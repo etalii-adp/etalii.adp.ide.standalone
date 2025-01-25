@@ -1,0 +1,50 @@
+﻿<!-- Stuff that needs to happen at the end of the MSBuild process should go in the .targets file. -->
+<Project>
+  <!-- We want all the projects to have the right configurations and platforms. -->
+  <PropertyGroup>
+    <Configurations>Debug;Release</Configurations>
+    <Platforms>AnyCPU</Platforms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The .DotSettings file is maintained by Rider/Resharper - no need to show it. -->
+    <None Remove="*.csproj.DotSettings" />
+  </ItemGroup>
+
+  <!-- We want all projects to honor the GitVersioning as specified using the NBGV tool-->
+  <ItemGroup>
+    <PackageReference Include="Nerdbank.GitVersioning" Condition="!Exists('packages.config')" Label="Nerdbank.GitVersioning (.targets)" >
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+<!--  &lt;!&ndash; We want to do a bit of xunit magic. So let's add all test relevant packages in one central place &ndash;&gt;-->
+<!--  <ItemGroup Condition="'$(IsUbigiaTestProject)' == 'true'">-->
+<!--    <PackageReference Include="Microsoft.NET.Test.Sdk" Label="Microsoft.NET.Test.Sdk (.targets)" />-->
+<!--    <PackageReference Include="xunit" Label="Xunit.Version (.targets)" />-->
+<!--    <PackageReference Include="xunit.assert" Label="Xunit.Assert (.targets)" />-->
+<!--    <PackageReference Include="xunit.runner.visualstudio" Label="Xunit.Runner.Visualstudio (.targets)">-->
+<!--      <PrivateAssets>all</PrivateAssets>-->
+<!--      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>-->
+<!--    </PackageReference>-->
+<!--    <PackageReference Include="AltCover" Label="AltCover (.targets)">-->
+<!--      <PrivateAssets>all</PrivateAssets>-->
+<!--      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>-->
+<!--    </PackageReference>-->
+
+<!--    <Content Include="$(MSBuildThisFileDirectory)\xunit.runner.json" CopyToOutputDirectory="PreserveNewest" >-->
+<!--      <Visible>false</Visible>-->
+<!--    </Content>-->
+<!--  </ItemGroup>-->
+
+<!--  &lt;!&ndash; We want any project that is not a test or portal project to use nugetizer assistance when creating packages.-->
+<!--       The analyzer project currently requires nugetizer &ndash;&gt;-->
+<!--  <ItemGroup Condition="'$(IsUbigiaTestProject)' != 'true' AND '$(IsPortalProject)' != 'true'">-->
+<!--&lt;!&ndash;  <ItemGroup Condition="'$(IsUbigiaTestProject)' != 'true' AND '$(IsPortalProject)' != 'true' AND '$(IsAnalyzerProject)' != 'true'">&ndash;&gt;-->
+<!--    <PackageReference Include="NuGetizer" Label="NuGetizer (.targets)" >-->
+<!--      <PrivateAssets>all</PrivateAssets>-->
+<!--      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>-->
+<!--    </PackageReference>-->
+<!--  </ItemGroup>-->
+
+</Project>

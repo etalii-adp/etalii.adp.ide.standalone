@@ -14,6 +14,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Global", "_Global", "{D87B
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
 		.github\workflows\azure-static-web-apps-white-beach-07a1db903.yml = .github\workflows\azure-static-web-apps-white-beach-07a1db903.yml
+		global.json = global.json
+		Directory.Build.props = Directory.Build.props
+		Directory.Build.targets = Directory.Build.targets
+		Directory.Packages.props = Directory.Packages.props
 	EndProjectSection
 EndProject
 Global

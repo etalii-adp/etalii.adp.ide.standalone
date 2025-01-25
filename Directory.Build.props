@@ -1,0 +1,101 @@
+﻿<!-- Stuff that needs to happen at the start of the MSBuild process should go in the .props file. -->
+<Project>
+  <PropertyGroup>
+    <Version>$(PackageVersion)</Version>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Authors>Peter Vrenken</Authors>
+    <Copyright>Copyright ©2024-2025 Peter Vrenken</Copyright>
+    <Company>EtAlii</Company>
+    <Product>ADP</Product>
+    <PackageProjectUrl>https://github.com/vrenken/EtAlii.Adp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/vrenken/EtAlii.Adps</RepositoryUrl>
+    <LangVersion>13</LangVersion>
+
+<!--    &lt;!&ndash; We need to maintain netstandard2.0 as netstandard2.1 is not compatbile with roslyn analyzers. &ndash;&gt;-->
+<!--    &lt;!&ndash; https://github.com/dotnet/roslyn/issues/47087 &ndash;&gt;-->
+<!--    <UbigiaLibraryTargetFramework>netstandard2.1</UbigiaLibraryTargetFramework>-->
+<!--    <UbigiaGrpcLibraryTargetFramework>netstandard2.1</UbigiaGrpcLibraryTargetFramework>-->
+<!--    <UbigiaPersistenceLibraryTargetFramework>netstandard2.1</UbigiaPersistenceLibraryTargetFramework>-->
+<!--    <UbigiaInfrastructureLibraryTargetFramework>netstandard2.1</UbigiaInfrastructureLibraryTargetFramework>-->
+<!--    <UbigiaApplicationTargetFramework>net7.0</UbigiaApplicationTargetFramework>-->
+<!--    <UbigiaGuiApplicationTargetFramework>$(UbigiaApplicationTargetFramework)-windows</UbigiaGuiApplicationTargetFramework>-->
+<!--    <UbigiaTestApplicationTargetFramework>$(UbigiaApplicationTargetFramework)</UbigiaTestApplicationTargetFramework>-->
+
+<!--    <DefineConstants Condition="'$(UbigiaIsRunningOnBuildAgent)' == 'true'">$(DefineConstants);UBIGIA_IS_RUNNING_ON_BUILD_AGENT</DefineConstants>-->
+
+<!--    <UseLapaParsingInTests>false</UseLapaParsingInTests> &lt;!&ndash; Set to true to always use the legacy Lapa parsers instead of the Antlr4 ones. &ndash;&gt;-->
+<!--    <DefineConstants Condition="'$(UseLapaParsingInTests)' == 'true'">$(DefineConstants);USE_LAPA_PARSING_IN_TESTS</DefineConstants>-->
+
+<!--    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>-->
+
+<!--    <LangVersion>11</LangVersion>-->
+<!--    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>-->
+
+<!--    <NoWarn>$(NoWarn);CA1822</NoWarn> &lt;!&ndash; [CA1822] Mark members as static, however as we aim to use as few static keywords as possible this is a false alarm. &ndash;&gt;-->
+<!--    <NoWarn>$(NoWarn);AD0001</NoWarn> &lt;!&ndash; In SonarQube step of the build process: CSC : warning AD0001: Analyzer 'SonarAnalyzer.Rules.CSharp.CbdeHandlerRule' threw an exception of type 'SonarAnalyzer.CBDE.CbdeException' with message 'Top level error in CBDE handling &ndash;&gt;-->
+
+
+<!--    &lt;!&ndash; We want to have comments on everything public &ndash;&gt;-->
+<!--    &lt;!&ndash;    <GenerateDocumentationFile>true</GenerateDocumentationFile>&ndash;&gt;-->
+<!--    &lt;!&ndash;    <MSBuildWarningsAsErrors>CS1591</MSBuildWarningsAsErrors>&ndash;&gt;-->
+
+<!--  </PropertyGroup>-->
+
+<!--  &lt;!&ndash; Analysis, code conventions and standardization. &ndash;&gt;-->
+<!--  <PropertyGroup>-->
+<!--    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>-->
+<!--    <WarningsAsErrors>true</WarningsAsErrors>-->
+<!--    <AnalysisLevel>5.0</AnalysisLevel>-->
+<!--  </PropertyGroup>-->
+
+<!--  <PropertyGroup>-->
+<!--    &lt;!&ndash;<DefineConstants>$(DefineConstants);USE_ORIGINAL_CONTAINER</DefineConstants>&ndash;&gt;   &lt;!&ndash; = original implementation. &ndash;&gt;-->
+<!--    <DefineConstants>$(DefineConstants);USE_WRAPPER_CONTAINER</DefineConstants>           &lt;!&ndash; = wrapper around Microsoft.Extensions.DependencyInjection. &ndash;&gt;-->
+<!--  </PropertyGroup>-->
+
+<!--  <ItemGroup>-->
+<!--&lt;!&ndash;    <PackageReference Include="Meziantou.Analyzer" Version="1.0.612" >&ndash;&gt;-->
+<!--&lt;!&ndash;      <PrivateAssets>all</PrivateAssets>&ndash;&gt;-->
+<!--&lt;!&ndash;      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>&ndash;&gt;-->
+<!--&lt;!&ndash;    </PackageReference>&ndash;&gt;-->
+<!--&lt;!&ndash;    <PackageReference Include="SonarAnalyzer.CSharp" Version="8.14.0.22654">&ndash;&gt;-->
+<!--&lt;!&ndash;      <PrivateAssets>all</PrivateAssets>&ndash;&gt;-->
+<!--&lt;!&ndash;      <IncludeAssets>analyzers</IncludeAssets>&ndash;&gt;-->
+<!--&lt;!&ndash;    </PackageReference>&ndash;&gt;-->
+<!--  </ItemGroup>-->
+
+<!--  <PropertyGroup>-->
+<!--    <IsPortalProject Condition="$(MSBuildProjectName.Contains('.Portal.'))">true</IsPortalProject>-->
+<!--    <IsUbigiaTestProject Condition="$(MSBuildProjectName.EndsWith('.Tests')) OR $(MSBuildProjectName.EndsWith('.Tests.Docker')) OR $(MSBuildProjectName.EndsWith('.Tests.Local')) OR $(MSBuildProjectName) == 'HashLibTest'">true</IsUbigiaTestProject>-->
+<!--    <IsAnalyzerProject Condition="$(MSBuildProjectName.EndsWith('.Analyzers'))">true</IsAnalyzerProject>-->
+<!--    <IsUbigiaApplication>false</IsUbigiaApplication>-->
+<!--    <IsUbigiaLibrary>false</IsUbigiaLibrary>-->
+<!--  </PropertyGroup>-->
+
+<!--  &lt;!&ndash; The PropertyGroup below is used to configure all test projects. &ndash;&gt;-->
+<!--  <PropertyGroup Condition="'$(IsUbigiaTestProject)' == 'true'">-->
+<!--    <TargetFramework>$(UbigiaTestApplicationTargetFramework)</TargetFramework>-->
+<!--    <Description>Unit test project</Description>-->
+<!--    <OutputType>Library</OutputType>-->
+<!--    <IsPackable>false</IsPackable>-->
+<!--  </PropertyGroup>-->
+
+<!--  &lt;!&ndash; We don't want any of the hosting test projects to be packaged. &ndash;&gt;-->
+<!--  <PropertyGroup Condition="$(MSBuildProjectName.Contains('.Hostings.Tests.'))">-->
+<!--    <IsPackable>false</IsPackable>-->
+<!--  </PropertyGroup>-->
+
+<!--  &lt;!&ndash; We want any non-test project to use the pure nullable convention. &ndash;&gt;-->
+<!--  <PropertyGroup Condition="'$(IsUbigiaTestProject)' != 'true'">-->
+<!--    <Nullable>disable</Nullable>-->
+<!--  </PropertyGroup>-->
+
+<!--  <PropertyGroup>-->
+<!--    &lt;!&ndash; Patch for build error:  &ndash;&gt;-->
+<!--    &lt;!&ndash; error NG0011: Some project references cannot be properly packaged. Please install the NuGetizer package on the following projects: C:\*\.nuget\packages\nerdbank.gitversioning\3.5.109\build\PrivateP2PCaching.proj. &ndash;&gt;-->
+<!--    &lt;!&ndash; https://github.com/devlooped/nugetizer/issues/198 &ndash;&gt;-->
+<!--    <NBGV_CacheMode>None</NBGV_CacheMode>-->
+  </PropertyGroup>
+
+</Project>
+
