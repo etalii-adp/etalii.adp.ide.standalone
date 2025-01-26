@@ -44,15 +44,6 @@
         {
             "route": "/logout",
             "redirect": "/.auth/logout"
-        },
-        {
-            "route": "/calendar*",
-            "rewrite": "/calendar.html"
-        },
-        {
-            "route": "/specials",
-            "redirect": "/deals",
-            "statusCode": 301
         }
     ],
     "navigationFallback": {

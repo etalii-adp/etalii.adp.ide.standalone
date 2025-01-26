@@ -1,6 +1,22 @@
 ﻿@page "/user"
 <PageTitle>Ubigia</PageTitle>
+@attribute [Authorize]
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authorization
 
-<h1>Hello, world!</h1>
+<h1>@_authenticatedUser?.Identity?.Name</h1>
+
+<h2>Claims</h2>
+
+@foreach (var claim in _authenticatedUser?.Claims ?? Array.Empty<Claim>())
+{
+    <p class="claim">@(claim.Type): @claim.Value</p>
+}
 
 
+<h2>Claims</h2>
+
+@foreach (var claim in _authenticatedUser?.Claims ?? [])
+{
+    <p>@(claim.Type): @claim.Value</p>
+}

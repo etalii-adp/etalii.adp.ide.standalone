@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Routing;
 
 namespace EtAlii.Adp.Client;
@@ -7,7 +8,7 @@ public partial class NavHeader
 {
     private string? _lastDiagram = "1234";
     private SelectedPage _selectedPage = SelectedPage.Home;
-    private string? _userName = "vrenken@live.nl";
+    private string? _userName = null;//"vrenken@live.nl";
 
     private MarkupString _ubigiaLink;
     private MarkupString _userLink;
@@ -15,10 +16,11 @@ public partial class NavHeader
     private MarkupString _diagramLink;
     
     [Inject] private NavigationManager Navigation { get; set; } = null!;
+    [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = null!;
     
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        UpdateBreadcrumbs();
+        await UpdateBreadcrumbs();
         
         // Subscribe to the LocationChanged event
         Navigation.LocationChanged += OnLocationChanged;
@@ -31,9 +33,9 @@ public partial class NavHeader
         Navigation.LocationChanged -= OnLocationChanged;
     }
     
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => UpdateBreadcrumbs();
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => InvokeAsync(UpdateBreadcrumbs);
 
-    private void UpdateBreadcrumbs()
+    private async Task UpdateBreadcrumbs()
     {
         // Get the current URI and extract the path
         var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri);
@@ -54,34 +56,50 @@ public partial class NavHeader
         {
             _selectedPage = SelectedPage.Home;
         }
+        
+        if (AuthenticationStateProvider != null!)
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            _userName = user.Identity is { } identity 
+                ? identity.Name 
+                : null;
+        }
+        else
+        {
+            _userName = null;
+        }
 
+        if (_userName != null)
+        {
+            
+        }
+        else
+        {
+            _lastDiagram = null;
+        }
 
         _ubigiaLink = _selectedPage == SelectedPage.Home
-            ? new MarkupString("<b><a href=\"/\">Ubigia</a></b> /")
-            : new MarkupString("<a href=\"/\">Ubigia</a> /");
+            ? new MarkupString($"<b><a href=\"/\">Ubigia</a></b>{(_userName != null ? " / " : "")}")
+            : new MarkupString($"<a href=\"/\">Ubigia</a>{(_userName != null ? " / " : "")}");
         
         _userLink = _selectedPage == SelectedPage.User
             ? new MarkupString($"<b><a href=\"/user\">{_userName}</a></b> /")
             : new MarkupString($"<a href=\"/user\">{_userName}</a> /");
 
-        if (_lastDiagram != null)
-        {
-            _diagramsLink = _selectedPage == SelectedPage.Diagrams
-                ? new MarkupString("<b><a href=\"/user/diagrams\">Diagrams</a></b> /")
-                : new MarkupString("<a href=\"/user/diagrams\">Diagrams</a> /");
-        }
-        else
-        {
-            _diagramsLink = _selectedPage == SelectedPage.Diagrams
-                ? new MarkupString("<b><a href=\"/user/diagrams\">Diagrams</a></b>")
-                : new MarkupString("<a href=\"/user/diagrams\">Diagrams</a>");
-        }
+        _diagramsLink = _selectedPage == SelectedPage.Diagrams
+            ? new MarkupString($"<b><a href=\"/user/diagrams\">Diagrams</a></b>{(_lastDiagram != null ? " / " : "")}")
+            : new MarkupString($"<a href=\"/user/diagrams\">Diagrams</a>{(_lastDiagram != null ? " / " : "")}");
 
         if (_lastDiagram != null)
         {
             _diagramLink = _selectedPage == SelectedPage.Diagram
-                ? new MarkupString($"<b><a href=\"/user/diagrams/{_lastDiagram}\">{_lastDiagram}</a></b> /")
-                : new MarkupString($"<a href=\"/user/diagrams/{_lastDiagram}\">{_lastDiagram}</a> /");
+                ? new MarkupString($"<b><a href=\"/user/diagrams/{_lastDiagram}\">{_lastDiagram}</a></b>")
+                : new MarkupString($"<a href=\"/user/diagrams/{_lastDiagram}\">{_lastDiagram}</a>");
+        }
+        else
+        {
+            _diagramLink = new MarkupString();
         }
         StateHasChanged();
     }
