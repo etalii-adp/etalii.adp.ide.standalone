@@ -1,0 +1,34 @@
+﻿<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="EtAlii.Adp" type="com.intellij.execution.configurations.multilaunch" factoryName="MultiLaunchConfiguration">
+    <rows>
+      <ExecutableRowSnapshot>
+        <option name="condition">
+          <ConditionSnapshot>
+            <option name="type" value="immediately" />
+          </ConditionSnapshot>
+        </option>
+        <option name="executable">
+          <ExecutableSnapshot>
+            <option name="id" value="runConfig:Azure - Run Function App.Api" />
+          </ExecutableSnapshot>
+        </option>
+      </ExecutableRowSnapshot>
+      <ExecutableRowSnapshot>
+        <option name="condition">
+          <ConditionSnapshot>
+            <attributes>
+              <entry key="port" value="7071" />
+            </attributes>
+            <option name="type" value="waitPortOpened" />
+          </ConditionSnapshot>
+        </option>
+        <option name="executable">
+          <ExecutableSnapshot>
+            <option name="id" value="runConfig:.NET Launch Settings Profile.Client: https" />
+          </ExecutableSnapshot>
+        </option>
+      </ExecutableRowSnapshot>
+    </rows>
+    <method v="2" />
+  </configuration>
+</component>
