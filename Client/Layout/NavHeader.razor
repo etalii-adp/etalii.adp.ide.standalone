@@ -1,0 +1,30 @@
+﻿@namespace EtAlii.Adp.Client
+
+<div class="top-row d-flex px-4">
+        @if (_lastDiagram != null)
+        {
+            <div class="flex-grow-1">
+                @_ubigiaLink
+                @_userLink
+                @_diagramsLink
+                @_diagramLink
+            </div>
+        }
+        else if (_userName != null)
+        {
+            <div class="flex-grow-1">
+                @_ubigiaLink
+                @_userLink
+                @_diagramsLink
+            </div>
+        }
+        else
+        {
+            <div class="flex-grow-1">
+                @_ubigiaLink
+            </div>
+        }
+    <div class="ms-3">
+        <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+    </div>
+</div>
