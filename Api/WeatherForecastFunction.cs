@@ -22,7 +22,7 @@ namespace Api
             _logger.LogInformation("Fetching weather forecast");
 
             var randomNumber = new Random();
-            var temp = 0;
+            int temp;
 
             var result = Enumerable.Range(1, 5).Select(index => new WeatherForecast
             {
