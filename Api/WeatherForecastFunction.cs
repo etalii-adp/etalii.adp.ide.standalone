@@ -13,11 +13,14 @@ namespace Api
         public HttpTrigger(ILoggerFactory loggerFactory)
         {
             _logger = loggerFactory.CreateLogger<HttpTrigger>();
+            _logger.LogInformation("Initialized Http Trigger Function");
         }
 
         [Function("WeatherForecast")]
         public HttpResponseData Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequestData req)
         {
+            _logger.LogInformation("Fetching weather forecast");
+
             var randomNumber = new Random();
             var temp = 0;
 
