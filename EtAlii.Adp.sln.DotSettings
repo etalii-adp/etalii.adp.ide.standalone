@@ -3,4 +3,5 @@
 	<s:String x:Key="/Default/Environment/Hierarchy/Build/BuildTool/CustomBuildToolPath/@EntryValue">C:\Program Files\dotnet\sdk\9.0.102\MSBuild.dll</s:String>
 	<s:Int64 x:Key="/Default/Environment/Hierarchy/Build/BuildTool/MsbuildVersion/@EntryValue">4294967293</s:Int64>
 	<s:String x:Key="/Default/Environment/Hierarchy/NuGetOptions/DefaultPackageManagementFormat/@EntryValue">PackageReference</s:String>
-	<s:Boolean x:Key="/Default/Environment/Hierarchy/NuGetOptions/RemoveDependencies/@EntryValue">True</s:Boolean></wpf:ResourceDictionary>
+	<s:Boolean x:Key="/Default/Environment/Hierarchy/NuGetOptions/RemoveDependencies/@EntryValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=ubigia/@EntryIndexedValue">True</s:Boolean></wpf:ResourceDictionary>
