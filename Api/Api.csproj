@@ -12,6 +12,7 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" />
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService"/>
     <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" />
+    <PackageReference Include="Microsoft.AspNetCore.Cors" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
