@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Z.Blazor.Diagrams.Algorithms" />
+    <PackageReference Include="Z.Blazor.Diagrams.Core" />
+    <PackageReference Include="Z.Blazor.Diagrams" />
+  </ItemGroup>
+
+</Project>
