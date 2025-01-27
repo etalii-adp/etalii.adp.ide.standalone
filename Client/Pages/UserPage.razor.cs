@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 
 namespace EtAlii.Adp.Client.Pages;
 
-public partial class User
+public partial class UserPage
 {
     [Inject] public AuthenticationStateProvider AuthenticationStateProvider { get; set; } = null!;
 

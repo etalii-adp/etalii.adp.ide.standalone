@@ -3,7 +3,7 @@ using BlazorApp.Shared;
 
 namespace EtAlii.Adp.Client.Pages;
 
-public partial class Diagrams
+public partial class DiagramsPage
 {
     private WeatherForecast[] _forecasts = [];
 
