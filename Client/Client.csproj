@@ -8,9 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" PrivateAssets="all"  />
+    <PackageReference Include="Z.Blazor.Diagrams.Algorithms" />
+    <PackageReference Include="Z.Blazor.Diagrams.Core" />
+    <PackageReference Include="Z.Blazor.Diagrams" />
   </ItemGroup>
 
 
@@ -21,6 +26,7 @@
 
   <ItemGroup>
     <Folder Include="Authentication\_Model\" />
+    <Folder Include="Diagram\" />
   </ItemGroup>
 
 </Project>
