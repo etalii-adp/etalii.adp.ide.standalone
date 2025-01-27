@@ -79,6 +79,11 @@ public partial class NavHeader
             _lastDiagram = null;
         }
 
+#if DEBUG
+            _userName = "Test User";
+            _lastDiagram = "Test Diagram";
+#endif
+
         _ubigiaLink = _selectedPage == SelectedPage.Home
             ? new MarkupString($"<b><a href=\"/\">Ubigia</a></b>{(_userName != null ? " / " : "")}")
             : new MarkupString($"<a href=\"/\">Ubigia</a>{(_userName != null ? " / " : "")}");
