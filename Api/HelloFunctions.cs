@@ -15,7 +15,7 @@ public class HelloFunctions
         return response;
     }
 
-    [Function("hello/protected")]
+    [Function("hello_protected")]
     public HttpResponseData RunProtectedHello([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequestData req)
     {
         var user = StaticWebAppsApiAuth.Parse(req);
@@ -35,7 +35,7 @@ public class HelloFunctions
         return response;
     }
 
-    [Function("hello/protected/admin")]
+    [Function("hello_protected_admin")]
     public HttpResponseData RunProtectedAdminHello([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequestData req)
     {
         var user = StaticWebAppsApiAuth.Parse(req);
@@ -57,7 +57,7 @@ public class HelloFunctions
         return response;
     }
 
-    [Function("hello/protected/superadmin")]
+    [Function("hello_protected_superadmin")]
     public HttpResponseData RunProtectedSuperAdminHello([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequestData req)
     {
         var user = StaticWebAppsApiAuth.Parse(req);

@@ -38,12 +38,12 @@ public partial class HomePage
 
     private async Task CallProtectedFunction()
     {
-        _protectedApiResponse = await Http.GetStringAsync("/api/hello/protected");
+        _protectedApiResponse = await Http.GetStringAsync("/api/hello_protected");
     }
 
     private async Task CallProtectedAdminFunction()
     {
-        var response = await Http.GetAsync("/api/hello/protected/admin");
+        var response = await Http.GetAsync("/api/hello_protected_admin");
         _protectedAdminApiResponse = await response.Content.ReadAsStringAsync();
         _adminFunctionMessageColor = response.IsSuccessStatusCode ? "green" : "red";
     }
@@ -51,7 +51,7 @@ public partial class HomePage
 
     private async Task CallProtectedSuperAdminFunction()
     {
-        var response = await Http.GetAsync("/api/hello/protected/superadmin");
+        var response = await Http.GetAsync("/api/hello_protected_superadmin");
         _protectedSuperAdminApiResponse = await response.Content.ReadAsStringAsync();
 
         _superAdminFunctionMessageColor = response.IsSuccessStatusCode ? "green" : "red";

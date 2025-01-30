@@ -23,15 +23,15 @@
             }
         },
         {
-            "route": "/api/hello/protected",
+            "route": "/api/hello_protected",
             "allowedRoles": [ "authenticated" ]
         },
         {
-            "route": "/api/hello/protected/admin",
+            "route": "/api/hello_protected_admin",
             "allowedRoles": [ "admin" ]
         },
         {
-            "route": "/api/hello/protected/superadmin",
+            "route": "/api/hello_protected_superadmin",
             "allowedRoles": [ "authenticated" ]
         }
     ],
