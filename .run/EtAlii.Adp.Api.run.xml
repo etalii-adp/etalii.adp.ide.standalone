@@ -1,5 +1,5 @@
 ﻿<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Api" type="AzureFunctionAppRun" factoryName="Azure - Run Function">
+  <configuration default="false" name="EtAlii.Adp.Api" type="AzureFunctionAppRun" factoryName="Azure - Run Function">
     <option name="PROJECT_FILE_PATH" value="$PROJECT_DIR$/Api/Api.csproj" />
     <option name="LAUNCH_PROFILE_NAME" value="Api" />
     <option name="PROJECT_TFM" value="net9.0" />
