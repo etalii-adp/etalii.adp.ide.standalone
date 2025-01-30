@@ -10,6 +10,5 @@
   </Folder>
   <Project Path="Api\Api.csproj" />
   <Project Path="Client\Client.csproj" />
-  <Project Path="EtAlii.Adp\EtAlii.Adp.csproj" Type="Classic C#" />
   <Project Path="Shared\Shared.csproj" />
 </Solution>
