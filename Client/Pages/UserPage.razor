@@ -1,17 +1,27 @@
-﻿@page "/user"
+﻿@namespace EtAlii.Adp.Client
+@page "/user"
 <PageTitle>Ubigia</PageTitle>
-@attribute [Authorize]
-@using Microsoft.AspNetCore.Authorization
+@* @attribute [Authorize] *@
+@* @using Microsoft.AspNetCore.Authorization *@
 
 <h2>Identity</h2>
 
-Name: @_authenticatedUser?.Identity?.Name - @_authenticatedUser?.Identity?.AuthenticationType - @_authenticatedUser?.Identity?.IsAuthenticated<br/>
+Name: @_authenticatedUser?.Identity?.Name <br/>
+AuthenticationType: @_authenticatedUser?.Identity?.AuthenticationType <br/>
+IsAuthenticated: @_authenticatedUser?.Identity?.IsAuthenticated<br/>
 
 <h2>Identities</h2>
 
 @foreach (var identity in _authenticatedUser?.Identities ?? [])
 {
-    <p class="identity">@(identity.Name): @identity.Label - @identity.AuthenticationType - @identity.IsAuthenticated</p>
+    <p class="identity">
+        Name: @identity.Name <br/>
+        Label: @identity.Label <br/>
+        NameClaimType: @identity.NameClaimType <br/>
+        RoleClaimType: @identity.RoleClaimType <br/>
+        AuthenticationType: @identity.AuthenticationType <br/>
+        IsAuthenticated: @identity.IsAuthenticated <br/>
+    </p>
 }
 
 <h2>Claims</h2>
