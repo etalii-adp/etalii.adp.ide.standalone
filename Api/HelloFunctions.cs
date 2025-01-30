@@ -62,19 +62,17 @@ public class HelloFunctions
     {
         var user = StaticWebAppsApiAuth.Parse(req);
 
-        HttpResponseData response;
-        if (!user.IsInRole("superadmin"))
-        {
-            response = req.CreateResponse(HttpStatusCode.Unauthorized);
-            var message = $"Hi {user.Identity!.Name}. You are not authorized to access this function." +
-                           "The 'superadmin' role is required, please contact the administrator.";
-            response.WriteStringAsync(unauthMessage);
-        }
-        else
-        {
-            response = req.CreateResponse(HttpStatusCode.OK);
-            response.WriteStringAsync($"Hello from SUPER ADMIN PROTECTED function");
-        }
+        var isSuperAdmin = user.IsInRole("superadmin");
+        var response = isSuperAdmin
+            ? req.CreateResponse(HttpStatusCode.OK)
+            : req.CreateResponse(HttpStatusCode.Unauthorized);
+
+        var message = isSuperAdmin
+            ? $"Hello from SUPER ADMIN PROTECTED function"
+            : $"Hi {user.Identity!.Name}. You are not authorized to access this function." +
+               "The 'superadmin' role is required, please contact the administrator.";
+
+        response.WriteStringAsync(message);
 
         return response;
     }
