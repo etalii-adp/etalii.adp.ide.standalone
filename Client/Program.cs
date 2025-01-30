@@ -11,6 +11,6 @@ builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(builder.C
 
 builder.Services.AddOptions();
 builder.Services.AddAuthorizationCore();
-builder.Services.AddScoped<AuthenticationStateProvider, UserAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider, CloudAuthenticationStateProvider>();
 
 await builder.Build().RunAsync();

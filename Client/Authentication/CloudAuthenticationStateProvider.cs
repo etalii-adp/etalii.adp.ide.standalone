@@ -5,11 +5,11 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
 namespace EtAlii.Adp.Client;
 
-public class UserAuthenticationStateProvider : AuthenticationStateProvider
+public class CloudAuthenticationStateProvider : AuthenticationStateProvider
 {
     private readonly HttpClient _client;
 
-    public UserAuthenticationStateProvider(IWebAssemblyHostEnvironment environment)
+    public CloudAuthenticationStateProvider(IWebAssemblyHostEnvironment environment)
     {
         _client = new HttpClient { BaseAddress = new Uri(environment.BaseAddress) };
     }

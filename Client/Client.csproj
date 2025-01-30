@@ -27,6 +27,7 @@
 
 
   <ItemGroup>
+    <Folder Include="Configuration\" />
     <Folder Include="Diagram\" />
   </ItemGroup>
 
