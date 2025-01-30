@@ -2,5 +2,5 @@
 
 public class UserAuthenticationState
 {
-    public ClientPrincipal ClientPrincipal { get; set; }
+    public ClientPrincipal ClientPrincipal { get; set; } = null!;
 }

@@ -3,8 +3,6 @@
     <TargetFramework>net9.0</TargetFramework>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
     <OutputType>Exe</OutputType>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
     <RootNamespace>EtAlii.Adp.Api</RootNamespace>
   </PropertyGroup>
   <ItemGroup>

@@ -20,15 +20,17 @@ public class HelloFunctions
     {
         var user = StaticWebAppsApiAuth.Parse(req);
 
+        HttpResponseData response;
         if (user.Identity == null || !user.Identity.IsAuthenticated)
         {
-            var unauthResponse = req.CreateResponse(HttpStatusCode.Unauthorized);
-            unauthResponse.WriteStringAsync($"User does does not have access to function");
-            return unauthResponse;
+            response = req.CreateResponse(HttpStatusCode.Unauthorized);
+            response.WriteStringAsync($"User does does not have access to function");
         }
-
-        var response = req.CreateResponse(HttpStatusCode.OK);
-        response.WriteStringAsync($"Hello '{user.Identity.Name}' from PROTECTED function");
+        else
+        {
+            response = req.CreateResponse(HttpStatusCode.OK);
+            response.WriteStringAsync($"Hello '{user.Identity.Name}' from PROTECTED function");
+        }
 
         return response;
     }
@@ -38,17 +40,19 @@ public class HelloFunctions
     {
         var user = StaticWebAppsApiAuth.Parse(req);
 
+        HttpResponseData response;
         if (!user.IsInRole("admin"))
         {
-            var unauthResponse = req.CreateResponse(HttpStatusCode.Unauthorized);
-            var unauthMessage = $"Hi {user.Identity.Name}. You are not authorized to access this function." +
-                                "The 'admin' role is required, please contact the administrator.";
-            unauthResponse.WriteStringAsync(unauthMessage);
-            return unauthResponse;
+            response = req.CreateResponse(HttpStatusCode.Unauthorized);
+            var message = $"Hi {user.Identity!.Name}. You are not authorized to access this function." +
+                           "The 'admin' role is required, please contact the administrator.";
+            response.WriteStringAsync(message);
         }
-
-        var response = req.CreateResponse(HttpStatusCode.OK);
-        response.WriteStringAsync($"Hello '{user.Identity.Name}' from ADMIN PROTECTED function");
+        else
+        {
+            response = req.CreateResponse(HttpStatusCode.OK);
+            response.WriteStringAsync($"Hello '{user.Identity!.Name}' from ADMIN PROTECTED function");
+        }
 
         return response;
     }
@@ -58,17 +62,19 @@ public class HelloFunctions
     {
         var user = StaticWebAppsApiAuth.Parse(req);
 
+        HttpResponseData response;
         if (!user.IsInRole("superadmin"))
         {
-            var unauthResponse = req.CreateResponse(HttpStatusCode.Unauthorized);
-            var unauthMessage = $"Hi {user.Identity.Name}. You are not authorized to access this function." +
-                                "The 'superadmin' role is required, please contact the administrator.";
-            unauthResponse.WriteStringAsync(unauthMessage);
-            return unauthResponse;
+            response = req.CreateResponse(HttpStatusCode.Unauthorized);
+            var message = $"Hi {user.Identity!.Name}. You are not authorized to access this function." +
+                           "The 'superadmin' role is required, please contact the administrator.";
+            response.WriteStringAsync(unauthMessage);
         }
-
-        var response = req.CreateResponse(HttpStatusCode.OK);
-        response.WriteStringAsync($"Hello from SUPER ADMIN PROTECTED function");
+        else
+        {
+            response = req.CreateResponse(HttpStatusCode.OK);
+            response.WriteStringAsync($"Hello from SUPER ADMIN PROTECTED function");
+        }
 
         return response;
     }

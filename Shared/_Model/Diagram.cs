@@ -1,9 +1,8 @@
-﻿namespace BlazorApp.Shared
+﻿namespace EtAlii.Adp;
+
+public class Diagram
 {
-    public class Diagram
-    {
-        public string Name { get; set; }
-        public DiagramPosition Position { get; set; }
-        public float Zoom { get; set; }
-    }
+    public string Name { get; set; } = null!;
+    public DiagramPosition Position { get; set; }
+    public float Zoom { get; set; }
 }

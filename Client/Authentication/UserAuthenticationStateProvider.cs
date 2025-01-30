@@ -21,7 +21,9 @@ public class UserAuthenticationStateProvider : AuthenticationStateProvider
             var state = await _client.GetFromJsonAsync<UserAuthenticationState>("/.auth/me");
 
             var principal = state!.ClientPrincipal;
-            principal.UserRoles = principal.UserRoles.Except(["anonymous"], StringComparer.CurrentCultureIgnoreCase);
+            principal.UserRoles = principal.UserRoles
+                .Except(["anonymous"], StringComparer.CurrentCultureIgnoreCase)
+                .ToArray();
 
             if (!principal.UserRoles.Any())
             {
@@ -34,7 +36,9 @@ public class UserAuthenticationStateProvider : AuthenticationStateProvider
             identity.AddClaims(principal.UserRoles.Select(r => new Claim(ClaimTypes.Role, r)));
 
             return new AuthenticationState(new ClaimsPrincipal(identity));
-        } catch(Exception ex) {
+        } 
+        catch(Exception) 
+        {
             return new AuthenticationState(new ClaimsPrincipal());
         }
     }

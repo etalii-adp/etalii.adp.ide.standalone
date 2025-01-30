@@ -1,20 +1,19 @@
 ﻿using System.Numerics;
 
-namespace BlazorApp.Shared
+namespace EtAlii.Adp;
+
+public  struct DiagramPosition
 {
-    public  struct DiagramPosition
+    public Vector2 Coordinates { get; set; }
+
+    public DiagramPosition(Vector2 coordinates)
     {
-        public Vector2 Coordinates { get; set; }
-
-        public DiagramPosition(Vector2 coordinates)
-        {
-            Coordinates = coordinates;
-        }
-        
-        public DiagramPosition(DiagramPosition position)
-        {
-            Coordinates = position.Coordinates;
-        }
-
+        Coordinates = coordinates;
     }
+        
+    public DiagramPosition(DiagramPosition position)
+    {
+        Coordinates = position.Coordinates;
+    }
+
 }

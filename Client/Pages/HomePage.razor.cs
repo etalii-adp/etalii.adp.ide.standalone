@@ -11,15 +11,14 @@ public partial class HomePage
 
     private ClaimsPrincipal? _user;
 
-    private bool _isUserAuthenticated = false;
+    private bool _isUserAuthenticated;
 
-    private bool _isUserAdmin = false;
+    private bool _isUserAdmin;
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthenticationStateProvider
-            .GetAuthenticationStateAsync();
-        _user = authState?.User;
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _user = authState.User;
         _isUserAuthenticated = _user?.Identity?.IsAuthenticated ?? false;
         _isUserAdmin = _user?.IsInRole("admin") ?? false;
     }

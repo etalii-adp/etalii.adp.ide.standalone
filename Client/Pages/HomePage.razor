@@ -7,7 +7,7 @@
 
 <AuthorizeView>
     <Authorized>
-        <h2>Hello, @context.User?.Identity?.Name! <a href="/.auth/logout">Log out</a></h2>
+        <h2>Hello, @context.User.Identity!.Name! <a href="/.auth/logout">Log out</a></h2>
         
     </Authorized>
     <NotAuthorized>

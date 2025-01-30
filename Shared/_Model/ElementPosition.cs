@@ -1,9 +1,8 @@
 ﻿using System.Numerics;
 
-namespace BlazorApp.Shared
+namespace EtAlii.Adp;
+
+public struct ElementPosition
 {
-    public struct ElementPosition
-    {
-        public Vector2 Coordinates { get; set; }
-    }
+    public Vector2 Coordinates { get; set; }
 }

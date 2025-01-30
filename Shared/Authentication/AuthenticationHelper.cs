@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 
 namespace EtAlii.Adp;
 
@@ -8,14 +6,16 @@ public static class AuthenticationHelper
 {
     public static ClaimsPrincipal GetClaimsPrincipalFromClientPrincipal(ClientPrincipal? clientPrincipal)
     {
-        if (clientPrincipal is null || clientPrincipal.UserRoles is null || clientPrincipal.UserId is null || clientPrincipal.UserDetails is null)
+        if (clientPrincipal is null || !clientPrincipal.UserRoles.Any() || clientPrincipal.UserId is null || clientPrincipal.UserDetails is null)
         {
             return new ClaimsPrincipal();
         }
 
         try
         {
-            clientPrincipal.UserRoles = clientPrincipal.UserRoles.Except(new string[] { "anonymous" }, StringComparer.CurrentCultureIgnoreCase);
+            clientPrincipal.UserRoles = clientPrincipal.UserRoles
+                .Except(["anonymous"], StringComparer.CurrentCultureIgnoreCase)
+                .ToArray();
 
             if (!clientPrincipal.UserRoles.Any())
             {
