@@ -8,13 +8,13 @@ public partial class NavHeader
 {
     private string? _lastDiagram = "1234";
     private SelectedPage _selectedPage = SelectedPage.Home;
-    private string? _userName = null;//"vrenken@live.nl";
 
     private MarkupString _ubigiaLink;
     private MarkupString _userLink;
     private MarkupString _diagramsLink;
     private MarkupString _diagramLink;
-    
+    private string? _userName;
+
     [Inject] private NavigationManager Navigation { get; set; } = null!;
     [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = null!;
     
@@ -57,32 +57,19 @@ public partial class NavHeader
             _selectedPage = SelectedPage.Home;
         }
         
-        if (AuthenticationStateProvider != null!)
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var isUserAuthenticated = user.Identity?.IsAuthenticated ?? false;
+        
+        if (isUserAuthenticated)
         {
-            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User;
-            _userName = user.Identity is { } identity 
-                ? identity.Name 
-                : null;
-        }
-        else
-        {
-            _userName = null;
-        }
-
-        if (_userName != null)
-        {
-            
+            _userName = user.Identity?.Name ?? null!;
+            _lastDiagram = "Test Diagram";
         }
         else
         {
             _lastDiagram = null;
         }
-
-#if DEBUG
-            _userName = "Test User";
-            _lastDiagram = "Test Diagram";
-#endif
 
         _ubigiaLink = _selectedPage == SelectedPage.Home
             ? new MarkupString($"<b><a href=\"/\">Ubigia</a></b>{(_userName != null ? " / " : "")}")
