@@ -16,34 +16,23 @@
             }
         },
         {
-            "route": "/api/*",
-            "methods": ["GET"],
-            "allowedRoles": ["registeredusers"]
+            "route": "/user*",
+            "allowedRoles": ["authenticated"],
+            "headers": {
+                "Cache-Control": "no-store"
+            }
         },
         {
-            "route": "/api/*",
-            "methods": ["PUT", "POST", "PATCH", "DELETE"],
-            "allowedRoles": ["administrator"]
+            "route": "/api/hello/protected",
+            "allowedRoles": [ "authenticated" ]
         },
         {
-            "route": "/api/*",
-            "allowedRoles": ["authenticated"]
+            "route": "/api/hello/protected/admin",
+            "allowedRoles": [ "admin" ]
         },
         {
-            "route": "/user/*",
-            "allowedRoles": ["registeredusers"]
-        },
-        {
-            "route": "/login",
-            "rewrite": "/.auth/login/github"
-        },
-        {
-            "route": "/.auth/login/x",
-            "statusCode": 404
-        },
-        {
-            "route": "/logout",
-            "redirect": "/.auth/logout"
+            "route": "/api/hello/protected/superadmin",
+            "allowedRoles": [ "authenticated" ]
         }
     ],
     "navigationFallback": {

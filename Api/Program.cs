@@ -4,14 +4,16 @@ using Microsoft.Extensions.Hosting;
 
 var builder = new HostBuilder();
 var host = builder
-    .ConfigureFunctionsWorkerDefaults(b =>
-    {
-        b.Services.AddCors();
-    })
+    .ConfigureFunctionsWorkerDefaults()
+    // .ConfigureFunctionsWorkerDefaults(b =>
+    // {
+    //     b.Services.AddCors();
+    // })
     .ConfigureServices(services =>
     {
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
+
     })
     .Build();
 

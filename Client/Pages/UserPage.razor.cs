@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 
-namespace EtAlii.Adp.Client.Pages;
+namespace EtAlii.Adp.Client;
 
 public partial class UserPage
 {

@@ -1,60 +1,58 @@
 using System.Net;
-using BlazorApp.Shared;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 
-namespace Api
+namespace EtAlii.Adp.Api;
+
+public class HttpTrigger
 {
-    public class HttpTrigger
+    private readonly ILogger _logger;
+
+    public HttpTrigger(ILoggerFactory loggerFactory)
     {
-        private readonly ILogger _logger;
+        _logger = loggerFactory.CreateLogger<HttpTrigger>();
+        _logger.LogInformation("Initialized Http Trigger Function");
+    }
 
-        public HttpTrigger(ILoggerFactory loggerFactory)
+    [Function("WeatherForecast")]
+    public HttpResponseData Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequestData req)
+    {
+        _logger.LogInformation("Fetching weather forecast");
+
+        var randomNumber = new Random();
+        int temp;
+
+        var result = Enumerable.Range(1, 5).Select(index => new WeatherForecast
         {
-            _logger = loggerFactory.CreateLogger<HttpTrigger>();
-            _logger.LogInformation("Initialized Http Trigger Function");
+            Date = DateTime.Now.AddDays(index),
+            TemperatureC = temp = randomNumber.Next(-20, 55),
+            Summary = GetSummary(temp)
+        }).ToArray();
+
+        var response = req.CreateResponse(HttpStatusCode.OK);
+        response.WriteAsJsonAsync(result);
+
+        return response;
+    }
+
+    private string GetSummary(int temp)
+    {
+        var summary = "Mild";
+
+        if (temp >= 32)
+        {
+            summary = "Hot";
+        }
+        else if (temp <= 16 && temp > 0)
+        {
+            summary = "Cold";
+        }
+        else if (temp <= 0)
+        {
+            summary = "Freezing";
         }
 
-        [Function("WeatherForecast")]
-        public HttpResponseData Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequestData req)
-        {
-            _logger.LogInformation("Fetching weather forecast");
-
-            var randomNumber = new Random();
-            int temp;
-
-            var result = Enumerable.Range(1, 5).Select(index => new WeatherForecast
-            {
-                Date = DateTime.Now.AddDays(index),
-                TemperatureC = temp = randomNumber.Next(-20, 55),
-                Summary = GetSummary(temp)
-            }).ToArray();
-
-            var response = req.CreateResponse(HttpStatusCode.OK);
-            response.WriteAsJsonAsync(result);
-
-            return response;
-        }
-
-        private string GetSummary(int temp)
-        {
-            var summary = "Mild";
-
-            if (temp >= 32)
-            {
-                summary = "Hot";
-            }
-            else if (temp <= 16 && temp > 0)
-            {
-                summary = "Cold";
-            }
-            else if (temp <= 0)
-            {
-                summary = "Freezing";
-            }
-
-            return summary;
-        }
+        return summary;
     }
 }
