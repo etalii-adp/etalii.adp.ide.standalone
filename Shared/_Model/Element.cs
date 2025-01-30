@@ -1,4 +1,4 @@
-﻿namespace BlazorApp.Shared
+﻿namespace EtAlii.Adp
 {
     public class Element
     {

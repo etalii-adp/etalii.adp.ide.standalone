@@ -1,7 +1,6 @@
 ﻿using System.Net.Http.Json;
-using BlazorApp.Shared;
 
-namespace EtAlii.Adp.Client.Pages;
+namespace EtAlii.Adp.Client;
 
 public partial class DiagramsPage
 {
@@ -11,7 +10,7 @@ public partial class DiagramsPage
     {
         try
         {
-            _forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("/api/WeatherForecast") ?? [];
+            _forecasts = await HttpClientJsonExtensions.GetFromJsonAsync<WeatherForecast[]>(Http, "/api/WeatherForecast") ?? [];
         }
         catch (Exception ex)
         {

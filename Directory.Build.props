@@ -11,7 +11,8 @@
     <RepositoryUrl>https://github.com/vrenken/EtAlii.Adps</RepositoryUrl>
     <LangVersion>13</LangVersion>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
 
     <!--    &lt;!&ndash; We need to maintain netstandard2.0 as netstandard2.1 is not compatbile with roslyn analyzers. &ndash;&gt;-->
 <!--    &lt;!&ndash; https://github.com/dotnet/roslyn/issues/47087 &ndash;&gt;-->

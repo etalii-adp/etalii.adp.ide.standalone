@@ -1,7 +1,6 @@
-﻿namespace BlazorApp.Shared
+﻿namespace EtAlii.Adp;
+
+public class Connector
 {
-    public class Connector
-    {
         
-    }
 }

@@ -13,9 +13,9 @@ public static class StaticWebAppsApiAuth
     {
         var clientPrincipal = new ClientPrincipal();
 
-        if (req.Headers.TryGetValues(ClientPrincipalHeader, out IEnumerable<string> headers))
+        if (req.Headers.TryGetValues(ClientPrincipalHeader, out var headers))
         {
-            var header = headers?.FirstOrDefault();
+            var header = headers.First();
             var decoded = Convert.FromBase64String(header);
             var json = Encoding.UTF8.GetString(decoded);
             clientPrincipal = JsonSerializer.Deserialize<ClientPrincipal>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
