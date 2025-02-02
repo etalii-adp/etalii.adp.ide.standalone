@@ -18,7 +18,7 @@ public class LocalAuthenticationStateProvider : AuthenticationStateProvider
 #if DEBUG        
         return Task.FromResult(_currentUserState);
 #else
-        return Task.FromResult(null);
+        return Task.FromResult<AuthenticationState>(null);
 #endif
     }
 
