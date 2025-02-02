@@ -7,7 +7,14 @@
                 </Authorizing>
                 <NotAuthorized>
                     <h1>Sorry</h1>
-                    <p>You are not authorized to view this page.</p>
+                    @if (context.User.Identity?.IsAuthenticated != true)
+                    {
+                        <p role="alert">Please login to access this page.</p>
+                    }
+                    else
+                    {
+                        <p role="alert">You are not authorized to access this page.</p>
+                    }
                 </NotAuthorized>
             </AuthorizeRouteView>
             <FocusOnNavigate RouteData="@routeData" Selector="h1" />
@@ -15,7 +22,8 @@
         <NotFound>
             <PageTitle>Not found</PageTitle>
             <LayoutView Layout="@typeof(MainLayout)">
-                <p role="alert">Sorry, there's nothing at this address.</p>
+                <h1>Sorry</h1>
+                <p role="alert">There's nothing at this address.</p>
             </LayoutView>
         </NotFound>
     </Router>

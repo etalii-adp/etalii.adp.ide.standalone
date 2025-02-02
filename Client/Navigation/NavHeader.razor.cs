@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using System.Collections.ObjectModel;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Routing;
 
@@ -15,6 +16,14 @@ public partial class NavHeader
     private MarkupString _diagramLink;
     private string? _userName;
 
+    // private static readonly IReadOnlyDictionary<string, string> AuthenticationProviders = new Dictionary<string, string>
+    // {
+    //     { "github", "GitHub" }, 
+    //     { "twitter", "Twitter" },
+    //     { "aad", "Microsoft" },
+    //     { "facebook", "Facebook" }
+    // };
+    
     [Inject] private NavigationManager Navigation { get; set; } = null!;
     [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = null!;
     

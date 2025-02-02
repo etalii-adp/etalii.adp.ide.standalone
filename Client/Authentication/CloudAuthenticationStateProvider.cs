@@ -16,8 +16,9 @@ public class CloudAuthenticationStateProvider : AuthenticationStateProvider
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        try 
+        try
         {
+            //var s = await _client.GetStringAsync("/.auth/me");
             var state = await _client.GetFromJsonAsync<UserAuthenticationState>("/.auth/me");
 
             var principal = state!.ClientPrincipal;
