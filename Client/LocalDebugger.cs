@@ -3,8 +3,8 @@
 public static class LocalDebugger
 {
 #if DEBUG
-    public const bool IsAttached = true;
+    public static bool IsAttached {get; } = true;
 #else
-    public const bool IsAttached = false;
+    public static bool IsAttached {get; } = false;
 #endif
 }

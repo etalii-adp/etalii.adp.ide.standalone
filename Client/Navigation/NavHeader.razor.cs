@@ -1,5 +1,4 @@
-﻿using System.Collections.ObjectModel;
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Routing;
 
@@ -15,14 +14,18 @@ public partial class NavHeader
     private MarkupString _diagramsLink;
     private MarkupString _diagramLink;
     private string? _userName;
+    private const string RelativeLandingPageAfterLogin = "/user/diagrams";
+    private const string RelativeLandingPageAfterLogout = "/";
+    private const string CloudHostName = "www.ubigia.net";
 
-    // private static readonly IReadOnlyDictionary<string, string> AuthenticationProviders = new Dictionary<string, string>
-    // {
-    //     { "github", "GitHub" }, 
-    //     { "twitter", "Twitter" },
-    //     { "aad", "Microsoft" },
-    //     { "facebook", "Facebook" }
-    // };
+    private readonly string _landingUrlAfterLogin = LocalDebugger.IsAttached
+        ? RelativeLandingPageAfterLogin
+        : new Uri($"https://{CloudHostName}{RelativeLandingPageAfterLogin}").ToString();
+
+    private readonly string _landingUrlAfterLogout = LocalDebugger.IsAttached
+        ? RelativeLandingPageAfterLogout
+        : new Uri($"https://{CloudHostName}{RelativeLandingPageAfterLogout}").ToString();
+
     
     [Inject] private NavigationManager Navigation { get; set; } = null!;
     [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = null!;
@@ -77,6 +80,7 @@ public partial class NavHeader
         }
         else
         {
+            _userName = null;
             _lastDiagram = null;
         }
 

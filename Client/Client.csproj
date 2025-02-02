@@ -29,7 +29,12 @@
 
   <ItemGroup>
     <Folder Include="Configuration\" />
-    <Folder Include="Diagram\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Navigation\NavHeader.Debug.razor.cs">
+      <DependentUpon>NavHeader.razor</DependentUpon>
+    </Compile>
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,4 @@
-﻿using System.Security.Claims;
-
-namespace EtAlii.Adp;
+﻿namespace EtAlii.Adp;
 
 public class ClientPrincipal
 {

@@ -30,7 +30,14 @@
     <div class="ms-3">
     <AuthorizeView>
         <Authorized>
-            <a href="/.auth/logout">Logout</a>
+            @if (LocalDebugger.IsAttached)
+            {
+                <a href="/.auth/logout/local" @onclick="@LogoutLocalDeveloper" @onclick:preventDefault>Logout</a>
+            }
+            else
+            {
+                <a href="/.auth/logout">Logout</a>
+            }
         </Authorized>
         <NotAuthorized>
             <Dropdown Color="DropdownColor.None">
@@ -46,15 +53,15 @@
                         @*     </li> *@
                         @* } *@
                         <li class="list-group-item">
-                            <a href="/.auth/login/github??post_login_redirect_uri=https://www.ubigia.net/user/diagrams">Login using GitHub</a>
+                            <a href="/.auth/login/github??post_login_redirect_uri=@(_landingUrlAfterLogin)">Login using GitHub</a>
                         </li>
                         <li class="list-group-item">
-                            <a href="/.auth/login/github??post_login_redirect_uri=https://www.ubigia.net/user/diagrams">Login using Microsoft</a>
+                            <a href="/.auth/login/github??post_login_redirect_uri=@(_landingUrlAfterLogin)">Login using Microsoft</a>
                         </li>
                         @if (LocalDebugger.IsAttached)
                         {
                             <li class="list-group-item">
-                                <a href="/.auth/login/github??post_login_redirect_uri=https://www.ubigia.net/user/diagrams">Login as Developer</a>
+                                <a href="/.auth/login/local" @onclick="@LoginLocalDeveloper" @onclick:preventDefault>Login as Developer</a>
                             </li>
                         }
                     </ul>
