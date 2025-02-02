@@ -18,16 +18,16 @@ public class LocalAuthenticationStateProvider : AuthenticationStateProvider
 #if DEBUG        
         return Task.FromResult(_currentUserState);
 #else
-        return Task.FromResult<AuthenticationState>(null);
+        return Task.FromResult<AuthenticationState>(null!);
 #endif
     }
 
-    public void MarkUserAsAuthenticated(string username)
+    public void MarkUserAsAuthenticated(LocalTestUser user)
     {
 #if DEBUG        
-        var identity = new GenericIdentity("test-user");
-        identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, "83b5582c-2f9e-49df-87ff-d5792440af2e"));
-        identity.AddClaim(new Claim(ClaimTypes.Name, "test-user"));
+        var identity = new GenericIdentity(user.Username);
+        identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Guid));
+        identity.AddClaim(new Claim(ClaimTypes.Name, user.Username));
         //identity.AddClaims(principal.UserRoles.Select(r => new Claim(ClaimTypes.Role, r)));
 
         _currentUserState = new AuthenticationState(new ClaimsPrincipal(identity));

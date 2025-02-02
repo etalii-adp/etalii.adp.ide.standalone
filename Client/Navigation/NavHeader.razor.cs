@@ -16,7 +16,7 @@ public partial class NavHeader
     private string? _userName;
     private const string RelativeLandingPageAfterLogin = "/user/diagrams";
     private const string RelativeLandingPageAfterLogout = "/";
-    private const string CloudHostName = "www.ubigia.net";
+    private const string CloudHostName = "ubigia.net";
 
     private readonly string _landingUrlAfterLogin = LocalDebugger.IsAttached
         ? RelativeLandingPageAfterLogin

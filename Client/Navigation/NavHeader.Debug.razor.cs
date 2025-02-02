@@ -4,19 +4,15 @@ namespace EtAlii.Adp.Client;
 
 public partial class NavHeader
 {
-    private async Task LoginLocalDeveloper()
+    private void LoginLocalTestUser(LocalTestUser user)
     {
-        var username = "Mock User"; // You can replace this with any logic to simulate different users
-        ((LocalAuthenticationStateProvider)AuthenticationStateProvider).MarkUserAsAuthenticated(username);
+        ((LocalAuthenticationStateProvider)AuthenticationStateProvider).MarkUserAsAuthenticated(user);
         Navigation.NavigateTo(_landingUrlAfterLogin);
-        //await UpdateBreadcrumbs();
     }
 
-    private void LogoutLocalDeveloper()
+    private void LogoutLocalTestUser()
     {
         ((LocalAuthenticationStateProvider)AuthenticationStateProvider).MarkUserAsLoggedOut();
-        // username = null;
         Navigation.NavigateTo(_landingUrlAfterLogout);
-        //Navigation.Refresh();
     }
 }

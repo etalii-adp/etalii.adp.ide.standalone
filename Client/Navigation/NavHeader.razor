@@ -32,7 +32,7 @@
         <Authorized>
             @if (LocalDebugger.IsAttached)
             {
-                <a href="/.auth/logout/local" @onclick="@LogoutLocalDeveloper" @onclick:preventDefault>Logout</a>
+                <a href="/.auth/logout/local" @onclick="@LogoutLocalTestUser" @onclick:preventDefault>Logout</a>
             }
             else
             {
@@ -60,9 +60,12 @@
                         </li>
                         @if (LocalDebugger.IsAttached)
                         {
-                            <li class="list-group-item">
-                                <a href="/.auth/login/local" @onclick="@LoginLocalDeveloper" @onclick:preventDefault>Login as Developer</a>
-                            </li>
+                            @foreach (var user in LocalTestUser.All)
+                            {
+                                <li class="list-group-item">
+                                    <a href="/.auth/login/local" @onclick="@(() => LoginLocalTestUser(user))" @onclick:preventDefault>Login as @user.Username</a>
+                                </li>
+                            }
                         }
                     </ul>
 
