@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Routing;
 
 namespace EtAlii.Adp.Client;
@@ -28,8 +27,7 @@ public partial class NavHeader
 
     
     [Inject] private NavigationManager Navigation { get; set; } = null!;
-    [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = null!;
-    
+
     protected override async Task OnInitializedAsync()
     {
         await UpdateBreadcrumbs();

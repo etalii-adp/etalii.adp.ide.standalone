@@ -40,46 +40,33 @@
             }
         </Authorized>
         <NotAuthorized>
-            <Dropdown Color="DropdownColor.None">
-                <DropdownToggleButton>Login</DropdownToggleButton>
-                <DropdownMenu>
+            <Modal
+                @ref="_loginModal"
+                title=""
+                ShowCloseButton="false"
+                IsVerticallyCentered="true">
+                <BodyTemplate>
                     <ul class="list-group list-group-flush">
-                        @* @foreach(var provider in AuthenticationProviders) *@
-                        @* { *@
-                        @*     <li class="list-group-item"> *@
-                        @*         <a class="btn btn-block btn-lg btn-social btn-@provider.Key" href="/.auth/login/@provider.Key"> *@
-                        @*             <span class="fa fa-@provider.Key"></span> Sign in with @provider.Value *@
-                        @*         </a> *@
-                        @*     </li> *@
-                        @* } *@
-                        <li class="list-group-item">
-                            <a href="/.auth/login/github?post_login_redirect_uri=@(_landingUrlAfterLogin)">Login using GitHub</a>
-                        </li>
-                        <li class="list-group-item">
-                            <a href="/.auth/login/github?post_login_redirect_uri=@(_landingUrlAfterLogin)">Login using Microsoft</a>
-                        </li>
+                        <Button Class="login-github-btn" @onclick="@LoginUsingGitHub">
+                            <Icon Name="IconName.Github"/> Sign in with GitHub
+                        </Button>
+                        <Button Class="login-microsoft-btn" @onclick="@LoginUsingMicrosoft">
+                            <Icon Name="IconName.Microsoft"/> Sign in with Microsoft
+                        </Button>
                         @if (LocalDebugger.IsAttached)
                         {
                             @foreach (var user in LocalTestUser.All)
                             {
-                                <li class="list-group-item">
-                                    <a href="/.auth/login/local" @onclick="@(() => LoginLocalTestUser(user))" @onclick:preventDefault>Login as @user.Username</a>
-                                </li>
+                                <Button Class="login-test-user-btn" @onclick="@(() => LoginLocalTestUser(user))">
+                                    <Icon Name="IconName.Person"/> Sign in as @user.Username
+                                </Button>
                             }
                         }
                     </ul>
+                </BodyTemplate>
+            </Modal>
 
-                    @* <CardTitle>Card title</CardTitle> *@
-                    @* <CardText>Some quick example text to build on the card title and make up the bulk of the card's content.</CardText> *@
-                    @* <Button Color="ButtonColor.Primary" To="#" Type="ButtonType.Link">Go somewhere</Button> *@
-
-                    @* <DropdownItem To="#" Type="DropdownItemType.Link">Action</DropdownItem> *@
-                    @* <DropdownItem To="#" Type="DropdownItemType.Link">Another action</DropdownItem> *@
-                    @* <DropdownItem To="#" Type="DropdownItemType.Link">Something else here</DropdownItem> *@
-                </DropdownMenu>
-            </Dropdown>
-
-            
+            <a href="/.auth/login" @onclick="@ShowLoginModal" @onclick:preventDefault>Login</a>
         </NotAuthorized>
     </AuthorizeView>
     </div>

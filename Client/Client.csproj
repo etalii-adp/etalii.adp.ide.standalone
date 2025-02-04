@@ -35,6 +35,9 @@
     <Compile Update="Navigation\NavHeader.Debug.razor.cs">
       <DependentUpon>NavHeader.razor</DependentUpon>
     </Compile>
+    <Compile Update="Navigation\NavHeader.Authentication.razor.cs">
+      <DependentUpon>NavHeader.razor</DependentUpon>
+    </Compile>
   </ItemGroup>
 
 </Project>

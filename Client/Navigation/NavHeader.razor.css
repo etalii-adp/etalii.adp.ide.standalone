@@ -1,0 +1,49 @@
+﻿::deep .login-github-btn {
+    margin: 5px;
+    background-color: #444;
+    color: #fff;
+}
+
+::deep .login-github-btn:hover {
+    background-color: #2b2b2b;
+    color: #fff;
+}
+
+::deep .login-github-btn:focus, ::deep .login-github-btn:active {
+    background-color: #2b2b2b;
+    color: #fff;
+}
+
+
+::deep .login-microsoft-btn {
+    margin: 5px;
+    background-color:#2672ec;
+    color: #fff;
+}
+
+::deep .login-microsoft-btn:hover {
+    background-color: #125acd;
+    color: #fff;
+}
+
+::deep .login-microsoft-btn:focus, ::deep .login-microsoft-btn:active {
+    background-color: #125acd;
+    color: #fff;
+}
+
+
+::deep .login-test-user-btn {
+    margin: 5px;
+    background-color:green;
+    color: #fff;
+}
+
+::deep .login-test-user-btn:hover {
+    background-color: forestgreen;
+    color: #fff;
+}
+
+::deep .login-test-user-btn:focus, ::deep .login-test-user-btn:active {
+    background-color: forestgreen;
+    color: #fff;
+}
