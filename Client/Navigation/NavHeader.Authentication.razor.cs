@@ -17,11 +17,11 @@ public partial class NavHeader
 
     private void LoginUsingGitHub()
     {
-        Navigation.NavigateTo($"/.auth/login/github?post_login_redirect_uri={_landingUrlAfterLogin}");
+        Navigation.NavigateTo($"/.auth/login/github?post_login_redirect_uri={_landingUrlAfterLogin}", true);
     }
 
     private void LoginUsingMicrosoft()
     {
-        Navigation.NavigateTo($"/.auth/login/aad?post_login_redirect_uri={_landingUrlAfterLogin}");
+        Navigation.NavigateTo($"/.auth/login/aad?post_login_redirect_uri={_landingUrlAfterLogin}", true);
     }
 }
