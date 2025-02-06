@@ -4,13 +4,13 @@ namespace EtAlii.Adp.Client;
 
 public partial class DiagramsPage
 {
-    private WeatherForecast[] _forecasts = [];
+    private WeatherForecast[] _diagrams = [];
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            _forecasts = await HttpClientJsonExtensions.GetFromJsonAsync<WeatherForecast[]>(Http, "/api/WeatherForecast") ?? [];
+            _diagrams = await HttpClientJsonExtensions.GetFromJsonAsync<WeatherForecast[]>(Http, "/api/diagrams") ?? [];
         }
         catch (Exception ex)
         {

@@ -3,38 +3,24 @@
 @inject HttpClient Http
 <PageTitle>Diagrams</PageTitle>
 
-<h1>Weather forecast</h1>
-
-<p>This component demonstrates fetching data from the server.</p>
-
-@if (_forecasts.Any() != true)
+@if (_diagrams.Any() != true)
 {
     <p><em>Loading...</em></p>
 }
 else
 {
-    <table class="table">
-        <thead>
-        <tr>
-            <th>Date</th>
-            <th>Temp. (C)</th>
-            <th>Temp. (F)</th>
-            <th>Summary</th>
-        </tr>
-        </thead>
-        <tbody>
-        @foreach (var forecast in _forecasts)
+    <div class="d-flex flex-wrap">
+        @foreach (var diagram in _diagrams)
         {
-            <tr>
-                <td>@forecast.Date.ToShortDateString()</td>
-                <td>@forecast.TemperatureC</td>
-                <td>@forecast.TemperatureF</td>
-                <td>@forecast.Summary</td>
-            </tr>
+            <Card Class="mb-4">
+                <img src="/images/placeholder.png" alt="placeholder"/>
+                <CardBody>
+                    <CardTitle>@diagram.Date</CardTitle>
+                    <CardText>@diagram.Summary</CardText>
+                    <CardText Class="text-muted">@diagram.TemperatureC</CardText>
+                </CardBody>
+            </Card>
+            <span></span>
         }
-        </tbody>
-    </table>
+    </div>
 }
-
-<a href="/.auth/logout">Log out</a>
-
