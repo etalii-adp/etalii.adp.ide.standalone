@@ -52,17 +52,8 @@
 </Ribbon>
 
 <div class="mt-2">
-    Selected ribbon item: @selectedRibbonItem
+    Selected ribbon item: @_selectedRibbonItem
 </div>
-
-@code {
-    string? selectedRibbonItem;
-
-    private void OnRibbonItemClick(RibbonItemEventArgs args)
-    {
-        selectedRibbonItem = args.Name;
-    }
-}
 
 <h1>Counter</h1>
 

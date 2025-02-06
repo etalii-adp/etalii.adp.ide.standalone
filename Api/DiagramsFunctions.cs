@@ -1,4 +1,5 @@
 using System.Net;
+using System.Numerics;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
@@ -21,31 +22,20 @@ public class DiagramsFunctions
         _logger.LogInformation("Fetching diagrams");
 
         var randomNumber = new Random();
-        int temp;
 
-        var result = Enumerable.Range(1, 25).Select(index => new WeatherForecast
+        var result = Enumerable.Range(1, 25).Select(index => new Diagram
         {
-            Date = DateTime.Now.AddDays(index),
-            TemperatureC = temp = randomNumber.Next(-20, 55),
-            Summary = GetSummary(temp)
+            Id = Guid.NewGuid(),
+            CreationDate = DateTime.Now.AddDays(-index * 2),
+            ModificationDate = DateTime.Now.AddDays(-index),
+            Name = $"Diagram {index}",
+            Description = $"Diagram {index} description",
+            Position = new Vector2(randomNumber.Next(-200, 200), randomNumber.Next(-200, 200)),
+            Zoom = 0f
         }).ToArray();
 
         var response = req.CreateResponse(HttpStatusCode.OK);
         await response.WriteAsJsonAsync(result);
-
         return response;
-    }
-
-    private string GetSummary(int temp)
-    {
-        var summary = temp switch
-        {
-            >= 32 => "Hot",
-            <= 16 and > 0 => "Cold",
-            <= 0 => "Freezing",
-            _ => "Mild"
-        };
-
-        return summary;
     }
 }

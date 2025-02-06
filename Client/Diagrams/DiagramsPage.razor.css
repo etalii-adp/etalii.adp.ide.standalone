@@ -1,5 +1,9 @@
 ﻿::deep  .card {
     margin-left: 15px;
     margin-right: 15px;
-    width: 250px;
+    width: 300px;
+}
+
+::deep .dropdown-toggle::after {
+    content: none;
 }

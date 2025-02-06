@@ -15,9 +15,21 @@ else
             <Card Class="mb-4">
                 <img src="/images/placeholder.png" alt="placeholder"/>
                 <CardBody>
-                    <CardTitle>@diagram.Date</CardTitle>
-                    <CardText>@diagram.Summary</CardText>
-                    <CardText Class="text-muted">@diagram.TemperatureC</CardText>
+                    <CardTitle>@diagram.Name</CardTitle>
+                    <CardText>@diagram.Description</CardText>
+                    <small class="text-muted">Created: @diagram.CreationDate.ToDisplayDateAndTime()</small><br/>
+                    <small class="text-muted">Modified: @diagram.ModificationDate.ToDisplayDateAndTime()</small><br/>
+                    <small class="text-muted">@diagram.Position</small><br/>
+                    <small class="text-muted">Zoom: @diagram.Zoom</small>
+                    <div style="align-self: end">
+                        <Dropdown Color="DropdownColor.Light" Size="DropdownSize.Small">
+                            <DropdownToggleButton><Icon Name="IconName.ThreeDots" /></DropdownToggleButton>
+                            <DropdownMenu>
+                                <DropdownItem To="#" Type="DropdownItemType.Link">Rename</DropdownItem>
+                                <DropdownItem To="#" Type="DropdownItemType.Link">Delete</DropdownItem>
+                            </DropdownMenu>
+                        </Dropdown>
+                    </div>
                 </CardBody>
             </Card>
             <span></span>

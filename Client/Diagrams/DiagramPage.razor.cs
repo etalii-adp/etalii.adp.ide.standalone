@@ -5,6 +5,7 @@ using Blazor.Diagrams.Core.Models;
 using Blazor.Diagrams.Core.PathGenerators;
 using Blazor.Diagrams.Core.Routers;
 using Blazor.Diagrams.Options;
+using BlazorBootstrap;
 using Microsoft.AspNetCore.Components;
 
 namespace EtAlii.Adp.Client;
@@ -16,6 +17,13 @@ public partial class DiagramPage
     [Parameter] public string DiagramTitle { get; set; } = null!;
     
     protected BlazorDiagram Diagram { get; set; } = null!;
+
+    private string? _selectedRibbonItem;
+
+    private void OnRibbonItemClick(RibbonItemEventArgs args)
+    {
+        _selectedRibbonItem = args.Name;
+    }
 
     private void IncrementCount()
     {
