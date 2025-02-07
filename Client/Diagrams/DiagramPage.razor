@@ -4,7 +4,7 @@
 
 <PageTitle>Ubigia</PageTitle>
 
-<Ribbon OnClick="OnRibbonItemClick">
+<Ribbon OnClick="OnRibbonItemClick" Class="e-ribbon">
     <RibbonTab Title="Home" Active="true">
         <Content>
             <!-- New -->
@@ -50,16 +50,6 @@
         </Content>
     </RibbonTab>
 </Ribbon>
-
-<div class="mt-2">
-    Selected ribbon item: @_selectedRibbonItem
-</div>
-
-<h1>Counter</h1>
-
-<p role="status">Current count: @_currentCount</p>
-
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
 
 <div class="diagram-container">
     <CascadingValue Value="Diagram" IsFixed="true">

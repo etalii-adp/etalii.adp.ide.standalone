@@ -75,3 +75,8 @@ main {
         padding-right: 1.5rem !important;
     }
 }
+
+hr {
+    color: black;
+    margin-top: 2px;
+}
