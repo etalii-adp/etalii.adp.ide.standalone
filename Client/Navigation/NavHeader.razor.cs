@@ -90,25 +90,25 @@ public partial class NavHeader
         }
 
         _ubigiaLink = _selectedPage == SelectedPage.Ubigia
-            ? new MarkupString($"<b><a href=\"/ubigia\">Ubigia</a></b> / ")
+            ? new MarkupString($"<b><a style=\"color:black\" href=\"/ubigia\">Ubigia</a></b> / ")
             : new MarkupString($"<a href=\"/ubigia\">Ubigia</a> / ");
 
         _adpLink = _selectedPage == SelectedPage.Adp
-            ? new MarkupString($"<b><a href=\"/\">Adp</a></b>{(_userName != null ? " / " : "")}")
+            ? new MarkupString($"<b><a style=\"color:black\" href=\"/\">Adp</a></b>{(_userName != null ? " / " : "")}")
             : new MarkupString($"<a href=\"/\">Adp</a>{(_userName != null ? " / " : "")}");
 
         _userLink = _selectedPage == SelectedPage.User
-            ? new MarkupString($"<b><a href=\"/user\">{_userName}</a></b> /")
+            ? new MarkupString($"<b><a style=\"color:black\" href=\"/user\">{_userName}</a></b> /")
             : new MarkupString($"<a href=\"/user\">{_userName}</a> /");
 
         _diagramsLink = _selectedPage == SelectedPage.Diagrams
-            ? new MarkupString($"<b><a href=\"/user/diagrams\">Diagrams</a></b>{(_lastDiagram != null ? " / " : "")}")
+            ? new MarkupString($"<b><a style=\"color:black\" href=\"/user/diagrams\">Diagrams</a></b>{(_lastDiagram != null ? " / " : "")}")
             : new MarkupString($"<a href=\"/user/diagrams\">Diagrams</a>{(_lastDiagram != null ? " / " : "")}");
 
         if (_lastDiagram != null)
         {
             _diagramLink = _selectedPage == SelectedPage.Diagram
-                ? new MarkupString($"<b><a href=\"/user/diagrams/{_lastDiagram}\">{_lastDiagram}</a></b>")
+                ? new MarkupString($"<b><a style=\"color:black\" href=\"/user/diagrams/{_lastDiagram}\">{_lastDiagram}</a></b>")
                 : new MarkupString($"<a href=\"/user/diagrams/{_lastDiagram}\">{_lastDiagram}</a>");
         }
         else
