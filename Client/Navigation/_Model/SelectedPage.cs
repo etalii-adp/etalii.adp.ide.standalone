@@ -2,8 +2,9 @@
 
 public enum SelectedPage
 {
-    Home = 0,
-    User = 1,
-    Diagrams = 2,
-    Diagram = 3,
+    Ubigia = 0,
+    Adp = 1,
+    User = 2,
+    Diagrams = 3,
+    Diagram = 4,
 }

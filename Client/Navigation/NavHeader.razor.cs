@@ -6,9 +6,10 @@ namespace EtAlii.Adp.Client;
 public partial class NavHeader
 {
     private string? _lastDiagram = "1234";
-    private SelectedPage _selectedPage = SelectedPage.Home;
+    private SelectedPage _selectedPage = SelectedPage.Adp;
 
     private MarkupString _ubigiaLink;
+    private MarkupString _adpLink;
     private MarkupString _userLink;
     private MarkupString _diagramsLink;
     private MarkupString _diagramLink;
@@ -48,7 +49,9 @@ public partial class NavHeader
     private async Task UpdateBreadcrumbs()
     {
         // Get the current URI and extract the path
-        var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var currentPath = Navigation
+            .ToBaseRelativePath(Navigation.Uri)
+            .ToLower();
 
         if (currentPath.Contains("user/diagrams/"))
         {
@@ -62,9 +65,13 @@ public partial class NavHeader
         {
             _selectedPage = SelectedPage.User;
         }
+        else if (currentPath.EndsWith("ubigia"))
+        {
+            _selectedPage = SelectedPage.Ubigia;
+        }
         else
         {
-            _selectedPage = SelectedPage.Home;
+            _selectedPage = SelectedPage.Adp;
         }
         
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -82,10 +89,14 @@ public partial class NavHeader
             _lastDiagram = null;
         }
 
-        _ubigiaLink = _selectedPage == SelectedPage.Home
-            ? new MarkupString($"<b><a href=\"/\">Ubigia</a></b>{(_userName != null ? " / " : "")}")
-            : new MarkupString($"<a href=\"/\">Ubigia</a>{(_userName != null ? " / " : "")}");
-        
+        _ubigiaLink = _selectedPage == SelectedPage.Ubigia
+            ? new MarkupString($"<b><a href=\"/ubigia\">Ubigia</a></b> / ")
+            : new MarkupString($"<a href=\"/ubigia\">Ubigia</a> / ");
+
+        _adpLink = _selectedPage == SelectedPage.Adp
+            ? new MarkupString($"<b><a href=\"/\">Adp</a></b>{(_userName != null ? " / " : "")}")
+            : new MarkupString($"<a href=\"/\">Adp</a>{(_userName != null ? " / " : "")}");
+
         _userLink = _selectedPage == SelectedPage.User
             ? new MarkupString($"<b><a href=\"/user\">{_userName}</a></b> /")
             : new MarkupString($"<a href=\"/user\">{_userName}</a> /");

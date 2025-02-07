@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 
 namespace EtAlii.Adp.Client;
 
-public partial class HomePage
+public partial class Adp : ComponentBase
 {
     [Inject] private HttpClient Http {get; set;} = null!;
     [Inject] private AuthenticationStateProvider AuthenticationStateProvider {get; set;} = null!;

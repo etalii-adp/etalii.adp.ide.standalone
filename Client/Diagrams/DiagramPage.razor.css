@@ -4,7 +4,7 @@
     border: 0;
 }
 
-::deep nav nav-underline {
+::deep .nav .nav-underline {
     padding-left: 0.5rem !important;
     padding-right: 0.5rem !important;
     margin-top: -18px;
