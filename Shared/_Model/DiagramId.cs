@@ -3,16 +3,11 @@
 namespace EtAlii.Adp;
 
 [DebuggerDisplay("{ToString()}")]
-public struct DiagramIdentifier
+public class DiagramIdentifier
 {
-    public Guid Identifier { get; set; }
-
-    private DiagramIdentifier(Guid identifier)
-    {
-        Identifier = identifier;
-    }
+    public required Guid Identifier { get; init; }
     
-    public static implicit operator DiagramIdentifier(Guid id) => new(id);
+    public static implicit operator DiagramIdentifier(Guid id) => new() { Identifier = id };
     public static explicit operator Guid(DiagramIdentifier did) => did.Identifier;
     
     public override string ToString() => $"(Diagram: {Identifier.ToString()})";

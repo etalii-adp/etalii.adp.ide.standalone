@@ -1,19 +1,16 @@
 ﻿using System.Diagnostics;
 using System.Numerics;
+using System.Text.Json.Serialization;
 
 namespace EtAlii.Adp;
 
 [DebuggerDisplay("{ToString()}")]
-public struct ElementPosition
+public class ElementPosition
 {
-    public Vector2 Coordinates { get; set; }
+    [JsonConverter(typeof(Vector2Converter))]
+    public required Vector2 Coordinates { get; init; }
 
-    private ElementPosition(Vector2 coordinates)
-    {
-        Coordinates = coordinates;
-    }
-
-    public static implicit operator ElementPosition(Vector2 v) => new(v);
+    public static implicit operator ElementPosition(Vector2 v) => new() { Coordinates = v };
     public static explicit operator Vector2(ElementPosition p) => p.Coordinates;
     
     public override string ToString() => $"(Element: {Coordinates.X}, {Coordinates.Y})";

@@ -12,22 +12,15 @@ namespace EtAlii.Adp.Client;
 
 public partial class DiagramPage
 {
-    private int _currentCount;
-
     [Parameter] public string DiagramTitle { get; set; } = null!;
     
     protected BlazorDiagram Diagram { get; set; } = null!;
 
-    private string? _selectedRibbonItem;
+    // private string? _selectedRibbonItem;
 
     private void OnRibbonItemClick(RibbonItemEventArgs args)
     {
-        _selectedRibbonItem = args.Name;
-    }
-
-    private void IncrementCount()
-    {
-        _currentCount++;
+        // _selectedRibbonItem = args.Name;
     }
     
     protected override void OnInitialized()

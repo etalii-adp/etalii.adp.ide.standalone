@@ -2,6 +2,6 @@
 {
     public class Element
     {
-        public DiagramPosition Position { get; set; }
+        public DiagramPosition Position { get; set; } = null!;
     }
 }
