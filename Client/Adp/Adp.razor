@@ -22,7 +22,7 @@
         <span style="font-weight: bold; color: @_superAdminFunctionMessageColor ;">@_protectedSuperAdminApiResponse</span>
         <p>User needs to be authenticated and have 'Super Admin' role</p>
     </div>
-    @if(_isUserAuthenticated){
+    @if(_isUserAuthenticated && LocalDebugger.IsAttached){
         <div style="flex: 1; padding: 10px;">
             <table>
                 <thead>
