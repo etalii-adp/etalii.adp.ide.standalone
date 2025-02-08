@@ -5,80 +5,55 @@ namespace EtAlii.Adp.Client;
 
 public partial class DiagramsPage
 {
-    private Diagram[] _diagrams = [];
+    private Diagram[]? _diagrams;
 
     protected override async Task OnInitializedAsync()
     {
-        await ReloadDiagrams();
+        await GetAllDiagrams();
     }
 
-    private async Task ReloadDiagrams()
+    private async Task GetAllDiagrams()
     {
-        try
-        {
-            _diagrams = await Http.GetFromJsonAsync<Diagram[]>(ApplicationApi.Diagrams.Get.Request) ?? [];
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.ToString());
-        }
+        _diagrams = await Http.GetFromJsonAsync<Diagram[]>(ApplicationApi.Diagrams.Get.Request) ?? [];
     }
 
     private async Task OnAddNewTrendDiagram()
     {
-        try
+        const string namePrefix = "New Trends Diagram";
+        var matchingDiagramCount = _diagrams!.Count(d => d.Name.StartsWith(namePrefix)) + 1;
+        
+        var diagram = new Diagram
         {
-            var diagram = new Diagram
-            {
-                Name = "Client created diagram",
-                Description = "Client created diagram description",
-                Id = Guid.NewGuid(),
-                Position = new Vector2(1, 1),
-                CreationDate = DateTime.Now,
-                ModificationDate = DateTime.Now,
-                Zoom = 0,
-            };
-            var response = await Http.PostAsJsonAsync(ApplicationApi.Diagrams.Add.Request, diagram);
-            diagram = (await response.Content.ReadFromJsonAsync<Diagram>())!;
-            _diagrams = _diagrams.Concat([diagram]).ToArray();
-            await ReloadDiagrams();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.ToString());
-        }
+            Name = $"{namePrefix} {matchingDiagramCount}",
+            Description = "Provide a short description",
+            Id = Guid.NewGuid(),
+            Position = new Vector2(0, 0),
+            CreationDate = DateTime.UtcNow,
+            ModificationDate = DateTime.UtcNow,
+            Zoom = 0,
+        };
+        var response = await Http.PostAsJsonAsync(ApplicationApi.Diagrams.Add.Request, diagram);
+        diagram = (await response.Content.ReadFromJsonAsync<Diagram>())!;
+        _diagrams = _diagrams!.Concat([diagram]).ToArray();
+        StateHasChanged();
     }
     
     private async Task EditDiagram(Diagram diagram)
     {
-        try
-        {
-            var response = await Http.PatchAsJsonAsync(ApplicationApi.Diagrams.Edit.Request(diagram.Id), diagram);
-            var changedDiagram = (await response.Content.ReadFromJsonAsync<Diagram>())!;
-            var diagramIndex = _diagrams.Index().Single(d => d.Item.Id == changedDiagram.Id).Index;
-            _diagrams[diagramIndex] = changedDiagram;
-            await ReloadDiagrams();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.ToString());
-        }
+        var response = await Http.PatchAsJsonAsync(ApplicationApi.Diagrams.Edit.Request(diagram.Id), diagram);
+        var changedDiagram = (await response.Content.ReadFromJsonAsync<Diagram>())!;
+        var diagramIndex = _diagrams!.Index().Single(d => d.Item.Id == changedDiagram.Id).Index;
+        _diagrams![diagramIndex] = changedDiagram;
+        StateHasChanged();
     }
     
     private async Task DeleteDiagram(Diagram diagram)
     {
-        try
-        {
-            var response = await Http.DeleteAsync(ApplicationApi.Diagrams.Remove.Request(diagram.Id));
-            var removedDiagram = (await response.Content.ReadFromJsonAsync<Diagram>())!;
-            _diagrams = _diagrams
-                .Where(d => d.Id != removedDiagram.Id)
-                .ToArray();
-            await ReloadDiagrams();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.ToString());
-        }
+        var response = await Http.DeleteAsync(ApplicationApi.Diagrams.Remove.Request(diagram.Id));
+        var removedDiagram = (await response.Content.ReadFromJsonAsync<Diagram>())!;
+        _diagrams = _diagrams!
+            .Where(d => d.Id != removedDiagram.Id)
+            .ToArray();
+        StateHasChanged();
     }
 }

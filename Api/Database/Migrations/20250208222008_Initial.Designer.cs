@@ -12,7 +12,7 @@ using NetTopologySuite.Geometries;
 namespace EtAlii.Adp.Api.Database.Migrations
 {
     [DbContext(typeof(AdpDbContext))]
-    [Migration("20250208142702_Initial")]
+    [Migration("20250208222008_Initial")]
     partial class Initial
     {
         /// <inheritdoc />

@@ -6,7 +6,7 @@ using NetTopologySuite.Geometries;
 namespace EtAlii.Adp;
 
 [DebuggerDisplay("{ToString()}")]
-public class DiagramPosition : IEquatable<DiagramPosition>
+public partial class DiagramPosition : IEquatable<DiagramPosition>
 {
     [JsonConverter(typeof(Vector2Converter))]
     public required Vector2 Coordinates { get; init; }

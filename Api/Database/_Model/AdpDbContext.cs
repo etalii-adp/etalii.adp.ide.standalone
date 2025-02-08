@@ -18,19 +18,28 @@ public class AdpDbContext : DbContext
     {
         var builder = modelBuilder.Entity<Diagram>();
         builder.HasIndex(e => e.Id);
+        
+        builder
+            .Property(e => e.Id)
+            .HasConversion<DiagramIdentifierToGuidConverter>();
+        
+        builder
+            .Property(e => e.Position)
+            .HasConversion<DiagramPositionToPointConverter>();
+
     }
     
-    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
-    {
-        // Apply a global conversion for DateTime -> long (Unix timestamp)
-        configurationBuilder
-            .Properties<DiagramIdentifier>()
-            .HaveConversion<DiagramIdentifierToGuidConverter>();
-        
-        configurationBuilder
-            .Properties<DiagramPosition>()
-            .HaveConversion<DiagramPositionToPointConverter>();
-    }
+    // protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    // {
+    //     // Apply a global conversion for DateTime -> long (Unix timestamp)
+    //     configurationBuilder
+    //         .Properties<DiagramIdentifier>()
+    //         .HaveConversion<DiagramIdentifierToGuidConverter>();
+    //     
+    //     configurationBuilder
+    //         .Properties<DiagramPosition>()
+    //         .HaveConversion<DiagramPositionToPointConverter>();
+    // }
     
 // using var dbContext = moduleDefinition.GetDbContext(scope);
 // if (dbContext.Database.GetPendingMigrations().Any())

@@ -14,13 +14,18 @@ public partial class DiagramsFunctions
         {
             _logger.LogInformation("Handling {functionName}", request.FunctionContext.FunctionDefinition.Name);
 
+            // Deserialize.
             var diagram = (await request.ReadFromJsonAsync<Diagram>())!;
-            diagram.ModificationDate = DateTime.UtcNow;
             
-            _diagrams = _diagrams
-                .Concat([diagram])
-                .ToArray();
+            // Tag for modification.
+            diagram.ModificationDate = DateTime.UtcNow;
+
+            // Save.
+            await using var context = await _dbContextFactory.CreateDbContextAsync();
+            await context.Diagrams.AddAsync(diagram);
+            await context.SaveChangesAsync();
         
+            // Respond.
             var response = request.CreateResponse(HttpStatusCode.OK);
             await response.WriteAsJsonAsync(diagram);
             _logger.LogTrace("Handled {functionName}", request.FunctionContext.FunctionDefinition.Name);
@@ -30,7 +35,6 @@ public partial class DiagramsFunctions
         {
             _logger.LogError(e, "Unable to handle {functionName}", request.FunctionContext.FunctionDefinition.Name);
             var response = request.CreateResponse(HttpStatusCode.FailedDependency);
-            await response.WriteAsJsonAsync(_diagrams);
             return response;
         }
     }

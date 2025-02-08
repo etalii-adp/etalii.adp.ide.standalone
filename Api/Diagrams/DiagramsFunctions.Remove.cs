@@ -1,6 +1,7 @@
 using System.Net;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace EtAlii.Adp.Api;
@@ -14,8 +15,15 @@ public partial class DiagramsFunctions
         {
             _logger.LogInformation("Handling {functionName}", request.FunctionContext.FunctionDefinition.Name);
 
-            var diagram = _diagrams.Single(d => d.Id == (DiagramIdentifier)id);
+            // Fetch.
+            await using var context = await _dbContextFactory.CreateDbContextAsync();
+            var diagram = await context.Diagrams.SingleAsync(d => d.Id == id);
+            
+            // Save.
+            context.Diagrams.Remove(diagram);
+            await context.SaveChangesAsync();
 
+            // Respond.
             var response = request.CreateResponse(HttpStatusCode.OK);
             await response.WriteAsJsonAsync(diagram);
             _logger.LogTrace("Handled {functionName}", request.FunctionContext.FunctionDefinition.Name);
@@ -25,7 +33,6 @@ public partial class DiagramsFunctions
         {
             _logger.LogError(e, "Unable to handle {functionName}", request.FunctionContext.FunctionDefinition.Name);
             var response = request.CreateResponse(HttpStatusCode.FailedDependency);
-            await response.WriteAsJsonAsync(_diagrams);
             return response;
         }
     }
