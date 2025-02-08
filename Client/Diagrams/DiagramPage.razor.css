@@ -4,8 +4,10 @@
     border: 0;
 }
 
-::deep .nav .nav-underline {
+::deep .editor-ribbon + div {
+    --bs-nav-link-padding-y: -0.5rem;
+    --bs-nav-underline-gap: 0.5rem;
     padding-left: 0.5rem !important;
     padding-right: 0.5rem !important;
-    margin-top: -18px;
+    margin-top: -12px;
 }
