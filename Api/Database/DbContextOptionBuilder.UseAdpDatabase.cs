@@ -14,7 +14,7 @@ public static class DbContextOptionBuilderUseAdpDatabaseExtension
         var databaseFile = Path.Join(path, "database.db");
         ConnectionString = $"Data Source={databaseFile}";
 #else
-        ConnectionString = "Server=tcp:etalii-adp.database.windows.net,1433;Initial Catalog=etalii-adp;Persist Security Info=False;User ID=adp-admin;Password=11gghh22_EtAlii!;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+        ConnectionString = "Server=tcp:etalii-adp.database.windows.net,1433;Initial Catalog=etalii-adp;Persist Security Info=False;User ID=adp-admin;Password=11gghh22_EtAlii;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
 #endif
     }
 
