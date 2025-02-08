@@ -8,7 +8,7 @@ public partial class DiagramsApi
 {
     private readonly ILogger _logger;
     
-    private const AuthorizationLevel _authorizationLevel = AuthorizationLevel.User;
+    private const AuthorizationLevel _authorizationLevel = AuthorizationLevel.Anonymous;
     
     private readonly IDbContextFactory<AdpDbContext> _dbContextFactory;
 
