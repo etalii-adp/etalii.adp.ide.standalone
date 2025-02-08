@@ -14,17 +14,17 @@ public partial class NavHeader
     private MarkupString _diagramsLink;
     private MarkupString _diagramLink;
     private string? _userName;
-    private const string RelativeLandingPageAfterLogin = "/user/diagrams";
-    private const string RelativeLandingPageAfterLogout = "/";
-    private const string CloudHostName = "ubigia.net";
+    private const string _relativeLandingPageAfterLogin = "/user/diagrams";
+    private const string _relativeLandingPageAfterLogout = "/";
+    private const string _cloudHostName = "ubigia.net";
 
     private readonly string _landingUrlAfterLogin = LocalDebugger.IsAttached
-        ? RelativeLandingPageAfterLogin
-        : new Uri($"https://{CloudHostName}{RelativeLandingPageAfterLogin}").ToString();
+        ? _relativeLandingPageAfterLogin
+        : new Uri($"https://{_cloudHostName}{_relativeLandingPageAfterLogin}").ToString();
 
     private readonly string _landingUrlAfterLogout = LocalDebugger.IsAttached
-        ? RelativeLandingPageAfterLogout
-        : new Uri($"https://{CloudHostName}{RelativeLandingPageAfterLogout}").ToString();
+        ? _relativeLandingPageAfterLogout
+        : new Uri($"https://{_cloudHostName}{_relativeLandingPageAfterLogout}").ToString();
 
     
     [Inject] private NavigationManager Navigation { get; set; } = null!;
