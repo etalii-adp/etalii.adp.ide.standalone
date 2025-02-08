@@ -6,7 +6,11 @@
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="9.0.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Cors" Version="2.3.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.1" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite.NetTopologySuite" Version="9.0.1" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.1" />
     <PackageVersion Include="Nerdbank.GitVersioning" Version="3.7.115" />
+    <PackageVersion Include="NetTopologySuite" Version="2.5.0" />
     <PackageVersion Include="System.Numerics.Vectors" Version="4.6.0" />
     <PackageVersion Include="System.Net.Http.Json" Version="9.0.1" />
     <PackageVersion Include="System.Text.Json" Version="9.0.1" />
