@@ -21,25 +21,24 @@ public class AdpDbContext : DbContext
         
         builder
             .Property(e => e.Id)
-            .HasConversion<DiagramIdentifierToGuidConverter>();
-        
+            .IsRequired();
+
         builder
             .Property(e => e.Position)
-            .HasConversion<DiagramPositionToPointConverter>();
+            .IsRequired();
 
     }
     
-    // protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
-    // {
-    //     // Apply a global conversion for DateTime -> long (Unix timestamp)
-    //     configurationBuilder
-    //         .Properties<DiagramIdentifier>()
-    //         .HaveConversion<DiagramIdentifierToGuidConverter>();
-    //     
-    //     configurationBuilder
-    //         .Properties<DiagramPosition>()
-    //         .HaveConversion<DiagramPositionToPointConverter>();
-    // }
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder
+            .Properties<DiagramIdentifier>()
+            .HaveConversion<DiagramIdentifierToGuidConverter>();
+        
+        configurationBuilder
+            .Properties<DiagramPosition>()
+            .HaveConversion<DiagramPositionToPointConverter>();
+    }
     
 // using var dbContext = moduleDefinition.GetDbContext(scope);
 // if (dbContext.Database.GetPendingMigrations().Any())

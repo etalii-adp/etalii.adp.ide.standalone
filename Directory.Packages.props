@@ -1,6 +1,6 @@
 ﻿<Project>
   <ItemGroup>
-    <PackageVersion Include="Blazor.Bootstrap" Version="3.3.0" />
+    <PackageVersion Include="Blazor.Bootstrap" Version="3.3.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Authorization" Version="9.0.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.Authorization" Version="9.0.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="9.0.1" />

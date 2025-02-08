@@ -12,7 +12,6 @@ public static class DbContextOptionBuilderUseAdpDatabaseExtension
         var folder = Environment.SpecialFolder.LocalApplicationData;
         var path = Environment.GetFolderPath(folder);
         var databaseFile = Path.Join(path, "database.db");
-        //var databaseFile = Path.Combine("Data", "database.db");
         ConnectionString = $"Data Source={databaseFile}";
 
     }

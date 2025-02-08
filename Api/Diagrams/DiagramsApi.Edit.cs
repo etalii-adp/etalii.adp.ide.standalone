@@ -5,10 +5,10 @@ using Microsoft.Extensions.Logging;
 
 namespace EtAlii.Adp.Api;
 
-public partial class DiagramsFunctions
+public partial class DiagramsApi
 {
-    [Function(ApplicationApi.Diagrams.Add.Function)]
-    public async Task<HttpResponseData> AddDiagram([HttpTrigger(_authorizationLevel, HttpMethodName.Post, Route = ApplicationApi.Diagrams.Add.Function)] HttpRequestData request)
+    [Function(ApplicationApi.Diagrams.Edit.Function)]
+    public async Task<HttpResponseData> EditDiagram([HttpTrigger(_authorizationLevel, HttpMethodName.Put, ApplicationApi.Diagrams.Edit.Route)] HttpRequestData request, Guid id)
     {
         try
         {
@@ -19,12 +19,12 @@ public partial class DiagramsFunctions
             
             // Tag for modification.
             diagram.ModificationDate = DateTime.UtcNow;
-
+            
             // Save.
             await using var context = await _dbContextFactory.CreateDbContextAsync();
-            await context.Diagrams.AddAsync(diagram);
+            context.Diagrams.Update(diagram);
             await context.SaveChangesAsync();
-        
+
             // Respond.
             var response = request.CreateResponse(HttpStatusCode.OK);
             await response.WriteAsJsonAsync(diagram);

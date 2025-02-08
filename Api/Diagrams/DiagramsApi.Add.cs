@@ -1,28 +1,30 @@
 using System.Net;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace EtAlii.Adp.Api;
 
-public partial class DiagramsFunctions
+public partial class DiagramsApi
 {
-    [Function(ApplicationApi.Diagrams.Remove.Function)]
-    public async Task<HttpResponseData> RemoveDiagram([HttpTrigger(_authorizationLevel, HttpMethodName.Delete, Route = ApplicationApi.Diagrams.Remove.Route)] HttpRequestData request, Guid id)
+    [Function(ApplicationApi.Diagrams.Add.Function)]
+    public async Task<HttpResponseData> AddDiagram([HttpTrigger(_authorizationLevel, HttpMethodName.Post, Route = ApplicationApi.Diagrams.Add.Function)] HttpRequestData request)
     {
         try
         {
             _logger.LogInformation("Handling {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
 
-            // Fetch.
-            await using var context = await _dbContextFactory.CreateDbContextAsync();
-            var diagram = await context.Diagrams.SingleAsync(d => d.Id == id);
+            // Deserialize.
+            var diagram = (await request.ReadFromJsonAsync<Diagram>())!;
             
-            // Save.
-            context.Diagrams.Remove(diagram);
-            await context.SaveChangesAsync();
+            // Tag for modification.
+            diagram.ModificationDate = DateTime.UtcNow;
 
+            // Save.
+            await using var context = await _dbContextFactory.CreateDbContextAsync();
+            await context.Diagrams.AddAsync(diagram);
+            await context.SaveChangesAsync();
+        
             // Respond.
             var response = request.CreateResponse(HttpStatusCode.OK);
             await response.WriteAsJsonAsync(diagram);

@@ -37,7 +37,6 @@
 	  <ProjectReference Include="..\Shared\Shared.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Database\Migrations\" />
     <Folder Include="Trends\" />
   </ItemGroup>
 </Project>

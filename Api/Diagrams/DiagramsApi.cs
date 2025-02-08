@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace EtAlii.Adp.Api;
 
-public partial class DiagramsFunctions
+public partial class DiagramsApi
 {
     private readonly ILogger _logger;
     
@@ -12,11 +12,11 @@ public partial class DiagramsFunctions
     
     private readonly IDbContextFactory<AdpDbContext> _dbContextFactory;
 
-    public DiagramsFunctions(ILoggerFactory loggerFactory, IDbContextFactory<AdpDbContext> dbContextFactory)
+    public DiagramsApi(ILoggerFactory loggerFactory, IDbContextFactory<AdpDbContext> dbContextFactory)
     {
         _dbContextFactory = dbContextFactory;
 
-        _logger = loggerFactory.CreateLogger<DiagramsFunctions>();
-        _logger.LogInformation("Initialized {FunctionApi}", nameof(DiagramsFunctions));
+        _logger = loggerFactory.CreateLogger<DiagramsApi>();
+        _logger.LogInformation("Initialized {FunctionApi}", nameof(DiagramsApi));
     }
 }

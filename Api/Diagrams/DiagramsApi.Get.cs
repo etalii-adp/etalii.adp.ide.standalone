@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace EtAlii.Adp.Api;
 
-public partial class DiagramsFunctions
+public partial class DiagramsApi
 {
     [Function(ApplicationApi.Diagrams.Get.Function)]
     public async Task<HttpResponseData> GetDiagrams([HttpTrigger(_authorizationLevel, HttpMethodName.Get)] HttpRequestData request)
