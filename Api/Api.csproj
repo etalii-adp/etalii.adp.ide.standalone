@@ -11,6 +11,12 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" />
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService"/>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.NetTopologySuite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
 
     <!--    <PackageReference Include="Microsoft.Azure.Functions.Worker" />-->
 <!--    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" />-->
@@ -31,6 +37,6 @@
 	  <ProjectReference Include="..\Shared\Shared.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Diagrams\Trends\" />
+    <Folder Include="Trends\" />
   </ItemGroup>
 </Project>
