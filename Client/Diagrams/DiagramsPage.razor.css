@@ -7,3 +7,20 @@
 ::deep .dropdown-toggle::after {
     content: none;
 }
+
+::deep .editor-card {
+    border: 1px;
+    padding: 0;
+    display: contents;
+    vertical-align: top;
+}
+
+::deep .add-button {
+    text-align: left;
+    align-content: flex-start;
+    width: 300px;
+    margin: 0 0 0.5rem;
+    padding-left: 7px;
+    padding-right: 0;
+    padding-top: 0;
+}

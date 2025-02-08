@@ -3,36 +3,60 @@
 @inject HttpClient Http
 <PageTitle>Diagrams</PageTitle>
 
-@if (_diagrams.Any() != true)
-{
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <div class="d-flex flex-wrap">
-        @foreach (var diagram in _diagrams)
+<AuthorizeView>
+    <Authorized>
+        @if (_diagrams.Any() != true)
         {
-            <Card Class="mb-4">
-                @* <img src="/images/placeholder.png" alt="placeholder"/> *@
-                <CardBody>
-                    <CardTitle>@diagram.Name</CardTitle>
-                    <CardText>@diagram.Description</CardText>
-                    <small class="text-muted">Created: @diagram.CreationDate.ToDisplayDateAndTime()</small><br/>
-                    <small class="text-muted">Modified: @diagram.ModificationDate.ToDisplayDateAndTime()</small><br/>
-                    <small class="text-muted">@diagram.Position</small><br/>
-                    <small class="text-muted">Zoom: @diagram.Zoom</small>
-                    <div style="align-self: end">
-                        <Dropdown Color="DropdownColor.Light" Size="DropdownSize.Small">
-                            <DropdownToggleButton><Icon Name="IconName.ThreeDots" /></DropdownToggleButton>
-                            <DropdownMenu>
-                                <DropdownItem To="#" Type="DropdownItemType.Link">Rename</DropdownItem>
-                                <DropdownItem To="#" Type="DropdownItemType.Link">Delete</DropdownItem>
-                            </DropdownMenu>
-                        </Dropdown>
-                    </div>
-                </CardBody>
-            </Card>
-            <span></span>
+            <p><em>Loading...</em></p>
         }
-    </div>
-}
+        else
+        {
+            <div class="d-flex flex-wrap">
+                @foreach (var diagram in _diagrams)
+                {
+                    <Card Class="mb-4">
+                        @* <img src="/images/placeholder.png" alt="placeholder"/> *@
+                        <CardBody>
+                            <CardTitle>@diagram.Name</CardTitle>
+                            <CardText>@diagram.Description</CardText>
+                            <small class="text-muted">Created: @diagram.CreationDate.ToDisplayDateAndTime()</small><br/>
+                            <small class="text-muted">Modified: @diagram.ModificationDate.ToDisplayDateAndTime()</small><br/>
+                            <small class="text-muted">@diagram.Position</small><br/>
+                            <small class="text-muted">Zoom: @diagram.Zoom</small>
+                            <div style="align-self: end">
+                                <Dropdown Color="DropdownColor.Light" Size="DropdownSize.Small">
+                                    <DropdownToggleButton><Icon Name="IconName.ThreeDots"/></DropdownToggleButton>
+                                    <DropdownMenu>
+                                        <DropdownItem To="#" Type="DropdownItemType.Link">Rename</DropdownItem>
+                                        <DropdownItem To="#" Type="DropdownItemType.Link">Delete</DropdownItem>
+                                    </DropdownMenu>
+                                </Dropdown>
+                            </div>
+                        </CardBody>
+                    </Card>
+                    <span></span>
+                }
+                <Card Class="mb-4 editor-card">
+                    <CardBody>
+                        <Button
+                            Class="add-button"
+                            Size="ButtonSize.Large"
+                            @onclick="@OnAddNewTrendDiagram"
+                            Color="ButtonColor.Primary"><Icon Name="IconName.ClockHistory" /> &nbsp;Add 'Trends' diagram</Button><br/>
+                        <Button
+                            Class="add-button"
+                            Size="ButtonSize.Large"
+                            @onclick="@OnAddNewTrendDiagram"
+                            Color="ButtonColor.Primary"><Icon Name="IconName.Floppy" /> &nbsp;Add 'Dependencies' diagram</Button>
+                    </CardBody>
+                </Card>
+                <span></span>
+
+            </div>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <h3 style="text-align: center; margin-top: 50px"><i><b>You are not authorized</b> - "Either log in or go away."</i></h3>
+    </NotAuthorized>
+</AuthorizeView>
+

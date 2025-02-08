@@ -8,13 +8,23 @@ public partial class DiagramsPage
 
     protected override async Task OnInitializedAsync()
     {
+        await ReloadDiagrams();
+    }
+
+    private async Task ReloadDiagrams()
+    {
         try
         {
-            _diagrams = await Http.GetFromJsonAsync<Diagram[]>("/api/diagrams") ?? [];
+            _diagrams = await Http.GetFromJsonAsync<Diagram[]>(ApplicationPath.Diagrams.GetDiagramsRequest) ?? [];
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex.ToString());
         }
+    }
+
+    private async Task OnAddNewTrendDiagram()
+    {
+        await ReloadDiagrams();
     }
 }
