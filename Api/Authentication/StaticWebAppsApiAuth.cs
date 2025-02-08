@@ -7,13 +7,13 @@ namespace EtAlii.Adp.Api;
 
 public static class StaticWebAppsApiAuth
 {
-    private const string ClientPrincipalHeader = "x-ms-client-principal";
+    private const string _clientPrincipalHeader = "x-ms-client-principal";
 
     public static ClaimsPrincipal Parse(HttpRequestData req)
     {
         var clientPrincipal = new ClientPrincipal();
 
-        if (req.Headers.TryGetValues(ClientPrincipalHeader, out var headers))
+        if (req.Headers.TryGetValues(_clientPrincipalHeader, out var headers))
         {
             var header = headers.First();
             var decoded = Convert.FromBase64String(header);
