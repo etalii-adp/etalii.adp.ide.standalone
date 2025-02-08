@@ -6,7 +6,7 @@ using NetTopologySuite.Geometries;
 namespace EtAlii.Adp;
 
 [DebuggerDisplay("{ToString()}")]
-public partial class DiagramPosition : IEquatable<DiagramPosition>
+public class DiagramPosition : IEquatable<DiagramPosition>
 {
     [JsonConverter(typeof(Vector2Converter))]
     public required Vector2 Coordinates { get; init; }
@@ -14,7 +14,7 @@ public partial class DiagramPosition : IEquatable<DiagramPosition>
     public static implicit operator DiagramPosition(Vector2 v) => new() { Coordinates = v };
     public static explicit operator Vector2(DiagramPosition p) => p.Coordinates;
 
-    public static implicit operator DiagramPosition(Point v) => new() { Coordinates = new Vector2((float)v.X, (float)v.Y) };
+    public static explicit operator DiagramPosition(Point v) => new() { Coordinates = new Vector2((float)v.X, (float)v.Y) };
     public static explicit operator Point(DiagramPosition p) => new (p.Coordinates.X, p.Coordinates.Y);
     
     public override string ToString() => $"Position: {Coordinates.X}, {Coordinates.Y}";

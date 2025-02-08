@@ -3,11 +3,11 @@
 namespace EtAlii.Adp;
 
 [DebuggerDisplay("{ToString()}")]
-public partial class DiagramIdentifier : IEquatable<DiagramIdentifier>
+public class DiagramIdentifier : IEquatable<DiagramIdentifier>
 {
     public required Guid Identifier { get; init; }
     
-    public static implicit operator DiagramIdentifier(Guid id) => new() { Identifier = id };
+    public static explicit operator DiagramIdentifier(Guid id) => new() { Identifier = id };
     public static explicit operator Guid(DiagramIdentifier did) => did.Identifier;
 
     public static bool operator ==(DiagramIdentifier? di, Guid id) => di?.Identifier == id;
