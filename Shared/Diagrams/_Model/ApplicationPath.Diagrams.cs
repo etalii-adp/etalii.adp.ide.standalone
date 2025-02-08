@@ -1,19 +1,33 @@
 ﻿namespace EtAlii.Adp;
 
-public static partial class ApplicationPath
+public static partial class ApplicationApi
 {
     public static partial class Diagrams
     {
-        public const string GetDiagramsRequest = $"/api/{GetDiagramsFunction}";
-        public const string GetDiagramsFunction = "diagrams-get";
+        public static class Get
+        {
+            public const string Request = $"/api/{Function}";
+            public const string Function = "diagrams-get";
+        }
 
-        public const string AddDiagramRequest = $"/api/{AddDiagramFunction}";
-        public const string AddDiagramFunction = "diagrams/add";
+        public static class Add
+        {
+            public const string Request = $"/api/{Function}";
+            public const string Function = "diagrams/add";
+        }
 
-        public const string RemoveDiagramRequest = $"/api/{RemoveDiagramFunction}";
-        public const string RemoveDiagramFunction = "diagrams/remove";
+        public static class Remove
+        {
+            public static string Request(DiagramIdentifier id) => $"/api/{Function}/{id.Identifier}";
+            public const string Function = "diagrams-remove";
+            public const string Route = $"{Function}/{{id:guid}}";
+        }
 
-        public const string EditDiagramRequest = $"/api/{EditDiagramFunction}";
-        public const string EditDiagramFunction = "diagrams/edit";
+        public static class Edit
+        {
+            public static string Request(DiagramIdentifier id) => $"/api/{Function}/{id}";
+            public const string Function = "diagrams/edit";
+            public const string Route = $"{Function}/{{id:guid}}";
+        }
     }
 }

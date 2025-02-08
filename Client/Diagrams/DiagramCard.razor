@@ -1,0 +1,22 @@
+﻿@namespace EtAlii.Adp.Client
+
+<Card Class="mb-4">
+    <CardBody>
+        <CardTitle>@Diagram.Name</CardTitle>
+        <CardText>@Diagram.Description</CardText>
+        <small class="text-muted">Created: @Diagram.CreationDate.ToDisplayDateAndTime()</small><br/>
+        <small class="text-muted">Modified: @Diagram.ModificationDate.ToDisplayDateAndTime()</small><br/>
+        <small class="text-muted">@Diagram.Position</small><br/>
+        <small class="text-muted">Zoom: @Diagram.Zoom</small>
+        <div style="align-self: end">
+            <Dropdown Color="DropdownColor.Light" Size="DropdownSize.Small">
+                <DropdownToggleButton><Icon Name="IconName.ThreeDots"/></DropdownToggleButton>
+                <DropdownMenu>
+                    <DropdownItem To="#" @onclick="@(() => EditDiagram(Diagram))">Rename</DropdownItem>
+                    <DropdownItem To="#" @onclick="@(() => DeleteDiagram(Diagram))">Delete</DropdownItem>
+                </DropdownMenu>
+            </Dropdown>
+        </div>
+    </CardBody>
+</Card>
+<span></span>

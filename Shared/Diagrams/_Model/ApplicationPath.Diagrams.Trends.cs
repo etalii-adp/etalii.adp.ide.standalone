@@ -1,6 +1,6 @@
 ﻿namespace EtAlii.Adp;
 
-public static partial class ApplicationPath
+public static partial class ApplicationApi
 {
     public static partial class Diagrams
     {
