@@ -13,7 +13,7 @@ public partial class DiagramsFunctions
     {
         try
         {
-            _logger.LogInformation("Handling {functionName}", request.FunctionContext.FunctionDefinition.Name);
+            _logger.LogInformation("Handling {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
 
             await using var context = await _dbContextFactory.CreateDbContextAsync();
             var diagrams = await context.Diagrams.ToArrayAsync();
@@ -24,7 +24,7 @@ public partial class DiagramsFunctions
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Unable to handle {requestMethod}", request.Method);
+            _logger.LogError(e, "Unable to handle {RequestMethod}", request.Method);
             var response = request.CreateResponse(HttpStatusCode.FailedDependency);
             return response;
         }

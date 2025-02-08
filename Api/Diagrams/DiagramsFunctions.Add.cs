@@ -12,7 +12,7 @@ public partial class DiagramsFunctions
     {
         try
         {
-            _logger.LogInformation("Handling {functionName}", request.FunctionContext.FunctionDefinition.Name);
+            _logger.LogInformation("Handling {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
 
             // Deserialize.
             var diagram = (await request.ReadFromJsonAsync<Diagram>())!;
@@ -28,12 +28,12 @@ public partial class DiagramsFunctions
             // Respond.
             var response = request.CreateResponse(HttpStatusCode.OK);
             await response.WriteAsJsonAsync(diagram);
-            _logger.LogTrace("Handled {functionName}", request.FunctionContext.FunctionDefinition.Name);
+            _logger.LogTrace("Handled {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
             return response;
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Unable to handle {functionName}", request.FunctionContext.FunctionDefinition.Name);
+            _logger.LogError(e, "Unable to handle {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
             var response = request.CreateResponse(HttpStatusCode.FailedDependency);
             return response;
         }
