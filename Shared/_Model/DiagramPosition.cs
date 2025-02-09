@@ -18,7 +18,7 @@ public class DiagramPosition : IEquatable<DiagramPosition>
     // We should use a projected coordinate system SRID:
     // https://gis.stackexchange.com/questions/265797/srid-for-basic-x-y-coordinate-system
     // http://alibabacloud.com/blog/an-overview-of-srid-and-coordinate-system_597004
-    public static explicit operator Point(DiagramPosition p) => new (p.Coordinates.X, p.Coordinates.Y) { SRID = 201 };
+    public static explicit operator Point(DiagramPosition p) => new (p.Coordinates.X, p.Coordinates.Y) { SRID = 2227 };
     
     public override string ToString() => $"Position: {Coordinates.X}, {Coordinates.Y}";
 
