@@ -29,7 +29,10 @@ public static class DbContextOptionBuilderUseAdpDatabaseExtension
             });
         //.UseLoggerFactory(s.GetRequiredService<ILoggerFactory>());
 #else
-        options.UseSqlServer(ConnectionString);
+        options.UseSqlServer(ConnectionString, sqlOptions =>
+        {
+            sqlOptions.UseNetTopologySuite();
+        });
 #endif
     }
 }
