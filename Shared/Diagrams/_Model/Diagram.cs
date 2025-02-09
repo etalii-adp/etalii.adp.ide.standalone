@@ -3,6 +3,8 @@
 public class Diagram
 {
     public required DiagramIdentifier Id { get; init; }
+    // public required User Owner { get; init; }
+    public User Owner { get; init; } = null!;
     public required string Name { get; set; } = string.Empty;
     public required string Description { get; init; }
     public required DiagramPosition Position { get; init; }
