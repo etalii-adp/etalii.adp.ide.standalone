@@ -17,7 +17,7 @@ public partial class DiagramsApi
 
             // Fetch.
             await using var context = await _dbContextFactory.CreateDbContextAsync();
-            var diagram = await context.Diagrams.SingleAsync(d => d.Id == id);
+            var diagram = await context.Diagrams.SingleAsync(d => d.Id == (DiagramIdentifier)id);
             
             // Save.
             context.Diagrams.Remove(diagram);
