@@ -15,7 +15,10 @@ public class DiagramPosition : IEquatable<DiagramPosition>
     public static explicit operator Vector2(DiagramPosition p) => p.Coordinates;
 
     public static explicit operator DiagramPosition(Point v) => new() { Coordinates = new Vector2((float)v.X, (float)v.Y) };
-    public static explicit operator Point(DiagramPosition p) => new (p.Coordinates.X, p.Coordinates.Y);
+    // We should use a projected coordinate system SRID:
+    // https://gis.stackexchange.com/questions/265797/srid-for-basic-x-y-coordinate-system
+    // http://alibabacloud.com/blog/an-overview-of-srid-and-coordinate-system_597004
+    public static explicit operator Point(DiagramPosition p) => new (p.Coordinates.X, p.Coordinates.Y) { SRID = 201 };
     
     public override string ToString() => $"Position: {Coordinates.X}, {Coordinates.Y}";
 

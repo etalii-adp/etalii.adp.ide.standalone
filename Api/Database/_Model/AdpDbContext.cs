@@ -17,6 +17,7 @@ public class AdpDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         var builder = modelBuilder.Entity<Diagram>();
+
         builder.HasIndex(e => e.Id);
         
         builder
@@ -26,7 +27,6 @@ public class AdpDbContext : DbContext
         builder
             .Property(e => e.Position)
             .IsRequired();
-
     }
     
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
@@ -39,16 +39,4 @@ public class AdpDbContext : DbContext
             .Properties<DiagramPosition>()
             .HaveConversion<DiagramPositionToPointConverter>();
     }
-    
-// using var dbContext = moduleDefinition.GetDbContext(scope);
-// if (dbContext.Database.GetPendingMigrations().Any())
-// {
-//     _logger.Debug("Migrating database for {ModuleName}", moduleDefinition.GetType().Name);
-//     dbContext.Database.Migrate();
-// }
-// else
-// {
-//     _logger.Debug("Database is in sync with {ModuleName}", moduleDefinition.GetType().Name);
-// }
-
 }
