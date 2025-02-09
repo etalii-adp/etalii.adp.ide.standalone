@@ -12,20 +12,17 @@ namespace EtAlii.Adp.Api.Database.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterDatabase()
-                .Annotation("Sqlite:InitSpatialMetaData", true);
-
             migrationBuilder.CreateTable(
                 name: "Diagrams",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    Description = table.Column<string>(type: "TEXT", nullable: false),
-                    Position = table.Column<Point>(type: "POINT", nullable: false),
-                    CreationDate = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    ModificationDate = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    Zoom = table.Column<float>(type: "REAL", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Position = table.Column<Point>(type: "geography", nullable: false),
+                    CreationDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ModificationDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Zoom = table.Column<float>(type: "real", nullable: false)
                 },
                 constraints: table =>
                 {
