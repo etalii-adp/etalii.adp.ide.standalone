@@ -26,7 +26,7 @@ public partial class DiagramsPage
         {
             Name = $"{namePrefix} {matchingDiagramCount}",
             Description = "Provide a short description",
-            Id = (DiagramIdentifier)Guid.NewGuid(),
+            Id = DiagramIdentifier.NewIdentifier(),
             Position = new Vector2(0, 0),
             CreationDate = DateTime.UtcNow,
             ModificationDate = DateTime.UtcNow,

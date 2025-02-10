@@ -17,6 +17,8 @@ public class DiagramIdentifier : IEquatable<DiagramIdentifier>
     public static bool operator ==(DiagramIdentifier? left, DiagramIdentifier? right) => Equals(left, right);
     public static bool operator !=(DiagramIdentifier? left, DiagramIdentifier? right) => !Equals(left, right);
 
+    public static DiagramIdentifier NewIdentifier() => (DiagramIdentifier)Guid.NewGuid();
+
     public override string ToString() => $"(Diagram: {Identifier.ToString()})";
 
     public bool Equals(DiagramIdentifier? other)
