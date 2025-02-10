@@ -16,6 +16,7 @@ public class UserIdentifier : IEquatable<UserIdentifier>
     public static bool operator !=(Guid id, UserIdentifier? di) => di?.Identifier != id;
     public static bool operator ==(UserIdentifier? left, UserIdentifier? right) => Equals(left, right);
     public static bool operator !=(UserIdentifier? left, UserIdentifier? right) => !Equals(left, right);
+    public static UserIdentifier NewIdentifier() => (UserIdentifier)Guid.NewGuid();
 
     public override string ToString() => $"(Diagram: {Identifier.ToString()})";
 
