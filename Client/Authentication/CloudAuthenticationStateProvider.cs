@@ -18,7 +18,6 @@ public class CloudAuthenticationStateProvider : AuthenticationStateProvider
     {
         try
         {
-            //var s = await _client.GetStringAsync("/.auth/me");
             var state = await _client.GetFromJsonAsync<UserAuthenticationState>("/.auth/me");
 
             var principal = state!.ClientPrincipal;
