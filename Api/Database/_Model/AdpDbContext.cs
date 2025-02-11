@@ -34,12 +34,15 @@ public class AdpDbContext : DbContext
             builder
                 .Property(e => e.JoinDate)
                 .IsRequired();
-            
+
+            builder
+                .Property(e => e.ExternalIdentifier)
+                .IsRequired();
+
             builder
                 .HasMany(e => e.Diagrams)
                 .WithOne(e => e.Owner)
-                //.IsRequired()
-                ;
+                .IsRequired();
         });
         
         // Diagrams.
