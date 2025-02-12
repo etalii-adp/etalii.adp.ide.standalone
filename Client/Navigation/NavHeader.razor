@@ -58,10 +58,10 @@
                         </Button>
                         @if (LocalDebugger.IsAttached)
                         {
-                            @foreach (var user in LocalTestUser.All)
+                            @foreach (var user in User.LocalTestUsers)
                             {
                                 <Button Class="login-test-user-btn" @onclick="@(() => LoginLocalTestUser(user))">
-                                    <Icon Name="IconName.Person"/> Sign in as @user.Username
+                                    <Icon Name="IconName.Person"/> Sign in as @user.Name
                                 </Button>
                             }
                         }
@@ -72,5 +72,9 @@
             <a href="/.auth/login" @onclick="@ShowLoginModal" @onclick:preventDefault>Login</a>
         </NotAuthorized>
     </AuthorizeView>
+        @if (LocalDebugger.IsAttached)
+        {
+            <b style="color: red">&nbsp;&nbsp;DEBUG</b>
+        }
     </div>
 </div>
