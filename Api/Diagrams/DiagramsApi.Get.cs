@@ -13,6 +13,12 @@ public partial class DiagramsApi
     {
         try
         {
+            var user = ClientPrincipal.Parse(request);
+            if (user.Identity?.IsAuthenticated != true)
+            {
+                return request.CreateResponse(HttpStatusCode.Unauthorized);
+            }
+            
             _logger.LogInformation("Handling {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
 
             await using var context = await _dbContextFactory.CreateDbContextAsync();
