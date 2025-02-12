@@ -58,6 +58,8 @@ public class LoginApi
         {
             _logger.LogError(e, "Unable to handle {RequestMethod}", request.Method);
             var response = request.CreateResponse(HttpStatusCode.FailedDependency);
+            // TODO: Remove - security risk
+            await response.WriteStringAsync(e.ToString());
             return response;
         }
     }
