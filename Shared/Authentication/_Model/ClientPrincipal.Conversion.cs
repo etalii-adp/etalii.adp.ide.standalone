@@ -52,9 +52,9 @@ public partial class ClientPrincipal
                 .Where(c => c.Type == ClaimTypes.Role)
                 .Select(c => c.Value)
                 .ToArray(),
-            UserId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier)!.Value,
-            UserDetails = claimsIdentity.FindFirst(ClaimTypes.Name)!.Value,
-            ExternalIdentifier = claimsIdentity.FindFirst(ClaimTypes.Sid)!.Value,
+            UserId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty,
+            UserDetails = claimsIdentity.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty,
+            ExternalIdentifier = claimsIdentity.FindFirst(ClaimTypes.Sid)?.Value ?? string.Empty,
         };
     }
 }
