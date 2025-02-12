@@ -25,10 +25,11 @@ public partial class NavHeader
     private readonly string _landingUrlAfterLogout = LocalDebugger.IsAttached
         ? _relativeLandingPageAfterLogout
         : new Uri($"https://{_cloudHostName}{_relativeLandingPageAfterLogout}").ToString();
-
     
     [Inject] private NavigationManager Navigation { get; set; } = null!;
 
+    [Inject] private UserManager UserManager { get; set; } = null!;
+    
     protected override async Task OnInitializedAsync()
     {
         await UpdateBreadcrumbs();
@@ -73,14 +74,11 @@ public partial class NavHeader
         {
             _selectedPage = SelectedPage.Adp;
         }
-        
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-        var isUserAuthenticated = user.Identity?.IsAuthenticated ?? false;
-        
-        if (isUserAuthenticated)
+
+        await UserManager.Update();
+        if (UserManager.IsAuthenticated)
         {
-            _userName = user.Identity?.Name ?? null!;
+            _userName = UserManager.ClaimsPrincipal.Identity?.Name ?? null!;
             _lastDiagram = "Test Diagram";
         }
         else

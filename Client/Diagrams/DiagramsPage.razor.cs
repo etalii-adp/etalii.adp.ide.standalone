@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Json;
 using System.Numerics;
+using Microsoft.AspNetCore.Components;
 
 namespace EtAlii.Adp.Client;
 
@@ -7,14 +8,18 @@ public partial class DiagramsPage
 {
     private Diagram[]? _diagrams;
 
+    [Inject] private UserManager UserManager { get; set; } = null!;
+    [Inject] private HttpClient Client { get; set; } = null!;
+
     protected override async Task OnInitializedAsync()
     {
+        await UserManager.Update();
         await GetAllDiagrams();
     }
 
     private async Task GetAllDiagrams()
     {
-        _diagrams = await Http.GetFromJsonAsync<Diagram[]>(ApplicationApi.Diagrams.Get.Request) ?? [];
+        _diagrams = await Client.GetFromJsonAsync<Diagram[]>(ApplicationApi.Diagrams.Get.Request) ?? [];
     }
 
     private async Task OnAddNewTrendDiagram()
@@ -24,6 +29,7 @@ public partial class DiagramsPage
         
         var diagram = new Diagram
         {
+            Owner = UserManager.CurrentUser,
             Name = $"{namePrefix} {matchingDiagramCount}",
             Description = "Provide a short description",
             Id = DiagramIdentifier.NewIdentifier(),
@@ -32,7 +38,7 @@ public partial class DiagramsPage
             ModificationDate = DateTime.UtcNow,
             Zoom = 0,
         };
-        var response = await Http.PostAsJsonAsync(ApplicationApi.Diagrams.Add.Request, diagram);
+        var response = await Client.PostAsJsonAsync(ApplicationApi.Diagrams.Add.Request, diagram);
         diagram = (await response.Content.ReadFromJsonAsync<Diagram>())!;
         _diagrams = _diagrams!.Concat([diagram]).ToArray();
         StateHasChanged();
@@ -40,7 +46,7 @@ public partial class DiagramsPage
     
     private async Task EditDiagram(Diagram diagram)
     {
-        var response = await Http.PatchAsJsonAsync(ApplicationApi.Diagrams.Edit.Request(diagram.Id), diagram);
+        var response = await Client.PatchAsJsonAsync(ApplicationApi.Diagrams.Edit.Request(diagram.Id), diagram);
         var changedDiagram = (await response.Content.ReadFromJsonAsync<Diagram>())!;
         var diagramIndex = _diagrams!.Index().Single(d => d.Item.Id == changedDiagram.Id).Index;
         _diagrams![diagramIndex] = changedDiagram;
@@ -49,7 +55,7 @@ public partial class DiagramsPage
     
     private async Task DeleteDiagram(Diagram diagram)
     {
-        var response = await Http.DeleteAsync(ApplicationApi.Diagrams.Remove.Request(diagram.Id));
+        var response = await Client.DeleteAsync(ApplicationApi.Diagrams.Remove.Request(diagram.Id));
         var removedDiagram = (await response.Content.ReadFromJsonAsync<Diagram>())!;
         _diagrams = _diagrams!
             .Where(d => d.Id != removedDiagram.Id)
