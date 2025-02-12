@@ -32,6 +32,7 @@ public static class DbContextOptionBuilderUseAdpDatabaseExtension
         options
             .UseSqlServer(ConnectionString, sqlOptions =>
             {
+                sqlOptions.EnableRetryOnFailure();
                 sqlOptions.UseNetTopologySuite();
             });
 // #endif
