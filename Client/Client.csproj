@@ -31,6 +31,7 @@
     <Folder Include="Configuration\" />
     <Folder Include="Diagrams\_Model\" />
     <Folder Include="Trends\" />
+    <Folder Include="User\_Model\" />
   </ItemGroup>
 
   <ItemGroup>
