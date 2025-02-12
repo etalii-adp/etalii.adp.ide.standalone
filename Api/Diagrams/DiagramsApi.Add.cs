@@ -1,6 +1,7 @@
 using System.Net;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace EtAlii.Adp.Api;
@@ -12,11 +13,13 @@ public partial class DiagramsApi
     {
         try
         {
-            var user = ClientPrincipal.Parse(request);
-            if (user.Identity?.IsAuthenticated != true)
+#if !DEBUG
+            var claims = ClientPrincipal.Parse(request);
+            if (claims.Identity?.IsAuthenticated != true)
             {
                 return request.CreateResponse(HttpStatusCode.Unauthorized);
             }
+#endif
             
             _logger.LogInformation("Handling {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
 
@@ -28,7 +31,7 @@ public partial class DiagramsApi
 
             // Save.
             await using var context = await _dbContextFactory.CreateDbContextAsync();
-            await context.Diagrams.AddAsync(diagram);
+            context.Entry(diagram).State = EntityState.Added;
             await context.SaveChangesAsync();
         
             // Respond.

@@ -13,11 +13,13 @@ public partial class DiagramsApi
     {
         try
         {
-            var user = ClientPrincipal.Parse(request);
-            if (user.Identity?.IsAuthenticated != true)
+#if !DEBUG              
+            var claims = ClientPrincipal.Parse(request);
+            if (claims.Identity?.IsAuthenticated != true)
             {
                 return request.CreateResponse(HttpStatusCode.Unauthorized);
             }
+#endif
 
             _logger.LogInformation("Handling {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
 
@@ -26,7 +28,7 @@ public partial class DiagramsApi
             var diagram = await context.Diagrams.SingleAsync(d => d.Id == (DiagramIdentifier)id);
             
             // Save.
-            context.Diagrams.Remove(diagram);
+            context.Entry(diagram).State = EntityState.Deleted;
             await context.SaveChangesAsync();
 
             // Respond.

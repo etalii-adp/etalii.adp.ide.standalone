@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.Claims;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.EntityFrameworkCore;
@@ -13,17 +14,30 @@ public partial class DiagramsApi
     {
         try
         {
-            var user = ClientPrincipal.Parse(request);
-            if (user.Identity?.IsAuthenticated != true)
+            var claims = ClientPrincipal.Parse(request);
+#if !DEBUG              
+            if (claims.Identity?.IsAuthenticated != true)
             {
                 return request.CreateResponse(HttpStatusCode.Unauthorized);
             }
-            
+#endif
+
             _logger.LogInformation("Handling {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
 
+            var userName = claims.Identity!.Name!;
+            var externalIdentifier = claims.FindFirst(c => c.Type == ClaimTypes.Sid)!.Value;
+
             await using var context = await _dbContextFactory.CreateDbContextAsync();
-            var diagrams = await context.Diagrams.ToArrayAsync();
-        
+            
+            var user = await context.Users
+                .Include(u => u.Diagrams)
+                .SingleAsync(u => u.Name == userName && u.ExternalIdentifier == externalIdentifier); 
+            var diagrams = user.Diagrams;
+
+            foreach (var diagram in diagrams)
+            {
+                diagram.Owner = null!;
+            }
             var response = request.CreateResponse(HttpStatusCode.OK);
             await response.WriteAsJsonAsync(diagrams);
             return response;
