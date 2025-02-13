@@ -25,6 +25,10 @@ public class CloudAuthenticationStateProvider : AuthenticationStateProvider
                 .Except(["anonymous"], StringComparer.CurrentCultureIgnoreCase)
                 .ToArray();
 
+            if (string.IsNullOrEmpty(principal.ExternalIdentifier))
+            {
+                principal.ExternalIdentifier = $"{principal.UserId}@{principal.IdentityProvider}";
+            }
             var claimsPrincipal = ClientPrincipal.ToClaimsPrincipal(principal);
             return new AuthenticationState(claimsPrincipal);
         } 
