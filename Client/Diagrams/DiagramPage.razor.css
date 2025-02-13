@@ -1,5 +1,6 @@
 ﻿.diagram-container {
-    border: 0;
+    width: 100%;
+    height: calc(100% - 200px);
 }
 
 ::deep .editor-ribbon + div {
