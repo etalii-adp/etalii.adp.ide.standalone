@@ -39,9 +39,15 @@ public partial class ClientPrincipal
     
     public static ClientPrincipal ToClientPrincipal(IIdentity identity, ILogger logger) => ToClientPrincipal((ClaimsIdentity)identity, logger);
 
-    private static ClientPrincipal ToClientPrincipal(ClaimsIdentity claimsIdentity, ILogger logger)
+    private static ClientPrincipal ToClientPrincipal(ClaimsIdentity? claimsIdentity, ILogger logger)
     {
         logger.LogInformation("Checking claims");
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+        if (claimsIdentity is null)
+        {
+            logger.LogInformation("No identity found");
+            return null!;
+        }
         if (!(claimsIdentity.Claims ?? []).Any())
         {
             logger.LogInformation("No claims found");
