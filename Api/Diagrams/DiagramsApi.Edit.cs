@@ -14,7 +14,7 @@ public partial class DiagramsApi
         try
         {
 #if !DEBUG              
-            var claims = ClientPrincipal.Parse(request);
+            var claims = ClientPrincipal.Parse(request, _logger);
             if (claims.Identity?.IsAuthenticated != true)
             {
                 return request.CreateResponse(HttpStatusCode.Unauthorized);
