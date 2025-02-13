@@ -42,12 +42,12 @@ public partial class ClientPrincipal
     private static ClientPrincipal ToClientPrincipal(ClaimsIdentity claimsIdentity, ILogger logger)
     {
         logger.LogInformation("Checking claims");
-        if (!claimsIdentity.Claims.Any())
+        if (!(claimsIdentity.Claims ?? []).Any())
         {
             logger.LogInformation("No claims found");
             return null!;
         }
-        var claims = claimsIdentity.Claims
+        var claims = claimsIdentity.Claims!
             .Where(c => c.Type == ClaimTypes.Role)
             .Select(c => c.Value)
             .ToArray();
