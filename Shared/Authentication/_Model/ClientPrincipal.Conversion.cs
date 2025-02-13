@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using System.Security.Principal;
+using Microsoft.Extensions.Logging;
 
 namespace EtAlii.Adp;
 
@@ -36,24 +37,33 @@ public partial class ClientPrincipal
         }
     }
     
-    public static ClientPrincipal ToClientPrincipal(IIdentity identity) => ToClientPrincipal((ClaimsIdentity)identity);
+    public static ClientPrincipal ToClientPrincipal(IIdentity identity, ILogger logger) => ToClientPrincipal((ClaimsIdentity)identity, logger);
 
-    private static ClientPrincipal ToClientPrincipal(ClaimsIdentity claimsIdentity)
+    private static ClientPrincipal ToClientPrincipal(ClaimsIdentity claimsIdentity, ILogger logger)
     {
+        logger.LogInformation("Checking claims");
         if (!claimsIdentity.Claims.Any())
         {
+            logger.LogInformation("No claims found");
             return null!;
         }
-        
+        var claims = claimsIdentity.Claims
+            .Where(c => c.Type == ClaimTypes.Role)
+            .Select(c => c.Value)
+            .ToArray();
+
+        logger.LogInformation("Checking userId");
+        var userId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+        logger.LogInformation("Checking userDetails");
+        var userDetails = claimsIdentity.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty;
+
         return new ClientPrincipal
         {
             IdentityProvider = claimsIdentity.AuthenticationType,
-            UserRoles = claimsIdentity.Claims
-                .Where(c => c.Type == ClaimTypes.Role)
-                .Select(c => c.Value)
-                .ToArray(),
-            UserId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty,
-            UserDetails = claimsIdentity.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty,
+            UserRoles = claims,
+            UserId = userId,
+            UserDetails = userDetails,
             ExternalIdentifier = claimsIdentity.FindFirst(ClaimTypes.Sid)?.Value ?? string.Empty,
         };
     }

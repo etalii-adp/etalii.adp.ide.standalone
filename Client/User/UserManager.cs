@@ -16,10 +16,13 @@ public class UserManager
 
     private readonly HttpClient _client;
 
+    private readonly ILogger _logger;
     public UserManager(
         AuthenticationStateProvider authenticationStateProvider,
-        HttpClient client)
+        HttpClient client,
+        ILoggerFactory loggerFactory)
     {
+        _logger = loggerFactory.CreateLogger<UserManager>();
         _authenticationStateProvider = authenticationStateProvider;
         _client = client;
     }
@@ -31,12 +34,12 @@ public class UserManager
             var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
             ClaimsPrincipal = authState.User;
 
-            _clientPrincipal = ClientPrincipal.ToClientPrincipal(ClaimsPrincipal.Identity!);
+            _clientPrincipal = ClientPrincipal.ToClientPrincipal(ClaimsPrincipal.Identity!, _logger);
 
             if (IsAuthenticated)
             {
 #if DEBUG                
-                ClientPrincipal.SetHeader(_client.DefaultRequestHeaders, ClaimsPrincipal);
+                ClientPrincipal.SetHeader(_client, ClaimsPrincipal, _logger);
 #endif
                 CurrentUser = await _client.GetFromJsonAsync<User>(ApplicationApi.Authentication.Get.Request) ?? null!;
             }

@@ -14,7 +14,7 @@ public partial class DiagramsApi
     {
         try
         {
-            var claims = ClientPrincipal.Parse(request);
+            var claims = ClientPrincipal.Parse(request, _logger);
 #if !DEBUG              
             if (claims.Identity?.IsAuthenticated != true)
             {

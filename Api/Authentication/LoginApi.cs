@@ -30,7 +30,7 @@ public class LoginApi
         {
             _logger.LogInformation("Handling {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
 
-            var claims = ClientPrincipal.Parse(request);
+            var claims = ClientPrincipal.Parse(request, _logger);
 
             var userName = claims.Identity!.Name!;
             var externalIdentifier = claims.FindFirst(c => c.Type == ClaimTypes.Sid)!.Value;
