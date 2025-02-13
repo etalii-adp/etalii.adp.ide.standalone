@@ -5,7 +5,6 @@ namespace EtAlii.Adp.Client;
 
 public partial class NavHeader
 {
-    private string? _lastDiagram = "1234";
     private SelectedPage _selectedPage = SelectedPage.Adp;
 
     private MarkupString _ubigiaLink;
@@ -28,6 +27,7 @@ public partial class NavHeader
     
     [Inject] private NavigationManager Navigation { get; set; } = null!;
 
+    [Inject] private DiagramManager DiagramManager { get; set; } = null!;
     [Inject] private UserManager UserManager { get; set; } = null!;
     
     protected override async Task OnInitializedAsync()
@@ -79,12 +79,10 @@ public partial class NavHeader
         if (UserManager.IsAuthenticated)
         {
             _userName = UserManager.ClaimsPrincipal.Identity?.Name ?? null!;
-            _lastDiagram = "Test Diagram";
         }
         else
         {
             _userName = null;
-            _lastDiagram = null;
         }
 
         _ubigiaLink = _selectedPage == SelectedPage.Ubigia
@@ -100,14 +98,14 @@ public partial class NavHeader
             : new MarkupString($"<a href=\"/user\">{_userName}</a> /");
 
         _diagramsLink = _selectedPage == SelectedPage.Diagrams
-            ? new MarkupString($"<b><a style=\"color:black\" href=\"/user/diagrams\">Diagrams</a></b>{(_lastDiagram != null ? " / " : "")}")
-            : new MarkupString($"<a href=\"/user/diagrams\">Diagrams</a>{(_lastDiagram != null ? " / " : "")}");
+            ? new MarkupString($"<b><a style=\"color:black\" href=\"/user/diagrams\">Diagrams</a></b>{(DiagramManager.CurrentDiagram != null ? " / " : "")}")
+            : new MarkupString($"<a href=\"/user/diagrams\">Diagrams</a>{(DiagramManager.CurrentDiagram != null ? " / " : "")}");
 
-        if (_lastDiagram != null)
+        if (DiagramManager.CurrentDiagram != null!)
         {
             _diagramLink = _selectedPage == SelectedPage.Diagram
-                ? new MarkupString($"<b><a style=\"color:black\" href=\"/user/diagrams/{_lastDiagram}\">{_lastDiagram}</a></b>")
-                : new MarkupString($"<a href=\"/user/diagrams/{_lastDiagram}\">{_lastDiagram}</a>");
+                ? new MarkupString($"<b><a style=\"color:black\" href=\"/user/diagrams/{DiagramManager.CurrentDiagram.Id}\">{DiagramManager.CurrentDiagram.Name}</a></b>")
+                : new MarkupString($"<a href=\"/user/diagrams/{DiagramManager.CurrentDiagram.Id}\">{DiagramManager.CurrentDiagram.Name}</a>");
         }
         else
         {

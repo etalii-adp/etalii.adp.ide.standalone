@@ -11,6 +11,9 @@ public partial class DiagramsPage
     [Inject] private UserManager UserManager { get; set; } = null!;
     [Inject] private HttpClient Client { get; set; } = null!;
 
+    [Inject] private NavigationManager NavigationManager { get; set; } = null!;
+    [Inject] private DiagramManager DiagramManager { get; set; } = null!;
+    
     protected override async Task OnInitializedAsync()
     {
         await UserManager.Update();
@@ -62,4 +65,13 @@ public partial class DiagramsPage
             .ToArray();
         StateHasChanged();
     }
+
+    private void ViewDiagram(Diagram diagram)
+    {
+        DiagramManager.SetCurrentDiagram(diagram);
+        NavigationManager.NavigateTo($"/user/diagrams/{diagram.Id.Identifier}");
+        StateHasChanged();
+    }
+
+    
 }

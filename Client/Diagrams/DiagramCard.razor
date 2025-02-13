@@ -8,7 +8,7 @@
         <small class="text-muted">Modified: @Diagram.ModificationDate.ToDisplayDateAndTime()</small><br/>
         <small class="text-muted">@Diagram.Position</small><br/>
         <small class="text-muted">Zoom: @Diagram.Zoom</small>
-        <div style="align-self: end">
+        <div style="position: absolute; bottom: 0; right: 0; margin-right: 5px; margin-bottom: 5px">
             <Dropdown Color="DropdownColor.Light" Size="DropdownSize.Small">
                 <DropdownToggleButton><Icon Name="IconName.ThreeDots"/></DropdownToggleButton>
                 <DropdownMenu>
@@ -16,6 +16,9 @@
                     <DropdownItem To="#" @onclick="@(() => DeleteDiagram(Diagram))">Delete</DropdownItem>
                 </DropdownMenu>
             </Dropdown>
+        </div>
+        <div style="position: absolute; top: 0; right: 0">
+            <Button Color="ButtonColor.Light" @onclick="@(() => ViewDiagram(Diagram))"><Icon Name="IconName.Eye"/></Button>
         </div>
     </CardBody>
 </Card>
