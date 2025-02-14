@@ -11,7 +11,7 @@ builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(builder.C
 
 builder.Services.AddScoped<UserManager>();
 builder.Services.AddSingleton<DiagramManager>();
-
+builder.Services.AddSingleton<ChangePusher>();
 
 builder.Services.AddBlazorBootstrap();
 builder.Services.AddOptions();
