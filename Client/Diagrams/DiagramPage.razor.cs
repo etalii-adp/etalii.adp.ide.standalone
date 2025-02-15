@@ -39,10 +39,7 @@ public partial class DiagramPage
         var options = new BlazorDiagramOptions
         {
             AllowMultiSelection = true,
-            Zoom =
-            {
-                Enabled = false,
-            },
+            Zoom = { Enabled = true },
             Links =
             {
                 DefaultRouter = new NormalRouter(),
@@ -59,6 +56,7 @@ public partial class DiagramPage
         Diagram.SetPan(_diagram.Position.X, _diagram.Position.Y);
         Diagram.ZoomChanged += OnDiagramZoomed;
         Diagram.PanChanged += OnDiagramPanned;
+        Diagram.PointerDoubleClick += OnDiagramDoubleClicked;
         
         var firstNode = Diagram.Nodes.Add(new NodeModel(position: new Point(50, 50)) { Title = "Node 1" });
         var secondNode = Diagram.Nodes.Add(new NodeModel(position: new Point(200, 100)) { Title = "Node 2" });
@@ -73,34 +71,4 @@ public partial class DiagramPage
         var link = Diagram.Links.Add(new LinkModel(sourceAnchor, targetAnchor));
     }
 
-    private async void OnDiagramZoomed()
-    {
-        try
-        {
-            var change = MapZoomChange.Apply(_diagram, (float)Diagram.Zoom);
-
-            // Throttled save.
-            await ChangePusher.Enqueue(change);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Unable to handle {MethodName}", nameof(OnDiagramZoomed));
-        }
-    }
-
-    private async void OnDiagramPanned()
-    {
-        try
-        {
-            var newPosition = new DiagramPosition { X = Diagram.Pan.X, Y = Diagram.Pan.Y };
-            var change = MapPositionChange.Apply(_diagram, newPosition);
-
-            // Throttled save.
-            await ChangePusher.Enqueue(change);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Unable to handle {MethodName}", nameof(OnDiagramPanned));
-        }
-    }
 }
