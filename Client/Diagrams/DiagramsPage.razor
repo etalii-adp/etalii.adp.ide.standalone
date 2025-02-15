@@ -6,8 +6,7 @@
     <Authorized>
         @if (_diagrams == null)
         {
-            <p><em>Loading...</em></p>
-            <Spinner Color="SpinnerColor.Primary" />
+            <LoadingMessage Message="Loading diagrams" />
         }
         else
         {
