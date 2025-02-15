@@ -59,7 +59,7 @@ public partial class DiagramPage
         Diagram.ZoomChanged += OnDiagramZoomed;
         Diagram.PanChanged += OnDiagramPanned;
         Diagram.PointerDoubleClick += OnDiagramDoubleClicked;
-        
+
         // var firstNode = Diagram.Nodes.Add(new NodeModel(position: new Point(50, 50)) { Title = "Node 1" });
         // var secondNode = Diagram.Nodes.Add(new NodeModel(position: new Point(200, 100)) { Title = "Node 2" });
         // var leftPort = secondNode.AddPort(PortAlignment.Left);

@@ -41,6 +41,9 @@
     <Compile Update="Diagrams\DiagramPage.PanZoom.razor.cs">
       <DependentUpon>DiagramPage.razor</DependentUpon>
     </Compile>
+    <Compile Update="Diagrams\DiagramPage.Nodes.razor.cs">
+      <DependentUpon>DiagramPage.razor</DependentUpon>
+    </Compile>
   </ItemGroup>
 
 </Project>
