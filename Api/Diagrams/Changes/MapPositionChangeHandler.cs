@@ -8,7 +8,6 @@ public class MapPositionChangeHandler : ChangeHandler<DiagramPositionChange>
     {
         // Fetch the diagram.
         var diagram = await context.Diagrams.SingleAsync(d => d.Id == change.Id);
-        // context.Diagrams.SingleAsync(d => EF.Functions.Contains())
         
         // Apply changes.
         diagram.Position = change.NewPosition;

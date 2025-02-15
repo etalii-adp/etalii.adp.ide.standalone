@@ -5,8 +5,8 @@ namespace EtAlii.Adp
     public class Node
     {
         public required NodeIdentifier Id { get; init; }
-        
-        public required Diagram Diagram { get; init; }
+
+        public Diagram Diagram { get; set; } = null!;
 
         public NodePosition Position
         {

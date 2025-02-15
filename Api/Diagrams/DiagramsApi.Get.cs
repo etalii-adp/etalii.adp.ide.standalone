@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Api;
 public partial class DiagramsApi
 {
     [Function(ApplicationApi.Diagrams.Get.Function)]
-    public async Task<HttpResponseData> GetDiagrams([HttpTrigger(_authorizationLevel, HttpMethodName.Get)] HttpRequestData request)
+    public async Task<HttpResponseData> GetDiagrams([HttpTrigger(_authorizationLevel, HttpMethodName.Get, Route = ApplicationApi.Diagrams.Get.Route)] HttpRequestData request)
     {
         try
         {
@@ -34,10 +34,9 @@ public partial class DiagramsApi
                 .SingleAsync(u => u.Name == userName && u.ExternalIdentifier == externalIdentifier); 
             var diagrams = user.Diagrams;
 
-            foreach (var diagram in diagrams)
-            {
-                diagram.Owner = null!;
-            }
+            // Clear the diagrams owner so that no circular dependencies are serialized.
+            foreach (var diagram in diagrams) diagram.Owner = null!;
+            
             var response = request.CreateResponse(HttpStatusCode.OK);
             await response.WriteAsJsonAsync(diagrams);
             return response;

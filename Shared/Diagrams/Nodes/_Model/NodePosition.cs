@@ -8,11 +8,6 @@ public class NodePosition
     public required double X { get; init; }
     public required double Y { get; init; }
     
-    public NodePosition() { }
-    
-    // ReSharper disable once UnusedMember.Global
-    public NodePosition(double x, double y) { X = x; Y = y; }
-    
     // public static implicit operator NodePosition(Vector2 v) => new() { X = v.X, Y = v.Y };
     // // public static explicit operator Vector2(NodePosition p) => new(p.X, p.Y);
     // public static explicit operator NodePosition(float[] v) => new() { X = v[0], Y = v[1] };

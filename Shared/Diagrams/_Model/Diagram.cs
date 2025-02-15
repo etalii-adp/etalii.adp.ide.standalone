@@ -2,15 +2,20 @@
 
 namespace EtAlii.Adp;
 
-public class Diagram
+public record Diagram
 {
     public required DiagramIdentifier Id { get; init; }
     public required User Owner { get; set; } = null!;
     public required string Name { get; set; } = string.Empty;
     public required string Description { get; init; }
 
-    public ICollection<Node> Nodes { get; private set; } = new List<Node>();
-
+    [JsonIgnore]
+    public ICollection<Node> Nodes => _nodes;
+    // ReSharper disable once InconsistentNaming
+    // Reason: We need to still have a property to be able to serialize.
+    [JsonInclude, JsonPropertyName("Nodes")]
+    private ICollection<Node> _nodes { get; set; } = new List<Node>();
+    
     public DiagramPosition Position
     {
         get { if(_position == null) _position = new DiagramPosition { X = _diagramPositionX, Y = _diagramPositionY }; return _position; }

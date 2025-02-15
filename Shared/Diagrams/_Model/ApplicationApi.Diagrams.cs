@@ -8,6 +8,7 @@ public static partial class ApplicationApi
         {
             public const string Request = $"/api/{Function}";
             public const string Function = "diagrams-get";
+            public const string Route = Function;
         }
 
         public static class Add
