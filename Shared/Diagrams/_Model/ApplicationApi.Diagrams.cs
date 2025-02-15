@@ -14,6 +14,7 @@ public static partial class ApplicationApi
         {
             public const string Request = $"/api/{Function}";
             public const string Function = "diagrams-add";
+            public const string Route = Function;
         }
 
         public static class Remove
@@ -25,7 +26,7 @@ public static partial class ApplicationApi
 
         public static class Edit
         {
-            public static string Request(DiagramIdentifier id) => $"/api/{Function}/{id}";
+            public static string Request(DiagramIdentifier id) => $"/api/{Function}/{id.Identifier}";
             public const string Function = "diagrams-edit";
             public const string Route = $"{Function}/{{id:guid}}";
         }

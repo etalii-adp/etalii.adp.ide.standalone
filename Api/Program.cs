@@ -12,6 +12,9 @@ var host = builder
         services.AddAdpDbContexts();
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
+
+        services.AddSingleton<IChangeHandler, MapZoomChangeHandler>();
+        services.AddSingleton<IChangeHandler, MapPositionChangeHandler>();
     })
     .Build();
 

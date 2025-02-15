@@ -25,6 +25,12 @@ public partial class DiagramsApi
 
             // Deserialize.
             var diagram = (await request.ReadFromJsonAsync<Diagram>())!;
+
+            if (diagram.Id != id)
+            {
+                _logger.LogError("Unable to handle {FunctionName} - mismatching Identifier {DiagramIdentifier}", request.FunctionContext.FunctionDefinition.Name, id);
+                return request.CreateResponse(HttpStatusCode.Conflict);
+            }
             
             // Tag for modification.
             diagram.ModificationDate = DateTime.UtcNow;

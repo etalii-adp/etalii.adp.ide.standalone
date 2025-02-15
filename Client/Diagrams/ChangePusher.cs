@@ -8,19 +8,26 @@ public class ChangePusher
     private Task? _pushTask;
 
     private readonly HttpClient _client;
+    
+    private readonly DiagramManager _diagramManager;
+    
+    private readonly Type[] _takeLastChangeTypes =
+    [
+        typeof(MapZoomChange),
+        typeof(MapPositionChange)
+    ];
 
-    public ChangePusher(HttpClient client)
+    public ChangePusher(HttpClient client, DiagramManager diagramManager)
     {
         _client = client;
+        _diagramManager = diagramManager;
     }
 
     public async Task Enqueue(Change change)
     {
-        if (_pushTask != null)
-        {
-            _changes.Enqueue(change);
-        }
-        else
+        // TODO: Add AsyncLock.
+        _changes.Enqueue(change);
+        if (_pushTask == null)
         {
             var changes = _changes.ToArray();
             _pushTask = Task.Run(() => PushChanges(changes));
@@ -31,9 +38,24 @@ public class ChangePusher
 
     private async Task PushChanges(Change[] changes)
     {
-        foreach (var change in changes)
+        changes = Flatten(changes);
+        
+        await _client.PostAsJsonAsync(ApplicationApi.Diagrams.Changes.Request(_diagramManager.CurrentDiagram!.Id), changes);
+    }
+
+    private Change[] Flatten(Change[] changes)
+    {
+        foreach (var takeLastChangeType in _takeLastChangeTypes)
         {
-            await _client.PostAsJsonAsync("/api/", change);
+            var last = changes.LastOrDefault(c => c.GetType() == takeLastChangeType);
+            if (last != null)
+            {
+                changes = changes
+                    .Where(c => c.GetType() != takeLastChangeType)
+                    .Concat([last])
+                    .ToArray();
+            }
         }
+        return changes;
     }
 }

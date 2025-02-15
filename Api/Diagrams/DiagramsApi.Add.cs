@@ -9,7 +9,7 @@ namespace EtAlii.Adp.Api;
 public partial class DiagramsApi
 {
     [Function(ApplicationApi.Diagrams.Add.Function)]
-    public async Task<HttpResponseData> AddDiagram([HttpTrigger(_authorizationLevel, HttpMethodName.Post, Route = ApplicationApi.Diagrams.Add.Function)] HttpRequestData request)
+    public async Task<HttpResponseData> AddDiagram([HttpTrigger(_authorizationLevel, HttpMethodName.Post, Route = ApplicationApi.Diagrams.Add.Route)] HttpRequestData request)
     {
         try
         {

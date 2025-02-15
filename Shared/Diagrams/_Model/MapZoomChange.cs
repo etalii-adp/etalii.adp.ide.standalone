@@ -2,7 +2,20 @@
 
 public class MapZoomChange : Change
 {
-    public required float Zoom { get; init; }
+    public required DiagramIdentifier Id { get; init; }
+    public required double NewZoom { get; init; }
+    public required double OldZoom { get; init; }
     
-    public static Change Create(Diagram diagram) => new MapZoomChange { Zoom = diagram.Zoom };
+    public static Change Apply(Diagram diagram, double newZoom)
+    {
+        var oldZoom = diagram.Zoom;
+        diagram.Zoom = newZoom;
+        
+        return new MapZoomChange
+        {
+            Id = diagram.Id, 
+            NewZoom = newZoom, 
+            OldZoom = oldZoom
+        };
+    }
 }
