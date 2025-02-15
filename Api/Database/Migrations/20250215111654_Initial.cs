@@ -37,7 +37,7 @@ namespace EtAlii.Adp.Api.Database.Migrations
                     Position = table.Column<Point>(type: "geography", nullable: false),
                     CreationDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ModificationDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Zoom = table.Column<float>(type: "real", nullable: false)
+                    Zoom = table.Column<double>(type: "float", nullable: false)
                 },
                 constraints: table =>
                 {

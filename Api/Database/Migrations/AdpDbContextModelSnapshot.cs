@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Api.Database.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.1")
+                .HasAnnotation("ProductVersion", "9.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -49,8 +49,8 @@ namespace EtAlii.Adp.Api.Database.Migrations
                         .IsRequired()
                         .HasColumnType("geography");
 
-                    b.Property<float>("Zoom")
-                        .HasColumnType("real");
+                    b.Property<double>("Zoom")
+                        .HasColumnType("float");
 
                     b.HasKey("Id");
 
