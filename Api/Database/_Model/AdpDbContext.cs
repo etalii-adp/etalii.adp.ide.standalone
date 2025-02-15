@@ -17,6 +17,11 @@ public class AdpDbContext : DbContext
     /// </summary>
     public DbSet<Node> Nodes { get; set; }
 
+    /// <summary>
+    /// The links that are connecting the nodes in a diagram.
+    /// </summary>
+    public DbSet<Link> Links { get; set; }
+
     // ReSharper disable once ConvertToPrimaryConstructor
     // Reason: Needs to be public so that the contexts can be pooled. 
     public AdpDbContext(DbContextOptions<AdpDbContext> options) : base(options) { }
@@ -47,6 +52,7 @@ public class AdpDbContext : DbContext
             builder
                 .HasMany(e => e.Diagrams)
                 .WithOne(e => e.Owner)
+                .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
         });
         
@@ -81,6 +87,7 @@ public class AdpDbContext : DbContext
             builder
                 .HasMany(e => e.Nodes)
                 .WithOne(e => e.Diagram)
+                .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
 
         });
@@ -107,6 +114,28 @@ public class AdpDbContext : DbContext
                 .Property<double>("_nodePositionY")
                 .HasColumnName("NodePositionY")
                 .IsRequired();
+
+            builder
+                .HasMany(e => e.OutboundLinks)
+                .WithOne(e => e.Start)
+                .OnDelete(DeleteBehavior.NoAction)
+                .IsRequired();
+
+            builder
+                .HasMany(e => e.InboundLinks)
+                .WithOne(e => e.End)
+                .OnDelete(DeleteBehavior.NoAction)
+                .IsRequired();
+        });
+
+        // Links.
+        Configure(modelBuilder.Entity<Link>(), builder =>
+        {
+            builder.HasIndex(e => e.Id);
+            builder
+                .Property(e => e.Id)
+                .IsRequired();
+
         });
 
     }
@@ -127,7 +156,11 @@ public class AdpDbContext : DbContext
         configurationBuilder
             .Properties<NodeIdentifier>()
             .HaveConversion<NodeIdentifierToGuidConverter>();
-        
+
+        configurationBuilder
+            .Properties<LinkIdentifier>()
+            .HaveConversion<LinkIdentifierToGuidConverter>();
+            
         // configurationBuilder
         //     .Properties<DiagramPosition>()
         //     .HaveConversion<DiagramPositionToPointConverter>();

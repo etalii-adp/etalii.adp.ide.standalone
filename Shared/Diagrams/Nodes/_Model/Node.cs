@@ -16,5 +16,19 @@ namespace EtAlii.Adp
         [JsonIgnore] private NodePosition? _position;
         [JsonIgnore] private double _nodePositionX;
         [JsonIgnore] private double _nodePositionY;
+        
+        
+        [JsonIgnore] public ICollection<Link> InboundLinks => _inboundLinks;
+        // ReSharper disable once InconsistentNaming
+        // Reason: We need to still have a property to be able to serialize.
+        [JsonInclude, JsonPropertyName(nameof(InboundLinks))]
+        private ICollection<Link> _inboundLinks { get; set; } = new List<Link>();
+
+        [JsonIgnore] public ICollection<Link> OutboundLinks => _outboundLinks;
+        // ReSharper disable once InconsistentNaming
+        // Reason: We need to still have a property to be able to serialize.
+        [JsonInclude, JsonPropertyName(nameof(OutboundLinks))]
+        private ICollection<Link> _outboundLinks { get; set; } = new List<Link>();
+
     }
 }
