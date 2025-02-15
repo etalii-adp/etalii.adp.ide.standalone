@@ -19,7 +19,7 @@ public class LoginApi
     {
         _dbContextFactory = dbContextFactory;
 
-        _logger = loggerFactory.CreateLogger<DiagramsApi>();
+        _logger = loggerFactory.CreateLogger<LoginApi>();
         _logger.LogInformation("Initialized {FunctionApi}", nameof(LoginApi));
     }
     

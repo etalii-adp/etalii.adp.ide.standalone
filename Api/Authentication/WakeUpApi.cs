@@ -13,7 +13,7 @@ public class WakeUpApi
 
     public WakeUpApi(ILoggerFactory loggerFactory)
     {
-        _logger = loggerFactory.CreateLogger<DiagramsApi>();
+        _logger = loggerFactory.CreateLogger<WakeUpApi>();
         _logger.LogInformation("Initialized {FunctionApi}", nameof(WakeUpApi));
     }
     
