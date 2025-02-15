@@ -6,14 +6,13 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using NetTopologySuite.Geometries;
 
 #nullable disable
 
 namespace EtAlii.Adp.Api.Database.Migrations
 {
     [DbContext(typeof(AdpDbContext))]
-    [Migration("20250215111654_Initial")]
+    [Migration("20250215121645_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -48,12 +47,16 @@ namespace EtAlii.Adp.Api.Database.Migrations
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Point>("Position")
-                        .IsRequired()
-                        .HasColumnType("geography");
-
                     b.Property<double>("Zoom")
                         .HasColumnType("float");
+
+                    b.Property<double>("_diagramPositionX")
+                        .HasColumnType("float")
+                        .HasColumnName("DiagramPositionX");
+
+                    b.Property<double>("_diagramPositionY")
+                        .HasColumnType("float")
+                        .HasColumnName("DiagramPositionY");
 
                     b.HasKey("Id");
 

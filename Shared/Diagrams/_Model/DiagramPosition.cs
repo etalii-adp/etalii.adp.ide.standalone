@@ -1,28 +1,25 @@
 ﻿using System.Diagnostics;
-using System.Numerics;
-using System.Text.Json.Serialization;
-using NetTopologySuite.Geometries;
 
 namespace EtAlii.Adp;
 
 [DebuggerDisplay("{ToString()}")]
 public class DiagramPosition : IEquatable<DiagramPosition>
 {
-    [JsonConverter(typeof(Vector2Converter))]
-    public required Vector2 Coordinates { get; init; }
+    public required double X { get; init; }
+    public required double Y { get; init; }
     
-    public static implicit operator DiagramPosition(Vector2 v) => new() { Coordinates = v };
-    public static explicit operator Vector2(DiagramPosition p) => p.Coordinates;
-
-    public static explicit operator DiagramPosition(Point v) => new() { Coordinates = new Vector2((float)v.X, (float)v.Y) };
-    // We should use a projected coordinate system SRID:
-    // https://gis.stackexchange.com/questions/265797/srid-for-basic-x-y-coordinate-system
-    // http://alibabacloud.com/blog/an-overview-of-srid-and-coordinate-system_597004
-    public static explicit operator Point(DiagramPosition p) => new (p.Coordinates.X, p.Coordinates.Y) { SRID = 4326 };
+    public DiagramPosition() { }
+    public DiagramPosition(double x, double y) { X = x; Y = y; }
     
-    public override string ToString() => $"Position: {Coordinates.X}, {Coordinates.Y}";
+    // public static implicit operator DiagramPosition(Vector2 v) => new() { X = v.X, Y = v.Y };
+    // // public static explicit operator Vector2(DiagramPosition p) => new(p.X, p.Y);
+    // public static explicit operator DiagramPosition(float[] v) => new() { X = v[0], Y = v[1] };
+    //
+    // public static explicit operator double[](DiagramPosition p) => [p.X, p.Y];
+    
+    public override string ToString() => $"Position: {X}, {Y}";
 
-    public override int GetHashCode() => Coordinates.GetHashCode();
+    public override int GetHashCode() => HashCode.Combine(X, Y);
 
     public static bool operator ==(DiagramPosition? left, DiagramPosition? right) => Equals(left, right);
 
@@ -32,7 +29,7 @@ public class DiagramPosition : IEquatable<DiagramPosition>
     {
         if (other is null) return false;
         if (ReferenceEquals(this, other)) return true;
-        return Coordinates.Equals(other.Coordinates);
+        return X.Equals(other.X) && Y.Equals(other.Y);
     }
 
     public override bool Equals(object? obj)

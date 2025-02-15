@@ -25,7 +25,6 @@ public static class DbContextOptionBuilderUseAdpDatabaseExtension
 //         options
 //             .UseSqlite(ConnectionString, sqliteOptions =>
 //             {
-//                 sqliteOptions.UseNetTopologySuite();     
 //             });
 //         //.UseLoggerFactory(s.GetRequiredService<ILoggerFactory>());
 // #else
@@ -33,7 +32,7 @@ public static class DbContextOptionBuilderUseAdpDatabaseExtension
             .UseSqlServer(ConnectionString, sqlOptions =>
             {
                 sqlOptions.EnableRetryOnFailure();
-                sqlOptions.UseNetTopologySuite();
+//                sqlOptions.UseVectorSearch();
             });
 // #endif
     }

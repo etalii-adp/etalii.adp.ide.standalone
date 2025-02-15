@@ -7,7 +7,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Core" />
-    <PackageReference Include="NetTopologySuite" />
     <PackageReference Include="System.Numerics.Vectors" />
     <PackageReference Include="System.Text.Json" />
     <PackageReference Update="Nerdbank.GitVersioning" />

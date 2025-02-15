@@ -8,15 +8,12 @@
     <PackageVersion Include="Microsoft.AspNetCore.Cors" Version="2.3.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Core" Version="2.0.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.1" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite.NetTopologySuite" Version="9.0.1" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.2" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="9.0.2" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
     <PackageVersion Include="Nerdbank.GitVersioning" Version="3.7.115" />
-    <PackageVersion Include="NetTopologySuite" Version="2.5.0" />
     <PackageVersion Include="System.Numerics.Vectors" Version="4.6.0" />
     <PackageVersion Include="System.Net.Http.Json" Version="9.0.2" />
     <PackageVersion Include="System.Text.Json" Version="9.0.2" />

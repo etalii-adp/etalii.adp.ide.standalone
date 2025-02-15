@@ -52,9 +52,25 @@ public class AdpDbContext : DbContext
             builder
                 .Property(e => e.Id)
                 .IsRequired();
-            
+
             builder
-                .Property(e => e.Position)
+                .Property(e => e.Name)
+                .IsRequired();
+
+            builder
+                .Property(e => e.Zoom)
+                .IsRequired();
+
+            builder
+                .Ignore(e => e.Position);
+
+            builder
+                .Property<double>("_diagramPositionX")
+                .HasColumnName("DiagramPositionX")
+                .IsRequired();
+            builder
+                .Property<double>("_diagramPositionY")
+                .HasColumnName("DiagramPositionY")
                 .IsRequired();
         });
     }
@@ -72,8 +88,8 @@ public class AdpDbContext : DbContext
             .Properties<UserIdentifier>()
             .HaveConversion<UserIdentifierToGuidConverter>();
         
-        configurationBuilder
-            .Properties<DiagramPosition>()
-            .HaveConversion<DiagramPositionToPointConverter>();
+        // configurationBuilder
+        //     .Properties<DiagramPosition>()
+        //     .HaveConversion<DiagramPositionToPointConverter>();
     }
 }

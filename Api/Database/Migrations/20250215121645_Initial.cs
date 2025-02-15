@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using NetTopologySuite.Geometries;
 
 #nullable disable
 
@@ -34,10 +33,11 @@ namespace EtAlii.Adp.Api.Database.Migrations
                     OwnerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Position = table.Column<Point>(type: "geography", nullable: false),
                     CreationDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ModificationDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Zoom = table.Column<double>(type: "float", nullable: false)
+                    Zoom = table.Column<double>(type: "float", nullable: false),
+                    DiagramPositionX = table.Column<double>(type: "float", nullable: false),
+                    DiagramPositionY = table.Column<double>(type: "float", nullable: false)
                 },
                 constraints: table =>
                 {

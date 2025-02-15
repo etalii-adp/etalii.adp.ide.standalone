@@ -1,5 +1,4 @@
 ﻿using System.Net.Http.Json;
-using System.Numerics;
 using Microsoft.AspNetCore.Components;
 
 namespace EtAlii.Adp.Client;
@@ -36,7 +35,7 @@ public partial class DiagramsPage
             Name = $"{namePrefix} {matchingDiagramCount}",
             Description = "Provide a short description",
             Id = DiagramIdentifier.NewIdentifier(),
-            Position = new Vector2(0, 0),
+            Position = new DiagramPosition { X = 0, Y = 0 },
             CreationDate = DateTime.UtcNow,
             ModificationDate = DateTime.UtcNow,
             Zoom = 0,

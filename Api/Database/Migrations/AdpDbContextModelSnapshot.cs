@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using NetTopologySuite.Geometries;
 
 #nullable disable
 
@@ -45,12 +44,16 @@ namespace EtAlii.Adp.Api.Database.Migrations
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Point>("Position")
-                        .IsRequired()
-                        .HasColumnType("geography");
-
                     b.Property<double>("Zoom")
                         .HasColumnType("float");
+
+                    b.Property<double>("_diagramPositionX")
+                        .HasColumnType("float")
+                        .HasColumnName("DiagramPositionX");
+
+                    b.Property<double>("_diagramPositionY")
+                        .HasColumnType("float")
+                        .HasColumnName("DiagramPositionY");
 
                     b.HasKey("Id");
 

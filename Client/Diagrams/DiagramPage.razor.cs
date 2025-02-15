@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-using Blazor.Diagrams;
+﻿using Blazor.Diagrams;
 using Blazor.Diagrams.Core.Anchors;
 using Blazor.Diagrams.Core.Geometry;
 using Blazor.Diagrams.Core.Models;
@@ -57,7 +56,7 @@ public partial class DiagramPage
     {
         _diagram = DiagramManager.CurrentDiagram!;
         Diagram.SetZoom(_diagram.Zoom <= 0f ? 1f : _diagram.Zoom);
-        Diagram.SetPan(_diagram.Position.Coordinates.X, _diagram.Position.Coordinates.Y);
+        Diagram.SetPan(_diagram.Position.X, _diagram.Position.Y);
         Diagram.ZoomChanged += OnDiagramZoomed;
         Diagram.PanChanged += OnDiagramPanned;
         
@@ -93,7 +92,7 @@ public partial class DiagramPage
     {
         try
         {
-            var newPosition = (DiagramPosition)new Vector2 { X = (float)Diagram.Pan.X, Y = (float)Diagram.Pan.Y };
+            var newPosition = new DiagramPosition { X = Diagram.Pan.X, Y = Diagram.Pan.Y };
             var change = MapPositionChange.Apply(_diagram, newPosition);
 
             // Throttled save.
