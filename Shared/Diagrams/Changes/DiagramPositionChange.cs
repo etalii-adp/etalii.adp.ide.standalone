@@ -1,6 +1,6 @@
 ﻿namespace EtAlii.Adp;
 
-public class MapPositionChange : Change
+public class DiagramPositionChange : Change
 {
     public required DiagramIdentifier Id { get; init; }
     public required DiagramPosition NewPosition { get; init; }
@@ -11,7 +11,7 @@ public class MapPositionChange : Change
         var oldPosition = diagram.Position;
         diagram.Position = newPosition; 
         
-        return new MapPositionChange 
+        return new DiagramPositionChange 
         { 
             Id = diagram.Id, 
             NewPosition = newPosition,

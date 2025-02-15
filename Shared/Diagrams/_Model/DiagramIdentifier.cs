@@ -2,7 +2,7 @@
 
 namespace EtAlii.Adp;
 
-[DebuggerDisplay("{ToString()}")]
+[DebuggerDisplay("Diagram@{ToString()}")]
 public class DiagramIdentifier : IEquatable<DiagramIdentifier>
 {
     public required Guid Identifier { get; init; }
@@ -19,7 +19,7 @@ public class DiagramIdentifier : IEquatable<DiagramIdentifier>
 
     public static DiagramIdentifier NewIdentifier() => (DiagramIdentifier)Guid.NewGuid();
 
-    public override string ToString() => $"(Diagram: {Identifier.ToString()})";
+    public override string ToString() => Identifier.ToString();
 
     public bool Equals(DiagramIdentifier? other)
     {

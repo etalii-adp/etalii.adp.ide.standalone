@@ -2,9 +2,9 @@
 
 namespace EtAlii.Adp.Api;
 
-public class MapZoomChangeHandler : ChangeHandler<MapZoomChange>
+public class MapZoomChangeHandler : ChangeHandler<DiagramZoomChange>
 {
-    protected override async Task Apply(MapZoomChange change, AdpDbContext context)
+    protected override async Task Apply(DiagramZoomChange change, AdpDbContext context)
     {
         // Fetch the diagram.
         var diagram = await context.Diagrams.SingleAsync(d => d.Id == change.Id);
@@ -17,7 +17,7 @@ public class MapZoomChangeHandler : ChangeHandler<MapZoomChange>
         context.Entry(diagram).State = EntityState.Modified;
     }
     
-    protected override async Task Undo(MapZoomChange change, AdpDbContext context)
+    protected override async Task Undo(DiagramZoomChange change, AdpDbContext context)
     {
         // Fetch the diagram.
         var diagram = await context.Diagrams.SingleAsync(d => d.Id == change.Id);

@@ -9,6 +9,8 @@ public class Diagram
     public required string Name { get; set; } = string.Empty;
     public required string Description { get; init; }
 
+    public ICollection<Node> Nodes { get; private set; } = new List<Node>();
+
     public DiagramPosition Position
     {
         get { if(_position == null) _position = new DiagramPosition { X = _diagramPositionX, Y = _diagramPositionY }; return _position; }

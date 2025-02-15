@@ -11,6 +11,11 @@ public class AdpDbContext : DbContext
     public DbSet<Diagram> Diagrams { get; set; }
 
     public DbSet<User> Users { get; set; }
+    
+    /// <summary>
+    /// The nodes that are known to the system.
+    /// </summary>
+    public DbSet<Node> Nodes { get; set; }
 
     // ReSharper disable once ConvertToPrimaryConstructor
     // Reason: Needs to be public so that the contexts can be pooled. 
@@ -72,7 +77,38 @@ public class AdpDbContext : DbContext
                 .Property<double>("_diagramPositionY")
                 .HasColumnName("DiagramPositionY")
                 .IsRequired();
+            
+            builder
+                .HasMany(e => e.Nodes)
+                .WithOne(e => e.Diagram)
+                .IsRequired();
+
         });
+        
+        // Nodes.
+        Configure(modelBuilder.Entity<Node>(), builder =>
+        {
+            builder.HasIndex(e => e.Id);
+            builder
+                .Property(e => e.Id)
+                .IsRequired();
+
+            // builder
+            //     .Property(e => e.Name)
+            //     .IsRequired();
+
+            builder
+                .Ignore(e => e.Position);
+            builder
+                .Property<double>("_nodePositionX")
+                .HasColumnName("NodePositionX")
+                .IsRequired();
+            builder
+                .Property<double>("_nodePositionY")
+                .HasColumnName("NodePositionY")
+                .IsRequired();
+        });
+
     }
 
     private void Configure<TEntity>(EntityTypeBuilder<TEntity> builder, Action<EntityTypeBuilder<TEntity>> configure) 
@@ -87,6 +123,10 @@ public class AdpDbContext : DbContext
         configurationBuilder
             .Properties<UserIdentifier>()
             .HaveConversion<UserIdentifierToGuidConverter>();
+
+        configurationBuilder
+            .Properties<NodeIdentifier>()
+            .HaveConversion<NodeIdentifierToGuidConverter>();
         
         // configurationBuilder
         //     .Properties<DiagramPosition>()

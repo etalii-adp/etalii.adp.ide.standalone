@@ -13,8 +13,8 @@ public class ChangePusher
     
     private readonly Type[] _takeLastChangeTypes =
     [
-        typeof(MapZoomChange),
-        typeof(MapPositionChange)
+        typeof(DiagramZoomChange),
+        typeof(DiagramPositionChange)
     ];
 
     public ChangePusher(HttpClient client, DiagramManager diagramManager)

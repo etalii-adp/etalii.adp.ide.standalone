@@ -8,9 +8,10 @@ namespace EtAlii.Adp.Client;
 public partial class DiagramPage
 {
     
-    private NodeModel NewNode(double x, double y)
+    private NodeModel NewNode(Point position)
     {
-        var node = new NodeModel(new Point(x, y));
+        // TODO: We currently do left-top positioning, but need to do a small correction to place the node from its the center. 
+        var node = new NodeModel(position);
         node.AddPort(PortAlignment.Bottom);
         node.AddPort(PortAlignment.Top);
         node.AddPort(PortAlignment.Left);
@@ -20,7 +21,9 @@ public partial class DiagramPage
 
     private void OnDiagramDoubleClicked(Model? model, PointerEventArgs e)
     {
-        var node = NewNode(e.ClientX, e.ClientY);
+        var point = Diagram.GetRelativeMousePoint(e.ClientX, e.ClientY);
+        var node = NewNode(point);
         Diagram.Nodes.Add(node);
+        //Diagram
     }
 }

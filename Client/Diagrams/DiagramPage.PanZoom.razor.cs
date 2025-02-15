@@ -6,7 +6,7 @@ public partial class DiagramPage
     {
         try
         {
-            var change = MapZoomChange.Apply(_diagram, (float)Diagram.Zoom);
+            var change = DiagramZoomChange.Apply(_diagram, (float)Diagram.Zoom);
 
             // Throttled save.
             await ChangePusher.Enqueue(change);
@@ -22,7 +22,7 @@ public partial class DiagramPage
         try
         {
             var newPosition = new DiagramPosition { X = Diagram.Pan.X, Y = Diagram.Pan.Y };
-            var change = MapPositionChange.Apply(_diagram, newPosition);
+            var change = DiagramPositionChange.Apply(_diagram, newPosition);
 
             // Throttled save.
             await ChangePusher.Enqueue(change);

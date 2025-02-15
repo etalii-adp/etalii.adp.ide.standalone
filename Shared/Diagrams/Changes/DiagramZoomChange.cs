@@ -1,6 +1,6 @@
 ﻿namespace EtAlii.Adp;
 
-public class MapZoomChange : Change
+public class DiagramZoomChange : Change
 {
     public required DiagramIdentifier Id { get; init; }
     public required double NewZoom { get; init; }
@@ -11,7 +11,7 @@ public class MapZoomChange : Change
         var oldZoom = diagram.Zoom;
         diagram.Zoom = newZoom;
         
-        return new MapZoomChange
+        return new DiagramZoomChange
         {
             Id = diagram.Id, 
             NewZoom = newZoom, 
