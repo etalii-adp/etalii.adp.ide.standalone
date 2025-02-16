@@ -54,12 +54,11 @@ public partial class DiagramPage
 
         await PopulateNodes();
         
-        Diagram.SetZoom(_diagram.Zoom <= 0f ? 1f : _diagram.Zoom);
-        Diagram.SetPan(_diagram.Position.X, _diagram.Position.Y);
-        Diagram.ZoomChanged += OnDiagramZoomed;
-        Diagram.PanChanged += OnDiagramPanned;
+        InitializeZoom();
+        InitializePan();
         Diagram.PointerDoubleClick += OnDiagramDoubleClicked;
-
+        Diagram.Links.Added += OnLinkAdded;
+        Diagram.Links.Removed += OnLinkRemoved;
         // var firstNode = Diagram.Nodes.Add(new NodeModel(position: new Point(50, 50)) { Title = "Node 1" });
         // var secondNode = Diagram.Nodes.Add(new NodeModel(position: new Point(200, 100)) { Title = "Node 2" });
         // var leftPort = secondNode.AddPort(PortAlignment.Left);

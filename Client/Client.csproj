@@ -10,6 +10,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" PrivateAssets="all" />
+    <PackageReference Include="System.Reactive" />
 
 <!--    <PackageReference Include="Microsoft.AspNetCore.Components" />-->
 <!--    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />-->
@@ -38,10 +39,16 @@
     <Compile Update="Navigation\NavHeader.Authentication.razor.cs">
       <DependentUpon>NavHeader.razor</DependentUpon>
     </Compile>
-    <Compile Update="Diagrams\DiagramPage.PanZoom.razor.cs">
+    <Compile Update="Diagrams\DiagramPage.Pan.razor.cs">
       <DependentUpon>DiagramPage.razor</DependentUpon>
     </Compile>
     <Compile Update="Diagrams\DiagramPage.Nodes.razor.cs">
+      <DependentUpon>DiagramPage.razor</DependentUpon>
+    </Compile>
+    <Compile Update="Diagrams\DiagramPage.Zoom.razor.cs">
+      <DependentUpon>DiagramPage.razor</DependentUpon>
+    </Compile>
+    <Compile Update="Diagrams\DiagramPage.Links.razor.cs">
       <DependentUpon>DiagramPage.razor</DependentUpon>
     </Compile>
   </ItemGroup>

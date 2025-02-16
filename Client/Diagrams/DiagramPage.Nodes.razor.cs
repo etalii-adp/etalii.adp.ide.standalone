@@ -24,6 +24,9 @@ public partial class DiagramPage
         try
         {
             var node = (Node)model;
+            
+            _logger.LogInformation("Moving node {NodeIdentifier} to {NodePosition}", node.Id, node.Position);
+
             var change = NodeMoveChange.Apply(_diagram, node.Id, new NodePosition { X = model.Position.X, Y = model.Position.Y });
             await ChangePusher.Enqueue(change);
         }
@@ -38,7 +41,11 @@ public partial class DiagramPage
         try
         {
             var point = Diagram.GetRelativeMousePoint(e.ClientX, e.ClientY);
+            
             var node = Node.Create(point, NodeIdentifier.NewIdentifier());
+            
+            _logger.LogInformation("Double clicked diagram - adding node {NodeIdentifier} on {NodePosition}", node.Id, node.Position);
+
             Diagram.Nodes.Add(node);
         
             var change = NodeAddChange.Apply(_diagram, node.Position, node.Id);
