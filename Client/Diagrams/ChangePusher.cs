@@ -1,4 +1,5 @@
 ﻿using System.Net.Http.Json;
+using NeoSmart.AsyncLock;
 
 namespace EtAlii.Adp.Client;
 
@@ -8,6 +9,7 @@ public class ChangePusher
     private Task? _pushTask;
 
     private readonly HttpClient _client;
+    private readonly AsyncLock _lock = new();
     
     private readonly DiagramManager _diagramManager;
     
@@ -25,13 +27,33 @@ public class ChangePusher
 
     public async Task Enqueue(Change change)
     {
-        // TODO: Add AsyncLock.
-        _changes.Enqueue(change);
-        if (_pushTask == null)
+        using (await _lock.LockAsync())
         {
-            var changes = _changes.ToArray();
-            _pushTask = Task.Run(() => PushChanges(changes));
-            await _pushTask;
+            _changes.Enqueue(change);
+            _pushTask ??= Task.Run(PushChanges);
+        }
+    }
+
+    private async Task PushChanges()
+    {
+        Change[] changesToPush;
+        do
+        {
+            using (await _lock.LockAsync())
+            {
+                changesToPush = _changes.ToArray();
+                _changes.Clear();
+            }
+
+            if (changesToPush.Any())
+            {
+                await PushChanges(changesToPush);
+            }
+            
+        } while (changesToPush.Any());
+
+        using (await _lock.LockAsync())
+        {
             _pushTask = null;
         }
     }
