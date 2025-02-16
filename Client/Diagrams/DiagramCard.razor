@@ -6,8 +6,8 @@
         <CardText>@Diagram.Description</CardText>
         <small class="text-muted">Created: @Diagram.CreationDate.ToDisplayDateAndTime()</small><br/>
         <small class="text-muted">Modified: @Diagram.ModificationDate.ToDisplayDateAndTime()</small><br/>
-        <small class="text-muted">Position: @Diagram.Position.X.ToString("##.#####"), @Diagram.Position.Y.ToString("##.#####")</small><br/>
-        <small class="text-muted">Zoom: @Diagram.Zoom.ToString("##.#####")</small>
+        <small class="text-muted">Position: @Diagram.Position.X.ToString("0.#####"), @Diagram.Position.Y.ToString("##.#####")</small><br/>
+        <small class="text-muted">Zoom: @Diagram.Zoom.ToString("0.#####")</small>
         <div style="position: absolute; top: 0; right: 0; margin-right: 5px; margin-top: 5px">
             <Button Size="ButtonSize.Small" Color="ButtonColor.Light" @onclick="@(() => ViewDiagram(Diagram))"><Icon Name="IconName.Eye"/></Button>
         </div>
