@@ -2,17 +2,17 @@
 
 namespace EtAlii.Adp.Client;
 
-public partial class DiagramPage
+public partial class ViewManager
 {
     private void InitializePan()
     {
-        Diagram.SetPan(_diagram.Position.X, _diagram.Position.Y);
+        _view.SetPan(_diagram.Position.X, _diagram.Position.Y);
 
         // Convert the event into an observable sequence
         var eventStream = Observable
             .FromEvent(
-                h => Diagram.PanChanged += h, 
-                h => Diagram.PanChanged -= h)
+                h => _view.PanChanged += h, 
+                h => _view.PanChanged -= h)
             .Throttle(TimeSpan.FromMilliseconds(500)); // Waits for 500ms of inactivity
 
         eventStream.Subscribe(_ => OnDiagramPanned());
@@ -22,18 +22,20 @@ public partial class DiagramPage
     {
         try
         {
-            var newPosition = new DiagramPosition { X = Diagram.Pan.X, Y = Diagram.Pan.Y };
+            var newPosition = new DiagramPosition { X = _view.Pan.X, Y = _view.Pan.Y };
             
             _logger.LogInformation("Panning diagram to {DiagramPosition}", newPosition);
 
             var change = DiagramPositionChange.Apply(_diagram, newPosition);
 
             // Throttled save.
-            await ChangePusher.Enqueue(change);
+            await _changePusher.Enqueue(change);
         }
         catch (Exception e)
         {
             _logger.LogError(e, "Unable to handle {MethodName}", nameof(OnDiagramPanned));
         }
     }
+
 }
+    

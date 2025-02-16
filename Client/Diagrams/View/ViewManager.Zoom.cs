@@ -2,17 +2,17 @@
 
 namespace EtAlii.Adp.Client;
 
-public partial class DiagramPage
+public partial class ViewManager
 {
     private void InitializeZoom()
     {
-        Diagram.SetZoom(_diagram.Zoom <= 0f ? 1f : _diagram.Zoom);
+        _view.SetZoom(_diagram.Zoom <= 0f ? 1f : _diagram.Zoom);
 
         // Convert the event into an observable sequence
         var eventStream = Observable
             .FromEvent(
-                h => Diagram.ZoomChanged += h, 
-                h => Diagram.ZoomChanged -= h)
+                h => _view.ZoomChanged += h, 
+                h => _view.ZoomChanged -= h)
             .Throttle(TimeSpan.FromMilliseconds(500)); // Waits for 500ms of inactivity
 
         eventStream.Subscribe(_ => OnDiagramZoomed());
@@ -22,12 +22,12 @@ public partial class DiagramPage
     {
         try
         {
-            _logger.LogInformation("Zooming diagram from {OldZoom} to {NewZoom}", _diagram.Zoom, Diagram.Zoom);
+            _logger.LogInformation("Zooming diagram from {OldZoom} to {NewZoom}", _diagram.Zoom, _view.Zoom);
 
-            var change = DiagramZoomChange.Apply(_diagram, Diagram.Zoom);
+            var change = DiagramZoomChange.Apply(_diagram, _view.Zoom);
 
             // Throttled save.
-            await ChangePusher.Enqueue(change);
+            await _changePusher.Enqueue(change);
         }
         catch (Exception e)
         {
@@ -35,3 +35,4 @@ public partial class DiagramPage
         }
     }
 }
+    

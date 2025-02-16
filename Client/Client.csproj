@@ -29,6 +29,7 @@
 
 
   <ItemGroup>
+    <Folder Include="About\" />
     <Folder Include="Configuration\" />
     <Folder Include="Diagrams\_Model\" />
     <Folder Include="Trends\" />
@@ -38,18 +39,6 @@
   <ItemGroup>
     <Compile Update="Navigation\NavHeader.Authentication.razor.cs">
       <DependentUpon>NavHeader.razor</DependentUpon>
-    </Compile>
-    <Compile Update="Diagrams\DiagramPage.Pan.razor.cs">
-      <DependentUpon>DiagramPage.razor</DependentUpon>
-    </Compile>
-    <Compile Update="Diagrams\DiagramPage.Nodes.razor.cs">
-      <DependentUpon>DiagramPage.razor</DependentUpon>
-    </Compile>
-    <Compile Update="Diagrams\DiagramPage.Zoom.razor.cs">
-      <DependentUpon>DiagramPage.razor</DependentUpon>
-    </Compile>
-    <Compile Update="Diagrams\DiagramPage.Links.razor.cs">
-      <DependentUpon>DiagramPage.razor</DependentUpon>
     </Compile>
   </ItemGroup>
 

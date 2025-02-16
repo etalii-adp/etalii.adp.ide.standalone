@@ -1,8 +1,4 @@
-﻿using Blazor.Diagrams;
-using Blazor.Diagrams.Core.PathGenerators;
-using Blazor.Diagrams.Core.Routers;
-using Blazor.Diagrams.Options;
-using BlazorBootstrap;
+﻿using BlazorBootstrap;
 using Microsoft.AspNetCore.Components;
 
 namespace EtAlii.Adp.Client;
@@ -11,7 +7,7 @@ public partial class DiagramPage
 {
     [Parameter] public string DiagramTitle { get; set; } = null!;
     
-    protected BlazorDiagram Diagram { get; set; } = null!;
+    private DiagramView _view = null!;
 
     // private string? _selectedRibbonItem;
     [Inject] private ILoggerFactory LoggerFactory { get; set; } = null!;
@@ -22,43 +18,38 @@ public partial class DiagramPage
     
     [Inject] private ChangePusher ChangePusher { get; set; } = null!;
     
-    private Diagram _diagram = null!;
-    
     private ILogger _logger = null!;
+    
+    private NodeManager _nodeManager = null!;
+    private ViewManager _viewManager = null!;
+    private LinkManager _linkManager = null!;
+    
     
     private void OnRibbonItemClick(RibbonItemEventArgs args)
     {
         // _selectedRibbonItem = args.Name;
     }
 
-    protected override void OnInitialized()
+    protected override async Task OnParametersSetAsync()
     {
         _logger = LoggerFactory.CreateLogger<DiagramPage>();
         
-        var options = new BlazorDiagramOptions
+        _logger.LogInformation("Diagram page parameters set");
+
+        _view = new DiagramView
         {
-            AllowMultiSelection = true,
-            Zoom = { Enabled = true },
-            Links =
-            {
-                DefaultRouter = new NormalRouter(),
-                DefaultPathGenerator = new SmoothPathGenerator()
-            },
+            Diagram = DiagramManager.CurrentDiagram!
         };
-        Diagram = new BlazorDiagram(options);
-    }
-
-    protected override async Task OnParametersSetAsync()
-    {
-        _diagram = DiagramManager.CurrentDiagram!;
-
-        await PopulateNodes();
         
-        InitializeZoom();
-        InitializePan();
-        Diagram.PointerDoubleClick += OnDiagramDoubleClicked;
-        Diagram.Links.Added += OnLinkAdded;
-        Diagram.Links.Removed += OnLinkRemoved;
+        _viewManager = new ViewManager(_view, _view.Diagram, ChangePusher, LoggerFactory);
+        await _viewManager.Initialize();
+
+        _nodeManager = new NodeManager(_view, _view.Diagram, Client, ChangePusher, LoggerFactory);
+        await _nodeManager.Initialize();
+        
+        _linkManager = new LinkManager(_view, _view.Diagram, Client, ChangePusher, LoggerFactory);
+        await _linkManager.Initialize();
+
         // var firstNode = Diagram.Nodes.Add(new NodeModel(position: new Point(50, 50)) { Title = "Node 1" });
         // var secondNode = Diagram.Nodes.Add(new NodeModel(position: new Point(200, 100)) { Title = "Node 2" });
         // var leftPort = secondNode.AddPort(PortAlignment.Left);
