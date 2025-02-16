@@ -17,8 +17,8 @@ public class WakeUpApi
         _logger.LogInformation("Initialized {FunctionApi}", nameof(WakeUpApi));
     }
     
-    [Function(ApplicationApi.WakeUp.Get.Function)]
-    public async Task<HttpResponseData> Wakeup([HttpTrigger(_authorizationLevel, HttpMethodName.Head, Route = ApplicationApi.WakeUp.Get.Function)] HttpRequestData request)
+    [Function(ApplicationApi.WakeUp.Head.Function)]
+    public async Task<HttpResponseData> Wakeup([HttpTrigger(_authorizationLevel, HttpMethodName.Head, Route = ApplicationApi.WakeUp.Head.Function)] HttpRequestData request)
     {
         try
         {

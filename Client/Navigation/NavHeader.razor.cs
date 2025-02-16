@@ -30,6 +30,8 @@ public partial class NavHeader
     [Inject] private DiagramManager DiagramManager { get; set; } = null!;
     [Inject] private UserManager UserManager { get; set; } = null!;
     
+    private bool _isLoaded;
+    
     protected override async Task OnInitializedAsync()
     {
         await UpdateBreadcrumbs();
@@ -111,6 +113,8 @@ public partial class NavHeader
         {
             _diagramLink = new MarkupString();
         }
+
+        _isLoaded = true;
         StateHasChanged();
     }
 }

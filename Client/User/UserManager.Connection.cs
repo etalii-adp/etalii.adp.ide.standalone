@@ -18,7 +18,7 @@ public partial class UserManager
     {
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Head, ApplicationApi.WakeUp.Get.Request);
+            using var request = new HttpRequestMessage(HttpMethod.Head, ApplicationApi.WakeUp.Head.Request);
             using var response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             return response.IsSuccessStatusCode;
         }
