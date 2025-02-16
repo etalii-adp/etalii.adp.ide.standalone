@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 
 namespace EtAlii.Adp.Client;
 
-public class UserManager
+public partial class UserManager
 {
     public User CurrentUser { get; private set; } = null!;
     public ClaimsPrincipal ClaimsPrincipal { get; private set; } = null!;
@@ -31,6 +31,8 @@ public class UserManager
     {
         if (CurrentUser == null! || _clientPrincipal == null!)
         {
+            await WaitUntilBackedIsResponsive();
+
             var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
             ClaimsPrincipal = authState.User;
 

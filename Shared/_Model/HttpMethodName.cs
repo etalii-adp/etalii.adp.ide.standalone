@@ -26,4 +26,6 @@ public static class HttpMethodName
     /// Use for: Deleting a resource.
     /// </summary>
     public const string Delete = "DELETE";
+    
+    public const string Head = "HEAD";
 }

@@ -18,7 +18,7 @@ public class WakeUpApi
     }
     
     [Function(ApplicationApi.WakeUp.Get.Function)]
-    public async Task<HttpResponseData> Wakeup([HttpTrigger(_authorizationLevel, HttpMethodName.Get, Route = ApplicationApi.WakeUp.Get.Function)] HttpRequestData request)
+    public async Task<HttpResponseData> Wakeup([HttpTrigger(_authorizationLevel, HttpMethodName.Head, Route = ApplicationApi.WakeUp.Get.Function)] HttpRequestData request)
     {
         try
         {
