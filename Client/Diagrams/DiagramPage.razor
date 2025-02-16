@@ -2,7 +2,7 @@
 @page "/user/diagrams/{DiagramTitle}"
 @using Blazor.Diagrams.Components
 @using Blazor.Diagrams.Components.Widgets
-<PageTitle>Ubigia</PageTitle>
+<PageTitle>Ubigia - @_view.Diagram.Name</PageTitle>
 
 <AuthorizeView>
     <Authorized>
@@ -26,8 +26,9 @@
                     </RibbonItemGroup>
                     <RibbonItemGroup Name="Export">
                         <RibbonItem Name="ExportLlm" IconName="IconName.Chat" IconSize="IconSize.x3" IsFirstItem="true" >Export to<br />LLM</RibbonItem>
-                        <RibbonItem Name="ExportJson" IconName="IconName.FileTypeJson" IconSize="IconSize.x3" IsLastItem="true" >Export as<br />JSON</RibbonItem>
-                        <RibbonItem Name="ExportXml" IconName="IconName.FileTypeXml" IconSize="IconSize.x3" IsLastItem="true" >Export as<br />XML</RibbonItem>
+                        <RibbonItem Name="ExportJson" IconName="IconName.FileTypeJson" IconSize="IconSize.x3" >Export as<br />JSON</RibbonItem>
+                        <RibbonItem Name="ExportXml" IconName="IconName.FileTypeXml" IconSize="IconSize.x3" >Export as<br />XML</RibbonItem>
+                        <RibbonItem Name="ExportImage" IconName="IconName.Image" IconSize="IconSize.x3" IsLastItem="true" >Export as<br />Image</RibbonItem>
                     </RibbonItemGroup>
                 </Content>
             </RibbonTab>
