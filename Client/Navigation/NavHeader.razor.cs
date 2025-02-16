@@ -98,8 +98,8 @@ public partial class NavHeader
             : new MarkupString($"<a href=\"/user\">{_userName}</a> /");
 
         _diagramsLink = _selectedPage == SelectedPage.Diagrams
-            ? new MarkupString($"<b><a style=\"color:black\" href=\"/user/diagrams\">Diagrams</a></b>{(DiagramManager.CurrentDiagram != null ? " / " : "")}")
-            : new MarkupString($"<a href=\"/user/diagrams\">Diagrams</a>{(DiagramManager.CurrentDiagram != null ? " / " : "")}");
+            ? new MarkupString($"<b><a style=\"color:black\" href=\"/user/diagrams\">Diagrams</a></b>")
+            : new MarkupString($"<a href=\"/user/diagrams\">Diagrams</a>{(_selectedPage == SelectedPage.Diagram ? " / " : "")}");
 
         if (DiagramManager.CurrentDiagram != null!)
         {
