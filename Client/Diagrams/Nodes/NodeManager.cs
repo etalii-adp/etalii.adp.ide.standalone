@@ -1,5 +1,4 @@
-﻿using System.Net.Http.Json;
-using Blazor.Diagrams.Core.Events;
+﻿using Blazor.Diagrams.Core.Events;
 using Blazor.Diagrams.Core.Geometry;
 using Blazor.Diagrams.Core.Models.Base;
 
@@ -9,18 +8,16 @@ public class NodeManager
 {
     private readonly DiagramView _view;
     private readonly Diagram _diagram;
-    private readonly HttpClient _client;
     private readonly ChangePusher _changePusher;
     private readonly ILogger _logger;
 
     public NodeManager(
-        DiagramView view, Diagram diagram, HttpClient client,
+        DiagramView view, Diagram diagram,
         ChangePusher changePusher, ILoggerFactory loggerFactory)
     {
         _logger = loggerFactory.CreateLogger<NodeManager>();
         _view = view;
         _diagram = diagram;
-        _client = client;
         _changePusher = changePusher;
     }
 
@@ -28,15 +25,15 @@ public class NodeManager
     {
         _logger.LogInformation("Initializing node management");
 
-        var diagram = (await _client.GetFromJsonAsync<Diagram>(ApplicationApi.Diagram.Content.Request(_diagram.Id)))!;
-        foreach (var n in diagram.Nodes)
+        foreach (var n in _diagram.Nodes)
         {
-            var node = Node.Create(new Point(n.Position.X, n.Position.Y), n.Id);
-            node.Moved += OnNodeMoved;
-            _diagram.Nodes.Add(n);
-            _view.Nodes.Add(node);
+            var nodeView = NodeView.Create(new Point(n.Position.X, n.Position.Y), n.Id);
+            nodeView.Moved += OnNodeMoved;
+            _view.Nodes.Add(nodeView);
         }
         _view.PointerDoubleClick += OnDiagramDoubleClicked;
+
+        await Task.CompletedTask;
     }
     
 
@@ -45,11 +42,11 @@ public class NodeManager
     {
         try
         {
-            var node = (Node)model;
+            var nodeView = (NodeView)model;
             
-            _logger.LogInformation("Moving node {NodeIdentifier} to {NodePosition}", node.Id, node.Position);
+            _logger.LogInformation("Moving node {NodeIdentifier} to {NodePosition}", nodeView.Id, nodeView.Position);
 
-            var change = NodeMoveChange.Apply(_diagram, node.Id, new NodePosition { X = model.Position.X, Y = model.Position.Y });
+            var change = NodeMoveChange.Apply(_diagram, nodeView.Id, new NodePosition { X = model.Position.X, Y = model.Position.Y });
             await _changePusher.Enqueue(change);
         }
         catch (Exception exception)
@@ -64,13 +61,13 @@ public class NodeManager
         {
             var point = _view.GetRelativeMousePoint(e.ClientX, e.ClientY);
             
-            var node = Node.Create(point, NodeIdentifier.NewIdentifier());
+            var nodeView = NodeView.Create(point, NodeIdentifier.NewIdentifier());
             
-            _logger.LogInformation("Double clicked diagram - adding node {NodeIdentifier} on {NodePosition}", node.Id, node.Position);
+            _logger.LogInformation("Double clicked diagram - adding node {NodeIdentifier} on {NodePosition}", nodeView.Id, nodeView.Position);
 
-            _view.Nodes.Add(node);
+            _view.Nodes.Add(nodeView);
         
-            var change = NodeAddChange.Apply(_diagram, node.Position, node.Id);
+            var change = NodeAddChange.Apply(_diagram, nodeView.Position, nodeView.Id);
             await _changePusher.Enqueue(change);
         }
         catch (Exception exception)

@@ -90,6 +90,11 @@ public class AdpDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
 
+            builder
+                .HasMany(e => e.Links)
+                .WithOne(e => e.Diagram)
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
         });
         
         // Nodes.
@@ -117,13 +122,15 @@ public class AdpDbContext : DbContext
 
             builder
                 .HasMany(e => e.OutboundLinks)
-                .WithOne(e => e.Start)
+                .WithOne(e => e.StartNode)
+                .IsRequired()
                 .OnDelete(DeleteBehavior.NoAction)
                 .IsRequired();
 
             builder
                 .HasMany(e => e.InboundLinks)
-                .WithOne(e => e.End)
+                .WithOne(e => e.EndNode)
+                .IsRequired()
                 .OnDelete(DeleteBehavior.NoAction)
                 .IsRequired();
         });
@@ -136,6 +143,13 @@ public class AdpDbContext : DbContext
                 .Property(e => e.Id)
                 .IsRequired();
 
+            builder
+                .Property(e => e.StartPort)
+                .IsRequired();
+
+            builder
+                .Property(e => e.EndPort)
+                .IsRequired();
         });
 
     }

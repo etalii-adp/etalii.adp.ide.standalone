@@ -17,6 +17,7 @@ var host = builder
         services.AddSingleton<IChangeHandler, MapPositionChangeHandler>();
         services.AddSingleton<IChangeHandler, NodeAddChangeHandler>();
         services.AddSingleton<IChangeHandler, NodeMoveChangeHandler>();
+        services.AddSingleton<IChangeHandler, LinkAddChangeHandler>();
     })
     .Build();
 

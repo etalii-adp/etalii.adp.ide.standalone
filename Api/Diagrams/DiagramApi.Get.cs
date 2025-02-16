@@ -43,10 +43,21 @@ public class DiagramApi
 
             var diagram = await context.Diagrams
                 .Include(d => d.Nodes)
+                .Include(d => d.Links)
                 .SingleAsync(d => d.Id == (DiagramIdentifier)id);
 
-            // Clear the nodes diagram so that no circular dependencies are serialized.
+            // Clear the nodes and links diagram property so that no circular dependencies are serialized.
             foreach (var node in diagram.Nodes) node.Diagram = null!;
+            foreach (var link in diagram.Links)
+            {
+                link.StartNode.Diagram = null!;
+                link.StartNode.InboundLinks.Clear();
+                link.StartNode.OutboundLinks.Clear();
+                link.EndNode.Diagram = null!;
+                link.EndNode.InboundLinks.Clear();
+                link.EndNode.OutboundLinks.Clear();
+                link.Diagram = null!;
+            }
 
             // Respond.
             var response = request.CreateResponse(HttpStatusCode.OK);

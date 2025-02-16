@@ -6,6 +6,7 @@ namespace EtAlii.Adp;
 [JsonDerivedType(typeof(DiagramZoomChange), typeDiscriminator: nameof(DiagramZoomChange))]
 [JsonDerivedType(typeof(NodeAddChange), typeDiscriminator: nameof(NodeAddChange))]
 [JsonDerivedType(typeof(NodeMoveChange), typeDiscriminator: nameof(NodeMoveChange))]
+[JsonDerivedType(typeof(LinkAddChange), typeDiscriminator: nameof(LinkAddChange))]
 public abstract class Change
 {
 }

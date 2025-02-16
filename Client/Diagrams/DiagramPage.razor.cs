@@ -1,4 +1,5 @@
-﻿using BlazorBootstrap;
+﻿using System.Net.Http.Json;
+using BlazorBootstrap;
 using Microsoft.AspNetCore.Components;
 
 namespace EtAlii.Adp.Client;
@@ -41,13 +42,16 @@ public partial class DiagramPage
             Diagram = DiagramManager.CurrentDiagram!
         };
         
+        var updatedDiagram = (await Client.GetFromJsonAsync<Diagram>(ApplicationApi.Diagram.Content.Request(_view.Diagram.Id)))!;
+        _view.Diagram.Update(updatedDiagram);
+        
         _viewManager = new ViewManager(_view, _view.Diagram, ChangePusher, LoggerFactory);
         await _viewManager.Initialize();
 
-        _nodeManager = new NodeManager(_view, _view.Diagram, Client, ChangePusher, LoggerFactory);
+        _nodeManager = new NodeManager(_view, _view.Diagram, ChangePusher, LoggerFactory);
         await _nodeManager.Initialize();
         
-        _linkManager = new LinkManager(_view, _view.Diagram, Client, ChangePusher, LoggerFactory);
+        _linkManager = new LinkManager(_view, _view.Diagram, ChangePusher, LoggerFactory);
         await _linkManager.Initialize();
 
         // var firstNode = Diagram.Nodes.Add(new NodeModel(position: new Point(50, 50)) { Title = "Node 1" });
