@@ -15,6 +15,7 @@ public class DiagramView : BlazorDiagram
         Zoom = { Enabled = true },
         Links =
         {
+            EnableSnapping = true,
             DefaultRouter = new NormalRouter(),
             DefaultPathGenerator = new SmoothPathGenerator()
         },
@@ -23,6 +24,6 @@ public class DiagramView : BlazorDiagram
     public DiagramView()
         : base(Options)
     {
-        
+        RegisterComponent<NodeView, NodeWidget>();
     }
 }

@@ -1,0 +1,46 @@
+﻿.default-node {
+    width: fit-content;
+}
+
+div > h5 {
+    min-width: 100px; 
+    text-align: center;
+    margin: 0 25px;
+}
+
+::deep .node-text-input {
+    margin-left: 25px; 
+    margin-right: 25px; 
+    width: fit-content; 
+    min-width: 100px; 
+    text-align: center;
+    font-size: 1.25rem;
+}
+
+/*div > input[type=number] {*/
+/*    padding: 3px;*/
+/*    border-radius: 3px;*/
+/*    border: 1px solid black;*/
+/*    margin-bottom: 8px;*/
+/*}*/
+
+/*::deep .diagram-port {*/
+/*    position: absolute;*/
+/*    width: 30px;*/
+/*    height: 20px;*/
+/*    background-color: black;*/
+/*    left: 50%;*/
+/*    transform: translate(-50%, -50%);*/
+/*}*/
+
+/*::deep .diagram-port.top {*/
+/*    border-top-left-radius: 50%;*/
+/*    border-top-right-radius: 50%;*/
+/*    top: -10px;*/
+/*}*/
+
+/*::deep .diagram-port.bottom {*/
+/*    border-bottom-left-radius: 50%;*/
+/*    border-bottom-right-radius: 50%;*/
+/*    bottom: -30px;*/
+/*}*/

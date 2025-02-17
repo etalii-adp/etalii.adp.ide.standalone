@@ -1,5 +1,4 @@
 ﻿using Blazor.Diagrams.Core.Events;
-using Blazor.Diagrams.Core.Geometry;
 using Blazor.Diagrams.Core.Models.Base;
 
 namespace EtAlii.Adp.Client;
@@ -27,7 +26,7 @@ public class NodeManager
 
         foreach (var n in _diagram.Nodes)
         {
-            var nodeView = NodeView.Create(new Point(n.Position.X, n.Position.Y), n.Id);
+            var nodeView = NodeView.Create(n);
             nodeView.Moved += OnNodeMoved;
             _view.Nodes.Add(nodeView);
         }
@@ -59,6 +58,8 @@ public class NodeManager
     {
         try
         {
+            if (model is not null) return;
+            
             var point = _view.GetRelativeMousePoint(e.ClientX, e.ClientY);
             
             var nodeView = NodeView.Create(point, NodeIdentifier.NewIdentifier());
