@@ -63,7 +63,7 @@ public class LinkManager
     private void OnLinkRemoved(BaseLinkModel linkView)
     {
         linkView.TargetAttached -= OnLinkCompleted;
-        _logger.LogInformation("Link removed: {Source} to {Target}", linkView.Source?.ToString() ?? "NONE", linkView.Target?.ToString() ?? "NONE");
+        _logger.LogInformation("Link removed: {Source} to {Target}", linkView.Source.ToString(), linkView.Target.ToString());
     }
 
     private async void OnLinkCompleted(BaseLinkModel linkView)
