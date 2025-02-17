@@ -6,6 +6,7 @@ namespace EtAlii.Adp
     {
         public required NodeIdentifier Id { get; init; }
 
+        public string Name { get; set; } = string.Empty;
         public Diagram Diagram { get; set; } = null!;
 
         public NodePosition Position

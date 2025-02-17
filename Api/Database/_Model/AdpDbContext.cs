@@ -105,9 +105,9 @@ public class AdpDbContext : DbContext
                 .Property(e => e.Id)
                 .IsRequired();
 
-            // builder
-            //     .Property(e => e.Name)
-            //     .IsRequired();
+            builder
+                .Property(e => e.Name)
+                .IsRequired();
 
             builder
                 .Ignore(e => e.Position);
