@@ -1,15 +1,16 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using BlazorBootstrap;
+using Microsoft.AspNetCore.Components;
 
 namespace EtAlii.Adp.Client;
 
 public partial class NodeWidget
 {
     [Parameter] public NodeView Node { get; set; } = null!;
-
-    // [Inject] private ChangePusher ChangePusher { get; set; } = null!;
     
     private string _nodeName = string.Empty;
     private bool _isEditing;
+
+    private TextInput _textInput = null!;
 
     protected override void OnParametersSet()
     {
@@ -25,14 +26,10 @@ public partial class NodeWidget
     private async Task OnEndNameEdit()
     {
         _isEditing = false;
+        var oldName = Node.Name;
         Node.Name = _nodeName;
-        
         StateHasChanged();
-        
-        // NodeRenameChange.Apply()
-        // var change = NodeAddChange.Apply(_diagram, nodeView.Position, nodeView.Id);
-        // await ChangePusher.Enqueue(change);
 
-        await Task.CompletedTask;
+        await Node.NodeManager.RenameNode(Node, oldName, _nodeName);
     }
 }

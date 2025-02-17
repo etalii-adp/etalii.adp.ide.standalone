@@ -7,25 +7,28 @@ public class NodeView : NodeModel
 {
     public string Name { get; set; } = string.Empty;
     public new NodeIdentifier Id { get; }
-    public new NodePosition Position => new NodePosition { X = base.Position.X, Y = base.Position.Y };
+    public new NodePosition Position => new() { X = base.Position.X, Y = base.Position.Y };
 
-    private NodeView(NodeIdentifier id, Point position)
+    public NodeManager NodeManager { get; }
+    
+    private NodeView(NodeIdentifier id, Point position, NodeManager nodeManager)
         : base(id.ToString(), position)
     {
         Id = id;
+        NodeManager = nodeManager;
     }
 
-    public static NodeView Create(Node node)
+    public static NodeView Create(NodeManager nodeManager, Node node)
     {
         var position = new Point(node.Position.X, node.Position.Y);
-        var view = Create(position, node.Id);
+        var view = Create(nodeManager, position, node.Id);
         view.Name = node.Name;
         return view;
     }
 
-    public static NodeView Create(Point position, NodeIdentifier id)
+    public static NodeView Create(NodeManager nodeManager, Point position, NodeIdentifier id)
     {
-        var node = new NodeView(id, position)
+        var node = new NodeView(id, position, nodeManager)
         {
             Name = "New element",
         };

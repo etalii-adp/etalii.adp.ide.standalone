@@ -7,11 +7,10 @@ public class NodeRenameChange : Change
     public required string NewName { get; init; }
     public required string OldName { get; init; }
     
-    public static Change Apply(Diagram diagram, NodeIdentifier nodeId, string newName)
+    public static Change Apply(Diagram diagram, NodeIdentifier nodeId, string oldName, string newName)
     {
         var node = diagram.Nodes.Single(n => n.Id == nodeId);
         
-        var oldName = node.Name;
         node.Name = newName;
         
         return new NodeRenameChange

@@ -26,7 +26,7 @@ public class NodeManager
 
         foreach (var n in _diagram.Nodes)
         {
-            var nodeView = NodeView.Create(n);
+            var nodeView = NodeView.Create(this, n);
             nodeView.Moved += OnNodeMoved;
             _view.Nodes.Add(nodeView);
         }
@@ -62,7 +62,7 @@ public class NodeManager
             
             var point = _view.GetRelativeMousePoint(e.ClientX, e.ClientY);
             
-            var nodeView = NodeView.Create(point, NodeIdentifier.NewIdentifier());
+            var nodeView = NodeView.Create(this, point, NodeIdentifier.NewIdentifier());
             
             _logger.LogInformation("Double clicked diagram - adding node {NodeIdentifier} on {NodePosition}", nodeView.Id, nodeView.Position);
 
@@ -74,6 +74,21 @@ public class NodeManager
         catch (Exception exception)
         {
             _logger.LogError(exception, "Unable to handle {MethodName}", nameof(OnDiagramDoubleClicked));
+        }
+    }
+
+    public async Task RenameNode(NodeView nodeView, string oldName, string newName)
+    {
+        try
+        {
+            _logger.LogInformation("Renaming node {NodeIdentifier} from {OldName} to {NewName}", nodeView.Id, oldName, newName);
+
+            var change = NodeRenameChange.Apply(_diagram, nodeView.Id, oldName, newName);
+            await _changePusher.Enqueue(change);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "Unable to handle {MethodName}", nameof(RenameNode));
         }
     }
 }
