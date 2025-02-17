@@ -1,5 +1,4 @@
-﻿using BlazorBootstrap;
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 
 namespace EtAlii.Adp.Client;
 
@@ -9,8 +8,6 @@ public partial class NodeWidget
     
     private string _nodeName = string.Empty;
     private bool _isEditing;
-
-    private TextInput _textInput = null!;
 
     protected override void OnParametersSet()
     {
