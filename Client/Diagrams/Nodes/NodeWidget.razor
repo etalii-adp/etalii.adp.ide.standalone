@@ -8,7 +8,7 @@
     }
     else
     {
-        <TextInput class="node-text-input" @onblur="OnEndNameEdit" @bind-Value="@_nodeName" />
+        <TextInput @ref="_textInput" class="node-text-input" @onblur="OnEndNameEdit" @bind-Value="@_nodeName" />
     }
     
     @foreach (var port in Node.Ports)
