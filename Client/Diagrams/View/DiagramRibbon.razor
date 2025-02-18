@@ -1,0 +1,71 @@
+﻿@namespace EtAlii.Adp.Client
+
+<div class="editor-ribbon"></div>
+<Ribbon OnClick="OnRibbonItemClick" Style="margin-top: -18px; margin-left: 10px;">
+    <RibbonTab Title="Home" Active="true">
+        <Content>
+            <!-- New -->
+            <RibbonItemGroup Name="New">
+                <RibbonItem Name="NewEmail" IconName="IconName.EnvelopePlus" IconSize="IconSize.x3">New<br/>Email</RibbonItem>
+                <RibbonItem Name="Appointment" IconName="IconName.Calendar3Event" IconSize="IconSize.x3"/>
+            </RibbonItemGroup>
+            <!-- Delete -->
+            <RibbonItemGroup Name="Delete">
+                <RibbonItem @ref="_deleteButton" Class="@(_canDelete ? "" : "disabled-ribbon-button")" Name="Delete" IconColor="IconColor.Danger" IconName="IconName.Trash" IconSize="IconSize.x3">Remove</RibbonItem>
+                <RibbonItem Name="Archive" IconColor="IconColor.Primary" IconName="IconName.Archive" IconSize="IconSize.x3">Archive</RibbonItem>
+            </RibbonItemGroup>
+            <RibbonItemGroup Name="Undo / Redo">
+                <RibbonItem Name="Undo" IconName="IconName.ArrowCounterclockwise" IconSize="IconSize.x3">Undo</RibbonItem>
+                <RibbonItem Name="Redo" IconName="IconName.ArrowClockwise" IconSize="IconSize.x3">Redo</RibbonItem>
+            </RibbonItemGroup>
+            <RibbonItemGroup Name="Grouping">
+                <RibbonItem Name="Group" IconName="IconName.FolderPlus" IconSize="IconSize.x3">Group</RibbonItem>
+                <RibbonItem Name="Ungroup" IconName="IconName.FolderMinus" IconSize="IconSize.x3">Ungroup</RibbonItem>
+            </RibbonItemGroup>
+            <RibbonItemGroup Name="Alignment">
+                <RibbonItem Name="AlignTop" IconName="IconName.AlignTop" IconSize="IconSize.x3">Align<br/>top</RibbonItem>
+                <RibbonItem Name="AlignBottom" IconName="IconName.AlignBottom" IconSize="IconSize.x3">Align<br/>bottom</RibbonItem>
+                <RibbonItem Name="AlignLeft" IconName="IconName.AlignStart" IconSize="IconSize.x3">Align<br/>left</RibbonItem>
+                <RibbonItem Name="AlignRight" IconName="IconName.AlignEnd" IconSize="IconSize.x3">Align<br/>right</RibbonItem>
+            </RibbonItemGroup>
+            <RibbonItemGroup Name="Export">
+                <RibbonItem Name="ExportLlm" IconName="IconName.Chat" IconSize="IconSize.x3">Export to<br/>LLM</RibbonItem>
+                <RibbonItem Name="ExportJson" IconName="IconName.FileTypeJson" IconSize="IconSize.x3">Export as<br/>JSON</RibbonItem>
+                <RibbonItem Name="ExportXml" IconName="IconName.FileTypeXml" IconSize="IconSize.x3">Export as<br/>XML</RibbonItem>
+                <RibbonItem Name="ExportImage" IconName="IconName.Image" IconSize="IconSize.x3">Export as<br/>Image</RibbonItem>
+                <RibbonItem Name="ExportAzure" IconName="IconName.Microsoft" IconSize="IconSize.x3">Export to<br/>Azure DevOps</RibbonItem>
+                <RibbonItem Name="ImportAzure" IconName="IconName.Microsoft" IconSize="IconSize.x3">Import from <br/>Azure DevOps</RibbonItem>
+            </RibbonItemGroup>
+        </Content>
+    </RibbonTab>
+    <RibbonTab Title="Send / Receive">
+        <Content>
+            <!-- Send & Receive -->
+            <RibbonItemGroup Name="Send & Receive">
+                <RibbonItem Name="SendReceiveAllFolders" IconColor="IconColor.Success" IconName="IconName.EnvelopePlus" IconSize="IconSize.x3">Send/Receive<br/>All Folders</RibbonItem>
+                <RibbonItem Name="UpdateFolder" IconColor="IconColor.Primary" IconName="IconName.Calendar3Event" IconSize="IconSize.x3">Update<br/>Folder</RibbonItem>
+            </RibbonItemGroup>
+            <!-- Download -->
+            <RibbonItemGroup Name="Download">
+                <RibbonItem Name="ShowProgress" IconColor="IconColor.Success" IconName="IconName.Trash" IconSize="IconSize.x3">Show<br/>Progress</RibbonItem>
+                <RibbonItem Name="CancelAll" IconColor="IconColor.Primary" IconName="IconName.XSquareFill" IconSize="IconSize.x3">Cancel<br/>All</RibbonItem>
+            </RibbonItemGroup>
+        </Content>
+    </RibbonTab>
+    <RibbonTab Title="Folder">
+        <Content>
+            <!-- New -->
+            <RibbonItemGroup Name="New">
+                <RibbonItem Name="NewFolder" IconColor="IconColor.Success" IconName="IconName.FolderPlus" IconSize="IconSize.x3">New<br/>Folder</RibbonItem>
+                <RibbonItem Name="NewSearchFolder" IconColor="IconColor.Primary" IconName="IconName.Search" IconSize="IconSize.x3">New<br/>Search Folder</RibbonItem>
+            </RibbonItemGroup>
+            <!-- Actions -->
+            <RibbonItemGroup Name="Actions">
+                <RibbonItem Name="RenameFolder" IconColor="IconColor.Success" IconName="IconName.CursorText" IconSize="IconSize.x3">Rename<br/>Folder</RibbonItem>
+                <RibbonItem Name="CopyFolder" IconColor="IconColor.Primary" IconName="IconName.Copy" IconSize="IconSize.x3">Copy<br/>Folder</RibbonItem>
+                <RibbonItem Name="MoveFolder" IconColor="IconColor.Primary" IconName="IconName.ArrowRight" IconSize="IconSize.x3">Move<br/>Folder</RibbonItem>
+                <RibbonItem Name="DeleteFolder" IconColor="IconColor.Primary" IconName="IconName.FolderX" IconSize="IconSize.x3">Delete<br/>Folder</RibbonItem>
+            </RibbonItemGroup>
+        </Content>
+    </RibbonTab>
+</Ribbon>

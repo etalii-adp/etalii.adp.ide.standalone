@@ -1,5 +1,4 @@
 ﻿using System.Net.Http.Json;
-using BlazorBootstrap;
 using Microsoft.AspNetCore.Components;
 
 namespace EtAlii.Adp.Client;
@@ -10,7 +9,6 @@ public partial class DiagramPage
     
     private DiagramView _view = null!;
 
-    // private string? _selectedRibbonItem;
     [Inject] private ILoggerFactory LoggerFactory { get; set; } = null!;
 
     [Inject] private HttpClient Client { get; set; } = null!;
@@ -24,12 +22,6 @@ public partial class DiagramPage
     private NodeManager _nodeManager = null!;
     private ViewManager _viewManager = null!;
     private LinkManager _linkManager = null!;
-    
-    
-    private void OnRibbonItemClick(RibbonItemEventArgs args)
-    {
-        // _selectedRibbonItem = args.Name;
-    }
 
     protected override async Task OnParametersSetAsync()
     {
