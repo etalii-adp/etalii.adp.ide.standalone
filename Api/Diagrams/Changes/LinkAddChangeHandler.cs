@@ -28,10 +28,10 @@ public class LinkAddChangeHandler : ChangeHandler<LinkAddChange>
         {
             Diagram = diagram,
             Id = linkId,
-            StartNode = sourceNode,
-            StartPort = sourcePort,
-            EndNode = targetNode,
-            EndPort = targetPort,
+            SourceNode = sourceNode,
+            SourcePort = sourcePort,
+            TargetNode = targetNode,
+            TargetPort = targetPort,
         };
         diagram.Links.Add(link);
         

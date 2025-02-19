@@ -30,21 +30,21 @@ public class LinkManager
         {
             var sourceNode = _view.Nodes
                 .Cast<NodeView>()
-                .Single(n => n.Id == l.StartNode.Id);
+                .Single(n => n.Id == l.SourceNode.Id);
 
             var sourcePort = sourceNode.Ports
                 .Cast<PortView>()
-                .Single(p => p.Id == l.StartPort);
+                .Single(p => p.Id == l.SourcePort);
 
-            var endNode = _view.Nodes
+            var targetNode = _view.Nodes
                 .Cast<NodeView>()
-                .Single(n => n.Id == l.EndNode.Id);
+                .Single(n => n.Id == l.TargetNode.Id);
 
-            var endPort = endNode.Ports
+            var targetPort = targetNode.Ports
                 .Cast<PortView>()
-                .Single(p => p.Id == l.EndPort);
+                .Single(p => p.Id == l.TargetPort);
             
-            _view.Links.Add(new LinkView(l.Id, sourcePort, endPort));
+            _view.Links.Add(new LinkView(l.Id, sourcePort, targetPort));
         }
         
         _view.Links.Added += OnLinkAdded;
