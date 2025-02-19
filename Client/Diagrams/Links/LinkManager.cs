@@ -44,7 +44,7 @@ public class LinkManager
                 .Cast<PortView>()
                 .Single(p => p.Id == l.EndPort);
             
-            _view.Links.Add(new LinkView(l.Id, l.StartNode.Id, l.EndNode.Id, sourcePort, endPort));
+            _view.Links.Add(new LinkView(l.Id, sourcePort, endPort));
         }
         
         _view.Links.Added += OnLinkAdded;
@@ -65,20 +65,19 @@ public class LinkManager
         _logger.LogInformation("Link removed: {Source} to {Target}", linkView.Source.ToString(), linkView.Target.ToString());
     }
 
-    private async void OnLinkCompleted(BaseLinkModel linkView)
+    private async void OnLinkCompleted(BaseLinkModel link)
     {
         try
         {
+            var linkView = (LinkView)link;
             linkView.TargetAttached -= OnLinkCompleted;
             _logger.LogInformation("Link add completed: {Source} to {Target}", linkView.Source.ToString(), linkView.Target.ToString());
             
             var source = (PortView)((SinglePortAnchor)linkView.Source).Port;
             var target = (PortView)((SinglePortAnchor)linkView.Target).Port;
 
-            var linkId = LinkIdentifier.NewIdentifier();
-            ((LinkView)linkView).Initialize(linkId, source.NodeIdentifier, target.NodeIdentifier);
             var change = LinkAddChange.Apply(_diagram,
-                linkId, 
+                linkView.Id, 
                 source.NodeIdentifier, source.Id, 
                 target.NodeIdentifier, target.Id);
             
