@@ -1,4 +1,5 @@
 ﻿using Blazor.Diagrams;
+using Blazor.Diagrams.Components;
 using Blazor.Diagrams.Core.PathGenerators;
 using Blazor.Diagrams.Core.Routers;
 using Blazor.Diagrams.Options;
@@ -25,5 +26,6 @@ public class DiagramView : BlazorDiagram
         : base(Options)
     {
         RegisterComponent<NodeView, NodeWidget>();
+        RegisterComponent<LinkView, LinkWidget>();
     }
 }

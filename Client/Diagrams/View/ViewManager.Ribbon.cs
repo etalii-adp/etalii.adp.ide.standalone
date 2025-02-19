@@ -9,14 +9,22 @@ public partial class ViewManager
         _ribbon.UpdateBasedOnSelection(_view.GetSelectedModels().ToArray());
     }
 
-    private void HandleCommand(string commandName)
+    private async void HandleCommand(string commandName)
     {
-        var selection = _view
-            .GetSelectedModels()
-            .ToArray();
-        var handler = _commandHandlers.Single(ch => ch.CommandName == commandName);
-        handler.Execute(selection);
-    }
+        try
+        {
+            _logger.LogInformation("Handling command{CommandName}", commandName);
 
+            var selection = _view
+                .GetSelectedModels()
+                .ToArray();
+            var handler = _commandHandlers.Single(ch => ch.CommandName == commandName);
+            await handler.Execute(selection);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "Unable to handle {MethodName}", nameof(HandleCommand));
+        }
+    }
 }
     

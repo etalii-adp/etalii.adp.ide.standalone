@@ -13,12 +13,15 @@ var host = builder
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
 
+        services.AddSingleton<LinkAddChangeHandler>();
+
         services.AddSingleton<IChangeHandler, MapZoomChangeHandler>();
         services.AddSingleton<IChangeHandler, MapPositionChangeHandler>();
         services.AddSingleton<IChangeHandler, NodeAddChangeHandler>();
         services.AddSingleton<IChangeHandler, NodeMoveChangeHandler>();
         services.AddSingleton<IChangeHandler, LinkAddChangeHandler>();
         services.AddSingleton<IChangeHandler, NodeRenameChangeHandler>();
+        services.AddSingleton<IChangeHandler, LinkRemoveChangeHandler>();
     })
     .Build();
 

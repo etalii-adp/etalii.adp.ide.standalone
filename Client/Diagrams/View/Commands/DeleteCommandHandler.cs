@@ -1,4 +1,4 @@
-﻿using Blazor.Diagrams.Core.Models;
+﻿using Blazor.Diagrams.Core.Anchors;
 using Blazor.Diagrams.Core.Models.Base;
 
 namespace EtAlii.Adp.Client;
@@ -19,15 +19,15 @@ public class DeleteCommandHandler : ICommandHandler
 
     public string CommandName => Cn.Delete;
 
-    public void Execute(SelectableModel[] selection)
+    public async Task Execute(SelectableModel[] selection)
     {
         var links = selection
-            .OfType<LinkModel>()
+            .OfType<LinkView>()
             .ToArray();
 
         foreach (var link in links)
         {
-            RemoveLink(link);
+            await RemoveLink(link);
         }
         
         var nodes = selection
@@ -36,17 +36,31 @@ public class DeleteCommandHandler : ICommandHandler
 
         foreach (var node in nodes)
         {
-            RemoveNode(node);
+            await RemoveNode(node);
         }
     }
 
-    private void RemoveNode(NodeView node)
+    private async Task RemoveNode(NodeView node)
     {
-        //_changePusher.Enqueue()
+        foreach (var link in node.Links.OfType<LinkView>())
+        {
+            await RemoveLink(link);
+        }
+        
+        await Task.CompletedTask;
+        // await _changePusher.Enqueue(node);
+        
+        _view.Nodes.Remove(node);
     }
 
-    private void RemoveLink(LinkModel link)
+    private async Task RemoveLink(LinkView link)
     {
-        //_changePusher.Enqueue()
+        var source = (PortView)((SinglePortAnchor)link.Source).Port;
+        var target = (PortView)((SinglePortAnchor)link.Target).Port;
+
+        var change = LinkRemoveChange.Apply(_diagram, link.Id, link.SourceNodeId, source.Id, link.TargetNodeId, target.Id);
+        await _changePusher.Enqueue(change);
+        
+        _view.Links.Remove(link);
     }
 }

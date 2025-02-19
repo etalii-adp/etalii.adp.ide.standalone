@@ -1,5 +1,4 @@
 ﻿using Blazor.Diagrams.Core.Anchors;
-using Blazor.Diagrams.Core.Models;
 using Blazor.Diagrams.Core.Models.Base;
 
 namespace EtAlii.Adp.Client;
@@ -45,7 +44,7 @@ public class LinkManager
                 .Cast<PortView>()
                 .Single(p => p.Id == l.EndPort);
             
-            _view.Links.Add(new LinkModel(sourcePort, endPort));
+            _view.Links.Add(new LinkView(l.Id, l.StartNode.Id, l.EndNode.Id, sourcePort, endPort));
         }
         
         _view.Links.Added += OnLinkAdded;
@@ -75,9 +74,11 @@ public class LinkManager
             
             var source = (PortView)((SinglePortAnchor)linkView.Source).Port;
             var target = (PortView)((SinglePortAnchor)linkView.Target).Port;
-            
+
+            var linkId = LinkIdentifier.NewIdentifier();
+            ((LinkView)linkView).Initialize(linkId, source.NodeIdentifier, target.NodeIdentifier);
             var change = LinkAddChange.Apply(_diagram,
-                LinkIdentifier.NewIdentifier(), 
+                linkId, 
                 source.NodeIdentifier, source.Id, 
                 target.NodeIdentifier, target.Id);
             
