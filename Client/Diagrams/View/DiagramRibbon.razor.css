@@ -5,9 +5,3 @@
     padding-right: 0.5rem !important;
     margin-top: -12px;
 }
-
-::deep .disabled-ribbon-button {
-    pointer-events: none; /* Prevent clicks, hovers, etc. */
-    opacity: 0.5; /* Make it look disabled */
-    user-select: none;
-}

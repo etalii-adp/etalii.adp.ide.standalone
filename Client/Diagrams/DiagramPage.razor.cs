@@ -22,6 +22,7 @@ public partial class DiagramPage
     private NodeManager _nodeManager = null!;
     private ViewManager _viewManager = null!;
     private LinkManager _linkManager = null!;
+    private DiagramRibbon _ribbon = null!;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -37,7 +38,7 @@ public partial class DiagramPage
         var updatedDiagram = (await Client.GetFromJsonAsync<Diagram>(ApplicationApi.Diagram.Content.Request(_view.Diagram.Id)))!;
         _view.Diagram.Update(updatedDiagram);
         
-        _viewManager = new ViewManager(_view, _view.Diagram, ChangePusher, LoggerFactory);
+        _viewManager = new ViewManager(_view, _view.Diagram, _ribbon, ChangePusher, LoggerFactory);
         await _viewManager.Initialize();
 
         _nodeManager = new NodeManager(_view, _view.Diagram, ChangePusher, LoggerFactory);

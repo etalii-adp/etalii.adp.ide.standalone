@@ -8,6 +8,7 @@ namespace EtAlii.Adp;
 [JsonDerivedType(typeof(NodeMoveChange), typeDiscriminator: nameof(NodeMoveChange))]
 [JsonDerivedType(typeof(NodeRenameChange), typeDiscriminator: nameof(NodeRenameChange))]
 [JsonDerivedType(typeof(LinkAddChange), typeDiscriminator: nameof(LinkAddChange))]
+[JsonDerivedType(typeof(LinkRemoveChange), typeDiscriminator: nameof(LinkRemoveChange))]
 public abstract class Change
 {
 }

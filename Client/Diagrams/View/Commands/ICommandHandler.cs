@@ -1,0 +1,7 @@
+﻿namespace EtAlii.Adp.Client;
+
+public interface ICommandHandler
+{
+    string CommandName { get; }
+    void Execute();
+}
