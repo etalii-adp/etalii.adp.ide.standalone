@@ -1,6 +1,4 @@
-﻿using Blazor.Diagrams.Core.Models.Base;
-
-namespace EtAlii.Adp.Client;
+﻿namespace EtAlii.Adp.Client;
 
 public partial class ViewManager
 {
@@ -32,11 +30,6 @@ public partial class ViewManager
         ];
     }
 
-    private void OnSelectionChanged(SelectableModel obj)
-    {
-        _ribbon.UpdateBasedOnSelection(_view.GetSelectedModels().ToArray());
-    }
-
     public async Task Initialize()
     {
         _logger.LogInformation("Initializing view management");
@@ -44,12 +37,6 @@ public partial class ViewManager
         InitializeZoom();
         
         await Task.CompletedTask;
-    }
-
-    private void HandleCommand(string commandName)
-    {
-        var handler = _commandHandlers.Single(ch => ch.CommandName == commandName);
-        handler.Execute();
     }
 }
     

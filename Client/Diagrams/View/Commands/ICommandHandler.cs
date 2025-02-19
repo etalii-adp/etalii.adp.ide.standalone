@@ -1,7 +1,9 @@
-﻿namespace EtAlii.Adp.Client;
+﻿using Blazor.Diagrams.Core.Models.Base;
+
+namespace EtAlii.Adp.Client;
 
 public interface ICommandHandler
 {
     string CommandName { get; }
-    void Execute();
+    void Execute(SelectableModel[] selection);
 }

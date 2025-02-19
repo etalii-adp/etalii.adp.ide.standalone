@@ -27,8 +27,8 @@
                 <RibbonItem Name="@CommandName.Redo" IconName="IconName.ArrowClockwise" IconSize="IconSize.x3">Redo</RibbonItem>
             </RibbonItemGroup>
             <RibbonItemGroup Name="Grouping">
-                <RibbonItem Name="@CommandName.Group" IconName="IconName.FolderPlus" IconSize="IconSize.x3">Group</RibbonItem>
-                <RibbonItem Name="@CommandName.Ungroup" IconName="IconName.FolderMinus" IconSize="IconSize.x3">Ungroup</RibbonItem>
+                <RibbonItem Name="@CommandName.Group" Class="@(_canGroup ? "" : "disabled-ribbon-button")" IconName="IconName.FolderPlus" IconSize="IconSize.x3">Group</RibbonItem>
+                <RibbonItem Name="@CommandName.Ungroup" Class="@(_canUngroup ? "" : "disabled-ribbon-button")" IconName="IconName.FolderMinus" IconSize="IconSize.x3">Ungroup</RibbonItem>
             </RibbonItemGroup>
             <RibbonItemGroup Name="Alignment">
                 <RibbonItem Name="AlignTop" IconName="IconName.AlignTop" IconSize="IconSize.x3">Align<br/>top</RibbonItem>

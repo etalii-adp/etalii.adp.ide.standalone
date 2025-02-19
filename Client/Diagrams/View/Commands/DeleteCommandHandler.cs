@@ -1,4 +1,7 @@
-﻿namespace EtAlii.Adp.Client;
+﻿using Blazor.Diagrams.Core.Models;
+using Blazor.Diagrams.Core.Models.Base;
+
+namespace EtAlii.Adp.Client;
 using Cn = CommandName;
 
 public class DeleteCommandHandler : ICommandHandler
@@ -16,8 +19,34 @@ public class DeleteCommandHandler : ICommandHandler
 
     public string CommandName => Cn.Delete;
 
-    public void Execute()
+    public void Execute(SelectableModel[] selection)
     {
+        var links = selection
+            .OfType<LinkModel>()
+            .ToArray();
+
+        foreach (var link in links)
+        {
+            RemoveLink(link);
+        }
         
+        var nodes = selection
+            .OfType<NodeView>()
+            .ToArray();
+
+        foreach (var node in nodes)
+        {
+            RemoveNode(node);
+        }
+    }
+
+    private void RemoveNode(NodeView node)
+    {
+        //_changePusher.Enqueue()
+    }
+
+    private void RemoveLink(LinkModel link)
+    {
+        //_changePusher.Enqueue()
     }
 }

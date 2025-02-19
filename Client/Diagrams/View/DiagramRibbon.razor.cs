@@ -7,6 +7,8 @@ namespace EtAlii.Adp.Client;
 public partial class DiagramRibbon : ComponentBase
 {
     private bool _canDelete;
+    private bool _canGroup;
+    private bool _canUngroup;
 
     public event Action<string>? RibbonClicked;
     
@@ -18,8 +20,10 @@ public partial class DiagramRibbon : ComponentBase
     public void UpdateBasedOnSelection(SelectableModel[] selectedObjects)
     {
         _canDelete = selectedObjects.Any();
+        _canGroup = selectedObjects.OfType<NodeView>().Count() > 1;
+        _canUngroup = false;// selectedObjects.OfType<GroupView>().Count() > 1;
+        
         StateHasChanged();
-        //_deleteButton;
     }
 
     private void OnRibbonItemClick(RibbonItemEventArgs e) => RibbonClicked?.Invoke(e.Name!);
