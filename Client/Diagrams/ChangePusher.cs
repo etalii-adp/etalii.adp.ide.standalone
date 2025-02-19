@@ -34,6 +34,18 @@ public class ChangePusher
         }
     }
 
+    public async Task Enqueue(Change[] changes)
+    {
+        using (await _lock.LockAsync())
+        {
+            foreach (var change in changes)
+            {
+                _changes.Enqueue(change);
+            }
+            _pushTask ??= Task.Run(PushChanges);
+        }
+    }
+
     private async Task PushChanges()
     {
         Change[] changesToPush;
