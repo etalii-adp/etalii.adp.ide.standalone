@@ -6,15 +6,15 @@ public class NodeAddChangeHandler : ChangeHandler<NodeAddChange>
 {
     protected override async Task Apply(NodeAddChange change, AdpDbContext context)
     {
-        await Apply(context, change.DiagramId, change.NewNodeId, change.NewPosition);
+        await Apply(context, change.DiagramId, change.NewNodeId, change.NewPosition, change.NewName);
     }
 
     public async Task Apply(
         AdpDbContext context, 
         DiagramIdentifier diagramId,
         NodeIdentifier nodeId,
-        NodePosition nodePosition
-        )
+        NodePosition nodePosition,
+        string nodeName)
     {
         // Fetch the diagram.
         var diagram = await context.Diagrams.SingleAsync(d => d.Id == diagramId);
@@ -24,7 +24,8 @@ public class NodeAddChangeHandler : ChangeHandler<NodeAddChange>
         {
             Diagram = diagram,
             Id = nodeId,
-            Position = nodePosition
+            Position = nodePosition,
+            Name = nodeName
         };
         diagram.Nodes.Add(node);
         

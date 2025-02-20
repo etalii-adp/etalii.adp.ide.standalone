@@ -68,7 +68,7 @@ public class NodeManager
 
             _view.Nodes.Add(nodeView);
         
-            var change = NodeAddChange.Apply(_diagram, nodeView.Position, nodeView.Id);
+            var change = NodeAddChange.Apply(_diagram, nodeView.Position, nodeView.Id, nodeView.Name);
             await _changePusher.Enqueue(change);
         }
         catch (Exception exception)

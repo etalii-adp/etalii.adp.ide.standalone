@@ -16,6 +16,6 @@ public class NodeRemoveChangeHandler : ChangeHandler<NodeRemoveChange>
     
     protected override async Task Undo(NodeRemoveChange change, AdpDbContext context)
     {
-        await _nodeAddChangeHandler.Apply(context, change.DiagramId, change.OldNodeId, change.OldNodePosition);
+        await _nodeAddChangeHandler.Apply(context, change.DiagramId, change.OldNodeId, change.OldNodePosition, change.OldNodeName);
     }
 }

@@ -44,7 +44,7 @@ public class DeleteCommandHandler : ICommandHandler
             .Select(RemoveLink)
             .ToList();
 
-        var change = NodeRemoveChange.Apply(_diagram, node.Id, node.Position);
+        var change = NodeRemoveChange.Apply(_diagram, node.Id, node.Position, node.Name);
         changes.Add(change);
 
         _view.Nodes.Remove(node);

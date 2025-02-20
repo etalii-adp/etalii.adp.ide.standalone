@@ -5,8 +5,9 @@ public class NodeRemoveChange : Change
     public required DiagramIdentifier DiagramId { get; init; }
     public required NodeIdentifier OldNodeId { get; init; }
     public required NodePosition OldNodePosition { get; init; }
+    public required string OldNodeName { get; init; } 
 
-    public static Change Apply(Diagram diagram, NodeIdentifier oldNodeId, NodePosition oldNodePosition)
+    public static Change Apply(Diagram diagram, NodeIdentifier oldNodeId, NodePosition oldNodePosition, string oldNodeName)
     {
         var node = diagram.Nodes.Single(n => n.Id == oldNodeId);
         diagram.Nodes.Remove(node);
@@ -15,7 +16,8 @@ public class NodeRemoveChange : Change
         {
             DiagramId = diagram.Id, 
             OldNodeId = oldNodeId,
-            OldNodePosition = oldNodePosition
+            OldNodePosition = oldNodePosition,
+            OldNodeName = oldNodeName,
         };
     }
 }

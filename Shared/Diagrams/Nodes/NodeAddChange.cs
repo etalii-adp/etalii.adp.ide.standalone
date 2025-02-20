@@ -5,8 +5,9 @@ public class NodeAddChange : Change
     public required DiagramIdentifier DiagramId { get; init; }
     public required NodeIdentifier NewNodeId { get; init; }
     public required NodePosition NewPosition { get; init; }
+    public required string NewName { get; init; }
     
-    public static Change Apply(Diagram diagram, NodePosition position, NodeIdentifier nodeId)
+    public static Change Apply(Diagram diagram, NodePosition position, NodeIdentifier nodeId, string name)
     {
         var node = new Node
         {
@@ -20,7 +21,8 @@ public class NodeAddChange : Change
         {
             DiagramId = diagram.Id, 
             NewNodeId = node.Id,
-            NewPosition = position
+            NewPosition = position,
+            NewName = name,
         };
     }
 }
