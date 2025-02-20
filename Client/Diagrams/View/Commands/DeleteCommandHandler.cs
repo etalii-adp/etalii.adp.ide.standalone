@@ -29,10 +29,14 @@ public class DeleteCommandHandler : ICommandHandler
             .SelectMany(RemoveNode)
             .ToArray();
         
-        return linkChanges
+        var changes = linkChanges
             .Concat(nodeChanges)
             .OrderBy(c => c is NodeRemoveChange) // We first will remove the nodes.
             .ToArray();
+        
+        _view.UnselectAll(); // We want to unselect everything as the nodes and links will be deleted.
+
+        return changes;
     }
 
     private Change[] RemoveNode(NodeView node)
