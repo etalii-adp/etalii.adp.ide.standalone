@@ -9,6 +9,7 @@ public partial class DiagramRibbon : ComponentBase
     private bool _canDelete;
     private bool _canGroup;
     private bool _canUngroup;
+    private bool _canAlign;
 
     public event Action<string>? RibbonClicked;
     
@@ -22,6 +23,7 @@ public partial class DiagramRibbon : ComponentBase
         _canDelete = selectedObjects.Any();
         _canGroup = selectedObjects.OfType<NodeView>().Count() > 1;
         _canUngroup = false;// selectedObjects.OfType<GroupView>().Count() > 1;
+        _canAlign = selectedObjects.Length != 0 && selectedObjects.Length == selectedObjects.OfType<NodeView>().Count();
         
         StateHasChanged();
     }

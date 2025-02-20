@@ -31,10 +31,10 @@
                 <RibbonItem Name="@CommandName.Ungroup" Class="@(_canUngroup ? "" : "disabled-ribbon-button")" IconName="IconName.FolderMinus" IconSize="IconSize.x3">Ungroup</RibbonItem>
             </RibbonItemGroup>
             <RibbonItemGroup Name="Alignment">
-                <RibbonItem Name="AlignTop" IconName="IconName.AlignTop" IconSize="IconSize.x3">Align<br/>top</RibbonItem>
-                <RibbonItem Name="AlignBottom" IconName="IconName.AlignBottom" IconSize="IconSize.x3">Align<br/>bottom</RibbonItem>
-                <RibbonItem Name="AlignLeft" IconName="IconName.AlignStart" IconSize="IconSize.x3">Align<br/>left</RibbonItem>
-                <RibbonItem Name="AlignRight" IconName="IconName.AlignEnd" IconSize="IconSize.x3">Align<br/>right</RibbonItem>
+                <RibbonItem Name="@CommandName.AlignTop" Class="@(_canAlign ? "" : "disabled-ribbon-button")" IconName="IconName.AlignTop" IconSize="IconSize.x3">Align<br/>top</RibbonItem>
+                <RibbonItem Name="@CommandName.AlignBottom" Class="@(_canAlign ? "" : "disabled-ribbon-button")" IconName="IconName.AlignBottom" IconSize="IconSize.x3">Align<br/>bottom</RibbonItem>
+                <RibbonItem Name="@CommandName.AlignLeft" Class="@(_canAlign ? "" : "disabled-ribbon-button")" IconName="IconName.AlignStart" IconSize="IconSize.x3">Align<br/>left</RibbonItem>
+                <RibbonItem Name="@CommandName.AlignRight" Class="@(_canAlign ? "" : "disabled-ribbon-button")" IconName="IconName.AlignEnd" IconSize="IconSize.x3">Align<br/>right</RibbonItem>
             </RibbonItemGroup>
         </Content>
     </RibbonTab>
