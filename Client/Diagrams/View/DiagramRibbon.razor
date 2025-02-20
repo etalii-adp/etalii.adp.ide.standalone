@@ -14,27 +14,27 @@
         <Content>
             <!-- New -->
             <RibbonItemGroup Name="New">
-                <RibbonItem Name="NewEmail" IconName="IconName.EnvelopePlus" IconSize="IconSize.x3">New<br/>Email</RibbonItem>
-                <RibbonItem Name="Appointment" IconName="IconName.Calendar3Event" IconSize="IconSize.x3"/>
+                <RibbonItem Name="NewEmail" IconName="IconName.EnvelopePlus" IconSize="IconSize.x3" IconColor="IconColor.Primary" >New<br/>Email</RibbonItem>
+                <RibbonItem Name="Appointment" IconName="IconName.Calendar3Event" IconSize="IconSize.x3" IconColor="IconColor.Primary" />
             </RibbonItemGroup>
             <!-- Delete -->
             <RibbonItemGroup Name="Delete">
                 <RibbonItem Name="@CommandName.Delete" Class="@(_canDelete ? "" : "disabled-ribbon-button")" IconColor="IconColor.Danger" IconName="IconName.Trash" IconSize="IconSize.x3">Remove</RibbonItem>
-                <RibbonItem Name="Archive" IconColor="IconColor.Primary" IconName="IconName.Archive" IconSize="IconSize.x3">Archive</RibbonItem>
+                <RibbonItem Name="Archive" IconName="IconName.Archive" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Archive</RibbonItem>
             </RibbonItemGroup>
             <RibbonItemGroup Name="Undo / Redo">
-                <RibbonItem Name="@CommandName.Undo" IconName="IconName.ArrowCounterclockwise" IconSize="IconSize.x3">Undo</RibbonItem>
-                <RibbonItem Name="@CommandName.Redo" IconName="IconName.ArrowClockwise" IconSize="IconSize.x3">Redo</RibbonItem>
+                <RibbonItem Name="@CommandName.Undo" IconName="IconName.ArrowCounterclockwise" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Undo</RibbonItem>
+                <RibbonItem Name="@CommandName.Redo" IconName="IconName.ArrowClockwise" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Redo</RibbonItem>
             </RibbonItemGroup>
             <RibbonItemGroup Name="Grouping">
-                <RibbonItem Name="@CommandName.Group" Class="@(_canGroup ? "" : "disabled-ribbon-button")" IconName="IconName.FolderPlus" IconSize="IconSize.x3">Group</RibbonItem>
-                <RibbonItem Name="@CommandName.Ungroup" Class="@(_canUngroup ? "" : "disabled-ribbon-button")" IconName="IconName.FolderMinus" IconSize="IconSize.x3">Ungroup</RibbonItem>
+                <RibbonItem Name="@CommandName.Group" Class="@(_canGroup ? "" : "disabled-ribbon-button")" IconName="IconName.FolderPlus" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Group</RibbonItem>
+                <RibbonItem Name="@CommandName.Ungroup" Class="@(_canUngroup ? "" : "disabled-ribbon-button")" IconName="IconName.FolderMinus" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Ungroup</RibbonItem>
             </RibbonItemGroup>
             <RibbonItemGroup Name="Alignment">
-                <RibbonItem Name="@CommandName.AlignTop" Class="@(_canAlign ? "" : "disabled-ribbon-button")" IconName="IconName.AlignTop" IconSize="IconSize.x3">Align<br/>top</RibbonItem>
-                <RibbonItem Name="@CommandName.AlignBottom" Class="@(_canAlign ? "" : "disabled-ribbon-button")" IconName="IconName.AlignBottom" IconSize="IconSize.x3">Align<br/>bottom</RibbonItem>
-                <RibbonItem Name="@CommandName.AlignLeft" Class="@(_canAlign ? "" : "disabled-ribbon-button")" IconName="IconName.AlignStart" IconSize="IconSize.x3">Align<br/>left</RibbonItem>
-                <RibbonItem Name="@CommandName.AlignRight" Class="@(_canAlign ? "" : "disabled-ribbon-button")" IconName="IconName.AlignEnd" IconSize="IconSize.x3">Align<br/>right</RibbonItem>
+                <RibbonItem Name="@CommandName.AlignTop" Class="@(_canAlign ? "" : "disabled-ribbon-button")" IconName="IconName.AlignTop" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Align<br/>top</RibbonItem>
+                <RibbonItem Name="@CommandName.AlignBottom" Class="@(_canAlign ? "" : "disabled-ribbon-button")" IconName="IconName.AlignBottom" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Align<br/>bottom</RibbonItem>
+                <RibbonItem Name="@CommandName.AlignLeft" Class="@(_canAlign ? "" : "disabled-ribbon-button")" IconName="IconName.AlignStart" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Align<br/>left</RibbonItem>
+                <RibbonItem Name="@CommandName.AlignRight" Class="@(_canAlign ? "" : "disabled-ribbon-button")" IconName="IconName.AlignEnd" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Align<br/>right</RibbonItem>
             </RibbonItemGroup>
         </Content>
     </RibbonTab>
@@ -42,13 +42,13 @@
         <Content>
             <!-- Send & Receive -->
             <RibbonItemGroup Name="Send & Receive">
-                <RibbonItem Name="SendReceiveAllFolders" IconColor="IconColor.Success" IconName="IconName.EnvelopePlus" IconSize="IconSize.x3">Send/Receive<br/>All Folders</RibbonItem>
-                <RibbonItem Name="UpdateFolder" IconColor="IconColor.Primary" IconName="IconName.Calendar3Event" IconSize="IconSize.x3">Update<br/>Folder</RibbonItem>
+                <RibbonItem Name="SendReceiveAllFolders" IconName="IconName.EnvelopePlus" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Send/Receive<br/>All Folders</RibbonItem>
+                <RibbonItem Name="UpdateFolder" IconName="IconName.Calendar3Event" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Update<br/>Folder</RibbonItem>
             </RibbonItemGroup>
             <!-- Download -->
             <RibbonItemGroup Name="Download">
-                <RibbonItem Name="ShowProgress" IconColor="IconColor.Success" IconName="IconName.Trash" IconSize="IconSize.x3">Show<br/>Progress</RibbonItem>
-                <RibbonItem Name="CancelAll" IconColor="IconColor.Primary" IconName="IconName.XSquareFill" IconSize="IconSize.x3">Cancel<br/>All</RibbonItem>
+                <RibbonItem Name="ShowProgress" IconName="IconName.Trash" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Show<br/>Progress</RibbonItem>
+                <RibbonItem Name="CancelAll" IconName="IconName.XSquareFill" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Cancel<br/>All</RibbonItem>
             </RibbonItemGroup>
         </Content>
     </RibbonTab>
@@ -56,12 +56,12 @@
         <Content>
             <!-- New -->
             <RibbonItemGroup Name="New">
-                <RibbonItem Name="NewFolder" IconColor="IconColor.Success" IconName="IconName.FolderPlus" IconSize="IconSize.x3">New<br/>Folder</RibbonItem>
+                <RibbonItem Name="NewFolder" IconColor="IconColor.Primary" IconName="IconName.FolderPlus" IconSize="IconSize.x3">New<br/>Folder</RibbonItem>
                 <RibbonItem Name="NewSearchFolder" IconColor="IconColor.Primary" IconName="IconName.Search" IconSize="IconSize.x3">New<br/>Search Folder</RibbonItem>
             </RibbonItemGroup>
             <!-- Actions -->
             <RibbonItemGroup Name="Actions">
-                <RibbonItem Name="RenameFolder" IconColor="IconColor.Success" IconName="IconName.CursorText" IconSize="IconSize.x3">Rename<br/>Folder</RibbonItem>
+                <RibbonItem Name="RenameFolder" IconColor="IconColor.Primary" IconName="IconName.CursorText" IconSize="IconSize.x3">Rename<br/>Folder</RibbonItem>
                 <RibbonItem Name="CopyFolder" IconColor="IconColor.Primary" IconName="IconName.Copy" IconSize="IconSize.x3">Copy<br/>Folder</RibbonItem>
                 <RibbonItem Name="MoveFolder" IconColor="IconColor.Primary" IconName="IconName.ArrowRight" IconSize="IconSize.x3">Move<br/>Folder</RibbonItem>
                 <RibbonItem Name="DeleteFolder" IconColor="IconColor.Primary" IconName="IconName.FolderX" IconSize="IconSize.x3">Delete<br/>Folder</RibbonItem>
@@ -71,16 +71,16 @@
     <RibbonTab Title="Import / Export">
         <Content>
             <RibbonItemGroup Name="Export">
-                <RibbonItem Name="ExportLlm" IconName="IconName.Chat" IconSize="IconSize.x3">Export to<br/>LLM</RibbonItem>
-                <RibbonItem Name="ExportJson" IconName="IconName.FileTypeJson" IconSize="IconSize.x3">Export as<br/>JSON</RibbonItem>
-                <RibbonItem Name="ExportXml" IconName="IconName.FileTypeXml" IconSize="IconSize.x3">Export as<br/>XML</RibbonItem>
-                <RibbonItem Name="ExportImage" IconName="IconName.Image" IconSize="IconSize.x3">Export as<br/>Image</RibbonItem>
-                <RibbonItem Name="ExportAzure" IconName="IconName.Microsoft" IconSize="IconSize.x3">Export to<br/>Azure DevOps</RibbonItem>
-                <RibbonItem Name="ExportGitHub" IconName="IconName.Github" IconSize="IconSize.x3">Export to<br/>Github Project</RibbonItem>
+                <RibbonItem Name="ExportLlm" IconName="IconName.Chat" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Export to<br/>LLM</RibbonItem>
+                <RibbonItem Name="ExportJson" IconName="IconName.FileTypeJson" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Export as<br/>JSON</RibbonItem>
+                <RibbonItem Name="ExportXml" IconName="IconName.FileTypeXml" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Export as<br/>XML</RibbonItem>
+                <RibbonItem Name="ExportImage" IconName="IconName.Image" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Export as<br/>Image</RibbonItem>
+                <RibbonItem Name="ExportAzure" IconName="IconName.Microsoft" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Export to<br/>Azure DevOps</RibbonItem>
+                <RibbonItem Name="ExportGitHub" IconName="IconName.Github" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Export to<br/>Github Project</RibbonItem>
             </RibbonItemGroup>
             <RibbonItemGroup Name="Import">
-                <RibbonItem Name="ImportAzure" IconName="IconName.Microsoft" IconSize="IconSize.x3">Import from <br/>Azure DevOps</RibbonItem>
-                <RibbonItem Name="ImportGitHub" IconName="IconName.Github" IconSize="IconSize.x3">Import from<br/>Github Project</RibbonItem>
+                <RibbonItem Name="ImportAzure" IconName="IconName.Microsoft" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Import from <br/>Azure DevOps</RibbonItem>
+                <RibbonItem Name="ImportGitHub" IconName="IconName.Github" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Import from<br/>Github Project</RibbonItem>
             </RibbonItemGroup>
         </Content>
     </RibbonTab>
