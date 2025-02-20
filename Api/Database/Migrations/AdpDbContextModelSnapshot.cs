@@ -72,17 +72,17 @@ namespace EtAlii.Adp.Api.Database.Migrations
                     b.Property<Guid>("DiagramId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("EndNodeId")
+                    b.Property<Guid>("SourceNodeId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("EndPort")
+                    b.Property<string>("SourcePort")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("StartNodeId")
+                    b.Property<Guid>("TargetNodeId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("StartPort")
+                    b.Property<string>("TargetPort")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -90,11 +90,11 @@ namespace EtAlii.Adp.Api.Database.Migrations
 
                     b.HasIndex("DiagramId");
 
-                    b.HasIndex("EndNodeId");
-
                     b.HasIndex("Id");
 
-                    b.HasIndex("StartNodeId");
+                    b.HasIndex("SourceNodeId");
+
+                    b.HasIndex("TargetNodeId");
 
                     b.ToTable("Links");
                 });
@@ -170,23 +170,23 @@ namespace EtAlii.Adp.Api.Database.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("EtAlii.Adp.Node", "EndNode")
-                        .WithMany("InboundLinks")
-                        .HasForeignKey("EndNodeId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                    b.HasOne("EtAlii.Adp.Node", "SourceNode")
+                        .WithMany()
+                        .HasForeignKey("SourceNodeId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("EtAlii.Adp.Node", "StartNode")
-                        .WithMany("OutboundLinks")
-                        .HasForeignKey("StartNodeId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                    b.HasOne("EtAlii.Adp.Node", "TargetNode")
+                        .WithMany()
+                        .HasForeignKey("TargetNodeId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Diagram");
 
-                    b.Navigation("EndNode");
+                    b.Navigation("SourceNode");
 
-                    b.Navigation("StartNode");
+                    b.Navigation("TargetNode");
                 });
 
             modelBuilder.Entity("EtAlii.Adp.Node", b =>
@@ -205,13 +205,6 @@ namespace EtAlii.Adp.Api.Database.Migrations
                     b.Navigation("Links");
 
                     b.Navigation("Nodes");
-                });
-
-            modelBuilder.Entity("EtAlii.Adp.Node", b =>
-                {
-                    b.Navigation("InboundLinks");
-
-                    b.Navigation("OutboundLinks");
                 });
 
             modelBuilder.Entity("EtAlii.Adp.User", b =>

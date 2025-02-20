@@ -55,6 +55,7 @@ namespace EtAlii.Adp.Api.Database.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     DiagramId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     NodePositionX = table.Column<double>(type: "float", nullable: false),
                     NodePositionY = table.Column<double>(type: "float", nullable: false)
@@ -76,10 +77,10 @@ namespace EtAlii.Adp.Api.Database.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     DiagramId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    StartNodeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    StartPort = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    EndNodeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    EndPort = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    SourceNodeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SourcePort = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    TargetNodeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TargetPort = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -91,15 +92,17 @@ namespace EtAlii.Adp.Api.Database.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Links_Nodes_EndNodeId",
-                        column: x => x.EndNodeId,
+                        name: "FK_Links_Nodes_SourceNodeId",
+                        column: x => x.SourceNodeId,
                         principalTable: "Nodes",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Links_Nodes_StartNodeId",
-                        column: x => x.StartNodeId,
+                        name: "FK_Links_Nodes_TargetNodeId",
+                        column: x => x.TargetNodeId,
                         principalTable: "Nodes",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
@@ -118,19 +121,19 @@ namespace EtAlii.Adp.Api.Database.Migrations
                 column: "DiagramId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Links_EndNodeId",
-                table: "Links",
-                column: "EndNodeId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Links_Id",
                 table: "Links",
                 column: "Id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Links_StartNodeId",
+                name: "IX_Links_SourceNodeId",
                 table: "Links",
-                column: "StartNodeId");
+                column: "SourceNodeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Links_TargetNodeId",
+                table: "Links",
+                column: "TargetNodeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Nodes_DiagramId",

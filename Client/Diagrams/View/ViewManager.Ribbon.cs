@@ -19,7 +19,8 @@ public partial class ViewManager
                 .GetSelectedModels()
                 .ToArray();
             var handler = _commandHandlers.Single(ch => ch.CommandName == commandName);
-            await handler.Execute(selection);
+            var changes = handler.Execute(selection);
+            await _changePusher.Enqueue(changes);
         }
         catch (Exception exception)
         {

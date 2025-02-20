@@ -8,59 +8,59 @@ public class DeleteCommandHandler : ICommandHandler
 {
     private readonly DiagramView _view;
     private readonly Diagram _diagram;
-    private readonly ChangePusher _changePusher;
 
-    public DeleteCommandHandler(DiagramView view, Diagram diagram, ChangePusher changePusher)
+    public DeleteCommandHandler(DiagramView view, Diagram diagram)
     {
         _view = view;
         _diagram = diagram;
-        _changePusher = changePusher;
     }
 
     public string CommandName => Cn.Delete;
 
-    public async Task Execute(SelectableModel[] selection)
+    public Change[] Execute(SelectableModel[] selection)
     {
-        var links = selection
+        var linkChanges = selection
             .OfType<LinkView>()
+            .Select(RemoveLink)
             .ToArray();
 
-        foreach (var link in links)
-        {
-            await RemoveLink(link);
-        }
-        
-        var nodes = selection
+        var nodeChanges = selection
             .OfType<NodeView>()
+            .SelectMany(RemoveNode)
             .ToArray();
-
-        foreach (var node in nodes)
-        {
-            await RemoveNode(node);
-        }
+        
+        return linkChanges
+            .Concat(nodeChanges)
+            .OrderBy(c => c is NodeRemoveChange) // We first will remove the nodes.
+            .ToArray();
     }
 
-    private async Task RemoveNode(NodeView node)
+    private Change[] RemoveNode(NodeView node)
     {
-        foreach (var link in node.Links.OfType<LinkView>())
-        {
-            await RemoveLink(link);
-        }
-        
-        await Task.CompletedTask;
-        // await _changePusher.Enqueue(node);
-        
+        var changes = node.Ports
+            .SelectMany(p => p.Links)
+            .ToArray() // Needed to safeguard against collection modifications.
+            .OfType<LinkView>()
+            .Select(RemoveLink)
+            .ToList();
+
+        var change = NodeRemoveChange.Apply(_diagram, node.Id, node.Position);
+        changes.Add(change);
+
         _view.Nodes.Remove(node);
+        
+        return changes.ToArray();
     }
 
-    private async Task RemoveLink(LinkView link)
+    private Change RemoveLink(LinkView link)
     {
         var source = (PortView)((SinglePortAnchor)link.Source).Port;
         var target = (PortView)((SinglePortAnchor)link.Target).Port;
 
-        var change = LinkRemoveChange.Apply(_diagram, link.Id, link.SourceNodeId, source.Id, link.TargetNodeId, target.Id);
-        await _changePusher.Enqueue(change);
+        var change = LinkRemoveChange.Apply(_diagram, link.Id, source.NodeIdentifier, source.Id, target.NodeIdentifier, target.Id);
         
         _view.Links.Remove(link);
+        
+        return change;
     }
 }

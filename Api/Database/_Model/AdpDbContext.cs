@@ -119,20 +119,6 @@ public class AdpDbContext : DbContext
                 .Property<double>("_nodePositionY")
                 .HasColumnName("NodePositionY")
                 .IsRequired();
-
-            builder
-                .HasMany(e => e.OutboundLinks)
-                .WithOne(e => e.StartNode)
-                .IsRequired()
-                .OnDelete(DeleteBehavior.NoAction)
-                .IsRequired();
-
-            builder
-                .HasMany(e => e.InboundLinks)
-                .WithOne(e => e.EndNode)
-                .IsRequired()
-                .OnDelete(DeleteBehavior.NoAction)
-                .IsRequired();
         });
 
         // Links.
@@ -144,11 +130,23 @@ public class AdpDbContext : DbContext
                 .IsRequired();
 
             builder
-                .Property(e => e.StartPort)
+                .Property(e => e.SourcePort)
                 .IsRequired();
 
             builder
-                .Property(e => e.EndPort)
+                .Property(e => e.TargetPort)
+                .IsRequired();
+
+            builder
+                .HasOne(e => e.SourceNode)
+                .WithMany()
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+            
+            builder
+                .HasOne(e => e.TargetNode)
+                .WithMany()
+                .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
         });
 

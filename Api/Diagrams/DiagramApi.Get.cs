@@ -51,11 +51,7 @@ public class DiagramApi
             foreach (var link in diagram.Links)
             {
                 link.SourceNode.Diagram = null!;
-                link.SourceNode.InboundLinks.Clear();
-                link.SourceNode.OutboundLinks.Clear();
                 link.TargetNode.Diagram = null!;
-                link.TargetNode.InboundLinks.Clear();
-                link.TargetNode.OutboundLinks.Clear();
                 link.Diagram = null!;
             }
 
