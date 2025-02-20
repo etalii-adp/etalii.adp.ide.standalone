@@ -7,7 +7,7 @@ public record Diagram
     public required DiagramIdentifier Id { get; init; }
     public required User Owner { get; set; } = null!;
     public required string Name { get; set; } = string.Empty;
-    public required string Description { get; init; }
+    public required string Description { get; set; } = string.Empty;
 
     [JsonIgnore] public ICollection<Node> Nodes => _nodes;
     // ReSharper disable once InconsistentNaming

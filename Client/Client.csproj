@@ -32,6 +32,7 @@
   <ItemGroup>
     <Folder Include="About\" />
     <Folder Include="Configuration\" />
+    <Folder Include="Diagrams\Notes\" />
     <Folder Include="Diagrams\_Model\" />
     <Folder Include="Trends\" />
     <Folder Include="User\_Model\" />

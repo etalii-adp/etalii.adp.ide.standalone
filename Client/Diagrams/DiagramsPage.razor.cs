@@ -46,9 +46,9 @@ public partial class DiagramsPage
         StateHasChanged();
     }
     
-    private async Task EditDiagram(Diagram diagram)
+    private async Task EditedDiagram(Diagram diagram)
     {
-        var response = await Client.PatchAsJsonAsync(ApplicationApi.Diagrams.Edit.Request(diagram.Id), diagram);
+        var response = await Client.PutAsJsonAsync(ApplicationApi.Diagrams.Edit.Request(diagram.Id), diagram);
         var changedDiagram = (await response.Content.ReadFromJsonAsync<Diagram>())!;
         var diagramIndex = _diagrams!.Index().Single(d => d.Item.Id == changedDiagram.Id).Index;
         _diagrams![diagramIndex] = changedDiagram;
@@ -71,6 +71,4 @@ public partial class DiagramsPage
         NavigationManager.NavigateTo($"/user/diagrams/{diagram.Id.Identifier}");
         StateHasChanged();
     }
-
-    
 }
