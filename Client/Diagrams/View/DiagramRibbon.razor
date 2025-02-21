@@ -24,8 +24,8 @@
                 <RibbonItem Name="Archive" IconName="IconName.Archive" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Archive</RibbonItem>
             </RibbonItemGroup>
             <RibbonItemGroup Name="Undo / Redo">
-                <RibbonItem Name="@CommandName.Undo" IconName="IconName.ArrowCounterclockwise" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Undo</RibbonItem>
-                <RibbonItem Name="@CommandName.Redo" IconName="IconName.ArrowClockwise" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Redo</RibbonItem>
+                <RibbonItem Name="@CommandName.Undo" Class="@(_canUndo ? "" : "disabled-ribbon-button")" IconName="IconName.ArrowCounterclockwise" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Undo</RibbonItem>
+                <RibbonItem Name="@CommandName.Redo" Class="@(_canRedo ? "" : "disabled-ribbon-button")"  IconName="IconName.ArrowClockwise" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Redo</RibbonItem>
             </RibbonItemGroup>
             <RibbonItemGroup Name="Grouping">
                 <RibbonItem Name="@CommandName.Group" Class="@(_canGroup ? "" : "disabled-ribbon-button")" IconName="IconName.FolderPlus" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Group</RibbonItem>
@@ -39,10 +39,9 @@
             </RibbonItemGroup>
         </Content>
     </RibbonTab>
-    <RibbonTab Title="Send / Receive">
+    <RibbonTab Title="Structure">
         <Content>
-            <!-- Send & Receive -->
-            <RibbonItemGroup Name="Send & Receive">
+            <RibbonItemGroup Name="Tags">
                 <RibbonItem Name="SendReceiveAllFolders" IconName="IconName.EnvelopePlus" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Send/Receive<br/>All Folders</RibbonItem>
                 <RibbonItem Name="UpdateFolder" IconName="IconName.Calendar3Event" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Update<br/>Folder</RibbonItem>
             </RibbonItemGroup>
@@ -83,6 +82,13 @@
                 <RibbonItem Name="ImportAzure" IconName="IconName.Microsoft" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Import from <br/>Azure DevOps</RibbonItem>
                 <RibbonItem Name="ImportGitHub" IconName="IconName.Github" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Import from<br/>Github Project</RibbonItem>
             </RibbonItemGroup>
+        </Content>
+    </RibbonTab>
+    <RibbonTab Title="Synchronize">
+        <Content>
+            <RibbonItem Name="SynchronizeAzure" IconName="IconName.Microsoft" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Sync <br/>Azure DevOps</RibbonItem>
+            <RibbonItem Name="SynchronizeGithub" IconName="IconName.Github" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Sync <br/>Github Project</RibbonItem>
+            <RibbonItem Name="SynchronizeNotion" IconName="IconName.SquareHalf" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Sync <br/>Notion</RibbonItem>
         </Content>
     </RibbonTab>
 </Ribbon>

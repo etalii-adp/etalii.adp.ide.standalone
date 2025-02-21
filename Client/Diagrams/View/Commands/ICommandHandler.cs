@@ -5,5 +5,5 @@ namespace EtAlii.Adp.Client;
 public interface ICommandHandler
 {
     string CommandName { get; }
-    Change[] Execute(SelectableModel[] selection);
+    Task<Change[]> Execute(SelectableModel[] selection);
 }

@@ -29,7 +29,7 @@ public partial class ViewManager
             var change = DiagramPositionChange.Apply(_diagram, newPosition);
 
             // Throttled save.
-            await _changePusher.Enqueue(change);
+            await _history.Push(change);
         }
         catch (Exception e)
         {

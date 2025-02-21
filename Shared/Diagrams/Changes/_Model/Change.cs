@@ -12,4 +12,5 @@ namespace EtAlii.Adp;
 [JsonDerivedType(typeof(LinkRemoveChange), typeDiscriminator: nameof(LinkRemoveChange))]
 public abstract class Change
 {
+    public bool Undo { get; set; }
 }

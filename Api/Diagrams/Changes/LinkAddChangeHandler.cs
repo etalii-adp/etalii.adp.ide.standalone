@@ -4,7 +4,7 @@ namespace EtAlii.Adp.Api;
 
 public class LinkAddChangeHandler : ChangeHandler<LinkAddChange>
 {
-    protected override async Task Apply(LinkAddChange change, AdpDbContext context)
+    protected override async Task Do(LinkAddChange change, AdpDbContext context)
     {
         await Apply(context, change.DiagramId, change.NewLinkId, change.SourceNodeId, change.SourcePort, change.TargetNodeId, change.TargetPort);
     }

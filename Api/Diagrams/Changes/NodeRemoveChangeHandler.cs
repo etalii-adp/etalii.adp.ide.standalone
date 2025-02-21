@@ -9,7 +9,7 @@ public class NodeRemoveChangeHandler : ChangeHandler<NodeRemoveChange>
         _nodeAddChangeHandler = nodeAddChangeHandler;
     }
     
-    protected override async Task Apply(NodeRemoveChange change, AdpDbContext context)
+    protected override async Task Do(NodeRemoveChange change, AdpDbContext context)
     {
         await _nodeAddChangeHandler.Undo(context, change.DiagramId, change.OldNodeId);
     }

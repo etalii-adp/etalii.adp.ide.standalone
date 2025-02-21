@@ -12,6 +12,7 @@ builder.Services.AddSingleton(_ => new HttpClient { BaseAddress = new Uri(builde
 builder.Services.AddScoped<UserManager>();
 builder.Services.AddSingleton<DiagramManager>();
 builder.Services.AddSingleton<ChangePusher>();
+builder.Services.AddSingleton<HistoryManager>();
 
 builder.Services.AddBlazorBootstrap();
 builder.Services.AddOptions();

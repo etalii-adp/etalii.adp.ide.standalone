@@ -9,7 +9,7 @@ public class LinkRemoveChangeHandler : ChangeHandler<LinkRemoveChange>
         _linkAddChangeHandler = linkAddChangeHandler;
     }
     
-    protected override async Task Apply(LinkRemoveChange change, AdpDbContext context)
+    protected override async Task Do(LinkRemoveChange change, AdpDbContext context)
     {
         await _linkAddChangeHandler.Undo(context, change.OldLinkId);
     }

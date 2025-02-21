@@ -4,6 +4,11 @@ namespace EtAlii.Adp.Client;
 
 public partial class ViewManager
 {
+    private void OnHistoryChanged()
+    {
+        _ribbon.UpdateBasedOnHistory(_history);
+    }
+
     private void OnSelectionChanged(SelectableModel obj)
     {
         _ribbon.UpdateBasedOnSelection(_view.GetSelectedModels().ToArray());
@@ -19,8 +24,8 @@ public partial class ViewManager
                 .GetSelectedModels()
                 .ToArray();
             var handler = _commandHandlers.Single(ch => ch.CommandName == commandName);
-            var changes = handler.Execute(selection);
-            await _changePusher.Enqueue(changes);
+            var changes = await handler.Execute(selection);
+            await _history.Push(changes);
         }
         catch (Exception exception)
         {

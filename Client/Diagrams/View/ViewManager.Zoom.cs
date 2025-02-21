@@ -27,7 +27,7 @@ public partial class ViewManager
             var change = DiagramZoomChange.Apply(_diagram, _view.Zoom);
 
             // Throttled save.
-            await _changePusher.Enqueue(change);
+            await _history.Push(change);
         }
         catch (Exception e)
         {

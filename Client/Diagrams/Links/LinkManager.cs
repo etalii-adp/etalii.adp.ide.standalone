@@ -7,19 +7,19 @@ public class LinkManager
 {
     private readonly DiagramView _view;
     private readonly Diagram _diagram;
-    private readonly ChangePusher _changePusher;
+    private readonly HistoryManager _history;
     private readonly ILogger _logger;
 
     public LinkManager(
         DiagramView view, 
         Diagram diagram, 
-        ChangePusher changePusher, 
-        ILoggerFactory loggerFactory)
+        ILoggerFactory loggerFactory, 
+        HistoryManager history)
     {
         _logger = loggerFactory.CreateLogger<LinkManager>();
         _view = view;
         _diagram = diagram;
-        _changePusher = changePusher;
+        _history = history;
     }
 
     public async Task Initialize()
@@ -81,7 +81,7 @@ public class LinkManager
                 source.NodeIdentifier, source.Id, 
                 target.NodeIdentifier, target.Id);
             
-            await _changePusher.Enqueue(change);
+            await _history.Push(change);
         }
         catch (Exception exception)
         {

@@ -12,15 +12,26 @@ public partial class DiagramRibbon : ComponentBase
     private bool _canAlign;
     private bool _canRename;
 
+    private bool _canUndo;
+    private bool _canRedo;
+    
     private DiagramSelection _selection = DiagramSelection.Nothing;
 
     public event Action<string>? RibbonClicked;
+    
     
     protected override void OnParametersSet()
     {
         UpdateBasedOnSelection([]);
     }
 
+    public void UpdateBasedOnHistory(HistoryManager historyManager)
+    {
+        _canUndo = historyManager.History > 0;
+        _canRedo = historyManager.Future > 0;
+        StateHasChanged();
+    }
+    
     public void UpdateBasedOnSelection(SelectableModel[] selectedObjects)
     {
         if (selectedObjects.Length == 1 && selectedObjects.Length == selectedObjects.OfType<NodeView>().Count())

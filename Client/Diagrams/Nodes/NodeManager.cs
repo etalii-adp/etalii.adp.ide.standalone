@@ -7,17 +7,18 @@ public class NodeManager
 {
     private readonly DiagramView _view;
     private readonly Diagram _diagram;
-    private readonly ChangePusher _changePusher;
+    private readonly HistoryManager _history;
     private readonly ILogger _logger;
 
     public NodeManager(
         DiagramView view, Diagram diagram,
-        ChangePusher changePusher, ILoggerFactory loggerFactory)
+        ILoggerFactory loggerFactory, 
+        HistoryManager history)
     {
         _logger = loggerFactory.CreateLogger<NodeManager>();
         _view = view;
         _diagram = diagram;
-        _changePusher = changePusher;
+        _history = history;
     }
 
     public async Task Initialize()
@@ -46,7 +47,7 @@ public class NodeManager
             _logger.LogInformation("Moving node {NodeIdentifier} to {NodePosition}", nodeView.Id, nodeView.Position);
 
             var change = NodeMoveChange.Apply(_diagram, nodeView.Id, new NodePosition { X = model.Position.X, Y = model.Position.Y });
-            await _changePusher.Enqueue(change);
+            await _history.Push(change);
         }
         catch (Exception exception)
         {
@@ -69,7 +70,7 @@ public class NodeManager
             _view.Nodes.Add(nodeView);
         
             var change = NodeAddChange.Apply(_diagram, nodeView.Position, nodeView.Id, nodeView.Name);
-            await _changePusher.Enqueue(change);
+            await _history.Push(change);
         }
         catch (Exception exception)
         {
@@ -84,7 +85,7 @@ public class NodeManager
             _logger.LogInformation("Renaming node {NodeIdentifier} from {OldName} to {NewName}", nodeView.Id, oldName, newName);
 
             var change = NodeRenameChange.Apply(_diagram, nodeView.Id, oldName, newName);
-            await _changePusher.Enqueue(change);
+            await _history.Push(change);
         }
         catch (Exception exception)
         {

@@ -17,7 +17,7 @@ public class DeleteCommandHandler : ICommandHandler
 
     public string CommandName => Cn.Delete;
 
-    public Change[] Execute(SelectableModel[] selection)
+    public Task<Change[]> Execute(SelectableModel[] selection)
     {
         _view.UnselectAll(); // We want to unselect everything as the nodes and links will be deleted.
 
@@ -36,7 +36,7 @@ public class DeleteCommandHandler : ICommandHandler
             .OrderBy(c => c is NodeRemoveChange) // We first will remove the nodes.
             .ToArray();
         
-        return changes;
+        return Task.FromResult(changes);
     }
 
     private Change[] RemoveNode(NodeView node)

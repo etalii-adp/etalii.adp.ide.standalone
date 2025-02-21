@@ -4,7 +4,7 @@ namespace EtAlii.Adp.Api;
 
 public class NodeAddChangeHandler : ChangeHandler<NodeAddChange>
 {
-    protected override async Task Apply(NodeAddChange change, AdpDbContext context)
+    protected override async Task Do(NodeAddChange change, AdpDbContext context)
     {
         await Apply(context, change.DiagramId, change.NewNodeId, change.NewPosition, change.NewName);
     }

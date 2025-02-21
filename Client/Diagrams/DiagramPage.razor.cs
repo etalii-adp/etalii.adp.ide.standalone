@@ -15,7 +15,7 @@ public partial class DiagramPage
 
     [Inject] private DiagramManager DiagramManager { get; set; } = null!;
     
-    [Inject] private ChangePusher ChangePusher { get; set; } = null!;
+    [Inject] private HistoryManager HistoryManager { get; set; } = null!;
     
     private ILogger _logger = null!;
     
@@ -38,13 +38,13 @@ public partial class DiagramPage
         var updatedDiagram = (await Client.GetFromJsonAsync<Diagram>(ApplicationApi.Diagram.Content.Request(_view.Diagram.Id)))!;
         _view.Diagram.Update(updatedDiagram);
         
-        _viewManager = new ViewManager(_view, _view.Diagram, _ribbon, ChangePusher, LoggerFactory);
+        _viewManager = new ViewManager(_view, _view.Diagram, _ribbon, HistoryManager, LoggerFactory);
         await _viewManager.Initialize();
 
-        _nodeManager = new NodeManager(_view, _view.Diagram, ChangePusher, LoggerFactory);
+        _nodeManager = new NodeManager(_view, _view.Diagram, LoggerFactory, HistoryManager);
         await _nodeManager.Initialize();
         
-        _linkManager = new LinkManager(_view, _view.Diagram, ChangePusher, LoggerFactory);
+        _linkManager = new LinkManager(_view, _view.Diagram, LoggerFactory, HistoryManager);
         await _linkManager.Initialize();
 
         // var firstNode = Diagram.Nodes.Add(new NodeModel(position: new Point(50, 50)) { Title = "Node 1" });

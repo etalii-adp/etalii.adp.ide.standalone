@@ -10,10 +10,10 @@
 - [ ] In-app error visualization.
 
 ## Tasks - Editing
-- [X] Ribbon disable button capability.
-- [X] Ribbon selection responsiveness.
-- [X] Ribbon node Edit.
-- [ ] Persisted undo/redo.
+- [X] Ribbon disable button capability
+- [X] Ribbon selection responsiveness
+- [X] Ribbon node Edit
+- [ ] Persisted undo/redo
 - [ ] Note nodes
 - [ ] Note links
 - [ ] Node colors
@@ -25,26 +25,34 @@
 - [ ] Stretch
 
 ## Tasks - Dependencies
-- [X] Link removal.
-- [X] Node removal.
-- [ ] 'Future' or 'Not concrete' tag to node visualization.
+- [X] Link removal
+- [X] Node removal
+- [ ] 'Future' or 'Not concrete' tag to node visualization
 - [ ] Export as Json
 - [ ] Export as Xml
 - [ ] Export as Text
 - [ ] Export as Image
-- [ ] Import / Export / Sync with Azure DevOps.
+- [ ] Import / Export / Sync with Azure DevOps
 - [ ] Classification: Concrete artifact, Abstract Concept, Paradigm Shift
 
 ## Potential diagrams
 - [ ] Dependencies within this project
 - [ ] Evolution of entertainment
 - [ ] Agile project development 
+- [ ]  Stories => Books => Video => Games => XR
+- [ ] Trends in XR
+- [ ] Politics?
 
 ## Future
 - [ ] Making perspectives public
 - [ ] Ads
 
-  Stories => Books => Video => Games => XR
-- [ ] Trends in XR
-- [ ] Politics?
-- [ ] 
+
+## Tools
+```sql
+DROP TABLE IF EXISTS dbo.Links;
+DROP TABLE IF EXISTS dbo.Nodes;
+DROP TABLE IF EXISTS dbo.Diagrams;
+DROP TABLE IF EXISTS dbo.__EFMigrationsHistory;
+DROP TABLE IF EXISTS dbo.Users;
+```

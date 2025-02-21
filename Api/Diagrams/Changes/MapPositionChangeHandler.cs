@@ -4,7 +4,7 @@ namespace EtAlii.Adp.Api;
 
 public class MapPositionChangeHandler : ChangeHandler<DiagramPositionChange>
 {
-    protected override async Task Apply(DiagramPositionChange change, AdpDbContext context)
+    protected override async Task Do(DiagramPositionChange change, AdpDbContext context)
     {
         // Fetch the diagram.
         var diagram = await context.Diagrams.SingleAsync(d => d.Id == change.Id);

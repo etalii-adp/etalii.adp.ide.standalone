@@ -4,7 +4,7 @@ namespace EtAlii.Adp.Api;
 
 public class NodeMoveChangeHandler : ChangeHandler<NodeMoveChange>
 {
-    protected override async Task Apply(NodeMoveChange change, AdpDbContext context)
+    protected override async Task Do(NodeMoveChange change, AdpDbContext context)
     {
         // Fetch the node.
         var node = await context.Nodes.SingleAsync(n => n.Id == change.NodeId);
