@@ -3,7 +3,8 @@
 public static class CommandName
 {
     public const string Delete = nameof(Delete);
-
+    public const string Rename = nameof(Rename);
+    
     public const string Undo = nameof(Undo);
     public const string Redo = nameof(Redo);
 

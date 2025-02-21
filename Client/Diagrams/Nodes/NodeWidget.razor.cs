@@ -14,8 +14,9 @@ public partial class NodeWidget
     protected override void OnParametersSet()
     {
         _nodeName = Node.Name;
+        Node.EditRequested += OnStartNameEdit;
     }
-
+    
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (_textInput != null && _isEditing)

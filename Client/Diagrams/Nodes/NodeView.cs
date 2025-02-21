@@ -10,6 +10,8 @@ public class NodeView : NodeModel
     public new NodePosition Position => new() { X = base.Position.X, Y = base.Position.Y };
 
     public NodeManager NodeManager { get; }
+
+    public event Action EditRequested = null!;
     
     private NodeView(NodeIdentifier id, Point position, NodeManager nodeManager)
         : base(id.ToString(), position)
@@ -35,5 +37,10 @@ public class NodeView : NodeModel
         node.AddPort(new PortView("Past", node, PortAlignment.Left));
         node.AddPort(new PortView("Future", node, PortAlignment.Right));
         return node;
+    }
+
+    public void RequestNameEdit()
+    {
+        EditRequested.Invoke();
     }
 }

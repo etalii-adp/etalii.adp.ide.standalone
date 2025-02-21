@@ -26,7 +26,8 @@ public partial class ViewManager
 
         _commandHandlers =
         [
-            new DeleteCommandHandler(_view, _diagram)
+            new DeleteCommandHandler(_view, _diagram),
+            new RenameCommandHandler(_view, _diagram),
         ];
     }
 

@@ -16,6 +16,7 @@
             <RibbonItemGroup Name="New">
                 <RibbonItem Name="NewEmail" IconName="IconName.EnvelopePlus" IconSize="IconSize.x3" IconColor="IconColor.Primary" >New<br/>Email</RibbonItem>
                 <RibbonItem Name="Appointment" IconName="IconName.Calendar3Event" IconSize="IconSize.x3" IconColor="IconColor.Primary" />
+                <RibbonItem Name="@CommandName.Rename" Class="@(_canRename ? "" : "disabled-ribbon-button")"  IconColor="IconColor.Primary" IconName="IconName.CursorText" IconSize="IconSize.x3">Rename</RibbonItem>
             </RibbonItemGroup>
             <!-- Delete -->
             <RibbonItemGroup Name="Delete">
