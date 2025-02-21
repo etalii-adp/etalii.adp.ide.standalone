@@ -32,8 +32,8 @@
   <ItemGroup>
     <Folder Include="About\" />
     <Folder Include="Configuration\" />
-    <Folder Include="Diagrams\Notes\" />
-    <Folder Include="Diagrams\_Model\" />
+    <Folder Include="Diagram\Notes\" />
+    <Folder Include="Diagram\_Model\" />
     <Folder Include="Trends\" />
     <Folder Include="User\_Model\" />
   </ItemGroup>
@@ -42,6 +42,18 @@
     <Compile Update="Navigation\NavHeader.Authentication.razor.cs">
       <DependentUpon>NavHeader.razor</DependentUpon>
     </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Diagrams\Nodes\NodeWidget.razor" />
+    <_ContentIncludedByDefault Remove="Diagrams\View\DiagramRibbon.razor" />
+    <_ContentIncludedByDefault Remove="Diagrams\View\DiagramRibbonItem.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="Diagram\Nodes\NodeWidget.razor" />
+    <AdditionalFiles Include="Diagram\View\DiagramRibbon.razor" />
+    <AdditionalFiles Include="Diagram\View\DiagramRibbonItem.razor" />
   </ItemGroup>
 
 </Project>
