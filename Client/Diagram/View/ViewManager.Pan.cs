@@ -15,27 +15,7 @@ public partial class ViewManager
                 h => _view.PanChanged -= h)
             .Throttle(TimeSpan.FromMilliseconds(500)); // Waits for 500ms of inactivity
 
-        eventStream.Subscribe(_ => OnDiagramPanned());
+        eventStream.Subscribe(_ => HandleCommand(CommandName.Pan));
     }
-
-    private async void OnDiagramPanned()
-    {
-        try
-        {
-            var newPosition = new DiagramPosition { X = _view.Pan.X, Y = _view.Pan.Y };
-            
-            _logger.LogInformation("Panning diagram to {DiagramPosition}", newPosition);
-
-            var change = DiagramPositionChange.Apply(_diagram, newPosition);
-
-            // Throttled save.
-            await _history.Push(change);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Unable to handle {MethodName}", nameof(OnDiagramPanned));
-        }
-    }
-
 }
     

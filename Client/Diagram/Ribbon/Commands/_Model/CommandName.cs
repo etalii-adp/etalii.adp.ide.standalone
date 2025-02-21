@@ -15,4 +15,8 @@ public static class CommandName
     public const string AlignBottom = nameof(AlignBottom);
     public const string AlignLeft = nameof(AlignLeft);
     public const string AlignRight = nameof(AlignRight);
+    
+    public const string Pan = nameof(Pan);
+    public const string Zoom = nameof(Zoom);
+
 }

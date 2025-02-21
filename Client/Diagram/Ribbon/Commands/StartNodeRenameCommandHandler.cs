@@ -3,7 +3,7 @@
 namespace EtAlii.Adp.Client;
 using Cn = CommandName;
 
-public class RenameCommandHandler : ICommandHandler
+public class StartNodeRenameCommandHandler : ICommandHandler
 {
     public string CommandName => Cn.Rename;
 

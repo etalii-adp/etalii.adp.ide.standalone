@@ -15,24 +15,7 @@ public partial class ViewManager
                 h => _view.ZoomChanged -= h)
             .Throttle(TimeSpan.FromMilliseconds(500)); // Waits for 500ms of inactivity
 
-        eventStream.Subscribe(_ => OnDiagramZoomed());
-    }
-
-    private async void OnDiagramZoomed()
-    {
-        try
-        {
-            _logger.LogInformation("Zooming diagram from {OldZoom} to {NewZoom}", _diagram.Zoom, _view.Zoom);
-
-            var change = DiagramZoomChange.Apply(_diagram, _view.Zoom);
-
-            // Throttled save.
-            await _history.Push(change);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Unable to handle {MethodName}", nameof(OnDiagramZoomed));
-        }
+        eventStream.Subscribe(_ => HandleCommand(CommandName.Zoom));
     }
 }
     

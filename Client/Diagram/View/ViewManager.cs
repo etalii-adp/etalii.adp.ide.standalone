@@ -9,6 +9,7 @@ public partial class ViewManager
     private readonly ILogger _logger;
 
     private readonly ICommandHandler[] _commandHandlers;
+    
     public ViewManager(
         DiagramView view, 
         Diagram diagram, 
@@ -28,9 +29,11 @@ public partial class ViewManager
         _commandHandlers =
         [
             new DeleteCommandHandler(_view, _diagram),
-            new RenameCommandHandler(),
+            new StartNodeRenameCommandHandler(),
             new UndoCommandHandler(_history),
-            new RedoCommandHandler(_history)
+            new RedoCommandHandler(_history),
+            new PanCommand(_diagram, _view, loggerFactory),
+            new ZoomCommand(_diagram, _view, loggerFactory)
         ];
     }
 
@@ -41,6 +44,25 @@ public partial class ViewManager
         InitializeZoom();
         
         await Task.CompletedTask;
+    }
+    
+    private async void HandleCommand(string commandName)
+    {
+        try
+        {
+            _logger.LogInformation("Handling {CommandName} command", commandName);
+
+            var selection = _view
+                .GetSelectedModels()
+                .ToArray();
+            var handler = _commandHandlers.Single(ch => ch.CommandName == commandName);
+            var changes = await handler.Execute(selection);
+            await _history.Push(changes);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "Unable to handle {CommandName} command", commandName);
+        }
     }
 }
     
