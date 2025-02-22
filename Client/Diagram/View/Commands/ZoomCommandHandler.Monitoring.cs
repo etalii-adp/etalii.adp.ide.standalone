@@ -9,19 +9,19 @@ public partial class ZoomCommandHandler
     private IObservable<Unit> _eventStream = null!;
     private IDisposable _subscription = null!;
 
-    public static void Initialize(ZoomCommandHandler handler, DiagramContext context)
+    public void Initialize(DiagramContext context)
     {
-        handler._context = context;
+        _context = context;
         context.View.SetZoom(context.Diagram.Zoom <= 0f ? 1f : context.Diagram.Zoom);
 
         // Convert the event into an observable sequence
-        handler._eventStream = Observable
+        _eventStream = Observable
             .FromEvent(
                 h => context.View.ZoomChanged += h, 
                 h => context.View.ZoomChanged -= h)
             .Throttle(TimeSpan.FromMilliseconds(500)); // Waits for 500ms of inactivity
         
-        handler.StartZoomMonitor();
+        StartZoomMonitor();
     }
 
     private void StartZoomMonitor()

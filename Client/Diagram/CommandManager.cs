@@ -43,8 +43,8 @@ public class CommandManager
         }
     }
 
-    public static void Initialize(CommandManager commandManager, DiagramContext context)
+    public void Initialize(DiagramContext context)
     {
-        commandManager._context = context;
+        _context = context;
     }
 }

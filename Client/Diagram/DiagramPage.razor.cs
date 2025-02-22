@@ -7,8 +7,6 @@ public partial class DiagramPage
 {
     [Parameter] public string DiagramTitle { get; set; } = null!;
     
-    private DiagramView _view = null!;
-
     [Inject] private ILoggerFactory LoggerFactory { get; set; } = null!;
 
     [Inject] private HttpClient Client { get; set; } = null!;
@@ -17,81 +15,44 @@ public partial class DiagramPage
     
     [Inject] private HistoryManager HistoryManager { get; set; } = null!;
     
-    private ILogger _logger = null!;
+    [Inject] private CommandManager CommandManager { get; set; } = null!;
+    [Inject] private NodeManager NodeManager { get; set; } = null!;
+    [Inject] private LinkManager LinkManager { get; set; } = null!;
     
-    private NodeManager _nodeManager = null!;
-    private ViewManager _viewManager = null!;
-    private LinkManager _linkManager = null!;
+    [Inject] private DiagramView DiagramView { get; set; } = null!;
+    [Inject] private IEnumerable<ICommandHandler> CommandHandlers { get; set; } = null!;
+    
+    private ILogger _logger = null!;
     private DiagramRibbon _ribbon = null!;
+    private DiagramContext _context = null!;
+    private Diagram _currentDiagram = null!;
 
     protected override async Task OnParametersSetAsync()
     {
         _logger = LoggerFactory.CreateLogger<DiagramPage>();
         
         _logger.LogInformation("Diagram page parameters set");
-
-        _view = new DiagramView
-        {
-            Diagram = DiagramManager.CurrentDiagram!
-        };
         
-        var updatedDiagram = (await Client.GetFromJsonAsync<Diagram>(ApplicationApi.Diagram.Content.Request(_view.Diagram.Id)))!;
-        _view.Diagram.Update(updatedDiagram);
+        _currentDiagram = DiagramManager.CurrentDiagram!;
+        var updatedDiagram = (await Client.GetFromJsonAsync<Diagram>(ApplicationApi.Diagram.Content.Request(_currentDiagram.Id)))!;
+        _currentDiagram.Update(updatedDiagram);
 
-        var panCommandHandler = new PanCommandHandler(LoggerFactory);
-        var zoomCommandHandler = new ZoomCommandHandler(LoggerFactory);
-        var addNodeCommandHandler = new AddNodeCommandHandler(LoggerFactory);
-        var removeNodeCommandHandler = new RemoveNodeCommandHandler(addNodeCommandHandler, LoggerFactory);
-        var commandHandlers = new ICommandHandler[]
+        _context = new DiagramContext
         {
-            new DeleteCommandHandler(),
-            new StartNodeRenameCommandHandler(),
-            new UndoCommandHandler(HistoryManager),
-            new RedoCommandHandler(HistoryManager),
-            panCommandHandler,
-            zoomCommandHandler,
-            
-            addNodeCommandHandler,
-            removeNodeCommandHandler,
-            new RenameNodeCommandHandler(LoggerFactory),
-            new MoveNodeCommandHandler(LoggerFactory),
-            
-            new AddLinkCommandHandler(LoggerFactory),
-            new RemoveLinkCommandHandler(LoggerFactory),
-            
-            new AlignNodesLeftCommandHandler(),
-            new AlignNodesRightCommandHandler(),
-            new AlignNodesTopCommandHandler(),
-            new AlignNodesBottomCommandHandler(),
-            
-            new GroupNodesCommandHandler(),
-            new UngroupNodesCommandHandler()
-        };
-
-        var commandManager = new CommandManager(HistoryManager, LoggerFactory);
-        
-        var context = new DiagramContext
-        {
-            Diagram = _view.Diagram,
+            Diagram = _currentDiagram,
             Ribbon = _ribbon,
             History = HistoryManager,
-            View = _view,
-            Commands = commandManager,
-            CommandHandlers = commandHandlers,
+            Nodes = NodeManager,
+            Links = LinkManager,
+            View = DiagramView,
+            Commands = CommandManager,
+            CommandHandlers = CommandHandlers.ToArray()
         };
         
-        _viewManager = new ViewManager(context, LoggerFactory);
-        await _viewManager.Initialize();
-
-        _nodeManager = new NodeManager(context, LoggerFactory);
-        await _nodeManager.Initialize();
-        
-        _linkManager = new LinkManager(context, LoggerFactory);
-        await _linkManager.Initialize();
-
-        CommandManager.Initialize(commandManager, context);
-        DiagramRibbon.Initialize(_ribbon, context);
-        PanCommandHandler.Initialize(panCommandHandler, context);
-        ZoomCommandHandler.Initialize(zoomCommandHandler, context);
+        _context.View.Initialize(_context);
+        _context.Nodes.Initialize(_context);
+        _context.Links.Initialize(_context);
+        _context.Commands.Initialize(_context);
+        _context.Ribbon.Initialize(_context);
     }
 }

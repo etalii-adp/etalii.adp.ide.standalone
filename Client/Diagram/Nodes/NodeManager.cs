@@ -5,29 +5,28 @@ namespace EtAlii.Adp.Client;
 
 public class NodeManager
 {
-    private readonly DiagramContext _context;
+    private DiagramContext _context = null!;
     private readonly ILogger _logger;
 
-    public NodeManager(DiagramContext context, ILoggerFactory loggerFactory)
+    public NodeManager(ILoggerFactory loggerFactory)
     {
         _logger = loggerFactory.CreateLogger<NodeManager>();
-        _context = context;
     }
-
-    public async Task Initialize()
+    
+    public void Initialize(DiagramContext context)
     {
+        _context = context;
         _logger.LogInformation("Initializing node management");
 
-        foreach (var n in _context.Diagram.Nodes)
+        foreach (var n in context.Diagram.Nodes)
         {
-            var nodeView = NodeView.Create(_context, n);
+            var nodeView = NodeView.Create(context, n);
             nodeView.Moved += OnNodeMoved;
-            _context.View.Nodes.Add(nodeView);
+            context.View.Nodes.Add(nodeView);
         }
-        _context.View.PointerDoubleClick += OnDiagramDoubleClicked;
-
-        await Task.CompletedTask;
+        context.View.PointerDoubleClick += OnDiagramDoubleClicked;
     }
+
     
     private void OnNodeMoved(MovableModel model)
     {

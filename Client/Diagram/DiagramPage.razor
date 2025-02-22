@@ -2,14 +2,14 @@
 @page "/user/diagrams/{DiagramTitle}"
 @using Blazor.Diagrams.Components
 @using Blazor.Diagrams.Components.Widgets
-<PageTitle>Ubigia - @_view.Diagram.Name</PageTitle>
+<PageTitle>Ubigia - @_currentDiagram.Name</PageTitle>
 
 <AuthorizeView>
     <Authorized>
         <DiagramRibbon @ref="_ribbon" />
 
         <div class="diagram-container">
-            <CascadingValue Value="_view">
+            <CascadingValue Value="DiagramView">
                 <DiagramCanvas>
                     <Widgets>
                         <NavigatorWidget

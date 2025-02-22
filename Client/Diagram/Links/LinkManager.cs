@@ -5,24 +5,22 @@ namespace EtAlii.Adp.Client;
 
 public class LinkManager
 {
-    private readonly DiagramContext _context;
+    private DiagramContext _context = null!;
     private readonly ILogger _logger;
 
-    public LinkManager(
-        DiagramContext context,
-        ILoggerFactory loggerFactory)
+    public LinkManager(ILoggerFactory loggerFactory)
     {
-        _context = context;
         _logger = loggerFactory.CreateLogger<LinkManager>();
     }
-
-    public async Task Initialize()
+    
+    public void Initialize(DiagramContext context)
     {
+        _context = context;
         _logger.LogInformation("Initializing link management");
 
-        foreach (var l in _context.Diagram.Links)
+        foreach (var l in context.Diagram.Links)
         {
-            var sourceNode = _context.View.Nodes
+            var sourceNode = context.View.Nodes
                 .Cast<NodeView>()
                 .Single(n => n.Id == l.SourceNode.Id);
 
@@ -30,7 +28,7 @@ public class LinkManager
                 .Cast<PortView>()
                 .Single(p => p.Id == l.SourcePort);
 
-            var targetNode = _context.View.Nodes
+            var targetNode = context.View.Nodes
                 .Cast<NodeView>()
                 .Single(n => n.Id == l.TargetNode.Id);
 
@@ -38,13 +36,11 @@ public class LinkManager
                 .Cast<PortView>()
                 .Single(p => p.Id == l.TargetPort);
             
-            _context.View.Links.Add(new LinkView(l.Id, sourcePort, targetPort));
+            context.View.Links.Add(new LinkView(l.Id, sourcePort, targetPort));
         }
         
-        _context.View.Links.Added += OnLinkAdded;
-        _context.View.Links.Removed += OnLinkRemoved;
-
-        await Task.CompletedTask;
+        context.View.Links.Added += context.Links.OnLinkAdded;
+        context.View.Links.Removed += context.Links.OnLinkRemoved;
     }
     
     private void OnLinkAdded(BaseLinkModel linkView)

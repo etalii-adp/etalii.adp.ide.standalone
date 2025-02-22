@@ -7,13 +7,13 @@ public partial class DiagramRibbon : ComponentBase
 {
     private DiagramContext _context = null!;
 
-    public static void Initialize(DiagramRibbon ribbon, DiagramContext context)
+    public void Initialize(DiagramContext context)
     {
-        ribbon._context = context;
-        ribbon.StateHasChanged();
+        _context = context;
+        StateHasChanged();
 
-        context.View.SelectionChanged += _ => ribbon.StateHasChanged();
-        context.History.Changed += ribbon.StateHasChanged;
+        context.View.SelectionChanged += _ => StateHasChanged();
+        context.History.Changed += StateHasChanged;
     }
 
     protected override void OnParametersSet() => StateHasChanged();

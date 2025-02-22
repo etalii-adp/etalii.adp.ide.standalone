@@ -13,10 +13,42 @@ builder.Services.AddScoped<UserManager>();
 builder.Services.AddSingleton<DiagramManager>();
 builder.Services.AddSingleton<ChangePusher>();
 builder.Services.AddSingleton<HistoryManager>();
+builder.Services.AddSingleton<CommandManager>();
+builder.Services.AddSingleton<NodeManager>();
+builder.Services.AddSingleton<LinkManager>();
+builder.Services.AddSingleton<DiagramView>();
 
 builder.Services.AddBlazorBootstrap();
 builder.Services.AddOptions();
 builder.Services.AddAuthorizationCore();
+
+    
+builder.Services.AddSingleton<ICommandHandler, PanCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, ZoomCommandHandler>();
+
+builder.Services.AddSingleton<AddNodeCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, AddNodeCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, RemoveNodeCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, RenameNodeCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, MoveNodeCommandHandler>();
+
+builder.Services.AddSingleton<ICommandHandler, AlignNodesLeftCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, AlignNodesRightCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, AlignNodesTopCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, AlignNodesBottomCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, GroupNodesCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, UngroupNodesCommandHandler>();
+
+builder.Services.AddSingleton<ICommandHandler, DeleteCommandHandler>();
+
+builder.Services.AddSingleton<ICommandHandler, StartNodeRenameCommandHandler>();
+
+builder.Services.AddSingleton<ICommandHandler, UndoCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, RedoCommandHandler>();
+
+builder.Services.AddSingleton<ICommandHandler, AddLinkCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, RemoveLinkCommandHandler>();
+
 
 if (LocalDebugger.IsAttached)
 {

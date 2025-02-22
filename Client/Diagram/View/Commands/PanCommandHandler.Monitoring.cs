@@ -9,19 +9,19 @@ public partial class PanCommandHandler
     private IObservable<Unit> _eventStream = null!;
     private IDisposable _subscription = null!;
 
-    public static void Initialize(PanCommandHandler handler, DiagramContext context)
+    public void Initialize(DiagramContext context)
     {
-        handler._context = context;
+        _context = context;
         context.View.SetPan(context.Diagram.Position.X, context.Diagram.Position.Y);
 
         // Convert the event into an observable sequence
-        handler._eventStream = Observable
+        _eventStream = Observable
             .FromEvent(
                 h => context.View.PanChanged += h, 
                 h => context.View.PanChanged -= h)
             .Throttle(TimeSpan.FromMilliseconds(500)); // Waits for 500ms of inactivity
         
-        handler.StartPanningMonitor();
+        StartPanningMonitor();
     }
 
     private void StartPanningMonitor()

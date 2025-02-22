@@ -8,7 +8,8 @@ public class DiagramContext
     public required Diagram Diagram { get; init; }
     public required DiagramRibbon Ribbon { get; init; } 
     public required HistoryManager History { get; init; }
-
+    public required NodeManager Nodes { get; init; }
+    public required LinkManager Links { get; init; }
     public required CommandManager Commands { get; init; }
     
     public required ICommandHandler[] CommandHandlers { get; init; }
