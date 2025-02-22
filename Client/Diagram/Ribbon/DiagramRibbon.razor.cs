@@ -58,7 +58,7 @@ public partial class DiagramRibbon : ComponentBase
 
     private void OnSelectionChanged(SelectableModel obj)
     {
-        var selectedObjects = _context.View.GetSelectedModels().ToArray();
+        var selectedObjects = _context.Selection;
         
         if (selectedObjects.Length == 1 && selectedObjects.Length == selectedObjects.OfType<NodeView>().Count())
         {
