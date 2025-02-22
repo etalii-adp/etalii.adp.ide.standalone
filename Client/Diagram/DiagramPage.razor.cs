@@ -35,7 +35,7 @@ public partial class DiagramPage
         
         _currentDiagram = DiagramManager.CurrentDiagram!;
         var updatedDiagram = (await Client.GetFromJsonAsync<Diagram>(ApplicationApi.Diagram.Content.Request(_currentDiagram.Id)))!;
-        _currentDiagram.Update(updatedDiagram);
+        _currentDiagram.Initialize(updatedDiagram);
 
         _context = new DiagramContext
         {

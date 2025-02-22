@@ -38,7 +38,7 @@ public record Diagram
     /// </summary>
     public required double Zoom { get; set; } = 1f;
 
-    public void Update(Diagram diagram)
+    public void Initialize(Diagram diagram)
     {
         _nodes = diagram.Nodes;
         _links = diagram.Links;

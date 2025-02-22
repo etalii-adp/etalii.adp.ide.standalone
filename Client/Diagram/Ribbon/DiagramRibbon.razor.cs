@@ -6,7 +6,13 @@ namespace EtAlii.Adp.Client;
 public partial class DiagramRibbon : ComponentBase
 {
     private DiagramContext _context = null!;
+    private readonly ILogger _logger;
 
+    public DiagramRibbon(ILoggerFactory loggerFactory)
+    {
+        _logger = loggerFactory.CreateLogger<DiagramRibbon>();
+    }
+    
     public void Initialize(DiagramContext context)
     {
         _context = context;
@@ -22,7 +28,13 @@ public partial class DiagramRibbon : ComponentBase
     {
         var handler = _context.CommandHandlers
             .OfType<IRibbonCommandHandler>()
-            .Single(ch => ch.CommandName == e.Name);
+            .SingleOrDefault(ch => ch.CommandName == e.Name);
+        if (handler == null)
+        {
+            _logger.LogError("No handler found for {CommandName}", e.Name);
+            return;
+        }
+        
         var commands = handler.CreateCommands(_context);
         _context.Commands.Handle(commands);
     }
