@@ -1,5 +1,4 @@
 ﻿namespace EtAlii.Adp.Client;
-using Cn = CommandName;
 
 public class MoveNodeCommandHandler : CommandHandler<NodeMoveCommand>
 {
@@ -10,8 +9,6 @@ public class MoveNodeCommandHandler : CommandHandler<NodeMoveCommand>
         _logger = loggerFactory.CreateLogger<MoveNodeCommandHandler>();
     }
 
-    public override string CommandName => Cn.MoveNode;
-    
     
     public static Command CreateCommand(DiagramContext context, NodeView nodeView)
     {

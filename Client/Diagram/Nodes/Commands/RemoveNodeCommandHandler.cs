@@ -1,5 +1,4 @@
 ﻿namespace EtAlii.Adp.Client;
-using Cn = CommandName;
 
 public class RemoveNodeCommandHandler : CommandHandler<NodeRemoveCommand>
 {
@@ -12,8 +11,6 @@ public class RemoveNodeCommandHandler : CommandHandler<NodeRemoveCommand>
         _logger = loggerFactory.CreateLogger<RemoveNodeCommandHandler>();
     }
 
-    public override string CommandName => Cn.RemoveNode;
-    
     public static Command Create(DiagramContext context, NodeIdentifier oldNodeId, NodePosition oldNodePosition, string oldNodeName)
     {
         return new NodeRemoveCommand

@@ -1,5 +1,4 @@
 ﻿namespace EtAlii.Adp.Client;
-using Cn = CommandName;
 
 public class AddLinkCommandHandler : CommandHandler<LinkAddCommand>
 {
@@ -10,8 +9,6 @@ public class AddLinkCommandHandler : CommandHandler<LinkAddCommand>
         _logger = loggerFactory.CreateLogger<AddLinkCommandHandler>();
     }
 
-    public override string CommandName => Cn.AddLink;
-    
     public static Command CreateCommand(Diagram diagram, 
         LinkIdentifier newLinkId, 
         NodeIdentifier sourceNodeId, 

@@ -3,8 +3,6 @@
 public abstract class CommandHandler<TCommand> : ICommandHandler
     where TCommand : Command
 {
-    public abstract string CommandName { get; }
-
     public bool CanHandle(Command command) => command is TCommand;
 
     public virtual bool SendToBackend => true;

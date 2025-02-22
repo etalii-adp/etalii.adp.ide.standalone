@@ -58,6 +58,11 @@ public partial class DiagramPage
             
             new AddLinkCommandHandler(LoggerFactory),
             new RemoveLinkCommandHandler(LoggerFactory),
+            
+            new AlignNodesLeftCommandHandler(),
+            new AlignNodesRightCommandHandler(),
+            new AlignNodesTopCommandHandler(),
+            new AlignNodesBottomCommandHandler()
         };
 
         var commandManager = new CommandManager(HistoryManager, LoggerFactory);

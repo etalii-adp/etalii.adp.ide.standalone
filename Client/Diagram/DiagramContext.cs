@@ -14,5 +14,7 @@ public class DiagramContext
     public required ICommandHandler[] CommandHandlers { get; init; }
 
     public SelectableModel[] Selection { get; set; } = [];
-    
+
+    public DiagramSelection SelectionType { get; set; } = DiagramSelection.Nothing;
+
 }

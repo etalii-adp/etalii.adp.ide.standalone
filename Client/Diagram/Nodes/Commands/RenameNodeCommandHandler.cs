@@ -1,5 +1,4 @@
 ﻿namespace EtAlii.Adp.Client;
-using Cn = CommandName;
 
 public class RenameNodeCommandHandler : CommandHandler<NodeRenameCommand>
 {
@@ -10,8 +9,6 @@ public class RenameNodeCommandHandler : CommandHandler<NodeRenameCommand>
         _logger = loggerFactory.CreateLogger<RenameNodeCommandHandler>();
     }
 
-    public override string CommandName => Cn.RenameNode;
-    
 
     public static Command CreateCommand(NodeIdentifier nodeId, string oldName, string newName)
     {

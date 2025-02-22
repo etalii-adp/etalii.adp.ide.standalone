@@ -1,16 +1,20 @@
 ﻿using Blazor.Diagrams.Core.Anchors;
+using BlazorBootstrap;
 
 namespace EtAlii.Adp.Client;
-using Cn = CommandName;
 
-public class DeleteCommandHandler : CommandHandler<DeleteCommand>
+public class DeleteCommandHandler : RibbonCommandHandler<DeleteCommand>
 {
-    public override string CommandName => Cn.Delete;
-
     public override bool SendToBackend => false;
     public override bool UseInUndoRedo => false;
 
-    public static Command[] CreateCommands(DiagramContext context)
+    public override IconName IconName => IconName.Trash;
+    public override string IconTitle => "Remove";
+    public override IconColor IconColor => IconColor.Danger;
+
+    public override bool CanHandle(DiagramContext context) => context.SelectionType != DiagramSelection.Nothing;
+
+    public override Command[] CreateCommands(DiagramContext context) 
     {
         var linkCommands = context.Selection
             .OfType<LinkView>()

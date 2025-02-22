@@ -1,19 +1,22 @@
 ﻿# Grand plan
 
 ## Tasks - Bugs
-- [ ] Node layout inconsistency.
+- [ ] Node layout inconsistency
+- [ ] Undo when zooming
 
 ## Tasks - General
-- [ ] Add Beta software warning.
-- [ ] Scaled data loading.
-- [ ] View based filtering.
-- [ ] In-app error visualization.
+- [ ] Add Beta software warning
+- [ ] Scaled data loading
+- [ ] View based filtering
+- [ ] In-app error visualization
 
 ## Tasks - Editing
 - [X] Ribbon disable button capability
 - [X] Ribbon selection responsiveness
 - [X] Ribbon node Edit
-- [ ] Persisted undo/redo
+- [X] Persisted undo/redo
+- [ ] Node tags
+- [ ] Link tags
 - [ ] Note nodes
 - [ ] Note links
 - [ ] Node colors
@@ -23,6 +26,7 @@
 - [ ] Expand Group
 - [ ] Align left/right/top/bottom
 - [ ] Stretch
+- [ ] Fullscreen toggle
 
 ## Tasks - Dependencies
 - [X] Link removal

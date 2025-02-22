@@ -1,5 +1,4 @@
 ﻿namespace EtAlii.Adp.Client;
-using Cn = CommandName;
 
 public class RemoveLinkCommandHandler : CommandHandler<LinkRemoveCommand>
 {
@@ -10,8 +9,6 @@ public class RemoveLinkCommandHandler : CommandHandler<LinkRemoveCommand>
         _logger = loggerFactory.CreateLogger<RemoveLinkCommandHandler>();
     }
 
-    public override string CommandName => Cn.RemoveLink;
-    
     public static Command CreateCommand(DiagramContext context, 
         LinkIdentifier oldLinkId, 
         NodeIdentifier sourceNodeId, 

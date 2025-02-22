@@ -14,41 +14,41 @@
         <Content>
             <!-- New -->
             <RibbonItemGroup Name="New">
-                <RibbonItem Name="NewEmail" IconName="IconName.EnvelopePlus" IconSize="IconSize.x3" IconColor="IconColor.Primary" >New<br/>Email</RibbonItem>
-                <RibbonItem Name="Appointment" IconName="IconName.Calendar3Event" IconSize="IconSize.x3" IconColor="IconColor.Primary" />
-                <RibbonItem Name="@CommandName.Rename" Class="@(_canRename ? "" : "disabled-ribbon-button")"  IconColor="IconColor.Primary" IconName="IconName.CursorText" IconSize="IconSize.x3">Rename</RibbonItem>
+                <DiagramRibbonPlaceStub Name="NewEmail" IconName="IconName.EnvelopePlus" >New<br/>Email</DiagramRibbonPlaceStub>
+                <DiagramRibbonPlaceStub Name="Appointment" IconName="IconName.Calendar3Event" />
+                <DiagramRibbonItem Context="@_context" THandler="StartNodeRenameCommandHandler" />
             </RibbonItemGroup>
             <!-- Delete -->
             <RibbonItemGroup Name="Delete">
-                <RibbonItem Name="@CommandName.Delete" Class="@(_canDelete ? "" : "disabled-ribbon-button")" IconColor="IconColor.Danger" IconName="IconName.Trash" IconSize="IconSize.x3">Remove</RibbonItem>
-                <RibbonItem Name="Archive" IconName="IconName.Archive" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Archive</RibbonItem>
+                <DiagramRibbonItem Context="@_context" THandler="DeleteCommandHandler" />
+                <DiagramRibbonPlaceStub Name="Archive" IconName="IconName.Archive" >Archive</DiagramRibbonPlaceStub>
             </RibbonItemGroup>
             <RibbonItemGroup Name="Undo / Redo">
-                <RibbonItem Name="@CommandName.Undo" Class="@(_canUndo ? "" : "disabled-ribbon-button")" IconName="IconName.ArrowCounterclockwise" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Undo</RibbonItem>
-                <RibbonItem Name="@CommandName.Redo" Class="@(_canRedo ? "" : "disabled-ribbon-button")"  IconName="IconName.ArrowClockwise" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Redo</RibbonItem>
+                <DiagramRibbonItem Context="@_context" THandler="UndoCommandHandler" />
+                <DiagramRibbonItem Context="@_context" THandler="RedoCommandHandler" />
             </RibbonItemGroup>
             <RibbonItemGroup Name="Grouping">
-                <RibbonItem Name="@CommandName.Group" Class="@(_canGroup ? "" : "disabled-ribbon-button")" IconName="IconName.FolderPlus" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Group</RibbonItem>
-                <RibbonItem Name="@CommandName.Ungroup" Class="@(_canUngroup ? "" : "disabled-ribbon-button")" IconName="IconName.FolderMinus" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Ungroup</RibbonItem>
+                <DiagramRibbonPlaceStub Name="Group" Class="@(_canGroup ? "" : "disabled-ribbon-button")" IconName="IconName.FolderPlus" >Group</DiagramRibbonPlaceStub>
+                <DiagramRibbonPlaceStub Name="Ungroup" Class="@(_canUngroup ? "" : "disabled-ribbon-button")" IconName="IconName.FolderMinus" >Ungroup</DiagramRibbonPlaceStub>
             </RibbonItemGroup>
             <RibbonItemGroup Name="Alignment">
-                <RibbonItem Name="@CommandName.AlignTop" Class="@(_canAlign ? "" : "disabled-ribbon-button")" IconName="IconName.AlignTop" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Align<br/>top</RibbonItem>
-                <RibbonItem Name="@CommandName.AlignBottom" Class="@(_canAlign ? "" : "disabled-ribbon-button")" IconName="IconName.AlignBottom" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Align<br/>bottom</RibbonItem>
-                <RibbonItem Name="@CommandName.AlignLeft" Class="@(_canAlign ? "" : "disabled-ribbon-button")" IconName="IconName.AlignStart" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Align<br/>left</RibbonItem>
-                <RibbonItem Name="@CommandName.AlignRight" Class="@(_canAlign ? "" : "disabled-ribbon-button")" IconName="IconName.AlignEnd" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Align<br/>right</RibbonItem>
+                <DiagramRibbonItem Context="@_context" THandler="AlignNodesTopCommandHandler"/>
+                <DiagramRibbonItem Context="@_context" THandler="AlignNodesBottomCommandHandler"/>
+                <DiagramRibbonItem Context="@_context" THandler="AlignNodesLeftCommandHandler"/>
+                <DiagramRibbonItem Context="@_context" THandler="AlignNodesRightCommandHandler"/>
             </RibbonItemGroup>
         </Content>
     </RibbonTab>
     <RibbonTab Title="Structure">
         <Content>
             <RibbonItemGroup Name="Tags">
-                <RibbonItem Name="SendReceiveAllFolders" IconName="IconName.EnvelopePlus" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Send/Receive<br/>All Folders</RibbonItem>
-                <RibbonItem Name="UpdateFolder" IconName="IconName.Calendar3Event" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Update<br/>Folder</RibbonItem>
+                <DiagramRibbonPlaceStub Name="SendReceiveAllFolders" IconName="IconName.EnvelopePlus" >Send/Receive<br/>All Folders</DiagramRibbonPlaceStub> 
+                <DiagramRibbonPlaceStub Name="UpdateFolder" IconName="IconName.Calendar3Event" >Update<br/>Folder</DiagramRibbonPlaceStub> 
             </RibbonItemGroup>
             <!-- Download -->
             <RibbonItemGroup Name="Download">
-                <RibbonItem Name="ShowProgress" IconName="IconName.Trash" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Show<br/>Progress</RibbonItem>
-                <RibbonItem Name="CancelAll" IconName="IconName.XSquareFill" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Cancel<br/>All</RibbonItem>
+                <DiagramRibbonPlaceStub Name="ShowProgress" IconName="IconName.Trash" >Show<br/>Progress</DiagramRibbonPlaceStub> 
+                <DiagramRibbonPlaceStub Name="CancelAll" IconName="IconName.XSquareFill" >Cancel<br/>All</DiagramRibbonPlaceStub> 
             </RibbonItemGroup>
         </Content>
     </RibbonTab>
@@ -56,39 +56,39 @@
         <Content>
             <!-- New -->
             <RibbonItemGroup Name="New">
-                <RibbonItem Name="NewFolder" IconColor="IconColor.Primary" IconName="IconName.FolderPlus" IconSize="IconSize.x3">New<br/>Folder</RibbonItem>
-                <RibbonItem Name="NewSearchFolder" IconColor="IconColor.Primary" IconName="IconName.Search" IconSize="IconSize.x3">New<br/>Search Folder</RibbonItem>
+                <DiagramRibbonPlaceStub Name="NewFolder" IconName="IconName.FolderPlus">New<br/>Folder</DiagramRibbonPlaceStub> 
+                <DiagramRibbonPlaceStub Name="NewSearchFolder" IconName="IconName.Search">New<br/>Search Folder</DiagramRibbonPlaceStub> 
             </RibbonItemGroup>
             <!-- Actions -->
             <RibbonItemGroup Name="Actions">
-                <RibbonItem Name="RenameFolder" IconColor="IconColor.Primary" IconName="IconName.CursorText" IconSize="IconSize.x3">Rename<br/>Folder</RibbonItem>
-                <RibbonItem Name="CopyFolder" IconColor="IconColor.Primary" IconName="IconName.Copy" IconSize="IconSize.x3">Copy<br/>Folder</RibbonItem>
-                <RibbonItem Name="MoveFolder" IconColor="IconColor.Primary" IconName="IconName.ArrowRight" IconSize="IconSize.x3">Move<br/>Folder</RibbonItem>
-                <RibbonItem Name="DeleteFolder" IconColor="IconColor.Primary" IconName="IconName.FolderX" IconSize="IconSize.x3">Delete<br/>Folder</RibbonItem>
+                <DiagramRibbonPlaceStub Name="RenameFolder" IconName="IconName.CursorText">Rename<br/>Folder</DiagramRibbonPlaceStub> 
+                <DiagramRibbonPlaceStub Name="CopyFolder" IconName="IconName.Copy">Copy<br/>Folder</DiagramRibbonPlaceStub> 
+                <DiagramRibbonPlaceStub Name="MoveFolder" IconName="IconName.ArrowRight">Move<br/>Folder</DiagramRibbonPlaceStub> 
+                <DiagramRibbonPlaceStub Name="DeleteFolder" IconName="IconName.FolderX">Delete<br/>Folder</DiagramRibbonPlaceStub> 
             </RibbonItemGroup>
         </Content>
     </RibbonTab>
     <RibbonTab Title="Import / Export">
         <Content>
             <RibbonItemGroup Name="Export">
-                <RibbonItem Name="ExportLlm" IconName="IconName.Chat" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Export to<br/>LLM</RibbonItem>
-                <RibbonItem Name="ExportJson" IconName="IconName.FileTypeJson" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Export as<br/>JSON</RibbonItem>
-                <RibbonItem Name="ExportXml" IconName="IconName.FileTypeXml" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Export as<br/>XML</RibbonItem>
-                <RibbonItem Name="ExportImage" IconName="IconName.Image" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Export as<br/>Image</RibbonItem>
-                <RibbonItem Name="ExportAzure" IconName="IconName.Microsoft" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Export to<br/>Azure DevOps</RibbonItem>
-                <RibbonItem Name="ExportGitHub" IconName="IconName.Github" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Export to<br/>Github Project</RibbonItem>
+                <DiagramRibbonPlaceStub Name="ExportLlm" IconName="IconName.Chat" >Export to<br/>LLM</DiagramRibbonPlaceStub> 
+                <DiagramRibbonPlaceStub Name="ExportJson" IconName="IconName.FileTypeJson" >Export as<br/>JSON</DiagramRibbonPlaceStub> 
+                <DiagramRibbonPlaceStub Name="ExportXml" IconName="IconName.FileTypeXml" >Export as<br/>XML</DiagramRibbonPlaceStub> 
+                <DiagramRibbonPlaceStub Name="ExportImage" IconName="IconName.Image" >Export as<br/>Image</DiagramRibbonPlaceStub> 
+                <DiagramRibbonPlaceStub Name="ExportAzure" IconName="IconName.Microsoft" >Export to<br/>Azure DevOps</DiagramRibbonPlaceStub> 
+                <DiagramRibbonPlaceStub Name="ExportGitHub" IconName="IconName.Github" >Export to<br/>Github Project</DiagramRibbonPlaceStub> 
             </RibbonItemGroup>
             <RibbonItemGroup Name="Import">
-                <RibbonItem Name="ImportAzure" IconName="IconName.Microsoft" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Import from <br/>Azure DevOps</RibbonItem>
-                <RibbonItem Name="ImportGitHub" IconName="IconName.Github" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Import from<br/>Github Project</RibbonItem>
+                <DiagramRibbonPlaceStub Name="ImportAzure" IconName="IconName.Microsoft" >Import from <br/>Azure DevOps</DiagramRibbonPlaceStub> 
+                <DiagramRibbonPlaceStub Name="ImportGitHub" IconName="IconName.Github" >Import from<br/>Github Project</DiagramRibbonPlaceStub> 
             </RibbonItemGroup>
         </Content>
     </RibbonTab>
     <RibbonTab Title="Synchronize">
         <Content>
-            <RibbonItem Name="SynchronizeAzure" IconName="IconName.Microsoft" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Sync <br/>Azure DevOps</RibbonItem>
-            <RibbonItem Name="SynchronizeGithub" IconName="IconName.Github" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Sync <br/>Github Project</RibbonItem>
-            <RibbonItem Name="SynchronizeNotion" IconName="IconName.SquareHalf" IconSize="IconSize.x3" IconColor="IconColor.Primary" >Sync <br/>Notion</RibbonItem>
+            <DiagramRibbonPlaceStub Name="SynchronizeAzure" IconName="IconName.Microsoft" >Sync <br/>Azure DevOps</DiagramRibbonPlaceStub> 
+            <DiagramRibbonPlaceStub Name="SynchronizeGithub" IconName="IconName.Github" >Sync <br/>Github Project</DiagramRibbonPlaceStub> 
+            <DiagramRibbonPlaceStub Name="SynchronizeNotion" IconName="IconName.SquareHalf" >Sync <br/>Notion</DiagramRibbonPlaceStub> 
         </Content>
     </RibbonTab>
 </Ribbon>

@@ -1,10 +1,7 @@
 ﻿namespace EtAlii.Adp.Client;
-using Cn = CommandName;
 
 public partial class ZoomCommandHandler : CommandHandler<DiagramZoomCommand>
 {
-    public override string CommandName => Cn.Zoom;
-
     private readonly ILogger _logger;
 
     public ZoomCommandHandler(ILoggerFactory loggerFactory)

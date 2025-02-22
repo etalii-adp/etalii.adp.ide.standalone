@@ -1,5 +1,4 @@
 ﻿namespace EtAlii.Adp.Client;
-using Cn = CommandName;
 
 public class AddNodeCommandHandler : CommandHandler<NodeAddCommand>
 {
@@ -10,8 +9,6 @@ public class AddNodeCommandHandler : CommandHandler<NodeAddCommand>
         _logger = loggerFactory.CreateLogger<AddNodeCommandHandler>();
     }
 
-    public override string CommandName => Cn.AddNode;
-    
     public static Command CreateCommand(DiagramContext context, NodePosition position, NodeIdentifier nodeId, string name)
     {
         return new NodeAddCommand

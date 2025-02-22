@@ -1,10 +1,7 @@
 ﻿namespace EtAlii.Adp.Client;
 
-using Cn = CommandName;
-
 public partial class PanCommandHandler : CommandHandler<DiagramPositionCommand>
 {
-    public override string CommandName => Cn.Pan;
     private readonly ILogger _logger;
     
     public PanCommandHandler(ILoggerFactory loggerFactory)

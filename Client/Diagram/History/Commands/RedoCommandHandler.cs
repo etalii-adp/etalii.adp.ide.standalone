@@ -1,22 +1,26 @@
-﻿namespace EtAlii.Adp.Client;
-using Cn = CommandName;
+﻿using BlazorBootstrap;
 
-public class RedoCommandHandler : CommandHandler<RedoCommand>
+namespace EtAlii.Adp.Client;
+
+public class RedoCommandHandler : RibbonCommandHandler<RedoCommand>
 {
     private readonly HistoryManager _history;
 
     public override bool SendToBackend => false;
     public override bool UseInUndoRedo => false;
 
+    public override IconName IconName => IconName.ArrowCounterclockwise;
+    public override string IconTitle => "Redo";
+
     public RedoCommandHandler(HistoryManager history)
     {
         _history = history;
     }
 
-    public static Command CreateCommand(DiagramContext _) => new RedoCommand();
+    public override bool CanHandle(DiagramContext context) => context.History.Future > 0;
 
-    public override string CommandName => Cn.Redo;
-
+    public override Command[] CreateCommands(DiagramContext _) => [ new RedoCommand() ];
+    
     protected override async Task Do(RedoCommand command, DiagramContext context)
     {
         await _history.TryRedo(context);

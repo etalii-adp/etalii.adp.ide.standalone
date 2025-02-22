@@ -1,14 +1,18 @@
-﻿namespace EtAlii.Adp.Client;
-using Cn = CommandName;
+﻿using BlazorBootstrap;
 
-public class StartNodeRenameCommandHandler : CommandHandler<StartNodeRenameCommand>
+namespace EtAlii.Adp.Client;
+
+public class StartNodeRenameCommandHandler : RibbonCommandHandler<StartNodeRenameCommand>
 {
-    public override string CommandName => Cn.Rename;
-    
     public override bool SendToBackend => false;
     public override bool UseInUndoRedo => false;
+    
+    public override IconName IconName => IconName.CursorText;
+    public override string IconTitle => "Rename";
 
-    public static Command CreateCommand(DiagramContext _) => new StartNodeRenameCommand();
+    public override bool CanHandle(DiagramContext context) => context.SelectionType == DiagramSelection.SingleNode;
+
+    public override Command[] CreateCommands(DiagramContext _) => [ new StartNodeRenameCommand() ];
     
     protected override Task Do(StartNodeRenameCommand command, DiagramContext context)
     {
