@@ -45,7 +45,7 @@
                 <DiagramRibbonPlaceStub Name="Fit selection" IconName="IconName.AspectRatio">Fit<br/>selection</DiagramRibbonPlaceStub>
             </RibbonItemGroup>
             <RibbonItemGroup Name="View">
-                <DiagramRibbonPlaceStub Name="Fullscreen" IconName="IconName.Fullscreen">Fullscreen</DiagramRibbonPlaceStub>
+                <DiagramRibbonItem Context="@_context" THandler="ToggleFullscreenCommandHandler"/>
             </RibbonItemGroup>
         </Content>
     </RibbonTab>

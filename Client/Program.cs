@@ -49,6 +49,7 @@ builder.Services.AddSingleton<ICommandHandler, RedoCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, AddLinkCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, RemoveLinkCommandHandler>();
 
+builder.Services.AddSingleton<ICommandHandler, ToggleFullscreenCommandHandler>();
 
 if (LocalDebugger.IsAttached)
 {
