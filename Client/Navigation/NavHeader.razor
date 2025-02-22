@@ -81,6 +81,9 @@
                 <a href="/.auth/login" @onclick="@ShowLoginModal" @onclick:preventDefault>Login</a>
             </NotAuthorized>
         </AuthorizeView>
+        @* <div class="float-end"> *@
+        @*     <ThemeSwitcher Position="DropdownMenuPosition.End" /> *@
+        @* </div> *@
         @if (LocalDebugger.IsAttached)
         {
             <b style="color: red">&nbsp;&nbsp;DEBUG</b>
