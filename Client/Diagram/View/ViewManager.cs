@@ -54,6 +54,10 @@ public class ViewManager
 
         _context.Selection = selectedObjects;
         _context.SelectionType = selectionType;
+        
+        _context.CanGroup = _context.Selection.OfType<NodeView>().Count() > 1;
+        _context.CanUngroup = false;// selectedObjects.OfType<GroupView>().Count() > 1;
+
     }
 }
     

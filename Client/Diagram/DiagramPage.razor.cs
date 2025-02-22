@@ -62,7 +62,10 @@ public partial class DiagramPage
             new AlignNodesLeftCommandHandler(),
             new AlignNodesRightCommandHandler(),
             new AlignNodesTopCommandHandler(),
-            new AlignNodesBottomCommandHandler()
+            new AlignNodesBottomCommandHandler(),
+            
+            new GroupNodesCommandHandler(),
+            new UngroupNodesCommandHandler()
         };
 
         var commandManager = new CommandManager(HistoryManager, LoggerFactory);

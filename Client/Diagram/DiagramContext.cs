@@ -16,5 +16,6 @@ public class DiagramContext
     public SelectableModel[] Selection { get; set; } = [];
 
     public DiagramSelection SelectionType { get; set; } = DiagramSelection.Nothing;
-
+    public bool CanGroup { get; set; }
+    public bool CanUngroup { get; set; }
 }
