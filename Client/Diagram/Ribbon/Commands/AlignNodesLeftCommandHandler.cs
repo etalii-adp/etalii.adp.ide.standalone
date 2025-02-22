@@ -13,7 +13,7 @@ public class AlignNodesLeftCommandHandler : RibbonCommandHandler<AlignNodesLeftC
 
     public override bool CanHandle(DiagramContext context) => context.SelectionType == DiagramSelection.MultipleNodes;
 
-    public override Command[] CreateCommands(DiagramContext _) => [ ];
+    public override Command[] CreateCommands(DiagramContext _) => [ new AlignNodesLeftCommand() ];
     
     protected override Task Do(AlignNodesLeftCommand command, DiagramContext context)
     {

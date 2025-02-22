@@ -13,7 +13,7 @@ public class AlignNodesBottomCommandHandler : RibbonCommandHandler<AlignNodesBot
 
     public override bool CanHandle(DiagramContext context) => context.SelectionType == DiagramSelection.MultipleNodes;
 
-    public override Command[] CreateCommands(DiagramContext _) => [ ];
+    public override Command[] CreateCommands(DiagramContext _) => [ new AlignNodesBottomCommand() ];
     
     protected override Task Do(AlignNodesBottomCommand command, DiagramContext context)
     {

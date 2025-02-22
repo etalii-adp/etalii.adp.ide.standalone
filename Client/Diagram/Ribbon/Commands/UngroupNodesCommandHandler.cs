@@ -13,7 +13,7 @@ public class UngroupNodesCommandHandler : RibbonCommandHandler<UngroupNodesComma
 
     public override bool CanHandle(DiagramContext context) => context.CanUngroup;
 
-    public override Command[] CreateCommands(DiagramContext _) => [ ];
+    public override Command[] CreateCommands(DiagramContext _) => [ new UngroupNodesCommand() ];
     
     protected override Task Do(UngroupNodesCommand command, DiagramContext context)
     {

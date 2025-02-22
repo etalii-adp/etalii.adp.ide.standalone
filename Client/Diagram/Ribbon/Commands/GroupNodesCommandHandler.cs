@@ -13,7 +13,7 @@ public class GroupNodesCommandHandler : RibbonCommandHandler<GroupNodesCommand>
 
     public override bool CanHandle(DiagramContext context) => context.CanGroup;
 
-    public override Command[] CreateCommands(DiagramContext _) => [ ];
+    public override Command[] CreateCommands(DiagramContext _) => [ new GroupNodesCommand() ];
     
     protected override Task Do(GroupNodesCommand command, DiagramContext context)
     {
