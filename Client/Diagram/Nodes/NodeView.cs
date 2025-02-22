@@ -7,36 +7,33 @@ public class NodeView : NodeModel
 {
     public string Name { get; set; } = string.Empty;
     public new NodeIdentifier Id { get; }
-    public new NodePosition Position => new() { X = base.Position.X, Y = base.Position.Y };
 
-    public NodeManager NodeManager { get; }
+    public new NodePosition Position
+    {
+        get => new() { X = base.Position.X, Y = base.Position.Y };
+        set => UpdatePositionSilently(value.X - base.Position.X, value.Y - base.Position.Y);
+    }
+
+    public DiagramContext Context { get; }
 
     public event Action EditRequested = null!;
     
-    private NodeView(NodeIdentifier id, Point position, NodeManager nodeManager)
-        : base(id.ToString(), position)
+    private NodeView(NodeIdentifier id, NodePosition position, DiagramContext context)
+        : base(id.ToString(), new Point(position.X, position.Y))
     {
         Id = id;
-        NodeManager = nodeManager;
+        Context = context;
     }
 
-    public static NodeView Create(NodeManager nodeManager, Node node)
+    public static NodeView Create(DiagramContext context, Node node)
     {
-        var position = new Point(node.Position.X, node.Position.Y);
-        var view = Create(nodeManager, position, node.Id);
-        view.Name = node.Name;
-        return view;
-    }
-
-    public static NodeView Create(NodeManager nodeManager, Point position, NodeIdentifier id)
-    {
-        var node = new NodeView(id, position, nodeManager)
+        var view = new NodeView(node.Id, node.Position, context)
         {
-            Name = "New element",
+            Name = node.Name,
         };
-        node.AddPort(new PortView("Past", node, PortAlignment.Left));
-        node.AddPort(new PortView("Future", node, PortAlignment.Right));
-        return node;
+        view.AddPort(new PortView("Past", view, PortAlignment.Left));
+        view.AddPort(new PortView("Future", view, PortAlignment.Right));
+        return view;
     }
 
     public void RequestNameEdit()

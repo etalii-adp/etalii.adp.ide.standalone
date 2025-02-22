@@ -14,26 +14,52 @@ public partial class DiagramRibbon : ComponentBase
 
     private bool _canUndo;
     private bool _canRedo;
+
+    private DiagramContext _context = null!;
     
     private DiagramSelection _selection = DiagramSelection.Nothing;
-
-    public event Action<string>? RibbonClicked;
-    
     
     protected override void OnParametersSet()
     {
-        UpdateBasedOnSelection([]);
-    }
-
-    public void UpdateBasedOnHistory(HistoryManager historyManager)
-    {
-        _canUndo = historyManager.History > 0;
-        _canRedo = historyManager.Future > 0;
-        StateHasChanged();
+        OnHistoryChanged();
     }
     
-    public void UpdateBasedOnSelection(SelectableModel[] selectedObjects)
+    private void OnRibbonItemClick(RibbonItemEventArgs e)
     {
+        var commands = e.Name switch
+        {
+            CommandName.Delete => DeleteCommandHandler.CreateCommands(_context),
+            CommandName.Rename => [StartNodeRenameCommandHandler.CreateCommand(_context)],
+            CommandName.Undo => [UndoCommandHandler.CreateCommand(_context)],
+            CommandName.Redo => [RedoCommandHandler.CreateCommand(_context)],
+            _ => throw new ArgumentOutOfRangeException()
+        };
+        _context.Commands.Handle(commands);
+    }
+
+    public static void Initialize(DiagramRibbon ribbon, DiagramContext context)
+    {
+        ribbon._context = context;
+
+        context.View.SelectionChanged += ribbon.OnSelectionChanged;
+        context.History.Changed += ribbon.OnHistoryChanged;
+    }
+
+    private void OnHistoryChanged()
+    {
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+        if (_context is not null)
+        {
+            _canUndo = _context.History.History > 0;
+            _canRedo = _context.History.Future > 0;
+        }
+        StateHasChanged();
+    }
+
+    private void OnSelectionChanged(SelectableModel obj)
+    {
+        var selectedObjects = _context.View.GetSelectedModels().ToArray();
+        
         if (selectedObjects.Length == 1 && selectedObjects.Length == selectedObjects.OfType<NodeView>().Count())
         {
             _selection = DiagramSelection.SingleNode;            
@@ -67,6 +93,4 @@ public partial class DiagramRibbon : ComponentBase
         
         StateHasChanged();
     }
-
-    private void OnRibbonItemClick(RibbonItemEventArgs e) => RibbonClicked?.Invoke(e.Name!);
 }

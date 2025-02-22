@@ -13,17 +13,17 @@ var host = builder
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
 
-        services.AddSingleton<LinkAddChangeHandler>();
-        services.AddSingleton<NodeAddChangeHandler>();
+        services.AddSingleton<LinkAddCommandHandler>();
+        services.AddSingleton<NodeAddCommandHandler>();
         
-        services.AddSingleton<IChangeHandler, MapZoomChangeHandler>();
-        services.AddSingleton<IChangeHandler, MapPositionChangeHandler>();
-        services.AddSingleton<IChangeHandler, NodeAddChangeHandler>();
-        services.AddSingleton<IChangeHandler, NodeRemoveChangeHandler>();
-        services.AddSingleton<IChangeHandler, NodeMoveChangeHandler>();
-        services.AddSingleton<IChangeHandler, NodeRenameChangeHandler>();
-        services.AddSingleton<IChangeHandler, LinkAddChangeHandler>();
-        services.AddSingleton<IChangeHandler, LinkRemoveChangeHandler>();
+        services.AddSingleton<ICommandHandler, MapZoomCommandHandler>();
+        services.AddSingleton<ICommandHandler, MapPositionCommandHandler>();
+        services.AddSingleton<ICommandHandler, NodeAddCommandHandler>();
+        services.AddSingleton<ICommandHandler, NodeRemoveCommandHandler>();
+        services.AddSingleton<ICommandHandler, NodeMoveCommandHandler>();
+        services.AddSingleton<ICommandHandler, NodeRenameCommandHandler>();
+        services.AddSingleton<ICommandHandler, LinkAddCommandHandler>();
+        services.AddSingleton<ICommandHandler, LinkRemoveCommandHandler>();
     })
     .Build();
 

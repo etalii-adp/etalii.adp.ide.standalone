@@ -19,4 +19,11 @@ public static class CommandName
     public const string Pan = nameof(Pan);
     public const string Zoom = nameof(Zoom);
 
+    public const string AddNode = nameof(AddNode);
+    public const string RemoveNode = nameof(RemoveNode);
+    public const string MoveNode = nameof(MoveNode);
+    public const string RenameNode = nameof(RenameNode);
+    
+    public const string AddLink = nameof(AddLink);
+    public const string RemoveLink = nameof(RemoveLink);
 }

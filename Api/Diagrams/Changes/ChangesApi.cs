@@ -13,15 +13,15 @@ public class ChangesApi
     private const AuthorizationLevel _authorizationLevel = AuthorizationLevel.Anonymous;
     
     private readonly IDbContextFactory<AdpDbContext> _dbContextFactory;
-    private readonly IChangeHandler[] _changeHandlers;
+    private readonly ICommandHandler[] _commandHandlers;
 
     public ChangesApi(
         ILoggerFactory loggerFactory, 
         IDbContextFactory<AdpDbContext> dbContextFactory,
-        IEnumerable<IChangeHandler> changeHandlers)
+        IEnumerable<ICommandHandler> commandHandlers)
     {
         _dbContextFactory = dbContextFactory;
-        _changeHandlers = changeHandlers.ToArray();
+        _commandHandlers = commandHandlers.ToArray();
 
         _logger = loggerFactory.CreateLogger<DiagramsApi>();
         _logger.LogInformation("Initialized {FunctionApi}", nameof(ChangesApi));
@@ -43,14 +43,14 @@ public class ChangesApi
             _logger.LogInformation("Handling {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
 
             // // Deserialize.
-            var changes = (await request.ReadFromJsonAsync<Change[]>())!;
+            var commands = (await request.ReadFromJsonAsync<Command[]>())!;
 
             await using var context = await _dbContextFactory.CreateDbContextAsync();
 
-            foreach (var change in changes)
+            foreach (var command in commands)
             {
-                var handler = _changeHandlers.Single(h => h.ChangeType == change.GetType());
-                await handler.Apply(change, context);
+                var handler = _commandHandlers.Single(h => h.CommandType == command.GetType());
+                await handler.Apply(command, context);
             }
             
             await context.SaveChangesAsync();

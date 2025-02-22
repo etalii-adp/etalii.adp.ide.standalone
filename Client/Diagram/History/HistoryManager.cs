@@ -5,8 +5,8 @@ public class HistoryManager
     public int Future => _future.Count;
     public int History => _history.Count;
     
-    private readonly Stack<Change> _history = new();
-    private readonly Stack<Change> _future = new();
+    private readonly Stack<Memento> _history = new();
+    private readonly Stack<Memento> _future = new();
 
     private readonly ChangePusher _changePusher;
 
@@ -14,54 +14,110 @@ public class HistoryManager
 
     public event Action Changed = null!;
     
-    public HistoryManager(ILoggerFactory loggerFactory, ChangePusher changePusher)
+    public HistoryManager(
+        ILoggerFactory loggerFactory, 
+        ChangePusher changePusher)
     {
         _changePusher = changePusher;
         _logger = loggerFactory.CreateLogger<UserManager>();
     }
 
-    public async Task Push(Change change)
+    public async Task Push(Command command, DiagramContext context)
     {
-        await _changePusher.Enqueue(change);
+        _logger.LogInformation("Pushing command on history {CommandName}", command.GetType().Name);
         
-        _history.Push(change);
-        _future.Clear();
+        var handler = context.CommandHandlers.Single(h => h.CanHandle(command));
+        await handler.Execute(command, context);
+
+        if (handler.SendToBackend)
+        {
+            await _changePusher.Enqueue(command);
+        }
+        if (handler.UseInUndoRedo)
+        {
+            _history.Push(new Memento { Commands = [ command ] });
+            _future.Clear();
+        }
         Changed.Invoke();
     }
 
-    public async Task Push(Change[] changes)
+    public async Task Push(Command[] commands, DiagramContext context)
     {
-        await _changePusher.Enqueue(changes);
+        var mappings = commands
+            .Select(c => new { Command = c, Handler = context.CommandHandlers.Single(h => h.CanHandle(c)) })
+            .ToArray();
 
-        foreach (var change in changes)
+        var commandsToPush = mappings
+            .Where(m => m.Handler.SendToBackend)
+            .Select(m => m.Command)
+            .ToArray();
+
+        var commandsToRemember = mappings
+            .Where(m => m.Handler.UseInUndoRedo)
+            .Select(m => m.Command)
+            .ToArray();
+        
+        foreach (var mapping in mappings)
         {
-            _history.Push(change);
+            await mapping.Handler.Execute(mapping.Command, context);
+        }
+
+        if (commandsToPush.Any())
+        {
+            await _changePusher.Enqueue(commandsToPush);
+        }
+
+        if (commandsToRemember.Any())
+        {
+            _history.Push(new Memento { Commands = commandsToRemember });
+            _future.Clear();
         }
         
-        _future.Clear();
         Changed.Invoke();
     }
 
-    public async Task<bool> TryUndo()
+    public async Task<bool> TryUndo(DiagramContext context)
     {
-        var success = _history.TryPop(out var change);
-        if (!success || change is null) return success;
+        _logger.LogInformation("Undoing history");
+
+        var success = _history.TryPop(out var memento);
+        if (!success || memento is null) return success;
+
+        var commands = memento.Commands
+            .Reverse()
+            .ToArray();
+        foreach (var command in commands)
+        {
+            command.Undo = true;
+            var handler = context.CommandHandlers.Single(h => h.CanHandle(command));
+            await handler.Execute(command, context);
+        }
         
-        change.Undo = true;
-        _future.Push(change);
-        await _changePusher.Enqueue(change);
+        await _changePusher.Enqueue(commands);
+        _future.Push(memento);
         Changed.Invoke();
         return success;
     }
     
-    public async Task<bool> TryRedo()
+    public async Task<bool> TryRedo(DiagramContext context)
     {
-        var success = _future.TryPop(out var change);
-        if (!success || change is null) return success;
+        _logger.LogInformation("Redoing history");
+
+        var success = _future.TryPop(out var memento);
+        if (!success || memento is null) return success;
+
+        var commands = memento.Commands
+            .Reverse()
+            .ToArray();
+        foreach (var command in commands)
+        {
+            command.Undo = false;
+            var handler = context.CommandHandlers.Single(h => h.CanHandle(command));
+            await handler.Execute(command, context);
+        }
         
-        change.Undo = false;
-        _history.Push(change);
-        await _changePusher.Enqueue(change);
+        await _changePusher.Enqueue(commands);
+        _history.Push(memento);
         Changed.Invoke();
         return success;
     }

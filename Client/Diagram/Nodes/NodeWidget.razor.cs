@@ -16,7 +16,7 @@ public partial class NodeWidget
         _nodeName = Node.Name;
         Node.EditRequested += OnStartNameEdit;
     }
-    
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (_textInput != null && _isEditing)
@@ -30,13 +30,14 @@ public partial class NodeWidget
         StateHasChanged();
     }
 
-    private async Task OnEndNameEdit()
+    private void OnEndNameEdit()
     {
         _isEditing = false;
         var oldName = Node.Name;
         Node.Name = _nodeName;
         StateHasChanged();
 
-        await Node.NodeManager.RenameNode(Node, oldName, _nodeName);
+        var command = RenameNodeCommandHandler.CreateCommand(Node.Id, oldName, _nodeName);
+        Node.Context.Commands.Handle(command);
     }
 }

@@ -1,70 +1,70 @@
 ﻿using Blazor.Diagrams.Core.Anchors;
-using Blazor.Diagrams.Core.Models.Base;
 
 namespace EtAlii.Adp.Client;
 using Cn = CommandName;
 
-public class DeleteCommandHandler : ICommandHandler
+public class DeleteCommandHandler : CommandHandler<DeleteCommand>
 {
-    private readonly DiagramView _view;
-    private readonly Diagram _diagram;
+    public override string CommandName => Cn.Delete;
 
-    public DeleteCommandHandler(DiagramView view, Diagram diagram)
+    public override bool SendToBackend => false;
+    public override bool UseInUndoRedo => false;
+
+    public static Command[] CreateCommands(DiagramContext context)
     {
-        _view = view;
-        _diagram = diagram;
-    }
-
-    public string CommandName => Cn.Delete;
-
-    public Task<Change[]> Execute(SelectableModel[] selection)
-    {
-        _view.UnselectAll(); // We want to unselect everything as the nodes and links will be deleted.
-
-        var linkChanges = selection
+        var linkCommands = context.Selection
             .OfType<LinkView>()
-            .Select(RemoveLink)
+            .Select(l => CreateRemoveLinkCommand(l, context))
             .ToArray();
 
-        var nodeChanges = selection
+        var nodeCommands = context.Selection
             .OfType<NodeView>()
-            .SelectMany(RemoveNode)
+            .SelectMany(n => CreateRemoveNodeCommands(n, context))
             .ToArray();
         
-        var changes = linkChanges
-            .Concat(nodeChanges)
-            .OrderBy(c => c is NodeRemoveChange) // We first will remove the nodes.
+        var commands = linkCommands
+            .Concat(nodeCommands)
+            .Concat([new DeleteCommand()])
+            .OrderBy(c => c is NodeRemoveCommand) // We first will remove the nodes.
             .ToArray();
         
-        return Task.FromResult(changes);
+        return commands;
+    }
+    
+    protected override Task Do(DeleteCommand command, DiagramContext context)
+    {
+        context.View.UnselectAll(); // We want to unselect everything as the nodes and links will be deleted.
+
+        return Task.CompletedTask;
     }
 
-    private Change[] RemoveNode(NodeView node)
+    protected override Task Undo(DeleteCommand command, DiagramContext context)
     {
-        var changes = node.Ports
+        return Task.CompletedTask;
+    }
+    
+    private static Command[] CreateRemoveNodeCommands(NodeView node, DiagramContext context)
+    {
+        var commands = node.Ports
             .SelectMany(p => p.Links)
             .ToArray() // Needed to safeguard against collection modifications.
             .OfType<LinkView>()
-            .Select(RemoveLink)
+            .Select(l => CreateRemoveLinkCommand(l, context))
             .ToList();
 
-        var change = NodeRemoveChange.Apply(_diagram, node.Id, node.Position, node.Name);
-        changes.Add(change);
-
-        _view.Nodes.Remove(node);
+        var command = RemoveNodeCommandHandler.Create(context, node.Id, node.Position, node.Name);
+        commands.Add(command);
         
-        return changes.ToArray();
+        return commands.ToArray();
     }
 
-    private Change RemoveLink(LinkView link)
+    private static Command CreateRemoveLinkCommand(LinkView link, DiagramContext context)
     {
         var source = (PortView)((SinglePortAnchor)link.Source).Port;
         var target = (PortView)((SinglePortAnchor)link.Target).Port;
 
-        var change = LinkRemoveChange.Apply(_diagram, link.Id, source.NodeIdentifier, source.Id, target.NodeIdentifier, target.Id);
+        var command = RemoveLinkCommandHandler.CreateCommand(context, link.Id, source.NodeIdentifier, source.Id, target.NodeIdentifier, target.Id);
         
-        _view.Links.Remove(link);
-        
-        return change;
+        return command;
     }
 }

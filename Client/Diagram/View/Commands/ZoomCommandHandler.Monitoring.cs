@@ -1,0 +1,40 @@
+﻿using System.Reactive;
+using System.Reactive.Linq;
+
+namespace EtAlii.Adp.Client;
+
+public partial class ZoomCommandHandler 
+{
+    private DiagramContext _context = null!;
+    private IObservable<Unit> _eventStream = null!;
+    private IDisposable _subscription = null!;
+
+    public static void Initialize(ZoomCommandHandler handler, DiagramContext context)
+    {
+        handler._context = context;
+        context.View.SetZoom(context.Diagram.Zoom <= 0f ? 1f : context.Diagram.Zoom);
+
+        // Convert the event into an observable sequence
+        handler._eventStream = Observable
+            .FromEvent(
+                h => context.View.ZoomChanged += h, 
+                h => context.View.ZoomChanged -= h)
+            .Throttle(TimeSpan.FromMilliseconds(500)); // Waits for 500ms of inactivity
+        
+        handler.StartZoomMonitor();
+    }
+
+    private void StartZoomMonitor()
+    {
+        _subscription = _eventStream.Subscribe(_ =>
+        {
+            var command = CreateCommand(_context);
+            _context.Commands.Handle(command);
+        });
+    }
+    private void StopZoomMonitor()
+    {
+        _subscription.Dispose();
+        _subscription = null!;
+    }
+}

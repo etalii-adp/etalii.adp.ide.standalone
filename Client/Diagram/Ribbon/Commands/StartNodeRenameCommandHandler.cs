@@ -1,17 +1,25 @@
-﻿using Blazor.Diagrams.Core.Models.Base;
-
-namespace EtAlii.Adp.Client;
+﻿namespace EtAlii.Adp.Client;
 using Cn = CommandName;
 
-public class StartNodeRenameCommandHandler : ICommandHandler
+public class StartNodeRenameCommandHandler : CommandHandler<StartNodeRenameCommand>
 {
-    public string CommandName => Cn.Rename;
+    public override string CommandName => Cn.Rename;
+    
+    public override bool SendToBackend => false;
+    public override bool UseInUndoRedo => false;
 
-    public Task<Change[]> Execute(SelectableModel[] selection)
+    public static Command CreateCommand(DiagramContext _) => new StartNodeRenameCommand();
+    
+    protected override Task Do(StartNodeRenameCommand command, DiagramContext context)
     {
-        var nodeView = selection.Cast<NodeView>().Single();
+        var nodeView = context.Selection.Cast<NodeView>().Single();
         nodeView.RequestNameEdit();
+        
+        return Task.CompletedTask;
+    }
 
-        return Task.FromResult(Array.Empty<Change>());
+    protected override Task Undo(StartNodeRenameCommand change, DiagramContext context)
+    {
+        return Task.CompletedTask;
     }
 }

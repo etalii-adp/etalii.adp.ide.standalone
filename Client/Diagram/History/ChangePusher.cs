@@ -5,7 +5,7 @@ namespace EtAlii.Adp.Client;
 
 public class ChangePusher
 {
-    private readonly Queue<Change> _changes = new();
+    private readonly Queue<Command> _commands = new();
     private Task? _pushTask;
 
     private readonly HttpClient _client;
@@ -13,10 +13,10 @@ public class ChangePusher
     
     private readonly DiagramManager _diagramManager;
     
-    private readonly Type[] _takeLastChangeTypes =
+    private readonly Type[] _takeLastCommandTypes =
     [
-        typeof(DiagramZoomChange),
-        typeof(DiagramPositionChange)
+        typeof(DiagramZoomCommand),
+        typeof(DiagramPositionCommand)
     ];
 
     public ChangePusher(HttpClient client, DiagramManager diagramManager)
@@ -25,22 +25,22 @@ public class ChangePusher
         _diagramManager = diagramManager;
     }
 
-    public async Task Enqueue(Change change)
+    public async Task Enqueue(Command command)
     {
         using (await _lock.LockAsync())
         {
-            _changes.Enqueue(change);
+            _commands.Enqueue(command);
             _pushTask ??= Task.Run(PushChanges);
         }
     }
 
-    public async Task Enqueue(Change[] changes)
+    public async Task Enqueue(Command[] commands)
     {
         using (await _lock.LockAsync())
         {
-            foreach (var change in changes)
+            foreach (var command in commands)
             {
-                _changes.Enqueue(change);
+                _commands.Enqueue(command);
             }
             _pushTask ??= Task.Run(PushChanges);
         }
@@ -48,21 +48,21 @@ public class ChangePusher
 
     private async Task PushChanges()
     {
-        Change[] changesToPush;
+        Command[] commandsToPush;
         do
         {
             using (await _lock.LockAsync())
             {
-                changesToPush = _changes.ToArray();
-                _changes.Clear();
+                commandsToPush = _commands.ToArray();
+                _commands.Clear();
             }
 
-            if (changesToPush.Any())
+            if (commandsToPush.Any())
             {
-                await PushChanges(changesToPush);
+                await PushChanges(commandsToPush);
             }
             
-        } while (changesToPush.Any());
+        } while (commandsToPush.Any());
 
         using (await _lock.LockAsync())
         {
@@ -70,26 +70,26 @@ public class ChangePusher
         }
     }
 
-    private async Task PushChanges(Change[] changes)
+    private async Task PushChanges(Command[] commands)
     {
-        changes = Flatten(changes);
+        commands = Flatten(commands);
         
-        await _client.PostAsJsonAsync(ApplicationApi.Diagrams.Changes.Request(_diagramManager.CurrentDiagram!.Id), changes);
+        await _client.PostAsJsonAsync(ApplicationApi.Diagrams.Changes.Request(_diagramManager.CurrentDiagram!.Id), commands);
     }
 
-    private Change[] Flatten(Change[] changes)
+    private Command[] Flatten(Command[] commands)
     {
-        foreach (var takeLastChangeType in _takeLastChangeTypes)
+        foreach (var takeLastCommandType in _takeLastCommandTypes)
         {
-            var last = changes.LastOrDefault(c => c.GetType() == takeLastChangeType);
+            var last = commands.LastOrDefault(c => c.GetType() == takeLastCommandType);
             if (last != null)
             {
-                changes = changes
-                    .Where(c => c.GetType() != takeLastChangeType)
+                commands = commands
+                    .Where(c => c.GetType() != takeLastCommandType)
                     .Concat([last])
                     .ToArray();
             }
         }
-        return changes;
+        return commands;
     }
 }

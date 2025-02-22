@@ -5,30 +5,24 @@ namespace EtAlii.Adp.Client;
 
 public class LinkManager
 {
-    private readonly DiagramView _view;
-    private readonly Diagram _diagram;
-    private readonly HistoryManager _history;
+    private readonly DiagramContext _context;
     private readonly ILogger _logger;
 
     public LinkManager(
-        DiagramView view, 
-        Diagram diagram, 
-        ILoggerFactory loggerFactory, 
-        HistoryManager history)
+        DiagramContext context,
+        ILoggerFactory loggerFactory)
     {
+        _context = context;
         _logger = loggerFactory.CreateLogger<LinkManager>();
-        _view = view;
-        _diagram = diagram;
-        _history = history;
     }
 
     public async Task Initialize()
     {
         _logger.LogInformation("Initializing link management");
 
-        foreach (var l in _diagram.Links)
+        foreach (var l in _context.Diagram.Links)
         {
-            var sourceNode = _view.Nodes
+            var sourceNode = _context.View.Nodes
                 .Cast<NodeView>()
                 .Single(n => n.Id == l.SourceNode.Id);
 
@@ -36,7 +30,7 @@ public class LinkManager
                 .Cast<PortView>()
                 .Single(p => p.Id == l.SourcePort);
 
-            var targetNode = _view.Nodes
+            var targetNode = _context.View.Nodes
                 .Cast<NodeView>()
                 .Single(n => n.Id == l.TargetNode.Id);
 
@@ -44,11 +38,11 @@ public class LinkManager
                 .Cast<PortView>()
                 .Single(p => p.Id == l.TargetPort);
             
-            _view.Links.Add(new LinkView(l.Id, sourcePort, targetPort));
+            _context.View.Links.Add(new LinkView(l.Id, sourcePort, targetPort));
         }
         
-        _view.Links.Added += OnLinkAdded;
-        _view.Links.Removed += OnLinkRemoved;
+        _context.View.Links.Added += OnLinkAdded;
+        _context.View.Links.Removed += OnLinkRemoved;
 
         await Task.CompletedTask;
     }
@@ -65,23 +59,23 @@ public class LinkManager
         _logger.LogInformation("Link removed: {Source} to {Target}", linkView.Source.ToString(), linkView.Target.ToString());
     }
 
-    private async void OnLinkCompleted(BaseLinkModel link)
+    private void OnLinkCompleted(BaseLinkModel link)
     {
         try
         {
             var linkView = (LinkView)link;
             linkView.TargetAttached -= OnLinkCompleted;
-            _logger.LogInformation("Link add completed: {Source} to {Target}", linkView.Source.ToString(), linkView.Target.ToString());
+            _logger.LogInformation("Link completed: {Source} to {Target}", linkView.Source.ToString(), linkView.Target.ToString());
             
             var source = (PortView)((SinglePortAnchor)linkView.Source).Port;
             var target = (PortView)((SinglePortAnchor)linkView.Target).Port;
 
-            var change = LinkAddChange.Apply(_diagram,
+            var command = AddLinkCommandHandler.CreateCommand(_context.Diagram,
                 linkView.Id, 
                 source.NodeIdentifier, source.Id, 
                 target.NodeIdentifier, target.Id);
             
-            await _history.Push(change);
+            _context.Commands.Handle(command);
         }
         catch (Exception exception)
         {
