@@ -9,6 +9,9 @@ public interface IRibbonCommandHandler : ICommandHandler
     IconColor IconColor { get; }
 
     string CommandName { get; }
+    bool IsToggled(DiagramContext context);
+    
+    event Action Changed;
 
     Command[] CreateCommands(DiagramContext context);
     

@@ -8,9 +8,16 @@ public abstract class RibbonCommandHandler<TCommand> : CommandHandler<TCommand>,
     public abstract IconName IconName { get; }
     public abstract string IconTitle { get; }
     public virtual IconColor IconColor => IconColor.Primary;
-    
+
+    public event Action Changed = null!;
+    protected void RaiseChanged()
+    {
+        Changed.Invoke();
+    }
+
     public abstract Command[] CreateCommands(DiagramContext context);
     
     public abstract bool CanHandle(DiagramContext context);
 
+    public virtual bool IsToggled(DiagramContext context) => false;
 }

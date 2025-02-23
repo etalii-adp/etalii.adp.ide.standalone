@@ -1,4 +1,5 @@
-﻿using BlazorBootstrap;
+﻿using Blazor.Diagrams.Core.Models.Base;
+using BlazorBootstrap;
 using Microsoft.AspNetCore.Components;
 
 namespace EtAlii.Adp.Client;
@@ -18,10 +19,17 @@ public partial class DiagramRibbon : ComponentBase
         _context = context;
         StateHasChanged();
 
-        context.View.SelectionChanged += _ => StateHasChanged();
+        context.View.SelectionChanged += StateHasChanged;
         context.History.Changed += StateHasChanged;
     }
 
+    public void Deinitialize()
+    {
+        _context.View.SelectionChanged -= StateHasChanged;
+        _context.History.Changed -= StateHasChanged;
+    }
+
+    private void StateHasChanged(SelectableModel? _) => StateHasChanged();
     protected override void OnParametersSet() => StateHasChanged();
     
     private void OnRibbonItemClick(RibbonItemEventArgs e)
