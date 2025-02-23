@@ -30,6 +30,7 @@ public class MoveNodeCommandHandler : CommandHandler<NodeMoveCommand>
 
         var view = context.View.Nodes.OfType<NodeView>().Single(nv => nv.Id == command.NodeId);
         view.Position = command.NewPosition;
+        view.Refresh();
 
         return Task.CompletedTask;
     }
@@ -42,7 +43,8 @@ public class MoveNodeCommandHandler : CommandHandler<NodeMoveCommand>
 
         var view = context.View.Nodes.OfType<NodeView>().Single(nv => nv.Id == command.NodeId);
         view.Position = command.OldPosition;
-
+        view.Refresh();
+        
         return Task.CompletedTask;
     }
 }
