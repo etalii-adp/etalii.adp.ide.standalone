@@ -77,13 +77,14 @@
                         </ul>
                     </BodyTemplate>
                 </Modal>
-
                 <a href="/.auth/login" @onclick="@ShowLoginModal" @onclick:preventDefault>Login</a>
             </NotAuthorized>
         </AuthorizeView>
-        @* <div class="float-end"> *@
-        @*     <ThemeSwitcher Position="DropdownMenuPosition.End" /> *@
-        @* </div> *@
+    </div>
+    <div class="ms-3">
+        <AdpThemeSwitcher Position="DropdownMenuPosition.End" />
+    </div>
+    <div class="ms-3">
         @if (LocalDebugger.IsAttached)
         {
             <b style="color: red">&nbsp;&nbsp;DEBUG</b>

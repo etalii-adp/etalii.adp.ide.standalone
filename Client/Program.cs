@@ -22,6 +22,7 @@ builder.Services.AddBlazorBootstrap();
 builder.Services.AddOptions();
 builder.Services.AddAuthorizationCore();
 
+builder.Services.AddSingleton<AdpThemeSwitcherJsInterop>();
     
 builder.Services.AddSingleton<ICommandHandler, PanCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, ZoomCommandHandler>();
