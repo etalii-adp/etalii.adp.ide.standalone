@@ -17,6 +17,7 @@
                 <DiagramRibbonPlaceStub Name="NewEmail" IconName="IconName.EnvelopePlus" >New<br/>Email</DiagramRibbonPlaceStub>
                 <DiagramRibbonPlaceStub Name="Appointment" IconName="IconName.Calendar3Event"/>
                 <DiagramRibbonItem Context="@_context" THandler="StartNodeRenameCommandHandler"/>
+                <DiagramRibbonItem Context="@_context" THandler="TogglePropertiesWidgetCommandHandler"/>
             </RibbonItemGroup>
             <RibbonItemGroup Name="Delete">
                 <DiagramRibbonItem Context="@_context" THandler="DeleteCommandHandler"/>
