@@ -47,4 +47,9 @@ public class CommandManager
     {
         _context = context;
     }
+    
+    public void Deinitialize()
+    {
+        // Placeholder.
+    }
 }

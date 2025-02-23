@@ -39,10 +39,16 @@ public class LinkManager
             context.View.Links.Add(new LinkView(l.Id, sourcePort, targetPort));
         }
         
-        context.View.Links.Added += context.Links.OnLinkAdded;
-        context.View.Links.Removed += context.Links.OnLinkRemoved;
+        context.View.Links.Added += OnLinkAdded;
+        context.View.Links.Removed += OnLinkRemoved;
     }
-    
+
+    public void Deinitialize()
+    {
+        _context.View.Links.Added += OnLinkAdded;
+        _context.View.Links.Removed += OnLinkRemoved;
+    }
+
     private void OnLinkAdded(BaseLinkModel linkView)
     {
         _logger.LogInformation("Link add started: {Source} to {Target}", linkView.Source.ToString(), linkView.Target.ToString());

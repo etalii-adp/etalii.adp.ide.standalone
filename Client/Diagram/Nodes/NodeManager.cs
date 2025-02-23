@@ -27,6 +27,10 @@ public class NodeManager
         context.View.PointerDoubleClick += OnDiagramDoubleClicked;
     }
 
+    public void Deinitialize()
+    {
+        _context.View.PointerDoubleClick -= OnDiagramDoubleClicked;
+    }
     
     private void OnNodeMoved(MovableModel model)
     {

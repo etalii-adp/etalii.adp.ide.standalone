@@ -14,14 +14,13 @@
         <Content>
             <!-- New -->
             <RibbonItemGroup Name="New">
-                <DiagramRibbonPlaceStub Name="NewEmail" IconName="IconName.EnvelopePlus" >New<br/>Email</DiagramRibbonPlaceStub>
+                <DiagramRibbonPlaceStub Name="NewEmail" IconName="IconName.EnvelopePlus">New<br/>Email</DiagramRibbonPlaceStub>
                 <DiagramRibbonPlaceStub Name="Appointment" IconName="IconName.Calendar3Event"/>
                 <DiagramRibbonItem Context="@_context" THandler="StartNodeRenameCommandHandler"/>
-                <DiagramRibbonItem Context="@_context" THandler="TogglePropertiesWidgetCommandHandler"/>
             </RibbonItemGroup>
             <RibbonItemGroup Name="Delete">
                 <DiagramRibbonItem Context="@_context" THandler="DeleteCommandHandler"/>
-                <DiagramRibbonPlaceStub Name="Archive" IconName="IconName.Archive" >Archive</DiagramRibbonPlaceStub>
+                <DiagramRibbonPlaceStub Name="Archive" IconName="IconName.Archive">Archive<br/>&nbsp;</DiagramRibbonPlaceStub>
             </RibbonItemGroup>
             <RibbonItemGroup Name="Undo / Redo">
                 <DiagramRibbonItem Context="@_context" THandler="UndoCommandHandler"/>
@@ -42,10 +41,11 @@
     <RibbonTab Title="View">
         <Content>
             <RibbonItemGroup Name="Selection">
-                <DiagramRibbonPlaceStub Name="Fit all" IconName="IconName.ArrowsFullscreen">Fit all</DiagramRibbonPlaceStub>
+                <DiagramRibbonPlaceStub Name="Fit all" IconName="IconName.ArrowsFullscreen">Fit all<br/>&nbsp;</DiagramRibbonPlaceStub>
                 <DiagramRibbonPlaceStub Name="Fit selection" IconName="IconName.AspectRatio">Fit<br/>selection</DiagramRibbonPlaceStub>
             </RibbonItemGroup>
             <RibbonItemGroup Name="View">
+                <DiagramRibbonItem Context="@_context" THandler="TogglePropertiesWidgetCommandHandler"/>
                 <DiagramRibbonItem Context="@_context" THandler="ToggleFullscreenCommandHandler"/>
             </RibbonItemGroup>
         </Content>

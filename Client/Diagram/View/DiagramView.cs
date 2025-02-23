@@ -23,13 +23,14 @@ public class DiagramView : BlazorDiagram
         
         RegisterComponent<NodeView, NodeWidget>();
         RegisterComponent<LinkView, LinkWidget>();
+
+        SelectionChanged += _ => UpdateContext();
     }
     
     public void Initialize(DiagramContext context)
     {
         _context = context;
         _logger.LogInformation("Initializing view management");
-        SelectionChanged += _ => UpdateContext();
         
         context.CommandHandlers
             .OfType<PanCommandHandler>()
@@ -40,6 +41,12 @@ public class DiagramView : BlazorDiagram
             .OfType<ZoomCommandHandler>()
             .Single()
             .Initialize(_context);
+    }
+
+    public void DeInitialize()
+    {
+        Links.Clear();
+        Nodes.Clear();
     }
 
     private void UpdateContext()

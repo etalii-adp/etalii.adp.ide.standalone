@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace EtAlii.Adp.Client;
 
-public partial class DiagramPage
+public partial class DiagramPage : IDisposable
 {
     [Parameter] public string DiagramTitle { get; set; } = null!;
     
@@ -49,10 +49,23 @@ public partial class DiagramPage
             CommandHandlers = CommandHandlers.ToArray()
         };
         
+        _logger.LogInformation("Initializing subsystems");
+
         _context.View.Initialize(_context);
         _context.Nodes.Initialize(_context);
         _context.Links.Initialize(_context);
         _context.Commands.Initialize(_context);
         _context.Ribbon.Initialize(_context);
+    }
+
+    public void Dispose()
+    {
+        _logger.LogInformation("Deinitializing subsystems");
+
+        _context.View.DeInitialize();
+        _context.Nodes.Deinitialize();
+        _context.Links.Deinitialize();
+        _context.Commands.Deinitialize();
+        _context.Ribbon.Deinitialize();
     }
 }
