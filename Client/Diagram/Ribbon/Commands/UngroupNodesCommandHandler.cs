@@ -9,7 +9,7 @@ public class UngroupNodesCommandHandler : RibbonCommandHandler<UngroupNodesComma
 
     
     public override IconName IconName => IconName.FolderMinus;
-    public override string IconTitle => "Ungroup";
+    public override string IconTitle => "Ungroup<br/>&nbsp;";
 
     public override bool CanHandle(DiagramContext context) => context.CanUngroup;
 

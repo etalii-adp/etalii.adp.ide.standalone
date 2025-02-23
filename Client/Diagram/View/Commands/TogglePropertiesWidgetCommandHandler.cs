@@ -9,15 +9,19 @@ public class TogglePropertiesWidgetCommandHandler : RibbonCommandHandler<ToggleP
 
     
     public override IconName IconName => IconName.FileRuled;
-    public override string IconTitle => "Properties";
+    public override string IconTitle => "Properties<br/>&nbsp;";
 
     public override bool CanHandle(DiagramContext context) => true;
+
+    public override bool IsToggled(DiagramContext context) => context.View.ShowProperties;
 
     public override Command[] CreateCommands(DiagramContext _) => [ new TogglePropertiesWidgetCommand() ];
     
     protected override Task Do(TogglePropertiesWidgetCommand command, DiagramContext context)
     {
         context.View.ShowProperties = !context.View.ShowProperties;
+        context.View.Refresh();
+        RaiseChanged();
         
         return Task.CompletedTask;
     }

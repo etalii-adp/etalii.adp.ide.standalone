@@ -9,7 +9,7 @@ public class DeleteCommandHandler : RibbonCommandHandler<DeleteCommand>
     public override bool UseInUndoRedo => false;
 
     public override IconName IconName => IconName.Trash;
-    public override string IconTitle => "Remove";
+    public override string IconTitle => "Remove<br/>&nbsp;";
     public override IconColor IconColor => IconColor.Danger;
 
     public override bool CanHandle(DiagramContext context) => context.SelectionType != DiagramSelection.Nothing;

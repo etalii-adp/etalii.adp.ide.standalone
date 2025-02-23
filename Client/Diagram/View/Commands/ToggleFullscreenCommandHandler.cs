@@ -13,8 +13,11 @@ public class ToggleFullscreenCommandHandler : RibbonCommandHandler<ToggleFullscr
     public override IconName IconName => _iconName;
     private IconName _iconName = IconName.Fullscreen;
     public override string IconTitle => _iconTitle;
-    private string _iconTitle = "Fullscreen";
+    private string _iconTitle = "Fullscreen<br/>&nbsp;";
     public override bool CanHandle(DiagramContext context) => true;
+
+    private bool _isFullscreen;
+    public override bool IsToggled(DiagramContext context) => _isFullscreen;
 
     public override Command[] CreateCommands(DiagramContext _) => [ new ToggleFullscreenCommand() ];
 
@@ -24,6 +27,7 @@ public class ToggleFullscreenCommandHandler : RibbonCommandHandler<ToggleFullscr
     }
     protected override async Task Do(ToggleFullscreenCommand command, DiagramContext context)
     {
+        _isFullscreen = !_isFullscreen;
         await _jsRuntime.InvokeVoidAsync("toggleFullScreen");
 
         _iconName = IconName == IconName.Fullscreen 
@@ -31,6 +35,8 @@ public class ToggleFullscreenCommandHandler : RibbonCommandHandler<ToggleFullscr
             : IconName.Fullscreen;
         
         _iconTitle = IconName == IconName.Fullscreen ? "Fullscreen" : "Exit<br/>fullscreen";
+        
+        RaiseChanged();
     }
 
     protected override Task Undo(ToggleFullscreenCommand change, DiagramContext context)

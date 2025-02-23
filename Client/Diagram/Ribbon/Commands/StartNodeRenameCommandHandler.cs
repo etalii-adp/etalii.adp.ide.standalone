@@ -8,7 +8,7 @@ public class StartNodeRenameCommandHandler : RibbonCommandHandler<StartNodeRenam
     public override bool UseInUndoRedo => false;
     
     public override IconName IconName => IconName.CursorText;
-    public override string IconTitle => "Rename";
+    public override string IconTitle => "Rename<br/>&nbsp;";
 
     public override bool CanHandle(DiagramContext context) => context.SelectionType == DiagramSelection.SingleNode;
 

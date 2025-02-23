@@ -9,7 +9,7 @@ public class GroupNodesCommandHandler : RibbonCommandHandler<GroupNodesCommand>
 
     
     public override IconName IconName => IconName.FolderPlus;
-    public override string IconTitle => "Group";
+    public override string IconTitle => "Group<br/>&nbsp;";
 
     public override bool CanHandle(DiagramContext context) => context.CanGroup;
 

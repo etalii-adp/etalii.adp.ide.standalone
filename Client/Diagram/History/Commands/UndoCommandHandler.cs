@@ -10,7 +10,7 @@ public class UndoCommandHandler : RibbonCommandHandler<UndoCommand>
     public override bool UseInUndoRedo => false;
 
     public override IconName IconName => IconName.ArrowClockwise;
-    public override string IconTitle => "Undo";
+    public override string IconTitle => "Undo<br/>&nbsp;";
 
     public UndoCommandHandler(HistoryManager history)
     {
