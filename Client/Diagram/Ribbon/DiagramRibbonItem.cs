@@ -30,17 +30,36 @@ public class DiagramRibbonItem<THandler> : RibbonItem
 
     private void OnHandlerChanged()
     {
-        Name = _handler.CommandName;
-        IconColor = _handler.IconColor;
-        IconName = _handler.IconName;
-        Style = _handler.IsToggled(Context)
+        var isChanged = false;
+        var newName = _handler.CommandName;
+        isChanged |= string.Equals(newName, Name, StringComparison.InvariantCulture);
+        Name = newName;
+
+        var newColor = _handler.IconColor;
+        isChanged |= newColor == IconColor;
+        IconColor = newColor;
+
+        var newIconName = _handler.IconName; 
+        isChanged |= newIconName == IconName;
+        IconName = newIconName;
+
+        var newStyle = _handler.IsToggled(Context)
             ? "background-color: rgba(var(--bs-secondary-rgb), 0.10) !important"
             : "";
+        isChanged |= newStyle == Style;
+        Style = newStyle;
         Class = _handler.CanHandle(Context) 
             ? string.Empty
             : "disabled-ribbon-button";
-        ChildContent = builder => builder.AddMarkupContent(1, _handler.IconTitle);
-        StateHasChanged();
+
+        RenderFragment newChildContent = builder => builder.AddMarkupContent(1, _handler.IconTitle); 
+        isChanged |= newChildContent != ChildContent;
+        ChildContent = newChildContent;
+
+        if (isChanged)
+        {
+            StateHasChanged();
+        }
     }
 }
 
