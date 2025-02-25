@@ -3,7 +3,7 @@
 namespace EtAlii.Adp;
 
 [DebuggerDisplay("Node@{ToString()}")]
-public class NodePosition
+public readonly struct NodePosition : IEquatable<NodePosition>
 {
     public required double X { get; init; }
     public required double Y { get; init; }
@@ -21,18 +21,7 @@ public class NodePosition
 
     public static bool operator !=(NodePosition? left, NodePosition? right) => !Equals(left, right);
 
-    public bool Equals(NodePosition? other)
-    {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-        return X.Equals(other.X) && Y.Equals(other.Y);
-    }
+    public override bool Equals(object? obj) => obj is NodePosition other && Equals(other);
 
-    public override bool Equals(object? obj)
-    {
-        if (obj is null) return false;
-        if (ReferenceEquals(this, obj)) return true;
-        if (obj.GetType() != GetType()) return false;
-        return Equals((NodePosition)obj);
-    }
+    public bool Equals(NodePosition other) => X.Equals(other.X) && Y.Equals(other.Y);
 }

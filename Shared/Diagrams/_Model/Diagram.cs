@@ -23,7 +23,7 @@ public record Diagram
     
     public DiagramPosition Position
     {
-        get { if(_position == null) _position = new DiagramPosition { X = _diagramPositionX, Y = _diagramPositionY }; return _position; }
+        get { _position ??= new DiagramPosition { X = _diagramPositionX, Y = _diagramPositionY }; return _position!.Value; }
         set { _position = value; _diagramPositionX = value.X; _diagramPositionY = value.Y; }
     }
     [JsonIgnore] private DiagramPosition? _position;

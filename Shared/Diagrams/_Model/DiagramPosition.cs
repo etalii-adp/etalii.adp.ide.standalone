@@ -3,7 +3,7 @@
 namespace EtAlii.Adp;
 
 [DebuggerDisplay("Diagram@{ToString()}")]
-public class DiagramPosition : IEquatable<DiagramPosition>
+public readonly struct DiagramPosition : IEquatable<DiagramPosition>
 {
     public required double X { get; init; }
     public required double Y { get; init; }
@@ -26,18 +26,7 @@ public class DiagramPosition : IEquatable<DiagramPosition>
 
     public static bool operator !=(DiagramPosition? left, DiagramPosition? right) => !Equals(left, right);
 
-    public bool Equals(DiagramPosition? other)
-    {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-        return X.Equals(other.X) && Y.Equals(other.Y);
-    }
+    public override bool Equals(object? obj) => obj is DiagramPosition other && Equals(other);
 
-    public override bool Equals(object? obj)
-    {
-        if (obj is null) return false;
-        if (ReferenceEquals(this, obj)) return true;
-        if (obj.GetType() != GetType()) return false;
-        return Equals((DiagramPosition)obj);
-    }
+    public bool Equals(DiagramPosition other) => X.Equals(other.X) && Y.Equals(other.Y);
 }

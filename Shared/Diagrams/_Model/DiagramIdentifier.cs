@@ -3,7 +3,7 @@
 namespace EtAlii.Adp;
 
 [DebuggerDisplay("Diagram@{ToString()}")]
-public class DiagramIdentifier : IEquatable<DiagramIdentifier>
+public readonly struct DiagramIdentifier : IEquatable<DiagramIdentifier>
 {
     public required Guid Identifier { get; init; }
     
@@ -20,21 +20,10 @@ public class DiagramIdentifier : IEquatable<DiagramIdentifier>
     public static DiagramIdentifier NewIdentifier() => (DiagramIdentifier)Guid.NewGuid();
 
     public override string ToString() => Identifier.ToString();
+    
+    public override bool Equals(object? obj) => obj is DiagramIdentifier other && Equals(other);
 
-    public bool Equals(DiagramIdentifier? other)
-    {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-        return Identifier.Equals(other.Identifier);
-    }
-
-    public override bool Equals(object? obj)
-    {
-        if (obj is null) return false;
-        if (ReferenceEquals(this, obj)) return true;
-        if (obj.GetType() != GetType()) return false;
-        return Equals((DiagramIdentifier)obj);
-    }
+    public bool Equals(DiagramIdentifier other) => Identifier.Equals(other.Identifier);
 
     public override int GetHashCode() => Identifier.GetHashCode();
 }

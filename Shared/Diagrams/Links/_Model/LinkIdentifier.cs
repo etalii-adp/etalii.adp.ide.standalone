@@ -3,7 +3,7 @@
 namespace EtAlii.Adp;
 
 [DebuggerDisplay("Diagram@{ToString()}")]
-public class LinkIdentifier : IEquatable<LinkIdentifier>
+public readonly struct LinkIdentifier : IEquatable<LinkIdentifier>
 {
     public required Guid Identifier { get; init; }
     
@@ -21,20 +21,9 @@ public class LinkIdentifier : IEquatable<LinkIdentifier>
 
     public override string ToString() => Identifier.ToString();
 
-    public bool Equals(LinkIdentifier? other)
-    {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-        return Identifier.Equals(other.Identifier);
-    }
+    public override bool Equals(object? obj) => obj is LinkIdentifier other && Equals(other);
 
-    public override bool Equals(object? obj)
-    {
-        if (obj is null) return false;
-        if (ReferenceEquals(this, obj)) return true;
-        if (obj.GetType() != GetType()) return false;
-        return Equals((LinkIdentifier)obj);
-    }
+    public bool Equals(LinkIdentifier other) => Identifier.Equals(other.Identifier);
 
     public override int GetHashCode() => Identifier.GetHashCode();
 }

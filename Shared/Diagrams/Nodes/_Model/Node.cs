@@ -11,7 +11,7 @@ namespace EtAlii.Adp
 
         public NodePosition Position
         {
-            get { if(_position == null) _position = new NodePosition { X = _nodePositionX, Y = _nodePositionY }; return _position; }
+            get { _position ??= new NodePosition { X = _nodePositionX, Y = _nodePositionY }; return _position!.Value; }
             set { _position = value; _nodePositionX = value.X; _nodePositionY = value.Y; }
         }
         [JsonIgnore] private NodePosition? _position;
