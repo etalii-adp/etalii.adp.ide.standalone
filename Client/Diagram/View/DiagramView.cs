@@ -15,6 +15,7 @@ public class DiagramView : BlazorDiagram
     private DiagramContext _context = null!;
 
     public bool ShowProperties { get; set; }
+    public bool ShowNavigator { get; set; }
     
     public DiagramView(ILoggerFactory loggerFactory)
         : base(Options)

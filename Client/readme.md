@@ -17,9 +17,11 @@
 - [X] Persisted undo/redo
 - [ ] Node tags
 - [ ] Link tags
+- [ ] Tag colors
+- [ ] Node color
 - [ ] Note nodes
 - [ ] Note links
-- [ ] Node colors
+- [ ] Note color
 - [ ] Group
 - [ ] Ungroup
 - [ ] Collapse Group
@@ -43,7 +45,7 @@
 - [ ] Dependencies within this project
 - [ ] Evolution of entertainment
 - [ ] Agile project development 
-- [ ]  Stories => Books => Video => Games => XR
+- [ ] Stories => Books => Video => Games => XR
 - [ ] Trends in XR
 - [ ] Politics?
 
