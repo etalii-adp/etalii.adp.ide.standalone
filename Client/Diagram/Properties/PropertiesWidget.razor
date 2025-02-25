@@ -5,38 +5,56 @@
 
     <table style="margin-left: 5px; margin-right: 5px">
         <tbody>
-        @foreach (var property in Properties)
-        {
-            <tr>
-                <td class="col-md-4 m-2 align-middle">@property.Key</td>
-                <td class="col-md-8 m-2 align-middle">
-                    <div style="margin-top: 5px">
-                        @if (property.ValueType == typeof(string))
-                        {
-                            <TextInput @bind-Value="@property.ValueAsString"/>
-                            @* <input type="text" class="form-control" @bind="@property.Value" /> *@
-                        }
-                        else if (property.ValueType == typeof(int))
-                        {
-                            <NumberInput TValue="int" @bind-value="@property.ValueAsInt"/>
-                            @* <input type="number" class="form-control" @bind="@property.Value" /> *@
-                        }
-
-                        @* else if (property.ValueType == typeof(bool)) *@
-                        @* { *@
-                        @*     $1$ <CheckboxInput Value="true" /> #1# *@
-                        @*     $1$ <input type="checkbox" class="form-check-input" @bind="@property.Value" /> #1# *@
-                        @* } *@
-                        @* else if (property.ValueType == typeof(DateTime)) *@
-                        @* { *@
-                        @*     <DateInput TValue="DateOnly" @bind-value="@_date" /> *@
-                        @* } *@
-                    </div>
-                </td>
-            </tr>
-        }
+            @foreach (var property in Properties)
+            {
+                <tr>
+                    @if (property.ValueType == typeof(string))
+                    {
+                        <td class="col-md-4 m-2 align-middle">@property.Key</td>
+                        <td class="col-md-8 m-2 align-middle">
+                            <div style="margin-top: 5px">
+                                <TextInput @bind-Value="@property.ValueAsString"/>
+                            </div>
+                        </td>
+                    }
+                    else if (property.ValueType == typeof(int))
+                    {
+                        <td class="col-md-4 m-2 align-middle">@property.Key</td>
+                        <td class="col-md-8 m-2 align-middle">
+                            <div style="margin-top: 5px">
+                                <NumberInput TValue="int" @bind-value="@property.ValueAsInt"/>
+                            </div>
+                        </td>
+                    }
+                    else if (property.ValueType == typeof(DateOnly))
+                    {
+                        <td class="col-md-4 m-2 align-middle">@property.Key</td>
+                        <td class="col-md-8 m-2 align-middle">
+                            <div style="margin-top: 5px">
+                                <DateInput TValue="DateOnly" @bind-value="@property.ValueAsDateOnly"/>
+                            </div>
+                        </td>
+                    }
+                    else if (property.ValueType == typeof(bool))
+                    {
+                        <td class="col-md-4 m-2 align-middle">@property.Key</td>
+                        <td class="col-md-8 m-2 align-middle">
+                            <div style="margin-top: 5px">
+                                <Switch @bind-value="@property.ValueAsBoolean"/>
+                            </div>
+                        </td>
+                    }
+                    else if (property.ValueType == typeof(TagGroup))
+                    {
+                        <td class="col-md-4 m-2 align-middle" style="align-content: baseline; padding-top: 11px;">@property.Key</td>
+                        <td class="col-md-8 m-2 align-middle">
+                            <div style="margin-top: 5px">
+                                <TagsInput/>
+                            </div>
+                        </td>
+                    }
+                </tr>
+            }
         </tbody>
     </table>
-
-
 </Card>

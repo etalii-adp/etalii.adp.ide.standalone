@@ -1,0 +1,13 @@
+﻿@namespace EtAlii.Adp.Client
+
+<div class="tag-input" disabled="@Disabled">
+    <div class="tags">
+        @foreach (var tag in _tags)
+        {
+            <span class="tag">
+                @tag <button @onclick="() => RemoveTag(tag)">×</button>
+            </span>
+        }
+    </div>
+    <input @bind="_newTag" @onkeyup="HandleKeyPress" placeholder="Add a tag..." />
+</div>

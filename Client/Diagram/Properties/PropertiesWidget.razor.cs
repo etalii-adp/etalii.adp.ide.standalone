@@ -21,8 +21,32 @@ public partial class PropertiesWidget //: IDisposable
         new()
         {
             Key = "Created",
-            Value = DateTime.Now,
-            ValueType = typeof(DateTime),
+            Value = DateOnly.FromDateTime(DateTime.Now),
+            ValueType = typeof(DateOnly),
+        },
+        new()
+        {
+            Key = "Link",
+            Value = new Uri("https://github.com"),
+            ValueType = typeof(Uri),
+        },
+        new()
+        {
+            Key = "Show link",
+            Value = true,
+            ValueType = typeof(bool),
+        },
+        new()
+        {
+            Key = "State",
+            Value = new TagGroup { Id = TagGroupIdentifier.NewIdentifier(), Name = "State", },
+            ValueType = typeof(TagGroup),
+        },
+        new()
+        {
+            Key = "Maturity",
+            Value = new TagGroup { Id = TagGroupIdentifier.NewIdentifier(), Name = "Maturity", },
+            ValueType = typeof(TagGroup),
         }
     ];
     

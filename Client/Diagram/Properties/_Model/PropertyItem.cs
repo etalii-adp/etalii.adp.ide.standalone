@@ -29,6 +29,12 @@ public class PropertyItem
         set => Value = value;
     }
 
+    public bool ValueAsBoolean
+    {
+        get => (bool)Value;
+        set => Value = value;
+    }
+
     
     public Type ValueType { get; set; } = typeof(string);
     public List<string>? Options { get; set; } // For dropdowns
