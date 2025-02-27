@@ -40,9 +40,7 @@ public partial class UserManager
 
             if (IsAuthenticated)
             {
-#if DEBUG                
                 ClientPrincipal.SetHeader(_client, ClaimsPrincipal, _logger);
-#endif
                 CurrentUser = await _client.GetFromJsonAsync<User>(ApplicationApi.Authentication.Get.Request) ?? null!;
             }
         }
