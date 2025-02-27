@@ -23,6 +23,11 @@ public partial class PanCommandHandler
         
         StartPanningMonitor();
     }
+    
+    public void DeInitialize()
+    {
+        StopPanningMonitor();
+    }
 
     private void StartPanningMonitor()
     {

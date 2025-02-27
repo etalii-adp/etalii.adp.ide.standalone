@@ -24,10 +24,19 @@ public partial class ZoomCommandHandler
         StartZoomMonitor();
     }
 
+    public void DeInitialize()
+    {
+        StopZoomMonitor();
+    }
+
     private void StartZoomMonitor()
     {
         _subscription = _eventStream.Subscribe(_ =>
         {
+            var newZoom = _context.View.Zoom;
+            var oldZoom = _context.Diagram.Zoom;
+            if (!(Math.Abs(newZoom - oldZoom) > 0.00001f)) return;
+            
             var command = CreateCommand(_context);
             _context.Commands.Handle(command);
         });

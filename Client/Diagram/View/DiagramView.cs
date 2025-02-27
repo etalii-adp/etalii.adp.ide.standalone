@@ -48,6 +48,16 @@ public class DiagramView : BlazorDiagram
     {
         Links.Clear();
         Nodes.Clear();
+        
+        _context.CommandHandlers
+            .OfType<PanCommandHandler>()
+            .Single()
+            .DeInitialize();
+
+        _context.CommandHandlers
+            .OfType<ZoomCommandHandler>()
+            .Single()
+            .DeInitialize();
     }
 
     private void UpdateContext()
