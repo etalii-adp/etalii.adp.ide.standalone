@@ -32,7 +32,7 @@ public class LoginApi
 
             var claims = ClientPrincipal.Parse(request, _logger);
 
-            var userName = claims.Identity!.Name!;
+            var userName = claims.Identity!.Name;
             if (string.IsNullOrWhiteSpace(userName))
             {
                 throw new ApplicationException("User name cannot be empty");
@@ -67,7 +67,7 @@ public class LoginApi
             var response = request.CreateResponse(HttpStatusCode.FailedDependency);
             // TODO: Remove - security risk
             response.Headers.TryAddWithoutValidation("Exception", Base64Url.Encode(e.ToString()));
-            await response.WriteStringAsync($"Error occured while processing request: {e}");
+            // await response.WriteStringAsync();
             return response;
         }
     }

@@ -14,20 +14,16 @@ public static class HttpClientLoggingExtensions
             var result = await response.Content.ReadFromJsonAsync<TItem>();
             return result!;
         }
-        else
-        {
-            logger.LogInformation("GET request to {RequestUri} failed", requestUri);
-            // TODO: Remove - security risk
-            if (response.Headers.TryGetValues("Exception", out var values))
-            {
-                var base64EncodedException = values.First();
-                var exception = Base64Url.Decode(base64EncodedException);
-                logger.LogError("Diagnostics message: {Exception}", exception);
-            }
 
-            var content = await response.Content.ReadAsStringAsync();
-            logger.LogError("Content returned: {Content}", content);
-            return null!;
-        }
+        logger.LogInformation("GET request to {RequestUri} failed", requestUri);
+
+        // TODO: Remove - security risk
+        if (!response.Headers.TryGetValues("Exception", out var values)) return null!;
+        
+        var base64EncodedException = values.First();
+        var exception = Base64Url.Decode(base64EncodedException);
+        logger.LogError("Diagnostics message: {Exception}", exception);
+
+        return null!;
     }
 }

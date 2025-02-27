@@ -47,7 +47,7 @@ public partial class DiagramsApi
             var response = request.CreateResponse(HttpStatusCode.FailedDependency);
             // TODO: Remove - security risk
             response.Headers.TryAddWithoutValidation("Exception", Base64Url.Encode(e.ToString()));
-            await response.WriteStringAsync($"Error occured while processing request: {e}");
+            // await response.WriteStringAsync($"Error occured while processing request: {e}");
             return response;
         }
     }
