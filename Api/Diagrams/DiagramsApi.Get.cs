@@ -18,7 +18,7 @@ public partial class DiagramsApi
             if (!request.TryAuthentication(_logger, out var response, out var principal)) return response;
             
             var userName = principal.UserDetails;
-            var externalIdentifier = principal.ExternalIdentifier;
+            var externalIdentifier = $"{principal.UserId}@{principal.IdentityProvider}";
 
             await using var context = await _dbContextFactory.CreateDbContextAsync();
             

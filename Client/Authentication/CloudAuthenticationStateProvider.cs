@@ -37,10 +37,10 @@ public class CloudAuthenticationStateProvider : AuthenticationStateProvider
             //         .Concat(AuthenticatedRole)
             //         .ToArray();
             // }
-            if (string.IsNullOrEmpty(principal.ExternalIdentifier))
-            {
-                principal.ExternalIdentifier = $"{principal.UserId}@{principal.IdentityProvider}";
-            }
+            // if (string.IsNullOrEmpty(principal.UserDetails))
+            // {
+            //     principal.ExternalIdentifier = $"{principal.UserId}@{principal.IdentityProvider}";
+            // }
             var claimsPrincipal = ClientPrincipal.ToClaimsPrincipal(principal, _logger);
             _logger.LogInformation("Authentication state retrieved successfully for {UserName}", principal.UserDetails);
             return new AuthenticationState(claimsPrincipal);

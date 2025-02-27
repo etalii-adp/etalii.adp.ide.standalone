@@ -10,10 +10,10 @@ public static class HttpRequestDataAuthenticationExtensions
 {
     public static bool TryAuthentication(this HttpRequestData request, ILogger logger, out HttpResponseData response, out ClientPrincipal clientPrincipal)
     {
-        clientPrincipal = ClientPrincipal.Parse(request, logger);
+        clientPrincipal = ClientPrincipal.Parse(request, logger)!;
 
 #if !DEBUG    
-            if (!clientPrincipal.UserRoles.Contains("authenticated"))
+            if (!clientPrincipal?.UserRoles.Contains("authenticated") == true)
             {
                 response = request.CreateResponse(HttpStatusCode.Unauthorized);
                 return false;

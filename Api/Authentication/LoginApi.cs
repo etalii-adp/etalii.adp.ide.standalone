@@ -31,15 +31,18 @@ public class LoginApi
 
             if (!request.TryAuthentication(_logger, out var response, out var principal)) return response;
 
+            var externalIdentifier = $"{principal.UserId}@{principal.IdentityProvider}";
+
             await using var context = await _dbContextFactory.CreateDbContextAsync();
-            var user = await context.Users.SingleOrDefaultAsync(u => u.ExternalIdentifier == principal.ExternalIdentifier);
+
+            var user = await context.Users.SingleOrDefaultAsync(u => u.ExternalIdentifier == externalIdentifier);
             if (user == null)
             {
                 user = new User
                 {
                     Id = UserIdentifier.NewIdentifier(),
                     Name = principal.UserDetails!,
-                    ExternalIdentifier = principal.ExternalIdentifier!,
+                    ExternalIdentifier = externalIdentifier,
                     JoinDate = DateTime.UtcNow,
                     //Theme = Theme.Light,
                 };

@@ -12,42 +12,44 @@ public partial class ClientPrincipal
     private const string _clientPrincipalIdentityProviderHeader = "X-MS-CLIENT-PRINCIPAL-IDP";
 
         
-    public static ClientPrincipal Parse(HttpRequestData req, ILogger logger)
+    public static ClientPrincipal? Parse(HttpRequestData req, ILogger logger)
     {
         logger.LogInformation("Parsing headers");
         if (!req.Headers.TryGetValues(_clientPrincipalHeader, out var headers))
         {
-            throw new ApplicationException($"No header found for {_clientPrincipalHeader}");
+            return null;
+            //throw new ApplicationException($"No header found for {_clientPrincipalHeader}");
         }
 
         var principalHeaders = headers!.ToArray();
-        if (principalHeaders.Length > 1)
-        {
-            var result = new List<string>();
-            foreach (var h in principalHeaders)
-            {
-                var j = Base64Url.Decode(h);
-                result.Add(j);
-            }
-            throw new ApplicationException($"Multiple headers found for {_clientPrincipalHeader}:\r\n\r\n{string.Join("\r\n", result)}");
-        }
+        // if (principalHeaders.Length > 1)
+        // {
+        //     var result = new List<string>();
+        //     foreach (var h in principalHeaders)
+        //     {
+        //         var j = Base64Url.Decode(h);
+        //         result.Add(j);
+        //     }
+        //     throw new ApplicationException($"Multiple headers found for {_clientPrincipalHeader}:\r\n\r\n{string.Join("\r\n", result)}");
+        // }
         var header = principalHeaders.First();
         var json = Base64Url.Decode(header);
         var principal = JsonSerializer.Deserialize<ClientPrincipal>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
 
-        req.Headers.TryGetValues(_clientPrincipalIdHeader, out var ids);
-        req.Headers.TryGetValues(_clientPrincipalNameHeader, out var names);
-        req.Headers.TryGetValues(_clientPrincipalIdentityProviderHeader, out var providers);
-        
-        throw new InvalidOperationException($"Json check on header:\r\n\r\nName: {names.Single()}\r\nId: {ids.Single()}\r\nProvider: {providers.Single()}\r\n\r\n{json}");
+        // req.Headers.TryGetValues(_clientPrincipalIdHeader, out var ids);
+        // req.Headers.TryGetValues(_clientPrincipalNameHeader, out var names);
+        // req.Headers.TryGetValues(_clientPrincipalIdentityProviderHeader, out var providers);
+        // throw new InvalidOperationException($"Json check on header:\r\n\r\nName: {names.Single()}\r\nId: {ids.Single()}\r\nProvider: {providers.Single()}\r\n\r\n{json}");
         
         if (string.IsNullOrWhiteSpace(principal.UserDetails))
         {
-            throw new ApplicationException($"Empty user details were found when parsing the {_clientPrincipalHeader} header");
+            return null;
+            //throw new ApplicationException($"Empty user details were found when parsing the {_clientPrincipalHeader} header");
         }
-        if (string.IsNullOrWhiteSpace(principal.ExternalIdentifier))
+        if (string.IsNullOrWhiteSpace(principal.UserDetails))
         {
-            throw new ApplicationException($"Empty external identifier was found when parsing the {_clientPrincipalHeader} header");
+            return null;
+            //throw new ApplicationException($"Empty user details (name) was found when parsing the {_clientPrincipalHeader} header");
         }
 
         return principal;
@@ -57,13 +59,13 @@ public partial class ClientPrincipal
     {
         logger.LogInformation("Setting headers");
 
+        if (string.IsNullOrEmpty(clientPrincipal.UserId))
+        {
+            throw new ApplicationException($"No user ID was found to set in the {_clientPrincipalHeader} header");
+        }
         if (string.IsNullOrEmpty(clientPrincipal.UserDetails))
         {
-            throw new ApplicationException($"No user details found to set in the {_clientPrincipalHeader} header");
-        }
-        if (string.IsNullOrEmpty(clientPrincipal.ExternalIdentifier))
-        {
-            throw new ApplicationException($"No external identifier found to set in the {_clientPrincipalHeader} header");
+            throw new ApplicationException($"No user details (name) was found to set in the {_clientPrincipalHeader} header");
         }
         
         var headers = client.DefaultRequestHeaders;
@@ -71,6 +73,6 @@ public partial class ClientPrincipal
         var header = Base64Url.Encode(json);
         headers.Remove(_clientPrincipalHeader);
         headers.TryAddWithoutValidation(_clientPrincipalHeader, header);
-        logger.LogInformation("Finished setting headers {UserDetails} {ExternalIdentifier}", clientPrincipal.UserDetails, clientPrincipal.ExternalIdentifier);
+        logger.LogInformation("Finished setting headers {UserDetails} {UserId}", clientPrincipal.UserDetails, clientPrincipal.UserId);
     }
 }

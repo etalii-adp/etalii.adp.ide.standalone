@@ -6,5 +6,4 @@ public partial class ClientPrincipal
     public string? UserId { get; init; } = string.Empty;
     public string? UserDetails { get; init; } = string.Empty;
     public string[] UserRoles { get; set; } = [];
-    public string? ExternalIdentifier { get; set; } = string.Empty;
 }
