@@ -31,25 +31,15 @@ public class LoginApi
 
             if (!request.TryAuthentication(_logger, out var response, out var principal)) return response;
 
-            var userName = principal.UserDetails;
-            if (string.IsNullOrWhiteSpace(userName))
-            {
-                throw new ApplicationException("User name cannot be empty");
-            }
-            var externalIdentifier = principal.ExternalIdentifier;
-            if (string.IsNullOrWhiteSpace(externalIdentifier))
-            {
-                throw new ApplicationException("ExternalIdentifier cannot be empty");
-            }
             await using var context = await _dbContextFactory.CreateDbContextAsync();
-            var user = await context.Users.SingleOrDefaultAsync(u => u.ExternalIdentifier == externalIdentifier);
+            var user = await context.Users.SingleOrDefaultAsync(u => u.ExternalIdentifier == principal.ExternalIdentifier);
             if (user == null)
             {
                 user = new User
                 {
                     Id = UserIdentifier.NewIdentifier(),
-                    Name = userName,
-                    ExternalIdentifier = externalIdentifier,
+                    Name = principal.UserDetails!,
+                    ExternalIdentifier = principal.ExternalIdentifier!,
                     JoinDate = DateTime.UtcNow,
                     //Theme = Theme.Light,
                 };
