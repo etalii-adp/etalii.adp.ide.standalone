@@ -30,21 +30,8 @@ public partial class DiagramsPage
 
     private async Task GetAllDiagrams()
     {
-        var response = await Client.GetAsync(ApplicationApi.Diagrams.Get.Request);
-        if (response.IsSuccessStatusCode)
-        {
-            _diagrams = await response.Content.ReadFromJsonAsync<Diagram[]>();
-        }
-        else
-        {
-            // TODO: Remove - security risk
-            if (response.TrailingHeaders.TryGetValues("Diagnostics", out var values))
-            {
-                var diagnostics = string.Join(',', values);
-                _logger.LogError("Fetching diagrams failed with response: {Diagnostics}", diagnostics);
-            }
-            _diagrams = [];
-        }
+        var diagrams = await Client.GetFromJsonWithLoggingAsync<Diagram[]>(ApplicationApi.Diagrams.Get.Request, _logger);
+        _diagrams = diagrams == null! ? diagrams : [];
     }
 
     private async Task OnAddNewTrendDiagram()

@@ -1,5 +1,4 @@
-﻿using System.Net.Http.Json;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Components.Authorization;
 
 namespace EtAlii.Adp.Client;
@@ -43,22 +42,12 @@ public partial class UserManager
                 ClientPrincipal.SetHeader(_client, ClaimsPrincipal, _logger);
                 
                 _logger.LogInformation("Calling GET request");
-                var response = await _client.GetAsync(ApplicationApi.Authentication.Get.Request);
-                if (response.IsSuccessStatusCode)
+
+                var user = await _client.GetFromJsonWithLoggingAsync<User>(ApplicationApi.Authentication.Get.Request, _logger);
+                CurrentUser = user!;
+                if (CurrentUser == null!)
                 {
-                    _logger.LogInformation("GET request succeeded");
-                    var user = await response.Content.ReadFromJsonAsync<User>();
-                    CurrentUser = user!;
-                }
-                else
-                {
-                    _logger.LogInformation("GET request failed");
-                    // TODO: Remove - security risk
-                    if (response.TrailingHeaders.TryGetValues("Diagnostics", out var values))
-                    {
-                        var diagnostics = string.Join(',', values);
-                        _logger.LogError("Unable to authenticating user: {Diagnostics}", diagnostics);
-                    }
+                    _logger.LogError("Unable to authenticating user");
                     _clientPrincipal = null!;
                 }
             }
