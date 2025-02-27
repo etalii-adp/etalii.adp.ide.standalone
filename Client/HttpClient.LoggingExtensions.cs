@@ -22,7 +22,7 @@ public static class HttpClientLoggingExtensions
         
         var base64EncodedException = values.First();
         var exception = Base64Url.Decode(base64EncodedException);
-        logger.LogError("Diagnostics message: {Exception}", exception);
+        logger.LogError("API exception: {Exception}", exception);
 
         return null!;
     }
