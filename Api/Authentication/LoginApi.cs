@@ -1,5 +1,4 @@
 using System.Net;
-using System.Security.Claims;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.EntityFrameworkCore;
@@ -30,14 +29,16 @@ public class LoginApi
         {
             _logger.LogInformation("Handling {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
 
-            var claims = ClientPrincipal.Parse(request, _logger);
+            if (!request.TryAuthentication(_logger, out var response, out var principal)) return response;
 
-            var userName = claims.Identity!.Name;
+            //var userName = principal.Identity!.Name;
+            var userName = principal.UserDetails;
             if (string.IsNullOrWhiteSpace(userName))
             {
                 throw new ApplicationException("User name cannot be empty");
             }
-            var externalIdentifier = claims.FindFirst(c => c.Type == ClaimTypes.Sid)!.Value;
+            //var externalIdentifier = principal.FindFirst(c => c.Type == ClaimTypes.Sid)!.Value;
+            var externalIdentifier = principal.ExternalIdentifier;
             if (string.IsNullOrWhiteSpace(externalIdentifier))
             {
                 throw new ApplicationException("ExternalIdentifier cannot be empty");
@@ -52,12 +53,13 @@ public class LoginApi
                     Name = userName,
                     ExternalIdentifier = externalIdentifier,
                     JoinDate = DateTime.UtcNow,
+                    //Theme = Theme.Light,
                 };
 
                 context.Entry(user).State = EntityState.Added;
                 await context.SaveChangesAsync();
             }
-            var response = request.CreateResponse(HttpStatusCode.OK);
+            response = request.CreateResponse(HttpStatusCode.OK);
             await response.WriteAsJsonAsync(user);
             return response;
         }

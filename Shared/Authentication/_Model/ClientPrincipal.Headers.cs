@@ -1,5 +1,4 @@
 using Microsoft.Azure.Functions.Worker.Http;
-using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
@@ -9,7 +8,7 @@ public partial class ClientPrincipal
 {
     private const string _clientPrincipalHeader = "x-ms-client-principal";
 
-    public static ClaimsPrincipal Parse(HttpRequestData req, ILogger logger)
+    public static ClientPrincipal Parse(HttpRequestData req, ILogger logger)
     {
         logger.LogInformation("Parsing headers");
         if (!req.Headers.TryGetValues(_clientPrincipalHeader, out var headers))
@@ -19,8 +18,7 @@ public partial class ClientPrincipal
         var header = headers.First();
         var json = Base64Url.Decode(header);
         var clientPrincipal = JsonSerializer.Deserialize<ClientPrincipal>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
-
-        return ToClaimsPrincipal(clientPrincipal, logger);
+        return clientPrincipal;
     }
 
     public static void SetHeader(HttpClient client, ClientPrincipal clientPrincipal, ILogger logger)

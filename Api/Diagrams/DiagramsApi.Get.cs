@@ -1,5 +1,4 @@
 using System.Net;
-using System.Security.Claims;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.EntityFrameworkCore;
@@ -14,18 +13,12 @@ public partial class DiagramsApi
     {
         try
         {
-            var claims = ClientPrincipal.Parse(request, _logger);
-#if !DEBUG              
-            if (claims.Identity?.IsAuthenticated != true)
-            {
-                return request.CreateResponse(HttpStatusCode.Unauthorized);
-            }
-#endif
-
             _logger.LogInformation("Handling {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
 
-            var userName = claims.Identity!.Name!;
-            var externalIdentifier = claims.FindFirst(c => c.Type == ClaimTypes.Sid)!.Value;
+            if (!request.TryAuthentication(_logger, out var response, out var principal)) return response;
+            
+            var userName = principal.UserDetails;
+            var externalIdentifier = principal.ExternalIdentifier;
 
             await using var context = await _dbContextFactory.CreateDbContextAsync();
             
@@ -37,7 +30,7 @@ public partial class DiagramsApi
             // Clear the diagrams owner so that no circular dependencies are serialized.
             foreach (var diagram in diagrams) diagram.Owner = null!;
             
-            var response = request.CreateResponse(HttpStatusCode.OK);
+            response = request.CreateResponse(HttpStatusCode.OK);
             await response.WriteAsJsonAsync(diagrams);
             return response;
         }
