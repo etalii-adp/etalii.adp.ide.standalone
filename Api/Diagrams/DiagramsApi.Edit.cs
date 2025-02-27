@@ -13,15 +13,9 @@ public partial class DiagramsApi
     {
         try
         {
-#if !DEBUG              
-            var claims = ClientPrincipal.Parse(request, _logger);
-            if (claims.Identity?.IsAuthenticated != true)
-            {
-                return request.CreateResponse(HttpStatusCode.Unauthorized);
-            }
-#endif
-
             _logger.LogInformation("Handling {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
+
+            if (!request.TryAuthentication(_logger, out var response, out _)) return response;
 
             // Deserialize.
             var diagram = (await request.ReadFromJsonAsync<Diagram>())!;
@@ -41,7 +35,7 @@ public partial class DiagramsApi
             await context.SaveChangesAsync();
 
             // Respond.
-            var response = request.CreateResponse(HttpStatusCode.OK);
+            response = request.CreateResponse(HttpStatusCode.OK);
             await response.WriteAsJsonAsync(diagram);
             _logger.LogInformation("Handled {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
             return response;
@@ -49,8 +43,7 @@ public partial class DiagramsApi
         catch (Exception e)
         {
             _logger.LogError(e, "Unable to handle {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
-            var response = request.CreateResponse(HttpStatusCode.FailedDependency);
-            return response;
+            return request.HandleFailure(_logger, e);
         }
     }
 }

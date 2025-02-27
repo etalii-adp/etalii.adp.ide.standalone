@@ -66,11 +66,7 @@ public class LoginApi
         catch (Exception e)
         {
             _logger.LogError(e, "Unable to handle {RequestMethod}", request.Method);
-            var response = request.CreateResponse(HttpStatusCode.FailedDependency);
-            // TODO: Remove - security risk
-            response.Headers.TryAddWithoutValidation("Exception", Base64Url.Encode(e.ToString()));
-            // await response.WriteStringAsync();
-            return response;
+            return request.HandleFailure(_logger, e);
         }
     }
 }

@@ -28,16 +28,10 @@ public class DiagramApi
     {
         try
         {
-#if !DEBUG 
-            var claims = ClientPrincipal.Parse(request, _logger);
-            if (claims.Identity?.IsAuthenticated != true)
-            {
-                return request.CreateResponse(HttpStatusCode.Unauthorized);
-            }
-#endif
-
             _logger.LogInformation("Handling {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
             
+            if (!request.TryAuthentication(_logger, out var response, out _)) return response;
+
             // Save.
             await using var context = await _dbContextFactory.CreateDbContextAsync();
 
@@ -56,7 +50,7 @@ public class DiagramApi
             }
 
             // Respond.
-            var response = request.CreateResponse(HttpStatusCode.OK);
+            response = request.CreateResponse(HttpStatusCode.OK);
             await response.WriteAsJsonAsync(diagram);
 
             _logger.LogInformation("Handled {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
@@ -65,8 +59,7 @@ public class DiagramApi
         catch (Exception e)
         {
             _logger.LogError(e, "Unable to handle {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
-            var response = request.CreateResponse(HttpStatusCode.FailedDependency);
-            return response;
+            return request.HandleFailure(_logger, e);
         }
     }
 }

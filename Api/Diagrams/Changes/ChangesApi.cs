@@ -32,15 +32,9 @@ public class ChangesApi
     {
         try
         {
-#if !DEBUG
-            var claims = ClientPrincipal.Parse(request, _logger);
-            if (claims.Identity?.IsAuthenticated != true)
-            {
-                return request.CreateResponse(HttpStatusCode.Unauthorized);
-            }
-#endif
-            
             _logger.LogInformation("Handling {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
+
+            if (!request.TryAuthentication(_logger, out var response, out _)) return response;
 
             // // Deserialize.
             var commands = (await request.ReadFromJsonAsync<Command[]>())!;
@@ -56,16 +50,14 @@ public class ChangesApi
             await context.SaveChangesAsync();
             
             // Respond.
-            var response = request.CreateResponse(HttpStatusCode.OK);
+            response = request.CreateResponse(HttpStatusCode.OK);
             _logger.LogInformation("Handled {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
             return response;
         }
         catch (Exception e)
         {
             _logger.LogError(e, "Unable to handle {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
-            var response = request.CreateResponse(HttpStatusCode.FailedDependency);
-            return response;
+            return request.HandleFailure(_logger, e);
         }
     }
-
 }
