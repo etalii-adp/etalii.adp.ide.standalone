@@ -97,8 +97,11 @@ public partial class NavHeader
 
         _userLink = _selectedPage == SelectedPage.User
             ? new MarkupString($"<b><a style=\"color:black\" href=\"/user\">{_userName}</a></b> /")
+#if DEBUG
             : new MarkupString($"<a href=\"/user\">{_userName}</a> /");
-
+#else
+            : new MarkupString($"{_userName} /");
+#endif
         _diagramsLink = _selectedPage == SelectedPage.Diagrams
             ? new MarkupString($"<b><a style=\"color:black\" href=\"/user/diagrams\">Diagrams</a></b>")
             : new MarkupString($"<a href=\"/user/diagrams\">Diagrams</a>{(_selectedPage == SelectedPage.Diagram ? " / " : "")}");
