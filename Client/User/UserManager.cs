@@ -54,7 +54,7 @@ public partial class UserManager
                 {
                     _logger.LogInformation("GET request failed");
                     // TODO: Remove - security risk
-                    if (response.Headers.TryGetValues("Diagnostics", out var values))
+                    if (response.TrailingHeaders.TryGetValues("Diagnostics", out var values))
                     {
                         var diagnostics = string.Join(',', values);
                         _logger.LogError("Unable to authenticating user: {Diagnostics}", diagnostics);

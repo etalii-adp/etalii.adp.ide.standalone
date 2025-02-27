@@ -38,7 +38,7 @@ public partial class DiagramsPage
         else
         {
             // TODO: Remove - security risk
-            if (response.Headers.TryGetValues("Diagnostics", out var values))
+            if (response.TrailingHeaders.TryGetValues("Diagnostics", out var values))
             {
                 var diagnostics = string.Join(',', values);
                 _logger.LogError("Fetching diagrams failed with response: {Diagnostics}", diagnostics);
