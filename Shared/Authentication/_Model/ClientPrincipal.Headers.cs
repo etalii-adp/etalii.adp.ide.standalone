@@ -1,6 +1,5 @@
 using Microsoft.Azure.Functions.Worker.Http;
 using System.Security.Claims;
-using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
