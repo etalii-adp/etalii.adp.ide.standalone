@@ -5,6 +5,7 @@ namespace EtAlii.Adp.Client;
 
 public partial class ZoomCommandHandler 
 {
+    private const double _zoomTolerance = 0.00001f;
     private DiagramContext _context = null!;
     private IObservable<Unit> _eventStream = null!;
     private IDisposable _subscription = null!;
@@ -35,7 +36,7 @@ public partial class ZoomCommandHandler
         {
             var newZoom = _context.View.Zoom;
             var oldZoom = _context.Diagram.Zoom;
-            if (!(Math.Abs(newZoom - oldZoom) > 0.00001f)) return;
+            if (!(Math.Abs(newZoom - oldZoom) > _zoomTolerance)) return;
             
             var command = CreateCommand(_context);
             _context.Commands.Handle(command);

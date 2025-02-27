@@ -5,6 +5,7 @@ namespace EtAlii.Adp.Client;
 
 public partial class PanCommandHandler 
 {
+    private const double _panTolerance = 0.00001f;
     private DiagramContext _context = null!;
     private IObservable<Unit> _eventStream = null!;
     private IDisposable _subscription = null!;
@@ -33,6 +34,9 @@ public partial class PanCommandHandler
     {
         _subscription = _eventStream.Subscribe(_ =>
         {
+            var newPosition = new DiagramPosition { X = _context.View.Pan.X, Y = _context.View.Pan.Y };
+            var oldPosition = _context.Diagram.Position;
+            if (Math.Abs(newPosition.X - oldPosition.X) < _panTolerance || Math.Abs(newPosition.Y - oldPosition.Y) < _panTolerance) return;
             var command = CreateCommand(_context);
             _context.Commands.Handle(command);
         });
