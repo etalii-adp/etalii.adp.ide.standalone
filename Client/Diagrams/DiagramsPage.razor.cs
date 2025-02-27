@@ -37,9 +37,9 @@ public partial class DiagramsPage
         catch (Exception e)
         {
             // TODO: Remove - security risk
+            _logger.LogError(e, "Fetching diagram failed");
             var response = await Client.GetAsync(ApplicationApi.Diagrams.Get.Request);
             var content = await response.Content.ReadAsStringAsync();
-            _logger.LogError(e, "Fetching diagram failed");
             _logger.LogError("Fetching diagrams failed with response: {Content}", content);
             //throw;
         }
