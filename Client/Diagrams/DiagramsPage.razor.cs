@@ -13,15 +13,36 @@ public partial class DiagramsPage
     [Inject] private NavigationManager NavigationManager { get; set; } = null!;
     [Inject] private DiagramManager DiagramManager { get; set; } = null!;
     
+    [Inject] private ILoggerFactory LoggerFactory { get; set; } = null!;
+
+    private ILogger _logger = null!;
+    
     protected override async Task OnInitializedAsync()
     {
         await UserManager.Update();
         await GetAllDiagrams();
     }
 
+    protected override void OnParametersSet()
+    {
+        _logger = LoggerFactory.CreateLogger<DiagramsPage>();
+    }
+
     private async Task GetAllDiagrams()
     {
-        _diagrams = await Client.GetFromJsonAsync<Diagram[]>(ApplicationApi.Diagrams.Get.Request) ?? [];
+        try
+        {
+            _diagrams = await Client.GetFromJsonAsync<Diagram[]>(ApplicationApi.Diagrams.Get.Request) ?? [];
+        }
+        catch (Exception e)
+        {
+            // TODO: Remove - security risk
+            var response = await Client.GetAsync(ApplicationApi.Diagrams.Get.Request);
+            var content = await response.Content.ReadAsStringAsync();
+            _logger.LogError(e, "Fetching diagram failed");
+            _logger.LogError("Fetching diagrams failed with response: {Content}", content);
+            throw;
+        }
     }
 
     private async Task OnAddNewTrendDiagram()
