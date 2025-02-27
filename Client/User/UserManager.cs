@@ -5,7 +5,7 @@ namespace EtAlii.Adp.Client;
 
 public partial class UserManager
 {
-    public User CurrentUser { get; private set; } = null!;
+    public User? CurrentUser { get; private set; }
     public ClaimsPrincipal ClaimsPrincipal { get; private set; } = null!;
 
     private ClientPrincipal _clientPrincipal = null!;
@@ -40,17 +40,17 @@ public partial class UserManager
             if (IsAuthenticated)
             {
 #if DEBUG // Azure does this by itself.                
-                //ClientPrincipal.SetHeader(_client, _clientPrincipal, _logger);
+                ClientPrincipal.SetHeader(_client, _clientPrincipal, _logger);
 #endif                
                 _logger.LogInformation("Calling GET request");
 
                 var user = await _client.GetFromJsonWithLoggingAsync<User>(ApplicationApi.Authentication.Get.Request, _logger);
                 CurrentUser = user!;
-                if (CurrentUser == null!)
-                {
-                    _logger.LogError("Unable to authenticating user");
-                    _clientPrincipal = null!;
-                }
+                // if (CurrentUser == null!)
+                // {
+                //     _logger.LogError("Unable to authenticating user");
+                //     _clientPrincipal = null!;
+                // }
             }
         }
     }

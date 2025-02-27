@@ -44,7 +44,7 @@ public partial class DiagramsPage
         
         var diagram = new Diagram
         {
-            Owner = UserManager.CurrentUser,
+            Owner = UserManager.CurrentUser!,
             Name = $"{namePrefix} {matchingDiagramCount}",
             Description = "Provide a short description",
             Id = DiagramIdentifier.NewIdentifier(),
