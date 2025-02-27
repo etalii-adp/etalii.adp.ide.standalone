@@ -39,8 +39,9 @@ public partial class UserManager
 
             if (IsAuthenticated)
             {
-                ClientPrincipal.SetHeader(_client, _clientPrincipal, _logger);
-                
+#if DEBUG // Azure does this by itself.                
+                //ClientPrincipal.SetHeader(_client, _clientPrincipal, _logger);
+#endif                
                 _logger.LogInformation("Calling GET request");
 
                 var user = await _client.GetFromJsonWithLoggingAsync<User>(ApplicationApi.Authentication.Get.Request, _logger);

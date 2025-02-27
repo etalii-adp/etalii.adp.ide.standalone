@@ -10,7 +10,7 @@ public class CloudAuthenticationStateProvider : AuthenticationStateProvider
     private readonly HttpClient _client;
     private readonly ILogger _logger;
 
-    private static readonly string[] AuthenticatedRole = ["authenticated"];
+    // private static readonly string[] AuthenticatedRole = ["authenticated"];
     private static readonly string[] AnonymousRole = ["anonymous"];
     
     public CloudAuthenticationStateProvider(IWebAssemblyHostEnvironment environment, ILoggerFactory loggerFactory)
@@ -30,13 +30,13 @@ public class CloudAuthenticationStateProvider : AuthenticationStateProvider
                 .Except(AnonymousRole, StringComparer.CurrentCultureIgnoreCase)
                 .ToArray();
 
-            if (!string.IsNullOrEmpty(principal.UserId))
-            {
-                principal.UserRoles = principal.UserRoles
-                    .Except(AuthenticatedRole, StringComparer.CurrentCultureIgnoreCase)
-                    .Concat(AuthenticatedRole)
-                    .ToArray();
-            }
+            // if (!string.IsNullOrEmpty(principal.UserId))
+            // {
+            //     principal.UserRoles = principal.UserRoles
+            //         .Except(AuthenticatedRole, StringComparer.CurrentCultureIgnoreCase)
+            //         .Concat(AuthenticatedRole)
+            //         .ToArray();
+            // }
             if (string.IsNullOrEmpty(principal.ExternalIdentifier))
             {
                 principal.ExternalIdentifier = $"{principal.UserId}@{principal.IdentityProvider}";
