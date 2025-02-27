@@ -42,10 +42,12 @@ public class CloudAuthenticationStateProvider : AuthenticationStateProvider
                 principal.ExternalIdentifier = $"{principal.UserId}@{principal.IdentityProvider}";
             }
             var claimsPrincipal = ClientPrincipal.ToClaimsPrincipal(principal, _logger);
+            _logger.LogInformation("Authentication state retrieved successfully for {UserName}", principal.UserDetails);
             return new AuthenticationState(claimsPrincipal);
         } 
-        catch(Exception) 
+        catch(Exception e) 
         {
+            _logger.LogError(e, "Authentication state retrieval failed");
             return new AuthenticationState(new ClaimsPrincipal());
         }
     }
