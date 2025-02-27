@@ -15,6 +15,7 @@ public partial class ClientPrincipal
         logger.LogInformation("Parsing headers");
         if (!req.Headers.TryGetValues(_clientPrincipalHeader, out var headers))
         {
+            throw new HttpRequestException($"No header found for {_clientPrincipalHeader}");
             logger.LogInformation("No matching header found");
             return ToClaimsPrincipal(new ClientPrincipal(), logger);
         }
