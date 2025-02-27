@@ -7,7 +7,11 @@ namespace EtAlii.Adp;
 public partial class ClientPrincipal
 {
     private const string _clientPrincipalHeader = "x-ms-client-principal";
+    private const string _clientPrincipalIdHeader = "X-MS-CLIENT-PRINCIPAL-ID";
+    private const string _clientPrincipalNameHeader = "X-MS-CLIENT-PRINCIPAL-NAME";
+    private const string _clientPrincipalIdentityProviderHeader = "X-MS-CLIENT-PRINCIPAL-IDP";
 
+        
     public static ClientPrincipal Parse(HttpRequestData req, ILogger logger)
     {
         logger.LogInformation("Parsing headers");
@@ -30,6 +34,12 @@ public partial class ClientPrincipal
         var header = principalHeaders.First();
         var json = Base64Url.Decode(header);
         var principal = JsonSerializer.Deserialize<ClientPrincipal>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+        req.Headers.TryGetValues(_clientPrincipalIdHeader, out var ids);
+        req.Headers.TryGetValues(_clientPrincipalNameHeader, out var names);
+        req.Headers.TryGetValues(_clientPrincipalIdentityProviderHeader, out var providers);
+        
+        throw new InvalidOperationException($"Json check on header:\r\n\r\nName: {names.Single()}\r\nId: {ids.Single()}\r\nProvider: {providers.Single()}\r\n\r\n{json}");
         
         if (string.IsNullOrWhiteSpace(principal.UserDetails))
         {
