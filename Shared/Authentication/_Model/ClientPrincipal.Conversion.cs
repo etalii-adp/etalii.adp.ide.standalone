@@ -27,10 +27,10 @@ public partial class ClientPrincipal
         }
 
         var identity = new ClaimsIdentity(clientPrincipal.IdentityProvider);
+        identity.AddClaims(clientPrincipal.UserRoles.Select(r => new Claim(ClaimTypes.Role, r)));
         identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, clientPrincipal.UserId!));
         identity.AddClaim(new Claim(ClaimTypes.Name, clientPrincipal.UserDetails!));
         identity.AddClaim(new Claim(ClaimTypes.Sid, clientPrincipal.ExternalIdentifier));
-        identity.AddClaims(clientPrincipal.UserRoles.Select(r => new Claim(ClaimTypes.Role, r)));
         return new ClaimsPrincipal(identity);
     }
     
@@ -50,23 +50,17 @@ public partial class ClientPrincipal
             logger.LogInformation("No claims found");
             return null!;
         }
-        var claims = claimsIdentity.Claims!
+        var roles = claimsIdentity.Claims!
             .Where(c => c.Type == ClaimTypes.Role)
             .Select(c => c.Value)
             .ToArray();
 
-        logger.LogInformation("Checking userId");
-        var userId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
-
-        logger.LogInformation("Checking userDetails");
-        var userDetails = claimsIdentity.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty;
-
         var principal = new ClientPrincipal
         {
             IdentityProvider = claimsIdentity.AuthenticationType,
-            UserRoles = claims,
-            UserId = userId,
-            UserDetails = userDetails,
+            UserRoles = roles,
+            UserId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty,
+            UserDetails = claimsIdentity.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty,
             ExternalIdentifier = claimsIdentity.FindFirst(ClaimTypes.Sid)?.Value ?? string.Empty,
         };
         if (string.IsNullOrEmpty(principal.UserId))
