@@ -31,7 +31,7 @@ public partial class DiagramsPage
     private async Task GetAllDiagrams()
     {
         var diagrams = await Client.GetFromJsonWithLoggingAsync<Diagram[]>(ApplicationApi.Diagrams.Get.Request, _logger);
-        _diagrams = diagrams == null! ? diagrams : [];
+        _diagrams = diagrams != null! ? diagrams : [];
     }
 
     private async Task OnAddNewTrendDiagram()
