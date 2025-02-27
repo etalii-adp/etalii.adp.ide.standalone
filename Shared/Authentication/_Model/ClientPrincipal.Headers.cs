@@ -37,5 +37,6 @@ public partial class ClientPrincipal
         var header = Convert.ToBase64String(encoded);
         headers.Remove(_clientPrincipalHeader);
         headers.Add(_clientPrincipalHeader, header);
+        logger.LogInformation("Finished setting headers");
     }
 }
