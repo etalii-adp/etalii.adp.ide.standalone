@@ -64,7 +64,7 @@ public partial class ClientPrincipal
         logger.LogInformation("Checking userDetails");
         var userDetails = claimsIdentity.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty;
 
-        return new ClientPrincipal
+        var principal = new ClientPrincipal
         {
             IdentityProvider = claimsIdentity.AuthenticationType,
             UserRoles = claims,
@@ -72,5 +72,14 @@ public partial class ClientPrincipal
             UserDetails = userDetails,
             ExternalIdentifier = claimsIdentity.FindFirst(ClaimTypes.Sid)?.Value ?? string.Empty,
         };
+        if (string.IsNullOrEmpty(principal.UserId))
+        {
+            logger.LogError("UserId is empty");
+        }
+        if (string.IsNullOrEmpty(principal.ExternalIdentifier))
+        {
+            logger.LogError("ExternalIdentifier is empty");
+        }
+        return principal;
     }
 }
