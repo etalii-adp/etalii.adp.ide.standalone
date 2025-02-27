@@ -67,7 +67,7 @@ public class LoginApi
             var response = request.CreateResponse(HttpStatusCode.FailedDependency);
             // TODO: Remove - security risk
             response.Headers.Add("Diagnostics", e.ToString());
-            await response.WriteStringAsync("Error occured while processing request");
+            await response.WriteStringAsync($"Error occured while processing request: {e}");
             return response;
         }
     }
