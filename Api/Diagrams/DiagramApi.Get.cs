@@ -59,7 +59,7 @@ public class DiagramApi
             var response = request.CreateResponse(HttpStatusCode.OK);
             await response.WriteAsJsonAsync(diagram);
 
-            _logger.LogTrace("Handled {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
+            _logger.LogInformation("Handled {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
             return response;
         }
         catch (Exception e)
