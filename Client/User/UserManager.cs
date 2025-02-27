@@ -40,8 +40,20 @@ public partial class UserManager
 
             if (IsAuthenticated)
             {
-                ClientPrincipal.SetHeader(_client, ClaimsPrincipal, _logger);
-                CurrentUser = await _client.GetFromJsonAsync<User>(ApplicationApi.Authentication.Get.Request) ?? null!;
+                try
+                {
+                    ClientPrincipal.SetHeader(_client, ClaimsPrincipal, _logger);
+                    CurrentUser = await _client.GetFromJsonAsync<User>(ApplicationApi.Authentication.Get.Request) ?? null!;
+                }
+                catch (Exception e)
+                {
+                    // TODO: Remove - security risk
+                    _logger.LogError(e, "Unable authenticating user");
+                    var response = await _client.GetAsync(ApplicationApi.Authentication.Get.Request);
+                    var content = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Unable authenticating user: {Content}", content);
+                    _clientPrincipal = null!;
+                }
             }
         }
     }
