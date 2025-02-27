@@ -31,6 +31,6 @@ public partial class ClientPrincipal
         var header = Base64Url.Encode(json);
         headers.Remove(_clientPrincipalHeader);
         headers.TryAddWithoutValidation(_clientPrincipalHeader, header);
-        logger.LogInformation("Finished setting headers");
+        logger.LogInformation("Finished setting headers {UserId} {ExternalIdentifier}", clientPrincipal.UserId, clientPrincipal.ExternalIdentifier);
     }
 }
