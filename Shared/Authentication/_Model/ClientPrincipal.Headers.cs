@@ -15,7 +15,19 @@ public partial class ClientPrincipal
         {
             throw new ApplicationException($"No header found for {_clientPrincipalHeader}");
         }
-        var header = headers.First();
+
+        var principalHeaders = headers!.ToArray();
+        if (principalHeaders.Length > 1)
+        {
+            var result = new List<string>();
+            foreach (var h in principalHeaders)
+            {
+                var j = Base64Url.Decode(h);
+                result.Add(j);
+            }
+            throw new ApplicationException($"Multiple headers found for {_clientPrincipalHeader}:\r\n\r\n{string.Join("\r\n", result)}");
+        }
+        var header = principalHeaders.First();
         var json = Base64Url.Decode(header);
         var principal = JsonSerializer.Deserialize<ClientPrincipal>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
         
@@ -49,6 +61,6 @@ public partial class ClientPrincipal
         var header = Base64Url.Encode(json);
         headers.Remove(_clientPrincipalHeader);
         headers.TryAddWithoutValidation(_clientPrincipalHeader, header);
-        logger.LogInformation("Finished setting headers {UserId} {ExternalIdentifier}", clientPrincipal.UserId, clientPrincipal.ExternalIdentifier);
+        logger.LogInformation("Finished setting headers {UserDetails} {ExternalIdentifier}", clientPrincipal.UserDetails, clientPrincipal.ExternalIdentifier);
     }
 }
