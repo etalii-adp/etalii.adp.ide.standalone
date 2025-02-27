@@ -18,10 +18,11 @@ public static class HttpClientLoggingExtensions
         {
             logger.LogInformation("GET request to {RequestUri} failed", requestUri);
             // TODO: Remove - security risk
-            if (response.TrailingHeaders.TryGetValues("Diagnostics", out var values))
+            if (response.TrailingHeaders.TryGetValues("Exception", out var values))
             {
-                var diagnostics = string.Join(',', values);
-                logger.LogError("Diagnostics message: {Diagnostics}", diagnostics);
+                var base64EncodedException = values.First();
+                var exception = Base64Url.Decode(base64EncodedException);
+                logger.LogError("Diagnostics message: {Exception}", exception);
             }
 
             var content = await response.Content.ReadAsStringAsync();
