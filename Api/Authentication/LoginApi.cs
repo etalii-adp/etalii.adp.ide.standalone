@@ -31,13 +31,11 @@ public class LoginApi
 
             if (!request.TryAuthentication(_logger, out var response, out var principal)) return response;
 
-            //var userName = principal.Identity!.Name;
             var userName = principal.UserDetails;
             if (string.IsNullOrWhiteSpace(userName))
             {
                 throw new ApplicationException("User name cannot be empty");
             }
-            //var externalIdentifier = principal.FindFirst(c => c.Type == ClaimTypes.Sid)!.Value;
             var externalIdentifier = principal.ExternalIdentifier;
             if (string.IsNullOrWhiteSpace(externalIdentifier))
             {
