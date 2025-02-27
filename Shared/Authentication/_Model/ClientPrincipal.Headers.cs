@@ -18,8 +18,7 @@ public partial class ClientPrincipal
             throw new ApplicationException($"No header found for {_clientPrincipalHeader}");
         }
         var header = headers.First();
-        var decoded = Convert.FromBase64String(header);
-        var json = Encoding.UTF8.GetString(decoded);
+        var json = Base64Url.Decode(header);
         var clientPrincipal = JsonSerializer.Deserialize<ClientPrincipal>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
 
         return ToClaimsPrincipal(clientPrincipal, logger);
@@ -32,10 +31,9 @@ public partial class ClientPrincipal
         logger.LogInformation("Setting headers");
         var headers = client.DefaultRequestHeaders;
         var json = JsonSerializer.Serialize(clientPrincipal, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        var encoded = Encoding.UTF8.GetBytes(json);
-        var header = Convert.ToBase64String(encoded);
+        var header = Base64Url.Encode(json);
         headers.Remove(_clientPrincipalHeader);
-        headers.Add(_clientPrincipalHeader, header);
+        headers.TryAddWithoutValidation(_clientPrincipalHeader, header);
         logger.LogInformation("Finished setting headers");
     }
 }
