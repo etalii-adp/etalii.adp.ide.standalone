@@ -6,11 +6,20 @@ namespace EtAlii.Adp;
 
 public partial class ClientPrincipal
 {
-    public static ClaimsPrincipal ToClaimsPrincipal(ClientPrincipal? clientPrincipal)
+    public static ClaimsPrincipal ToClaimsPrincipal(ClientPrincipal? clientPrincipal, ILogger logger)
     {
         if (clientPrincipal is null || !clientPrincipal.UserRoles.Any() || clientPrincipal.UserId is null || clientPrincipal.UserDetails is null)
         {
             return new ClaimsPrincipal();
+        }
+        
+        if (string.IsNullOrEmpty(clientPrincipal.UserId))
+        {
+            logger.LogError("UserId is empty whilst converting to ClaimsPrincipal");
+        }
+        if (string.IsNullOrEmpty(clientPrincipal.ExternalIdentifier))
+        {
+            logger.LogError("ExternalIdentifier is empty whilst converting to ClaimsPrincipal");
         }
 
         try
@@ -74,11 +83,11 @@ public partial class ClientPrincipal
         };
         if (string.IsNullOrEmpty(principal.UserId))
         {
-            logger.LogError("UserId is empty");
+            logger.LogError("UserId is empty whilst converting to ClientPrincipal");
         }
         if (string.IsNullOrEmpty(principal.ExternalIdentifier))
         {
-            logger.LogError("ExternalIdentifier is empty");
+            logger.LogError("ExternalIdentifier is empty whilst converting to ClientPrincipal");
         }
         return principal;
     }

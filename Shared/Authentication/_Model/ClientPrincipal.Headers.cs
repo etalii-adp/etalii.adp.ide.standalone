@@ -16,14 +16,14 @@ public partial class ClientPrincipal
         if (!req.Headers.TryGetValues(_clientPrincipalHeader, out var headers))
         {
             logger.LogInformation("No matching header found");
-            return ToClaimsPrincipal(new ClientPrincipal());
+            return ToClaimsPrincipal(new ClientPrincipal(), logger);
         }
         var header = headers.First();
         var decoded = Convert.FromBase64String(header);
         var json = Encoding.UTF8.GetString(decoded);
         var clientPrincipal = JsonSerializer.Deserialize<ClientPrincipal>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-        return ToClaimsPrincipal(clientPrincipal);
+        return ToClaimsPrincipal(clientPrincipal, logger);
     }
 
     public static void SetHeader(HttpClient client, ClaimsPrincipal principal, ILogger logger)

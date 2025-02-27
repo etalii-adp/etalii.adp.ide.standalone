@@ -8,10 +8,12 @@ namespace EtAlii.Adp.Client;
 public class CloudAuthenticationStateProvider : AuthenticationStateProvider
 {
     private readonly HttpClient _client;
+    private readonly ILogger _logger;
 
-    public CloudAuthenticationStateProvider(IWebAssemblyHostEnvironment environment)
+    public CloudAuthenticationStateProvider(IWebAssemblyHostEnvironment environment, ILoggerFactory loggerFactory)
     {
         _client = new HttpClient { BaseAddress = new Uri(environment.BaseAddress) };
+        _logger = loggerFactory.CreateLogger<CloudAuthenticationStateProvider>();
     }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
@@ -29,7 +31,7 @@ public class CloudAuthenticationStateProvider : AuthenticationStateProvider
             {
                 principal.ExternalIdentifier = $"{principal.UserId}@{principal.IdentityProvider}";
             }
-            var claimsPrincipal = ClientPrincipal.ToClaimsPrincipal(principal);
+            var claimsPrincipal = ClientPrincipal.ToClaimsPrincipal(principal, _logger);
             return new AuthenticationState(claimsPrincipal);
         } 
         catch(Exception) 
