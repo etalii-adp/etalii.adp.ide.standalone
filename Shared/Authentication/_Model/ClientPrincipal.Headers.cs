@@ -23,10 +23,8 @@ public partial class ClientPrincipal
         return ToClaimsPrincipal(clientPrincipal, logger);
     }
 
-    public static void SetHeader(HttpClient client, ClaimsPrincipal principal, ILogger logger)
+    public static void SetHeader(HttpClient client, ClientPrincipal clientPrincipal, ILogger logger)
     {
-        var clientPrincipal = ToClientPrincipal(principal.Identity, logger);
-
         logger.LogInformation("Setting headers");
         var headers = client.DefaultRequestHeaders;
         var json = JsonSerializer.Serialize(clientPrincipal, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });

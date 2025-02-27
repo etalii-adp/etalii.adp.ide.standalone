@@ -39,7 +39,7 @@ public partial class UserManager
 
             if (IsAuthenticated)
             {
-                ClientPrincipal.SetHeader(_client, ClaimsPrincipal, _logger);
+                ClientPrincipal.SetHeader(_client, _clientPrincipal, _logger);
                 
                 _logger.LogInformation("Calling GET request");
 
