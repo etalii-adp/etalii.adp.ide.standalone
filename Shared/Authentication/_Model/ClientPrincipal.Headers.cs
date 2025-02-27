@@ -15,14 +15,12 @@ public partial class ClientPrincipal
         logger.LogInformation("Parsing headers");
         if (!req.Headers.TryGetValues(_clientPrincipalHeader, out var headers))
         {
-            throw new HttpRequestException($"No header found for {_clientPrincipalHeader}");
-            logger.LogInformation("No matching header found");
-            return ToClaimsPrincipal(new ClientPrincipal(), logger);
+            throw new ApplicationException($"No header found for {_clientPrincipalHeader}");
         }
         var header = headers.First();
         var decoded = Convert.FromBase64String(header);
         var json = Encoding.UTF8.GetString(decoded);
-        var clientPrincipal = JsonSerializer.Deserialize<ClientPrincipal>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var clientPrincipal = JsonSerializer.Deserialize<ClientPrincipal>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
 
         return ToClaimsPrincipal(clientPrincipal, logger);
     }

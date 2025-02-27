@@ -6,13 +6,8 @@ namespace EtAlii.Adp;
 
 public partial class ClientPrincipal
 {
-    public static ClaimsPrincipal ToClaimsPrincipal(ClientPrincipal? clientPrincipal, ILogger logger)
+    public static ClaimsPrincipal ToClaimsPrincipal(ClientPrincipal clientPrincipal, ILogger logger)
     {
-        if (clientPrincipal is null || !clientPrincipal.UserRoles.Any() || clientPrincipal.UserId is null || clientPrincipal.UserDetails is null)
-        {
-            return new ClaimsPrincipal();
-        }
-        
         if (string.IsNullOrEmpty(clientPrincipal.UserId))
         {
             logger.LogError("UserId is empty whilst converting to ClaimsPrincipal");
@@ -22,28 +17,21 @@ public partial class ClientPrincipal
             logger.LogError("ExternalIdentifier is empty whilst converting to ClaimsPrincipal");
         }
 
-        try
-        {
-            clientPrincipal.UserRoles = clientPrincipal.UserRoles
-                .Except(["anonymous"], StringComparer.CurrentCultureIgnoreCase)
-                .ToArray();
+        clientPrincipal.UserRoles = clientPrincipal.UserRoles
+            .Except(["anonymous"], StringComparer.CurrentCultureIgnoreCase)
+            .ToArray();
 
-            if (!clientPrincipal.UserRoles.Any())
-            {
-                return new ClaimsPrincipal();
-            }
-
-            var identity = new ClaimsIdentity(clientPrincipal.IdentityProvider);
-            identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, clientPrincipal.UserId!));
-            identity.AddClaim(new Claim(ClaimTypes.Name, clientPrincipal.UserDetails!));
-            identity.AddClaim(new Claim(ClaimTypes.Sid, clientPrincipal.ExternalIdentifier));
-            identity.AddClaims(clientPrincipal.UserRoles.Select(r => new Claim(ClaimTypes.Role, r)));
-            return new ClaimsPrincipal(identity);
-        }
-        catch
+        if (!clientPrincipal.UserRoles.Any())
         {
-            return new ClaimsPrincipal();
+            throw new ApplicationException("ClientPrincipal.UserRoles is empty whilst converting to ClaimsPrincipal");
         }
+
+        var identity = new ClaimsIdentity(clientPrincipal.IdentityProvider);
+        identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, clientPrincipal.UserId!));
+        identity.AddClaim(new Claim(ClaimTypes.Name, clientPrincipal.UserDetails!));
+        identity.AddClaim(new Claim(ClaimTypes.Sid, clientPrincipal.ExternalIdentifier));
+        identity.AddClaims(clientPrincipal.UserRoles.Select(r => new Claim(ClaimTypes.Role, r)));
+        return new ClaimsPrincipal(identity);
     }
     
     public static ClientPrincipal ToClientPrincipal(IIdentity identity, ILogger logger) => ToClientPrincipal((ClaimsIdentity)identity, logger);
@@ -83,11 +71,11 @@ public partial class ClientPrincipal
         };
         if (string.IsNullOrEmpty(principal.UserId))
         {
-            logger.LogError("UserId is empty whilst converting to ClientPrincipal");
+            logger.LogError("ClaimsIdentity.UserId is empty whilst converting to ClientPrincipal");
         }
         if (string.IsNullOrEmpty(principal.ExternalIdentifier))
         {
-            logger.LogError("ExternalIdentifier is empty whilst converting to ClientPrincipal");
+            logger.LogError("ClaimsIdentity.ExternalIdentifier is empty whilst converting to ClientPrincipal");
         }
         return principal;
     }
