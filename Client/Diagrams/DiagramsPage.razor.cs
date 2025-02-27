@@ -41,7 +41,7 @@ public partial class DiagramsPage
             var content = await response.Content.ReadAsStringAsync();
             _logger.LogError(e, "Fetching diagram failed");
             _logger.LogError("Fetching diagrams failed with response: {Content}", content);
-            throw;
+            //throw;
         }
     }
 
