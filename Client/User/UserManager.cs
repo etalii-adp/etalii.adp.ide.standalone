@@ -42,14 +42,17 @@ public partial class UserManager
             {
                 ClientPrincipal.SetHeader(_client, ClaimsPrincipal, _logger);
                 
+                _logger.LogTrace("Calling GET request");
                 var response = await _client.GetAsync(ApplicationApi.Authentication.Get.Request);
                 if (response.IsSuccessStatusCode)
                 {
+                    _logger.LogTrace("GET request succeeded");
                     var user = await response.Content.ReadFromJsonAsync<User>();
                     CurrentUser = user!;
                 }
                 else
                 {
+                    _logger.LogTrace("GET request failed");
                     // TODO: Remove - security risk
                     if (response.Headers.TryGetValues("Diagnostics", out var values))
                     {
