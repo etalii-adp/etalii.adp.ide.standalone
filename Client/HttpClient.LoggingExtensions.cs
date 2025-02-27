@@ -18,7 +18,7 @@ public static class HttpClientLoggingExtensions
         {
             logger.LogInformation("GET request to {RequestUri} failed", requestUri);
             // TODO: Remove - security risk
-            if (response.TrailingHeaders.TryGetValues("Exception", out var values))
+            if (response.Headers.TryGetValues("Exception", out var values))
             {
                 var base64EncodedException = values.First();
                 var exception = Base64Url.Decode(base64EncodedException);
