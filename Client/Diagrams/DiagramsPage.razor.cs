@@ -30,17 +30,19 @@ public partial class DiagramsPage
 
     private async Task GetAllDiagrams()
     {
-        try
+        var response = await Client.GetAsync(ApplicationApi.Diagrams.Get.Request);
+        if (response.IsSuccessStatusCode)
         {
-            _diagrams = await Client.GetFromJsonAsync<Diagram[]>(ApplicationApi.Diagrams.Get.Request) ?? [];
+            _diagrams = await response.Content.ReadFromJsonAsync<Diagram[]>();
         }
-        catch (Exception e)
+        else
         {
             // TODO: Remove - security risk
-            _logger.LogError(e, "Fetching diagram failed");
-            var response = await Client.GetAsync(ApplicationApi.Diagrams.Get.Request);
-            var content = await response.Content.ReadAsStringAsync();
-            _logger.LogError("Fetching diagrams failed with response: {Content}", content);
+            if (response.Headers.TryGetValues("Diagnostics", out var values))
+            {
+                var diagnostics = string.Join(',', values);
+                _logger.LogError("Fetching diagrams failed with response: {Diagnostics}", diagnostics);
+            }
             _diagrams = [];
         }
     }

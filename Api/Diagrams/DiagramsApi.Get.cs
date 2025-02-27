@@ -46,7 +46,7 @@ public partial class DiagramsApi
             _logger.LogError(e, "Unable to handle {RequestMethod}", request.Method);
             var response = request.CreateResponse(HttpStatusCode.FailedDependency);
             // TODO: Remove - security risk
-            await response.WriteStringAsync(e.ToString());
+            response.Headers.Add("Diagnostics", e.ToString());
             return response;
         }
     }
