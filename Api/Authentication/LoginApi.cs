@@ -33,8 +33,15 @@ public class LoginApi
             var claims = ClientPrincipal.Parse(request, _logger);
 
             var userName = claims.Identity!.Name!;
+            if (string.IsNullOrWhiteSpace(userName))
+            {
+                throw new ApplicationException("User name cannot be empty");
+            }
             var externalIdentifier = claims.FindFirst(c => c.Type == ClaimTypes.Sid)!.Value;
-
+            if (string.IsNullOrWhiteSpace(externalIdentifier))
+            {
+                throw new ApplicationException("ExternalIdentifier cannot be empty");
+            }
             await using var context = await _dbContextFactory.CreateDbContextAsync();
             var user = await context.Users.SingleOrDefaultAsync(u => u.ExternalIdentifier == externalIdentifier);
             if (user == null)
