@@ -20,12 +20,15 @@ public partial class DiagramsPage
     protected override async Task OnInitializedAsync()
     {
         await UserManager.Update();
-        await GetAllDiagrams();
     }
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         _logger = LoggerFactory.CreateLogger<DiagramsPage>();
+        if (_diagrams == null!)
+        {
+            await GetAllDiagrams();
+        }
     }
 
     private async Task GetAllDiagrams()

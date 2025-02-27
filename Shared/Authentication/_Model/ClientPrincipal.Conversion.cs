@@ -59,9 +59,9 @@ public partial class ClientPrincipal
         {
             IdentityProvider = claimsIdentity.AuthenticationType,
             UserRoles = roles,
-            UserId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty,
-            UserDetails = claimsIdentity.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty,
-            ExternalIdentifier = claimsIdentity.FindFirst(ClaimTypes.Sid)?.Value ?? string.Empty,
+            UserId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier)!.Value,
+            UserDetails = claimsIdentity.FindFirst(ClaimTypes.Name)!.Value,
+            ExternalIdentifier = claimsIdentity.FindFirst(ClaimTypes.Sid)!.Value,
         };
         if (string.IsNullOrEmpty(principal.UserId))
         {
