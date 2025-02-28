@@ -31,6 +31,22 @@ public class User
         },
         new()
         {
+            Id = (UserIdentifier)Guid.Parse("3618849b-7086-4dea-9531-87476faaa340"),
+            JoinDate = DateTime.Now.Subtract(TimeSpan.FromHours(24)),
+            Name = "vrenken",
+            ExternalIdentifier = "ed88e2ea385240d8a2249627eaf1bcd6@github",
+            Theme = Theme.Light,
+        },
+        new()
+        {
+            Id = (UserIdentifier)Guid.Parse("64164a21-c899-4873-b078-939af5f15d1b"),
+            JoinDate = DateTime.Now.Subtract(TimeSpan.FromHours(24)),
+            Name = "vrenken@live.nl",
+            ExternalIdentifier = "5072f74699fd4a3e8f40161ba787cbdb@aad",
+            Theme = Theme.Light,
+        },
+        new()
+        {
             Id = (UserIdentifier)Guid.Parse("00000000-0000-0000-0000-000000000003"),
             JoinDate = DateTime.Now.Subtract(TimeSpan.FromHours(879)),
             Name = "tanja.vrenken",

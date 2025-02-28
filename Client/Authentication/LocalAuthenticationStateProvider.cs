@@ -25,12 +25,11 @@ public class LocalAuthenticationStateProvider : AuthenticationStateProvider
     public void MarkUserAsAuthenticated(User user)
     {
 #if DEBUG // Only for testing locally
-        var identity = new GenericIdentity(user.Name);
-        identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id.Identifier.ToString()));
-        identity.AddClaim(new Claim(ClaimTypes.Sid, user.ExternalIdentifier));
+        var externalIdentifierComponents = user.ExternalIdentifier.Split("@");
+        var identity = new GenericIdentity(user.Name, externalIdentifierComponents[1]);
+        identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, externalIdentifierComponents[0]));
         identity.AddClaim(new Claim(ClaimTypes.Name, user.Name));
         identity.AddClaim(new Claim(ClaimTypes.Role, "authenticated")); 
-        // identity.AddClaims(principal.UserRoles.Select(r => new Claim(ClaimTypes.Role, r)));
 
         _currentUserState = new AuthenticationState(new ClaimsPrincipal(identity));
         
