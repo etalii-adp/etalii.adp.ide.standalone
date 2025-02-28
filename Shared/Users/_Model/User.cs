@@ -7,6 +7,7 @@ public class User
     public required DateTime JoinDate { get; init; }
     public required string ExternalIdentifier { get; init; }
 
+    public required Theme Theme { get; set; } = Theme.Light;
     public ICollection<Diagram> Diagrams { get; private set; } = new List<Diagram>();
     
     public static readonly User[] LocalTestUsers =
@@ -18,6 +19,7 @@ public class User
             JoinDate = DateTime.Now,
             Name = "admin",
             ExternalIdentifier = "github-admin-00000000-0000-0000-0000-000000000001",
+            Theme = Theme.Light,
         },
         new()
         {
@@ -25,6 +27,7 @@ public class User
             JoinDate = DateTime.Now.Subtract(TimeSpan.FromHours(24)),
             Name = "peter.vrenken",
             ExternalIdentifier = "github-peter",
+            Theme = Theme.Light,
         },
         new()
         {
@@ -32,6 +35,7 @@ public class User
             JoinDate = DateTime.Now.Subtract(TimeSpan.FromHours(879)),
             Name = "tanja.vrenken",
             ExternalIdentifier = "github-tanja",
+            Theme = Theme.Dark,
         },
         new()
         {
@@ -39,6 +43,7 @@ public class User
             JoinDate = DateTime.Now.Subtract(TimeSpan.FromHours(8765)),
             Name = "arjan.vrenken",
             ExternalIdentifier = "aad-arjan-00000000-0000-0000-0000-000000000004",
+            Theme = Theme.Auto,
         },
         new()
         {
@@ -46,6 +51,7 @@ public class User
             JoinDate = DateTime.Now.Subtract(TimeSpan.FromHours(3445)),
             Name = "ida.vrenken",
             ExternalIdentifier = "aad-ida-00000000-0000-0000-0000-000000000005",
+            Theme = Theme.Light,
         }
 #endif
     ];

@@ -44,7 +44,7 @@ public class LoginApi
                     Name = principal.UserDetails!,
                     ExternalIdentifier = externalIdentifier,
                     JoinDate = DateTime.UtcNow,
-                    //Theme = Theme.Light,
+                    Theme = Theme.Light,
                 };
 
                 context.Entry(user).State = EntityState.Added;
