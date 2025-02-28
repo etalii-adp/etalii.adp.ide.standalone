@@ -4,7 +4,9 @@
     {
         public required TagIdentifier Id { get; init; }
 
-        public string Name { get; set; } = string.Empty;
-        public Diagram Diagram { get; set; } = null!;
+        public required string Name { get; set; } = string.Empty;
+        // public Diagram Diagram { get; set; } = null!;
+
+        public TagGroup TagGroup { get; init; } = null!;
     }
 }

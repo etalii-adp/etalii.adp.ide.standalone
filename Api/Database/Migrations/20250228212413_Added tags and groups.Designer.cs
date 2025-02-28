@@ -4,6 +4,7 @@ using EtAlii.Adp.Api;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EtAlii.Adp.Api.Database.Migrations
 {
     [DbContext(typeof(AdpDbContext))]
-    partial class AdpDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250228212413_Added tags and groups")]
+    partial class Addedtagsandgroups
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -157,11 +160,17 @@ namespace EtAlii.Adp.Api.Database.Migrations
                     b.Property<Guid>("LinkId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("LinkId1")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("NodeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("NodeId1")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
@@ -170,7 +179,11 @@ namespace EtAlii.Adp.Api.Database.Migrations
 
                     b.HasIndex("LinkId");
 
+                    b.HasIndex("LinkId1");
+
                     b.HasIndex("NodeId");
+
+                    b.HasIndex("NodeId1");
 
                     b.ToTable("TagGroups");
                 });
@@ -264,16 +277,24 @@ namespace EtAlii.Adp.Api.Database.Migrations
             modelBuilder.Entity("EtAlii.Adp.TagGroup", b =>
                 {
                     b.HasOne("EtAlii.Adp.Link", "Link")
-                        .WithMany("TagGroups")
+                        .WithMany()
                         .HasForeignKey("LinkId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.HasOne("EtAlii.Adp.Node", "Node")
+                    b.HasOne("EtAlii.Adp.Link", null)
                         .WithMany("TagGroups")
+                        .HasForeignKey("LinkId1");
+
+                    b.HasOne("EtAlii.Adp.Node", "Node")
+                        .WithMany()
                         .HasForeignKey("NodeId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
+
+                    b.HasOne("EtAlii.Adp.Node", null)
+                        .WithMany("TagGroups")
+                        .HasForeignKey("NodeId1");
 
                     b.Navigation("Link");
 

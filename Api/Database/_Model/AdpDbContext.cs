@@ -22,6 +22,10 @@ public class AdpDbContext : DbContext
     /// </summary>
     public DbSet<Link> Links { get; set; }
 
+    public DbSet<Tag> Tags { get; set; }
+    
+    public DbSet<TagGroup> TagGroups { get; set; }
+    
     // ReSharper disable once ConvertToPrimaryConstructor
     // Reason: Needs to be public so that the contexts can be pooled. 
     public AdpDbContext(DbContextOptions<AdpDbContext> options) : base(options) { }
@@ -119,6 +123,13 @@ public class AdpDbContext : DbContext
                 .Property<double>("_nodePositionY")
                 .HasColumnName("NodePositionY")
                 .IsRequired();
+            
+            builder
+                .HasMany(e => e.TagGroups)
+                .WithOne(o => o.Node)
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
+
         });
 
         // Links.
@@ -148,8 +159,53 @@ public class AdpDbContext : DbContext
                 .WithMany()
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
+            
+            builder
+                .HasMany(e => e.TagGroups)
+                .WithOne(o => o.Link)
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
         });
 
+        Configure(modelBuilder.Entity<TagGroup>(), builder =>
+        {
+            builder.HasIndex(e => e.Id);
+            builder
+                .Property(e => e.Id)
+                .IsRequired();
+
+            builder
+                .Property(e => e.Name)
+                .IsRequired();
+
+            builder
+                .HasMany(e => e.Tags)
+                .WithOne(o => o.TagGroup)
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
+
+            builder
+                .HasOne(e => e.Link)
+                .WithMany(o => o.TagGroups)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            builder
+                .HasOne(e => e.Node)
+                .WithMany(o => o.TagGroups)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+        
+        Configure(modelBuilder.Entity<Tag>(), builder =>
+        {
+            builder.HasIndex(e => e.Id);
+            builder
+                .Property(e => e.Id)
+                .IsRequired();
+
+            builder
+                .Property(e => e.Name)
+                .IsRequired();
+        });
     }
 
     private void Configure<TEntity>(EntityTypeBuilder<TEntity> builder, Action<EntityTypeBuilder<TEntity>> configure) 
@@ -172,7 +228,19 @@ public class AdpDbContext : DbContext
         configurationBuilder
             .Properties<LinkIdentifier>()
             .HaveConversion<LinkIdentifierToGuidConverter>();
-            
+
+        configurationBuilder
+            .Properties<LinkIdentifier>()
+            .HaveConversion<LinkIdentifierToGuidConverter>();
+
+        configurationBuilder
+            .Properties<TagIdentifier>()
+            .HaveConversion<TagIdentifierToGuidConverter>();
+
+        configurationBuilder
+            .Properties<TagGroupIdentifier>()
+            .HaveConversion<TagGroupIdentifierToGuidConverter>();
+
         // configurationBuilder
         //     .Properties<DiagramPosition>()
         //     .HaveConversion<DiagramPositionToPointConverter>();
