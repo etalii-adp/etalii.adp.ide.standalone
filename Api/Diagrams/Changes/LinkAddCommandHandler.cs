@@ -19,9 +19,20 @@ public class LinkAddCommandHandler : CommandHandler<LinkAddCommand>
         string targetPort)
     {
         // Fetch the diagram.
-        var diagram = await context.Diagrams.SingleAsync(d => d.Id == diagramId);
-        var sourceNode = await context.Nodes.SingleAsync(n => n.Id == sourceNodeId);
-        var targetNode = await context.Nodes.SingleAsync(n => n.Id == targetNodeId);
+        var diagram = context.ChangeTracker
+            .Entries<Diagram>()
+            .SingleOrDefault(n => n.State is EntityState.Added or EntityState.Modified && n.Entity.Id == diagramId)?.Entity;
+        diagram ??= await context.Diagrams.SingleAsync(d => d.Id == diagramId);
+        
+        var sourceNode = context.ChangeTracker
+            .Entries<Node>()
+            .SingleOrDefault(n => n.State is EntityState.Added or EntityState.Modified && n.Entity.Id == sourceNodeId)?.Entity;
+        sourceNode ??= await context.Nodes.SingleAsync(n => n.Id == sourceNodeId);
+        
+        var targetNode = context.ChangeTracker
+            .Entries<Node>()
+            .SingleOrDefault(n => n.State is EntityState.Added or EntityState.Modified && n.Entity.Id == targetNodeId)?.Entity;
+        targetNode ??= await context.Nodes.SingleAsync(n => n.Id == targetNodeId);
         
         // Apply changes.
         var link = new Link
@@ -36,9 +47,9 @@ public class LinkAddCommandHandler : CommandHandler<LinkAddCommand>
         diagram.Links.Add(link);
         
         // Tag for modification and addition.
-        context.Entry(diagram).State = EntityState.Modified;
-        context.Entry(sourceNode).State = EntityState.Modified;
-        context.Entry(targetNode).State = EntityState.Modified;
+        context.Entry(diagram).State = context.Entry(diagram).State == EntityState.Added ? EntityState.Added : EntityState.Modified;
+        context.Entry(sourceNode).State = context.Entry(sourceNode).State == EntityState.Added ? EntityState.Added : EntityState.Modified;
+        context.Entry(targetNode).State = context.Entry(targetNode).State == EntityState.Added ? EntityState.Added : EntityState.Modified;
         context.Entry(link).State = EntityState.Added;
     }
     
