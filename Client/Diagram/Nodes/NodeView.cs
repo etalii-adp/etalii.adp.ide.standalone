@@ -8,6 +8,8 @@ public class NodeView : NodeModel
     public string Name { get; set; } = string.Empty;
     public new NodeIdentifier Id { get; }
 
+    public Node Node { get; }
+    
     public new NodePosition Position
     {
         get => new() { X = base.Position.X, Y = base.Position.Y };
@@ -18,16 +20,17 @@ public class NodeView : NodeModel
 
     public event Action EditRequested = null!;
     
-    private NodeView(NodeIdentifier id, NodePosition position, DiagramContext context)
-        : base(id.ToString(), new Point(position.X, position.Y))
+    private NodeView(Node node, DiagramContext context)
+        : base(node.Id.ToString(), new Point(node.Position.X, node.Position.Y))
     {
-        Id = id;
+        Node = node;
+        Id = node.Id;
         Context = context;
     }
 
     public static NodeView Create(DiagramContext context, Node node)
     {
-        var view = new NodeView(node.Id, node.Position, context)
+        var view = new NodeView(node, context)
         {
             Name = node.Name,
         };

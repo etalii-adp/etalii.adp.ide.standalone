@@ -19,13 +19,13 @@ public partial class DiagramRibbon : ComponentBase
         _context = context;
         StateHasChanged();
 
-        context.View.SelectionChanged += StateHasChanged;
+        context.SelectionChanged += StateHasChanged;
         context.History.Changed += StateHasChanged;
     }
 
     public void Deinitialize()
     {
-        _context.View.SelectionChanged -= StateHasChanged;
+        _context.SelectionChanged -= StateHasChanged;
         _context.History.Changed -= StateHasChanged;
     }
 

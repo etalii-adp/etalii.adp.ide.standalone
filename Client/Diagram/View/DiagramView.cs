@@ -94,10 +94,12 @@ public class DiagramView : BlazorDiagram
         }
 
         _context.Selection = selectedObjects;
+        _context.SelectedNode = selectionType == DiagramSelection.SingleNode ? selectedObjects.Cast<NodeView>().Single() : null!;
         _context.SelectionType = selectionType;
         
         _context.CanGroup = _context.Selection.OfType<NodeView>().Count() > 1;
         _context.CanUngroup = false;// selectedObjects.OfType<GroupView>().Count() > 1;
+        _context.RaiseSelectionChanged();
 
     }
     

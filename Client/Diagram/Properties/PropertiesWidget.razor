@@ -5,6 +5,22 @@
 
     <table style="margin-left: 5px; margin-right: 5px">
         <tbody>
+        @if (Context?.SelectedNode is { } nodeView)
+        {
+            foreach (var tagGroup in nodeView.Node.TagGroups)
+            {
+                <tr>
+                    <td class="col-md-4 m-2 align-middle" style="align-content: baseline; padding-top: 11px;">@tagGroup.Name</td>
+                    <td class="col-md-8 m-2 align-middle">
+                        <div style="margin-top: 5px">
+                            <TagsInput/>
+                        </div>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
             @foreach (var property in Properties)
             {
                 <tr>
@@ -55,6 +71,7 @@
                     }
                 </tr>
             }
+        }
         </tbody>
     </table>
 </Card>

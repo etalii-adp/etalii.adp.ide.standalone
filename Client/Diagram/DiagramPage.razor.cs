@@ -43,6 +43,7 @@ public partial class DiagramPage : IDisposable
             Ribbon = _ribbon,
             History = HistoryManager,
             Nodes = NodeManager,
+            NodeFactory = new NodeFactory(), // Should become typed per diagram.
             Links = LinkManager,
             View = DiagramView,
             Commands = CommandManager,

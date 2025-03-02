@@ -29,13 +29,7 @@ public class AddNodeCommandHandler : CommandHandler<NodeAddCommand>
     {
         _logger.LogInformation("Adding node {NodeIdentifier} on {NodePosition}", nodeId, nodePosition);
 
-        var node = new Node
-        {
-            Id = nodeId, 
-            Diagram = context.Diagram,
-            Position = nodePosition,
-            Name = nodeName,
-        };
+        var node = context.NodeFactory.Create(context.Diagram, nodeId, nodePosition, nodeName);
         context.Diagram.Nodes.Add(node);
 
         var view = NodeView.Create(context, node);

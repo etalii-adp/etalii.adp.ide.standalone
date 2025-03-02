@@ -4,6 +4,14 @@ namespace EtAlii.Adp.Client;
 
 public partial class PropertiesWidget //: IDisposable
 {
+    [CascadingParameter] private DiagramContext Context { get; set; } = null!;
+
+    protected override void OnInitialized()
+    {
+        Context.SelectionChanged += StateHasChanged;
+    }
+
+
     [Parameter] public PropertyItem[] Properties { get; set; } =
     [
         new()
