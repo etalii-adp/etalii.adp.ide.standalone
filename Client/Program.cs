@@ -60,6 +60,11 @@ builder.Services.AddSingleton<ICommandHandler, AddTagGroupCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, RemoveTagGroupCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, RenameTagGroupCommandHandler>();
 
+builder.Services.AddSingleton<AddTagCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, AddTagCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, RemoveTagCommandHandler>();
+
+
 if (LocalDebugger.IsAttached)
 {
     builder.Services.AddScoped<AuthenticationStateProvider, LocalAuthenticationStateProvider>();

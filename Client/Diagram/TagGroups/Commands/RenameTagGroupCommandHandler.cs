@@ -6,7 +6,7 @@ public class RenameTagGroupCommandHandler : CommandHandler<TagGroupRenameCommand
 
     public RenameTagGroupCommandHandler(ILoggerFactory loggerFactory)
     {
-        _logger = loggerFactory.CreateLogger<RenameNodeCommandHandler>();
+        _logger = loggerFactory.CreateLogger<RenameTagGroupCommandHandler>();
     }
 
 

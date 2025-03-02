@@ -8,7 +8,7 @@ public class RemoveTagGroupCommandHandler : CommandHandler<TagGroupRemoveCommand
     public RemoveTagGroupCommandHandler(AddTagGroupCommandHandler addTagGroupCommandHandler, ILoggerFactory loggerFactory)
     {
         _addTagGroupCommandHandler = addTagGroupCommandHandler;
-        _logger = loggerFactory.CreateLogger<RemoveNodeCommandHandler>();
+        _logger = loggerFactory.CreateLogger<RemoveTagGroupCommandHandler>();
     }
 
     public static Command Create(DiagramContext context, NodeIdentifier nodeId, TagGroupIdentifier oldTagGroupId, string oldTagGroupName)
@@ -30,7 +30,7 @@ public class RemoveTagGroupCommandHandler : CommandHandler<TagGroupRemoveCommand
 
     protected override Task Undo(TagGroupRemoveCommand command, DiagramContext context)
     {
-        _logger.LogInformation("Re-adding tag group {TagGroupIdentifier} {TagGroupName} on {NodePosition}", command.OldTagGroupId, command.OldTagGroupName, command.NodeId);
+        _logger.LogInformation("Re-adding tag group {TagGroupIdentifier} {TagGroupName} on {NodeIdentifier}", command.OldTagGroupId, command.OldTagGroupName, command.NodeId);
 
         return _addTagGroupCommandHandler.Do(context, command.NodeId, command.OldTagGroupId, command.OldTagGroupName);
     }
