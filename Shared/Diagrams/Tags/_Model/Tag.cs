@@ -7,6 +7,6 @@
         public required string Name { get; set; } = string.Empty;
         // public Diagram Diagram { get; set; } = null!;
 
-        public TagGroup TagGroup { get; init; } = null!;
+        public TagGroup TagGroup { get; set; } = null!;
     }
 }

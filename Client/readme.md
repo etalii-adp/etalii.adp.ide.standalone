@@ -3,6 +3,7 @@
 ## Tasks - Bugs
 - [ ] Node layout inconsistency
 - [ ] Undo when zooming
+- [X] Authentication for multiple people
 
 ## Tasks - General
 - [ ] Add Beta software warning
@@ -28,7 +29,8 @@
 - [ ] Expand Group
 - [ ] Align left/right/top/bottom
 - [ ] Stretch
-- [ ] Fullscreen toggle
+- [X] Fullscreen toggle
+- [ ] Persist fullscreen toggle
 
 ## Tasks - Dependencies
 - [X] Link removal
@@ -52,13 +54,15 @@
 ## Future
 - [ ] Making perspectives public
 - [ ] Ads
-
+- [ ] Commerce
 
 ## Tools
 ```sql
-DROP TABLE IF EXISTS dbo.Links;
-DROP TABLE IF EXISTS dbo.Nodes;
-DROP TABLE IF EXISTS dbo.Diagrams;
-DROP TABLE IF EXISTS dbo.__EFMigrationsHistory;
-DROP TABLE IF EXISTS dbo.Users;
+DECLARE @sql NVARCHAR(MAX) = '';
+
+SELECT @sql = STRING_AGG('DROP TABLE ' + QUOTENAME(TABLE_NAME), '; ')
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_TYPE = 'BASE TABLE';
+
+EXEC sp_executesql @sql;
 ```

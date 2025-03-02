@@ -45,12 +45,31 @@ public class DiagramApi
                 .SingleAsync(d => d.Id == (DiagramIdentifier)id);
 
             // Clear the nodes and links diagram property so that no circular dependencies are serialized.
-            foreach (var node in diagram.Nodes) node.Diagram = null!;
+            foreach (var node in diagram.Nodes)
+            {
+                node.Diagram = null!;
+                foreach (var group in node.TagGroups)
+                {
+                    group.Node = null!;
+                    foreach (var tag in group.Tags)
+                    {
+                        tag.TagGroup = null!;
+                    }
+                }
+            }
             foreach (var link in diagram.Links)
             {
                 link.SourceNode.Diagram = null!;
                 link.TargetNode.Diagram = null!;
                 link.Diagram = null!;
+                foreach (var group in link.TagGroups)
+                {
+                    group.Link = null!;
+                    foreach (var tag in group.Tags)
+                    {
+                        tag.TagGroup = null!;
+                    }
+                }
             }
 
             // Respond.

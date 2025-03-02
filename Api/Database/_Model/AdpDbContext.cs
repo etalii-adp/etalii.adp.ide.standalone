@@ -127,9 +127,7 @@ public class AdpDbContext : DbContext
             builder
                 .HasMany(e => e.TagGroups)
                 .WithOne(o => o.Node)
-                .OnDelete(DeleteBehavior.Cascade)
-                .IsRequired();
-
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Links.
@@ -163,8 +161,7 @@ public class AdpDbContext : DbContext
             builder
                 .HasMany(e => e.TagGroups)
                 .WithOne(o => o.Link)
-                .OnDelete(DeleteBehavior.Cascade)
-                .IsRequired();
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         Configure(modelBuilder.Entity<TagGroup>(), builder =>
@@ -187,12 +184,12 @@ public class AdpDbContext : DbContext
             builder
                 .HasOne(e => e.Link)
                 .WithMany(o => o.TagGroups)
-                .OnDelete(DeleteBehavior.NoAction);
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder
                 .HasOne(e => e.Node)
                 .WithMany(o => o.TagGroups)
-                .OnDelete(DeleteBehavior.NoAction);
+                .OnDelete(DeleteBehavior.Restrict);
         });
         
         Configure(modelBuilder.Entity<Tag>(), builder =>

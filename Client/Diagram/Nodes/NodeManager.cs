@@ -56,8 +56,14 @@ public class NodeManager
             
             _logger.LogInformation("Double clicked diagram {NodePosition}", position);
 
-            var command = AddNodeCommandHandler.CreateCommand(_context, position, NodeIdentifier.NewIdentifier(), "New element");        
-            _context.Commands.Handle(command);
+            var nodeIdentifier = NodeIdentifier.NewIdentifier();
+            var tagGroupIdentifier = TagGroupIdentifier.NewIdentifier();
+            Command[] commands =
+            [
+                AddNodeCommandHandler.CreateCommand(_context, position, nodeIdentifier, "New element"),
+                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, tagGroupIdentifier, "Type"),
+            ];
+            _context.Commands.Handle(commands);
         }
         catch (Exception exception)
         {

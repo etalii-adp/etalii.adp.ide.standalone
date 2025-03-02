@@ -11,19 +11,26 @@ public class TagGroupAddCommandHandler : CommandHandler<TagGroupAddCommand>
 
     public async Task Do(AdpDbContext context, NodeIdentifier nodeId, TagGroupIdentifier tagGroupId, string tagGroupName)
     {
-        // Fetch the diagram.
-        var node = await context.Nodes.SingleAsync(n => n.Id == nodeId);
+        // Fetch the node.
+        var node = context.ChangeTracker
+            .Entries<Node>()
+            .SingleOrDefault(n => n.State is EntityState.Added or EntityState.Modified && n.Entity.Id == nodeId)?.Entity;
+
+        node ??= await context.Nodes
+            .Include(n => n.TagGroups)
+            .SingleAsync(n => n.Id == nodeId);
 
         // Apply changes.
         var group = new TagGroup
         {
+            Node = node,
             Id = tagGroupId,
             Name = tagGroupName,
         };
         node.TagGroups.Add(group);
         
         // Tag for modification and addition.
-        context.Entry(node).State = EntityState.Modified;
+        context.Entry(node).State = context.Entry(node).State == EntityState.Added ? EntityState.Added : EntityState.Modified;
         context.Entry(group).State = EntityState.Added;
     }
 

@@ -2,7 +2,7 @@
 
 public class PropertyItem
 {
-    public string Key { get; set; } = string.Empty;
+    public string Key { get; init; } = string.Empty;
     public object Value { get; set; } = null!;
 
     public string ValueAsString

@@ -55,6 +55,11 @@ builder.Services.AddSingleton<ICommandHandler, ToggleFullscreenCommandHandler>()
 builder.Services.AddSingleton<ICommandHandler, TogglePropertiesWidgetCommandHandler>();
 
 
+builder.Services.AddSingleton<AddTagGroupCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, AddTagGroupCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, RemoveTagGroupCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, RenameTagGroupCommandHandler>();
+
 if (LocalDebugger.IsAttached)
 {
     builder.Services.AddScoped<AuthenticationStateProvider, LocalAuthenticationStateProvider>();

@@ -33,7 +33,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Database\Migrations\" />
-    <Folder Include="Diagrams\Values\Tags\" />
     <Folder Include="Trends\" />
   </ItemGroup>
 </Project>

@@ -9,14 +9,13 @@ namespace EtAlii.Adp
         public required string Name { get; set; } = string.Empty;
         // public Diagram Diagram { get; set; } = null!;
 
-        public Node Node { get; init; } = null!;
-        public Link Link { get; init; } = null!;
+        public Node? Node { get; set; }
+        public Link? Link { get; set; }
         
         [JsonIgnore] public ICollection<Tag> Tags => _tags;
         // ReSharper disable once InconsistentNaming
         // Reason: We need to still have a property to be able to serialize.
         [JsonInclude, JsonPropertyName(nameof(Tags))]
         private ICollection<Tag> _tags { get; set; } = new List<Tag>();
-
     }
 }

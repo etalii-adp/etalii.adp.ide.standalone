@@ -40,7 +40,6 @@ public class LinkAddCommandHandler : CommandHandler<LinkAddCommand>
         context.Entry(sourceNode).State = EntityState.Modified;
         context.Entry(targetNode).State = EntityState.Modified;
         context.Entry(link).State = EntityState.Added;
-        
     }
     
     protected override async Task Undo(LinkAddCommand command, AdpDbContext context)

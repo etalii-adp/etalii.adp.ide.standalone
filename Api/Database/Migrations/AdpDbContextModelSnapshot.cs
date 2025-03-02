@@ -154,14 +154,14 @@ namespace EtAlii.Adp.Api.Database.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("LinkId")
+                    b.Property<Guid?>("LinkId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("NodeId")
+                    b.Property<Guid?>("NodeId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
@@ -266,14 +266,12 @@ namespace EtAlii.Adp.Api.Database.Migrations
                     b.HasOne("EtAlii.Adp.Link", "Link")
                         .WithMany("TagGroups")
                         .HasForeignKey("LinkId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("EtAlii.Adp.Node", "Node")
                         .WithMany("TagGroups")
                         .HasForeignKey("NodeId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Link");
 
