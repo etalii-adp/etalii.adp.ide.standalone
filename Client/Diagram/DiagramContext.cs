@@ -25,5 +25,5 @@ public class DiagramContext
 
     public event Action SelectionChanged = null!;
 
-    public void RaiseSelectionChanged() => SelectionChanged?.Invoke();
+    public void RaiseSelectionChanged() => SelectionChanged.Invoke();
 }
