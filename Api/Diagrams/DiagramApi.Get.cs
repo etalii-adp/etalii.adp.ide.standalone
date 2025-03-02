@@ -37,7 +37,11 @@ public class DiagramApi
 
             var diagram = await context.Diagrams
                 .Include(d => d.Nodes)
+                .ThenInclude(n => n.TagGroups)
+                .ThenInclude(g => g.Tags)
                 .Include(d => d.Links)
+                .ThenInclude(l => l.TagGroups)
+                .ThenInclude(g => g.Tags)
                 .SingleAsync(d => d.Id == (DiagramIdentifier)id);
 
             // Clear the nodes and links diagram property so that no circular dependencies are serialized.

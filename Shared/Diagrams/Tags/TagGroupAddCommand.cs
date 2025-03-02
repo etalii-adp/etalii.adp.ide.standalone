@@ -1,0 +1,8 @@
+﻿namespace EtAlii.Adp;
+
+public class TagGroupAddCommand : Command
+{
+    public required NodeIdentifier NodeId { get; init; }
+    public required TagGroupIdentifier NewTagGroupId { get; init; }
+    public required string NewTagGroupName { get; init; }
+}

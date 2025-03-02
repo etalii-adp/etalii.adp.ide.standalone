@@ -15,6 +15,7 @@ var host = builder
 
         services.AddSingleton<LinkAddCommandHandler>();
         services.AddSingleton<NodeAddCommandHandler>();
+        services.AddSingleton<TagGroupAddCommandHandler>();
         
         services.AddSingleton<ICommandHandler, MapZoomCommandHandler>();
         services.AddSingleton<ICommandHandler, MapPositionCommandHandler>();
@@ -24,6 +25,10 @@ var host = builder
         services.AddSingleton<ICommandHandler, NodeRenameCommandHandler>();
         services.AddSingleton<ICommandHandler, LinkAddCommandHandler>();
         services.AddSingleton<ICommandHandler, LinkRemoveCommandHandler>();
+        
+        services.AddSingleton<ICommandHandler, TagGroupAddCommandHandler>();
+        services.AddSingleton<ICommandHandler, TagGroupRemoveCommandHandler>();
+        services.AddSingleton<ICommandHandler, TagGroupRenameCommandHandler>();
     })
     .Build();
 
