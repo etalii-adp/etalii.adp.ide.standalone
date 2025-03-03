@@ -4,6 +4,7 @@
 - [ ] Node layout inconsistency
 - [ ] Undo when zooming
 - [X] Authentication for multiple people
+- [ ] Property Widget update after undo/redo
 
 ## Tasks - General
 - [ ] Add Beta software warning
@@ -16,8 +17,11 @@
 - [X] Ribbon selection responsiveness
 - [X] Ribbon node Edit
 - [X] Persisted undo/redo
-- [ ] Node tags
+- [X] Node tags
+- [ ] Reused tags
+- [ ] Filter by node tags
 - [ ] Link tags
+- [ ] Link directional tag
 - [ ] Tag colors
 - [ ] Node color
 - [ ] Note nodes
@@ -31,6 +35,7 @@
 - [ ] Stretch
 - [X] Fullscreen toggle
 - [ ] Persist fullscreen toggle
+- [ ] Other properties in property grid
 
 ## Tasks - Dependencies
 - [X] Link removal
