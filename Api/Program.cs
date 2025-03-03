@@ -13,25 +13,33 @@ var host = builder
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
 
-        services.AddSingleton<LinkAddCommandHandler>();
-        services.AddSingleton<NodeAddCommandHandler>();
-        services.AddSingleton<TagGroupAddCommandHandler>();
-        services.AddSingleton<TagAddCommandHandler>();
-        
         services.AddSingleton<ICommandHandler, MapZoomCommandHandler>();
         services.AddSingleton<ICommandHandler, MapPositionCommandHandler>();
+        
+        services.AddSingleton<NodeAddCommandHandler>();
         services.AddSingleton<ICommandHandler, NodeAddCommandHandler>();
         services.AddSingleton<ICommandHandler, NodeRemoveCommandHandler>();
         services.AddSingleton<ICommandHandler, NodeMoveCommandHandler>();
         services.AddSingleton<ICommandHandler, NodeRenameCommandHandler>();
+        
+        services.AddSingleton<LinkAddCommandHandler>();
         services.AddSingleton<ICommandHandler, LinkAddCommandHandler>();
         services.AddSingleton<ICommandHandler, LinkRemoveCommandHandler>();
         
+        services.AddSingleton<TagGroupAddCommandHandler>();
         services.AddSingleton<ICommandHandler, TagGroupAddCommandHandler>();
         services.AddSingleton<ICommandHandler, TagGroupRemoveCommandHandler>();
         services.AddSingleton<ICommandHandler, TagGroupRenameCommandHandler>();
+        
+        services.AddSingleton<TagAddCommandHandler>();
         services.AddSingleton<ICommandHandler, TagAddCommandHandler>();
         services.AddSingleton<ICommandHandler, TagRemoveCommandHandler>();
+
+        services.AddSingleton<TagAssignCommandHandler>();
+        services.AddSingleton<ICommandHandler, TagAssignCommandHandler>();
+        services.AddSingleton<ICommandHandler, TagUnassignCommandHandler>();
+        
+        
     })
     .Build();
 

@@ -64,6 +64,9 @@ builder.Services.AddSingleton<AddTagCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, AddTagCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, RemoveTagCommandHandler>();
 
+builder.Services.AddSingleton<AssignTagCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, AssignTagCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, UnassignTagCommandHandler>();
 
 if (LocalDebugger.IsAttached)
 {

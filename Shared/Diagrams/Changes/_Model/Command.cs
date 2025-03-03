@@ -15,6 +15,8 @@ namespace EtAlii.Adp;
 [JsonDerivedType(typeof(TagGroupRenameCommand), typeDiscriminator: nameof(TagGroupRenameCommand))]
 [JsonDerivedType(typeof(TagAddCommand), typeDiscriminator: nameof(TagAddCommand))]
 [JsonDerivedType(typeof(TagRemoveCommand), typeDiscriminator: nameof(TagRemoveCommand))]
+[JsonDerivedType(typeof(TagAssignCommand), typeDiscriminator: nameof(TagAssignCommand))]
+[JsonDerivedType(typeof(TagUnassignCommand), typeDiscriminator: nameof(TagUnassignCommand))]
 public abstract class Command
 {
     public bool Undo { get; set; }

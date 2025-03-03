@@ -177,9 +177,9 @@ public class AdpDbContext : DbContext
 
             builder
                 .HasMany(e => e.Tags)
-                .WithOne(o => o.TagGroup)
-                .OnDelete(DeleteBehavior.Cascade)
-                .IsRequired();
+                .WithMany(o => o.TagGroups);
+                //.OnDelete(DeleteBehavior.Cascade)
+                //.IsRequired();
 
             builder
                 .HasOne(e => e.Link)

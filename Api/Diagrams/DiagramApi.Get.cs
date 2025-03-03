@@ -53,7 +53,7 @@ public class DiagramApi
                     group.Node = null!;
                     foreach (var tag in group.Tags)
                     {
-                        tag.TagGroup = null!;
+                        tag.TagGroups.Clear();
                     }
                 }
             }
@@ -67,7 +67,7 @@ public class DiagramApi
                     group.Link = null!;
                     foreach (var tag in group.Tags)
                     {
-                        tag.TagGroup = null!;
+                        tag.TagGroups.Clear();
                     }
                 }
             }
