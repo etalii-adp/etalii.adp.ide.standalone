@@ -19,11 +19,14 @@ public partial class TagsInput : ComponentBase
 
     protected override void OnInitialized()
     {
-        if (Value != null!)
-        {
-            _tags.AddRange(Value.Tags.Select(g => g.Name));
-            _tags.Sort();
-        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        _tags.Clear();
+        if (Value == null!) return;
+        _tags.AddRange(Value.Tags.Select(g => g.Name));
+        _tags.Sort();
     }
 
     private void AddTag()
