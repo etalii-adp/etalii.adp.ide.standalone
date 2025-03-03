@@ -5,7 +5,7 @@
         @foreach (var tag in _selectedTags)
         {
             <span class="tag">
-                @tag <button @onclick="() => RemoveTag(tag)">×</button>
+                @tag.Name <button @onclick="() => RemoveTag(tag)">×</button>
             </span>
         }
     </div>
@@ -16,11 +16,13 @@
             AutoClose="true" 
             AutoCloseBehavior="DropdownAutoCloseBehavior.Both"
             Direction="DropdownDirection.Dropend">
-            <input @bind="_newTagName" @onkeyup="HandleKeyPress" placeholder="Add a tag..." 
+            <input @bind-value="_newTagName"
+                   @bind-value:event="oninput"
+                   @onkeyup="HandleKeyPress" placeholder="Add a tag..." 
                    @onfocus="OnInputFieldGotFocus" @onblur="OnInputFieldLostFocus" />
             <DropdownMenu Style="width:300px;">
                 <div class="tags">
-                    @foreach (var tag in _allAvailableTags)
+                    @foreach (var tag in _visibleAvailableTags)
                     {
                         <span class="tag">@tag.Name <button @onclick="() => AddExistingTag(tag)">+</button></span>
                     }

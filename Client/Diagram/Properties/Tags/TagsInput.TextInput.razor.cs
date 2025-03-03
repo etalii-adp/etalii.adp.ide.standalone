@@ -8,10 +8,18 @@ public partial class TagsInput
 
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_newTagName) && !_selectedTags.Contains(_newTagName))
+        var newTagName = _newTagName.Trim();
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_newTagName))
         {
-            AddTag(_newTagName.Trim());
-            await _tagOptionsDropDown.HideAsync();
+            var isAlreadySelected = _selectedTags.Any(t => t.Name == newTagName);
+            var tagIsInVisibleTags = _visibleAvailableTags.Any(t => t.Name == newTagName);
+            if (!isAlreadySelected && !tagIsInVisibleTags)
+            {
+                var tag = new Tag { Id = TagIdentifier.NewIdentifier(), Name = newTagName };
+                AddTag(tag);
+                _newTagName = "";
+                await _tagOptionsDropDown.HideAsync();
+            }
         }
         else
         {

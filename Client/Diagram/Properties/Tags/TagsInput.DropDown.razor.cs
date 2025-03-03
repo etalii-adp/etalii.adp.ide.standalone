@@ -11,7 +11,7 @@ public partial class TagsInput
     private void AddExistingTag(Tag tag)
     {
         _allAvailableTags.Remove(tag);
-        AddTag(tag.Name);
+        AddTag(tag);
     }
 
     private async Task OnInputFieldGotFocus()
@@ -30,5 +30,8 @@ public partial class TagsInput
         _visibleAvailableTags = string.IsNullOrWhiteSpace(_newTagName)
             ? _allAvailableTags.ToArray()
             : _allAvailableTags.Where(t => t.Name.Contains(_newTagName, StringComparison.InvariantCultureIgnoreCase)).ToArray();
+         StateHasChanged();
+        
+        _logger.LogInformation("Filtered to {VisibleAvailableTagCount} visible available tags using '{Filter}'", _visibleAvailableTags.Length, _newTagName);
     }
 }

@@ -4,8 +4,9 @@ namespace EtAlii.Adp.Client;
 
 public partial class TagsInput : ComponentBase
 {
-    private readonly List<string> _selectedTags = new();
+    private readonly List<Tag> _selectedTags = new();
     private bool _canAdd;
+    private ILogger<DiagramPage> _logger = null!;
 
     [Parameter]
     public bool Disabled { get; set; }
@@ -16,11 +17,15 @@ public partial class TagsInput : ComponentBase
 
     [CascadingParameter] public DiagramContext Context { get; set; } = null!;
 
+    [Inject] private ILoggerFactory LoggerFactory { get; set; } = null!;
+
     protected override void OnParametersSet()
     {
+        _logger = LoggerFactory.CreateLogger<DiagramPage>();
+        
         _selectedTags.Clear();
         if (Value == null!) return;
-        _selectedTags.AddRange(Value.Tags.Select(g => g.Name));
+        _selectedTags.AddRange(Value.Tags);
         _selectedTags.Sort();
         UpdateCanAdd();
         
@@ -39,25 +44,21 @@ public partial class TagsInput : ComponentBase
         StateHasChanged();
     }
     
-    private void AddTag(string tagName)
+    private void AddTag(Tag tag)
     {
-        var tagToAdd = tagName; 
-        _selectedTags.Add(tagToAdd);
+        _selectedTags.Add(tag);
         _selectedTags.Sort();
-        _newTagName = "";
 
-        var tagId = TagIdentifier.NewIdentifier();
-        var command = AddTagCommandHandler.CreateCommand(Context, Value.Id, tagId, tagToAdd); 
+        var command = AddTagCommandHandler.CreateCommand(Context, Value.Id, tag.Id, tag.Name); 
         Context.Commands.Handle(command);
         UpdateCanAdd();
     }
 
-    private void RemoveTag(string tagNameToRemove)
+    private void RemoveTag(Tag tagToRemove)
     {
-        _selectedTags.Remove(tagNameToRemove);
+        _selectedTags.Remove(tagToRemove);
         
-        var tag = Value.Tags.Single(t => t.Name == tagNameToRemove);
-        var command = RemoveTagCommandHandler.CreateCommand(Context, Value.Id, tag.Id, tagNameToRemove); 
+        var command = RemoveTagCommandHandler.CreateCommand(Context, Value.Id, tagToRemove.Id, tagToRemove.Name); 
         Context.Commands.Handle(command);
         UpdateCanAdd();
     }
