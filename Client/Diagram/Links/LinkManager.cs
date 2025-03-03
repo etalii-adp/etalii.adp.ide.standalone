@@ -45,8 +45,8 @@ public class LinkManager
 
     public void Deinitialize()
     {
-        _context.View.Links.Added += OnLinkAdded;
-        _context.View.Links.Removed += OnLinkRemoved;
+        _context.View.Links.Added -= OnLinkAdded;
+        _context.View.Links.Removed -= OnLinkRemoved;
     }
 
     private void OnLinkAdded(BaseLinkModel linkView)
