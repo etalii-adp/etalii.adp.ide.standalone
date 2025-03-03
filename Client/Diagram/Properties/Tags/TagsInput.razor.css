@@ -11,7 +11,7 @@
 
 ::deep .dropdown-menu {
     border-radius: 0;
-    margin-left: 4px;
+    padding-left: 4px;
 }
 
 .tags {
