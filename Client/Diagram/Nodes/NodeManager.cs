@@ -66,11 +66,11 @@ public class NodeManager
             Command[] commands =
             [
                 AddNodeCommandHandler.CreateCommand(_context, position, nodeIdentifier, "New element"),
-                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, typeTagGroupIdentifier, "Type"),
+                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, typeTagGroupIdentifier, "Type", TagGroupMode.Single),
                 AddTagCommandHandler.CreateCommand(_context, typeTagGroupIdentifier, typeTagIdentifier, "Default"),
-                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, statusTagGroupIdentifier, "Status"),
+                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, statusTagGroupIdentifier, "Status", TagGroupMode.Single),
                 AddTagCommandHandler.CreateCommand(_context, statusTagGroupIdentifier, statusTagIdentifier, "None"),
-                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, layerTagGroupIdentifier, "Layer"),
+                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, layerTagGroupIdentifier, "Layer", TagGroupMode.Single),
                 AddTagCommandHandler.CreateCommand(_context, layerTagGroupIdentifier, layerTagIdentifier, "All"),
             ];
             _context.Commands.Handle(commands);

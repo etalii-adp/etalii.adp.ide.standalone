@@ -9,22 +9,23 @@ public class AddTagGroupCommandHandler : CommandHandler<TagGroupAddCommand>
         _logger = loggerFactory.CreateLogger<AddTagGroupCommandHandler>();
     }
 
-    public static Command CreateCommand(DiagramContext _, NodeIdentifier nodeId, TagGroupIdentifier tagGroupId, string name)
+    public static Command CreateCommand(DiagramContext _, NodeIdentifier nodeId, TagGroupIdentifier tagGroupId, string name, TagGroupMode tagGroupMode)
     {
         return new TagGroupAddCommand
         {
             NodeId = nodeId,
             NewTagGroupId = tagGroupId,
-            NewTagGroupName = name
+            NewTagGroupName = name,
+            NewTagGroupMode = tagGroupMode
         };
     }
 
     protected override Task Do(TagGroupAddCommand command, DiagramContext context)
     {
-        return Do(context, command.NodeId, command.NewTagGroupId, command.NewTagGroupName);
+        return Do(context, command.NodeId, command.NewTagGroupId, command.NewTagGroupName, command.NewTagGroupMode);
     }
     
-    public Task Do(DiagramContext context, NodeIdentifier nodeId, TagGroupIdentifier tagGroupId, string tagGroupName)
+    public Task Do(DiagramContext context, NodeIdentifier nodeId, TagGroupIdentifier tagGroupId, string tagGroupName, TagGroupMode tagGroupMode)
     {
         _logger.LogInformation("Adding tag group {TagGroupIdentifier} {TagGroupName} on {NodeIdentifier}", tagGroupId, tagGroupName, nodeId);
 
@@ -33,7 +34,8 @@ public class AddTagGroupCommandHandler : CommandHandler<TagGroupAddCommand>
         var tagGroup = new TagGroup
         {
             Id = tagGroupId,
-            Name = tagGroupName
+            Name = tagGroupName,
+            Mode = tagGroupMode
         };
         
         node.TagGroups.Add(tagGroup);

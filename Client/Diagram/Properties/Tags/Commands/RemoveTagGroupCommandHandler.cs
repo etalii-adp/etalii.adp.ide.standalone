@@ -11,13 +11,14 @@ public class RemoveTagGroupCommandHandler : CommandHandler<TagGroupRemoveCommand
         _logger = loggerFactory.CreateLogger<RemoveTagGroupCommandHandler>();
     }
 
-    public static Command Create(DiagramContext context, NodeIdentifier nodeId, TagGroupIdentifier oldTagGroupId, string oldTagGroupName)
+    public static Command Create(DiagramContext context, NodeIdentifier nodeId, TagGroupIdentifier oldTagGroupId, string oldTagGroupName, TagGroupMode oldTagGroupMode)
     {
         return new TagGroupRemoveCommand
         {
             NodeId = nodeId,
             OldTagGroupId = oldTagGroupId,
-            OldTagGroupName = oldTagGroupName
+            OldTagGroupName = oldTagGroupName,
+            OldTagGroupMode = oldTagGroupMode
         };
     }
 
@@ -32,6 +33,6 @@ public class RemoveTagGroupCommandHandler : CommandHandler<TagGroupRemoveCommand
     {
         _logger.LogInformation("Re-adding tag group {TagGroupIdentifier} {TagGroupName} on {NodeIdentifier}", command.OldTagGroupId, command.OldTagGroupName, command.NodeId);
 
-        return _addTagGroupCommandHandler.Do(context, command.NodeId, command.OldTagGroupId, command.OldTagGroupName);
+        return _addTagGroupCommandHandler.Do(context, command.NodeId, command.OldTagGroupId, command.OldTagGroupName, command.OldTagGroupMode);
     }
 }

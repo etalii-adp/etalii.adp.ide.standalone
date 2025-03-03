@@ -9,6 +9,7 @@ namespace EtAlii.Adp
         public required string Name { get; set; } = string.Empty;
         // public Diagram Diagram { get; set; } = null!;
 
+        public required TagGroupMode Mode { get; init; }
         public Node? Node { get; set; }
         public Link? Link { get; set; }
         
