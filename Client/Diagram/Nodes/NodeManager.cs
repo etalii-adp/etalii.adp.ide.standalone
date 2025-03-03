@@ -57,13 +57,21 @@ public class NodeManager
             _logger.LogInformation("Double clicked diagram {NodePosition}", position);
 
             var nodeIdentifier = NodeIdentifier.NewIdentifier();
-            var tagGroupIdentifier = TagGroupIdentifier.NewIdentifier();
-            var tagIdentifier = TagIdentifier.NewIdentifier();
+            var typeTagGroupIdentifier = TagGroupIdentifier.NewIdentifier();
+            var typeTagIdentifier = TagIdentifier.NewIdentifier();
+            var statusTagGroupIdentifier = TagGroupIdentifier.NewIdentifier();
+            var statusTagIdentifier = TagIdentifier.NewIdentifier();
+            var layerTagGroupIdentifier = TagGroupIdentifier.NewIdentifier();
+            var layerTagIdentifier = TagIdentifier.NewIdentifier();
             Command[] commands =
             [
                 AddNodeCommandHandler.CreateCommand(_context, position, nodeIdentifier, "New element"),
-                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, tagGroupIdentifier, "Type"),
-                AddTagCommandHandler.CreateCommand(_context, tagGroupIdentifier, tagIdentifier, "Default"),
+                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, typeTagGroupIdentifier, "Type"),
+                AddTagCommandHandler.CreateCommand(_context, typeTagGroupIdentifier, typeTagIdentifier, "Default"),
+                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, statusTagGroupIdentifier, "Status"),
+                AddTagCommandHandler.CreateCommand(_context, statusTagGroupIdentifier, statusTagIdentifier, "None"),
+                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, layerTagGroupIdentifier, "Layer"),
+                AddTagCommandHandler.CreateCommand(_context, layerTagGroupIdentifier, layerTagIdentifier, "All"),
             ];
             _context.Commands.Handle(commands);
         }
