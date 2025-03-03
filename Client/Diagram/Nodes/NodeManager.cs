@@ -70,7 +70,7 @@ public class NodeManager
                 AddTagCommandHandler.CreateCommand(_context, typeTagGroupIdentifier, typeTagIdentifier, "Default"),
                 AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, statusTagGroupIdentifier, "Status", TagGroupMode.Single),
                 AddTagCommandHandler.CreateCommand(_context, statusTagGroupIdentifier, statusTagIdentifier, "None"),
-                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, layerTagGroupIdentifier, "Layer", TagGroupMode.Single),
+                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, layerTagGroupIdentifier, "Layer", TagGroupMode.Multiple),
                 AddTagCommandHandler.CreateCommand(_context, layerTagGroupIdentifier, layerTagIdentifier, "All"),
             ];
             _context.Commands.Handle(commands);

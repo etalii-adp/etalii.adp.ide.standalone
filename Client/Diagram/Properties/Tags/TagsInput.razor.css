@@ -4,6 +4,8 @@
     border-radius: 0;
     display: flex;
     flex-wrap: wrap;
+    min-height: 40px !important;
+    min-width: auto !important;
     gap: 5px;
 }
 

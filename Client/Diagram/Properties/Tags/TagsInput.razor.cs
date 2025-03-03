@@ -7,6 +7,7 @@ public partial class TagsInput : ComponentBase
 {
     private readonly List<string> _tags = new();
     private string _newTag = "";
+    private bool _canAdd;
 
     [Parameter]
     public bool Disabled { get; set; }
@@ -17,18 +18,21 @@ public partial class TagsInput : ComponentBase
 
     [CascadingParameter] public DiagramContext Context { get; set; } = null!;
 
-    protected override void OnInitialized()
-    {
-    }
-
     protected override void OnParametersSet()
     {
         _tags.Clear();
         if (Value == null!) return;
         _tags.AddRange(Value.Tags.Select(g => g.Name));
         _tags.Sort();
+        UpdateCanAdd();
     }
 
+    private void UpdateCanAdd()
+    {
+        _canAdd = Value.Mode == TagGroupMode.Multiple || _tags.Count == 0;
+        StateHasChanged();
+    }
+    
     private void AddTag()
     {
         if (string.IsNullOrWhiteSpace(_newTag) || _tags.Contains(_newTag)) return;
@@ -41,6 +45,7 @@ public partial class TagsInput : ComponentBase
         var tagId = TagIdentifier.NewIdentifier();
         var command = AddTagCommandHandler.CreateCommand(Context, Value.Id, tagId, tagToAdd); 
         Context.Commands.Handle(command);
+        UpdateCanAdd();
     }
 
     private void RemoveTag(string tagNameToRemove)
@@ -50,7 +55,7 @@ public partial class TagsInput : ComponentBase
         var tag = Value.Tags.Single(t => t.Name == tagNameToRemove);
         var command = RemoveTagCommandHandler.CreateCommand(Context, Value.Id, tag.Id, tagNameToRemove); 
         Context.Commands.Handle(command);
-
+        UpdateCanAdd();
     }
 
     private void HandleKeyPress(KeyboardEventArgs e)

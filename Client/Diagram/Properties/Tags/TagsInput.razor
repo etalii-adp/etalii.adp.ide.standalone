@@ -9,5 +9,8 @@
             </span>
         }
     </div>
-    <input @bind="_newTag" @onkeyup="HandleKeyPress" placeholder="Add a tag..." />
+    @if (_canAdd)
+    {
+        <input @bind="_newTag" @onkeyup="HandleKeyPress" placeholder="Add a tag..." />
+    }
 </div>
