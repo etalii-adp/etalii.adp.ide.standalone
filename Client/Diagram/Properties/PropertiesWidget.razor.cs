@@ -4,20 +4,17 @@ namespace EtAlii.Adp.Client;
 
 public partial class PropertiesWidget 
 {
-    private DiagramContext _context = null!;
+    [CascadingParameter] private DiagramContext Context { get; set; } = null!;
 
-    public void Initialize(DiagramContext context)
+    protected override void OnParametersSet()
     {
-        _context = context;
-        StateHasChanged();
-        context.SelectionChanged += StateHasChanged;
+        if (Context != null!)
+        {
+            Context.SelectionChanged -= StateHasChanged;
+            Context.SelectionChanged += StateHasChanged;
+        }
     }
 
-    public void Deinitialize()
-    {
-        _context.SelectionChanged -= StateHasChanged;
-    }
-    
     [Parameter] public PropertyItem[] Properties { get; set; } =
     [
         new()
