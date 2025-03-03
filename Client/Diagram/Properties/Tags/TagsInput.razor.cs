@@ -4,8 +4,7 @@ namespace EtAlii.Adp.Client;
 
 public partial class TagsInput : ComponentBase
 {
-    private readonly List<string> _tags = new();
-    private string _newTag = "";
+    private readonly List<string> _selectedTags = new();
     private bool _canAdd;
 
     [Parameter]
@@ -19,14 +18,14 @@ public partial class TagsInput : ComponentBase
 
     protected override void OnParametersSet()
     {
-        _tags.Clear();
+        _selectedTags.Clear();
         if (Value == null!) return;
-        _tags.AddRange(Value.Tags.Select(g => g.Name));
-        _tags.Sort();
+        _selectedTags.AddRange(Value.Tags.Select(g => g.Name));
+        _selectedTags.Sort();
         UpdateCanAdd();
         
-        _availableTags.Clear();
-        _availableTags.AddRange(
+        _allAvailableTags.Clear();
+        _allAvailableTags.AddRange(
         [
             new Tag { Id = TagIdentifier.NewIdentifier(), Name = "System",},
             new Tag { Id = TagIdentifier.NewIdentifier(), Name = "Test",},
@@ -36,16 +35,16 @@ public partial class TagsInput : ComponentBase
 
     private void UpdateCanAdd()
     {
-        _canAdd = Value.Mode == TagGroupMode.Multiple || _tags.Count == 0;
+        _canAdd = Value.Mode == TagGroupMode.Multiple || _selectedTags.Count == 0;
         StateHasChanged();
     }
     
     private void AddTag(string tagName)
     {
         var tagToAdd = tagName; 
-        _tags.Add(tagToAdd);
-        _tags.Sort();
-        _newTag = "";
+        _selectedTags.Add(tagToAdd);
+        _selectedTags.Sort();
+        _newTagName = "";
 
         var tagId = TagIdentifier.NewIdentifier();
         var command = AddTagCommandHandler.CreateCommand(Context, Value.Id, tagId, tagToAdd); 
@@ -55,7 +54,7 @@ public partial class TagsInput : ComponentBase
 
     private void RemoveTag(string tagNameToRemove)
     {
-        _tags.Remove(tagNameToRemove);
+        _selectedTags.Remove(tagNameToRemove);
         
         var tag = Value.Tags.Single(t => t.Name == tagNameToRemove);
         var command = RemoveTagCommandHandler.CreateCommand(Context, Value.Id, tag.Id, tagNameToRemove); 
