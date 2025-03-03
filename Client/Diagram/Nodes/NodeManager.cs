@@ -58,10 +58,12 @@ public class NodeManager
 
             var nodeIdentifier = NodeIdentifier.NewIdentifier();
             var tagGroupIdentifier = TagGroupIdentifier.NewIdentifier();
+            var tagIdentifier = TagIdentifier.NewIdentifier();
             Command[] commands =
             [
                 AddNodeCommandHandler.CreateCommand(_context, position, nodeIdentifier, "New element"),
                 AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, tagGroupIdentifier, "Type"),
+                AddTagCommandHandler.CreateCommand(_context, tagGroupIdentifier, tagIdentifier, "Default"),
             ];
             _context.Commands.Handle(commands);
         }
