@@ -11,6 +11,21 @@
     </div>
     @if (_canAdd)
     {
-        <input @bind="_newTag" @onkeyup="HandleKeyPress" placeholder="Add a tag..." />
+        <Dropdown 
+            Color="DropdownColor.Secondary" @ref="_tagOptionsDropDown" 
+            AutoClose="true" 
+            AutoCloseBehavior="DropdownAutoCloseBehavior.Both"
+            Direction="DropdownDirection.Dropend">
+            <input @bind="_newTag" @onkeyup="HandleKeyPress" placeholder="Add a tag..." 
+                   @onfocus="OnInputFieldGotFocus" @onblur="OnInputFieldLostFocus" />
+            <DropdownMenu Style="width:300px;">
+                <div class="tags">
+                    @foreach (var tag in _availableTags)
+                    {
+                        <span class="tag">@tag.Name <button @onclick="() => AddExistingTag(tag)">+</button></span>
+                    }
+                </div>
+            </DropdownMenu>
+        </Dropdown>
     }
 </div>

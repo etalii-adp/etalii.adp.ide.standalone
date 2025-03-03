@@ -9,6 +9,11 @@
     gap: 5px;
 }
 
+::deep .dropdown-menu {
+    border-radius: 0;
+    margin-left: 4px;
+}
+
 .tags {
     display: flex;
     flex-wrap: wrap;

@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 
 namespace EtAlii.Adp.Client;
 
@@ -25,6 +24,14 @@ public partial class TagsInput : ComponentBase
         _tags.AddRange(Value.Tags.Select(g => g.Name));
         _tags.Sort();
         UpdateCanAdd();
+        
+        _availableTags.Clear();
+        _availableTags.AddRange(
+        [
+            new Tag { Id = TagIdentifier.NewIdentifier(), Name = "System",},
+            new Tag { Id = TagIdentifier.NewIdentifier(), Name = "Test",},
+            new Tag { Id = TagIdentifier.NewIdentifier(), Name = "Default",}
+        ]);
     }
 
     private void UpdateCanAdd()
@@ -33,11 +40,9 @@ public partial class TagsInput : ComponentBase
         StateHasChanged();
     }
     
-    private void AddTag()
+    private void AddTag(string tagName)
     {
-        if (string.IsNullOrWhiteSpace(_newTag) || _tags.Contains(_newTag)) return;
-
-        var tagToAdd = _newTag.Trim(); 
+        var tagToAdd = tagName; 
         _tags.Add(tagToAdd);
         _tags.Sort();
         _newTag = "";
@@ -56,13 +61,5 @@ public partial class TagsInput : ComponentBase
         var command = RemoveTagCommandHandler.CreateCommand(Context, Value.Id, tag.Id, tagNameToRemove); 
         Context.Commands.Handle(command);
         UpdateCanAdd();
-    }
-
-    private void HandleKeyPress(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
-        {
-            AddTag();
-        }
     }
 }
