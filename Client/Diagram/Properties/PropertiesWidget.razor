@@ -8,7 +8,7 @@
 
         <table style="margin-left: 5px; margin-right: 5px">
             <tbody>
-            @if (Context.SelectedNode is { } nodeView)
+            @if (_context.SelectedNode is { } nodeView)
             {
                 foreach (var tagGroup in nodeView.Node.TagGroups)
                 {

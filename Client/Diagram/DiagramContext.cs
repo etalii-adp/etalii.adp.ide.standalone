@@ -13,7 +13,8 @@ public class DiagramContext
     public required NodeFactory NodeFactory { get; init; }
     public required LinkManager Links { get; init; }
     public required CommandManager Commands { get; init; }
-    
+    public required PropertiesWidget Properties { get; init; }
+
     public required ICommandHandler[] CommandHandlers { get; init; }
 
     public SelectableModel[] Selection { get; set; } = [];
