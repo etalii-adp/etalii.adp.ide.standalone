@@ -1,7 +1,7 @@
 ﻿.tag-input {
     border: 1px solid #ccc;
     padding: 5px;
-    border-radius: 5px;
+    border-radius: 0;
     display: flex;
     flex-wrap: wrap;
     gap: 5px;
@@ -16,8 +16,9 @@
 .tag {
     background: #007bff;
     color: white;
-    padding: 5px 10px;
-    border-radius: 15px;
+    height: 27px;
+    padding: 5px 5px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
 }
