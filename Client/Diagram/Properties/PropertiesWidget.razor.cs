@@ -4,11 +4,11 @@ namespace EtAlii.Adp.Client;
 
 public partial class PropertiesWidget 
 {
-    [CascadingParameter] private DiagramContext Context { get; set; } = null!;
+    [CascadingParameter] private DiagramContext? Context { get; set; }
 
     protected override void OnParametersSet()
     {
-        if (Context != null!)
+        if (Context != null)
         {
             Context.SelectionChanged -= StateHasChanged;
             Context.SelectionChanged += StateHasChanged;
