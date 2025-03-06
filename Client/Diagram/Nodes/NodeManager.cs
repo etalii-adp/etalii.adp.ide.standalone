@@ -73,6 +73,7 @@ public class NodeManager
             
             _logger.LogInformation("Double clicked diagram {NodePosition}", position);
 
+            var nodeIdentifier = NodeIdentifier.NewIdentifier();
             var (typeTagGroupId, typeTagId, assignTypeTag) = CreateTagAndGroup("Type", "Default");
             var (statusTagGroupId, statusTagId, assignStatusTag) = CreateTagAndGroup("Status", "None");
             var (layerTagGroupId, layerTagId, assignLayerTag) = CreateTagAndGroup("Layer", "All");
