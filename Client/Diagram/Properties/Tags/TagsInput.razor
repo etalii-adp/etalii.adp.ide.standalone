@@ -4,18 +4,14 @@
     <div class="tags">
         @foreach (var tag in _selectedTags)
         {
-            <span class="tag">
-                @tag.Name <button @onclick="() => RemoveTag(tag)">×</button>
-            </span>
+            <DeletableTagView Tag="@tag" Delete="UnassignTag" />
         }
     </div>
     @if (_canAdd)
     {
-        <Dropdown 
-            Color="DropdownColor.Secondary" @ref="_tagOptionsDropDown" 
-            AutoClose="true" 
-            AutoCloseBehavior="DropdownAutoCloseBehavior.Both"
-            Direction="DropdownDirection.Dropend">
+        <Dropdown @ref="_tagOptionsDropDown" 
+                  AutoClose="true" 
+                  AutoCloseBehavior="DropdownAutoCloseBehavior.Inside" >
             <input @bind-value="_newTagName"
                    @bind-value:event="oninput"
                    @onkeyup="HandleKeyPress" placeholder="Add a tag..." 
@@ -24,7 +20,7 @@
                 <div class="tags">
                     @foreach (var tag in _visibleAvailableTags)
                     {
-                        <span class="tag">@tag.Name <button @onclick="() => AddExistingTag(tag)">+</button></span>
+                        <AssignableTagView Tag="@tag" Assign="AssignExistingTag" />
                     }
                 </div>
             </DropdownMenu>

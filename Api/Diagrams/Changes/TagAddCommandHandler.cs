@@ -23,10 +23,11 @@ public class TagAddCommandHandler : CommandHandler<TagAddCommand>
         // Apply changes.
         var tag = new Tag
         {
-            TagGroup = tagGroup,
+            // TagGroups = [tagGroup],
             Id = tagId,
             Name = tagName,
         };
+        tag.TagGroups.Add(tagGroup);
         tagGroup.Tags.Add(tag);
         
         // Tag for modification and addition.

@@ -44,6 +44,23 @@ public class NodeManager
             _logger.LogError(exception, "Unable to handle {MethodName}", nameof(OnDiagramDoubleClicked));
         }
     }
+
+    private (TagGroupIdentifier GroupIdentifier, TagIdentifier TagIdentifier, bool AssignTypeTag) CreateTagAndGroup(
+        string groupName,
+        string tagName)
+    {
+        var tagGroupId = TagGroupIdentifier.NewIdentifier();
+        var tag = _context.Diagram.Nodes
+            .SelectMany(n => n.TagGroups)
+            .Where(g => g.Name == groupName)
+            .SelectMany(g => g.Tags)
+            .DistinctBy(t => t.Id)
+            .SingleOrDefault(t => t.Name == tagName);
+        var assignTag = tag != null;
+        var tagId = tag?.Id ?? TagIdentifier.NewIdentifier();
+
+        return (tagGroupId, tagId, assignTag);
+    }
     
     private void OnDiagramDoubleClicked(Model? model, PointerEventArgs e)
     {
@@ -56,22 +73,27 @@ public class NodeManager
             
             _logger.LogInformation("Double clicked diagram {NodePosition}", position);
 
-            var nodeIdentifier = NodeIdentifier.NewIdentifier();
-            var typeTagGroupIdentifier = TagGroupIdentifier.NewIdentifier();
-            var typeTagIdentifier = TagIdentifier.NewIdentifier();
-            var statusTagGroupIdentifier = TagGroupIdentifier.NewIdentifier();
-            var statusTagIdentifier = TagIdentifier.NewIdentifier();
-            var layerTagGroupIdentifier = TagGroupIdentifier.NewIdentifier();
-            var layerTagIdentifier = TagIdentifier.NewIdentifier();
+            var (typeTagGroupId, typeTagId, assignTypeTag) = CreateTagAndGroup("Type", "Default");
+            var (statusTagGroupId, statusTagId, assignStatusTag) = CreateTagAndGroup("Status", "None");
+            var (layerTagGroupId, layerTagId, assignLayerTag) = CreateTagAndGroup("Layer", "All");
+            
             Command[] commands =
             [
                 AddNodeCommandHandler.CreateCommand(_context, position, nodeIdentifier, "New element"),
-                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, typeTagGroupIdentifier, "Type", TagGroupMode.Single),
-                AddTagCommandHandler.CreateCommand(_context, typeTagGroupIdentifier, typeTagIdentifier, "Default"),
-                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, statusTagGroupIdentifier, "Status", TagGroupMode.Single),
-                AddTagCommandHandler.CreateCommand(_context, statusTagGroupIdentifier, statusTagIdentifier, "None"),
-                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, layerTagGroupIdentifier, "Layer", TagGroupMode.Multiple),
-                AddTagCommandHandler.CreateCommand(_context, layerTagGroupIdentifier, layerTagIdentifier, "All"),
+                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, typeTagGroupId, "Type", TagGroupMode.Single),
+                assignTypeTag 
+                    ? AssignTagCommandHandler.CreateCommand(_context, typeTagGroupId, typeTagId)
+                    : AddTagCommandHandler.CreateCommand(_context, typeTagGroupId, typeTagId, "Default"),
+                
+                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, statusTagGroupId, "Status", TagGroupMode.Single),
+                assignStatusTag 
+                    ? AssignTagCommandHandler.CreateCommand(_context, statusTagGroupId, statusTagId)
+                    : AddTagCommandHandler.CreateCommand(_context, statusTagGroupId, statusTagId, "None"),
+                
+                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, layerTagGroupId, "Layer", TagGroupMode.Multiple),
+                assignLayerTag 
+                    ? AssignTagCommandHandler.CreateCommand(_context, layerTagGroupId, layerTagId)
+                    : AddTagCommandHandler.CreateCommand(_context, layerTagGroupId, layerTagId, "All"),
             ];
             _context.Commands.Handle(commands);
         }

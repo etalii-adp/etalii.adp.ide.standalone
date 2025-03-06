@@ -30,12 +30,22 @@ public partial class TagsInput : ComponentBase
         UpdateCanAdd();
         
         _allAvailableTags.Clear();
-        _allAvailableTags.AddRange(
-        [
-            new Tag { Id = TagIdentifier.NewIdentifier(), Name = "System",},
-            new Tag { Id = TagIdentifier.NewIdentifier(), Name = "Test",},
-            new Tag { Id = TagIdentifier.NewIdentifier(), Name = "Default",}
-        ]);
+        
+        var tagGroupName = Value.Name;
+
+        var tagGroupsWithTags = Context.Diagram.Nodes
+            .SelectMany(n => n.TagGroups)
+            .Where(g => g.Name == tagGroupName && g.Tags.Count != 0)
+            .Distinct()
+            .ToArray();
+            
+        var tags = tagGroupsWithTags
+            .SelectMany(g => g.Tags)
+            .DistinctBy(t => t.Name)
+            .OrderBy(t => t.Name)
+            .ToArray();
+
+        _allAvailableTags.AddRange(tags);
     }
 
     private void UpdateCanAdd()
@@ -44,7 +54,7 @@ public partial class TagsInput : ComponentBase
         StateHasChanged();
     }
     
-    private void AddTag(Tag tag)
+    private void AddNewTag(Tag tag)
     {
         _selectedTags.Add(tag);
         _selectedTags.Sort();
@@ -54,12 +64,25 @@ public partial class TagsInput : ComponentBase
         UpdateCanAdd();
     }
 
-    private void RemoveTag(Tag tagToRemove)
+    private async Task AssignExistingTag(Tag tag)
+    {
+        _selectedTags.Add(tag);
+        _selectedTags.Sort();
+
+        var command = AssignTagCommandHandler.CreateCommand(Context, Value.Id, tag.Id); 
+        Context.Commands.Handle(command);
+
+        await ShowTagsWhenAvailable();
+        UpdateCanAdd();
+    }
+
+    private async Task UnassignTag(Tag tagToRemove)
     {
         _selectedTags.Remove(tagToRemove);
         
-        var command = RemoveTagCommandHandler.CreateCommand(Context, Value.Id, tagToRemove.Id, tagToRemove.Name); 
+        var command = UnassignTagCommandHandler.CreateCommand(Context, Value.Id, tagToRemove.Id); 
         Context.Commands.Handle(command);
         UpdateCanAdd();
+        await ShowTagsWhenAvailable();
     }
 }

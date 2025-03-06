@@ -12,19 +12,18 @@ public partial class TagsInput
         if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_newTagName))
         {
             var isAlreadySelected = _selectedTags.Any(t => t.Name == newTagName);
-            var tagIsInVisibleTags = _visibleAvailableTags.Any(t => t.Name == newTagName);
+            var tagIsInVisibleTags = _visibleAvailableTags.Any(t => t.Tag.Name == newTagName);
             if (!isAlreadySelected && !tagIsInVisibleTags)
             {
                 var tag = new Tag { Id = TagIdentifier.NewIdentifier(), Name = newTagName };
-                AddTag(tag);
+                AddNewTag(tag);
                 _newTagName = "";
                 await _tagOptionsDropDown.HideAsync();
             }
         }
         else
         {
-            UpdateVisibleTags();
-            await _tagOptionsDropDown.ShowAsync();
+            await ShowTagsWhenAvailable();
         }
     }
 }
