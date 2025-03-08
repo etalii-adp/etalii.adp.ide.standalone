@@ -12,6 +12,9 @@ public partial class PropertiesWidget
         {
             Context.SelectionChanged -= StateHasChanged;
             Context.SelectionChanged += StateHasChanged;
+            
+            Context.History.Changed -= StateHasChanged;
+            Context.History.Changed += StateHasChanged;
         }
     }
 
