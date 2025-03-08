@@ -2,6 +2,10 @@
     width: fit-content;
 }
 
+.default-node.selected {
+    border: 2px solid rgba(var(--bs-primary-rgb)) !important;
+}
+
 div > h5 {
     min-width: 100px; 
     text-align: center;
