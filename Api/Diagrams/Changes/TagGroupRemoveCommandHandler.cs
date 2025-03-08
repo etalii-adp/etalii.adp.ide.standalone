@@ -16,6 +16,6 @@ public class TagGroupRemoveCommandHandler : CommandHandler<TagGroupRemoveCommand
 
     protected override Task Undo(TagGroupRemoveCommand command, AdpDbContext context)
     {
-        return _tagGroupAddCommandHandler.Do(context, command.NodeId, command.OldTagGroupId, command.OldTagGroupName, command.OldTagGroupMode);
+        return _tagGroupAddCommandHandler.Do(context, command.NodeId, command.OldTagGroupId, command.OldTagGroupName, command.OldTagGroupMode, command.OldTagGroupOrder);
     }
 }

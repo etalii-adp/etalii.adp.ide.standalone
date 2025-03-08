@@ -6,4 +6,5 @@ public class TagGroupRemoveCommand : Command
     public required TagGroupIdentifier OldTagGroupId { get; init; }
     public required string OldTagGroupName { get; init; }
     public required TagGroupMode OldTagGroupMode { get; init; }
+    public required int OldTagGroupOrder { get; init; }
 }

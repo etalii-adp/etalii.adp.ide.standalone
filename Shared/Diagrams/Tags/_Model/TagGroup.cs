@@ -12,6 +12,8 @@ namespace EtAlii.Adp
         public required TagGroupMode Mode { get; init; }
         public Node? Node { get; set; }
         public Link? Link { get; set; }
+
+        public required int Order { get; init; }
         
         [JsonIgnore] public ICollection<Tag> Tags => _tags;
         // ReSharper disable once InconsistentNaming

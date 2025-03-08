@@ -10,7 +10,7 @@
             <tbody>
             @if (Context?.SelectedNode is { } nodeView)
             {
-                foreach (var tagGroup in nodeView.Node.TagGroups)
+                foreach (var tagGroup in nodeView.Node.TagGroups.OrderBy(g => g.Order))
                 {
                     <tr>
                         <td class="col-md-4 m-2 align-middle" style="align-content: baseline; padding-top: 11px;">@tagGroup.Name</td>

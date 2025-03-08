@@ -6,7 +6,7 @@ public class TagGroupAddCommandHandler : CommandHandler<TagGroupAddCommand>
 {
     protected override Task Do(TagGroupAddCommand command, AdpDbContext context)
     {
-        return Do(context, command.NodeId, command.NewTagGroupId, command.NewTagGroupName, command.NewTagGroupMode);
+        return Do(context, command.NodeId, command.NewTagGroupId, command.NewTagGroupName, command.NewTagGroupMode, command.NewTagGroupOrder);
     }
 
     public async Task Do(
@@ -14,7 +14,8 @@ public class TagGroupAddCommandHandler : CommandHandler<TagGroupAddCommand>
         NodeIdentifier nodeId, 
         TagGroupIdentifier tagGroupId, 
         string tagGroupName,
-        TagGroupMode tagGroupMode)
+        TagGroupMode tagGroupMode,
+        int tagGroupOrder)
     {
         // Fetch the node.
         var node = context.ChangeTracker
@@ -31,7 +32,8 @@ public class TagGroupAddCommandHandler : CommandHandler<TagGroupAddCommand>
             Node = node,
             Id = tagGroupId,
             Name = tagGroupName,
-            Mode = tagGroupMode
+            Mode = tagGroupMode,
+            Order = tagGroupOrder
         };
         node.TagGroups.Add(group);
         

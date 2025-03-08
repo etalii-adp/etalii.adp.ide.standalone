@@ -81,17 +81,17 @@ public class NodeManager
             Command[] commands =
             [
                 AddNodeCommandHandler.CreateCommand(_context, position, nodeIdentifier, "New element"),
-                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, typeTagGroupId, "Type", TagGroupMode.Single),
+                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, typeTagGroupId, "Type", 0, TagGroupMode.Single),
                 assignTypeTag 
                     ? AssignTagCommandHandler.CreateCommand(_context, typeTagGroupId, typeTagId)
                     : AddTagCommandHandler.CreateCommand(_context, typeTagGroupId, typeTagId, "Default"),
                 
-                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, statusTagGroupId, "Status", TagGroupMode.Single),
+                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, statusTagGroupId, "Status", 1, TagGroupMode.Single),
                 assignStatusTag 
                     ? AssignTagCommandHandler.CreateCommand(_context, statusTagGroupId, statusTagId)
                     : AddTagCommandHandler.CreateCommand(_context, statusTagGroupId, statusTagId, "None"),
                 
-                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, layerTagGroupId, "Layer", TagGroupMode.Multiple),
+                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, layerTagGroupId, "Layer", 2, TagGroupMode.Multiple),
                 assignLayerTag 
                     ? AssignTagCommandHandler.CreateCommand(_context, layerTagGroupId, layerTagId)
                     : AddTagCommandHandler.CreateCommand(_context, layerTagGroupId, layerTagId, "All"),

@@ -18,7 +18,7 @@
 - [X] Ribbon node Edit
 - [X] Persisted undo/redo
 - [X] Node tags
-- [ ] Reused tags
+- [X] Reused tags
 - [ ] Filter by node tags
 - [ ] Link tags
 - [ ] Link directional tag

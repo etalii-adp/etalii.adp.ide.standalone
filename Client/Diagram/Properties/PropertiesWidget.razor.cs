@@ -50,13 +50,13 @@ public partial class PropertiesWidget
         new()
         {
             Key = "State",
-            Value = new TagGroup { Id = TagGroupIdentifier.NewIdentifier(), Name = "State", Mode = TagGroupMode.Multiple},
+            Value = new TagGroup { Id = TagGroupIdentifier.NewIdentifier(), Name = "State", Mode = TagGroupMode.Multiple, Order = 0},
             ValueType = typeof(TagGroup),
         },
         new()
         {
             Key = "Maturity",
-            Value = new TagGroup { Id = TagGroupIdentifier.NewIdentifier(), Name = "Maturity", Mode = TagGroupMode.Single },
+            Value = new TagGroup { Id = TagGroupIdentifier.NewIdentifier(), Name = "Maturity", Mode = TagGroupMode.Single, Order = 1 },
             ValueType = typeof(TagGroup),
         }
     ];
