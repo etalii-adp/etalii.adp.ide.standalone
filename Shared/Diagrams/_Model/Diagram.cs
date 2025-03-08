@@ -33,6 +33,9 @@ public record Diagram
     public required DateTime CreationDate { get; init; }
     public required DateTime ModificationDate { get; set; }
     
+    public bool ShowProperties { get; set; } = true;
+    public bool ShowNavigation { get; set; } = true;
+    
     /// <summary>
     /// Default zoom is 1f.
     /// </summary>

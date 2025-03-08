@@ -13,14 +13,14 @@
                 <CascadingValue Value="_context">
                     <DiagramCanvas>
                         <Widgets>
-                            @if (DiagramView.ShowProperties)
+                            @if (_currentDiagram.ShowProperties)
                             {
                                 @* @ref="_propertiesWidget" *@
                                 <PropertiesWidget
                                     Style="position: absolute; left: 15px; top: 15px; bottom: 15px; border: 1px solid black; width: 400px; border-radius: 0">
                                 </PropertiesWidget>
                             }
-                            @if (DiagramView.ShowNavigator)
+                            @if (_currentDiagram.ShowNavigation)
                             {
                                 <NavigatorWidget
                                     Width="200"

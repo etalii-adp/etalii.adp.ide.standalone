@@ -2,7 +2,7 @@
 
 namespace EtAlii.Adp.Api;
 
-public class MapZoomCommandHandler : CommandHandler<DiagramZoomCommand>
+public class DiagramZoomCommandHandler : CommandHandler<DiagramZoomCommand>
 {
     protected override async Task Do(DiagramZoomCommand command, AdpDbContext context)
     {

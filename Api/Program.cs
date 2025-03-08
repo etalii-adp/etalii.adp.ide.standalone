@@ -13,8 +13,10 @@ var host = builder
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
 
-        services.AddSingleton<ICommandHandler, MapZoomCommandHandler>();
-        services.AddSingleton<ICommandHandler, MapPositionCommandHandler>();
+        services.AddSingleton<ICommandHandler, DiagramZoomCommandHandler>();
+        services.AddSingleton<ICommandHandler, DiagramPositionCommandHandler>();
+        services.AddSingleton<ICommandHandler, ToggleShowPropertiesCommandHandler>();
+        services.AddSingleton<ICommandHandler, ToggleShowNavigationCommandHandler>();
         
         services.AddSingleton<NodeAddCommandHandler>();
         services.AddSingleton<ICommandHandler, NodeAddCommandHandler>();

@@ -2,7 +2,7 @@
 
 namespace EtAlii.Adp.Api;
 
-public class MapPositionCommandHandler : CommandHandler<DiagramPositionCommand>
+public class DiagramPositionCommandHandler : CommandHandler<DiagramPositionCommand>
 {
     protected override async Task Do(DiagramPositionCommand command, AdpDbContext context)
     {
