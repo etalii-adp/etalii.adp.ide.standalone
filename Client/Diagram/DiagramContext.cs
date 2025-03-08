@@ -1,4 +1,5 @@
 ﻿using Blazor.Diagrams.Core.Models.Base;
+using BlazorBootstrap;
 
 namespace EtAlii.Adp.Client;
 
@@ -15,6 +16,7 @@ public class DiagramContext
     public required CommandManager Commands { get; init; }
     // public required PropertiesWidget Properties { get; init; }
 
+    public required ToastService ToastService { get; init; }
     public required ICommandHandler[] CommandHandlers { get; init; }
 
     public SelectableModel[] Selection { get; set; } = [];

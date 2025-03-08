@@ -88,7 +88,7 @@
         <Content>
             <RibbonItemGroup Name="Export">
                 <DiagramRibbonPlaceStub Name="ExportLlm" IconName="IconName.Chat" >Export to<br/>LLM</DiagramRibbonPlaceStub> 
-                <DiagramRibbonPlaceStub Name="ExportJson" IconName="IconName.FileTypeJson" >Export as<br/>JSON</DiagramRibbonPlaceStub> 
+                <DiagramRibbonItem Context="@_context" THandler="ExportDiagramAsJsonCommandHandler"/>
                 <DiagramRibbonPlaceStub Name="ExportXml" IconName="IconName.FileTypeXml" >Export as<br/>XML</DiagramRibbonPlaceStub> 
                 <DiagramRibbonPlaceStub Name="ExportImage" IconName="IconName.Image" >Export as<br/>Image</DiagramRibbonPlaceStub> 
                 <DiagramRibbonPlaceStub Name="ExportAzure" IconName="IconName.Microsoft" >Export to<br/>Azure DevOps</DiagramRibbonPlaceStub> 

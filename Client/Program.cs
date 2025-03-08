@@ -68,6 +68,8 @@ builder.Services.AddSingleton<AssignTagCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, AssignTagCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, UnassignTagCommandHandler>();
 
+builder.Services.AddSingleton<ICommandHandler, ExportDiagramAsJsonCommandHandler>();
+
 if (LocalDebugger.IsAttached)
 {
     builder.Services.AddScoped<AuthenticationStateProvider, LocalAuthenticationStateProvider>();

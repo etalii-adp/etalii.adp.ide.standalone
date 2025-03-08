@@ -1,4 +1,5 @@
 ﻿using System.Net.Http.Json;
+using BlazorBootstrap;
 using Microsoft.AspNetCore.Components;
 
 namespace EtAlii.Adp.Client;
@@ -22,6 +23,8 @@ public partial class DiagramPage : IDisposable
     [Inject] private DiagramView DiagramView { get; set; } = null!;
     [Inject] private IEnumerable<ICommandHandler> CommandHandlers { get; set; } = null!;
     
+    [Inject] private ToastService ToastService { get; set; } = null!;
+
     private ILogger _logger = null!;
     private DiagramRibbon _ribbon = null!;
     private DiagramContext _context = null!;
@@ -47,6 +50,7 @@ public partial class DiagramPage : IDisposable
             NodeFactory = new NodeFactory(), // Should become typed per diagram.
             Links = LinkManager,
             View = DiagramView,
+            ToastService = ToastService,
             Commands = CommandManager,
             CommandHandlers = CommandHandlers.ToArray(),
             // Properties = _propertiesWidget,

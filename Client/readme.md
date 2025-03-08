@@ -3,8 +3,6 @@
 ## Tasks - Bugs
 - [ ] Node layout inconsistency
 - [ ] Undo when zooming
-- [X] Authentication for multiple people
-- [ ] Property Widget update after undo/redo
 
 ## Tasks - General
 - [ ] Add Beta software warning
@@ -13,12 +11,6 @@
 - [ ] In-app error visualization
 
 ## Tasks - Editing
-- [X] Ribbon disable button capability
-- [X] Ribbon selection responsiveness
-- [X] Ribbon node Edit
-- [X] Persisted undo/redo
-- [X] Node tags
-- [X] Reused tags
 - [ ] Filter by node tags
 - [ ] Link tags
 - [ ] Link directional tag
@@ -33,16 +25,13 @@
 - [ ] Expand Group
 - [ ] Align left/right/top/bottom
 - [ ] Stretch
-- [X] Fullscreen toggle
 - [ ] Persist fullscreen toggle
 - [ ] Other properties in property grid
 
 ## Tasks - Dependencies
-- [X] Link removal
-- [X] Node removal
 - [ ] 'Future' or 'Not concrete' tag to node visualization
 - [ ] Export as Json
-- [ ] Export as Xml
+- [X] Export as Xml
 - [ ] Export as Text
 - [ ] Export as Image
 - [ ] Import / Export / Sync with Azure DevOps
@@ -60,6 +49,21 @@
 - [ ] Making perspectives public
 - [ ] Ads
 - [ ] Commerce
+
+## Done
+- [X] Property Widget update after undo/redo
+- [X] Authentication for multiple people
+- [X] Ribbon disable button capability
+- [X] Ribbon selection responsiveness
+- [X] Ribbon node Edit
+- [X] Persisted undo/redo
+- [X] Node tags
+- [X] Reused tags
+- [X] Fullscreen toggle
+- [X] Persist properties toggle
+- [X] Persist navigation toggle
+- [X] Link removal
+- [X] Node removal
 
 ## Tools
 ```sql
