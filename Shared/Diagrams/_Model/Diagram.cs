@@ -1,11 +1,13 @@
 ﻿using System.Text.Json.Serialization;
+using System.Xml.Serialization;
 
 namespace EtAlii.Adp;
 
 public record Diagram
 {
     public required DiagramIdentifier Id { get; init; }
-    public required User Owner { get; set; } = null!;
+    
+    [XmlIgnore] public required User Owner { get; set; } = null!;
     public required string Name { get; set; } = string.Empty;
     public required string Description { get; set; } = string.Empty;
 

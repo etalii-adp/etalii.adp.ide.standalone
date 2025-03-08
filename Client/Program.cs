@@ -69,6 +69,7 @@ builder.Services.AddSingleton<ICommandHandler, AssignTagCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, UnassignTagCommandHandler>();
 
 builder.Services.AddSingleton<ICommandHandler, ExportDiagramAsJsonCommandHandler>();
+builder.Services.AddSingleton<ICommandHandler, ExportDiagramAsXmlCommandHandler>();
 
 if (LocalDebugger.IsAttached)
 {
