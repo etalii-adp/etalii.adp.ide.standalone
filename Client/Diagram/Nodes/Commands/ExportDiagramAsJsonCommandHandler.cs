@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 using BlazorBootstrap;
 using Microsoft.JSInterop;
 
@@ -30,6 +31,7 @@ public class ExportDiagramAsJsonCommandHandler : RibbonCommandHandler<ExportDiag
         {
             PropertyNameCaseInsensitive = true,
             WriteIndented = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
         var json = JsonSerializer.Serialize(context.Diagram, options);
         await _jsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", json);
