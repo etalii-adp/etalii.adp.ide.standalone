@@ -1,6 +1,16 @@
 ﻿@namespace EtAlii.Adp.Client
 @inherits DropDownRibbonItem<LayersCommandHandler>
 
+<style>
+    .form-check-label {
+        /* We do not want the text in the checkboxes to be selectable. 
+        Reason is that the double click on the checkbox will else select the text in it as well. */
+        -webkit-user-select: none; /* Safari */
+        -ms-user-select: none; /* IE 10 and IE 11 */
+        user-select: none; /* Standard syntax */
+    }
+</style>
+
 <RibbonItem
     Style="@ButtonStyle"
     Class="@ButtonClass"
@@ -18,7 +28,7 @@
                 Label="@option.Tag.Name" 
                 Value="option.IsChecked"
                 ValueExpression="() => option.IsChecked"
-                ValueChanged="(value) => OnToggleFilter(value, option)" />
+                ValueChanged="value => OnToggleFilter(value, option)" />
         }
     </CardBody>
 </Card>
