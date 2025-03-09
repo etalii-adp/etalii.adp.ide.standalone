@@ -22,7 +22,10 @@ public partial class TagsInput
         UpdateVisibleTags();
         if (_visibleAvailableTags.Length != 0)
         {
-            await _tagOptionsDropDown.ShowAsync();
+            if (_tagOptionsDropDown != null!)
+            {
+                await _tagOptionsDropDown.ShowAsync();
+            }
         }
         else
         {
