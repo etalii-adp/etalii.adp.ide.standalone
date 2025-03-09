@@ -3,6 +3,7 @@
 ## Tasks - Bugs
 - [ ] Node layout inconsistency
 - [ ] Undo when zooming
+- [ ] Node dragging when property widget is visible.
 
 ## Tasks - General
 - [ ] Add Beta software warning
@@ -11,7 +12,6 @@
 - [ ] In-app error visualization
 
 ## Tasks - Editing
-- [ ] Filter by node tags
 - [ ] Link tags
 - [ ] Link directional tag
 - [ ] Tag colors
@@ -30,8 +30,6 @@
 
 ## Tasks - Dependencies
 - [ ] 'Future' or 'Not concrete' tag to node visualization
-- [ ] Export as Json
-- [X] Export as Xml
 - [ ] Export as Text
 - [ ] Export as Image
 - [ ] Import / Export / Sync with Azure DevOps
@@ -51,6 +49,9 @@
 - [ ] Commerce
 
 ## Done
+- [X] Filter by node tags
+- [X] Export as Json
+- [X] Export as Xml
 - [X] Property Widget update after undo/redo
 - [X] Authentication for multiple people
 - [X] Ribbon disable button capability
