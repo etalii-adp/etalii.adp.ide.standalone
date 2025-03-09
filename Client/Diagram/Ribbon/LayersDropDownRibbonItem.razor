@@ -1,0 +1,18 @@
+﻿@namespace EtAlii.Adp.Client
+@inherits DropDownRibbonItem<LayersCommandHandler>
+
+<RibbonItem
+    Style="@ButtonStyle"
+    Class="@ButtonClass"
+    IconColor="@IconColor"
+    IconSize="IconSize.x3"
+    @ref="RibbonItem" 
+    Name="@ButtonName" 
+    IconName="@IconName">@IconTitle</RibbonItem>
+
+<Card @ref="DropDownCard" Style="@DropDownCardStyle">
+    <CardBody>
+        This is some text within a card body.<br/>
+        This is some text within a card body.<br/>
+    </CardBody>
+</Card>

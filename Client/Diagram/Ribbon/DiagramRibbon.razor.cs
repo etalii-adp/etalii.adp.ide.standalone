@@ -31,12 +31,14 @@ public partial class DiagramRibbon : ComponentBase
 
     private void StateHasChanged(SelectableModel? _) => StateHasChanged();
     protected override void OnParametersSet() => StateHasChanged();
+
     
     private void OnRibbonItemClick(RibbonItemEventArgs e)
     {
         var handler = _context.CommandHandlers
             .OfType<IRibbonCommandHandler>()
             .SingleOrDefault(ch => ch.CommandName == e.Name);
+
         if (handler == null)
         {
             _logger.LogError("No handler found for {CommandName}", e.Name);
@@ -44,6 +46,9 @@ public partial class DiagramRibbon : ComponentBase
         }
         
         var commands = handler.CreateCommands(_context);
+
+        handler.RaiseClicked(commands);
+        
         _context.Commands.Handle(commands);
     }
 }

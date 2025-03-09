@@ -13,6 +13,10 @@ public interface IRibbonCommandHandler : ICommandHandler
     
     event Action Changed;
 
+    event Action<Command[]> Clicked;
+
+    void RaiseClicked(Command[] commands);
+    
     Command[] CreateCommands(DiagramContext context);
     
     bool CanHandle(DiagramContext context);

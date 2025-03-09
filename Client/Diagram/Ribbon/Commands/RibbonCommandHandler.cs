@@ -10,9 +10,17 @@ public abstract class RibbonCommandHandler<TCommand> : CommandHandler<TCommand>,
     public virtual IconColor IconColor => IconColor.Primary;
 
     public event Action Changed = null!;
+
+    public event Action<Command[]> Clicked = null!;
+    
     protected void RaiseChanged()
     {
         Changed.Invoke();
+    }
+
+    public void RaiseClicked(Command[] commands)
+    {
+        Clicked.Invoke(commands);
     }
 
     public abstract Command[] CreateCommands(DiagramContext context);

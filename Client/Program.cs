@@ -54,6 +54,7 @@ builder.Services.AddSingleton<ICommandHandler, ToggleShowNavigationCommandHandle
 builder.Services.AddSingleton<ICommandHandler, ToggleFullscreenCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, ToggleShowPropertiesCommandHandler>();
 
+builder.Services.AddSingleton<ICommandHandler, LayersCommandHandler>();
 
 builder.Services.AddSingleton<AddTagGroupCommandHandler>();
 builder.Services.AddSingleton<ICommandHandler, AddTagGroupCommandHandler>();

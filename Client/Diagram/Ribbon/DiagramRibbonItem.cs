@@ -62,12 +62,3 @@ public class DiagramRibbonItem<THandler> : RibbonItem
         }
     }
 }
-
-public class DiagramRibbonPlaceStub : RibbonItem
-{
-    public DiagramRibbonPlaceStub()
-    {
-        IconColor = IconColor.Primary;
-        IconSize = IconSize.x3;
-    }
-}
