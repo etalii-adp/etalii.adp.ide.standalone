@@ -2,7 +2,7 @@
 
 namespace EtAlii.Adp.Client;
 
-public partial class PropertiesWidget 
+public partial class PropertiesWidget  : IDisposable
 {
     [CascadingParameter] private DiagramContext? Context { get; set; }
 
@@ -70,4 +70,12 @@ public partial class PropertiesWidget
     [Parameter] public double Width { get; set; }
     [Parameter] public double Height { get; set; }
     [Parameter] public string? Style { get; set; }
+    
+    public void Dispose()
+    {
+        if (Context == null) return;
+        Context.SelectionChanged -= StateHasChanged;
+        Context.History.Changed -= StateHasChanged;
+        Context = null;
+    }
 }

@@ -4,7 +4,7 @@ using Microsoft.JSInterop;
 
 namespace EtAlii.Adp.Client;
 
-public abstract class DropDownRibbonItem<THandler> : ComponentBase
+public abstract class DropDownRibbonItem<THandler> : ComponentBase, IDisposable
     where THandler : class, IRibbonCommandHandler
 {
     [Parameter] public DiagramContext Context { get; set; } = null!;
@@ -112,4 +112,12 @@ public abstract class DropDownRibbonItem<THandler> : ComponentBase
     }
 
     protected abstract void UpdateDropDown();
+
+    public void Dispose()
+    {
+        if (_handler == null!) return;
+        _handler.Changed -= OnHandlerChanged;
+        _handler.Clicked -= OnHandlerClicked;
+        _handler = null!;
+    }
 }
