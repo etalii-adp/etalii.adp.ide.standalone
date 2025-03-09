@@ -6,6 +6,13 @@
         opacity: 0.5; /* Make it look disabled */
         user-select: none;
     }
+    .text-center {
+        /* We do not want the text in the ribbon to be selectable. 
+        Reason is that the double click in the canvas will else select the text in the last ribbon button */
+        -webkit-user-select: none; /* Safari */
+        -ms-user-select: none; /* IE 10 and IE 11 */
+        user-select: none; /* Standard syntax */
+    }
 </style>
 
 <div class="editor-ribbon"></div>
