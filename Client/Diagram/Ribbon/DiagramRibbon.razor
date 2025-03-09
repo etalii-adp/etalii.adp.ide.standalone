@@ -21,13 +21,13 @@
         <Content>
             <!-- New -->
             <RibbonItemGroup Name="New">
-                <DiagramRibbonPlaceStub Name="NewEmail" IconName="IconName.EnvelopePlus">New<br/>Email</DiagramRibbonPlaceStub>
-                <DiagramRibbonPlaceStub Name="Appointment" IconName="IconName.Calendar3Event"/>
+                @* <DiagramRibbonPlaceStub Name="NewEmail" IconName="IconName.EnvelopePlus">New<br/>Email</DiagramRibbonPlaceStub> *@
+                @* <DiagramRibbonPlaceStub Name="Appointment" IconName="IconName.Calendar3Event"/> *@
                 <DiagramRibbonItem Context="@_context" THandler="StartNodeRenameCommandHandler"/>
             </RibbonItemGroup>
             <RibbonItemGroup Name="Delete">
                 <DiagramRibbonItem Context="@_context" THandler="DeleteCommandHandler"/>
-                <DiagramRibbonPlaceStub Name="Archive" IconName="IconName.Archive">Archive<br/>&nbsp;</DiagramRibbonPlaceStub>
+                @* <DiagramRibbonPlaceStub Name="Archive" IconName="IconName.Archive">Archive<br/>&nbsp;</DiagramRibbonPlaceStub> *@
             </RibbonItemGroup>
             <RibbonItemGroup Name="Undo / Redo">
                 <DiagramRibbonItem Context="@_context" THandler="UndoCommandHandler"/>
@@ -62,35 +62,35 @@
             </RibbonItemGroup>
         </Content>
     </RibbonTab>
-    <RibbonTab Title="Structure">
-        <Content>
-            <RibbonItemGroup Name="Tags">
-                <DiagramRibbonPlaceStub Name="SendReceiveAllFolders" IconName="IconName.EnvelopePlus" >Send/Receive<br/>All Folders</DiagramRibbonPlaceStub> 
-                <DiagramRibbonPlaceStub Name="UpdateFolder" IconName="IconName.Calendar3Event" >Update<br/>Folder</DiagramRibbonPlaceStub> 
-            </RibbonItemGroup>
-            <!-- Download -->
-            <RibbonItemGroup Name="Download">
-                <DiagramRibbonPlaceStub Name="ShowProgress" IconName="IconName.Trash" >Show<br/>Progress</DiagramRibbonPlaceStub> 
-                <DiagramRibbonPlaceStub Name="CancelAll" IconName="IconName.XSquareFill" >Cancel<br/>All</DiagramRibbonPlaceStub> 
-            </RibbonItemGroup>
-        </Content>
-    </RibbonTab>
-    <RibbonTab Title="Folder">
-        <Content>
-            <!-- New -->
-            <RibbonItemGroup Name="New">
-                <DiagramRibbonPlaceStub Name="NewFolder" IconName="IconName.FolderPlus">New<br/>Folder</DiagramRibbonPlaceStub> 
-                <DiagramRibbonPlaceStub Name="NewSearchFolder" IconName="IconName.Search">New<br/>Search Folder</DiagramRibbonPlaceStub> 
-            </RibbonItemGroup>
-            <!-- Actions -->
-            <RibbonItemGroup Name="Actions">
-                <DiagramRibbonPlaceStub Name="RenameFolder" IconName="IconName.CursorText">Rename<br/>Folder</DiagramRibbonPlaceStub> 
-                <DiagramRibbonPlaceStub Name="CopyFolder" IconName="IconName.Copy">Copy<br/>Folder</DiagramRibbonPlaceStub> 
-                <DiagramRibbonPlaceStub Name="MoveFolder" IconName="IconName.ArrowRight">Move<br/>Folder</DiagramRibbonPlaceStub> 
-                <DiagramRibbonPlaceStub Name="DeleteFolder" IconName="IconName.FolderX">Delete<br/>Folder</DiagramRibbonPlaceStub> 
-            </RibbonItemGroup>
-        </Content>
-    </RibbonTab>
+    @* <RibbonTab Title="Structure"> *@
+    @*     <Content> *@
+    @*         <RibbonItemGroup Name="Tags"> *@
+    @*             <DiagramRibbonPlaceStub Name="SendReceiveAllFolders" IconName="IconName.EnvelopePlus" >Send/Receive<br/>All Folders</DiagramRibbonPlaceStub>  *@
+    @*             <DiagramRibbonPlaceStub Name="UpdateFolder" IconName="IconName.Calendar3Event" >Update<br/>Folder</DiagramRibbonPlaceStub>  *@
+    @*         </RibbonItemGroup> *@
+    @*         <!-- Download --> *@
+    @*         <RibbonItemGroup Name="Download"> *@
+    @*             <DiagramRibbonPlaceStub Name="ShowProgress" IconName="IconName.Trash" >Show<br/>Progress</DiagramRibbonPlaceStub>  *@
+    @*             <DiagramRibbonPlaceStub Name="CancelAll" IconName="IconName.XSquareFill" >Cancel<br/>All</DiagramRibbonPlaceStub>  *@
+    @*         </RibbonItemGroup> *@
+    @*     </Content> *@
+    @* </RibbonTab> *@
+    @* <RibbonTab Title="Folder"> *@
+    @*     <Content> *@
+    @*         <!-- New --> *@
+    @*         <RibbonItemGroup Name="New"> *@
+    @*             <DiagramRibbonPlaceStub Name="NewFolder" IconName="IconName.FolderPlus">New<br/>Folder</DiagramRibbonPlaceStub>  *@
+    @*             <DiagramRibbonPlaceStub Name="NewSearchFolder" IconName="IconName.Search">New<br/>Search Folder</DiagramRibbonPlaceStub>  *@
+    @*         </RibbonItemGroup> *@
+    @*         <!-- Actions --> *@
+    @*         <RibbonItemGroup Name="Actions"> *@
+    @*             <DiagramRibbonPlaceStub Name="RenameFolder" IconName="IconName.CursorText">Rename<br/>Folder</DiagramRibbonPlaceStub>  *@
+    @*             <DiagramRibbonPlaceStub Name="CopyFolder" IconName="IconName.Copy">Copy<br/>Folder</DiagramRibbonPlaceStub>  *@
+    @*             <DiagramRibbonPlaceStub Name="MoveFolder" IconName="IconName.ArrowRight">Move<br/>Folder</DiagramRibbonPlaceStub>  *@
+    @*             <DiagramRibbonPlaceStub Name="DeleteFolder" IconName="IconName.FolderX">Delete<br/>Folder</DiagramRibbonPlaceStub>  *@
+    @*         </RibbonItemGroup> *@
+    @*     </Content> *@
+    @* </RibbonTab> *@
     <RibbonTab Title="Import / Export">
         <Content>
             <RibbonItemGroup Name="Export">
@@ -109,9 +109,11 @@
     </RibbonTab>
     <RibbonTab Title="Synchronize">
         <Content>
-            <DiagramRibbonPlaceStub Name="SynchronizeAzure" IconName="IconName.Microsoft" >Sync <br/>Azure DevOps</DiagramRibbonPlaceStub> 
-            <DiagramRibbonPlaceStub Name="SynchronizeGithub" IconName="IconName.Github" >Sync <br/>Github Project</DiagramRibbonPlaceStub> 
-            <DiagramRibbonPlaceStub Name="SynchronizeNotion" IconName="IconName.SquareHalf" >Sync <br/>Notion</DiagramRibbonPlaceStub> 
+            <RibbonItemGroup Name="Synchronize">
+                <DiagramRibbonPlaceStub Name="SynchronizeAzure" IconName="IconName.Microsoft">Sync <br/>Azure DevOps</DiagramRibbonPlaceStub>
+                <DiagramRibbonPlaceStub Name="SynchronizeGithub" IconName="IconName.Github">Sync <br/>Github Project</DiagramRibbonPlaceStub>
+                <DiagramRibbonPlaceStub Name="SynchronizeNotion" IconName="IconName.SquareHalf">Sync <br/>Notion</DiagramRibbonPlaceStub>
+            </RibbonItemGroup>
         </Content>
     </RibbonTab>
 </Ribbon>
