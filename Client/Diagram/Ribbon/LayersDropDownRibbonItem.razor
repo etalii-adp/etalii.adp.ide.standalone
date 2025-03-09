@@ -12,9 +12,13 @@
 
 <Card @ref="DropDownCard" Style="@DropDownCardStyle">
     <CardBody>
-        @foreach (var layerTag in _layerTags)
+        @foreach (var option in _layerFilterOptions)
         {
-            <CheckboxInput Label="@layerTag.Name" @bind-Value="_checkedValue" />
+            <CheckboxInput 
+                Label="@option.Tag.Name" 
+                Value="option.IsChecked"
+                ValueExpression="() => option.IsChecked"
+                ValueChanged="(value) => OnToggleFilter(value, option)" />
         }
     </CardBody>
 </Card>
