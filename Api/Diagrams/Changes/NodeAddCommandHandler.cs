@@ -44,23 +44,12 @@ public class NodeAddCommandHandler : CommandHandler<NodeAddCommand>
         // Fetch the diagram.
         var diagram = await context.Diagrams.SingleAsync(d => d.Id == diagramId);
 
-        var node = await context.Nodes.SingleAsync(n => n.Id == nodeId);
-
-        //var sourceLinks = await context.Links.Where(l => l.SourceNode == node).ToArrayAsync();
-        //var targetLinks = await context.Links.Where(l => l.TargetNode == node).ToArrayAsync();
+        var node = await context.Nodes
+            .Include(n => n.TagGroups)
+            .SingleAsync(n => n.Id == nodeId);
         
         // Tag for deletion.
         context.Entry(diagram).State = EntityState.Modified;
         context.Entry(node).State = EntityState.Deleted;
-
-        // foreach (var sourceLink in sourceLinks)
-        // {
-        //     context.Entry(sourceLink).State = EntityState.Deleted;
-        // }
-        //
-        // foreach (var targetLink in targetLinks)
-        // {
-        //     context.Entry(targetLink).State = EntityState.Deleted;
-        // }
     }
 }

@@ -21,6 +21,32 @@ public class DeleteCommandHandler : RibbonCommandHandler<DeleteCommand>
             .Select(l => CreateRemoveLinkCommand(l, context))
             .ToArray();
 
+        var tagGroupCommands = context.Selection
+            .OfType<NodeView>()
+            .Select(n => new { n.Node, n.Node.TagGroups })
+            .Select(m =>
+            {
+                var unassignTagsCommands = m.TagGroups
+                    .Select(tg =>
+                    {
+                        return tg.Tags
+                            .Select(t => UnassignTagCommandHandler.CreateCommand(context, tg.Id, t.Id))
+                            .ToArray();
+
+                    })
+                    .SelectMany(m2 => m2)
+                    .ToArray();
+                var removeTagGroupCommands = m.TagGroups
+                    .Select(tg => RemoveTagGroupCommandHandler.Create(context, m.Node.Id, tg.Id, tg.Name, tg.Mode, tg.Order))
+                    .ToArray();
+                
+                return unassignTagsCommands
+                    .Concat(removeTagGroupCommands)
+                    .ToArray();
+            })
+            .SelectMany(m => m)
+            .ToArray();
+            
         var nodeCommands = context.Selection
             .OfType<NodeView>()
             .SelectMany(n => CreateRemoveNodeCommands(n, context))
@@ -28,8 +54,20 @@ public class DeleteCommandHandler : RibbonCommandHandler<DeleteCommand>
         
         var commands = linkCommands
             .Concat(nodeCommands)
+            .Concat(tagGroupCommands)
             .Concat([new DeleteCommand()])
-            .OrderBy(c => c is NodeRemoveCommand) // We first will remove the nodes.
+            .OrderBy(c =>
+            {
+                return c switch
+                {
+                    DeleteCommand _ => 0,    
+                    TagUnassignCommand => 1,
+                    TagGroupRemoveCommand => 2,
+                    LinkRemoveCommand => 3,
+                    NodeRemoveCommand => 4,
+                    _ => 99
+                };
+            }) 
             .ToArray();
         
         return commands;
