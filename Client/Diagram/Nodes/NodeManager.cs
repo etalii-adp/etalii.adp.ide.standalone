@@ -76,7 +76,7 @@ public class NodeManager
             var nodeIdentifier = NodeIdentifier.NewIdentifier();
             var (typeTagGroupId, typeTagId, assignTypeTag) = CreateTagAndGroup(WellKnownTagGroup.Type, "Default");
             var (statusTagGroupId, statusTagId, assignStatusTag) = CreateTagAndGroup(WellKnownTagGroup.Status, "None");
-            var (layerTagGroupId, layerTagId, assignLayerTag) = CreateTagAndGroup(WellKnownTagGroup.Layer, "All");
+            var (layerTagGroupId, layerTagId, assignLayerTag) = CreateTagAndGroup(WellKnownTagGroup.Layer, "Default");
             
             Command[] commands =
             [
@@ -94,7 +94,7 @@ public class NodeManager
                 AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, layerTagGroupId, WellKnownTagGroup.Layer, 2, TagGroupMode.Multiple),
                 assignLayerTag 
                     ? AssignTagCommandHandler.CreateCommand(_context, layerTagGroupId, layerTagId)
-                    : AddTagCommandHandler.CreateCommand(_context, layerTagGroupId, layerTagId, "All"),
+                    : AddTagCommandHandler.CreateCommand(_context, layerTagGroupId, layerTagId, "Default"),
             ];
             _context.Commands.Handle(commands);
         }
