@@ -76,7 +76,7 @@ public abstract class DropDownRibbonItem<THandler> : ComponentBase, IDisposable
         isChanged |= newIconName == IconName;
         IconName = newIconName;
 
-        var newStyle = _handler.IsToggled(Context)
+        var newStyle = _handler.IsToggled(Context) || IsToggled(Context)
             ? "background-color: rgba(var(--bs-secondary-rgb), 0.10) !important"
             : "";
         isChanged |= newStyle == ButtonStyle;
@@ -108,11 +108,20 @@ public abstract class DropDownRibbonItem<THandler> : ComponentBase, IDisposable
         {
             UpdateDropDown();
         }
+
+        UpdateButton();
+    }
+
+    protected void UpdateButton()
+    {
+        OnHandlerChanged();
         StateHasChanged();
     }
 
     protected abstract void UpdateDropDown();
 
+    protected abstract bool IsToggled(DiagramContext context);
+    
     public void Dispose()
     {
         if (_handler == null!) return;

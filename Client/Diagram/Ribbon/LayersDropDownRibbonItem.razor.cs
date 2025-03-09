@@ -9,6 +9,13 @@ public partial class LayersDropDownRibbonItem : DropDownRibbonItem<LayersCommand
     {
     }
 
+    protected override bool IsToggled(DiagramContext context)
+    {
+        var all = _layerFilterOptions.Length;
+        var selected = _layerFilterOptions.Count(o => o.IsChecked);
+        return selected != all && all > 0;
+    }
+
     protected override void UpdateDropDown()
     {
         var hasOptions = _layerFilterOptions.Any();
@@ -66,6 +73,9 @@ public partial class LayersDropDownRibbonItem : DropDownRibbonItem<LayersCommand
                 link.Refresh();
             }
         }
+
+        UpdateButton();
+        
         return Task.CompletedTask;
     }
 }
