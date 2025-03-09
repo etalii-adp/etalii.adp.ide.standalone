@@ -7,9 +7,11 @@ public class NodeManager
 {
     private DiagramContext _context = null!;
     private readonly ILogger _logger;
-
+    private readonly ILoggerFactory _loggerFactory;
+    
     public NodeManager(ILoggerFactory loggerFactory)
     {
+        _loggerFactory = loggerFactory;
         _logger = loggerFactory.CreateLogger<NodeManager>();
     }
     
@@ -20,8 +22,7 @@ public class NodeManager
 
         foreach (var n in context.Diagram.Nodes)
         {
-            var nodeView = NodeView.Create(context, n);
-            nodeView.Moved += OnNodeMoved;
+            var nodeView = new NodeView(n, context, _loggerFactory);
             context.View.Nodes.Add(nodeView);
         }
         context.View.PointerDoubleClick += OnDiagramDoubleClicked;
@@ -32,18 +33,6 @@ public class NodeManager
         _context.View.PointerDoubleClick -= OnDiagramDoubleClicked;
     }
     
-    private void OnNodeMoved(MovableModel model)
-    {
-        try
-        {
-            var command = MoveNodeCommandHandler.CreateCommand(_context, (NodeView)model);
-            _context.Commands.Handle(command);
-        }
-        catch (Exception exception)
-        {
-            _logger.LogError(exception, "Unable to handle {MethodName}", nameof(OnDiagramDoubleClicked));
-        }
-    }
 
     private (TagGroupIdentifier GroupIdentifier, TagIdentifier TagIdentifier, bool AssignTypeTag) CreateTagAndGroup(
         string groupName,
@@ -52,6 +41,7 @@ public class NodeManager
         var tagGroupId = TagGroupIdentifier.NewIdentifier();
         var tag = _context.Diagram.Nodes
             .SelectMany(n => n.TagGroups)
+            .DistinctBy(g => g.Id)
             .Where(g => g.Name == groupName)
             .SelectMany(g => g.Tags)
             .DistinctBy(t => t.Id)

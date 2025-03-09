@@ -3,9 +3,11 @@
 public class AddNodeCommandHandler : CommandHandler<NodeAddCommand>
 {
     private readonly ILogger _logger;
+    private readonly ILoggerFactory _loggerFactory;
 
     public AddNodeCommandHandler(ILoggerFactory loggerFactory)
     {
+        _loggerFactory = loggerFactory;
         _logger = loggerFactory.CreateLogger<AddNodeCommandHandler>();
     }
 
@@ -32,7 +34,7 @@ public class AddNodeCommandHandler : CommandHandler<NodeAddCommand>
         var node = context.NodeFactory.Create(context.Diagram, nodeId, nodePosition, nodeName);
         context.Diagram.Nodes.Add(node);
 
-        var view = NodeView.Create(context, node);
+        var view = new NodeView(node, context, _loggerFactory);
         context.View.Nodes.Add(view);
 
         return Task.CompletedTask;
