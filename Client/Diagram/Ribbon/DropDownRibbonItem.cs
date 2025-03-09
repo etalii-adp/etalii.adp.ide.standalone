@@ -101,8 +101,15 @@ public abstract class DropDownRibbonItem<THandler> : ComponentBase
         _dropDownCardIsVisible = !_dropDownCardIsVisible;
             
         DropDownCardStyle = _dropDownCardIsVisible 
-            ? $"visibility: visible; position: absolute; top: {buttonBounds.Bottom + 15}px; border-radius: 0"
+            ? $"visibility: visible; position: absolute; top: {buttonBounds.Bottom + 15}px; border-radius: 0; z-index: 99999"
             : "visibility: collapse; position: absolute";
+
+        if (_dropDownCardIsVisible)
+        {
+            UpdateDropDown();
+        }
         StateHasChanged();
     }
+
+    protected abstract void UpdateDropDown();
 }

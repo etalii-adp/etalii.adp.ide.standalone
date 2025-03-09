@@ -74,24 +74,24 @@ public class NodeManager
             _logger.LogInformation("Double clicked diagram {NodePosition}", position);
 
             var nodeIdentifier = NodeIdentifier.NewIdentifier();
-            var (typeTagGroupId, typeTagId, assignTypeTag) = CreateTagAndGroup("Type", "Default");
-            var (statusTagGroupId, statusTagId, assignStatusTag) = CreateTagAndGroup("Status", "None");
-            var (layerTagGroupId, layerTagId, assignLayerTag) = CreateTagAndGroup("Layer", "All");
+            var (typeTagGroupId, typeTagId, assignTypeTag) = CreateTagAndGroup(WellKnownTagGroup.Type, "Default");
+            var (statusTagGroupId, statusTagId, assignStatusTag) = CreateTagAndGroup(WellKnownTagGroup.Status, "None");
+            var (layerTagGroupId, layerTagId, assignLayerTag) = CreateTagAndGroup(WellKnownTagGroup.Layer, "All");
             
             Command[] commands =
             [
                 AddNodeCommandHandler.CreateCommand(_context, position, nodeIdentifier, "New element"),
-                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, typeTagGroupId, "Type", 0, TagGroupMode.Single),
+                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, typeTagGroupId, WellKnownTagGroup.Type, 0, TagGroupMode.Single),
                 assignTypeTag 
                     ? AssignTagCommandHandler.CreateCommand(_context, typeTagGroupId, typeTagId)
                     : AddTagCommandHandler.CreateCommand(_context, typeTagGroupId, typeTagId, "Default"),
                 
-                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, statusTagGroupId, "Status", 1, TagGroupMode.Single),
+                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, statusTagGroupId, WellKnownTagGroup.Status, 1, TagGroupMode.Single),
                 assignStatusTag 
                     ? AssignTagCommandHandler.CreateCommand(_context, statusTagGroupId, statusTagId)
                     : AddTagCommandHandler.CreateCommand(_context, statusTagGroupId, statusTagId, "None"),
                 
-                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, layerTagGroupId, "Layer", 2, TagGroupMode.Multiple),
+                AddTagGroupCommandHandler.CreateCommand(_context, nodeIdentifier, layerTagGroupId, WellKnownTagGroup.Layer, 2, TagGroupMode.Multiple),
                 assignLayerTag 
                     ? AssignTagCommandHandler.CreateCommand(_context, layerTagGroupId, layerTagId)
                     : AddTagCommandHandler.CreateCommand(_context, layerTagGroupId, layerTagId, "All"),

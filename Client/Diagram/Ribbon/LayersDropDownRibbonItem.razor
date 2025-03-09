@@ -12,7 +12,9 @@
 
 <Card @ref="DropDownCard" Style="@DropDownCardStyle">
     <CardBody>
-        This is some text within a card body.<br/>
-        This is some text within a card body.<br/>
+        @foreach (var layerTag in _layerTags)
+        {
+            <CheckboxInput Label="@layerTag.Name" @bind-Value="_checkedValue" />
+        }
     </CardBody>
 </Card>

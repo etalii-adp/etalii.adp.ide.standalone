@@ -28,7 +28,6 @@
     <Folder Include="About\" />
     <Folder Include="Configuration\" />
     <Folder Include="Diagram\Notes\" />
-    <Folder Include="Diagram\_Model\" />
     <Folder Include="Trends\" />
     <Folder Include="User\_Model\" />
   </ItemGroup>
