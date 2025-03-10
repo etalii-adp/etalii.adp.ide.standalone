@@ -17,6 +17,7 @@ var host = builder
         services.AddSingleton<ICommandHandler, DiagramPositionCommandHandler>();
         services.AddSingleton<ICommandHandler, ToggleShowPropertiesCommandHandler>();
         services.AddSingleton<ICommandHandler, ToggleShowNavigationCommandHandler>();
+        services.AddSingleton<ICommandHandler, TogglePublicAccessCommandHandler>();
         
         services.AddSingleton<NodeAddCommandHandler>();
         services.AddSingleton<ICommandHandler, NodeAddCommandHandler>();

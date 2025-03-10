@@ -37,7 +37,11 @@ public record Diagram
     
     public bool ShowProperties { get; set; } = true;
     public bool ShowNavigation { get; set; } = true;
-    
+
+    public bool AllowPublicAccess { get; set; } = false;
+
+    public bool ShowInPortal { get; set; } = false;
+
     /// <summary>
     /// Default zoom is 1f.
     /// </summary>

@@ -30,6 +30,8 @@ public class DiagramRibbonItem<THandler> : RibbonItem
 
     private void OnHandlerChanged()
     {
+        _handler.Update(Context);
+        
         var isChanged = false;
         var newName = _handler.CommandName;
         isChanged |= string.Equals(newName, Name, StringComparison.InvariantCulture);
