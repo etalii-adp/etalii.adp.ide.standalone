@@ -62,7 +62,7 @@
             </RibbonItemGroup>
             <RibbonItemGroup Name="Access">
                 <DiagramRibbonItem Context="@_context" THandler="TogglePublicAccessCommandHandler"/>
-                <DiagramRibbonPlaceStub Name="ShowInPortal" IconName="IconName.Share">Show in<br />portal</DiagramRibbonPlaceStub>
+                <DiagramRibbonItem Context="@_context" THandler="ToggleShowInPortalCommandHandler"/>
             </RibbonItemGroup>
             
         </Content>

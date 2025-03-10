@@ -32,15 +32,25 @@ public class TogglePublicAccessCommandHandler : RibbonCommandHandler<TogglePubli
 
     public override Command[] CreateCommands(DiagramContext context)
     {
-        return
-        [
-            new TogglePublicAccessCommand
-            {
-                Id = context.Diagram.Id,
-                NewAllowPublicAccess = !context.Diagram.AllowPublicAccess,
-                OldAllowPublicAccess = context.Diagram.AllowPublicAccess,
-            }
-        ];
+        var togglePublicAccessCommand = new TogglePublicAccessCommand
+        {
+            Id = context.Diagram.Id,
+            NewAllowPublicAccess = !context.Diagram.AllowPublicAccess,
+            OldAllowPublicAccess = context.Diagram.AllowPublicAccess,
+        };
+        var toggleShowInPortalCommand = new ToggleShowInPortalCommand
+        {
+            Id = context.Diagram.Id,
+            NewShowInPortal = !context.Diagram.ShowInPortal,
+            OldShowInPortal = context.Diagram.ShowInPortal,
+        };
+
+        if (context.Diagram is { AllowPublicAccess: true, ShowInPortal: true })
+        {
+            return [toggleShowInPortalCommand, togglePublicAccessCommand];
+        }
+
+        return [togglePublicAccessCommand];
     }
 
     protected override async Task Do(TogglePublicAccessCommand command, DiagramContext context)

@@ -18,7 +18,8 @@ var host = builder
         services.AddSingleton<ICommandHandler, ToggleShowPropertiesCommandHandler>();
         services.AddSingleton<ICommandHandler, ToggleShowNavigationCommandHandler>();
         services.AddSingleton<ICommandHandler, TogglePublicAccessCommandHandler>();
-        
+        services.AddSingleton<ICommandHandler, ToggleShowInPortalCommandHandler>();
+                
         services.AddSingleton<NodeAddCommandHandler>();
         services.AddSingleton<ICommandHandler, NodeAddCommandHandler>();
         services.AddSingleton<ICommandHandler, NodeRemoveCommandHandler>();
