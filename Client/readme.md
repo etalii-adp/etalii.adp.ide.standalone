@@ -16,7 +16,6 @@
 - [ ] Refactor layer filtering to command/handler pattern.
 
 ## Tasks - Editing
-- [ ] Align left/right/top/bottom
 - [ ] Read-only public diagram viewing
 - [ ] Link tags
 - [ ] Link directional tag
@@ -33,13 +32,20 @@
 - [ ] Stretch
 - [ ] Persist fullscreen toggle
 - [ ] Other properties in property grid
-
+- [ ] Add node horizontal and vertical align ribbon buttons
+- [ ] Add node highlighting based on tags.
+- [ ] Add node highlighting based on creation time.
+- [ ] Add node highlighting based on change time.
+ 
 ## Tasks - Dependencies
 - [ ] 'Future' or 'Not concrete' tag to node visualization
 - [ ] Export as Text
 - [ ] Export as Image
 - [ ] Import / Export / Sync with Azure DevOps
 - [ ] Classification: Concrete artifact, Abstract Concept, Paradigm Shift
+
+## Nice to have
+- [ ] Make node alignment take the first selected node as its origin.
 
 ## Potential diagrams
 - [ ] Dependencies within this project
@@ -55,6 +61,7 @@
 - [ ] Commerce
 
 ## Done
+- [X] Align left/right/top/bottom
 - [X] Filter by node tags
 - [X] Export as Json
 - [X] Export as Xml
