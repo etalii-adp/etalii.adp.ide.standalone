@@ -3,17 +3,24 @@
 ## Tasks - Bugs
 - [ ] Node layout inconsistency
 - [ ] Undo when zooming
-- [ ] Node dragging when property widget is visible.
+- [ ] Node dragging when property widget is visible
+- [ ] Deletion of nodes and links
+- [ ] Layer filter auto-close 
+- [ ] Make undo/redo only work on one diagram - flush when switching
 
 ## Tasks - General
 - [ ] Add Beta software warning
 - [ ] Scaled data loading
 - [ ] View based filtering
 - [ ] In-app error visualization
+- [ ] Refactor layer filtering to command/handler pattern.
 
 ## Tasks - Editing
+- [ ] Align left/right/top/bottom
+- [ ] Read-only public diagram viewing
 - [ ] Link tags
 - [ ] Link directional tag
+- [ ] Link filtering
 - [ ] Tag colors
 - [ ] Node color
 - [ ] Note nodes
@@ -23,7 +30,6 @@
 - [ ] Ungroup
 - [ ] Collapse Group
 - [ ] Expand Group
-- [ ] Align left/right/top/bottom
 - [ ] Stretch
 - [ ] Persist fullscreen toggle
 - [ ] Other properties in property grid
