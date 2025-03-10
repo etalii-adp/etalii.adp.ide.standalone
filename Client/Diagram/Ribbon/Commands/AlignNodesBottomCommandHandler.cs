@@ -13,8 +13,31 @@ public class AlignNodesBottomCommandHandler : RibbonCommandHandler<AlignNodesBot
 
     public override bool CanHandle(DiagramContext context) => context.SelectionType == DiagramSelection.MultipleNodes;
 
-    public override Command[] CreateCommands(DiagramContext _) => [ new AlignNodesBottomCommand() ];
-    
+    public override Command[] CreateCommands(DiagramContext context)
+    {
+        var selectedViews = context.Selection
+            .Cast<NodeView>()
+            .ToArray();
+        
+        var firstView = selectedViews.First();
+
+        var bottom = firstView.Node.Position.Y + firstView.Size!.Height / 2f;
+
+        return selectedViews
+            .Except([firstView])
+            .Select(view => new NodeMoveCommand
+            {
+                NodeId = view.Id,
+                OldPosition = view.Position,
+                NewPosition = view.Position with
+                {
+                    Y = bottom - view.Size!.Height / 2f
+                }
+            })
+            .Cast<Command>()
+            .ToArray();
+    }
+
     protected override Task Do(AlignNodesBottomCommand command, DiagramContext context)
     {
         return Task.CompletedTask;

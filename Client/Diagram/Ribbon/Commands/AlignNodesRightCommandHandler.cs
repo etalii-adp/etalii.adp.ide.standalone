@@ -13,8 +13,31 @@ public class AlignNodesRightCommandHandler : RibbonCommandHandler<AlignNodesRigh
 
     public override bool CanHandle(DiagramContext context) => context.SelectionType == DiagramSelection.MultipleNodes;
 
-    public override Command[] CreateCommands(DiagramContext _) => [ new AlignNodesRightCommand() ];
-    
+    public override Command[] CreateCommands(DiagramContext context)
+    {
+        var selectedViews = context.Selection
+            .Cast<NodeView>()
+            .ToArray();
+        
+        var firstView = selectedViews.First();
+
+        var right = firstView.Node.Position.X + firstView.Size!.Width / 2f;
+
+        return selectedViews
+            .Except([firstView])
+            .Select(view => new NodeMoveCommand
+            {
+                NodeId = view.Id,
+                OldPosition = view.Position,
+                NewPosition = view.Position with
+                {
+                    X = right - view.Size!.Width / 2f
+                }
+            })
+            .Cast<Command>()
+            .ToArray();
+    }
+
     protected override Task Do(AlignNodesRightCommand command, DiagramContext context)
     {
         return Task.CompletedTask;

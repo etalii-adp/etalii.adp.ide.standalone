@@ -13,8 +13,31 @@ public class AlignNodesTopCommandHandler : RibbonCommandHandler<AlignNodesTopCom
 
     public override bool CanHandle(DiagramContext context) => context.SelectionType == DiagramSelection.MultipleNodes;
 
-    public override Command[] CreateCommands(DiagramContext _) => [ new AlignNodesTopCommand() ];
-    
+    public override Command[] CreateCommands(DiagramContext context)
+    {
+        var selectedViews = context.Selection
+            .Cast<NodeView>()
+            .ToArray();
+        
+        var firstView = selectedViews.First();
+
+        var top = firstView.Node.Position.Y - firstView.Size!.Height / 2f;
+
+        return selectedViews
+            .Except([firstView])
+            .Select(view => new NodeMoveCommand
+            {
+                NodeId = view.Id,
+                OldPosition = view.Position,
+                NewPosition = view.Position with
+                {
+                    Y = top + view.Size!.Height / 2f
+                }
+            })
+            .Cast<Command>()
+            .ToArray();
+    }
+
     protected override Task Do(AlignNodesTopCommand command, DiagramContext context)
     {
         return Task.CompletedTask;
