@@ -21,7 +21,7 @@ public class AlignNodesTopCommandHandler : RibbonCommandHandler<AlignNodesTopCom
         
         var firstView = selectedViews.First();
 
-        var top = firstView.Node.Position.Y - firstView.Size!.Height / 2f;
+        var top = firstView.Node.Position.Y;
 
         return selectedViews
             .Except([firstView])
@@ -29,10 +29,7 @@ public class AlignNodesTopCommandHandler : RibbonCommandHandler<AlignNodesTopCom
             {
                 NodeId = view.Id,
                 OldPosition = view.Position,
-                NewPosition = view.Position with
-                {
-                    Y = top + view.Size!.Height / 2f
-                }
+                NewPosition = view.Position with { Y = top }
             })
             .Cast<Command>()
             .ToArray();

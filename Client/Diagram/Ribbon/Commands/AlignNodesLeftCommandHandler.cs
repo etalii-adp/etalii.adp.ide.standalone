@@ -21,7 +21,7 @@ public class AlignNodesLeftCommandHandler : RibbonCommandHandler<AlignNodesLeftC
         
         var firstView = selectedViews.First();
 
-        var left = firstView.Node.Position.X - firstView.Size!.Width / 2f;
+        var left = firstView.Node.Position.X;
 
         return selectedViews
             .Except([firstView])
@@ -29,10 +29,7 @@ public class AlignNodesLeftCommandHandler : RibbonCommandHandler<AlignNodesLeftC
             {
                 NodeId = view.Id,
                 OldPosition = view.Position,
-                NewPosition = view.Position with
-                {
-                    X = left + view.Size!.Width / 2f
-                }
+                NewPosition = view.Position with { X = left }
             })
             .Cast<Command>()
             .ToArray();

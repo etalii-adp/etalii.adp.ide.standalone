@@ -21,7 +21,7 @@ public class AlignNodesBottomCommandHandler : RibbonCommandHandler<AlignNodesBot
         
         var firstView = selectedViews.First();
 
-        var bottom = firstView.Node.Position.Y + firstView.Size!.Height / 2f;
+        var bottom = firstView.Node.Position.Y + firstView.Size!.Height;
 
         return selectedViews
             .Except([firstView])
@@ -29,10 +29,7 @@ public class AlignNodesBottomCommandHandler : RibbonCommandHandler<AlignNodesBot
             {
                 NodeId = view.Id,
                 OldPosition = view.Position,
-                NewPosition = view.Position with
-                {
-                    Y = bottom - view.Size!.Height / 2f
-                }
+                NewPosition = view.Position with { Y = bottom - view.Size!.Height }
             })
             .Cast<Command>()
             .ToArray();
