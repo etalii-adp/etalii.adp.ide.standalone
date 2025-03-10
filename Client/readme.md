@@ -20,6 +20,7 @@
 - [ ] Link tags
 - [ ] Link directional tag
 - [ ] Link filtering
+- [ ] Make nodes multi-assign possible.
 - [ ] Tag colors
 - [ ] Node color
 - [ ] Note nodes
