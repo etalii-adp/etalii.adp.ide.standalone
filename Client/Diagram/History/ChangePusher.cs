@@ -61,7 +61,7 @@ public class ChangePusher
         Command[] commandsToPush;
         do
         {
-            var commandsGotPushed = false;
+            bool commandsGotPushed;
             using (await _lock.LockAsync())
             {
                 commandsToPush = _commands.ToArray();
