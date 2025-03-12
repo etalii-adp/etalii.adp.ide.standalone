@@ -28,4 +28,6 @@ public abstract class RibbonCommandHandler<TCommand> : CommandHandler<TCommand>,
     public abstract bool CanHandle(DiagramContext context);
 
     public virtual bool IsToggled(DiagramContext context) => false;
+
+    public virtual void Update(DiagramContext context) {}
 }

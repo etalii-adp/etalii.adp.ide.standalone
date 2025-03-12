@@ -60,6 +60,11 @@
                 <LayersDropDownRibbonItem Context="@_context" />
                 <DiagramRibbonPlaceStub Name="Tags" IconName="IconName.Tags">Filter by<br/>tags</DiagramRibbonPlaceStub>
             </RibbonItemGroup>
+            <RibbonItemGroup Name="Access">
+                <DiagramRibbonItem Context="@_context" THandler="TogglePublicAccessCommandHandler"/>
+                <DiagramRibbonItem Context="@_context" THandler="ToggleShowInPortalCommandHandler"/>
+            </RibbonItemGroup>
+            
         </Content>
     </RibbonTab>
     @* <RibbonTab Title="Structure"> *@

@@ -20,6 +20,8 @@ public interface IRibbonCommandHandler : ICommandHandler
     Command[] CreateCommands(DiagramContext context);
     
     bool CanHandle(DiagramContext context);
+    
+    void Update(DiagramContext context);
 }
 
 public interface IRibbonCommandHandler<TCommand> : IRibbonCommandHandler
