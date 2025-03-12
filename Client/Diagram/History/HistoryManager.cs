@@ -12,7 +12,7 @@ public class HistoryManager
 
     private readonly ILogger _logger;
 
-    public event Action Changed = null!;
+    public event Action? Changed;
     
     public HistoryManager(
         ILoggerFactory loggerFactory, 
@@ -29,7 +29,7 @@ public class HistoryManager
         var handler = context.CommandHandlers.Single(h => h.CanHandle(command));
         await handler.Execute(command, context);
 
-        if (handler.SendToBackend)
+        if (handler.SendToBackend && !context.Diagram.IsReadOnly)
         {
             await _changePusher.Enqueue(command);
         }
@@ -38,7 +38,7 @@ public class HistoryManager
             _history.Push(new Memento { Commands = [ command ] });
             _future.Clear();
         }
-        Changed.Invoke();
+        Changed?.Invoke();
     }
 
     public async Task Push(Command[] commands, DiagramContext context)
@@ -48,7 +48,7 @@ public class HistoryManager
             .ToArray();
 
         var commandsToPush = mappings
-            .Where(m => m.Handler.SendToBackend)
+            .Where(m => m.Handler.SendToBackend && !context.Diagram.IsReadOnly)
             .Select(m => m.Command)
             .ToArray();
 
@@ -73,7 +73,7 @@ public class HistoryManager
             _future.Clear();
         }
         
-        Changed.Invoke();
+        Changed?.Invoke();
     }
 
     public async Task<bool> TryUndo(DiagramContext context)
@@ -95,7 +95,7 @@ public class HistoryManager
         
         await _changePusher.Enqueue(commands);
         _future.Push(memento);
-        Changed.Invoke();
+        Changed?.Invoke();
         return success;
     }
     
@@ -118,7 +118,7 @@ public class HistoryManager
         
         await _changePusher.Enqueue(commands);
         _history.Push(memento);
-        Changed.Invoke();
+        Changed?.Invoke();
         return success;
     }
 }
