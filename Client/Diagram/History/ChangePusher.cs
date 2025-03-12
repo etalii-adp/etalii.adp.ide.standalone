@@ -105,13 +105,12 @@ public class ChangePusher
 
         try
         {
-            await _client.PostAsJsonAsync(ApplicationApi.Diagrams.Changes.Request(_diagramManager.CurrentDiagram!.Id), commands);
-            return true;
+            var response = await _client.PostAsJsonAsync(ApplicationApi.Diagrams.Changes.Request(_diagramManager.CurrentDiagram!.Id), commands);
+            return response.IsSuccessStatusCode;
         }
         catch (Exception e)
         {
-            _logger.LogError("Unable to post commands to the backend");
-            _logger.LogError(e, e.Message);
+            _logger.LogError(e, "Unable to post commands to the backend: {ExceptionMessage}", e.Message);
             return false;
         }
     }

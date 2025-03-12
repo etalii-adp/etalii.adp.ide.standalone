@@ -30,44 +30,48 @@ public class ChangesApi
     [Function(ApplicationApi.Diagrams.Changes.Function)]
     public async Task<HttpResponseData> Update([HttpTrigger(_authorizationLevel, HttpMethodName.Post, Route = ApplicationApi.Diagrams.Changes.Route)] HttpRequestData request, Guid id)
     {
-        // We need to have access to the transaction in the catch clause. Hence we need to
-        // create the db context before the try.
+        // We need to have access to the transaction in the catch clause.
+        // Hence, we need to create the db context before the try.
         await using var context = await _dbContextFactory.CreateDbContextAsync();
-        await using var transaction = await context.Database.BeginTransactionAsync();
-
-        try
+        var executionStrategy = context.Database.CreateExecutionStrategy();
+        return await executionStrategy.ExecuteAsync(async () =>
         {
-            _logger.LogInformation("Handling {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
+            await using var transaction = await context.Database.BeginTransactionAsync();
 
-            if (!request.TryAuthentication(_logger, out var response, out _)) return response;
-
-            // // Deserialize.
-            var commands = (await request.ReadFromJsonAsync<Command[]>())!;
-            
-            foreach (var command in commands)
+            try
             {
-                var handler = _commandHandlers.Single(h => h.CommandType == command.GetType());
-                await handler.Apply(command, context);
-            }
-            
-            // Let's save.
-            await context.SaveChangesAsync();
-            
-            // All is fine, now let's commit the transaction.
-            await transaction.CommitAsync();
+                _logger.LogInformation("Handling {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
 
-            // Respond.
-            response = request.CreateResponse(HttpStatusCode.OK);
-            _logger.LogInformation("Handled {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
-            return response;
-        }
-        catch (Exception e)
-        {
-            // We do not want any changes to the database as we inform the client of a failure.
-            await transaction.RollbackAsync(); 
-            
-            _logger.LogError(e, "Unable to handle {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
-            return request.HandleFailure(_logger, e);
-        }
+                if (!request.TryAuthentication(_logger, out var response, out _)) return response;
+
+                // // Deserialize.
+                var commands = (await request.ReadFromJsonAsync<Command[]>())!;
+
+                foreach (var command in commands)
+                {
+                    var handler = _commandHandlers.Single(h => h.CommandType == command.GetType());
+                    await handler.Apply(command, context);
+                }
+
+                // Let's save.
+                await context.SaveChangesAsync();
+
+                // All is fine, now let's commit the transaction.
+                await transaction.CommitAsync();
+
+                // Respond.
+                response = request.CreateResponse(HttpStatusCode.OK);
+                _logger.LogInformation("Handled {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
+                return response;
+            }
+            catch (Exception e)
+            {
+                // We do not want any changes to the database as we inform the client of a failure.
+                await transaction.RollbackAsync();
+
+                _logger.LogError(e, "Unable to handle {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
+                return request.HandleFailure(_logger, e);
+            }
+        });
     }
 }
