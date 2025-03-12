@@ -30,6 +30,11 @@ public class ChangesApi
     [Function(ApplicationApi.Diagrams.Changes.Function)]
     public async Task<HttpResponseData> Update([HttpTrigger(_authorizationLevel, HttpMethodName.Post, Route = ApplicationApi.Diagrams.Changes.Route)] HttpRequestData request, Guid id)
     {
+        // We need to have access to the transaction in the catch clause. Hence we need to
+        // create the db context before the try.
+        await using var context = await _dbContextFactory.CreateDbContextAsync();
+        await using var transaction = await context.Database.BeginTransactionAsync();
+
         try
         {
             _logger.LogInformation("Handling {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
@@ -38,17 +43,19 @@ public class ChangesApi
 
             // // Deserialize.
             var commands = (await request.ReadFromJsonAsync<Command[]>())!;
-
-            await using var context = await _dbContextFactory.CreateDbContextAsync();
-
+            
             foreach (var command in commands)
             {
                 var handler = _commandHandlers.Single(h => h.CommandType == command.GetType());
                 await handler.Apply(command, context);
             }
             
+            // Let's save.
             await context.SaveChangesAsync();
             
+            // All is fine, now let's commit the transaction.
+            await transaction.CommitAsync();
+
             // Respond.
             response = request.CreateResponse(HttpStatusCode.OK);
             _logger.LogInformation("Handled {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
@@ -56,6 +63,9 @@ public class ChangesApi
         }
         catch (Exception e)
         {
+            // We do not want any changes to the database as we inform the client of a failure.
+            await transaction.RollbackAsync(); 
+            
             _logger.LogError(e, "Unable to handle {FunctionName}", request.FunctionContext.FunctionDefinition.Name);
             return request.HandleFailure(_logger, e);
         }
