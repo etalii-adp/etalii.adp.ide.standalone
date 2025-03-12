@@ -103,6 +103,13 @@ public class DiagramView : BlazorDiagram
     private new static readonly BlazorDiagramOptions Options = new()
     {
         AllowMultiSelection = true,
+        Virtualization =
+        {
+            Enabled = true,
+            OnNodes = true,
+            OnLinks = true,
+            OnGroups = true,
+        },
         Zoom = { Enabled = true },
         Links =
         {
