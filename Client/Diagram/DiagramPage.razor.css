@@ -2,3 +2,8 @@
     width: 100%;
     height: calc(100% - 200px);
 }
+
+.diagram-container-no-ribbon {
+    width: 100%;
+    height: calc(100%);
+}
