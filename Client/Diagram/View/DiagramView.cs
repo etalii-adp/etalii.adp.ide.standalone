@@ -1,6 +1,7 @@
 ﻿using Blazor.Diagrams;
 using Blazor.Diagrams.Components;
 using Blazor.Diagrams.Core.Anchors;
+using Blazor.Diagrams.Core.Behaviors;
 using Blazor.Diagrams.Core.Models.Base;
 using Blazor.Diagrams.Core.PathGenerators;
 using Blazor.Diagrams.Core.Routers;
@@ -39,6 +40,19 @@ public class DiagramView : BlazorDiagram
             .OfType<ZoomCommandHandler>()
             .Single()
             .Initialize(_context);
+        
+        if (_context.Diagram.IsReadOnly)
+        {
+            UnregisterBehavior<SelectionBehavior>();
+            UnregisterBehavior<DragMovablesBehavior>();
+            //UnregisterBehavior<DragNewLinkBehavior>();
+            //UnregisterBehavior<PanBehavior>();
+            //UnregisterBehavior<ZoomBehavior>();
+            //UnregisterBehavior<EventsBehavior>();
+            UnregisterBehavior<KeyboardShortcutsBehavior>();
+            //UnregisterBehavior<ControlsBehavior>();
+            //UnregisterBehavior<VirtualizationBehavior>();
+        }
     }
 
     public void DeInitialize()

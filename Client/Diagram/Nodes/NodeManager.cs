@@ -25,12 +25,19 @@ public class NodeManager
             var nodeView = new NodeView(n, context, _loggerFactory);
             context.View.Nodes.Add(nodeView);
         }
-        context.View.PointerDoubleClick += OnDiagramDoubleClicked;
+
+        if (!_context.Diagram.IsReadOnly)
+        {
+            context.View.PointerDoubleClick += OnDiagramDoubleClicked;
+        }
     }
 
     public void Deinitialize()
     {
-        _context.View.PointerDoubleClick -= OnDiagramDoubleClicked;
+        if (!_context.Diagram.IsReadOnly)
+        {
+            _context.View.PointerDoubleClick -= OnDiagramDoubleClicked;
+        }
     }
     
 

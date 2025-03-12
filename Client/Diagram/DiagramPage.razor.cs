@@ -29,7 +29,6 @@ public partial class DiagramPage : IDisposable
     private DiagramRibbon _ribbon = null!;
     private DiagramContext _context = null!;
     private Diagram _currentDiagram = null!;
-    // private PropertiesWidget _propertiesWidget = null!;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -53,7 +52,6 @@ public partial class DiagramPage : IDisposable
             ToastService = ToastService,
             Commands = CommandManager,
             CommandHandlers = CommandHandlers.ToArray(),
-            // Properties = _propertiesWidget,
         };
         
         _logger.LogInformation("Initializing subsystems");
@@ -62,8 +60,10 @@ public partial class DiagramPage : IDisposable
         _context.Nodes.Initialize(_context);
         _context.Links.Initialize(_context);
         _context.Commands.Initialize(_context);
-        _context.Ribbon.Initialize(_context);
-        //_context.Properties.Initialize(_context);
+        if (_context.Ribbon != null!)
+        {
+            _context.Ribbon.Initialize(_context);
+        }
     }
 
     public void Dispose()
@@ -74,7 +74,9 @@ public partial class DiagramPage : IDisposable
         _context.Nodes.Deinitialize();
         _context.Links.Deinitialize();
         _context.Commands.Deinitialize();
-        _context.Ribbon.Deinitialize();
-        //_context.Properties.Deinitialize();
+        if (_context.Ribbon != null!)
+        {
+            _context.Ribbon.Deinitialize();
+        }
     }
 }

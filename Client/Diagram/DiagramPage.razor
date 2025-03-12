@@ -6,21 +6,23 @@
 
 <AuthorizeView>
     <Authorized>
-        <DiagramRibbon @ref="_ribbon" />
+        @if (!_currentDiagram.IsReadOnly)
+        {
+            <DiagramRibbon @ref="_ribbon"/>
+        }
 
         <div class="diagram-container">
             <CascadingValue Value="DiagramView">
                 <CascadingValue Value="_context">
                     <DiagramCanvas>
                         <Widgets>
-                            @if (_currentDiagram.ShowProperties)
+                            @if (_currentDiagram is { ShowProperties: true, IsReadOnly: false })
                             {
-                                @* @ref="_propertiesWidget" *@
                                 <PropertiesWidget
                                     Style="position: absolute; left: 15px; top: 15px; bottom: 15px; border: 1px solid black; width: 400px; border-radius: 0">
                                 </PropertiesWidget>
                             }
-                            @if (_currentDiagram.ShowNavigation)
+                            @if (_currentDiagram is { ShowNavigation: true, IsReadOnly: false })
                             {
                                 <NavigatorWidget
                                     Width="200"
@@ -34,7 +36,7 @@
                 </CascadingValue>
             </CascadingValue>
         </div>
-        <Toasts class="p-3" AutoHide="true" Delay="4000" Placement="ToastsPlacement.TopRight" />
+        <Toasts class="p-3" AutoHide="true" Delay="4000" Placement="ToastsPlacement.TopRight"/>
     </Authorized>
     
     <NotAuthorized>

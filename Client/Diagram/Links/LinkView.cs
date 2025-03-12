@@ -12,8 +12,9 @@ public class LinkView : LinkModel
         Id = LinkIdentifier.NewIdentifier();
     }
 
-    public LinkView(LinkIdentifier id, PortModel sourcePort, PortModel targetPort) : base(sourcePort, targetPort)
+    public LinkView(Link link, DiagramContext context, PortModel sourcePort, PortModel targetPort) : base(sourcePort, targetPort)
     {
-        Id = id;
+        Locked = context.Diagram.IsReadOnly;
+        Id = link.Id;
     }
 }

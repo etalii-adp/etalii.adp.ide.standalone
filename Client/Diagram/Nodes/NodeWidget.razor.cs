@@ -3,10 +3,12 @@ using Microsoft.AspNetCore.Components;
 
 namespace EtAlii.Adp.Client;
 
-public partial class NodeWidget
+public partial class NodeWidget : IDisposable
 {
     [Parameter] public NodeView Node { get; set; } = null!;
     
+    [CascadingParameter] public DiagramContext Context { get; set; } = null!;
+
     private string _nodeName = string.Empty;
     private bool _isEditing;
     private TextInput? _textInput;
@@ -14,7 +16,10 @@ public partial class NodeWidget
     protected override void OnParametersSet()
     {
         _nodeName = Node.Name;
-        Node.EditRequested += OnStartNameEdit;
+        if (!Node.Context.Diagram.IsReadOnly)
+        {
+            Node.EditRequested += OnStartNameEdit;
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -26,6 +31,8 @@ public partial class NodeWidget
     }
     private void OnStartNameEdit()
     {
+        if (Node.Context.Diagram.IsReadOnly) return;
+
         _isEditing = true;
         StateHasChanged();
     }
@@ -39,5 +46,13 @@ public partial class NodeWidget
 
         var command = RenameNodeCommandHandler.CreateCommand(Node.Id, oldName, _nodeName);
         Node.Context.Commands.Handle(command);
+    }
+
+    public void Dispose()
+    {
+        if (!Node.Context.Diagram.IsReadOnly)
+        {
+            Node.EditRequested -= OnStartNameEdit;
+        }
     }
 }

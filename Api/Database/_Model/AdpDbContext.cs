@@ -80,6 +80,9 @@ public class AdpDbContext : DbContext
                 .Ignore(e => e.Position);
 
             builder
+                .Ignore(e => e.IsReadOnly);
+
+            builder
                 .Property<double>("_diagramPositionX")
                 .HasColumnName("DiagramPositionX")
                 .IsRequired();

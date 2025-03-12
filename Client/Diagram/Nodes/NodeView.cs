@@ -25,10 +25,15 @@ public class NodeView : NodeModel, IDisposable
     public NodeView(Node node, DiagramContext context, ILoggerFactory loggerFactory)
         : base(node.Id.ToString(), new Point(node.Position.X, node.Position.Y))
     {
+        Locked = context.Diagram.IsReadOnly;
         Node = node;
         Id = node.Id;
         Context = context;
-        Moved += OnNodeMoved;
+
+        if (!Context.Diagram.IsReadOnly)
+        {
+            Moved += OnNodeMoved;
+        }
         _logger = loggerFactory.CreateLogger<NodeView>();
         Name = node.Name;
         AddPort(new PortView("Past", this, PortAlignment.Left));
@@ -55,6 +60,9 @@ public class NodeView : NodeModel, IDisposable
 
     public void Dispose()
     {
-        Moved -= OnNodeMoved;
+        if (!Context.Diagram.IsReadOnly)
+        {
+            Moved -= OnNodeMoved;
+        }
     }
 }

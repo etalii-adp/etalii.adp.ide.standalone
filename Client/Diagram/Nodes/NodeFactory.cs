@@ -1,6 +1,6 @@
 ﻿namespace EtAlii.Adp.Client;
 
-public class NodeFactory // ForDependencygraph, should become NodeFactory
+public class NodeFactory
 {
     public Node Create(Diagram diagram, NodeIdentifier nodeId, NodePosition nodePosition, string nodeName)
     {

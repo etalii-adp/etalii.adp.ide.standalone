@@ -35,18 +35,25 @@ public class LinkManager
             var targetPort = targetNode.Ports
                 .Cast<PortView>()
                 .Single(p => p.Id == l.TargetPort);
-            
-            context.View.Links.Add(new LinkView(l.Id, sourcePort, targetPort));
+
+            var linkView = new LinkView(l, context, sourcePort, targetPort);
+            context.View.Links.Add(linkView);
         }
-        
-        context.View.Links.Added += OnLinkAdded;
-        context.View.Links.Removed += OnLinkRemoved;
+
+        if (!_context.Diagram.IsReadOnly)
+        {
+            context.View.Links.Added += OnLinkAdded;
+            context.View.Links.Removed += OnLinkRemoved;
+        }
     }
 
     public void Deinitialize()
     {
-        _context.View.Links.Added -= OnLinkAdded;
-        _context.View.Links.Removed -= OnLinkRemoved;
+        if (!_context.Diagram.IsReadOnly)
+        {
+            _context.View.Links.Added -= OnLinkAdded;
+            _context.View.Links.Removed -= OnLinkRemoved;
+        }
     }
 
     private void OnLinkAdded(BaseLinkModel linkView)
