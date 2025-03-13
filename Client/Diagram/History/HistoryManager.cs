@@ -33,7 +33,7 @@ public class HistoryManager
         {
             if (!context.Diagram.IsReadOnly)
             {
-                await _changePusher.Enqueue(command);
+                await _changePusher.Enqueue(command, context.Diagram.Id);
             }
         }
         if (handler.UseInUndoRedo)
@@ -69,7 +69,7 @@ public class HistoryManager
         {
             if (!context.Diagram.IsReadOnly)
             {
-                await _changePusher.Enqueue(commandsToPush);
+                await _changePusher.Enqueue(commandsToPush, context.Diagram.Id);
             }
         }
 
@@ -101,7 +101,7 @@ public class HistoryManager
 
         if (!context.Diagram.IsReadOnly)
         {
-            await _changePusher.Enqueue(commands);
+            await _changePusher.Enqueue(commands, context.Diagram.Id);
         }
 
         _future.Push(memento);
@@ -128,7 +128,7 @@ public class HistoryManager
 
         if (!context.Diagram.IsReadOnly)
         {
-            await _changePusher.Enqueue(commands);
+            await _changePusher.Enqueue(commands, context.Diagram.Id);
         }
 
         _history.Push(memento);

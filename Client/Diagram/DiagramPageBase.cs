@@ -12,8 +12,6 @@ public class DiagramPageBase : ComponentBase, IDisposable
     [Inject] private ILoggerFactory LoggerFactory { get; set; } = null!;
 
     [Inject] private HttpClient Client { get; set; } = null!;
-
-    [Inject] private DiagramManager DiagramManager { get; set; } = null!;
     
     [Inject] private HistoryManager HistoryManager { get; set; } = null!;
     

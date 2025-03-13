@@ -11,8 +11,6 @@ public class ChangePusher
     private readonly HttpClient _client;
     private readonly AsyncLock _lock = new();
     
-    private readonly DiagramManager _diagramManager;
-    
     private readonly Type[] _takeLastCommandTypes =
     [
         typeof(DiagramZoomCommand),
@@ -23,26 +21,24 @@ public class ChangePusher
 
     public ChangePusher(
         HttpClient client, 
-        DiagramManager diagramManager,
         ILoggerFactory loggerFactory)
     {
         _client = client;
-        _diagramManager = diagramManager;
         _logger = loggerFactory.CreateLogger<ChangePusher>();
     }
 
-    public async Task Enqueue(Command command)
+    public async Task Enqueue(Command command, DiagramIdentifier diagramId)
     {
         using (await _lock.LockAsync())
         {
             _logger.LogInformation("Enqueuing {CommandCount} commands to be pushed to the backend", 1);
 
             _commands.Enqueue(command);
-            _pushTask ??= Task.Run(PushChanges);
+            _pushTask ??= Task.Run(() => PushChanges(diagramId));
         }
     }
 
-    public async Task Enqueue(Command[] commands)
+    public async Task Enqueue(Command[] commands, DiagramIdentifier diagramId)
     {
         using (await _lock.LockAsync())
         {
@@ -52,11 +48,11 @@ public class ChangePusher
             {
                 _commands.Enqueue(command);
             }
-            _pushTask ??= Task.Run(PushChanges);
+            _pushTask ??= Task.Run(() => PushChanges(diagramId));
         }
     }
 
-    private async Task PushChanges()
+    private async Task PushChanges(DiagramIdentifier diagramId)
     {
         Command[] commandsToPush;
         do
@@ -74,7 +70,7 @@ public class ChangePusher
                 }
                 
                 _logger.LogInformation("Pushing {CommandCount} commands to the backend", commandsToPush.Length);
-                commandsGotPushed = await PushChanges(commandsToPush);
+                commandsGotPushed = await PushChanges(commandsToPush, diagramId);
                 if (commandsGotPushed) continue;
 
                 // Post failed, re-adding them to the queue.
@@ -99,13 +95,13 @@ public class ChangePusher
         }
     }
 
-    private async Task<bool> PushChanges(Command[] commands)
+    private async Task<bool> PushChanges(Command[] commands, DiagramIdentifier diagramId)
     {
         commands = Flatten(commands);
 
         try
         {
-            var response = await _client.PostAsJsonAsync(ApplicationApi.Diagrams.Changes.Request(_diagramManager.CurrentDiagram!.Id), commands);
+            var response = await _client.PostAsJsonAsync(ApplicationApi.Diagrams.Changes.Request(diagramId), commands);
             return response.IsSuccessStatusCode;
         }
         catch (Exception e)
