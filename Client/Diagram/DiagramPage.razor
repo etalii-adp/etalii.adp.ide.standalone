@@ -1,42 +1,48 @@
 ﻿@namespace EtAlii.Adp.Client
-@page "/user/diagrams/{DiagramTitle}"
+@inherits DiagramPageBase
+@page "/user/diagrams/{DiagramId:guid}"
 @using Blazor.Diagrams.Components
 @using Blazor.Diagrams.Components.Widgets
-<PageTitle>Ubigia - @_currentDiagram.Name</PageTitle>
+<PageTitle>Ubigia - @(CurrentDiagram?.Name ?? "Diagram")</PageTitle>
 
 <AuthorizeView>
     <Authorized>
-        @if (!_currentDiagram.IsReadOnly)
+        <DiagramRibbon @ref="Ribbon"/>
+        @if (IsLoaded)
         {
-            <DiagramRibbon @ref="_ribbon"/>
-        }
-
-        <div class="diagram-container">
-            <CascadingValue Value="DiagramView">
-                <CascadingValue Value="_context">
-                    <DiagramCanvas>
-                        <Widgets>
-                            @if (_currentDiagram is { ShowProperties: true, IsReadOnly: false })
-                            {
-                                <PropertiesWidget
-                                    Style="position: absolute; left: 15px; top: 15px; bottom: 15px; border: 1px solid black; width: 400px; border-radius: 0">
-                                </PropertiesWidget>
-                            }
-                            @if (_currentDiagram is { ShowNavigation: true, IsReadOnly: false })
-                            {
-                                <NavigatorWidget
-                                    Width="200"
-                                    Height="150"
-                                    Style="position: absolute; bottom: 15px; right: 15px; border: 1px solid black;">
-                                </NavigatorWidget>
-                            }
-                            <SelectionBoxWidget/>
-                        </Widgets>
-                    </DiagramCanvas>
+            <div class="@(CurrentDiagram!.IsReadOnly ? "diagram-container-no-ribbon" : "diagram-container")">
+                <CascadingValue Value="DiagramView">
+                    <CascadingValue Value="Context">
+                        <DiagramCanvas>
+                            <Widgets>
+                                @if (CurrentDiagram is { ShowProperties: true, IsReadOnly: false })
+                                {
+                                    <PropertiesWidget
+                                        Style="position: absolute; left: 15px; top: 15px; bottom: 15px; border: 1px solid black; width: 400px; border-radius: 0">
+                                    </PropertiesWidget>
+                                }
+                                @if (CurrentDiagram is { ShowNavigation: true, IsReadOnly: false })
+                                {
+                                    <NavigatorWidget
+                                        Width="200"
+                                        Height="150"
+                                        Style="position: absolute; bottom: 15px; right: 15px; border: 1px solid black;">
+                                    </NavigatorWidget>
+                                }
+                                <SelectionBoxWidget/>
+                            </Widgets>
+                        </DiagramCanvas>
+                    </CascadingValue>
                 </CascadingValue>
-            </CascadingValue>
-        </div>
-        <Toasts class="p-3" AutoHide="true" Delay="4000" Placement="ToastsPlacement.TopRight"/>
+            </div>
+            <Toasts class="p-3" AutoHide="true" Delay="4000" Placement="ToastsPlacement.TopRight"/>    
+        }
+        else
+        {
+            <div style="display: flex; margin: 100px; justify-content: center;">
+                <Spinner Color="SpinnerColor.Primary" />   
+            </div>
+        }
     </Authorized>
     
     <NotAuthorized>

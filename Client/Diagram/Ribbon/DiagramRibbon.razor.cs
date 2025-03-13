@@ -9,6 +9,8 @@ public partial class DiagramRibbon : ComponentBase
     private DiagramContext _context = null!;
     private readonly ILogger _logger;
 
+    private bool _isReadOnly;
+    
     public DiagramRibbon(ILoggerFactory loggerFactory)
     {
         _logger = loggerFactory.CreateLogger<DiagramRibbon>();
@@ -16,6 +18,8 @@ public partial class DiagramRibbon : ComponentBase
     
     public void Initialize(DiagramContext context)
     {
+        _isReadOnly = context.Diagram.IsReadOnly;
+
         _context = context;
         StateHasChanged();
 

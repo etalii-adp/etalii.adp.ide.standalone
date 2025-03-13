@@ -1,9 +1,10 @@
 ﻿.diagram-container {
     width: 100%;
-    height: calc(100% - 200px);
+    height: calc(100% - 195px);
 }
 
 .diagram-container-no-ribbon {
     width: 100%;
-    height: calc(100%);
+    height: calc(100% - 45px);
+    margin-top: -15px;
 }
