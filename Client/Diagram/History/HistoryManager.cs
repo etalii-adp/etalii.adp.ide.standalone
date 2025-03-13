@@ -31,7 +31,10 @@ public class HistoryManager
 
         if (handler.SendToBackend && !context.Diagram.IsReadOnly)
         {
-            await _changePusher.Enqueue(command);
+            if (!context.Diagram.IsReadOnly)
+            {
+                await _changePusher.Enqueue(command);
+            }
         }
         if (handler.UseInUndoRedo)
         {
@@ -64,7 +67,10 @@ public class HistoryManager
 
         if (commandsToPush.Any())
         {
-            await _changePusher.Enqueue(commandsToPush);
+            if (!context.Diagram.IsReadOnly)
+            {
+                await _changePusher.Enqueue(commandsToPush);
+            }
         }
 
         if (commandsToRemember.Any())
@@ -92,8 +98,12 @@ public class HistoryManager
             var handler = context.CommandHandlers.Single(h => h.CanHandle(command));
             await handler.Execute(command, context);
         }
-        
-        await _changePusher.Enqueue(commands);
+
+        if (!context.Diagram.IsReadOnly)
+        {
+            await _changePusher.Enqueue(commands);
+        }
+
         _future.Push(memento);
         Changed?.Invoke();
         return success;
@@ -115,8 +125,12 @@ public class HistoryManager
             var handler = context.CommandHandlers.Single(h => h.CanHandle(command));
             await handler.Execute(command, context);
         }
-        
-        await _changePusher.Enqueue(commands);
+
+        if (!context.Diagram.IsReadOnly)
+        {
+            await _changePusher.Enqueue(commands);
+        }
+
         _history.Push(memento);
         Changed?.Invoke();
         return success;
