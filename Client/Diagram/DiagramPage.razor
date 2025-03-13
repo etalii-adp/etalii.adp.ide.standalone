@@ -1,8 +1,6 @@
 ﻿@namespace EtAlii.Adp.Client
 @inherits DiagramPageBase
 @page "/user/diagrams/{DiagramId:guid}"
-@using Blazor.Diagrams.Components
-@using Blazor.Diagrams.Components.Widgets
 <PageTitle>Ubigia - @(CurrentDiagram?.Name ?? "Diagram")</PageTitle>
 
 <AuthorizeView>
@@ -13,25 +11,7 @@
             <div class="@(CurrentDiagram!.IsReadOnly ? "diagram-container-no-ribbon" : "diagram-container")">
                 <CascadingValue Value="DiagramView">
                     <CascadingValue Value="Context">
-                        <DiagramCanvas>
-                            <Widgets>
-                                @if (CurrentDiagram is { ShowProperties: true, IsReadOnly: false })
-                                {
-                                    <PropertiesWidget
-                                        Style="position: absolute; left: 15px; top: 15px; bottom: 15px; border: 1px solid black; width: 400px; border-radius: 0">
-                                    </PropertiesWidget>
-                                }
-                                @if (CurrentDiagram is { ShowNavigation: true, IsReadOnly: false })
-                                {
-                                    <NavigatorWidget
-                                        Width="200"
-                                        Height="150"
-                                        Style="position: absolute; bottom: 15px; right: 15px; border: 1px solid black;">
-                                    </NavigatorWidget>
-                                }
-                                <SelectionBoxWidget/>
-                            </Widgets>
-                        </DiagramCanvas>
+                        <DiagramComponent />
                     </CascadingValue>
                 </CascadingValue>
             </div>
