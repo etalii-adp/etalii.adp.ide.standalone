@@ -30,6 +30,10 @@ public class DiagramPageBase : ComponentBase, IDisposable
     protected Diagram? CurrentDiagram;
     protected bool IsLoaded;
 
+    protected virtual void ConfigureContext(DiagramContext context)
+    {
+    }
+    
     protected override async Task OnParametersSetAsync()
     {
         var diagramId = new DiagramIdentifier { Identifier = DiagramId };
@@ -48,6 +52,8 @@ public class DiagramPageBase : ComponentBase, IDisposable
             Commands = CommandManager,
             CommandHandlers = CommandHandlers.ToArray(),
         };
+        
+        ConfigureContext(Context);
         
         _logger.LogInformation("Initializing subsystems");
 

@@ -32,7 +32,7 @@ public record Diagram
     [JsonIgnore] private double _diagramPositionX;
     [JsonIgnore] private double _diagramPositionY;
 
-    [JsonIgnore] public bool IsReadOnly { get; set; } = false;
+    [JsonIgnore] public bool IsReadOnly { get; set; }
     public required DateTime CreationDate { get; init; }
     public required DateTime ModificationDate { get; set; }
     
