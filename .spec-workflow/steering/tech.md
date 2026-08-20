@@ -49,6 +49,9 @@ The idea is that the solution can:
 * To test the implementation of the modular diagrams use the following diagram visualizations:&#x20;
   * Mindmap (file extension \= .mm)&#x20;
 
+# Frontend
+* All styling for the application should be done in a centralized manner, avoiding inline styles and promoting consistency and maintainability as much as possible.
+
 # Decision log
 
 1. **File-based storage over a database**: keeps diagrams reviewable and mergeable through normal repository tooling; revisit only if a hosted/multi-user scenario proves this insufficient.
