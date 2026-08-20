@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <PackageVersion Include="Grpc.AspNetCore" Version="2.66.0" />
+    <PackageVersion Include="Grpc.AspNetCore.Web" Version="2.66.0" />
     <PackageVersion Include="Grpc.Core.Testing" Version="2.46.6" />
     <PackageVersion Include="Grpc.Net.Client" Version="2.66.0" />
     <PackageVersion Include="JetBrains.Annotations" Version="2026.2.0" />

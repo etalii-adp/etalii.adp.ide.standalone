@@ -25,6 +25,10 @@ builder.Services.AddGrpc(options =>
 
 var app = builder.Build();
 
+// DefaultEnabled so every mapped gRPC service (including AdpService once that spec
+// implements it) accepts grpc-web without needing an explicit .EnableGrpcWeb() call.
+app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });
+
 app.MapGrpcService<AuthenticationServiceImpl>();
 app.MapGrpcService<ProjectServiceImpl>();
 // AdpService (grpc-core-communication) is mapped here once that spec implements it.
