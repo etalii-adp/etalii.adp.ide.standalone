@@ -10,8 +10,13 @@
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="fa014b36-c252-4984-b634-1f345daf407e" name="Changes" comment="Completed gRPC core communication specification implementation: created and validated connection.proto, elements.proto, deltas.proto, and service.proto. Removed obsolete approval file.">
+    <list default="true" id="fa014b36-c252-4984-b634-1f345daf407e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.spec-workflow/approvals/login-project-selection/.snapshots/design.md/metadata.json" beforeDir="false" afterPath="$PROJECT_DIR$/.spec-workflow/approvals/login-project-selection/.snapshots/design.md/metadata.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.spec-workflow/approvals/login-project-selection/.snapshots/requirements.md/metadata.json" beforeDir="false" afterPath="$PROJECT_DIR$/.spec-workflow/approvals/login-project-selection/.snapshots/requirements.md/metadata.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.spec-workflow/specs/login-project-selection/design.md" beforeDir="false" afterPath="$PROJECT_DIR$/.spec-workflow/specs/login-project-selection/design.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.spec-workflow/specs/login-project-selection/requirements.md" beforeDir="false" afterPath="$PROJECT_DIR$/.spec-workflow/specs/login-project-selection/requirements.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -48,6 +53,65 @@
     <urls />
   </component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="1.0000000000000013" />
+      <entry key="MS500" value="1.0013256882284727" />
+      <entry key="S2" value="1.308790925480476" />
+      <entry key="S5" value="1.9441218961595617" />
+      <entry key="S10" value="2.3733617775334013" />
+      <entry key="S30" value="2.7642522776367597" />
+      <entry key="S60" value="2.8784020462152977" />
+      <entry key="M2" value="2.938240111543774" />
+      <entry key="M5" value="2.9750614886746503" />
+      <entry key="M10" value="2.9874955368590506" />
+      <entry key="M15" value="2.992151232223141" />
+      <entry key="M30" value="3.0549165782102863" />
+      <entry key="H1" value="3.6410365798701765" />
+      <entry key="H2" value="5.120686260252226" />
+      <entry key="H4" value="6.853306998307785" />
+      <entry key="D1" value="9.337105104842426" />
+      <entry key="W1" value="9.901216575651876" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="0.0" />
+      <entry key="S10" value="0.0" />
+      <entry key="S30" value="0.0" />
+      <entry key="S60" value="0.0" />
+      <entry key="M2" value="0.0" />
+      <entry key="M5" value="0.0" />
+      <entry key="M10" value="0.0" />
+      <entry key="M15" value="0.0" />
+      <entry key="M30" value="0.0" />
+      <entry key="H1" value="0.0" />
+      <entry key="H2" value="0.0" />
+      <entry key="H4" value="0.0" />
+      <entry key="D1" value="0.0" />
+      <entry key="W1" value="0.0" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="0.8467453123625285" />
+      <entry key="MS500" value="0.9685906594486439" />
+      <entry key="S2" value="1.2998216942066407" />
+      <entry key="S5" value="1.939954344148795" />
+      <entry key="S10" value="2.371082580717838" />
+      <entry key="S30" value="2.763433202758976" />
+      <entry key="S60" value="2.877983840780662" />
+      <entry key="M2" value="2.9380287365993607" />
+      <entry key="M5" value="2.9749763793666397" />
+      <entry key="M10" value="2.9874528877571116" />
+      <entry key="M15" value="2.9921227754763167" />
+      <entry key="M30" value="3.0549021635213185" />
+      <entry key="H1" value="3.6410284898131073" />
+      <entry key="H2" value="5.120681097512" />
+      <entry key="H4" value="6.853303761523398" />
+      <entry key="D1" value="9.337104408625956" />
+      <entry key="W1" value="9.901216471103954" />
+    </decayedShown>
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 6,
   &quot;fromUser&quot;: false
@@ -103,7 +167,13 @@
     <MESSAGE value="Bumped .idea and audit.log." />
     <MESSAGE value="Added gRPC core communication specs: requirements and design documents." />
     <MESSAGE value="Completed gRPC core communication specification implementation: created and validated connection.proto, elements.proto, deltas.proto, and service.proto. Removed obsolete approval file." />
-    <option name="LAST_COMMIT_MESSAGE" value="Completed gRPC core communication specification implementation: created and validated connection.proto, elements.proto, deltas.proto, and service.proto. Removed obsolete approval file." />
+    <MESSAGE value="Updated CLAUDE.md to clarify commit conventions for `.spec-workflow/` files." />
+    <MESSAGE value="Clarified `.spec-workflow/` commit conventions to include LLM-generated changes in CLAUDE.md." />
+    <MESSAGE value="Updated `.spec-workflow/steering/tech.md` to document React + TypeScript client, WebGL rendering choice, Vite dev server integration, and ASP.NET Core hosting setup." />
+    <MESSAGE value="Added user-managed, persisted project list requirements to login-project-selection spec." />
+    <MESSAGE value="Refined and expanded requirements: clarified gRPC-web transport and canvas/WebGL rendering decisions; documented client technology stack and updated non-functional criteria formatting." />
+    <MESSAGE value="Added initial approval metadata, snapshot, and pending requirements for login-project-selection spec." />
+    <option name="LAST_COMMIT_MESSAGE" value="Added initial approval metadata, snapshot, and pending requirements for login-project-selection spec." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
