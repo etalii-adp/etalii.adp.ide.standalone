@@ -21,8 +21,8 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </summary>
 public class LoginProjectSelectionFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
-    private const string DeveloperUsername = "developer";
-    private const string DeveloperCredential = "developer";
+    private const string DeveloperUsername = "admin";
+    private const string DeveloperCredential = "changeme";
     private const string SessionTokenHeader = "session-token";
 
     private readonly WebApplicationFactory<Program> _factory;
