@@ -14,7 +14,7 @@ No `product.md` steering document exists yet for this project. This requirements
 
 ### Requirement 1 — Workspace shell
 
-**User Story:** As a diagram author, I want a VS Code-like workspace shell (activity bar, explorer, tabbed editor area, status bar) in my browser, so that the tool feels immediately familiar and I can navigate my files without a learning curve.
+**User Story:** As a diagram author, I want a VS Code-like workspace shell (activity bar, (file) explorer, tabbed editor area, status bar) in my browser, so that the tool feels immediately familiar and I can navigate my files without a learning curve.
 
 #### Acceptance Criteria
 
@@ -40,7 +40,7 @@ No `product.md` steering document exists yet for this project. This requirements
 
 #### Acceptance Criteria
 
-1. WHEN the web client opens a diagram THEN the system SHALL establish a gRPC streaming connection to the backend for that diagram's change feed.
+1. WHEN the web client opens a diagram THEN the system SHALL establish a gRPC streaming connection to the backend for that diagram's change feed, using grpc-web as the browser-side transport (see Non-Functional Requirements: Client Technology Stack).
 2. WHEN the backend applies a change to a diagram (from this client, another client, or an external file change) THEN the system SHALL push the change to all connected clients viewing that diagram within a bounded latency.
 3. IF the gRPC stream is interrupted THEN the system SHALL attempt to reconnect and reconcile client state with backend state without requiring a full page reload.
 4. WHEN a change is pushed to the client THEN the system SHALL apply it without discarding the user's current selection, viewport (pan/zoom), or in-progress uncommitted edit.
@@ -53,7 +53,7 @@ No `product.md` steering document exists yet for this project. This requirements
 
 1. WHEN a diagram is opened THEN the system SHALL render its nodes and connections on a pannable, zoomable canvas.
 2. WHEN the user adds, moves, resizes, connects, or deletes a diagram element THEN the system SHALL persist the change and reflect it on the canvas.
-3. IF the diagram contains a large number of elements THEN the system SHALL use virtualization so that only visible elements are rendered, keeping interaction responsive.
+3. IF the diagram contains a large number of elements THEN the system SHALL use virtualization so that only visible elements are rendered, keeping interaction responsive, rendered via a canvas/WebGL-based renderer rather than raw SVG/DOM (see Non-Functional Requirements: Client Technology Stack).
 4. WHEN the diagram or element schema differs by diagram type THEN the system SHALL support that variability through a pluggable diagram-type model rather than hardcoding a single diagram shape.
 
 ### Requirement 5 — Read-only mode
@@ -82,23 +82,35 @@ No `product.md` steering document exists yet for this project. This requirements
 ## Non-Functional Requirements
 
 ### Code Architecture and Modularity
-- **Single Responsibility Principle**: Each file should have a single, well-defined purpose
-- **Modular Design**: Components, utilities, and services should be isolated and reusable
-- **Dependency Management**: Minimize interdependencies between modules
-- **Clear Interfaces**: Define clean contracts between components and layers
-- **Diagram-type extensibility**: The core canvas, storage, and sync layers SHALL NOT depend on any single diagram type's schema; new diagram types SHALL be addable without modifying core layers.
+
+* **Single Responsibility Principle**: Each file should have a single, well-defined purpose
+* **Modular Design**: Components, utilities, and services should be isolated and reusable
+* **Dependency Management**: Minimize interdependencies between modules
+* **Clear Interfaces**: Define clean contracts between components and layers
+* **Diagram-type extensibility**: The core canvas, storage, and sync layers SHALL NOT depend on any single diagram type's schema; new diagram types SHALL be addable without modifying core layers.
+
+### Client Technology Stack
+
+* **Framework**: React + TypeScript.
+* **Diagram rendering**: A canvas/WebGL-based rendering library (e.g. Konva or PixiJS) rather than raw SVG/DOM, chosen for its ability to sustain smooth pan/zoom/drag interaction on large, virtualized diagrams (Requirement 4.3, Performance below).
+* **gRPC transport**: grpc-web (or Connect-Web), backed by ASP.NET Core's gRPC-Web middleware on the backend, since browsers cannot speak native HTTP/2 gRPC directly (Requirement 3.1).
+* **Decision rationale**: chosen over a Blazor WebAssembly (all-C#) client because the canvas/diagramming ecosystem available to React/TypeScript is significantly more mature for this use case, outweighing the benefit of reusing generated gRPC stubs and Rider tooling end-to-end in C#.
 
 ### Performance
-- Canvas interactions (pan, zoom, select, drag) SHALL remain responsive (target: no perceptible input lag) on diagrams with thousands of elements via virtualization.
-- Backend-to-client change propagation SHALL complete within a bounded latency suitable for a "live" feel (target: sub-second on a local/LAN connection).
+
+* Canvas interactions (pan, zoom, select, drag) SHALL remain responsive (target: no perceptible input lag) on diagrams with thousands of elements via virtualization.
+* Backend-to-client change propagation SHALL complete within a bounded latency suitable for a "live" feel (target: sub-second on a local/LAN connection).
 
 ### Security
-- The gRPC channel between backend and web client SHALL be authenticated/authorized appropriately for the deployment context before exposing any workspace beyond localhost.
-- File system access from the backend SHALL be scoped to explicitly opened workspace folders, not the whole filesystem.
+
+* The gRPC channel between backend and web client SHALL be authenticated/authorized appropriately for the deployment context before exposing any workspace beyond localhost.
+* File system access from the backend SHALL be scoped to explicitly opened workspace folders, not the whole filesystem.
 
 ### Reliability
-- Loss of the gRPC stream SHALL NOT corrupt on-disk diagram state; the backend remains the durable source of truth.
-- Concurrent edits from multiple clients to the same diagram SHALL be reconciled without silent data loss.
+
+* Loss of the gRPC stream SHALL NOT corrupt on-disk diagram state; the backend remains the durable source of truth.
+* Concurrent edits from multiple clients to the same diagram SHALL be reconciled without silent data loss.
 
 ### Usability
-- The web client's look and interaction model SHALL closely follow familiar VS Code conventions (layout, keyboard shortcuts, command palette) to minimize onboarding friction.
+
+* The web client's look and interaction model SHALL closely follow familiar VS Code conventions (layout, keyboard shortcuts, command palette, undo/redo capabilities) to minimize onboarding friction.
