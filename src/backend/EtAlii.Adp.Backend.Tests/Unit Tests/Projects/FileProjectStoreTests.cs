@@ -44,10 +44,22 @@ public class FileProjectStoreTests : IDisposable
         var folderPath = CreateRealFolder("my-project");
         var segments = folderPath.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
 
-        var added = store.Add("user-1", segments);
+        var added = store.Add("user-1", "", segments);
 
         Assert.Equal("my-project", added.Name);
         Assert.Single(store.List("user-1"));
+    }
+
+    [Fact]
+    public void Add_WithExplicitName_UsesItInsteadOfTheFolderName()
+    {
+        var store = new FileProjectStore(_appDataRoot);
+        var folderPath = CreateRealFolder("my-project");
+        var segments = folderPath.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+
+        var added = store.Add("user-1", "Custom Name", segments);
+
+        Assert.Equal("Custom Name", added.Name);
     }
 
     [Fact]
@@ -55,10 +67,10 @@ public class FileProjectStoreTests : IDisposable
     {
         var store = new FileProjectStore(_appDataRoot);
         var validFolder = CreateRealFolder("existing-project");
-        store.Add("user-1", validFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
+        store.Add("user-1", "", validFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
 
         var missingSegments = new[] { _appDataRoot, "does-not-exist" };
-        Assert.Throws<InvalidProjectPathException>(() => store.Add("user-1", missingSegments));
+        Assert.Throws<InvalidProjectPathException>(() => store.Add("user-1", "", missingSegments));
 
         Assert.Single(store.List("user-1"));
     }
@@ -68,7 +80,7 @@ public class FileProjectStoreTests : IDisposable
     {
         var store = new FileProjectStore(_appDataRoot);
         var folderPath = CreateRealFolder("to-remove");
-        var added = store.Add("user-1", folderPath.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
+        var added = store.Add("user-1", "", folderPath.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
 
         store.Remove("user-1", added.Id);
 
@@ -81,7 +93,7 @@ public class FileProjectStoreTests : IDisposable
     {
         var store = new FileProjectStore(_appDataRoot);
         var folderPath = CreateRealFolder("survives-restart");
-        store.Add("user-1", folderPath.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
+        store.Add("user-1", "", folderPath.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
 
         // Simulate a process restart: a brand-new store instance re-reading the same file.
         var reloadedStore = new FileProjectStore(_appDataRoot);

@@ -25,7 +25,7 @@ public sealed class ProjectServiceImpl : ProjectService.ProjectServiceBase
         var userId = SessionContext.GetUsername(context);
         try
         {
-            var added = _projectStore.Add(userId, request.Path.Segments.ToList());
+            var added = _projectStore.Add(userId, request.Name, request.Path.Segments.ToList());
             return Task.FromResult(new AddProjectResponse { Added = ToProto(added) });
         }
         catch (InvalidProjectPathException ex)
@@ -52,7 +52,8 @@ public sealed class ProjectServiceImpl : ProjectService.ProjectServiceBase
         {
             Id = record.Id,
             Name = record.Name,
-            Path = path
+            Path = path,
+            DisplayPath = PathTruncator.Truncate(record.PathSegments)
         };
     }
 }

@@ -19,7 +19,7 @@ public sealed class FileProjectStore : IProjectStore
 
     public IReadOnlyList<ProjectRecord> List(string userId) => Read(userId);
 
-    public ProjectRecord Add(string userId, IReadOnlyList<string> pathSegments)
+    public ProjectRecord Add(string userId, string name, IReadOnlyList<string> pathSegments)
     {
         var folderPath = IoPath.Combine(pathSegments.ToArray());
         if (!Directory.Exists(folderPath))
@@ -28,8 +28,8 @@ public sealed class FileProjectStore : IProjectStore
         }
 
         var projects = Read(userId).ToList();
-        var name = new DirectoryInfo(folderPath).Name;
-        var record = new ProjectRecord(Guid.NewGuid().ToString("N"), name, pathSegments);
+        var resolvedName = string.IsNullOrWhiteSpace(name) ? new DirectoryInfo(folderPath).Name : name.Trim();
+        var record = new ProjectRecord(Guid.NewGuid().ToString("N"), resolvedName, pathSegments);
         projects.Add(record);
         Write(userId, projects);
         return record;

@@ -10,6 +10,7 @@ message Project {
   string id = 1;
   string name = 2;
   Path path = 3;
+  string display_path = 4; // path.segments joined and middle-truncated for tile display
 }
 
 message ListProjectsRequest {}
@@ -20,6 +21,7 @@ message ListProjectsResponse {
 
 message AddProjectRequest {
   Path path = 1; // plain-text folder path entry, per Requirement 5.2
+  string name = 2;
 }
 
 message AddProjectError {
