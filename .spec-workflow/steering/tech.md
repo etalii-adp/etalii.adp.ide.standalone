@@ -2,13 +2,15 @@
 
 * For the time being the backend services and other capabilities will be implemented in .NET, with the latest SDK configured using global.json.
 * For the time being the frontend applications will be web based. This might change with the right reasoning.
-* The communication between the frontend and backend services will be gRPC based. Authentication and authorization will be done as decorations on the corresponding gRPC initialization calls.
-* For hosting ASP.NET core is preferred.
+* The web client is built with React + TypeScript, rendering the diagram canvas via a canvas/WebGL-based library (e.g. Konva or PixiJS) rather than raw SVG/DOM, for virtualization performance on large diagrams.
+* The communication between the frontend and backend services will be gRPC based. Authentication and authorization will be done as decorations on the corresponding gRPC initialization calls. From the browser this happens over grpc-web, backed by ASP.NET Core's gRPC-Web middleware.
+* For hosting ASP.NET core is preferred. In production ASP.NET Core serves the built React client as static files and hosts the gRPC-Web endpoint in the same process - one process, no separate frontend server, no Blazor involved.
 
 # Development tools
 
 * The development will mostly be done using Jetbrains Rider.
 * The development team prefers an F5 experience, which means that development, testing and debugging should be doable in one go. I.e. locally and without any complex dependencies. To achieve this it should be possible to ramp up all relevant services using local-only persistency and hosting.
+* The React client uses Vite as its dev server/build tool, for fast hot-module-reload during local development and a static-file bundle for production. These two do not compete for hosting: in the F5 scenario, ASP.NET Core still owns the port the browser talks to and proxies frontend requests through to the Vite dev server (a standard SPA-proxy pattern) purely so edits hot-reload instantly without a full rebuild; in production Vite is not running at all, and ASP.NET Core simply serves Vite's static build output directly, alongside the gRPC-Web endpoint, in that same single process.
 
 # Naming
 
@@ -52,3 +54,5 @@ The idea is that the solution can:
 1. **File-based storage over a database**: keeps diagrams reviewable and mergeable through normal repository tooling; revisit only if a hosted/multi-user scenario proves this insufficient.
 2. **Bi-directional gRPC for frontend-backend communication**: chosen for strongly-typed contracts and native streaming support, which fits the "push changes to open clients" requirement better than plain REST/JSON.
 3. **.NET/ASP.NET Core backend**: aligns with the team's Rider-based, F5-first development workflow and existing tooling familiarity.
+4. **React + TypeScript client over Blazor WebAssembly**: the canvas/diagramming ecosystem available to React/TypeScript is significantly more mature for a virtualized, WebGL-rendered diagram surface than Blazor's, outweighing the appeal of an all-C# stack; revisit only if a specific chunk of C# logic clearly needs to run client-side.
+5. **ASP.NET Core hosts the React build directly**: kept to a single process/runtime in production (static files + gRPC-Web endpoint together) rather than combining Blazor and React, avoiding a JS-interop serialization boundary on the path that streams diagram deltas to the canvas.
