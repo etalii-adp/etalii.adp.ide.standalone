@@ -11,7 +11,7 @@ This design defines the core gRPC `.proto` contract for EtAlii.Adp: the wire mes
 * Uses gRPC bidirectional streaming per the "Bi-directional gRPC for frontend-backend communication" decision.
 * Elements carry deltas (`add`/`remove`/`group`/`ungroup`), consistent with the "Frontend-backend synchronization" section's delta-based model.
 * View information (center + bounding box) is sent client → backend, matching the documented virtualization approach where the backend remembers per-connection view state.
-* Namespacing follows the `EtAlii.Adp.<Area>` (.NET) / `com.etalii.adp.<area>` convention; here `<Area>` is `Core`.
+* Namespacing follows the `EtAlii.Adp` (.NET) / `com.etalii.adp` convention used elsewhere in the project.
 
 ### Project Structure (structure.md)
 
@@ -43,7 +43,8 @@ Four `.proto` files under `src/api/`, all in a single `etalii.adp` package (`EtA
 ```mermaid
 graph TD
     Connection[connection.proto<br/>Path, ViewUpdate] --> Service[service.proto<br/>ClientMessage, AdpService]
-    Elements[elements.proto<br/>Element] --> Deltas[deltas.proto<br/>Add/Remove/Group/Ungroup/Delta]
+    Connection --> Elements[elements.proto<br/>Element]
+    Elements --> Deltas[deltas.proto<br/>Add/Remove/Group/Ungroup/Delta]
     Deltas --> Service
     Elements -.type-safe payload extension point.-> DiagramTypes[future: diagrams/&lt;diagram&gt;/api/*.proto]
 ```
@@ -66,8 +67,8 @@ graph TD
 
 * **Purpose:** Defines the extensible, mime-typed visual element (Requirement 4).
 * **Messages:** `ElementId`, `Element`.
-* **Dependencies:** `google/protobuf/any.proto` (for the type-safe extension point).
-* **Reuses:** N/A.
+* **Dependencies:** `connection.proto` (for `Point2D`), `google/protobuf/any.proto` (for the type-safe extension point).
+* **Reuses:** `connection.proto`.
 
 ### `deltas.proto`
 
@@ -122,9 +123,12 @@ message ElementId {
   string value = 1;
 }
 
+// import "connection.proto";
+// import "google/protobuf/any.proto";
+
 message Element {
   ElementId id = 1;
-  Point2D position = 2;      // imported from connection.proto
+  Point2D position = 2;      // Point2D from connection.proto
   string type = 3;           // mime-style, e.g. "mindmap/node"
   google.protobuf.Any payload = 4; // type-specific message, defined per diagram module
 }
