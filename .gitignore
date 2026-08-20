@@ -1,0 +1,16 @@
+# .NET
+bin/
+obj/
+*.user
+
+# Node / client
+node_modules/
+dist/
+client/src/generated/
+
+# IDE
+.vs/
+
+# OS
+.DS_Store
+Thumbs.db

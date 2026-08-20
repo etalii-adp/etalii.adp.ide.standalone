@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "EtAlii.Adp.Backend.Service": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "developer"
+      },
+      "applicationUrl": "http://localhost:5080"
+    }
+  }
+}

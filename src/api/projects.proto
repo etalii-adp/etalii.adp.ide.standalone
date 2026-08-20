@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package etalii.adp;
+
+import "connection.proto";
+
+option csharp_namespace = "EtAlii.Adp";
+
+message Project {
+  string id = 1;
+  string name = 2;
+  Path path = 3;
+}
+
+message ListProjectsRequest {}
+
+message ListProjectsResponse {
+  repeated Project projects = 1;
+}
+
+message AddProjectRequest {
+  Path path = 1; // plain-text folder path entry, per Requirement 5.2
+}
+
+message AddProjectError {
+  string message = 1;
+}
+
+message AddProjectResponse {
+  oneof result {
+    Project added = 1;
+    AddProjectError error = 2;
+  }
+}
+
+message RemoveProjectRequest {
+  string project_id = 1;
+}
+
+message RemoveProjectResponse {}
+
+service ProjectService {
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse);
+  rpc AddProject(AddProjectRequest) returns (AddProjectResponse);
+  rpc RemoveProject(RemoveProjectRequest) returns (RemoveProjectResponse);
+}
