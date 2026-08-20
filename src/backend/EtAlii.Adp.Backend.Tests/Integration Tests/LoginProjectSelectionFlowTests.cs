@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
-namespace EtAlii.Adp.Backend.Tests.Integration;
+namespace EtAlii.Adp.Backend.Tests;
 
 /// <summary>
 /// Exercises the full login-project-selection flow against the real backend

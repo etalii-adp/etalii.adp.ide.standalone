@@ -2,7 +2,7 @@ using EtAlii.Adp.Backend.Authentication;
 using Microsoft.Extensions.Options;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests.Authentication;
+namespace EtAlii.Adp.Backend.Tests;
 
 public class LocalAuthenticatorTests
 {

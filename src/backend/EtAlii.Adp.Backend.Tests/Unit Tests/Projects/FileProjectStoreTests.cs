@@ -2,7 +2,7 @@ using EtAlii.Adp.Backend.Projects;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
-namespace EtAlii.Adp.Backend.Tests.Projects;
+namespace EtAlii.Adp.Backend.Tests;
 
 public class FileProjectStoreTests : IDisposable
 {

@@ -153,6 +153,17 @@
   </component>
   <component name="UnityCheckinConfiguration" checkUnsavedScenes="true" />
   <component name="UnityProjectConfiguration" hasMinimizedUI="false" />
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
     <MESSAGE value="Added new configuration files for IDEA project." />
@@ -173,7 +184,8 @@
     <MESSAGE value="Expanded `login-project-selection` requirements with default local-mode credentials and applied consistent markdown formatting across NFRs and design documents." />
     <MESSAGE value="Updated `.idea/workspace.xml` with changes in approval metadata, spec snapshots, and completion feature state." />
     <MESSAGE value="Documented centralized styling guidelines under &quot;Frontend&quot; in `.spec-workflow/steering/tech.md`." />
-    <option name="LAST_COMMIT_MESSAGE" value="Documented centralized styling guidelines under &quot;Frontend&quot; in `.spec-workflow/steering/tech.md`." />
+    <MESSAGE value="Pinned backend SDK version to 10.0.203 with roll-forward to latest feature." />
+    <option name="LAST_COMMIT_MESSAGE" value="Pinned backend SDK version to 10.0.203 with roll-forward to latest feature." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
