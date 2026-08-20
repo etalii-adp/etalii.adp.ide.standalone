@@ -21,7 +21,7 @@ This implements the "Minimal footprint, incremental value" and "Value from day o
 1. WHEN an unauthenticated user opens the web client THEN the system SHALL present a login screen and SHALL NOT render the project grid, the workspace shell, or any diagram content.
 2. WHEN a user submits valid credentials THEN the system SHALL establish an authenticated session and proceed to the project-selection home page.
 3. IF a user submits invalid credentials THEN the system SHALL reject the attempt and remain on the login screen with a clear error, without granting any access.
-4. WHEN running in the local, standalone "F5" scenario THEN the system SHALL support a local-only auth mode (per `grpc-core-communication` Requirement 5.4) so login still functions without an external identity provider.
+4. WHEN running in the local, standalone "F5" scenario THEN the system SHALL support a local-only auth mode (per `grpc-core-communication` Requirement 5.4) so login still functions without an external identity provider. this will be 'admin' as a username and 'changeme' as the password.
 5. IF an authenticated session expires or becomes invalid THEN the system SHALL return the user to the login screen rather than continuing to display protected content.
 6. WHEN enforcing the login gate THEN the system SHALL enforce it at the backend/gRPC connection level (per `grpc-core-communication` Requirement 5.1–5.2), not only by hiding UI on the client.
 
@@ -70,19 +70,24 @@ This implements the "Minimal footprint, incremental value" and "Value from day o
 ## Non-Functional Requirements
 
 ### Code Architecture and Modularity
-- **Single Responsibility Principle**: Login, project-grid, and workspace-shell concerns are separate, independently reachable states in the client, not intertwined.
-- **Modular Design**: The login gate and project-grid components SHALL NOT depend on `adp-diagram-ide`'s workspace/canvas components; the dependency only runs the other way (workspace shell is reached only after project selection).
+
+* **Single Responsibility Principle**: Login, project-grid, and workspace-shell concerns are separate, independently reachable states in the client, not intertwined.
+* **Modular Design**: The login gate and project-grid components SHALL NOT depend on `adp-diagram-ide`'s workspace/canvas components; the dependency only runs the other way (workspace shell is reached only after project selection).
 
 ### Performance
-- The project grid SHALL load and render without waiting on any individual project's diagram data being fetched — only the list of available projects is needed up front.
+
+* The project grid SHALL load and render without waiting on any individual project's diagram data being fetched — only the list of available projects is needed up front.
 
 ### Security
-- Login SHALL be enforced server-side; a client-side-only route guard is not sufficient (Requirement 1.6).
-- A user's project grid SHALL only ever list projects that user is authorized to access.
+
+* Login SHALL be enforced server-side; a client-side-only route guard is not sufficient (Requirement 1.6).
+* A user's project grid SHALL only ever list projects that user is authorized to access.
 
 ### Reliability
-- IF the backend is unreachable at login time THEN the system SHALL surface a clear connection error rather than an unexplained hang or silent failure.
-- Per-user project list persistence SHOULD follow the same file-based, no-database philosophy as diagram storage (per `tech.md`'s "File-based storage over a database" decision) rather than introducing a new persistence mechanism.
+
+* IF the backend is unreachable at login time THEN the system SHALL surface a clear connection error rather than an unexplained hang or silent failure.
+* Per-user project list persistence SHOULD follow the same file-based, no-database philosophy as diagram storage (per `tech.md`'s "File-based storage over a database" decision) rather than introducing a new persistence mechanism.
 
 ### Usability
-- The project grid SHOULD follow a recent-projects-grid convention familiar from IDEs like Rider (per `tech.md`'s development-tools context), reinforcing the "familiar surface" product principle even before a project is opened.
+
+* The project grid SHOULD follow a recent-projects-grid convention familiar from IDEs like Rider (per `tech.md`'s development-tools context), reinforcing the "familiar surface" product principle even before a project is opened.
