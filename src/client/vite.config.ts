@@ -6,4 +6,10 @@ import react from "@vitejs/plugin-react";
 // directly (see tech.md's Development tools section).
 export default defineConfig({
   plugins: [react()],
+  // Must match appsettings.developer.json's Client:DevServerUrl; strictPort so a
+  // port conflict fails loudly instead of silently drifting (and breaking the proxy).
+  server: {
+    port: 5174,
+    strictPort: true,
+  },
 });
