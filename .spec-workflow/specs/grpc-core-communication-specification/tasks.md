@@ -1,6 +1,6 @@
 # Tasks Document
 
-- [ ] 1. Create src/api/connection.proto
+- [x] 1. Create src/api/connection.proto
   - File: src/api/connection.proto
   - Define `Path`, `Point2D`, `BoundingBox`, and `ViewUpdate` messages exactly as specified in design.md's Data Models section
   - Use `syntax = "proto3";`, `package etalii.adp;`, `option csharp_namespace = "EtAlii.Adp";`
@@ -9,7 +9,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 2.3_
   - _Prompt: Implement the task for spec grpc-core-communication-specification, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Protocol Buffers/gRPC contract author | Task: Create src/api/connection.proto defining the Path (repeated string segments), Point2D (x, y), BoundingBox (min, max), and ViewUpdate (center, bounding_box) messages exactly as shown in design.md's Data Models section, following requirements 1.1-1.3 and 2.1-2.3 | Restrictions: proto3 syntax only, no service/rpc definitions in this file, no business logic or comments beyond what clarifies non-obvious intent, field numbers must match design.md exactly | Leverage: design.md's Data Models and Components sections for exact message shapes | Success: file parses as valid proto3, matches design.md byte-for-byte in message/field names and numbers, no other files are created or modified. Mark this task in-progress ([-]) in tasks.md before starting, and mark it complete ([x]) and log the implementation with log-implementation after finishing._
 
-- [ ] 2. Create src/api/elements.proto
+- [x] 2. Create src/api/elements.proto
   - File: src/api/elements.proto
   - Define `ElementId` and `Element` messages exactly as specified in design.md's Data Models section
   - Import `connection.proto` (for `Point2D`) and `google/protobuf/any.proto` (for the type-safe extension point)
@@ -18,7 +18,7 @@
   - _Requirements: 4.1, 4.2, 4.3, 4.4_
   - _Prompt: Implement the task for spec grpc-core-communication-specification, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Protocol Buffers/gRPC contract author | Task: Create src/api/elements.proto defining ElementId (value) and Element (id, position, type, payload) messages exactly as shown in design.md's Data Models section, importing connection.proto for Point2D and google/protobuf/any.proto for the payload extension point, following requirements 4.1-4.4 | Restrictions: proto3 syntax only, do not inline a copy of Point2D, do not define any concrete element type (that is diagram-module scope, not this task), field numbers must match design.md exactly | Leverage: design.md's Data Models and Components sections, src/api/connection.proto from task 1 | Success: file parses as valid proto3 with correct imports resolving against src/api/connection.proto, matches design.md in message/field names and numbers. Mark this task in-progress ([-]) in tasks.md before starting, and mark it complete ([x]) and log the implementation with log-implementation after finishing._
 
-- [ ] 3. Create src/api/deltas.proto
+- [x] 3. Create src/api/deltas.proto
   - File: src/api/deltas.proto
   - Define `Add`, `Remove`, `Group`, `Ungroup`, and `Delta` messages exactly as specified in design.md's Data Models section
   - Import `elements.proto` (for `Element`/`ElementId`)
@@ -27,7 +27,7 @@
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
   - _Prompt: Implement the task for spec grpc-core-communication-specification, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Protocol Buffers/gRPC contract author | Task: Create src/api/deltas.proto defining Add, Remove, Group, Ungroup, and the Delta oneof envelope exactly as shown in design.md's Data Models section, importing elements.proto for Element/ElementId, following requirements 3.1-3.5 | Restrictions: proto3 syntax only, Delta must be a oneof over exactly the four actions with the field numbers from design.md, no service/rpc definitions in this file | Leverage: design.md's Data Models and Components sections, src/api/elements.proto from task 2 | Success: file parses as valid proto3 with correct imports resolving against src/api/elements.proto, matches design.md in message/field names and numbers. Mark this task in-progress ([-]) in tasks.md before starting, and mark it complete ([x]) and log the implementation with log-implementation after finishing._
 
-- [ ] 4. Create src/api/service.proto
+- [x] 4. Create src/api/service.proto
   - File: src/api/service.proto
   - Define the `ClientMessage` oneof envelope and the `AdpService` bidirectional-streaming `Connect` RPC exactly as specified in design.md's Data Models section
   - Import `connection.proto` (for `Path`/`ViewUpdate`) and `deltas.proto` (for `Delta`)
@@ -36,7 +36,7 @@
   - _Requirements: 5.1, 5.2, 5.3_
   - _Prompt: Implement the task for spec grpc-core-communication-specification, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Protocol Buffers/gRPC contract author | Task: Create src/api/service.proto defining ClientMessage (oneof of Path connect / ViewUpdate view_update) and the AdpService service with a single bidirectional-streaming rpc Connect(stream ClientMessage) returns (stream Delta), exactly as shown in design.md's Data Models section, importing connection.proto and deltas.proto, following requirements 5.1-5.3 | Restrictions: proto3 syntax only, exactly one rpc method (Connect), do not add authentication/authorization message types (out of scope per design.md's Error Handling section) | Leverage: design.md's Data Models and Components sections, src/api/connection.proto from task 1, src/api/deltas.proto from task 3 | Success: file parses as valid proto3 with correct imports resolving against connection.proto and deltas.proto, service/RPC signature matches design.md exactly. Mark this task in-progress ([-]) in tasks.md before starting, and mark it complete ([x]) and log the implementation with log-implementation after finishing._
 
-- [ ] 5. Validate the core contract compiles end-to-end
+- [x] 5. Validate the core contract compiles end-to-end
   - Files: src/api/connection.proto, src/api/elements.proto, src/api/deltas.proto, src/api/service.proto (verification only, no edits expected unless a compile error is found)
   - Run a throwaway local `protoc`/`Grpc.Tools` C# codegen pass over all four files together (per design.md's Testing Strategy) and confirm it succeeds with no errors
   - Do not check the generated stub code into the repository — this task only proves the contract is valid

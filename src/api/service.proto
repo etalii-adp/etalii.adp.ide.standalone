@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package etalii.adp;
+
+import "connection.proto";
+import "deltas.proto";
+
+option csharp_namespace = "EtAlii.Adp";
+
+message ClientMessage {
+  oneof payload {
+    Path connect = 1;       // expected as the first message on the stream
+    ViewUpdate view_update = 2;
+  }
+}
+
+service AdpService {
+  rpc Connect(stream ClientMessage) returns (stream Delta);
+}

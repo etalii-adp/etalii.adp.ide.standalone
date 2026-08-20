@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/grpc-core-communication-specification/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-20T11:17:48.159Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787224668151_atpts7cbw",
+      "approvalTitle": "Tasks: gRPC Core Communication Specification"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-20T11:18:52.993Z",
+      "trigger": "approved",
+      "approvalId": "approval_1787224668151_atpts7cbw",
+      "approvalTitle": "Tasks: gRPC Core Communication Specification"
+    }
+  ]
+}
