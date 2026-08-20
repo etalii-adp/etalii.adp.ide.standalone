@@ -3,8 +3,10 @@
   "title": "Rename AdpService to DiagramService — Requirements",
   "filePath": ".spec-workflow/specs/rename-adpservice-to-diagramservice/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-20T16:02:20.283Z",
   "category": "spec",
-  "categoryName": "rename-adpservice-to-diagramservice"
+  "categoryName": "rename-adpservice-to-diagramservice",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-20T16:07:36.496Z"
 }
