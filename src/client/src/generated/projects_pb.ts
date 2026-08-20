@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file projects.proto.
  */
 export const file_projects: GenFile = /*@__PURE__*/
-  fileDesc("Cg5wcm9qZWN0cy5wcm90bxIKZXRhbGlpLmFkcCJDCgdQcm9qZWN0EgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSHgoEcGF0aBgDIAEoCzIQLmV0YWxpaS5hZHAuUGF0aCIVChNMaXN0UHJvamVjdHNSZXF1ZXN0Ij0KFExpc3RQcm9qZWN0c1Jlc3BvbnNlEiUKCHByb2plY3RzGAEgAygLMhMuZXRhbGlpLmFkcC5Qcm9qZWN0IjMKEUFkZFByb2plY3RSZXF1ZXN0Eh4KBHBhdGgYASABKAsyEC5ldGFsaWkuYWRwLlBhdGgiIgoPQWRkUHJvamVjdEVycm9yEg8KB21lc3NhZ2UYASABKAkicgoSQWRkUHJvamVjdFJlc3BvbnNlEiQKBWFkZGVkGAEgASgLMhMuZXRhbGlpLmFkcC5Qcm9qZWN0SAASLAoFZXJyb3IYAiABKAsyGy5ldGFsaWkuYWRwLkFkZFByb2plY3RFcnJvckgAQggKBnJlc3VsdCIqChRSZW1vdmVQcm9qZWN0UmVxdWVzdBISCgpwcm9qZWN0X2lkGAEgASgJIhcKFVJlbW92ZVByb2plY3RSZXNwb25zZTKGAgoOUHJvamVjdFNlcnZpY2USUQoMTGlzdFByb2plY3RzEh8uZXRhbGlpLmFkcC5MaXN0UHJvamVjdHNSZXF1ZXN0GiAuZXRhbGlpLmFkcC5MaXN0UHJvamVjdHNSZXNwb25zZRJLCgpBZGRQcm9qZWN0Eh0uZXRhbGlpLmFkcC5BZGRQcm9qZWN0UmVxdWVzdBoeLmV0YWxpaS5hZHAuQWRkUHJvamVjdFJlc3BvbnNlElQKDVJlbW92ZVByb2plY3QSIC5ldGFsaWkuYWRwLlJlbW92ZVByb2plY3RSZXF1ZXN0GiEuZXRhbGlpLmFkcC5SZW1vdmVQcm9qZWN0UmVzcG9uc2VCDaoCCkV0QWxpaS5BZHBiBnByb3RvMw", [file_connection]);
+  fileDesc("Cg5wcm9qZWN0cy5wcm90bxIKZXRhbGlpLmFkcCJZCgdQcm9qZWN0EgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSHgoEcGF0aBgDIAEoCzIQLmV0YWxpaS5hZHAuUGF0aBIUCgxkaXNwbGF5X3BhdGgYBCABKAkiFQoTTGlzdFByb2plY3RzUmVxdWVzdCI9ChRMaXN0UHJvamVjdHNSZXNwb25zZRIlCghwcm9qZWN0cxgBIAMoCzITLmV0YWxpaS5hZHAuUHJvamVjdCJBChFBZGRQcm9qZWN0UmVxdWVzdBIeCgRwYXRoGAEgASgLMhAuZXRhbGlpLmFkcC5QYXRoEgwKBG5hbWUYAiABKAkiIgoPQWRkUHJvamVjdEVycm9yEg8KB21lc3NhZ2UYASABKAkicgoSQWRkUHJvamVjdFJlc3BvbnNlEiQKBWFkZGVkGAEgASgLMhMuZXRhbGlpLmFkcC5Qcm9qZWN0SAASLAoFZXJyb3IYAiABKAsyGy5ldGFsaWkuYWRwLkFkZFByb2plY3RFcnJvckgAQggKBnJlc3VsdCIqChRSZW1vdmVQcm9qZWN0UmVxdWVzdBISCgpwcm9qZWN0X2lkGAEgASgJIhcKFVJlbW92ZVByb2plY3RSZXNwb25zZTKGAgoOUHJvamVjdFNlcnZpY2USUQoMTGlzdFByb2plY3RzEh8uZXRhbGlpLmFkcC5MaXN0UHJvamVjdHNSZXF1ZXN0GiAuZXRhbGlpLmFkcC5MaXN0UHJvamVjdHNSZXNwb25zZRJLCgpBZGRQcm9qZWN0Eh0uZXRhbGlpLmFkcC5BZGRQcm9qZWN0UmVxdWVzdBoeLmV0YWxpaS5hZHAuQWRkUHJvamVjdFJlc3BvbnNlElQKDVJlbW92ZVByb2plY3QSIC5ldGFsaWkuYWRwLlJlbW92ZVByb2plY3RSZXF1ZXN0GiEuZXRhbGlpLmFkcC5SZW1vdmVQcm9qZWN0UmVzcG9uc2VCDaoCCkV0QWxpaS5BZHBiBnByb3RvMw", [file_connection]);
 
 /**
  * @generated from message etalii.adp.Project
@@ -32,6 +32,13 @@ export type Project = Message<"etalii.adp.Project"> & {
    * @generated from field: etalii.adp.Path path = 3;
    */
   path?: Path | undefined;
+
+  /**
+   * path.segments joined and middle-truncated for tile display
+   *
+   * @generated from field: string display_path = 4;
+   */
+  displayPath: string;
 };
 
 /**
@@ -81,6 +88,11 @@ export type AddProjectRequest = Message<"etalii.adp.AddProjectRequest"> & {
    * @generated from field: etalii.adp.Path path = 1;
    */
   path?: Path | undefined;
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name: string;
 };
 
 /**
