@@ -55,6 +55,18 @@ This implements the "Minimal footprint, incremental value" and "Value from day o
 1. WHEN a user chooses to log out THEN the system SHALL end the authenticated session and return to the login screen.
 2. WHEN a session ends (logout or expiry) THEN the system SHALL discard any in-memory project/diagram state held on the client.
 
+### Requirement 5 — Persisted, user-managed project list
+
+**User Story:** As a user, I want my list of project folders to persist across sessions and be able to add or remove entries myself, so that I don't have to reconfigure my workspace every time I log in.
+
+#### Acceptance Criteria
+
+1. WHEN a user's project list changes (an add or a remove) THEN the system SHALL persist that list associated with the user, so it survives logout/login and application restarts.
+2. WHEN a user wants to add a project THEN the system SHALL let them do so by entering a folder path as plain text (first iteration); a richer folder-browse picker MAY replace or augment this later without changing the persisted data model. This is how Requirement 2.4's "way to add one" is satisfied.
+3. WHEN a user submits a folder path to add THEN the system SHALL validate that it resolves to an accessible folder before adding it to their project list, and SHALL reject an invalid path with a clear error without corrupting the existing list.
+4. WHEN a user removes a project from their list THEN the system SHALL remove it from their persisted project list and from the grid, but SHALL NOT delete or otherwise modify the underlying folder or its contents on disk.
+5. WHEN a project is added or removed THEN the system SHALL reflect the change in the grid without requiring a full page reload.
+
 ## Non-Functional Requirements
 
 ### Code Architecture and Modularity
@@ -70,6 +82,7 @@ This implements the "Minimal footprint, incremental value" and "Value from day o
 
 ### Reliability
 - IF the backend is unreachable at login time THEN the system SHALL surface a clear connection error rather than an unexplained hang or silent failure.
+- Per-user project list persistence SHOULD follow the same file-based, no-database philosophy as diagram storage (per `tech.md`'s "File-based storage over a database" decision) rather than introducing a new persistence mechanism.
 
 ### Usability
 - The project grid SHOULD follow a recent-projects-grid convention familiar from IDEs like Rider (per `tech.md`'s development-tools context), reinforcing the "familiar surface" product principle even before a project is opened.
