@@ -14,4 +14,24 @@
     <PackageReference Include="JetBrains.Annotations" />
   </ItemGroup>
 
+  <!--
+    Production hosting only (tech.md's Development tools section): the F5/local-dev loop talks
+    to Vite directly via ClientAppHostingExtensions' dev-server proxy instead, so the client's
+    dist/ never needs to exist for `dotnet build`/`dotnet run` - only for `dotnet publish`.
+  -->
+  <Target Name="BuildClientApp" BeforeTargets="Publish">
+    <Exec Command="npm ci" WorkingDirectory="$(MSBuildThisFileDirectory)..\..\client" />
+    <Exec Command="npm run build" WorkingDirectory="$(MSBuildThisFileDirectory)..\..\client" />
+  </Target>
+
+  <Target Name="PublishClientApp" BeforeTargets="ComputeFilesToPublish" DependsOnTargets="BuildClientApp">
+    <ItemGroup>
+      <ClientDistFile Include="$(MSBuildThisFileDirectory)..\..\client\dist\**" />
+      <ResolvedFileToPublish Include="@(ClientDistFile)">
+        <RelativePath>wwwroot\%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+
 </Project>
