@@ -9,6 +9,11 @@ function toPathSegments(rawPath: string): string[] {
   return rawPath.split(/[/\\]+/).filter((segment) => segment.length > 0);
 }
 
+/** Hex-encodes a ShortGuid's raw bytes for use as a React list key. */
+function toKey(bytes: Uint8Array): string {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 interface ProjectGridPageProps {
   /** Hands the selected project off to the workspace shell (adp-diagram-ide); this component has no dependency on that shell itself. */
   onProjectSelected: (project: Project) => void;
@@ -51,7 +56,7 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
     await refresh();
   };
 
-  const handleRemove = async (projectId: string) => {
+  const handleRemove = async (projectId: Uint8Array) => {
     await projectClient.removeProject({ projectId: { value: projectId } });
     await refresh();
   };
@@ -72,7 +77,7 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
 
       <ul className="project-grid">
         {projects.map((project) => (
-          <li className="project-card" key={project.id?.value}>
+          <li className="project-card" key={project.id ? toKey(project.id.value) : project.name}>
             <button className="project-card-open" type="button" onClick={() => onProjectSelected(project)}>
               <span className="project-card-name">{project.name}</span>
               <span className="project-card-path">{project.displayPath}</span>
@@ -80,7 +85,7 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
             <button
               className="remove-button"
               type="button"
-              onClick={() => void handleRemove(project.id?.value ?? "")}
+              onClick={() => project.id && void handleRemove(project.id.value)}
               aria-label={`Remove ${project.name}`}
             >
               <span className="mdi mdi-trash-can-outline" aria-hidden="true" />

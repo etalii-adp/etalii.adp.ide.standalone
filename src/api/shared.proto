@@ -8,7 +8,8 @@ package etalii.adp;
 // the wire representation of.
 option csharp_namespace = "EtAlii.Adp.Contracts";
 
-// The base36 string representation of a System.Guid (EtAlii.Adp.ShortGuid).
+// The raw 16-byte representation of a System.Guid (EtAlii.Adp.ShortGuid);
+// the base36 string form is a display/URL concern, not a wire concern.
 message ShortGuid {
-  string value = 1;
+  bytes value = 1;
 }

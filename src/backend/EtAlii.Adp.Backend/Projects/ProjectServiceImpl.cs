@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend.Sessions;
+using Google.Protobuf;
 using Grpc.Core;
 using ShortGuidContract = EtAlii.Adp.Contracts.ShortGuid;
 
@@ -41,7 +42,7 @@ public sealed class ProjectServiceImpl : ProjectService.ProjectServiceBase
     public override Task<RemoveProjectResponse> RemoveProject(RemoveProjectRequest request, ServerCallContext context)
     {
         var userId = SessionContext.GetUsername(context);
-        _projectStore.Remove(userId, ShortGuid.Parse(request.ProjectId.Value));
+        _projectStore.Remove(userId, new Guid(request.ProjectId.Value.Span));
         return Task.FromResult(new RemoveProjectResponse());
     }
 
@@ -51,7 +52,7 @@ public sealed class ProjectServiceImpl : ProjectService.ProjectServiceBase
         path.Segments.AddRange(record.PathSegments);
         return new Project
         {
-            Id = new ShortGuidContract { Value = record.Id.ToString() },
+            Id = new ShortGuidContract { Value = ByteString.CopyFrom(record.Id.Guid.ToByteArray()) },
             Name = record.Name,
             Path = path,
             DisplayPath = PathTruncator.Truncate(record.PathSegments)

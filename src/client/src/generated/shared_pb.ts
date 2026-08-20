@@ -10,18 +10,19 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shared.proto.
  */
 export const file_shared: GenFile = /*@__PURE__*/
-  fileDesc("CgxzaGFyZWQucHJvdG8SCmV0YWxpaS5hZHAiGgoJU2hvcnRHdWlkEg0KBXZhbHVlGAEgASgJQheqAhRFdEFsaWkuQWRwLkNvbnRyYWN0c2IGcHJvdG8z");
+  fileDesc("CgxzaGFyZWQucHJvdG8SCmV0YWxpaS5hZHAiGgoJU2hvcnRHdWlkEg0KBXZhbHVlGAEgASgMQheqAhRFdEFsaWkuQWRwLkNvbnRyYWN0c2IGcHJvdG8z");
 
 /**
- * The base36 string representation of a System.Guid (EtAlii.Adp.ShortGuid).
+ * The raw 16-byte representation of a System.Guid (EtAlii.Adp.ShortGuid);
+ * the base36 string form is a display/URL concern, not a wire concern.
  *
  * @generated from message etalii.adp.ShortGuid
  */
 export type ShortGuid = Message<"etalii.adp.ShortGuid"> & {
   /**
-   * @generated from field: string value = 1;
+   * @generated from field: bytes value = 1;
    */
-  value: string;
+  value: Uint8Array;
 };
 
 /**
