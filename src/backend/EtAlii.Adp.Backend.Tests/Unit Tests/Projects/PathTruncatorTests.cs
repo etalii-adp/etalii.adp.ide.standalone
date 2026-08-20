@@ -42,6 +42,22 @@ public class PathTruncatorTests
     }
 
     [Fact]
+    public void Truncate_PrefersTheSplitThatKeepsTheEllipsisClosestToCenter_EvenWhenGrowingTheFrontFirstWouldAlsoFit()
+    {
+        // The middle segment is made long enough that no split can ever include it, so
+        // the only real choice is how much of {A, BBBBB} vs {D, E} to keep. Growing the
+        // front greedily would settle on {A, BBBBB} + ... + {E} (a 7/1 char imbalance),
+        // but {A} + ... + {D, E} keeps the same number of segments (3) with the head and
+        // tail nearly equal (1/3) - the ellipsis lands much closer to the middle, which is
+        // what this asserts.
+        var segments = new[] { "A", "BBBBB", "middle-filler-segment", "D", "E" };
+
+        var result = PathTruncator.Truncate(segments, maxLength: 13);
+
+        Assert.Equal($"A{Sep}...{Sep}D{Sep}E", result);
+    }
+
+    [Fact]
     public void Truncate_WithTwoSegmentsTooLongToFit_FallsBackToCharacterTruncation()
     {
         var segments = new[] { "C:", new string('a', 60) };

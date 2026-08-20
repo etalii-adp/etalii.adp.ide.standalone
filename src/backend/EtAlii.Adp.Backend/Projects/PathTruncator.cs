@@ -7,7 +7,10 @@ namespace EtAlii.Adp.Backend.Projects;
 /// "split the remaining budget between a head and a tail" approach (see
 /// https://codereview.stackexchange.com/questions/289368) but operating on whole
 /// path segments first, so a folder name is never cut in half - only whole
-/// segments are dropped from the middle. Falls back to character-level
+/// segments are dropped from the middle. Among every front/back split that fits
+/// maxLength, the one keeping the most segments is preferred, and ties are broken
+/// by whichever keeps the head and tail closest in length - i.e. the ellipsis as
+/// close to the middle of the result as possible. Falls back to character-level
 /// truncation when there aren't enough segments to drop from (a bare path or a
 /// single very long segment).
 /// </summary>
@@ -36,37 +39,61 @@ public static class PathTruncator
             return TruncateMiddle(full, maxLength);
         }
 
-        var frontCount = 1;
-        var backCount = 1;
-
-        while (frontCount + backCount < segments.Count)
+        var split = FindMostCenteredSplit(segments, maxLength, separator);
+        if (split is not var (frontCount, backCount))
         {
-            if (CombinedLength(segments, frontCount + 1, backCount, separator) <= maxLength)
+            return TruncateMiddle(full, maxLength);
+        }
+
+        return string.Join(separator, segments.Take(frontCount))
+            + separator + Ellipsis + separator
+            + string.Join(separator, segments.Skip(segments.Count - backCount));
+    }
+
+    private static (int FrontCount, int BackCount)? FindMostCenteredSplit(IReadOnlyList<string> segments, int maxLength, string separator)
+    {
+        (int FrontCount, int BackCount)? best = null;
+        var bestTotal = 0;
+        var bestImbalance = int.MaxValue;
+
+        for (var frontCount = 1; frontCount < segments.Count; frontCount++)
+        {
+            var frontLength = SegmentsLength(segments, 0, frontCount, separator);
+            var maxBackCount = segments.Count - frontCount - 1;
+
+            for (var backCount = 1; backCount <= maxBackCount; backCount++)
             {
-                frontCount++;
-            }
-            else if (CombinedLength(segments, frontCount, backCount + 1, separator) <= maxLength)
-            {
-                backCount++;
-            }
-            else
-            {
-                break;
+                var backLength = SegmentsLength(segments, segments.Count - backCount, backCount, separator);
+                var combinedLength = frontLength + separator.Length + Ellipsis.Length + separator.Length + backLength;
+                if (combinedLength > maxLength)
+                {
+                    continue;
+                }
+
+                var total = frontCount + backCount;
+                var imbalance = Math.Abs(frontLength - backLength);
+
+                if (best is null || total > bestTotal || (total == bestTotal && imbalance < bestImbalance))
+                {
+                    best = (frontCount, backCount);
+                    bestTotal = total;
+                    bestImbalance = imbalance;
+                }
             }
         }
 
-        var result = string.Join(separator, segments.Take(frontCount))
-            + separator + Ellipsis + separator
-            + string.Join(separator, segments.Skip(segments.Count - backCount));
-
-        return result.Length <= maxLength ? result : TruncateMiddle(full, maxLength);
+        return best;
     }
 
-    private static int CombinedLength(IReadOnlyList<string> segments, int frontCount, int backCount, string separator)
+    private static int SegmentsLength(IReadOnlyList<string> segments, int start, int count, string separator)
     {
-        var frontLength = segments.Take(frontCount).Sum(s => s.Length) + separator.Length * Math.Max(0, frontCount - 1);
-        var backLength = segments.Skip(segments.Count - backCount).Sum(s => s.Length) + separator.Length * Math.Max(0, backCount - 1);
-        return frontLength + separator.Length + Ellipsis.Length + separator.Length + backLength;
+        var sum = 0;
+        for (var i = start; i < start + count; i++)
+        {
+            sum += segments[i].Length;
+        }
+
+        return sum + separator.Length * Math.Max(0, count - 1);
     }
 
     private static string TruncateMiddle(string text, int maxLength)
