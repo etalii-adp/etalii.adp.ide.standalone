@@ -6,8 +6,7 @@ namespace EtAlii.Adp;
 /// A <see cref="Guid"/> represented as a fixed-length, 25-character base36 string
 /// (25 is the smallest width in which every possible 128-bit value fits: 36^24 &lt; 2^128 &le; 36^25).
 /// </summary>
-public readonly struct ShortGuid :
-    IEquatable<ShortGuid>,
+public readonly record struct ShortGuid :
     IComparable<ShortGuid>,
     ISpanFormattable,
     ISpanParsable<ShortGuid>
@@ -29,12 +28,8 @@ public readonly struct ShortGuid :
     public static implicit operator Guid(ShortGuid value) => value._value;
 
     public bool Equals(ShortGuid other) => _value.Equals(other._value);
-    public override bool Equals(object? obj) => obj is ShortGuid other && Equals(other);
     public override int GetHashCode() => _value.GetHashCode();
-
-    public static bool operator ==(ShortGuid left, ShortGuid right) => left.Equals(right);
-    public static bool operator !=(ShortGuid left, ShortGuid right) => !left.Equals(right);
-
+    
     public int CompareTo(ShortGuid other) => ToUInt128().CompareTo(other.ToUInt128());
 
     public static bool operator <(ShortGuid left, ShortGuid right) => left.CompareTo(right) < 0;
@@ -96,16 +91,19 @@ public readonly struct ShortGuid :
             return false;
         }
 
+        UInt128 value = 0;
         try
         {
-            UInt128 value = 0;
             foreach (var c in s)
             {
                 int digit;
-                if (c is >= '0' and <= '9') digit = c - '0';
-                else if (c is >= 'a' and <= 'z') digit = c - 'a' + 10;
-                else if (c is >= 'A' and <= 'Z') digit = c - 'A' + 10;
-                else return false;
+                switch (c)
+                {
+                    case >= '0' and <= '9': digit = c - '0'; break;
+                    case >= 'a' and <= 'z': digit = c - 'a' + 10; break;
+                    case >= 'A' and <= 'Z': digit = c - 'A' + 10; break;
+                    default: return false;
+                }
 
                 value = checked(value * 36 + (UInt128)digit);
             }
