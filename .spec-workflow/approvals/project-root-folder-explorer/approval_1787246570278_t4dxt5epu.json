@@ -3,8 +3,10 @@
   "title": "Requirements: project-root-folder-explorer",
   "filePath": ".spec-workflow/specs/project-root-folder-explorer/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-20T17:22:50.278Z",
   "category": "spec",
-  "categoryName": "project-root-folder-explorer"
+  "categoryName": "project-root-folder-explorer",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-20T23:37:57.462Z"
 }
