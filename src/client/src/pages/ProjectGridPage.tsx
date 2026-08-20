@@ -9,18 +9,6 @@ function toPathSegments(rawPath: string): string[] {
   return rawPath.split(/[/\\]+/).filter((segment) => segment.length > 0);
 }
 
-function TrashIcon() {
-  return (
-    <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M4 6h12" />
-      <path d="M7.5 6V4.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V6" />
-      <path d="M15 6l-.75 10a1 1 0 0 1-1 .9H6.75a1 1 0 0 1-1-.9L5 6" />
-      <path d="M8.5 9v5" />
-      <path d="M11.5 9v5" />
-    </svg>
-  );
-}
-
 interface ProjectGridPageProps {
   /** Hands the selected project off to the workspace shell (adp-diagram-ide); this component has no dependency on that shell itself. */
   onProjectSelected: (project: Project) => void;
@@ -95,7 +83,7 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
               onClick={() => void handleRemove(project.id)}
               aria-label={`Remove ${project.name}`}
             >
-              <TrashIcon />
+              <span className="mdi mdi-trash-can-outline" aria-hidden="true" />
             </button>
           </li>
         ))}

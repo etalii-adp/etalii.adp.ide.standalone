@@ -16,6 +16,7 @@
     "@bufbuild/protobuf": "^2.2.3",
     "@connectrpc/connect": "^2.0.1",
     "@connectrpc/connect-web": "^2.0.1",
+    "@mdi/font": "^7.4.47",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

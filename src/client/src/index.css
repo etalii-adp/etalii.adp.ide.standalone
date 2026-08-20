@@ -203,6 +203,8 @@ button {
   border: none;
   color: var(--color-text-muted);
   border-radius: 6px;
+  font-size: 1.125rem;
+  line-height: 1;
 }
 
 .remove-button:hover {
