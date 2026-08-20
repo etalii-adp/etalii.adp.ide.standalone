@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/steering/product.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-19T16:41:28.950Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787157688943_dj1zweibo",
+      "approvalTitle": "Steering: Product (extended)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-20T10:47:40.093Z",
+      "trigger": "approved",
+      "approvalId": "approval_1787157688943_dj1zweibo",
+      "approvalTitle": "Steering: Product (extended)"
+    }
+  ]
+}

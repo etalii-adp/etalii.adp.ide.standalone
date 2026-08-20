@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/steering/tech.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-19T16:41:31.344Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787157691336_8cuy0a4kk",
+      "approvalTitle": "Steering: Tech (extended)"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-20T10:47:26.787Z",
+      "trigger": "approved",
+      "approvalId": "approval_1787157691336_8cuy0a4kk",
+      "approvalTitle": "Steering: Tech (extended)"
+    }
+  ]
+}
