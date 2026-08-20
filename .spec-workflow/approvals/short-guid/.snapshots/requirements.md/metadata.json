@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/short-guid/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-20T23:00:03.842Z",
       "trigger": "initial",
+      "approvalId": "approval_1787266803796_s3a1q0gkn",
+      "approvalTitle": "Requirements: short-guid"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-20T23:01:05.599Z",
+      "trigger": "approved",
       "approvalId": "approval_1787266803796_s3a1q0gkn",
       "approvalTitle": "Requirements: short-guid"
     }

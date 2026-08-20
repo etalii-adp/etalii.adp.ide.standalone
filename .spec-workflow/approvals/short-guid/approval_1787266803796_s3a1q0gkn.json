@@ -3,8 +3,10 @@
   "title": "Requirements: short-guid",
   "filePath": ".spec-workflow/specs/short-guid/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-20T23:00:03.796Z",
   "category": "spec",
-  "categoryName": "short-guid"
+  "categoryName": "short-guid",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-20T23:01:05.607Z"
 }
