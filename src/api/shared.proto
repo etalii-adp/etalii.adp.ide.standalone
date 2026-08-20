@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package etalii.adp;
+
+// A dedicated namespace, distinct from the domain namespace "EtAlii.Adp" the
+// other generated messages share, because EtAlii.Adp itself already defines
+// a ShortGuid type (src/backend/EtAlii.Adp/ShortGuid.cs) that this message is
+// the wire representation of.
+option csharp_namespace = "EtAlii.Adp.Contracts";
+
+// The base36 string representation of a System.Guid (EtAlii.Adp.ShortGuid).
+message ShortGuid {
+  string value = 1;
+}

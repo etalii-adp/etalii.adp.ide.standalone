@@ -29,13 +29,13 @@ public sealed class FileProjectStore : IProjectStore
 
         var projects = Read(userId).ToList();
         var resolvedName = string.IsNullOrWhiteSpace(name) ? new DirectoryInfo(folderPath).Name : name.Trim();
-        var record = new ProjectRecord(Guid.NewGuid().ToString("N"), resolvedName, pathSegments);
+        var record = new ProjectRecord(ShortGuid.NewShortGuid(), resolvedName, pathSegments);
         projects.Add(record);
         Write(userId, projects);
         return record;
     }
 
-    public void Remove(string userId, string projectId)
+    public void Remove(string userId, ShortGuid projectId)
     {
         var projects = Read(userId).Where(p => p.Id != projectId).ToList();
         Write(userId, projects);
@@ -55,7 +55,7 @@ public sealed class FileProjectStore : IProjectStore
         var json = File.ReadAllText(filePath);
         var entries = JsonSerializer.Deserialize<List<ProjectEntry>>(json) ?? new List<ProjectEntry>();
         return entries
-            .Select(e => new ProjectRecord(e.Id, e.Name, e.Path))
+            .Select(e => new ProjectRecord(ShortGuid.Parse(e.Id), e.Name, e.Path))
             .ToList();
     }
 
@@ -65,7 +65,7 @@ public sealed class FileProjectStore : IProjectStore
         Directory.CreateDirectory(IoPath.GetDirectoryName(filePath)!);
 
         var entries = projects
-            .Select(p => new ProjectEntry(p.Id, p.Name, p.PathSegments.ToList()))
+            .Select(p => new ProjectEntry(p.Id.ToString(), p.Name, p.PathSegments.ToList()))
             .ToList();
         var json = JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(filePath, json);

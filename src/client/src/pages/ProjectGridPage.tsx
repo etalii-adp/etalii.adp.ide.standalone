@@ -52,7 +52,7 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
   };
 
   const handleRemove = async (projectId: string) => {
-    await projectClient.removeProject({ projectId });
+    await projectClient.removeProject({ projectId: { value: projectId } });
     await refresh();
   };
 
@@ -72,7 +72,7 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
 
       <ul className="project-grid">
         {projects.map((project) => (
-          <li className="project-card" key={project.id}>
+          <li className="project-card" key={project.id?.value}>
             <button className="project-card-open" type="button" onClick={() => onProjectSelected(project)}>
               <span className="project-card-name">{project.name}</span>
               <span className="project-card-path">{project.displayPath}</span>
@@ -80,7 +80,7 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
             <button
               className="remove-button"
               type="button"
-              onClick={() => void handleRemove(project.id)}
+              onClick={() => void handleRemove(project.id?.value ?? "")}
               aria-label={`Remove ${project.name}`}
             >
               <span className="mdi mdi-trash-can-outline" aria-hidden="true" />
