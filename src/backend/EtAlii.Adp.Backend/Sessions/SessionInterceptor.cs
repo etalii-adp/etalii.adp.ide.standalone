@@ -49,11 +49,11 @@ public sealed class SessionInterceptor : Interceptor
         }
 
         var token = context.RequestHeaders.GetValue(SessionTokenMetadataKey);
-        if (token is null || !_sessionStore.TryValidate(token, out var username))
+        if (token is null || !_sessionStore.TryValidate(token, out var userId))
         {
             throw new RpcException(new Status(StatusCode.Unauthenticated, "Missing or invalid session token."));
         }
 
-        SessionContext.SetUsername(context, username!);
+        SessionContext.SetUserId(context, userId);
     }
 }

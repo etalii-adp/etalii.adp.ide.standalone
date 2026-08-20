@@ -1,4 +1,6 @@
 using System.Buffers.Binary;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace EtAlii.Adp;
 
@@ -23,6 +25,13 @@ public readonly record struct ShortGuid :
     public Guid Guid => _value;
 
     public static ShortGuid NewShortGuid() => new(Guid.NewGuid());
+
+    /// <summary>
+    /// Deterministically derives a ShortGuid from a name, so the same name always
+    /// yields the same identity (e.g. a stable per-username id with no separate
+    /// persisted name-to-id mapping needed).
+    /// </summary>
+    public static ShortGuid FromName(string name) => new(new Guid(MD5.HashData(Encoding.UTF8.GetBytes(name))));
 
     public static implicit operator ShortGuid(Guid value) => new(value);
     public static implicit operator Guid(ShortGuid value) => value._value;

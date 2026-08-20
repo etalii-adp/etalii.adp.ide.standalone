@@ -17,9 +17,9 @@ public sealed class FileProjectStore : IProjectStore
         _appDataRoot = appDataRoot;
     }
 
-    public IReadOnlyList<ProjectRecord> List(string userId) => Read(userId);
+    public IReadOnlyList<ProjectRecord> List(ShortGuid userId) => Read(userId);
 
-    public ProjectRecord Add(string userId, string name, IReadOnlyList<string> pathSegments)
+    public ProjectRecord Add(ShortGuid userId, string name, IReadOnlyList<string> pathSegments)
     {
         var folderPath = IoPath.Combine(pathSegments.ToArray());
         if (!Directory.Exists(folderPath))
@@ -35,16 +35,16 @@ public sealed class FileProjectStore : IProjectStore
         return record;
     }
 
-    public void Remove(string userId, ShortGuid projectId)
+    public void Remove(ShortGuid userId, ShortGuid projectId)
     {
         var projects = Read(userId).Where(p => p.Id != projectId).ToList();
         Write(userId, projects);
     }
 
-    private string GetFilePath(string userId) =>
-        IoPath.Combine(_appDataRoot, "EtAlii.Adp", "users", userId, "projects.json");
+    private string GetFilePath(ShortGuid userId) =>
+        IoPath.Combine(_appDataRoot, "EtAlii.Adp", "users", userId.ToString(), "projects.json");
 
-    private IReadOnlyList<ProjectRecord> Read(string userId)
+    private IReadOnlyList<ProjectRecord> Read(ShortGuid userId)
     {
         var filePath = GetFilePath(userId);
         if (!File.Exists(filePath))
@@ -59,7 +59,7 @@ public sealed class FileProjectStore : IProjectStore
             .ToList();
     }
 
-    private void Write(string userId, IReadOnlyList<ProjectRecord> projects)
+    private void Write(ShortGuid userId, IReadOnlyList<ProjectRecord> projects)
     {
         var filePath = GetFilePath(userId);
         Directory.CreateDirectory(IoPath.GetDirectoryName(filePath)!);

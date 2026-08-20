@@ -24,7 +24,8 @@ public sealed class AuthenticationServiceImpl : AuthenticationService.Authentica
             });
         }
 
-        var token = _sessionStore.Issue(request.Username);
+        var userId = ShortGuid.FromName(request.Username);
+        var token = _sessionStore.Issue(userId);
         return Task.FromResult(new LoginResponse
         {
             Session = new SessionToken { Value = token }

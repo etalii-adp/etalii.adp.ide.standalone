@@ -4,10 +4,10 @@ public sealed record ProjectRecord(ShortGuid Id, string Name, IReadOnlyList<stri
 
 public interface IProjectStore
 {
-    IReadOnlyList<ProjectRecord> List(string userId);
+    IReadOnlyList<ProjectRecord> List(ShortGuid userId);
 
     /// <exception cref="InvalidProjectPathException">The path does not resolve to an accessible folder.</exception>
-    ProjectRecord Add(string userId, string name, IReadOnlyList<string> pathSegments);
+    ProjectRecord Add(ShortGuid userId, string name, IReadOnlyList<string> pathSegments);
 
-    void Remove(string userId, ShortGuid projectId);
+    void Remove(ShortGuid userId, ShortGuid projectId);
 }

@@ -69,6 +69,24 @@ public class ShortGuidTests
     }
 
     [Fact]
+    public void FromName_CalledRepeatedlyWithTheSameName_ProducesTheSameValue()
+    {
+        var first = ShortGuid.FromName("developer");
+        var second = ShortGuid.FromName("developer");
+
+        Assert.Equal(first, second);
+    }
+
+    [Fact]
+    public void FromName_WithDifferentNames_ProducesDifferentValues()
+    {
+        var first = ShortGuid.FromName("developer");
+        var second = ShortGuid.FromName("someone-else");
+
+        Assert.NotEqual(first, second);
+    }
+
+    [Fact]
     public void Equals_WithSameUnderlyingGuid_AreEqualWithMatchingHashCodes()
     {
         var value = Guid.NewGuid();

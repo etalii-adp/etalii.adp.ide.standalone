@@ -1,7 +1,5 @@
 using EtAlii.Adp.Backend.Sessions;
-using Google.Protobuf;
 using Grpc.Core;
-using ShortGuidContract = EtAlii.Adp.Contracts.ShortGuid;
 
 namespace EtAlii.Adp.Backend.Projects;
 
@@ -16,7 +14,7 @@ public sealed class ProjectServiceImpl : ProjectService.ProjectServiceBase
 
     public override Task<ListProjectsResponse> ListProjects(ListProjectsRequest request, ServerCallContext context)
     {
-        var userId = SessionContext.GetUsername(context);
+        var userId = SessionContext.GetUserId(context);
         var response = new ListProjectsResponse();
         response.Projects.AddRange(_projectStore.List(userId).Select(ToProto));
         return Task.FromResult(response);
@@ -24,7 +22,7 @@ public sealed class ProjectServiceImpl : ProjectService.ProjectServiceBase
 
     public override Task<AddProjectResponse> AddProject(AddProjectRequest request, ServerCallContext context)
     {
-        var userId = SessionContext.GetUsername(context);
+        var userId = SessionContext.GetUserId(context);
         try
         {
             var added = _projectStore.Add(userId, request.Name, request.Path.Segments.ToList());
@@ -41,8 +39,8 @@ public sealed class ProjectServiceImpl : ProjectService.ProjectServiceBase
 
     public override Task<RemoveProjectResponse> RemoveProject(RemoveProjectRequest request, ServerCallContext context)
     {
-        var userId = SessionContext.GetUsername(context);
-        _projectStore.Remove(userId, new Guid(request.ProjectId.Value.Span));
+        var userId = SessionContext.GetUserId(context);
+        _projectStore.Remove(userId, request.ProjectId.ToShortGuid());
         return Task.FromResult(new RemoveProjectResponse());
     }
 
@@ -52,7 +50,7 @@ public sealed class ProjectServiceImpl : ProjectService.ProjectServiceBase
         path.Segments.AddRange(record.PathSegments);
         return new Project
         {
-            Id = new ShortGuidContract { Value = ByteString.CopyFrom(record.Id.Guid.ToByteArray()) },
+            Id = record.Id.ToContract(),
             Name = record.Name,
             Path = path,
             DisplayPath = PathTruncator.Truncate(record.PathSegments)

@@ -6,6 +6,8 @@ namespace EtAlii.Adp.Backend.Tests;
 
 public class FileProjectStoreTests : IDisposable
 {
+    private static readonly ShortGuid UserId = ShortGuid.FromName("user-1");
+
     private readonly string _appDataRoot;
 
     public FileProjectStoreTests()
@@ -34,7 +36,7 @@ public class FileProjectStoreTests : IDisposable
     {
         var store = new FileProjectStore(_appDataRoot);
 
-        Assert.Empty(store.List("user-1"));
+        Assert.Empty(store.List(UserId));
     }
 
     [Fact]
@@ -44,10 +46,10 @@ public class FileProjectStoreTests : IDisposable
         var folderPath = CreateRealFolder("my-project");
         var segments = folderPath.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
 
-        var added = store.Add("user-1", "", segments);
+        var added = store.Add(UserId, "", segments);
 
         Assert.Equal("my-project", added.Name);
-        Assert.Single(store.List("user-1"));
+        Assert.Single(store.List(UserId));
     }
 
     [Fact]
@@ -57,7 +59,7 @@ public class FileProjectStoreTests : IDisposable
         var folderPath = CreateRealFolder("my-project");
         var segments = folderPath.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
 
-        var added = store.Add("user-1", "Custom Name", segments);
+        var added = store.Add(UserId, "Custom Name", segments);
 
         Assert.Equal("Custom Name", added.Name);
     }
@@ -67,12 +69,12 @@ public class FileProjectStoreTests : IDisposable
     {
         var store = new FileProjectStore(_appDataRoot);
         var validFolder = CreateRealFolder("existing-project");
-        store.Add("user-1", "", validFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
+        store.Add(UserId, "", validFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
 
         var missingSegments = new[] { _appDataRoot, "does-not-exist" };
-        Assert.Throws<InvalidProjectPathException>(() => store.Add("user-1", "", missingSegments));
+        Assert.Throws<InvalidProjectPathException>(() => store.Add(UserId, "", missingSegments));
 
-        Assert.Single(store.List("user-1"));
+        Assert.Single(store.List(UserId));
     }
 
     [Fact]
@@ -80,11 +82,11 @@ public class FileProjectStoreTests : IDisposable
     {
         var store = new FileProjectStore(_appDataRoot);
         var folderPath = CreateRealFolder("to-remove");
-        var added = store.Add("user-1", "", folderPath.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
+        var added = store.Add(UserId, "", folderPath.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
 
-        store.Remove("user-1", added.Id);
+        store.Remove(UserId, added.Id);
 
-        Assert.Empty(store.List("user-1"));
+        Assert.Empty(store.List(UserId));
         Assert.True(Directory.Exists(folderPath));
     }
 
@@ -93,11 +95,11 @@ public class FileProjectStoreTests : IDisposable
     {
         var store = new FileProjectStore(_appDataRoot);
         var folderPath = CreateRealFolder("survives-restart");
-        store.Add("user-1", "", folderPath.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
+        store.Add(UserId, "", folderPath.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
 
         // Simulate a process restart: a brand-new store instance re-reading the same file.
         var reloadedStore = new FileProjectStore(_appDataRoot);
 
-        Assert.Single(reloadedStore.List("user-1"));
+        Assert.Single(reloadedStore.List(UserId));
     }
 }

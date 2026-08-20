@@ -61,10 +61,11 @@ public class SessionInterceptorTests
     }
 
     [Fact]
-    public async Task UnaryServerHandler_WithValidToken_PassesThroughAndSetsUsername()
+    public async Task UnaryServerHandler_WithValidToken_PassesThroughAndSetsUserId()
     {
+        var userId = ShortGuid.FromName("developer");
         var sessionStore = new InMemorySessionStore();
-        var token = sessionStore.Issue("developer");
+        var token = sessionStore.Issue(userId);
         var interceptor = new SessionInterceptor(sessionStore);
         var headers = new Metadata { { SessionInterceptor.SessionTokenMetadataKey, token } };
         var context = CreateContext("/etalii.adp.ProjectService/ListProjects", headers);
@@ -72,6 +73,6 @@ public class SessionInterceptorTests
         var result = await interceptor.UnaryServerHandler("ping", context, Handler);
 
         Assert.Equal("ping", result);
-        Assert.Equal("developer", SessionContext.GetUsername(context));
+        Assert.Equal(userId, SessionContext.GetUserId(context));
     }
 }
