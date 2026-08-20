@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/login-project-selection/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-20T11:40:07.135Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787226007112_r6a6vg0bv",
+      "approvalTitle": "Requirements: Login & Project Selection"
+    }
+  ]
+}
