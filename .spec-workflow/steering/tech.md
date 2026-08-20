@@ -48,8 +48,11 @@ The idea is that the solution can:
 * Prefer fast, local unit/integration tests over end-to-end tests that depend on hosted infrastructure, given the local-first runtime model.
 * To test the implementation of the modular diagrams use the following diagram visualizations:&#x20;
   * Mindmap (file extension \= .mm)&#x20;
+* Test classes in C# should follow the filename '\<Classname>.Tests' and the class name \<Classname>Tests. Mind the dot.
+* Tests should follow the tripple a pattern: arrange, act, assert.
 
 # Frontend
+
 * All styling for the application should be done in a centralized manner, avoiding inline styles and promoting consistency and maintainability as much as possible.
 
 # Decision log
