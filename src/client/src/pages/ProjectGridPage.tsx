@@ -55,23 +55,32 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
   };
 
   if (isLoading) {
-    return <p>Loading projects…</p>;
+    return (
+      <div className="projects-page">
+        <p className="projects-empty">Loading projects…</p>
+      </div>
+    );
   }
 
   return (
-    <div>
+    <div className="projects-page">
       <h1>Your projects</h1>
 
       {projects.length === 0 ? (
-        <p>You don't have any projects yet. Add one below to get started.</p>
+        <p className="projects-empty">You don't have any projects yet. Add one below to get started.</p>
       ) : (
-        <ul>
+        <ul className="project-grid">
           {projects.map((project) => (
-            <li key={project.id}>
-              <button type="button" onClick={() => onProjectSelected(project)}>
+            <li className="project-card" key={project.id}>
+              <button className="project-card-open" type="button" onClick={() => onProjectSelected(project)}>
                 {project.name}
               </button>
-              <button type="button" onClick={() => void handleRemove(project.id)} aria-label={`Remove ${project.name}`}>
+              <button
+                className="remove-button"
+                type="button"
+                onClick={() => void handleRemove(project.id)}
+                aria-label={`Remove ${project.name}`}
+              >
                 Remove
               </button>
             </li>
@@ -79,18 +88,20 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
         </ul>
       )}
 
-      <form onSubmit={handleAdd}>
-        <label>
-          Folder path
-          <input
-            value={newPath}
-            onChange={(event) => setNewPath(event.target.value)}
-            placeholder="C:\path\to\project"
-            required
-          />
-        </label>
-        <button type="submit">Add project</button>
-        {addError && <p role="alert">{addError}</p>}
+      <form className="add-project-form" onSubmit={handleAdd}>
+        <div className="add-project-row">
+          <label className="field">
+            Folder path
+            <input
+              value={newPath}
+              onChange={(event) => setNewPath(event.target.value)}
+              placeholder="C:\path\to\project"
+              required
+            />
+          </label>
+          <button className="primary-button" type="submit">Add project</button>
+        </div>
+        {addError && <p className="error-text" role="alert">{addError}</p>}
       </form>
     </div>
   );
