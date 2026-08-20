@@ -12,11 +12,6 @@
   <component name="ChangeListManager">
     <list default="true" id="fa014b36-c252-4984-b634-1f345daf407e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.spec-workflow/approvals/login-project-selection/.snapshots/design.md/metadata.json" beforeDir="false" afterPath="$PROJECT_DIR$/.spec-workflow/approvals/login-project-selection/.snapshots/design.md/metadata.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.spec-workflow/approvals/login-project-selection/.snapshots/requirements.md/metadata.json" beforeDir="false" afterPath="$PROJECT_DIR$/.spec-workflow/approvals/login-project-selection/.snapshots/requirements.md/metadata.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.spec-workflow/specs/login-project-selection/design.md" beforeDir="false" afterPath="$PROJECT_DIR$/.spec-workflow/specs/login-project-selection/design.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.spec-workflow/specs/login-project-selection/requirements.md" beforeDir="false" afterPath="$PROJECT_DIR$/.spec-workflow/specs/login-project-selection/requirements.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -55,23 +50,23 @@
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.0000000000000013" />
-      <entry key="MS500" value="1.0013256882284727" />
-      <entry key="S2" value="1.308790925480476" />
-      <entry key="S5" value="1.9441218961595617" />
-      <entry key="S10" value="2.3733617775334013" />
-      <entry key="S30" value="2.7642522776367597" />
-      <entry key="S60" value="2.8784020462152977" />
-      <entry key="M2" value="2.938240111543774" />
-      <entry key="M5" value="2.9750614886746503" />
-      <entry key="M10" value="2.9874955368590506" />
-      <entry key="M15" value="2.992151232223141" />
-      <entry key="M30" value="3.0549165782102863" />
-      <entry key="H1" value="3.6410365798701765" />
-      <entry key="H2" value="5.120686260252226" />
-      <entry key="H4" value="6.853306998307785" />
-      <entry key="D1" value="9.337105104842426" />
-      <entry key="W1" value="9.901216575651876" />
+      <entry key="MS100" value="1.0001366327115344" />
+      <entry key="MS500" value="1.2162862357600088" />
+      <entry key="S2" value="2.234811046629124" />
+      <entry key="S5" value="4.073462485836139" />
+      <entry key="S10" value="6.956589293717565" />
+      <entry key="S30" value="12.04307140432621" />
+      <entry key="S60" value="14.219378639570158" />
+      <entry key="M2" value="15.522960959949657" />
+      <entry key="M5" value="16.38827155989067" />
+      <entry key="M10" value="16.757730608779436" />
+      <entry key="M15" value="17.03303989630965" />
+      <entry key="M30" value="17.762492954493112" />
+      <entry key="H1" value="18.887265007132388" />
+      <entry key="H2" value="20.711209811034912" />
+      <entry key="H4" value="22.841814312079748" />
+      <entry key="D1" value="26.093086383493283" />
+      <entry key="W1" value="26.863856189882213" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
@@ -93,23 +88,23 @@
       <entry key="W1" value="0.0" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="0.8467453123625285" />
-      <entry key="MS500" value="0.9685906594486439" />
-      <entry key="S2" value="1.2998216942066407" />
-      <entry key="S5" value="1.939954344148795" />
-      <entry key="S10" value="2.371082580717838" />
-      <entry key="S30" value="2.763433202758976" />
-      <entry key="S60" value="2.877983840780662" />
-      <entry key="M2" value="2.9380287365993607" />
-      <entry key="M5" value="2.9749763793666397" />
-      <entry key="M10" value="2.9874528877571116" />
-      <entry key="M15" value="2.9921227754763167" />
-      <entry key="M30" value="3.0549021635213185" />
-      <entry key="H1" value="3.6410284898131073" />
-      <entry key="H2" value="5.120681097512" />
-      <entry key="H4" value="6.853303761523398" />
-      <entry key="D1" value="9.337104408625956" />
-      <entry key="W1" value="9.901216471103954" />
+      <entry key="MS100" value="0.9593951894653444" />
+      <entry key="MS500" value="1.2063426058147224" />
+      <entry key="S2" value="2.230505785501113" />
+      <entry key="S5" value="4.070139581445611" />
+      <entry key="S10" value="6.95362678058972" />
+      <entry key="S30" value="12.041338265581604" />
+      <entry key="S60" value="14.218354576040754" />
+      <entry key="M2" value="15.522401895820442" />
+      <entry key="M5" value="16.388035438799736" />
+      <entry key="M10" value="16.757609414901797" />
+      <entry key="M15" value="17.03295696578164" />
+      <entry key="M30" value="17.762448296030307" />
+      <entry key="H1" value="18.887240351030762" />
+      <entry key="H2" value="20.711195853996756" />
+      <entry key="H4" value="22.841806448429622" />
+      <entry key="D1" value="26.093084855029424" />
+      <entry key="W1" value="26.86385596424359" />
     </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
@@ -173,7 +168,12 @@
     <MESSAGE value="Added user-managed, persisted project list requirements to login-project-selection spec." />
     <MESSAGE value="Refined and expanded requirements: clarified gRPC-web transport and canvas/WebGL rendering decisions; documented client technology stack and updated non-functional criteria formatting." />
     <MESSAGE value="Added initial approval metadata, snapshot, and pending requirements for login-project-selection spec." />
-    <option name="LAST_COMMIT_MESSAGE" value="Added initial approval metadata, snapshot, and pending requirements for login-project-selection spec." />
+    <MESSAGE value="Clarified `.spec-workflow/` commit conventions to include approval-driven file changes in CLAUDE.md." />
+    <MESSAGE value="Added approval artifacts and tasks metadata for login-project-selection, including snapshots for design, requirements, and tasks." />
+    <MESSAGE value="Expanded `login-project-selection` requirements with default local-mode credentials and applied consistent markdown formatting across NFRs and design documents." />
+    <MESSAGE value="Updated `.idea/workspace.xml` with changes in approval metadata, spec snapshots, and completion feature state." />
+    <MESSAGE value="Documented centralized styling guidelines under &quot;Frontend&quot; in `.spec-workflow/steering/tech.md`." />
+    <option name="LAST_COMMIT_MESSAGE" value="Documented centralized styling guidelines under &quot;Frontend&quot; in `.spec-workflow/steering/tech.md`." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

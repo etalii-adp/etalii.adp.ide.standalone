@@ -6,7 +6,7 @@ obj/
 # Node / client
 node_modules/
 dist/
-client/src/generated/
+src/client/src/generated/
 
 # IDE
 .vs/
