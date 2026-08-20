@@ -6,22 +6,24 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Path } from "./connection_pb";
 import { file_connection } from "./connection_pb";
+import type { ShortGuid } from "./shared_pb";
+import { file_shared } from "./shared_pb";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file projects.proto.
  */
 export const file_projects: GenFile = /*@__PURE__*/
-  fileDesc("Cg5wcm9qZWN0cy5wcm90bxIKZXRhbGlpLmFkcCJZCgdQcm9qZWN0EgoKAmlkGAEgASgJEgwKBG5hbWUYAiABKAkSHgoEcGF0aBgDIAEoCzIQLmV0YWxpaS5hZHAuUGF0aBIUCgxkaXNwbGF5X3BhdGgYBCABKAkiFQoTTGlzdFByb2plY3RzUmVxdWVzdCI9ChRMaXN0UHJvamVjdHNSZXNwb25zZRIlCghwcm9qZWN0cxgBIAMoCzITLmV0YWxpaS5hZHAuUHJvamVjdCJBChFBZGRQcm9qZWN0UmVxdWVzdBIeCgRwYXRoGAEgASgLMhAuZXRhbGlpLmFkcC5QYXRoEgwKBG5hbWUYAiABKAkiIgoPQWRkUHJvamVjdEVycm9yEg8KB21lc3NhZ2UYASABKAkicgoSQWRkUHJvamVjdFJlc3BvbnNlEiQKBWFkZGVkGAEgASgLMhMuZXRhbGlpLmFkcC5Qcm9qZWN0SAASLAoFZXJyb3IYAiABKAsyGy5ldGFsaWkuYWRwLkFkZFByb2plY3RFcnJvckgAQggKBnJlc3VsdCIqChRSZW1vdmVQcm9qZWN0UmVxdWVzdBISCgpwcm9qZWN0X2lkGAEgASgJIhcKFVJlbW92ZVByb2plY3RSZXNwb25zZTKGAgoOUHJvamVjdFNlcnZpY2USUQoMTGlzdFByb2plY3RzEh8uZXRhbGlpLmFkcC5MaXN0UHJvamVjdHNSZXF1ZXN0GiAuZXRhbGlpLmFkcC5MaXN0UHJvamVjdHNSZXNwb25zZRJLCgpBZGRQcm9qZWN0Eh0uZXRhbGlpLmFkcC5BZGRQcm9qZWN0UmVxdWVzdBoeLmV0YWxpaS5hZHAuQWRkUHJvamVjdFJlc3BvbnNlElQKDVJlbW92ZVByb2plY3QSIC5ldGFsaWkuYWRwLlJlbW92ZVByb2plY3RSZXF1ZXN0GiEuZXRhbGlpLmFkcC5SZW1vdmVQcm9qZWN0UmVzcG9uc2VCDaoCCkV0QWxpaS5BZHBiBnByb3RvMw", [file_connection]);
+  fileDesc("Cg5wcm9qZWN0cy5wcm90bxIKZXRhbGlpLmFkcCJwCgdQcm9qZWN0EiEKAmlkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSDAoEbmFtZRgCIAEoCRIeCgRwYXRoGAMgASgLMhAuZXRhbGlpLmFkcC5QYXRoEhQKDGRpc3BsYXlfcGF0aBgEIAEoCSIVChNMaXN0UHJvamVjdHNSZXF1ZXN0Ij0KFExpc3RQcm9qZWN0c1Jlc3BvbnNlEiUKCHByb2plY3RzGAEgAygLMhMuZXRhbGlpLmFkcC5Qcm9qZWN0IkEKEUFkZFByb2plY3RSZXF1ZXN0Eh4KBHBhdGgYASABKAsyEC5ldGFsaWkuYWRwLlBhdGgSDAoEbmFtZRgCIAEoCSIiCg9BZGRQcm9qZWN0RXJyb3ISDwoHbWVzc2FnZRgBIAEoCSJyChJBZGRQcm9qZWN0UmVzcG9uc2USJAoFYWRkZWQYASABKAsyEy5ldGFsaWkuYWRwLlByb2plY3RIABIsCgVlcnJvchgCIAEoCzIbLmV0YWxpaS5hZHAuQWRkUHJvamVjdEVycm9ySABCCAoGcmVzdWx0IkEKFFJlbW92ZVByb2plY3RSZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZCIXChVSZW1vdmVQcm9qZWN0UmVzcG9uc2UyhgIKDlByb2plY3RTZXJ2aWNlElEKDExpc3RQcm9qZWN0cxIfLmV0YWxpaS5hZHAuTGlzdFByb2plY3RzUmVxdWVzdBogLmV0YWxpaS5hZHAuTGlzdFByb2plY3RzUmVzcG9uc2USSwoKQWRkUHJvamVjdBIdLmV0YWxpaS5hZHAuQWRkUHJvamVjdFJlcXVlc3QaHi5ldGFsaWkuYWRwLkFkZFByb2plY3RSZXNwb25zZRJUCg1SZW1vdmVQcm9qZWN0EiAuZXRhbGlpLmFkcC5SZW1vdmVQcm9qZWN0UmVxdWVzdBohLmV0YWxpaS5hZHAuUmVtb3ZlUHJvamVjdFJlc3BvbnNlQg2qAgpFdEFsaWkuQWRwYgZwcm90bzM", [file_connection, file_shared]);
 
 /**
  * @generated from message etalii.adp.Project
  */
 export type Project = Message<"etalii.adp.Project"> & {
   /**
-   * @generated from field: string id = 1;
+   * @generated from field: etalii.adp.ShortGuid id = 1;
    */
-  id: string;
+  id?: ShortGuid | undefined;
 
   /**
    * @generated from field: string name = 2;
@@ -153,9 +155,9 @@ export const AddProjectResponseSchema: GenMessage<AddProjectResponse> = /*@__PUR
  */
 export type RemoveProjectRequest = Message<"etalii.adp.RemoveProjectRequest"> & {
   /**
-   * @generated from field: string project_id = 1;
+   * @generated from field: etalii.adp.ShortGuid project_id = 1;
    */
-  projectId: string;
+  projectId?: ShortGuid | undefined;
 };
 
 /**

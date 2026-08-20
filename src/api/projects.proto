@@ -3,11 +3,12 @@ syntax = "proto3";
 package etalii.adp;
 
 import "connection.proto";
+import "shared.proto";
 
 option csharp_namespace = "EtAlii.Adp";
 
 message Project {
-  string id = 1;
+  ShortGuid id = 1;
   string name = 2;
   Path path = 3;
   string display_path = 4; // path.segments joined and middle-truncated for tile display
@@ -36,7 +37,7 @@ message AddProjectResponse {
 }
 
 message RemoveProjectRequest {
-  string project_id = 1;
+  ShortGuid project_id = 1;
 }
 
 message RemoveProjectResponse {}
