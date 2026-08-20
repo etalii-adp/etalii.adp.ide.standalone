@@ -10,32 +10,7 @@
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="fa014b36-c252-4984-b634-1f345daf407e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/adp-diagram-ide/.snapshots/requirements.md/metadata.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/adp-diagram-ide/.snapshots/requirements.md/snapshot-001.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/adp-diagram-ide/approval_1787156179654_7gele3tq3.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/grpc-core-communication-specification/.snapshots/requirements.md/metadata.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/grpc-core-communication-specification/.snapshots/requirements.md/snapshot-001.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/grpc-core-communication-specification/.snapshots/requirements.md/snapshot-002.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/grpc-core-communication/.snapshots/requirements.md/metadata.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/grpc-core-communication/.snapshots/requirements.md/snapshot-001.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/grpc-core-communication/approval_1787221772770_anadwhd6n.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/product/.snapshots/product.md/metadata.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/product/.snapshots/product.md/snapshot-001.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/product/.snapshots/product.md/snapshot-002.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/product/approval_1787157688943_dj1zweibo.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/structure/.snapshots/structure.md/metadata.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/structure/.snapshots/structure.md/snapshot-001.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/structure/.snapshots/structure.md/snapshot-002.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/structure/approval_1787157693091_50vqaok4l.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/tech/.snapshots/tech.md/metadata.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/tech/.snapshots/tech.md/snapshot-001.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/tech/.snapshots/tech.md/snapshot-002.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/approvals/tech/approval_1787157691336_8cuy0a4kk.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/specs/adp-diagram-ide/requirements.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/specs/grpc-core-communication-specification/requirements.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.spec-workflow/specs/grpc-core-communication/requirements.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/audit.log" afterDir="false" />
+    <list default="true" id="fa014b36-c252-4984-b634-1f345daf407e" name="Changes" comment="Completed gRPC core communication specification implementation: created and validated connection.proto, elements.proto, deltas.proto, and service.proto. Removed obsolete approval file.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -124,7 +99,11 @@
     <MESSAGE value="Added new configuration files for IDEA project." />
     <MESSAGE value="Bumped steering." />
     <MESSAGE value="Bumped templates." />
-    <option name="LAST_COMMIT_MESSAGE" value="Bumped templates." />
+    <MESSAGE value="Bumped approvals." />
+    <MESSAGE value="Bumped .idea and audit.log." />
+    <MESSAGE value="Added gRPC core communication specs: requirements and design documents." />
+    <MESSAGE value="Completed gRPC core communication specification implementation: created and validated connection.proto, elements.proto, deltas.proto, and service.proto. Removed obsolete approval file." />
+    <option name="LAST_COMMIT_MESSAGE" value="Completed gRPC core communication specification implementation: created and validated connection.proto, elements.proto, deltas.proto, and service.proto. Removed obsolete approval file." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
