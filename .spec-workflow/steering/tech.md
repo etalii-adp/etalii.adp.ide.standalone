@@ -12,11 +12,12 @@
 * The development team prefers an F5 experience, which means that development, testing and debugging should be doable in one go. I.e. locally and without any complex dependencies. To achieve this it should be possible to ramp up all relevant services using local-only persistency and hosting.
 * The React client uses Vite as its dev server/build tool, for fast hot-module-reload during local development and a static-file bundle for production. These two do not compete for hosting: in the F5 scenario, ASP.NET Core still owns the port the browser talks to and proxies frontend requests through to the Vite dev server (a standard SPA-proxy pattern) purely so edits hot-reload instantly without a full rebuild; in production Vite is not running at all, and ASP.NET Core simply serves Vite's static build output directly, alongside the gRPC-Web endpoint, in that same single process.
 
-# Naming
+# Naming & Identity
 
 * The organization is called 'EtAlii', mind the uppercase E and A.
 * The product name is an abbreviation 'ADP', which stands for 'A Different Perspective'.
 * When using namespaces, include the company name and product name. In .NET world this would be 'EtAlii.Adp', for other languages where appropriate it would be 'com.etalii.adp'.
+* Use the Base36 based ShortId everywhere where an ID or identity is needed.
 
 # Runtime
 
