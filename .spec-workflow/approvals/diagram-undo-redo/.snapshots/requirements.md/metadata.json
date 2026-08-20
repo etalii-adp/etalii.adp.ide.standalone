@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/diagram-undo-redo/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-20T17:29:15.223Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787246955208_8n7m588j0",
+      "approvalTitle": "Requirements: diagram-undo-redo"
+    }
+  ]
+}
