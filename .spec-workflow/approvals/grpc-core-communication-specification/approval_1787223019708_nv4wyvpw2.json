@@ -1,0 +1,12 @@
+{
+  "id": "approval_1787223019708_nv4wyvpw2",
+  "title": "Design: gRPC Core Communication Specification",
+  "filePath": ".spec-workflow/specs/grpc-core-communication-specification/design.md",
+  "type": "document",
+  "status": "approved",
+  "createdAt": "2026-08-20T10:50:19.708Z",
+  "category": "spec",
+  "categoryName": "grpc-core-communication-specification",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-20T11:05:15.711Z"
+}
