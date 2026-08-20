@@ -2,11 +2,9 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" />
     <PackageReference Include="Grpc.AspNetCore.Web" />
+    <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,10 +17,6 @@
       client stubs generated here to call the services in-process.
     -->
     <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="Both" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
   </ItemGroup>
 
 </Project>

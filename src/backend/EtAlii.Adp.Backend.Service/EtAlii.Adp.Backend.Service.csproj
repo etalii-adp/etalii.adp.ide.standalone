@@ -2,9 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" />
   </ItemGroup>
 
