@@ -1,6 +1,7 @@
 using EtAlii.Adp.Backend.Authentication;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
+using JetBrains.Annotations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,4 +29,5 @@ app.Run();
 
 // Exposes the top-level-statement Program class to EtAlii.Adp.Backend.Tests'
 // WebApplicationFactory<Program>-based integration test.
+[UsedImplicitly]
 public partial class Program;
