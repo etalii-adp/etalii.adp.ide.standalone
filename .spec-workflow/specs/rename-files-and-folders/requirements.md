@@ -71,7 +71,7 @@ This spec adds the ability to rename a file or folder directly from the workspac
 ### Security
 
 - Rename SHALL be scoped to the project's root folder exactly as hierarchy listing already is (`project-root-folder-explorer` Requirement 1.4, Requirement 2.3), never able to reach outside it.
-- A user SHALL only be able to rename within a project they are authorized to access (their own project list, per `login-project-selection` Requirement 5.1).
+- A user SHALL only be able to rename within a project they are authorized to access, per `login-project-selection` Non-Functional: Security.
 
 ### Reliability
 
