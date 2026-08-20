@@ -9,7 +9,7 @@
     "prebuild": "npm run generate",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "generate": "buf generate ../src/api",
+    "generate": "buf generate ../api",
     "preview": "vite preview"
   },
   "dependencies": {
