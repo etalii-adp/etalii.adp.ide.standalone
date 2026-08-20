@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 
 namespace EtAlii.Adp.Backend.Client;
 
-public static class ClientAppHostingExtensions
+public static class ServiceCollectionAddClientAppHostingExtensions
 {
     public static IServiceCollection AddClientAppHosting(this IServiceCollection services)
     {
