@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/login-project-selection/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-20T14:58:45.380Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787237925369_kc6kdswg5",
+      "approvalTitle": "Design: Login & Project Selection"
+    }
+  ]
+}
