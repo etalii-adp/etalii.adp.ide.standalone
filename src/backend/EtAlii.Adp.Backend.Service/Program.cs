@@ -6,15 +6,14 @@ using JetBrains.Annotations;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.Configure<LocalAuthenticatorOptions>(
-    builder.Configuration.GetSection(LocalAuthenticatorOptions.SectionName));
+var localAuthenticationOptionsSection = builder.Configuration.GetSection(LocalAuthenticatorOptions.SectionName);
+builder.Services.Configure<LocalAuthenticatorOptions>(localAuthenticationOptionsSection);
 builder.Services.AddSingleton<IAuthenticator, LocalAuthenticator>();
 builder.Services.AddSingleton<ISessionStore, InMemorySessionStore>();
-builder.Services.AddSingleton<IProjectStore>(_ =>
-    new FileProjectStore(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)));
+builder.Services.AddSingleton<IProjectStore>(_ => new FileProjectStore(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)));
 
-builder.Services.Configure<ClientAppOptions>(
-    builder.Configuration.GetSection(ClientAppOptions.SectionName));
+var clientAppOptionsSection = builder.Configuration.GetSection(ClientAppOptions.SectionName);
+builder.Services.Configure<ClientAppOptions>(clientAppOptionsSection);
 builder.Services.AddClientAppHosting();
 
 builder.Services.AddGrpc(options =>
