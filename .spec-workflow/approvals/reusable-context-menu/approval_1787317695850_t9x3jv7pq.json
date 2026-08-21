@@ -3,8 +3,10 @@
   "title": "Tasks: reusable-context-menu",
   "filePath": ".spec-workflow/specs/reusable-context-menu/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-21T13:08:15.000Z",
   "category": "spec",
-  "categoryName": "reusable-context-menu"
+  "categoryName": "reusable-context-menu",
+  "response": "Approved directly by user request",
+  "respondedAt": "2026-08-21T13:12:24.000Z"
 }
