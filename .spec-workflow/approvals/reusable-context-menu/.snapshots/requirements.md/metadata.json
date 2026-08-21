@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/reusable-context-menu/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-21T10:58:42.755Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787309922707_6gy6gilj2",
+      "approvalTitle": "Requirements: reusable-context-menu"
+    }
+  ]
+}
