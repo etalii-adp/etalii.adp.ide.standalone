@@ -4,8 +4,8 @@
   --color-border: #e2e8f0;
   --color-text: #0f172a;
   --color-text-muted: #64748b;
-  --color-primary: #4f46e5;
-  --color-primary-hover: #4338ca;
+  --color-primary: limegreen;
+  --color-primary-hover: #28a428;
   --color-danger: #dc2626;
   --color-danger-bg: #fef2f2;
   --radius: 10px;
@@ -19,8 +19,8 @@
     --color-border: #334155;
     --color-text: #f1f5f9;
     --color-text-muted: #94a3b8;
-    --color-primary: #6366f1;
-    --color-primary-hover: #818cf8;
+    --color-primary: limegreen;
+    --color-primary-hover: #4be64b;
     --color-danger: #f87171;
     --color-danger-bg: #3f1d1d;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.4);
@@ -29,6 +29,30 @@
 
 * {
   box-sizing: border-box;
+}
+
+/* Scrollbars: track matches the normal page background in both themes,
+   instead of a mismatched OS-default color. */
+* {
+  scrollbar-color: var(--color-border) var(--color-bg);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 6px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }
 
 body {
@@ -314,6 +338,10 @@ button {
   color: var(--color-text-muted);
 }
 
+.tab .mdi {
+  font-size: 1.125rem;
+}
+
 .tab:hover {
   color: var(--color-text);
 }
@@ -426,7 +454,7 @@ button {
 }
 
 .ribbon-button .mdi {
-  font-size: 1.125rem;
+  font-size: 1.5rem;
   color: var(--color-primary);
 }
 

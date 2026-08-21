@@ -26,44 +26,67 @@ export function WorkspaceShell({ projectName, onBack }: WorkspaceShellProps) {
       <div className="shell-body">
         <SplitPane
           direction="horizontal"
-          initialSplit={0.22}
+          initialSplit={0.2}
           minSize={160}
           first={
             <TabbedPane
               tabs={[
                 { id: "hierarchy", label: "Hierarchy", icon: "mdi-file-tree", content: <HierarchyPanel /> },
-                { id: "toolbox", label: "Toolbox", icon: "mdi-toolbox-outline", content: <ToolboxPanel /> },
                 { id: "search", label: "Search", icon: "mdi-magnify", content: <SearchPanel /> },
               ]}
             />
           }
           second={
             <SplitPane
-              direction="vertical"
-              initialSplit={0.7}
-              minSize={120}
+              direction="horizontal"
+              initialSplit={0.78}
+              minSize={160}
               first={
-                <TabbedPane
-                  tabs={[
-                    { id: "diagram-1", label: "Diagram 1", icon: "mdi-file-tree-outline", content: <DiagramPanel /> },
-                    { id: "diagram-2", label: "Diagram 2", icon: "mdi-file-tree-outline", content: <DiagramPanel /> },
-                  ]}
+                <SplitPane
+                  direction="vertical"
+                  initialSplit={0.7}
+                  minSize={120}
+                  first={
+                    <TabbedPane
+                      tabs={[
+                        {
+                          id: "diagram-1",
+                          label: "Diagram 1",
+                          icon: "mdi-file-tree-outline",
+                          content: <DiagramPanel />,
+                        },
+                        {
+                          id: "diagram-2",
+                          label: "Diagram 2",
+                          icon: "mdi-file-tree-outline",
+                          content: <DiagramPanel />,
+                        },
+                      ]}
+                    />
+                  }
+                  second={
+                    <TabbedPane
+                      tabs={[
+                        {
+                          id: "problems",
+                          label: "Errors & Warnings",
+                          icon: "mdi-alert-circle-outline",
+                          content: <ErrorsWarningsPanel />,
+                        },
+                      ]}
+                    />
+                  }
                 />
               }
               second={
                 <TabbedPane
                   tabs={[
+                    { id: "toolbox", label: "Toolbox", icon: "mdi-toolbox-outline", content: <ToolboxPanel /> },
                     {
                       id: "properties",
                       label: "Property Grid",
                       icon: "mdi-tune-variant",
                       content: <PropertyGridPanel />,
-                    },
-                    {
-                      id: "problems",
-                      label: "Errors & Warnings",
-                      icon: "mdi-alert-circle-outline",
-                      content: <ErrorsWarningsPanel />,
                     },
                   ]}
                 />
