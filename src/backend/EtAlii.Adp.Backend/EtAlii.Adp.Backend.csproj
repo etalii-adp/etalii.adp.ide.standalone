@@ -19,4 +19,8 @@
     <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="Both" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Hierarchy\_Model\" />
+  </ItemGroup>
+
 </Project>
