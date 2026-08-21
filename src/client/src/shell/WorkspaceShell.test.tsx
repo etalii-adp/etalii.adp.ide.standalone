@@ -18,7 +18,7 @@ function renderShell(props: Partial<ComponentProps<typeof WorkspaceShell>> = {})
 }
 
 describe("WorkspaceShell", () => {
-  it("renders the default pane/tab arrangement, with Toolbox and Property Grid in the rightmost column", () => {
+  it("renders the default pane/tab arrangement, with Toolbox and Properties in the rightmost column", () => {
     renderShell();
 
     const tabLists = screen.getAllByRole("tablist");
@@ -32,7 +32,7 @@ describe("WorkspaceShell", () => {
     const [left, center, right] = tabLists;
     expect(labelsFor(left)).toEqual(["Hierarchy", "Search"]);
     expect(labelsFor(center)).toEqual(["Diagram 1", "Diagram 2"]);
-    expect(labelsFor(right)).toEqual(["Toolbox", "Property Grid"]);
+    expect(labelsFor(right)).toEqual(["Toolbox", "Properties"]);
 
     // Errors & Warnings is now alone in its pane, so TabbedPane renders no
     // tab strip for it (only shown when a pane hosts more than one tab) -

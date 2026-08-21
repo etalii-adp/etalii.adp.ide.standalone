@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file hierarchy.proto.
  */
 export const file_hierarchy: GenFile = /*@__PURE__*/
-  fileDesc("Cg9oaWVyYXJjaHkucHJvdG8SCmV0YWxpaS5hZHAimgEKBUVudHJ5EiEKAmlkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSKAoJcGFyZW50X2lkGAIgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSDAoEbmFtZRgDIAEoCRIjCgRraW5kGAQgASgOMhUuZXRhbGlpLmFkcC5FbnRyeUtpbmQSEQoJYXZhaWxhYmxlGAUgASgIIpIBChJMaXN0RW50cmllc1JlcXVlc3QSKQoKcHJvamVjdF9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEigKCWZvbGRlcl9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEicKCHdhdGNoX2lkGAMgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQiIwoQTGlzdEVudHJpZXNFcnJvchIPCgdtZXNzYWdlGAEgASgJIi0KB0VudHJpZXMSIgoHZW50cmllcxgBIAMoCzIRLmV0YWxpaS5hZHAuRW50cnkidgoTTGlzdEVudHJpZXNSZXNwb25zZRImCgdlbnRyaWVzGAEgASgLMhMuZXRhbGlpLmFkcC5FbnRyaWVzSAASLQoFZXJyb3IYAiABKAsyHC5ldGFsaWkuYWRwLkxpc3RFbnRyaWVzRXJyb3JIAEIICgZyZXN1bHQiawoVV2F0Y2hIaWVyYXJjaHlSZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkIjAKDEVudHJ5Q3JlYXRlZBIgCgVlbnRyeRgBIAEoCzIRLmV0YWxpaS5hZHAuRW50cnkiNwoMRW50cnlSZW1vdmVkEicKCGVudHJ5X2lkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQiSQoMRW50cnlSZW5hbWVkEicKCGVudHJ5X2lkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSEAoIbmV3X25hbWUYAiABKAkiIgoPUm9vdFVuYXZhaWxhYmxlEg8KB21lc3NhZ2UYASABKAki2wEKD0hpZXJhcmNoeUNoYW5nZRIrCgdjcmVhdGVkGAEgASgLMhguZXRhbGlpLmFkcC5FbnRyeUNyZWF0ZWRIABIrCgdyZW1vdmVkGAIgASgLMhguZXRhbGlpLmFkcC5FbnRyeVJlbW92ZWRIABIrCgdyZW5hbWVkGAMgASgLMhguZXRhbGlpLmFkcC5FbnRyeVJlbmFtZWRIABI3ChByb290X3VuYXZhaWxhYmxlGAQgASgLMhsuZXRhbGlpLmFkcC5Sb290VW5hdmFpbGFibGVIAEIICgZjaGFuZ2UqPQoJRW50cnlLaW5kEhoKFkVOVFJZX0tJTkRfVU5TUEVDSUZJRUQQABIICgRGSUxFEAESCgoGRk9MREVSEAIytgEKEEhpZXJhcmNoeVNlcnZpY2USTgoLTGlzdEVudHJpZXMSHi5ldGFsaWkuYWRwLkxpc3RFbnRyaWVzUmVxdWVzdBofLmV0YWxpaS5hZHAuTGlzdEVudHJpZXNSZXNwb25zZRJSCg5XYXRjaEhpZXJhcmNoeRIhLmV0YWxpaS5hZHAuV2F0Y2hIaWVyYXJjaHlSZXF1ZXN0GhsuZXRhbGlpLmFkcC5IaWVyYXJjaHlDaGFuZ2UwAUINqgIKRXRBbGlpLkFkcGIGcHJvdG8z", [file_shared]);
+  fileDesc("Cg9oaWVyYXJjaHkucHJvdG8SCmV0YWxpaS5hZHAisAEKBUVudHJ5EiEKAmlkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSKAoJcGFyZW50X2lkGAIgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSDAoEbmFtZRgDIAEoCRIjCgRraW5kGAQgASgOMhUuZXRhbGlpLmFkcC5FbnRyeUtpbmQSEQoJYXZhaWxhYmxlGAUgASgIEhQKDGhhc19jaGlsZHJlbhgGIAEoCCKSAQoSTGlzdEVudHJpZXNSZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBIoCglmb2xkZXJfaWQYAiABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgDIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkIiMKEExpc3RFbnRyaWVzRXJyb3ISDwoHbWVzc2FnZRgBIAEoCSItCgdFbnRyaWVzEiIKB2VudHJpZXMYASADKAsyES5ldGFsaWkuYWRwLkVudHJ5InYKE0xpc3RFbnRyaWVzUmVzcG9uc2USJgoHZW50cmllcxgBIAEoCzITLmV0YWxpaS5hZHAuRW50cmllc0gAEi0KBWVycm9yGAIgASgLMhwuZXRhbGlpLmFkcC5MaXN0RW50cmllc0Vycm9ySABCCAoGcmVzdWx0ImsKFVdhdGNoSGllcmFyY2h5UmVxdWVzdBIpCgpwcm9qZWN0X2lkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSJwoId2F0Y2hfaWQYAiABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZCIwCgxFbnRyeUNyZWF0ZWQSIAoFZW50cnkYASABKAsyES5ldGFsaWkuYWRwLkVudHJ5IjcKDEVudHJ5UmVtb3ZlZBInCghlbnRyeV9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkIkkKDEVudHJ5UmVuYW1lZBInCghlbnRyeV9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEhAKCG5ld19uYW1lGAIgASgJIk0KDEVudHJ5VXBkYXRlZBInCghlbnRyeV9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEhQKDGhhc19jaGlsZHJlbhgCIAEoCCIiCg9Sb290VW5hdmFpbGFibGUSDwoHbWVzc2FnZRgBIAEoCSKIAgoPSGllcmFyY2h5Q2hhbmdlEisKB2NyZWF0ZWQYASABKAsyGC5ldGFsaWkuYWRwLkVudHJ5Q3JlYXRlZEgAEisKB3JlbW92ZWQYAiABKAsyGC5ldGFsaWkuYWRwLkVudHJ5UmVtb3ZlZEgAEisKB3JlbmFtZWQYAyABKAsyGC5ldGFsaWkuYWRwLkVudHJ5UmVuYW1lZEgAEjcKEHJvb3RfdW5hdmFpbGFibGUYBCABKAsyGy5ldGFsaWkuYWRwLlJvb3RVbmF2YWlsYWJsZUgAEisKB3VwZGF0ZWQYBSABKAsyGC5ldGFsaWkuYWRwLkVudHJ5VXBkYXRlZEgAQggKBmNoYW5nZSo9CglFbnRyeUtpbmQSGgoWRU5UUllfS0lORF9VTlNQRUNJRklFRBAAEggKBEZJTEUQARIKCgZGT0xERVIQAjK2AQoQSGllcmFyY2h5U2VydmljZRJOCgtMaXN0RW50cmllcxIeLmV0YWxpaS5hZHAuTGlzdEVudHJpZXNSZXF1ZXN0Gh8uZXRhbGlpLmFkcC5MaXN0RW50cmllc1Jlc3BvbnNlElIKDldhdGNoSGllcmFyY2h5EiEuZXRhbGlpLmFkcC5XYXRjaEhpZXJhcmNoeVJlcXVlc3QaGy5ldGFsaWkuYWRwLkhpZXJhcmNoeUNoYW5nZTABQg2qAgpFdEFsaWkuQWRwYgZwcm90bzM", [file_shared]);
 
 /**
  * @generated from message etalii.adp.Entry
@@ -46,6 +46,13 @@ export type Entry = Message<"etalii.adp.Entry"> & {
    * @generated from field: bool available = 5;
    */
   available: boolean;
+
+  /**
+   * for a folder: whether it currently has any entry inside it; always false for a file
+   *
+   * @generated from field: bool has_children = 6;
+   */
+  hasChildren: boolean;
 };
 
 /**
@@ -232,6 +239,30 @@ export const EntryRenamedSchema: GenMessage<EntryRenamed> = /*@__PURE__*/
   messageDesc(file_hierarchy, 8);
 
 /**
+ * @generated from message etalii.adp.EntryUpdated
+ */
+export type EntryUpdated = Message<"etalii.adp.EntryUpdated"> & {
+  /**
+   * @generated from field: etalii.adp.ShortGuid entry_id = 1;
+   */
+  entryId?: ShortGuid | undefined;
+
+  /**
+   * pushed when an existing, already-known folder's has_children changes
+   *
+   * @generated from field: bool has_children = 2;
+   */
+  hasChildren: boolean;
+};
+
+/**
+ * Describes the message etalii.adp.EntryUpdated.
+ * Use `create(EntryUpdatedSchema)` to create a new message.
+ */
+export const EntryUpdatedSchema: GenMessage<EntryUpdated> = /*@__PURE__*/
+  messageDesc(file_hierarchy, 9);
+
+/**
  * @generated from message etalii.adp.RootUnavailable
  */
 export type RootUnavailable = Message<"etalii.adp.RootUnavailable"> & {
@@ -246,7 +277,7 @@ export type RootUnavailable = Message<"etalii.adp.RootUnavailable"> & {
  * Use `create(RootUnavailableSchema)` to create a new message.
  */
 export const RootUnavailableSchema: GenMessage<RootUnavailable> = /*@__PURE__*/
-  messageDesc(file_hierarchy, 9);
+  messageDesc(file_hierarchy, 10);
 
 /**
  * @generated from message etalii.adp.HierarchyChange
@@ -279,6 +310,12 @@ export type HierarchyChange = Message<"etalii.adp.HierarchyChange"> & {
      */
     value: RootUnavailable;
     case: "rootUnavailable";
+  } | {
+    /**
+     * @generated from field: etalii.adp.EntryUpdated updated = 5;
+     */
+    value: EntryUpdated;
+    case: "updated";
   } | { case: undefined; value?: undefined };
 };
 
@@ -287,7 +324,7 @@ export type HierarchyChange = Message<"etalii.adp.HierarchyChange"> & {
  * Use `create(HierarchyChangeSchema)` to create a new message.
  */
 export const HierarchyChangeSchema: GenMessage<HierarchyChange> = /*@__PURE__*/
-  messageDesc(file_hierarchy, 10);
+  messageDesc(file_hierarchy, 11);
 
 /**
  * @generated from enum etalii.adp.EntryKind

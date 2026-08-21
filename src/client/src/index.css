@@ -73,10 +73,40 @@ button {
   cursor: pointer;
 }
 
+/* Shared app header (credit line atop the login, projects, and workspace views) */
+
+.app-header {
+  flex: 0 0 auto;
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.app-header-heart {
+  color: var(--color-danger);
+}
+
+.app-header-link {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.app-header-link:hover {
+  color: var(--color-primary);
+}
+
 /* Auth page */
 
 .auth-page {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-page-body {
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   justify-content: center;

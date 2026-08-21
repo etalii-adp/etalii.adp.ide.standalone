@@ -11,6 +11,8 @@ export interface TreeNode {
   name: string;
   kind: EntryKind;
   available: boolean;
+  /** For a folder: whether it currently has any entry inside it; always false for a file. */
+  hasChildren: boolean;
   /** undefined = never fetched (Requirement 2.2's expand-on-demand). */
   childKeys?: string[];
   expanded: boolean;
@@ -54,6 +56,7 @@ function entryToNode(entry: Entry, previous?: TreeNode): TreeNode {
     name: entry.name,
     kind: entry.kind,
     available: entry.available,
+    hasChildren: entry.hasChildren,
     childKeys: previous?.childKeys,
     expanded: previous?.expanded ?? false,
     loading: previous?.loading ?? false,
@@ -162,6 +165,16 @@ export function applyHierarchyChange(state: TreeState, change: HierarchyChange):
       }
 
       return { ...state, nodesByKey: { ...state.nodesByKey, [key]: { ...node, name: change.change.value.newName } } };
+    }
+
+    case "updated": {
+      const key = keyOf(change.change.value.entryId?.value);
+      const node = key ? state.nodesByKey[key] : undefined;
+      if (!key || !node) {
+        return state;
+      }
+
+      return { ...state, nodesByKey: { ...state.nodesByKey, [key]: { ...node, hasChildren: change.change.value.hasChildren } } };
     }
 
     default:
@@ -348,6 +361,7 @@ function ExplorerTreeNodeView({ nodeKey, state, depth, onToggle }: ExplorerTreeN
   }
 
   const isFolder = node.kind === EntryKind.FOLDER;
+  const isExpandable = isFolder && node.hasChildren;
 
   return (
     <li role="treeitem" aria-expanded={isFolder ? node.expanded : undefined}>
@@ -355,14 +369,12 @@ function ExplorerTreeNodeView({ nodeKey, state, depth, onToggle }: ExplorerTreeN
         type="button"
         className={`explorer-tree-node${node.available ? "" : " explorer-tree-node-unavailable"}`}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
-        onClick={() => isFolder && onToggle(nodeKey, node)}
+        onClick={() => isExpandable && onToggle(nodeKey, node)}
       >
-        {isFolder && (
-          <span
-            className={`mdi explorer-tree-chevron ${node.expanded ? "mdi-chevron-down" : "mdi-chevron-right"}`}
-            aria-hidden="true"
-          />
-        )}
+        <span
+          className={`mdi explorer-tree-chevron ${isExpandable ? (node.expanded ? "mdi-chevron-down" : "mdi-chevron-right") : ""}`}
+          aria-hidden="true"
+        />
         <span className={`mdi ${iconFor(node)}`} aria-hidden="true" />
         <span className="explorer-tree-node-name">{node.name}</span>
       </button>

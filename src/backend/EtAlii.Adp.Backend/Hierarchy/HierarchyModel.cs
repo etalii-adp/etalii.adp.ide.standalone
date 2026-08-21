@@ -103,6 +103,12 @@ public sealed class HierarchyModel
             return;
         }
 
+        // A new entry under a folder can flip that folder from empty to non-empty
+        // (unlocking expand) regardless of whether the folder's own children are
+        // being tracked in detail on this connection - so this check runs even
+        // when the create itself is about to be discarded below.
+        RecomputeHasChildren(parentPath);
+
         ShortGuid? parentId;
         if (string.Equals(parentPath, _rootPath, StringComparison.OrdinalIgnoreCase))
         {
@@ -130,6 +136,15 @@ public sealed class HierarchyModel
 
     private void OnRemoved(string path)
     {
+        // Mirrors OnCreated: a removal can flip a folder from non-empty to empty
+        // (locking expand again), regardless of whether the removed entry itself
+        // was known/tracked on this connection.
+        var parentPath = IoPath.GetDirectoryName(path);
+        if (parentPath is not null)
+        {
+            RecomputeHasChildren(parentPath);
+        }
+
         if (!_idByPath.TryGetValue(path, out var id))
         {
             return; // never known on this connection
@@ -137,6 +152,48 @@ public sealed class HierarchyModel
 
         RemoveSubtree(id);
         EntryChanged?.Invoke(new HierarchyEntryChange.Removed(id));
+    }
+
+    /// <summary>
+    /// Refreshes an already-known folder's <see cref="EntryNode.HasChildren"/> against
+    /// current disk state and pushes an <see cref="HierarchyEntryChange.Updated"/> if it
+    /// changed. A no-op for the root (it has no <see cref="EntryNode"/> of its own - the
+    /// explorer's root level is always expanded) or a folder this connection doesn't know
+    /// as an entry at all yet.
+    /// </summary>
+    private void RecomputeHasChildren(string folderPath)
+    {
+        if (string.Equals(folderPath, _rootPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (!_idByPath.TryGetValue(folderPath, out var folderId))
+        {
+            return;
+        }
+
+        var hasChildren = SafeHasAnyChild(folderPath);
+        var entry = _entriesById[folderId];
+        if (entry.HasChildren == hasChildren)
+        {
+            return;
+        }
+
+        _entriesById[folderId] = entry with { HasChildren = hasChildren };
+        EntryChanged?.Invoke(new HierarchyEntryChange.Updated(folderId, hasChildren));
+    }
+
+    private static bool SafeHasAnyChild(string path)
+    {
+        try
+        {
+            return Directory.EnumerateFileSystemEntries(path).Any();
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException)
+        {
+            return false;
+        }
     }
 
     private void OnRenamed(string oldPath, string newPath)
@@ -203,9 +260,10 @@ public sealed class HierarchyModel
             if (_idByPath.TryGetValue(entryPath, out var existingId))
             {
                 var existing = _entriesById[existingId];
-                if (!existing.Available)
+                var refreshedHasChildren = existing.IsFolder && SafeHasAnyChild(entryPath);
+                if (!existing.Available || existing.HasChildren != refreshedHasChildren)
                 {
-                    existing = existing with { Available = true };
+                    existing = existing with { Available = true, HasChildren = refreshedHasChildren };
                     _entriesById[existingId] = existing;
                 }
 
@@ -245,7 +303,8 @@ public sealed class HierarchyModel
     private EntryNode AddEntry(ShortGuid? parentId, string name, bool isFolder, string path)
     {
         var newId = ShortGuid.NewShortGuid();
-        var node = new EntryNode(newId, parentId, name, isFolder, Available: true);
+        var hasChildren = isFolder && SafeHasAnyChild(path);
+        var node = new EntryNode(newId, parentId, name, isFolder, Available: true, hasChildren);
         _entriesById[newId] = node;
         _pathById[newId] = path;
         _idByPath[path] = newId;

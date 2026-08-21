@@ -144,6 +144,7 @@ public sealed class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
             Name = node.Name,
             Kind = node.IsFolder ? EntryKind.Folder : EntryKind.File,
             Available = node.Available,
+            HasChildren = node.HasChildren,
         };
         if (node.ParentId is { } parentId)
         {
@@ -158,6 +159,7 @@ public sealed class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
         HierarchyEntryChange.Created c => new HierarchyChange { Created = new EntryCreated { Entry = ToProto(c.Entry) } },
         HierarchyEntryChange.Removed r => new HierarchyChange { Removed = new EntryRemoved { EntryId = r.EntryId } },
         HierarchyEntryChange.Renamed rn => new HierarchyChange { Renamed = new EntryRenamed { EntryId = rn.EntryId, NewName = rn.NewName } },
+        HierarchyEntryChange.Updated up => new HierarchyChange { Updated = new EntryUpdated { EntryId = up.EntryId, HasChildren = up.HasChildren } },
         HierarchyEntryChange.RootUnavailable u => new HierarchyChange { RootUnavailable = new RootUnavailable { Message = u.Message } },
         _ => throw new ArgumentOutOfRangeException(nameof(change)),
     };

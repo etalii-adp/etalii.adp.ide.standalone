@@ -89,13 +89,83 @@ public class HierarchyModelTests : IDisposable
     {
         var unlisted = CreateFolder("unlisted");
         var model = new HierarchyModel(_root);
-        model.ListChildren(null); // root listed, but "unlisted"'s own children are not
+        var unlistedEntry = model.ListChildren(null).Single(); // root listed, but "unlisted"'s own children are not
+
+        HierarchyEntryChange? raised = null;
+        model.EntryChanged += change => raised = change;
+
+        var newFile = CreateFile(segments: ["unlisted", "inside.txt"]);
+        model.OnWatcherEvent(WatcherChangeTypes.Created, null, newFile);
+
+        // The new file itself is discarded (never listed here), but "unlisted" flips from
+        // empty to non-empty regardless - that's what unlocks its expand affordance.
+        var updated = Assert.IsType<HierarchyEntryChange.Updated>(raised);
+        Assert.Equal(unlistedEntry.Id, updated.EntryId);
+        Assert.True(updated.HasChildren);
+    }
+
+    [Fact]
+    public void AddEntry_ForANewlyCreatedFolder_ReflectsWhetherItAlreadyHasChildrenOnDisk()
+    {
+        var populated = CreateFolder("populated");
+        CreateFile(segments: ["populated", "inside.txt"]);
+        CreateFolder("empty");
+        var model = new HierarchyModel(_root);
+
+        var children = model.ListChildren(null);
+
+        Assert.True(children.Single(c => c.Name == "populated").HasChildren);
+        Assert.False(children.Single(c => c.Name == "empty").HasChildren);
+    }
+
+    [Fact]
+    public void ListChildren_ReSyncingAKnownFolder_RefreshesHasChildren()
+    {
+        var folderPath = CreateFolder("sub");
+        var model = new HierarchyModel(_root);
+        var before = model.ListChildren(null).Single();
+        Assert.False(before.HasChildren);
+
+        CreateFile(segments: ["sub", "new.txt"]);
+        var after = model.ListChildren(null).Single();
+
+        Assert.True(after.HasChildren);
+    }
+
+    [Fact]
+    public void OnWatcherEvent_Removed_LastChildOfAFolder_PushesUpdatedWithHasChildrenFalse()
+    {
+        var folderPath = CreateFolder("sub");
+        var filePath = CreateFile(segments: ["sub", "only.txt"]);
+        var model = new HierarchyModel(_root);
+        var folderEntry = model.ListChildren(null).Single();
+        Assert.True(folderEntry.HasChildren);
+
+        HierarchyEntryChange? raised = null;
+        model.EntryChanged += change => raised = change;
+
+        File.Delete(filePath);
+        model.OnWatcherEvent(WatcherChangeTypes.Deleted, filePath, null);
+
+        var updated = Assert.IsType<HierarchyEntryChange.Updated>(raised);
+        Assert.Equal(folderEntry.Id, updated.EntryId);
+        Assert.False(updated.HasChildren);
+    }
+
+    [Fact]
+    public void RecomputeHasChildren_WhenValueDoesNotChange_RaisesNoEvent()
+    {
+        CreateFolder("sub");
+        CreateFile(segments: ["sub", "a.txt"]);
+        var model = new HierarchyModel(_root);
+        model.ListChildren(null); // "sub" already known to have children
 
         var raised = false;
         model.EntryChanged += _ => raised = true;
 
-        var newFile = CreateFile(segments: ["unlisted", "inside.txt"]);
-        model.OnWatcherEvent(WatcherChangeTypes.Created, null, newFile);
+        // A second file lands in "sub" - it already had children, so HasChildren doesn't change.
+        var secondFile = CreateFile(segments: ["sub", "b.txt"]);
+        model.OnWatcherEvent(WatcherChangeTypes.Created, null, secondFile);
 
         Assert.False(raised);
     }

@@ -1,3 +1,4 @@
+import { AppHeader } from "../components/AppHeader";
 import { RibbonBar } from "./RibbonBar";
 import { SplitPane } from "./SplitPane";
 import { TabbedPane } from "./TabbedPane";
@@ -17,6 +18,7 @@ export interface WorkspaceShellProps {
 export function WorkspaceShell({ projectId, projectName, onBack }: WorkspaceShellProps) {
   return (
     <div className="shell">
+      <AppHeader />
       <div className="shell-header">
         <button type="button" className="shell-header-back" onClick={onBack}>
           &larr; Back to projects
@@ -85,7 +87,7 @@ export function WorkspaceShell({ projectId, projectName, onBack }: WorkspaceShel
                     { id: "toolbox", label: "Toolbox", icon: "mdi-toolbox-outline", content: <ToolboxPanel /> },
                     {
                       id: "properties",
-                      label: "Property Grid",
+                      label: "Properties",
                       icon: "mdi-tune-variant",
                       content: <PropertyGridPanel />,
                     },

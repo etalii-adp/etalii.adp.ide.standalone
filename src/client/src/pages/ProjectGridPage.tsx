@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@connectrpc/connect";
+import { AppHeader } from "../components/AppHeader";
 import { useAuth } from "../auth/AuthContext";
 import { ProjectService } from "../generated/projects_pb";
 import type { Project } from "../generated/projects_pb";
@@ -64,6 +65,7 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
   if (isLoading) {
     return (
       <div className="projects-page">
+        <AppHeader />
         <p className="projects-empty">Loading projects…</p>
       </div>
     );
@@ -71,6 +73,7 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
 
   return (
     <div className="projects-page">
+      <AppHeader />
       <h1>Your projects</h1>
 
       {projects.length === 0 && <p className="projects-empty">You don't have any projects yet. Add one below to get started.</p>}

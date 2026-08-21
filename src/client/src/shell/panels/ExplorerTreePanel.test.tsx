@@ -17,13 +17,14 @@ function key(byte: number): string {
   return base64Encode(id(byte));
 }
 
-function makeEntry(idByte: number, name: string, kind: EntryKind, parentByte?: number): Entry {
+function makeEntry(idByte: number, name: string, kind: EntryKind, parentByte?: number, hasChildren = false): Entry {
   return create(EntrySchema, {
     id: { value: id(idByte) },
     parentId: parentByte === undefined ? undefined : { value: id(parentByte) },
     name,
     kind,
     available: true,
+    hasChildren,
   });
 }
 
@@ -140,6 +141,17 @@ describe("applyHierarchyChange", () => {
 
     expect(next.nodesByKey[key(2)]?.name).toBe("renamed-sub");
     expect(next.nodesByKey[key(2)]?.childKeys).toEqual([]);
+  });
+
+  it("updated: refreshes a folder's hasChildren flag", () => {
+    let state = applyEntries(EMPTY_TREE_STATE, undefined, [makeEntry(2, "sub", EntryKind.FOLDER, undefined, false)]);
+    const change = create(HierarchyChangeSchema, {
+      change: { case: "updated", value: { entryId: { value: id(2) }, hasChildren: true } },
+    });
+
+    state = applyHierarchyChange(state, change);
+
+    expect(state.nodesByKey[key(2)]?.hasChildren).toBe(true);
   });
 
   it("an id it doesn't know about is a no-op", () => {

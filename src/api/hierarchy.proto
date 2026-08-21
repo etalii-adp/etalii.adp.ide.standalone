@@ -18,6 +18,7 @@ message Entry {
   string name = 3;
   EntryKind kind = 4;
   bool available = 5; // false when a listed folder becomes inaccessible (permissions, deletion)
+  bool has_children = 6; // for a folder: whether it currently has any entry inside it; always false for a file
 }
 
 message ListEntriesRequest {
@@ -59,6 +60,11 @@ message EntryRenamed {
   string new_name = 2;
 }
 
+message EntryUpdated {
+  ShortGuid entry_id = 1;
+  bool has_children = 2; // pushed when an existing, already-known folder's has_children changes
+}
+
 message RootUnavailable {
   string message = 1;
 }
@@ -69,6 +75,7 @@ message HierarchyChange {
     EntryRemoved removed = 2;
     EntryRenamed renamed = 3;
     RootUnavailable root_unavailable = 4;
+    EntryUpdated updated = 5;
   }
 }
 

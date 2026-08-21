@@ -12,5 +12,7 @@ public abstract record HierarchyEntryChange
 
     public sealed record Renamed(ShortGuid EntryId, string NewName) : HierarchyEntryChange;
 
+    public sealed record Updated(ShortGuid EntryId, bool HasChildren) : HierarchyEntryChange;
+
     public sealed record RootUnavailable(string Message) : HierarchyEntryChange;
 }
