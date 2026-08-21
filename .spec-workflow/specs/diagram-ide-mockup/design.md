@@ -28,14 +28,14 @@ This design fills `App.tsx`'s `Gate()` placeholder with a static, purely visual 
 
 ### Integration Points
 
-* **`App.tsx`'s `Gate()`**: the `<p>Workspace shell for "{openProject.name}" goes here (adp-diagram-ide).</p>` placeholder is replaced with `<WorkspaceShellMockup projectName={openProject.name} onBack={...} />`, keeping the existing "Back to projects" button and `openProject` state exactly as they are today (Requirement 1.1/1.3).
+* **`App.tsx`'s `Gate()`**: the `<p>Workspace shell for "{openProject.name}" goes here (adp-diagram-ide).</p>` placeholder is replaced with `<WorkspaceShell projectName={openProject.name} onBack={...} />`, keeping the existing "Back to projects" button and `openProject` state exactly as they are today (Requirement 1.1/1.3).
 * **`adp-diagram-ide` Requirement 1**: this design is that requirement's first concrete shell implementation; later work under that spec (or `project-root-folder-explorer`, `rename-files-and-folders`, mindmap/diagram-type specs) replaces individual files under `shell/panels/` in place, never the pane/tab mechanism in `shell/` itself.
 
 ## Architecture
 
 ```mermaid
 graph TD
-    Gate[App.tsx Gate] -->|openProject set| Shell[WorkspaceShellMockup]
+    Gate[App.tsx Gate] -->|openProject set| Shell[WorkspaceShell]
     Shell --> Ribbon[RibbonBar]
     Shell --> Root[SplitPane root, horizontal]
     Root --> Left[TabbedPane: Hierarchy, Toolbox, Search]
@@ -59,12 +59,12 @@ The default arrangement (Requirement 4) is a fixed tree of two generic, content-
 ### Modular Design Principles
 
 * **Single file responsibility**: `SplitPane` and `TabbedPane` know nothing about panels; `RibbonBar` knows nothing about panes; each `shell/panels/*.tsx` file knows nothing about the layout tree it happens to be placed in.
-* **Content isolation**: a panel placeholder is handed no layout props beyond standard sizing (it fills its tab's content area) — swapping `HierarchyPanel`'s placeholder body for real content later requires no change to `WorkspaceShellMockup`'s tree definition.
+* **Content isolation**: a panel placeholder is handed no layout props beyond standard sizing (it fills its tab's content area) — swapping `HierarchyPanel`'s placeholder body for real content later requires no change to `WorkspaceShell`'s tree definition.
 * **Testability**: `SplitPane`'s resize math and `TabbedPane`'s active-tab state are plain, DOM-independent enough to unit test without a full render tree.
 
 ## Components and Interfaces
 
-### `WorkspaceShellMockup` (`shell/WorkspaceShellMockup.tsx`)
+### `WorkspaceShell` (`shell/WorkspaceShell.tsx`)
 
 * **Purpose:** Compose the ribbon and the fixed default pane tree (Requirement 4); the single integration point `App.tsx`'s `Gate()` renders.
 * **Interfaces:** `{ projectName: string; onBack: () => void }` — `projectName` is displayed (e.g. in a title area) but never used to fetch anything (Requirement 1.2); `onBack` is passed straight through to the existing "Back to projects" affordance already in `Gate()`.
@@ -103,16 +103,16 @@ The default arrangement (Requirement 4) is a fixed tree of two generic, content-
 ### The six panel components (`shell/panels/{Hierarchy,Diagram,PropertyGrid,ErrorsWarnings,Toolbox,Search}Panel.tsx`)
 
 * **Purpose:** One tiny wrapper component per panel, each just calling `PanelPlaceholder` with that panel's own `title`/`description`/`futureSpec` — this is the "own component per panel" the Modular Design NFR requires, so a later spec replacing e.g. `HierarchyPanel.tsx` never touches `PanelPlaceholder` or any sibling panel.
-* **Interfaces:** No props (each is a fixed, named placeholder); `DiagramPanel` is instantiated twice by `WorkspaceShellMockup` with different tab labels ("Diagram 1", "Diagram 2") to satisfy Requirement 4.2, since the component itself has no notion of "which" diagram.
+* **Interfaces:** No props (each is a fixed, named placeholder); `DiagramPanel` is instantiated twice by `WorkspaceShell` with different tab labels ("Diagram 1", "Diagram 2") to satisfy Requirement 4.2, since the component itself has no notion of "which" diagram.
 * **Dependencies:** `PanelPlaceholder`.
 * **Reuses:** `PanelPlaceholder` (all six).
 
 ## Data Models
 
-This spec has no backend/proto data model. The only "data" is the local, static layout description `WorkspaceShellMockup` passes to `SplitPane`/`TabbedPane`:
+This spec has no backend/proto data model. The only "data" is the local, static layout description `WorkspaceShell` passes to `SplitPane`/`TabbedPane`:
 
 ```ts
-// shell/WorkspaceShellMockup.tsx (illustrative shape, not a persisted schema)
+// shell/WorkspaceShell.tsx (illustrative shape, not a persisted schema)
 type TabDef = { id: string; label: string; icon: string; content: ReactNode };
 
 const leftTabs: TabDef[] = [
@@ -157,9 +157,9 @@ No other error scenarios apply: with no network calls, no file reads, and no per
 
 ### Integration Testing
 
-* `WorkspaceShellMockup` renders the full default tree matching Requirement 4.1–4.4 exactly (which panels are tabs in which pane).
+* `WorkspaceShell` renders the full default tree matching Requirement 4.1–4.4 exactly (which panels are tabs in which pane).
 * Theme: rendering under both a light and a simulated dark `prefers-color-scheme` produces the expected CSS-custom-property-driven colors, with no hard-coded color reaching the DOM (Requirement 7.1/7.2).
-* `App.tsx`'s `Gate()`: selecting a project renders `WorkspaceShellMockup` (not the old placeholder text), and "Back to projects" still returns to `ProjectGridPage` unchanged (Requirement 1.1/1.3).
+* `App.tsx`'s `Gate()`: selecting a project renders `WorkspaceShell` (not the old placeholder text), and "Back to projects" still returns to `ProjectGridPage` unchanged (Requirement 1.1/1.3).
 
 ### End-to-End Testing
 
