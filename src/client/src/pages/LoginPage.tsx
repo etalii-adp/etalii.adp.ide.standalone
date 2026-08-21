@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { ConnectError } from "@connectrpc/connect";
+import { AdpLogo } from "../components/AdpLogo";
 import { AppHeader } from "../components/AppHeader";
 import { useAuth } from "../auth/AuthContext";
 
@@ -38,37 +39,40 @@ export function LoginPage() {
     <div className="auth-page">
       <AppHeader />
       <div className="auth-page-body">
-        <form className="auth-card" onSubmit={handleSubmit}>
-          <h1>Sign in to EtAlii.Adp</h1>
+        <div className="auth-stack">
+          <AdpLogo />
+          <form className="auth-card" onSubmit={handleSubmit}>
+            <h1>Sign in</h1>
 
-          <label className="field">
-            Username
-            <input
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              autoComplete="username"
-              required
-            />
-          </label>
+            <label className="field">
+              Username
+              <input
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                autoComplete="username"
+                required
+              />
+            </label>
 
-          <label className="field">
-            Credential
-            <input
-              type="password"
-              value={credential}
-              onChange={(event) => setCredential(event.target.value)}
-              autoComplete="current-password"
-              required
-            />
-          </label>
+            <label className="field">
+              Credential
+              <input
+                type="password"
+                value={credential}
+                onChange={(event) => setCredential(event.target.value)}
+                autoComplete="current-password"
+                required
+              />
+            </label>
 
-          <button className="primary-button" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Signing in…" : "Sign in"}
-          </button>
+            <button className="primary-button" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Signing in…" : "Sign in"}
+            </button>
 
-          {loginError && <p className="error-text" role="alert">{loginError}</p>}
-          {connectionError && <p className="error-text" role="alert">{connectionError}</p>}
-        </form>
+            {loginError && <p className="error-text" role="alert">{loginError}</p>}
+            {connectionError && <p className="error-text" role="alert">{connectionError}</p>}
+          </form>
+        </div>
       </div>
     </div>
   );
