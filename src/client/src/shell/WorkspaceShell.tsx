@@ -1,7 +1,7 @@
 import { AppHeader } from "../components/AppHeader";
-import { RibbonBar } from "./RibbonBar";
-import { SplitPane } from "./SplitPane";
-import { TabbedPane } from "./TabbedPane";
+import { RibbonBar } from "./ribbon/RibbonBar";
+import { SplitPane } from "./panes/SplitPane";
+import { TabbedPane } from "./panes/TabbedPane";
 import { DiagramPanel } from "./panels/DiagramPanel";
 import { ErrorsWarningsPanel } from "./panels/ErrorsWarningsPanel";
 import { HierarchyPanel } from "./panels/HierarchyPanel";

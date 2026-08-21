@@ -14,8 +14,8 @@ import { EntryKind, HierarchyService } from "../../generated/hierarchy_pb";
 import type { Entry, HierarchyChange } from "../../generated/hierarchy_pb";
 import { ContextScope } from "../../generated/context_pb";
 import type { ContextAction, ContextActionGroup, ContextPrompt } from "../../generated/context_pb";
-import { ContextMenu, type ContextMenuGroup, type ContextMenuItem } from "../ContextMenu";
-import { ContextPromptHost } from "../ContextPromptHost";
+import { ContextMenu, type ContextMenuGroup, type ContextMenuItem } from "../context/ContextMenu";
+import { ContextPromptHost } from "../context/ContextPromptHost";
 
 export interface TreeNode {
   id: Uint8Array;

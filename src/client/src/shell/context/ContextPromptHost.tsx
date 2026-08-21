@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useId, useState } from "react";
-import { Dialog } from "../components/Dialog";
-import { ConfirmDialog } from "../components/ConfirmDialog";
-import { useDebouncedValue } from "./useDebouncedValue";
-import type { ContextPrompt } from "../generated/context_pb";
+import { Dialog } from "../../components/Dialog";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { useDebouncedValue } from "./../useDebouncedValue";
+import type { ContextPrompt } from "../../generated/context_pb";
 
 /** How long the input must sit still before its validation round trip is worth making. */
 const VALIDATION_DEBOUNCE_MS = 200;
