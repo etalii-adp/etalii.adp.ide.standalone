@@ -56,6 +56,10 @@ The idea is that the solution can:
 
 * All styling for the application should be done in a centralized manner, avoiding inline styles and promoting consistency and maintainability as much as possible.
 
+# Backend
+
+* For a specific subsytem or component, place simple POCO objects and objects that represent data rather than functionalities in a dedicated subfolder called '\_Model'.
+
 # Decision log
 
 1. **File-based storage over a database**: keeps diagrams reviewable and mergeable through normal repository tooling; revisit only if a hosted/multi-user scenario proves this insufficient.
