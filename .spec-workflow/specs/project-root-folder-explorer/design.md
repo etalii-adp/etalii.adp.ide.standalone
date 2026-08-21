@@ -2,7 +2,7 @@
 
 ## Overview
 
-This design adds a new backend gRPC service, `HierarchyService`, that resolves a project's root folder (Requirement 1), lists its file/folder hierarchy on demand (Requirement 2), and streams live changes to it (Requirement 4) — backed by a per-*connection*, in-memory hierarchy model, each fed by its own dedicated `FileSystemWatcher` instance (configured with `IncludeSubdirectories = true` so one watcher covers its connection's entire folder hierarchy). Nothing about this state is shared: two connections open to the same project run two fully independent watchers and models, with no cross-connection coordination. On the client, a new explorer tree component (living inside `adp-diagram-ide`'s workspace-shell side panel) consumes both calls to populate and keep the tree current (Requirement 3), rendering Material Design Icons for every node.
+This design adds a new backend gRPC service, `HierarchyService`, that resolves a project's root folder (Requirement 1), lists its file/folder hierarchy on demand (Requirement 2), and streams live changes to it (Requirement 4) — backed by a per-*connection*, in-memory hierarchy model, each fed by its own dedicated `FileSystemWatcher` instance (configured with `IncludeSubdirectories = true` so one watcher covers its connection's entire folder hierarchy). Nothing about this state is shared: two connections open to the same project run two fully independent watchers and models, with no cross-connection coordination. On the client, `diagram-ide-mockup`'s `HierarchyPanel.tsx` — currently a static placeholder tab in the workspace shell's left pane — is edited in place to render a new `ExplorerTreePanel` component, which consumes both calls to populate and keep the tree current (Requirement 3), rendering Material Design Icons for every node.
 
 ## Steering Document Alignment
 
@@ -18,7 +18,7 @@ This design adds a new backend gRPC service, `HierarchyService`, that resolves a
 
 * `HierarchyService`'s backend implementation lives in `EtAlii.Adp.Backend` (core, not diagram-specific), in a new `Hierarchy/` folder alongside the existing `Projects/`, `Sessions/`, `Authentication/`, `Client/` folders — mirroring `Projects/`'s `ProjectServiceImpl` + `IProjectStore` split.
 * Its `.proto` contract, `hierarchy.proto`, lives in the shared `src/api/` folder alongside `projects.proto`/`connection.proto`/`shared.proto`, importing `shared.proto` for `ShortGuid` exactly as `projects.proto` does.
-* The client's explorer tree component lives in `client/` alongside `adp-diagram-ide`'s workspace shell (the side panel it plugs into), not inside any `diagrams/<diagram>/client/` folder — it has no diagram-type-specific knowledge.
+* The client's explorer tree component, `ExplorerTreePanel`, lives in `src/client/src/shell/panels/` alongside `diagram-ide-mockup`'s other panel components, and is rendered from within `HierarchyPanel.tsx` — edited in place, replacing its `PanelPlaceholder` body, per that spec's own hand-off design (Requirement 5.2) — not inside any `diagrams/<diagram>/client/` folder, since it has no diagram-type-specific knowledge.
 
 ## Code Reuse Analysis
 
@@ -28,12 +28,12 @@ This design adds a new backend gRPC service, `HierarchyService`, that resolves a
 * **`IProjectStore`** (`EtAlii.Adp.Backend.Projects`): resolving a `project_id` to its root folder path (and re-validating it resolves to an accessible folder, Requirement 1.2) reuses the existing per-user project store rather than duplicating project lookup.
 * **`ShortGuid` / `EtAlii.Adp.Contracts.ShortGuid`** (`EtAlii.Adp` library, `ShortGuid.Cast.cs`): entry ids reuse the exact same type and implicit wire conversion `ProjectRecord.Id` already uses — no new id type.
 * **`@mdi/font` client integration** (`main.tsx`, `ProjectGridPage.tsx`): the explorer's node icons (Requirement 3.6–3.9) reuse this existing import rather than adding a package.
-* **`adp-diagram-ide` workspace shell side panel**: the explorer tree is a new component rendered inside that existing panel, not a new panel.
+* **`diagram-ide-mockup`'s `HierarchyPanel.tsx`**: this spec edits that file in place to render `ExplorerTreePanel` instead of its current `PanelPlaceholder` body — the exact hand-off `diagram-ide-mockup`'s own Requirement 5.2 calls out — rather than adding a new, separately named pane to the shell.
 
 ### Integration Points
 
 * **`login-project-selection`'s `Project.path`**: `HierarchyService` resolves a project's root folder through `IProjectStore`, the same store `ProjectService` already owns — no second source of truth for "where is this project's folder."
-* **`adp-diagram-ide` Requirement 1 (workspace shell) / Requirement 3 (`AdpService` change feed)**: the explorer tree is a new leaf under the existing side panel, and `WatchHierarchy` is a second, independent change-feed stream opened alongside `AdpService.Connect` when the workspace shell opens (Requirement 3.11) — the two streams don't share a connection, since a project's hierarchy and an individual open diagram's elements have different lifecycles (one per project vs. one per open diagram tab).
+* **`diagram-ide-mockup`'s Hierarchy panel / `adp-diagram-ide` Requirement 3 (`AdpService` change feed)**: `ExplorerTreePanel` replaces the Hierarchy panel's placeholder content within the shell's left `TabbedPane` (alongside the Toolbox and Search tabs, per `diagram-ide-mockup` Requirement 4.4), and `WatchHierarchy` is a second, independent change-feed stream opened alongside `AdpService.Connect` when the workspace shell opens (Requirement 3.11) — the two streams don't share a connection, since a project's hierarchy and an individual open diagram's elements have different lifecycles (one per project vs. one per open diagram tab).
 * **`rename-files-and-folders`** (future spec, blocked on this one being implemented): will add a `RenameEntry` RPC to `hierarchy.proto` and reuse `HierarchyModel`'s id-preserving rename handling (Requirement 4.5) directly — this design's id stability is what makes that spec's "keep the same node identity across a rename" requirement possible.
 
 ## Architecture
@@ -100,12 +100,12 @@ graph TD
 * **Dependencies:** `System.IO.FileSystemWatcher`.
 * **Reuses:** N/A — first use of `FileSystemWatcher` in the codebase.
 
-### `ExplorerTreePanel` (client, `client/`)
+### `ExplorerTreePanel` (client, `src/client/src/shell/panels/`)
 
-* **Purpose:** Renders the hierarchy inside the workspace shell's side panel (Requirement 3): generates one `watch_id` when the project opens (Requirement 3.11), fetches via `ListEntries` on expand, applies `WatchHierarchy` messages by id (Requirement 3.10), and renders MDI icons per node (Requirement 3.6–3.9).
+* **Purpose:** Renders the hierarchy inside `diagram-ide-mockup`'s Hierarchy panel (Requirement 3), replacing that panel's `PanelPlaceholder` body: generates one `watch_id` when the project opens (Requirement 3.11), fetches via `ListEntries` on expand, applies `WatchHierarchy` messages by id (Requirement 3.10), and renders MDI icons per node (Requirement 3.6–3.9).
 * **Interfaces:** React component; local state is a `Map<ShortGuid, TreeNode>` mirroring that connection's backend model, so an incoming change message is a direct map lookup, not a tree walk. Generates its `watch_id` client-side (a fresh random id, not obtained from the server) and includes it on every `ListEntries` and the one `WatchHierarchy` call for that project session, so all of its calls land on the same backend-side `HierarchyModel`.
 * **Dependencies:** A generated `HierarchyServiceClient` (grpc-web).
-* **Reuses:** `@mdi/font` (already imported in `main.tsx`), the workspace shell's existing side-panel slot from `adp-diagram-ide`.
+* **Reuses:** `@mdi/font` (already imported in `main.tsx`); `diagram-ide-mockup`'s `HierarchyPanel.tsx` file and its existing place in the shell's left `TabbedPane`, edited in place rather than replaced.
 
 ## Data Models
 
