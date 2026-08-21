@@ -31,7 +31,10 @@ public readonly record struct ShortGuid :
     /// yields the same identity (e.g. a stable per-username id with no separate
     /// persisted name-to-id mapping needed).
     /// </summary>
-    public static ShortGuid FromName(string name) => new(new Guid(MD5.HashData(Encoding.UTF8.GetBytes(name))));
+    public static ShortGuid FromName(string name)
+    {
+        return new ShortGuid(new Guid(MD5.HashData(Encoding.UTF8.GetBytes(name))));
+    }
 
     public static implicit operator ShortGuid(Guid value) => new(value);
     public static implicit operator Guid(ShortGuid value) => value._value;
