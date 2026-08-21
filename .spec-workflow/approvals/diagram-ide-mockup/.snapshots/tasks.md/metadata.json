@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/diagram-ide-mockup/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-21T08:14:31.575Z",
       "trigger": "initial",
+      "approvalId": "approval_1787300071553_rym78hqzx",
+      "approvalTitle": "Tasks: diagram-ide-mockup"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-21T08:17:30.818Z",
+      "trigger": "revision_requested",
       "approvalId": "approval_1787300071553_rym78hqzx",
       "approvalTitle": "Tasks: diagram-ide-mockup"
     }
