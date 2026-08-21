@@ -4,6 +4,8 @@
 
 This design adds a new backend gRPC service, `HierarchyService`, that resolves a project's root folder (Requirement 1), lists its file/folder hierarchy on demand (Requirement 2), and streams live changes to it (Requirement 4) — backed by a per-*connection*, in-memory hierarchy model, each fed by its own dedicated `FileSystemWatcher` instance (configured with `IncludeSubdirectories = true` so one watcher covers its connection's entire folder hierarchy). Nothing about this state is shared: two connections open to the same project run two fully independent watchers and models, with no cross-connection coordination. On the client, `diagram-ide-mockup`'s `HierarchyPanel.tsx` — currently a static placeholder tab in the workspace shell's left pane — is edited in place to render a new `ExplorerTreePanel` component, which consumes both calls to populate and keep the tree current (Requirement 3), rendering Material Design Icons for every node.
 
+
+
 ## Steering Document Alignment
 
 ### Technical Standards (tech.md)
@@ -88,7 +90,7 @@ graph TD
 ### `HierarchyModel` (backend, `EtAlii.Adp.Backend.Hierarchy`)
 
 * **Purpose:** The in-memory tree for one connection: entries keyed by `ShortGuid` (Requirement 2.5/2.6), containment-checked path resolution (Requirement 1.4/2.3), and watcher-event-to-`HierarchyChange` translation (Requirement 4.5–4.7).
-* **Interfaces:** `IReadOnlyList<EntryNode> ListChildren(ShortGuid? folderId)` (null = root; results sorted folders-before-files then alphabetically, per Requirement 3.5, so ordering is decided once here rather than independently by whichever client happens to be on the other end); `void OnWatcherEvent(WatcherChangeTypes, string oldPath, string newPath)`; `void Reconcile()` (full re-scan, used for Requirement 4.6's buffer-overflow recovery); event `EntryChanged` that `HierarchyServiceImpl` subscribes its one `WatchHierarchy` call to. `HierarchyServiceImpl` maps `EntryNode` to the wire `Entry` message itself (a `ToProto()` step), the same way `ProjectServiceImpl.ToProto` maps `ProjectRecord` to `Project` — `HierarchyModel` never constructs proto messages directly.
+* **Interfaces:** `IReadOnlyList<EntryNode> ListChildren(ShortGuid? folderId)` (null \= root; results sorted folders-before-files then alphabetically, per Requirement 3.5, so ordering is decided once here rather than independently by whichever client happens to be on the other end); `void OnWatcherEvent(WatcherChangeTypes, string oldPath, string newPath)`; `void Reconcile()` (full re-scan, used for Requirement 4.6's buffer-overflow recovery); event `EntryChanged` that `HierarchyServiceImpl` subscribes its one `WatchHierarchy` call to. `HierarchyServiceImpl` maps `EntryNode` to the wire `Entry` message itself (a `ToProto()` step), the same way `ProjectServiceImpl.ToProto` maps `ProjectRecord` to `Project` — `HierarchyModel` never constructs proto messages directly.
 * **Dependencies:** The connection's resolved root folder path.
 * **Reuses:** `ShortGuid.NewShortGuid()` for id assignment (Requirement 2.6).
 * **Design note (Requirement 4.7):** `OnWatcherEvent` only updates the model for a path whose *parent* is already a known folder in this model (i.e., a folder this connection has actually listed). An event under a folder this connection has never listed is discarded outright — not queued, not partially recorded — since there is nothing yet to reconcile it against; a later `ListEntries` for that folder does a fresh disk read and assigns ids at that point (Requirement 2.6), same as if the event had never happened.
@@ -212,19 +214,15 @@ Held only in memory, one instance per `watch_id`, per `HierarchyModelStore`'s li
 1. **Root folder inaccessible at project-open time (Requirement 1.2/1.3)**
    * **Handling:** The first `ListEntries` call for a project (root, `folder_id` unset) re-validates the path via `IProjectStore`; if it no longer resolves, `ListEntriesResponse.error` is returned and `HierarchyModelStore` never creates a model for that connection's `watch_id`.
    * **User Impact:** Workspace-shell entry is aborted with a clear error (per `adp-diagram-ide`'s shell-entry flow); the project stays in the user's list untouched.
-
 2. **A listed folder becomes inaccessible later (Requirement 2.4)**
    * **Handling:** `HierarchyModel` marks that entry `available = false` rather than removing it or failing the containing `ListEntries`/`WatchHierarchy` call.
    * **User Impact:** The folder renders with the distinct unavailable icon/treatment (Requirement 3.9) instead of disappearing or erroring the whole tree.
-
 3. **The root folder itself becomes inaccessible while open (Requirement 4.3)**
    * **Handling:** `RootFolderWatcher` reports the failure to its connection's `HierarchyModel`, which pushes `RootUnavailable` on that connection's own `WatchHierarchy` stream and attempts to restart that connection's watcher once the root is reachable again (Reliability NFR). Every open connection to that project detects and recovers from this independently — there is no shared watcher to coordinate.
    * **User Impact:** The explorer shows a clear, scoped error banner rather than a stale or silently empty tree.
-
 4. **Watcher buffer overflow (Requirement 4.6)**
    * **Handling:** `HierarchyModel.Reconcile()` re-scans everything currently in the model against disk, preserving existing ids and only assigning new ones for genuinely new entries.
    * **User Impact:** Invisible under normal use — the tree simply stays correct through a burst of missed low-level events.
-
 5. **Path escape attempt (`..`, symlink) (Requirement 1.4/2.3)**
    * **Handling:** `HierarchyModel` resolves every path against the project's root using `Path.GetFullPath` + a strict prefix check (and resolves symlink targets before that check), rejecting anything that would resolve outside it; such a request is treated as an invalid/not-found entry, never as a folder to list.
    * **User Impact:** No content from outside the project is ever observable through the explorer, regardless of how the request was shaped.
