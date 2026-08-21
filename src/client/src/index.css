@@ -80,7 +80,7 @@ button {
   padding: 0.5rem 1rem;
   font-size: 0.75rem;
   color: var(--color-text-muted);
-  text-align: center;
+  text-align: right;
 }
 
 .app-header-heart {
@@ -530,6 +530,11 @@ button {
 .shell-project-name {
   font-weight: 600;
   color: var(--color-text);
+}
+
+.shell-header .app-header {
+  margin-left: auto;
+  padding: 0;
 }
 
 .shell-body {

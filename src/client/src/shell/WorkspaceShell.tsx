@@ -18,12 +18,12 @@ export interface WorkspaceShellProps {
 export function WorkspaceShell({ projectId, projectName, onBack }: WorkspaceShellProps) {
   return (
     <div className="shell">
-      <AppHeader />
       <div className="shell-header">
         <button type="button" className="shell-header-back" onClick={onBack}>
           &larr; Back to projects
         </button>
         <span className="shell-project-name">{projectName}</span>
+        <AppHeader />
       </div>
       <RibbonBar />
       <div className="shell-body">
