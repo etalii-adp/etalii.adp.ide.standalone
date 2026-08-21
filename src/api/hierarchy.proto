@@ -6,6 +6,11 @@ import "shared.proto"; // ShortGuid
 
 option csharp_namespace = "EtAlii.Adp";
 
+service HierarchyService {
+  rpc ListEntries(ListEntriesRequest) returns (ListEntriesResponse);
+  rpc WatchHierarchy(WatchHierarchyRequest) returns (stream HierarchyChange);
+}
+
 enum EntryKind {
   ENTRY_KIND_UNSPECIFIED = 0;
   FILE = 1;
@@ -77,9 +82,4 @@ message HierarchyChange {
     RootUnavailable root_unavailable = 4;
     EntryUpdated updated = 5;
   }
-}
-
-service HierarchyService {
-  rpc ListEntries(ListEntriesRequest) returns (ListEntriesResponse);
-  rpc WatchHierarchy(WatchHierarchyRequest) returns (stream HierarchyChange);
 }

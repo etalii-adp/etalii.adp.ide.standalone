@@ -7,6 +7,12 @@ import "shared.proto";
 
 option csharp_namespace = "EtAlii.Adp";
 
+service ProjectService {
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse);
+  rpc AddProject(AddProjectRequest) returns (AddProjectResponse);
+  rpc RemoveProject(RemoveProjectRequest) returns (RemoveProjectResponse);
+}
+
 message Project {
   ShortGuid id = 1;
   string name = 2;
@@ -41,9 +47,3 @@ message RemoveProjectRequest {
 }
 
 message RemoveProjectResponse {}
-
-service ProjectService {
-  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse);
-  rpc AddProject(AddProjectRequest) returns (AddProjectResponse);
-  rpc RemoveProject(RemoveProjectRequest) returns (RemoveProjectResponse);
-}

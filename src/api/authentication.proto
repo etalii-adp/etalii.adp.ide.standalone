@@ -4,6 +4,11 @@ package etalii.adp;
 
 option csharp_namespace = "EtAlii.Adp";
 
+service AuthenticationService {
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+}
+
 message LoginRequest {
   string username = 1;
   string credential = 2; // opaque; local mode may treat this as a plain password
@@ -29,8 +34,3 @@ message LogoutRequest {
 }
 
 message LogoutResponse {}
-
-service AuthenticationService {
-  rpc Login(LoginRequest) returns (LoginResponse);
-  rpc Logout(LogoutRequest) returns (LogoutResponse);
-}

@@ -7,13 +7,13 @@ import "deltas.proto";
 
 option csharp_namespace = "EtAlii.Adp";
 
+service AdpService {
+  rpc Connect(stream ClientMessage) returns (stream Delta);
+}
+
 message ClientMessage {
   oneof payload {
     Path connect = 1;       // expected as the first message on the stream
     ViewUpdate view_update = 2;
   }
-}
-
-service AdpService {
-  rpc Connect(stream ClientMessage) returns (stream Delta);
 }
