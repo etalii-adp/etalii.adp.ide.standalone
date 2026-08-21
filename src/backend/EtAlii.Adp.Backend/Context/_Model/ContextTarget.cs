@@ -9,4 +9,8 @@ namespace EtAlii.Adp.Backend.Context;
 /// <param name="ResolvedFullPath">The absolute, containment-checked location this source resolved to.</param>
 /// <param name="IsContainer">Whether the target holds other targets (for the hierarchy scope: a folder).</param>
 /// <param name="SourceId">The id the client used to name this target, echoed back for correlation.</param>
-public sealed record ContextTarget(ContextScope Scope, string ResolvedFullPath, bool IsContainer, ShortGuid SourceId);
+public sealed record ContextTarget(
+    ContextScope Scope,
+    string ResolvedFullPath,
+    bool IsContainer,
+    ShortGuid SourceId);
