@@ -168,15 +168,50 @@ Other mind-mapping tools (XMind, MindMeister, Coggle, FreeMind) could each get t
 
 ---
 
-## 11. "Diagrams as code" tooling (cross-cutting)
+## 11. "Diagrams as code" tooling
 
-Not diagram *types* — text-based tools that render many of the notations above from plain text, well suited to version control and to generation by Claude Code. No `State`/`Origin` tracked here since these are rendering tools, not diagram types ADP itself would implement support *for* the way it implements a diagram type.
+Text-based tools that render many of the notations above from plain text, well suited to version control and to generation by Claude Code. Each one is a distinct *rendering path* for one or more diagram types already cataloged above — a code-authored `uml/class` diagram is still fundamentally a class diagram, but rendering it via Mermaid vs. ADP's own native editor is a different `Origin`, so each tool/diagram-type pair gets its own row here rather than being folded into the sections above.
 
-| Tool | Renders | Link |
-|---|---|---|
-| Mermaid | Flowcharts, sequence, class, state, ER, Gantt, C4 (subset), architecture diagrams | [mermaid.js.org](https://mermaid.js.org/) |
-| PlantUML | Full UML set, plus C4 via C4-PlantUML | [plantuml.com](https://plantuml.com/) |
-| Structurizr | C4 model specifically | [structurizr.com](https://structurizr.com/) |
-| D2 | General-purpose declarative diagramming | [d2lang.com](https://d2lang.com/) |
-| Diagrams (Python) | Cloud/infrastructure diagrams with official-style icons | [diagrams.mingrammer.com](https://diagrams.mingrammer.com/) |
-| Context Mapper | DDD Context Maps + generates PlantUML/BPMN sketches | [contextmapper.org](https://contextmapper.org/) |
+### 11a. Mermaid
+
+| State | Origin | Diagram | Theory | Example |
+|---|---|---|---|---|
+| 💡 Identified | `mermaid/flowchart` | Flowchart | [mermaid.js.org](https://mermaid.js.org/) | [Mermaid Live Editor](https://mermaid.live/) |
+| 💡 Identified | `mermaid/sequence` | Sequence diagram | [mermaid.js.org](https://mermaid.js.org/) | [Mermaid Live Editor](https://mermaid.live/) |
+| 💡 Identified | `mermaid/class` | Class diagram | [mermaid.js.org](https://mermaid.js.org/) | [Mermaid Live Editor](https://mermaid.live/) |
+| 💡 Identified | `mermaid/state` | State diagram | [mermaid.js.org](https://mermaid.js.org/) | [Mermaid Live Editor](https://mermaid.live/) |
+| 💡 Identified | `mermaid/er` | Entity-Relationship diagram | [mermaid.js.org](https://mermaid.js.org/) | [Mermaid Live Editor](https://mermaid.live/) |
+| 💡 Identified | `mermaid/gantt` | Gantt chart | [mermaid.js.org](https://mermaid.js.org/) | [Mermaid Live Editor](https://mermaid.live/) |
+| 💡 Identified | `mermaid/c4` | C4 diagram (subset) | [mermaid.js.org](https://mermaid.js.org/) | [Mermaid Live Editor](https://mermaid.live/) |
+| 💡 Identified | `mermaid/architecture` | Architecture diagram | [mermaid.js.org](https://mermaid.js.org/) | [Mermaid Live Editor](https://mermaid.live/) |
+
+### 11b. PlantUML
+
+| State | Origin | Diagram | Theory | Example |
+|---|---|---|---|---|
+| 💡 Identified | `plantuml/uml` | Full UML set (see section 1) | [plantuml.com](https://plantuml.com/) | [Real World PlantUML gallery](https://real-world-plantuml.com/) |
+| 💡 Identified | `plantuml/c4` | C4 diagram, via C4-PlantUML | [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) | [Real World PlantUML gallery](https://real-world-plantuml.com/) |
+
+### 11c. Structurizr
+
+| State | Origin | Diagram | Theory | Example |
+|---|---|---|---|---|
+| 💡 Identified | `structurizr/c4` | C4 model ("model once, view many") | [structurizr.com](https://structurizr.com/) | [structurizr.com/help/examples](https://structurizr.com/help/examples) |
+
+### 11d. D2
+
+| State | Origin | Diagram | Theory | Example |
+|---|---|---|---|---|
+| 💡 Identified | `d2/diagram` | General-purpose declarative diagram | [d2lang.com](https://d2lang.com/) | [D2 Playground](https://play.d2lang.com/) |
+
+### 11e. Diagrams (Python)
+
+| State | Origin | Diagram | Theory | Example |
+|---|---|---|---|---|
+| 💡 Identified | `diagrams-python/cloud-infrastructure` | Cloud/infrastructure diagram with official-style vendor icons | [diagrams.mingrammer.com](https://diagrams.mingrammer.com/) | [Diagrams gallery](https://diagrams.mingrammer.com/docs/getting-started/examples) |
+
+### 11f. Context Mapper
+
+| State | Origin | Diagram | Theory | Example |
+|---|---|---|---|---|
+| 💡 Identified | `contextmapper/context-map` | DDD Context Map, plus generated PlantUML/BPMN sketches | [contextmapper.org](https://contextmapper.org/) | [Context Mapper example](https://contextmapper.org/docs/context-map/) |
