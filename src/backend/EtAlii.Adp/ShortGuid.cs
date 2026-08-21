@@ -6,7 +6,7 @@ namespace EtAlii.Adp;
 
 /// <summary>
 /// A <see cref="Guid"/> represented as a fixed-length, 25-character base36 string
-/// (25 is the smallest width in which every possible 128-bit value fits: 36^24 &lt; 2^128 &le; 36^25).
+/// (25 is the smallest width in which every possible 128-bit value fits: 36^24 &lt; 2^128 &#le; 36^25).
 /// </summary>
 public readonly record struct ShortGuid :
     IComparable<ShortGuid>,
@@ -41,7 +41,7 @@ public readonly record struct ShortGuid :
 
     public bool Equals(ShortGuid other) => _value.Equals(other._value);
     public override int GetHashCode() => _value.GetHashCode();
-    
+
     public int CompareTo(ShortGuid other) => ToUInt128().CompareTo(other.ToUInt128());
 
     public static bool operator <(ShortGuid left, ShortGuid right) => left.CompareTo(right) < 0;
