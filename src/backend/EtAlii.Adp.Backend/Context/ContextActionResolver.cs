@@ -13,6 +13,7 @@ public sealed class ContextActionResolver : IContextActionResolver
         _providers = providers.ToList();
     }
 
+    // <inheritdoc />
     public async ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
     {
         var groups = new List<ContextActionGroupDefinition>();
@@ -24,11 +25,13 @@ public sealed class ContextActionResolver : IContextActionResolver
         return groups;
     }
 
+    // <inheritdoc />
     public ValueTask<ContextActionOwner?> ResolveByActionIdAsync(ContextTarget target, string actionId, CancellationToken cancellationToken) =>
         ResolveAsync(target, action => action.Id == actionId, cancellationToken);
 
+    // <inheritdoc />
     public ValueTask<ContextActionOwner?> ResolveByShortcutAsync(ContextTarget target, ContextShortcutDefinition shortcut, CancellationToken cancellationToken) =>
-        ResolveAsync(target, action => action.Available && action.Shortcut is { } bound && bound.Matches(shortcut), cancellationToken);
+        ResolveAsync(target, action => action is { Available: true, Shortcut: { } bound } && bound.Matches(shortcut), cancellationToken);
 
     private async ValueTask<ContextActionOwner?> ResolveAsync(
         ContextTarget target, Func<ContextActionDefinition, bool> predicate, CancellationToken cancellationToken)
