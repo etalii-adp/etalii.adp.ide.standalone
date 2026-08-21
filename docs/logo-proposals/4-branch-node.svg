@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="ADP">
+  <style>
+    .p { stroke: #0f172a; }
+    .pf { fill: #0f172a; }
+    @media (prefers-color-scheme: dark) { .p { stroke: #f1f5f9; } .pf { fill: #f1f5f9; } }
+  </style>
+  <path class="p" d="M9 4v24"/>
+  <circle class="pf" cx="9" cy="8" r="2.5"/>
+  <circle class="pf" cx="9" cy="24" r="2.5"/>
+  <path class="p" d="M9 24c0-8 3-11 8.5-11"/>
+  <rect x="17.5" y="7.5" width="11" height="11" rx="2" stroke="limegreen"/>
+</svg>

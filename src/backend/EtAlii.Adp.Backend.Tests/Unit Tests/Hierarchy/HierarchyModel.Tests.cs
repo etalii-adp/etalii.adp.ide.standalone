@@ -100,6 +100,7 @@ public class HierarchyModelTests : IDisposable
         // The new file itself is discarded (never listed here), but "unlisted" flips from
         // empty to non-empty regardless - that's what unlocks its expand affordance.
         var updated = Assert.IsType<HierarchyEntryChange.Updated>(raised);
+        Assert.NotEmpty(unlisted);
         Assert.Equal(unlistedEntry.Id, updated.EntryId);
         Assert.True(updated.HasChildren);
     }
@@ -114,6 +115,7 @@ public class HierarchyModelTests : IDisposable
 
         var children = model.ListChildren(null);
 
+        Assert.NotEmpty(populated);
         Assert.True(children.Single(c => c.Name == "populated").HasChildren);
         Assert.False(children.Single(c => c.Name == "empty").HasChildren);
     }
@@ -129,6 +131,7 @@ public class HierarchyModelTests : IDisposable
         CreateFile(segments: ["sub", "new.txt"]);
         var after = model.ListChildren(null).Single();
 
+        Assert.NotEmpty(folderPath);
         Assert.True(after.HasChildren);
     }
 
@@ -148,6 +151,7 @@ public class HierarchyModelTests : IDisposable
         model.OnWatcherEvent(WatcherChangeTypes.Deleted, filePath, null);
 
         var updated = Assert.IsType<HierarchyEntryChange.Updated>(raised);
+        Assert.NotEmpty(folderPath);
         Assert.Equal(folderEntry.Id, updated.EntryId);
         Assert.False(updated.HasChildren);
     }
@@ -221,6 +225,8 @@ public class HierarchyModelTests : IDisposable
 
         var childrenAfterRename = model.ListChildren(folderEntry.Id);
         var childAfterRename = Assert.Single(childrenAfterRename);
+
+        Assert.NotEmpty(childFile);
         Assert.Equal(childEntry.Id, childAfterRename.Id);
     }
 
@@ -240,6 +246,7 @@ public class HierarchyModelTests : IDisposable
         model.Reconcile();
 
         var after = model.ListChildren(null);
+        Assert.NotEmpty(survivorPath);
         Assert.Equal(new[] { "newcomer.txt", "survivor.txt" }, after.Select(e => e.Name).OrderBy(n => n));
         Assert.Equal(survivorId, after.Single(e => e.Name == "survivor.txt").Id);
     }

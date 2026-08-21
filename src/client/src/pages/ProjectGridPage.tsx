@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@connectrpc/connect";
 import { AppHeader } from "../components/AppHeader";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { Dialog } from "../components/Dialog";
 import { useAuth } from "../auth/AuthContext";
 import { ProjectService } from "../generated/projects_pb";
 import type { Project } from "../generated/projects_pb";
@@ -22,7 +23,7 @@ interface ProjectGridPageProps {
 }
 
 export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
-  const { transport } = useAuth();
+  const { transport, logout } = useAuth();
   const projectClient = useMemo(() => createClient(ProjectService, transport), [transport]);
 
   const [projects, setProjects] = useState<Project[]>([]);
@@ -31,6 +32,13 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
   const [addError, setAddError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [pendingRemoval, setPendingRemoval] = useState<Project | null>(null);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+
+  // Both fields have to carry something usable before the project can be added: a
+  // name that is more than whitespace, and a path that yields at least one segment.
+  const trimmedName = newName.trim();
+  const pathSegments = toPathSegments(newPath);
+  const canAdd = trimmedName.length > 0 && pathSegments.length > 0;
 
   const refresh = useCallback(async () => {
     const response = await projectClient.listProjects({});
@@ -42,20 +50,30 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
     void refresh();
   }, [refresh]);
 
-  const handleAdd = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const closeAdd = () => {
+    setIsAddOpen(false);
+    setNewName("");
+    setNewPath("");
+    setAddError(null);
+  };
+
+  const handleAdd = async () => {
+    if (!canAdd) {
+      return;
+    }
     setAddError(null);
 
-    const segments = toPathSegments(newPath);
-    const response = await projectClient.addProject({ name: newName, path: { segments } });
+    const response = await projectClient.addProject({
+      name: trimmedName,
+      path: { segments: pathSegments },
+    });
 
     if (response.result.case === "error") {
       setAddError(response.result.value.message);
       return;
     }
 
-    setNewName("");
-    setNewPath("");
+    closeAdd();
     await refresh();
   };
 
@@ -72,10 +90,22 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
     }
   };
 
+  // Shown in both the loading and loaded states, so signing out never depends on
+  // the project list having arrived.
+  const header = (
+    <div className="projects-header">
+      <button className="logout-button" type="button" onClick={() => void logout()}>
+        <span className="mdi mdi-logout" aria-hidden="true" />
+        Sign out
+      </button>
+      <AppHeader />
+    </div>
+  );
+
   if (isLoading) {
     return (
       <div className="projects-page">
-        <AppHeader />
+        {header}
         <p className="projects-empty">Loading projects…</p>
       </div>
     );
@@ -83,7 +113,7 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
 
   return (
     <div className="projects-page">
-      <AppHeader />
+      {header}
       <h1>Your projects</h1>
 
       {projects.length === 0 && <p className="projects-empty">You don't have any projects yet. Add one below to get started.</p>}
@@ -107,30 +137,63 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
         ))}
 
         <li className="project-card project-card-add">
-          <form onSubmit={handleAdd}>
-            <label className="field">
-              Name
-              <input
-                value={newName}
-                onChange={(event) => setNewName(event.target.value)}
-                placeholder="My project"
-                required
-              />
-            </label>
-            <label className="field">
-              Folder path
-              <input
-                value={newPath}
-                onChange={(event) => setNewPath(event.target.value)}
-                placeholder="C:\path\to\project"
-                required
-              />
-            </label>
-            <button className="primary-button" type="submit">Add project</button>
-            {addError && <p className="error-text" role="alert">{addError}</p>}
-          </form>
+          <button
+            className="project-card-add-button"
+            type="button"
+            onClick={() => setIsAddOpen(true)}
+            aria-label="Add project"
+          >
+            <span className="mdi mdi-plus" aria-hidden="true" />
+          </button>
         </li>
       </ul>
+
+      <Dialog
+        open={isAddOpen}
+        icon="mdi-plus"
+        title="Add project"
+        onClose={closeAdd}
+        buttons={[
+          { key: "cancel", label: "Cancel", color: "neutral", onClick: closeAdd },
+          {
+            key: "add",
+            label: "Add project",
+            color: "primary",
+            disabled: !canAdd,
+            onClick: () => void handleAdd(),
+          },
+        ]}
+      >
+        {/* Enter submits, as it did while these fields still lived in a form. */}
+        <div
+          className="add-project-fields"
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && canAdd) {
+              event.preventDefault();
+              void handleAdd();
+            }
+          }}
+        >
+          <label className="field">
+            Name
+            <input
+              value={newName}
+              onChange={(event) => setNewName(event.target.value)}
+              placeholder="My project"
+              data-dialog-autofocus
+            />
+          </label>
+          <label className="field">
+            Folder path
+            <input
+              value={newPath}
+              onChange={(event) => setNewPath(event.target.value)}
+              placeholder="C:\path\to\project"
+            />
+          </label>
+          {addError && <p className="error-text" role="alert">{addError}</p>}
+        </div>
+      </Dialog>
 
       <ConfirmDialog
         open={pendingRemoval !== null}
