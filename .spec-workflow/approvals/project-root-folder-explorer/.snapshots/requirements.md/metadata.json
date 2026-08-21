@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/project-root-folder-explorer/requirements.md",
-  "currentVersion": 3,
+  "currentVersion": 4,
   "snapshots": [
     {
       "version": 1,
@@ -24,6 +24,14 @@
       "timestamp": "2026-08-21T00:04:05.350Z",
       "trigger": "approved",
       "approvalId": "approval_1787270545257_yhsiswh16",
+      "approvalTitle": "Requirements: project-root-folder-explorer"
+    },
+    {
+      "version": 4,
+      "filename": "snapshot-004.json",
+      "timestamp": "2026-08-21T08:22:14.854Z",
+      "trigger": "approved",
+      "approvalId": "approval_1787276835580_bb59w52jo",
       "approvalTitle": "Requirements: project-root-folder-explorer"
     }
   ]
