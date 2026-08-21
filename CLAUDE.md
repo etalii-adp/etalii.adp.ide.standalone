@@ -1,5 +1,9 @@
 # EtAlii.Adp
 
+## Git worktrees
+
+Actual development work — writing code, editing specs, running builds/tests — should always happen in a dedicated git worktree (`.claude/worktrees/<name>/`), never directly in this main checkout. Create a new worktree per distinct piece of work and merge it back into `develop` when done. Multiple sessions routinely work against this repository at the same time; working directly in the main checkout risks one session's `git add`/`git commit` sweeping up another's uncommitted changes via a shared index, exactly the kind of cross-contamination a dedicated worktree avoids.
+
 ## spec-workflow
 
 This repo uses the `.spec-workflow/` folder (steering docs, specs, approvals, implementation logs) to plan and track work before implementation.
