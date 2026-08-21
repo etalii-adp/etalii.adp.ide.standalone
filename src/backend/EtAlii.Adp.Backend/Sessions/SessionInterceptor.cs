@@ -38,6 +38,16 @@ public sealed class SessionInterceptor : Interceptor
         return continuation(requestStream, responseStream, context);
     }
 
+    public override Task ServerStreamingServerHandler<TRequest, TResponse>(
+        TRequest request,
+        IServerStreamWriter<TResponse> responseStream,
+        ServerCallContext context,
+        ServerStreamingServerMethod<TRequest, TResponse> continuation)
+    {
+        EnsureAuthenticatedUnlessExempt(context);
+        return continuation(request, responseStream, context);
+    }
+
     private static bool IsExempt(string method) =>
         method.EndsWith("/Login", StringComparison.Ordinal);
 

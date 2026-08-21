@@ -14,7 +14,13 @@ function Gate() {
   }
 
   if (openProject) {
-    return <WorkspaceShell projectName={openProject.name} onBack={() => setOpenProject(null)} />;
+    return (
+      <WorkspaceShell
+        projectId={openProject.id?.value ?? new Uint8Array(0)}
+        projectName={openProject.name}
+        onBack={() => setOpenProject(null)}
+      />
+    );
   }
 
   return <ProjectGridPage onProjectSelected={setOpenProject} />;
