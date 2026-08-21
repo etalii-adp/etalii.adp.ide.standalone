@@ -58,7 +58,8 @@ The idea is that the solution can:
 
 # Backend
 
-* For a specific subsytem or component, place simple POCO objects and objects that represent data rather than functionalities in a dedicated subfolder called '\_Model'.
+* For a specific subsystem or component, place simple POCO objects and objects that represent data rather than functionalities in a dedicated subfolder called '\_Model'.
+* Follow the one entity per file principle.
 
 # Decision log
 
