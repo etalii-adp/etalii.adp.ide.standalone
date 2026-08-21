@@ -1,5 +1,6 @@
 using EtAlii.Adp.Backend.Authentication;
 using EtAlii.Adp.Backend.Client;
+using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
@@ -13,6 +14,12 @@ builder.Services.AddSingleton<IAuthenticator, LocalAuthenticator>();
 builder.Services.AddSingleton<ISessionStore, InMemorySessionStore>();
 builder.Services.AddSingleton<IProjectStore>(_ => new FileProjectStore(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)));
 builder.Services.AddSingleton<IHierarchyModelStore, HierarchyModelStore>();
+builder.Services.AddSingleton<IContextInteractionStore, ContextInteractionStore>();
+builder.Services.AddSingleton<IContextActionResolver, ContextActionResolver>();
+// Registered through IContextActionProvider so the resolver picks it up from
+// IEnumerable<IContextActionProvider> - a later module contributing its own actions
+// (and their shortcuts) is one more line here and no change anywhere else.
+builder.Services.AddSingleton<IContextActionProvider, HierarchyContextActionProvider>();
 
 var clientAppOptionsSection = builder.Configuration.GetSection(ClientAppOptions.SectionName);
 builder.Services.Configure<ClientAppOptions>(clientAppOptionsSection);

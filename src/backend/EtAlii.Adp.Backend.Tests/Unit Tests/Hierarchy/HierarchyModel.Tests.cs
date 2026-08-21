@@ -282,4 +282,64 @@ public class HierarchyModelTests : IDisposable
             Directory.Delete(outsideRoot, recursive: true);
         }
     }
+
+    [Fact]
+    public void TryResolvePath_ForAKnownEntry_YieldsItsCurrentLocationAndKind()
+    {
+        var filePath = CreateFile(segments: "a.txt");
+        CreateFolder("sub");
+        var model = new HierarchyModel(_root);
+        var children = model.ListChildren(null);
+
+        Assert.True(model.TryResolvePath(children.Single(c => c.Name == "a.txt").Id, out var resolvedFile, out var fileIsFolder));
+        Assert.True(model.TryResolvePath(children.Single(c => c.Name == "sub").Id, out _, out var subIsFolder));
+
+        Assert.Equal(IoPath.GetFullPath(filePath), resolvedFile);
+        Assert.False(fileIsFolder);
+        Assert.True(subIsFolder);
+    }
+
+    [Fact]
+    public void TryResolvePath_ForAnIdThisModelDoesNotKnow_ResolvesToNothing()
+    {
+        var model = new HierarchyModel(_root);
+
+        var resolved = model.TryResolvePath(ShortGuid.NewShortGuid(), out var path, out _);
+
+        Assert.False(resolved);
+        Assert.Equal("", path);
+    }
+
+    [Fact]
+    public void TryResolvePath_ForAnEntryTurnedIntoASymlinkEscapingTheRoot_ResolvesToNothing()
+    {
+        var outsideRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outsideRoot);
+        try
+        {
+            var entryPath = CreateFolder("swapped");
+            var model = new HierarchyModel(_root);
+            var entryId = model.ListChildren(null).Single(c => c.Name == "swapped").Id;
+
+            // Swap the real folder for a symlink pointing outside, exactly the case
+            // resolving straight from the listing-time path would walk into.
+            Directory.Delete(entryPath);
+            try
+            {
+                Directory.CreateSymbolicLink(entryPath, outsideRoot);
+            }
+            catch (Exception)
+            {
+                // Creating a directory symlink requires a privilege this environment may not
+                // grant (e.g. no Developer Mode / not elevated) - nothing to assert without it.
+                return;
+            }
+
+            Assert.False(model.TryResolvePath(entryId, out _, out _));
+        }
+        finally
+        {
+            Directory.Delete(outsideRoot, recursive: true);
+        }
+    }
 }

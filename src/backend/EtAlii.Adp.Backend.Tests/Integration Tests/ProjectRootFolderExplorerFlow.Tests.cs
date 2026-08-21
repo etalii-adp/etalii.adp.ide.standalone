@@ -81,7 +81,7 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
     }
 
     private static async Task<HierarchyChange> AwaitTriggeredChangeAsync(
-        AsyncServerStreamingCall<HierarchyChange> call, CancellationTokenSource cts, Action triggerChange)
+        AsyncServerStreamingCall<HierarchyMessage> call, CancellationTokenSource cts, Action triggerChange)
     {
         var pendingMoveNext = call.ResponseStream.MoveNext(cts.Token);
         await Task.Delay(WatcherStartupGrace);
@@ -89,7 +89,14 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
 
         var moved = await pendingMoveNext;
         Assert.True(moved, "Expected a HierarchyChange message but the stream ended or timed out.");
-        return call.ResponseStream.Current;
+        return ChangeOf(call.ResponseStream.Current);
+    }
+
+    /// <summary>Unwraps the stream's HierarchyMessage envelope, which also carries context prompts.</summary>
+    private static HierarchyChange ChangeOf(HierarchyMessage message)
+    {
+        Assert.Equal(HierarchyMessage.MessageOneofCase.Change, message.MessageCase);
+        return message.Change;
     }
 
     [Fact]
@@ -149,8 +156,8 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
 
         Assert.True(await pendingA, "Expected a HierarchyChange message on connection A but the stream ended or timed out.");
         Assert.True(await pendingB, "Expected a HierarchyChange message on connection B but the stream ended or timed out.");
-        var changeA = callA.ResponseStream.Current;
-        var changeB = callB.ResponseStream.Current;
+        var changeA = ChangeOf(callA.ResponseStream.Current);
+        var changeB = ChangeOf(callB.ResponseStream.Current);
 
         Assert.Equal(HierarchyChange.ChangeOneofCase.Created, changeA.ChangeCase);
         Assert.Equal(HierarchyChange.ChangeOneofCase.Created, changeB.ChangeCase);
