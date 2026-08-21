@@ -31,6 +31,9 @@ public class FileProjectStoreTests : IDisposable
         return folderPath;
     }
 
+    private static PathRecord ToPathRecord(string folderPath) =>
+        new(folderPath.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
+
     [Fact]
     public void List_WithNoPersistedFile_ReturnsEmpty()
     {
@@ -44,9 +47,8 @@ public class FileProjectStoreTests : IDisposable
     {
         var store = new FileProjectStore(_appDataRoot);
         var folderPath = CreateRealFolder("my-project");
-        var segments = folderPath.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
 
-        var added = store.Add(UserId, "", segments);
+        var added = store.Add(UserId, "", ToPathRecord(folderPath));
 
         Assert.Equal("my-project", added.Name);
         Assert.Single(store.List(UserId));
@@ -57,9 +59,8 @@ public class FileProjectStoreTests : IDisposable
     {
         var store = new FileProjectStore(_appDataRoot);
         var folderPath = CreateRealFolder("my-project");
-        var segments = folderPath.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
 
-        var added = store.Add(UserId, "Custom Name", segments);
+        var added = store.Add(UserId, "Custom Name", ToPathRecord(folderPath));
 
         Assert.Equal("Custom Name", added.Name);
     }
@@ -69,10 +70,10 @@ public class FileProjectStoreTests : IDisposable
     {
         var store = new FileProjectStore(_appDataRoot);
         var validFolder = CreateRealFolder("existing-project");
-        store.Add(UserId, "", validFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
+        store.Add(UserId, "", ToPathRecord(validFolder));
 
-        var missingSegments = new[] { _appDataRoot, "does-not-exist" };
-        Assert.Throws<InvalidProjectPathException>(() => store.Add(UserId, "", missingSegments));
+        var missingPath = new PathRecord(new[] { _appDataRoot, "does-not-exist" });
+        Assert.Throws<InvalidProjectPathException>(() => store.Add(UserId, "", missingPath));
 
         Assert.Single(store.List(UserId));
     }
@@ -82,7 +83,7 @@ public class FileProjectStoreTests : IDisposable
     {
         var store = new FileProjectStore(_appDataRoot);
         var folderPath = CreateRealFolder("to-remove");
-        var added = store.Add(UserId, "", folderPath.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
+        var added = store.Add(UserId, "", ToPathRecord(folderPath));
 
         store.Remove(UserId, added.Id);
 
@@ -95,11 +96,27 @@ public class FileProjectStoreTests : IDisposable
     {
         var store = new FileProjectStore(_appDataRoot);
         var folderPath = CreateRealFolder("survives-restart");
-        store.Add(UserId, "", folderPath.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
+        store.Add(UserId, "", ToPathRecord(folderPath));
 
         // Simulate a process restart: a brand-new store instance re-reading the same file.
         var reloadedStore = new FileProjectStore(_appDataRoot);
 
         Assert.Single(reloadedStore.List(UserId));
+    }
+
+    [Fact]
+    public void List_AfterReconstructingStore_RoundTripsIdNameAndPathSegmentsExactly()
+    {
+        var store = new FileProjectStore(_appDataRoot);
+        var folderPath = CreateRealFolder("round-trips-exactly");
+        var path = ToPathRecord(folderPath);
+        var added = store.Add(UserId, "Round Trip Name", path);
+
+        var reloadedStore = new FileProjectStore(_appDataRoot);
+        var reloaded = Assert.Single(reloadedStore.List(UserId));
+
+        Assert.Equal(added.Id, reloaded.Id);
+        Assert.Equal("Round Trip Name", reloaded.Name);
+        Assert.Equal(path.Segments, reloaded.Path.Segments);
     }
 }

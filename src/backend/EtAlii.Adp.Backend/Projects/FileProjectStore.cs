@@ -6,7 +6,9 @@ namespace EtAlii.Adp.Backend.Projects;
 /// <summary>
 /// Per-user project list persisted as a plain JSON file at
 /// {appDataRoot}/EtAlii.Adp/users/{userId}/projects.json, per tech.md's
-/// file-based (no database) storage philosophy.
+/// file-based (no database) storage philosophy. ProjectRecord (and its
+/// nested PathRecord) is serialized directly - no separate DTO - relying on
+/// ShortGuid's own JsonConverter (ShortGuidJsonConverter) for its Id.
 /// </summary>
 public sealed class FileProjectStore : IProjectStore
 {
@@ -19,9 +21,9 @@ public sealed class FileProjectStore : IProjectStore
 
     public IReadOnlyList<ProjectRecord> List(ShortGuid userId) => Read(userId);
 
-    public ProjectRecord Add(ShortGuid userId, string name, IReadOnlyList<string> pathSegments)
+    public ProjectRecord Add(ShortGuid userId, string name, PathRecord path)
     {
-        var folderPath = IoPath.Combine(pathSegments.ToArray());
+        var folderPath = IoPath.Combine(path.Segments.ToArray());
         if (!Directory.Exists(folderPath))
         {
             throw new InvalidProjectPathException($"Folder not found: {folderPath}");
@@ -29,7 +31,7 @@ public sealed class FileProjectStore : IProjectStore
 
         var projects = Read(userId).ToList();
         var resolvedName = string.IsNullOrWhiteSpace(name) ? new DirectoryInfo(folderPath).Name : name.Trim();
-        var record = new ProjectRecord(ShortGuid.NewShortGuid(), resolvedName, pathSegments);
+        var record = new ProjectRecord(ShortGuid.NewShortGuid(), resolvedName, path);
         projects.Add(record);
         Write(userId, projects);
         return record;
@@ -53,10 +55,7 @@ public sealed class FileProjectStore : IProjectStore
         }
 
         var json = File.ReadAllText(filePath);
-        var entries = JsonSerializer.Deserialize<List<ProjectEntry>>(json) ?? new List<ProjectEntry>();
-        return entries
-            .Select(e => new ProjectRecord(ShortGuid.Parse(e.Id), e.Name, e.Path))
-            .ToList();
+        return JsonSerializer.Deserialize<List<ProjectRecord>>(json) ?? new List<ProjectRecord>();
     }
 
     private void Write(ShortGuid userId, IReadOnlyList<ProjectRecord> projects)
@@ -64,12 +63,7 @@ public sealed class FileProjectStore : IProjectStore
         var filePath = GetFilePath(userId);
         Directory.CreateDirectory(IoPath.GetDirectoryName(filePath)!);
 
-        var entries = projects
-            .Select(p => new ProjectEntry(p.Id.ToString(), p.Name, p.PathSegments.ToList()))
-            .ToList();
-        var json = JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true });
+        var json = JsonSerializer.Serialize(projects, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(filePath, json);
     }
-
-    private sealed record ProjectEntry(string Id, string Name, List<string> Path);
 }

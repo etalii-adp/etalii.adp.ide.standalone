@@ -1,6 +1,3 @@
-﻿namespace EtAlii.Adp.Backend.Projects;
+namespace EtAlii.Adp.Backend.Projects;
 
-public sealed record ProjectRecord(
-    ShortGuid Id,
-    string Name,
-    IReadOnlyList<string> PathSegments);
+public sealed record ProjectRecord(ShortGuid Id, string Name, PathRecord Path);

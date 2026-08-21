@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace EtAlii.Adp;
 
@@ -8,6 +9,7 @@ namespace EtAlii.Adp;
 /// A <see cref="Guid"/> represented as a fixed-length, 25-character base36 string
 /// (25 is the smallest width in which every possible 128-bit value fits: 36^24 &lt; 2^128 &#le; 36^25).
 /// </summary>
+[JsonConverter(typeof(ShortGuidJsonConverter))]
 public readonly record struct ShortGuid :
     IComparable<ShortGuid>,
     ISpanFormattable,
