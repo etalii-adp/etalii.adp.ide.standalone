@@ -75,3 +75,88 @@ describe("ProjectGridPage removal confirmation", () => {
     expect(screen.queryByText("Remove project?")).toBeNull();
   });
 });
+
+describe("ProjectGridPage add dialog", () => {
+  /** Opens the add dialog from the grid's "+" tile and returns its fields. */
+  async function openAddDialog() {
+    listProjects.mockResolvedValue({ projects: [] });
+
+    render(<ProjectGridPage onProjectSelected={() => {}} />);
+    await screen.findByRole("button", { name: "Add project" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Add project" }));
+
+    return {
+      name: screen.getByPlaceholderText("My project"),
+      path: screen.getByPlaceholderText("C:\\path\\to\\project"),
+      // The tile and the dialog's confirm button share the "Add project" name, so
+      // pick the one in the footer rather than the tile that opened the dialog.
+      submit: screen
+        .getAllByRole("button", { name: "Add project" })
+        .find((button) => button.className.includes("dialog-button")) as HTMLElement,
+    };
+  }
+
+  it("keeps the form out of the grid until the add tile is used", async () => {
+    listProjects.mockResolvedValue({ projects: [] });
+
+    render(<ProjectGridPage onProjectSelected={() => {}} />);
+    await screen.findByRole("button", { name: "Add project" });
+
+    expect(screen.queryByPlaceholderText("My project")).toBeNull();
+    expect(document.querySelector(".project-card-add-button .mdi-plus")).not.toBeNull();
+  });
+
+  it("disables Add project until both a name and a path are provided", async () => {
+    const { name, path, submit } = await openAddDialog();
+
+    expect(submit).toHaveProperty("disabled", true);
+
+    fireEvent.change(name, { target: { value: "Alpha" } });
+    expect(submit).toHaveProperty("disabled", true);
+
+    fireEvent.change(path, { target: { value: "C:\\projects\\alpha" } });
+    expect(submit).toHaveProperty("disabled", false);
+  });
+
+  it("treats whitespace-only input as missing", async () => {
+    const { name, path, submit } = await openAddDialog();
+
+    fireEvent.change(name, { target: { value: "   " } });
+    fireEvent.change(path, { target: { value: "C:\\projects\\alpha" } });
+    expect(submit).toHaveProperty("disabled", true);
+
+    fireEvent.change(name, { target: { value: "Alpha" } });
+    fireEvent.change(path, { target: { value: "\\\\" } });
+    expect(submit).toHaveProperty("disabled", true);
+  });
+
+  it("adds the project with its path split into segments, then closes", async () => {
+    addProject.mockResolvedValue({ result: { case: "project", value: {} } });
+    const { name, path, submit } = await openAddDialog();
+
+    fireEvent.change(name, { target: { value: "  Alpha  " } });
+    fireEvent.change(path, { target: { value: "C:\\projects\\alpha" } });
+    fireEvent.click(submit);
+
+    expect(addProject).toHaveBeenCalledWith({
+      name: "Alpha",
+      path: { segments: ["C:", "projects", "alpha"] },
+    });
+
+    await screen.findByRole("button", { name: "Add project" });
+    expect(screen.queryByPlaceholderText("My project")).toBeNull();
+  });
+
+  it("keeps the dialog open and shows the error when the backend rejects the add", async () => {
+    addProject.mockResolvedValue({ result: { case: "error", value: { message: "Folder not found." } } });
+    const { name, path, submit } = await openAddDialog();
+
+    fireEvent.change(name, { target: { value: "Alpha" } });
+    fireEvent.change(path, { target: { value: "C:\\nope" } });
+    fireEvent.click(submit);
+
+    expect(await screen.findByRole("alert")).toHaveProperty("textContent", "Folder not found.");
+    expect(screen.getByPlaceholderText("My project")).not.toBeNull();
+  });
+});
