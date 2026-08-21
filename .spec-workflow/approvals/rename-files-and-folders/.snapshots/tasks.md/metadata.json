@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/rename-files-and-folders/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-21T15:25:09.000Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787325910010_q4w8jz2nx",
+      "approvalTitle": "Tasks: rename-files-and-folders"
+    }
+  ]
+}
