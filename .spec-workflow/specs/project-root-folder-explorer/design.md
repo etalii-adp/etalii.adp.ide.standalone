@@ -2,7 +2,7 @@
 
 ## Overview
 
-This design adds a new backend gRPC service, `HierarchyService`, that resolves a project's root folder (Requirement 1), lists its file/folder hierarchy on demand (Requirement 2), and streams live changes to it (Requirement 4) — backed by a per-project, in-memory hierarchy model fed by a recursive `FileSystemWatcher`. On the client, a new explorer tree component (living inside `adp-diagram-ide`'s workspace-shell side panel) consumes both calls to populate and keep the tree current (Requirement 3), rendering Material Design Icons for every node.
+This design adds a new backend gRPC service, `HierarchyService`, that resolves a project's root folder (Requirement 1), lists its file/folder hierarchy on demand (Requirement 2), and streams live changes to it (Requirement 4) — backed by a per-project, in-memory hierarchy model fed by a single `FileSystemWatcher` instance per project, configured with `IncludeSubdirectories = true` so that one watcher covers the entire folder hierarchy rather than one watcher per folder. On the client, a new explorer tree component (living inside `adp-diagram-ide`'s workspace-shell side panel) consumes both calls to populate and keep the tree current (Requirement 3), rendering Material Design Icons for every node.
 
 ## Steering Document Alignment
 
@@ -40,7 +40,7 @@ This design adds a new backend gRPC service, `HierarchyService`, that resolves a
 
 ```mermaid
 graph TD
-    FSW[FileSystemWatcher<br/>recursive, per project] -->|create/delete/rename events| Model[HierarchyModel<br/>in-memory, per project]
+    FSW[FileSystemWatcher<br/>one instance per project<br/>IncludeSubdirectories = true] -->|create/delete/rename events| Model[HierarchyModel<br/>in-memory, per project]
     Registry[HierarchyModelRegistry<br/>ref-counted by open streams] -->|owns| Model
     Registry -->|owns| FSW
     Store[IProjectStore] -->|resolves + re-validates root path| Service[HierarchyServiceImpl]
@@ -86,7 +86,7 @@ graph TD
 
 ### `RootFolderWatcher` (backend, `EtAlii.Adp.Backend.Hierarchy`)
 
-* **Purpose:** Thin wrapper around .NET's `FileSystemWatcher` (recursive, scoped to one project's root folder), forwarding create/delete/rename/error events to its owning `HierarchyModel` (Requirement 4.4).
+* **Purpose:** Thin wrapper around a single .NET `FileSystemWatcher` instance, scoped to one project's root folder with `IncludeSubdirectories = true` — one watcher per project covers that project's entire folder hierarchy, never one watcher per folder — forwarding create/delete/rename/error events to its owning `HierarchyModel` (Requirement 4.4).
 * **Interfaces:** Constructor takes the root path and a callback; `Dispose()` stops watching.
 * **Dependencies:** `System.IO.FileSystemWatcher`.
 * **Reuses:** N/A — first use of `FileSystemWatcher` in the codebase.
