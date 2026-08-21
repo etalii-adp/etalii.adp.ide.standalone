@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { LoginPage } from "./pages/LoginPage";
 import { ProjectGridPage } from "./pages/ProjectGridPage";
+import { WorkspaceShell } from "./shell/WorkspaceShell";
 import type { Project } from "./generated/projects_pb";
 
 function Gate() {
@@ -13,16 +14,7 @@ function Gate() {
   }
 
   if (openProject) {
-    // The workspace shell itself belongs to the adp-diagram-ide spec; this
-    // is the hand-off point Requirement 2.3 describes.
-    return (
-      <div>
-        <button type="button" onClick={() => setOpenProject(null)}>
-          &larr; Back to projects
-        </button>
-        <p>Workspace shell for "{openProject.name}" goes here (adp-diagram-ide).</p>
-      </div>
-    );
+    return <WorkspaceShell projectName={openProject.name} onBack={() => setOpenProject(null)} />;
   }
 
   return <ProjectGridPage onProjectSelected={setOpenProject} />;
