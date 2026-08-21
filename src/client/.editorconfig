@@ -1,0 +1,54 @@
+# EditorConfig for EtAlii.Adp client (TypeScript / React / Vite)
+#
+# Baseline: the generic, universally-adopted EditorConfig defaults (as
+# documented at https://editorconfig.org), extended with the TypeScript/
+# JavaScript ecosystem's de-facto mainstream conventions (2-space indent,
+# double-quoted strings, semicolons - the same defaults Prettier ships with),
+# plus JetBrains WebStorm/Rider's supported `ij_javascript_*`/`ij_typescript_*`
+# formatting keys for anything the core EditorConfig spec doesn't cover.
+#
+# There's no ESLint/Prettier config in this project (yet) to check rules
+# against automatically, unlike the backend's `dotnet format style`. The
+# choices below were instead verified by hand against the existing
+# src/client/src sources; nothing currently conflicts, so unlike the backend
+# .editorconfig there's nothing to comment out today. If a rule is added
+# later that a formatter would flag heavily against existing code, disable it
+# here the same way the backend file does: comment it out (or downgrade it)
+# with a note explaining why.
+root = true
+
+# All files
+[*]
+charset = utf-8
+end_of_line = crlf
+indent_style = space
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{json,jsonc}]
+indent_size = 2
+
+[*.{yml,yaml}]
+indent_size = 2
+
+# TypeScript / JavaScript
+[*.{ts,tsx,js,jsx,mjs,cjs}]
+indent_size = 2
+
+# JetBrains WebStorm/Rider formatter hints (verified against existing code:
+# double quotes and semicolons are used consistently throughout src/client/src).
+ij_javascript_use_double_quotes = true
+ij_typescript_use_double_quotes = true
+ij_javascript_use_semicolon_after_statement = true
+ij_typescript_use_semicolon_after_statement = true
+ij_javascript_spaces_within_imports = true
+ij_typescript_spaces_within_imports = true
+
+[*.css]
+indent_size = 2
+
+[*.html]
+indent_size = 2
