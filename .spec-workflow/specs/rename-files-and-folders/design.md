@@ -114,7 +114,7 @@ The **shortcut path** collapses the middle: `ExecuteAction` carries a `ContextSh
   * `SubmitInteraction(SubmitInteractionRequest) → SubmitInteractionResponse` — step 7.
   * `CancelInteraction(CancelInteractionRequest) → CancelInteractionResponse` — dialog dismissed (Requirements 5.5, 9.4).
 * **Dependencies:** `IProjectStore` + `SessionContext` (authorization, reusing `TryResolveRootPath`), `IHierarchyModelStore` (entry-id → full path), `IContextActionResolver`, `IContextInteractionStore`.
-* **Design note (step 6b):** the validation verdict returns on `ProposeInput`'s **own response** rather than as a pushed prompt. Pushing it would add a second round trip and introduce a stale-verdict race as the user keeps typing; returning it directly cannot race, and the backend remains the sole authority on validity either way. The response still echoes the `revision` it validated so the client can discard an out-of-order reply, and the client debounces keystrokes.
+* **Design note (step 6b):** the validation verdict returns on `ProposeInput`'s **own response** rather than as a pushed prompt. Pushing it would add a second round trip and introduce a stale-verdict race as the user keeps typing; returning it directly cannot race, and the backend remains the sole authority on validity either way. The call is driven by a 200 ms debounced value rather than fired per keystroke (see `useDebouncedValue`), and the response echoes the `revision` it validated so any reply that still arrives out of order is discarded.
 * **Design note (`WatchHierarchy` edit):** the existing method gains two lines — registering its `ChannelWriter` with `IContextInteractionStore` on entry, and `Remove(watchId)` in its existing `finally`. Nothing else in that file changes.
 
 ### `IContextActionProvider` / `ContextActionResolver` (backend, `Context/`)
@@ -166,9 +166,17 @@ The **shortcut path** collapses the middle: `ExecuteAction` carries a `ContextSh
 
 * **Purpose:** Render whichever dialog the current backend prompt asks for — scope-agnostic, so future actions need no new client component.
 * **Interfaces:** `{ prompt: ContextPrompt | null; onPropose; onSubmit; onCancel }`.
-  * `show_input_dialog` → `Dialog` with a text input; the confirm button's `disabled` is driven by the latest matching-`revision` verdict, starting disabled (Requirement 5.2); a failed submit keeps it open showing the error (Requirement 6.5).
+  * `show_input_dialog` → `Dialog` with a text input, validated as described under *Debounced validation* below; a failed submit keeps it open showing the error (Requirement 6.5).
   * `show_confirm_dialog` → `ConfirmDialog` with `confirmColor="danger"`, message supplied by the backend (Requirement 11).
 * **Reuses:** `Dialog`, `ConfirmDialog` — no new dialog mechanism (Requirements NFR *Reuse over reinvention*).
+
+### Debounced validation (client, `shell/useDebouncedValue.ts`, new)
+
+* **Purpose:** Throttle the validation round trip so `ProposeInput` fires when the user pauses, not on every keystroke.
+* **Interfaces:** `useDebouncedValue<T>(value: T, delayMs: number): T` — a small hook holding the last value that stayed unchanged for `delayMs`, implemented with `useState` + `useEffect` and a `clearTimeout` cleanup, so each new keystroke cancels the pending emission. This is React's own reactive model (declarative effect, automatic cleanup on unmount), which is why it needs no new dependency — adding an observable library for one debounced input would run against tech.md's "don't reinvent, integrate" in the wrong direction. `ContextPromptHost` uses it at **200 ms**, then fires `ProposeInput` from an effect on the debounced value.
+* **Trailing-edge, not leading:** validation is only meaningful once the user stops typing — a leading-edge throttle would validate the first character and then a partial name, showing verdicts against text the user has already moved past.
+* **Pending state is a disabled state:** the confirm button starts disabled (Requirement 5.2) and is enabled *only* when a verdict is `valid` **and** its echoed `revision` matches the current input. It is therefore disabled during the whole 200 ms window and while a call is in flight, which is what stops a stale "valid" verdict from being submitted against newly-typed text. Because the pending state already covers that gap, the client deliberately does **not** re-implement the empty/invalid-character/unchanged rules locally — the backend stays the single source of truth for validity, so the dialog and the pre-commit re-check cannot drift.
+* **Dependencies:** React only.
 
 ## Data Models
 
@@ -312,7 +320,9 @@ ContextValidationResult / ContextCommitResult / ContextExecutionResult
 * `ContextActionResolver`: only matching-scope providers are consulted; groups concatenate in registration order; an empty provider set yields no groups.
 * `HierarchyContextActionProvider`: Rename/Delete both always reported with correct `available` + reason; `F2`/`Delete` shortcuts attached; validation rejects empty, invalid-character, unchanged, and colliding names, and accepts a valid change; containment rejects a `..`/symlink escape; commit renames a populated folder without touching its contents (Requirement 7.1).
 * `ContextInteractionStore`: per-`watch_id` isolation, `TryPush` reaching only the owning connection, completion removing the interaction (idempotent submit).
-* Client: the shortcut-matching function (key + modifiers vs. an action list, ignoring unavailable actions); the tree's flatten-and-move-focus helper against a synthetic expanded/collapsed tree; `ContextPromptHost`'s enable/disable logic including discarding a stale `revision`.
+* Client: the shortcut-matching function (key + modifiers vs. an action list, ignoring unavailable actions); the tree's flatten-and-move-focus helper against a synthetic expanded/collapsed tree.
+* `useDebouncedValue` (fake timers): emits only after the delay elapses; rapid successive changes emit once, carrying the final value; an unmount mid-window emits nothing.
+* `ContextPromptHost` (fake timers): no `ProposeInput` fires before 200 ms of quiet; typing through the window issues exactly one call; the confirm button is disabled while pending, enabled only on a `valid` verdict whose `revision` matches the current input, and disabled again the moment the input changes after a valid verdict — the stale-submit case.
 
 ### Integration Testing
 
@@ -331,7 +341,7 @@ ContextValidationResult / ContextCommitResult / ContextExecutionResult
 Three points where this design differs from the sequence as stated, each deliberate:
 
 1. **Not a literal bidi stream** — impossible over gRPC-Web from a browser. The backend still initiates prompts; it does so over the already-open `WatchHierarchy` stream, with unary calls carrying the client→backend leg (see *Why not a bidirectional stream*).
-2. **Step 6b's verdict returns on `ProposeInput`'s own response**, not as a pushed prompt — avoids a second round trip and a stale-verdict race while keeping the backend the sole authority on validity.
+2. **Step 6b's verdict returns on `ProposeInput`'s own response**, not as a pushed prompt — avoids a second round trip and a stale-verdict race while keeping the backend the sole authority on validity. Step 6a is additionally debounced at 200 ms rather than fired per keystroke, with the confirm button disabled for the whole pending window (see *Debounced validation*).
 3. **`source` is an entry id, not a full file path** — the backend resolves it to the absolute path and hands *that* to providers, so provider logic keys off the full path exactly as intended. Sending paths to the browser would contradict tech.md's "the client never touches the filesystem directly", leak the user's directory layout, and mean accepting client-supplied paths as input.
 
 Additionally, **Requirements 8.1, 8.2, 10.3 and 10.4 (open editor tabs and unsaved changes) cannot be implemented yet** — no editor-tab or document-buffer concept exists (`DiagramPanel` is still a placeholder). The design leaves the seam: the confirm prompt's `message` is backend-composed, so the unsaved-changes warning becomes a provider concern once an open-document registry exists, with no contract change. These acceptance criteria should be tracked as deferred rather than marked done by this spec's tasks.

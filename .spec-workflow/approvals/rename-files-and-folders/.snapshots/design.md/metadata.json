@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/rename-files-and-folders/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-21T15:06:33.000Z",
       "trigger": "initial",
+      "approvalId": "approval_1787324793406_v7k2mq9dz",
+      "approvalTitle": "Design: rename-files-and-folders"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-21T15:18:38.000Z",
+      "trigger": "revision_requested",
       "approvalId": "approval_1787324793406_v7k2mq9dz",
       "approvalTitle": "Design: rename-files-and-folders"
     }
