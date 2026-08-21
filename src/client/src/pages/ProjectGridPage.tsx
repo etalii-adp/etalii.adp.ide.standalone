@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@connectrpc/connect";
 import { AppHeader } from "../components/AppHeader";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { useAuth } from "../auth/AuthContext";
 import { ProjectService } from "../generated/projects_pb";
 import type { Project } from "../generated/projects_pb";
@@ -29,6 +30,7 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
   const [newPath, setNewPath] = useState("");
   const [addError, setAddError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [pendingRemoval, setPendingRemoval] = useState<Project | null>(null);
 
   const refresh = useCallback(async () => {
     const response = await projectClient.listProjects({});
@@ -62,6 +64,14 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
     await refresh();
   };
 
+  const handleConfirmRemove = async () => {
+    const projectId = pendingRemoval?.id?.value;
+    setPendingRemoval(null);
+    if (projectId) {
+      await handleRemove(projectId);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="projects-page">
@@ -88,7 +98,7 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
             <button
               className="remove-button"
               type="button"
-              onClick={() => project.id && void handleRemove(project.id.value)}
+              onClick={() => setPendingRemoval(project)}
               aria-label={`Remove ${project.name}`}
             >
               <span className="mdi mdi-trash-can-outline" aria-hidden="true" />
@@ -121,6 +131,18 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
           </form>
         </li>
       </ul>
+
+      <ConfirmDialog
+        open={pendingRemoval !== null}
+        icon="mdi-trash-can-outline"
+        title="Remove project?"
+        message={`Are you really sure that you want to remove project '${pendingRemoval?.name}'? It will not be deleted from disk but only from the project grid.`}
+        confirmLabel="Yes"
+        cancelLabel="No"
+        confirmColor="danger"
+        onConfirm={() => void handleConfirmRemove()}
+        onCancel={() => setPendingRemoval(null)}
+      />
     </div>
   );
 }
