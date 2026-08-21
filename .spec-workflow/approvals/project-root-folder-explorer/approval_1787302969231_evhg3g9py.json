@@ -3,8 +3,10 @@
   "title": "Design: project-root-folder-explorer",
   "filePath": ".spec-workflow/specs/project-root-folder-explorer/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-21T09:02:49.231Z",
   "category": "spec",
-  "categoryName": "project-root-folder-explorer"
+  "categoryName": "project-root-folder-explorer",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-21T09:04:12.798Z"
 }
