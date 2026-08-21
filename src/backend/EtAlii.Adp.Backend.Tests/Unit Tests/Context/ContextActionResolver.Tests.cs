@@ -64,7 +64,7 @@ public class ContextActionResolverTests
         var owner = await resolver.ResolveByActionIdAsync(Target(), "second", CancellationToken.None);
 
         Assert.NotNull(owner);
-        Assert.Same(second, owner!.Provider);
+        Assert.Same(second, owner.Provider);
         Assert.Equal("second", owner.Action.Id);
     }
 
@@ -90,7 +90,7 @@ public class ContextActionResolverTests
         var owner = await resolver.ResolveByShortcutAsync(Target(), new ContextShortcutDefinition("F2", Shift: true), CancellationToken.None);
 
         Assert.NotNull(owner);
-        Assert.Equal("shifted", owner!.Action.Id);
+        Assert.Equal("shifted", owner.Action.Id);
     }
 
     [Fact]

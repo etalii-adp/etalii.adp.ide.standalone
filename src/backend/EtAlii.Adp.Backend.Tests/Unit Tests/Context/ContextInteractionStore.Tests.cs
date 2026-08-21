@@ -37,7 +37,7 @@ public class ContextInteractionStoreTests
 
         Assert.True(pushed);
         Assert.True(channelA.Reader.TryRead(out var messageA));
-        Assert.Equal(HierarchyMessage.MessageOneofCase.Prompt, messageA!.MessageCase);
+        Assert.Equal(HierarchyMessage.MessageOneofCase.Prompt, messageA.MessageCase);
         Assert.False(channelB.Reader.TryRead(out _));
     }
 

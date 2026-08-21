@@ -160,7 +160,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
 
         var prompt = (await pendingPrompt).Prompt;
         Assert.Equal(ContextPrompt.PromptOneofCase.InputDialog, prompt.PromptCase);
-        Assert.Equal((ShortGuid)interactionId, (ShortGuid)prompt.InteractionId);
+        Assert.Equal(interactionId, (ShortGuid)prompt.InteractionId);
         Assert.Equal("original.txt", prompt.InputDialog.InitialValue);
 
         var rejected = await hierarchyClient.ProposeInputAsync(
