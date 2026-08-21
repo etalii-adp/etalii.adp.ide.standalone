@@ -137,7 +137,7 @@ public sealed partial class HierarchyServiceImpl : HierarchyService.HierarchySer
             return false;
         }
 
-        var candidatePath = IoPath.Combine(project.PathSegments.ToArray());
+        var candidatePath = IoPath.Combine(project.Path.Segments.ToArray());
         if (!Directory.Exists(candidatePath))
         {
             rootPath = "";
