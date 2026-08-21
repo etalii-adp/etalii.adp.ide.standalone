@@ -54,7 +54,7 @@ tab_width = 4
 # Commented out: dotnet_separate_import_directive_groups (blank line between
 # using-directive groups by root namespace) currently fires on ~14 of ~20 .cs
 # files, since usings here aren't grouped that way today.
-# dotnet_separate_import_directive_groups = true
+dotnet_separate_import_directive_groups = true
 dotnet_sort_system_directives_first = true
 file_header_template = unset
 
@@ -62,16 +62,16 @@ file_header_template = unset
 # Silent in Microsoft's own template (not something disabled for this codebase):
 # qualifying with 'this.' is a personal/team style choice the template
 # deliberately leaves unenforced.
-dotnet_style_qualification_for_event = false:silent
-dotnet_style_qualification_for_field = false:silent
-dotnet_style_qualification_for_method = false:silent
-dotnet_style_qualification_for_property = false:silent
+dotnet_style_qualification_for_event = false:warning
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_method = false:warning
+dotnet_style_qualification_for_property = false:warning
 
 # Language keywords vs BCL types preferences
 # Silent in Microsoft's own template: preferring 'int' over 'Int32' is treated
 # as a low-priority nit, not worth flagging.
-dotnet_style_predefined_type_for_locals_parameters_members = true:silent
-dotnet_style_predefined_type_for_member_access = true:silent
+dotnet_style_predefined_type_for_locals_parameters_members = true:warning
+dotnet_style_predefined_type_for_member_access = true:warning
 
 # Parentheses preferences
 # Silent in Microsoft's own template: clarifying parentheses are encouraged

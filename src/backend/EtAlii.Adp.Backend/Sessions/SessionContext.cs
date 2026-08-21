@@ -14,6 +14,5 @@ public static class SessionContext
     public static void SetUserId(ServerCallContext context, ShortGuid userId) =>
         context.UserState[UserIdStateKey] = userId;
 
-    public static ShortGuid GetUserId(ServerCallContext context) =>
-        (ShortGuid)context.UserState[UserIdStateKey]!;
+    public static ShortGuid GetUserId(ServerCallContext context) => (ShortGuid)context.UserState[UserIdStateKey];
 }

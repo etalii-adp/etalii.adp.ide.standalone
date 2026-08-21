@@ -15,9 +15,9 @@ namespace EtAlii.Adp.Backend.Tests;
 /// host running in-process (per the F5/local-only philosophy, no external
 /// infrastructure), per design.md's Integration Testing strategy.
 ///
-/// AdpService (grpc-core-communication) is not yet implemented, so session
+/// DiagramService (grpc-core-communication) is not yet implemented, so session
 /// consistency is verified across AuthenticationService/ProjectService only;
-/// extend this once that spec adds a real AdpService implementation.
+/// extend this once that spec adds a real DiagramService implementation.
 /// </summary>
 public class LoginProjectSelectionFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
