@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
 import { base64Encode } from "@bufbuild/protobuf/wire";
 import {
@@ -7,7 +8,33 @@ import {
   HierarchyChangeSchema,
   type Entry,
 } from "../../generated/hierarchy_pb";
-import { EMPTY_TREE_STATE, applyEntries, applyHierarchyChange, type TreeState } from "./ExplorerTreePanel";
+import { ContextActionGroupSchema, type ContextActionGroup } from "../../generated/context_pb";
+import {
+  EMPTY_TREE_STATE,
+  ExplorerTreePanel,
+  applyEntries,
+  applyHierarchyChange,
+  entryFocusKey,
+  matchShortcut,
+  neighbourKey,
+  toMenuGroups,
+  visibleKeys,
+  type ShortcutEventLike,
+  type TreeState,
+} from "./ExplorerTreePanel";
+
+const listEntries = vi.fn();
+const watchHierarchy = vi.fn();
+const discoverActions = vi.fn();
+const executeAction = vi.fn();
+
+vi.mock("../../auth/AuthContext", () => ({
+  useAuth: () => ({ transport: {} }),
+}));
+
+vi.mock("@connectrpc/connect", () => ({
+  createClient: () => ({ listEntries, watchHierarchy, discoverActions, executeAction }),
+}));
 
 function id(byte: number): Uint8Array {
   return new Uint8Array(16).fill(byte);
@@ -161,5 +188,345 @@ describe("applyHierarchyChange", () => {
     const next = applyHierarchyChange(state, change);
 
     expect(next).toEqual(state);
+  });
+});
+
+describe("visibleKeys", () => {
+  /** root: [folder 2 (expanded, children 3 & 4), file 1]; folder 4 collapsed with a child 5. */
+  function nestedState(): TreeState {
+    let state = applyEntries(EMPTY_TREE_STATE, undefined, [
+      makeEntry(2, "sub", EntryKind.FOLDER, undefined, true),
+      makeEntry(1, "a.txt", EntryKind.FILE),
+    ]);
+    state = applyEntries(state, key(2), [
+      makeEntry(4, "deeper", EntryKind.FOLDER, 2, true),
+      makeEntry(3, "inside.txt", EntryKind.FILE, 2),
+    ]);
+    state = applyEntries(state, key(4), [makeEntry(5, "leaf.txt", EntryKind.FILE, 4)]);
+    return expand(state, key(2));
+  }
+
+  function expand(state: TreeState, nodeKey: string): TreeState {
+    return { ...state, nodesByKey: { ...state.nodesByKey, [nodeKey]: { ...state.nodesByKey[nodeKey]!, expanded: true } } };
+  }
+
+  it("walks an expanded folder's children but skips a collapsed one's", () => {
+    expect(visibleKeys(nestedState())).toEqual([key(2), key(4), key(3), key(1)]);
+  });
+
+  it("includes a newly-expanded folder's children from then on", () => {
+    expect(visibleKeys(expand(nestedState(), key(4)))).toEqual([key(2), key(4), key(5), key(3), key(1)]);
+  });
+
+  describe("neighbourKey", () => {
+    it("moves down and up through the rendered order", () => {
+      const state = nestedState();
+
+      expect(neighbourKey(state, key(2), 1)).toBe(key(4));
+      expect(neighbourKey(state, key(3), -1)).toBe(key(4));
+    });
+
+    it("stops rather than wrapping at either end", () => {
+      const state = nestedState();
+
+      expect(neighbourKey(state, key(1), 1)).toBeUndefined();
+      expect(neighbourKey(state, key(2), -1)).toBeUndefined();
+    });
+
+    it("starts at the first entry when nothing is focused yet", () => {
+      expect(neighbourKey(nestedState(), undefined, 1)).toBe(key(2));
+    });
+  });
+
+  describe("entryFocusKey", () => {
+    it("returns to the previously-focused entry when it is still rendered", () => {
+      expect(entryFocusKey(nestedState(), key(3))).toBe(key(3));
+    });
+
+    it("falls back to the first entry when the previous one is gone", () => {
+      expect(entryFocusKey(nestedState(), key(99))).toBe(key(2));
+    });
+  });
+});
+
+describe("matchShortcut", () => {
+  function groups(overrides?: { available?: boolean; shift?: boolean }): ContextActionGroup[] {
+    return [
+      create(ContextActionGroupSchema, {
+        actions: [
+          {
+            id: "hierarchy.rename",
+            label: "Rename…",
+            icon: "mdi-pencil-outline",
+            available: overrides?.available ?? true,
+            shortcut: { key: "F2", shift: overrides?.shift ?? false },
+          },
+        ],
+      }),
+    ];
+  }
+
+  function press(key: string, modifiers?: Partial<ShortcutEventLike>): ShortcutEventLike {
+    return { key, ctrlKey: false, shiftKey: false, altKey: false, metaKey: false, ...modifiers };
+  }
+
+  it("finds the action bound to the pressed key", () => {
+    expect(matchShortcut(groups(), press("F2"))?.id).toBe("hierarchy.rename");
+  });
+
+  it("ignores a key nothing is bound to", () => {
+    expect(matchShortcut(groups(), press("F4"))).toBeUndefined();
+  });
+
+  it("requires the modifiers to match exactly", () => {
+    expect(matchShortcut(groups(), press("F2", { shiftKey: true }))).toBeUndefined();
+    expect(matchShortcut(groups({ shift: true }), press("F2", { shiftKey: true }))?.id).toBe("hierarchy.rename");
+  });
+
+  it("ignores an action the backend reported unavailable, so its shortcut is inert too", () => {
+    expect(matchShortcut(groups({ available: false }), press("F2"))).toBeUndefined();
+  });
+
+  it("finds nothing at all when no actions were reported for the entry", () => {
+    expect(matchShortcut([], press("F2"))).toBeUndefined();
+  });
+});
+
+describe("toMenuGroups", () => {
+  it("maps an unavailable action onto a disabled item carrying its reason", () => {
+    const groups = [
+      create(ContextActionGroupSchema, {
+        actions: [
+          { id: "hierarchy.delete", label: "Delete", icon: "mdi-trash-can-outline", available: false, unavailableReason: "No parent folder." },
+        ],
+      }),
+    ];
+
+    const menuGroups = toMenuGroups(groups, () => {});
+
+    expect(menuGroups[0]?.[0]).toMatchObject({
+      id: "hierarchy.delete",
+      label: "Delete",
+      icon: "mdi-trash-can-outline",
+      disabled: true,
+      disabledReason: "No parent folder.",
+    });
+  });
+
+  it("keeps one backend group as one menu group, in the order they were reported", () => {
+    const groups = [
+      create(ContextActionGroupSchema, { actions: [{ id: "a", label: "A", icon: "", available: true }] }),
+      create(ContextActionGroupSchema, { actions: [{ id: "b", label: "B", icon: "", available: true }] }),
+    ];
+
+    expect(toMenuGroups(groups, () => {}).map((group) => group.map((item) => item.id))).toEqual([["a"], ["b"]]);
+  });
+
+  it("calls back with the action a selected item stands for", () => {
+    const onSelect = vi.fn();
+    const groups = [
+      create(ContextActionGroupSchema, { actions: [{ id: "hierarchy.rename", label: "Rename…", icon: "", available: true }] }),
+    ];
+
+    const item = toMenuGroups(groups, onSelect)[0]?.[0];
+    (item as { onSelect: () => void }).onSelect();
+
+    expect(onSelect.mock.calls[0]?.[0]?.id).toBe("hierarchy.rename");
+  });
+});
+
+describe("ExplorerTreePanel keyboard navigation and triggers", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // A stream that never yields: these tests drive the tree, not the change feed.
+    watchHierarchy.mockReturnValue({
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      async *[Symbol.asyncIterator]() {},
+    });
+    discoverActions.mockResolvedValue({ groups: [] });
+    executeAction.mockResolvedValue({ accepted: true, error: "" });
+  });
+
+  /** Root holds folder "sub" (with one child) and file "a.txt"; the folder is not expanded yet. */
+  function mockRootAndChildren() {
+    listEntries.mockImplementation(({ folderId }: { folderId?: { value: Uint8Array } }) =>
+      Promise.resolve(
+        folderId
+          ? { result: { case: "entries", value: { entries: [makeEntry(3, "inside.txt", EntryKind.FILE, 2)] } } }
+          : {
+              result: {
+                case: "entries",
+                value: { entries: [makeEntry(2, "sub", EntryKind.FOLDER, undefined, true), makeEntry(1, "a.txt", EntryKind.FILE)] },
+              },
+            },
+      ),
+    );
+  }
+
+  async function renderPanel() {
+    mockRootAndChildren();
+    render(<ExplorerTreePanel projectId={new Uint8Array(16)} />);
+    await screen.findByText("sub");
+  }
+
+  function row(name: string): HTMLButtonElement {
+    return screen.getByText(name).closest("button") as HTMLButtonElement;
+  }
+
+  /** Focus for real, inside act, so the row's onFocus state update is flushed before asserting. */
+  function focusRow(name: string) {
+    act(() => row(name).focus());
+  }
+
+  function tree(): HTMLElement {
+    return screen.getByRole("tree");
+  }
+
+  it("is a single Tab stop: exactly one row is tabbable at a time", async () => {
+    await renderPanel();
+
+    const tabbable = screen.getAllByRole("button").filter((button) => button.tabIndex === 0);
+
+    expect(tabbable).toHaveLength(1);
+    expect(tabbable[0]).toBe(row("sub"));
+  });
+
+  it("marks the focused row with a class distinct from hover", async () => {
+    await renderPanel();
+
+    focusRow("a.txt");
+
+    expect(row("a.txt").className).toContain("explorer-tree-node-focused");
+    expect(row("sub").className).not.toContain("explorer-tree-node-focused");
+  });
+
+  it("moves focus down and up through the rendered rows with the arrow keys", async () => {
+    await renderPanel();
+    focusRow("sub");
+
+    fireEvent.keyDown(tree(), { key: "ArrowDown" });
+    expect(document.activeElement).toBe(row("a.txt"));
+
+    fireEvent.keyDown(tree(), { key: "ArrowUp" });
+    expect(document.activeElement).toBe(row("sub"));
+  });
+
+  it("expands a collapsed folder with ArrowRight, then steps into its first child", async () => {
+    await renderPanel();
+    focusRow("sub");
+
+    fireEvent.keyDown(tree(), { key: "ArrowRight" });
+    await screen.findByText("inside.txt");
+    expect(document.activeElement).toBe(row("sub"));
+
+    fireEvent.keyDown(tree(), { key: "ArrowRight" });
+    expect(document.activeElement).toBe(row("inside.txt"));
+  });
+
+  it("collapses an expanded folder with ArrowLeft, and steps out to the parent from a child", async () => {
+    await renderPanel();
+    focusRow("sub");
+    fireEvent.keyDown(tree(), { key: "ArrowRight" });
+    await screen.findByText("inside.txt");
+
+    focusRow("inside.txt");
+    fireEvent.keyDown(tree(), { key: "ArrowLeft" });
+    expect(document.activeElement).toBe(row("sub"));
+
+    fireEvent.keyDown(tree(), { key: "ArrowLeft" });
+    expect(screen.queryByText("inside.txt")).toBeNull();
+  });
+
+  it("triggers the backend action a pressed key is bound to for the focused entry", async () => {
+    discoverActions.mockResolvedValue({
+      groups: [
+        create(ContextActionGroupSchema, {
+          actions: [{ id: "hierarchy.rename", label: "Rename…", icon: "mdi-pencil-outline", available: true, shortcut: { key: "F2" } }],
+        }),
+      ],
+    });
+    await renderPanel();
+
+    focusRow("a.txt");
+    await waitFor(() => expect(discoverActions).toHaveBeenCalled());
+    fireEvent.keyDown(tree(), { key: "F2" });
+
+    await waitFor(() => expect(executeAction).toHaveBeenCalled());
+    expect(executeAction.mock.calls[0]?.[0]?.trigger).toMatchObject({ case: "actionId", value: "hierarchy.rename" });
+  });
+
+  it("does nothing for a key bound to an action the backend reported unavailable", async () => {
+    discoverActions.mockResolvedValue({
+      groups: [
+        create(ContextActionGroupSchema, {
+          actions: [
+            { id: "hierarchy.delete", label: "Delete", icon: "mdi-trash-can-outline", available: false, shortcut: { key: "Delete" } },
+          ],
+        }),
+      ],
+    });
+    await renderPanel();
+
+    focusRow("a.txt");
+    await waitFor(() => expect(discoverActions).toHaveBeenCalled());
+    fireEvent.keyDown(tree(), { key: "Delete" });
+
+    expect(executeAction).not.toHaveBeenCalled();
+  });
+
+  it("does not react to a shortcut pressed outside the tree", async () => {
+    discoverActions.mockResolvedValue({
+      groups: [
+        create(ContextActionGroupSchema, {
+          actions: [{ id: "hierarchy.rename", label: "Rename…", icon: "mdi-pencil-outline", available: true, shortcut: { key: "F2" } }],
+        }),
+      ],
+    });
+    await renderPanel();
+    focusRow("a.txt");
+    await waitFor(() => expect(discoverActions).toHaveBeenCalled());
+
+    fireEvent.keyDown(document.body, { key: "F2" });
+
+    expect(executeAction).not.toHaveBeenCalled();
+  });
+
+  it("opens the same menu on right-click and on Shift+F10, focusing the entry it acts on", async () => {
+    discoverActions.mockResolvedValue({
+      groups: [
+        create(ContextActionGroupSchema, {
+          actions: [{ id: "hierarchy.rename", label: "Rename…", icon: "mdi-pencil-outline", available: true, shortcut: { key: "F2" } }],
+        }),
+      ],
+    });
+    await renderPanel();
+
+    fireEvent.contextMenu(row("a.txt"));
+    await screen.findByRole("menu");
+    expect(screen.getByRole("menuitem", { name: "Rename…" })).toBeTruthy();
+    expect(row("a.txt").className).toContain("explorer-tree-node-focused");
+
+    fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
+    fireEvent.keyDown(tree(), { key: "F10", shiftKey: true });
+
+    await screen.findByRole("menu");
+    expect(screen.getByRole("menuitem", { name: "Rename…" })).toBeTruthy();
+  });
+
+  it("runs the same action from the menu that its shortcut runs", async () => {
+    discoverActions.mockResolvedValue({
+      groups: [
+        create(ContextActionGroupSchema, {
+          actions: [{ id: "hierarchy.rename", label: "Rename…", icon: "mdi-pencil-outline", available: true, shortcut: { key: "F2" } }],
+        }),
+      ],
+    });
+    await renderPanel();
+
+    fireEvent.contextMenu(row("a.txt"));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Rename…" }));
+
+    await waitFor(() => expect(executeAction).toHaveBeenCalled());
+    expect(executeAction.mock.calls[0]?.[0]?.trigger).toMatchObject({ case: "actionId", value: "hierarchy.rename" });
   });
 });

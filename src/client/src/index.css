@@ -574,6 +574,15 @@ button {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
+/* The focused entry - what F2, Delete and an opened context menu act on. Deliberately not
+   :focus-visible: a right-click focuses a row too, and that has to stay visible. Kept
+   distinct from :hover by a border rather than a heavier fill, so hovering a different row
+   never hides which entry is actually focused. */
+.explorer-tree-node-focused {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
 .explorer-tree-node .mdi {
   font-size: 1.125rem;
   color: var(--color-text-muted);
@@ -795,4 +804,37 @@ button {
 .context-menu-submenu-indicator {
   color: var(--color-text-muted);
   flex: 0 0 auto;
+}
+
+/* Context prompt dialogs (rename-files-and-folders): the input dialog's body, rendered
+   inside the shared Dialog primitive rather than by a dialog of its own. */
+
+.context-prompt-field-label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.context-prompt-field {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-family: inherit;
+  font-size: 0.875rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.context-prompt-field:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.context-prompt-error {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-danger);
 }
