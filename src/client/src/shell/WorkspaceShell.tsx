@@ -9,11 +9,12 @@ import { SearchPanel } from "./panels/SearchPanel";
 import { ToolboxPanel } from "./panels/ToolboxPanel";
 
 export interface WorkspaceShellProps {
+  projectId: Uint8Array;
   projectName: string;
   onBack: () => void;
 }
 
-export function WorkspaceShell({ projectName, onBack }: WorkspaceShellProps) {
+export function WorkspaceShell({ projectId, projectName, onBack }: WorkspaceShellProps) {
   return (
     <div className="shell">
       <div className="shell-header">
@@ -31,7 +32,7 @@ export function WorkspaceShell({ projectName, onBack }: WorkspaceShellProps) {
           first={
             <TabbedPane
               tabs={[
-                { id: "hierarchy", label: "Hierarchy", icon: "mdi-file-tree", content: <HierarchyPanel /> },
+                { id: "hierarchy", label: "Hierarchy", icon: "mdi-file-tree", content: <HierarchyPanel projectId={projectId} /> },
                 { id: "search", label: "Search", icon: "mdi-magnify", content: <SearchPanel /> },
               ]}
             />

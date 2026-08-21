@@ -1,10 +1,25 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import type { ComponentProps } from "react";
+import { AuthProvider } from "../auth/AuthContext";
 import { WorkspaceShell } from "./WorkspaceShell";
+
+// HierarchyPanel now renders ExplorerTreePanel, which reads AuthContext for its
+// gRPC transport (useAuth) - every render below needs an AuthProvider ancestor.
+// Its ListEntries/WatchHierarchy calls will fail with no real backend behind
+// this test's transport; ExplorerTreePanel catches that into its own error
+// state rather than throwing, so it doesn't affect these structural assertions.
+function renderShell(props: Partial<ComponentProps<typeof WorkspaceShell>> = {}) {
+  return render(
+    <AuthProvider>
+      <WorkspaceShell projectId={new Uint8Array(16)} projectName="Test Project" onBack={() => {}} {...props} />
+    </AuthProvider>,
+  );
+}
 
 describe("WorkspaceShell", () => {
   it("renders the default pane/tab arrangement, with Toolbox and Property Grid in the rightmost column", () => {
-    render(<WorkspaceShell projectName="Test Project" onBack={() => {}} />);
+    renderShell();
 
     const tabLists = screen.getAllByRole("tablist");
     expect(tabLists).toHaveLength(3);
@@ -25,13 +40,13 @@ describe("WorkspaceShell", () => {
   });
 
   it("displays the project name", () => {
-    render(<WorkspaceShell projectName="Test Project" onBack={() => {}} />);
+    renderShell();
     expect(screen.getByText("Test Project")).toBeTruthy();
   });
 
   it("calls onBack when the back affordance is used", () => {
     const onBack = vi.fn();
-    render(<WorkspaceShell projectName="Test Project" onBack={onBack} />);
+    renderShell({ onBack });
 
     fireEvent.click(screen.getByText(/Back to projects/));
 
