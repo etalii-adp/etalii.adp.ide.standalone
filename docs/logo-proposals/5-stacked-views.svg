@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="ADP">
+  <style>
+    .p { stroke: #0f172a; }
+    @media (prefers-color-scheme: dark) { .p { stroke: #f1f5f9; } }
+  </style>
+  <path d="M16 3.5 26 6.5 16 9.5 6 6.5Z" stroke="limegreen"/>
+  <path class="p" d="M16 13 26 16 16 19 6 16Z"/>
+  <path class="p" d="M16 22.5 26 25.5 16 28.5 6 25.5Z"/>
+</svg>
