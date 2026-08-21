@@ -81,12 +81,25 @@ Every panel's inner content is an explicit, clearly-marked placeholder. This spe
 3. WHEN a panel's loading shim is implemented in code THEN the system SHALL mark that exact spot with a code comment identifying it as the loading-state placeholder to be replaced by a real asynchronous-loading indicator once that panel's real content (and its actual data fetch) is implemented, mirroring Requirement 5.2's hand-off convention.
 4. This spec's simulated loading delay (Requirement 6.1) is a mockup device only — it SHALL NOT be implemented as, or be mistaken for, a real asynchronous data fetch; Requirement 1.2's prohibition on any backend/gRPC dependency continues to apply during the loading shim as much as afterward.
 
+### Requirement 7 — Visual consistency with the existing client theme
+
+**User Story:** As a reviewer, I want the mockup to look like it already belongs to EtAlii.Adp, so that I'm judging the proposed IDE layout itself rather than being distracted by a mismatched or unstyled visual treatment.
+
+#### Acceptance Criteria
+
+1. WHEN the mockup renders THEN the system SHALL draw all colors, corner radii, and shadows from the existing CSS custom properties already defined in `index.css` (`--color-bg`, `--color-surface`, `--color-border`, `--color-text`, `--color-text-muted`, `--color-primary`, `--color-primary-hover`, `--color-danger`, `--radius`, `--shadow`) rather than introducing new hard-coded values or a second palette.
+2. WHEN the user's system is set to dark mode THEN the system SHALL render the mockup using the existing `prefers-color-scheme: dark` override already defined for those same custom properties — exactly as `LoginPage`/`ProjectGridPage` already do — rather than only supporting a light appearance.
+3. WHEN the mockup renders interactive elements (ribbon buttons, tabs, pane-resize handles) THEN the system SHALL follow the hover/active/focus treatment already established elsewhere in the client (e.g. `.primary-button:hover`'s background shift, `.field input:focus`'s focus ring) rather than inventing new interaction styling.
+4. WHEN the mockup renders text THEN the system SHALL use the same font stack and type-scale conventions already established in `index.css` (e.g. `h1`'s weight/size, `.project-card-name`'s label styling) rather than introducing new typography.
+5. WHEN a panel's loading shim (Requirement 6) or static placeholder (Requirement 5) renders THEN the system SHALL style it to the same standard as the rest of the mockup — a placeholder SHALL still read as an intentional, polished part of the product, never as an unstyled debug box.
+
 ## Non-Functional Requirements
 
 ### Code Architecture and Modularity
 
 - **Single Responsibility**: the dockable-pane/tab mechanism (Requirement 3) SHALL be implemented as a component that has no knowledge of what content any given tab hosts, so it can be reused unchanged once real panel content replaces today's placeholders.
 - **Modular Design**: each of the six panel placeholders SHALL be its own component, owning both its loading shim (Requirement 6) and its static placeholder (Requirement 5), so replacing one panel's placeholder with real content later touches only that file, not the pane/tab mechanism or the other five placeholders.
+- **Reuse over reinvention**: theming (Requirement 7) SHALL reuse `index.css`'s existing CSS custom properties rather than defining a parallel set scoped to just this mockup, so a future palette/style change made in one place still applies here automatically.
 
 ### Performance
 
@@ -102,4 +115,4 @@ Every panel's inner content is an explicit, clearly-marked placeholder. This spe
 
 ### Usability
 
-- The mockup SHOULD look and feel close enough to a finished IDE (spacing, consistent icon usage via `@mdi/font`, centralized styling per tech.md's Frontend section) that reviewers can judge the real layout from it, not just a rough wireframe.
+- Beyond Requirement 7's concrete theming rules, the mockup SHOULD look and feel close enough to a finished IDE (spacing, information density, consistent icon usage via `@mdi/font`) that reviewers can judge the real layout from it, not just a rough wireframe.
