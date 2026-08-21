@@ -8,9 +8,11 @@
     "dev": "vite",
     "prebuild": "npm run generate",
     "build": "tsc --noEmit && vite build",
+    "pretypecheck": "npm run generate",
     "typecheck": "tsc --noEmit",
     "generate": "buf generate ../api",
     "preview": "vite preview",
+    "pretest": "npm run generate",
     "test": "vitest run"
   },
   "dependencies": {
