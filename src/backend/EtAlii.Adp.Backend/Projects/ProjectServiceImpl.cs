@@ -40,17 +40,17 @@ public sealed class ProjectServiceImpl : ProjectService.ProjectServiceBase
     public override Task<RemoveProjectResponse> RemoveProject(RemoveProjectRequest request, ServerCallContext context)
     {
         var userId = SessionContext.GetUserId(context);
-        _projectStore.Remove(userId, request.ProjectId.ToShortGuid());
+        _projectStore.Remove(userId, request.ProjectId);
         return Task.FromResult(new RemoveProjectResponse());
     }
 
     private static Project ToProto(ProjectRecord record)
     {
-        var path = new EtAlii.Adp.Path();
+        var path = new Path();
         path.Segments.AddRange(record.PathSegments);
         return new Project
         {
-            Id = record.Id.ToContract(),
+            Id = record.Id,
             Name = record.Name,
             Path = path,
             DisplayPath = PathTruncator.Truncate(record.PathSegments)
