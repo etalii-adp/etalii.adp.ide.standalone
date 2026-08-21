@@ -1,0 +1,84 @@
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { ConfirmDialog } from "./ConfirmDialog";
+
+describe("ConfirmDialog", () => {
+  it("renders the default icon and Confirm/Cancel buttons", () => {
+    render(
+      <ConfirmDialog
+        open
+        title="Remove project?"
+        message="This can't be undone."
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+
+    expect(screen.getByText("Remove project?")).not.toBeNull();
+    expect(screen.getByText("This can't be undone.")).not.toBeNull();
+    expect(document.querySelector(".dialog-header-icon.mdi-help-circle-outline")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Cancel" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Confirm" })).not.toBeNull();
+  });
+
+  it("invokes onConfirm and onCancel from their respective buttons", () => {
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+    render(
+      <ConfirmDialog
+        open
+        title="Remove project?"
+        message="This can't be undone."
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(onCancel).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls onCancel when Escape is pressed or the backdrop is clicked", () => {
+    const onCancel = vi.fn();
+    const { container } = render(
+      <ConfirmDialog
+        open
+        title="Remove project?"
+        message="This can't be undone."
+        onConfirm={() => {}}
+        onCancel={onCancel}
+      />,
+    );
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onCancel).toHaveBeenCalledTimes(1);
+
+    fireEvent.mouseDown(container.querySelector(".dialog-overlay") as HTMLElement);
+    expect(onCancel).toHaveBeenCalledTimes(2);
+  });
+
+  it("supports custom labels and a danger confirm color for destructive actions", () => {
+    render(
+      <ConfirmDialog
+        open
+        icon="mdi-trash-can-outline"
+        title="Delete project?"
+        message="This can't be undone."
+        confirmLabel="Delete"
+        cancelLabel="Keep it"
+        confirmColor="danger"
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+
+    expect(document.querySelector(".dialog-header-icon.mdi-trash-can-outline")).not.toBeNull();
+    const deleteButton = screen.getByRole("button", { name: "Delete" });
+    expect(deleteButton.className).toContain("dialog-button-danger");
+    expect(screen.getByRole("button", { name: "Keep it" })).not.toBeNull();
+  });
+});
