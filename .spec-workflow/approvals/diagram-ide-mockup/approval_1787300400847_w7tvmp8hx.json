@@ -3,8 +3,10 @@
   "title": "Tasks: diagram-ide-mockup",
   "filePath": ".spec-workflow/specs/diagram-ide-mockup/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-21T08:20:00.847Z",
   "category": "spec",
-  "categoryName": "diagram-ide-mockup"
+  "categoryName": "diagram-ide-mockup",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-21T08:20:52.795Z"
 }
