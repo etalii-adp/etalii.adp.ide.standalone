@@ -5,9 +5,10 @@ import { ProjectGridPage } from "./ProjectGridPage";
 const listProjects = vi.fn();
 const removeProject = vi.fn();
 const addProject = vi.fn();
+const logout = vi.fn();
 
 vi.mock("../auth/AuthContext", () => ({
-  useAuth: () => ({ transport: {} }),
+  useAuth: () => ({ transport: {}, logout }),
 }));
 
 vi.mock("@connectrpc/connect", () => ({
@@ -73,6 +74,41 @@ describe("ProjectGridPage removal confirmation", () => {
 
     expect(removeProject).not.toHaveBeenCalled();
     expect(screen.queryByText("Remove project?")).toBeNull();
+  });
+});
+
+describe("ProjectGridPage sign out", () => {
+  it("signs the user out when the header button is clicked", async () => {
+    listProjects.mockResolvedValue({ projects: [] });
+
+    render(<ProjectGridPage onProjectSelected={() => {}} />);
+    await screen.findByRole("button", { name: "Add project" });
+
+    expect(logout).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+
+    expect(logout).toHaveBeenCalledTimes(1);
+  });
+
+  it("leads the header with the sign-out button", async () => {
+    listProjects.mockResolvedValue({ projects: [] });
+
+    render(<ProjectGridPage onProjectSelected={() => {}} />);
+    await screen.findByRole("button", { name: "Add project" });
+
+    const header = document.querySelector(".projects-header");
+    expect(header?.firstElementChild).toBe(screen.getByRole("button", { name: "Sign out" }));
+  });
+
+  it("offers sign out while the projects are still loading", () => {
+    // Never resolves, so the component stays in its loading branch.
+    listProjects.mockReturnValue(new Promise(() => {}));
+
+    render(<ProjectGridPage onProjectSelected={() => {}} />);
+
+    expect(screen.getByText("Loading projects…")).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    expect(logout).toHaveBeenCalledTimes(1);
   });
 });
 

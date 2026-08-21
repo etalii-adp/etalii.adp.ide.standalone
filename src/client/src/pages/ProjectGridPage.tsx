@@ -23,7 +23,7 @@ interface ProjectGridPageProps {
 }
 
 export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
-  const { transport } = useAuth();
+  const { transport, logout } = useAuth();
   const projectClient = useMemo(() => createClient(ProjectService, transport), [transport]);
 
   const [projects, setProjects] = useState<Project[]>([]);
@@ -90,10 +90,22 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
     }
   };
 
+  // Shown in both the loading and loaded states, so signing out never depends on
+  // the project list having arrived.
+  const header = (
+    <div className="projects-header">
+      <button className="logout-button" type="button" onClick={() => void logout()}>
+        <span className="mdi mdi-logout" aria-hidden="true" />
+        Sign out
+      </button>
+      <AppHeader />
+    </div>
+  );
+
   if (isLoading) {
     return (
       <div className="projects-page">
-        <AppHeader />
+        {header}
         <p className="projects-empty">Loading projects…</p>
       </div>
     );
@@ -101,7 +113,7 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
 
   return (
     <div className="projects-page">
-      <AppHeader />
+      {header}
       <h1>Your projects</h1>
 
       {projects.length === 0 && <p className="projects-empty">You don't have any projects yet. Add one below to get started.</p>}
