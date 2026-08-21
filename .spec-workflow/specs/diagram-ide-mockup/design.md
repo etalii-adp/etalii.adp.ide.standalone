@@ -38,10 +38,10 @@ graph TD
     Gate[App.tsx Gate] -->|openProject set| Shell[WorkspaceShellMockup]
     Shell --> Ribbon[RibbonBar]
     Shell --> Root[SplitPane root, horizontal]
-    Root --> Left[TabbedPane: Hierarchy | Toolbox | Search]
+    Root --> Left[TabbedPane: Hierarchy, Toolbox, Search]
     Root --> RightSplit[SplitPane, vertical]
-    RightSplit --> Center[TabbedPane: Diagram 1 | Diagram 2]
-    RightSplit --> Bottom[TabbedPane: Property Grid | Errors & Warnings]
+    RightSplit --> Center[TabbedPane: Diagram 1, Diagram 2]
+    RightSplit --> Bottom[TabbedPane: Property Grid, Errors and Warnings]
     Left --> HierarchyPanel
     Left --> ToolboxPanel
     Left --> SearchPanel
