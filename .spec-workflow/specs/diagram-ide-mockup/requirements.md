@@ -66,20 +66,31 @@ Every panel's inner content is an explicit, clearly-marked placeholder. This spe
 
 #### Acceptance Criteria
 
-1. WHEN any of the six panels (Hierarchy, Diagram, Property Grid, Errors & Warnings, Toolbox, Search) renders its content area THEN the system SHALL show a clearly visible placeholder — at minimum the panel's name and a short description of what will eventually live there — rather than an empty area.
+1. WHEN any of the six panels (Hierarchy, Diagram, Property Grid, Errors & Warnings, Toolbox, Search) has finished its loading shim (Requirement 6) THEN the system SHALL show a clearly visible static placeholder — at minimum the panel's name and a short description of what will eventually live there — rather than an empty area.
 2. WHEN a panel's placeholder is implemented in code THEN the system SHALL mark that exact spot with a code comment identifying which future spec is expected to replace it (e.g. referencing `project-root-folder-explorer` at the Hierarchy panel's content), mirroring the existing hand-off comment already in `App.tsx`'s `Gate()`.
 3. This spec SHALL NOT implement any of: real file/folder listing, diagram rendering or editing, property editing, error/warning collection, toolbox item drag-and-drop, or search execution — every one of those remains entirely the responsibility of the spec that owns that capability.
+
+### Requirement 6 — Loading shims for individual panels
+
+**User Story:** As a reviewer, I want to see each panel's loading state as well as its static placeholder, so that the loading treatment for real content (arriving asynchronously later) can be reviewed and agreed on now, rather than being left as an afterthought once real data-fetching exists.
+
+#### Acceptance Criteria
+
+1. WHEN any of the six panels (Hierarchy, Diagram, Property Grid, Errors & Warnings, Toolbox, Search) first mounts THEN the system SHALL show a loading shim — a skeleton-style placeholder, distinct from that panel's static "content goes here" placeholder (Requirement 5.1) — for a brief, simulated duration before showing that static placeholder.
+2. WHEN a panel's loading shim is shown THEN the system SHALL style it consistently with the rest of the mockup while remaining visually distinct from that panel's eventual static placeholder, so reviewers can tell the two states apart and neither one reads as broken or unstyled.
+3. WHEN a panel's loading shim is implemented in code THEN the system SHALL mark that exact spot with a code comment identifying it as the loading-state placeholder to be replaced by a real asynchronous-loading indicator once that panel's real content (and its actual data fetch) is implemented, mirroring Requirement 5.2's hand-off convention.
+4. This spec's simulated loading delay (Requirement 6.1) is a mockup device only — it SHALL NOT be implemented as, or be mistaken for, a real asynchronous data fetch; Requirement 1.2's prohibition on any backend/gRPC dependency continues to apply during the loading shim as much as afterward.
 
 ## Non-Functional Requirements
 
 ### Code Architecture and Modularity
 
 - **Single Responsibility**: the dockable-pane/tab mechanism (Requirement 3) SHALL be implemented as a component that has no knowledge of what content any given tab hosts, so it can be reused unchanged once real panel content replaces today's placeholders.
-- **Modular Design**: each of the six panel placeholders SHALL be its own component, so replacing one panel's placeholder with real content later touches only that file, not the pane/tab mechanism or the other five placeholders.
+- **Modular Design**: each of the six panel placeholders SHALL be its own component, owning both its loading shim (Requirement 6) and its static placeholder (Requirement 5), so replacing one panel's placeholder with real content later touches only that file, not the pane/tab mechanism or the other five placeholders.
 
 ### Performance
 
-- Being static placeholder content with no backend calls, the mockup SHALL render and become interactive (pane resize, tab switch) with no noticeable delay.
+- Being static placeholder content with no backend calls, the mockup SHALL render and become interactive (pane resize, tab switch) with no noticeable delay; the one deliberate exception is each panel's brief, simulated loading shim (Requirement 6.1), which is a fixed, short mockup delay rather than a performance concern.
 
 ### Security
 
