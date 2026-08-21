@@ -578,7 +578,7 @@ button {
    :focus-visible: a right-click focuses a row too, and that has to stay visible. Kept
    distinct from :hover by a border rather than a heavier fill, so hovering a different row
    never hides which entry is actually focused. */
-.explorer-tree-node-focused {
+.explorer-tree-node.explorer-tree-node-focused {
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
   box-shadow: inset 0 0 0 1px var(--color-primary);
 }
