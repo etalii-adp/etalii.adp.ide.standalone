@@ -2,4 +2,20 @@
   <ItemGroup>
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Both serve DiagramDefinitionDiscovery only. The abstractions package rather than
+      Microsoft.Extensions.Logging, so this library stays host-agnostic; DependencyModel to
+      read the deployment manifest the assembly walk is seeded from.
+    -->
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- DiagramDefinition.Initialize is internal: only the host fills the cache, and only the tests may reset it. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Backend.Service" />
+    <InternalsVisibleTo Include="EtAlii.Adp.Diagram.Tests" />
+  </ItemGroup>
 </Project>

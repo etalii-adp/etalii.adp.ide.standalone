@@ -4,7 +4,7 @@
 >
 > **Seam.** Task 10's `CommitAsync` ends in "not supported yet" by design (Requirement 6). [`create-diagram-file`](../create-diagram-file/requirements.md) replaces that one branch; nothing else in this spec should need to change for it, and task 10's tests pin the check ordering that spec relies on.
 
-- [ ] 1. Add the discovery component's package references to `EtAlii.Adp.Diagram`
+- [x] 1. Add the discovery component's package references to `EtAlii.Adp.Diagram`
   - File: `src/Directory.Packages.props` (modify), `src/backend/EtAlii.Adp.Diagram/EtAlii.Adp.Diagram.csproj` (modify)
   - Add `Microsoft.Extensions.Logging.Abstractions` and `Microsoft.Extensions.DependencyModel` as `PackageVersion`s (current stable for the solution's .NET 10 target), then reference both from `EtAlii.Adp.Diagram.csproj`. Add `<InternalsVisibleTo Include="EtAlii.Adp.Backend.Service" />` and `<InternalsVisibleTo Include="EtAlii.Adp.Diagram.Tests" />` to the same csproj for task 3's `Initialize`
   - Purpose: discovery can log and can read the deployment manifest without the abstraction library referencing the host
