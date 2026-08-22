@@ -26,36 +26,82 @@ public class DiagramDefinitionAllTests : IDisposable
     {
         Assert.NotNull(DiagramDefinition.All);
         Assert.Empty(DiagramDefinition.All);
+        Assert.False(DiagramDefinition.IsInitialized);
     }
 
     [Fact]
-    public void Initialize_FillsAll()
+    public void Initialize_RunsTheScanAndFillsAll()
     {
-        DiagramDefinition.Initialize([Sample]);
+        var filledNow = DiagramDefinition.Initialize(() => [Sample]);
 
-        var definition = Assert.Single(DiagramDefinition.All);
-        Assert.Same(Sample, definition);
+        Assert.True(filledNow);
+        Assert.Same(Sample, Assert.Single(DiagramDefinition.All));
+        Assert.True(DiagramDefinition.IsInitialized);
     }
 
     [Fact]
     public void All_ReturnsTheSameCollectionOnEveryRead()
     {
         // Requirement 1.3: a second read must not re-run anything - it is the cached list.
-        DiagramDefinition.Initialize([Sample]);
+        DiagramDefinition.Initialize(() => [Sample]);
 
         Assert.Same(DiagramDefinition.All, DiagramDefinition.All);
     }
 
     [Fact]
-    public void Initialize_CalledTwice_ThrowsAndKeepsTheFirstList()
+    public void Initialize_CalledTwice_DoesNotRunTheSecondScanAndKeepsTheFirstList()
     {
-        DiagramDefinition.Initialize([Sample]);
-        var other = new DiagramDefinition(new DiagramOrigin("fixture", "other"), "Other");
+        // A second host in the same process (WebApplicationFactory per test) runs the same
+        // startup; the cache is per process, so the first fill stands and the second scan
+        // never even runs.
+        DiagramDefinition.Initialize(() => [Sample]);
+        var secondScanRan = false;
 
-        var exception = Assert.Throws<InvalidOperationException>(() => DiagramDefinition.Initialize([other]));
+        var filledNow = DiagramDefinition.Initialize(() =>
+        {
+            secondScanRan = true;
+            return [new DiagramDefinition(new DiagramOrigin("fixture", "other"), "Other")];
+        });
 
-        Assert.Contains("already been initialized", exception.Message, StringComparison.Ordinal);
+        Assert.False(filledNow);
+        Assert.False(secondScanRan);
         Assert.Same(Sample, Assert.Single(DiagramDefinition.All));
+    }
+
+    [Fact]
+    public async Task Initialize_UnderConcurrentCallers_RunsTheScanExactlyOnce()
+    {
+        // Test classes build hosts in parallel, so several can reach Initialize at once.
+        var scans = 0;
+        var gate = new ManualResetEventSlim();
+
+        var callers = Enumerable.Range(0, 8).Select(_ => Task.Run(() =>
+        {
+            gate.Wait();
+            return DiagramDefinition.Initialize(() =>
+            {
+                Interlocked.Increment(ref scans);
+                return [Sample];
+            });
+        })).ToArray();
+        gate.Set();
+        var results = await Task.WhenAll(callers);
+
+        Assert.Equal(1, scans);
+        Assert.Equal(1, results.Count(filledNow => filledNow));
+        Assert.Single(DiagramDefinition.All);
+    }
+
+    [Fact]
+    public void IsInitialized_TracksWhetherTheScanRan_NotWhetherAnythingWasFound()
+    {
+        DiagramDefinition.Initialize(() => []);
+
+        Assert.True(DiagramDefinition.IsInitialized);
+        Assert.Empty(DiagramDefinition.All);
+        // ...and an empty first result is still the result: no later scan replaces it.
+        Assert.False(DiagramDefinition.Initialize(() => [Sample]));
+        Assert.Empty(DiagramDefinition.All);
     }
 
     [Fact]
@@ -65,12 +111,11 @@ public class DiagramDefinitionAllTests : IDisposable
     }
 
     [Fact]
-    public void Initialize_WithAnEmptyList_IsAllowed()
+    public void Initialize_WhenTheScanReturnsNull_ThrowsAndStaysUninitialized()
     {
-        // "Nothing discovered" is a legitimate, if unfortunate, state - not an error here.
-        DiagramDefinition.Initialize([]);
+        Assert.Throws<InvalidOperationException>(() => DiagramDefinition.Initialize(() => null!));
 
+        Assert.False(DiagramDefinition.IsInitialized);
         Assert.Empty(DiagramDefinition.All);
-        Assert.Throws<InvalidOperationException>(() => DiagramDefinition.Initialize([Sample]));
     }
 }

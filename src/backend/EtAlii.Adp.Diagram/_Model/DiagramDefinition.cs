@@ -21,24 +21,35 @@ public sealed record DiagramDefinition(DiagramOrigin Origin, string Title)
     /// </remarks>
     public static IReadOnlyList<DiagramDefinition> All { get; private set; } = [];
 
-    private static bool Initialized { get; set; }
+    /// <summary>Whether <see cref="Initialize"/> has run in this process - distinct from "found nothing".</summary>
+    internal static bool IsInitialized { get; private set; }
+
+    private static readonly Lock InitializeGate = new();
 
     /// <summary>
-    /// Fills <see cref="All"/>. Called once by the host after discovery; a second call is a
-    /// programming error and throws rather than silently replacing the list.
+    /// Fills <see cref="All"/> - the first time - by running <paramref name="discover"/>. The
+    /// cache is per process, so once it is filled a later call runs nothing, leaves the list
+    /// exactly as it was and reports <c>false</c>. That later call is not an error: a test
+    /// process hosts the application several times over (one <c>WebApplicationFactory</c>
+    /// per test), and each host runs the same startup - concurrently, which is why the check
+    /// and the fill happen under one lock, so the scan runs exactly once.
     /// </summary>
-    internal static void Initialize(IReadOnlyList<DiagramDefinition> definitions)
+    /// <returns><c>true</c> when this call ran the scan and filled the cache; <c>false</c> when it was already filled.</returns>
+    internal static bool Initialize(Func<IReadOnlyList<DiagramDefinition>> discover)
     {
-        ArgumentNullException.ThrowIfNull(definitions);
+        ArgumentNullException.ThrowIfNull(discover);
 
-        if (Initialized)
+        lock (InitializeGate)
         {
-            throw new InvalidOperationException(
-                $"{nameof(DiagramDefinition)}.{nameof(All)} has already been initialized; it is filled exactly once per process.");
-        }
+            if (IsInitialized)
+            {
+                return false;
+            }
 
-        All = definitions;
-        Initialized = true;
+            All = discover() ?? throw new InvalidOperationException("Discovery returned null.");
+            IsInitialized = true;
+            return true;
+        }
     }
 
     /// <summary>
@@ -47,7 +58,10 @@ public sealed record DiagramDefinition(DiagramOrigin Origin, string Title)
     /// </summary>
     internal static void ResetForTests()
     {
-        All = [];
-        Initialized = false;
+        lock (InitializeGate)
+        {
+            All = [];
+            IsInitialized = false;
+        }
     }
 }

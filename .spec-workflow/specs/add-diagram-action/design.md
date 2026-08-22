@@ -168,13 +168,19 @@ Two consequences are handled explicitly:
   public sealed record DiagramDefinition(DiagramOrigin Origin, string Title)
   {
       /// Every diagram type discovered at startup, stable order, never null. Empty until
-      /// Initialize has run - only the host calls that, once.
-      public static IReadOnlyList<DiagramDefinition> All => _all;
+      /// Initialize has run - only the host calls that.
+      public static IReadOnlyList<DiagramDefinition> All { get; private set; } = [];
 
-      /// Called once by the host after discovery. A second call is a programming error.
-      public static void Initialize(IReadOnlyList<DiagramDefinition> definitions);
+      /// Whether the scan has run in this process - distinct from "found nothing".
+      internal static bool IsInitialized { get; private set; }
 
-      private static IReadOnlyList<DiagramDefinition> _all = Array.Empty<DiagramDefinition>();
+      /// Runs discover and fills All the first time, under a lock; a later call runs
+      /// nothing, leaves All untouched and returns false. Not an error: a test process
+      /// hosts the application once per test, concurrently, and each host runs startup.
+      internal static bool Initialize(Func<IReadOnlyList<DiagramDefinition>> discover);
+
+      /// Test-only reset, so the cache tests can start clean.
+      internal static void ResetForTests();
   }
   ```
 * **Why `Initialize` and not a lazy static:** a lazy initializer inside the record could not take the host's `ILogger` (Requirement 2) and could not be given test assemblies (NFR Testability). `Initialize` is `internal` + `InternalsVisibleTo("EtAlii.Adp.Backend.Service")` and `("EtAlii.Adp.Diagram.Tests")`, so only the host and the tests can set it; it throws `InvalidOperationException` on a second call, which satisfies "no public way to replace it" (1.2) while keeping the record a plain record.
@@ -347,7 +353,7 @@ ContextOptionNode      : Id, Label, Selectable, Children (IReadOnlyList<ContextO
 
 * **`DiagramDefinitionDiscovery.Discover`** (`EtAlii.Adp.Diagram.Tests`): drive it with assemblies the test controls - the test project itself containing fixture types: a valid `Diagram` (`Fixtures/Valid/Diagram.cs`), a malformed one (`Definition` of the wrong type, a non-static one, one whose getter throws), and two valid ones with the same origin. Assert: valid found; malformed skipped and logged (capture with a test `ILogger`); collision keeps the ordinal-first assembly and logs both; result order stable; empty input → empty + warning; an assembly whose `GetTypes` throws `ReflectionTypeLoadException` is partially read (`.Types`) not skipped wholesale.
 * **`DiagramDefinitionDiscovery.FindApplicationAssemblies`**: assert every returned assembly's name starts with `EtAlii.Adp`; assert the test assembly itself is present (it is the entry point under xunit's host? No - `GetEntryAssembly()` is the test host, so assert the *fallback* path: with the entry assembly's references not including the test assembly, the manifest seed still yields `EtAlii.Adp.Diagram.Tests` and `EtAlii.Adp.Diagram`). This is the one test that proves Requirement 3.3's seeding against a real manifest.
-* **`DiagramDefinition.Initialize`**: sets `All`; second call throws; `All` before `Initialize` is empty, not null.
+* **`DiagramDefinition.Initialize`**: runs the scan and sets `All`; a second call runs nothing and keeps the first list; eight concurrent callers run the scan exactly once; `All` before `Initialize` is empty, not null.
 * **`DiagramOptionTree.Build`**: grouping by vendor; titles as labels; ids are origin keys; subtype nests under its type and synthesises a parent when absent; vendors and children sorted; empty in → empty out.
 * **`AddDiagramContextActionProvider`** (`Backend.Tests/Unit Tests/Hierarchy/`): `DiscoverAsync` on a file → empty; on a missing folder → empty; on a folder → one Add action, available; with `All` empty (use an `Initialize`-able test seam: the provider takes `IReadOnlyList<DiagramDefinition>` via a constructor overload defaulting to `DiagramDefinition.All`) → unavailable with reason. `ExecuteAsync` → `RequiresChoice` with the expected tree; on a vanished folder → `Failed`. `CommitAsync`: unknown id → `Failed("…not available")`; vanished folder → `Failed("…no longer exists")` **before** the not-supported message; known id → `Failed` naming the title and **no file created** (assert directory contents unchanged).
 * **`ContextServiceImpl.Actions.TryResolveTargetAsync`** root branch: no source + empty store → root container target at `rootPath`; no source + a selection → that selection's target (unchanged behaviour).
@@ -370,3 +376,4 @@ ContextOptionNode      : Id, Label, Selectable, Children (IReadOnlyList<ContextO
 3. **`Initialize` instead of a self-initialising `All`.** Requirement 1.2 asked for a get-only property; it is one. The `internal` initializer exists only because a static initializer cannot be handed a logger or test assemblies (see the `DiagramDefinition.All` section).
 4. **Option ids are origin keys, not `ShortGuid`s.** `DiagramDefinition` has no id, and an origin is already unique per the collision rule; minting ids would add a lookup table for nothing.
 5. **`Insert` as the shortcut** follows the F2/Delete precedent (the key the OS convention associates with the action). It is data from the provider, per Requirement 4.6, and can change without client involvement.
+6. **`Initialize` is first-call-wins, not throw-on-second-call** (found during task 6). The design as approved said a second call "is a programming error". Implementing it that way broke 20 of the 24 existing integration tests at once: `WebApplicationFactory` builds a host per test, every host runs `Program.cs`, and xunit runs test classes in parallel - so "a second call" is routine, and concurrent. The cache is per process and a second host in the same process is the same process, so the correct contract is: the first call runs the scan and fills `All` under a lock; any later call runs nothing, keeps the list and returns `false`; `Program.cs` logs that it reused the cache. Requirement 1.2 (computed once per process, no public way to replace) holds unchanged - if anything more strictly, since the scan now provably runs once even under concurrency. `Initialize` therefore takes the scan as a `Func` rather than its result, so the once-guarantee covers the scan itself and not only the assignment.

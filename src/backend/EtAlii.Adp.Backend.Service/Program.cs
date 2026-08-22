@@ -5,6 +5,7 @@ using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
+using EtAlii.Adp.Diagram;
 using JetBrains.Annotations;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -48,6 +49,22 @@ builder.Services.AddGrpc(options =>
 });
 
 var app = builder.Build();
+
+// Once per process: after Build so the host's logger exists, before anything can serve a
+// request that reads DiagramDefinition.All. Not a DI service - it runs once and its result
+// is the static cache, so there is nothing for a container to hand out. A second host in
+// the same process (a test process builds one per test) finds the cache filled and the
+// scan is not repeated; Initialize owns that guarantee, under a lock.
+var discoveryLogger = app.Services.GetRequiredService<ILogger<DiagramDefinitionDiscovery>>();
+var discoveredNow = DiagramDefinition.Initialize(() =>
+    new DiagramDefinitionDiscovery(discoveryLogger)
+        .Discover(DiagramDefinitionDiscovery.FindApplicationAssemblies(discoveryLogger)));
+if (!discoveredNow)
+{
+    discoveryLogger.LogInformation(
+        "Diagram types were already discovered in this process; reusing the {Count} cached definitions",
+        DiagramDefinition.All.Count);
+}
 
 // DefaultEnabled so every mapped gRPC service (including DiagramService once that spec
 // implements it) accepts grpc-web without needing an explicit .EnableGrpcWeb() call.
