@@ -1,26 +1,25 @@
-using EtAlii.Adp.Backend.Context;
-using EtAlii.Adp.Backend.Sessions;
 using Grpc.Core;
 
-namespace EtAlii.Adp.Backend.Hierarchy;
+namespace EtAlii.Adp.Backend.Context;
 
 /// <summary>
-/// The context-action half of <see cref="HierarchyServiceImpl"/>: discovering what a source
+/// The context-action half of <see cref="ContextServiceImpl"/>: discovering what a target
 /// offers, starting an action, judging proposed input, and finishing or abandoning it.
-/// These live on <c>HierarchyService</c> so they reuse the per-connection stream
-/// <c>WatchHierarchy</c> already holds open — that stream is the only way a browser client
-/// can be pushed anything, gRPC-Web offering neither client-streaming nor bidi.
+/// An explicit source names the target; without one, the action applies to whatever the
+/// connection currently has selected - which is how a ribbon button or a global
+/// shortcut says "rename whatever is selected" without looking the selection up first.
 /// </summary>
 /// <remarks>
 /// Nothing here branches on rename or delete: every decision comes from
 /// <see cref="IContextActionResolver"/> and whichever provider it routes to.
 /// </remarks>
-public sealed partial class HierarchyServiceImpl
+public sealed partial class ContextServiceImpl
 {
     public override async Task<DiscoverActionsResponse> DiscoverActions(DiscoverActionsRequest request, ServerCallContext context)
     {
         var response = new DiscoverActionsResponse();
-        if (!TryResolveTarget(request.ProjectId, request.WatchId, request.Scope, request.Source, context, out var target))
+        var target = await TryResolveTargetAsync(request.ProjectId, request.WatchId, request.Source, context);
+        if (target is null)
         {
             // Unauthorized, unknown, or already gone - all answered the same way, so a
             // caller learns nothing about entries outside what it may already see.
@@ -28,15 +27,16 @@ public sealed partial class HierarchyServiceImpl
         }
 
         var groups = await _contextActionResolver.DiscoverAsync(target, context.CancellationToken);
-        response.Groups.AddRange(groups.Select(ToProto));
+        response.Groups.AddRange(groups.Select(ContextMessageMapper.ToProto));
         return response;
     }
 
     public override async Task<ExecuteActionResponse> ExecuteAction(ExecuteActionRequest request, ServerCallContext context)
     {
-        if (!TryResolveTarget(request.ProjectId, request.WatchId, request.Scope, request.Source, context, out var target))
+        var target = await TryResolveTargetAsync(request.ProjectId, request.WatchId, request.Source, context);
+        if (target is null)
         {
-            return Rejected("This item is no longer available.");
+            return Rejected(request.Source is null ? "Nothing is selected." : "This item is no longer available.");
         }
 
         var owner = request.TriggerCase switch
@@ -154,83 +154,35 @@ public sealed partial class HierarchyServiceImpl
     private static ExecuteActionResponse Rejected(string error) => new() { Accepted = false, Error = error };
 
     /// <summary>
-    /// Turns the client's source id into the absolute location a provider acts on, going
-    /// only through this connection's own model: an id belonging to another connection or
-    /// another project is simply unknown there, so it resolves to nothing rather than
-    /// revealing whether it exists.
+    /// The target an action applies to: the explicitly named source, resolved through this
+    /// connection's own resolvers so an id from elsewhere resolves to nothing - or, with no
+    /// source given, the innermost level of the connection's current selection.
     /// </summary>
-    private bool TryResolveTarget(
+    private async ValueTask<ContextTarget?> TryResolveTargetAsync(
         Contracts.ShortGuid projectId,
         Contracts.ShortGuid watchId,
-        ContextScope scope,
         ContextSource? source,
-        ServerCallContext context,
-        out ContextTarget target)
+        ServerCallContext context)
     {
-        target = null!;
-
-        var userId = SessionContext.GetUserId(context);
-        if (!TryResolveRootPath(userId, projectId, out var rootPath, out _))
+        var userId = Sessions.SessionContext.GetUserId(context);
+        if (!Projects.ProjectRootResolver.TryResolve(_projectStore, userId, projectId, out var rootPath, out _))
         {
-            return false;
+            return null;
         }
 
-        if (source?.SourceCase != ContextSource.SourceOneofCase.EntryId)
+        if (source is null)
         {
-            return false;
+            return _selectionStore.Get(watchId)?.Innermost.Target;
         }
 
-        var model = _hierarchyModelStore.GetOrCreate(watchId, rootPath);
-        var entryId = (ShortGuid)source.EntryId;
-        if (!model.TryResolvePath(entryId, out var fullPath, out var isFolder))
-        {
-            return false;
-        }
+        var resolution = await _selectionResolver.ResolveLevelAsync(
+            watchId, rootPath, ContextSelectionSource.Unspecified, source, [], null, context.CancellationToken);
 
-        target = new ContextTarget(scope, fullPath, isFolder, entryId);
-        return true;
+        return resolution is ContextLevelResolution.Resolved resolved ? resolved.Level.Target : null;
     }
 
     private static ContextShortcutDefinition FromProto(ContextShortcut shortcut) =>
         new(shortcut.Key, shortcut.Ctrl, shortcut.Shift, shortcut.Alt, shortcut.Meta);
-
-    private static ContextActionGroup ToProto(ContextActionGroupDefinition group)
-    {
-        var result = new ContextActionGroup();
-        result.Actions.AddRange(group.Actions.Select(ToProto));
-        return result;
-    }
-
-    private static ContextAction ToProto(ContextActionDefinition action)
-    {
-        var result = new ContextAction
-        {
-            Id = action.Id,
-            Label = action.Label,
-            Icon = action.Icon,
-            Available = action.Available,
-            UnavailableReason = action.UnavailableReason,
-        };
-
-        if (action.Shortcut is { } shortcut)
-        {
-            result.Shortcut = new ContextShortcut
-            {
-                Key = shortcut.Key,
-                Ctrl = shortcut.Ctrl,
-                Shift = shortcut.Shift,
-                Alt = shortcut.Alt,
-                Meta = shortcut.Meta,
-            };
-        }
-
-        if (action.Children is { } children)
-        {
-            result.Items.AddRange(children.Select(ToProto));
-        }
-
-        return result;
-    }
 
     private static InputDialogPrompt ToProto(ContextInputRequest request) => new()
     {

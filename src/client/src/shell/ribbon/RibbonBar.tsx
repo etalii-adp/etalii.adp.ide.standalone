@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { RibbonContextualGroups } from "./RibbonContextualGroups";
 
 interface RibbonButtonDef {
   icon: string;
@@ -71,6 +72,8 @@ export function RibbonBar() {
           })}
         </div>
       ))}
+      {/* The selection-driven part: whatever the backend says applies to the current selection. */}
+      <RibbonContextualGroups />
     </div>
   );
 }
