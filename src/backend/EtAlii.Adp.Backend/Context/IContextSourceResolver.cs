@@ -35,5 +35,5 @@ public interface IContextSourceResolver
     /// relative path when the thing moves or is renamed, or null when it is gone; it
     /// must tolerate being invoked after disposal. Disposing stops the observation.
     /// </summary>
-    IDisposable Track(ShortGuid watchId, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange);
+    IDisposable Track(ShortGuid watchId, string rootPath, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange);
 }

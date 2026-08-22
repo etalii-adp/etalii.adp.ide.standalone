@@ -1,37 +1,27 @@
 using System.Threading.Channels;
-using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
 using Grpc.Core;
-using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Backend.Hierarchy;
 
-public sealed partial class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
+public sealed class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
 {
     private static readonly TimeSpan RootRecoveryPollInterval = TimeSpan.FromSeconds(2);
 
     private readonly IProjectStore _projectStore;
     private readonly IHierarchyModelStore _hierarchyModelStore;
-    private readonly IContextActionResolver _contextActionResolver;
-    private readonly IContextInteractionStore _contextInteractionStore;
 
-    public HierarchyServiceImpl(
-        IProjectStore projectStore,
-        IHierarchyModelStore hierarchyModelStore,
-        IContextActionResolver contextActionResolver,
-        IContextInteractionStore contextInteractionStore)
+    public HierarchyServiceImpl(IProjectStore projectStore, IHierarchyModelStore hierarchyModelStore)
     {
         _projectStore = projectStore;
         _hierarchyModelStore = hierarchyModelStore;
-        _contextActionResolver = contextActionResolver;
-        _contextInteractionStore = contextInteractionStore;
     }
 
     public override Task<ListEntriesResponse> ListEntries(ListEntriesRequest request, ServerCallContext context)
     {
         var userId = SessionContext.GetUserId(context);
-        if (!TryResolveRootPath(userId, request.ProjectId, out var rootPath, out var error))
+        if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var rootPath, out var error))
         {
             return Task.FromResult(new ListEntriesResponse { Error = new ListEntriesError { Message = error } });
         }
@@ -51,7 +41,7 @@ public sealed partial class HierarchyServiceImpl : HierarchyService.HierarchySer
         ServerCallContext context)
     {
         var userId = SessionContext.GetUserId(context);
-        if (!TryResolveRootPath(userId, request.ProjectId, out var rootPath, out var error))
+        if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var rootPath, out var error))
         {
             throw new RpcException(new Status(StatusCode.FailedPrecondition, error));
         }
@@ -62,10 +52,6 @@ public sealed partial class HierarchyServiceImpl : HierarchyService.HierarchySer
 
         void OnEntryChanged(HierarchyEntryChange change) => channel.Writer.TryWrite(new HierarchyMessage { Change = ToProto(change) });
         model.EntryChanged += OnEntryChanged;
-
-        // The same stream carries backend-initiated context prompts, so an action started
-        // by a unary call on this connection can reach this connection - and only it.
-        _contextInteractionStore.Register(watchId, channel.Writer);
 
         using var recoveryCts = new CancellationTokenSource();
         var watcher = CreateWatcher(rootPath, model, recoveryCts.Token);
@@ -87,7 +73,6 @@ public sealed partial class HierarchyServiceImpl : HierarchyService.HierarchySer
         {
             model.EntryChanged -= OnEntryChanged;
             await recoveryCts.CancelAsync();
-            _contextInteractionStore.Remove(watchId);
             _hierarchyModelStore.Remove(watchId);
         }
     }
@@ -125,29 +110,6 @@ public sealed partial class HierarchyServiceImpl : HierarchyService.HierarchySer
         {
             // The WatchHierarchy call ended before the root folder came back; nothing to recover.
         }
-    }
-
-    private bool TryResolveRootPath(ShortGuid userId, ShortGuid projectId, out string rootPath, out string error)
-    {
-        var project = _projectStore.List(userId).FirstOrDefault(p => p.Id == projectId);
-        if (project is null)
-        {
-            rootPath = "";
-            error = "Project not found.";
-            return false;
-        }
-
-        var candidatePath = IoPath.Combine(project.Path.Segments.ToArray());
-        if (!Directory.Exists(candidatePath))
-        {
-            rootPath = "";
-            error = "The project's root folder is no longer accessible.";
-            return false;
-        }
-
-        rootPath = candidatePath;
-        error = "";
-        return true;
     }
 
     private static Entry ToProto(EntryNode node)

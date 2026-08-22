@@ -28,8 +28,8 @@ public class ContextInteractionStoreTests
         var store = new ContextInteractionStore();
         var watchIdA = ShortGuid.NewShortGuid();
         var watchIdB = ShortGuid.NewShortGuid();
-        var channelA = Channel.CreateUnbounded<HierarchyMessage>();
-        var channelB = Channel.CreateUnbounded<HierarchyMessage>();
+        var channelA = Channel.CreateUnbounded<ContextMessage>();
+        var channelB = Channel.CreateUnbounded<ContextMessage>();
         store.Register(watchIdA, channelA.Writer);
         store.Register(watchIdB, channelB.Writer);
 
@@ -37,7 +37,7 @@ public class ContextInteractionStoreTests
 
         Assert.True(pushed);
         Assert.True(channelA.Reader.TryRead(out var messageA));
-        Assert.Equal(HierarchyMessage.MessageOneofCase.Prompt, messageA.MessageCase);
+        Assert.Equal(ContextMessage.MessageOneofCase.Prompt, messageA.MessageCase);
         Assert.False(channelB.Reader.TryRead(out _));
     }
 
@@ -57,7 +57,7 @@ public class ContextInteractionStoreTests
         var store = new ContextInteractionStore();
         var watchId = ShortGuid.NewShortGuid();
         var interactionId = ShortGuid.NewShortGuid();
-        var channel = Channel.CreateUnbounded<HierarchyMessage>();
+        var channel = Channel.CreateUnbounded<ContextMessage>();
         store.Register(watchId, channel.Writer);
         store.Begin(Interaction(watchId, interactionId));
 
@@ -74,8 +74,8 @@ public class ContextInteractionStoreTests
         var watchIdA = ShortGuid.NewShortGuid();
         var watchIdB = ShortGuid.NewShortGuid();
         var interactionB = ShortGuid.NewShortGuid();
-        store.Register(watchIdA, Channel.CreateUnbounded<HierarchyMessage>().Writer);
-        store.Register(watchIdB, Channel.CreateUnbounded<HierarchyMessage>().Writer);
+        store.Register(watchIdA, Channel.CreateUnbounded<ContextMessage>().Writer);
+        store.Register(watchIdB, Channel.CreateUnbounded<ContextMessage>().Writer);
         store.Begin(Interaction(watchIdB, interactionB));
 
         store.Remove(watchIdA);
@@ -89,7 +89,7 @@ public class ContextInteractionStoreTests
         var store = new ContextInteractionStore();
         var watchId = ShortGuid.NewShortGuid();
         var interactionId = ShortGuid.NewShortGuid();
-        store.Register(watchId, Channel.CreateUnbounded<HierarchyMessage>().Writer);
+        store.Register(watchId, Channel.CreateUnbounded<ContextMessage>().Writer);
         store.Begin(Interaction(watchId, interactionId));
 
         store.Complete(interactionId);

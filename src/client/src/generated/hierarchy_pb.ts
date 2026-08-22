@@ -6,15 +6,13 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { ShortGuid } from "./shared_pb";
 import { file_shared } from "./shared_pb";
-import type { ContextActionGroup, ContextPrompt, ContextScope, ContextShortcut, ContextSource } from "./context_pb";
-import { file_context } from "./context_pb";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file hierarchy.proto.
  */
 export const file_hierarchy: GenFile = /*@__PURE__*/
-  fileDesc("Cg9oaWVyYXJjaHkucHJvdG8SCmV0YWxpaS5hZHAisAEKBUVudHJ5EiEKAmlkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSKAoJcGFyZW50X2lkGAIgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSDAoEbmFtZRgDIAEoCRIjCgRraW5kGAQgASgOMhUuZXRhbGlpLmFkcC5FbnRyeUtpbmQSEQoJYXZhaWxhYmxlGAUgASgIEhQKDGhhc19jaGlsZHJlbhgGIAEoCCKSAQoSTGlzdEVudHJpZXNSZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBIoCglmb2xkZXJfaWQYAiABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgDIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkIiMKEExpc3RFbnRyaWVzRXJyb3ISDwoHbWVzc2FnZRgBIAEoCSItCgdFbnRyaWVzEiIKB2VudHJpZXMYASADKAsyES5ldGFsaWkuYWRwLkVudHJ5InYKE0xpc3RFbnRyaWVzUmVzcG9uc2USJgoHZW50cmllcxgBIAEoCzITLmV0YWxpaS5hZHAuRW50cmllc0gAEi0KBWVycm9yGAIgASgLMhwuZXRhbGlpLmFkcC5MaXN0RW50cmllc0Vycm9ySABCCAoGcmVzdWx0ImsKFVdhdGNoSGllcmFyY2h5UmVxdWVzdBIpCgpwcm9qZWN0X2lkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSJwoId2F0Y2hfaWQYAiABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZCIwCgxFbnRyeUNyZWF0ZWQSIAoFZW50cnkYASABKAsyES5ldGFsaWkuYWRwLkVudHJ5IjcKDEVudHJ5UmVtb3ZlZBInCghlbnRyeV9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkIkkKDEVudHJ5UmVuYW1lZBInCghlbnRyeV9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEhAKCG5ld19uYW1lGAIgASgJIk0KDEVudHJ5VXBkYXRlZBInCghlbnRyeV9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEhQKDGhhc19jaGlsZHJlbhgCIAEoCCIiCg9Sb290VW5hdmFpbGFibGUSDwoHbWVzc2FnZRgBIAEoCSKIAgoPSGllcmFyY2h5Q2hhbmdlEisKB2NyZWF0ZWQYASABKAsyGC5ldGFsaWkuYWRwLkVudHJ5Q3JlYXRlZEgAEisKB3JlbW92ZWQYAiABKAsyGC5ldGFsaWkuYWRwLkVudHJ5UmVtb3ZlZEgAEisKB3JlbmFtZWQYAyABKAsyGC5ldGFsaWkuYWRwLkVudHJ5UmVuYW1lZEgAEjcKEHJvb3RfdW5hdmFpbGFibGUYBCABKAsyGy5ldGFsaWkuYWRwLlJvb3RVbmF2YWlsYWJsZUgAEisKB3VwZGF0ZWQYBSABKAsyGC5ldGFsaWkuYWRwLkVudHJ5VXBkYXRlZEgAQggKBmNoYW5nZSJ5ChBIaWVyYXJjaHlNZXNzYWdlEi0KBmNoYW5nZRgBIAEoCzIbLmV0YWxpaS5hZHAuSGllcmFyY2h5Q2hhbmdlSAASKwoGcHJvbXB0GAIgASgLMhkuZXRhbGlpLmFkcC5Db250ZXh0UHJvbXB0SABCCQoHbWVzc2FnZSLAAQoWRGlzY292ZXJBY3Rpb25zUmVxdWVzdBIpCgpwcm9qZWN0X2lkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSJwoId2F0Y2hfaWQYAiABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgVzY29wZRgDIAEoDjIYLmV0YWxpaS5hZHAuQ29udGV4dFNjb3BlEikKBnNvdXJjZRgEIAEoCzIZLmV0YWxpaS5hZHAuQ29udGV4dFNvdXJjZSJJChdEaXNjb3ZlckFjdGlvbnNSZXNwb25zZRIuCgZncm91cHMYASADKAsyHi5ldGFsaWkuYWRwLkNvbnRleHRBY3Rpb25Hcm91cCK+AgoURXhlY3V0ZUFjdGlvblJlcXVlc3QSKQoKcHJvamVjdF9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEicKCHdhdGNoX2lkGAIgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSJwoFc2NvcGUYAyABKA4yGC5ldGFsaWkuYWRwLkNvbnRleHRTY29wZRIpCgZzb3VyY2UYBCABKAsyGS5ldGFsaWkuYWRwLkNvbnRleHRTb3VyY2USLQoOaW50ZXJhY3Rpb25faWQYBSABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBITCglhY3Rpb25faWQYBiABKAlIABIvCghzaG9ydGN1dBgHIAEoCzIbLmV0YWxpaS5hZHAuQ29udGV4dFNob3J0Y3V0SABCCQoHdHJpZ2dlciI4ChVFeGVjdXRlQWN0aW9uUmVzcG9uc2USEAoIYWNjZXB0ZWQYASABKAgSDQoFZXJyb3IYAiABKAkiZQoTUHJvcG9zZUlucHV0UmVxdWVzdBItCg5pbnRlcmFjdGlvbl9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEhAKCHJldmlzaW9uGAIgASgNEg0KBXZhbHVlGAMgASgJIkcKFFByb3Bvc2VJbnB1dFJlc3BvbnNlEhAKCHJldmlzaW9uGAEgASgNEg0KBXZhbGlkGAIgASgIEg4KBnJlYXNvbhgDIAEoCSJYChhTdWJtaXRJbnRlcmFjdGlvblJlcXVlc3QSLQoOaW50ZXJhY3Rpb25faWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBINCgV2YWx1ZRgCIAEoCSI9ChlTdWJtaXRJbnRlcmFjdGlvblJlc3BvbnNlEhEKCWNvbXBsZXRlZBgBIAEoCBINCgVlcnJvchgCIAEoCSJJChhDYW5jZWxJbnRlcmFjdGlvblJlcXVlc3QSLQoOaW50ZXJhY3Rpb25faWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZCIbChlDYW5jZWxJbnRlcmFjdGlvblJlc3BvbnNlKj0KCUVudHJ5S2luZBIaChZFTlRSWV9LSU5EX1VOU1BFQ0lGSUVEEAASCAoERklMRRABEgoKBkZPTERFUhACMoAFChBIaWVyYXJjaHlTZXJ2aWNlEk4KC0xpc3RFbnRyaWVzEh4uZXRhbGlpLmFkcC5MaXN0RW50cmllc1JlcXVlc3QaHy5ldGFsaWkuYWRwLkxpc3RFbnRyaWVzUmVzcG9uc2USUwoOV2F0Y2hIaWVyYXJjaHkSIS5ldGFsaWkuYWRwLldhdGNoSGllcmFyY2h5UmVxdWVzdBocLmV0YWxpaS5hZHAuSGllcmFyY2h5TWVzc2FnZTABEloKD0Rpc2NvdmVyQWN0aW9ucxIiLmV0YWxpaS5hZHAuRGlzY292ZXJBY3Rpb25zUmVxdWVzdBojLmV0YWxpaS5hZHAuRGlzY292ZXJBY3Rpb25zUmVzcG9uc2USVAoNRXhlY3V0ZUFjdGlvbhIgLmV0YWxpaS5hZHAuRXhlY3V0ZUFjdGlvblJlcXVlc3QaIS5ldGFsaWkuYWRwLkV4ZWN1dGVBY3Rpb25SZXNwb25zZRJRCgxQcm9wb3NlSW5wdXQSHy5ldGFsaWkuYWRwLlByb3Bvc2VJbnB1dFJlcXVlc3QaIC5ldGFsaWkuYWRwLlByb3Bvc2VJbnB1dFJlc3BvbnNlEmAKEVN1Ym1pdEludGVyYWN0aW9uEiQuZXRhbGlpLmFkcC5TdWJtaXRJbnRlcmFjdGlvblJlcXVlc3QaJS5ldGFsaWkuYWRwLlN1Ym1pdEludGVyYWN0aW9uUmVzcG9uc2USYAoRQ2FuY2VsSW50ZXJhY3Rpb24SJC5ldGFsaWkuYWRwLkNhbmNlbEludGVyYWN0aW9uUmVxdWVzdBolLmV0YWxpaS5hZHAuQ2FuY2VsSW50ZXJhY3Rpb25SZXNwb25zZUINqgIKRXRBbGlpLkFkcGIGcHJvdG8z", [file_shared, file_context]);
+  fileDesc("Cg9oaWVyYXJjaHkucHJvdG8SCmV0YWxpaS5hZHAisAEKBUVudHJ5EiEKAmlkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSKAoJcGFyZW50X2lkGAIgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSDAoEbmFtZRgDIAEoCRIjCgRraW5kGAQgASgOMhUuZXRhbGlpLmFkcC5FbnRyeUtpbmQSEQoJYXZhaWxhYmxlGAUgASgIEhQKDGhhc19jaGlsZHJlbhgGIAEoCCKSAQoSTGlzdEVudHJpZXNSZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBIoCglmb2xkZXJfaWQYAiABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgDIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkIiMKEExpc3RFbnRyaWVzRXJyb3ISDwoHbWVzc2FnZRgBIAEoCSItCgdFbnRyaWVzEiIKB2VudHJpZXMYASADKAsyES5ldGFsaWkuYWRwLkVudHJ5InYKE0xpc3RFbnRyaWVzUmVzcG9uc2USJgoHZW50cmllcxgBIAEoCzITLmV0YWxpaS5hZHAuRW50cmllc0gAEi0KBWVycm9yGAIgASgLMhwuZXRhbGlpLmFkcC5MaXN0RW50cmllc0Vycm9ySABCCAoGcmVzdWx0ImsKFVdhdGNoSGllcmFyY2h5UmVxdWVzdBIpCgpwcm9qZWN0X2lkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSJwoId2F0Y2hfaWQYAiABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZCIwCgxFbnRyeUNyZWF0ZWQSIAoFZW50cnkYASABKAsyES5ldGFsaWkuYWRwLkVudHJ5IjcKDEVudHJ5UmVtb3ZlZBInCghlbnRyeV9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkIkkKDEVudHJ5UmVuYW1lZBInCghlbnRyeV9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEhAKCG5ld19uYW1lGAIgASgJIk0KDEVudHJ5VXBkYXRlZBInCghlbnRyeV9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEhQKDGhhc19jaGlsZHJlbhgCIAEoCCIiCg9Sb290VW5hdmFpbGFibGUSDwoHbWVzc2FnZRgBIAEoCSKIAgoPSGllcmFyY2h5Q2hhbmdlEisKB2NyZWF0ZWQYASABKAsyGC5ldGFsaWkuYWRwLkVudHJ5Q3JlYXRlZEgAEisKB3JlbW92ZWQYAiABKAsyGC5ldGFsaWkuYWRwLkVudHJ5UmVtb3ZlZEgAEisKB3JlbmFtZWQYAyABKAsyGC5ldGFsaWkuYWRwLkVudHJ5UmVuYW1lZEgAEjcKEHJvb3RfdW5hdmFpbGFibGUYBCABKAsyGy5ldGFsaWkuYWRwLlJvb3RVbmF2YWlsYWJsZUgAEisKB3VwZGF0ZWQYBSABKAsyGC5ldGFsaWkuYWRwLkVudHJ5VXBkYXRlZEgAQggKBmNoYW5nZSJSChBIaWVyYXJjaHlNZXNzYWdlEi0KBmNoYW5nZRgBIAEoCzIbLmV0YWxpaS5hZHAuSGllcmFyY2h5Q2hhbmdlSABCCQoHbWVzc2FnZUoECAIQAyo9CglFbnRyeUtpbmQSGgoWRU5UUllfS0lORF9VTlNQRUNJRklFRBAAEggKBEZJTEUQARIKCgZGT0xERVIQAjK3AQoQSGllcmFyY2h5U2VydmljZRJOCgtMaXN0RW50cmllcxIeLmV0YWxpaS5hZHAuTGlzdEVudHJpZXNSZXF1ZXN0Gh8uZXRhbGlpLmFkcC5MaXN0RW50cmllc1Jlc3BvbnNlElMKDldhdGNoSGllcmFyY2h5EiEuZXRhbGlpLmFkcC5XYXRjaEhpZXJhcmNoeVJlcXVlc3QaHC5ldGFsaWkuYWRwLkhpZXJhcmNoeU1lc3NhZ2UwAUINqgIKRXRBbGlpLkFkcGIGcHJvdG8z", [file_shared]);
 
 /**
  * @generated from message etalii.adp.Entry
@@ -329,8 +327,9 @@ export const HierarchyChangeSchema: GenMessage<HierarchyChange> = /*@__PURE__*/
   messageDesc(file_hierarchy, 11);
 
 /**
- * The stream carries both hierarchy deltas and backend-initiated prompts;
- * HierarchyChange itself is unchanged, only wrapped.
+ * Wraps HierarchyChange so the stream's element type can grow without the RPC
+ * signature changing again. Prompts used to ride here as field 2; they now travel
+ * on ContextService.Watch (context.proto).
  *
  * @generated from message etalii.adp.HierarchyMessage
  */
@@ -344,12 +343,6 @@ export type HierarchyMessage = Message<"etalii.adp.HierarchyMessage"> & {
      */
     value: HierarchyChange;
     case: "change";
-  } | {
-    /**
-     * @generated from field: etalii.adp.ContextPrompt prompt = 2;
-     */
-    value: ContextPrompt;
-    case: "prompt";
   } | { case: undefined; value?: undefined };
 };
 
@@ -359,263 +352,6 @@ export type HierarchyMessage = Message<"etalii.adp.HierarchyMessage"> & {
  */
 export const HierarchyMessageSchema: GenMessage<HierarchyMessage> = /*@__PURE__*/
   messageDesc(file_hierarchy, 12);
-
-/**
- * @generated from message etalii.adp.DiscoverActionsRequest
- */
-export type DiscoverActionsRequest = Message<"etalii.adp.DiscoverActionsRequest"> & {
-  /**
-   * @generated from field: etalii.adp.ShortGuid project_id = 1;
-   */
-  projectId?: ShortGuid | undefined;
-
-  /**
-   * @generated from field: etalii.adp.ShortGuid watch_id = 2;
-   */
-  watchId?: ShortGuid | undefined;
-
-  /**
-   * @generated from field: etalii.adp.ContextScope scope = 3;
-   */
-  scope: ContextScope;
-
-  /**
-   * @generated from field: etalii.adp.ContextSource source = 4;
-   */
-  source?: ContextSource | undefined;
-};
-
-/**
- * Describes the message etalii.adp.DiscoverActionsRequest.
- * Use `create(DiscoverActionsRequestSchema)` to create a new message.
- */
-export const DiscoverActionsRequestSchema: GenMessage<DiscoverActionsRequest> = /*@__PURE__*/
-  messageDesc(file_hierarchy, 13);
-
-/**
- * @generated from message etalii.adp.DiscoverActionsResponse
- */
-export type DiscoverActionsResponse = Message<"etalii.adp.DiscoverActionsResponse"> & {
-  /**
-   * @generated from field: repeated etalii.adp.ContextActionGroup groups = 1;
-   */
-  groups: ContextActionGroup[];
-};
-
-/**
- * Describes the message etalii.adp.DiscoverActionsResponse.
- * Use `create(DiscoverActionsResponseSchema)` to create a new message.
- */
-export const DiscoverActionsResponseSchema: GenMessage<DiscoverActionsResponse> = /*@__PURE__*/
-  messageDesc(file_hierarchy, 14);
-
-/**
- * @generated from message etalii.adp.ExecuteActionRequest
- */
-export type ExecuteActionRequest = Message<"etalii.adp.ExecuteActionRequest"> & {
-  /**
-   * @generated from field: etalii.adp.ShortGuid project_id = 1;
-   */
-  projectId?: ShortGuid | undefined;
-
-  /**
-   * @generated from field: etalii.adp.ShortGuid watch_id = 2;
-   */
-  watchId?: ShortGuid | undefined;
-
-  /**
-   * @generated from field: etalii.adp.ContextScope scope = 3;
-   */
-  scope: ContextScope;
-
-  /**
-   * @generated from field: etalii.adp.ContextSource source = 4;
-   */
-  source?: ContextSource | undefined;
-
-  /**
-   * client-generated; correlates the pushed prompt back to this call
-   *
-   * @generated from field: etalii.adp.ShortGuid interaction_id = 5;
-   */
-  interactionId?: ShortGuid | undefined;
-
-  /**
-   * @generated from oneof etalii.adp.ExecuteActionRequest.trigger
-   */
-  trigger: {
-    /**
-     * @generated from field: string action_id = 6;
-     */
-    value: string;
-    case: "actionId";
-  } | {
-    /**
-     * @generated from field: etalii.adp.ContextShortcut shortcut = 7;
-     */
-    value: ContextShortcut;
-    case: "shortcut";
-  } | { case: undefined; value?: undefined };
-};
-
-/**
- * Describes the message etalii.adp.ExecuteActionRequest.
- * Use `create(ExecuteActionRequestSchema)` to create a new message.
- */
-export const ExecuteActionRequestSchema: GenMessage<ExecuteActionRequest> = /*@__PURE__*/
-  messageDesc(file_hierarchy, 15);
-
-/**
- * @generated from message etalii.adp.ExecuteActionResponse
- */
-export type ExecuteActionResponse = Message<"etalii.adp.ExecuteActionResponse"> & {
-  /**
-   * @generated from field: bool accepted = 1;
-   */
-  accepted: boolean;
-
-  /**
-   * @generated from field: string error = 2;
-   */
-  error: string;
-};
-
-/**
- * Describes the message etalii.adp.ExecuteActionResponse.
- * Use `create(ExecuteActionResponseSchema)` to create a new message.
- */
-export const ExecuteActionResponseSchema: GenMessage<ExecuteActionResponse> = /*@__PURE__*/
-  messageDesc(file_hierarchy, 16);
-
-/**
- * @generated from message etalii.adp.ProposeInputRequest
- */
-export type ProposeInputRequest = Message<"etalii.adp.ProposeInputRequest"> & {
-  /**
-   * @generated from field: etalii.adp.ShortGuid interaction_id = 1;
-   */
-  interactionId?: ShortGuid | undefined;
-
-  /**
-   * @generated from field: uint32 revision = 2;
-   */
-  revision: number;
-
-  /**
-   * @generated from field: string value = 3;
-   */
-  value: string;
-};
-
-/**
- * Describes the message etalii.adp.ProposeInputRequest.
- * Use `create(ProposeInputRequestSchema)` to create a new message.
- */
-export const ProposeInputRequestSchema: GenMessage<ProposeInputRequest> = /*@__PURE__*/
-  messageDesc(file_hierarchy, 17);
-
-/**
- * @generated from message etalii.adp.ProposeInputResponse
- */
-export type ProposeInputResponse = Message<"etalii.adp.ProposeInputResponse"> & {
-  /**
-   * echoed, so the client can discard a verdict for text it has moved past
-   *
-   * @generated from field: uint32 revision = 1;
-   */
-  revision: number;
-
-  /**
-   * @generated from field: bool valid = 2;
-   */
-  valid: boolean;
-
-  /**
-   * @generated from field: string reason = 3;
-   */
-  reason: string;
-};
-
-/**
- * Describes the message etalii.adp.ProposeInputResponse.
- * Use `create(ProposeInputResponseSchema)` to create a new message.
- */
-export const ProposeInputResponseSchema: GenMessage<ProposeInputResponse> = /*@__PURE__*/
-  messageDesc(file_hierarchy, 18);
-
-/**
- * @generated from message etalii.adp.SubmitInteractionRequest
- */
-export type SubmitInteractionRequest = Message<"etalii.adp.SubmitInteractionRequest"> & {
-  /**
-   * @generated from field: etalii.adp.ShortGuid interaction_id = 1;
-   */
-  interactionId?: ShortGuid | undefined;
-
-  /**
-   * @generated from field: string value = 2;
-   */
-  value: string;
-};
-
-/**
- * Describes the message etalii.adp.SubmitInteractionRequest.
- * Use `create(SubmitInteractionRequestSchema)` to create a new message.
- */
-export const SubmitInteractionRequestSchema: GenMessage<SubmitInteractionRequest> = /*@__PURE__*/
-  messageDesc(file_hierarchy, 19);
-
-/**
- * @generated from message etalii.adp.SubmitInteractionResponse
- */
-export type SubmitInteractionResponse = Message<"etalii.adp.SubmitInteractionResponse"> & {
-  /**
-   * @generated from field: bool completed = 1;
-   */
-  completed: boolean;
-
-  /**
-   * @generated from field: string error = 2;
-   */
-  error: string;
-};
-
-/**
- * Describes the message etalii.adp.SubmitInteractionResponse.
- * Use `create(SubmitInteractionResponseSchema)` to create a new message.
- */
-export const SubmitInteractionResponseSchema: GenMessage<SubmitInteractionResponse> = /*@__PURE__*/
-  messageDesc(file_hierarchy, 20);
-
-/**
- * @generated from message etalii.adp.CancelInteractionRequest
- */
-export type CancelInteractionRequest = Message<"etalii.adp.CancelInteractionRequest"> & {
-  /**
-   * @generated from field: etalii.adp.ShortGuid interaction_id = 1;
-   */
-  interactionId?: ShortGuid | undefined;
-};
-
-/**
- * Describes the message etalii.adp.CancelInteractionRequest.
- * Use `create(CancelInteractionRequestSchema)` to create a new message.
- */
-export const CancelInteractionRequestSchema: GenMessage<CancelInteractionRequest> = /*@__PURE__*/
-  messageDesc(file_hierarchy, 21);
-
-/**
- * @generated from message etalii.adp.CancelInteractionResponse
- */
-export type CancelInteractionResponse = Message<"etalii.adp.CancelInteractionResponse"> & {
-};
-
-/**
- * Describes the message etalii.adp.CancelInteractionResponse.
- * Use `create(CancelInteractionResponseSchema)` to create a new message.
- */
-export const CancelInteractionResponseSchema: GenMessage<CancelInteractionResponse> = /*@__PURE__*/
-  messageDesc(file_hierarchy, 22);
 
 /**
  * @generated from enum etalii.adp.EntryKind
@@ -662,51 +398,6 @@ export const HierarchyService: GenService<{
     methodKind: "server_streaming";
     input: typeof WatchHierarchyRequestSchema;
     output: typeof HierarchyMessageSchema;
-  },
-  /**
-   * Context actions. gRPC-Web offers no client-streaming or bidi from a browser, so
-   * the client->backend leg of each interaction is a unary call correlated by
-   * watch_id/interaction_id, while the backend->client leg (prompts) rides the
-   * WatchHierarchy stream this connection already has open.
-   *
-   * @generated from rpc etalii.adp.HierarchyService.DiscoverActions
-   */
-  discoverActions: {
-    methodKind: "unary";
-    input: typeof DiscoverActionsRequestSchema;
-    output: typeof DiscoverActionsResponseSchema;
-  },
-  /**
-   * @generated from rpc etalii.adp.HierarchyService.ExecuteAction
-   */
-  executeAction: {
-    methodKind: "unary";
-    input: typeof ExecuteActionRequestSchema;
-    output: typeof ExecuteActionResponseSchema;
-  },
-  /**
-   * @generated from rpc etalii.adp.HierarchyService.ProposeInput
-   */
-  proposeInput: {
-    methodKind: "unary";
-    input: typeof ProposeInputRequestSchema;
-    output: typeof ProposeInputResponseSchema;
-  },
-  /**
-   * @generated from rpc etalii.adp.HierarchyService.SubmitInteraction
-   */
-  submitInteraction: {
-    methodKind: "unary";
-    input: typeof SubmitInteractionRequestSchema;
-    output: typeof SubmitInteractionResponseSchema;
-  },
-  /**
-   * @generated from rpc etalii.adp.HierarchyService.CancelInteraction
-   */
-  cancelInteraction: {
-    methodKind: "unary";
-    input: typeof CancelInteractionRequestSchema;
-    output: typeof CancelInteractionResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_hierarchy, 0);

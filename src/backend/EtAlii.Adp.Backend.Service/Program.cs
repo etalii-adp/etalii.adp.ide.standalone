@@ -22,6 +22,13 @@ builder.Services.AddSingleton<IContextActionResolver, ContextActionResolver>();
 // (and their shortcuts) is one more line here and no change anywhere else.
 builder.Services.AddSingleton<IContextActionProvider, HierarchyContextActionProvider>();
 
+builder.Services.AddSingleton<IContextSelectionStore, ContextSelectionStore>();
+builder.Services.AddSingleton<ContextSelectionResolver>();
+// Registered through IContextSourceResolver for the same reason as the provider above:
+// a later module that makes a new kind of thing selectable (a diagram element, a
+// location in a file) is one more line here and no change anywhere else.
+builder.Services.AddSingleton<IContextSourceResolver, HierarchyContextSourceResolver>();
+
 builder.Services.AddSingleton<ICommandDispatcher, CommandDispatcher>();
 // One process-wide history for now. Scoping it per project (or per diagram, as
 // diagram-undo-redo's requirements describe) is a later step: nothing yet exposes undo/redo
@@ -49,6 +56,7 @@ app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });
 app.MapGrpcService<AuthenticationServiceImpl>();
 app.MapGrpcService<ProjectServiceImpl>();
 app.MapGrpcService<HierarchyServiceImpl>();
+app.MapGrpcService<ContextServiceImpl>();
 // DiagramService (grpc-core-communication) is mapped here once that spec implements it.
 
 app.MapClientApp();
