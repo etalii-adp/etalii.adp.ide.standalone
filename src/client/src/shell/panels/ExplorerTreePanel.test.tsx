@@ -8,7 +8,14 @@ import {
   HierarchyChangeSchema,
   type Entry,
 } from "../../generated/hierarchy_pb";
-import { ContextActionGroupSchema, type ContextActionGroup } from "../../generated/context_pb";
+import {
+  ContextActionGroupSchema,
+  ContextSelectionAction,
+  ContextSelectionSource,
+  type ContextActionGroup,
+  type ContextSelection,
+} from "../../generated/context_pb";
+import { NONE_DETAIL, selectionFor } from "../context/ContextConnectionProvider";
 import {
   EMPTY_TREE_STATE,
   ExplorerTreePanel,
@@ -24,16 +31,34 @@ import {
 
 const listEntries = vi.fn();
 const watchHierarchy = vi.fn();
-const discoverActions = vi.fn();
+const select = vi.fn<(selection: ContextSelection | null) => void>();
 const executeAction = vi.fn();
+const executeShortcut = vi.fn();
+
+/** What the (mocked) context connection currently holds; tests set it to simulate a push. */
+const contextState: { selection: ContextSelection | null; actions: ContextActionGroup[] } = { selection: null, actions: [] };
+
+function resetContext() {
+  contextState.selection = null;
+  contextState.actions = [];
+}
 
 vi.mock("../../auth/AuthContext", () => ({
   useAuth: () => ({ transport: {} }),
 }));
 
 vi.mock("@connectrpc/connect", () => ({
-  createClient: () => ({ listEntries, watchHierarchy, discoverActions, executeAction }),
+  createClient: () => ({ listEntries, watchHierarchy }),
 }));
+
+vi.mock("../context/ContextConnectionProvider", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../context/ContextConnectionProvider")>();
+  return {
+    ...actual,
+    useContextConnection: () => ({ watchId: new Uint8Array(16), select, executeAction, executeShortcut }),
+    useContextSelection: () => ({ ...contextState, levels: [], preview: null, connected: true }),
+  };
+});
 
 function id(byte: number): Uint8Array {
   return new Uint8Array(16).fill(byte);
@@ -294,12 +319,12 @@ describe("matchShortcut", () => {
 describe("ExplorerTreePanel keyboard navigation and triggers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetContext();
     // A stream that never yields: these tests drive the tree, not the change feed.
     watchHierarchy.mockReturnValue({
       // eslint-disable-next-line @typescript-eslint/no-empty-function
       async *[Symbol.asyncIterator]() {},
     });
-    discoverActions.mockResolvedValue({ groups: [] });
     executeAction.mockResolvedValue({ accepted: true, error: "" });
   });
 
@@ -321,8 +346,9 @@ describe("ExplorerTreePanel keyboard navigation and triggers", () => {
 
   async function renderPanel() {
     mockRootAndChildren();
-    render(<ExplorerTreePanel projectId={new Uint8Array(16)} />);
+    const rendered = render(<ExplorerTreePanel projectId={new Uint8Array(16)} />);
     await screen.findByText("sub");
+    return rendered;
   }
 
   function row(name: string): HTMLButtonElement {
@@ -338,13 +364,24 @@ describe("ExplorerTreePanel keyboard navigation and triggers", () => {
     return screen.getByRole("tree");
   }
 
+  const renameGroups = () => [
+    create(ContextActionGroupSchema, {
+      actions: [{ id: "hierarchy.rename", label: "Rename…", icon: "mdi-pencil-outline", available: true, shortcut: { key: "F2" } }],
+    }),
+  ];
+
+  /** What the backend would push after selecting entry `byte`: the chain and its actions. */
+  function pushed(byte: number, path: string[], groups: ContextActionGroup[], detail = NONE_DETAIL) {
+    contextState.selection = selectionFor(ContextSelectionSource.EXPLORER, id(byte), path, detail);
+    contextState.actions = groups;
+  }
+
   it("is a single Tab stop: exactly one row is tabbable at a time", async () => {
     await renderPanel();
 
     const tabbable = screen.getAllByRole("button").filter((button) => button.tabIndex === 0);
 
     expect(tabbable).toHaveLength(1);
-    expect(tabbable[0]).toBe(row("sub"));
   });
 
   it("marks the focused row with a class distinct from hover", async () => {
@@ -354,6 +391,30 @@ describe("ExplorerTreePanel keyboard navigation and triggers", () => {
 
     expect(row("a.txt").className).toContain("explorer-tree-node-focused");
     expect(row("sub").className).not.toContain("explorer-tree-node-focused");
+  });
+
+  it("reports a focused entry as a plain selection carrying its id and project-relative path", async () => {
+    await renderPanel();
+
+    focusRow("a.txt");
+
+    await waitFor(() => expect(select).toHaveBeenCalled());
+    const sent = select.mock.calls.at(-1)?.[0];
+    expect(sent?.source).toBe(ContextSelectionSource.EXPLORER);
+    expect(sent?.path?.segments).toEqual(["a.txt"]);
+    expect(sent?.id?.source).toMatchObject({ case: "entryId", value: { value: id(1) } });
+    expect(sent?.detail.case).toBe("none");
+  });
+
+  it("reports a nested entry with the path built from its parents", async () => {
+    await renderPanel();
+
+    focusRow("sub");
+    fireEvent.keyDown(tree(), { key: "ArrowRight" });
+    await screen.findByText("inside.txt");
+    fireEvent.keyDown(tree(), { key: "ArrowRight" });
+
+    await waitFor(() => expect(select.mock.calls.at(-1)?.[0]?.path?.segments).toEqual(["sub", "inside.txt"]));
   });
 
   it("moves focus down and up through the rendered rows with the arrow keys", async () => {
@@ -384,83 +445,92 @@ describe("ExplorerTreePanel keyboard navigation and triggers", () => {
     focusRow("sub");
     fireEvent.keyDown(tree(), { key: "ArrowRight" });
     await screen.findByText("inside.txt");
+    fireEvent.keyDown(tree(), { key: "ArrowRight" });
 
-    focusRow("inside.txt");
     fireEvent.keyDown(tree(), { key: "ArrowLeft" });
     expect(document.activeElement).toBe(row("sub"));
 
     fireEvent.keyDown(tree(), { key: "ArrowLeft" });
-    expect(screen.queryByText("inside.txt")).toBeNull();
+    await waitFor(() => expect(screen.queryByText("inside.txt")).toBeNull());
+  });
+
+  it("activates a file with Enter, and toggles a folder as well as activating it", async () => {
+    await renderPanel();
+
+    focusRow("a.txt");
+    fireEvent.keyDown(tree(), { key: "Enter" });
+    expect(select.mock.calls.at(-1)?.[0]?.detail).toMatchObject({ case: "action", value: ContextSelectionAction.ACTIVATE });
+
+    focusRow("sub");
+    fireEvent.keyDown(tree(), { key: "Enter" });
+    await screen.findByText("inside.txt");
+    expect(select.mock.calls.at(-1)?.[0]?.detail).toMatchObject({ case: "action", value: ContextSelectionAction.ACTIVATE });
+    expect(select.mock.calls.at(-1)?.[0]?.path?.segments).toEqual(["sub"]);
+  });
+
+  it("clears the selection with Escape", async () => {
+    await renderPanel();
+    focusRow("a.txt");
+
+    fireEvent.keyDown(tree(), { key: "Escape" });
+
+    expect(select).toHaveBeenLastCalledWith(null);
+    expect(row("a.txt").className).not.toContain("explorer-tree-node-focused");
   });
 
   it("triggers the backend action a pressed key is bound to for the focused entry", async () => {
-    discoverActions.mockResolvedValue({
-      groups: [
-        create(ContextActionGroupSchema, {
-          actions: [{ id: "hierarchy.rename", label: "Rename…", icon: "mdi-pencil-outline", available: true, shortcut: { key: "F2" } }],
-        }),
-      ],
-    });
+    pushed(1, ["a.txt"], renameGroups());
     await renderPanel();
 
     focusRow("a.txt");
-    await waitFor(() => expect(discoverActions).toHaveBeenCalled());
     fireEvent.keyDown(tree(), { key: "F2" });
 
-    await waitFor(() => expect(executeAction).toHaveBeenCalled());
-    expect(executeAction.mock.calls[0]?.[0]?.trigger).toMatchObject({ case: "actionId", value: "hierarchy.rename" });
+    await waitFor(() => expect(executeAction).toHaveBeenCalledWith("hierarchy.rename"));
+  });
+
+  it("ignores a shortcut while the pushed actions belong to a different entry than the focused one", async () => {
+    pushed(2, ["sub"], renameGroups());
+    await renderPanel();
+
+    focusRow("a.txt");
+    fireEvent.keyDown(tree(), { key: "F2" });
+
+    expect(executeAction).not.toHaveBeenCalled();
   });
 
   it("does nothing for a key bound to an action the backend reported unavailable", async () => {
-    discoverActions.mockResolvedValue({
-      groups: [
-        create(ContextActionGroupSchema, {
-          actions: [
-            { id: "hierarchy.delete", label: "Delete", icon: "mdi-trash-can-outline", available: false, shortcut: { key: "Delete" } },
-          ],
-        }),
-      ],
-    });
+    pushed(1, ["a.txt"], [
+      create(ContextActionGroupSchema, {
+        actions: [{ id: "hierarchy.rename", label: "Rename…", icon: "", available: false, unavailableReason: "Locked.", shortcut: { key: "F2" } }],
+      }),
+    ]);
     await renderPanel();
 
     focusRow("a.txt");
-    await waitFor(() => expect(discoverActions).toHaveBeenCalled());
-    fireEvent.keyDown(tree(), { key: "Delete" });
+    fireEvent.keyDown(tree(), { key: "F2" });
 
     expect(executeAction).not.toHaveBeenCalled();
   });
 
   it("does not react to a shortcut pressed outside the tree", async () => {
-    discoverActions.mockResolvedValue({
-      groups: [
-        create(ContextActionGroupSchema, {
-          actions: [{ id: "hierarchy.rename", label: "Rename…", icon: "mdi-pencil-outline", available: true, shortcut: { key: "F2" } }],
-        }),
-      ],
-    });
+    pushed(1, ["a.txt"], renameGroups());
     await renderPanel();
-    focusRow("a.txt");
-    await waitFor(() => expect(discoverActions).toHaveBeenCalled());
 
+    focusRow("a.txt");
     fireEvent.keyDown(document.body, { key: "F2" });
 
     expect(executeAction).not.toHaveBeenCalled();
   });
 
-  it("opens the same menu on right-click and on Shift+F10, focusing the entry it acts on", async () => {
-    discoverActions.mockResolvedValue({
-      groups: [
-        create(ContextActionGroupSchema, {
-          actions: [{ id: "hierarchy.rename", label: "Rename…", icon: "mdi-pencil-outline", available: true, shortcut: { key: "F2" } }],
-        }),
-      ],
-    });
+  it("opens the menu at once from actions already held for the entry, on right-click and on Shift+F10", async () => {
+    pushed(1, ["a.txt"], renameGroups());
     await renderPanel();
 
     fireEvent.contextMenu(row("a.txt"));
     await screen.findByRole("menu");
     expect(screen.getByRole("menuitem", { name: "Rename…" })).toBeTruthy();
     expect(row("a.txt").className).toContain("explorer-tree-node-focused");
+    expect(select.mock.calls.at(-1)?.[0]?.detail).toMatchObject({ case: "action", value: ContextSelectionAction.CONTEXT_MENU });
 
     fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
     fireEvent.keyDown(tree(), { key: "F10", shiftKey: true });
@@ -469,21 +539,28 @@ describe("ExplorerTreePanel keyboard navigation and triggers", () => {
     expect(screen.getByRole("menuitem", { name: "Rename…" })).toBeTruthy();
   });
 
+  it("opens the menu when the CONTEXT_MENU push for the entry arrives, if its actions were not held yet", async () => {
+    const { rerender } = await renderPanel();
+
+    fireEvent.contextMenu(row("a.txt"));
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(select.mock.calls.at(-1)?.[0]?.detail).toMatchObject({ case: "action", value: ContextSelectionAction.CONTEXT_MENU });
+
+    pushed(1, ["a.txt"], renameGroups(), { case: "action", value: ContextSelectionAction.CONTEXT_MENU });
+    rerender(<ExplorerTreePanel projectId={new Uint8Array(16)} />);
+
+    await screen.findByRole("menu");
+    expect(screen.getByRole("menuitem", { name: "Rename…" })).toBeTruthy();
+  });
+
   it("runs the same action from the menu that its shortcut runs", async () => {
-    discoverActions.mockResolvedValue({
-      groups: [
-        create(ContextActionGroupSchema, {
-          actions: [{ id: "hierarchy.rename", label: "Rename…", icon: "mdi-pencil-outline", available: true, shortcut: { key: "F2" } }],
-        }),
-      ],
-    });
+    pushed(1, ["a.txt"], renameGroups());
     await renderPanel();
 
     fireEvent.contextMenu(row("a.txt"));
     fireEvent.click(await screen.findByRole("menuitem", { name: "Rename…" }));
 
-    await waitFor(() => expect(executeAction).toHaveBeenCalled());
-    expect(executeAction.mock.calls[0]?.[0]?.trigger).toMatchObject({ case: "actionId", value: "hierarchy.rename" });
+    await waitFor(() => expect(executeAction).toHaveBeenCalledWith("hierarchy.rename"));
   });
 });
 
@@ -491,7 +568,7 @@ describe("ExplorerTreePanel collapse and expand triggers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     watchHierarchy.mockReturnValue({ [Symbol.asyncIterator]: () => ({ next: () => new Promise(() => {}) }) });
-    discoverActions.mockResolvedValue({ result: { case: "groups", value: { groups: [] } } });
+    resetContext();
     listEntries.mockImplementation(({ folderId }: { folderId?: { value: Uint8Array } }) =>
       Promise.resolve(
         folderId

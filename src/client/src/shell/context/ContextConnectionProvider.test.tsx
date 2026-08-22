@@ -9,6 +9,7 @@ import {
 } from "../../generated/context_pb";
 import {
   ContextConnectionProvider,
+  NONE_DETAIL,
   SELECT_COALESCE_MS,
   innermostAction,
   innermostKey,
@@ -85,7 +86,7 @@ function selectionMessage(entryId: Uint8Array | null, options: { transient?: boo
     message: {
       case: "selection",
       value: {
-        selection: entryId ? selectionFor(ContextSelectionSource.EXPLORER, entryId, options.path ?? ["a.txt"], { case: "none", value: {} }) : undefined,
+        selection: entryId ? selectionFor(ContextSelectionSource.EXPLORER, entryId, options.path ?? ["a.txt"], NONE_DETAIL) : undefined,
         levels: entryId ? [{ detail: { case: "entry", value: { kind: 1, available: true } } }] : [],
         actions: entryId ? [{ actions: [{ id: "hierarchy.rename", label: "Rename", icon: "", available: true }] }] : [],
         transient: options.transient ?? false,
@@ -170,7 +171,7 @@ describe("ContextConnectionProvider", () => {
 
     streams[0]!.push(selectionMessage(entryA));
 
-    await waitFor(() => expect(screen.getByTestId("selection").textContent).toBe(innermostKey(selectionFor(0, entryA, [], { case: "none", value: {} }))));
+    await waitFor(() => expect(screen.getByTestId("selection").textContent).toBe(innermostKey(selectionFor(0, entryA, [], NONE_DETAIL))));
     expect(screen.getByTestId("actions").textContent).toBe("hierarchy.rename");
   });
 
@@ -207,7 +208,7 @@ describe("ContextConnectionProvider", () => {
   it("coalesces plain selections and flushes a gesture at once", async () => {
     vi.useFakeTimers();
     renderProvider();
-    const plain = selectionFor(ContextSelectionSource.EXPLORER, entryA, ["a.txt"], { case: "none", value: {} });
+    const plain = selectionFor(ContextSelectionSource.EXPLORER, entryA, ["a.txt"], NONE_DETAIL);
     const gesture = selectionFor(ContextSelectionSource.EXPLORER, entryB, ["b.txt"], { case: "action", value: ContextSelectionAction.CONTEXT_MENU });
 
     act(() => {
@@ -247,7 +248,7 @@ describe("ContextConnectionProvider", () => {
     vi.useFakeTimers();
     renderProvider();
     await flush();
-    const plain = selectionFor(ContextSelectionSource.EXPLORER, entryA, ["a.txt"], { case: "none", value: {} });
+    const plain = selectionFor(ContextSelectionSource.EXPLORER, entryA, ["a.txt"], NONE_DETAIL);
     act(() => {
       connection!.select(plain);
       vi.advanceTimersByTime(SELECT_COALESCE_MS);

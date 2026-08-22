@@ -12,11 +12,18 @@ import { base64Encode } from "@bufbuild/protobuf/wire";
 import { useAuth } from "../../auth/AuthContext";
 import { EntryKind, HierarchyService } from "../../generated/hierarchy_pb";
 import type { Entry, HierarchyChange } from "../../generated/hierarchy_pb";
-import { ContextScope } from "../../generated/context_pb";
-import type { ContextAction, ContextActionGroup, ContextPrompt } from "../../generated/context_pb";
+import { ContextSelectionAction, ContextSelectionSource } from "../../generated/context_pb";
+import type { ContextAction, ContextActionGroup, ContextSelection } from "../../generated/context_pb";
 import { ContextMenu } from "../context/ContextMenu";
 import { toMenuGroups } from "../context/toMenuGroups";
-import { ContextPromptHost } from "../context/ContextPromptHost";
+import {
+  NONE_DETAIL,
+  innermostAction,
+  innermostKey,
+  selectionFor,
+  useContextConnection,
+  useContextSelection,
+} from "../context/ContextConnectionProvider";
 
 export interface TreeNode {
   id: Uint8Array;
@@ -321,25 +328,47 @@ export interface ExplorerTreePanelProps {
   projectId: Uint8Array;
 }
 
+/** The entry's project-relative path, read off the tree the ids came from. */
+export function pathOf(state: TreeState, key: string): string[] {
+  const segments: string[] = [];
+  let cursor: string | undefined = key;
+  while (cursor !== undefined) {
+    const node: TreeNode | undefined = state.nodesByKey[cursor];
+    if (!node) {
+      break;
+    }
+    segments.unshift(node.name);
+    cursor = node.parentKey;
+  }
+  return segments;
+}
+
 export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
   const { transport } = useAuth();
   const hierarchyClient = useMemo(() => createClient(HierarchyService, transport), [transport]);
-  const watchIdRef = useRef<Uint8Array>(crypto.getRandomValues(new Uint8Array(16)));
+  const { watchId, select, executeAction } = useContextConnection();
+  const { selection, actions } = useContextSelection();
 
   const [state, setState] = useState<TreeState>(EMPTY_TREE_STATE);
   const [error, setError] = useState<string | null>(null);
   const [focusedKey, setFocusedKey] = useState<string | undefined>();
-  const [actionsByKey, setActionsByKey] = useState<Record<string, ContextActionGroup[]>>({});
-  const [menu, setMenu] = useState<{ groups: ContextActionGroup[]; position: { x: number; y: number } } | null>(null);
-  const [prompt, setPrompt] = useState<ContextPrompt | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
+  const pendingMenuRef = useRef<{ key: string; position: { x: number; y: number } } | null>(null);
+  // A gesture selects its entry itself; the focus it also causes must not follow up with a plain one.
+  const gestureKeyRef = useRef<string | undefined>(undefined);
   const nodeRefs = useRef(new Map<string, HTMLButtonElement>());
+
+  // The pushed actions belong to whatever the backend currently has selected. They only
+  // answer for the focused row once the two agree, so a stale list never fires.
+  const selectionKey = innermostKey(selection);
+  const focusedActions = focusedKey !== undefined && selectionKey === focusedKey ? actions : [];
 
   const fetchChildren = useCallback(
     async (parentKey: string | undefined, folderId: Uint8Array | undefined) => {
       const response = await hierarchyClient.listEntries({
         projectId: { value: projectId },
         folderId: folderId ? { value: folderId } : undefined,
-        watchId: { value: watchIdRef.current },
+        watchId: { value: watchId },
       });
 
       const result = response.result;
@@ -351,7 +380,7 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
       const entries = result.value?.entries ?? [];
       setState((previous) => applyEntries(previous, parentKey, entries));
     },
-    [hierarchyClient, projectId],
+    [hierarchyClient, projectId, watchId],
   );
 
   useEffect(() => {
@@ -368,16 +397,10 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
     void (async () => {
       try {
         const stream = hierarchyClient.watchHierarchy(
-          { projectId: { value: projectId }, watchId: { value: watchIdRef.current } },
+          { projectId: { value: projectId }, watchId: { value: watchId } },
           { signal: abortController.signal },
         );
-        // The stream now carries two kinds of message: hierarchy deltas, and prompts the
-        // backend raises for an action running on this very connection.
         for await (const message of stream) {
-          if (message.message.case === "prompt") {
-            setPrompt(message.message.value);
-            continue;
-          }
           if (message.message.case !== "change") {
             continue;
           }
@@ -436,6 +459,21 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
     [fetchChildren],
   );
 
+  /** Reports an entry to the context service, with the gesture that selected it. */
+  const selectNode = useCallback(
+    (key: string, detail: ContextSelection["detail"]) => {
+      const node = state.nodesByKey[key];
+      if (!node) {
+        return;
+      }
+      if (detail.case === "action") {
+        gestureKeyRef.current = key;
+      }
+      select(selectionFor(ContextSelectionSource.EXPLORER, node.id, pathOf(state, key), detail));
+    },
+    [select, state],
+  );
+
   const focusNode = useCallback((key: string | undefined) => {
     if (key === undefined) {
       return;
@@ -444,92 +482,90 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
     nodeRefs.current.get(key)?.focus();
   }, []);
 
-  /**
-   * The focused entry's actions, fetched once and kept on hand. The same cache answers the
-   * context menu and every keypress, so an unrelated key never costs a round trip and the
-   * client never needs to know which key means what.
-   */
-  const actionsFor = useCallback(
-    async (key: string, node: TreeNode): Promise<ContextActionGroup[]> => {
-      const cached = actionsByKey[key];
-      if (cached) {
-        return cached;
+  // Focus is the explorer's; selection is the context service's. Every focus change is
+  // reported as a plain selection, which the connection coalesces for a held arrow key.
+  useEffect(() => {
+    if (gestureKeyRef.current === focusedKey) {
+      gestureKeyRef.current = undefined;
+      return;
+    }
+    if (focusedKey !== undefined && state.nodesByKey[focusedKey]) {
+      selectNode(focusedKey, NONE_DETAIL);
+    }
+    // The path is read at the moment of focusing; a later rename reaches the backend on its own.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusedKey]);
+
+  // A focused entry the tree no longer has (removed by a pushed change) is no selection either.
+  useEffect(() => {
+    if (focusedKey !== undefined && state.rootFetched && !state.nodesByKey[focusedKey]) {
+      setFocusedKey(undefined);
+      select(null);
+    }
+  }, [focusedKey, select, state]);
+
+  const activate = useCallback(
+    (key: string, node: TreeNode) => {
+      if (node.kind === EntryKind.FOLDER && node.hasChildren) {
+        toggleExpand(key, node);
       }
-
-      const response = await hierarchyClient.discoverActions({
-        projectId: { value: projectId },
-        watchId: { value: watchIdRef.current },
-        scope: ContextScope.HIERARCHY,
-        source: { source: { case: "entryId", value: { value: node.id } } },
-      });
-
-      setActionsByKey((previous) => ({ ...previous, [key]: response.groups }));
-      return response.groups;
+      selectNode(key, { case: "action", value: ContextSelectionAction.ACTIVATE });
     },
-    [actionsByKey, hierarchyClient, projectId],
+    [selectNode, toggleExpand],
   );
 
   const runAction = useCallback(
-    async (node: TreeNode, trigger: { case: "actionId"; value: string } | { case: "shortcut"; value: ShortcutEventLike }) => {
-      const response = await hierarchyClient.executeAction({
-        projectId: { value: projectId },
-        watchId: { value: watchIdRef.current },
-        scope: ContextScope.HIERARCHY,
-        source: { source: { case: "entryId", value: { value: node.id } } },
-        interactionId: { value: crypto.getRandomValues(new Uint8Array(16)) },
-        trigger:
-          trigger.case === "actionId"
-            ? { case: "actionId", value: trigger.value }
-            : {
-                case: "shortcut",
-                value: {
-                  key: trigger.value.key,
-                  ctrl: trigger.value.ctrlKey,
-                  shift: trigger.value.shiftKey,
-                  alt: trigger.value.altKey,
-                  meta: trigger.value.metaKey,
-                },
-              },
-      });
-
-      if (!response.accepted && response.error) {
-        setError(response.error);
+    async (actionId: string) => {
+      const outcome = await executeAction(actionId);
+      if (!outcome.accepted && outcome.error) {
+        setError(outcome.error);
       }
     },
-    [hierarchyClient, projectId],
+    [executeAction],
   );
 
+  /**
+   * Right-click selects with CONTEXT_MENU, which makes the backend push this entry's
+   * actions. If they are already here (the row was focused first, as a click does), the
+   * menu opens at once; otherwise it opens when that push arrives.
+   */
   const openMenuFor = useCallback(
-    async (key: string, node: TreeNode, position: { x: number; y: number }) => {
-      const groups = await actionsFor(key, node);
-      // An entry that has gone away reports no actions at all; ContextMenu renders nothing
-      // for empty groups, so no hollow menu appears.
-      setMenu({ groups, position });
+    (key: string, position: { x: number; y: number }) => {
+      focusNode(key);
+      selectNode(key, { case: "action", value: ContextSelectionAction.CONTEXT_MENU });
+      if (selectionKey === key && actions.length > 0) {
+        pendingMenuRef.current = null;
+        setMenuPosition(position);
+      } else {
+        pendingMenuRef.current = { key, position };
+      }
     },
-    [actionsFor],
+    [actions.length, focusNode, selectNode, selectionKey],
   );
+
+  useEffect(() => {
+    const pending = pendingMenuRef.current;
+    if (pending && selectionKey === pending.key && innermostAction(selection) === ContextSelectionAction.CONTEXT_MENU) {
+      pendingMenuRef.current = null;
+      setMenuPosition(pending.position);
+    }
+  }, [selection, selectionKey]);
 
   /** The keyboard equivalent of a right-click: anchored to the focused row, not a pointer. */
   const openMenuAtRow = useCallback(
-    (key: string, node: TreeNode) => {
+    (key: string) => {
       const rect = nodeRefs.current.get(key)?.getBoundingClientRect();
-      void openMenuFor(key, node, { x: rect?.left ?? 0, y: rect?.bottom ?? 0 }).catch(() => {
-        // A failed discovery just means no menu opens; the next attempt tries again.
-      });
+      openMenuFor(key, { x: rect?.left ?? 0, y: rect?.bottom ?? 0 });
     },
     [openMenuFor],
   );
 
   const handleContextMenu = useCallback(
-    (event: ReactMouseEvent, key: string, node: TreeNode) => {
+    (event: ReactMouseEvent, key: string) => {
       event.preventDefault();
-      focusNode(key);
-      void openMenuFor(key, node, { x: event.clientX, y: event.clientY }).catch(() => {
-        // Discovery failing is not worth replacing the tree with an error; the menu simply
-        // does not open, and the next attempt tries again.
-      });
+      openMenuFor(key, { x: event.clientX, y: event.clientY });
     },
-    [focusNode, openMenuFor],
+    [openMenuFor],
   );
 
   const handleKeyDown = useCallback(
@@ -573,12 +609,31 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
           return;
         }
 
+        case "Enter": {
+          if (!node || !key) {
+            return;
+          }
+          event.preventDefault();
+          activate(key, node);
+          return;
+        }
+
+        case "Escape": {
+          if (menuPosition !== null) {
+            return; // the menu's own Escape handling closes it
+          }
+          event.preventDefault();
+          setFocusedKey(undefined);
+          select(null);
+          return;
+        }
+
         case "ContextMenu": {
           if (!node || !key) {
             return;
           }
           event.preventDefault();
-          openMenuAtRow(key, node);
+          openMenuAtRow(key);
           return;
         }
 
@@ -587,7 +642,7 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
             return;
           }
           event.preventDefault();
-          openMenuAtRow(key, node);
+          openMenuAtRow(key);
           return;
         }
 
@@ -601,67 +656,16 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
 
       // Anything else is only a shortcut if the backend said so for this very entry - the
       // client holds no key-to-action mapping of its own, here or anywhere.
-      const match = matchShortcut(actionsByKey[key] ?? [], event);
+      const match = matchShortcut(focusedActions, event);
       if (!match) {
         return;
       }
 
       event.preventDefault();
-      void runAction(node, { case: "actionId", value: match.id });
+      void runAction(match.id);
     },
-    [actionsByKey, focusedKey, focusNode, openMenuAtRow, runAction, state, toggleExpand],
+    [activate, focusedActions, focusedKey, focusNode, menuPosition, openMenuAtRow, runAction, select, state, toggleExpand],
   );
-
-  // Discovering on focus is what lets a keypress be answered from the cache; it also means
-  // the menu usually has its items ready by the time it is asked for.
-  useEffect(() => {
-    const node = focusedKey ? state.nodesByKey[focusedKey] : undefined;
-    if (!focusedKey || !node || actionsByKey[focusedKey]) {
-      return;
-    }
-    void actionsFor(focusedKey, node).catch(() => {
-      // Leaving the entry without cached actions is the safe outcome: its shortcuts simply
-      // do not fire, rather than firing against a guess.
-    });
-  }, [actionsByKey, actionsFor, focusedKey, state]);
-
-  const promptInteractionId = prompt?.interactionId?.value;
-
-  const handlePropose = useCallback(
-    async (revision: number, value: string) => {
-      const response = await hierarchyClient.proposeInput({
-        interactionId: promptInteractionId ? { value: promptInteractionId } : undefined,
-        revision,
-        value,
-      });
-      return { revision: response.revision, valid: response.valid, reason: response.reason };
-    },
-    [hierarchyClient, promptInteractionId],
-  );
-
-  const handleSubmitPrompt = useCallback(
-    async (value: string) => {
-      const response = await hierarchyClient.submitInteraction({
-        interactionId: promptInteractionId ? { value: promptInteractionId } : undefined,
-        value,
-      });
-      if (response.completed) {
-        setPrompt(null);
-      }
-      return { completed: response.completed, error: response.error };
-    },
-    [hierarchyClient, promptInteractionId],
-  );
-
-  const handleCancelPrompt = useCallback(() => {
-    setPrompt(null);
-    void hierarchyClient
-      .cancelInteraction({ interactionId: promptInteractionId ? { value: promptInteractionId } : undefined })
-      .catch(() => {
-        // The dialog is already gone client-side; the interaction also dies with the
-        // connection, so a failed cancel leaves nothing stranded that matters.
-      });
-  }, [hierarchyClient, promptInteractionId]);
 
   if (error) {
     return (
@@ -692,27 +696,17 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
             tabbableKey={tabbableKey}
             nodeRefs={nodeRefs.current}
             onToggle={toggleExpand}
+            onActivate={activate}
             onFocusNode={setFocusedKey}
             onContextMenu={handleContextMenu}
           />
         ))}
       </ul>
       <ContextMenu
-        open={menu !== null}
-        groups={menu ? toMenuGroups(menu.groups, (action) => {
-          const node = focusedKey ? state.nodesByKey[focusedKey] : undefined;
-          if (node) {
-            void runAction(node, { case: "actionId", value: action.id });
-          }
-        }) : []}
-        position={menu?.position ?? { x: 0, y: 0 }}
-        onClose={() => setMenu(null)}
-      />
-      <ContextPromptHost
-        prompt={prompt}
-        onPropose={handlePropose}
-        onSubmit={handleSubmitPrompt}
-        onCancel={handleCancelPrompt}
+        open={menuPosition !== null}
+        groups={menuPosition ? toMenuGroups(focusedActions, (action) => void runAction(action.id)) : []}
+        position={menuPosition ?? { x: 0, y: 0 }}
+        onClose={() => setMenuPosition(null)}
       />
     </>
   );
@@ -726,8 +720,9 @@ interface ExplorerTreeNodeViewProps {
   tabbableKey: string | undefined;
   nodeRefs: Map<string, HTMLButtonElement>;
   onToggle: (key: string, node: TreeNode) => void;
+  onActivate: (key: string, node: TreeNode) => void;
   onFocusNode: (key: string) => void;
-  onContextMenu: (event: ReactMouseEvent, key: string, node: TreeNode) => void;
+  onContextMenu: (event: ReactMouseEvent, key: string) => void;
 }
 
 function ExplorerTreeNodeView({
@@ -738,6 +733,7 @@ function ExplorerTreeNodeView({
   tabbableKey,
   nodeRefs,
   onToggle,
+  onActivate,
   onFocusNode,
   onContextMenu,
 }: ExplorerTreeNodeViewProps) {
@@ -750,17 +746,17 @@ function ExplorerTreeNodeView({
   const isExpandable = isFolder && node.hasChildren;
   const isFocused = nodeKey === focusedKey;
 
-  const childProps = { state, depth: depth + 1, focusedKey, tabbableKey, nodeRefs, onToggle, onFocusNode, onContextMenu };
+  const childProps = { state, depth: depth + 1, focusedKey, tabbableKey, nodeRefs, onToggle, onActivate, onFocusNode, onContextMenu };
 
   return (
     <li role="treeitem" aria-expanded={isFolder ? node.expanded : undefined} aria-selected={isFocused || undefined}>
       {/* The chevron is its own control, so it sits beside the row button rather than inside
-          it - a button cannot legally nest in another. The double click that toggles is bound
-          here, on their shared parent, so it covers the chevron and the label alike. */}
+          it - a button cannot legally nest in another. The double click that activates is
+          bound here, on their shared parent, so it covers the chevron and the label alike. */}
       <div
         className="explorer-tree-row"
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
-        onDoubleClick={() => isExpandable && onToggle(nodeKey, node)}
+        onDoubleClick={() => onActivate(nodeKey, node)}
       >
         {isExpandable ? (
           <button
@@ -808,7 +804,7 @@ function ExplorerTreeNodeView({
           className={`explorer-tree-node${node.available ? "" : " explorer-tree-node-unavailable"}${isFocused ? " explorer-tree-node-focused" : ""}`}
           tabIndex={nodeKey === tabbableKey ? 0 : -1}
           onFocus={() => onFocusNode(nodeKey)}
-          onContextMenu={(event) => onContextMenu(event, nodeKey, node)}
+          onContextMenu={(event) => onContextMenu(event, nodeKey)}
         >
           <span className={`mdi ${iconFor(node)}`} aria-hidden="true" />
           <span className="explorer-tree-node-name">{node.name}</span>

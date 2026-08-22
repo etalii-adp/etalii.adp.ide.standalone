@@ -132,7 +132,7 @@
   - _Requirements: 1.4, 3.4, 3.6, 4.5, 4.6, 6.3, 6.5, 9.4_
   - _Prompt: Implement the task for spec context-service, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/TypeScript developer with gRPC-web experience | Task: Create `ContextConnectionProvider` with its three hooks and tests in `src/client/src/shell/context/` per design.md's component spec | Restrictions: exactly one `Watch` stream per mounted provider; the connection context value must not change identity on every selection push (split contexts); no `scope` in any request; unhandled stream errors after abort are ignored, before abort trigger reconnect; follow `src/client/.editorconfig` | Success: tests pass; rendering two consumers under one provider opens one stream in the mock_
 
-- [-] 17. Wire the provider and the prompt host into `WorkspaceShell`
+- [x] 17. Wire the provider and the prompt host into `WorkspaceShell`
   - File: `src/client/src/shell/WorkspaceShell.tsx` (modify), `src/client/src/shell/context/ShellPromptHost.tsx` (new), `src/client/src/shell/WorkspaceShell.test.tsx` (modify)
   - Wrap the shell body in `<ContextConnectionProvider projectId>`; add `ShellPromptHost` (renders `ContextPromptHost` from `useContextPrompt()`) once outside the panes; update the shell test to stub the provider's client
   - Purpose: Requirements 4.5, 6.3
@@ -140,7 +140,7 @@
   - _Requirements: 4.5, 6.3_
   - _Prompt: Implement the task for spec context-service, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Mount `ContextConnectionProvider` and a new `ShellPromptHost` in `WorkspaceShell` per design.md, keeping `WorkspaceShell` a layout-only file | Restrictions: no panel reads the provider directly from `WorkspaceShell` props — they use hooks; the existing shell tests keep passing with a mocked client | Success: `npm test` passes for the shell tests_
 
-- [ ] 18. Refactor `ExplorerTreePanel` onto the context connection
+- [x] 18. Refactor `ExplorerTreePanel` onto the context connection
   - File: `src/client/src/shell/panels/ExplorerTreePanel.tsx` (modify)
   - Use `useContextConnection().watchId`; focus change → `select(EXPLORER, none, node)` with `path` built from the node's parent chain; right-click / `Shift+F10` / `ContextMenu` key → `select(..., CONTEXT_MENU)` immediate and open `ContextMenu` now if `useContextSelection().selection` id matches, else on the next matching push (`pendingMenuRef`); double-click / `Enter` → `ACTIVATE` (+ `toggleExpand` for folders); `Escape` with no menu → `select(null)`; removal of the focused entry → `select(null)`; shortcuts matched against the provider's `actions` only when ids match; delete `actionsByKey`, `actionsFor`, the discovery effect, `runAction`'s client, `prompt` state, `ContextPromptHost`, and the `prompt` case in the `WatchHierarchy` loop
   - Purpose: Requirements 3.1, 3.5–3.8, 5.2, 9.5
@@ -148,7 +148,7 @@
   - _Requirements: 3.1, 3.5, 3.6, 3.7, 3.8, 5.2, 9.5_
   - _Prompt: Implement the task for spec context-service, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer with accessibility/keyboard-navigation expertise | Task: Refactor `ExplorerTreePanel` per design.md's component spec so it produces selections through the context connection and consumes pushed actions, removing its own discovery, execution client and prompt host | Restrictions: tree state, reducers, `ListEntries`/`WatchHierarchy`, icons and roving tabindex unchanged; the client still holds no key→action table; never fire a shortcut against actions whose selection id differs from the focused node; the focus ring must never wait on the backend | Success: `npm run typecheck` passes; the explorer tests in task 19 pass_
 
-- [ ] 19. Update `ExplorerTreePanel` tests
+- [x] 19. Update `ExplorerTreePanel` tests
   - File: `src/client/src/shell/panels/ExplorerTreePanel.test.tsx` (modify)
   - Render under a mocked `ContextConnectionProvider`; assert: focus → `select(none)` with the right path/id; right-click → `select(CONTEXT_MENU)` and the menu opens from held actions when ids match / on the next matching push otherwise; `Enter` on a folder toggles and sends `ACTIVATE`; `Escape` sends `null`; shortcut fires `executeShortcut` only when ids match; the existing navigation and reducer tests unchanged
   - Purpose: Requirements 3.1, 3.5–3.8, 5.2, 9.5
@@ -156,7 +156,7 @@
   - _Requirements: 3.1, 3.5, 3.6, 3.7, 3.8, 5.2, 9.5_
   - _Prompt: Implement the task for spec context-service, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend QA engineer (vitest + testing-library) | Task: Update the explorer tests for the refactored panel per design.md's Unit Testing list, keeping every still-valid existing test | Restrictions: test behaviour through rendered DOM and the mocked provider calls, not internals; no snapshot tests | Success: `npm test` passes_
 
-- [ ] 20. Property Grid shows the selection
+- [-] 20. Property Grid shows the selection
   - File: `src/client/src/shell/panels/PropertyGridPanel.tsx` (modify), `src/client/src/shell/panels/PropertyGridPanel.test.tsx` (new), `src/client/src/index.css` (modify)
   - Read `useContextSelection()`; nothing selected → intentional "Nothing selected" state (placeholder standard) keeping the `futureSpec` comment for editing; otherwise one block per level (outermost first): name, path (`/`-joined), kind, availability, source; `.property-grid`/`.property-grid-row` styles from existing tokens, light/dark. Tests: empty state; one-level file; two-level chain
   - Purpose: Requirement 7

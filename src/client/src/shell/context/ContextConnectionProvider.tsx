@@ -10,6 +10,7 @@ import {
 } from "react";
 import { createClient } from "@connectrpc/connect";
 import { create } from "@bufbuild/protobuf";
+import { EmptySchema } from "@bufbuild/protobuf/wkt";
 import { base64Encode } from "@bufbuild/protobuf/wire";
 import { useAuth } from "../../auth/AuthContext";
 import { ContextService, ContextSelectionSchema } from "../../generated/context_pb";
@@ -24,6 +25,9 @@ import type {
 } from "../../generated/context_pb";
 import type { ContextPromptSubmission, ContextPromptVerdict } from "./ContextPromptHost";
 import { useCoalescedSelect } from "./useCoalescedSelect";
+
+/** The `none` alternative: a plain selection, nothing more. */
+export const NONE_DETAIL: ContextSelection["detail"] = { case: "none", value: create(EmptySchema) };
 
 /** How long a burst of plain selections may keep coalescing before the last one is sent. */
 export const SELECT_COALESCE_MS = 80;
