@@ -147,6 +147,29 @@ public class ContextSelectionStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateFromTrack_MovesTheTargetAlongWithThePath()
+    {
+        var watchId = ShortGuid.NewShortGuid();
+        var resolver = new StubResolver();
+        ContextSelectionRecord? rediscoveredWith = null;
+        _store.Set(watchId, Root, Record(resolver, "docs", "a.txt"), (record, _) =>
+        {
+            rediscoveredWith = record;
+            return ValueTask.FromResult(record);
+        });
+
+        resolver.Fire(["documents", "b.txt"]);
+
+        var deadline = DateTime.UtcNow + Timeout;
+        while (rediscoveredWith is null && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(10);
+        }
+
+        Assert.Equal(System.IO.Path.Combine(Root, "documents", "b.txt"), rediscoveredWith!.Innermost.Target.ResolvedFullPath);
+    }
+
+    [Fact]
     public async Task UpdateFromTrack_WithNull_Clears()
     {
         var watchId = ShortGuid.NewShortGuid();

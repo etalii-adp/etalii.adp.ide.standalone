@@ -180,7 +180,7 @@
   - _Requirements: 10.1–10.8, 10.11_
   - _Prompt: Implement the task for spec context-service, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend QA engineer (vitest + testing-library) | Task: Create the ribbon tests listed in design.md's Unit Testing section under `src/client/src/shell/ribbon/` | Restrictions: drive through DOM events and the mocked provider; no snapshots; keyboard paths covered | Success: `npm test` passes_
 
-- [ ] 23. Manual F5 verification
+- [x] 23. Manual F5 verification
   - File: none (verification only; temporary port edits to `src/client/vite.config.ts` and `src/backend/EtAlii.Adp.Backend.Service/appsettings.developer.json` reverted before merge)
   - Per design.md *End-to-End Testing*: arrow through the explorer → Property Grid follows, ribbon shows Rename/Delete without flicker; tooltip "Rename (F2)"; ribbon Rename → same dialog as F2; right-click → instant menu; OS rename while selected → path updates; OS delete → "Nothing selected" and group disappears; `Escape` clears; narrow window → ribbon scrolls; light and dark; `dotnet format style --verify-no-changes --severity info` clean; `npm run typecheck` and `npm test` clean
   - Purpose: prove the whole arc in the real app before merging the worktree

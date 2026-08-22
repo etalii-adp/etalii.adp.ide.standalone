@@ -163,7 +163,11 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
     private static ContextSelectionRecord Rewrite(ContextSelectionRecord record, int levelIndex, IReadOnlyList<string> newRelativePath)
     {
         var levels = record.Levels.ToList();
-        levels[levelIndex] = levels[levelIndex] with { RelativePath = newRelativePath };
+        var level = levels[levelIndex];
+        // The target moves with the path: providers re-discovering actions must look at
+        // where the thing is now, not where it was when selected.
+        var target = level.Target with { ResolvedFullPath = Relocate(level.Target.ResolvedFullPath, level.RelativePath.Count, newRelativePath) };
+        levels[levelIndex] = level with { RelativePath = newRelativePath, Target = target };
 
         var chain = record.Chain.Clone();
         var cursor = chain;
@@ -176,6 +180,21 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         cursor.Path.Segments.AddRange(newRelativePath);
 
         return record with { Chain = chain, Levels = levels };
+    }
+
+    /// <summary>
+    /// The absolute location after a level's relative path changed: strip as many trailing
+    /// segments as the old relative path had, then append the new ones.
+    /// </summary>
+    private static string Relocate(string fullPath, int oldSegmentCount, IReadOnlyList<string> newRelativePath)
+    {
+        var basePath = fullPath;
+        for (var index = 0; index < oldSegmentCount; index++)
+        {
+            basePath = System.IO.Path.GetDirectoryName(basePath) ?? basePath;
+        }
+
+        return System.IO.Path.Combine([basePath, .. newRelativePath]);
     }
 
     private Entry GetOrCreate(ShortGuid watchId) => _entries.GetOrAdd(watchId, CreateEntry);
