@@ -100,7 +100,7 @@
   - _Requirements: 6.5, 6.6_
   - _Prompt: Implement the task for spec context-service, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA engineer specializing in gRPC integration tests | Task: Update the existing integration tests so every context-action arc runs through `ContextService` and observes prompts on the context `Watch` stream, preserving what each test asserts about behaviour, and add the no-`source` execute case | Restrictions: do not weaken any existing assertion; the isolation test must still prove a prompt on one `watch_id` is never seen on another; keep the stream-startup grace approach | Success: `dotnet test` passes for the whole backend test project_
 
-- [-] 13. Integration test `ContextSelectionFlow`
+- [x] 13. Integration test `ContextSelectionFlow`
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/ContextSelectionFlow.Tests.cs`
   - Per design.md *Integration Testing*: `Watch` baseline empty; `ListEntries` → `Select(none)` → message with chain, filled path, `EntryDetail`, Rename/Delete groups; `Select(PREVIEW)` → transient, `Get` unchanged (observed via a following baseline on a re-opened stream); rename on disk → new path, same id; delete → empty; foreign id → error, no push; two connections isolated; `Select`/`Watch` for another user's project rejected
   - Purpose: end-to-end proof of Requirements 2–5 and the Security NFR on the real host
@@ -108,7 +108,7 @@
   - _Requirements: 2.3, 2.6, 3.2, 3.3, 4.1, 4.2, 4.4, 5.1, 9.4_
   - _Prompt: Implement the task for spec context-service, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA engineer specializing in gRPC integration tests | Task: Create `ContextSelectionFlowTests` in `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/ContextSelectionFlow.Tests.cs` covering design.md's listed flows against a real temp project folder and `WebApplicationFactory<Program>` | Restrictions: bounded waits with the existing `MessageTimeout`; the disk-change cases must wait for the pushed message rather than sleep; each test owns its temp folder | Success: `dotnet test` passes and is stable across three runs_
 
-- [ ] 14. Regenerate client stubs and extract `toMenuGroups`
+- [-] 14. Regenerate client stubs and extract `toMenuGroups`
   - File: `src/client/src/shell/context/toMenuGroups.ts` (new), `src/client/src/shell/panels/ExplorerTreePanel.tsx` (modify: import), `src/client/src/shell/panels/ExplorerTreePanel.test.tsx` (modify: import)
   - Run `npm run generate`; move `toMenuGroups` (and its test) out of `ExplorerTreePanel.tsx` unchanged so the ribbon can share it
   - Purpose: prepare the client for tasks 15–22 without behaviour change
