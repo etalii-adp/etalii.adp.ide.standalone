@@ -9,14 +9,8 @@ namespace EtAlii.Adp.Backend.Hierarchy;
 /// module contributing its own file-type-specific actions sits beside it rather than
 /// inside it.
 /// </summary>
-public sealed class HierarchyContextActionProvider : IContextActionProvider
+public sealed partial class HierarchyContextActionProvider : IContextActionProvider
 {
-    public const string RenameActionId = "hierarchy.rename";
-    public const string DeleteActionId = "hierarchy.delete";
-
-    private static readonly ContextShortcutDefinition RenameShortcut = new("F2");
-    private static readonly ContextShortcutDefinition DeleteShortcut = new("Delete");
-
     public ContextScope Scope => ContextScope.Hierarchy;
 
     public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
@@ -85,13 +79,9 @@ public sealed class HierarchyContextActionProvider : IContextActionProvider
     /// </summary>
     public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
     {
-        if (actionId != RenameActionId)
-        {
-            // Delete takes no value, so there is nothing to judge.
-            return ValueTask.FromResult(ContextValidationResult.Accepted);
-        }
-
-        return ValueTask.FromResult(ValidateRename(target, value));
+        return ValueTask.FromResult(actionId != RenameActionId
+            ? ContextValidationResult.Accepted // Delete takes no value, so there is nothing to judge.
+            : ValidateRename(target, value));
     }
 
     public async ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
@@ -109,117 +99,6 @@ public sealed class HierarchyContextActionProvider : IContextActionProvider
             _ => ContextCommitResult.Failed($"Unknown action '{actionId}'."),
         };
     }
-
-    private static ContextCommitResult Rename(ContextTarget target, string newName)
-    {
-        var destination = IoPath.Combine(ParentFolderOf(target)!, newName);
-        try
-        {
-            // A single move, never a copy-then-delete: a folder keeps its entire nested
-            // contents untouched, and the operation cannot leave a half-renamed state.
-            if (target.IsContainer)
-            {
-                Directory.Move(target.ResolvedFullPath, destination);
-            }
-            else
-            {
-                File.Move(target.ResolvedFullPath, destination);
-            }
-
-            return ContextCommitResult.Succeeded;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            return ContextCommitResult.Failed($"Could not rename this item: {ex.Message}");
-        }
-    }
-
-    private static ContextCommitResult Delete(ContextTarget target)
-    {
-        try
-        {
-            if (target.IsContainer)
-            {
-                Directory.Delete(target.ResolvedFullPath, recursive: true);
-            }
-            else
-            {
-                File.Delete(target.ResolvedFullPath);
-            }
-
-            return ContextCommitResult.Succeeded;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            // A recursive delete can fail partway through, so say that the delete did not
-            // complete rather than that nothing happened; whatever did get removed arrives
-            // as ordinary changes from the watcher, leaving the tree showing real state.
-            var remains = target.IsContainer && Directory.Exists(target.ResolvedFullPath);
-            var suffix = remains ? " Some of its contents may already have been removed." : "";
-            return ContextCommitResult.Failed($"Could not fully delete this item: {ex.Message}{suffix}");
-        }
-    }
-
-    private static ContextValidationResult ValidateRename(ContextTarget target, string value)
-    {
-        var newName = value.Trim();
-        if (newName.Length == 0)
-        {
-            return ContextValidationResult.Rejected("Enter a name.");
-        }
-
-        if (ParentFolderOf(target) is not { } parentFolder)
-        {
-            return ContextValidationResult.Rejected("This item has no parent folder to act within.");
-        }
-
-        // A rename changes the name, not the location - so a value that is anything other
-        // than a bare name is refused outright. Rejecting separators, relative segments and
-        // rooted paths here is also what keeps a "rename" from reaching outside the root:
-        // the destination is checked below to still sit in this very parent folder.
-        if (newName is "." or ".." ||
-            newName.IndexOfAny(new[] { IoPath.DirectorySeparatorChar, IoPath.AltDirectorySeparatorChar, ':' }) >= 0 ||
-            newName.IndexOfAny(IoPath.GetInvalidFileNameChars()) >= 0)
-        {
-            return ContextValidationResult.Rejected("A name cannot contain a path or any of \\ / : * ? \" < > |");
-        }
-
-        var currentName = IoPath.GetFileName(target.ResolvedFullPath);
-        if (string.Equals(newName, currentName, StringComparison.Ordinal))
-        {
-            return ContextValidationResult.Rejected("Enter a name that differs from the current one.");
-        }
-
-        string destination;
-        try
-        {
-            destination = IoPath.GetFullPath(IoPath.Combine(parentFolder, newName));
-        }
-        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
-        {
-            return ContextValidationResult.Rejected("That name cannot be used on this system.");
-        }
-
-        var destinationParent = IoPath.GetDirectoryName(destination);
-        if (destinationParent is null || !string.Equals(destinationParent, parentFolder, StringComparison.OrdinalIgnoreCase))
-        {
-            return ContextValidationResult.Rejected("A rename can only change the name, not move the item.");
-        }
-
-        // On a case-insensitive filesystem, renaming only the casing has the item colliding
-        // with itself; that is a legitimate rename, so let the move handle it.
-        var isSameEntry = string.Equals(destination, target.ResolvedFullPath, StringComparison.OrdinalIgnoreCase);
-        if (!isSameEntry && (File.Exists(destination) || Directory.Exists(destination)))
-        {
-            return ContextValidationResult.Rejected($"An item named '{newName}' already exists in this folder.");
-        }
-
-        return ContextValidationResult.Accepted;
-    }
-
-    private static string DeleteConfirmationMessage(string name, bool isFolder) => isFolder
-        ? $"Delete the folder '{name}' and everything inside it from disk? This cannot be undone."
-        : $"Delete '{name}' from disk? This cannot be undone.";
 
     private static string? ParentFolderOf(ContextTarget target) => IoPath.GetDirectoryName(target.ResolvedFullPath);
 
