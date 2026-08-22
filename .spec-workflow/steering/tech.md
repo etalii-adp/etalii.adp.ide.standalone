@@ -59,7 +59,7 @@ The idea is that the solution can:
 # Backend
 
 * For a specific subsystem or component, place simple POCO objects and objects that represent data rather than functionalities in a dedicated subfolder called '\_Model'.
-* Follow the one entity per file principle.
+* Follow the one entity per file principle. One exception to this is a CommandHandler and the Command it handles.
 
 # Decision log
 
