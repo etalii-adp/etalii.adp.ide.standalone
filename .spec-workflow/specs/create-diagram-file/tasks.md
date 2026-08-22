@@ -8,7 +8,7 @@
 >
 > **Bugs.** Per CLAUDE.md, any bug found while implementing or verifying a task is covered by a unit or integration test, or recorded in `tests.md`.
 
-- [ ] 1. Derive a diagram type's MIME type on `DiagramOrigin`
+- [x] 1. Derive a diagram type's MIME type on `DiagramOrigin`
   - File: `src/backend/EtAlii.Adp.Diagram/_Model/DiagramOrigin.cs` (modify), `src/backend/EtAlii.Adp.Diagram.Tests/DiagramOrigin.Tests.cs` (modify)
   - Add `public string MimeType => Subtype.Length == 0 ? $"{Vendor}/{Type}" : $"{Vendor}/{Type}+{Subtype}";` with a comment saying why `+` and not a second `/` (a MIME type has exactly one slash; `+suffix` is the structured-suffix convention). Tests: no subtype → `freeplane/mindmap`; with subtype → `plantuml/uml+sequence`; the no-subtype form matches the Origin column `docs/diagrams.md` uses for the same type
   - Purpose: one place derives the string the created file's first line carries (Requirement 3.2)
@@ -16,7 +16,7 @@
   - _Requirements: 3.2_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add a computed `MimeType` property to `DiagramOrigin` per design.md's component spec, with tests in the existing `DiagramOrigin.Tests.cs` | Restrictions: `EtAlii.Adp.Diagram` gains no dependency on the backend and no new using; the property is computed, never stored; do not change the record's constructor or existing members | Success: `dotnet test` passes and a sample of real module definitions produce exactly the strings docs/diagrams.md lists_
 
-- [ ] 2. Extract the name rules out of rename into `EntryNameRules`
+- [x] 2. Extract the name rules out of rename into `EntryNameRules`
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/EntryNameRules.cs` (new), `src/backend/EtAlii.Adp.Backend/Hierarchy/HierarchyContextActionProvider.Rename.cs` (modify), `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/EntryNameRules.Tests.cs` (new)
   - Move `ValidateRename`'s rules verbatim into `internal static ContextValidationResult Validate(string name, string parentFolder, string? currentName = null)`: trim, empty, `.`/`..`, separators and `:`, `GetInvalidFileNameChars`, unusable path, destination outside `parentFolder`, existing entry. The "must differ from the current name" rule and the case-insensitive same-entry exemption apply only when `currentName` is given. Reword the move rejection to "A name cannot contain a path." so it fits both callers; keep every other message byte-identical. `ValidateRename` becomes a call to it
   - Purpose: one judgement of "is this a usable name in this folder", shared by rename and add (Requirements 2.4–2.6)
@@ -24,7 +24,7 @@
   - _Requirements: 2.4, 2.5, 2.6_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer performing a behaviour-preserving refactor | Task: Extract the rename validation rules into `EntryNameRules` per design.md and have `ValidateRename` call it, then cover the rules directly with unit tests | Restrictions: this is a refactor — the existing rename tests must pass unchanged, which is the proof; user-visible rejection messages stay identical except the one reworded message named in design.md; the new type is `internal static` and knows nothing about diagrams | Success: `dotnet test` green including every pre-existing rename test, and `EntryNameRules.Tests.cs` covers empty, dot segments, separators, invalid characters, an existing file, an existing folder, a valid name, and the with-`currentName` cases_
 
-- [ ] 3. Implement `DiagramFileName`
+- [x] 3. Implement `DiagramFileName`
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/DiagramFileName.cs` (new), `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/DiagramFileName.Tests.cs` (new)
   - `Extension = ".adp"`; `Suggest(DiagramOrigin origin, string folder)` — base from `origin.Type` plus `-{Subtype}` when present, invalid characters and separators replaced with `-` and runs collapsed, then the first free candidate of `base`, `base-2`, `base-3`, … tested against `folder/candidate.adp`; `StripExtension(string)` removes one trailing `.adp` ordinal-case-insensitively; `WithExtension(string)` appends it
   - Purpose: the suggested, collision-free name and the extension handling (Requirements 2.2, 2.3)
@@ -32,7 +32,7 @@
   - _Requirements: 2.2, 2.3, 3.1_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Create `DiagramFileName` with `Suggest`, `StripExtension` and `WithExtension` per design.md's component spec, with unit tests against a temp folder | Restrictions: `Suggest` stops at the first free candidate and never enumerates the folder; sanitising must make it impossible for an origin segment to produce a separator or an invalid character; no diagram-type knowledge beyond the shared `DiagramOrigin` | Success: tests cover no-subtype and subtype origins, a segment containing a separator, `x.adp` taken then `x-2.adp` also taken, and `StripExtension`/`WithExtension` for `a`, `a.adp`, `a.ADP`, `a.adp.adp`_
 
-- [ ] 4. Implement `AdpFileWriter`
+- [x] 4. Implement `AdpFileWriter`
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/AdpFileWriter.cs` (new), `src/backend/EtAlii.Adp.Backend/Hierarchy/_Model/AdpFileWriteResult.cs` (new), `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/AdpFileWriter.Tests.cs` (new)
   - `Create(string folder, string fileName, string firstLine)`: write `firstLine + "\n"` as UTF-8 **without BOM** to `~adp-{Guid:N}.tmp` in the same folder, then `File.Move(temp, destination, overwrite: false)`; result `Created(FullPath)` | `NameTaken` | `Failed(Message)`; every failure path deletes the temp file without letting the delete's own exception escape
   - Purpose: the atomic, create-new write and its cleanup (Requirements 3.1, 3.3, 5.1, 5.2, and 2.8's guarantee)
@@ -40,7 +40,7 @@
   - _Requirements: 3.1, 3.3, 5.1, 5.2_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer with filesystem expertise | Task: Create `AdpFileWriter` and `AdpFileWriteResult` per design.md, with unit tests against a temp folder | Restrictions: the temp file lives in the same folder as the destination (a cross-volume move is not atomic); the move must be the non-overwriting overload so an existing file is never replaced; UTF8Encoding with encoderShouldEmitUTF8Identifier false, and assert the bytes in the test rather than the string; the writer knows nothing about diagrams and takes its content as a plain string | Success: tests prove the exact bytes written, no temp file left on success or on failure, `NameTaken` when the destination exists with the existing content untouched, and `Failed` plus cleanup when the folder disappears mid-write_
 
-- [ ] 5. Keep the writer's temp files out of the hierarchy
+- [x] 5. Keep the writer's temp files out of the hierarchy
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/HierarchyModel.cs` (modify), `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/HierarchyModel.Tests.cs` (modify)
   - Ignore paths whose file name matches `~adp-*.tmp` in `OnWatcherEvent`'s create/rename/remove handling, so ADP's own scratch files never become entries or changes. Add a test driving `OnWatcherEvent` with such a path and asserting no `EntryChanged` is raised and no entry is listed
   - Purpose: the atomic write's temp file must not flicker in every connected explorer (design.md *Temp files and the watcher*)

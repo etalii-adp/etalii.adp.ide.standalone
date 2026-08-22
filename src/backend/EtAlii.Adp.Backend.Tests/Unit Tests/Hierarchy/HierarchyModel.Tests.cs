@@ -342,4 +342,56 @@ public class HierarchyModelTests : IDisposable
             Directory.Delete(outsideRoot, recursive: true);
         }
     }
+    [Fact]
+    public void OnWatcherEvent_ForTheWritersScratchFile_RaisesNothingAndListsNothing()
+    {
+        // AdpFileWriter writes a new diagram to a scratch file in the destination folder and
+        // moves it into place; neither step is project content, so neither may reach a client.
+        var model = new HierarchyModel(_root);
+        model.ListChildren(null);
+        var changes = new List<HierarchyEntryChange>();
+        model.EntryChanged += changes.Add;
+
+        var scratch = IoPath.Combine(_root, $"{AdpFileWriter.TempPrefix}0123456789abcdef{AdpFileWriter.TempExtension}");
+        File.WriteAllText(scratch, "freeplane/mindmap\n");
+        model.OnWatcherEvent(WatcherChangeTypes.Created, null, scratch);
+
+        Assert.Empty(changes);
+        Assert.Empty(model.ListChildren(null));
+    }
+
+    [Fact]
+    public void OnWatcherEvent_ForTheMoveThatPublishesADiagram_ReportsOnlyTheCreatedFile()
+    {
+        var model = new HierarchyModel(_root);
+        model.ListChildren(null);
+        var changes = new List<HierarchyEntryChange>();
+        model.EntryChanged += changes.Add;
+
+        var scratch = IoPath.Combine(_root, $"{AdpFileWriter.TempPrefix}0123456789abcdef{AdpFileWriter.TempExtension}");
+        var published = IoPath.Combine(_root, "domain.adp");
+        File.WriteAllText(scratch, "freeplane/mindmap\n");
+        model.OnWatcherEvent(WatcherChangeTypes.Created, null, scratch);
+        File.Move(scratch, published);
+        model.OnWatcherEvent(WatcherChangeTypes.Renamed, scratch, published);
+
+        // The rename away from a scratch name is ignored as well; the entry arrives when the
+        // watcher reports the published file itself.
+        Assert.Empty(changes);
+        model.OnWatcherEvent(WatcherChangeTypes.Created, null, published);
+        var created = Assert.IsType<HierarchyEntryChange.Created>(Assert.Single(changes));
+        Assert.Equal("domain.adp", created.Entry.Name);
+    }
+
+    [Fact]
+    public void Reconcile_NeverResurrectsAScratchFileLeftBehind()
+    {
+        var model = new HierarchyModel(_root);
+        model.ListChildren(null);
+        File.WriteAllText(IoPath.Combine(_root, $"{AdpFileWriter.TempPrefix}abandoned{AdpFileWriter.TempExtension}"), "");
+
+        model.Reconcile();
+
+        Assert.Empty(model.ListChildren(null));
+    }
 }

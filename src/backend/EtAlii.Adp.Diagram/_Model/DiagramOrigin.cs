@@ -14,5 +14,15 @@ public sealed record DiagramOrigin(string Vendor, string Type, string Subtype = 
     /// </summary>
     public string Key => Subtype.Length == 0 ? $"{Vendor}/{Type}" : $"{Vendor}/{Type}/{Subtype}";
 
+    /// <summary>
+    /// This diagram type as a MIME type - what a created <c>.adp</c> file states on its first
+    /// line. Distinct from <see cref="Key"/>, which identifies a choice inside ADP and may take
+    /// a shape MIME does not allow: a MIME type has exactly one slash, so a subtype is appended
+    /// with <c>+</c>, the structured-suffix convention MIME already uses (<c>svg+xml</c>,
+    /// <c>ld+json</c>). Without a subtype the two are identical, and both match the Origin
+    /// column docs/diagrams.md carries.
+    /// </summary>
+    public string MimeType => Subtype.Length == 0 ? $"{Vendor}/{Type}" : $"{Vendor}/{Type}+{Subtype}";
+
     public override string ToString() => Key;
 }
