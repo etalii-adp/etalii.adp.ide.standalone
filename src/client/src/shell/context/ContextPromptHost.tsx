@@ -29,13 +29,63 @@ export interface ContextPromptHostProps {
   onCancel: () => void;
 }
 
+/** The prompt kinds this host knows how to put on screen. */
+const RENDERABLE_PROMPTS = new Set(["inputDialog", "confirmDialog", "choiceDialog", "closed"]);
+
 /**
  * Renders whichever dialog the backend's current prompt asks for. It is driven purely by
  * prompt data and never asks what the running action is, so an action added later gets its
  * dialog here without a new component or a new branch.
+ *
+ * A prompt this build does not know - a newer backend asking for a dialog kind added after
+ * this client was built, or a client running against a contract it was not generated from -
+ * is not silently dropped. Dropping it would leave the user's click doing nothing at all and
+ * the backend holding an interaction that is never answered; instead the interaction is
+ * cancelled and the user is told, so the action visibly ends rather than vanishing.
  */
 export function ContextPromptHost({ prompt, onPropose, onSubmit, onCancel }: ContextPromptHostProps) {
-  switch (prompt?.prompt.case) {
+  const promptCase = prompt?.prompt.case;
+  const unsupported = prompt !== null && !RENDERABLE_PROMPTS.has(promptCase ?? "");
+  const [unsupportedNotice, setUnsupportedNotice] = useState(false);
+
+  useEffect(() => {
+    if (unsupported) {
+      if (import.meta.env.DEV) {
+        console.warn(
+          `ContextPromptHost: the backend asked for a '${promptCase ?? "(unset)"}' prompt, which this build cannot render` +
+            " - cancelling the interaction. If the contract changed, the generated client stubs are probably stale.",
+        );
+      }
+      setUnsupportedNotice(true);
+      onCancel();
+      return;
+    }
+
+    if (prompt !== null) {
+      // A prompt that can be rendered takes over from any notice still on screen.
+      setUnsupportedNotice(false);
+    }
+  }, [onCancel, prompt, promptCase, unsupported]);
+
+  if (prompt === null || unsupported) {
+    // Either there is nothing to show, or there was something this build could not show -
+    // whose interaction the effect above has already cancelled.
+    return unsupportedNotice ? (
+      <Dialog
+        open
+        icon="mdi-alert-circle-outline"
+        title="Action not supported"
+        buttons={[{ key: "close", label: "Close", color: "neutral", autoFocus: true, onClick: () => setUnsupportedNotice(false) }]}
+        onClose={() => setUnsupportedNotice(false)}
+      >
+        <p className="dialog-message">
+          This action needs a newer version of the app than the one you are running. Nothing was changed.
+        </p>
+      </Dialog>
+    ) : null;
+  }
+
+  switch (prompt.prompt.case) {
     case "inputDialog":
       return (
         <InputPromptDialog
@@ -92,6 +142,7 @@ export function ContextPromptHost({ prompt, onPropose, onSubmit, onCancel }: Con
       );
 
     default:
+      // Unreachable: an unrenderable prompt was handled above.
       return null;
   }
 }

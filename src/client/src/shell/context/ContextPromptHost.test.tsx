@@ -243,3 +243,56 @@ describe("ContextPromptHost choice dialog", () => {
     expect(confirmButton("Add")).toHaveProperty("disabled", true);
   });
 });
+
+describe("ContextPromptHost with a prompt this build cannot render", () => {
+  // A newer backend asking for a dialog kind added after this client was built - or, as
+  // actually happened, a client whose generated stubs predate the contract, so a prompt it
+  // was sent deserialises with no case at all.
+  function unknownPrompt(): ContextPrompt {
+    return create(ContextPromptSchema, { interactionId: { value: new Uint8Array(16).fill(9) } });
+  }
+
+  it("cancels the interaction rather than leaving it open with nothing on screen", () => {
+    const onCancel = vi.fn();
+
+    render(<ContextPromptHost prompt={unknownPrompt()} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={onCancel} />);
+
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("tells the user the action ended, instead of a click that does nothing", () => {
+    render(<ContextPromptHost prompt={unknownPrompt()} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+
+    expect(screen.getByText("Action not supported")).toBeTruthy();
+    expect(screen.getByText(/needs a newer version/)).toBeTruthy();
+  });
+
+  it("closes that notice when dismissed", () => {
+    render(<ContextPromptHost prompt={unknownPrompt()} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+
+    expect(screen.queryByText("Action not supported")).toBeNull();
+  });
+
+  it("shows nothing at all when there is simply no prompt", () => {
+    const onCancel = vi.fn();
+
+    render(<ContextPromptHost prompt={null} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={onCancel} />);
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
+  it("lets a prompt it can render take over from the notice", () => {
+    const { rerender } = render(
+      <ContextPromptHost prompt={unknownPrompt()} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={vi.fn()} />,
+    );
+    expect(screen.getByText("Action not supported")).toBeTruthy();
+
+    rerender(<ContextPromptHost prompt={confirmPrompt()} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+
+    expect(screen.queryByText("Action not supported")).toBeNull();
+    expect(screen.getByText("Delete folder?")).toBeTruthy();
+  });
+});
