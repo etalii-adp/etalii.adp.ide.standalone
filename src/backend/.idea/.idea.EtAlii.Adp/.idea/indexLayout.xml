@@ -5,6 +5,7 @@
       <Path>../../docs</Path>
       <Path>../api</Path>
       <Path>../client</Path>
+      <Path>../diagrams</Path>
     </attachedFolders>
     <explicitIncludes />
     <explicitExcludes />
