@@ -362,6 +362,12 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
   // answer for the focused row once the two agree, so a stale list never fires.
   const selectionKey = innermostKey(selection);
   const focusedActions = focusedKey !== undefined && selectionKey === focusedKey ? actions : [];
+  // With nothing selected the backend pushes what applies to the project root - the
+  // explorer's empty space. Those answer only while no row is focused, for the same reason.
+  const rootActions = focusedKey === undefined && selection === null ? actions : [];
+  const menuActions = focusedKey === undefined ? rootActions : focusedActions;
+  const treeRef = useRef<HTMLUListElement>(null);
+  const pendingRootMenuRef = useRef<{ x: number; y: number } | null>(null);
 
   const fetchChildren = useCallback(
     async (parentKey: string | undefined, folderId: Uint8Array | undefined) => {
@@ -560,6 +566,53 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
     [openMenuFor],
   );
 
+  /**
+   * A right-click on the tree's empty space means the project root. Clearing the selection
+   * is what makes the backend push the root's actions; as with a row, the menu opens at once
+   * if they are already here and otherwise when that push arrives. Focus moves to the tree
+   * itself so a shortcut pressed next - Insert - still reaches the handler.
+   */
+  const openRootMenu = useCallback(
+    (position: { x: number; y: number }) => {
+      setFocusedKey(undefined);
+      treeRef.current?.focus();
+      select(null);
+      if (selection === null && actions.length > 0) {
+        pendingRootMenuRef.current = null;
+        setMenuPosition(position);
+      } else {
+        pendingRootMenuRef.current = position;
+      }
+    },
+    [actions.length, select, selection],
+  );
+
+  useEffect(() => {
+    const pending = pendingRootMenuRef.current;
+    if (pending && selection === null && focusedKey === undefined && actions.length > 0) {
+      pendingRootMenuRef.current = null;
+      setMenuPosition(pending);
+    }
+  }, [actions.length, focusedKey, selection]);
+
+  /** Where a keyboard-opened root menu goes: the tree's top-left, there being no row to anchor to. */
+  const rootMenuPosition = useCallback((): { x: number; y: number } => {
+    const rect = treeRef.current?.getBoundingClientRect();
+    return { x: rect?.left ?? 0, y: rect?.top ?? 0 };
+  }, []);
+
+  const handleTreeContextMenu = useCallback(
+    (event: ReactMouseEvent<HTMLUListElement>) => {
+      // A row's own right-click bubbles up here too; only the tree's bare surface is the root.
+      if (event.target !== event.currentTarget) {
+        return;
+      }
+      event.preventDefault();
+      openRootMenu({ x: event.clientX, y: event.clientY });
+    },
+    [openRootMenu],
+  );
+
   const handleContextMenu = useCallback(
     (event: ReactMouseEvent, key: string) => {
       event.preventDefault();
@@ -629,20 +682,25 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
         }
 
         case "ContextMenu": {
-          if (!node || !key) {
-            return;
-          }
           event.preventDefault();
-          openMenuAtRow(key);
+          if (node && key) {
+            openMenuAtRow(key);
+          } else {
+            openRootMenu(rootMenuPosition());
+          }
           return;
         }
 
         case "F10": {
-          if (!event.shiftKey || !node || !key) {
+          if (!event.shiftKey) {
             return;
           }
           event.preventDefault();
-          openMenuAtRow(key);
+          if (node && key) {
+            openMenuAtRow(key);
+          } else {
+            openRootMenu(rootMenuPosition());
+          }
           return;
         }
 
@@ -650,13 +708,10 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
           break;
       }
 
-      if (!node || !key) {
-        return;
-      }
-
-      // Anything else is only a shortcut if the backend said so for this very entry - the
-      // client holds no key-to-action mapping of its own, here or anywhere.
-      const match = matchShortcut(focusedActions, event);
+      // Anything else is only a shortcut if the backend said so for this very entry - or,
+      // with no row focused, for the project root. The client holds no key-to-action
+      // mapping of its own, here or anywhere.
+      const match = matchShortcut(menuActions, event);
       if (!match) {
         return;
       }
@@ -664,7 +719,7 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
       event.preventDefault();
       void runAction(match.id);
     },
-    [activate, focusedActions, focusedKey, focusNode, menuPosition, openMenuAtRow, runAction, select, state, toggleExpand],
+    [activate, focusedKey, focusNode, menuActions, menuPosition, openMenuAtRow, openRootMenu, rootMenuPosition, runAction, select, state, toggleExpand],
   );
 
   if (error) {
@@ -685,7 +740,15 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
 
   return (
     <>
-      <ul className="explorer-tree" role="tree" onKeyDown={handleKeyDown}>
+      <ul
+        ref={treeRef}
+        className="explorer-tree"
+        role="tree"
+        // Focusable only by script: after a right-click on the empty space, so Insert reaches us.
+        tabIndex={-1}
+        onKeyDown={handleKeyDown}
+        onContextMenu={handleTreeContextMenu}
+      >
         {state.rootKeys.map((key) => (
           <ExplorerTreeNodeView
             key={key}
@@ -704,7 +767,7 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
       </ul>
       <ContextMenu
         open={menuPosition !== null}
-        groups={menuPosition ? toMenuGroups(focusedActions, (action) => void runAction(action.id)) : []}
+        groups={menuPosition ? toMenuGroups(menuActions, (action) => void runAction(action.id)) : []}
         position={menuPosition ?? { x: 0, y: 0 }}
         onClose={() => setMenuPosition(null)}
       />

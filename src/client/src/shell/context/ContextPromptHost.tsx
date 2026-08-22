@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { Dialog } from "../../components/Dialog";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { ChoicePromptDialog } from "./ChoicePromptDialog";
 import { useDebouncedValue } from "./../useDebouncedValue";
 import type { ContextPrompt } from "../../generated/context_pb";
 
@@ -61,6 +62,18 @@ export function ContextPromptHost({ prompt, onPropose, onSubmit, onCancel }: Con
         />
       );
     }
+
+    case "choiceDialog":
+      return (
+        <ChoicePromptDialog
+          // Remounted per interaction for the same reason as the input dialog: the chosen
+          // option, the expansion state and any error belong to one interaction only.
+          key={keyOf(prompt)}
+          prompt={prompt.prompt.value}
+          onSubmit={onSubmit}
+          onCancel={onCancel}
+        />
+      );
 
     case "closed":
       return (

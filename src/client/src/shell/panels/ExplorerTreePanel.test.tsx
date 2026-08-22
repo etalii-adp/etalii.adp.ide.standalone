@@ -663,3 +663,138 @@ describe("ExplorerTreePanel collapse and expand triggers", () => {
     expect(fileRow.querySelector(".explorer-tree-chevron")).not.toBeNull();
   });
 });
+
+describe("ExplorerTreePanel empty space: the project root", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetContext();
+    watchHierarchy.mockReturnValue({
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      async *[Symbol.asyncIterator]() {},
+    });
+    listEntries.mockResolvedValue({
+      result: {
+        case: "entries",
+        value: { entries: [makeEntry(2, "sub", EntryKind.FOLDER, undefined, true), makeEntry(1, "a.txt", EntryKind.FILE)] },
+      },
+    });
+  });
+
+  /** What the backend pushes while nothing is selected: the root's actions, no selection. */
+  const rootGroups = () => [
+    create(ContextActionGroupSchema, {
+      actions: [
+        { id: "hierarchy.add", label: "Add…", icon: "mdi-plus", available: true, shortcut: { key: "Insert" } },
+        { id: "hierarchy.rename", label: "Rename…", icon: "mdi-pencil-outline", available: false, unavailableReason: "The project folder itself cannot be renamed or deleted here." },
+      ],
+    }),
+  ];
+
+  function pushedRoot() {
+    contextState.selection = null;
+    contextState.actions = rootGroups();
+  }
+
+  async function renderPanel() {
+    const rendered = render(<ExplorerTreePanel projectId={new Uint8Array(16)} />);
+    await screen.findByText("sub");
+    return rendered;
+  }
+
+  const tree = () => screen.getByRole("tree");
+  const row = (name: string) => screen.getByText(name).closest("button") as HTMLButtonElement;
+
+  it("right-clicking the empty space clears the selection and opens the menu from the root's actions", async () => {
+    pushedRoot();
+    await renderPanel();
+
+    fireEvent.contextMenu(tree());
+
+    expect(select).toHaveBeenLastCalledWith(null);
+    await screen.findByRole("menu");
+    expect(screen.getByRole("menuitem", { name: "Add…" })).toBeTruthy();
+    // Rendered straight from what was pushed: greyed, with the backend's reason, not omitted.
+    const rename = screen.getByRole("menuitem", { name: "Rename…" });
+    expect(rename.getAttribute("aria-disabled")).toBe("true");
+  });
+
+  it("right-clicking a row is unchanged: it still selects that entry, not the root", async () => {
+    pushedRoot();
+    await renderPanel();
+
+    fireEvent.contextMenu(row("a.txt"));
+
+    const last = select.mock.calls.at(-1)?.[0];
+    expect(last).not.toBeNull();
+    expect(last?.detail).toMatchObject({ case: "action", value: ContextSelectionAction.CONTEXT_MENU });
+  });
+
+  it("opens the root menu once the cleared baseline with the root's actions arrives, if they were not held yet", async () => {
+    // Something is selected when the user right-clicks the empty space: the root's actions
+    // are not here yet, so the menu waits for the push that clearing causes.
+    contextState.selection = selectionFor(ContextSelectionSource.EXPLORER, id(1), ["a.txt"], NONE_DETAIL);
+    contextState.actions = [];
+    const { rerender } = await renderPanel();
+
+    fireEvent.contextMenu(tree());
+    expect(select).toHaveBeenLastCalledWith(null);
+    expect(screen.queryByRole("menu")).toBeNull();
+
+    pushedRoot();
+    rerender(<ExplorerTreePanel projectId={new Uint8Array(16)} />);
+
+    await screen.findByRole("menu");
+    expect(screen.getByRole("menuitem", { name: "Add…" })).toBeTruthy();
+  });
+
+  it("Insert with no row focused runs the root's Add, straight from the pushed shortcut", async () => {
+    pushedRoot();
+    await renderPanel();
+    executeAction.mockResolvedValue({ accepted: true, error: "" });
+
+    // Focus the tree itself, as a right-click on the empty space would have.
+    act(() => tree().focus());
+    fireEvent.keyDown(tree(), { key: "Insert" });
+
+    expect(executeAction).toHaveBeenCalledWith("hierarchy.add");
+  });
+
+  it("Insert with a row focused does not fall back to the root's actions", async () => {
+    // The row's own actions are not held (nothing pushed for it), so nothing must run - the
+    // root's Insert must not leak onto a focused row.
+    pushedRoot();
+    await renderPanel();
+
+    act(() => row("a.txt").focus());
+    fireEvent.keyDown(tree(), { key: "Insert" });
+
+    expect(executeAction).not.toHaveBeenCalled();
+  });
+
+  it("Shift+F10 with no row focused opens the root menu", async () => {
+    pushedRoot();
+    await renderPanel();
+
+    act(() => tree().focus());
+    fireEvent.keyDown(tree(), { key: "F10", shiftKey: true });
+
+    await screen.findByRole("menu");
+    expect(screen.getByRole("menuitem", { name: "Add…" })).toBeTruthy();
+  });
+
+  it("right-clicking the empty space while a row is focused moves focus off the row before opening the root menu", async () => {
+    pushedRoot();
+    await renderPanel();
+
+    act(() => row("a.txt").focus());
+    expect(row("a.txt").className).toContain("explorer-tree-node-focused");
+
+    fireEvent.contextMenu(tree());
+
+    // The row is no longer the focused entry, so the held root actions apply again and
+    // the menu opens from them (the menu then takes focus itself, as it always does).
+    await screen.findByRole("menu");
+    expect(row("a.txt").className).not.toContain("explorer-tree-node-focused");
+    expect(screen.getByRole("menuitem", { name: "Add…" })).toBeTruthy();
+  });
+});

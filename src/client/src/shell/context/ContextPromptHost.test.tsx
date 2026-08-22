@@ -205,3 +205,41 @@ describe("ContextPromptHost confirm dialog", () => {
     expect(onCancel).toHaveBeenCalled();
   });
 });
+
+function choicePrompt(interactionByte = 3): ContextPrompt {
+  return create(ContextPromptSchema, {
+    interactionId: { value: new Uint8Array(16).fill(interactionByte) },
+    prompt: {
+      case: "choiceDialog",
+      value: {
+        title: "Add diagram",
+        icon: "mdi-plus",
+        confirmLabel: "Add",
+        emptyMessage: "No diagram types are available.",
+        options: [{ id: "c4", label: "c4", selectable: false, children: [{ id: "c4/context", label: "System Context", selectable: true, children: [] }] }],
+      },
+    },
+  });
+}
+
+describe("ContextPromptHost choice dialog", () => {
+  it("renders the choice dialog for a choiceDialog prompt", () => {
+    render(<ContextPromptHost prompt={choicePrompt()} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+
+    expect(screen.getByText("Add diagram")).toBeTruthy();
+    expect(screen.getByRole("tree")).toBeTruthy();
+    expect(confirmButton("Add")).toHaveProperty("disabled", true);
+  });
+
+  it("remounts for a new interaction, so a choice made in one never leaks into the next", () => {
+    const { rerender } = render(
+      <ContextPromptHost prompt={choicePrompt(3)} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByText("System Context").closest("button")!);
+    expect(confirmButton("Add")).toHaveProperty("disabled", false);
+
+    rerender(<ContextPromptHost prompt={choicePrompt(4)} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+
+    expect(confirmButton("Add")).toHaveProperty("disabled", true);
+  });
+});
