@@ -88,7 +88,7 @@
   - _Requirements: 1.1, 1.3, 1.4, 2.6, 2.7, 2.8, 3.1, 3.2, 4.1, 4.2_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA engineer specializing in gRPC integration tests | Task: Create `CreateDiagramFileFlowTests` covering design.md's listed flows against a real temp project and `WebApplicationFactory<Program>` | Restrictions: bounded waits with the existing timeout constants, never sleeps, for anything watcher-driven; assert the created file's bytes, not just its existence; each test owns its temp folder | Success: `dotnet test` passes and is stable across three consecutive runs_
 
-- [ ] 11. Carry the second value and the created path through the client connection
+- [x] 11. Carry the second value and the created path through the client connection
   - File: `src/client/src/shell/context/ContextPromptHost.tsx` (modify), `src/client/src/shell/context/ContextConnectionProvider.tsx` (modify), `src/client/src/shell/context/ContextConnectionProvider.test.tsx` (modify)
   - Regenerate stubs. `onSubmit` becomes `(value: string, text?: string) => Promise<ContextPromptSubmission>`; `ContextPromptSubmission` gains `createdPath?: string[]`. The provider sends `text`, and on a completed response with a `created_path` sets `pendingReveal` on the selection context; `ContextConnectionValue` gains a stable `clearReveal()`
   - Purpose: the client half of the two-value submit and the reveal hand-off (Requirements 2.7, 4.2, 4.3)
@@ -96,7 +96,7 @@
   - _Requirements: 2.7, 4.2, 4.3_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/TypeScript developer with gRPC-web experience | Task: Extend the submit path with the optional text value and surface the created path as `pendingReveal`, per design.md | Restrictions: `pendingReveal` belongs on the selection context and `clearReveal` on the connection context, so `select()` callers do not re-render when a reveal is queued; existing rename and delete submits keep working with a single value; add provider tests for both | Success: `npm run typecheck` clean and the provider tests cover a submit carrying text and a completed response setting `pendingReveal`_
 
-- [ ] 12. Add the name field to the choice dialog
+- [x] 12. Add the name field to the choice dialog
   - File: `src/client/src/shell/context/ChoicePromptDialog.tsx` (modify), `src/client/src/shell/context/ChoicePromptDialog.test.tsx` (modify)
   - Per design.md: initial value from the first selectable option's `suggestedValue`; selecting an option updates the field while untouched; typing marks it touched and bumps `revision`; `useDebouncedValue` at 200 ms drives `onPropose`; a stale verdict is ignored; confirm enabled only with a selectable option chosen and a current valid verdict; the rejection reason renders under the field; confirm calls `onSubmit(optionId, name)`; a failed submit keeps the dialog open with both intact; no field at all when there are no options
   - Purpose: Requirements 2.1–2.5, 2.7 and the keyboard rule
@@ -104,7 +104,7 @@
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.7_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer with form-validation and accessibility expertise | Task: Add the name field and its live validation to `ChoicePromptDialog` per design.md's component spec, with tests | Restrictions: reuse `InputPromptDialog`'s debounce/revision/stale-verdict rules rather than inventing a second validation feel; once the user has typed, an option selection must never overwrite the field; the dialog stays keyboard-complete, with Enter in the field confirming when confirm is enabled; no diagram vocabulary in the component | Success: tests cover suggestion following, touched behaviour, confirm gating for no-selection / invalid / pending, the rendered reason, submit carrying both values, and a failed submit keeping the dialog open_
 
-- [ ] 13. Reveal the created file in the explorer, and give `.adp` an icon
+- [x] 13. Reveal the created file in the explorer, and give `.adp` an icon
   - File: `src/client/src/shell/panels/ExplorerTreePanel.tsx` (modify), `src/client/src/shell/panels/ExplorerTreePanel.test.tsx` (modify)
   - Reveal effect: walk `pendingReveal`'s segments from `rootKeys` matching by name, expanding (and thereby fetching) each unexpanded folder on the way; focus the leaf when it resolves — the existing focus effect reports it as the selection — then `clearReveal()`. A 1 s fallback expands/refetches the deepest resolved folder and retries once, then clears regardless. Add `adp: "mdi-graph-outline"` to `FILE_ICONS_BY_EXTENSION`
   - Purpose: Requirements 4.3, 4.4, 6.1

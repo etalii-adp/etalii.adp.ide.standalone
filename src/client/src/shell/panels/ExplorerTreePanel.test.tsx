@@ -24,6 +24,7 @@ import {
   entryFocusKey,
   matchShortcut,
   neighbourKey,
+  resolveRevealPath,
   visibleKeys,
   type ShortcutEventLike,
   type TreeState,
@@ -34,13 +35,19 @@ const watchHierarchy = vi.fn();
 const select = vi.fn<(selection: ContextSelection | null) => void>();
 const executeAction = vi.fn();
 const executeShortcut = vi.fn();
+const clearReveal = vi.fn();
 
 /** What the (mocked) context connection currently holds; tests set it to simulate a push. */
-const contextState: { selection: ContextSelection | null; actions: ContextActionGroup[] } = { selection: null, actions: [] };
+const contextState: { selection: ContextSelection | null; actions: ContextActionGroup[]; pendingReveal: string[] | null } = {
+  selection: null,
+  actions: [],
+  pendingReveal: null,
+};
 
 function resetContext() {
   contextState.selection = null;
   contextState.actions = [];
+  contextState.pendingReveal = null;
 }
 
 vi.mock("../../auth/AuthContext", () => ({
@@ -55,7 +62,7 @@ vi.mock("../context/ContextConnectionProvider", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../context/ContextConnectionProvider")>();
   return {
     ...actual,
-    useContextConnection: () => ({ watchId: new Uint8Array(16), select, executeAction, executeShortcut }),
+    useContextConnection: () => ({ watchId: new Uint8Array(16), select, executeAction, executeShortcut, clearReveal }),
     useContextSelection: () => ({ ...contextState, levels: [], preview: null, connected: true }),
   };
 });
@@ -796,5 +803,92 @@ describe("ExplorerTreePanel empty space: the project root", () => {
     await screen.findByRole("menu");
     expect(row("a.txt").className).not.toContain("explorer-tree-node-focused");
     expect(screen.getByRole("menuitem", { name: "Add…" })).toBeTruthy();
+  });
+});
+
+describe("resolveRevealPath", () => {
+  function tree(): TreeState {
+    let state = applyEntries(EMPTY_TREE_STATE, undefined, [
+      makeEntry(2, "sub", EntryKind.FOLDER, undefined, true),
+      makeEntry(1, "a.txt", EntryKind.FILE),
+    ]);
+    state = applyEntries(state, key(2), [makeEntry(3, "inside.adp", EntryKind.FILE, 2)]);
+    return state;
+  }
+
+  it("finds an entry that is already listed", () => {
+    expect(resolveRevealPath(tree(), ["a.txt"])).toEqual({ leafKey: key(1) });
+  });
+
+  it("finds a nested entry whose folder has been listed", () => {
+    expect(resolveRevealPath(tree(), ["sub", "inside.adp"])).toEqual({ leafKey: key(3) });
+  });
+
+  it("names the folder to expand when its children were never listed", () => {
+    const unlisted = applyEntries(EMPTY_TREE_STATE, undefined, [makeEntry(2, "sub", EntryKind.FOLDER, undefined, true)]);
+
+    expect(resolveRevealPath(unlisted, ["sub", "later.adp"])).toEqual({ expandKey: key(2) });
+  });
+
+  it("asks for nothing when a root-level entry has simply not arrived yet", () => {
+    expect(resolveRevealPath(tree(), ["not-there-yet.adp"])).toEqual({ expandKey: undefined });
+  });
+});
+
+describe("ExplorerTreePanel revealing what was just created", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetContext();
+    watchHierarchy.mockReturnValue({
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      async *[Symbol.asyncIterator]() {},
+    });
+    listEntries.mockImplementation(({ folderId }: { folderId?: { value: Uint8Array } }) =>
+      Promise.resolve(
+        folderId
+          ? { result: { case: "entries", value: { entries: [makeEntry(3, "inside.adp", EntryKind.FILE, 2)] } } }
+          : {
+              result: {
+                case: "entries",
+                value: { entries: [makeEntry(2, "sub", EntryKind.FOLDER, undefined, true), makeEntry(1, "a.txt", EntryKind.FILE)] },
+              },
+            },
+      ),
+    );
+  });
+
+  it("focuses a created entry that is already listed, and forgets the reveal", async () => {
+    contextState.pendingReveal = ["a.txt"];
+    render(<ExplorerTreePanel projectId={new Uint8Array(16)} />);
+    await screen.findByText("a.txt");
+
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByText("a.txt").closest("button")));
+    expect(clearReveal).toHaveBeenCalled();
+  });
+
+  it("expands the folder it was created in, then focuses it there", async () => {
+    contextState.pendingReveal = ["sub", "inside.adp"];
+    render(<ExplorerTreePanel projectId={new Uint8Array(16)} />);
+    await screen.findByText("sub");
+
+    // The folder's children were never listed, so revealing has to expand it first.
+    await screen.findByText("inside.adp");
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByText("inside.adp").closest("button")));
+    expect(clearReveal).toHaveBeenCalled();
+  });
+
+  it("gives up on a reveal that never resolves, rather than holding on to it", async () => {
+    vi.useFakeTimers();
+    try {
+      contextState.pendingReveal = ["never-arrives.adp"];
+      render(<ExplorerTreePanel projectId={new Uint8Array(16)} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2500);
+      });
+
+      expect(clearReveal).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

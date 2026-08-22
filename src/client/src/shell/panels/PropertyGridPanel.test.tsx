@@ -23,7 +23,7 @@ vi.mock("../context/ContextConnectionProvider", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../context/ContextConnectionProvider")>();
   return {
     ...actual,
-    useContextSelection: () => ({ ...contextState, preview: null, connected: true }),
+    useContextSelection: () => ({ ...contextState, preview: null, pendingReveal: null, connected: true }),
   };
 });
 

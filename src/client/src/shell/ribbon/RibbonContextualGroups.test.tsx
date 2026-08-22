@@ -20,7 +20,7 @@ vi.mock("../context/ContextConnectionProvider", async (importOriginal) => {
   return {
     ...actual,
     useContextConnection: () => ({ watchId: new Uint8Array(16), select: vi.fn(), executeAction, executeShortcut: vi.fn() }),
-    useContextSelection: () => ({ ...contextState, levels: [], preview: null, connected: true }),
+    useContextSelection: () => ({ ...contextState, levels: [], preview: null, pendingReveal: null, connected: true }),
   };
 });
 

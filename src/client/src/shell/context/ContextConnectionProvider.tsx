@@ -47,6 +47,8 @@ export interface ContextConnectionValue {
   /** A plain selection (`none`) is coalesced; any action, or `null` to clear, goes at once. */
   select: (selection: ContextSelection | null) => void;
   executeAction: (actionId: string, source?: ContextSource) => Promise<ActionOutcome>;
+  /** Forgets a pending reveal, once whoever shows the hierarchy has acted on it. */
+  clearReveal: () => void;
   executeShortcut: (shortcut: ContextShortcut, source?: ContextSource) => Promise<ActionOutcome>;
 }
 
@@ -60,6 +62,12 @@ export interface ContextSelectionValue {
   actions: ContextActionGroup[];
   /** The last PREVIEW, cleared by the next message of any kind. */
   preview: ContextSelectionChanged | null;
+  /**
+   * Project-relative segments of something just created on this connection, waiting to be
+   * revealed in the hierarchy. Set by a submission that created something; cleared by
+   * whoever reveals it.
+   */
+  pendingReveal: string[] | null;
   connected: boolean;
 }
 
@@ -74,7 +82,14 @@ const ConnectionContext = createContext<ContextConnectionValue | undefined>(unde
 const SelectionContext = createContext<ContextSelectionValue | undefined>(undefined);
 const PromptContext = createContext<ContextPromptValue | undefined>(undefined);
 
-const EMPTY_SELECTION: ContextSelectionValue = { selection: null, levels: [], actions: [], preview: null, connected: false };
+const EMPTY_SELECTION: ContextSelectionValue = {
+  selection: null,
+  levels: [],
+  actions: [],
+  preview: null,
+  pendingReveal: null,
+  connected: false,
+};
 
 /** The id of a chain's innermost level, as a comparable key, or undefined for no selection. */
 export function innermostKey(selection: ContextSelection | null | undefined): string | undefined {
@@ -113,6 +128,11 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
 
   const [selectionValue, setSelectionValue] = useState<ContextSelectionValue>(EMPTY_SELECTION);
   const [prompt, setPrompt] = useState<ContextPrompt | null>(null);
+
+  const setPendingReveal = useCallback(
+    (segments: string[] | null) => setSelectionValue((previous) => ({ ...previous, pendingReveal: segments })),
+    [],
+  );
 
   const sendSelect = useCallback(
     (selection: ContextSelection | null) => {
@@ -174,6 +194,9 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
                     levels: changed.levels,
                     actions: changed.actions,
                     preview: null,
+                    // A reveal outlives the selection pushes that arrive while the new entry
+                    // is still on its way through the watcher.
+                    pendingReveal: previous.pendingReveal,
                     connected: true,
                   },
             );
@@ -218,9 +241,10 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
       watchId: watchIdRef.current,
       select,
       executeAction: (actionId, source) => execute({ case: "actionId", value: actionId }, source),
+      clearReveal: () => setPendingReveal(null),
       executeShortcut: (shortcut, source) => execute({ case: "shortcut", value: shortcut }, source),
     }),
-    [select, execute],
+    [select, execute, setPendingReveal],
   );
 
   const promptInteractionId = prompt?.interactionId?.value;
@@ -238,15 +262,24 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
   );
 
   const onSubmit = useCallback(
-    async (value: string) => {
+    async (value: string, text?: string) => {
       const response = await client.submitInteraction({
         interactionId: promptInteractionId ? { value: promptInteractionId } : undefined,
         value,
+        text,
       });
       if (response.completed) {
         setPrompt(null);
       }
-      return { completed: response.completed, error: response.error };
+      // Something was created: hand its path to whoever shows the hierarchy, so the entry
+      // can be revealed once the watcher announces it. The backend never selects it for us -
+      // it has no id for a file its watcher has not seen yet.
+      const createdPath = response.createdPath?.segments;
+      if (response.completed && createdPath !== undefined && createdPath.length > 0) {
+        setPendingReveal(createdPath);
+      }
+
+      return { completed: response.completed, error: response.error, createdPath };
     },
     [client, promptInteractionId],
   );
