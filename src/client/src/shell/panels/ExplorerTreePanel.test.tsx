@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
 import { base64Encode } from "@bufbuild/protobuf/wire";
 import {
@@ -7,7 +8,13 @@ import {
   HierarchyChangeSchema,
   type Entry,
 } from "../../generated/hierarchy_pb";
-import { EMPTY_TREE_STATE, applyEntries, applyHierarchyChange, type TreeState } from "./ExplorerTreePanel";
+import {
+  EMPTY_TREE_STATE,
+  ExplorerTreeNodeView,
+  applyEntries,
+  applyHierarchyChange,
+  type TreeState,
+} from "./ExplorerTreePanel";
 
 function id(byte: number): Uint8Array {
   return new Uint8Array(16).fill(byte);
@@ -161,5 +168,127 @@ describe("applyHierarchyChange", () => {
     const next = applyHierarchyChange(state, change);
 
     expect(next).toEqual(state);
+  });
+});
+
+describe("ExplorerTreeNodeView expand/collapse interaction", () => {
+  function folderState(expanded = false, hasChildren = true): TreeState {
+    return {
+      rootKeys: [key(1)],
+      rootFetched: true,
+      nodesByKey: {
+        [key(1)]: {
+          id: id(1),
+          parentKey: undefined,
+          name: "src",
+          kind: EntryKind.FOLDER,
+          available: true,
+          hasChildren,
+          childKeys: undefined,
+          expanded,
+          loading: false,
+        },
+      },
+    };
+  }
+
+  function renderNode(state: TreeState) {
+    const onToggle = vi.fn();
+    render(
+      <ul>
+        <ExplorerTreeNodeView nodeKey={key(1)} state={state} depth={0} onToggle={onToggle} />
+      </ul>,
+    );
+    return { onToggle };
+  }
+
+  const label = () => document.querySelector(".explorer-tree-node-label") as HTMLElement;
+  const chevron = () => document.querySelector(".explorer-tree-chevron-button") as HTMLElement;
+  const row = () => document.querySelector(".explorer-tree-node") as HTMLElement;
+
+  it("does not toggle on a single click on the label", () => {
+    const { onToggle } = renderNode(folderState());
+
+    fireEvent.click(label());
+
+    expect(onToggle).not.toHaveBeenCalled();
+  });
+
+  it("toggles on a single click on the chevron widget", () => {
+    const { onToggle } = renderNode(folderState());
+
+    fireEvent.click(chevron());
+
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    expect(onToggle.mock.calls[0][0]).toBe(key(1));
+  });
+
+  it("toggles on a double click on the label", () => {
+    const { onToggle } = renderNode(folderState());
+
+    fireEvent.doubleClick(label());
+
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it("toggles on a double click anywhere on the row", () => {
+    const { onToggle } = renderNode(folderState());
+
+    fireEvent.doubleClick(row());
+
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it("toggles once for a real double click on the chevron, not twice", () => {
+    // A real double click is click(detail 1), click(detail 2), dblclick - fireEvent.doubleClick
+    // alone sends only the last of those, so the whole burst is replayed here. Handled naively
+    // the two clicks would toggle twice and land back where they started.
+    const { onToggle } = renderNode(folderState());
+
+    fireEvent.click(chevron(), { detail: 1 });
+    fireEvent.click(chevron(), { detail: 2 });
+    fireEvent.doubleClick(chevron(), { detail: 2 });
+
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it("still toggles when the chevron is activated from the keyboard", () => {
+    // Keyboard activation reports detail 0, which must not be mistaken for a repeat click.
+    const { onToggle } = renderNode(folderState());
+
+    fireEvent.click(chevron(), { detail: 0 });
+
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it("labels the chevron by what pressing it will do", () => {
+    renderNode(folderState(false));
+    expect(chevron().getAttribute("aria-label")).toBe("Expand src");
+
+    cleanup();
+    renderNode(folderState(true));
+    expect(chevron().getAttribute("aria-label")).toBe("Collapse src");
+  });
+
+  it("keeps the chevron reachable by keyboard", () => {
+    // The label no longer toggles, so the chevron is the only pointer-free way in until
+    // arrow-key navigation lands; it must not be removed from the tab order.
+    renderNode(folderState());
+
+    expect(chevron().getAttribute("tabindex")).not.toBe("-1");
+  });
+
+  it("renders no chevron button for a folder without children", () => {
+    const { onToggle } = renderNode(folderState(false, false));
+
+    expect(chevron()).toBeNull();
+    fireEvent.doubleClick(row());
+    expect(onToggle).not.toHaveBeenCalled();
+  });
+
+  it("keeps a placeholder so rows without a chevron stay aligned", () => {
+    renderNode(folderState(false, false));
+
+    expect(document.querySelector(".explorer-tree-chevron")).not.toBeNull();
   });
 });

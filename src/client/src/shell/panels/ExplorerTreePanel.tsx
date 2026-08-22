@@ -354,7 +354,15 @@ interface ExplorerTreeNodeViewProps {
   onToggle: (key: string, node: TreeNode) => void;
 }
 
-function ExplorerTreeNodeView({ nodeKey, state, depth, onToggle }: ExplorerTreeNodeViewProps) {
+/**
+ * One row of the tree. Expanding and collapsing is deliberately kept off the first click on
+ * the label: a single click there is what selects an entry, so toggling on it would make
+ * merely looking at a folder rearrange the tree under the pointer. The ways in are the
+ * chevron (one click), a double click anywhere on the row, and the arrow keys.
+ *
+ * Exported for unit testing, so the interaction can be driven without a gRPC transport.
+ */
+export function ExplorerTreeNodeView({ nodeKey, state, depth, onToggle }: ExplorerTreeNodeViewProps) {
   const node = state.nodesByKey[nodeKey];
   if (!node) {
     return null;
@@ -365,19 +373,47 @@ function ExplorerTreeNodeView({ nodeKey, state, depth, onToggle }: ExplorerTreeN
 
   return (
     <li role="treeitem" aria-expanded={isFolder ? node.expanded : undefined}>
-      <button
-        type="button"
+      <div
         className={`explorer-tree-node${node.available ? "" : " explorer-tree-node-unavailable"}`}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
-        onClick={() => isExpandable && onToggle(nodeKey, node)}
+        onDoubleClick={() => isExpandable && onToggle(nodeKey, node)}
       >
-        <span
-          className={`mdi explorer-tree-chevron ${isExpandable ? (node.expanded ? "mdi-chevron-down" : "mdi-chevron-right") : ""}`}
-          aria-hidden="true"
-        />
-        <span className={`mdi ${iconFor(node)}`} aria-hidden="true" />
-        <span className="explorer-tree-node-name">{node.name}</span>
-      </button>
+        {isExpandable ? (
+          <button
+            type="button"
+            className="explorer-tree-chevron-button"
+            aria-label={`${node.expanded ? "Collapse" : "Expand"} ${node.name}`}
+            onClick={(event) => {
+              // The row's double-click handler sits on the ancestor; without stopping here a
+              // click on the chevron would reach it as well and toggle a second time.
+              event.stopPropagation();
+
+              // detail counts the clicks in this burst, so this skips the second click of a
+              // double click: without it, double-clicking the chevron would toggle twice and
+              // land back where it started, while double-clicking the label toggles once.
+              // Keyboard activation reports detail 0, so Enter and Space still come through.
+              if (event.detail > 1) {
+                return;
+              }
+
+              onToggle(nodeKey, node);
+            }}
+            onDoubleClick={(event) => event.stopPropagation()}
+          >
+            <span
+              className={`mdi explorer-tree-chevron ${node.expanded ? "mdi-chevron-down" : "mdi-chevron-right"}`}
+              aria-hidden="true"
+            />
+          </button>
+        ) : (
+          // Holds the chevron's width so labels stay aligned whether or not a row has one.
+          <span className="mdi explorer-tree-chevron" aria-hidden="true" />
+        )}
+        <button type="button" className="explorer-tree-node-label">
+          <span className={`mdi ${iconFor(node)}`} aria-hidden="true" />
+          <span className="explorer-tree-node-name">{node.name}</span>
+        </button>
+      </div>
       {isFolder && node.expanded && (
         node.loading ? (
           <p className="explorer-tree-loading-children" style={{ paddingLeft: `${(depth + 1) * 16 + 8}px` }}>

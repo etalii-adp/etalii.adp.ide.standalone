@@ -637,27 +637,24 @@ button {
   padding: 0;
 }
 
+/* The row is a plain container rather than one big button: the chevron inside it is its own
+   control, and a button cannot legally nest inside another. */
 .explorer-tree-node {
   display: flex;
   align-items: center;
   gap: 0.375rem;
   width: 100%;
-  background: none;
-  border: none;
   border-radius: 6px;
   padding: 0.25rem 0.5rem 0.25rem 0;
   font-size: 0.8125rem;
   color: var(--color-text);
   text-align: left;
+  /* A double click toggles the row; without this it also selects the label text. */
+  user-select: none;
 }
 
 .explorer-tree-node:hover {
   background: var(--color-bg);
-}
-
-.explorer-tree-node:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .explorer-tree-node .mdi {
@@ -669,6 +666,41 @@ button {
 .explorer-tree-chevron {
   font-size: 1rem !important;
   width: 1rem;
+}
+
+.explorer-tree-chevron-button,
+.explorer-tree-node-label {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.explorer-tree-chevron-button {
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 4px;
+}
+
+.explorer-tree-chevron-button:hover .mdi {
+  color: var(--color-text);
+}
+
+.explorer-tree-node-label {
+  gap: 0.375rem;
+  /* min-width lets the flex item shrink far enough for the name's ellipsis to kick in. */
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.explorer-tree-chevron-button:focus-visible,
+.explorer-tree-node-label:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .explorer-tree-node-name {
