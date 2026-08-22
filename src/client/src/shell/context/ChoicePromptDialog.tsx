@@ -110,7 +110,15 @@ export function ChoicePromptDialog({ prompt, onSubmit, onCancel }: ChoicePromptD
 
   const handleKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLUListElement>) => {
-      const index = rows.findIndex((row) => row.option.id === focusedId);
+      // Which row the key applies to is read from the DOM, not from focusedId state: a key
+      // can arrive in the same tick as the focus that moved there (scripted input does this,
+      // a fast hand can too), before React has committed the onFocus state update - and the
+      // stale closure would then act on the previously focused row. The element with focus
+      // is the truth; the state only drives which row is tabbable.
+      const focusedElement = document.activeElement;
+      const currentId =
+        [...rowRefs.current.entries()].find(([, element]) => element === focusedElement)?.[0] ?? focusedId;
+      const index = rows.findIndex((row) => row.option.id === currentId);
       const row = index >= 0 ? rows[index] : undefined;
 
       switch (event.key) {

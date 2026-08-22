@@ -245,6 +245,25 @@ describe("ChoicePromptDialog keyboard", () => {
     expect(screen.queryByText("Component")).toBeNull();
   });
 
+  it("acts on the row that has focus even when the key arrives in the same tick as the focus", () => {
+    // Found in the manual pass (task 17): focus() and an immediate keydown, with no render
+    // in between, left the handler acting on the previously focused row - the onFocus
+    // state update had not been committed yet. The key must follow the DOM's focus, not
+    // the state's memory of it. No act() around focus() here, on purpose: that flush is
+    // exactly what hid the bug from the other keyboard tests.
+    renderDialog(twoVendorPrompt());
+    row("c4").focus();
+    fireEvent.keyDown(tree(), { key: "ArrowRight" });
+    expect(screen.getByText("System Context")).toBeTruthy();
+
+    row("uml").focus();
+    fireEvent.keyDown(tree(), { key: "ArrowRight" });
+
+    expect(screen.getByText("Class diagram")).toBeTruthy();
+    // ...and c4 was not toggled again by the stale id.
+    expect(screen.getByText("System Context")).toBeTruthy();
+  });
+
   it("ArrowRight on a leaf does nothing", () => {
     renderDialog(oneVendorPrompt());
     focusRow("System Context");
