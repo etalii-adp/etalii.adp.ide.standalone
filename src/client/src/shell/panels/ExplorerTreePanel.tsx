@@ -14,7 +14,8 @@ import { EntryKind, HierarchyService } from "../../generated/hierarchy_pb";
 import type { Entry, HierarchyChange } from "../../generated/hierarchy_pb";
 import { ContextScope } from "../../generated/context_pb";
 import type { ContextAction, ContextActionGroup, ContextPrompt } from "../../generated/context_pb";
-import { ContextMenu, type ContextMenuGroup, type ContextMenuItem } from "../context/ContextMenu";
+import { ContextMenu } from "../context/ContextMenu";
+import { toMenuGroups } from "../context/toMenuGroups";
 import { ContextPromptHost } from "../context/ContextPromptHost";
 
 export interface TreeNode {
@@ -273,24 +274,6 @@ export function matchShortcut(groups: ContextActionGroup[], event: ShortcutEvent
       shortcut.meta === event.metaKey
     );
   });
-}
-
-/** Maps backend-reported actions onto the menu's own vocabulary; the menu learns nothing about files. */
-export function toMenuGroups(groups: ContextActionGroup[], onSelect: (action: ContextAction) => void): ContextMenuGroup[] {
-  return groups.map((group) =>
-    group.actions.map((action): ContextMenuItem => {
-      const base = {
-        id: action.id,
-        label: action.label,
-        icon: action.icon,
-        disabled: !action.available,
-        disabledReason: action.unavailableReason,
-      };
-      return action.items.length > 0
-        ? { ...base, items: toMenuGroups(action.items, onSelect) }
-        : { ...base, onSelect: () => onSelect(action) };
-    }),
-  );
 }
 
 const FILE_ICONS_BY_EXTENSION: Record<string, string> = {
