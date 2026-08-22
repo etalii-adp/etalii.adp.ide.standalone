@@ -10,7 +10,7 @@ The **action half** lives in `EtAlii.Adp.Backend` and the client: a new `AddDiag
 
 The two halves meet at `DiagramDefinition`: discovery produces the list, the provider reads `DiagramDefinition.All` to build the options, and the client never sees a `DiagramDefinition` at all - only option labels and opaque option ids.
 
-This design is written **against `context-service`'s approved design**, not against today's `HierarchyService`-hosted context RPCs. Where it names `ContextServiceImpl`, `IContextSelectionStore` or `ContextMessage.prompt`, those are that spec's components; this spec's task list must be sequenced after the corresponding `context-service` tasks (see *Deviations and notes*).
+`context-service` is implemented and merged (all 23 tasks), so this design is written against its **shipped code** - `ContextServiceImpl.Actions`, `ContextSelectionStore`, `ContextMessageMapper`, the shell-level `ContextPromptHost` - not against a document. Each assumption below about that code was verified by reading it.
 
 ## Steering Document Alignment
 
@@ -44,7 +44,8 @@ This design is written **against `context-service`'s approved design**, not agai
 * **`EtAlii.Adp.Backend.csproj`** gains `<ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />`. Today the backend library does not reference the diagram abstractions; the provider needs `DiagramDefinition`. This is core → abstraction, the permitted direction.
 * **`EtAlii.Adp.Backend.Service/Program.cs`** runs discovery once after `builder.Build()` (so the host's logger factory exists) and registers `AddDiagramContextActionProvider` as an `IContextActionProvider`.
 * **`context.proto`** gains `ChoiceDialogPrompt` and the `ContextOption` tree it carries, as a third member of `ContextPrompt.prompt`.
-* **`context-service`'s `ContextServiceImpl.Actions`**: `TryResolveTarget` with an absent `source` already falls back to the store's current selection; this spec extends the *empty* case (store says nothing selected) to resolve to the project root (see *The root case*).
+* **`ContextServiceImpl.Actions.TryResolveTargetAsync`**: with an absent `source` it already returns `_selectionStore.Get(watchId)?.Innermost.Target`, with the authorized `rootPath` in scope on the lines above; this spec extends the *null* result of that lookup (nothing selected) to resolve to the project root (see *The root case*).
+* **`ContextSelectionStore` / `ContextMessageMapper`**: `Register` writes `ToMessage(entry.Record)` as the baseline and `Clear` writes `ToMessage(null)`; today `ToMessage(null)` yields a `ContextSelectionChanged` with no selection **and no actions**. This spec has both carry the root target's actions (see *The root case*).
 
 ## Architecture
 
@@ -119,13 +120,13 @@ For a **folder** target the flow is identical from `ExecuteAction` on, with `sou
 
 ### The root case
 
-`context-service` Requirement 2.7 makes "nothing selected" an explicit state (`SelectRequest.selection` absent → `store.Clear`), and its `ContextServiceImpl.Actions.TryResolveTarget` already falls back to `store.Get(watchId)?.Innermost.Target` when a request carries no `source`. Today that fallback yields *no target* when nothing is selected, and the request is rejected.
+`context-service` makes "nothing selected" an explicit state (`SelectRequest.selection` absent → `store.Clear`), and `ContextServiceImpl.Actions.TryResolveTargetAsync` already falls back to `_selectionStore.Get(watchId)?.Innermost.Target` when a request carries no `source`. Today that lookup yields *no target* when nothing is selected, and `ExecuteAction` rejects with "Nothing is selected."
 
 This spec changes exactly that branch: **when the store reports nothing selected, the target is the project root** - `new ContextTarget(ContextScope.Hierarchy, rootPath, IsContainer: true, SourceId: default)`, where `rootPath` is the already-authorized project root `TryResolveRootPath` produced. No new `ContextSource` member is added; "no source" *means* "the root", which is also what the explorer's empty space visually is.
 
 Two consequences are handled explicitly:
 
-* **Discovery for the root.** `context-service` pushes a selection's actions on its `Watch` stream (`ContextSelectionChanged.actions`) and sends an explicit "nothing selected" baseline. This spec has the baseline and every `Clear` carry the **root target's actions** in that same `actions` field, so the ribbon and the explorer's empty-space context menu have Add available without a `DiscoverActions` round trip. `ContextSelectionChanged.selection` stays absent - nothing is *selected*; the root is merely what actions apply to.
+* **Discovery for the root.** `ContextSelectionChanged.actions` already carries a selection's actions, and `Register`/`Clear` already push an explicit "nothing selected" message - but via `ContextMessageMapper.ToMessage(null)`, which carries no actions. This spec has the baseline and every `Clear` carry the **root target's actions** in that same `actions` field, so the ribbon and the explorer's empty-space context menu have Add available without a `DiscoverActions` round trip. `ContextSelectionChanged.selection` stays absent - nothing is *selected*; the root is merely what actions apply to.
 * **Rename/Delete on the root.** `HierarchyContextActionProvider.DiscoverAsync` already reports both unavailable when `ParentFolderOf(target)` is null ("This item has no parent folder to act within"), which is exactly the root. So the root's menu shows Rename and Delete greyed with that reason, and Add enabled - with no change to that provider.
 
 ### Modular Design Principles
@@ -214,11 +215,11 @@ public sealed record ContextOptionNode(
     IReadOnlyList<ContextOptionNode>? Children = null);
 ```
 
-### `ContextServiceImpl.Actions` (`context-service`'s file, edited)
+### `ContextServiceImpl.Actions` (`Context/ContextServiceImpl.Actions.cs`, edited)
 
 * `ExecuteAction`: the `switch` over `ContextExecutionResult` gains a `RequiresChoice r => ToProto(r.Request)` arm producing `ContextPrompt { choice_dialog }`.
-* `TryResolveTarget`: the absent-source branch becomes *"store has a selection → its innermost target; store has none → the root target"* (see *The root case*). The `rootPath` it needs is already in scope from `TryResolveRootPath`.
-* **`ContextSelectionStore.Register`/`Clear`:** the baseline and the cleared message carry `actions = resolver.DiscoverAsync(rootTarget)` - the service passes a `Func<Task<IReadOnlyList<ContextActionGroupDefinition>>>` for the root on `Register`, the same way it already supplies a rediscovery callback on `Set` (context-service design, store section), so the store still never references `IContextActionResolver` directly.
+* `TryResolveTargetAsync`: the `source is null` branch becomes *"store has a selection → its innermost target; store has none → the root target"* (see *The root case*). The `rootPath` it needs is already in scope from `ProjectRootResolver.TryResolve` a few lines above.
+* **`ContextSelectionStore.Register`/`Clear` + `ContextMessageMapper`:** the baseline and the cleared message carry the root's actions. `Register` gains a `rootActions` parameter (`IReadOnlyList<ContextActionGroupDefinition>`, computed once by the service from `resolver.DiscoverAsync(rootTarget)` when the `Watch` opens) which the entry keeps; `ToMessage(null)` becomes `ToMessage(null, rootActions)` and fills `actions` from it. The store still never references `IContextActionResolver`. The root's actions are computed once per `Watch` rather than per `Clear` because they depend only on the root existing and on `DiagramDefinition.All`, both stable for the life of a connection.
 
 ### `context.proto` (edited)
 
@@ -365,7 +366,7 @@ ContextOptionNode      : Id, Label, Selectable, Children (IReadOnlyList<ContextO
 
 ## Deviations and notes
 
-1. **Sequenced after `context-service`.** The root case, the pushed actions on the baseline, and the prompt channel all assume `context-service`'s design is implemented. Tasks in this spec that touch `ContextServiceImpl.Actions` or `ContextSelectionStore` depend on that spec's corresponding tasks and are marked so in tasks.md. If this spec is implemented first, the same changes land on today's `HierarchyServiceImpl.Context` instead and migrate with it - nothing here is specific to which service hosts the RPCs.
+1. **Built on shipped `context-service` code.** That spec was implemented and merged while this design was being written, so no sequencing caveat applies; every reference to its components names a file that exists on `develop` today.
 2. **No new `ContextSource` member for the root.** Requirement 4.2 said the contract "SHALL gain a way to name the root without naming an entry". The design satisfies it differently from how that sentence reads: the *absence* of a source, combined with the context service's explicit "nothing selected" state, already names the root unambiguously, so no new message is needed. Adding an `ENTRY_ROOT`-style member would create two ways to say the same thing.
 3. **`Initialize` instead of a self-initialising `All`.** Requirement 1.2 asked for a get-only property; it is one. The `internal` initializer exists only because a static initializer cannot be handed a logger or test assemblies (see the `DiagramDefinition.All` section).
 4. **Option ids are origin keys, not `ShortGuid`s.** `DiagramDefinition` has no id, and an origin is already unique per the collision rule; minting ids would add a lookup table for nothing.
