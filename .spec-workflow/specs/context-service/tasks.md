@@ -108,7 +108,7 @@
   - _Requirements: 2.3, 2.6, 3.2, 3.3, 4.1, 4.2, 4.4, 5.1, 9.4_
   - _Prompt: Implement the task for spec context-service, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA engineer specializing in gRPC integration tests | Task: Create `ContextSelectionFlowTests` in `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/ContextSelectionFlow.Tests.cs` covering design.md's listed flows against a real temp project folder and `WebApplicationFactory<Program>` | Restrictions: bounded waits with the existing `MessageTimeout`; the disk-change cases must wait for the pushed message rather than sleep; each test owns its temp folder | Success: `dotnet test` passes and is stable across three runs_
 
-- [-] 14. Regenerate client stubs and extract `toMenuGroups`
+- [x] 14. Regenerate client stubs and extract `toMenuGroups`
   - File: `src/client/src/shell/context/toMenuGroups.ts` (new), `src/client/src/shell/panels/ExplorerTreePanel.tsx` (modify: import), `src/client/src/shell/panels/ExplorerTreePanel.test.tsx` (modify: import)
   - Run `npm run generate`; move `toMenuGroups` (and its test) out of `ExplorerTreePanel.tsx` unchanged so the ribbon can share it
   - Purpose: prepare the client for tasks 15–22 without behaviour change
@@ -116,7 +116,7 @@
   - _Requirements: 10.3_
   - _Prompt: Implement the task for spec context-service, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript/React developer | Task: Regenerate the client's protobuf stubs and move `toMenuGroups` into `src/client/src/shell/context/toMenuGroups.ts` with its existing tests, updating imports | Restrictions: no behavioural change; follow `src/client/.editorconfig`; generated files are not committed if they are git-ignored today (check `.gitignore`) | Success: `npm run typecheck` passes except for the explorer's now-removed hierarchy RPC members (fixed in task 18); `npm test` for `toMenuGroups` passes_
 
-- [ ] 15. Implement `useCoalescedSelect` with tests
+- [x] 15. Implement `useCoalescedSelect` with tests
   - File: `src/client/src/shell/context/useCoalescedSelect.ts`, `src/client/src/shell/context/useCoalescedSelect.test.ts`
   - `useCoalescedSelect(send, delayMs)` returns `(selection, immediate) => void`: non-immediate calls schedule a trailing send after `delayMs`, replacing any pending; immediate calls clear the pending timer and send now; unmount clears the timer. Tests with fake timers: three calls in 80 ms send once with the last; immediate cancels pending and sends now; `null` immediate sends now; unmount sends nothing
   - Purpose: Requirements 3.4, 3.6 in an isolated, testable unit
@@ -124,7 +124,7 @@
   - _Requirements: 3.4, 3.6_
   - _Prompt: Implement the task for spec context-service, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer with hooks expertise | Task: Create `useCoalescedSelect` and its vitest tests under `src/client/src/shell/context/` per design.md | Restrictions: React only, no new dependency; the returned function identity is stable across renders (`useCallback` + refs); follow `src/client/.editorconfig` | Success: tests pass with `vi.useFakeTimers()`_
 
-- [ ] 16. Implement `ContextConnectionProvider` and hooks with tests
+- [x] 16. Implement `ContextConnectionProvider` and hooks with tests
   - File: `src/client/src/shell/context/ContextConnectionProvider.tsx`, `src/client/src/shell/context/ContextConnectionProvider.test.tsx`
   - Two React contexts (`ContextConnectionValue`, `ContextSelectionValue`) and hooks `useContextConnection`, `useContextSelection`, `useContextPrompt` per design.md; generates `watchId`; opens `Watch` on mount with `AbortController`, reconnects with 0.5 s→5 s backoff, handles baseline, `transient`, and `prompt` messages; `select()` via `useCoalescedSelect(80)` keeping `lastSentRef` and re-sending after an empty baseline on reconnect; `executeAction`/`executeShortcut` without `scope`, `source` only when given; prompt handlers (`propose`/`submit`/`cancel`) moved from the explorer. Tests with a mocked `ContextService` client: baseline handling, transient vs. normal, prompt surfacing, reconnect re-send, `executeAction` request shape
   - Purpose: the single client-side subscription and fan-out (Requirements 4.5, 4.6, 6.3, 9.4, Reliability)
@@ -132,7 +132,7 @@
   - _Requirements: 1.4, 3.4, 3.6, 4.5, 4.6, 6.3, 6.5, 9.4_
   - _Prompt: Implement the task for spec context-service, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/TypeScript developer with gRPC-web experience | Task: Create `ContextConnectionProvider` with its three hooks and tests in `src/client/src/shell/context/` per design.md's component spec | Restrictions: exactly one `Watch` stream per mounted provider; the connection context value must not change identity on every selection push (split contexts); no `scope` in any request; unhandled stream errors after abort are ignored, before abort trigger reconnect; follow `src/client/.editorconfig` | Success: tests pass; rendering two consumers under one provider opens one stream in the mock_
 
-- [ ] 17. Wire the provider and the prompt host into `WorkspaceShell`
+- [-] 17. Wire the provider and the prompt host into `WorkspaceShell`
   - File: `src/client/src/shell/WorkspaceShell.tsx` (modify), `src/client/src/shell/context/ShellPromptHost.tsx` (new), `src/client/src/shell/WorkspaceShell.test.tsx` (modify)
   - Wrap the shell body in `<ContextConnectionProvider projectId>`; add `ShellPromptHost` (renders `ContextPromptHost` from `useContextPrompt()`) once outside the panes; update the shell test to stub the provider's client
   - Purpose: Requirements 4.5, 6.3
