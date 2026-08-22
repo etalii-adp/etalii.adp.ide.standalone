@@ -7,4 +7,5 @@ public sealed record ContextChoiceRequest(
     string Icon,
     string ConfirmLabel,
     IReadOnlyList<ContextOptionNode> Options,
-    string EmptyMessage);
+    string EmptyMessage,
+    ContextTextFieldRequest? NameField = null);

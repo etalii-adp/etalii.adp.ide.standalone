@@ -196,15 +196,28 @@ message ContextOption {
   string label = 2;
   bool selectable = 3;
   repeated ContextOption children = 4;
+  // What a text field alongside this choice should take when this option is picked, as
+  // long as the user has not typed a value of their own. Computed when the prompt is
+  // built, so picking an option costs no round trip. Empty for a group.
+  string suggested_value = 5;
 }
 
-// A dialog asking the user to pick one option out of a (possibly grouped) tree.
+// A text field a dialog carries beside its primary answer, described as data like every
+// other part of a prompt - the client renders a labelled field and knows nothing more.
+message ContextTextField {
+  string label = 1;
+  string initial_value = 2;
+}
+
+// A dialog asking the user to pick one option out of a (possibly grouped) tree, and
+// optionally to name the result.
 message ChoiceDialogPrompt {
   string title = 1;
   string icon = 2;
   string confirm_label = 3;
   repeated ContextOption options = 4; // the top level of the tree
   string empty_message = 5;           // shown instead of the tree when options is empty
+  ContextTextField name_field = 6;    // unset: the dialog is a pure choice
 }
 
 // Backend-initiated: pushed down the connection's already-open Watch stream.
@@ -261,11 +274,20 @@ message ProposeInputResponse {
 message SubmitInteractionRequest {
   ShortGuid interaction_id = 1;
   string value = 2;
+  // The dialog's text field, when it has one; empty otherwise. Judged by the same
+  // ProposeInput verdicts the dialog used, and re-checked before anything is committed -
+  // a second answer rather than something encoded inside `value`, so an option id stays
+  // opaque and no provider has to know an encoding.
+  string text = 3;
 }
 
 message SubmitInteractionResponse {
   bool completed = 1;
   string error = 2;
+  // Set when the interaction created something the client may want to reveal. Project-
+  // relative, like every other path on this contract - absolute paths never leave the
+  // backend.
+  Path created_path = 3;
 }
 
 message CancelInteractionRequest {

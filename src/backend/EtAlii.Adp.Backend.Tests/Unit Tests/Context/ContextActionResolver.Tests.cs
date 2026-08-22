@@ -140,7 +140,7 @@ public class ContextActionResolverTests
         public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken) =>
             ValueTask.FromResult(ContextValidationResult.Accepted);
 
-        public ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken) =>
+        public ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken) =>
             ValueTask.FromResult(ContextCommitResult.Succeeded);
     }
 }

@@ -82,24 +82,39 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
                 Title: "Add diagram",
                 Icon: "mdi-plus",
                 ConfirmLabel: "Add",
-                Options: DiagramOptionTree.Build(_definitions()),
-                EmptyMessage: NoDiagramTypes)));
+                Options: DiagramOptionTree.Build(_definitions(), origin => DiagramFileName.Suggest(origin, target.ResolvedFullPath)),
+                EmptyMessage: NoDiagramTypes,
+                NameField: new ContextTextFieldRequest(Label: "Name"))));
     }
 
     /// <summary>
-    /// There is no free text to judge: a choice is either a known option id or it is not, and
-    /// <see cref="CommitAsync"/> is where that is decided.
+    /// Judges the name being typed into the dialog. The extension is part of what is judged:
+    /// the collision that matters is the file that would be created, not the base name. The
+    /// choice itself needs no judging - an option id is either known or it is not, which
+    /// <see cref="CommitAsync"/> decides.
     /// </summary>
     public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
-        => ValueTask.FromResult(ContextValidationResult.Accepted);
+        => ValueTask.FromResult(ValidateName(target, value));
+
+    private static ContextValidationResult ValidateName(ContextTarget target, string name)
+    {
+        // Judged before the extension is added: without this, an empty name would become the
+        // perfectly valid file ".adp" instead of being refused.
+        if (DiagramFileName.StripExtension(name).Trim().Length == 0)
+        {
+            return ContextValidationResult.Rejected("Enter a name.");
+        }
+
+        return EntryNameRules.Validate(DiagramFileName.WithExtension(name), target.ResolvedFullPath);
+    }
 
     /// <summary>
-    /// The seam. In this order: the folder is re-checked (it may have vanished while the
-    /// dialog was open), the option id is resolved to a definition, and then - for now -
-    /// the answer is that creating that type is not supported yet. A later spec replaces
-    /// only that last answer.
+    /// Creates the diagram. In this order: the folder is re-checked (it may have vanished while
+    /// the dialog was open), the option id is resolved to a definition, and the name is judged
+    /// again - a client that skipped validation cannot get past this. Only then is anything
+    /// written, and what is written is one line: the chosen type's MIME type.
     /// </summary>
-    public ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
+    public ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken)
     {
         if (actionId != AddActionId)
         {
@@ -117,7 +132,21 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
             return ValueTask.FromResult(ContextCommitResult.Failed("That diagram type is not available."));
         }
 
-        // Nothing is written to disk in this spec.
-        return ValueTask.FromResult(ContextCommitResult.Failed($"Creating a {definition.Title} diagram is not supported yet."));
+        var validation = ValidateName(target, text);
+        if (!validation.Valid)
+        {
+            return ValueTask.FromResult(ContextCommitResult.Failed(validation.Reason));
+        }
+
+        var fileName = DiagramFileName.WithExtension(text);
+        return ValueTask.FromResult(AdpFileWriter.Create(target.ResolvedFullPath, fileName, definition.Origin.MimeType) switch
+        {
+            AdpFileWriteResult.Created created => ContextCommitResult.Created(created.FullPath),
+            // Someone got there in the moment between judging the name and using it. The user
+            // picks another one; nothing is overwritten and no name is invented for them.
+            AdpFileWriteResult.NameTaken => ContextCommitResult.Failed($"An item named '{fileName}' already exists in this folder."),
+            AdpFileWriteResult.Failed failed => ContextCommitResult.Failed($"Could not create the diagram: {failed.Message}"),
+            _ => ContextCommitResult.Failed("Could not create the diagram."),
+        });
     }
 }

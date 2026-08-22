@@ -48,7 +48,7 @@
   - _Requirements: 3.3, 4.1_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Make `HierarchyModel` ignore `~adp-*.tmp` files per design.md's Temp files and the watcher section, with a test | Restrictions: one guard, applied to every watcher event kind, not three copies; the pattern is anchored on the `~adp-` prefix and the `.tmp` suffix so no ordinary project file matches; `Reconcile` must ignore them too, or a reconcile would resurrect one | Success: existing hierarchy tests pass and the new test proves a temp-named create raises nothing and lists nothing_
 
-- [ ] 6. Extend `context.proto` with the name field, the suggestion, the submitted text and the created path
+- [x] 6. Extend `context.proto` with the name field, the suggestion, the submitted text and the created path
   - File: `src/api/context.proto` (modify)
   - Add `ContextTextField { label, initial_value }`; `ContextOption.suggested_value = 5`; `ChoiceDialogPrompt.name_field = 6`; `SubmitInteractionRequest.text = 3`; `SubmitInteractionResponse.created_path = 3` (a `Path`). Comment each in the file's existing style, describing them generically — a text field beside a choice, a suggested value per option, a secondary submitted value, and something the interaction created that the client may want to reveal
   - Purpose: the four additive contract fields the flow needs (Requirements 2.1, 2.2, 4.2)
@@ -56,7 +56,7 @@
   - _Requirements: 2.1, 2.2, 4.2_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Protobuf/gRPC contract engineer | Task: Add the four fields and the `ContextTextField` message to `src/api/context.proto` exactly as design.md's Data Models section specifies | Restrictions: additive only — no renames, no removals, no renumbering; nothing in the comments may mention diagrams, `.adp`, or file extensions; `created_path` is `connection.proto`'s `Path`, never a string | Success: `dotnet build src/backend/EtAlii.Adp.slnx` and `npm run generate` in `src/client` both succeed and emit the new members_
 
-- [ ] 7. Carry the second value and the created path through the backend model and the provider interface
+- [x] 7. Carry the second value and the created path through the backend model and the provider interface
   - File: `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextTextFieldRequest.cs` (new), `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextDialogRequest.cs` (modify: `ContextChoiceRequest.NameField`), `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextOptionNode.cs` (modify: `SuggestedValue`), `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextCommitResult.cs` (modify: `CreatedFullPath`), `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextInteraction.cs` (modify: `RootPath`), `src/backend/EtAlii.Adp.Backend/Context/IContextActionProvider.cs` (modify), `src/backend/EtAlii.Adp.Backend/Hierarchy/HierarchyContextActionProvider.cs` (modify)
   - `CommitAsync` gains a `string text` parameter before the cancellation token; `HierarchyContextActionProvider` ignores it. Add the record members design.md lists, each with a comment saying what it is for
   - Purpose: let one interaction carry a choice *and* a name, and report what it created, without encoding two answers in one string (Requirements 2.1, 2.7, 4.2)
@@ -64,7 +64,7 @@
   - _Requirements: 2.1, 2.7, 4.2_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# backend developer | Task: Add the model members and the `CommitAsync` parameter design.md's Components section lists | Restrictions: `CreatedFullPath` stays absolute inside the backend and is converted only at the service boundary; do not encode two answers into `value`; one entity per file for the new record; after this task the solution will not compile until task 9 — that is expected, do 7, 8 and 9 in one pass | Success: every model change compiles in isolation and the intent of each new member is documented_
 
-- [ ] 8. Wire the service: root path on the interaction, name field out, text in, created path back
+- [x] 8. Wire the service: root path on the interaction, name field out, text in, created path back
   - File: `src/backend/EtAlii.Adp.Backend/Context/ContextServiceImpl.Actions.cs` (modify)
   - `ExecuteAction`: pass the already-resolved `rootPath` when calling `Begin`, and map `ContextChoiceRequest.NameField` into the prompt's `name_field`. `SubmitInteraction`: pass `request.Text` into `CommitAsync`, and on success with a non-empty `CreatedFullPath` fill `created_path` with `Path.GetRelativePath(interaction.RootPath, …)` split on both separators
   - Purpose: the two directions the new fields travel, with the absolute→relative conversion in the one place that already owns that rule (Requirement 4.2, Security NFR)
@@ -72,7 +72,7 @@
   - _Requirements: 2.1, 4.2_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# gRPC service developer | Task: Wire the new fields through `ContextServiceImpl.Actions` per design.md's component spec | Restrictions: an absolute path must never reach a proto message — convert at this boundary only; do not re-authorise or re-resolve anything in `SubmitInteraction`, use the `RootPath` the interaction already carries; rename and delete behaviour must not change | Success: `dotnet build` succeeds once task 9 lands, and the existing `ExplorerContextActionsFlow` tests still pass unchanged_
 
-- [ ] 9. Fill in the seam: name field, validation and creation in `AddDiagramContextActionProvider`
+- [x] 9. Fill in the seam: name field, validation and creation in `AddDiagramContextActionProvider`
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/AddDiagramContextActionProvider.cs` (modify), `src/backend/EtAlii.Adp.Backend/Hierarchy/DiagramOptionTree.cs` (modify), `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/AddDiagramContextActionProvider.Tests.cs` (modify)
   - `DiagramOptionTree.Build` gains a `Func<DiagramOrigin, string>` that fills each selectable node's `SuggestedValue`. `ExecuteAsync` passes `origin => DiagramFileName.Suggest(origin, target.ResolvedFullPath)` and a `NameField` labelled "Name". `ValidateAsync` validates `DiagramFileName.WithExtension(DiagramFileName.StripExtension(value))` through `EntryNameRules` against the target folder. `CommitAsync(target, actionId, value, text)` in order: folder gone → unknown option → invalid name → `AdpFileWriter.Create(folder, fileName, definition.Origin.MimeType)`, mapping `Created` to a succeeded result carrying the full path, `NameTaken` to the "already exists" message, `Failed` to "Could not create the diagram: …"
   - Purpose: the seam itself — this is where a file starts existing (Requirements 1.1–1.5, 2.2, 2.6–2.8, 3.1, 5.1–5.4)

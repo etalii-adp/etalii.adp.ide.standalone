@@ -28,6 +28,10 @@ public interface IContextActionProvider
     /// <summary>Judges a value the user proposed for an in-flight action.</summary>
     ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken);
 
-    /// <summary>Performs the action for real, after the user confirmed it.</summary>
-    ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken);
+    /// <summary>
+    /// Performs the action for real, after the user confirmed it. <paramref name="value"/> is
+    /// the dialog's primary answer - the typed text, or the chosen option id; <paramref name="text"/>
+    /// carries a text field the dialog showed beside that choice, and is empty when it showed none.
+    /// </summary>
+    ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken);
 }

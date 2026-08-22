@@ -9,4 +9,5 @@ public sealed record ContextOptionNode(
     string Id,
     string Label,
     bool Selectable,
-    IReadOnlyList<ContextOptionNode>? Children = null);
+    IReadOnlyList<ContextOptionNode>? Children = null,
+    string SuggestedValue = "");
