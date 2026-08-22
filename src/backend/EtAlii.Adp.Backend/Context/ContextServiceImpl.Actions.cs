@@ -85,6 +85,9 @@ public sealed partial class ContextServiceImpl
             case ContextExecutionResult.RequiresConfirmation requiresConfirmation:
                 prompt.ConfirmDialog = ToProto(requiresConfirmation.Request);
                 break;
+            case ContextExecutionResult.RequiresChoice requiresChoice:
+                prompt.ChoiceDialog = ToProto(requiresChoice.Request);
+                break;
         }
 
         if (!_contextInteractionStore.TryPush(request.WatchId, prompt))
@@ -156,7 +159,9 @@ public sealed partial class ContextServiceImpl
     /// <summary>
     /// The target an action applies to: the explicitly named source, resolved through this
     /// connection's own resolvers so an id from elsewhere resolves to nothing - or, with no
-    /// source given, the innermost level of the connection's current selection.
+    /// source given, the innermost level of the connection's current selection - or, with
+    /// nothing selected at all, the project root. "No source and no selection" is how the
+    /// explorer's empty space reads, and the root is what that space is.
     /// </summary>
     private async ValueTask<ContextTarget?> TryResolveTargetAsync(
         Contracts.ShortGuid projectId,
@@ -172,7 +177,7 @@ public sealed partial class ContextServiceImpl
 
         if (source is null)
         {
-            return _selectionStore.Get(watchId)?.Innermost.Target;
+            return _selectionStore.Get(watchId)?.Innermost.Target ?? RootTarget(rootPath);
         }
 
         var resolution = await _selectionResolver.ResolveLevelAsync(
@@ -180,6 +185,13 @@ public sealed partial class ContextServiceImpl
 
         return resolution is ContextLevelResolution.Resolved resolved ? resolved.Level.Target : null;
     }
+
+    /// <summary>
+    /// The project root as an action target. It has no entry id - it is the folder the
+    /// entries live in, not an entry - so its source id is the empty guid.
+    /// </summary>
+    internal static ContextTarget RootTarget(string rootPath) =>
+        new(ContextScope.Hierarchy, rootPath, IsContainer: true, SourceId: default);
 
     private static ContextShortcutDefinition FromProto(ContextShortcut shortcut) =>
         new(shortcut.Key, shortcut.Ctrl, shortcut.Shift, shortcut.Alt, shortcut.Meta);
@@ -201,4 +213,33 @@ public sealed partial class ContextServiceImpl
         ConfirmLabel = request.ConfirmLabel,
         Danger = request.Danger,
     };
+
+    private static ChoiceDialogPrompt ToProto(ContextChoiceRequest request)
+    {
+        var prompt = new ChoiceDialogPrompt
+        {
+            Title = request.Title,
+            Icon = request.Icon,
+            ConfirmLabel = request.ConfirmLabel,
+            EmptyMessage = request.EmptyMessage,
+        };
+        prompt.Options.AddRange(request.Options.Select(ToProto));
+        return prompt;
+    }
+
+    private static ContextOption ToProto(ContextOptionNode node)
+    {
+        var option = new ContextOption
+        {
+            Id = node.Id,
+            Label = node.Label,
+            Selectable = node.Selectable,
+        };
+        if (node.Children is { Count: > 0 } children)
+        {
+            option.Children.AddRange(children.Select(ToProto));
+        }
+
+        return option;
+    }
 }

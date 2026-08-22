@@ -20,7 +20,12 @@ public interface IContextSelectionStore
     /// Claims this connection's stream and writes the current state as its first message.
     /// A second registration for the same id supersedes the first.
     /// </summary>
-    void Register(ShortGuid watchId, ChannelWriter<ContextMessage> writer);
+    /// <param name="rootActions">
+    /// The project root's actions, carried on every "nothing selected" message this
+    /// connection receives - the baseline and each later clear - so the explorer's empty
+    /// space has its menu without asking.
+    /// </param>
+    void Register(ShortGuid watchId, ChannelWriter<ContextMessage> writer, IReadOnlyList<ContextActionGroupDefinition> rootActions);
 
     /// <summary>Drops a connection's stream, selection and observations.</summary>
     void Remove(ShortGuid watchId);

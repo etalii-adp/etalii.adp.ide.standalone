@@ -22,6 +22,7 @@ builder.Services.AddSingleton<IContextActionResolver, ContextActionResolver>();
 // IEnumerable<IContextActionProvider> - a later module contributing its own actions
 // (and their shortcuts) is one more line here and no change anywhere else.
 builder.Services.AddSingleton<IContextActionProvider, HierarchyContextActionProvider>();
+builder.Services.AddSingleton<IContextActionProvider, AddDiagramContextActionProvider>();
 
 builder.Services.AddSingleton<IContextSelectionStore, ContextSelectionStore>();
 builder.Services.AddSingleton<ContextSelectionResolver>();

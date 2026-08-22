@@ -255,4 +255,56 @@ public class HierarchyContextActionProviderTests : IDisposable
             Assert.NotEqual("", commit.Error);
         }
     }
+
+    // ---- the project root -------------------------------------------------------------
+    //
+    // The root is the folder the project *is*. It has a parent like any folder under a
+    // temp path, so a parent-folder check does not protect it; it is recognised by carrying
+    // no entry id, which no real entry ever lacks.
+
+    private static ContextTarget RootTarget(string path) =>
+        new(ContextScope.Hierarchy, path, IsContainer: true, SourceId: default);
+
+    [Fact]
+    public async Task DiscoverAsync_OnTheProjectRoot_ReportsRenameAndDeleteUnavailable_WithTheReason()
+    {
+        var groups = await _provider.DiscoverAsync(RootTarget(_root), CancellationToken.None);
+
+        var actions = Assert.Single(groups).Actions;
+        Assert.Equal(2, actions.Count);
+        Assert.All(actions, action => Assert.False(action.Available));
+        Assert.All(actions, action => Assert.Equal("The project folder itself cannot be renamed or deleted here.", action.UnavailableReason));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_OnTheProjectRoot_Fails_ForBothActions()
+    {
+        var rename = await _provider.ExecuteAsync(RootTarget(_root), HierarchyContextActionProvider.RenameActionId, CancellationToken.None);
+        var delete = await _provider.ExecuteAsync(RootTarget(_root), HierarchyContextActionProvider.DeleteActionId, CancellationToken.None);
+
+        Assert.IsType<ContextExecutionResult.Failed>(rename);
+        Assert.IsType<ContextExecutionResult.Failed>(delete);
+    }
+
+    [Fact]
+    public async Task CommitAsync_OnTheProjectRoot_RefusesToDeleteIt_EvenWhenThePromptStepWasSkipped()
+    {
+        // The most important one: a deleted root is a destroyed project.
+        File.WriteAllText(IoPath.Combine(_root, "keep.txt"), "x");
+
+        var result = await _provider.CommitAsync(RootTarget(_root), HierarchyContextActionProvider.DeleteActionId, "", CancellationToken.None);
+
+        Assert.False(result.Completed);
+        Assert.True(Directory.Exists(_root));
+        Assert.True(File.Exists(IoPath.Combine(_root, "keep.txt")));
+    }
+
+    [Fact]
+    public async Task CommitAsync_OnTheProjectRoot_RefusesToRenameIt()
+    {
+        var result = await _provider.CommitAsync(RootTarget(_root), HierarchyContextActionProvider.RenameActionId, "renamed", CancellationToken.None);
+
+        Assert.False(result.Completed);
+        Assert.True(Directory.Exists(_root));
+    }
 }

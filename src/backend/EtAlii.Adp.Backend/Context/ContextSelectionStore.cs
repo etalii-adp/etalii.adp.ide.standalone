@@ -16,7 +16,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         _idleTimeout = idleTimeout ?? DefaultIdleTimeout;
     }
 
-    public void Register(ShortGuid watchId, ChannelWriter<ContextMessage> writer)
+    public void Register(ShortGuid watchId, ChannelWriter<ContextMessage> writer, IReadOnlyList<ContextActionGroupDefinition> rootActions)
     {
         var entry = GetOrCreate(watchId);
         lock (entry.Gate)
@@ -24,7 +24,8 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
             entry.IdleTimer?.Dispose();
             entry.IdleTimer = null;
             entry.Writer = writer;
-            writer.TryWrite(ContextMessageMapper.ToMessage(entry.Record));
+            entry.RootActions = rootActions;
+            writer.TryWrite(ContextMessageMapper.ToMessage(entry.Record, entry.RootActions));
         }
     }
 
@@ -75,7 +76,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         {
             DisposeTracks(entry.Record);
             entry.Record = null;
-            entry.Writer?.TryWrite(ContextMessageMapper.ToMessage(null));
+            entry.Writer?.TryWrite(ContextMessageMapper.ToMessage(null, entry.RootActions));
         }
     }
 
@@ -238,5 +239,12 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         public ContextSelectionRecord? Record { get; set; }
         public ContextRediscovery? Rediscover { get; set; }
         public Timer? IdleTimer { get; set; }
+
+        /// <summary>
+        /// The project root's actions, given on Register and carried on every "nothing
+        /// selected" message. Computed once per Watch: they depend only on the root existing
+        /// and on the discovered diagram types, both stable for a connection's lifetime.
+        /// </summary>
+        public IReadOnlyList<ContextActionGroupDefinition>? RootActions { get; set; }
     }
 }

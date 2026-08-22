@@ -82,7 +82,7 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
     public override async Task Watch(WatchContextRequest request, IServerStreamWriter<ContextMessage> responseStream, ServerCallContext context)
     {
         var userId = SessionContext.GetUserId(context);
-        if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out _, out var error))
+        if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var rootPath, out var error))
         {
             throw new RpcException(new Status(StatusCode.FailedPrecondition, error));
         }
@@ -90,9 +90,13 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
         var watchId = (ShortGuid)request.WatchId;
         var channel = Channel.CreateUnbounded<ContextMessage>();
 
+        // What applies when nothing is selected: the project root's actions, discovered once
+        // here and carried on every "nothing selected" message for this connection.
+        var rootActions = await _contextActionResolver.DiscoverAsync(RootTarget(rootPath), context.CancellationToken);
+
         // Registering writes the baseline first, so a late subscriber is consistent
         // before anything else can arrive.
-        _selectionStore.Register(watchId, channel.Writer);
+        _selectionStore.Register(watchId, channel.Writer, rootActions);
         _contextInteractionStore.Register(watchId, channel.Writer);
 
         try

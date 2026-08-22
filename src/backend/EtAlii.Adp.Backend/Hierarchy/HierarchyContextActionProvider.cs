@@ -11,6 +11,8 @@ namespace EtAlii.Adp.Backend.Hierarchy;
 /// </summary>
 public sealed partial class HierarchyContextActionProvider : IContextActionProvider
 {
+    private const string RootUntouchable = "The project folder itself cannot be renamed or deleted here.";
+
     public ContextScope Scope => ContextScope.Hierarchy;
 
     public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
@@ -24,9 +26,14 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
 
         // Neither action is ever omitted - an entry that can't currently be touched reports
         // both as unavailable with the reason, so the menu can show them greyed and explain.
-        var unavailableReason = ParentFolderOf(target) is null
-            ? "This item has no parent folder to act within."
-            : "";
+        // The project root is the one folder that must never be renamed or deleted from
+        // inside the project it *is*; a parent-folder check would not catch it (only a drive
+        // root has no parent), so it is recognised outright.
+        var unavailableReason = HierarchyTargets.IsRoot(target)
+            ? RootUntouchable
+            : ParentFolderOf(target) is null
+                ? "This item has no parent folder to act within."
+                : "";
         var available = unavailableReason.Length == 0;
 
         var group = new ContextActionGroupDefinition(new[]
@@ -46,6 +53,11 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
         {
             return ValueTask.FromResult<ContextExecutionResult>(
                 new ContextExecutionResult.Failed("This item no longer exists."));
+        }
+
+        if (HierarchyTargets.IsRoot(target))
+        {
+            return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionResult.Failed(RootUntouchable));
         }
 
         var name = IoPath.GetFileName(target.ResolvedFullPath);
@@ -86,6 +98,13 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
 
     public async ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
     {
+        // Re-checked here, not only in ExecuteAsync: a client that skipped the prompt step
+        // must still be unable to rename or delete the project folder.
+        if (HierarchyTargets.IsRoot(target))
+        {
+            return ContextCommitResult.Failed(RootUntouchable);
+        }
+
         var validation = await ValidateAsync(target, actionId, value, cancellationToken);
         if (!validation.Valid)
         {
