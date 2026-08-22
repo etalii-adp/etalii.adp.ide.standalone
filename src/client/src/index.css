@@ -668,6 +668,14 @@ button {
   padding: 0;
 }
 
+/* The tree fills its panel, so the empty space under the last row is the tree's own: a
+   right-click there is "the project root", not "nothing". Outline off because the tree is
+   only ever focused programmatically, after that empty space was clicked. */
+.explorer-tree {
+  min-height: 100%;
+  outline: none;
+}
+
 /* The row is a plain container rather than one big button: the chevron inside it is its own
    control, and a button cannot legally nest inside another. */
 .explorer-tree-node {
