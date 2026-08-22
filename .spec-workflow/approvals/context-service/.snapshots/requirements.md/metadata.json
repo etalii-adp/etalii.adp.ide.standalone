@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/context-service/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-22T11:09:43.977Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787396983947_itzk7pk1g",
+      "approvalTitle": "Context Service — Requirements"
+    }
+  ]
+}
