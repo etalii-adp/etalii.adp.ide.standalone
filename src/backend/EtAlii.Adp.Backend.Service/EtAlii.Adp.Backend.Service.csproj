@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
     <PackageReference Include="JetBrains.Annotations" />
+    <ProjectReference Include="..\..\diagrams\*\backend\*\*.csproj" Exclude="..\..\diagrams\*\backend\*\*.Tests.csproj" />
   </ItemGroup>
 
   <!--

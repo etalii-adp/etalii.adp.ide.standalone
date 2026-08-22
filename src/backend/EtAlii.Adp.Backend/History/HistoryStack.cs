@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.History;
+namespace EtAlii.Adp.Backend;
 
 /// <summary>
 /// An in-memory undo/redo stack over <see cref="ICommandDispatcher"/>.

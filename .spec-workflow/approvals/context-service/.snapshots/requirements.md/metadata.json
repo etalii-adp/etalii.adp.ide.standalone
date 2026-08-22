@@ -1,0 +1,30 @@
+{
+  "filePath": ".spec-workflow/specs/context-service/requirements.md",
+  "currentVersion": 3,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-22T11:09:43.977Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787396983947_itzk7pk1g",
+      "approvalTitle": "Context Service — Requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-22T12:43:27.607Z",
+      "trigger": "revision_requested",
+      "approvalId": "approval_1787396983947_itzk7pk1g",
+      "approvalTitle": "Context Service — Requirements"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-08-22T12:52:48.743Z",
+      "trigger": "approved",
+      "approvalId": "approval_1787402769834_ach5z0m88",
+      "approvalTitle": "Context Service — Requirements (revision 2: ribbon context actions)"
+    }
+  ]
+}

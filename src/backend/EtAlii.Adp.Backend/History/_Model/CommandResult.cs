@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.History;
+namespace EtAlii.Adp.Backend;
 
 /// <summary>
 /// What came of executing an <see cref="ICommand"/>: success (optionally with the command

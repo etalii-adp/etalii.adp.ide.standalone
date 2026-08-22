@@ -1,5 +1,4 @@
 using EtAlii.Adp.Backend.Hierarchy;
-using EtAlii.Adp.Backend.History;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;

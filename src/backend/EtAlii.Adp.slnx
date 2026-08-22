@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/_Globals/">
+    <File Path="../../CLAUDE.md" />
     <File Path="../client/.editorconfig" />
     <File Path=".editorconfig" />
     <File Path="../Directory.Build.props" />

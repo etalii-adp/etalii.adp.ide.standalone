@@ -2,7 +2,7 @@ using EtAlii.Adp.Backend.Authentication;
 using EtAlii.Adp.Backend.Client;
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Hierarchy;
-using EtAlii.Adp.Backend.History;
+using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
 using JetBrains.Annotations;
@@ -26,8 +26,7 @@ builder.Services.AddSingleton<ICommandDispatcher, CommandDispatcher>();
 // One process-wide history for now. Scoping it per project (or per diagram, as
 // diagram-undo-redo's requirements describe) is a later step: nothing yet exposes undo/redo
 // over the wire, so there is no caller to scope it for.
-builder.Services.AddSingleton<IHistoryStack>(services =>
-    new HistoryStack(services.GetRequiredService<ICommandDispatcher>()));
+builder.Services.AddSingleton<IHistoryStack>(services => new HistoryStack(services.GetRequiredService<ICommandDispatcher>()));
 builder.Services.AddSingleton<ICommandHandler<RenameEntryCommand>, RenameEntryCommandHandler>();
 
 var clientAppOptionsSection = builder.Configuration.GetSection(ClientAppOptions.SectionName);
