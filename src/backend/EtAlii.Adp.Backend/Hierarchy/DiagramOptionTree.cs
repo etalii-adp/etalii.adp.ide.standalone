@@ -16,6 +16,7 @@ namespace EtAlii.Adp.Backend.Hierarchy;
 /// </remarks>
 public static class DiagramOptionTree
 {
+    /// <param name="definitions">The discovered diagram types.</param>
     /// <param name="suggest">
     /// Optionally, the value a text field beside the tree should take when an option is
     /// picked - computed here, while the folder is known, so choosing a type costs no round

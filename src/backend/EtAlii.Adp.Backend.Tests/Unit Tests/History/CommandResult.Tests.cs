@@ -4,6 +4,7 @@ namespace EtAlii.Adp.Backend.Tests;
 
 public class CommandResultTests
 {
+    // ReSharper disable once NotAccessedPositionalProperty.Local
     private sealed record SampleCommand(string Value) : ICommand;
 
     [Fact]

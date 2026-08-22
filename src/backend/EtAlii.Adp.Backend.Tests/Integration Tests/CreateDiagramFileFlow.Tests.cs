@@ -115,7 +115,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
     }
 
     /// <summary>The first selectable leaf in the tree, depth first - a real diagram type to choose.</summary>
-    private static ContextOption FirstLeaf(IEnumerable<ContextOption> options)
+    private static ContextOption? FirstLeaf(IEnumerable<ContextOption> options)
     {
         foreach (var option in options)
         {
@@ -198,6 +198,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         // selectable option carries the name to put in it.
         Assert.Equal("Name", prompt.ChoiceDialog.NameField.Label);
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
+        Assert.NotNull(leaf);
         Assert.NotEqual("", leaf.SuggestedValue);
 
         var rejected = await session.Context.ProposeInputAsync(
@@ -241,6 +242,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
         var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
+        Assert.NotNull(leaf);
 
         var submitted = await session.Context.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = leaf.Id, Text = "domain" }, session.Headers);
@@ -269,6 +271,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
         var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token, folderId);
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
+        Assert.NotNull(leaf);
 
         var submitted = await session.Context.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = leaf.Id, Text = "domain" }, session.Headers);
@@ -289,17 +292,18 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
         var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
+        Assert.NotNull(leaf);
 
         // Created while the dialog was open, after its suggestion was computed.
         var existing = IoPath.Combine(_projectFolder, "domain.adp");
-        File.WriteAllText(existing, "someone else's diagram");
+        await File.WriteAllTextAsync(existing, "someone else's diagram", cts.Token);
 
         var submitted = await session.Context.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = leaf.Id, Text = "domain" }, session.Headers);
 
         Assert.False(submitted.Completed);
         Assert.Contains("already exists", submitted.Error, StringComparison.Ordinal);
-        Assert.Equal("someone else's diagram", File.ReadAllText(existing));
+        Assert.Equal("someone else's diagram", await File.ReadAllTextAsync(existing, cts.Token));
     }
 
     [Fact]
@@ -312,6 +316,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
         var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
+        Assert.NotNull(leaf);
 
         var submitted = await session.Context.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = leaf.Id, Text = @"..\escaped" }, session.Headers);
@@ -331,6 +336,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
         var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
+        Assert.NotNull(leaf);
 
         var submitted = await session.Context.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = leaf.Id, Text = "" }, session.Headers);
@@ -351,6 +357,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
 
         var (first, firstInteraction) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var leaf = FirstLeaf(first.ChoiceDialog.Options);
+        Assert.NotNull(leaf);
         var firstName = leaf.SuggestedValue;
         var firstSubmit = await session.Context.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = firstInteraction, Value = leaf.Id, Text = firstName }, session.Headers);
@@ -359,6 +366,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         // The second dialog is built after the first file exists, so its suggestion moves on.
         var (second, secondInteraction) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var secondLeaf = FirstLeaf(second.ChoiceDialog.Options);
+        Assert.NotNull(secondLeaf);
         Assert.Equal($"{firstName}-2", secondLeaf.SuggestedValue);
 
         var secondSubmit = await session.Context.SubmitInteractionAsync(

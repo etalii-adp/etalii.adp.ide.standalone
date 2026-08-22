@@ -122,8 +122,8 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
     [Fact]
     public async Task TheFullRenameArc_ValidatesThenRenamesOnDisk_AndReportsTheRenameOnTheSameStream()
     {
-        File.WriteAllText(IoPath.Combine(_projectFolder, "original.txt"), "content");
-        File.WriteAllText(IoPath.Combine(_projectFolder, "taken.txt"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "original.txt"), "content");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "taken.txt"), "");
 
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
@@ -194,7 +194,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
     {
         var folder = IoPath.Combine(_projectFolder, "doomed");
         Directory.CreateDirectory(IoPath.Combine(folder, "inner"));
-        File.WriteAllText(IoPath.Combine(folder, "inner", "leaf.txt"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(folder, "inner", "leaf.txt"), "");
 
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
@@ -244,7 +244,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
     [Fact]
     public async Task ExecuteAction_TriggeredByShortcutWithNoPriorDiscovery_ProducesTheSamePromptAsTheActionIdPath()
     {
-        File.WriteAllText(IoPath.Combine(_projectFolder, "shortcut.txt"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "shortcut.txt"), "");
 
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
@@ -282,7 +282,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
     [Fact]
     public async Task APromptRaisedOnOneConnection_IsNeverObservedOnAnothersStream()
     {
-        File.WriteAllText(IoPath.Combine(_projectFolder, "shared.txt"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "shared.txt"), "");
 
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
@@ -331,7 +331,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
     [Fact]
     public async Task DiscoverActions_ForAnEntryIdBelongingToAnotherConnection_ReportsNothing()
     {
-        File.WriteAllText(IoPath.Combine(_projectFolder, "shared.txt"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "shared.txt"), "");
 
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
@@ -359,7 +359,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
     [Fact]
     public async Task DiscoverActions_ForAProjectTheCallerIsNotAuthorizedFor_ReportsNothing()
     {
-        File.WriteAllText(IoPath.Combine(_projectFolder, "private.txt"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "private.txt"), "");
 
         using var ownerChannel = CreateChannel();
         var ownerHeaders = await LoginAsync(ownerChannel);
@@ -385,13 +385,14 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
             },
             otherHeaders));
 
+        Assert.NotNull(ownerContextClient);
         Assert.Equal(StatusCode.Unauthenticated, rpcException.StatusCode);
     }
 
     [Fact]
     public async Task ExecuteAction_WithoutASource_ActsOnTheConnectionsCurrentSelection()
     {
-        File.WriteAllText(IoPath.Combine(_projectFolder, "selected.txt"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "selected.txt"), "");
 
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
@@ -441,7 +442,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
     [Fact]
     public async Task SubmitInteraction_RepeatedForTheSameId_DoesNothingTheSecondTime()
     {
-        File.WriteAllText(IoPath.Combine(_projectFolder, "once.txt"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "once.txt"), "");
 
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);

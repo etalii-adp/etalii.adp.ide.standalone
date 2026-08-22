@@ -7,11 +7,13 @@ namespace EtAlii.Adp.Backend.Context;
 /// </summary>
 public static class ContextMessageMapper
 {
+    /// <param name="record">The context selection record to map.</param>
     /// <param name="rootActions">
     /// What applies when nothing is selected - the project root's actions. Carried on the
     /// "nothing selected" message so the explorer's empty space has a menu without a round
     /// trip; the selection itself stays absent, because nothing is selected.
     /// </param>
+    /// <param name="transient">Whether the selection is transient.</param>
     public static ContextMessage ToMessage(
         ContextSelectionRecord? record,
         IReadOnlyList<ContextActionGroupDefinition>? rootActions = null,
