@@ -57,26 +57,26 @@ Three seams keep the service scope-agnostic:
 
 ```mermaid
 graph TD
-    subgraph client [Client - WorkspaceShell]
-        CCP[ContextConnectionProvider<br/>watch_id, Watch stream, select(), executeAction()]
-        EX[ExplorerTreePanel] -->|select / executeAction| CCP
-        PG[PropertyGridPanel] -->|useContextSelection| CCP
-        RB[RibbonBar + RibbonDropdownButton] -->|useContextSelection, executeAction| CCP
-        PH[ContextPromptHost] -->|prompt, propose/submit/cancel| CCP
-        RB -.renders.-> CM[ContextMenu]
-        EX -.renders.-> CM
+    subgraph client ["Client - WorkspaceShell"]
+        CCP["ContextConnectionProvider<br/>watch_id, Watch stream, select, executeAction"]
+        EX["ExplorerTreePanel"] -->|"select, executeAction"| CCP
+        PG["PropertyGridPanel"] -->|"useContextSelection"| CCP
+        RB["RibbonBar + RibbonDropdownButton"] -->|"useContextSelection, executeAction"| CCP
+        PH["ContextPromptHost"] -->|"prompt, propose, submit, cancel"| CCP
+        RB -. renders .-> CM["ContextMenu"]
+        EX -. renders .-> CM
     end
-    CCP -->|Select / Watch / ExecuteAction ...| CS[ContextServiceImpl]
-    EX -->|ListEntries / WatchHierarchy| HS[HierarchyServiceImpl]
-    subgraph backend [Backend]
-        CS --> SEL[ContextSelectionStore<br/>per watch_id: chain, writer, idle timer]
-        CS --> RES[IContextSourceResolver set]
-        RES --> HRES[HierarchyContextSourceResolver]
-        HRES --> HMS[HierarchyModelStore / HierarchyModel]
+    CCP -->|"Select, Watch, ExecuteAction, ..."| CS["ContextServiceImpl"]
+    EX -->|"ListEntries, WatchHierarchy"| HS["HierarchyServiceImpl"]
+    subgraph backend ["Backend"]
+        CS --> SEL["ContextSelectionStore<br/>per watch_id - chain, writer, idle timer"]
+        CS --> RES["IContextSourceResolver set"]
+        RES --> HRES["HierarchyContextSourceResolver"]
+        HRES --> HMS["HierarchyModelStore, HierarchyModel"]
         HS --> HMS
-        CS --> CAR[IContextActionResolver] --> CAP[IContextActionProvider set]
-        CS --> CIS[ContextInteractionStore]
-        HRES -.Track: EntryChanged.-> SEL
+        CS --> CAR["IContextActionResolver"] --> CAP["IContextActionProvider set"]
+        CS --> CIS["ContextInteractionStore"]
+        HRES -. "Track - EntryChanged" .-> SEL
     end
 ```
 
@@ -92,21 +92,21 @@ sequenceDiagram
     participant A as IContextActionResolver
     participant G as PropertyGrid / Ribbon
 
-    Note over P,S: Watch(project_id, watch_id) open since shell mount; baseline "nothing selected" received
+    Note over P,S: Watch stream open since shell mount, baseline "nothing selected" received
     U->>T: ArrowDown x3 (focus moves)
     T->>P: select(none, entry) x3
-    P->>S: Select(EXPLORER, path, entry_id, none) — once, after 80 ms of quiet
+    P->>S: Select(EXPLORER, path, entry_id, none) - once, after 80 ms of quiet
     S->>R: Resolve(entry_id, clientPath, parent=null)
     R-->>S: level(fullPath, relPath, HIERARCHY, kind, available)
     S->>A: DiscoverAsync(ContextTarget)
     A-->>S: groups
-    S-->>P: [Watch] ContextMessage.selection {chain, levels, actions}
+    S-->>P: Watch stream - selection with chain, levels, actions
     P-->>G: context value updated (one React render)
     P-->>T: actions for current id (shortcuts answerable)
     U->>T: right-click
-    T->>P: select(CONTEXT_MENU, entry) — immediate, flushes pending none
+    T->>P: select(CONTEXT_MENU, entry) - immediate, flushes pending none
     T->>T: opens ContextMenu from actions already held (ids match)
-    S-->>P: [Watch] selection {.., action: CONTEXT_MENU, actions}
+    S-->>P: Watch stream - selection with action CONTEXT_MENU, actions
     P-->>T: same groups → menu unchanged
 ```
 
