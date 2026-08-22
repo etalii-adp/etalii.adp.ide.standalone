@@ -156,7 +156,7 @@
   - _Requirements: 3.1, 3.5, 3.6, 3.7, 3.8, 5.2, 9.5_
   - _Prompt: Implement the task for spec context-service, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend QA engineer (vitest + testing-library) | Task: Update the explorer tests for the refactored panel per design.md's Unit Testing list, keeping every still-valid existing test | Restrictions: test behaviour through rendered DOM and the mocked provider calls, not internals; no snapshot tests | Success: `npm test` passes_
 
-- [-] 20. Property Grid shows the selection
+- [x] 20. Property Grid shows the selection
   - File: `src/client/src/shell/panels/PropertyGridPanel.tsx` (modify), `src/client/src/shell/panels/PropertyGridPanel.test.tsx` (new), `src/client/src/index.css` (modify)
   - Read `useContextSelection()`; nothing selected → intentional "Nothing selected" state (placeholder standard) keeping the `futureSpec` comment for editing; otherwise one block per level (outermost first): name, path (`/`-joined), kind, availability, source; `.property-grid`/`.property-grid-row` styles from existing tokens, light/dark. Tests: empty state; one-level file; two-level chain
   - Purpose: Requirement 7
@@ -164,7 +164,7 @@
   - _Requirements: 7.1, 7.2, 7.3, 7.4_
   - _Prompt: Implement the task for spec context-service, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/CSS developer | Task: Replace the Property Grid placeholder with a read-only selection view per design.md and Requirement 7, with tests | Restrictions: no property editing; no gRPC call of its own; centralised styling in `index.css` only, existing custom properties only; keep the `futureSpec` hand-off comment | Success: tests pass; visually themed in both modes_
 
-- [ ] 21. Ribbon contextual groups and drop-down button
+- [x] 21. Ribbon contextual groups and drop-down button
   - File: `src/client/src/shell/ribbon/RibbonContextualGroups.tsx` (new), `src/client/src/shell/ribbon/RibbonDropdownButton.tsx` (new), `src/client/src/shell/ribbon/RibbonBar.tsx` (modify), `src/client/src/index.css` (modify)
   - `RibbonContextualGroups` per design.md: nothing without a selection; previous groups disabled until actions for the new id arrive (`lastShownRef`); one `.ribbon-group.ribbon-group-contextual` per `ContextActionGroup`; plain actions → `.ribbon-button` with `disabled`, tooltip (`label (shortcut)` or `unavailable_reason`), click → `executeAction(id)`; actions with `items` → `RibbonDropdownButton` rendering `ContextMenu` at the button's bottom-left rect, opened by click/`ArrowDown`/`Enter`/`Space`, closed on selection/`Escape`/outside/selection change; `formatShortcut` helper. CSS: `.ribbon-button:disabled`, `.ribbon-button-dropdown .ribbon-chevron`, `.ribbon { overflow-x: auto; flex-wrap: nowrap }`, `.ribbon-group { flex: 0 0 auto }`; no pressed state on contextual buttons
   - Purpose: Requirement 10
@@ -172,7 +172,7 @@
   - _Requirements: 10.1–10.11_
   - _Prompt: Implement the task for spec context-service, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/CSS developer with IDE-toolbar UX sensibility | Task: Add the contextual ribbon groups and the drop-down button per design.md and Requirement 10, styled so contextual buttons are indistinguishable from the mockup's static ones | Restrictions: the drop-down is `ContextMenu`, not a second menu implementation; the ribbon never listens for shortcut keys; no `.ribbon-button-pressed` on contextual buttons; no new colours or sizes outside `index.css` tokens; the static `RIBBON_GROUPS` stay untouched | Success: `npm run typecheck` passes; in a manual check Rename/Delete appear after View for a selected file, Delete greys out with its reason when unavailable, the bar scrolls rather than wraps when narrow_
 
-- [ ] 22. Ribbon tests
+- [x] 22. Ribbon tests
   - File: `src/client/src/shell/ribbon/RibbonContextualGroups.test.tsx`, `src/client/src/shell/ribbon/RibbonDropdownButton.test.tsx`
   - Per design.md: nothing without a selection; buttons render icon/label/tooltip; disabled + `unavailable_reason` tooltip; click → `executeAction(id)` with no source; previous groups stay disabled until actions for the new id arrive; drop-down opens `ContextMenu` anchored to its rect, keyboard opens it, selecting a child calls `executeAction(childId)`, closes on selection change; `formatShortcut` cases
   - Purpose: Requirement 10
