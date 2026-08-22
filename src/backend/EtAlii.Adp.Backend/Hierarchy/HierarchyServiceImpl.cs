@@ -75,7 +75,7 @@ public sealed partial class HierarchyServiceImpl : HierarchyService.HierarchySer
         {
             await foreach (var message in channel.Reader.ReadAllAsync(context.CancellationToken))
             {
-                await responseStream.WriteAsync(message);
+                await responseStream.WriteAsync(message, context.CancellationToken);
             }
         }
         catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
@@ -86,7 +86,7 @@ public sealed partial class HierarchyServiceImpl : HierarchyService.HierarchySer
         finally
         {
             model.EntryChanged -= OnEntryChanged;
-            recoveryCts.Cancel();
+            await recoveryCts.CancelAsync();
             _contextInteractionStore.Remove(watchId);
             _hierarchyModelStore.Remove(watchId);
         }
@@ -96,7 +96,7 @@ public sealed partial class HierarchyServiceImpl : HierarchyService.HierarchySer
     {
         return new RootFolderWatcher(
             rootPath,
-            onChange: (changeType, oldPath, newPath) => model.OnWatcherEvent(changeType, oldPath, newPath),
+            onChange: model.OnWatcherEvent,
             onError: ex =>
             {
                 if (ex is InternalBufferOverflowException)
