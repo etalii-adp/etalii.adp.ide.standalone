@@ -99,7 +99,7 @@ sequenceDiagram
     Note over T,S: Watch stream open; store holds "nothing selected"
     U->>T: right-click empty explorer space
     T->>S: ExecuteAction(watch_id, interaction_id, action_id "hierarchy.add") - no source
-    S->>S: TryResolveTarget: store empty -> root target (IsContainer, ResolvedFullPath = project root)
+    S->>S: TryResolveTargetAsync: store empty -> root target (IsContainer, ResolvedFullPath = project root)
     S->>A: ExecuteAsync(rootTarget, "hierarchy.add")
     A->>A: DiagramDefinition.All -> ContextOptionNode tree by vendor
     A-->>S: RequiresChoice(ContextChoiceRequest)
@@ -116,13 +116,13 @@ sequenceDiagram
     H-->>U: dialog stays open showing the error
 ```
 
-For a **folder** target the flow is identical from `ExecuteAction` on, with `source` set and `TryResolveTarget` resolving the entry id as it does for rename. The shortcut path (`Insert`) collapses the menu step.
+For a **folder** target the flow is identical from `ExecuteAction` on, with `source` set and `TryResolveTargetAsync` resolving the entry id as it does for rename. The shortcut path (`Insert`) collapses the menu step.
 
 ### The root case
 
 `context-service` makes "nothing selected" an explicit state (`SelectRequest.selection` absent → `store.Clear`), and `ContextServiceImpl.Actions.TryResolveTargetAsync` already falls back to `_selectionStore.Get(watchId)?.Innermost.Target` when a request carries no `source`. Today that lookup yields *no target* when nothing is selected, and `ExecuteAction` rejects with "Nothing is selected."
 
-This spec changes exactly that branch: **when the store reports nothing selected, the target is the project root** - `new ContextTarget(ContextScope.Hierarchy, rootPath, IsContainer: true, SourceId: default)`, where `rootPath` is the already-authorized project root `TryResolveRootPath` produced. No new `ContextSource` member is added; "no source" *means* "the root", which is also what the explorer's empty space visually is.
+This spec changes exactly that branch: **when the store reports nothing selected, the target is the project root** - `new ContextTarget(ContextScope.Hierarchy, rootPath, IsContainer: true, SourceId: default)`, where `rootPath` is the already-authorized project root `ProjectRootResolver.TryResolve` produced. No new `ContextSource` member is added; "no source" *means* "the root", which is also what the explorer's empty space visually is.
 
 Two consequences are handled explicitly:
 
@@ -351,7 +351,7 @@ ContextOptionNode      : Id, Label, Selectable, Children (IReadOnlyList<ContextO
 * **`DiagramDefinition.Initialize`**: sets `All`; second call throws; `All` before `Initialize` is empty, not null.
 * **`DiagramOptionTree.Build`**: grouping by vendor; titles as labels; ids are origin keys; subtype nests under its type and synthesises a parent when absent; vendors and children sorted; empty in → empty out.
 * **`AddDiagramContextActionProvider`** (`Backend.Tests/Unit Tests/Hierarchy/`): `DiscoverAsync` on a file → empty; on a missing folder → empty; on a folder → one Add action, available; with `All` empty (use an `Initialize`-able test seam: the provider takes `IReadOnlyList<DiagramDefinition>` via a constructor overload defaulting to `DiagramDefinition.All`) → unavailable with reason. `ExecuteAsync` → `RequiresChoice` with the expected tree; on a vanished folder → `Failed`. `CommitAsync`: unknown id → `Failed("…not available")`; vanished folder → `Failed("…no longer exists")` **before** the not-supported message; known id → `Failed` naming the title and **no file created** (assert directory contents unchanged).
-* **`ContextServiceImpl.Actions.TryResolveTarget`** root branch: no source + empty store → root container target at `rootPath`; no source + a selection → that selection's target (unchanged behaviour).
+* **`ContextServiceImpl.Actions.TryResolveTargetAsync`** root branch: no source + empty store → root container target at `rootPath`; no source + a selection → that selection's target (unchanged behaviour).
 * **`ChoicePromptDialog`** (client): renders groups and leaves; confirm disabled until a leaf is selected; selecting a group does not enable it; Enter on a leaf submits its id; Escape cancels; empty options shows `emptyMessage` with confirm disabled; keyboard Up/Down/Right/Left move and expand as specified; exactly one tabbable node.
 * **`ContextPromptHost`**: a `choiceDialog` prompt renders `ChoicePromptDialog`; a new interaction id remounts it.
 
