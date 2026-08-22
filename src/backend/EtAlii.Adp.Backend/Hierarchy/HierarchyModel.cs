@@ -67,6 +67,14 @@ public sealed class HierarchyModel
     /// </summary>
     public void OnWatcherEvent(WatcherChangeTypes changeType, string? oldPath, string? newPath)
     {
+        // ADP's own scratch files are not project content: AdpFileWriter writes a new diagram
+        // to one of these in the destination folder and moves it into place, so ignoring them
+        // here is what keeps that write from flickering through every connected explorer.
+        if (IsScratchFile(oldPath) || IsScratchFile(newPath))
+        {
+            return;
+        }
+
         lock (_gate)
         {
             switch (changeType)
@@ -85,6 +93,23 @@ public sealed class HierarchyModel
                     break;
             }
         }
+    }
+
+    /// <summary>
+    /// Whether a path is one of <see cref="AdpFileWriter"/>'s temporary files. A reconcile
+    /// filters on this too, so a scratch file left behind by an interrupted write can never
+    /// reappear as an entry.
+    /// </summary>
+    private static bool IsScratchFile(string? path)
+    {
+        if (path is null)
+        {
+            return false;
+        }
+
+        var name = IoPath.GetFileName(path);
+        return name.StartsWith(AdpFileWriter.TempPrefix, StringComparison.Ordinal) &&
+            name.EndsWith(AdpFileWriter.TempExtension, StringComparison.OrdinalIgnoreCase);
     }
 
     public void NotifyRootUnavailable(string message) =>
@@ -212,7 +237,7 @@ public sealed class HierarchyModel
     {
         try
         {
-            return Directory.EnumerateFileSystemEntries(path).Any();
+            return Directory.EnumerateFileSystemEntries(path).Any(entry => !IsScratchFile(entry));
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException)
         {
@@ -253,7 +278,7 @@ public sealed class HierarchyModel
         IEnumerable<string> diskEntries;
         try
         {
-            diskEntries = Directory.EnumerateFileSystemEntries(folderPath).Where(IsContained);
+            diskEntries = Directory.EnumerateFileSystemEntries(folderPath).Where(entry => IsContained(entry) && !IsScratchFile(entry));
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException)
         {
