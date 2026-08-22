@@ -68,11 +68,26 @@ public sealed class HierarchyModel
     public void OnWatcherEvent(WatcherChangeTypes changeType, string? oldPath, string? newPath)
     {
         // ADP's own scratch files are not project content: AdpFileWriter writes a new diagram
-        // to one of these in the destination folder and moves it into place, so ignoring them
-        // here is what keeps that write from flickering through every connected explorer.
-        if (IsScratchFile(oldPath) || IsScratchFile(newPath))
+        // to one of these in the destination folder and moves it into place. The scratch file
+        // itself never becomes an entry - but the move that publishes the diagram is reported
+        // as a rename *away* from that name, and it is the only announcement the real file
+        // gets, so it is turned into the create it actually is.
+        if (IsScratchFile(newPath))
         {
             return;
+        }
+
+        if (IsScratchFile(oldPath))
+        {
+            if (changeType == WatcherChangeTypes.Renamed && newPath is not null)
+            {
+                changeType = WatcherChangeTypes.Created;
+                oldPath = null;
+            }
+            else
+            {
+                return;
+            }
         }
 
         lock (_gate)
