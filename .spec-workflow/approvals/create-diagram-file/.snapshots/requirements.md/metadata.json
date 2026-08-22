@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/create-diagram-file/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-22T16:25:01.680Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787415901616_9jtqqso2i",
+      "approvalTitle": "Create Diagram File — Requirements"
+    }
+  ]
+}
