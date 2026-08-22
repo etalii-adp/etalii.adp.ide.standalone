@@ -31,7 +31,7 @@
               <option name="patterns">
                 <list>
                   <Item>
-                    <option name="path" value="global.json" />
+                    <option name="path" value="../global.json" />
                   </Item>
                 </list>
               </option>
