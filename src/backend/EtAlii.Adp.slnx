@@ -7,6 +7,7 @@
     <File Path="global.json" />
   </Folder>
   <Project Path="EtAlii.Adp/EtAlii.Adp.csproj" />
+  <Project Path="EtAlii.Adp.Diagram/EtAlii.Adp.Diagram.csproj" />
   <Project Path="EtAlii.Adp.Tests/EtAlii.Adp.Tests.csproj" />
   <Project Path="EtAlii.Adp.Backend.Service/EtAlii.Adp.Backend.Service.csproj" />
   <Project Path="EtAlii.Adp.Backend.Tests/EtAlii.Adp.Backend.Tests.csproj" />

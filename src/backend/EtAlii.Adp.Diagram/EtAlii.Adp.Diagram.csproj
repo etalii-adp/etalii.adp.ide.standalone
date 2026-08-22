@@ -1,0 +1,5 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
+  </ItemGroup>
+</Project>
