@@ -10,6 +10,12 @@ The dialog presents them the way [docs/diagrams.md](../../../docs/diagrams.md) a
 
 This spec covers discovery, the action, and the dialog. It does **not** define what a created diagram's file contents are beyond an empty, well-formed document — each diagram type's own schema is that module's concern.
 
+### Relationship to `context-service`
+
+[`context-service`](../context-service/requirements.md) moves the context-action RPCs and the prompt channel off `HierarchyService` onto a dedicated `ContextService`, drops the `scope` field from those requests, and pushes a selected target's available actions down its own `Watch` stream. It explicitly keeps the provider abstractions — `IContextActionProvider`, `IContextActionResolver`, `ContextTarget` — unchanged.
+
+This spec therefore contributes Add through those same unchanged abstractions, and expects the action to be discovered and its dialog delivered over whichever channel is current when it is implemented. Two consequences follow, and are stated as requirements rather than left implicit: the "nothing selected" case (Requirement 4.2) is the context service's own notion of a selection that names no entry, and the new dialog kind this spec needs (Requirement 5) is a new prompt on that channel, not a second, parallel prompt mechanism.
+
 ## Alignment with Product Vision
 
 - [product.md](../steering/product.md)'s **"Don't reinvent, integrate"**: the grouping vocabulary is the origin tag the diagram catalog already uses, not a new taxonomy invented for a dialog.
@@ -51,9 +57,10 @@ This spec covers discovery, the action, and the dialog. It does **not** define w
 
 #### Acceptance Criteria
 
-1. WHEN the backend runs THEN every diagram-type module intended to ship SHALL be present among the assemblies discovery searches.
-2. IF the runtime has not yet loaded a referenced assembly THEN discovery SHALL still find it - .NET loads referenced assemblies lazily, so scanning only the already-loaded set is not sufficient.
-3. WHEN a diagram-type module is added to the solution THEN making it discoverable SHALL require no change to discovery code itself.
+1. WHEN the backend runs THEN every diagram-type module intended to ship SHALL be present among the assemblies discovery searches. The host already references them as a wildcard - `..\..\diagrams\*\backend\*\*.csproj`, excluding test projects, in [`EtAlii.Adp.Backend.Service.csproj`](../../../src/backend/EtAlii.Adp.Backend.Service/EtAlii.Adp.Backend.Service.csproj) - so this holds without a per-module reference.
+2. IF the runtime has not yet loaded a referenced assembly THEN discovery SHALL still find it - .NET loads referenced assemblies lazily, so scanning only `AppDomain.CurrentDomain.GetAssemblies()` is **not** sufficient and will under-report on a cold start.
+3. WHEN a diagram-type module is added to the solution THEN making it discoverable SHALL require no change to discovery code **and no change to the host's project references**, since the wildcard already covers a newly added module.
+4. IF a diagram-type module is referenced but contributes no `Diagram.Definition` THEN the system SHALL treat that as the module simply having nothing to contribute, not as an error - the 58 scaffolded modules are expected to gain definitions over time rather than all at once.
 
 ### Requirement 4 — An Add action on a folder and on the root
 
@@ -62,7 +69,7 @@ This spec covers discovery, the action, and the dialog. It does **not** define w
 #### Acceptance Criteria
 
 1. WHEN the user opens the context menu on a **folder** in the hierarchy THEN the system SHALL offer an **Add** action among that folder's actions.
-2. WHEN the user opens the context menu on the hierarchy's **empty space**, with no entry selected THEN the system SHALL offer the same Add action, targeting the **project root folder**.
+2. WHEN the user opens the context menu on the hierarchy's **empty space**, with no entry selected THEN the system SHALL offer the same Add action, targeting the **project root folder**. This is the one case the current `ContextSource` cannot express - it carries an `entry_id` and nothing else - so the contract SHALL gain a way to name the root without naming an entry.
 3. WHEN the user opens the context menu on a **file** THEN the system SHALL NOT offer Add - a file cannot contain a new entry.
 4. WHEN Add is triggered THEN the system SHALL open a dialog for choosing a diagram type, following the same backend-initiated prompt flow the existing rename and delete actions use.
 5. IF the target folder no longer exists when Add is triggered THEN the system SHALL report that rather than creating anything.
@@ -74,7 +81,7 @@ This spec covers discovery, the action, and the dialog. It does **not** define w
 
 #### Acceptance Criteria
 
-1. WHEN the dialog opens THEN the system SHALL list every diagram type from `DiagramDefinition.All`, each shown by its **`Title`**.
+1. WHEN the dialog opens THEN the system SHALL list every diagram type from `DiagramDefinition.All`, each shown by its **`Title`**. The existing prompt kinds - `InputDialogPrompt` and `ConfirmDialogPrompt` - cannot express a grouped list of choices, so the contract SHALL gain a prompt describing a hierarchy of selectable options as data, keeping the client free of any knowledge of diagram types.
 2. WHEN the dialog lists diagram types THEN the system SHALL **group them hierarchically by their origin**: by `Vendor` first, then by `Type`, and by `Subtype` where a diagram type carries one.
 3. WHEN a group is displayed THEN the system SHALL label it by its origin segment, so the grouping is legible rather than implied by indentation alone.
 4. WHEN the dialog is open THEN the system SHALL keep its confirm action disabled until a diagram type - not merely a group - is selected.
