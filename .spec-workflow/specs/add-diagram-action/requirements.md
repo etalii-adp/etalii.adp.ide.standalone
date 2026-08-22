@@ -18,11 +18,11 @@ This spec therefore contributes Add through those same unchanged abstractions, a
 
 ## Alignment with Product Vision
 
-- [product.md](../steering/product.md)'s **"Don't reinvent, integrate"**: the grouping vocabulary is the origin tag the diagram catalog already uses, not a new taxonomy invented for a dialog.
+- [product.md](../../steering/product.md)'s **"Don't reinvent, integrate"**: the grouping vocabulary is the origin tag the diagram catalog already uses, not a new taxonomy invented for a dialog.
 - product.md's **"Files are the source of truth"**: Add creates a real file in the project folder; it becomes visible through the same `RootFolderWatcher` → `EntryCreated` path as a file created outside ADP, not through a special-cased client-side insert.
 - product.md's **"Minimal footprint, incremental value"**: a diagram-type module contributes itself by existing and being deployed. Nothing in core code enumerates diagram types, so adding the 59th is a new project rather than an edit to a registry.
-- [structure.md](../steering/structure.md)'s **"Core vs diagram-type plugins"**: core must not depend on any single diagram type's schema. Discovery therefore reads only the shared `DiagramDefinition` abstraction, never a module's own types.
-- [tech.md](../steering/tech.md)'s **"the backend is the sole owner of reading/writing files"**: the client never composes a path or writes the new file; it names a chosen diagram type and the backend does the rest.
+- [structure.md](../../steering/structure.md)'s **"Core vs diagram-type plugins"**: core must not depend on any single diagram type's schema. Discovery therefore reads only the shared `DiagramDefinition` abstraction, never a module's own types.
+- [tech.md](../../steering/tech.md)'s **"the backend is the sole owner of reading/writing files"**: the client never composes a path or writes the new file; it names a chosen diagram type and the backend does the rest.
 
 ## Requirements
 
