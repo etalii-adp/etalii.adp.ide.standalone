@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.WardleyMap.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("wardley", origin.Vendor);
         Assert.Equal("map", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "Wardley Map",
-            EtAlii.Adp.Diagram.WardleyMap.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }

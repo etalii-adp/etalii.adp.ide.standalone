@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.PlantumlUml.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("plantuml", origin.Vendor);
         Assert.Equal("uml", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "Full UML set (see section 1)",
-            EtAlii.Adp.Diagram.PlantumlUml.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }

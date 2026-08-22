@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.ContextmapperContextMap.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("contextmapper", origin.Vendor);
         Assert.Equal("context-map", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "DDD Context Map, plus generated PlantUML/BPMN sketches",
-            EtAlii.Adp.Diagram.ContextmapperContextMap.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }

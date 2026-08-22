@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.UmlCommunication.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("uml", origin.Vendor);
         Assert.Equal("communication", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "Communication diagram",
-            EtAlii.Adp.Diagram.UmlCommunication.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }

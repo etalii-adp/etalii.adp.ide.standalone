@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.DddContextMap.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("ddd", origin.Vendor);
         Assert.Equal("context-map", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "Bounded Context / Context Map",
-            EtAlii.Adp.Diagram.DddContextMap.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }

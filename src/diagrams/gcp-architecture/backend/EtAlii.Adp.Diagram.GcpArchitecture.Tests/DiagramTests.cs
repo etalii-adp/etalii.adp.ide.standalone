@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.GcpArchitecture.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("gcp", origin.Vendor);
         Assert.Equal("architecture", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "GCP architecture diagram",
-            EtAlii.Adp.Diagram.GcpArchitecture.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }

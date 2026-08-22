@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.TogafAdm.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("togaf", origin.Vendor);
         Assert.Equal("adm", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "TOGAF ADM cycle diagram",
-            EtAlii.Adp.Diagram.TogafAdm.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }

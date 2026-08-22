@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.ZachmanMatrix.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("zachman", origin.Vendor);
         Assert.Equal("matrix", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "Zachman Framework matrix",
-            EtAlii.Adp.Diagram.ZachmanMatrix.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }

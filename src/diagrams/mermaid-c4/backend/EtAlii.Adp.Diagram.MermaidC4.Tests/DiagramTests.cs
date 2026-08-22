@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.MermaidC4.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("mermaid", origin.Vendor);
         Assert.Equal("c4", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "C4 diagram (subset)",
-            EtAlii.Adp.Diagram.MermaidC4.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }

@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.C4Deployment.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("c4", origin.Vendor);
         Assert.Equal("deployment", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "Deployment (supplementary)",
-            EtAlii.Adp.Diagram.C4Deployment.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }

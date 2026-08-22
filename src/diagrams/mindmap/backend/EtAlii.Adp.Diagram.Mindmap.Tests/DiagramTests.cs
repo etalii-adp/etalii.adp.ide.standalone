@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.Mindmap.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("freeplane", origin.Vendor);
         Assert.Equal("mindmap", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "Mind map (radial/hierarchical, single central topic)",
-            EtAlii.Adp.Diagram.Mindmap.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }

@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.ArchimateImplementationMigration.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("archimate", origin.Vendor);
         Assert.Equal("implementation-migration", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "ArchiMate — Implementation & Migration layer",
-            EtAlii.Adp.Diagram.ArchimateImplementationMigration.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }

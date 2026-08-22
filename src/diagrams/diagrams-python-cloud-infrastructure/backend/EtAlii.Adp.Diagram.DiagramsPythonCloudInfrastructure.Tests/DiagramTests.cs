@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.DiagramsPythonCloudInfrastructure.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("diagrams-python", origin.Vendor);
         Assert.Equal("cloud-infrastructure", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "Cloud/infrastructure diagram with official-style vendor icons",
-            EtAlii.Adp.Diagram.DiagramsPythonCloudInfrastructure.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }

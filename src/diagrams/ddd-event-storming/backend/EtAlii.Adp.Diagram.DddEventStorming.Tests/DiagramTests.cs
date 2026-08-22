@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.DddEventStorming.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("ddd", origin.Vendor);
         Assert.Equal("event-storming", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "Event Storming",
-            EtAlii.Adp.Diagram.DddEventStorming.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }

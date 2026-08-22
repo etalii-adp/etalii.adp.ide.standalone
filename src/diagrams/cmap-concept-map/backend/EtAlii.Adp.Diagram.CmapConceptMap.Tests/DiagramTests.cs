@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.CmapConceptMap.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("cmap", origin.Vendor);
         Assert.Equal("concept-map", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "Concept map (free-form network of concepts with labeled relationships)",
-            EtAlii.Adp.Diagram.CmapConceptMap.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }

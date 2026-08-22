@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.GenericSwimlane.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("generic", origin.Vendor);
         Assert.Equal("swimlane", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "Swimlane diagram",
-            EtAlii.Adp.Diagram.GenericSwimlane.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }

@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.BpmnProcess.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("bpmn", origin.Vendor);
         Assert.Equal("process", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "BPMN process diagram",
-            EtAlii.Adp.Diagram.BpmnProcess.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }

@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.AwsArchitecture.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("aws", origin.Vendor);
         Assert.Equal("architecture", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "AWS architecture diagram",
-            EtAlii.Adp.Diagram.AwsArchitecture.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }

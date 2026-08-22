@@ -7,7 +7,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
-        var origin = EtAlii.Adp.Diagram.DfdDataFlow.Diagram.Definition.Origin;
+        var origin = Diagram.Definition.Origin;
 
         Assert.Equal("dfd", origin.Vendor);
         Assert.Equal("data-flow", origin.Type);
@@ -19,6 +19,6 @@ public class DiagramTests
     {
         Assert.Equal(
             "Data Flow Diagram (Yourdon/DeMarco or Gane–Sarson notation)",
-            EtAlii.Adp.Diagram.DfdDataFlow.Diagram.Definition.Title);
+            Diagram.Definition.Title);
     }
 }
