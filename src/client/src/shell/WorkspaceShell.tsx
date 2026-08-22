@@ -1,4 +1,6 @@
 import { AppHeader } from "../components/AppHeader";
+import { ContextConnectionProvider } from "./context/ContextConnectionProvider";
+import { ShellPromptHost } from "./context/ShellPromptHost";
 import { RibbonBar } from "./ribbon/RibbonBar";
 import { SplitPane } from "./panes/SplitPane";
 import { TabbedPane } from "./panes/TabbedPane";
@@ -17,87 +19,92 @@ export interface WorkspaceShellProps {
 
 export function WorkspaceShell({ projectId, projectName, onBack }: WorkspaceShellProps) {
   return (
-    <div className="shell">
-      <div className="shell-header">
-        <button type="button" className="shell-header-back" onClick={onBack}>
-          &larr; Back to projects
-        </button>
-        <span className="shell-project-name">{projectName}</span>
-        <AppHeader />
+    // One context connection per opened project: every panel below reads the shared
+    // selection through hooks rather than wiring callbacks to each other.
+    <ContextConnectionProvider projectId={projectId}>
+      <div className="shell">
+        <div className="shell-header">
+          <button type="button" className="shell-header-back" onClick={onBack}>
+            &larr; Back to projects
+          </button>
+          <span className="shell-project-name">{projectName}</span>
+          <AppHeader />
+        </div>
+        <RibbonBar />
+        <div className="shell-body">
+          <SplitPane
+            direction="horizontal"
+            initialSplit={0.2}
+            minSize={160}
+            first={
+              <TabbedPane
+                tabs={[
+                  { id: "hierarchy", label: "Hierarchy", icon: "mdi-file-tree", content: <HierarchyPanel projectId={projectId} /> },
+                  { id: "search", label: "Search", icon: "mdi-magnify", content: <SearchPanel /> },
+                ]}
+              />
+            }
+            second={
+              <SplitPane
+                direction="horizontal"
+                initialSplit={0.78}
+                minSize={160}
+                first={
+                  <SplitPane
+                    direction="vertical"
+                    initialSplit={0.7}
+                    minSize={120}
+                    first={
+                      <TabbedPane
+                        tabs={[
+                          {
+                            id: "diagram-1",
+                            label: "Diagram 1",
+                            icon: "mdi-file-tree-outline",
+                            content: <DiagramPanel />,
+                          },
+                          {
+                            id: "diagram-2",
+                            label: "Diagram 2",
+                            icon: "mdi-file-tree-outline",
+                            content: <DiagramPanel />,
+                          },
+                        ]}
+                      />
+                    }
+                    second={
+                      <TabbedPane
+                        tabs={[
+                          {
+                            id: "problems",
+                            label: "Errors & Warnings",
+                            icon: "mdi-alert-circle-outline",
+                            content: <ErrorsWarningsPanel />,
+                          },
+                        ]}
+                      />
+                    }
+                  />
+                }
+                second={
+                  <TabbedPane
+                    tabs={[
+                      { id: "toolbox", label: "Toolbox", icon: "mdi-toolbox-outline", content: <ToolboxPanel /> },
+                      {
+                        id: "properties",
+                        label: "Properties",
+                        icon: "mdi-tune-variant",
+                        content: <PropertyGridPanel />,
+                      },
+                    ]}
+                  />
+                }
+              />
+            }
+          />
+        </div>
+        <ShellPromptHost />
       </div>
-      <RibbonBar />
-      <div className="shell-body">
-        <SplitPane
-          direction="horizontal"
-          initialSplit={0.2}
-          minSize={160}
-          first={
-            <TabbedPane
-              tabs={[
-                { id: "hierarchy", label: "Hierarchy", icon: "mdi-file-tree", content: <HierarchyPanel projectId={projectId} /> },
-                { id: "search", label: "Search", icon: "mdi-magnify", content: <SearchPanel /> },
-              ]}
-            />
-          }
-          second={
-            <SplitPane
-              direction="horizontal"
-              initialSplit={0.78}
-              minSize={160}
-              first={
-                <SplitPane
-                  direction="vertical"
-                  initialSplit={0.7}
-                  minSize={120}
-                  first={
-                    <TabbedPane
-                      tabs={[
-                        {
-                          id: "diagram-1",
-                          label: "Diagram 1",
-                          icon: "mdi-file-tree-outline",
-                          content: <DiagramPanel />,
-                        },
-                        {
-                          id: "diagram-2",
-                          label: "Diagram 2",
-                          icon: "mdi-file-tree-outline",
-                          content: <DiagramPanel />,
-                        },
-                      ]}
-                    />
-                  }
-                  second={
-                    <TabbedPane
-                      tabs={[
-                        {
-                          id: "problems",
-                          label: "Errors & Warnings",
-                          icon: "mdi-alert-circle-outline",
-                          content: <ErrorsWarningsPanel />,
-                        },
-                      ]}
-                    />
-                  }
-                />
-              }
-              second={
-                <TabbedPane
-                  tabs={[
-                    { id: "toolbox", label: "Toolbox", icon: "mdi-toolbox-outline", content: <ToolboxPanel /> },
-                    {
-                      id: "properties",
-                      label: "Properties",
-                      icon: "mdi-tune-variant",
-                      content: <PropertyGridPanel />,
-                    },
-                  ]}
-                />
-              }
-            />
-          }
-        />
-      </div>
-    </div>
+    </ContextConnectionProvider>
   );
 }

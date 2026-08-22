@@ -12,7 +12,7 @@ public sealed class ContextInteractionStore : IContextInteractionStore
     // connection entry remains the authority on what that connection currently holds.
     private readonly ConcurrentDictionary<ShortGuid, ContextInteraction> _interactions = new();
 
-    public void Register(ShortGuid watchId, ChannelWriter<HierarchyMessage> writer) =>
+    public void Register(ShortGuid watchId, ChannelWriter<ContextMessage> writer) =>
         _connections[watchId] = new Connection(writer);
 
     public void Remove(ShortGuid watchId)
@@ -37,7 +37,7 @@ public sealed class ContextInteractionStore : IContextInteractionStore
             return false;
         }
 
-        return connection.Writer.TryWrite(new HierarchyMessage { Prompt = prompt });
+        return connection.Writer.TryWrite(new ContextMessage { Prompt = prompt });
     }
 
     public void Begin(ContextInteraction interaction)
@@ -69,12 +69,12 @@ public sealed class ContextInteractionStore : IContextInteractionStore
 
     private sealed class Connection
     {
-        public Connection(ChannelWriter<HierarchyMessage> writer)
+        public Connection(ChannelWriter<ContextMessage> writer)
         {
             Writer = writer;
         }
 
-        public ChannelWriter<HierarchyMessage> Writer { get; }
+        public ChannelWriter<ContextMessage> Writer { get; }
 
         /// <summary>Used as a concurrent set; the byte value carries no meaning.</summary>
         public ConcurrentDictionary<ShortGuid, byte> InteractionIds { get; } = new();

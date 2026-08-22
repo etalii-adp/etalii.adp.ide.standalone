@@ -1,0 +1,45 @@
+using System.Threading.Channels;
+
+namespace EtAlii.Adp.Backend.Context;
+
+/// <summary>
+/// Re-derives a record's actions after the things it names changed underneath it.
+/// Supplied by the service, so the store itself never learns about action providers.
+/// </summary>
+public delegate ValueTask<ContextSelectionRecord> ContextRediscovery(ContextSelectionRecord record, CancellationToken cancellationToken);
+
+/// <summary>
+/// Owns, strictly per <c>watch_id</c>, a connection's current selection, the stream it
+/// is pushed down, and the observations that keep it current - never shared, even
+/// between two connections to the same project, mirroring
+/// <c>IHierarchyModelStore</c> and <see cref="IContextInteractionStore"/>.
+/// </summary>
+public interface IContextSelectionStore
+{
+    /// <summary>
+    /// Claims this connection's stream and writes the current state as its first message.
+    /// A second registration for the same id supersedes the first.
+    /// </summary>
+    void Register(ShortGuid watchId, ChannelWriter<ContextMessage> writer);
+
+    /// <summary>Drops a connection's stream, selection and observations.</summary>
+    void Remove(ShortGuid watchId);
+
+    /// <summary>The connection's current selection, for providers and actions without an explicit target.</summary>
+    ContextSelectionRecord? Get(ShortGuid watchId);
+
+    /// <summary>Replaces the current selection, starts observing its levels, and pushes it.</summary>
+    void Set(ShortGuid watchId, string rootPath, ContextSelectionRecord record, ContextRediscovery rediscover);
+
+    /// <summary>Records "nothing selected" and pushes it.</summary>
+    void Clear(ShortGuid watchId);
+
+    /// <summary>Pushes a selection without making it current (a preview).</summary>
+    void PushTransient(ShortGuid watchId, ContextSelectionRecord record);
+
+    /// <summary>
+    /// A tracked level moved (new relative path) or vanished (null): rewrite or clear the
+    /// current selection and push the result.
+    /// </summary>
+    void UpdateFromTrack(ShortGuid watchId, int levelIndex, IReadOnlyList<string>? newRelativePath);
+}

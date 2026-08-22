@@ -34,3 +34,10 @@ Run `dotnet format style --verify-no-changes --severity info` (from `src/backend
 - When changing files in the `.spec-workflow/` folder, always change these on the development branch.
 - When working on tasks from `.spec-workflow/` specifications, always do so in one single worktree for the specification.
 - When manually running the app (backend `dotnet run` + client `npm run dev`) for verification from inside a git worktree (not the main checkout), change both the client's dev server port (`src/client/vite.config.ts`'s `server.port`) and the backend's `Client:DevServerUrl` (`src/backend/EtAlii.Adp.Backend.Service/appsettings.developer.json`) to a different, free pair of ports before starting either server — the main checkout's own dev servers may already be running on the defaults (5174 client / 5080 backend). Before merging the worktree back, revert both files to their original values so the merge never carries a stray port change into `develop`.
+
+## Bugs found during implementation or verification
+
+Every bug found — whether by a failing test, a code review, or a manual verification pass — must leave a guard behind so it cannot silently return:
+
+- Preferred: cover it with a unit or integration test in the existing test projects (`src/backend/*.Tests` for C#, `*.test.ts(x)` under `src/client/src` for the client), written to fail before the fix and pass after it.
+- If the bug can only be reproduced through a running app or a manual interaction that a unit/integration test cannot express, add it instead to `tests.md` (repository root; create the file if it does not exist yet) as a step-by-step check — preconditions, actions, expected result — so Claude can execute it automatically as part of a manual verification pass. Each entry names the spec and task it came from.

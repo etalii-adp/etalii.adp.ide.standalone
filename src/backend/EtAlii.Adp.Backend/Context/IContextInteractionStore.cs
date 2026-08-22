@@ -10,7 +10,7 @@ namespace EtAlii.Adp.Backend.Context;
 public interface IContextInteractionStore
 {
     /// <summary>Claims this connection's prompt channel; called as its stream opens.</summary>
-    void Register(ShortGuid watchId, ChannelWriter<HierarchyMessage> writer);
+    void Register(ShortGuid watchId, ChannelWriter<ContextMessage> writer);
 
     /// <summary>Discards a connection's prompt channel and every interaction started on it.</summary>
     void Remove(ShortGuid watchId);

@@ -1,0 +1,357 @@
+using EtAlii.Adp.Backend.Hierarchy;
+using EtAlii.Adp.Backend.Projects;
+using Grpc.Core;
+using Grpc.Net.Client;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Xunit;
+using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
+
+namespace EtAlii.Adp.Backend.Tests;
+
+/// <summary>
+/// Exercises selection end to end against the real host: the baseline, a pushed
+/// selection with its filled-in path, detail and actions, previews, on-disk renames and
+/// deletes flowing back as selection changes, and - the property most worth having -
+/// one connection never observing another's selection.
+/// </summary>
+public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+{
+    private const string DeveloperUsername = "admin";
+    private const string DeveloperCredential = "changeme";
+    private const string SessionTokenHeader = "session-token";
+    private static readonly TimeSpan MessageTimeout = TimeSpan.FromSeconds(10);
+
+    // The hierarchy watcher only runs while a WatchHierarchy stream is open, and Grpc.Net
+    // only starts a server stream on its first read - so disk-change tests open that
+    // stream, start reading it, and give the watcher this long to come up.
+    private static readonly TimeSpan StreamStartupGrace = TimeSpan.FromMilliseconds(500);
+
+    private readonly WebApplicationFactory<Program> _factory;
+    private readonly string _appDataRoot;
+    private readonly string _projectFolder;
+
+    public ContextSelectionFlowTests(WebApplicationFactory<Program> baseFactory)
+    {
+        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
+        _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
+        Directory.CreateDirectory(_projectFolder);
+
+        _factory = baseFactory.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("developer");
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IProjectStore>();
+                services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
+            });
+        });
+    }
+
+    public void Dispose()
+    {
+        _factory.Dispose();
+        if (Directory.Exists(_appDataRoot))
+        {
+            Directory.Delete(_appDataRoot, recursive: true);
+        }
+    }
+
+    private GrpcChannel CreateChannel()
+    {
+        var httpClient = _factory.CreateDefaultClient();
+        return GrpcChannel.ForAddress(httpClient.BaseAddress!, new GrpcChannelOptions { HttpClient = httpClient });
+    }
+
+    private static async Task<Metadata> LoginAsync(GrpcChannel channel)
+    {
+        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
+        var response = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential });
+        return new Metadata { { SessionTokenHeader, response.Session.Value } };
+    }
+
+    private async Task<ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
+    {
+        var projectClient = new ProjectService.ProjectServiceClient(channel);
+        var pathMessage = new Path();
+        pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
+        var response = await projectClient.AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers);
+        return response.Added.Id;
+    }
+
+    private sealed record Session(
+        GrpcChannel Channel,
+        Metadata Headers,
+        Contracts.ShortGuid ProjectId,
+        Contracts.ShortGuid WatchId,
+        HierarchyService.HierarchyServiceClient Hierarchy,
+        ContextService.ContextServiceClient Context) : IDisposable
+    {
+        public void Dispose() => Channel.Dispose();
+    }
+
+    private async Task<Session> OpenSessionAsync()
+    {
+        var channel = CreateChannel();
+        var headers = await LoginAsync(channel);
+        var projectId = await AddProjectAsync(channel, headers);
+        return new Session(
+            channel, headers, projectId, ShortGuid.NewShortGuid(),
+            new HierarchyService.HierarchyServiceClient(channel),
+            new ContextService.ContextServiceClient(channel));
+    }
+
+    private static async Task<Contracts.ShortGuid> EntryIdOfAsync(Session session, string name)
+    {
+        var entries = await session.Hierarchy.ListEntriesAsync(
+            new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+        return entries.Entries.Entries_.Single(e => e.Name == name).Id;
+    }
+
+    private static ContextSelection Selection(Contracts.ShortGuid entryId, params string[] path)
+    {
+        var selection = new ContextSelection
+        {
+            Source = ContextSelectionSource.Explorer,
+            Id = new ContextSource { EntryId = entryId },
+            Path = new Path(),
+        };
+        selection.Path.Segments.AddRange(path);
+        return selection;
+    }
+
+    private static async Task<ContextSelectionChanged> ReadSelectionAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
+    {
+        while (await stream.MoveNext(cancellationToken))
+        {
+            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Selection)
+            {
+                return stream.Current.Selection;
+            }
+        }
+
+        throw new InvalidOperationException("The stream ended before a selection message arrived.");
+    }
+
+    [Fact]
+    public async Task Watch_OpensWithAnEmptyBaseline()
+    {
+        using var session = await OpenSessionAsync();
+        using var cts = new CancellationTokenSource(MessageTimeout);
+
+        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+        var baseline = await ReadSelectionAsync(call.ResponseStream, cts.Token);
+
+        Assert.Null(baseline.Selection);
+        Assert.Empty(baseline.Levels);
+        Assert.False(baseline.Transient);
+    }
+
+    [Fact]
+    public async Task Select_AFile_PushesTheChainWithFilledPathDetailAndActions()
+    {
+        Directory.CreateDirectory(IoPath.Combine(_projectFolder, "docs"));
+        File.WriteAllText(IoPath.Combine(_projectFolder, "docs", "design.mm"), "");
+        using var session = await OpenSessionAsync();
+        using var cts = new CancellationTokenSource(MessageTimeout);
+        var docsId = await EntryIdOfAsync(session, "docs");
+        var listed = await session.Hierarchy.ListEntriesAsync(
+            new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, FolderId = docsId }, session.Headers);
+        var fileId = listed.Entries.Entries_.Single().Id;
+
+        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+        await ReadSelectionAsync(call.ResponseStream, cts.Token);
+
+        // An empty path asks the backend to fill it in.
+        var response = await session.Context.SelectAsync(
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(fileId) }, session.Headers);
+        Assert.Equal("", response.Error);
+
+        var pushed = await ReadSelectionAsync(call.ResponseStream, cts.Token);
+        Assert.Equal(new[] { "docs", "design.mm" }, pushed.Selection.Path.Segments);
+        Assert.Equal(fileId, pushed.Selection.Id.EntryId);
+        Assert.Equal(ContextSelectionSource.Explorer, pushed.Selection.Source);
+        Assert.Equal(ContextSelection.DetailOneofCase.None_, pushed.Selection.DetailCase);
+        var detail = Assert.Single(pushed.Levels);
+        Assert.Equal(EntryKind.File, detail.Entry.Kind);
+        Assert.True(detail.Entry.Available);
+        var actionIds = pushed.Actions.SelectMany(g => g.Actions).Select(a => a.Id).ToList();
+        Assert.Contains(HierarchyContextActionProvider.RenameActionId, actionIds);
+        Assert.Contains(HierarchyContextActionProvider.DeleteActionId, actionIds);
+    }
+
+    [Fact]
+    public async Task Select_WithAMismatchingPath_IsRejectedAndPushesNothing()
+    {
+        File.WriteAllText(IoPath.Combine(_projectFolder, "a.txt"), "");
+        using var session = await OpenSessionAsync();
+        using var cts = new CancellationTokenSource(MessageTimeout);
+        var entryId = await EntryIdOfAsync(session, "a.txt");
+        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+        await ReadSelectionAsync(call.ResponseStream, cts.Token);
+
+        var response = await session.Context.SelectAsync(
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryId, "b.txt") }, session.Headers);
+
+        Assert.NotEqual("", response.Error);
+        var pending = call.ResponseStream.MoveNext(cts.Token);
+        var arrived = await Task.WhenAny(pending, Task.Delay(TimeSpan.FromMilliseconds(500), CancellationToken.None)) == pending;
+        Assert.False(arrived, "A rejected Select must not push anything.");
+    }
+
+    [Fact]
+    public async Task Select_Preview_PushesTransientAndLeavesTheCurrentSelectionAlone()
+    {
+        File.WriteAllText(IoPath.Combine(_projectFolder, "current.txt"), "");
+        File.WriteAllText(IoPath.Combine(_projectFolder, "preview.txt"), "");
+        using var session = await OpenSessionAsync();
+        using var cts = new CancellationTokenSource(MessageTimeout);
+        var currentId = await EntryIdOfAsync(session, "current.txt");
+        var previewId = await EntryIdOfAsync(session, "preview.txt");
+        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+        await ReadSelectionAsync(call.ResponseStream, cts.Token);
+        await session.Context.SelectAsync(
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(currentId) }, session.Headers);
+        await ReadSelectionAsync(call.ResponseStream, cts.Token);
+
+        var preview = Selection(previewId);
+        preview.Action = ContextSelectionAction.Preview;
+        await session.Context.SelectAsync(
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = preview }, session.Headers);
+        var transient = await ReadSelectionAsync(call.ResponseStream, cts.Token);
+        Assert.True(transient.Transient);
+        Assert.Equal(new[] { "preview.txt" }, transient.Selection.Path.Segments);
+
+        // An action without a source runs against what is actually current - which the
+        // preview must not have touched.
+        await session.Context.ExecuteActionAsync(
+            new ExecuteActionRequest
+            {
+                ProjectId = session.ProjectId,
+                WatchId = session.WatchId,
+                InteractionId = ShortGuid.NewShortGuid(),
+                ActionId = HierarchyContextActionProvider.RenameActionId,
+            },
+            session.Headers);
+        while (await call.ResponseStream.MoveNext(cts.Token))
+        {
+            if (call.ResponseStream.Current.MessageCase == ContextMessage.MessageOneofCase.Prompt)
+            {
+                Assert.Equal("current.txt", call.ResponseStream.Current.Prompt.InputDialog.InitialValue);
+                return;
+            }
+        }
+
+        Assert.Fail("No prompt arrived for the action on the current selection.");
+    }
+
+    [Fact]
+    public async Task RenameOnDisk_PushesTheSelectionWithItsNewPathAndTheSameId()
+    {
+        var original = IoPath.Combine(_projectFolder, "original.txt");
+        File.WriteAllText(original, "");
+        using var session = await OpenSessionAsync();
+        using var cts = new CancellationTokenSource(MessageTimeout);
+        var entryId = await EntryIdOfAsync(session, "original.txt");
+
+        using var hierarchyCall = session.Hierarchy.WatchHierarchy(new WatchHierarchyRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+        _ = hierarchyCall.ResponseStream.MoveNext(cts.Token);
+        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+        await ReadSelectionAsync(call.ResponseStream, cts.Token);
+        await session.Context.SelectAsync(
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryId) }, session.Headers);
+        await ReadSelectionAsync(call.ResponseStream, cts.Token);
+        await Task.Delay(StreamStartupGrace);
+
+        File.Move(original, IoPath.Combine(_projectFolder, "renamed.txt"));
+
+        var pushed = await ReadSelectionAsync(call.ResponseStream, cts.Token);
+        Assert.Equal(new[] { "renamed.txt" }, pushed.Selection.Path.Segments);
+        Assert.Equal(entryId, pushed.Selection.Id.EntryId);
+    }
+
+    [Fact]
+    public async Task DeleteOnDisk_PushesAnEmptySelection()
+    {
+        var file = IoPath.Combine(_projectFolder, "doomed.txt");
+        File.WriteAllText(file, "");
+        using var session = await OpenSessionAsync();
+        using var cts = new CancellationTokenSource(MessageTimeout);
+        var entryId = await EntryIdOfAsync(session, "doomed.txt");
+
+        using var hierarchyCall = session.Hierarchy.WatchHierarchy(new WatchHierarchyRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+        _ = hierarchyCall.ResponseStream.MoveNext(cts.Token);
+        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+        await ReadSelectionAsync(call.ResponseStream, cts.Token);
+        await session.Context.SelectAsync(
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryId) }, session.Headers);
+        await ReadSelectionAsync(call.ResponseStream, cts.Token);
+        await Task.Delay(StreamStartupGrace);
+
+        File.Delete(file);
+
+        var pushed = await ReadSelectionAsync(call.ResponseStream, cts.Token);
+        Assert.Null(pushed.Selection);
+    }
+
+    [Fact]
+    public async Task Select_WithAnIdFromAnotherConnection_IsRejected()
+    {
+        File.WriteAllText(IoPath.Combine(_projectFolder, "shared.txt"), "");
+        using var session = await OpenSessionAsync();
+        var foreignWatchId = ShortGuid.NewShortGuid();
+        var foreignEntries = await session.Hierarchy.ListEntriesAsync(
+            new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = foreignWatchId }, session.Headers);
+        var foreignId = foreignEntries.Entries.Entries_.Single().Id;
+
+        var response = await session.Context.SelectAsync(
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(foreignId) }, session.Headers);
+
+        Assert.NotEqual("", response.Error);
+    }
+
+    [Fact]
+    public async Task ASelectionOnOneConnection_IsNeverObservedOnAnothersStream()
+    {
+        File.WriteAllText(IoPath.Combine(_projectFolder, "shared.txt"), "");
+        using var session = await OpenSessionAsync();
+        using var ctsA = new CancellationTokenSource(MessageTimeout);
+        using var ctsB = new CancellationTokenSource(MessageTimeout);
+        var watchIdB = ShortGuid.NewShortGuid();
+        var entryIdA = await EntryIdOfAsync(session, "shared.txt");
+
+        using var callA = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+        using var callB = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchIdB }, session.Headers);
+        await ReadSelectionAsync(callA.ResponseStream, ctsA.Token);
+        await ReadSelectionAsync(callB.ResponseStream, ctsB.Token);
+        var pendingB = callB.ResponseStream.MoveNext(ctsB.Token);
+
+        await session.Context.SelectAsync(
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryIdA) }, session.Headers);
+
+        var pushedA = await ReadSelectionAsync(callA.ResponseStream, ctsA.Token);
+        Assert.Equal(new[] { "shared.txt" }, pushedA.Selection.Path.Segments);
+        var arrivedOnB = await Task.WhenAny(pendingB, Task.Delay(TimeSpan.FromSeconds(1), CancellationToken.None)) == pendingB;
+        Assert.False(arrivedOnB, "Connection B observed a selection made on connection A.");
+    }
+
+    [Fact]
+    public async Task SelectAndWatch_ForAProjectTheCallerIsNotAuthorizedFor_AreRejected()
+    {
+        using var owner = await OpenSessionAsync();
+        using var otherChannel = CreateChannel();
+        var otherHeaders = new Metadata { { SessionTokenHeader, "not-a-valid-session" } };
+        var otherClient = new ContextService.ContextServiceClient(otherChannel);
+
+        var selectFailure = await Assert.ThrowsAsync<RpcException>(async () => await otherClient.SelectAsync(
+            new SelectRequest { ProjectId = owner.ProjectId, WatchId = owner.WatchId }, otherHeaders));
+        Assert.Equal(StatusCode.Unauthenticated, selectFailure.StatusCode);
+
+        using var cts = new CancellationTokenSource(MessageTimeout);
+        using var call = otherClient.Watch(new WatchContextRequest { ProjectId = owner.ProjectId, WatchId = owner.WatchId }, otherHeaders);
+        var watchFailure = await Assert.ThrowsAsync<RpcException>(async () => await call.ResponseStream.MoveNext(cts.Token));
+        Assert.Equal(StatusCode.Unauthenticated, watchFailure.StatusCode);
+    }
+}

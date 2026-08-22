@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Backend.Projects;
 using Grpc.Core;
@@ -82,19 +83,21 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         return response.Added.Id;
     }
 
-    /// <summary>Reads until a message of the wanted kind arrives, skipping anything else on the stream.</summary>
-    private static async Task<HierarchyMessage> ReadUntilAsync(
-        IAsyncStreamReader<HierarchyMessage> stream, HierarchyMessage.MessageOneofCase wanted, CancellationToken cancellationToken)
+    /// <summary>
+    /// Reads the context stream until a prompt arrives, skipping the selection baseline and
+    /// any selection change that precedes it.
+    /// </summary>
+    private static async Task<ContextPrompt> ReadUntilPromptAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
     {
         while (await stream.MoveNext(cancellationToken))
         {
-            if (stream.Current.MessageCase == wanted)
+            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Prompt)
             {
-                return stream.Current;
+                return stream.Current.Prompt;
             }
         }
 
-        throw new InvalidOperationException($"The stream ended before a {wanted} message arrived.");
+        throw new InvalidOperationException("The stream ended before a prompt arrived.");
     }
 
     /// <summary>
@@ -125,6 +128,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
 
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
+        var contextClient = new ContextService.ContextServiceClient(channel);
         var headers = await LoginAsync(channel);
         var projectId = await AddProjectAsync(channel, headers);
         var watchId = ShortGuid.NewShortGuid();
@@ -134,23 +138,23 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
 
         using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers);
         using var cts = new CancellationTokenSource(MessageTimeout);
-        var pendingPrompt = ReadUntilAsync(call.ResponseStream, HierarchyMessage.MessageOneofCase.Prompt, cts.Token);
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers);
+        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
         await Task.Delay(StreamStartupGrace);
 
         var source = new ContextSource { EntryId = entryId };
-        var discovered = await hierarchyClient.DiscoverActionsAsync(
-            new DiscoverActionsRequest { ProjectId = projectId, WatchId = watchId, Scope = ContextScope.Hierarchy, Source = source },
+        var discovered = await contextClient.DiscoverActionsAsync(
+            new DiscoverActionsRequest { ProjectId = projectId, WatchId = watchId, Source = source },
             headers);
         var renameAction = discovered.Groups.SelectMany(g => g.Actions).Single(a => a.Id == HierarchyContextActionProvider.RenameActionId);
         Assert.True(renameAction.Available);
 
         var interactionId = ShortGuid.NewShortGuid();
-        var executed = await hierarchyClient.ExecuteActionAsync(
+        var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
                 ProjectId = projectId,
                 WatchId = watchId,
-                Scope = ContextScope.Hierarchy,
                 Source = source,
                 InteractionId = interactionId,
                 ActionId = renameAction.Id,
@@ -158,24 +162,24 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
             headers);
         Assert.True(executed.Accepted);
 
-        var prompt = (await pendingPrompt).Prompt;
+        var prompt = await pendingPrompt;
         Assert.Equal(ContextPrompt.PromptOneofCase.InputDialog, prompt.PromptCase);
         Assert.Equal(interactionId, (ShortGuid)prompt.InteractionId);
         Assert.Equal("original.txt", prompt.InputDialog.InitialValue);
 
-        var rejected = await hierarchyClient.ProposeInputAsync(
+        var rejected = await contextClient.ProposeInputAsync(
             new ProposeInputRequest { InteractionId = interactionId, Revision = 1, Value = "taken.txt" }, headers);
         Assert.False(rejected.Valid);
         Assert.Equal(1u, rejected.Revision);
 
-        var accepted = await hierarchyClient.ProposeInputAsync(
+        var accepted = await contextClient.ProposeInputAsync(
             new ProposeInputRequest { InteractionId = interactionId, Revision = 2, Value = "renamed.txt" }, headers);
         Assert.True(accepted.Valid);
         Assert.Equal(2u, accepted.Revision);
 
         var pendingChange = ReadUntilChangeAsync(call.ResponseStream, HierarchyChange.ChangeOneofCase.Renamed, cts.Token);
 
-        var submitted = await hierarchyClient.SubmitInteractionAsync(
+        var submitted = await contextClient.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = "renamed.txt" }, headers);
         Assert.True(submitted.Completed);
         Assert.False(File.Exists(IoPath.Combine(_projectFolder, "original.txt")));
@@ -195,6 +199,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
 
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
+        var contextClient = new ContextService.ContextServiceClient(channel);
         var headers = await LoginAsync(channel);
         var projectId = await AddProjectAsync(channel, headers);
         var watchId = ShortGuid.NewShortGuid();
@@ -204,16 +209,16 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
 
         using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers);
         using var cts = new CancellationTokenSource(MessageTimeout);
-        var pendingPrompt = ReadUntilAsync(call.ResponseStream, HierarchyMessage.MessageOneofCase.Prompt, cts.Token);
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers);
+        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
         await Task.Delay(StreamStartupGrace);
 
         var interactionId = ShortGuid.NewShortGuid();
-        var executed = await hierarchyClient.ExecuteActionAsync(
+        var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
                 ProjectId = projectId,
                 WatchId = watchId,
-                Scope = ContextScope.Hierarchy,
                 Source = new ContextSource { EntryId = entryId },
                 InteractionId = interactionId,
                 ActionId = HierarchyContextActionProvider.DeleteActionId,
@@ -221,14 +226,14 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
             headers);
         Assert.True(executed.Accepted);
 
-        var prompt = (await pendingPrompt).Prompt;
+        var prompt = await pendingPrompt;
         Assert.Equal(ContextPrompt.PromptOneofCase.ConfirmDialog, prompt.PromptCase);
         Assert.True(prompt.ConfirmDialog.Danger);
         Assert.Contains("doomed", prompt.ConfirmDialog.Message);
 
         var pendingChange = ReadUntilChangeAsync(call.ResponseStream, HierarchyChange.ChangeOneofCase.Removed, cts.Token);
 
-        var submitted = await hierarchyClient.SubmitInteractionAsync(
+        var submitted = await contextClient.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = "" }, headers);
         Assert.True(submitted.Completed);
         Assert.False(Directory.Exists(folder));
@@ -244,6 +249,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
 
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
+        var contextClient = new ContextService.ContextServiceClient(channel);
         var headers = await LoginAsync(channel);
         var projectId = await AddProjectAsync(channel, headers);
         var watchId = ShortGuid.NewShortGuid();
@@ -253,15 +259,15 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
 
         using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers);
         using var cts = new CancellationTokenSource(MessageTimeout);
-        var pendingPrompt = ReadUntilAsync(call.ResponseStream, HierarchyMessage.MessageOneofCase.Prompt, cts.Token);
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers);
+        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
         await Task.Delay(StreamStartupGrace);
 
-        var executed = await hierarchyClient.ExecuteActionAsync(
+        var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
                 ProjectId = projectId,
                 WatchId = watchId,
-                Scope = ContextScope.Hierarchy,
                 Source = new ContextSource { EntryId = entryId },
                 InteractionId = ShortGuid.NewShortGuid(),
                 Shortcut = new ContextShortcut { Key = "F2" },
@@ -269,7 +275,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
             headers);
 
         Assert.True(executed.Accepted);
-        var prompt = (await pendingPrompt).Prompt;
+        var prompt = await pendingPrompt;
         Assert.Equal(ContextPrompt.PromptOneofCase.InputDialog, prompt.PromptCase);
         Assert.Equal("shortcut.txt", prompt.InputDialog.InitialValue);
     }
@@ -281,6 +287,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
 
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
+        var contextClient = new ContextService.ContextServiceClient(channel);
         var headers = await LoginAsync(channel);
         var projectId = await AddProjectAsync(channel, headers);
         var watchIdA = ShortGuid.NewShortGuid();
@@ -290,21 +297,23 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchIdB }, headers);
         var entryIdA = entriesA.Entries.Entries_.Single(e => e.Name == "shared.txt").Id;
 
-        using var callA = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchIdA }, headers);
-        using var callB = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchIdB }, headers);
+        using var callA = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchIdA }, headers);
+        using var callB = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchIdB }, headers);
         using var ctsA = new CancellationTokenSource(MessageTimeout);
         using var ctsB = new CancellationTokenSource(MessageTimeout);
 
+        // Both streams open with their "nothing selected" baseline; what matters is what
+        // arrives after it.
+        Assert.True(await callA.ResponseStream.MoveNext(ctsA.Token));
+        Assert.True(await callB.ResponseStream.MoveNext(ctsB.Token));
         var pendingA = callA.ResponseStream.MoveNext(ctsA.Token);
         var pendingB = callB.ResponseStream.MoveNext(ctsB.Token);
-        await Task.Delay(StreamStartupGrace);
 
-        await hierarchyClient.ExecuteActionAsync(
+        await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
                 ProjectId = projectId,
                 WatchId = watchIdA,
-                Scope = ContextScope.Hierarchy,
                 Source = new ContextSource { EntryId = entryIdA },
                 InteractionId = ShortGuid.NewShortGuid(),
                 ActionId = HierarchyContextActionProvider.RenameActionId,
@@ -312,7 +321,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
             headers);
 
         Assert.True(await pendingA, "Expected the prompt on connection A but its stream ended or timed out.");
-        Assert.Equal(HierarchyMessage.MessageOneofCase.Prompt, callA.ResponseStream.Current.MessageCase);
+        Assert.Equal(ContextMessage.MessageOneofCase.Prompt, callA.ResponseStream.Current.MessageCase);
 
         // Nothing happened on disk, so B has nothing to receive at all - and certainly not
         // A's prompt. Anything arriving within this window is a leak.
@@ -327,6 +336,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
 
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
+        var contextClient = new ContextService.ContextServiceClient(channel);
         var headers = await LoginAsync(channel);
         var projectId = await AddProjectAsync(channel, headers);
         var watchIdA = ShortGuid.NewShortGuid();
@@ -335,12 +345,11 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         var entriesA = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchIdA }, headers);
         var entryIdA = entriesA.Entries.Entries_.Single(e => e.Name == "shared.txt").Id;
 
-        var discovered = await hierarchyClient.DiscoverActionsAsync(
+        var discovered = await contextClient.DiscoverActionsAsync(
             new DiscoverActionsRequest
             {
                 ProjectId = projectId,
                 WatchId = watchIdB,
-                Scope = ContextScope.Hierarchy,
                 Source = new ContextSource { EntryId = entryIdA },
             },
             headers);
@@ -356,6 +365,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         using var ownerChannel = CreateChannel();
         var ownerHeaders = await LoginAsync(ownerChannel);
         var ownerClient = new HierarchyService.HierarchyServiceClient(ownerChannel);
+        var ownerContextClient = new ContextService.ContextServiceClient(ownerChannel);
         var projectId = await AddProjectAsync(ownerChannel, ownerHeaders);
         var watchId = ShortGuid.NewShortGuid();
         var entries = await ownerClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, ownerHeaders);
@@ -365,19 +375,68 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         // project id resolves to nothing for this caller.
         using var otherChannel = CreateChannel();
         var otherHeaders = new Metadata { { SessionTokenHeader, "not-a-valid-session" } };
-        var otherClient = new HierarchyService.HierarchyServiceClient(otherChannel);
+        var otherContextClient = new ContextService.ContextServiceClient(otherChannel);
 
-        var rpcException = await Assert.ThrowsAsync<RpcException>(async () => await otherClient.DiscoverActionsAsync(
+        var rpcException = await Assert.ThrowsAsync<RpcException>(async () => await otherContextClient.DiscoverActionsAsync(
             new DiscoverActionsRequest
             {
                 ProjectId = projectId,
                 WatchId = watchId,
-                Scope = ContextScope.Hierarchy,
                 Source = new ContextSource { EntryId = entryId },
             },
             otherHeaders));
 
         Assert.Equal(StatusCode.Unauthenticated, rpcException.StatusCode);
+    }
+
+    [Fact]
+    public async Task ExecuteAction_WithoutASource_ActsOnTheConnectionsCurrentSelection()
+    {
+        File.WriteAllText(IoPath.Combine(_projectFolder, "selected.txt"), "");
+
+        using var channel = CreateChannel();
+        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
+        var contextClient = new ContextService.ContextServiceClient(channel);
+        var headers = await LoginAsync(channel);
+        var projectId = await AddProjectAsync(channel, headers);
+        var watchId = ShortGuid.NewShortGuid();
+
+        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers);
+        var entryId = entries.Entries.Entries_.Single(e => e.Name == "selected.txt").Id;
+
+        using var cts = new CancellationTokenSource(MessageTimeout);
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers);
+        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
+        await Task.Delay(StreamStartupGrace);
+
+        var nothingSelected = await contextClient.ExecuteActionAsync(
+            new ExecuteActionRequest
+            {
+                ProjectId = projectId,
+                WatchId = watchId,
+                InteractionId = ShortGuid.NewShortGuid(),
+                ActionId = HierarchyContextActionProvider.RenameActionId,
+            },
+            headers);
+        Assert.False(nothingSelected.Accepted);
+
+        var selection = new ContextSelection { Source = ContextSelectionSource.Explorer, Id = new ContextSource { EntryId = entryId } };
+        var selected = await contextClient.SelectAsync(new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = selection }, headers);
+        Assert.Equal("", selected.Error);
+
+        var executed = await contextClient.ExecuteActionAsync(
+            new ExecuteActionRequest
+            {
+                ProjectId = projectId,
+                WatchId = watchId,
+                InteractionId = ShortGuid.NewShortGuid(),
+                ActionId = HierarchyContextActionProvider.RenameActionId,
+            },
+            headers);
+
+        Assert.True(executed.Accepted);
+        var prompt = await pendingPrompt;
+        Assert.Equal("selected.txt", prompt.InputDialog.InitialValue);
     }
 
     [Fact]
@@ -387,6 +446,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
 
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
+        var contextClient = new ContextService.ContextServiceClient(channel);
         var headers = await LoginAsync(channel);
         var projectId = await AddProjectAsync(channel, headers);
         var watchId = ShortGuid.NewShortGuid();
@@ -396,16 +456,16 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
 
         using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers);
         using var cts = new CancellationTokenSource(MessageTimeout);
-        var pendingPrompt = ReadUntilAsync(call.ResponseStream, HierarchyMessage.MessageOneofCase.Prompt, cts.Token);
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers);
+        var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
         await Task.Delay(StreamStartupGrace);
 
         var interactionId = ShortGuid.NewShortGuid();
-        await hierarchyClient.ExecuteActionAsync(
+        await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
                 ProjectId = projectId,
                 WatchId = watchId,
-                Scope = ContextScope.Hierarchy,
                 Source = new ContextSource { EntryId = entryId },
                 InteractionId = interactionId,
                 ActionId = HierarchyContextActionProvider.RenameActionId,
@@ -413,9 +473,9 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
             headers);
         await pendingPrompt;
 
-        var first = await hierarchyClient.SubmitInteractionAsync(
+        var first = await contextClient.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = "twice.txt" }, headers);
-        var second = await hierarchyClient.SubmitInteractionAsync(
+        var second = await contextClient.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = "thrice.txt" }, headers);
 
         Assert.True(first.Completed);
