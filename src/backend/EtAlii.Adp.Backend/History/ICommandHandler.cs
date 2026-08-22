@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.History;
+namespace EtAlii.Adp.Backend;
 
 /// <summary>
 /// Carries out one specific <see cref="ICommand"/>. Exactly one handler is registered per

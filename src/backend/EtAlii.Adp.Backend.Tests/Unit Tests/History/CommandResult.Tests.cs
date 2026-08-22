@@ -1,4 +1,3 @@
-using EtAlii.Adp.Backend.History;
 using Xunit;
 
 namespace EtAlii.Adp.Backend.Tests;

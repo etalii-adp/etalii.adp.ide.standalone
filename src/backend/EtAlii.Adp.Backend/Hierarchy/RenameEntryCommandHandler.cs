@@ -1,4 +1,3 @@
-using EtAlii.Adp.Backend.History;
 using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Backend.Hierarchy;
@@ -42,19 +41,16 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
-        return Task.FromResult(Execute(command));
-    }
-
-    private static CommandResult Execute(RenameEntryCommand command)
-    {
         if (string.IsNullOrWhiteSpace(command.FullPath))
         {
-            return CommandResult.Failure("No entry was given to rename.");
+            var result = CommandResult.Failure("No entry was given to rename.");
+            return Task.FromResult(result);
         }
 
         if (ValidateName(command.NewName) is { } nameError)
         {
-            return CommandResult.Failure(nameError);
+            var result = CommandResult.Failure(nameError);
+            return Task.FromResult(result);
         }
 
         // A trailing separator would make GetFileName return an empty name, which would leave
@@ -64,13 +60,15 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         var isDirectory = Directory.Exists(sourcePath);
         if (!isDirectory && !File.Exists(sourcePath))
         {
-            return CommandResult.Failure("The entry no longer exists.");
+            var result = CommandResult.Failure("The entry no longer exists.");
+            return Task.FromResult(result);
         }
 
         var parentPath = IoPath.GetDirectoryName(sourcePath);
         if (string.IsNullOrEmpty(parentPath))
         {
-            return CommandResult.Failure("A root folder cannot be renamed.");
+            var result = CommandResult.Failure("A root folder cannot be renamed.");
+            return Task.FromResult(result);
         }
 
         var originalName = IoPath.GetFileName(sourcePath);
@@ -78,7 +76,8 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
 
         if (string.Equals(targetPath, sourcePath, StringComparison.Ordinal))
         {
-            return CommandResult.Failure("The new name is the same as the current name.");
+            var result = CommandResult.Failure("The new name is the same as the current name.");
+            return Task.FromResult(result);
         }
 
         // On a case-insensitive filesystem the target "already exists" because it *is* the source;
@@ -86,7 +85,8 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         var isCaseOnlyRename = string.Equals(targetPath, sourcePath, StringComparison.OrdinalIgnoreCase);
         if (!isCaseOnlyRename && (File.Exists(targetPath) || Directory.Exists(targetPath)))
         {
-            return CommandResult.Failure($"'{command.NewName}' already exists in this folder.");
+            var result = CommandResult.Failure($"'{command.NewName}' already exists in this folder.");
+            return Task.FromResult(result);
         }
 
         try
@@ -104,10 +104,11 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         {
             // Locked by another process, permissions, a path that outgrew the OS limit: all
             // things the user can act on, so they are reported rather than thrown.
-            return CommandResult.Failure($"'{originalName}' could not be renamed: {exception.Message}");
+            var result = CommandResult.Failure($"'{originalName}' could not be renamed: {exception.Message}");
+            return Task.FromResult(result);
         }
 
-        return CommandResult.Success(new RenameEntryCommand(targetPath, originalName));
+        return Task.FromResult(CommandResult.Success(new RenameEntryCommand(targetPath, originalName)));
     }
 
     /// <returns>The reason the name is unusable, or <c>null</c> when it is fine.</returns>

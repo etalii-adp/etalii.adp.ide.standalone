@@ -1,4 +1,3 @@
-using EtAlii.Adp.Backend.History;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
