@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/create-diagram-file/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-22T17:31:58.983Z",
       "trigger": "initial",
+      "approvalId": "approval_1787419918948_tq3qo2j7f",
+      "approvalTitle": "Create Diagram File — Tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-22T23:54:14.730Z",
+      "trigger": "approved",
       "approvalId": "approval_1787419918948_tq3qo2j7f",
       "approvalTitle": "Create Diagram File — Tasks"
     }

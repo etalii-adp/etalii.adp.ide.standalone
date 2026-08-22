@@ -3,8 +3,10 @@
   "title": "Create Diagram File — Design",
   "filePath": ".spec-workflow/specs/create-diagram-file/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-22T17:00:02.915Z",
   "category": "spec",
-  "categoryName": "create-diagram-file"
+  "categoryName": "create-diagram-file",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-22T23:54:12.800Z"
 }
