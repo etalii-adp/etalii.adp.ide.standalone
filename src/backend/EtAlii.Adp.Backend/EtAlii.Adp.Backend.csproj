@@ -5,6 +5,8 @@
     <PackageReference Include="Grpc.AspNetCore" />
     <PackageReference Include="Grpc.AspNetCore.Web" />
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
+    <!-- Core -> abstraction only: the Add action reads DiagramDefinition.All; no module is referenced. -->
+    <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
   </ItemGroup>
 
   <ItemGroup>

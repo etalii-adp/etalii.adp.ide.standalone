@@ -102,6 +102,5 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
 
     private static string? ParentFolderOf(ContextTarget target) => IoPath.GetDirectoryName(target.ResolvedFullPath);
 
-    private static bool Exists(ContextTarget target) =>
-        target.IsContainer ? Directory.Exists(target.ResolvedFullPath) : File.Exists(target.ResolvedFullPath);
+    private static bool Exists(ContextTarget target) => HierarchyTargets.Exists(target);
 }
