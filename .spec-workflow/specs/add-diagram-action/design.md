@@ -51,18 +51,18 @@ The two halves meet at `DiagramDefinition`: discovery produces the list, the pro
 
 ```mermaid
 graph TD
-    subgraph "EtAlii.Adp.Diagram (abstractions)"
+    subgraph Abstractions["EtAlii.Adp.Diagram abstractions"]
         DD[DiagramDefinition.All]
         DDD[DiagramDefinitionDiscovery]
         DDD -->|produces| DD
     end
 
-    subgraph "Host (Program.cs)"
-        P[startup] -->|walk EtAlii.Adp.* assemblies, log| DDD
+    subgraph Host["Host - Program.cs"]
+        P[startup] -->|walk EtAlii.Adp assemblies and log| DDD
         P -->|registers| ADP
     end
 
-    subgraph "EtAlii.Adp.Backend"
+    subgraph Backend["EtAlii.Adp.Backend"]
         ADP[AddDiagramContextActionProvider]
         RES[ContextActionResolver]
         HCAP[HierarchyContextActionProvider]
@@ -75,13 +75,13 @@ graph TD
         ADP -->|reads| DD
     end
 
-    subgraph "Client"
+    subgraph Client["Client"]
         CPH[ContextPromptHost]
         CD[ChoicePromptDialog]
         CPH -->|choiceDialog| CD
     end
 
-    CSA -.->|ContextMessage.prompt choice_dialog| CPH
+    CSA -.->|ContextMessage prompt choice_dialog| CPH
     CD -.->|SubmitInteraction option id| CSA
 ```
 
@@ -92,27 +92,26 @@ sequenceDiagram
     participant U as User
     participant T as ExplorerTreePanel
     participant S as ContextServiceImpl
-    participant R as ContextActionResolver
     participant A as AddDiagramContextActionProvider
     participant H as ContextPromptHost
 
-    Note over T,S: Watch stream open; store holds "nothing selected"
+    Note over T,S: Watch stream open, store holds "nothing selected"
     U->>T: right-click empty explorer space
-    T->>S: ExecuteAction(watch_id, interaction_id, action_id "hierarchy.add") - no source
-    S->>S: TryResolveTargetAsync: store empty -> root target (IsContainer, ResolvedFullPath = project root)
-    S->>A: ExecuteAsync(rootTarget, "hierarchy.add")
-    A->>A: DiagramDefinition.All -> ContextOptionNode tree by vendor
+    T->>S: ExecuteAction(watch_id, interaction_id, action_id hierarchy.add) with no source
+    S->>S: TryResolveTargetAsync, store empty, so target is the project root as a container
+    S->>A: ExecuteAsync(rootTarget, hierarchy.add)
+    A->>A: builds the ContextOptionNode tree from DiagramDefinition.All, grouped by vendor
     A-->>S: RequiresChoice(ContextChoiceRequest)
     S-->>H: [Watch stream] ContextPrompt.choice_dialog
     H-->>U: choice dialog, confirm disabled
-    U->>H: expands "c4", selects "System Context"
+    U->>H: expands c4 and selects System Context
     H-->>U: confirm enabled
     U->>H: presses Add
-    H->>S: SubmitInteraction(interaction_id, value = option id "c4/context")
-    S->>A: CommitAsync(rootTarget, "hierarchy.add", "c4/context")
-    A->>A: folder still exists? -> yes; look up definition by origin
-    A-->>S: Failed("Creating a System Context diagram is not supported yet.")
-    S-->>H: SubmitInteractionResponse { completed false, error }
+    H->>S: SubmitInteraction(interaction_id, value is the option id c4/context)
+    S->>A: CommitAsync(rootTarget, hierarchy.add, c4/context)
+    A->>A: confirms the folder still exists, then looks up the definition by origin
+    A-->>S: Failed - Creating a System Context diagram is not supported yet
+    S-->>H: SubmitInteractionResponse with completed false and the error
     H-->>U: dialog stays open showing the error
 ```
 
