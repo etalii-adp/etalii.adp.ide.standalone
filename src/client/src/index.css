@@ -720,22 +720,6 @@ button {
   background: var(--color-bg);
 }
 
-.explorer-tree-chevron-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  background: none;
-  border: none;
-  border-radius: 4px;
-  padding: 0;
-  color: inherit;
-}
-
-.explorer-tree-chevron-button:hover .mdi {
-  color: var(--color-text);
-}
-
 .explorer-tree-node .mdi {
   font-size: 1.125rem;
   color: var(--color-text-muted);
@@ -922,6 +906,112 @@ button {
 .dialog-button:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+/* Choice dialog: a tree of options to pick one from. Shares the explorer tree's tokens -
+   chevron width, row padding, the focused-row treatment - through its own selectors, so
+   the two can diverge later without either dragging the other along. */
+
+.choice-tree,
+.choice-tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.choice-tree {
+  max-height: 50vh;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  padding: 0.25rem;
+  /* A double click selects; without this it also selects the label text. */
+  user-select: none;
+}
+
+.choice-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem 0.25rem 0;
+  font-size: 0.8125rem;
+  color: var(--color-text);
+}
+
+.choice-tree-row:hover {
+  background: var(--color-surface);
+}
+
+/* The chosen option. A border as well as a fill, so it survives beside the hover fill. */
+.choice-tree-row-selected,
+.choice-tree-row-selected:hover {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+/* A group is distinguished by weight and colour, not by indentation alone (Requirement 5.4). */
+.choice-tree-row-group {
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+}
+
+.choice-tree-chevron-button,
+.choice-tree-label {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.choice-tree-chevron-button {
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 4px;
+}
+
+.choice-tree-chevron {
+  font-size: 1rem !important;
+  width: 1rem;
+  color: var(--color-text-muted);
+}
+
+.choice-tree-chevron-button:hover .choice-tree-chevron {
+  color: var(--color-text);
+}
+
+.choice-tree-label {
+  gap: 0.375rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.choice-tree-label-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.choice-tree-chevron-button:focus-visible,
+.choice-tree-label:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.choice-tree-empty {
+  margin: 0;
+  padding: 1rem 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  text-align: center;
 }
 
 .context-menu-catcher {
