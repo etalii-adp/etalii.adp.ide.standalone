@@ -1,4 +1,5 @@
 using System.Threading.Channels;
+using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
 using Grpc.Core;
@@ -6,17 +7,25 @@ using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Backend.Hierarchy;
 
-public sealed class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
+public sealed partial class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
 {
     private static readonly TimeSpan RootRecoveryPollInterval = TimeSpan.FromSeconds(2);
 
     private readonly IProjectStore _projectStore;
     private readonly IHierarchyModelStore _hierarchyModelStore;
+    private readonly IContextActionResolver _contextActionResolver;
+    private readonly IContextInteractionStore _contextInteractionStore;
 
-    public HierarchyServiceImpl(IProjectStore projectStore, IHierarchyModelStore hierarchyModelStore)
+    public HierarchyServiceImpl(
+        IProjectStore projectStore,
+        IHierarchyModelStore hierarchyModelStore,
+        IContextActionResolver contextActionResolver,
+        IContextInteractionStore contextInteractionStore)
     {
         _projectStore = projectStore;
         _hierarchyModelStore = hierarchyModelStore;
+        _contextActionResolver = contextActionResolver;
+        _contextInteractionStore = contextInteractionStore;
     }
 
     public override Task<ListEntriesResponse> ListEntries(ListEntriesRequest request, ServerCallContext context)
@@ -38,7 +47,7 @@ public sealed class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
 
     public override async Task WatchHierarchy(
         WatchHierarchyRequest request,
-        IServerStreamWriter<HierarchyChange> responseStream,
+        IServerStreamWriter<HierarchyMessage> responseStream,
         ServerCallContext context)
     {
         var userId = SessionContext.GetUserId(context);
@@ -49,10 +58,14 @@ public sealed class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
 
         var watchId = request.WatchId;
         var model = _hierarchyModelStore.GetOrCreate(watchId, rootPath);
-        var channel = Channel.CreateUnbounded<HierarchyChange>();
+        var channel = Channel.CreateUnbounded<HierarchyMessage>();
 
-        void OnEntryChanged(HierarchyEntryChange change) => channel.Writer.TryWrite(ToProto(change));
+        void OnEntryChanged(HierarchyEntryChange change) => channel.Writer.TryWrite(new HierarchyMessage { Change = ToProto(change) });
         model.EntryChanged += OnEntryChanged;
+
+        // The same stream carries backend-initiated context prompts, so an action started
+        // by a unary call on this connection can reach this connection - and only it.
+        _contextInteractionStore.Register(watchId, channel.Writer);
 
         using var recoveryCts = new CancellationTokenSource();
         var watcher = CreateWatcher(rootPath, model, recoveryCts.Token);
@@ -60,9 +73,9 @@ public sealed class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
 
         try
         {
-            await foreach (var change in channel.Reader.ReadAllAsync(context.CancellationToken))
+            await foreach (var message in channel.Reader.ReadAllAsync(context.CancellationToken))
             {
-                await responseStream.WriteAsync(change);
+                await responseStream.WriteAsync(message, context.CancellationToken);
             }
         }
         catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
@@ -73,7 +86,8 @@ public sealed class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
         finally
         {
             model.EntryChanged -= OnEntryChanged;
-            recoveryCts.Cancel();
+            await recoveryCts.CancelAsync();
+            _contextInteractionStore.Remove(watchId);
             _hierarchyModelStore.Remove(watchId);
         }
     }
@@ -82,7 +96,7 @@ public sealed class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
     {
         return new RootFolderWatcher(
             rootPath,
-            onChange: (changeType, oldPath, newPath) => model.OnWatcherEvent(changeType, oldPath, newPath),
+            onChange: model.OnWatcherEvent,
             onError: ex =>
             {
                 if (ex is InternalBufferOverflowException)
@@ -123,7 +137,7 @@ public sealed class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
             return false;
         }
 
-        var candidatePath = IoPath.Combine(project.PathSegments.ToArray());
+        var candidatePath = IoPath.Combine(project.Path.Segments.ToArray());
         if (!Directory.Exists(candidatePath))
         {
             rootPath = "";

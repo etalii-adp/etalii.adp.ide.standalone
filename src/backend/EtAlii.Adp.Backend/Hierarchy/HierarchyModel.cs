@@ -90,6 +90,30 @@ public sealed class HierarchyModel
     public void NotifyRootUnavailable(string message) =>
         EntryChanged?.Invoke(new HierarchyEntryChange.RootUnavailable(message));
 
+    /// <summary>
+    /// Resolves an entry id this connection knows to where it currently lives on disk.
+    /// Containment is re-checked here rather than trusted from listing time, so an entry
+    /// whose path has since been made to point outside the root (e.g. a swapped symlink)
+    /// resolves to nothing. An id from another connection or project is unknown here and
+    /// resolves to nothing too, which is what keeps it from leaking its own existence.
+    /// </summary>
+    public bool TryResolvePath(ShortGuid entryId, out string fullPath, out bool isFolder)
+    {
+        lock (_gate)
+        {
+            if (!_pathById.TryGetValue(entryId, out var path) || !IsContained(path))
+            {
+                fullPath = "";
+                isFolder = false;
+                return false;
+            }
+
+            fullPath = IoPath.GetFullPath(path);
+            isFolder = _entriesById[entryId].IsFolder;
+            return true;
+        }
+    }
+
     private void OnCreated(string path)
     {
         if (_idByPath.ContainsKey(path))

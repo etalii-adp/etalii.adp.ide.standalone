@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package etalii.adp;
+
+import "shared.proto"; // ShortGuid
+
+option csharp_namespace = "EtAlii.Adp";
+
+// The scope-agnostic vocabulary behind every context action: what actions a source
+// currently offers, how each can be triggered, and which dialog a running action
+// wants shown. Nothing here mentions files, folders, rename, or delete - a provider
+// on the backend supplies all of that as data, so a new action (or a whole new
+// scope) needs no change to this contract, the context menu, or the prompt host.
+
+// Which surface an action applies to. A future scope (a diagram canvas, a ribbon)
+// is added here and served by its own IContextActionProvider.
+enum ContextScope {
+  CONTEXT_SCOPE_UNSPECIFIED = 0;
+  HIERARCHY = 1;
+}
+
+// What the action applies to. For HIERARCHY this is an entry id, which the backend
+// resolves to an absolute path before handing it to a provider - the client is never
+// given, and never supplies, a filesystem path (tech.md: the client never touches the
+// filesystem; an absolute path would also leak the user's directory layout).
+message ContextSource {
+  oneof source {
+    ShortGuid entry_id = 1;
+  }
+}
+
+// A keypress, expressed so the client can match it directly against a KeyboardEvent
+// without a client-side table of which key means which action.
+message ContextShortcut {
+  string key = 1; // DOM KeyboardEvent.key, e.g. "F2", "Delete"
+  bool ctrl = 2;
+  bool shift = 3;
+  bool alt = 4;
+  bool meta = 5;
+}
+
+message ContextAction {
+  string id = 1;
+  string label = 2;
+  string icon = 3;                       // @mdi/font class, e.g. "mdi-pencil-outline"
+  ContextShortcut shortcut = 4;          // unset when the action has none
+  bool available = 5;                    // false -> rendered disabled, shortcut inert
+  string unavailable_reason = 6;         // surfaced as the disabled item's tooltip
+  repeated ContextActionGroup items = 7; // non-empty -> a submenu instead of an action
+}
+
+// One provider's contribution; the client renders each as one ContextMenuGroup.
+message ContextActionGroup {
+  repeated ContextAction actions = 1;
+}
+
+message InputDialogPrompt {
+  string title = 1;
+  string icon = 2;
+  string field_label = 3;
+  string initial_value = 4;
+  string confirm_label = 5;
+}
+
+message ConfirmDialogPrompt {
+  string title = 1;
+  string icon = 2;
+  string message = 3;
+  string confirm_label = 4;
+  bool danger = 5;
+}
+
+message ContextInteractionClosed {
+  string message = 1;
+}
+
+// Backend-initiated: pushed down the connection's already-open WatchHierarchy stream.
+message ContextPrompt {
+  ShortGuid interaction_id = 1;
+  oneof prompt {
+    InputDialogPrompt input_dialog = 2;
+    ConfirmDialogPrompt confirm_dialog = 3;
+    ContextInteractionClosed closed = 4; // backend-initiated dismissal
+  }
+}

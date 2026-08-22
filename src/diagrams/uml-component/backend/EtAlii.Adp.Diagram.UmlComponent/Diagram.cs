@@ -1,0 +1,9 @@
+namespace EtAlii.Adp.Diagram.UmlComponent;
+
+/// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `uml/component`.</summary>
+public static class Diagram
+{
+    public static DiagramDefinition Definition { get; } = new(
+        new DiagramOrigin("uml", "component"),
+        "Component diagram");
+}

@@ -8,9 +8,11 @@
     "dev": "vite",
     "prebuild": "npm run generate",
     "build": "tsc --noEmit && vite build",
+    "pretypecheck": "npm run generate",
     "typecheck": "tsc --noEmit",
     "generate": "buf generate ../api",
     "preview": "vite preview",
+    "pretest": "npm run generate",
     "test": "vitest run"
   },
   "dependencies": {
@@ -28,11 +30,11 @@
     "@testing-library/react": "^16.1.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react": "^6.1.0",
     "jsdom": "^25.0.1",
     "typescript": "^5.7.2",
-    "vite": "^6.0.5",
-    "vitest": "^2.1.8"
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
   },
   "allowScripts": {
     "@bufbuild/buf@1.72.0": true,
