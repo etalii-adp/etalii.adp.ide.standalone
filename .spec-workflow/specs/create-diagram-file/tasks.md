@@ -112,7 +112,7 @@
   - _Requirements: 4.3, 4.4, 6.1_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Add the reveal effect, its bounded fallback and the `.adp` icon to `ExplorerTreePanel` per design.md | Restrictions: revealing only moves focus — it must not call `select()` directly, since the existing focus effect already reports the selection; an unresolvable reveal must clear rather than retry forever or wedge the panel; the tree's reducers, streams and keyboard handling stay untouched; the client still composes no paths, it only matches the segments it was given | Success: tests cover a reveal that resolves against a listed file, one whose folder must be expanded first, and one that never resolves and clears after the fallback_
 
-- [ ] 14. Manual F5 verification
+- [x] 14. Manual F5 verification
   - File: none (verification only; temporary port edits to `src/client/vite.config.ts` and `src/backend/EtAlii.Adp.Backend.Service/appsettings.developer.json` reverted before merge)
   - Walk design.md's End-to-End list: Add on a folder, the suggestion following the selected type and stopping once typed, an invalid name showing its reason with Add disabled, creating the file, the file appearing focused and selected with an `.adp` icon, its content being one MIME-type line, a second Add suggesting `-2`, adding into a collapsed folder, a name taken behind the dialog's back, light and dark mode, keyboard-only. Plus `dotnet format style --verify-no-changes --severity info`, `npm run typecheck`, both suites
   - Purpose: prove the whole arc in the real app before merging the worktree
