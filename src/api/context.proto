@@ -186,6 +186,27 @@ message ContextInteractionClosed {
   string message = 1;
 }
 
+// One node of a choice dialog's option tree. A node with `selectable` false is a group:
+// shown, labelled and expandable, but never the dialog's answer. A group's `id` is
+// informational; a selectable node's `id` is exactly what SubmitInteraction sends back
+// as the value. Nothing here says what the options are - a provider supplies the tree,
+// so the same dialog can offer diagram types today and something else tomorrow.
+message ContextOption {
+  string id = 1;
+  string label = 2;
+  bool selectable = 3;
+  repeated ContextOption children = 4;
+}
+
+// A dialog asking the user to pick one option out of a (possibly grouped) tree.
+message ChoiceDialogPrompt {
+  string title = 1;
+  string icon = 2;
+  string confirm_label = 3;
+  repeated ContextOption options = 4; // the top level of the tree
+  string empty_message = 5;           // shown instead of the tree when options is empty
+}
+
 // Backend-initiated: pushed down the connection's already-open Watch stream.
 message ContextPrompt {
   ShortGuid interaction_id = 1;
@@ -193,6 +214,7 @@ message ContextPrompt {
     InputDialogPrompt input_dialog = 2;
     ConfirmDialogPrompt confirm_dialog = 3;
     ContextInteractionClosed closed = 4; // backend-initiated dismissal
+    ChoiceDialogPrompt choice_dialog = 5;
   }
 }
 

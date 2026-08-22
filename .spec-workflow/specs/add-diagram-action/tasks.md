@@ -52,7 +52,7 @@
   - _Requirements: 1.2, 2.1, 2.2, 3.1, 3.4_
   - _Prompt: Implement the task for spec add-diagram-action, first run spec-workflow-guide to get the workflow guide then implement the task: Role: ASP.NET Core developer | Task: Wire discovery into `Program.cs` after `builder.Build()` per design.md's `Program.cs` section, and add the startup integration test described above | Restrictions: discovery runs exactly once; it must run after `Build()` so the host logger exists, and before the app starts serving; do not register `DiagramDefinitionDiscovery` in DI (it is a one-shot at startup, not a service); the test must not call `Initialize` itself | Success: `dotnet run` of the service logs one "Discovered diagram type …" line per module that declares a `Definition` plus the summary line; the integration test passes; `dotnet test src/backend/EtAlii.Adp.Backend.Tests` green. Mark the task in progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7. Extend `context.proto` with the choice prompt
+- [x] 7. Extend `context.proto` with the choice prompt
   - File: `src/api/context.proto` (modify)
   - Add `message ContextOption { string id = 1; string label = 2; bool selectable = 3; repeated ContextOption children = 4; }` and `message ChoiceDialogPrompt { string title = 1; string icon = 2; string confirm_label = 3; repeated ContextOption options = 4; string empty_message = 5; }`; add `ChoiceDialogPrompt choice_dialog = 5;` to `ContextPrompt.prompt`. Comments in the existing style, including the note that a selectable node's `id` is exactly what `SubmitInteraction` sends back
   - Purpose: the one contract addition (design.md *Data Models*) - diagram-agnostic by construction
@@ -60,7 +60,7 @@
   - _Requirements: 5.1_
   - _Prompt: Implement the task for spec add-diagram-action, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Protobuf/gRPC contract engineer | Task: Add `ContextOption` and `ChoiceDialogPrompt` to `src/api/context.proto` and the new `choice_dialog = 5` member of `ContextPrompt.prompt`, matching design.md's Data Models verbatim | Restrictions: field number 5 in `ContextPrompt` - do not renumber or reuse existing members; no diagram vocabulary anywhere in the contract; do not touch the other prompt messages; no build-file edits (the csproj glob and `buf generate` pick it up) | Success: `dotnet build src/backend/EtAlii.Adp.slnx` and `npm run generate` in `src/client` both emit the new types. Mark the task in progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 8. Add the choice request records and the `RequiresChoice` execution result
+- [-] 8. Add the choice request records and the `RequiresChoice` execution result
   - File: `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextChoiceRequest.cs` (new), `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextOptionNode.cs` (new), `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextExecutionResult.cs` (modify)
   - `ContextChoiceRequest(Title, Icon, ConfirmLabel, IReadOnlyList<ContextOptionNode> Options, EmptyMessage)`; `ContextOptionNode(Id, Label, Selectable, IReadOnlyList<ContextOptionNode>? Children = null)`; `public sealed record RequiresChoice(ContextChoiceRequest Request) : ContextExecutionResult;`
   - Purpose: the backend-side description of a choice dialog, one entity per file
