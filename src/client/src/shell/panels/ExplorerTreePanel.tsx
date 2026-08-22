@@ -284,6 +284,7 @@ export function matchShortcut(groups: ContextActionGroup[], event: ShortcutEvent
 }
 
 const FILE_ICONS_BY_EXTENSION: Record<string, string> = {
+  adp: "mdi-graph-outline", // ADP's own diagram files
   ts: "mdi-language-typescript",
   tsx: "mdi-language-typescript",
   js: "mdi-language-javascript",
@@ -328,6 +329,43 @@ export interface ExplorerTreePanelProps {
   projectId: Uint8Array;
 }
 
+/** How long to keep trying to reveal something before giving up on it. */
+const REVEAL_TIMEOUT_MS = 2000;
+
+/**
+ * Walks a project-relative path through the tree by name, as far as the tree currently
+ * reaches: either the entry itself, or the deepest folder along the way whose children this
+ * connection has not listed yet - which is the one to expand to get any further.
+ */
+export function resolveRevealPath(
+  state: TreeState,
+  segments: string[],
+): { leafKey?: string; expandKey?: string } {
+  let keys = state.rootKeys;
+  let parentKey: string | undefined;
+
+  for (let index = 0; index < segments.length; index++) {
+    const key = keys.find((candidate) => state.nodesByKey[candidate]?.name === segments[index]);
+    if (key === undefined) {
+      // Not there yet: either its create is still on its way, or this folder was never listed.
+      return { expandKey: parentKey };
+    }
+    if (index === segments.length - 1) {
+      return { leafKey: key };
+    }
+
+    const node = state.nodesByKey[key];
+    if (node?.childKeys === undefined) {
+      return { expandKey: key };
+    }
+
+    keys = node.childKeys;
+    parentKey = key;
+  }
+
+  return {};
+}
+
 /** The entry's project-relative path, read off the tree the ids came from. */
 export function pathOf(state: TreeState, key: string): string[] {
   const segments: string[] = [];
@@ -346,8 +384,8 @@ export function pathOf(state: TreeState, key: string): string[] {
 export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
   const { transport } = useAuth();
   const hierarchyClient = useMemo(() => createClient(HierarchyService, transport), [transport]);
-  const { watchId, select, executeAction } = useContextConnection();
-  const { selection, actions } = useContextSelection();
+  const { watchId, select, executeAction, clearReveal } = useContextConnection();
+  const { selection, actions, pendingReveal } = useContextSelection();
 
   const [state, setState] = useState<TreeState>(EMPTY_TREE_STATE);
   const [error, setError] = useState<string | null>(null);
@@ -509,6 +547,41 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
       select(null);
     }
   }, [focusedKey, select, state]);
+
+  // Something was just created on this connection. It arrives like any other entry, through
+  // the watcher's own change - so this waits for it to appear rather than inserting it, then
+  // focuses it, which is what reports it as the selection. A folder that was never listed is
+  // expanded on the way, since nothing would ever arrive for it otherwise.
+  useEffect(() => {
+    if (!pendingReveal) {
+      return;
+    }
+
+    const { leafKey, expandKey } = resolveRevealPath(state, pendingReveal);
+    if (leafKey !== undefined) {
+      focusNode(leafKey);
+      clearReveal();
+      return;
+    }
+
+    if (expandKey !== undefined) {
+      const node = state.nodesByKey[expandKey];
+      if (node && !node.expanded) {
+        toggleExpand(expandKey, node);
+      }
+    }
+  }, [clearReveal, focusNode, pendingReveal, state, toggleExpand]);
+
+  // Nothing arrived in time - the entry may be somewhere this connection cannot see. Giving
+  // up keeps a stale reveal from sitting there and grabbing focus much later.
+  useEffect(() => {
+    if (!pendingReveal) {
+      return;
+    }
+
+    const timer = setTimeout(clearReveal, REVEAL_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [clearReveal, pendingReveal]);
 
   const activate = useCallback(
     (key: string, node: TreeNode) => {

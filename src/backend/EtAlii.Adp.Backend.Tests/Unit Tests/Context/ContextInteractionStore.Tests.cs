@@ -16,6 +16,7 @@ public class ContextInteractionStoreTests
     private static ContextInteraction Interaction(ShortGuid watchId, ShortGuid interactionId) => new()
     {
         Id = interactionId,
+        RootPath = @"C:\root",
         WatchId = watchId,
         Target = new ContextTarget(ContextScope.Hierarchy, @"C:\root\item.txt", IsContainer: false, ShortGuid.NewShortGuid()),
         ActionId = "stub.action",
@@ -123,7 +124,7 @@ public class ContextInteractionStoreTests
         public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken) =>
             ValueTask.FromResult(ContextValidationResult.Accepted);
 
-        public ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken) =>
+        public ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken) =>
             ValueTask.FromResult(ContextCommitResult.Succeeded);
     }
 }

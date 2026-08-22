@@ -145,10 +145,9 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Add_OnTheRoot_OpensTheChoiceDialog_AndSubmittingAnswersNotSupportedYet_LeavingTheFolderUntouched()
+    public async Task Add_OnTheRoot_OpensTheChoiceDialog_AndSubmittingCreatesTheDiagram()
     {
         File.WriteAllText(IoPath.Combine(_projectFolder, "existing.txt"), "x");
-        var before = ProjectListing();
 
         using var channel = CreateChannel();
         var headers = await LoginAsync(channel);
@@ -178,14 +177,19 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.All(prompt.ChoiceDialog.Options, vendor => Assert.False(vendor.Selectable));
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
 
+        // The dialog also carries a name field, and each selectable option a suggestion for it.
+        Assert.Equal("Name", prompt.ChoiceDialog.NameField.Label);
+        Assert.NotEqual("", leaf.SuggestedValue);
+
         var submitted = await contextClient.SubmitInteractionAsync(
-            new SubmitInteractionRequest { InteractionId = interactionId, Value = leaf.Id },
+            new SubmitInteractionRequest { InteractionId = interactionId, Value = leaf.Id, Text = leaf.SuggestedValue },
             headers);
 
-        Assert.False(submitted.Completed);
-        Assert.Contains("not supported yet", submitted.Error, StringComparison.Ordinal);
-        Assert.Contains(leaf.Label, submitted.Error, StringComparison.Ordinal);
-        Assert.Equal(before, ProjectListing());
+        // create-diagram-file replaced this spec's "not supported yet" answer with the real
+        // thing: a file on disk, and its project-relative path reported back.
+        Assert.True(submitted.Completed, submitted.Error);
+        Assert.Equal(new[] { $"{leaf.SuggestedValue}.adp" }, submitted.CreatedPath.Segments);
+        Assert.True(File.Exists(IoPath.Combine(_projectFolder, $"{leaf.SuggestedValue}.adp")));
     }
 
     [Fact]

@@ -372,15 +372,16 @@ public class HierarchyModelTests : IDisposable
         var published = IoPath.Combine(_root, "domain.adp");
         File.WriteAllText(scratch, "freeplane/mindmap\n");
         model.OnWatcherEvent(WatcherChangeTypes.Created, null, scratch);
+        Assert.Empty(changes);
+
         File.Move(scratch, published);
         model.OnWatcherEvent(WatcherChangeTypes.Renamed, scratch, published);
 
-        // The rename away from a scratch name is ignored as well; the entry arrives when the
-        // watcher reports the published file itself.
-        Assert.Empty(changes);
-        model.OnWatcherEvent(WatcherChangeTypes.Created, null, published);
+        // The move is the only announcement the published file gets - a watcher reports it as
+        // a rename, not a create - so it must arrive as the creation it actually is.
         var created = Assert.IsType<HierarchyEntryChange.Created>(Assert.Single(changes));
         Assert.Equal("domain.adp", created.Entry.Name);
+        Assert.Equal("domain.adp", Assert.Single(model.ListChildren(null)).Name);
     }
 
     [Fact]

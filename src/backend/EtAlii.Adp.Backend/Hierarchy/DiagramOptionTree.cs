@@ -16,7 +16,14 @@ namespace EtAlii.Adp.Backend.Hierarchy;
 /// </remarks>
 public static class DiagramOptionTree
 {
-    public static IReadOnlyList<ContextOptionNode> Build(IReadOnlyList<DiagramDefinition> definitions)
+    /// <param name="suggest">
+    /// Optionally, the value a text field beside the tree should take when an option is
+    /// picked - computed here, while the folder is known, so choosing a type costs no round
+    /// trip. Groups never carry one.
+    /// </param>
+    public static IReadOnlyList<ContextOptionNode> Build(
+        IReadOnlyList<DiagramDefinition> definitions,
+        Func<DiagramOrigin, string>? suggest = null)
     {
         ArgumentNullException.ThrowIfNull(definitions);
 
@@ -27,11 +34,13 @@ public static class DiagramOptionTree
                 Id: vendor.Key,
                 Label: vendor.Key,
                 Selectable: false,
-                Children: BuildVendor(vendor)))
+                Children: BuildVendor(vendor, suggest)))
             .ToArray();
     }
 
-    private static IReadOnlyList<ContextOptionNode> BuildVendor(IEnumerable<DiagramDefinition> definitions)
+    private static IReadOnlyList<ContextOptionNode> BuildVendor(
+        IEnumerable<DiagramDefinition> definitions,
+        Func<DiagramOrigin, string>? suggest)
     {
         var byType = definitions
             .GroupBy(definition => definition.Origin.Type, StringComparer.Ordinal)
@@ -44,7 +53,11 @@ public static class DiagramOptionTree
             var subtypes = type
                 .Where(definition => definition.Origin.Subtype.Length > 0)
                 .OrderBy(definition => definition.Title, StringComparer.Ordinal)
-                .Select(definition => new ContextOptionNode(definition.Origin.Key, definition.Title, Selectable: true))
+                .Select(definition => new ContextOptionNode(
+                    definition.Origin.Key,
+                    definition.Title,
+                    Selectable: true,
+                    SuggestedValue: Suggestion(suggest, definition)))
                 .ToArray();
 
             if (plain is not null)
@@ -54,7 +67,8 @@ public static class DiagramOptionTree
                     plain.Origin.Key,
                     plain.Title,
                     Selectable: true,
-                    Children: subtypes.Length == 0 ? null : subtypes));
+                    Children: subtypes.Length == 0 ? null : subtypes,
+                    SuggestedValue: Suggestion(suggest, plain)));
             }
             else
             {
@@ -72,4 +86,7 @@ public static class DiagramOptionTree
             .OrderBy(node => node.Label, StringComparer.Ordinal)
             .ToArray();
     }
+
+    private static string Suggestion(Func<DiagramOrigin, string>? suggest, DiagramDefinition definition) =>
+        suggest is null ? "" : suggest(definition.Origin);
 }

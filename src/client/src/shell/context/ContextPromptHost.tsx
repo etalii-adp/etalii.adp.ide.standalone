@@ -18,12 +18,14 @@ export interface ContextPromptVerdict {
 export interface ContextPromptSubmission {
   completed: boolean;
   error: string;
+  /** Project-relative segments of what the interaction created, when it created something. */
+  createdPath?: string[];
 }
 
 export interface ContextPromptHostProps {
   prompt: ContextPrompt | null;
   onPropose: (revision: number, value: string) => Promise<ContextPromptVerdict>;
-  onSubmit: (value: string) => Promise<ContextPromptSubmission>;
+  onSubmit: (value: string, text?: string) => Promise<ContextPromptSubmission>;
   onCancel: () => void;
 }
 
@@ -70,6 +72,7 @@ export function ContextPromptHost({ prompt, onPropose, onSubmit, onCancel }: Con
           // option, the expansion state and any error belong to one interaction only.
           key={keyOf(prompt)}
           prompt={prompt.prompt.value}
+          onPropose={onPropose}
           onSubmit={onSubmit}
           onCancel={onCancel}
         />
@@ -100,7 +103,7 @@ function keyOf(prompt: ContextPrompt): string {
 interface InputPromptDialogProps {
   prompt: { title: string; icon: string; fieldLabel: string; initialValue: string; confirmLabel: string };
   onPropose: (revision: number, value: string) => Promise<ContextPromptVerdict>;
-  onSubmit: (value: string) => Promise<ContextPromptSubmission>;
+  onSubmit: (value: string, text?: string) => Promise<ContextPromptSubmission>;
   onCancel: () => void;
 }
 

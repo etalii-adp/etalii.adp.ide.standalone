@@ -1,3 +1,4 @@
+using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Grpc.Core;
 
 namespace EtAlii.Adp.Backend.Context;
@@ -67,6 +68,13 @@ public sealed partial class ContextServiceImpl
         }
 
         var interactionId = (ShortGuid)request.InteractionId;
+
+        // Captured with the interaction because SubmitInteraction carries only an interaction
+        // id: without it, a commit that creates something could not report where it landed in
+        // the project-relative terms the contract allows.
+        Projects.ProjectRootResolver.TryResolve(
+            _projectStore, Sessions.SessionContext.GetUserId(context), request.ProjectId, out var rootPath, out _);
+
         _contextInteractionStore.Begin(new ContextInteraction
         {
             Id = interactionId,
@@ -74,6 +82,7 @@ public sealed partial class ContextServiceImpl
             Target = target,
             ActionId = owner.Action.Id,
             Provider = owner.Provider,
+            RootPath = rootPath,
         });
 
         var prompt = new ContextPrompt { InteractionId = interactionId };
@@ -132,7 +141,7 @@ public sealed partial class ContextServiceImpl
         }
 
         var commit = await interaction.Provider.CommitAsync(
-            interaction.Target, interaction.ActionId, request.Value, context.CancellationToken);
+            interaction.Target, interaction.ActionId, request.Value, request.Text, context.CancellationToken);
 
         if (!commit.Completed)
         {
@@ -144,8 +153,16 @@ public sealed partial class ContextServiceImpl
         _contextInteractionStore.Complete(request.InteractionId);
 
         // No hierarchy change is pushed from here - the connection's own RootFolderWatcher
-        // observes what happened on disk and reports it through the existing change feed.
-        return new SubmitInteractionResponse { Completed = true };
+        // observes what happened on disk and reports it through the existing change feed. What
+        // the response does carry is where the new thing lives, so the client that asked for it
+        // can recognise its own EntryCreated among the ones flowing down that feed.
+        var response = new SubmitInteractionResponse { Completed = true };
+        if (commit.CreatedFullPath.Length > 0)
+        {
+            response.CreatedPath = ToRelativePath(interaction.RootPath, commit.CreatedFullPath);
+        }
+
+        return response;
     }
 
     public override Task<CancelInteractionResponse> CancelInteraction(CancelInteractionRequest request, ServerCallContext context)
@@ -190,6 +207,18 @@ public sealed partial class ContextServiceImpl
     /// The project root as an action target. It has no entry id - it is the folder the
     /// entries live in, not an entry - so its source id is the empty guid.
     /// </summary>
+    /// <summary>
+    /// The project-relative form of an absolute path the backend produced - the one shape a
+    /// path is ever allowed to take on the wire, and the same one a selection carries.
+    /// </summary>
+    private static Path ToRelativePath(string rootPath, string fullPath)
+    {
+        var relative = new Path();
+        relative.Segments.AddRange(IoPath.GetRelativePath(rootPath, fullPath)
+            .Split([IoPath.DirectorySeparatorChar, IoPath.AltDirectorySeparatorChar], StringSplitOptions.RemoveEmptyEntries));
+        return relative;
+    }
+
     internal static ContextTarget RootTarget(string rootPath) =>
         new(ContextScope.Hierarchy, rootPath, IsContainer: true, SourceId: default);
 
@@ -223,6 +252,11 @@ public sealed partial class ContextServiceImpl
             ConfirmLabel = request.ConfirmLabel,
             EmptyMessage = request.EmptyMessage,
         };
+        if (request.NameField is { } nameField)
+        {
+            prompt.NameField = new ContextTextField { Label = nameField.Label, InitialValue = nameField.InitialValue };
+        }
+
         prompt.Options.AddRange(request.Options.Select(ToProto));
         return prompt;
     }
@@ -234,6 +268,7 @@ public sealed partial class ContextServiceImpl
             Id = node.Id,
             Label = node.Label,
             Selectable = node.Selectable,
+            SuggestedValue = node.SuggestedValue,
         };
         if (node.Children is { Count: > 0 } children)
         {

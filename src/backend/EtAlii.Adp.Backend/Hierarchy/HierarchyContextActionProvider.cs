@@ -96,7 +96,7 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
             : ValidateRename(target, value));
     }
 
-    public async ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
+    public async ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken)
     {
         // Re-checked here, not only in ExecuteAsync: a client that skipped the prompt step
         // must still be unable to rename or delete the project folder.

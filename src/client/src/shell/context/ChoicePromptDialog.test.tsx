@@ -45,11 +45,16 @@ function emptyPrompt(): ChoiceDialogPrompt {
   });
 }
 
-function renderDialog(prompt: ChoiceDialogPrompt, submitResult = { completed: true, error: "" }) {
-  const onSubmit = vi.fn(async (_value: string) => submitResult);
+function renderDialog(
+  prompt: ChoiceDialogPrompt,
+  submitResult = { completed: true, error: "" },
+  verdict: { valid: boolean; reason: string } = { valid: true, reason: "" },
+) {
+  const onSubmit = vi.fn(async (_value: string, _text?: string) => submitResult);
+  const onPropose = vi.fn(async (revision: number, _value: string) => ({ revision, ...verdict }));
   const onCancel = vi.fn();
-  render(<ChoicePromptDialog prompt={prompt} onSubmit={onSubmit} onCancel={onCancel} />);
-  return { onSubmit, onCancel };
+  render(<ChoicePromptDialog prompt={prompt} onPropose={onPropose} onSubmit={onSubmit} onCancel={onCancel} />);
+  return { onSubmit, onPropose, onCancel };
 }
 
 const confirmButton = () => screen.getByRole("button", { name: "Add" });
@@ -305,5 +310,100 @@ describe("ChoicePromptDialog keyboard", () => {
     fireEvent.keyDown(tree(), { key: "Enter" });
 
     expect(screen.getByText("System Context")).toBeTruthy();
+  });
+});
+
+/** A prompt that also asks for a name, with a suggestion on each selectable option. */
+function namedPrompt(): ChoiceDialogPrompt {
+  return create(ChoiceDialogPromptSchema, {
+    title: "Add diagram",
+    icon: "mdi-plus",
+    confirmLabel: "Add",
+    emptyMessage: "No diagram types are available.",
+    nameField: { label: "Name", initialValue: "" },
+    options: [
+      option("c4", "c4", false, [
+        { ...option("c4/context", "System Context", true), suggestedValue: "context" },
+        { ...option("c4/container", "Container", true), suggestedValue: "container" },
+      ]),
+    ] as ContextOption[],
+  });
+}
+
+const nameInput = () => screen.getByLabelText("Name") as HTMLInputElement;
+
+describe("ChoicePromptDialog name field", () => {
+  it("starts out holding the first selectable option's suggestion", () => {
+    renderDialog(namedPrompt());
+
+    expect(nameInput().value).toBe("context");
+  });
+
+  it("follows the selected option until the user types, and never after", () => {
+    renderDialog(namedPrompt());
+
+    fireEvent.click(row("Container"));
+    expect(nameInput().value).toBe("container");
+
+    fireEvent.change(nameInput(), { target: { value: "domain" } });
+    fireEvent.click(row("System Context"));
+
+    expect(nameInput().value).toBe("domain");
+  });
+
+  it("submits the chosen option together with the name", async () => {
+    const { onSubmit } = renderDialog(namedPrompt());
+
+    fireEvent.click(row("System Context"));
+    fireEvent.change(nameInput(), { target: { value: "domain" } });
+    // Wait for the debounced verdict, which is what enables the confirm button.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    });
+    fireEvent.click(confirmButton());
+
+    await act(async () => {});
+    expect(onSubmit).toHaveBeenCalledWith("c4/context", "domain");
+  });
+
+  it("can be confirmed on the untouched suggestion without any round trip", async () => {
+    const { onSubmit, onPropose } = renderDialog(namedPrompt());
+
+    fireEvent.click(row("System Context"));
+    expect(confirmButton()).toHaveProperty("disabled", false);
+    fireEvent.click(confirmButton());
+
+    await act(async () => {});
+    expect(onSubmit).toHaveBeenCalledWith("c4/context", "context");
+    expect(onPropose).not.toHaveBeenCalled();
+  });
+
+  it("keeps the confirm button disabled while a typed name has no verdict yet", () => {
+    renderDialog(namedPrompt());
+
+    fireEvent.click(row("System Context"));
+    fireEvent.change(nameInput(), { target: { value: "domain" } });
+
+    // The verdict for this revision has not arrived, so the name is not yet acceptable.
+    expect(confirmButton()).toHaveProperty("disabled", true);
+  });
+
+  it("shows the reason a name was refused and keeps the confirm button disabled", async () => {
+    renderDialog(namedPrompt(), { completed: true, error: "" }, { valid: false, reason: "An item named 'taken.adp' already exists in this folder." });
+
+    fireEvent.click(row("System Context"));
+    fireEvent.change(nameInput(), { target: { value: "taken" } });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    });
+
+    expect(screen.getByRole("alert").textContent).toContain("already exists");
+    expect(confirmButton()).toHaveProperty("disabled", true);
+  });
+
+  it("renders no name field for a prompt that does not ask for one", () => {
+    renderDialog(oneVendorPrompt());
+
+    expect(screen.queryByLabelText("Name")).toBeNull();
   });
 });

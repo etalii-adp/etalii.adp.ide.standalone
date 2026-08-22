@@ -48,7 +48,7 @@
   - _Requirements: 3.3, 4.1_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Make `HierarchyModel` ignore `~adp-*.tmp` files per design.md's Temp files and the watcher section, with a test | Restrictions: one guard, applied to every watcher event kind, not three copies; the pattern is anchored on the `~adp-` prefix and the `.tmp` suffix so no ordinary project file matches; `Reconcile` must ignore them too, or a reconcile would resurrect one | Success: existing hierarchy tests pass and the new test proves a temp-named create raises nothing and lists nothing_
 
-- [ ] 6. Extend `context.proto` with the name field, the suggestion, the submitted text and the created path
+- [x] 6. Extend `context.proto` with the name field, the suggestion, the submitted text and the created path
   - File: `src/api/context.proto` (modify)
   - Add `ContextTextField { label, initial_value }`; `ContextOption.suggested_value = 5`; `ChoiceDialogPrompt.name_field = 6`; `SubmitInteractionRequest.text = 3`; `SubmitInteractionResponse.created_path = 3` (a `Path`). Comment each in the file's existing style, describing them generically — a text field beside a choice, a suggested value per option, a secondary submitted value, and something the interaction created that the client may want to reveal
   - Purpose: the four additive contract fields the flow needs (Requirements 2.1, 2.2, 4.2)
@@ -56,7 +56,7 @@
   - _Requirements: 2.1, 2.2, 4.2_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Protobuf/gRPC contract engineer | Task: Add the four fields and the `ContextTextField` message to `src/api/context.proto` exactly as design.md's Data Models section specifies | Restrictions: additive only — no renames, no removals, no renumbering; nothing in the comments may mention diagrams, `.adp`, or file extensions; `created_path` is `connection.proto`'s `Path`, never a string | Success: `dotnet build src/backend/EtAlii.Adp.slnx` and `npm run generate` in `src/client` both succeed and emit the new members_
 
-- [ ] 7. Carry the second value and the created path through the backend model and the provider interface
+- [x] 7. Carry the second value and the created path through the backend model and the provider interface
   - File: `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextTextFieldRequest.cs` (new), `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextDialogRequest.cs` (modify: `ContextChoiceRequest.NameField`), `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextOptionNode.cs` (modify: `SuggestedValue`), `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextCommitResult.cs` (modify: `CreatedFullPath`), `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextInteraction.cs` (modify: `RootPath`), `src/backend/EtAlii.Adp.Backend/Context/IContextActionProvider.cs` (modify), `src/backend/EtAlii.Adp.Backend/Hierarchy/HierarchyContextActionProvider.cs` (modify)
   - `CommitAsync` gains a `string text` parameter before the cancellation token; `HierarchyContextActionProvider` ignores it. Add the record members design.md lists, each with a comment saying what it is for
   - Purpose: let one interaction carry a choice *and* a name, and report what it created, without encoding two answers in one string (Requirements 2.1, 2.7, 4.2)
@@ -64,7 +64,7 @@
   - _Requirements: 2.1, 2.7, 4.2_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# backend developer | Task: Add the model members and the `CommitAsync` parameter design.md's Components section lists | Restrictions: `CreatedFullPath` stays absolute inside the backend and is converted only at the service boundary; do not encode two answers into `value`; one entity per file for the new record; after this task the solution will not compile until task 9 — that is expected, do 7, 8 and 9 in one pass | Success: every model change compiles in isolation and the intent of each new member is documented_
 
-- [ ] 8. Wire the service: root path on the interaction, name field out, text in, created path back
+- [x] 8. Wire the service: root path on the interaction, name field out, text in, created path back
   - File: `src/backend/EtAlii.Adp.Backend/Context/ContextServiceImpl.Actions.cs` (modify)
   - `ExecuteAction`: pass the already-resolved `rootPath` when calling `Begin`, and map `ContextChoiceRequest.NameField` into the prompt's `name_field`. `SubmitInteraction`: pass `request.Text` into `CommitAsync`, and on success with a non-empty `CreatedFullPath` fill `created_path` with `Path.GetRelativePath(interaction.RootPath, …)` split on both separators
   - Purpose: the two directions the new fields travel, with the absolute→relative conversion in the one place that already owns that rule (Requirement 4.2, Security NFR)
@@ -72,7 +72,7 @@
   - _Requirements: 2.1, 4.2_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# gRPC service developer | Task: Wire the new fields through `ContextServiceImpl.Actions` per design.md's component spec | Restrictions: an absolute path must never reach a proto message — convert at this boundary only; do not re-authorise or re-resolve anything in `SubmitInteraction`, use the `RootPath` the interaction already carries; rename and delete behaviour must not change | Success: `dotnet build` succeeds once task 9 lands, and the existing `ExplorerContextActionsFlow` tests still pass unchanged_
 
-- [ ] 9. Fill in the seam: name field, validation and creation in `AddDiagramContextActionProvider`
+- [x] 9. Fill in the seam: name field, validation and creation in `AddDiagramContextActionProvider`
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/AddDiagramContextActionProvider.cs` (modify), `src/backend/EtAlii.Adp.Backend/Hierarchy/DiagramOptionTree.cs` (modify), `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/AddDiagramContextActionProvider.Tests.cs` (modify)
   - `DiagramOptionTree.Build` gains a `Func<DiagramOrigin, string>` that fills each selectable node's `SuggestedValue`. `ExecuteAsync` passes `origin => DiagramFileName.Suggest(origin, target.ResolvedFullPath)` and a `NameField` labelled "Name". `ValidateAsync` validates `DiagramFileName.WithExtension(DiagramFileName.StripExtension(value))` through `EntryNameRules` against the target folder. `CommitAsync(target, actionId, value, text)` in order: folder gone → unknown option → invalid name → `AdpFileWriter.Create(folder, fileName, definition.Origin.MimeType)`, mapping `Created` to a succeeded result carrying the full path, `NameTaken` to the "already exists" message, `Failed` to "Could not create the diagram: …"
   - Purpose: the seam itself — this is where a file starts existing (Requirements 1.1–1.5, 2.2, 2.6–2.8, 3.1, 5.1–5.4)
@@ -80,7 +80,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.2, 2.6, 2.7, 2.8, 3.1, 5.1, 5.2, 5.3, 5.4_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# backend developer | Task: Replace the provider's not-supported-yet commit with real creation, add the name field and per-option suggestions, and validate the name, per design.md's component spec | Restrictions: keep the check order exactly as design.md lists it; the provider gains no filesystem code of its own beyond calling `AdpFileWriter`; a taken name is reported, never silently changed; error messages name what the user can act on and never a path outside the project; `DiscoverAsync` must not change | Success: unit tests cover the check order, a good commit creating a file whose bytes are exactly the MIME type line, `NameTaken` reported without touching the existing file, and options carrying suggestions_
 
-- [ ] 10. Integration test the whole arc
+- [x] 10. Integration test the whole arc
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/CreateDiagramFileFlow.Tests.cs` (new)
   - Per design.md's Integration Testing list: the full arc on a folder (execute → choice prompt with suggestions and a name field on the context `Watch` stream → `ProposeInput` invalid then valid → `SubmitInteraction` with option id and name → `completed` with the project-relative `created_path` → the file on disk with exactly the MIME type line → `EntryCreated` on `WatchHierarchy`); the same on the project root; a name taken behind the dialog's back; a name with a separator submitted without a preceding propose; and no `EntryCreated` for any temp file
   - Purpose: prove the arc end to end against the real host (Requirements 1, 2.6–2.8, 3, 4.1–4.2)
@@ -88,7 +88,7 @@
   - _Requirements: 1.1, 1.3, 1.4, 2.6, 2.7, 2.8, 3.1, 3.2, 4.1, 4.2_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA engineer specializing in gRPC integration tests | Task: Create `CreateDiagramFileFlowTests` covering design.md's listed flows against a real temp project and `WebApplicationFactory<Program>` | Restrictions: bounded waits with the existing timeout constants, never sleeps, for anything watcher-driven; assert the created file's bytes, not just its existence; each test owns its temp folder | Success: `dotnet test` passes and is stable across three consecutive runs_
 
-- [ ] 11. Carry the second value and the created path through the client connection
+- [x] 11. Carry the second value and the created path through the client connection
   - File: `src/client/src/shell/context/ContextPromptHost.tsx` (modify), `src/client/src/shell/context/ContextConnectionProvider.tsx` (modify), `src/client/src/shell/context/ContextConnectionProvider.test.tsx` (modify)
   - Regenerate stubs. `onSubmit` becomes `(value: string, text?: string) => Promise<ContextPromptSubmission>`; `ContextPromptSubmission` gains `createdPath?: string[]`. The provider sends `text`, and on a completed response with a `created_path` sets `pendingReveal` on the selection context; `ContextConnectionValue` gains a stable `clearReveal()`
   - Purpose: the client half of the two-value submit and the reveal hand-off (Requirements 2.7, 4.2, 4.3)
@@ -96,7 +96,7 @@
   - _Requirements: 2.7, 4.2, 4.3_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/TypeScript developer with gRPC-web experience | Task: Extend the submit path with the optional text value and surface the created path as `pendingReveal`, per design.md | Restrictions: `pendingReveal` belongs on the selection context and `clearReveal` on the connection context, so `select()` callers do not re-render when a reveal is queued; existing rename and delete submits keep working with a single value; add provider tests for both | Success: `npm run typecheck` clean and the provider tests cover a submit carrying text and a completed response setting `pendingReveal`_
 
-- [ ] 12. Add the name field to the choice dialog
+- [x] 12. Add the name field to the choice dialog
   - File: `src/client/src/shell/context/ChoicePromptDialog.tsx` (modify), `src/client/src/shell/context/ChoicePromptDialog.test.tsx` (modify)
   - Per design.md: initial value from the first selectable option's `suggestedValue`; selecting an option updates the field while untouched; typing marks it touched and bumps `revision`; `useDebouncedValue` at 200 ms drives `onPropose`; a stale verdict is ignored; confirm enabled only with a selectable option chosen and a current valid verdict; the rejection reason renders under the field; confirm calls `onSubmit(optionId, name)`; a failed submit keeps the dialog open with both intact; no field at all when there are no options
   - Purpose: Requirements 2.1–2.5, 2.7 and the keyboard rule
@@ -104,7 +104,7 @@
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.7_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer with form-validation and accessibility expertise | Task: Add the name field and its live validation to `ChoicePromptDialog` per design.md's component spec, with tests | Restrictions: reuse `InputPromptDialog`'s debounce/revision/stale-verdict rules rather than inventing a second validation feel; once the user has typed, an option selection must never overwrite the field; the dialog stays keyboard-complete, with Enter in the field confirming when confirm is enabled; no diagram vocabulary in the component | Success: tests cover suggestion following, touched behaviour, confirm gating for no-selection / invalid / pending, the rendered reason, submit carrying both values, and a failed submit keeping the dialog open_
 
-- [ ] 13. Reveal the created file in the explorer, and give `.adp` an icon
+- [x] 13. Reveal the created file in the explorer, and give `.adp` an icon
   - File: `src/client/src/shell/panels/ExplorerTreePanel.tsx` (modify), `src/client/src/shell/panels/ExplorerTreePanel.test.tsx` (modify)
   - Reveal effect: walk `pendingReveal`'s segments from `rootKeys` matching by name, expanding (and thereby fetching) each unexpanded folder on the way; focus the leaf when it resolves — the existing focus effect reports it as the selection — then `clearReveal()`. A 1 s fallback expands/refetches the deepest resolved folder and retries once, then clears regardless. Add `adp: "mdi-graph-outline"` to `FILE_ICONS_BY_EXTENSION`
   - Purpose: Requirements 4.3, 4.4, 6.1
@@ -112,7 +112,7 @@
   - _Requirements: 4.3, 4.4, 6.1_
   - _Prompt: Implement the task for spec create-diagram-file, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Add the reveal effect, its bounded fallback and the `.adp` icon to `ExplorerTreePanel` per design.md | Restrictions: revealing only moves focus — it must not call `select()` directly, since the existing focus effect already reports the selection; an unresolvable reveal must clear rather than retry forever or wedge the panel; the tree's reducers, streams and keyboard handling stay untouched; the client still composes no paths, it only matches the segments it was given | Success: tests cover a reveal that resolves against a listed file, one whose folder must be expanded first, and one that never resolves and clears after the fallback_
 
-- [ ] 14. Manual F5 verification
+- [x] 14. Manual F5 verification
   - File: none (verification only; temporary port edits to `src/client/vite.config.ts` and `src/backend/EtAlii.Adp.Backend.Service/appsettings.developer.json` reverted before merge)
   - Walk design.md's End-to-End list: Add on a folder, the suggestion following the selected type and stopping once typed, an invalid name showing its reason with Add disabled, creating the file, the file appearing focused and selected with an `.adp` icon, its content being one MIME-type line, a second Add suggesting `-2`, adding into a collapsed folder, a name taken behind the dialog's back, light and dark mode, keyboard-only. Plus `dotnet format style --verify-no-changes --severity info`, `npm run typecheck`, both suites
   - Purpose: prove the whole arc in the real app before merging the worktree

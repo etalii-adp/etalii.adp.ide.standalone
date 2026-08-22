@@ -1,12 +1,48 @@
-import { useCallback, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Dialog } from "../../components/Dialog";
 import type { ChoiceDialogPrompt, ContextOption } from "../../generated/context_pb";
-import type { ContextPromptSubmission } from "./ContextPromptHost";
+import { useDebouncedValue } from "../useDebouncedValue";
+import type { ContextPromptSubmission, ContextPromptVerdict } from "./ContextPromptHost";
+
+/** How long the name must sit still before its validation round trip is worth making. */
+const VALIDATION_DEBOUNCE_MS = 200;
 
 export interface ChoicePromptDialogProps {
   prompt: ChoiceDialogPrompt;
-  onSubmit: (value: string) => Promise<ContextPromptSubmission>;
+  onPropose: (revision: number, value: string) => Promise<ContextPromptVerdict>;
+  onSubmit: (value: string, text?: string) => Promise<ContextPromptSubmission>;
   onCancel: () => void;
+}
+
+/** The suggestion a selectable option carries for the text field, if the prompt has one. */
+export function suggestionFor(options: ContextOption[], id: string | null): string {
+  if (id === null) {
+    return "";
+  }
+  for (const option of options) {
+    if (option.id === id) {
+      return option.suggestedValue;
+    }
+    const nested = suggestionFor(option.children, id);
+    if (nested !== "") {
+      return nested;
+    }
+  }
+  return "";
+}
+
+/** The first selectable option, depth first - what the text field starts out describing. */
+function firstSelectable(options: ContextOption[]): ContextOption | undefined {
+  for (const option of options) {
+    if (option.selectable) {
+      return option;
+    }
+    const nested = firstSelectable(option.children);
+    if (nested !== undefined) {
+      return nested;
+    }
+  }
+  return undefined;
 }
 
 /** One rendered row of the tree: which option, how deep, and whether it is open. */
@@ -57,7 +93,9 @@ export function visibleRows(options: ContextOption[], expanded: Set<string>): Vi
  * keeps the dialog open with the error shown under the tree, so the user can pick again
  * or cancel rather than losing their place.
  */
-export function ChoicePromptDialog({ prompt, onSubmit, onCancel }: ChoicePromptDialogProps) {
+export function ChoicePromptDialog({ prompt, onPropose, onSubmit, onCancel }: ChoicePromptDialogProps) {
+  const nameField = prompt.nameField;
+  const nameInputId = useId();
   const [expanded, setExpanded] = useState<Set<string>>(() => initialExpansion(prompt.options));
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
@@ -65,11 +103,33 @@ export function ChoicePromptDialog({ prompt, onSubmit, onCancel }: ChoicePromptD
   const [submitting, setSubmitting] = useState(false);
   const rowRefs = useRef(new Map<string, HTMLElement>());
 
+  // Revision 0 is the name the backend suggested: it computed that against the target folder,
+  // so it is free by construction and needs no round trip - which is what lets a user who
+  // just wants "one of these, here" press the confirm button without typing anything. Every
+  // edit bumps the revision and is judged; a verdict for an older revision is stale.
+  const [name, setName] = useState(() => nameField?.initialValue || firstSelectable(prompt.options)?.suggestedValue || "");
+  const [nameRevision, setNameRevision] = useState(0);
+  const [touched, setTouched] = useState(false);
+  const [verdict, setVerdict] = useState<ContextPromptVerdict | null>(null);
+
+  const debounced = useDebouncedValue({ revision: nameRevision, value: name }, VALIDATION_DEBOUNCE_MS);
+  useEffect(() => {
+    if (debounced.revision === 0) {
+      return;
+    }
+    void onPropose(debounced.revision, debounced.value).then(setVerdict);
+  }, [debounced, onPropose]);
+
+  const verdictIsCurrent = verdict !== null && verdict.revision === nameRevision;
+  const nameIsAcceptable =
+    nameField === undefined ? true : nameRevision === 0 ? name.length > 0 : verdictIsCurrent && verdict.valid;
+  const nameError = nameRevision > 0 && verdictIsCurrent && !verdict.valid ? verdict.reason : "";
+
   const rows = useMemo(() => visibleRows(prompt.options, expanded), [prompt.options, expanded]);
   const isEmpty = prompt.options.length === 0;
   // One Tab stop: the focused row, or failing that the first one.
   const tabbableId = focusedId ?? rows[0]?.option.id ?? null;
-  const canSubmit = selectedId !== null && !submitting;
+  const canSubmit = selectedId !== null && !submitting && nameIsAcceptable;
 
   const focusRow = useCallback((id: string | undefined) => {
     if (id === undefined) {
@@ -78,6 +138,19 @@ export function ChoicePromptDialog({ prompt, onSubmit, onCancel }: ChoicePromptD
     setFocusedId(id);
     rowRefs.current.get(id)?.focus();
   }, []);
+
+  /** Choosing an option names the file too - until the user has named it themselves. */
+  const choose = useCallback(
+    (id: string) => {
+      setSelectedId(id);
+      if (nameField !== undefined && !touched) {
+        setName(suggestionFor(prompt.options, id));
+        setNameRevision(0);
+        setVerdict(null);
+      }
+    },
+    [nameField, prompt.options, touched],
+  );
 
   const toggle = useCallback((id: string) => {
     setExpanded((previous) => {
@@ -98,7 +171,8 @@ export function ChoicePromptDialog({ prompt, onSubmit, onCancel }: ChoicePromptD
     setSubmitting(true);
     setSubmitError("");
     try {
-      const result = await onSubmit(selectedId);
+      // A prompt without a name field submits exactly as it always did: one answer, no second.
+      const result = nameField === undefined ? await onSubmit(selectedId) : await onSubmit(selectedId, name);
       if (!result.completed) {
         // Left open on purpose: the choice is still there to reconsider or cancel.
         setSubmitError(result.error);
@@ -106,7 +180,7 @@ export function ChoicePromptDialog({ prompt, onSubmit, onCancel }: ChoicePromptD
     } finally {
       setSubmitting(false);
     }
-  }, [onSubmit, selectedId]);
+  }, [name, nameField, onSubmit, selectedId]);
 
   const handleKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLUListElement>) => {
@@ -167,7 +241,7 @@ export function ChoicePromptDialog({ prompt, onSubmit, onCancel }: ChoicePromptD
             if (row.option.id === selectedId && canSubmit) {
               void handleSubmit();
             } else {
-              setSelectedId(row.option.id);
+              choose(row.option.id);
             }
           } else if (row.expandable) {
             toggle(row.option.id);
@@ -180,7 +254,7 @@ export function ChoicePromptDialog({ prompt, onSubmit, onCancel }: ChoicePromptD
           }
           event.preventDefault();
           if (row.option.selectable) {
-            setSelectedId(row.option.id);
+            choose(row.option.id);
           } else if (row.expandable) {
             toggle(row.option.id);
           }
@@ -190,7 +264,7 @@ export function ChoicePromptDialog({ prompt, onSubmit, onCancel }: ChoicePromptD
           return;
       }
     },
-    [canSubmit, focusRow, focusedId, handleSubmit, rows, selectedId, toggle],
+    [canSubmit, choose, focusRow, focusedId, handleSubmit, rows, selectedId, toggle],
   );
 
   return (
@@ -217,12 +291,17 @@ export function ChoicePromptDialog({ prompt, onSubmit, onCancel }: ChoicePromptD
               rowRefs={rowRefs.current}
               onFocus={() => setFocusedId(row.option.id)}
               onToggle={() => toggle(row.option.id)}
-              onChoose={() => setSelectedId(row.option.id)}
+              onChoose={() => choose(row.option.id)}
               onConfirm={() => {
-                // A double click on a leaf chooses it and confirms in one go.
-                setSelectedId(row.option.id);
-                if (!submitting) {
-                  void onSubmit(row.option.id).then((result) => {
+                // A double click on a leaf chooses it and confirms in one go - with whatever
+                // name is in the field, which is the suggestion for this option unless the
+                // user has typed one.
+                choose(row.option.id);
+                const submittedName = touched ? name : suggestionFor(prompt.options, row.option.id);
+                if (!submitting && (nameField === undefined || submittedName.length > 0)) {
+                  const submission =
+                    nameField === undefined ? onSubmit(row.option.id) : onSubmit(row.option.id, submittedName);
+                  void submission.then((result) => {
                     if (!result.completed) {
                       setSubmitError(result.error);
                     }
@@ -232,6 +311,33 @@ export function ChoicePromptDialog({ prompt, onSubmit, onCancel }: ChoicePromptD
             />
           ))}
         </ul>
+      )}
+      {!isEmpty && nameField !== undefined && (
+        <div className="field choice-name-field">
+          <label htmlFor={nameInputId}>{nameField.label}</label>
+          <input
+            id={nameInputId}
+            type="text"
+            value={name}
+            onChange={(event) => {
+              setTouched(true);
+              setName(event.target.value);
+              setNameRevision((previous) => previous + 1);
+            }}
+            onKeyDown={(event) => {
+              // Accepting the suggestion should not require reaching for the mouse.
+              if (event.key === "Enter" && canSubmit) {
+                event.preventDefault();
+                void handleSubmit();
+              }
+            }}
+          />
+          {nameError && (
+            <p className="context-prompt-error" role="alert">
+              {nameError}
+            </p>
+          )}
+        </div>
       )}
       {submitError && (
         <p className="context-prompt-error" role="alert">
