@@ -3,8 +3,10 @@
   "title": "add-diagram-action: design",
   "filePath": ".spec-workflow/specs/add-diagram-action/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-22T16:30:09.134Z",
   "category": "spec",
-  "categoryName": "add-diagram-action"
+  "categoryName": "add-diagram-action",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-22T16:34:07.557Z"
 }

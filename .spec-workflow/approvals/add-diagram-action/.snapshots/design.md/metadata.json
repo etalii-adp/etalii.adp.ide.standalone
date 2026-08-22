@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/add-diagram-action/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-22T16:30:09.149Z",
       "trigger": "initial",
+      "approvalId": "approval_1787416209134_18bkeiaix",
+      "approvalTitle": "add-diagram-action: design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-22T16:34:07.548Z",
+      "trigger": "approved",
       "approvalId": "approval_1787416209134_18bkeiaix",
       "approvalTitle": "add-diagram-action: design"
     }
