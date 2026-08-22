@@ -3,23 +3,12 @@ syntax = "proto3";
 package etalii.adp;
 
 import "shared.proto"; // ShortGuid
-import "context.proto"; // ContextScope, ContextSource, ContextShortcut, ContextActionGroup, ContextPrompt
 
 option csharp_namespace = "EtAlii.Adp";
 
 service HierarchyService {
   rpc ListEntries(ListEntriesRequest) returns (ListEntriesResponse);
   rpc WatchHierarchy(WatchHierarchyRequest) returns (stream HierarchyMessage);
-
-  // Context actions. gRPC-Web offers no client-streaming or bidi from a browser, so
-  // the client->backend leg of each interaction is a unary call correlated by
-  // watch_id/interaction_id, while the backend->client leg (prompts) rides the
-  // WatchHierarchy stream this connection already has open.
-  rpc DiscoverActions(DiscoverActionsRequest) returns (DiscoverActionsResponse);
-  rpc ExecuteAction(ExecuteActionRequest) returns (ExecuteActionResponse);
-  rpc ProposeInput(ProposeInputRequest) returns (ProposeInputResponse);
-  rpc SubmitInteraction(SubmitInteractionRequest) returns (SubmitInteractionResponse);
-  rpc CancelInteraction(CancelInteractionRequest) returns (CancelInteractionResponse);
 }
 
 enum EntryKind {
@@ -95,67 +84,12 @@ message HierarchyChange {
   }
 }
 
-// The stream carries both hierarchy deltas and backend-initiated prompts;
-// HierarchyChange itself is unchanged, only wrapped.
+// Wraps HierarchyChange so the stream's element type can grow without the RPC
+// signature changing again. Prompts used to ride here as field 2; they now travel
+// on ContextService.Watch (context.proto).
 message HierarchyMessage {
   oneof message {
     HierarchyChange change = 1;
-    ContextPrompt prompt = 2;
   }
+  reserved 2;
 }
-
-message DiscoverActionsRequest {
-  ShortGuid project_id = 1;
-  ShortGuid watch_id = 2;
-  ContextScope scope = 3;
-  ContextSource source = 4;
-}
-
-message DiscoverActionsResponse {
-  repeated ContextActionGroup groups = 1;
-}
-
-message ExecuteActionRequest {
-  ShortGuid project_id = 1;
-  ShortGuid watch_id = 2;
-  ContextScope scope = 3;
-  ContextSource source = 4;
-  ShortGuid interaction_id = 5; // client-generated; correlates the pushed prompt back to this call
-  oneof trigger {
-    string action_id = 6;
-    ContextShortcut shortcut = 7;
-  }
-}
-
-message ExecuteActionResponse {
-  bool accepted = 1;
-  string error = 2;
-}
-
-message ProposeInputRequest {
-  ShortGuid interaction_id = 1;
-  uint32 revision = 2;
-  string value = 3;
-}
-
-message ProposeInputResponse {
-  uint32 revision = 1; // echoed, so the client can discard a verdict for text it has moved past
-  bool valid = 2;
-  string reason = 3;
-}
-
-message SubmitInteractionRequest {
-  ShortGuid interaction_id = 1;
-  string value = 2;
-}
-
-message SubmitInteractionResponse {
-  bool completed = 1;
-  string error = 2;
-}
-
-message CancelInteractionRequest {
-  ShortGuid interaction_id = 1;
-}
-
-message CancelInteractionResponse {}

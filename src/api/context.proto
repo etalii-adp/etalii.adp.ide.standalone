@@ -2,30 +2,141 @@ syntax = "proto3";
 
 package etalii.adp;
 
-import "shared.proto"; // ShortGuid
+import "shared.proto";     // ShortGuid
+import "connection.proto"; // Path
+import "hierarchy.proto";  // EntryKind (hierarchy.proto does not import this file back)
+import "google/protobuf/empty.proto";
 
 option csharp_namespace = "EtAlii.Adp";
 
-// The scope-agnostic vocabulary behind every context action: what actions a source
-// currently offers, how each can be triggered, and which dialog a running action
-// wants shown. Nothing here mentions files, folders, rename, or delete - a provider
-// on the backend supplies all of that as data, so a new action (or a whole new
-// scope) needs no change to this contract, the context menu, or the prompt host.
+// The scope-agnostic vocabulary behind the context: what the user currently has
+// selected (and how), what actions a selected thing currently offers, how each can be
+// triggered, and which dialog a running action wants shown. Nothing here mentions
+// files, folders, rename, or delete - a resolver and a provider on the backend supply
+// all of that as data, so a new kind of selectable thing or a new action needs no
+// change to this contract, the context menu, the ribbon, or the prompt host.
 
-// Which surface an action applies to. A future scope (a diagram canvas, a ribbon)
-// is added here and served by its own IContextActionProvider.
+// One backend service owns the per-connection context. gRPC-Web offers no
+// client-streaming or bidi from a browser, so the client->backend leg is unary
+// (Select, ExecuteAction, ...) correlated by watch_id, while the backend->client leg
+// (selection changes, prompts) rides the one server stream Watch opens.
+service ContextService {
+  // Reports what a surface selected, or - with no selection - that nothing is.
+  rpc Select(SelectRequest) returns (SelectResponse);
+  // The connection's context as it changes; the first message is the current state.
+  rpc Watch(WatchContextRequest) returns (stream ContextMessage);
+
+  // Context actions. An explicit source names the target; without one the action
+  // applies to the connection's current selection.
+  rpc DiscoverActions(DiscoverActionsRequest) returns (DiscoverActionsResponse);
+  rpc ExecuteAction(ExecuteActionRequest) returns (ExecuteActionResponse);
+  rpc ProposeInput(ProposeInputRequest) returns (ProposeInputResponse);
+  rpc SubmitInteraction(SubmitInteractionRequest) returns (SubmitInteractionResponse);
+  rpc CancelInteraction(CancelInteractionRequest) returns (CancelInteractionResponse);
+}
+
+// Routes context actions to the providers that serve a kind of thing. Never sent by
+// a client: the backend derives it from the ContextSource member an id uses.
 enum ContextScope {
   CONTEXT_SCOPE_UNSPECIFIED = 0;
   HIERARCHY = 1;
 }
 
-// What the action applies to. For HIERARCHY this is an entry id, which the backend
-// resolves to an absolute path before handing it to a provider - the client is never
-// given, and never supplies, a filesystem path (tech.md: the client never touches the
-// filesystem; an absolute path would also leak the user's directory layout).
+// What a selection or an action refers to. For the hierarchy this is an entry id,
+// which the backend resolves to an absolute path before handing it to a provider -
+// the client is never given, and never supplies, a filesystem path (tech.md: the
+// client never touches the filesystem; an absolute path would also leak the user's
+// directory layout). A new kind of thing (a diagram element, a location in a file)
+// is one more member here, served by its own resolver on the backend.
 message ContextSource {
   oneof source {
     ShortGuid entry_id = 1;
+  }
+}
+
+// Which surface produced a selection, so a consumer can tell "the explorer selected
+// X" from "the canvas selected X" - e.g. so a surface does not re-react to its own.
+enum ContextSelectionSource {
+  CONTEXT_SELECTION_SOURCE_UNSPECIFIED = 0;
+  EXPLORER = 1;
+  DIAGRAM_CANVAS = 2;
+  SEARCH = 3;
+  PROBLEMS = 4;
+  TOOLBOX = 5;
+  RIBBON = 6;
+  PROPERTY_GRID = 7;
+}
+
+// The gesture behind a selection. A plain selection carries no action at all (see
+// ContextSelection.none). Values from 10 up are reserved for later surfaces so the
+// numbering stays stable; no consumer is required to handle them yet.
+enum ContextSelectionAction {
+  CONTEXT_SELECTION_ACTION_UNSPECIFIED = 0;
+  ACTIVATE = 1;       // open it / perform its primary action (double-click, Enter)
+  CONTEXT_MENU = 2;   // show what can be done with it (right-click, Shift+F10)
+  PREVIEW = 3;        // show it without committing to it (transient)
+  DRAG_START = 10;
+  DROP = 11;
+  RENAME_REQUEST = 12;
+  FOCUS_ONLY = 13;
+}
+
+// One level of a selection. `path` is the hierarchical locator: project-relative at
+// the outermost level, and relative to the parent on a child whose parent kind nests
+// by containment - so a chain's segments concatenate into one Path. The backend
+// verifies the path against (or fills it in from) `id`; it is never trusted alone.
+message ContextSelection {
+  ContextSelectionSource source = 1;
+  Path path = 2;
+  ContextSource id = 3;
+  oneof detail {
+    google.protobuf.Empty none = 4;        // a plain selection, nothing more
+    ContextSelectionAction action = 5;     // what the user did to it
+    ContextSelection child = 6;            // what is selected inside it
+  }
+}
+
+message SelectRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2; // same client-generated id the hierarchy calls on this connection use
+  ContextSelection selection = 3; // absent = nothing is selected
+}
+
+message SelectResponse {
+  string error = 1; // empty when accepted; deliberately generic otherwise
+}
+
+message WatchContextRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;
+}
+
+// Backend-resolved detail for one level of a selection, which a client cannot and
+// must not supply itself. One member per kind of thing.
+message ContextLevelDetail {
+  oneof detail {
+    EntryDetail entry = 1;
+  }
+}
+
+message EntryDetail {
+  EntryKind kind = 1;
+  bool available = 2;
+}
+
+message ContextSelectionChanged {
+  ContextSelection selection = 1;          // absent = nothing selected
+  repeated ContextLevelDetail levels = 2;  // outermost first; one per level of `selection`
+  repeated ContextActionGroup actions = 3; // the innermost level's actions
+  bool transient = 4;                      // true for a PREVIEW: the current selection is unchanged
+}
+
+// Everything the Watch stream carries: selection changes, and prompts an action
+// started on this very connection wants shown.
+message ContextMessage {
+  oneof message {
+    ContextSelectionChanged selection = 1;
+    ContextPrompt prompt = 2;
   }
 }
 
@@ -49,7 +160,8 @@ message ContextAction {
   repeated ContextActionGroup items = 7; // non-empty -> a submenu instead of an action
 }
 
-// One provider's contribution; the client renders each as one ContextMenuGroup.
+// One provider's contribution; the client renders each as one ContextMenuGroup (and
+// one ribbon group).
 message ContextActionGroup {
   repeated ContextAction actions = 1;
 }
@@ -74,7 +186,7 @@ message ContextInteractionClosed {
   string message = 1;
 }
 
-// Backend-initiated: pushed down the connection's already-open WatchHierarchy stream.
+// Backend-initiated: pushed down the connection's already-open Watch stream.
 message ContextPrompt {
   ShortGuid interaction_id = 1;
   oneof prompt {
@@ -83,3 +195,59 @@ message ContextPrompt {
     ContextInteractionClosed closed = 4; // backend-initiated dismissal
   }
 }
+
+message DiscoverActionsRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;
+  reserved 3; // was the client-stated scope; now derived from the source
+  ContextSource source = 4; // unset = the connection's current selection
+}
+
+message DiscoverActionsResponse {
+  repeated ContextActionGroup groups = 1;
+}
+
+message ExecuteActionRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;
+  reserved 3; // was the client-stated scope; now derived from the source
+  ContextSource source = 4;      // unset = the connection's current selection
+  ShortGuid interaction_id = 5;  // client-generated; correlates the pushed prompt back to this call
+  oneof trigger {
+    string action_id = 6;
+    ContextShortcut shortcut = 7;
+  }
+}
+
+message ExecuteActionResponse {
+  bool accepted = 1;
+  string error = 2;
+}
+
+message ProposeInputRequest {
+  ShortGuid interaction_id = 1;
+  uint32 revision = 2;
+  string value = 3;
+}
+
+message ProposeInputResponse {
+  uint32 revision = 1; // echoed, so the client can discard a verdict for text it has moved past
+  bool valid = 2;
+  string reason = 3;
+}
+
+message SubmitInteractionRequest {
+  ShortGuid interaction_id = 1;
+  string value = 2;
+}
+
+message SubmitInteractionResponse {
+  bool completed = 1;
+  string error = 2;
+}
+
+message CancelInteractionRequest {
+  ShortGuid interaction_id = 1;
+}
+
+message CancelInteractionResponse {}
