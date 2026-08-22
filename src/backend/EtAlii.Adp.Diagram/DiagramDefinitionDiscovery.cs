@@ -135,9 +135,17 @@ public sealed partial class DiagramDefinitionDiscovery
 
         void Enqueue(Assembly assembly)
         {
-            if (visited.Add(assembly.FullName ?? assembly.GetName().Name ?? string.Empty))
+            if (!visited.Add(assembly.FullName ?? assembly.GetName().Name ?? string.Empty))
             {
-                queue.Enqueue(assembly);
+                return;
+            }
+
+            queue.Enqueue(assembly);
+
+            // The entry assembly is walked from whatever it is, but only returned - and so
+            // only scanned - when it is one of ours: under a test runner it is the test host.
+            if (IsApplicationAssembly(assembly.GetName().Name))
+            {
                 ordered.Add(assembly);
             }
         }
@@ -156,7 +164,7 @@ public sealed partial class DiagramDefinitionDiscovery
         {
             foreach (var library in context.RuntimeLibraries)
             {
-                if (!library.Name.StartsWith(AssemblyPrefix, StringComparison.Ordinal))
+                if (!IsApplicationAssembly(library.Name))
                 {
                     continue;
                 }
@@ -173,7 +181,7 @@ public sealed partial class DiagramDefinitionDiscovery
             var assembly = queue.Dequeue();
             foreach (var reference in assembly.GetReferencedAssemblies())
             {
-                if (reference.Name is null || !reference.Name.StartsWith(AssemblyPrefix, StringComparison.Ordinal))
+                if (!IsApplicationAssembly(reference.Name))
                 {
                     continue;
                 }
@@ -192,6 +200,9 @@ public sealed partial class DiagramDefinitionDiscovery
 
         return ordered;
     }
+
+    private static bool IsApplicationAssembly(string? simpleName) =>
+        simpleName is not null && simpleName.StartsWith(AssemblyPrefix, StringComparison.Ordinal);
 
     private static Assembly? TryLoad(AssemblyName name, ILogger? logger)
     {
