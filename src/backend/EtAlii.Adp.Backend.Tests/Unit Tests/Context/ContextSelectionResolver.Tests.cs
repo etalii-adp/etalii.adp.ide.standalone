@@ -1,8 +1,7 @@
 using EtAlii.Adp.Backend.Context;
-using EtAlii.Adp.Contracts;
+
 using Google.Protobuf.WellKnownTypes;
 using Xunit;
-using ShortGuid = EtAlii.Adp.ShortGuid;
 
 namespace EtAlii.Adp.Backend.Tests;
 
