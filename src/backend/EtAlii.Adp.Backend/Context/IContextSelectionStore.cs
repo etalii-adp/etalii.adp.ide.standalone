@@ -20,6 +20,7 @@ public interface IContextSelectionStore
     /// Claims this connection's stream and writes the current state as its first message.
     /// A second registration for the same id supersedes the first.
     /// </summary>
+    /// <param name="rootPath">The project root's path.</param>
     /// <param name="writer">The connection's stream.</param>
     /// <param name="rootActions">
     /// The project root's actions, carried on every "nothing selected" message this
@@ -27,6 +28,7 @@ public interface IContextSelectionStore
     /// space has its menu without asking.
     /// </param>
     /// <param name="watchId">The connection's id.</param>
+    /// <param name="projectActions">The project's actions.</param>
     void Register(
         ShortGuid watchId,
         string rootPath,

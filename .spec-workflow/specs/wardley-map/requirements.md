@@ -10,12 +10,12 @@ This spec covers the **Wardley Map diagram module** — the second concrete diag
 
 **Dependencies.** This spec redefines none of them:
 
-- [`adp-diagram-ide`](../adp-diagram-ide/requirements.md) — the workspace shell, the pannable/zoomable canvas, read-only mode.
-- [`grpc-core-communication-specification`](../grpc-core-communication-specification/requirements.md) — `Element`, `Delta` (`add`/`remove`/`group`/`ungroup`), `Point2D`, and the `Any` payload extension point.
-- [`add-diagram-action`](../add-diagram-action/requirements.md) and [`create-diagram-file`](../create-diagram-file/requirements.md) — the Add action, the `.adp` file and its MIME first line, the name field.
-- [`mindmap-diagram`](../mindmap-diagram/requirements.md) — which introduced, and this spec reuses unchanged: `DiagramDefinition.Extension`, `IDiagramDocumentFactory`, `ContextSource.element_id`, `ContextScope.DIAGRAM_ELEMENT`, and `DiagramService`'s `Open` + `UpdateView` legs.
-- [`context-service`](../context-service/requirements.md) — the selection chain and the pushing of a selection's actions.
-- [`diagram-undo-redo`](../diagram-undo-redo/requirements.md) and `tech.md`'s **Commands** rule.
+* [`adp-diagram-ide`](../adp-diagram-ide/requirements.md) — the workspace shell, the pannable/zoomable canvas, read-only mode.
+* [`grpc-core-communication-specification`](../grpc-core-communication-specification/requirements.md) — `Element`, `Delta` (`add`/`remove`/`group`/`ungroup`), `Point2D`, and the `Any` payload extension point.
+* [`add-diagram-action`](../add-diagram-action/requirements.md) and [`create-diagram-file`](../create-diagram-file/requirements.md) — the Add action, the `.adp` file and its MIME first line, the name field.
+* [`mindmap-diagram`](../mindmap-diagram/requirements.md) — which introduced, and this spec reuses unchanged: `DiagramDefinition.Extension`, `IDiagramDocumentFactory`, `ContextSource.element_id`, `ContextScope.DIAGRAM_ELEMENT`, and `DiagramService`'s `Open` + `UpdateView` legs.
+* [`context-service`](../context-service/requirements.md) — the selection chain and the pushing of a selection's actions.
+* [`diagram-undo-redo`](../diagram-undo-redo/requirements.md) and `tech.md`'s **Commands** rule.
 
 **What this spec changes in core.** Ideally nothing. The one candidate is Requirement 8.4's canvas background layer, which is a general seam and must be usable by any diagram type. If anything else in core needs to change, that is a finding worth reporting rather than a licence to change it.
 
@@ -23,13 +23,13 @@ This spec covers the **Wardley Map diagram module** — the second concrete diag
 
 ## Alignment with Product Vision
 
-- [product.md](../../steering/product.md)'s **"Don't reinvent, integrate"** — `.owm` is the de-facto maps-as-code format, shared by onlinewardleymaps.com, the VS Code extension, the Obsidian plugin and `cli-owm`. ADP reads and writes what that ecosystem already reads and writes, rather than a format of its own.
-- product.md's **"Files are the source of truth"** — a map is two plain text files in the project folder, and a map ADP did not change is byte-identical after a save.
-- product.md's **"Linkage over illustration"** — `submap` and `url` tie a map to other maps and to external material; Requirement 6.6 keeps those live rather than decorative.
-- [tech.md](../../steering/tech.md)'s **Commands** — every edit, including a drag, is a command with an inverse.
-- tech.md's **Context** — a component becomes selectable by registering a resolver, exactly as a mindmap node did.
-- tech.md's **Implementation order** — the requirement order below follows model, persistence, wire, UI, logic, so the tasks can too.
-- [structure.md](../../steering/structure.md)'s **dependency direction** — the module depends on core; core never depends on the module.
+* [product.md](../../steering/product.md)'s **"Don't reinvent, integrate"** — `.owm` is the de-facto maps-as-code format, shared by onlinewardleymaps.com, the VS Code extension, the Obsidian plugin and `cli-owm`. ADP reads and writes what that ecosystem already reads and writes, rather than a format of its own.
+* product.md's **"Files are the source of truth"** — a map is two plain text files in the project folder, and a map ADP did not change is byte-identical after a save.
+* product.md's **"Linkage over illustration"** — `submap` and `url` tie a map to other maps and to external material; Requirement 6.6 keeps those live rather than decorative.
+* [tech.md](../../steering/tech.md)'s **Commands** — every edit, including a drag, is a command with an inverse.
+* tech.md's **Context** — a component becomes selectable by registering a resolver, exactly as a mindmap node did.
+* tech.md's **Implementation order** — the requirement order below follows model, persistence, wire, UI, logic, so the tasks can too.
+* [structure.md](../../steering/structure.md)'s **dependency direction** — the module depends on core; core never depends on the module.
 
 ## Requirements
 
@@ -111,6 +111,7 @@ This spec covers the **Wardley Map diagram module** — the second concrete diag
 6. WHEN a `submap` or a `url` is read THEN it SHALL be preserved, and activating a `submap` SHALL open the map it names through the same navigation path any other diagram is opened by — not through a Wardley-specific mechanism.
 7. WHEN a `note` is read THEN it SHALL be preserved and rendered as free text at its position.
 8. WHEN an `annotation` is read THEN it SHALL be preserved with **all** of its coordinates: the DSL permits one numbered annotation pinned at several places, which a one-element-one-position model does not express directly. How that is represented is a design decision; that none of the positions may be lost is not.
+9. Make the above component decorations also visible.
 
 ### Requirement 7 — Coordinates are authored, and moving something is an edit
 

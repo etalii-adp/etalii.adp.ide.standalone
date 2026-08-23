@@ -11,16 +11,9 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </summary>
 public class ModulePluggabilityTests
 {
-    /// <summary>The core assemblies a diagram module must never appear in the reference graph of.</summary>
-    private static readonly string[] CoreAssemblies =
-    [
-        "EtAlii.Adp",
-        "EtAlii.Adp.Diagram",
-        "EtAlii.Adp.Backend",
-    ];
-
     private const string ModulePrefix = "EtAlii.Adp.Diagram.";
 
+    /// <summary>The core assemblies a diagram module must never appear in the reference graph of.</summary>
     [Theory]
     [InlineData("EtAlii.Adp")]
     [InlineData("EtAlii.Adp.Diagram")]

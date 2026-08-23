@@ -96,9 +96,10 @@ public class MindmapContextSourceResolverTests : IDisposable
     }
 
     [Fact]
-    public void NestingOf_ANode_IsNotNestable()
+    public async Task NestingOf_ANode_IsNotNestable()
     {
-        var level = Assert.IsType<ContextLevelResolution.Resolved>(ResolveAsync("ID_88117420").Result).Level;
+        var result = await ResolveAsync("ID_88117420");
+        var level = Assert.IsType<ContextLevelResolution.Resolved>(result).Level;
 
         Assert.Equal(ContextNesting.NotNestable, _project.Resolver.NestingOf(level));
     }

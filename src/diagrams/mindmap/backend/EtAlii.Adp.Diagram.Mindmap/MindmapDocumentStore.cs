@@ -13,7 +13,7 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// </summary>
 public sealed class MindmapDocumentStore : IMindmapDocumentStore
 {
-    private static readonly ILogger _logger = Log.ForContext<MindmapDocumentStore>();
+    private static readonly ILogger Logger = Log.ForContext<MindmapDocumentStore>();
 
     private readonly ConcurrentDictionary<string, MindmapDocument> _documents = new(StringComparer.OrdinalIgnoreCase);
     private readonly IDiagramDocumentFactory _factory;
@@ -57,7 +57,7 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
         File.WriteAllText(temporary, document.ToText(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         File.Move(temporary, bodyPath, overwrite: true);
 
-        _logger.Debug("Saved {BodyPath} after {Change}", bodyPath, change.GetType().Name);
+        Logger.Debug("Saved {BodyPath} after {Change}", bodyPath, change.GetType().Name);
         Changed?.Invoke(this, new MindmapChangedEventArgs(bodyPath, change));
     }
 
@@ -82,7 +82,7 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
         {
             // A registration without its body is a recoverable state: open empty, and the body
             // is written by the first save (Requirement 2.5).
-            _logger.Information("No body at {BodyPath}; opening an empty map", bodyPath);
+            Logger.Information("No body at {BodyPath}; opening an empty map", bodyPath);
             var baseName = IoPath.GetFileNameWithoutExtension(bodyPath);
             return MindmapDocument.Parse(_factory.CreateEmptyDocument(baseName));
         }
@@ -94,7 +94,7 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
         catch (MindmapFormatException exception)
         {
             // Named, so the user knows which file is broken; rethrown, so only this diagram fails.
-            _logger.Warning(exception, "Could not read {BodyPath} as a Freeplane map", bodyPath);
+            Logger.Warning(exception, "Could not read {BodyPath} as a Freeplane map", bodyPath);
             throw new MindmapFormatException($"{IoPath.GetFileName(bodyPath)}: {exception.Message}", exception);
         }
     }

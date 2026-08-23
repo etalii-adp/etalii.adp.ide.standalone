@@ -31,14 +31,14 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
     private readonly IHistoryStackStore _historyStacks;
     private readonly DiagramDocumentFactories _documentFactories;
 
-    /// <param name="history">Where the create is sent; this provider writes nothing itself.</param>
+    /// <param name="historyStacks">The history stacks where the create is sent; this provider writes nothing itself.</param>
     /// <param name="documentFactories">Where a type that keeps a body sibling gets that body's initial content.</param>
     public AddDiagramContextActionProvider(IHistoryStackStore historyStacks, DiagramDocumentFactories documentFactories)
         : this(historyStacks, documentFactories, null)
     {
     }
 
-    /// <param name="history">Where the create is sent; this provider writes nothing itself.</param>
+    /// <param name="historyStacks">The history stacks where the create is sent; this provider writes nothing itself.</param>
     /// <param name="documentFactories">Where a type that keeps a body sibling gets that body's initial content.</param>
     /// <param name="definitions">
     /// The diagram types to offer, read at call time; <c>null</c> means

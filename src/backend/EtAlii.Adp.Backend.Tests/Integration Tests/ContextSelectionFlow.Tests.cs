@@ -151,14 +151,16 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     /// actions - undo and redo - on their own message (diagram-undo-redo Deviation 1). A test
     /// that then asserts nothing further arrives reads past both here.
     /// </summary>
-    private static async Task<ContextSelectionChanged> ReadBaselineAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
+    private static async Task TestBaselineAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
     {
+        // ReSharper disable once UnusedVariable
         var selection = await ReadSelectionAsync(stream, cancellationToken);
         while (await stream.MoveNext(cancellationToken))
         {
             if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.ProjectActions)
             {
-                return selection;
+                return;
+                //Assert.NotNull(selection);
             }
         }
 
@@ -251,7 +253,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         using var cts = CreateMessageTimeout();
         var entryId = await EntryIdOfAsync(session, "a.txt");
         using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        await ReadBaselineAsync(call.ResponseStream, cts.Token);
+        await TestBaselineAsync(call.ResponseStream, cts.Token);
 
         var response = await session.Context.SelectAsync(
             new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryId, "b.txt") }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
@@ -386,8 +388,8 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
 
         using var callA = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         using var callB = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchIdB }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        await ReadBaselineAsync(callA.ResponseStream, ctsA.Token);
-        await ReadBaselineAsync(callB.ResponseStream, ctsB.Token);
+        await TestBaselineAsync(callA.ResponseStream, ctsA.Token);
+        await TestBaselineAsync(callB.ResponseStream, ctsB.Token);
         var pendingB = callB.ResponseStream.MoveNext(ctsB.Token);
 
         await session.Context.SelectAsync(
