@@ -19,7 +19,12 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         _idleTimeout = idleTimeout ?? DefaultIdleTimeout;
     }
 
-    public void Register(ShortGuid watchId, ChannelWriter<ContextMessage> writer, IReadOnlyList<ContextActionGroupDefinition> rootActions)
+    public void Register(
+        ShortGuid watchId,
+        string rootPath,
+        ChannelWriter<ContextMessage> writer,
+        IReadOnlyList<ContextActionGroupDefinition> rootActions,
+        IReadOnlyList<ContextActionGroupDefinition> projectActions)
     {
         var entry = GetOrCreate(watchId);
         lock (entry.Gate)
@@ -27,8 +32,31 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
             entry.IdleTimer?.Dispose();
             entry.IdleTimer = null;
             entry.Writer = writer;
+            entry.RootPath = rootPath;
             entry.RootActions = rootActions;
+            entry.ProjectActions = projectActions;
+            // The baseline: the selection (or the root's actions when nothing is selected), and
+            // the project's own actions, so a connection is fully current the moment it registers.
             writer.TryWrite(ContextMessageMapper.ToMessage(entry.Record, entry.RootActions));
+            writer.TryWrite(ContextMessageMapper.ToProjectActionsMessage(projectActions));
+        }
+    }
+
+    public void PushProjectActions(string rootPath, IReadOnlyList<ContextActionGroupDefinition> actions)
+    {
+        var message = ContextMessageMapper.ToProjectActionsMessage(actions);
+        foreach (var entry in _entries.Values)
+        {
+            lock (entry.Gate)
+            {
+                if (entry.Writer is null || !string.Equals(entry.RootPath, rootPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                entry.ProjectActions = actions;
+                entry.Writer.TryWrite(message);
+            }
         }
     }
 
@@ -254,5 +282,11 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         /// and on the discovered diagram types, both stable for a connection's lifetime.
         /// </summary>
         public IReadOnlyList<ContextActionGroupDefinition>? RootActions { get; set; }
+
+        /// <summary>The project this connection belongs to; a project-actions push reaches only matching entries.</summary>
+        public string RootPath { get; set; } = "";
+
+        /// <summary>The project actions last sent, held so a re-registration re-sends them.</summary>
+        public IReadOnlyList<ContextActionGroupDefinition>? ProjectActions { get; set; }
     }
 }

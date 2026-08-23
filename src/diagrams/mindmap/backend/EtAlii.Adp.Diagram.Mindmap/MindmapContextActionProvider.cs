@@ -36,16 +36,16 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
 
     private static readonly string[] SkippedFolders = [".git", "node_modules", "bin", "obj", ".claude"];
 
-    private readonly IHistoryStack _history;
+    private readonly IHistoryStackStore _historyStacks;
     private readonly IMindmapDocumentStore _documents;
     private readonly MindmapViewState _views;
 
-    public MindmapContextActionProvider(IHistoryStack history, IMindmapDocumentStore documents, MindmapViewState views)
+    public MindmapContextActionProvider(IHistoryStackStore historyStacks, IMindmapDocumentStore documents, MindmapViewState views)
     {
-        ArgumentNullException.ThrowIfNull(history);
+        ArgumentNullException.ThrowIfNull(historyStacks);
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(views);
-        _history = history;
+        _historyStacks = historyStacks;
         _documents = documents;
         _views = views;
     }
@@ -126,7 +126,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
                 // subtree with it (Requirement 7.4). Both are undoable, and the message says so.
                 if (!node.HasChildren)
                 {
-                    return DispatchAsync(new RemoveNodeCommand(target.ResolvedFullPath, node.Id), cancellationToken);
+                    return DispatchAsync(target, new RemoveNodeCommand(target.ResolvedFullPath, node.Id), cancellationToken);
                 }
 
                 return Result(new ContextExecutionResult.RequiresConfirmation(new ContextConfirmationRequest(
@@ -155,7 +155,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
                     "The project has no files to link to.")));
 
             case UnlinkActionId when node.Link is not null:
-                return DispatchAsync(new SetNodeLinkCommand(target.ResolvedFullPath, node.Id, null), cancellationToken);
+                return DispatchAsync(target, new SetNodeLinkCommand(target.ResolvedFullPath, node.Id, null), cancellationToken);
 
             default:
                 return Result(new ContextExecutionResult.Failed($"Unknown action '{actionId}'."));
@@ -192,7 +192,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
             return ContextCommitResult.Failed($"Unknown action '{actionId}'.");
         }
 
-        var result = await _history.ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
 
@@ -203,9 +203,9 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
         return new SetNodeLinkCommand(target.ResolvedFullPath, node.Id, stored);
     }
 
-    private async ValueTask<ContextExecutionResult> DispatchAsync(ICommand command, CancellationToken cancellationToken)
+    private async ValueTask<ContextExecutionResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
     {
-        var result = await _history.ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? new ContextExecutionResult.Completed() : new ContextExecutionResult.Failed(result.Error);
     }
 

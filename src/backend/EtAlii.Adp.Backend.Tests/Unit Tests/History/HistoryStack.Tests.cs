@@ -450,5 +450,103 @@ public class HistoryStackTests
         stack.Dispose();
     }
 
+    // ---- availability -----------------------------------------------------------------
+
+    [Fact]
+    public async Task Availability_AgreesWithTheFourProperties_ThroughExecuteUndoAndRedo()
+    {
+        var (stack, _) = CreateStack();
+        using var guard = stack;
+
+        void AssertAgrees()
+        {
+            var availability = stack.Availability;
+            Assert.Equal(stack.CanUndo, availability.CanUndo);
+            Assert.Equal(stack.CanRedo, availability.CanRedo);
+            Assert.Equal(stack.UndoCount, availability.UndoCount);
+            Assert.Equal(stack.RedoCount, availability.RedoCount);
+        }
+
+        AssertAgrees(); // empty
+        Assert.Equal(new HistoryAvailability(false, false, 0, 0), stack.Availability);
+
+        await stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken);
+        AssertAgrees();
+        Assert.Equal(new HistoryAvailability(true, false, 1, 0), stack.Availability);
+
+        await stack.UndoAsync(TestContext.Current.CancellationToken);
+        AssertAgrees();
+        Assert.Equal(new HistoryAvailability(false, true, 0, 1), stack.Availability);
+
+        await stack.RedoAsync(TestContext.Current.CancellationToken);
+        AssertAgrees();
+        Assert.Equal(new HistoryAvailability(true, false, 1, 0), stack.Availability);
+    }
+
+    // ---- the Changed event ------------------------------------------------------------
+
+    [Fact]
+    public async Task Changed_FiresOnceEach_OnARecordedExecuteASuccessfulUndoAndASuccessfulRedo()
+    {
+        var (stack, _) = CreateStack();
+        using var guard = stack;
+        var changed = 0;
+        stack.Changed += (_, _) => changed++;
+
+        await stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken);
+        Assert.Equal(1, changed);
+
+        await stack.UndoAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(2, changed);
+
+        await stack.RedoAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(3, changed);
+    }
+
+    [Fact]
+    public async Task Changed_DoesNotFire_WhenACommandIsRejected()
+    {
+        var (stack, _) = CreateStack();
+        using var guard = stack;
+        var changed = 0;
+        stack.Changed += (_, _) => changed++;
+
+        await stack.ExecuteAsync(new FailingCommand("nope"), TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, changed);
+    }
+
+    [Fact]
+    public async Task Changed_DoesNotFire_WhenACommandSucceedsWithoutAnInverse()
+    {
+        // Nothing landed on the undo stack, so nothing about what can be undone changed.
+        var (stack, _) = CreateStack();
+        using var guard = stack;
+        var changed = 0;
+        stack.Changed += (_, _) => changed++;
+
+        await stack.ExecuteAsync(new UnrecordedCommand(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, changed);
+    }
+
+    [Fact]
+    public async Task Changed_DoesNotFire_WhenAnUndoFailsToApply()
+    {
+        var (stack, dispatcher) = CreateStack();
+        using var guard = stack;
+        await stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken);
+
+        var changed = 0;
+        stack.Changed += (_, _) => changed++;
+        // The undo dispatches the recorded inverse; make that dispatch fail.
+        dispatcher.FailNextWith = "cannot reverse";
+
+        var undo = await stack.UndoAsync(TestContext.Current.CancellationToken);
+
+        Assert.False(undo.IsSuccess);
+        Assert.Equal(0, changed);
+    }
+
     private sealed record UnrecordedCommand : ICommand;
 }

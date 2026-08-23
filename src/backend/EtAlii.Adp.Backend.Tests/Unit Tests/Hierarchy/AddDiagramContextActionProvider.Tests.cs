@@ -13,14 +13,16 @@ public class AddDiagramContextActionProviderTests : IDisposable
 
     private readonly string _root;
     private static readonly DiagramDocumentFactories NoFactories = new([]);
-    private readonly IHistoryStack _history = TestHistory.Create();
+    private readonly IHistoryStackStore _historyStacks;
+    private readonly IHistoryStack _history;
     private readonly AddDiagramContextActionProvider _provider;
 
     public AddDiagramContextActionProviderTests()
     {
-        _provider = new AddDiagramContextActionProvider(_history, NoFactories, [SystemContext, ClassDiagram]);
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
+        _history = TestHistory.Create(_root, out _historyStacks);
+        _provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, [SystemContext, ClassDiagram]);
     }
 
     public void Dispose()
@@ -31,9 +33,9 @@ public class AddDiagramContextActionProviderTests : IDisposable
         }
     }
 
-    private static ContextTarget FolderTarget(string path) => new(ContextScope.Hierarchy, path, IsContainer: true, ShortGuid.NewShortGuid());
+    private ContextTarget FolderTarget(string path) => new(ContextScope.Hierarchy, path, IsContainer: true, ShortGuid.NewShortGuid(), RootPath: _root);
 
-    private static ContextTarget FileTarget(string path) => new(ContextScope.Hierarchy, path, IsContainer: false, ShortGuid.NewShortGuid());
+    private ContextTarget FileTarget(string path) => new(ContextScope.Hierarchy, path, IsContainer: false, ShortGuid.NewShortGuid(), RootPath: _root);
 
     private string CreateFile(string name)
     {
@@ -95,7 +97,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     [Fact]
     public async Task DiscoverAsync_WithNoDiagramTypes_OffersAddUnavailableWithAReason()
     {
-        var provider = new AddDiagramContextActionProvider(_history, NoFactories, []);
+        var provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, []);
 
         var groups = await provider.DiscoverAsync(FolderTarget(_root), TestContext.Current.CancellationToken);
 
@@ -112,7 +114,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
         // cache at call time. Checked through the public seam: a list that changes after
         // construction is reflected.
         var definitions = new List<DiagramDefinition>();
-        var provider = new AddDiagramContextActionProvider(_history, NoFactories, definitions);
+        var provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, definitions);
         var before = await provider.DiscoverAsync(FolderTarget(_root), TestContext.Current.CancellationToken);
 
         definitions.Add(SystemContext);
@@ -159,7 +161,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     public async Task ExecuteAsync_WithNoDiagramTypes_StillAsksForAChoice_WithAnEmptyTree()
     {
         // The dialog's own empty state is what the user sees; the menu normally prevents this.
-        var provider = new AddDiagramContextActionProvider(_history, NoFactories, []);
+        var provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, []);
 
         var result = await provider.ExecuteAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
 

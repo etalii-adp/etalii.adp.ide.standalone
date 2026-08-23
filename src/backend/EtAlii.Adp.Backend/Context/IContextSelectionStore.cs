@@ -27,7 +27,19 @@ public interface IContextSelectionStore
     /// space has its menu without asking.
     /// </param>
     /// <param name="watchId">The connection's id.</param>
-    void Register(ShortGuid watchId, ChannelWriter<ContextMessage> writer, IReadOnlyList<ContextActionGroupDefinition> rootActions);
+    void Register(
+        ShortGuid watchId,
+        string rootPath,
+        ChannelWriter<ContextMessage> writer,
+        IReadOnlyList<ContextActionGroupDefinition> rootActions,
+        IReadOnlyList<ContextActionGroupDefinition> projectActions);
+
+    /// <summary>
+    /// Writes one project-actions message to every connection in <paramref name="rootPath"/>'s
+    /// project, and to none in another - so undo/redo availability follows the history without
+    /// disturbing anyone's selection (diagram-undo-redo Requirement 5.3, Deviation 1).
+    /// </summary>
+    void PushProjectActions(string rootPath, IReadOnlyList<ContextActionGroupDefinition> actions);
 
     /// <summary>Drops a connection's stream, selection and observations.</summary>
     void Remove(ShortGuid watchId);

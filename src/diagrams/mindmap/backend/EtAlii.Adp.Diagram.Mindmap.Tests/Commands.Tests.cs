@@ -26,7 +26,7 @@ public class CommandsTests : IDisposable
         File.Copy("Fixtures/architecture.mm", _bodyPath);
 
         _services = new ServiceCollection().AddCommands().AddMindmapCommands().BuildServiceProvider();
-        _history = _services.GetRequiredService<IHistoryStack>();
+        _history = _services.GetRequiredService<IHistoryStackStore>().Get(_root);
         _documents = _services.GetRequiredService<IMindmapDocumentStore>();
     }
 

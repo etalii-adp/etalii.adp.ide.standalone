@@ -21,6 +21,10 @@ vi.mock("../context/ContextConnectionProvider", async (importOriginal) => {
     ...actual,
     useContextConnection: () => ({ watchId: new Uint8Array(16), select: vi.fn(), executeAction, executeShortcut: vi.fn() }),
     useContextSelection: () => ({ ...contextState, levels: [], preview: null, pendingReveal: null, connected: true }),
+    // RibbonBar now also mounts the History group and the project shortcuts; give them empty
+    // project actions and no open prompt so those consumers are inert in this file's tests.
+    useProjectActions: () => [],
+    useContextPrompt: () => ({ prompt: null, onPropose: vi.fn(), onSubmit: vi.fn(), onCancel: vi.fn() }),
   };
 });
 

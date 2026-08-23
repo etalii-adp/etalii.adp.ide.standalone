@@ -28,13 +28,13 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
     private static readonly ILogger _logger = Log.ForContext<AddDiagramContextActionProvider>();
 
     private readonly Func<IReadOnlyList<DiagramDefinition>> _definitions;
-    private readonly IHistoryStack _history;
+    private readonly IHistoryStackStore _historyStacks;
     private readonly DiagramDocumentFactories _documentFactories;
 
     /// <param name="history">Where the create is sent; this provider writes nothing itself.</param>
     /// <param name="documentFactories">Where a type that keeps a body sibling gets that body's initial content.</param>
-    public AddDiagramContextActionProvider(IHistoryStack history, DiagramDocumentFactories documentFactories)
-        : this(history, documentFactories, null)
+    public AddDiagramContextActionProvider(IHistoryStackStore historyStacks, DiagramDocumentFactories documentFactories)
+        : this(historyStacks, documentFactories, null)
     {
     }
 
@@ -45,11 +45,11 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
     /// <see cref="DiagramDefinition.All"/>. Read lazily rather than captured, because the
     /// host fills the cache after the container is built.
     /// </param>
-    public AddDiagramContextActionProvider(IHistoryStack history, DiagramDocumentFactories documentFactories, IReadOnlyList<DiagramDefinition>? definitions)
+    public AddDiagramContextActionProvider(IHistoryStackStore historyStacks, DiagramDocumentFactories documentFactories, IReadOnlyList<DiagramDefinition>? definitions)
     {
-        ArgumentNullException.ThrowIfNull(history);
+        ArgumentNullException.ThrowIfNull(historyStacks);
         ArgumentNullException.ThrowIfNull(documentFactories);
-        _history = history;
+        _historyStacks = historyStacks;
         _documentFactories = documentFactories;
         _definitions = definitions is null ? () => DiagramDefinition.All : () => definitions;
     }
@@ -190,7 +190,7 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         // history is what makes the new file one undo away, by way of the delete the handler
         // reports as the inverse.
         var command = new CreateDiagramFileCommand(target.ResolvedFullPath, fileName, definition.Origin.MimeType, siblingFileName, siblingContent);
-        var result = await _history.ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
 
         return result.IsSuccess
             // The destination is the command's own, not something the handler had to report:

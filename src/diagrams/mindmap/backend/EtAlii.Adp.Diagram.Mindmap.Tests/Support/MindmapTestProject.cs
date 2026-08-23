@@ -43,7 +43,7 @@ internal sealed class MindmapTestProject : IDisposable
 
     public ShortGuid WatchId { get; } = ShortGuid.NewShortGuid();
 
-    public IHistoryStack History => _services.GetRequiredService<IHistoryStack>();
+    public IHistoryStack History => _services.GetRequiredService<IHistoryStackStore>().Get(Root);
 
     public IMindmapDocumentStore Documents => _services.GetRequiredService<IMindmapDocumentStore>();
 
