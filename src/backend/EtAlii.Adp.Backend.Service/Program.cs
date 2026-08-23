@@ -44,7 +44,16 @@ builder.Services.AddSingleton<IContextActionProvider, HierarchyContextActionProv
 // it, and letting the container choose between the two would leave which one it picks to
 // depend on what else happens to be registered.
 builder.Services.AddSingleton<IContextActionProvider>(services =>
-    new AddDiagramContextActionProvider(services.GetRequiredService<IHistoryStack>()));
+    new AddDiagramContextActionProvider(
+        services.GetRequiredService<IHistoryStack>(),
+        services.GetRequiredService<DiagramDocumentFactories>()));
+
+// Every IDiagramDocumentFactory a module registers, looked up by origin by the create-file
+// command. A module that keeps its body in a sibling file is one registration line here.
+builder.Services.AddSingleton<DiagramDocumentFactories>();
+// Which type a file on disk belongs to - by its .adp first line, or by a declared extension
+// for a body dropped in without one. The catalog it reads is registered by AddCommands.
+builder.Services.AddSingleton<DiagramFileRouter>();
 
 builder.Services.AddSingleton<IContextSelectionStore, ContextSelectionStore>();
 builder.Services.AddSingleton<ContextSelectionResolver>();
@@ -83,6 +92,27 @@ if (!discoveredNow)
     Log.ForContext<DiagramDefinitionDiscovery>().Information(
         "Diagram types were already discovered in this process; reusing the {Count} cached definitions",
         DiagramDefinition.All.Count);
+}
+
+// A type that keeps its body in a sibling file needs a factory to write that body. Checked
+// here, once, so a module deployed without its factory is a startup error naming the type
+// rather than a failed Add the first time a user picks it (mindmap-diagram Requirement 2.2).
+var missingFactories = app.Services.GetRequiredService<DiagramDocumentFactories>().Verify(DiagramDefinition.All);
+if (missingFactories.Count > 0)
+{
+    throw new InvalidOperationException(
+        "These diagram types declare a document extension but registered no IDiagramDocumentFactory: " +
+        string.Join(", ", missingFactories.Select(definition => $"{definition.Origin} ({definition.Extension})")));
+}
+
+// Two types claiming one extension is not fatal - registration files still route by their
+// MIME line - but a body dropped in on its own cannot be routed, so say so once, here.
+var ambiguousExtensions = app.Services.GetRequiredService<DiagramFileRouter>().AmbiguousExtensions();
+if (ambiguousExtensions.Count > 0)
+{
+    Log.ForContext<DiagramFileRouter>().Warning(
+        "More than one diagram type claims {Extensions}; files with these extensions open only through their .adp registration",
+        ambiguousExtensions);
 }
 
 // One summary line per HTTP request - method, path, status, elapsed - instead of the several

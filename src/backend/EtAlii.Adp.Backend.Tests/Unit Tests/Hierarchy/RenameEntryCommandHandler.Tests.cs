@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend.Hierarchy;
+using EtAlii.Adp.Diagram;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -8,7 +9,7 @@ namespace EtAlii.Adp.Backend.Tests;
 public class RenameEntryCommandHandlerTests : IDisposable
 {
     private readonly string _root;
-    private readonly RenameEntryCommandHandler _handler = new();
+    private readonly RenameEntryCommandHandler _handler = new(new EmptyCatalog());
 
     public RenameEntryCommandHandlerTests()
     {
@@ -368,4 +369,10 @@ public class RenameEntryCommandHandlerTests : IDisposable
         Assert.Equal("The entry no longer exists.", undone.Error);
         Assert.True(stack.CanUndo);
     }
+}
+
+/// <summary>A catalog knowing no diagram types: every file is a plain file to the handlers.</summary>
+internal sealed class EmptyCatalog : IDiagramDefinitionCatalog
+{
+    public IReadOnlyList<DiagramDefinition> All { get; } = [];
 }

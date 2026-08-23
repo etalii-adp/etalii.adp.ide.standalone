@@ -5,8 +5,17 @@ namespace EtAlii.Adp.Diagram;
 /// of docs/diagrams.md's catalog table. Each diagram-type project exposes exactly one of these
 /// through its own static <c>Diagram.Definition</c>.
 /// </summary>
-public sealed record DiagramDefinition(DiagramOrigin Origin, string Title)
+/// <param name="Extension">
+/// The extension, dot included, of the sibling file that holds this type's document body -
+/// <c>".mm"</c> for a mindmap. Empty means the <c>.adp</c> registration file is the whole
+/// diagram. Declared here so core can name the sibling by construction, without carrying a
+/// mapping from MIME type to extension for every type (mindmap-diagram Requirement 2.2).
+/// </param>
+public sealed record DiagramDefinition(DiagramOrigin Origin, string Title, string Extension = "")
 {
+    /// <summary>Whether this type keeps its body in a sibling file rather than in the <c>.adp</c> file itself.</summary>
+    public bool HasDocumentSibling => Extension.Length > 0;
+
     /// <summary>
     /// Every diagram type discovered at startup, in a stable order. Empty until the host has
     /// run <see cref="DiagramDefinitionDiscovery"/> and handed the result to

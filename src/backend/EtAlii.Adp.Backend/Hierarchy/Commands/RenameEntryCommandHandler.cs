@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram;
 using Serilog;
 using IoPath = System.IO.Path;
 
@@ -36,6 +37,14 @@ public sealed record RenameEntryCommand(
 public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryCommand>
 {
     private static readonly ILogger _logger = Log.ForContext<RenameEntryCommandHandler>();
+
+    private readonly IDiagramDefinitionCatalog _catalog;
+
+    public RenameEntryCommandHandler(IDiagramDefinitionCatalog catalog)
+    {
+        ArgumentNullException.ThrowIfNull(catalog);
+        _catalog = catalog;
+    }
 
     public Task<CommandResult> ExecuteAsync(
         RenameEntryCommand command,
@@ -92,6 +101,20 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             return Task.FromResult(result);
         }
 
+        // A diagram's registration file takes its document sibling with it, under the new
+        // base name, so the pair stays a pair (mindmap-diagram Requirement 2.10). Resolved
+        // before the move: the first line that names the sibling goes with the file.
+        var sibling = isDirectory ? null : DiagramFilePair.SiblingOf(sourcePath, _catalog);
+        var siblingTarget = sibling is null
+            ? null
+            : DiagramFilePair.SiblingPathFor(targetPath, IoPath.GetExtension(sibling));
+        if (siblingTarget is not null && File.Exists(sibling) && !isCaseOnlyRename &&
+            (File.Exists(siblingTarget) || Directory.Exists(siblingTarget)))
+        {
+            var result = CommandResult.Failure($"'{IoPath.GetFileName(siblingTarget)}' already exists in this folder.");
+            return Task.FromResult(result);
+        }
+
         try
         {
             if (isDirectory)
@@ -101,6 +124,20 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             else
             {
                 File.Move(sourcePath, targetPath);
+                if (siblingTarget is not null && File.Exists(sibling))
+                {
+                    try
+                    {
+                        File.Move(sibling!, siblingTarget);
+                    }
+                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+                    {
+                        // One command, one outcome: a sibling that will not follow puts the
+                        // registration file back, so an undo never has half a pair to restore.
+                        File.Move(targetPath, sourcePath);
+                        throw;
+                    }
+                }
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -114,6 +151,13 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         }
 
         _logger.Information("Renamed {SourcePath} to {NewName}", sourcePath, command.NewName);
+        if (siblingTarget is not null && File.Exists(siblingTarget))
+        {
+            _logger.Information("Renamed {SiblingPath} with its registration file", siblingTarget);
+        }
+
+        // The inverse re-derives the sibling from the renamed registration file, so it
+        // restores both names without carrying either.
         return Task.FromResult(CommandResult.Success(new RenameEntryCommand(targetPath, originalName)));
     }
 

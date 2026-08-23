@@ -23,39 +23,79 @@ public static class AdpFileWriter
 
     private static readonly ILogger _logger = Log.ForContext(typeof(AdpFileWriter));
 
-    public static AdpFileWriteResult Create(string folder, string fileName, string firstLine)
+    public static AdpFileWriteResult Create(string folder, string fileName, string firstLine) =>
+        CreateAll(folder, [(fileName, firstLine + "\n")]);
+
+    /// <summary>
+    /// Creates every file in <paramref name="files"/> or none of them: all are written to
+    /// temporary names first, then moved into place one by one, and a move that fails undoes
+    /// the moves before it. A reader can therefore never see a diagram with its registration
+    /// file but not its body, or the other way round (mindmap-diagram Requirement 1.6).
+    /// </summary>
+    /// <remarks>
+    /// The rollback is best-effort in one respect: the process dying between two moves leaves
+    /// the first in place. The temp-then-move discipline makes that window two filesystem
+    /// calls wide, which is as narrow as it gets without a journal.
+    /// </remarks>
+    public static AdpFileWriteResult CreateAll(string folder, IReadOnlyList<(string FileName, string Content)> files)
     {
-        var destination = IoPath.Combine(folder, fileName);
-        var temporary = IoPath.Combine(folder, $"{TempPrefix}{Guid.NewGuid():N}{TempExtension}");
+        ArgumentNullException.ThrowIfNull(files);
+        ArgumentOutOfRangeException.ThrowIfZero(files.Count);
+
+        var destinations = files.Select(file => IoPath.Combine(folder, file.FileName)).ToArray();
+        var temporaries = files.Select(_ => IoPath.Combine(folder, $"{TempPrefix}{Guid.NewGuid():N}{TempExtension}")).ToArray();
+        var moved = new List<string>(files.Count);
 
         try
         {
             // No BOM: the first line is meant to be readable as-is by anything that opens the
             // file, and a BOM would sit in front of it.
-            File.WriteAllText(temporary, firstLine + "\n", new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+            for (var i = 0; i < files.Count; i++)
+            {
+                File.WriteAllText(temporaries[i], files[i].Content, encoding);
+            }
 
-            // The non-overwriting move is the create-new guarantee: if the name was taken in
+            // The non-overwriting move is the create-new guarantee: if a name was taken in
             // the meantime, this throws rather than replacing what is there.
-            File.Move(temporary, destination, overwrite: false);
+            for (var i = 0; i < files.Count; i++)
+            {
+                File.Move(temporaries[i], destinations[i], overwrite: false);
+                moved.Add(destinations[i]);
+            }
 
-            // Information: a file appeared in the user's project because of us, which is
+            // Information: files appeared in the user's project because of us, which is
             // exactly the kind of thing worth being able to point at afterwards.
-            _logger.Information("Created {FilePath}", destination);
-            return new AdpFileWriteResult.Created(destination);
+            _logger.Information("Created {FilePaths}", destinations);
+            return new AdpFileWriteResult.Created(destinations[0]);
         }
-        catch (IOException) when (File.Exists(destination) || Directory.Exists(destination))
+        catch (IOException) when (destinations.Any(destination => !moved.Contains(destination) && (File.Exists(destination) || Directory.Exists(destination))))
         {
-            // Something claimed the name between the check and the move. The user is told and
+            // Something claimed a name between the check and the move. The user is told and
             // can pick another, so this is a warning about a race, not a failure.
-            _logger.Warning("Did not create {FilePath}: the name was taken while it was being written", destination);
-            DeleteQuietly(temporary);
+            _logger.Warning("Did not create {FilePaths}: a name was taken while it was being written", destinations);
+            RollBack(moved, temporaries);
             return new AdpFileWriteResult.NameTaken();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
         {
-            _logger.Error(ex, "Failed to create {FilePath}", destination);
-            DeleteQuietly(temporary);
+            _logger.Error(ex, "Failed to create {FilePaths}", destinations);
+            RollBack(moved, temporaries);
             return new AdpFileWriteResult.Failed(ex.Message);
+        }
+    }
+
+    /// <summary>Removes what did get moved into place, and every scratch file, after a failure part-way.</summary>
+    private static void RollBack(IEnumerable<string> moved, IEnumerable<string> temporaries)
+    {
+        foreach (var path in moved)
+        {
+            DeleteQuietly(path);
+        }
+
+        foreach (var path in temporaries)
+        {
+            DeleteQuietly(path);
         }
     }
 
