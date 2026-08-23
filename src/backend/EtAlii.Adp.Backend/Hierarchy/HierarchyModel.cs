@@ -440,7 +440,23 @@ public sealed class HierarchyModel
             return false;
         }
 
-        var linkTarget = File.ResolveLinkTarget(fullPath, returnFinalTarget: true)?.FullName;
+        // The link probe touches the disk, and the entry may be gone by the time it runs: a
+        // multi-file delete (a git checkout, say) raises one watcher event per file, and each
+        // event re-resolves every tracked selection - whose files may already have vanished
+        // while their model entries have not. Probing a vanished path throws, and this runs
+        // on the watcher's thread, where an unhandled exception kills the whole process
+        // (found by the diagram-workspace-tabs manual pass). A path that cannot be probed is
+        // simply not contained: a gone entry resolves to nothing, same as an unknown one.
+        string? linkTarget;
+        try
+        {
+            linkTarget = File.ResolveLinkTarget(fullPath, returnFinalTarget: true)?.FullName;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+
         return linkTarget is null || linkTarget.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase);
     }
 }

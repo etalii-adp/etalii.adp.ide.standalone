@@ -220,6 +220,31 @@ public class HierarchyContextSourceResolverTests : IDisposable
         Assert.Empty(reported);
     }
 
+    [Fact]
+    public async Task Track_ARemovalEvent_WhileTheTrackedFileAlreadyVanishedFromDisk_ReportsNullInsteadOfThrowing()
+    {
+        // The crash the diagram-workspace-tabs manual pass found: a multi-file delete (a git
+        // checkout, say) raises one watcher event per file. The first event re-resolves every
+        // tracked selection - including one whose file is already gone from disk while its
+        // model entry is not - and the containment check's link probe threw on the vanished
+        // path, on the watcher's thread, killing the whole backend process.
+        var sibling = CreateFile("a.txt");
+        var tracked = CreateFile("b.txt");
+        var level = Assert.IsType<ContextLevelResolution.Resolved>(await ResolveAsync(IdOf("b.txt"))).Level;
+        var reported = new List<IReadOnlyList<string>?>();
+        using var track = _resolver.Track(_watchId, _root, level, reported.Add);
+
+        // Both files go from disk at once; only the sibling's event has been processed so far,
+        // so the tracked entry still exists in the model while its file does not.
+        File.Delete(tracked);
+        File.Delete(sibling);
+        Model().OnWatcherEvent(WatcherChangeTypes.Deleted, sibling, null);
+
+        // The tracked entry could not be re-resolved (its file is gone), which reports the
+        // selection as vanished - never an exception out of the event.
+        Assert.Null(Assert.Single(reported));
+    }
+
     // ---- the diagram type on the detail (diagram-workspace-tabs Requirement 1) -----------
     //
     // The workspace opens tabs from the pushed selection, so the detail must say which files
