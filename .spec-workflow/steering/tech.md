@@ -61,6 +61,28 @@ The idea is that the solution can:
 * For a specific subsystem or component, place simple POCO objects and objects that represent data rather than functionalities in a dedicated subfolder called '\_Model'.
 * Follow the one entity per file principle. One exception to this is a CommandHandler and the Command it handles.
 
+# Context
+
+The context service owns what is selected and what can be done with it. Every feature that has a notion of "the thing the user is working on" goes through it rather than growing a selection of its own.
+
+* **One selection, held in one place.** `ContextService` is the single owner of a connection's selection. No surface keeps its own copy, and nothing calls the backend to ask what is selected - the answer is pushed over the context stream, with the resolved chain and the innermost level's actions in the same message.
+* **Make something selectable by registering an `IContextSourceResolver`**, never by adding a bespoke RPC. A diagram element, a search hit, an entry in an error list: each is one resolver, registered once, and the service is not touched.
+* **Offer what a user can do through an `IContextActionProvider`** for the relevant `ContextScope`. Actions discovered this way reach the ribbon, the right-click menu and the keyboard shortcut through the same path, so a feature never wires up three of them.
+* **Consumers are pure subscribers.** The ribbon, menus and panels read the pushed selection and its actions and call nothing but `ExecuteAction`. A consumer that needs more information asks for it to be carried on the selection rather than resolving it again itself.
+* **Extend the chain, don't add a parallel message.** A selection carries a source, a path, an id, and a nested `none | action | child` choice. A feature that needs to say more should nest a level or add detail to one, so every existing consumer keeps working unchanged.
+* Registering a resolver or a provider is one line in `Program.cs`. If a new feature needs a change inside the context service itself, that is a sign the abstraction is wrong - fix the abstraction rather than special-casing the feature.
+
+# Commands
+
+Anything that changes state is a command. This is what makes undo/redo a property of the system rather than something each feature has to remember to support.
+
+* **Every functional action is an `ICommand` with a matching `ICommandHandler<TCommand>`**, dispatched through `IHistoryStack`. A service, a gRPC method or a context action provider never performs the change inline - it builds the command and dispatches it.
+* **A handler reports the command that reverses it** as `CommandResult.Inverse`, which is what puts the change on the undo stack. A change that is deliberately not undoable returns plain `CommandResult.Success()`, and the reason it is not undoable belongs in the handler's own documentation.
+* **Handlers validate their own preconditions.** Undo and redo dispatch a handler again long after the original call, so it can trust nothing that was checked earlier - not the caller, and not the state of the disk.
+* **A rejected command is a `CommandResult`, not an exception.** A name already taken or a file that has since vanished is an expected outcome carrying a message meant for the user. Exceptions stay reserved for programming errors, such as dispatching a command with no registered handler.
+* A context action's `CommitAsync` is the point where the two rules above meet: it resolves what the user chose and dispatches a command, and does no filesystem work itself.
+* Known gaps to close rather than copy: the hierarchy rename and the Add-diagram commit both still change the filesystem directly, so neither is undoable yet, and `RenameEntryCommandHandler` exists but nothing dispatches it.
+
 # Decision log
 
 1. **File-based storage over a database**: keeps diagrams reviewable and mergeable through normal repository tooling; revisit only if a hosted/multi-user scenario proves this insufficient.
@@ -68,3 +90,5 @@ The idea is that the solution can:
 3. **.NET/ASP.NET Core backend**: aligns with the team's Rider-based, F5-first development workflow and existing tooling familiarity.
 4. **React + TypeScript client over Blazor WebAssembly**: the canvas/diagramming ecosystem available to React/TypeScript is significantly more mature for a virtualized, WebGL-rendered diagram surface than Blazor's, outweighing the appeal of an all-C# stack; revisit only if a specific chunk of C# logic clearly needs to run client-side.
 5. **ASP.NET Core hosts the React build directly**: kept to a single process/runtime in production (static files + gRPC-Web endpoint together) rather than combining Blazor and React, avoiding a JS-interop serialization boundary on the path that streams diagram deltas to the canvas.
+6. **One context service rather than per-surface selection**: selection and the actions that apply to it are cross-cutting - the explorer, the ribbon, the canvas and search all need the same answer - so they are resolved once and pushed, instead of each surface keeping its own state and asking its own questions. The cost is one indirection when adding a feature; the return is that a new selectable thing or a new action reaches every surface without any of them changing.
+7. **Commands for every state change**: undo/redo is a property users expect of a design tool everywhere, not per feature. Routing changes through `ICommand`/`ICommandHandler` and the history stack makes reversibility the default and forces each change to name its own inverse, rather than leaving each feature to reimplement it or quietly skip it.
