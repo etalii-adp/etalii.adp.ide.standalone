@@ -90,11 +90,11 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         return response.Added.Id;
     }
 
-    private static async Task<ContextSelectionChanged> ReadBaselineAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
+    private static async Task TestBaselineAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
     {
         Assert.True(await stream.MoveNext(cancellationToken), "the stream ended before the baseline arrived");
         Assert.Equal(ContextMessage.MessageOneofCase.Selection, stream.Current.MessageCase);
-        return stream.Current.Selection;
+        //return stream.Current.Selection;
     }
 
     private static async Task<ContextPrompt> ReadUntilPromptAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
@@ -200,7 +200,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         using var cts = CreateMessageTimeout();
         using var contextCall = session.Context.Watch(
             new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
+        await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
 
         var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         Assert.Equal(ContextPrompt.PromptOneofCase.ChoiceDialog, prompt.PromptCase);
@@ -250,7 +250,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
 
         using var contextCall = session.Context.Watch(
             new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
+        await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
         var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
         Assert.NotNull(leaf);
@@ -279,7 +279,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
 
         using var contextCall = session.Context.Watch(
             new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
+        await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
         var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token, folderId);
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
         Assert.NotNull(leaf);
@@ -300,7 +300,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         using var cts = CreateMessageTimeout();
         using var contextCall = session.Context.Watch(
             new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
+        await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
         var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
         Assert.NotNull(leaf);
@@ -324,7 +324,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         using var cts = CreateMessageTimeout();
         using var contextCall = session.Context.Watch(
             new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
+        await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
         var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
         Assert.NotNull(leaf);
@@ -344,7 +344,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         using var cts = CreateMessageTimeout();
         using var contextCall = session.Context.Watch(
             new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
+        await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
         var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
         Assert.NotNull(leaf);
@@ -364,7 +364,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         using var cts = CreateMessageTimeout();
         using var contextCall = session.Context.Watch(
             new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
+        await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
 
         var (first, firstInteraction) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var leaf = FirstLeaf(first.ChoiceDialog.Options);
