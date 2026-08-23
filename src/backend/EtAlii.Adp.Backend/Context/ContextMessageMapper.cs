@@ -34,6 +34,14 @@ public static class ContextMessageMapper
         return new ContextMessage { Selection = changed };
     }
 
+    /// <summary>The project's own actions, on their own message so no selection consumer is disturbed by a history change.</summary>
+    public static ContextMessage ToProjectActionsMessage(IReadOnlyList<ContextActionGroupDefinition> actions)
+    {
+        var projectActions = new ContextProjectActions();
+        projectActions.Actions.AddRange(actions.Select(ToProto));
+        return new ContextMessage { ProjectActions = projectActions };
+    }
+
     public static ContextActionGroup ToProto(ContextActionGroupDefinition group)
     {
         var result = new ContextActionGroup();

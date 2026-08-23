@@ -12,14 +12,15 @@ namespace EtAlii.Adp.Backend.Tests;
 public class HierarchyContextActionProviderTests : IDisposable
 {
     private readonly string _root;
-    private readonly IHistoryStack _history = TestHistory.Create();
+    private readonly IHistoryStack _history;
     private readonly HierarchyContextActionProvider _provider;
 
     public HierarchyContextActionProviderTests()
     {
-        _provider = new HierarchyContextActionProvider(_history);
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
+        _history = TestHistory.Create(_root, out var historyStacks);
+        _provider = new HierarchyContextActionProvider(historyStacks);
     }
 
     public void Dispose()
@@ -44,11 +45,11 @@ public class HierarchyContextActionProviderTests : IDisposable
         return path;
     }
 
-    private static ContextTarget FileTarget(string path) =>
-        new(ContextScope.Hierarchy, path, IsContainer: false, ShortGuid.NewShortGuid());
+    private ContextTarget FileTarget(string path) =>
+        new(ContextScope.Hierarchy, path, IsContainer: false, ShortGuid.NewShortGuid(), RootPath: _root);
 
-    private static ContextTarget FolderTarget(string path) =>
-        new(ContextScope.Hierarchy, path, IsContainer: true, ShortGuid.NewShortGuid());
+    private ContextTarget FolderTarget(string path) =>
+        new(ContextScope.Hierarchy, path, IsContainer: true, ShortGuid.NewShortGuid(), RootPath: _root);
 
     private async Task<IReadOnlyList<ContextActionDefinition>> DiscoverAsync(ContextTarget target) =>
         (await _provider.DiscoverAsync(target, TestContext.Current.CancellationToken)).SelectMany(g => g.Actions).ToList();
@@ -264,8 +265,8 @@ public class HierarchyContextActionProviderTests : IDisposable
     // temp path, so a parent-folder check does not protect it; it is recognised by carrying
     // no entry id, which no real entry ever lacks.
 
-    private static ContextTarget RootTarget(string path) =>
-        new(ContextScope.Hierarchy, path, IsContainer: true, SourceId: default);
+    private ContextTarget RootTarget(string path) =>
+        new(ContextScope.Hierarchy, path, IsContainer: true, SourceId: default, RootPath: _root);
 
     [Fact]
     public async Task DiscoverAsync_OnTheProjectRoot_ReportsRenameAndDeleteUnavailable_WithTheReason()

@@ -316,10 +316,15 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         using var ctsA = CreateMessageTimeout();
         using var ctsB = CreateMessageTimeout();
 
-        // Both streams open with their "nothing selected" baseline; what matters is what
-        // arrives after it.
+        // Both streams open with two baseline messages: the "nothing selected" selection and
+        // the project's own actions - undo and redo - on their own message (diagram-undo-redo
+        // Deviation 1). What matters is what arrives after both.
         Assert.True(await callA.ResponseStream.MoveNext(ctsA.Token));
         Assert.True(await callB.ResponseStream.MoveNext(ctsB.Token));
+        Assert.True(await callA.ResponseStream.MoveNext(ctsA.Token));
+        Assert.Equal(ContextMessage.MessageOneofCase.ProjectActions, callA.ResponseStream.Current.MessageCase);
+        Assert.True(await callB.ResponseStream.MoveNext(ctsB.Token));
+        Assert.Equal(ContextMessage.MessageOneofCase.ProjectActions, callB.ResponseStream.Current.MessageCase);
         var pendingA = callA.ResponseStream.MoveNext(ctsA.Token);
         var pendingB = callB.ResponseStream.MoveNext(ctsB.Token);
 

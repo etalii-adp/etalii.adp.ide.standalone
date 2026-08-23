@@ -13,17 +13,17 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
 {
     private const string RootUntouchable = "The project folder itself cannot be renamed or deleted here.";
 
-    private readonly IHistoryStack _history;
+    private readonly IHistoryStackStore _historyStacks;
 
-    /// <param name="history">
-    /// Where both actions send their work. Neither touches the filesystem itself: a rename
-    /// and a delete are state changes, so they go out as commands and the history is what
-    /// records them.
+    /// <param name="historyStacks">
+    /// Where both actions send their work, scoped to the target's project. Neither touches the
+    /// filesystem itself: a rename and a delete are state changes, so they go out as commands
+    /// and the project's history is what records them.
     /// </param>
-    public HierarchyContextActionProvider(IHistoryStack history)
+    public HierarchyContextActionProvider(IHistoryStackStore historyStacks)
     {
-        ArgumentNullException.ThrowIfNull(history);
-        _history = history;
+        ArgumentNullException.ThrowIfNull(historyStacks);
+        _historyStacks = historyStacks;
     }
 
     public ContextScope Scope => ContextScope.Hierarchy;
@@ -126,8 +126,8 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
 
         return actionId switch
         {
-            RenameActionId => await DispatchAsync(new RenameEntryCommand(target.ResolvedFullPath, value), cancellationToken),
-            DeleteActionId => await DispatchAsync(new DeleteEntryCommand(target.ResolvedFullPath), cancellationToken),
+            RenameActionId => await DispatchAsync(target, new RenameEntryCommand(target.ResolvedFullPath, value), cancellationToken),
+            DeleteActionId => await DispatchAsync(target, new DeleteEntryCommand(target.ResolvedFullPath), cancellationToken),
             _ => ContextCommitResult.Failed($"Unknown action '{actionId}'."),
         };
     }
@@ -137,9 +137,9 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
     /// expects. The handler's own message is passed straight through: it knows what actually
     /// stopped it, which is more than this provider can say from here.
     /// </summary>
-    private async ValueTask<ContextCommitResult> DispatchAsync(ICommand command, CancellationToken cancellationToken)
+    private async ValueTask<ContextCommitResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
     {
-        var result = await _history.ExecuteAsync(command, cancellationToken);
+        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
     }
 

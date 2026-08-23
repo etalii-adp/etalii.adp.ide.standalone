@@ -75,45 +75,71 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
         }
     }
 
+    public HistoryAvailability Availability
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return new HistoryAvailability(_undo.Count > 0, _redo.Count > 0, _undo.Count, _redo.Count);
+            }
+        }
+    }
+
+    public event EventHandler? Changed;
+
     public async Task<CommandResult> ExecuteAsync(ICommand command, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(command);
         ObjectDisposedException.ThrowIf(_isDisposed, this);
 
+        CommandResult result;
+        var recorded = false;
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var result = await _dispatcher.DispatchAsync(command, cancellationToken).ConfigureAwait(false);
+            result = await _dispatcher.DispatchAsync(command, cancellationToken).ConfigureAwait(false);
 
             // A rejected command changed nothing, so there is nothing to record and the redo
             // side stays valid - a failed attempt must not cost the user their redo entries.
             if (!result.IsSuccess)
             {
                 _logger.Warning("{Command} was rejected: {Reason}", command.GetType().Name, result.Error);
-                return result;
             }
-
-            if (result.Inverse is null)
+            else if (result.Inverse is null)
             {
                 // Succeeded but cannot be undone, so it does not belong on the stack.
                 _logger.Debug("{Command} succeeded without an inverse; not recorded for undo", command.GetType().Name);
-                return result;
             }
-
-            Record(new HistoryEntry(command, result.Inverse));
-            _logger.Information("{Command} executed; {UndoCount} changes can now be undone", command.GetType().Name, UndoCount);
-            return result;
+            else
+            {
+                Record(new HistoryEntry(command, result.Inverse));
+                _logger.Information("{Command} executed; {UndoCount} changes can now be undone", command.GetType().Name, UndoCount);
+                recorded = true;
+            }
         }
         finally
         {
             _gate.Release();
         }
+
+        // Outside the gate: a subscriber that re-enters the store cannot deadlock the stack.
+        if (recorded)
+        {
+            RaiseChanged();
+        }
+
+        return result;
     }
+
+    private void RaiseChanged() => Changed?.Invoke(this, EventArgs.Empty);
 
     public async Task<CommandResult> UndoAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_isDisposed, this);
 
+        CommandResult result;
+        var moved = false;
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
@@ -129,7 +155,7 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
                 entry = _undo.Last.Value;
             }
 
-            var result = await _dispatcher.DispatchAsync(entry.Inverse, cancellationToken).ConfigureAwait(false);
+            result = await _dispatcher.DispatchAsync(entry.Inverse, cancellationToken).ConfigureAwait(false);
 
             // Left in place on failure: the state was not reversed, so the entry still describes
             // a real change and undo stays available to retry once the obstacle is gone.
@@ -139,28 +165,38 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
                     "Could not undo {Command}: {Reason}. It stays on the undo stack",
                     entry.Command.GetType().Name,
                     result.Error);
-                return result;
             }
-
-            lock (_sync)
+            else
             {
-                _undo.RemoveLast();
-                _redo.Push(entry);
-            }
+                lock (_sync)
+                {
+                    _undo.RemoveLast();
+                    _redo.Push(entry);
+                }
 
-            _logger.Information("Undid {Command}; {UndoCount} left to undo, {RedoCount} to redo", entry.Command.GetType().Name, UndoCount, RedoCount);
-            return result;
+                _logger.Information("Undid {Command}; {UndoCount} left to undo, {RedoCount} to redo", entry.Command.GetType().Name, UndoCount, RedoCount);
+                moved = true;
+            }
         }
         finally
         {
             _gate.Release();
         }
+
+        if (moved)
+        {
+            RaiseChanged();
+        }
+
+        return result;
     }
 
     public async Task<CommandResult> RedoAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_isDisposed, this);
 
+        CommandResult result;
+        var moved = false;
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
@@ -176,31 +212,39 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
                 entry = peeked;
             }
 
-            var result = await _dispatcher.DispatchAsync(entry.Command, cancellationToken).ConfigureAwait(false);
+            result = await _dispatcher.DispatchAsync(entry.Command, cancellationToken).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
                 _logger.Warning(
                     "Could not redo {Command}: {Reason}. It stays on the redo stack",
                     entry.Command.GetType().Name,
                     result.Error);
-                return result;
             }
-
-            // No trimming needed: a redo entry was on the undo side a moment ago, so moving it
-            // back cannot push the count past the capacity it already respected.
-            lock (_sync)
+            else
             {
-                _redo.Pop();
-                _undo.AddLast(entry);
-            }
+                // No trimming needed: a redo entry was on the undo side a moment ago, so moving
+                // it back cannot push the count past the capacity it already respected.
+                lock (_sync)
+                {
+                    _redo.Pop();
+                    _undo.AddLast(entry);
+                }
 
-            _logger.Information("Redid {Command}; {UndoCount} left to undo, {RedoCount} to redo", entry.Command.GetType().Name, UndoCount, RedoCount);
-            return result;
+                _logger.Information("Redid {Command}; {UndoCount} left to undo, {RedoCount} to redo", entry.Command.GetType().Name, UndoCount, RedoCount);
+                moved = true;
+            }
         }
         finally
         {
             _gate.Release();
         }
+
+        if (moved)
+        {
+            RaiseChanged();
+        }
+
+        return result;
     }
 
     public void Clear()
@@ -220,6 +264,8 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
         {
             _gate.Release();
         }
+
+        RaiseChanged();
     }
 
     public void Dispose()

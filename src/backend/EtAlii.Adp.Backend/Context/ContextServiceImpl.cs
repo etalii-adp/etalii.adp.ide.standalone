@@ -26,19 +26,22 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
     private readonly ContextSelectionResolver _selectionResolver;
     private readonly IContextActionResolver _contextActionResolver;
     private readonly IContextInteractionStore _contextInteractionStore;
+    private readonly IHistoryStackStore _historyStacks;
 
     public ContextServiceImpl(
         IProjectStore projectStore,
         IContextSelectionStore selectionStore,
         ContextSelectionResolver selectionResolver,
         IContextActionResolver contextActionResolver,
-        IContextInteractionStore contextInteractionStore)
+        IContextInteractionStore contextInteractionStore,
+        IHistoryStackStore historyStacks)
     {
         _projectStore = projectStore;
         _selectionStore = selectionStore;
         _selectionResolver = selectionResolver;
         _contextActionResolver = contextActionResolver;
         _contextInteractionStore = contextInteractionStore;
+        _historyStacks = historyStacks;
     }
 
     public override async Task<SelectResponse> Select(SelectRequest request, ServerCallContext context)
@@ -109,9 +112,16 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
         // here and carried on every "nothing selected" message for this connection.
         var rootActions = await _contextActionResolver.DiscoverAsync(RootTarget(rootPath, watchId), context.CancellationToken);
 
+        // The project's own actions - undo and redo - which belong to the project rather than
+        // the selection and travel on their own message (diagram-undo-redo Deviation 1). The
+        // connection's lifetime drives the project's history: retained here, released below.
+        _historyStacks.Retain(rootPath);
+        var projectActions = await _contextActionResolver.DiscoverAsync(
+            HistoryActionsBroadcaster.ProjectTarget(rootPath), context.CancellationToken);
+
         // Registering writes the baseline first, so a late subscriber is consistent
         // before anything else can arrive.
-        _selectionStore.Register(watchId, channel.Writer, rootActions);
+        _selectionStore.Register(watchId, rootPath, channel.Writer, rootActions, projectActions);
         _contextInteractionStore.Register(watchId, channel.Writer);
         _logger.Information(
             "Context stream open on watch {WatchId} for project {ProjectId}, with {GroupCount} root action groups",
@@ -135,6 +145,7 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
         {
             _contextInteractionStore.Remove(watchId);
             _selectionStore.Remove(watchId);
+            _historyStacks.Release(rootPath);
             _logger.Information("Context stream closed on watch {WatchId}", watchId);
         }
     }

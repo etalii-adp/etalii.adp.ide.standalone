@@ -255,6 +255,13 @@ public sealed partial class ContextServiceImpl
             return _selectionStore.Get(watchId)?.Innermost.Target ?? RootTarget(rootPath, watchId);
         }
 
+        // An explicit project source names the project itself, for undo and redo, which apply
+        // to it rather than to whatever is selected (diagram-undo-redo Requirement 5.1).
+        if (source.SourceCase == ContextSource.SourceOneofCase.Project)
+        {
+            return HistoryActionsBroadcaster.ProjectTarget(rootPath);
+        }
+
         var resolution = await _selectionResolver.ResolveLevelAsync(
             watchId, rootPath, ContextSelectionSource.Unspecified, source, [], null, context.CancellationToken);
 

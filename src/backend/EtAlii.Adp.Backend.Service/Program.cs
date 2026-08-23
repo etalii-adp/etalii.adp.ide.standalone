@@ -47,7 +47,7 @@ builder.Services.AddSingleton<IContextActionProvider, HierarchyContextActionProv
 // depend on what else happens to be registered.
 builder.Services.AddSingleton<IContextActionProvider>(services =>
     new AddDiagramContextActionProvider(
-        services.GetRequiredService<IHistoryStack>(),
+        services.GetRequiredService<IHistoryStackStore>(),
         services.GetRequiredService<DiagramDocumentFactories>()));
 
 // Every IDiagramDocumentFactory a module registers, looked up by origin by the create-file
@@ -72,6 +72,11 @@ builder.Services.AddSingleton<IContextSourceResolver, HierarchyContextSourceReso
 // The dispatcher, the history and every command handler. Every state change the context
 // actions above make travels through here, which is what makes it undoable.
 builder.Services.AddCommands();
+
+// Undo and redo, offered as project-scope context actions, and the broadcaster that pushes
+// their availability whenever a project's history changes (diagram-undo-redo).
+builder.Services.AddSingleton<IContextActionProvider, EtAlii.Adp.Backend.History.HistoryContextActionProvider>();
+builder.Services.AddSingleton<HistoryActionsBroadcaster>();
 
 // The mindmap module: its commands and document store, its document factory, the resolver
 // that makes a node selectable and the provider that offers what can be done to one. Four
@@ -136,6 +141,10 @@ if (ambiguousExtensions.Count > 0)
 // One summary line per HTTP request - method, path, status, elapsed - instead of the several
 // ASP.NET Core writes by default. It is what makes a slow or failing call visible without
 // turning framework logging up to Information across the board.
+// Resolved eagerly so it subscribes to the history store now, at startup, rather than on the
+// first request that happens to touch it - a lazily-created broadcaster would miss changes.
+_ = app.Services.GetRequiredService<HistoryActionsBroadcaster>();
+
 app.UseSerilogRequestLogging();
 
 // DefaultEnabled so every mapped gRPC service (including DiagramService once that spec

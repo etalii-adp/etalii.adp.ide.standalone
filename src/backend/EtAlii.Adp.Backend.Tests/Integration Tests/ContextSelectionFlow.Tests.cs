@@ -146,6 +146,25 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         throw new InvalidOperationException("The stream ended before a selection message arrived.");
     }
 
+    /// <summary>
+    /// The full opening of a stream: the selection baseline and then the project's own
+    /// actions - undo and redo - on their own message (diagram-undo-redo Deviation 1). A test
+    /// that then asserts nothing further arrives reads past both here.
+    /// </summary>
+    private static async Task<ContextSelectionChanged> ReadBaselineAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
+    {
+        var selection = await ReadSelectionAsync(stream, cancellationToken);
+        while (await stream.MoveNext(cancellationToken))
+        {
+            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.ProjectActions)
+            {
+                return selection;
+            }
+        }
+
+        throw new InvalidOperationException("The stream ended before the project-actions baseline arrived.");
+    }
+
     [Fact]
     public async Task Watch_OpensWithAnEmptyBaseline()
     {
@@ -201,7 +220,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         using var cts = CreateMessageTimeout();
         var entryId = await EntryIdOfAsync(session, "a.txt");
         using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        await ReadSelectionAsync(call.ResponseStream, cts.Token);
+        await ReadBaselineAsync(call.ResponseStream, cts.Token);
 
         var response = await session.Context.SelectAsync(
             new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryId, "b.txt") }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
@@ -336,8 +355,8 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
 
         using var callA = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         using var callB = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchIdB }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        await ReadSelectionAsync(callA.ResponseStream, ctsA.Token);
-        await ReadSelectionAsync(callB.ResponseStream, ctsB.Token);
+        await ReadBaselineAsync(callA.ResponseStream, ctsA.Token);
+        await ReadBaselineAsync(callB.ResponseStream, ctsB.Token);
         var pendingB = callB.ResponseStream.MoveNext(ctsB.Token);
 
         await session.Context.SelectAsync(

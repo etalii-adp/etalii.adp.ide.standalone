@@ -27,11 +27,10 @@ public static class ServiceCollectionAddCommandsExtension
 
         services.AddSingleton<ICommandDispatcher, CommandDispatcher>();
 
-        // One process-wide history for now. Scoping it per project (or per diagram, as
-        // diagram-undo-redo's requirements describe) is a later step: nothing yet exposes
-        // undo/redo over the wire, so no caller can observe that the stack is shared.
-        services.AddSingleton<IHistoryStack>(provider =>
-            new HistoryStack(provider.GetRequiredService<ICommandDispatcher>()));
+        // One history per project, keyed by root path. A provider reaches its project's stack
+        // through Get(target.RootPath); a connection's Watch lifetime retains and releases it.
+        services.AddSingleton<IHistoryStackStore>(provider =>
+            new HistoryStackStore(provider.GetRequiredService<ICommandDispatcher>()));
 
         services.AddSingleton<ICommandHandler<RenameEntryCommand>, RenameEntryCommandHandler>();
         services.AddSingleton<ICommandHandler<DeleteEntryCommand>, DeleteEntryCommandHandler>();

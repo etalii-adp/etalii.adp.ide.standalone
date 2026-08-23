@@ -15,13 +15,14 @@ public class DiagramFilePairTests : IDisposable
     private static readonly DiagramDefinition ClassDiagram = new(new DiagramOrigin("uml", "class"), "Class diagram");
 
     private readonly string _root;
-    private readonly IHistoryStack _history = TestHistory.Create(Mindmap, ClassDiagram);
+    private readonly IHistoryStack _history;
     private readonly IDiagramDefinitionCatalog _catalog = new Catalog(Mindmap, ClassDiagram);
 
     public DiagramFilePairTests()
     {
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
+        _history = TestHistory.Create(_root, out _, Mindmap, ClassDiagram);
     }
 
     public void Dispose()

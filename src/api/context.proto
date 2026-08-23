@@ -41,7 +41,9 @@ service ContextService {
 enum ContextScope {
   CONTEXT_SCOPE_UNSPECIFIED = 0;
   HIERARCHY = 1;
-  // 2 is reserved for the project itself (diagram-undo-redo).
+  // The project itself: actions that belong to it rather than to a selection - undo and redo
+  // (diagram-undo-redo Requirement 5.1).
+  PROJECT = 2;
   // An element inside an open diagram - a mindmap node, later a class or a box - served by
   // the diagram type's own providers (mindmap-diagram Requirement 10.3).
   DIAGRAM_ELEMENT = 3;
@@ -60,6 +62,10 @@ message ContextSource {
     // delta stream carries for it, so a selection and an element are one identity
     // (mindmap-diagram Requirement 10.2). Only meaningful as a child of a diagram file.
     ElementId element_id = 2;
+    // The project this call is already scoped to. Empty rather than a project id: the request
+    // already carries project_id and the backend already resolved it, so a second copy would
+    // be a second thing to authorize and to disagree with (diagram-undo-redo).
+    google.protobuf.Empty project = 3;
   }
 }
 
@@ -150,12 +156,21 @@ message ContextSelectionChanged {
   bool transient = 4;                      // true for a PREVIEW: the current selection is unchanged
 }
 
-// Everything the Watch stream carries: selection changes, and prompts an action
-// started on this very connection wants shown.
+// Actions that belong to the project rather than to what is selected, so they stay correct
+// while the selection changes underneath them. Pushed when the connection registers and
+// whenever they change - today, whenever the project's history changes (diagram-undo-redo
+// Requirement 5.3, Deviation 1).
+message ContextProjectActions {
+  repeated ContextActionGroup actions = 1;
+}
+
+// Everything the Watch stream carries: selection changes, prompts an action started on this
+// very connection wants shown, and the project's own actions.
 message ContextMessage {
   oneof message {
     ContextSelectionChanged selection = 1;
     ContextPrompt prompt = 2;
+    ContextProjectActions project_actions = 3;
   }
 }
 
