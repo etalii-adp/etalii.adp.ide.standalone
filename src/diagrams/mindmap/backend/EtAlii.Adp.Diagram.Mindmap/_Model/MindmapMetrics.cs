@@ -11,9 +11,14 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// <param name="LineHeight">As a fraction of <paramref name="FontSize"/>.</param>
 /// <param name="HorizontalPadding">Inside the node box, each side.</param>
 /// <param name="VerticalPadding">Inside the node box, top and bottom.</param>
-/// <param name="HorizontalGap">Between a parent's edge and its children's edge.</param>
-/// <param name="VerticalGap">Between sibling subtrees.</param>
+/// <param name="HorizontalGap">Between a parent's edge and its children's edge, at minimum - see <paramref name="MinimumGapRatio"/>.</param>
+/// <param name="VerticalGap">Between sibling subtrees, at minimum - see <paramref name="MinimumGapRatio"/>.</param>
 /// <param name="MinimumWidth">So an empty node is still something to click on.</param>
+/// <param name="MinimumGapRatio">
+/// Elements keep at least this fraction of a node's width between them: the gap beside a node
+/// is never smaller than its width times this ratio, so wide nodes get proportionally more
+/// air. Configurable through appsettings.json's <c>Mindmap:MinimumGapRatio</c>.
+/// </param>
 public sealed record MindmapMetrics(
     string FontFamily = "system-ui, sans-serif",
     double FontSize = 14,
@@ -23,7 +28,8 @@ public sealed record MindmapMetrics(
     double VerticalPadding = 6,
     double HorizontalGap = 48,
     double VerticalGap = 10,
-    double MinimumWidth = 32)
+    double MinimumWidth = 32,
+    double MinimumGapRatio = 0.1)
 {
     public static MindmapMetrics Default { get; } = new();
 
@@ -35,6 +41,12 @@ public sealed record MindmapMetrics(
         var height = FontSize * LineHeight + 2 * VerticalPadding;
         return new MindmapSize(Math.Round(width, 2), Math.Round(height, 2));
     }
+
+    /// <summary>The gap between a node of <paramref name="width"/> and whatever sits beside it: the configured floor, or the ratio's share of the width when that is more.</summary>
+    public double GapBeside(double width) => Math.Max(HorizontalGap, width * MinimumGapRatio);
+
+    /// <summary>The gap between two stacked subtrees whose widest members are <paramref name="widthA"/> and <paramref name="widthB"/> wide.</summary>
+    public double GapBetween(double widthA, double widthB) => Math.Max(VerticalGap, Math.Max(widthA, widthB) * MinimumGapRatio);
 }
 
 public readonly record struct MindmapSize(double Width, double Height);

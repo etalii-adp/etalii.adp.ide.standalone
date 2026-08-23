@@ -163,4 +163,49 @@ public class MindmapLayoutTests
     {
         Assert.Equal(Metrics.MinimumWidth, Metrics.Measure("").Width);
     }
+
+    [Fact]
+    public void Compute_KeepsAtLeastTheConfiguredShareOfANodesWidthAroundIt()
+    {
+        // Two long siblings under one parent: the fixed VerticalGap alone would leave them
+        // closer than a tenth of their width; the ratio must win (appsettings' Mindmap:MinimumGapRatio).
+        var document = MindmapDocument.Parse(
+            "<map version=\"freeplane 1.11.5\">\n" +
+            "<node TEXT=\"r\" ID=\"root\">\n" +
+            "<node TEXT=\"a considerably longer sibling label than most\" ID=\"a\" POSITION=\"right\"/>\n" +
+            "<node TEXT=\"another considerably longer sibling label\" ID=\"b\" POSITION=\"right\"/>\n" +
+            "</node>\n" +
+            "</map>\n");
+        var metrics = MindmapMetrics.Default with { MinimumGapRatio = 0.1 };
+
+        var boxes = MindmapLayout.Compute(document.Root, metrics, _ => false);
+
+        var a = boxes["a"];
+        var b = boxes["b"];
+        var widest = Math.Max(a.Width, b.Width);
+        var verticalDistance = Math.Min(Math.Abs(b.Y - a.Bottom), Math.Abs(a.Y - b.Bottom));
+        Assert.True(verticalDistance >= widest * 0.1 - 0.01, $"siblings are {verticalDistance} apart; at least {widest * 0.1} required");
+
+        // The horizontal side of the same rule: a child sits at least the root's share away.
+        var root = boxes["root"];
+        Assert.True(a.X - root.Right >= root.Width * 0.1 - 0.01, "the child hugs its parent closer than the ratio allows");
+    }
+
+    [Fact]
+    public void Compute_ALargerConfiguredRatio_SpreadsTheSiblingsFurther()
+    {
+        var document = MindmapDocument.Parse(
+            "<map version=\"freeplane 1.11.5\">\n" +
+            "<node TEXT=\"r\" ID=\"root\">\n" +
+            "<node TEXT=\"a considerably longer sibling label than most\" ID=\"a\" POSITION=\"right\"/>\n" +
+            "<node TEXT=\"another considerably longer sibling label\" ID=\"b\" POSITION=\"right\"/>\n" +
+            "</node>\n" +
+            "</map>\n");
+
+        var near = MindmapLayout.Compute(document.Root, MindmapMetrics.Default with { MinimumGapRatio = 0.1 }, _ => false);
+        var far = MindmapLayout.Compute(document.Root, MindmapMetrics.Default with { MinimumGapRatio = 0.5 }, _ => false);
+
+        double Distance(IReadOnlyDictionary<string, MindmapBox> boxes) => boxes["b"].Y - boxes["a"].Bottom;
+        Assert.True(Distance(far) > Distance(near), "a larger ratio must push the siblings further apart");
+    }
 }

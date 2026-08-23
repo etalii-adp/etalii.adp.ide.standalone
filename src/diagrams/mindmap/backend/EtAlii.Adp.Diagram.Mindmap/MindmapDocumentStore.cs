@@ -78,18 +78,21 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
 
     private MindmapDocument Load(string bodyPath)
     {
-        if (!File.Exists(bodyPath))
+        var text = File.Exists(bodyPath) ? File.ReadAllText(bodyPath) : "";
+        if (string.IsNullOrWhiteSpace(text))
         {
-            // A registration without its body is a recoverable state: open empty, and the body
-            // is written by the first save (Requirement 2.5).
-            Logger.Information("No body at {BodyPath}; opening an empty map", bodyPath);
+            // A registration without its body - or with an empty one, which a zero-byte file
+            // dropped into the project amounts to - is a recoverable state: open empty, and
+            // the body is written by the first save (Requirement 2.5). Parsing "" as XML
+            // would otherwise throw here on every open attempt.
+            Logger.Information("No readable body at {BodyPath}; opening an empty map", bodyPath);
             var baseName = IoPath.GetFileNameWithoutExtension(bodyPath);
             return MindmapDocument.Parse(_factory.CreateEmptyDocument(baseName));
         }
 
         try
         {
-            return MindmapDocument.Parse(File.ReadAllText(bodyPath));
+            return MindmapDocument.Parse(text);
         }
         catch (MindmapFormatException exception)
         {

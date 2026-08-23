@@ -22,6 +22,12 @@ service DiagramService {
   // The client's viewport, so the backend delivers what falls inside it and not the whole
   // map. Never recorded on the history and never written to a file.
   rpc UpdateView(UpdateViewRequest) returns (UpdateViewResponse);
+
+  // Moves an element under a new parent - a drag on the canvas. What "parent" means is the
+  // module's own business; the module dispatches the move as a command, so it lands on the
+  // project's history and is one undo away, and the resulting document change reaches every
+  // open view as ordinary deltas.
+  rpc MoveElement(MoveElementRequest) returns (MoveElementResponse);
 }
 
 message OpenDiagramRequest {
@@ -39,5 +45,19 @@ message UpdateViewRequest {
 
 message UpdateViewResponse {
   // Empty on success; a diagram that is not open on this connection answers with an error.
+  string error = 1;
+}
+
+message MoveElementRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;
+  Path path = 3;            // project-relative path of the diagram's .adp file
+  string element_id = 4;    // the element being moved
+  string new_parent_id = 5; // the element it lands under
+  int32 index = 6;          // position among the new parent's children; -1 appends last
+}
+
+message MoveElementResponse {
+  // Empty on success; the module's own reason otherwise - a move into its own branch, say.
   string error = 1;
 }

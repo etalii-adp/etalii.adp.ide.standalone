@@ -25,6 +25,12 @@ export interface MindmapStream {
   failed: boolean;
   /** Tells the backend what the canvas can see, so a large map does not stream in full. */
   reportView: (viewport: Viewport) => void;
+  /**
+   * Moves an element under a new parent - the drop half of a drag. The backend dispatches it
+   * as a command (one undo away) and the change comes back as ordinary deltas; the returned
+   * string is empty on success, or the backend's own reason for refusing.
+   */
+  moveElement: (elementId: string, newParentId: string) => Promise<string>;
 }
 
 /**
@@ -114,5 +120,21 @@ export function useMindmapStream(projectId: Uint8Array, path: readonly string[])
       });
   };
 
-  return { model, loading, failed, reportView };
+  const moveElement = async (elementId: string, newParentId: string): Promise<string> => {
+    try {
+      const response = await clientRef.current.moveElement({
+        projectId: { value: projectId },
+        watchId: { value: watchId },
+        path: { segments: [...path] },
+        elementId,
+        newParentId,
+        index: -1, // append as the last child - where a drop lands
+      });
+      return response.error;
+    } catch (error) {
+      return error instanceof Error ? error.message : "The move could not be sent.";
+    }
+  };
+
+  return { model, loading, failed, reportView, moveElement };
 }

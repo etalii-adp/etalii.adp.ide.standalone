@@ -12,11 +12,31 @@ public sealed class MindmapViewState
 {
     private readonly ConcurrentDictionary<(ShortGuid WatchId, string BodyPath), ConnectionView> _views = new();
 
+    /// <summary>
+    /// Raised when a connection collapses or expands a branch, so the session holding that
+    /// connection's stream can push the matching group or ungroup delta. Without this seam a
+    /// toggle only changes state and no client ever hears of it - the provider that executes
+    /// the action and the session that owns the stream never meet otherwise.
+    /// </summary>
+    public event EventHandler<MindmapFoldToggledEventArgs>? FoldToggled;
+
     /// <summary>The view for a connection on a map, created on first ask - seeded from the file's own FOLDED attributes (Requirement 9.3).</summary>
     public ConnectionView For(ShortGuid watchId, string bodyPath, MindmapDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
         return _views.GetOrAdd((watchId, bodyPath.ToUpperInvariant()), _ => ConnectionView.SeededFrom(document));
+    }
+
+    /// <summary>
+    /// Collapses or expands one branch for one connection and announces it. The one route a
+    /// toggle is allowed to take: state and notification stay together, so a session cannot
+    /// miss a fold the way it would if callers toggled the view directly.
+    /// </summary>
+    public bool Toggle(ShortGuid watchId, string bodyPath, MindmapDocument document, string nodeId)
+    {
+        var nowFolded = For(watchId, bodyPath, document).Toggle(nodeId);
+        FoldToggled?.Invoke(this, new MindmapFoldToggledEventArgs(watchId, bodyPath, nodeId, nowFolded));
+        return nowFolded;
     }
 
     /// <summary>The view if the connection has one on this map; null otherwise, and nothing is created.</summary>
@@ -103,4 +123,16 @@ public readonly record struct MindmapViewport(double MinX, double MinY, double M
 {
     public bool Intersects(MindmapBox box) =>
         box.Right >= MinX && box.X <= MaxX && box.Bottom >= MinY && box.Y <= MaxY;
+}
+
+/// <summary>One connection collapsed or expanded one branch.</summary>
+public sealed class MindmapFoldToggledEventArgs(ShortGuid watchId, string bodyPath, string nodeId, bool folded) : EventArgs
+{
+    public ShortGuid WatchId { get; } = watchId;
+
+    public string BodyPath { get; } = bodyPath;
+
+    public string NodeId { get; } = nodeId;
+
+    public bool Folded { get; } = folded;
 }

@@ -51,6 +51,8 @@ public sealed class MindmapElementMapper
             HasChildren = node.HasChildren,
             Folded = false, // fold is the receiver's own view state; the element just carries content
             Link = node.Link is { } link ? new MindmapLink { Raw = link } : null,
+            // Empty on the root; what the canvas draws each node's connector to.
+            ParentId = node.Parent?.Id ?? "",
         };
 
         return new DiagramElement(

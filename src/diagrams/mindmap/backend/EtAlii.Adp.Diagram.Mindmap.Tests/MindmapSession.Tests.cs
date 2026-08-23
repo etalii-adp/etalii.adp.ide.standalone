@@ -1,4 +1,6 @@
+using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Diagrams;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -12,9 +14,11 @@ public class MindmapSessionTests : IDisposable
 {
     private readonly string _root;
     private readonly string _bodyPath;
-    private readonly MindmapDocumentStore _documents = new();
-    private readonly MindmapViewState _views = new();
+    private readonly ServiceProvider _services;
+    private readonly IMindmapDocumentStore _documents;
+    private readonly MindmapViewState _views;
     private readonly MindmapElementMapper _mapper = new(MindmapMetrics.Default);
+    private readonly IHistoryStack _history;
     private readonly ShortGuid _watchId = ShortGuid.NewShortGuid();
 
     public MindmapSessionTests()
@@ -23,17 +27,29 @@ public class MindmapSessionTests : IDisposable
         Directory.CreateDirectory(_root);
         _bodyPath = IoPath.Combine(_root, "architecture.mm");
         File.Copy("Fixtures/architecture.mm", _bodyPath);
+
+        // The same wiring the host uses, so a drag-move dispatched by the session runs the
+        // real command and lands on a real history.
+        _services = new ServiceCollection()
+            .AddSingleton<MindmapViewState>()
+            .AddCommands()
+            .AddMindmapCommands()
+            .BuildServiceProvider();
+        _documents = _services.GetRequiredService<IMindmapDocumentStore>();
+        _views = _services.GetRequiredService<MindmapViewState>();
+        _history = _services.GetRequiredService<IHistoryStackStore>().Get(_root);
     }
 
     public void Dispose()
     {
+        _services.Dispose();
         if (Directory.Exists(_root))
         {
             Directory.Delete(_root, recursive: true);
         }
     }
 
-    private MindmapSession Open() => new(_watchId, _bodyPath, _documents, _views, _mapper);
+    private MindmapSession Open() => new(_watchId, _bodyPath, _documents, _views, _mapper, _history);
 
     private static IReadOnlyList<DiagramElement> AddedElements(IReadOnlyList<DiagramDelta> deltas) =>
         deltas.OfType<DiagramDelta.Add>().SelectMany(add => add.Elements).ToList();
@@ -80,34 +96,93 @@ public class MindmapSessionTests : IDisposable
     }
 
     [Fact]
-    public void ToggleFold_PushesAGroupOfTheHiddenBranch_ThenAnUngroup()
+    public void CollapseThroughTheViewState_PushesAGroupWithRepositioning_ThenAnUngroup()
     {
+        // The whole route the action takes: the provider toggles through MindmapViewState,
+        // whose event is what makes this session push - the bug the manual pass found was a
+        // toggle that changed state no stream ever heard of.
         var session = Open();
         _ = session.Baseline();
+        var pushes = new List<IReadOnlyList<DiagramDelta>>();
+        session.Changed += (_, args) => pushes.Add(args.Deltas);
 
-        // Backend is unfolded in the file; folding it groups its subtree.
-        var folded = session.ToggleFold("ID_411002937");
-        var group = Assert.IsType<DiagramDelta.Group>(Assert.Single(folded));
+        // Backend is expanded in the file; collapsing it groups its subtree.
+        _views.Toggle(_watchId, _bodyPath, _documents.GetOrLoad(_bodyPath), "ID_411002937");
+
+        var collapse = Assert.Single(pushes);
+        var group = Assert.IsType<DiagramDelta.Group>(collapse[0]);
         Assert.Equal("ID_411002937", group.GroupElement.Id);
         Assert.Contains("ID_88117420", group.SourceElementIds);
+        // The freed room moves the survivors: the group travels with a repositioning upsert.
+        var repositioned = Assert.IsType<DiagramDelta.Add>(collapse[1]);
+        Assert.DoesNotContain(repositioned.Elements, element => element.Id == "ID_88117420");
 
-        var unfolded = session.ToggleFold("ID_411002937");
-        var ungroup = Assert.IsType<DiagramDelta.Ungroup>(Assert.Single(unfolded));
+        _views.Toggle(_watchId, _bodyPath, _documents.GetOrLoad(_bodyPath), "ID_411002937");
+
+        var expand = pushes[1];
+        var ungroup = Assert.IsType<DiagramDelta.Ungroup>(expand[0]);
         Assert.Equal("ID_411002937", ungroup.GroupElementId);
         Assert.Contains(ungroup.Elements, element => element.Id == "ID_88117420");
     }
 
     [Fact]
-    public void ToggleFold_IsViewStateOnly_AndDoesNotWriteTheFile()
+    public void CollapseThroughTheViewState_IsViewStateOnly_AndDoesNotWriteTheFile()
     {
         var before = File.ReadAllText(_bodyPath);
         var session = Open();
         _ = session.Baseline();
 
-        session.ToggleFold("ID_411002937");
+        _views.Toggle(_watchId, _bodyPath, _documents.GetOrLoad(_bodyPath), "ID_411002937");
 
         Assert.Equal(before, File.ReadAllText(_bodyPath));
         Assert.True(_views.For(_watchId, _bodyPath, _documents.GetOrLoad(_bodyPath)).IsFolded("ID_411002937"));
+    }
+
+    [Fact]
+    public void AnotherConnectionsCollapse_IsNotPushedOnThisStream()
+    {
+        // Folds are per connection (Requirement 9.4): a second viewer collapsing a branch
+        // must not regroup it for this one.
+        var session = Open();
+        _ = session.Baseline();
+        var pushed = false;
+        session.Changed += (_, _) => pushed = true;
+
+        _views.Toggle(ShortGuid.NewShortGuid(), _bodyPath, _documents.GetOrLoad(_bodyPath), "ID_411002937");
+
+        Assert.False(pushed);
+    }
+
+    [Fact]
+    public async Task MoveElement_RunsAsACommand_AndCanBeUndone()
+    {
+        // A drag on the canvas: Hierarchy (third child of Backend) moves under Client.
+        var session = Open();
+        _ = session.Baseline();
+
+        var error = await session.MoveElementAsync("ID_88117425", "ID_411002938", -1, TestContext.Current.CancellationToken);
+
+        Assert.Equal("", error);
+        var document = _documents.GetOrLoad(_bodyPath);
+        Assert.Equal("ID_411002938", document.Find("ID_88117425")!.Parent!.Id);
+        Assert.True(_history.CanUndo);
+
+        var undone = await _history.UndoAsync(TestContext.Current.CancellationToken);
+
+        Assert.True(undone.IsSuccess, undone.Error);
+        Assert.Equal("ID_411002937", _documents.GetOrLoad(_bodyPath).Find("ID_88117425")!.Parent!.Id);
+    }
+
+    [Fact]
+    public async Task MoveElement_IntoItsOwnBranch_IsRefusedWithTheHandlersReason()
+    {
+        var session = Open();
+        _ = session.Baseline();
+
+        var error = await session.MoveElementAsync("ID_411002937", "ID_88117422", -1, TestContext.Current.CancellationToken);
+
+        Assert.Contains("own branch", error, StringComparison.Ordinal);
+        Assert.False(_history.CanUndo);
     }
 
     [Fact]
@@ -131,7 +206,7 @@ public class MindmapSessionTests : IDisposable
     {
         var session = Open();
         _ = session.Baseline();
-        session.ToggleFold("ID_411002937");
+        _views.Toggle(_watchId, _bodyPath, _documents.GetOrLoad(_bodyPath), "ID_411002937");
 
         await session.DisposeAsync();
 

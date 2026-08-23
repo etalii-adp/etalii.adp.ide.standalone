@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file diagrams.proto.
  */
 export const file_diagrams: GenFile = /*@__PURE__*/
-  fileDesc("Cg5kaWFncmFtcy5wcm90bxIKZXRhbGlpLmFkcCKIAQoST3BlbkRpYWdyYW1SZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAyABKAsyEC5ldGFsaWkuYWRwLlBhdGgirQEKEVVwZGF0ZVZpZXdSZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAyABKAsyEC5ldGFsaWkuYWRwLlBhdGgSJAoEdmlldxgEIAEoCzIWLmV0YWxpaS5hZHAuVmlld1VwZGF0ZSIjChJVcGRhdGVWaWV3UmVzcG9uc2USDQoFZXJyb3IYASABKAkymgEKDkRpYWdyYW1TZXJ2aWNlEjsKBE9wZW4SHi5ldGFsaWkuYWRwLk9wZW5EaWFncmFtUmVxdWVzdBoRLmV0YWxpaS5hZHAuRGVsdGEwARJLCgpVcGRhdGVWaWV3Eh0uZXRhbGlpLmFkcC5VcGRhdGVWaWV3UmVxdWVzdBoeLmV0YWxpaS5hZHAuVXBkYXRlVmlld1Jlc3BvbnNlQg2qAgpFdEFsaWkuQWRwYgZwcm90bzM", [file_shared, file_connection, file_deltas]);
+  fileDesc("Cg5kaWFncmFtcy5wcm90bxIKZXRhbGlpLmFkcCKIAQoST3BlbkRpYWdyYW1SZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAyABKAsyEC5ldGFsaWkuYWRwLlBhdGgirQEKEVVwZGF0ZVZpZXdSZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAyABKAsyEC5ldGFsaWkuYWRwLlBhdGgSJAoEdmlldxgEIAEoCzIWLmV0YWxpaS5hZHAuVmlld1VwZGF0ZSIjChJVcGRhdGVWaWV3UmVzcG9uc2USDQoFZXJyb3IYASABKAkiwgEKEk1vdmVFbGVtZW50UmVxdWVzdBIpCgpwcm9qZWN0X2lkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSJwoId2F0Y2hfaWQYAiABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBIeCgRwYXRoGAMgASgLMhAuZXRhbGlpLmFkcC5QYXRoEhIKCmVsZW1lbnRfaWQYBCABKAkSFQoNbmV3X3BhcmVudF9pZBgFIAEoCRINCgVpbmRleBgGIAEoBSIkChNNb3ZlRWxlbWVudFJlc3BvbnNlEg0KBWVycm9yGAEgASgJMuoBCg5EaWFncmFtU2VydmljZRI7CgRPcGVuEh4uZXRhbGlpLmFkcC5PcGVuRGlhZ3JhbVJlcXVlc3QaES5ldGFsaWkuYWRwLkRlbHRhMAESSwoKVXBkYXRlVmlldxIdLmV0YWxpaS5hZHAuVXBkYXRlVmlld1JlcXVlc3QaHi5ldGFsaWkuYWRwLlVwZGF0ZVZpZXdSZXNwb25zZRJOCgtNb3ZlRWxlbWVudBIeLmV0YWxpaS5hZHAuTW92ZUVsZW1lbnRSZXF1ZXN0Gh8uZXRhbGlpLmFkcC5Nb3ZlRWxlbWVudFJlc3BvbnNlQg2qAgpFdEFsaWkuQWRwYgZwcm90bzM", [file_shared, file_connection, file_deltas]);
 
 /**
  * @generated from message etalii.adp.OpenDiagramRequest
@@ -101,6 +101,75 @@ export const UpdateViewResponseSchema: GenMessage<UpdateViewResponse> = /*@__PUR
   messageDesc(file_diagrams, 2);
 
 /**
+ * @generated from message etalii.adp.MoveElementRequest
+ */
+export type MoveElementRequest = Message<"etalii.adp.MoveElementRequest"> & {
+  /**
+   * @generated from field: etalii.adp.ShortGuid project_id = 1;
+   */
+  projectId?: ShortGuid | undefined;
+
+  /**
+   * @generated from field: etalii.adp.ShortGuid watch_id = 2;
+   */
+  watchId?: ShortGuid | undefined;
+
+  /**
+   * project-relative path of the diagram's .adp file
+   *
+   * @generated from field: etalii.adp.Path path = 3;
+   */
+  path?: Path | undefined;
+
+  /**
+   * the element being moved
+   *
+   * @generated from field: string element_id = 4;
+   */
+  elementId: string;
+
+  /**
+   * the element it lands under
+   *
+   * @generated from field: string new_parent_id = 5;
+   */
+  newParentId: string;
+
+  /**
+   * position among the new parent's children; -1 appends last
+   *
+   * @generated from field: int32 index = 6;
+   */
+  index: number;
+};
+
+/**
+ * Describes the message etalii.adp.MoveElementRequest.
+ * Use `create(MoveElementRequestSchema)` to create a new message.
+ */
+export const MoveElementRequestSchema: GenMessage<MoveElementRequest> = /*@__PURE__*/
+  messageDesc(file_diagrams, 3);
+
+/**
+ * @generated from message etalii.adp.MoveElementResponse
+ */
+export type MoveElementResponse = Message<"etalii.adp.MoveElementResponse"> & {
+  /**
+   * Empty on success; the module's own reason otherwise - a move into its own branch, say.
+   *
+   * @generated from field: string error = 1;
+   */
+  error: string;
+};
+
+/**
+ * Describes the message etalii.adp.MoveElementResponse.
+ * Use `create(MoveElementResponseSchema)` to create a new message.
+ */
+export const MoveElementResponseSchema: GenMessage<MoveElementResponse> = /*@__PURE__*/
+  messageDesc(file_diagrams, 4);
+
+/**
  * One open diagram, as two correlated one-way legs (tech.md's "gRPC call shapes"): a browser
  * on grpc-web cannot stream a request body, so the bidirectional Connect this service was
  * first declared with could never have been called from the client. Open returns the delta
@@ -132,6 +201,19 @@ export const DiagramService: GenService<{
     methodKind: "unary";
     input: typeof UpdateViewRequestSchema;
     output: typeof UpdateViewResponseSchema;
+  },
+  /**
+   * Moves an element under a new parent - a drag on the canvas. What "parent" means is the
+   * module's own business; the module dispatches the move as a command, so it lands on the
+   * project's history and is one undo away, and the resulting document change reaches every
+   * open view as ordinary deltas.
+   *
+   * @generated from rpc etalii.adp.DiagramService.MoveElement
+   */
+  moveElement: {
+    methodKind: "unary";
+    input: typeof MoveElementRequestSchema;
+    output: typeof MoveElementResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_diagrams, 0);

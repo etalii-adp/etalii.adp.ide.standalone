@@ -92,7 +92,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
         {
             var folded = view!.IsFolded(node);
             groups.Add(new ContextActionGroupDefinition([
-                new ContextActionDefinition(ToggleFoldActionId, folded ? "Unfold" : "Fold", folded ? "mdi-unfold-more-horizontal" : "mdi-unfold-less-horizontal", new ContextShortcutDefinition(" ")),
+                new ContextActionDefinition(ToggleFoldActionId, folded ? "Expand" : "Collapse", folded ? "mdi-unfold-more-horizontal" : "mdi-unfold-less-horizontal", new ContextShortcutDefinition(" ")),
             ]));
         }
 
@@ -138,8 +138,10 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
 
             case ToggleFoldActionId when node.HasChildren:
                 // View state, not a command: nothing is written and nothing lands on the history
-                // (Requirements 9.4, 9.6). The session pushes the matching group/ungroup delta.
-                view!.Toggle(node.Id);
+                // (Requirements 9.4, 9.6). Toggled through the view state's announcing method,
+                // which is what makes the session push the group/ungroup delta - toggling the
+                // view directly would change state no client ever hears of.
+                _views.Toggle(target.WatchId, target.ResolvedFullPath, _documents.GetOrLoad(target.ResolvedFullPath), node.Id);
                 return Result(new ContextExecutionResult.Completed());
 
             case EditNotesActionId:
