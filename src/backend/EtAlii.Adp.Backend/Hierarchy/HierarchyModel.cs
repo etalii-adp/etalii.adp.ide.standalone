@@ -1,3 +1,4 @@
+using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Backend.Hierarchy;
@@ -14,6 +15,8 @@ public sealed class HierarchyModel
     // FileSystemWatcher (its own background thread, via OnWatcherEvent) can call into
     // this model concurrently - plain Dictionary/HashSet are not thread-safe, so every
     // public entry point that reads or writes them takes this lock.
+    private static readonly ILogger _logger = Log.ForContext<HierarchyModel>();
+
     private readonly object _gate = new();
     private readonly string _rootPath;
     private readonly Dictionary<ShortGuid, EntryNode> _entriesById = new();
@@ -49,6 +52,13 @@ public sealed class HierarchyModel
         {
             var knownFolderIds = _entriesById.Values.Where(e => e.IsFolder).Select(e => e.Id).ToList();
 
+            // Debug rather than Information: a reconcile is recovery, but its trigger is
+            // already logged where it happened, and this only says how much was re-scanned.
+            _logger.Debug(
+                "Reconciling {RootPath} against disk: the root plus {FolderCount} known folders",
+                _rootPath,
+                knownFolderIds.Count);
+
             SyncFolder(null, raiseEvents: true);
             foreach (var folderId in knownFolderIds)
             {
@@ -74,6 +84,7 @@ public sealed class HierarchyModel
         // gets, so it is turned into the create it actually is.
         if (IsScratchFile(newPath))
         {
+            _logger.Verbose("Ignoring the watcher event for scratch file {Path}", newPath);
             return;
         }
 
@@ -81,14 +92,20 @@ public sealed class HierarchyModel
         {
             if (changeType == WatcherChangeTypes.Renamed && newPath is not null)
             {
+                _logger.Verbose("Reading the move of scratch file {OldPath} onto {NewPath} as a create", oldPath, newPath);
                 changeType = WatcherChangeTypes.Created;
                 oldPath = null;
             }
             else
             {
+                _logger.Verbose("Ignoring the {ChangeType} watcher event for scratch file {Path}", changeType, oldPath);
                 return;
             }
         }
+
+        // Verbose: one line per file system event, which is far too much for normal running
+        // but exactly what is wanted when the tree and disk have gone out of step.
+        _logger.Verbose("Watcher event {ChangeType}: {OldPath} -> {NewPath}", changeType, oldPath, newPath);
 
         lock (_gate)
         {
@@ -127,8 +144,11 @@ public sealed class HierarchyModel
             name.EndsWith(AdpFileWriter.TempExtension, StringComparison.OrdinalIgnoreCase);
     }
 
-    public void NotifyRootUnavailable(string message) =>
+    public void NotifyRootUnavailable(string message)
+    {
+        _logger.Warning("Telling the client that {RootPath} is unavailable: {Reason}", _rootPath, message);
         EntryChanged?.Invoke(new HierarchyEntryChange.RootUnavailable(message));
+    }
 
     /// <summary>
     /// Resolves an entry id this connection knows to where it currently lives on disk.
@@ -297,6 +317,9 @@ public sealed class HierarchyModel
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException)
         {
+            // The folder is shown greyed out rather than the call failing, so without this
+            // line there is nothing anywhere saying why it went grey.
+            _logger.Warning(ex, "Could not read {FolderPath}; marking it unavailable", folderPath);
             if (folderId is { } unavailableId && _entriesById.TryGetValue(unavailableId, out var unavailableEntry) && unavailableEntry.Available)
             {
                 _entriesById[unavailableId] = unavailableEntry with { Available = false };

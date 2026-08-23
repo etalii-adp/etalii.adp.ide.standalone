@@ -23,12 +23,22 @@ public sealed partial class ContextServiceImpl
         if (target is null)
         {
             // Unauthorized, unknown, or already gone - all answered the same way, so a
-            // caller learns nothing about entries outside what it may already see.
+            // caller learns nothing about entries outside what it may already see. The log is
+            // where the three are distinguishable, by what else was recorded around it.
+            _logger.Debug(
+                "No actions for {Source} on watch {WatchId}: it resolved to nothing",
+                Describe(request.Source),
+                request.WatchId);
             return response;
         }
 
         var groups = await _contextActionResolver.DiscoverAsync(target, context.CancellationToken);
         response.Groups.AddRange(groups.Select(ContextMessageMapper.ToProto));
+        _logger.Debug(
+            "Discovered {GroupCount} action groups for {TargetPath} on watch {WatchId}",
+            response.Groups.Count,
+            target.ResolvedFullPath,
+            request.WatchId);
         return response;
     }
 
@@ -37,6 +47,10 @@ public sealed partial class ContextServiceImpl
         var target = await TryResolveTargetAsync(request.ProjectId, request.WatchId, request.Source, context);
         if (target is null)
         {
+            _logger.Warning(
+                "Cannot run an action on watch {WatchId}: {Source} resolved to nothing",
+                request.WatchId,
+                Describe(request.Source));
             return Rejected(request.Source is null ? "Nothing is selected." : "This item is no longer available.");
         }
 
@@ -53,17 +67,23 @@ public sealed partial class ContextServiceImpl
         {
             // Covers an unknown action, a shortcut nothing here answers to, and a shortcut
             // bound to an action currently reported unavailable: none of them do anything.
+            _logger.Debug(
+                "Nothing to run for {Trigger} on {TargetPath}: no available action claims it",
+                request.TriggerCase == ExecuteActionRequest.TriggerOneofCase.ActionId ? request.ActionId : request.Shortcut.Key,
+                target.ResolvedFullPath);
             return Rejected("That action is not available for this item.");
         }
 
         var execution = await owner.Provider.ExecuteAsync(target, owner.Action.Id, context.CancellationToken);
         if (execution is ContextExecutionResult.Failed failed)
         {
+            _logger.Warning("Action {ActionId} on {TargetPath} failed: {Reason}", owner.Action.Id, target.ResolvedFullPath, failed.Message);
             return Rejected(failed.Message);
         }
 
         if (execution is ContextExecutionResult.Completed)
         {
+            _logger.Information("Action {ActionId} completed on {TargetPath}", owner.Action.Id, target.ResolvedFullPath);
             return new ExecuteActionResponse { Accepted = true };
         }
 
@@ -102,9 +122,19 @@ public sealed partial class ContextServiceImpl
         if (!_contextInteractionStore.TryPush(request.WatchId, prompt))
         {
             _contextInteractionStore.Complete(interactionId);
+            _logger.Warning(
+                "Could not put the {ActionId} dialog on watch {WatchId}: nothing is listening on it any more",
+                owner.Action.Id,
+                request.WatchId);
             return Rejected("This connection is no longer watching the project.");
         }
 
+        _logger.Debug(
+            "Action {ActionId} on {TargetPath} opened a {PromptKind} as interaction {InteractionId}",
+            owner.Action.Id,
+            target.ResolvedFullPath,
+            prompt.PromptCase,
+            interactionId);
         return new ExecuteActionResponse { Accepted = true };
     }
 
@@ -119,6 +149,7 @@ public sealed partial class ContextServiceImpl
         var interaction = _contextInteractionStore.Get(request.InteractionId);
         if (interaction is null)
         {
+            _logger.Debug("Ignoring input proposed for interaction {InteractionId}, which is no longer active", request.InteractionId);
             return new ProposeInputResponse { Revision = request.Revision, Valid = false, Reason = "This dialog is no longer active." };
         }
 
@@ -127,6 +158,12 @@ public sealed partial class ContextServiceImpl
         var validation = await interaction.Provider.ValidateAsync(
             interaction.Target, interaction.ActionId, request.Value, context.CancellationToken);
 
+        // Verbose: one of these per keystroke, once the debounce settles.
+        _logger.Verbose(
+            "Revision {Revision} of interaction {InteractionId} judged {Verdict}",
+            request.Revision,
+            request.InteractionId,
+            validation.Valid ? "valid" : $"invalid: {validation.Reason}");
         return new ProposeInputResponse { Revision = request.Revision, Valid = validation.Valid, Reason = validation.Reason };
     }
 
@@ -137,6 +174,7 @@ public sealed partial class ContextServiceImpl
         {
             // Also the second half of a double submit: the first one removed the interaction,
             // so the retry finds nothing to run again.
+            _logger.Debug("Ignoring a submit for interaction {InteractionId}, which is no longer active", request.InteractionId);
             return new SubmitInteractionResponse { Completed = false, Error = "This dialog is no longer active." };
         }
 
@@ -147,10 +185,21 @@ public sealed partial class ContextServiceImpl
         {
             // Left in flight deliberately: the dialog stays open with the user's input so
             // they can adjust the value or cancel, rather than losing what they typed.
+            _logger.Warning(
+                "{ActionId} on {TargetPath} did not complete: {Reason}",
+                interaction.ActionId,
+                interaction.Target.ResolvedFullPath,
+                commit.Error);
             return new SubmitInteractionResponse { Completed = false, Error = commit.Error };
         }
 
         _contextInteractionStore.Complete(request.InteractionId);
+        // Information: the action changed something the user will see and expect to persist.
+        _logger.Information(
+            "{ActionId} completed on {TargetPath}{Created}",
+            interaction.ActionId,
+            interaction.Target.ResolvedFullPath,
+            commit.CreatedFullPath.Length > 0 ? $", creating {commit.CreatedFullPath}" : string.Empty);
 
         // No hierarchy change is pushed from here - the connection's own RootFolderWatcher
         // observes what happened on disk and reports it through the existing change feed. What
@@ -168,10 +217,19 @@ public sealed partial class ContextServiceImpl
     public override Task<CancelInteractionResponse> CancelInteraction(CancelInteractionRequest request, ServerCallContext context)
     {
         _contextInteractionStore.Complete(request.InteractionId);
+        _logger.Debug("Interaction {InteractionId} was cancelled", request.InteractionId);
         return Task.FromResult(new CancelInteractionResponse());
     }
 
     private static ExecuteActionResponse Rejected(string error) => new() { Accepted = false, Error = error };
+
+    /// <summary>Names what a call pointed at, for the log: an explicit source, or the selection.</summary>
+    private static string Describe(ContextSource? source) => source?.SourceCase switch
+    {
+        ContextSource.SourceOneofCase.EntryId => $"entry {source.EntryId}",
+        null => "the current selection",
+        _ => "an unrecognised source",
+    };
 
     /// <summary>
     /// The target an action applies to: the explicitly named source, resolved through this

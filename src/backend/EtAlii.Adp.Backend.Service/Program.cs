@@ -84,6 +84,11 @@ if (!discoveredNow)
         DiagramDefinition.All.Count);
 }
 
+// One summary line per HTTP request - method, path, status, elapsed - instead of the several
+// ASP.NET Core writes by default. It is what makes a slow or failing call visible without
+// turning framework logging up to Information across the board.
+app.UseSerilogRequestLogging();
+
 // DefaultEnabled so every mapped gRPC service (including DiagramService once that spec
 // implements it) accepts grpc-web without needing an explicit .EnableGrpcWeb() call.
 app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });
@@ -96,7 +101,23 @@ app.MapGrpcService<ContextServiceImpl>();
 
 app.MapClientApp();
 
-app.Run();
+// Through ForContext<Program> rather than the bare Log, so this line carries a SourceContext
+// like every other one and does not read as coming from nowhere.
+Log.ForContext<Program>().Information(
+    "ADP is starting in the {Environment} environment with {DiagramTypeCount} diagram types",
+    app.Environment.EnvironmentName,
+    DiagramDefinition.All.Count);
+
+try
+{
+    app.Run();
+}
+finally
+{
+    // Gives buffered sinks their chance to write before the process goes; harmless for the
+    // console sink, and the reason a file sink added later will not silently lose its tail.
+    Log.CloseAndFlush();
+}
 
 // Exposes the top-level-statement Program class to EtAlii.Adp.Backend.Tests'
 // WebApplicationFactory<Program>-based integration test.

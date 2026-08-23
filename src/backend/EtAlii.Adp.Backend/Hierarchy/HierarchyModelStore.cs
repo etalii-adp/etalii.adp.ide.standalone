@@ -1,10 +1,13 @@
 using System.Collections.Concurrent;
+using Serilog;
 
 namespace EtAlii.Adp.Backend.Hierarchy;
 
 public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
 {
     private static readonly TimeSpan DefaultIdleTimeout = TimeSpan.FromSeconds(30);
+
+    private static readonly ILogger _logger = Log.ForContext<HierarchyModelStore>();
 
     private readonly TimeSpan _idleTimeout;
     private readonly ConcurrentDictionary<ShortGuid, Entry> _entries = new();
@@ -35,6 +38,7 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
         {
             entry.Watcher?.Dispose();
             entry.IdleTimer?.Dispose();
+            _logger.Debug("Dropped the hierarchy model for watch {WatchId}; {Remaining} still held", watchId, _entries.Count);
         }
     }
 
@@ -57,6 +61,13 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
     {
         if (_entries.TryGetValue(watchId, out var entry) && entry.Watcher is null)
         {
+            // A model built by ListEntries that no WatchHierarchy ever claimed - a client that
+            // listed and then went away. Worth seeing, because a steady stream of these means
+            // clients are not opening the watch they were expected to.
+            _logger.Debug(
+                "Evicting the hierarchy model for watch {WatchId}: no watch attached within {IdleTimeout}",
+                watchId,
+                _idleTimeout);
             Remove(watchId);
         }
     }

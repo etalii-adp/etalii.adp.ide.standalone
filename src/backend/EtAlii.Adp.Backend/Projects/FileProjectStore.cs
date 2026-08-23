@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Backend.Projects;
@@ -12,6 +13,8 @@ namespace EtAlii.Adp.Backend.Projects;
 /// </summary>
 public sealed class FileProjectStore : IProjectStore
 {
+    private static readonly ILogger _logger = Log.ForContext<FileProjectStore>();
+
     private readonly string _appDataRoot;
 
     public FileProjectStore(string appDataRoot)
@@ -51,11 +54,23 @@ public sealed class FileProjectStore : IProjectStore
         var filePath = GetFilePath(userId);
         if (!File.Exists(filePath))
         {
+            // Ordinary for a user who has not added a project yet, so not worth a warning.
+            _logger.Verbose("No project list yet for {UserId} at {StorePath}", userId, filePath);
             return Array.Empty<ProjectRecord>();
         }
 
         var json = File.ReadAllText(filePath);
-        return JsonSerializer.Deserialize<List<ProjectRecord>>(json) ?? new List<ProjectRecord>();
+        try
+        {
+            return JsonSerializer.Deserialize<List<ProjectRecord>>(json) ?? new List<ProjectRecord>();
+        }
+        catch (JsonException exception)
+        {
+            // Left to propagate as before - the point of the log is that the file on disk,
+            // not the request, is what is broken, which the caller's error will not say.
+            _logger.Error(exception, "The project list at {StorePath} is not valid JSON", filePath);
+            throw;
+        }
     }
 
     private void Write(ShortGuid userId, IReadOnlyList<ProjectRecord> projects)
@@ -65,5 +80,6 @@ public sealed class FileProjectStore : IProjectStore
 
         var json = JsonSerializer.Serialize(projects, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(filePath, json);
+        _logger.Debug("Wrote {Count} projects for {UserId} to {StorePath}", projects.Count, userId, filePath);
     }
 }

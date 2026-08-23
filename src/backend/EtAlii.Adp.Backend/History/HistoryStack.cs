@@ -1,3 +1,5 @@
+using Serilog;
+
 namespace EtAlii.Adp.Backend;
 
 /// <summary>
@@ -15,6 +17,8 @@ namespace EtAlii.Adp.Backend;
 public sealed class HistoryStack : IHistoryStack, IDisposable
 {
     public const int DefaultCapacity = 100;
+
+    private static readonly ILogger _logger = Log.ForContext<HistoryStack>();
 
     private readonly ICommandDispatcher _dispatcher;
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -83,12 +87,21 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
 
             // A rejected command changed nothing, so there is nothing to record and the redo
             // side stays valid - a failed attempt must not cost the user their redo entries.
-            if (!result.IsSuccess || result.Inverse is null)
+            if (!result.IsSuccess)
             {
+                _logger.Warning("{Command} was rejected: {Reason}", command.GetType().Name, result.Error);
+                return result;
+            }
+
+            if (result.Inverse is null)
+            {
+                // Succeeded but cannot be undone, so it does not belong on the stack.
+                _logger.Debug("{Command} succeeded without an inverse; not recorded for undo", command.GetType().Name);
                 return result;
             }
 
             Record(new HistoryEntry(command, result.Inverse));
+            _logger.Information("{Command} executed; {UndoCount} changes can now be undone", command.GetType().Name, UndoCount);
             return result;
         }
         finally
@@ -109,6 +122,7 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
             {
                 if (_undo.Last is null)
                 {
+                    _logger.Debug("Undo asked for with an empty undo stack");
                     return CommandResult.Failure("There is nothing to undo.");
                 }
 
@@ -121,6 +135,10 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
             // a real change and undo stays available to retry once the obstacle is gone.
             if (!result.IsSuccess)
             {
+                _logger.Warning(
+                    "Could not undo {Command}: {Reason}. It stays on the undo stack",
+                    entry.Command.GetType().Name,
+                    result.Error);
                 return result;
             }
 
@@ -130,6 +148,7 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
                 _redo.Push(entry);
             }
 
+            _logger.Information("Undid {Command}; {UndoCount} left to undo, {RedoCount} to redo", entry.Command.GetType().Name, UndoCount, RedoCount);
             return result;
         }
         finally
@@ -150,6 +169,7 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
             {
                 if (!_redo.TryPeek(out var peeked))
                 {
+                    _logger.Debug("Redo asked for with an empty redo stack");
                     return CommandResult.Failure("There is nothing to redo.");
                 }
 
@@ -159,6 +179,10 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
             var result = await _dispatcher.DispatchAsync(entry.Command, cancellationToken).ConfigureAwait(false);
             if (!result.IsSuccess)
             {
+                _logger.Warning(
+                    "Could not redo {Command}: {Reason}. It stays on the redo stack",
+                    entry.Command.GetType().Name,
+                    result.Error);
                 return result;
             }
 
@@ -170,6 +194,7 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
                 _undo.AddLast(entry);
             }
 
+            _logger.Information("Redid {Command}; {UndoCount} left to undo, {RedoCount} to redo", entry.Command.GetType().Name, UndoCount, RedoCount);
             return result;
         }
         finally
@@ -218,7 +243,11 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
             _undo.AddLast(entry);
             while (_undo.Count > Capacity)
             {
+                var dropped = _undo.First!.Value;
                 _undo.RemoveFirst();
+                // The user has quietly lost the ability to undo that far back, which nothing
+                // else records.
+                _logger.Debug("Dropped {Command} from the undo stack: it is full at {Capacity}", dropped.Command.GetType().Name, Capacity);
             }
         }
     }

@@ -1,3 +1,4 @@
+using Serilog;
 using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Backend.Hierarchy;
@@ -34,6 +35,8 @@ public sealed record RenameEntryCommand(
 /// </remarks>
 public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryCommand>
 {
+    private static readonly ILogger _logger = Log.ForContext<RenameEntryCommandHandler>();
+
     public Task<CommandResult> ExecuteAsync(
         RenameEntryCommand command,
         CancellationToken cancellationToken = default)
@@ -103,11 +106,14 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             // Locked by another process, permissions, a path that outgrew the OS limit: all
-            // things the user can act on, so they are reported rather than thrown.
+            // things the user can act on, so they are reported rather than thrown. Logged with
+            // the exception, which the message handed to the user does not carry.
+            _logger.Warning(exception, "Could not rename {SourcePath} to {TargetPath}", sourcePath, targetPath);
             var result = CommandResult.Failure($"'{originalName}' could not be renamed: {exception.Message}");
             return Task.FromResult(result);
         }
 
+        _logger.Information("Renamed {SourcePath} to {NewName}", sourcePath, command.NewName);
         return Task.FromResult(CommandResult.Success(new RenameEntryCommand(targetPath, originalName)));
     }
 

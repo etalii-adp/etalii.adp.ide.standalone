@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Serilog;
 
 namespace EtAlii.Adp.Backend.Client;
 
@@ -14,6 +15,7 @@ public static class ClientDevServerProxy
 
     private static readonly string[] ExcludedRequestHeaders = ["Host"];
     private static readonly string[] ExcludedResponseHeaders = ["Transfer-Encoding"];
+    private static readonly ILogger _logger = Log.ForContext(typeof(ClientDevServerProxy));
 
     public static async Task ProxyAsync(HttpContext context, HttpClient httpClient, Uri devServerBaseUri)
     {
@@ -40,9 +42,32 @@ public static class ClientDevServerProxy
             }
         }
 
-        using var proxyResponse = await httpClient.SendAsync(
-            proxyRequest, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted);
+        HttpResponseMessage proxyResponse;
+        try
+        {
+            proxyResponse = await httpClient.SendAsync(
+                proxyRequest, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted);
+        }
+        catch (HttpRequestException exception)
+        {
+            // Almost always the dev server simply not running, which otherwise shows up as a
+            // blank page and an exception several layers away from the cause. Rethrown so the
+            // request still fails exactly as it did before.
+            _logger.Error(
+                exception,
+                "Could not reach the client dev server at {DevServerUri}; is it running?",
+                devServerBaseUri);
+            throw;
+        }
 
+        using (proxyResponse)
+        {
+            await CopyBackAsync(context, proxyResponse);
+        }
+    }
+
+    private static async Task CopyBackAsync(HttpContext context, HttpResponseMessage proxyResponse)
+    {
         context.Response.StatusCode = (int)proxyResponse.StatusCode;
         foreach (var header in proxyResponse.Headers.Concat(proxyResponse.Content.Headers))
         {
