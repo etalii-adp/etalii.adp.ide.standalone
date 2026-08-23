@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/mindmap-diagram/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-23T13:04:30.317Z",
       "trigger": "initial",
+      "approvalId": "approval_1787490270255_6mljto0e0",
+      "approvalTitle": "Mindmap Diagram Module — Tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-23T13:07:38.297Z",
+      "trigger": "approved",
       "approvalId": "approval_1787490270255_6mljto0e0",
       "approvalTitle": "Mindmap Diagram Module — Tasks"
     }
