@@ -2,12 +2,15 @@ using System.Threading.Channels;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
 using Grpc.Core;
+using Serilog;
 
 namespace EtAlii.Adp.Backend.Hierarchy;
 
 public sealed class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
 {
     private static readonly TimeSpan RootRecoveryPollInterval = TimeSpan.FromSeconds(2);
+
+    private static readonly ILogger _logger = Log.ForContext<HierarchyServiceImpl>();
 
     private readonly IProjectStore _projectStore;
     private readonly IHierarchyModelStore _hierarchyModelStore;
@@ -32,6 +35,11 @@ public sealed class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
 
         var entries = new Entries();
         entries.Entries_.AddRange(children.Select(ToProto));
+        _logger.Debug(
+            "Listed {Count} entries under {FolderId} for watch {WatchId}",
+            entries.Entries_.Count,
+            folderId is { } id ? id.ToString() : "the root",
+            request.WatchId);
         return Task.FromResult(new ListEntriesResponse { Entries = entries });
     }
 
@@ -56,6 +64,13 @@ public sealed class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
         using var recoveryCts = new CancellationTokenSource();
         var watcher = CreateWatcher(rootPath, model, recoveryCts.Token);
         _hierarchyModelStore.AttachWatcher(watchId, watcher);
+        // Information: a watch is a long-lived resource with a file system watcher behind it,
+        // so its open and close are the pair to look for when one is suspected of leaking.
+        _logger.Information(
+            "Watching {RootPath} for project {ProjectId} on watch {WatchId}",
+            rootPath,
+            request.ProjectId,
+            watchId);
 
         try
         {
@@ -68,12 +83,14 @@ public sealed class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
         {
             // Expected: the client closed the stream (navigated away, reloaded, or the
             // workspace shell unmounted) - not a real error, so don't let it surface as one.
+            _logger.Debug("Watch {WatchId} was closed by the client", watchId);
         }
         finally
         {
             model.EntryChanged -= OnEntryChanged;
             await recoveryCts.CancelAsync();
             _hierarchyModelStore.Remove(watchId);
+            _logger.Information("Stopped watching {RootPath} on watch {WatchId}", rootPath, watchId);
         }
     }
 
@@ -86,10 +103,17 @@ public sealed class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
             {
                 if (ex is InternalBufferOverflowException)
                 {
+                    // Changes arrived faster than the watcher's buffer could hold. Nothing is
+                    // lost - the tree is rebuilt - but it means changes were missed in between.
+                    _logger.Warning(
+                        ex,
+                        "The watcher for {RootPath} overflowed its buffer; rebuilding the tree from disk",
+                        rootPath);
                     model.Reconcile();
                     return;
                 }
 
+                _logger.Error(ex, "The watcher for {RootPath} failed; waiting for the folder to come back", rootPath);
                 model.NotifyRootUnavailable(ex.Message);
                 _ = WaitForRootRecoveryAsync(rootPath, model, recoveryToken);
             });
@@ -104,11 +128,13 @@ public sealed class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
                 await Task.Delay(RootRecoveryPollInterval, cancellationToken);
             }
 
+            _logger.Information("{RootPath} is back; rebuilding the tree from disk", rootPath);
             model.Reconcile();
         }
         catch (OperationCanceledException)
         {
             // The WatchHierarchy call ended before the root folder came back; nothing to recover.
+            _logger.Debug("Gave up waiting for {RootPath} to come back: the watch ended first", rootPath);
         }
     }
 

@@ -2,7 +2,7 @@ using System.Threading.Channels;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
 using Grpc.Core;
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace EtAlii.Adp.Backend.Context;
 
@@ -19,27 +19,26 @@ namespace EtAlii.Adp.Backend.Context;
 /// </remarks>
 public sealed partial class ContextServiceImpl : ContextService.ContextServiceBase
 {
+    private static readonly ILogger _logger = Log.ForContext<ContextServiceImpl>();
+
     private readonly IProjectStore _projectStore;
     private readonly IContextSelectionStore _selectionStore;
     private readonly ContextSelectionResolver _selectionResolver;
     private readonly IContextActionResolver _contextActionResolver;
     private readonly IContextInteractionStore _contextInteractionStore;
-    private readonly ILogger<ContextServiceImpl> _logger;
 
     public ContextServiceImpl(
         IProjectStore projectStore,
         IContextSelectionStore selectionStore,
         ContextSelectionResolver selectionResolver,
         IContextActionResolver contextActionResolver,
-        IContextInteractionStore contextInteractionStore,
-        ILogger<ContextServiceImpl> logger)
+        IContextInteractionStore contextInteractionStore)
     {
         _projectStore = projectStore;
         _selectionStore = selectionStore;
         _selectionResolver = selectionResolver;
         _contextActionResolver = contextActionResolver;
         _contextInteractionStore = contextInteractionStore;
-        _logger = logger;
     }
 
     public override async Task<SelectResponse> Select(SelectRequest request, ServerCallContext context)
@@ -53,6 +52,7 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
         var watchId = (ShortGuid)request.WatchId;
         if (request.Selection is null)
         {
+            _logger.Debug("Selection cleared on watch {WatchId}", watchId);
             _selectionStore.Clear(watchId);
             return new SelectResponse();
         }
@@ -62,10 +62,25 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
         {
             // Unauthorized, unknown, gone, or malformed: one answer for all of them, and
             // the current selection stays exactly as it was.
-            return new SelectResponse { Error = ((ChainResolution.Rejected)resolution).Reason };
+            var reason = ((ChainResolution.Rejected)resolution).Reason;
+            // The client is told only that it was rejected; the log is the one place the
+            // source and id it asked about are kept beside the reason.
+            _logger.Warning(
+                "Rejected the selection of {Source}/{SelectionId} on watch {WatchId}: {Reason}",
+                request.Selection.Source,
+                request.Selection.Id,
+                watchId,
+                reason);
+            return new SelectResponse { Error = reason };
         }
 
         var record = await WithActionsAsync(resolved.Record, context.CancellationToken);
+        _logger.Debug(
+            "Selected {Path} on watch {WatchId} as {SelectionAction}, with {GroupCount} action groups",
+            record.Innermost.Target.ResolvedFullPath,
+            watchId,
+            record.Action,
+            record.Actions.Count);
 
         if (record.Action == ContextSelectionAction.Preview)
         {
@@ -98,6 +113,11 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
         // before anything else can arrive.
         _selectionStore.Register(watchId, channel.Writer, rootActions);
         _contextInteractionStore.Register(watchId, channel.Writer);
+        _logger.Information(
+            "Context stream open on watch {WatchId} for project {ProjectId}, with {GroupCount} root action groups",
+            watchId,
+            request.ProjectId,
+            rootActions.Count);
 
         try
         {
@@ -109,11 +129,13 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
         catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
         {
             // Expected: the client closed the stream - not a real error.
+            _logger.Debug("Context stream on watch {WatchId} was closed by the client", watchId);
         }
         finally
         {
             _contextInteractionStore.Remove(watchId);
             _selectionStore.Remove(watchId);
+            _logger.Information("Context stream closed on watch {WatchId}", watchId);
         }
     }
 
@@ -130,7 +152,7 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _logger.LogWarning(ex, "Discovering actions for the current selection failed; recording it without actions.");
+            _logger.Warning(ex, "Discovering actions for the current selection failed; recording it without actions");
             return record with { Actions = [] };
         }
     }

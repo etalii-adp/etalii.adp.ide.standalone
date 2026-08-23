@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
+using Serilog;
 
 namespace EtAlii.Adp.Backend.Context;
 
@@ -7,6 +8,8 @@ namespace EtAlii.Adp.Backend.Context;
 public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
 {
     private static readonly TimeSpan DefaultIdleTimeout = TimeSpan.FromSeconds(30);
+
+    private static readonly ILogger _logger = Log.ForContext<ContextSelectionStore>();
 
     private readonly TimeSpan _idleTimeout;
     private readonly ConcurrentDictionary<ShortGuid, Entry> _entries = new();
@@ -142,10 +145,15 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
             {
                 updated = await rediscover(rewritten, CancellationToken.None);
             }
-            catch
+            catch (Exception exception)
             {
                 // A provider failing to answer leaves the selection itself intact: it is
-                // pushed with the actions it had, and the next change tries again.
+                // pushed with the actions it had, and the next change tries again. Swallowed
+                // on purpose, so this line is the only trace it leaves.
+                _logger.Warning(
+                    exception,
+                    "Re-discovering actions after a change failed; keeping the {GroupCount} groups already shown",
+                    rewritten.Actions.Count);
             }
         }
 

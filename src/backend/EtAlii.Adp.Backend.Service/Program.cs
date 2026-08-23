@@ -7,8 +7,26 @@ using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
 using EtAlii.Adp.Diagram;
 using JetBrains.Annotations;
+using Serilog;
+
+// A plain console logger first, so anything logged while the host is still being built - a
+// configuration failure above all - lands somewhere instead of being dropped. Deliberately
+// not CreateBootstrapLogger: a reloadable logger is frozen when a host is built, and the
+// integration tests build several hosts in one process, which freezes it more than once.
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Replaces the logger above with the configured one, and points Log.Logger at it - which is
+// what the `Log.ForContext<T>()` in each class's static field resolves to. Levels and sinks
+// come from the Serilog section of appsettings.json rather than from code; ReadFrom.Services
+// picks up any enricher or sink registered in DI.
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext());
 
 var localAuthenticationOptionsSection = builder.Configuration.GetSection(LocalAuthenticatorOptions.SectionName);
 builder.Services.Configure<LocalAuthenticatorOptions>(localAuthenticationOptionsSection);
@@ -51,21 +69,25 @@ builder.Services.AddGrpc(options =>
 
 var app = builder.Build();
 
-// Once per process: after Build so the host's logger exists, before anything can serve a
-// request that reads DiagramDefinition.All. Not a DI service - it runs once and its result
+// Once per process: after Build so the Serilog pipeline is fully configured, before anything
+// can serve a request that reads DiagramDefinition.All. Not a DI service - it runs once and its result
 // is the static cache, so there is nothing for a container to hand out. A second host in
 // the same process (a test process builds one per test) finds the cache filled and the
 // scan is not repeated; Initialize owns that guarantee, under a lock.
-var discoveryLogger = app.Services.GetRequiredService<ILogger<DiagramDefinitionDiscovery>>();
 var discoveredNow = DiagramDefinition.Initialize(() =>
-    new DiagramDefinitionDiscovery(discoveryLogger)
-        .Discover(DiagramDefinitionDiscovery.FindApplicationAssemblies(discoveryLogger)));
+    new DiagramDefinitionDiscovery()
+        .Discover(DiagramDefinitionDiscovery.FindApplicationAssemblies()));
 if (!discoveredNow)
 {
-    discoveryLogger.LogInformation(
+    Log.ForContext<DiagramDefinitionDiscovery>().Information(
         "Diagram types were already discovered in this process; reusing the {Count} cached definitions",
         DiagramDefinition.All.Count);
 }
+
+// One summary line per HTTP request - method, path, status, elapsed - instead of the several
+// ASP.NET Core writes by default. It is what makes a slow or failing call visible without
+// turning framework logging up to Information across the board.
+app.UseSerilogRequestLogging();
 
 // DefaultEnabled so every mapped gRPC service (including DiagramService once that spec
 // implements it) accepts grpc-web without needing an explicit .EnableGrpcWeb() call.
@@ -79,7 +101,23 @@ app.MapGrpcService<ContextServiceImpl>();
 
 app.MapClientApp();
 
-app.Run();
+// Through ForContext<Program> rather than the bare Log, so this line carries a SourceContext
+// like every other one and does not read as coming from nowhere.
+Log.ForContext<Program>().Information(
+    "ADP is starting in the {Environment} environment with {DiagramTypeCount} diagram types",
+    app.Environment.EnvironmentName,
+    DiagramDefinition.All.Count);
+
+try
+{
+    app.Run();
+}
+finally
+{
+    // Gives buffered sinks their chance to write before the process goes; harmless for the
+    // console sink, and the reason a file sink added later will not silently lose its tail.
+    Log.CloseAndFlush();
+}
 
 // Exposes the top-level-statement Program class to EtAlii.Adp.Backend.Tests'
 // WebApplicationFactory<Program>-based integration test.

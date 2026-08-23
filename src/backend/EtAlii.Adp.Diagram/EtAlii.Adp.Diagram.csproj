@@ -5,12 +5,13 @@
 
   <ItemGroup>
     <!--
-      Both serve DiagramDefinitionDiscovery only. The abstractions package rather than
-      Microsoft.Extensions.Logging, so this library stays host-agnostic; DependencyModel to
-      read the deployment manifest the assembly walk is seeded from.
+      Both serve DiagramDefinitionDiscovery only. Serilog rather than a host logging
+      abstraction, so this library stays host-agnostic and logs through the same static
+      pipeline everywhere; DependencyModel to read the deployment manifest the assembly walk
+      is seeded from.
     -->
     <PackageReference Include="Microsoft.Extensions.DependencyModel" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Serilog" />
   </ItemGroup>
 
   <ItemGroup>

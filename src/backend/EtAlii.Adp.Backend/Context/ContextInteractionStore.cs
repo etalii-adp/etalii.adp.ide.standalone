@@ -1,11 +1,14 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
+using Serilog;
 
 namespace EtAlii.Adp.Backend.Context;
 
 /// <inheritdoc cref="IContextInteractionStore" />
 public sealed class ContextInteractionStore : IContextInteractionStore
 {
+    private static readonly ILogger _logger = Log.ForContext<ContextInteractionStore>();
+
     private readonly ConcurrentDictionary<ShortGuid, Connection> _connections = new();
 
     // A second index so an interaction id alone identifies its owning connection; the
@@ -20,6 +23,17 @@ public sealed class ContextInteractionStore : IContextInteractionStore
         if (!_connections.TryRemove(watchId, out var connection))
         {
             return;
+        }
+
+        if (!connection.InteractionIds.IsEmpty)
+        {
+            // Dialogs the user had open when the stream went away. Nothing was committed, so
+            // this is not a failure - but a stream of these means clients are dropping their
+            // connection mid-dialog.
+            _logger.Debug(
+                "Dropping {Count} unfinished interactions with watch {WatchId}",
+                connection.InteractionIds.Count,
+                watchId);
         }
 
         foreach (var interactionId in connection.InteractionIds.Keys)
@@ -44,6 +58,11 @@ public sealed class ContextInteractionStore : IContextInteractionStore
     {
         if (!_connections.TryGetValue(interaction.WatchId, out var connection))
         {
+            _logger.Warning(
+                "Interaction {InteractionId} for {ActionId} was dropped: watch {WatchId} is not registered",
+                interaction.Id,
+                interaction.ActionId,
+                interaction.WatchId);
             return;
         }
 

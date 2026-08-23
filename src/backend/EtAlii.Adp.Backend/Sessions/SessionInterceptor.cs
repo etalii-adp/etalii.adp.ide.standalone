@@ -1,5 +1,6 @@
 using Grpc.Core;
 using Grpc.Core.Interceptors;
+using Serilog;
 
 namespace EtAlii.Adp.Backend.Sessions;
 
@@ -11,6 +12,8 @@ namespace EtAlii.Adp.Backend.Sessions;
 public sealed class SessionInterceptor : Interceptor
 {
     public const string SessionTokenMetadataKey = "session-token";
+
+    private static readonly ILogger _logger = Log.ForContext<SessionInterceptor>();
 
     private readonly ISessionStore _sessionStore;
 
@@ -61,9 +64,17 @@ public sealed class SessionInterceptor : Interceptor
         var token = context.RequestHeaders.GetValue(SessionTokenMetadataKey);
         if (token is null || !_sessionStore.TryValidate(token, out var userId))
         {
+            // Which call was refused and whether a token was even offered - enough to tell a
+            // client that never logged in from one whose session expired, without recording
+            // the token itself.
+            _logger.Warning(
+                "Rejecting {Method}: {TokenState} session token",
+                context.Method,
+                token is null ? "no" : "an invalid");
             throw new RpcException(new Status(StatusCode.Unauthenticated, "Missing or invalid session token."));
         }
 
+        _logger.Verbose("{Method} authenticated as {UserId}", context.Method, userId);
         SessionContext.SetUserId(context, userId);
     }
 }

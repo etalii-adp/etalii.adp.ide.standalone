@@ -48,10 +48,43 @@ describe("RibbonContextualGroups", () => {
     contextState.actions = [];
   });
 
-  it("renders nothing while nothing is selected", () => {
+  it("renders nothing before anything has ever been selected", () => {
     const { container } = render(<RibbonContextualGroups />);
 
     expect(container.querySelector(".ribbon-group-contextual")).toBeNull();
+  });
+
+  it("keeps its buttons, disabled, once the selection goes away", () => {
+    select(entryA, renameAndDelete());
+    const { rerender } = render(<RibbonContextualGroups />);
+    expect((screen.getByRole("button", { name: "Rename…" }) as HTMLButtonElement).disabled).toBe(false);
+
+    contextState.selection = null;
+    contextState.actions = [];
+    rerender(<RibbonContextualGroups />);
+
+    // Still there - a ribbon that changes shape under the pointer is worse than one
+    // holding greyed-out buttons saying what would apply.
+    const rename = screen.getByRole("button", { name: "Rename…" }) as HTMLButtonElement;
+    expect(rename.disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "Delete" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("does not open a drop-down that is only being held over", async () => {
+    const groups = [
+      create(ContextActionGroupSchema, {
+        actions: [{ id: "convert", label: "Convert to…", icon: "", available: true, items: [{ actions: [{ id: "x", label: "X", icon: "", available: true }] }] }],
+      }),
+    ];
+    select(entryA, groups);
+    const { rerender } = render(<RibbonContextualGroups />);
+
+    contextState.selection = null;
+    contextState.actions = [];
+    rerender(<RibbonContextualGroups />);
+    fireEvent.click(screen.getByRole("button", { name: /Convert to…/ }));
+
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
   });
 
   it("renders one button per action with icon, label and tooltip, after the static groups", () => {

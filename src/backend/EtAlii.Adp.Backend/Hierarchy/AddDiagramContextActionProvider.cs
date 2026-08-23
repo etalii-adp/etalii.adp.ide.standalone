@@ -1,5 +1,6 @@
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Diagram;
+using Serilog;
 
 namespace EtAlii.Adp.Backend.Hierarchy;
 
@@ -23,6 +24,7 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
     public const string AddActionId = "hierarchy.add";
     private const string NoDiagramTypes = "No diagram types are available.";
     private static readonly ContextShortcutDefinition AddShortcut = new("Insert");
+    private static readonly ILogger _logger = Log.ForContext<AddDiagramContextActionProvider>();
 
     private readonly Func<IReadOnlyList<DiagramDefinition>> _definitions;
 
@@ -129,16 +131,21 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         var definition = _definitions().FirstOrDefault(candidate => candidate.Origin.Key == value);
         if (definition is null)
         {
+            // The client offered an option that is not on the list it was given - a stale
+            // dialog, or a client built against a different set of modules.
+            _logger.Warning("Rejecting the Add: {OptionId} is not one of the {Count} diagram types on offer", value, _definitions().Count);
             return ValueTask.FromResult(ContextCommitResult.Failed("That diagram type is not available."));
         }
 
         var validation = ValidateName(target, text);
         if (!validation.Valid)
         {
+            _logger.Debug("Rejecting the name {Name} for a new {Origin}: {Reason}", text, definition.Origin.Key, validation.Reason);
             return ValueTask.FromResult(ContextCommitResult.Failed(validation.Reason));
         }
 
         var fileName = DiagramFileName.WithExtension(text);
+        _logger.Debug("Creating a {Origin} diagram named {FileName} in {Folder}", definition.Origin.Key, fileName, target.ResolvedFullPath);
         return ValueTask.FromResult(AdpFileWriter.Create(target.ResolvedFullPath, fileName, definition.Origin.MimeType) switch
         {
             AdpFileWriteResult.Created created => ContextCommitResult.Created(created.FullPath),

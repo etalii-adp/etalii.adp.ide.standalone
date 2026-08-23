@@ -1,4 +1,5 @@
 using System.Text;
+using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Backend.Hierarchy;
@@ -20,6 +21,8 @@ public static class AdpFileWriter
 
     public const string TempExtension = ".tmp";
 
+    private static readonly ILogger _logger = Log.ForContext(typeof(AdpFileWriter));
+
     public static AdpFileWriteResult Create(string folder, string fileName, string firstLine)
     {
         var destination = IoPath.Combine(folder, fileName);
@@ -35,15 +38,22 @@ public static class AdpFileWriter
             // the meantime, this throws rather than replacing what is there.
             File.Move(temporary, destination, overwrite: false);
 
+            // Information: a file appeared in the user's project because of us, which is
+            // exactly the kind of thing worth being able to point at afterwards.
+            _logger.Information("Created {FilePath}", destination);
             return new AdpFileWriteResult.Created(destination);
         }
         catch (IOException) when (File.Exists(destination) || Directory.Exists(destination))
         {
+            // Something claimed the name between the check and the move. The user is told and
+            // can pick another, so this is a warning about a race, not a failure.
+            _logger.Warning("Did not create {FilePath}: the name was taken while it was being written", destination);
             DeleteQuietly(temporary);
             return new AdpFileWriteResult.NameTaken();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
         {
+            _logger.Error(ex, "Failed to create {FilePath}", destination);
             DeleteQuietly(temporary);
             return new AdpFileWriteResult.Failed(ex.Message);
         }
@@ -61,7 +71,9 @@ public static class AdpFileWriter
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // Deliberately ignored.
+            // Deliberately not rethrown; Debug so a folder slowly filling with scratch files
+            // still has an explanation somewhere.
+            _logger.Debug(ex, "Could not remove the scratch file {Path}", path);
         }
     }
 }

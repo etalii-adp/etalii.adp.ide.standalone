@@ -1,6 +1,6 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyModel;
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace EtAlii.Adp.Diagram;
 
@@ -11,8 +11,8 @@ namespace EtAlii.Adp.Diagram;
 /// diagram-type module already exposes.
 /// </summary>
 /// <remarks>
-/// This is a plain class rather than a static initializer so it can be handed a logger and
-/// a test-controlled set of assemblies. The host runs it once at startup and stores the
+/// This is a plain class rather than a static initializer so it can be handed a
+/// test-controlled set of assemblies. The host runs it once at startup and stores the
 /// result in <see cref="DiagramDefinition.All"/>; nothing else should call it.
 /// <para>
 /// It never throws for a bad assembly or a bad candidate. A module that cannot be loaded or
@@ -20,7 +20,7 @@ namespace EtAlii.Adp.Diagram;
 /// warning in the log - never the application's startup.
 /// </para>
 /// </remarks>
-public sealed partial class DiagramDefinitionDiscovery
+public sealed class DiagramDefinitionDiscovery
 {
     /// <summary>Only assemblies whose simple name starts with this are ever inspected.</summary>
     public const string AssemblyPrefix = "EtAlii.Adp";
@@ -28,13 +28,7 @@ public sealed partial class DiagramDefinitionDiscovery
     private const string CandidateTypeName = "Diagram";
     private const string DefinitionPropertyName = "Definition";
 
-    private readonly ILogger<DiagramDefinitionDiscovery> _logger;
-
-    public DiagramDefinitionDiscovery(ILogger<DiagramDefinitionDiscovery> logger)
-    {
-        ArgumentNullException.ThrowIfNull(logger);
-        _logger = logger;
-    }
+    private static readonly ILogger _logger = Log.ForContext<DiagramDefinitionDiscovery>();
 
     /// <summary>
     /// Scans exactly the given assemblies and returns the definitions found, ordered by
@@ -71,10 +65,14 @@ public sealed partial class DiagramDefinitionDiscovery
                     // Keep the ordinal-smaller assembly name so the winner does not depend on
                     // the order assemblies happened to be handed in.
                     var keepExisting = string.CompareOrdinal(existing.AssemblyName, assemblyName) <= 0;
-                    LogOriginCollision(
+                    var kept = keepExisting ? existing.AssemblyName : assemblyName;
+                    var dropped = keepExisting ? assemblyName : existing.AssemblyName;
+                    _logger.Warning(
+                        "Diagram origin {Origin} is declared by both {KeptAssembly} and {DroppedAssembly}; keeping the one from {KeptAssembly}",
                         definition.Origin.ToString(),
-                        keepExisting ? existing.AssemblyName : assemblyName,
-                        keepExisting ? assemblyName : existing.AssemblyName);
+                        kept,
+                        dropped,
+                        kept);
 
                     if (!keepExisting)
                     {
@@ -85,7 +83,11 @@ public sealed partial class DiagramDefinitionDiscovery
                 }
 
                 found[definition.Origin] = (definition, assemblyName);
-                LogDiscovered(definition.Origin.ToString(), definition.Title, assemblyName);
+                _logger.Information(
+                    "Discovered diagram type {Origin}: {Title} ({Assembly})",
+                    definition.Origin.ToString(),
+                    definition.Title,
+                    assemblyName);
             }
         }
 
@@ -96,10 +98,14 @@ public sealed partial class DiagramDefinitionDiscovery
             .ThenBy(definition => definition.Origin.Subtype, StringComparer.Ordinal)
             .ToArray();
 
-        LogSummary(result.Length, scanned);
+        _logger.Information(
+            "{Count} diagram types discovered across {AssemblyCount} assemblies",
+            result.Length,
+            scanned);
         if (result.Length == 0)
         {
-            LogNoneDiscovered();
+            _logger.Warning(
+                "No diagram types were discovered; the Add dialog will be empty. This usually means the diagram modules were not deployed or not referenced");
         }
 
         return result;
@@ -116,7 +122,7 @@ public sealed partial class DiagramDefinitionDiscovery
     /// dequeue, mark visited, load each unvisited reference, enqueue. Restricted to the
     /// <see cref="AssemblyPrefix"/> so it never descends into the framework.
     /// </remarks>
-    public static IReadOnlyList<Assembly> FindApplicationAssemblies(ILogger? logger = null)
+    public static IReadOnlyList<Assembly> FindApplicationAssemblies()
     {
         var entry = Assembly.GetEntryAssembly();
         if (entry is null)
@@ -124,7 +130,7 @@ public sealed partial class DiagramDefinitionDiscovery
             // Happens under some test hosts; fall back to this library so the walk still
             // starts somewhere sensible rather than returning nothing at all.
             entry = typeof(DiagramDefinitionDiscovery).Assembly;
-            logger?.LogWarning(
+            _logger.Warning(
                 "No entry assembly is available; seeding the assembly walk from {Assembly} instead",
                 entry.GetName().Name);
         }
@@ -155,7 +161,7 @@ public sealed partial class DiagramDefinitionDiscovery
         var context = DependencyContext.Default;
         if (context is null)
         {
-            logger?.LogWarning(
+            _logger.Warning(
                 "No deployment manifest is available, so the assembly walk is seeded from {Assembly} alone; " +
                 "diagram modules the host never references in code may be missed",
                 entry.GetName().Name);
@@ -169,7 +175,7 @@ public sealed partial class DiagramDefinitionDiscovery
                     continue;
                 }
 
-                if (TryLoad(new AssemblyName(library.Name), logger) is { } seeded)
+                if (TryLoad(new AssemblyName(library.Name)) is { } seeded)
                 {
                     Enqueue(seeded);
                 }
@@ -191,7 +197,7 @@ public sealed partial class DiagramDefinitionDiscovery
                     continue;
                 }
 
-                if (TryLoad(reference, logger) is { } loaded)
+                if (TryLoad(reference) is { } loaded)
                 {
                     Enqueue(loaded);
                 }
@@ -204,7 +210,7 @@ public sealed partial class DiagramDefinitionDiscovery
     private static bool IsApplicationAssembly(string? simpleName) =>
         simpleName is not null && simpleName.StartsWith(AssemblyPrefix, StringComparison.Ordinal);
 
-    private static Assembly? TryLoad(AssemblyName name, ILogger? logger)
+    private static Assembly? TryLoad(AssemblyName name)
     {
         try
         {
@@ -212,7 +218,7 @@ public sealed partial class DiagramDefinitionDiscovery
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            logger?.LogWarning(
+            _logger.Warning(
                 exception,
                 "Skipping assembly {Assembly}: it could not be loaded",
                 name.Name);
@@ -230,12 +236,18 @@ public sealed partial class DiagramDefinitionDiscovery
         {
             // Some types failed to load but the rest are fine; a Diagram class is almost
             // never among the failures, so read what loaded rather than drop the assembly.
-            LogPartialTypeLoad(assemblyName, exception.LoaderExceptions.Length);
+            _logger.Warning(
+                "Assembly {Assembly} loaded only partially ({FailedCount} types failed); scanning the types that did load",
+                assemblyName,
+                exception.LoaderExceptions.Length);
             return exception.Types.Where(type => type is not null)!;
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
-            LogAssemblySkipped(exception, assemblyName);
+            _logger.Warning(
+                exception,
+                "Skipping assembly {Assembly}: its types could not be enumerated",
+                assemblyName);
             return [];
         }
     }
@@ -249,14 +261,14 @@ public sealed partial class DiagramDefinitionDiscovery
         var property = type.GetProperty(DefinitionPropertyName, BindingFlags.Public | BindingFlags.Static);
         if (property is null)
         {
-            LogMalformed(type.FullName ?? type.Name, assemblyName, "it has no public static Definition property");
+            LogMalformed(type, assemblyName, "it has no public static Definition property");
             return null;
         }
 
         if (!typeof(DiagramDefinition).IsAssignableFrom(property.PropertyType))
         {
             LogMalformed(
-                type.FullName ?? type.Name,
+                type,
                 assemblyName,
                 $"its Definition property is a {property.PropertyType.Name}, not a {nameof(DiagramDefinition)}");
             return null;
@@ -269,36 +281,26 @@ public sealed partial class DiagramDefinitionDiscovery
                 return definition;
             }
 
-            LogMalformed(type.FullName ?? type.Name, assemblyName, "its Definition property returned null");
+            LogMalformed(type, assemblyName, "its Definition property returned null");
             return null;
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             // GetValue wraps whatever the getter threw.
             var cause = exception is TargetInvocationException { InnerException: { } inner } ? inner : exception;
-            LogMalformed(type.FullName ?? type.Name, assemblyName, $"reading its Definition property threw: {cause.Message}");
+            LogMalformed(type, assemblyName, $"reading its Definition property threw: {cause.Message}");
             return null;
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Discovered diagram type {Origin}: {Title} ({Assembly})")]
-    private partial void LogDiscovered(string origin, string title, string assembly);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "{Count} diagram types discovered across {AssemblyCount} assemblies")]
-    private partial void LogSummary(int count, int assemblyCount);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "No diagram types were discovered; the Add dialog will be empty. This usually means the diagram modules were not deployed or not referenced")]
-    private partial void LogNoneDiscovered();
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Skipping assembly {Assembly}: its types could not be enumerated")]
-    private partial void LogAssemblySkipped(Exception exception, string assembly);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Assembly {Assembly} loaded only partially ({FailedCount} types failed); scanning the types that did load")]
-    private partial void LogPartialTypeLoad(string assembly, int failedCount);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Skipping malformed diagram class {Type} in {Assembly}: {Reason}")]
-    private partial void LogMalformed(string type, string assembly, string reason);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Diagram origin {Origin} is declared by both {KeptAssembly} and {DroppedAssembly}; keeping the one from {KeptAssembly}")]
-    private partial void LogOriginCollision(string origin, string keptAssembly, string droppedAssembly);
+    /// <summary>
+    /// One shape of warning for every way a <c>Diagram</c> class can be wrong, so the log
+    /// reads the same whichever check rejected it and the reason stays a property of its own.
+    /// </summary>
+    private static void LogMalformed(Type type, string assemblyName, string reason) =>
+        _logger.Warning(
+            "Skipping malformed diagram class {Type} in {Assembly}: {Reason}",
+            type.FullName ?? type.Name,
+            assemblyName,
+            reason);
 }
