@@ -22,21 +22,23 @@ describe("WorkspaceShell", () => {
     renderShell();
 
     const tabLists = screen.getAllByRole("tablist");
-    expect(tabLists).toHaveLength(3);
+    expect(tabLists).toHaveLength(2);
 
     const labelsFor = (tabList: HTMLElement) =>
       within(tabList)
         .getAllByRole("tab")
         .map((tab) => tab.textContent);
 
-    const [left, center, right] = tabLists;
+    const [left, right] = tabLists;
     expect(labelsFor(left)).toEqual(["Hierarchy", "Search"]);
-    expect(labelsFor(center)).toEqual(["Diagram 1", "Diagram 2"]);
     expect(labelsFor(right)).toEqual(["Toolbox", "Properties"]);
 
-    // Errors & Warnings is now alone in its pane, so TabbedPane renders no
-    // tab strip for it (only shown when a pane hosts more than one tab) -
-    // only the 3 tablists above remain.
+    // The centre pane is the diagram tab system: no mock "Diagram 1"/"Diagram 2" tabs any
+    // more (diagram-workspace-tabs Requirement 4.3) - until something opens, it shows its
+    // empty state and renders no tablist. Errors & Warnings is alone in its pane, so its
+    // TabbedPane renders no strip either.
+    expect(screen.queryByText("Diagram 1")).toBeNull();
+    expect(screen.getByText("Double-click a diagram in the explorer to open it here.")).toBeTruthy();
   });
 
   it("displays the project name", () => {

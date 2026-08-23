@@ -474,6 +474,25 @@ button {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
+/* The per-tab close control (closable panes only, e.g. the diagram tabs). Kept subtle until
+   the tab is hovered, the way editor tabs behave everywhere. */
+.tab-close {
+  font-size: 0.875rem;
+  border-radius: 3px;
+  padding: 0.0625rem;
+  opacity: 0.35;
+}
+
+.tab:hover .tab-close,
+.tab-active .tab-close {
+  opacity: 0.8;
+}
+
+.tab-close:hover {
+  background: color-mix(in srgb, var(--color-text) 15%, transparent);
+  opacity: 1;
+}
+
 .tabbed-pane-content {
   flex: 1 1 auto;
   overflow: auto;
@@ -1192,6 +1211,14 @@ button {
 .mindmap-canvas-loading {
   margin: auto;
   color: var(--color-text-muted);
+}
+
+/* A diagram whose file is gone or moved: the tab stays, saying so plainly. */
+.mindmap-canvas-unavailable {
+  margin: auto;
+  padding: 0 1.5rem;
+  color: var(--color-text-muted);
+  text-align: center;
 }
 
 .mindmap-canvas-surface {

@@ -866,6 +866,28 @@ describe("ExplorerTreePanel revealing what was just created", () => {
     expect(clearReveal).toHaveBeenCalled();
   });
 
+  it("activates the revealed entry - exactly once, with no duplicate plain select", async () => {
+    // The activation is what opens a created diagram's tab through the same rule a
+    // double-click uses (diagram-workspace-tabs Requirement 3); the focus that precedes it
+    // must not also push a plain select for the same entry. The clearReveal mock mirrors
+    // production here - it really forgets the reveal - or the effect would re-run it.
+    contextState.pendingReveal = ["a.txt"];
+    clearReveal.mockImplementation(() => {
+      contextState.pendingReveal = null;
+    });
+    try {
+      render(<ExplorerTreePanel projectId={new Uint8Array(16)} />);
+      await screen.findByText("a.txt");
+
+      await waitFor(() => expect(select).toHaveBeenCalled());
+      const forRevealedEntry = select.mock.calls.map(([selection]) => selection as ContextSelection);
+      expect(forRevealedEntry).toHaveLength(1);
+      expect(forRevealedEntry[0]!.detail).toEqual({ case: "action", value: ContextSelectionAction.ACTIVATE });
+    } finally {
+      clearReveal.mockReset();
+    }
+  });
+
   it("expands the folder it was created in, then focuses it there", async () => {
     contextState.pendingReveal = ["sub", "inside.adp"];
     render(<ExplorerTreePanel projectId={new Uint8Array(16)} />);

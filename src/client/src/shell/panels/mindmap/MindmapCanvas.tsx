@@ -24,7 +24,7 @@ const NODE_HALF_HEIGHT = 16;
  * backend pushes, so a selection made anywhere else moves focus here too.
  */
 export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) {
-  const { model, loading } = useMindmapStream(projectId, path);
+  const { model, loading, failed } = useMindmapStream(projectId, path);
   const { select, executeShortcut } = useContextConnection();
   const { selection } = useContextSelection();
 
@@ -64,6 +64,19 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
   };
 
   const elements = [...model.elements.values()];
+
+  if (failed) {
+    // The backend gave a permanent answer - the file is gone, moved, or unroutable. The tab
+    // stays, closable as ever; re-activating the diagram under its new location opens a fresh
+    // one (diagram-workspace-tabs Requirement 5).
+    return (
+      <div className="mindmap-canvas" data-testid="mindmap-canvas">
+        <div className="mindmap-canvas-unavailable" role="alert">
+          This diagram is no longer available at {path.join("/")}.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mindmap-canvas" data-testid="mindmap-canvas">
