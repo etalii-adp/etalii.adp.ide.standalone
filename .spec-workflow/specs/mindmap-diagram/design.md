@@ -2,7 +2,7 @@
 
 ## Overview
 
-This design builds the **Mindmap module** as the first real diagram type: `diagrams/mindmap/` with `backend/`, `api/` and `client/`, plugged into core through the four seams the requirements name and nothing else. A mindmap is an `.adp` registration file plus a `.mm` Freeplane body plus, only when links exist, an `.adp.json` sidecar. The backend owns the tree, the layout and every edit; the client renders what it is sent and reports what the user did.
+This design builds the **Mindmap module** as the first real diagram type: `diagrams/mindmap/` with `backend/`, `api/` and `client/`, plugged into core through the four seams the requirements name and nothing else. A mindmap is exactly two files: an `.adp` registration file and a `.mm` Freeplane body. The backend owns the tree, the layout and every edit; the client renders what it is sent and reports what the user did.
 
 Four things carry the whole design:
 
@@ -81,7 +81,7 @@ Requirement 11.4. `deltas.proto`'s `Group` carries `Element group_element`; fold
 * **`EntryNameRules`** — unchanged; naming a mindmap is naming a file.
 * **`CreateDiagramFileCommand` / its handler** — extended to write the body sibling, not duplicated.
 * **`IHistoryStack` / `CommandDispatcher` / `CommandResult`** — the whole undo story; the module adds handlers and nothing else.
-* **`HierarchyModel.TryResolvePath`** — the containment check a link resolution needs (Requirement 12.9); the module does not re-derive containment.
+* **`HierarchyModel.TryResolvePath`** — the containment check a link resolution needs (Requirement 12.11); the module does not re-derive containment.
 * **`ContextSelectionResolver` / `IContextSourceResolver`** — the nesting machinery for the file→node chain; the module supplies one resolver.
 * **`ContextActionResolver`** — routes by scope; the module supplies providers for the new scope.
 * **`RibbonContextualGroups` / `ContextMenu` / `ContextPromptHost`** — the mindmap's actions, menu and prompts render through these unchanged.
@@ -262,17 +262,20 @@ message MindmapLink {
 }
 ```
 
-The link travels as path **and** id, and is stored as path alone (Requirement 12.1–12.2): an entry id is stable only within the connection that observed it, so it cannot be written to a file that outlives the connection.
+Three forms, deliberately not collapsed into one (Requirement 12.3): the `.mm` file holds a **map-relative** path in the node's own `LINK` attribute, because that is what Freeplane defines `LINK` to be; the wire carries a **project-relative** path, because the client is never given a location outside the project; and it carries the **entry id** too, because that is what a `Select` needs, and an id is stable only within the connection that observed it so it can never be the stored form.
 
-### The three files on disk
+### The two files on disk
 
 | File | Written by | Holds |
 |---|---|---|
-| `<name>.adp` | creation only | one line: `freeplane/mindmap` |
-| `<name>.mm` | every document edit | the Freeplane tree |
-| `<name>.adp.json` | link edits only | node id → project-relative path |
+| `<name>.adp` | creation only, in this spec | one line: `freeplane/mindmap` |
+| `<name>.mm` | every document edit | the Freeplane tree, links included |
 
-The sidecar exists only once a link does. Putting links in the `.adp` file was rejected: Requirement 2.4 keeps it unwritten after creation, which is what lets it stay a stable registration.
+A link is a node's own `LINK` attribute, which is what Freeplane uses for exactly this (Requirement 12.1) — so it needs no storage of ADP's own, cannot be orphaned, and travels with its node through a delete and an undo for free.
+
+An earlier revision of this design added a third `<name>.adp.json` file for links. It was wrong on its premise: it read Requirement 3.5's *IF ADP-specific data has no place in the standard schema* as settled, when `.mm` has a native home for a file link. It also cost the thing this module exists to prove — a link ADP wrote would have been invisible in Freeplane, and one Freeplane wrote invisible to ADP.
+
+When richer link kinds arrive they go in the `.adp` file after its MIME line (Requirement 12.4), which `create-diagram-file` Requirement 3.4 already shaped for by forbidding anything *before* that line. Requirement 2.4 keeps the `.adp` file unwritten **in this spec**; it does not reserve it forever.
 
 ## Error Handling
 
@@ -283,8 +286,8 @@ The sidecar exists only once a link does. Putting links in the `.adp` file was r
 | MIME type matches no definition | Reported naming the MIME type read; no empty canvas (Requirement 2.6). |
 | Two definitions claim one extension | Extension routing disabled for that extension, ambiguity reported naming both; `.adp`-routed files still open (Requirement 2.8). |
 | Command rejected | `CommandResult.Failure` with a user-facing message; nothing recorded on the history (Requirement 6.3). |
-| Link target deleted or outside the project | The link is shown broken, keeping what it pointed at; never silently dropped or re-pointed (Requirement 12.9–12.10). |
-| Sidecar names an unknown node id | Dropped on the next save, not a parse failure (Requirement 12.12). |
+| Link target deleted or outside the project | The link is shown broken, keeping what it pointed at; never silently dropped or re-pointed (Requirement 12.11-12.12). |
+| The `.mm` file is moved | Every `LINK` in it is rewritten so it still resolves, in the same command that moves the file - a map-relative path means something else from a new location (Requirement 12.14). |
 | Save fails midway | Atomic temp-then-move means the previous file survives intact (Requirement 3.6). |
 
 ## Testing Strategy
