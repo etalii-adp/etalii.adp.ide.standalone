@@ -17,7 +17,7 @@
 
 ## Phase A — the corpus
 
-- [ ] 1. Replace the fixture with a genuine Freeplane save
+- [x] 1. Replace the fixture with a genuine Freeplane save
   - File: `src/diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap.Tests/Fixtures/architecture.mm` (replace), `Fixtures/readme.md` (modify)
   - Open the committed map in Freeplane, add a node linked to a file in the project and one linked to a URL, save, and commit exactly what Freeplane wrote — same filename. Diff it against the hand-written version and record every difference in the readme: they are the schema knowledge this spec was written without. Confirm two things the spec asserts on an unverified reading: that a file link lives in the node's `LINK` attribute, and that Freeplane resolves it relative to the map file. If either is wrong, stop and correct Requirement 12 before task 6
   - Purpose: the round-trip rule is only as good as the file it round-trips (Requirements 3.2, 3.3, 12.1)
