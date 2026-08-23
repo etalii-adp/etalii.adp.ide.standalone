@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/diagram-workspace-tabs/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-23T15:57:40.047Z",
       "trigger": "initial",
+      "approvalId": "approval_1787500660016_qsrwrgiqe",
+      "approvalTitle": "Diagram Workspace Tabs — Design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-23T16:02:11.631Z",
+      "trigger": "approved",
       "approvalId": "approval_1787500660016_qsrwrgiqe",
       "approvalTitle": "Diagram Workspace Tabs — Design"
     }
