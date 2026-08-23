@@ -1,0 +1,222 @@
+# Tasks Document
+
+> **Two gates, and most of the spec is behind neither.** design.md's *Prerequisites and blockers* lists four. Only the stream-facing work waits on them:
+>
+> * **Gate S (the stream)** — `DiagramService.Connect` is declared bidirectional, which gRPC-Web cannot do from a browser, and `grpc-core-communication`'s runtime does not exist. Tasks **16–22** are behind this gate. Nothing else is.
+> * **Gate C (the contract's wording)** — `add` must be defined as an upsert and `Group.group_element` allowed to be an existing element. Tasks **17** and **19** are behind this too. Both are amendments to `grpc-core-communication-specification`, not code here.
+>
+> Tasks **1–15**, **23** and the catalog half of **24** can start today, and are the majority of the module: the document, the layout, every command, links, the create-a-mindmap flow and the whole context integration.
+>
+> **Worktree.** Per CLAUDE.md, implement in one dedicated worktree for this spec (e.g. `.claude/worktrees/mindmap-diagram/`). For the manual pass use a free port pair and revert `vite.config.ts` and `appsettings.developer.json` before merging.
+>
+> **Regenerate the client stubs.** Task 12 edits `context.proto`, task 16 adds `mindmap.proto`. `src/client/src/generated/*_pb.ts` is **gitignored and untracked**, so a stale copy fails silently. Run `npm run generate` in `src/client/` as part of each.
+>
+> **Task 1 first, or Requirement 3 is untested.** The corpus committed today was written by hand against the schema, not saved by Freeplane. Everything task 6 asserts rests on it.
+>
+> **Bugs.** Per CLAUDE.md, any bug found while implementing or verifying a task is covered by a unit or integration test, or recorded in `tests.md`.
+
+## Phase A — the corpus
+
+- [ ] 1. Replace the fixture with a genuine Freeplane save
+  - File: `src/diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap.Tests/Fixtures/architecture.mm` (replace), `Fixtures/readme.md` (modify)
+  - Open the committed map in Freeplane, add a node linked to a file in the project and one linked to a URL, save, and commit exactly what Freeplane wrote — same filename. Diff it against the hand-written version and record every difference in the readme: they are the schema knowledge this spec was written without. Confirm two things the spec asserts on an unverified reading: that a file link lives in the node's `LINK` attribute, and that Freeplane resolves it relative to the map file. If either is wrong, stop and correct Requirement 12 before task 6
+  - Purpose: the round-trip rule is only as good as the file it round-trips (Requirements 3.2, 3.3, 12.1)
+  - _Leverage: src/diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap.Tests/Fixtures/readme.md (says exactly this), Fixtures.Tests.cs (the guards that must still pass)_
+  - _Requirements: 3.2, 3.3, 12.1_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer with Freeplane installed | Task: Replace the hand-written corpus with a real Freeplane save and record what differed | Restrictions: do not hand-edit what Freeplane wrote; keep the filename; the six guards in Fixtures.Tests.cs must still pass, and where the real save lacks a feature they assert, add it in Freeplane rather than weakening the guard | Success: the fixture is Freeplane's own output, the readme's provenance section says so, and the LINK question is settled in writing_
+
+## Phase B — core seams
+
+- [ ] 2. Add `Extension` to `DiagramDefinition`
+  - File: `src/backend/EtAlii.Adp.Diagram/_Model/DiagramDefinition.cs` (modify), `src/backend/EtAlii.Adp.Diagram.Tests/DiagramDefinition.Tests.cs` (modify)
+  - `public sealed record DiagramDefinition(DiagramOrigin Origin, string Title, string Extension = "")`. `""` means the `.adp` file is the whole diagram. Defaulted so all 57 existing definitions compile unchanged
+  - Purpose: core derives a body sibling's name without knowing any diagram type (Requirement 2.2)
+  - _Leverage: src/backend/EtAlii.Adp.Diagram/_Model/DiagramDefinition.cs_
+  - _Requirements: 2.2_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add the defaulted Extension member per design.md | Restrictions: positional and defaulted, appended after Title so no existing construction breaks; no validation of the string here — the routing task owns that | Success: solution builds untouched elsewhere, and a test covers a definition with and without an extension_
+
+- [ ] 3. Add `IDiagramDocumentFactory` and its startup check
+  - File: `src/backend/EtAlii.Adp.Diagram/IDiagramDocumentFactory.cs` (new), `src/backend/EtAlii.Adp.Backend.Service/Program.cs` (modify), `src/backend/EtAlii.Adp.Diagram.Tests/` (new test)
+  - `DiagramOrigin Origin { get; }` and `string CreateEmptyDocument(string baseName)`, registered like `IContextActionProvider` and resolved by origin. At startup, a discovered definition that declares an `Extension` with no matching factory is a **deployment error reported then**, not at the first Add
+  - Purpose: the one thing core cannot derive — what an empty document of a type looks like (Requirements 1.4, 2.2)
+  - _Leverage: src/backend/EtAlii.Adp.Backend/Context/IContextActionProvider.cs (the registration shape to copy), src/backend/EtAlii.Adp.Backend.Service/Program.cs (discovery already runs there)_
+  - _Requirements: 1.4, 2.2_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add the factory abstraction and the startup consistency check per design.md | Restrictions: the interface lives in EtAlii.Adp.Diagram and knows no diagram type; the startup check names every offending definition rather than failing on the first | Success: a definition with an extension and no factory fails startup with a message naming it_
+
+- [ ] 4. Write the body sibling when a diagram is created
+  - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/Commands/CreateDiagramFileCommandHandler.cs` (modify), `src/backend/EtAlii.Adp.Backend/Hierarchy/AdpFileWriter.cs` (modify), `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/` (modify)
+  - The handler resolves the definition by MIME type; when it declares an `Extension`, it writes the body from the factory too. Both files go to temp names in the destination folder and are moved into place; if the second move fails the first is rolled back. The inverse becomes a delete naming **both** paths
+  - Purpose: both files or neither, and an undo removes the pair (Requirements 1.3, 1.6)
+  - _Leverage: src/backend/EtAlii.Adp.Backend/Hierarchy/AdpFileWriter.cs (temp-then-move and its cleanup), src/backend/EtAlii.Adp.Backend/Hierarchy/Commands/CreateDiagramFileCommandHandler.cs_
+  - _Requirements: 1.3, 1.6_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Extend the create-file command to write a declared body sibling atomically across both files, per design.md | Restrictions: a half-created pair must never be observable, including when the process dies between moves — prove the rollback with a test that forces the second move to fail; the handler still knows no diagram type | Success: tests cover both-created, rollback-on-failure, undo-removes-both, and a definition with no extension behaving exactly as today_
+
+- [ ] 5. Route a body file to its module, and refuse to guess
+  - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/` (new resolver), tests
+  - An `.adp` file routes by its MIME first line. A body file with **no** `.adp` sibling routes by its extension through the declared `Extension`. If two definitions declare one extension, extension routing is disabled for it, the ambiguity is reported naming both, and `.adp`-routed files still open
+  - Purpose: Requirements 2.3, 2.6, 2.7, 2.8
+  - _Leverage: src/backend/EtAlii.Adp.Diagram/DiagramDefinitionDiscovery.cs (how a duplicate origin is already refused rather than guessed)_
+  - _Requirements: 2.3, 2.6, 2.7, 2.8_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement type routing by .adp first line and by declared extension, with the ambiguity rule, per design.md | Restrictions: the .adp file always wins where present; an unknown MIME type reports what it read rather than opening an empty canvas; never pick one of two claimants | Success: tests cover .adp routing, bare-body routing, unknown MIME, and two definitions claiming one extension_
+
+- [ ] 6. Keep the `.adp`/`.mm` pair together on rename, move and delete
+  - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/Commands/` (modify), tests
+  - Renaming or moving the `.adp` renames or moves its body with it as **one** command whose inverse restores both. Deleting the `.adp` deletes the body too, in one command, with the confirmation naming both files. A body that goes missing on its own leaves the registration openable per Requirement 2.5
+  - Purpose: the pair cannot be broken by an ordinary explorer action (Requirements 2.10, 2.11, 2.12)
+  - _Leverage: src/backend/EtAlii.Adp.Backend/Hierarchy/Commands/RenameEntryCommandHandler.cs, DeleteEntryCommandHandler.cs (the commands being extended)_
+  - _Requirements: 2.10, 2.11, 2.12_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Make rename, move and delete operate on the pair as one command per design.md | Restrictions: one command, not two dispatched in sequence — an undo must never restore half a pair; a file with no sibling behaves exactly as today; the delete confirmation must list both files before anything is removed | Success: tests cover rename, move, delete, undo of rename and move, and a lone .adp file unaffected_
+
+## Phase C — the document
+
+- [ ] 7. Implement `MindmapNode` and `MindmapDocument`
+  - File: `src/diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/_Model/` (new), `.../MindmapDocument.cs` (new), tests
+  - `System.Xml.Linq` throughout: the document keeps the `XDocument` it parsed and edits mutate both the node records and the backing XML, so saving writes the document back rather than regenerating it. That is what makes the no-diff rule reachable and preserves everything ADP does not understand
+  - Purpose: Requirements 3.1, 3.2, 3.3, 3.7, 3.8
+  - _Leverage: src/diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap.Tests/Fixtures/architecture.mm (after task 1), Fixtures.Tests.cs_
+  - _Requirements: 3.1, 3.2, 3.3, 3.6, 3.7, 3.8_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement the tree model and the round-trippable document per design.md | Restrictions: never regenerate the XML from the model; an element or attribute the model does not know must survive untouched; a malformed file fails that one diagram with a message naming it, never the workspace | Success: parsing then serializing the corpus reproduces it byte for byte, and the same holds after an unknown attribute and an unknown element are added to it_
+
+- [ ] 8. Assign missing node ids, and persist them on the next save
+  - File: `.../MindmapDocument.cs` (modify), tests
+  - A node without an `ID` gets a `ShortGuid`-based one on load, held in memory and written on the **next save of that file** — never written back on open. A map opened and not edited produces no write at all
+  - Purpose: durable identity for selection and links, without breaking the no-diff rule (Requirements 3.3, 3.4)
+  - _Leverage: src/backend/EtAlii.Adp/ShortGuid.cs, the corpus's two id-less nodes_
+  - _Requirements: 3.3, 3.4_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement id assignment on load with persistence deferred to the next save, per design.md | Restrictions: opening a file must never write to it; ids must be stable for the lifetime of the loaded document; do not renumber ids the file already had | Success: a test opens the corpus, asserts no write occurred, then edits and saves and asserts the previously id-less nodes now carry ids_
+
+- [ ] 9. Implement `MindmapDocumentFactory`
+  - File: `.../MindmapDocumentFactory.cs` (new), `.../Diagram.cs` (modify), tests
+  - `Origin` is `freeplane/mindmap`; `CreateEmptyDocument(baseName)` returns a valid `.mm` with exactly one root node whose text is the base name. `Diagram.Definition` gains `Extension = ".mm"`
+  - Purpose: a new mindmap opens as a named, empty map (Requirements 1.4, 2.2)
+  - _Leverage: src/diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/Diagram.cs, the corpus as the shape to match_
+  - _Requirements: 1.4, 2.2_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement the document factory and declare the extension, per design.md | Restrictions: what it emits must open in Freeplane and must parse with task 7's parser; exactly one root node and no others | Success: a round trip of the created document through the parser is byte-stable, and Freeplane opens it_
+
+- [ ] 10. Implement `MindmapLayout`
+  - File: `.../MindmapLayout.cs` (new), `.../_Model/MindmapMetrics.cs` (new), tests
+  - Pure `Compute(root, metrics)` → positions. Root centred, branches alternating, children stacked on the cross axis, depth as distance. Deterministic. `MindmapMetrics` carries the declared font metric — family, size, advance — because font metrics do not exist on the backend
+  - Purpose: Requirements 5.1–5.8
+  - _Leverage: nothing existing — this is standalone by design and must stay so_
+  - _Requirements: 5.1, 5.2, 5.3, 5.5, 5.6, 5.7, 5.8_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement the deterministic layout and its metrics per design.md | Restrictions: no gRPC, filesystem or canvas dependency of any kind; positions are never written to the .mm file; the same tree must produce identical positions on every call and every machine | Success: tests assert determinism across two calls, no sibling overlap, stability of subtrees unaffected by an edit, and that a longer text widens a node_
+
+- [ ] 11. Implement the mindmap commands
+  - File: `.../Commands/` (new, one file per command and handler), `.../ServiceCollection.AddMindmapCommands.cs` (new), tests
+  - `AddChildNode`, `AddSiblingNode`, `MoveNode`, `RemoveNode`, `SetNodeText`, `SetNodeNotes`, `SetNodeLink`, each with the inverse design.md tabulates. `RemoveNode`'s inverse carries the detached subtree — ids, text, notes, links, order — because restoring it needs state, not coordinates. Registered by the module's **own** extension method, never core's `AddCommands`
+  - Purpose: Requirements 6.1–6.9, 7.1–7.9, 12.6
+  - _Leverage: src/backend/EtAlii.Adp.Backend/Hierarchy/Commands/RenameEntryCommandHandler.cs (handler shape and self-validation), src/backend/EtAlii.Adp.Backend/History/ServiceCollection.AddCommands.cs (the pattern, not the file)_
+  - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.9, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.9_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement one command and handler per edit with its inverse, and the module's registration extension, per design.md | Restrictions: core's AddCommands must gain no reference to this module; every handler re-validates against current state; a rejection is a CommandResult, never an exception; moving a node into its own subtree and removing or moving the root are rejected | Success: for each command, a test applies it, undoes it and asserts the document equals its prior state including ids and sibling order, then redoes it_
+
+## Phase D — context integration
+
+- [ ] 12. Extend `context.proto` for diagram elements
+  - File: `src/api/context.proto` (modify), regenerated stubs
+  - `ContextSource` gains `element_id`; `ContextScope` gains the diagram-element value. Then `npm run generate` in `src/client/`
+  - Purpose: the extension point `context-service` Requirement 2.4 anticipated (Requirements 10.2, 10.3)
+  - _Leverage: src/api/context.proto_
+  - _Requirements: 10.2, 10.3_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: API contract developer | Task: Add the element source member and the scope value, then regenerate | Restrictions: additive only, no renumbering; the context service itself gains no mindmap knowledge; you MUST run npm run generate because the generated stubs are gitignored | Success: dotnet build regenerates the C# types and npm run typecheck passes_
+
+- [ ] 13. Implement `MindmapContextSourceResolver`
+  - File: `.../MindmapContextSourceResolver.cs` (new), tests
+  - Resolves an `element_id` against the document named by the parent level, verifying the node belongs to that diagram on that connection and rejecting the whole chain otherwise. Supplies the per-level detail — text, has-children, folded, linked — and tracks the node so a removal updates or clears the selection
+  - Purpose: a node becomes selectable by registration alone (Requirements 10.1, 10.2, 10.4, 10.6, 10.7)
+  - _Leverage: src/backend/EtAlii.Adp.Backend/Hierarchy/HierarchyContextSourceResolver.cs (the resolver to model this on)_
+  - _Requirements: 10.1, 10.2, 10.4, 10.6, 10.7_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement the element source resolver per design.md | Restrictions: a node of another diagram and an id from another connection are both rejected without revealing that they exist; registering this resolver is the whole of making a node selectable — the context service is not edited | Success: tests cover a valid nested selection, a node belonging to another diagram, an unknown id, and the selection being cleared when the node is removed_
+
+- [ ] 14. Implement `MindmapContextActionProvider`
+  - File: `.../MindmapContextActionProvider.cs` (new), tests
+  - Add child, add sibling, rename, delete, fold/unfold, edit notes, link, unlink — for the diagram-element scope, each declaring its shortcut as data. Unavailable actions are reported with a reason rather than omitted. Read-only makes every document-changing action unavailable. Input uses the existing prompt channel
+  - Purpose: Requirements 8.3, 8.4, 8.5, 8.6, 8.7, 6.8, 12.7, 12.8
+  - _Leverage: src/backend/EtAlii.Adp.Backend/Hierarchy/HierarchyContextActionProvider.cs (shape, availability and reasons), AddDiagramContextActionProvider.cs (a provider that prompts then commits)_
+  - _Requirements: 8.3, 8.4, 8.5, 8.6, 8.7, 6.8, 12.7, 12.8_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement the element action provider per design.md | Restrictions: F2, Delete and Insert are already claimed by the explorer in the hierarchy scope — they coexist because resolution runs against the innermost selection, so do not rename them here; every action dispatches a command and touches no file itself | Success: tests cover availability in read-only mode, no sibling offered for the root, no unlink on an unlinked node, and each action dispatching its command_
+
+- [ ] 15. Implement link resolution
+  - File: `.../MindmapLinks.cs` (new), `.../Commands/SetNodeLinkCommandHandler.cs` (modify), `.../MindmapDocument.cs` (modify), tests
+  - The three forms of Requirement 12.3 and the conversions between them: the `.mm` holds a **map-relative** path in the node's `LINK`; the wire carries a **project-relative** path plus the receiving connection's entry id. Resolution re-checks containment through `HierarchyModel`, so a link can never reach outside the project even after a symlink swap. A target that no longer resolves is reported **broken**, keeping what it pointed at, never dropped or re-pointed. When the `.mm` file itself moves, every `LINK` in it is rewritten in the same command that moves it (task 6)
+  - Purpose: Requirements 12.1, 12.2, 12.3, 12.9, 12.10, 12.11, 12.12, 12.13, 12.14
+  - _Leverage: src/backend/EtAlii.Adp.Backend/Hierarchy/HierarchyModel.cs (TryResolvePath and its containment re-check), src/backend/EtAlii.Adp.Backend/Hierarchy/Commands/RenameEntryCommandHandler.cs (the move this hooks into)_
+  - _Requirements: 12.1, 12.2, 12.3, 12.9, 12.10, 12.11, 12.12, 12.13, 12.14_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement link storage, conversion, resolution and the move rewrite per design.md | Restrictions: an absolute path is never stored, sent or accepted; do not collapse the three forms into one; a link whose target vanished stays visible as broken rather than being deleted; rewriting on move happens inside the move command so an undo restores the old links too | Success: tests cover the map-relative round trip, the project-relative-plus-id wire form, a target outside the project refused, a deleted target reported broken, and every LINK rewritten when the map moves_
+
+## Phase E — the stream (Gate S)
+
+- [ ] 16. Define `mindmap.proto` — **Gate S**
+  - File: `src/diagrams/mindmap/api/mindmap.proto` (new), regenerated stubs
+  - `MindmapNodePayload` with text, notes, has-children, folded and an optional `MindmapLink` of project-relative path, entry id and broken flag. Packed into the core `Element.payload` `Any`; core protos are not edited
+  - Purpose: Requirements 11.2, 12.2
+  - _Leverage: src/api/elements.proto (the Any payload extension point)_
+  - _Requirements: 11.2, 12.2_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: API contract developer | Task: Define the module's own payload proto per design.md | Restrictions: lives under the module's api folder and never modifies a core proto; the link travels project-relative and by entry id, never as a filesystem path | Success: it builds into the module and packs into Element.payload_
+
+- [ ] 17. Implement `MindmapElementMapper` — **Gates S and C**
+  - File: `.../MindmapElementMapper.cs` (new), tests
+  - Nodes to `Element`s — id, layout position, `freeplane/mindmap+node` type, packed payload — and changes to deltas: `Add` as upsert, `Remove` for deletions, filtered by the connection's viewport and fold state
+  - Purpose: Requirements 11.2, 11.3, 11.5
+  - _Leverage: src/api/deltas.proto, src/api/elements.proto_
+  - _Requirements: 11.2, 11.3, 11.5_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Map nodes to elements and changes to deltas per design.md | Restrictions: an edit is an Add carrying the new state, never a Remove followed by an Add — that would drop focus on the node being edited; requires the contract amendment of Gate C to be in place first | Success: tests assert an edit produces one Add, a deletion one Remove, and that nodes outside the viewport are not delivered_
+
+- [ ] 18. Implement `MindmapDocumentStore` — **Gate S**
+  - File: `.../MindmapDocumentStore.cs` (new), tests
+  - One document per open diagram keyed by `.adp` path, with the connections viewing it; owns load/save, the layout cache and the **per-connection** fold state; idle eviction so an abandoned diagram does not leak
+  - Purpose: Requirements 9.4, 11.6, and the store half of Requirement 2.4
+  - _Leverage: src/backend/EtAlii.Adp.Backend/Hierarchy/HierarchyModelStore.cs (eviction pattern)_
+  - _Requirements: 2.4, 9.4, 11.6, 11.8_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement the per-diagram document store per design.md | Restrictions: fold state is per connection and is never written to the .mm file; the .adp file is never rewritten by an edit; a diagram with no connections is evicted | Success: tests cover two connections folding independently, no write on fold, and eviction after the last connection_
+
+- [ ] 19. Folding as group and ungroup deltas — **Gates S and C**
+  - File: `.../MindmapElementMapper.cs` (modify), `.../MindmapDocumentStore.cs` (modify), tests
+  - A fold sends `Group` with the subtree's ids and the folded parent as the group element; an unfold sends `Ungroup` carrying the branch again. Hidden descendants stop being delivered. `FOLDED` seeds the state on open and is round-tripped unchanged on save. No command, nothing on the history
+  - Purpose: Requirements 9.1–9.8, 11.4
+  - _Leverage: src/api/deltas.proto_
+  - _Requirements: 9.1, 9.2, 9.3, 9.5, 9.6, 9.7, 9.8, 11.4_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Express folding as group/ungroup deltas and per-connection view state, per design.md | Restrictions: folding dispatches no command and records nothing on the history; it is permitted in read-only mode; a change from another client inside a collapsed branch must not expand it; requires Gate C's group_element amendment | Success: tests cover fold hiding and stopping delivery, unfold restoring, read-only folding allowed, and a collapsed branch surviving a remote change_
+
+## Phase F — the client (Gate S)
+
+- [ ] 20. Implement `MindmapCanvas` — **Gate S**
+  - File: `src/diagrams/mindmap/client/` (new), tests
+  - Renders elements onto the shared canvas, holds no document state, applies deltas. Node boxes are drawn at the backend's computed size; overflow clips or wraps rather than moving the node. Indicates notes, links and collapsed children on the node
+  - Purpose: Requirements 4.1–4.4, 5.7, 11.1
+  - _Leverage: the shared canvas from adp-diagram-ide, src/client/src/index.css (centralised styling)_
+  - _Requirements: 4.1, 4.2, 4.3, 4.4, 5.7_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/TypeScript developer | Task: Render a mindmap from pushed elements per design.md | Restrictions: no document state and no local layout — the canvas draws what it is sent; styling goes in the centralised stylesheet with existing tokens; a node is never moved to fit its text | Success: tests assert rendering from a delta, replacing an element on an upsert, and the three node indicators_
+
+- [ ] 21. Selection, focus and keyboard modality — **Gate S**
+  - File: `src/diagrams/mindmap/client/` (modify), tests
+  - Node focus reports the nested selection through the existing provider; the canvas reacts to the **pushed** selection, scrolling it into view and expanding collapsed ancestors, and never re-reacts to its own. Shortcuts are modal: while an inline editor is open, text keys belong to it. Plain selects are coalesced; gesture selects are not
+  - Purpose: Requirements 8.1, 8.2, 10.1, 10.5, 10.8, 7.8
+  - _Leverage: src/client/src/shell/context/ContextConnectionProvider.tsx, useCoalescedSelect, ExplorerTreePanel (the same react-to-pushed-selection discipline)_
+  - _Requirements: 8.1, 8.2, 10.1, 10.5, 10.8, 7.8_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/TypeScript developer | Task: Wire node selection, focus following and modal shortcuts per design.md | Restrictions: the canvas keeps no selection of its own and does not re-react to a selection it produced; Escape during an edit dispatches no command and leaves nothing on the undo stack; no key-to-action table — shortcuts come from the backend as data | Success: tests cover focus following a pushed selection, an off-screen node scrolled into view, collapsed ancestors expanded, and Escape discarding an edit_
+
+- [ ] 22. Open and focus a new mindmap — **Gate S**
+  - File: `src/client/src/shell/` (modify), tests
+  - The `Select` of a newly created `.adp` file that this connection has no view open for is the trigger to open and focus it. Not inferred from having been the caller of the Add
+  - Purpose: Requirement 1.7
+  - _Leverage: src/client/src/shell/context/ContextConnectionProvider.tsx_
+  - _Requirements: 1.7_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/TypeScript developer | Task: Open and focus a diagram view from the pushed selection per design.md | Restrictions: one behaviour for every diagram file, whether or not this client created it; do not special-case the Add caller | Success: a test asserts a pushed selection of a diagram file with no open view opens one, and that a second selection of the same file does not open a duplicate_
+
+## Phase G — closing out
+
+- [ ] 23. Prove the module is actually pluggable
+  - File: `src/backend/EtAlii.Adp.Backend.Tests/` (new test), `src/diagrams/mindmap/` (structure check)
+  - The claim Requirement 13 makes has to be testable, not asserted. A test walks core's compiled assemblies — `EtAlii.Adp`, `EtAlii.Adp.Diagram`, `EtAlii.Adp.Backend` — and fails if any references `EtAlii.Adp.Diagram.Mindmap` or names a mindmap type. Confirm the module's folders match `structure.md` (`backend/`, `api/`, `client/`), that every seam is one registration line, and that core still builds and its tests still pass with the module's project references removed
+  - Purpose: Requirements 13.1, 13.2, 13.3, 13.4, 13.5
+  - _Leverage: src/backend/EtAlii.Adp.Diagram.Tests/DiagramDefinitionDiscovery.Walk.Tests.cs (already walks assemblies and reasons about references)_
+  - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Write the test that proves core does not depend on the mindmap module, and verify the structure and registration claims of Requirement 13 | Restrictions: assert on compiled metadata rather than on source text, so the test cannot be fooled by a comment; if core does turn out to reference the module, fix the dependency rather than weakening the test | Success: the test fails if a mindmap reference is added to any core project, and core builds and tests green with the module removed from the solution_
+
+- [ ] 24. Move the catalog row and run the manual pass
+  - File: `docs/diagrams.md` (modify), `tests.md` (modify if anything is found)
+  - Move `freeplane/mindmap` to 🛠️ when Phase C lands and ✅ when Phase F does. Then, with the app running on a free port pair: create a mindmap and confirm both files appear and it opens focused; add, rename, move and delete nodes with the keyboard alone; fold a branch and confirm it stays folded while another client edits inside it; undo an edit; open the `.mm` in Freeplane and confirm it still opens and shows the same map
+  - Purpose: Requirement 13.6 and the parts only a running app shows
+  - _Leverage: docs/diagrams.md, tests.md, CLAUDE.md's worktree port rule_
+  - _Requirements: 13.6, 8.1, 9.8, 3.2_
+  - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA engineer | Task: Update the catalog row and run the manual pass above | Restrictions: change both ports before starting and revert them before merging; the Freeplane round trip is the check that matters most — if Freeplane cannot open what ADP wrote, that is a Requirement 3 failure, not a cosmetic one; every bug found gets a test or a tests.md entry | Success: every check passes or has a guard behind it, and the catalog row matches reality_
