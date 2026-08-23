@@ -161,7 +161,7 @@ Diagram types for capturing and structuring knowledge rather than formal system 
 
 | State | Origin | Diagram | Theory | Example |
 |---|---|---|---|---|
-| 📝 Specified | `freeplane/mindmap` | Mind map (radial/hierarchical, single central topic) | [Freeplane](https://www.freeplane.org/) · `.mm` file format (tech.md's diagram-type test fixture) | [Freeplane example maps](https://www.freeplane.org/wiki/index.php/Gallery) |
+| 🛠️ Work-in-progress | `freeplane/mindmap` | Mind map (radial/hierarchical, single central topic) | [Freeplane](https://www.freeplane.org/) · `.mm` file format (tech.md's diagram-type test fixture) | [Freeplane example maps](https://www.freeplane.org/wiki/index.php/Gallery) |
 | 💡 Identified | `cmap/concept-map` | Concept map (free-form network of concepts with labeled relationships) | [Novak & Cañas, "The Theory Underlying Concept Maps"](https://cmap.ihmc.us/docs/theory-of-concept-maps) | [CmapTools example maps](https://cmap.ihmc.us/) |
 
 Other mind-mapping tools (XMind, MindMeister, Coggle, FreeMind) could each get their own `<vendor>/mindmap` row if ADP ever needs to read/write their specific file formats; `mindmap-diagram`'s spec settled on Freeplane's `.mm` format specifically (see tech.md).
