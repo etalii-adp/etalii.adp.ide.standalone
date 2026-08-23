@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/mindmap-diagram/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-23T12:03:24.174Z",
       "trigger": "initial",
+      "approvalId": "approval_1787486604089_ftp8we3w0",
+      "approvalTitle": "Mindmap Diagram Module — Design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-23T12:52:29.464Z",
+      "trigger": "approved",
       "approvalId": "approval_1787486604089_ftp8we3w0",
       "approvalTitle": "Mindmap Diagram Module — Design"
     }

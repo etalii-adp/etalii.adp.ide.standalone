@@ -3,8 +3,10 @@
   "title": "Mindmap Diagram Module — Design",
   "filePath": ".spec-workflow/specs/mindmap-diagram/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-23T12:03:24.089Z",
   "category": "spec",
-  "categoryName": "mindmap-diagram"
+  "categoryName": "mindmap-diagram",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-23T12:52:29.470Z"
 }
