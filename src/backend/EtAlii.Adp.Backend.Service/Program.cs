@@ -40,7 +40,11 @@ builder.Services.AddSingleton<IContextActionResolver, ContextActionResolver>();
 // IEnumerable<IContextActionProvider> - a later module contributing its own actions
 // (and their shortcuts) is one more line here and no change anywhere else.
 builder.Services.AddSingleton<IContextActionProvider, HierarchyContextActionProvider>();
-builder.Services.AddSingleton<IContextActionProvider, AddDiagramContextActionProvider>();
+// Built by hand: the provider's other constructor takes the diagram definitions a test hands
+// it, and letting the container choose between the two would leave which one it picks to
+// depend on what else happens to be registered.
+builder.Services.AddSingleton<IContextActionProvider>(services =>
+    new AddDiagramContextActionProvider(services.GetRequiredService<IHistoryStack>()));
 
 builder.Services.AddSingleton<IContextSelectionStore, ContextSelectionStore>();
 builder.Services.AddSingleton<ContextSelectionResolver>();
@@ -49,12 +53,9 @@ builder.Services.AddSingleton<ContextSelectionResolver>();
 // location in a file) is one more line here and no change anywhere else.
 builder.Services.AddSingleton<IContextSourceResolver, HierarchyContextSourceResolver>();
 
-builder.Services.AddSingleton<ICommandDispatcher, CommandDispatcher>();
-// One process-wide history for now. Scoping it per project (or per diagram, as
-// diagram-undo-redo's requirements describe) is a later step: nothing yet exposes undo/redo
-// over the wire, so there is no caller to scope it for.
-builder.Services.AddSingleton<IHistoryStack>(services => new HistoryStack(services.GetRequiredService<ICommandDispatcher>()));
-builder.Services.AddSingleton<ICommandHandler<RenameEntryCommand>, RenameEntryCommandHandler>();
+// The dispatcher, the history and every command handler. Every state change the context
+// actions above make travels through here, which is what makes it undoable.
+builder.Services.AddCommands();
 
 var clientAppOptionsSection = builder.Configuration.GetSection(ClientAppOptions.SectionName);
 builder.Services.Configure<ClientAppOptions>(clientAppOptionsSection);

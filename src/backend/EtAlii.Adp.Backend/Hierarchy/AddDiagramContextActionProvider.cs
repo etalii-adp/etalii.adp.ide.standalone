@@ -27,19 +27,24 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
     private static readonly ILogger _logger = Log.ForContext<AddDiagramContextActionProvider>();
 
     private readonly Func<IReadOnlyList<DiagramDefinition>> _definitions;
+    private readonly IHistoryStack _history;
 
-    public AddDiagramContextActionProvider()
-        : this(null)
+    /// <param name="history">Where the create is sent; this provider writes nothing itself.</param>
+    public AddDiagramContextActionProvider(IHistoryStack history)
+        : this(history, null)
     {
     }
 
+    /// <param name="history">Where the create is sent; this provider writes nothing itself.</param>
     /// <param name="definitions">
     /// The diagram types to offer, read at call time; <c>null</c> means
     /// <see cref="DiagramDefinition.All"/>. Read lazily rather than captured, because the
     /// host fills the cache after the container is built.
     /// </param>
-    public AddDiagramContextActionProvider(IReadOnlyList<DiagramDefinition>? definitions)
+    public AddDiagramContextActionProvider(IHistoryStack history, IReadOnlyList<DiagramDefinition>? definitions)
     {
+        ArgumentNullException.ThrowIfNull(history);
+        _history = history;
         _definitions = definitions is null ? () => DiagramDefinition.All : () => definitions;
     }
 
@@ -116,16 +121,16 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
     /// again - a client that skipped validation cannot get past this. Only then is anything
     /// written, and what is written is one line: the chosen type's MIME type.
     /// </summary>
-    public ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken)
+    public async ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken)
     {
         if (actionId != AddActionId)
         {
-            return ValueTask.FromResult(ContextCommitResult.Failed($"Unknown action '{actionId}'."));
+            return ContextCommitResult.Failed($"Unknown action '{actionId}'.");
         }
 
         if (!target.IsContainer || !HierarchyTargets.Exists(target))
         {
-            return ValueTask.FromResult(ContextCommitResult.Failed("The folder no longer exists."));
+            return ContextCommitResult.Failed("The folder no longer exists.");
         }
 
         var definition = _definitions().FirstOrDefault(candidate => candidate.Origin.Key == value);
@@ -134,26 +139,29 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
             // The client offered an option that is not on the list it was given - a stale
             // dialog, or a client built against a different set of modules.
             _logger.Warning("Rejecting the Add: {OptionId} is not one of the {Count} diagram types on offer", value, _definitions().Count);
-            return ValueTask.FromResult(ContextCommitResult.Failed("That diagram type is not available."));
+            return ContextCommitResult.Failed("That diagram type is not available.");
         }
 
         var validation = ValidateName(target, text);
         if (!validation.Valid)
         {
             _logger.Debug("Rejecting the name {Name} for a new {Origin}: {Reason}", text, definition.Origin.Key, validation.Reason);
-            return ValueTask.FromResult(ContextCommitResult.Failed(validation.Reason));
+            return ContextCommitResult.Failed(validation.Reason);
         }
 
         var fileName = DiagramFileName.WithExtension(text);
         _logger.Debug("Creating a {Origin} diagram named {FileName} in {Folder}", definition.Origin.Key, fileName, target.ResolvedFullPath);
-        return ValueTask.FromResult(AdpFileWriter.Create(target.ResolvedFullPath, fileName, definition.Origin.MimeType) switch
-        {
-            AdpFileWriteResult.Created created => ContextCommitResult.Created(created.FullPath),
-            // Someone got there in the moment between judging the name and using it. The user
-            // picks another one; nothing is overwritten and no name is invented for them.
-            AdpFileWriteResult.NameTaken => ContextCommitResult.Failed($"An item named '{fileName}' already exists in this folder."),
-            AdpFileWriteResult.Failed failed => ContextCommitResult.Failed($"Could not create the diagram: {failed.Message}"),
-            _ => ContextCommitResult.Failed("Could not create the diagram."),
-        });
+
+        // The write is the command's; this provider only decides what to write and where. The
+        // history is what makes the new file one undo away, by way of the delete the handler
+        // reports as the inverse.
+        var command = new CreateDiagramFileCommand(target.ResolvedFullPath, fileName, definition.Origin.MimeType);
+        var result = await _history.ExecuteAsync(command, cancellationToken);
+
+        return result.IsSuccess
+            // The destination is the command's own, not something the handler had to report:
+            // where the file lands follows from the folder and the name it was given.
+            ? ContextCommitResult.Created(CreateDiagramFileCommandHandler.DestinationOf(command))
+            : ContextCommitResult.Failed(result.Error);
     }
 }

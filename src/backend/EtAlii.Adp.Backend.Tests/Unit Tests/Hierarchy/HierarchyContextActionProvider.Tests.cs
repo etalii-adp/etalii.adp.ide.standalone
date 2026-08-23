@@ -12,10 +12,12 @@ namespace EtAlii.Adp.Backend.Tests;
 public class HierarchyContextActionProviderTests : IDisposable
 {
     private readonly string _root;
-    private readonly HierarchyContextActionProvider _provider = new();
+    private readonly IHistoryStack _history = TestHistory.Create();
+    private readonly HierarchyContextActionProvider _provider;
 
     public HierarchyContextActionProviderTests()
     {
+        _provider = new HierarchyContextActionProvider(_history);
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
     }
@@ -306,5 +308,73 @@ public class HierarchyContextActionProviderTests : IDisposable
 
         Assert.False(result.Completed);
         Assert.True(Directory.Exists(_root));
+    }
+
+    // ---- the actions go through the history --------------------------------------------
+
+    [Fact]
+    public async Task CommitAsync_Renaming_GoesThroughTheHistoryAndCanBeUndone()
+    {
+        // The whole point of routing the action through a command: the rename is reversible
+        // without the provider knowing anything about how to reverse it.
+        var path = CreateFile("before.txt", "content");
+
+        var commit = await _provider.CommitAsync(
+            FileTarget(path), HierarchyContextActionProvider.RenameActionId, "after.txt", "", TestContext.Current.CancellationToken);
+
+        Assert.True(commit.Completed, commit.Error);
+        Assert.True(_history.CanUndo);
+
+        var undone = await _history.UndoAsync(TestContext.Current.CancellationToken);
+
+        Assert.True(undone.IsSuccess, undone.Error);
+        Assert.True(File.Exists(path));
+        Assert.False(File.Exists(IoPath.Combine(_root, "after.txt")));
+        Assert.Equal("content", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public async Task CommitAsync_Renaming_CanBeRedoneAfterAnUndo()
+    {
+        var path = CreateFile("before.txt");
+        await _provider.CommitAsync(
+            FileTarget(path), HierarchyContextActionProvider.RenameActionId, "after.txt", "", TestContext.Current.CancellationToken);
+        await _history.UndoAsync(TestContext.Current.CancellationToken);
+
+        var redone = await _history.RedoAsync(TestContext.Current.CancellationToken);
+
+        Assert.True(redone.IsSuccess, redone.Error);
+        Assert.True(File.Exists(IoPath.Combine(_root, "after.txt")));
+        Assert.False(File.Exists(path));
+    }
+
+    [Fact]
+    public async Task CommitAsync_Deleting_IsNotRecordedForUndo()
+    {
+        // A delete is deliberately one-way - the confirmation dialog says so - and what that
+        // means concretely is that it leaves nothing on the undo stack to promise otherwise.
+        var target = FileTarget(CreateFile("gone.txt"));
+
+        var commit = await _provider.CommitAsync(
+            target, HierarchyContextActionProvider.DeleteActionId, "", "", TestContext.Current.CancellationToken);
+
+        Assert.True(commit.Completed, commit.Error);
+        Assert.False(_history.CanUndo);
+    }
+
+    [Fact]
+    public async Task CommitAsync_WhenTheCommandRejectsIt_ReportsTheHandlersOwnReason()
+    {
+        // The provider passes the handler's message straight through rather than inventing
+        // one, so what the user reads is what actually stopped the change.
+        var path = CreateFile("a.txt");
+        File.Delete(path);
+
+        var commit = await _provider.CommitAsync(
+            FileTarget(path), HierarchyContextActionProvider.RenameActionId, "b.txt", "", TestContext.Current.CancellationToken);
+
+        Assert.False(commit.Completed);
+        Assert.Equal("The entry no longer exists.", commit.Error);
+        Assert.False(_history.CanUndo);
     }
 }
