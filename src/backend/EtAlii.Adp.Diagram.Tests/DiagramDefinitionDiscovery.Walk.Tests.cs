@@ -22,15 +22,18 @@ public class DiagramDefinitionDiscoveryWalkTests
     [Fact]
     public void FindApplicationAssemblies_ReachesAssembliesTheEntryAssemblyNeverReferences()
     {
-        // Under the test runner the entry assembly is the test host, which carries no
-        // metadata reference to anything of ours - exactly the situation the real host is in
-        // with the diagram modules (Requirement 3.3). Finding this very assembly therefore
-        // proves the walk is seeded from the deployment manifest; the unseeded walk from the
-        // article returns nothing here.
-        var entry = Assembly.GetEntryAssembly();
-        var entryReferencesUs = entry?.GetReferencedAssemblies()
-            .Any(reference => reference.Name?.StartsWith(DiagramDefinitionDiscovery.AssemblyPrefix, StringComparison.Ordinal) == true) ?? false;
-        Assert.False(entryReferencesUs, "precondition: the entry assembly must not reference EtAlii.Adp.* for this test to prove anything");
+        // The walk returns assemblies no chain of metadata references from the entry assembly
+        // leads to - exactly the situation the real host is in with the diagram modules
+        // (Requirement 3.3). Finding them therefore proves the walk is seeded from the
+        // deployment manifest; the unseeded walk from the article never leaves the closure
+        // computed below.
+        //
+        // Which assembly is the entry one depends on the runner - under xUnit v3 the test
+        // project is its own executable, under a VSTest host it was that host - so the test
+        // compares against the closure rather than against one particular entry assembly, and
+        // proves the same property either way.
+        var reachableFromEntry = ReachableByMetadataFromEntry();
+        Assert.DoesNotContain("EtAlii.Adp", reachableFromEntry);
 
         var names = DiagramDefinitionDiscovery.FindApplicationAssemblies()
             .Select(assembly => assembly.GetName().Name)
@@ -39,6 +42,47 @@ public class DiagramDefinitionDiscoveryWalkTests
         Assert.Contains("EtAlii.Adp.Diagram.Tests", names);
         Assert.Contains("EtAlii.Adp.Diagram", names);
         Assert.Contains("EtAlii.Adp", names);
+    }
+
+    /// <summary>
+    /// Every EtAlii.Adp.* assembly a plain metadata walk outwards from the entry assembly can
+    /// reach - that is, everything discovery would find with no manifest seeding at all.
+    /// </summary>
+    private static HashSet<string> ReachableByMetadataFromEntry()
+    {
+        var reached = new HashSet<string>(StringComparer.Ordinal);
+        if (Assembly.GetEntryAssembly() is not { } entry)
+        {
+            return reached;
+        }
+
+        reached.Add(entry.GetName().Name!);
+        var pending = new Queue<Assembly>();
+        pending.Enqueue(entry);
+        while (pending.Count > 0)
+        {
+            foreach (var reference in pending.Dequeue().GetReferencedAssemblies())
+            {
+                if (reference.Name is not { } name ||
+                    !name.StartsWith(DiagramDefinitionDiscovery.AssemblyPrefix, StringComparison.Ordinal) ||
+                    !reached.Add(name))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    pending.Enqueue(Assembly.Load(reference));
+                }
+                catch (Exception)
+                {
+                    // A reference that will not load reaches nothing further. It stays counted
+                    // as reachable, which only makes the assertion above stricter.
+                }
+            }
+        }
+
+        return reached;
     }
 
     [Fact]
@@ -62,13 +106,16 @@ public class DiagramDefinitionDiscoveryWalkTests
     }
 
     [Fact]
-    public void FindApplicationAssemblies_DoesNotReturnTheTestHostEntryAssembly()
+    public void FindApplicationAssemblies_DoesNotReturnTheRunnersOwnAssemblies()
     {
-        // The entry assembly is where the walk starts, but under a test runner it is the
-        // runner's own host - not ours, so not something to scan for diagram types.
-        var names = DiagramDefinitionDiscovery.FindApplicationAssemblies().Select(a => a.GetName().Name);
+        // The walk starts at the entry assembly and spreads through what is deployed beside
+        // it, which under any test runner includes the runner itself. None of that holds
+        // diagram types, so none of it belongs in the result.
+        var names = DiagramDefinitionDiscovery.FindApplicationAssemblies().Select(a => a.GetName().Name).ToList();
 
         Assert.DoesNotContain("testhost", names);
+        Assert.DoesNotContain(names, name => name?.StartsWith("xunit", StringComparison.OrdinalIgnoreCase) == true);
+        Assert.DoesNotContain(names, name => name?.StartsWith("Microsoft.Testing.", StringComparison.Ordinal) == true);
     }
 
     [Fact]
