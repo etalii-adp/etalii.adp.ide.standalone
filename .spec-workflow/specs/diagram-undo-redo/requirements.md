@@ -6,9 +6,9 @@ This spec moves undo/redo from a client-local concept to a **server-side** capab
 
 When it was first written, none of the machinery existed. It does now, and this revision corrects the spec against it:
 
-- **Commands.** [tech.md](../../steering/tech.md)'s *Commands* rule already makes every state change an `ICommand` with an `ICommandHandler<TCommand>`, dispatched through `IHistoryStack`, where the handler reports the command that reverses it as `CommandResult.Inverse`. The explorer's rename, delete and add already work this way. Undo/redo therefore no longer needs a history of its own — it needs the existing one scoped and exposed.
-- **Context.** tech.md's *Context* rule means an action a user can perform is offered by an `IContextActionProvider` and reaches every surface through the context stream. Undo and redo are actions like any other, so this spec no longer defines a dedicated gRPC method for them.
-- **The ribbon.** `RibbonBar.tsx` currently carries hard-coded `Undo`/`Redo` buttons whose click handler only toggles a pressed style, under a `TODO(diagram-ide-mockup): wire real command handler`. They are mockup, not behaviour, and this spec replaces them.
+* **Commands.** [tech.md](../../steering/tech.md)'s *Commands* rule already makes every state change an `ICommand` with an `ICommandHandler<TCommand>`, dispatched through `IHistoryStack`, where the handler reports the command that reverses it as `CommandResult.Inverse`. The explorer's rename, delete and add already work this way. Undo/redo therefore no longer needs a history of its own — it needs the existing one scoped and exposed.
+* **Context.** tech.md's *Context* rule means an action a user can perform is offered by an `IContextActionProvider` and reaches every surface through the context stream. Undo and redo are actions like any other, so this spec no longer defines a dedicated gRPC method for them.
+* **The ribbon.** `RibbonBar.tsx` currently carries hard-coded `Undo`/`Redo` buttons whose click handler only toggles a pressed style, under a `TODO(diagram-ide-mockup): wire real command handler`. They are mockup, not behaviour, and this spec replaces them.
 
 It still does not redefine what counts as an editable change — that remains diagram-module-specific ([`grpc-core-communication-specification`](../grpc-core-communication-specification/requirements.md) Requirement 3's `add`/`remove`/`group`/`ungroup` deltas). That vocabulary is not implemented yet; when it is, each delta becomes a command like any other and inherits everything below without this spec changing again.
 
@@ -16,10 +16,10 @@ It replaces the local-history framing of [`adp-diagram-ide`](../adp-diagram-ide/
 
 ## Alignment with Product Vision
 
-- [product.md](../../steering/product.md)'s **"Live, pushed updates"**: undo/redo is itself a change, and SHALL propagate to every connected viewer the same way any other change does.
-- tech.md's **"the backend is the sole owner of reading/writing diagram files"**: history that determines what gets written back to disk belongs with that same owner, not scattered across clients.
-- tech.md's **Commands** rule: reversibility is a property of the system, not something each feature reimplements. This spec is what makes that property reach the user.
-- tech.md's **Context** rule: undo and redo reach the ribbon, the menu and the keyboard through the one path every other action uses.
+* [product.md](../../steering/product.md)'s **"Live, pushed updates"**: undo/redo is itself a change, and SHALL propagate to every connected viewer the same way any other change does.
+* tech.md's **"the backend is the sole owner of reading/writing diagram files"**: history that determines what gets written back to disk belongs with that same owner, not scattered across clients.
+* tech.md's **Commands** rule: reversibility is a property of the system, not something each feature reimplements. This spec is what makes that property reach the user.
+* tech.md's **Context** rule: undo and redo reach the ribbon, the menu and the keyboard through the one path every other action uses.
 
 ## Requirements
 
@@ -90,37 +90,37 @@ It replaces the local-history framing of [`adp-diagram-ide`](../adp-diagram-ide/
 
 #### Acceptance Criteria
 
-1. WHEN the ribbon renders Undo and Redo THEN it SHALL render them from the actions the context stream pushed, and SHALL NOT keep them in the hard-coded `RIBBON_GROUPS` list.
+1. WHEN the ribbon renders Undo and Redo THEN it SHALL render them from the actions the context stream pushed, and SHALL NOT keep them in the hard-coded `RIBBON_GROUPS` list but in a dedicated 'History' group.
 2. WHEN the ribbon renders these actions THEN it SHALL call nothing but `ExecuteAction`, holding no undo state of its own, exactly as `RibbonContextualGroups` already does for the selection's actions.
-3. WHEN there is nothing to undo or redo THEN the ribbon SHALL show the button disabled with its reason as the tooltip, which is the behaviour already defined by [`context-service`](../context-service/requirements.md) Requirement 10.7.
+3. WHEN there is nothing to undo or redo THEN the ribbon SHALL show the button disabled with its reason as the tooltip, which is the behaviour already defined by [`context-service`](../context-service/requirements.md) Requirement 10.7. The disabled/enabled state will change accordingly after each action.
 4. WHEN this spec is implemented THEN the `TODO(diagram-ide-mockup): wire real command handler` in `RibbonBar.tsx` and the pressed-state toggle it belongs to SHALL be gone for these two buttons.
 
 ## Non-Functional Requirements
 
 ### Code Architecture and Modularity
 
-- **Single Responsibility**: undo/redo is a core capability that operates on `ICommand`, so it SHALL stay diagram-type-agnostic and SHALL NOT be duplicated per diagram module.
-- **Modular Design**: diagram modules SHALL NOT implement undo/redo logic. A module gets it by doing what tech.md's *Commands* rule already requires of it — raising a command whose handler names its inverse.
-- **No second mechanism**: this spec SHALL be implementable by scoping the existing `IHistoryStack`, adding one `IContextActionProvider`, and deleting the ribbon's mock buttons. A new history, a new RPC, or a new client-side stack would each be a sign the design has drifted from the two steering rules it rests on.
+* **Single Responsibility**: undo/redo is a core capability that operates on `ICommand`, so it SHALL stay diagram-type-agnostic and SHALL NOT be duplicated per diagram module.
+* **Modular Design**: diagram modules SHALL NOT implement undo/redo logic. A module gets it by doing what tech.md's *Commands* rule already requires of it — raising a command whose handler names its inverse.
+* **No second mechanism**: this spec SHALL be implementable by scoping the existing `IHistoryStack`, adding one `IContextActionProvider`, and deleting the ribbon's mock buttons. A new history, a new RPC, or a new client-side stack would each be a sign the design has drifted from the two steering rules it rests on.
 
 ### Performance
 
-- Undo/redo application SHALL complete within the same bounded, sub-second latency budget as ordinary delta propagation (`grpc-core-communication` Non-Functional: Performance).
-- Recording a command SHALL NOT add perceptible latency to the change being applied and streamed.
-- Pushing updated undo/redo availability (Requirement 5.3) SHALL NOT cause a re-discovery storm: it is one push per history change, not one per connected client action.
+* Undo/redo application SHALL complete within the same bounded, sub-second latency budget as ordinary delta propagation (`grpc-core-communication` Non-Functional: Performance).
+* Recording a command SHALL NOT add perceptible latency to the change being applied and streamed.
+* Pushing updated undo/redo availability (Requirement 5.3) SHALL NOT cause a re-discovery storm: it is one push per history change, not one per connected client action.
 
 ### Security
 
-- Undo/redo requests SHALL be subject to the same authentication and project authorization as any other call, which they inherit by going through `ExecuteAction` (`grpc-core-communication` Requirement 5).
-- A client SHALL NOT be able to undo a command in a project it is not authorized for; per-project scoping (Requirement 1.5) is what makes this structural rather than a check to remember.
+* Undo/redo requests SHALL be subject to the same authentication and project authorization as any other call, which they inherit by going through `ExecuteAction` (`grpc-core-communication` Requirement 5).
+* A client SHALL NOT be able to undo a command in a project it is not authorized for; per-project scoping (Requirement 1.5) is what makes this structural rather than a check to remember.
 
 ### Reliability
 
-- The shared per-project history SHALL be safe under concurrent requests; no request SHALL be able to corrupt its ordering or the on-disk state.
-- Loss of a single client's connection SHALL NOT affect the history's integrity for the project's other clients.
-- WHERE an inverse command fails when applied — the file it would put back has been taken by something else — the entry SHALL stay on the undo stack so the user can retry once the obstacle is gone, which is what `HistoryStack` already does.
+* The shared per-project history SHALL be safe under concurrent requests; no request SHALL be able to corrupt its ordering or the on-disk state.
+* Loss of a single client's connection SHALL NOT affect the history's integrity for the project's other clients.
+* WHERE an inverse command fails when applied — the file it would put back has been taken by something else — the entry SHALL stay on the undo stack so the user can retry once the obstacle is gone, which is what `HistoryStack` already does.
 
 ### Usability
 
-- A viewing application SHALL be able to reflect undo/redo availability without attempting an operation to discover it (Requirement 5.2).
-- The user SHALL NOT be offered an undo for something that was never undoable (Requirement 3.5); a greyed button with a reason is honest, an enabled one that fails is not.
+* A viewing application SHALL be able to reflect undo/redo availability without attempting an operation to discover it (Requirement 5.2).
+* The user SHALL NOT be offered an undo for something that was never undoable (Requirement 3.5); a greyed button with a reason is honest, an enabled one that fails is not.

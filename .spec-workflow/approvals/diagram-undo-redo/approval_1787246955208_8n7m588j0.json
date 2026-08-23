@@ -3,8 +3,10 @@
   "title": "Requirements: diagram-undo-redo",
   "filePath": ".spec-workflow/specs/diagram-undo-redo/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-20T17:29:15.208Z",
   "category": "spec",
-  "categoryName": "diagram-undo-redo"
+  "categoryName": "diagram-undo-redo",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-23T11:33:33.862Z"
 }
