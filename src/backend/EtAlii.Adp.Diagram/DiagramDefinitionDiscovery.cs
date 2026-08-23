@@ -67,11 +67,14 @@ public sealed class DiagramDefinitionDiscovery
                     var keepExisting = string.CompareOrdinal(existing.AssemblyName, assemblyName) <= 0;
                     var kept = keepExisting ? existing.AssemblyName : assemblyName;
                     var dropped = keepExisting ? assemblyName : existing.AssemblyName;
+                    // Each property is named exactly once. An earlier wording mentioned the
+                    // kept assembly twice, and a template that repeats a property leaves the
+                    // second occurrence unbound - it renders as the bare property name.
                     _logger.Warning(
-                        "Diagram origin {Origin} is declared by both {KeptAssembly} and {DroppedAssembly}; keeping the one from KeptAssembly",
+                        "Diagram origin {Origin} is declared more than once; dropping {DroppedAssembly} and keeping the one from {KeptAssembly}",
                         definition.Origin.ToString(),
-                        kept,
-                        dropped);
+                        dropped,
+                        kept);
 
                     if (!keepExisting)
                     {

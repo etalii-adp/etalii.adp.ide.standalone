@@ -8,29 +8,9 @@ public sealed partial class HierarchyContextActionProvider
     public const string RenameActionId = "hierarchy.rename";
     private static readonly ContextShortcutDefinition RenameShortcut = new("F2");
 
-        private static ContextCommitResult Rename(ContextTarget target, string newName)
-    {
-        var destination = IoPath.Combine(ParentFolderOf(target)!, newName);
-        try
-        {
-            // A single move, never a copy-then-delete: a folder keeps its entire nested
-            // contents untouched, and the operation cannot leave a half-renamed state.
-            if (target.IsContainer)
-            {
-                Directory.Move(target.ResolvedFullPath, destination);
-            }
-            else
-            {
-                File.Move(target.ResolvedFullPath, destination);
-            }
-
-            return ContextCommitResult.Succeeded;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            return ContextCommitResult.Failed($"Could not rename this item: {ex.Message}");
-        }
-    }
+    // The move itself lives in RenameEntryCommandHandler; what is left here is the judgement
+    // of the name, which the dialog needs while the user is still typing and no command has
+    // been raised yet.
 
     private static ContextValidationResult ValidateRename(ContextTarget target, string value)
     {

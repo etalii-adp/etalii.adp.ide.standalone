@@ -12,10 +12,12 @@ public class AddDiagramContextActionProviderTests : IDisposable
     private static readonly DiagramDefinition ClassDiagram = new(new DiagramOrigin("uml", "class"), "Class diagram");
 
     private readonly string _root;
-    private readonly AddDiagramContextActionProvider _provider = new([SystemContext, ClassDiagram]);
+    private readonly IHistoryStack _history = TestHistory.Create();
+    private readonly AddDiagramContextActionProvider _provider;
 
     public AddDiagramContextActionProviderTests()
     {
+        _provider = new AddDiagramContextActionProvider(_history, [SystemContext, ClassDiagram]);
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
     }
@@ -92,7 +94,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     [Fact]
     public async Task DiscoverAsync_WithNoDiagramTypes_OffersAddUnavailableWithAReason()
     {
-        var provider = new AddDiagramContextActionProvider([]);
+        var provider = new AddDiagramContextActionProvider(_history, []);
 
         var groups = await provider.DiscoverAsync(FolderTarget(_root), TestContext.Current.CancellationToken);
 
@@ -109,7 +111,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
         // cache at call time. Checked through the public seam: a list that changes after
         // construction is reflected.
         var definitions = new List<DiagramDefinition>();
-        var provider = new AddDiagramContextActionProvider(definitions);
+        var provider = new AddDiagramContextActionProvider(_history, definitions);
         var before = await provider.DiscoverAsync(FolderTarget(_root), TestContext.Current.CancellationToken);
 
         definitions.Add(SystemContext);
@@ -156,7 +158,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     public async Task ExecuteAsync_WithNoDiagramTypes_StillAsksForAChoice_WithAnEmptyTree()
     {
         // The dialog's own empty state is what the user sees; the menu normally prevents this.
-        var provider = new AddDiagramContextActionProvider([]);
+        var provider = new AddDiagramContextActionProvider(_history, []);
 
         var result = await provider.ExecuteAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
 
@@ -298,5 +300,56 @@ public class AddDiagramContextActionProviderTests : IDisposable
 
         Assert.False(result.Completed);
         Assert.Contains("Unknown action", result.Error, StringComparison.Ordinal);
+    }
+
+    // ---- the create goes through the history --------------------------------------------
+
+    [Fact]
+    public async Task CommitAsync_CreatingADiagram_CanBeUndone()
+    {
+        // An Add is one Ctrl+Z away because its handler reports the delete of exactly what it
+        // wrote as the inverse - the provider itself knows nothing about undoing anything.
+        var commit = await _provider.CommitAsync(
+            FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "c4/context", "domain", TestContext.Current.CancellationToken);
+
+        Assert.True(commit.Completed, commit.Error);
+        var created = IoPath.Combine(_root, "domain.adp");
+        Assert.True(File.Exists(created));
+        Assert.Equal(created, commit.CreatedFullPath);
+        Assert.True(_history.CanUndo);
+
+        var undone = await _history.UndoAsync(TestContext.Current.CancellationToken);
+
+        Assert.True(undone.IsSuccess, undone.Error);
+        Assert.False(File.Exists(created));
+    }
+
+    [Fact]
+    public async Task CommitAsync_CreatingADiagram_CanBeRedoneWithTheSameContent()
+    {
+        await _provider.CommitAsync(
+            FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "c4/context", "domain", TestContext.Current.CancellationToken);
+        await _history.UndoAsync(TestContext.Current.CancellationToken);
+
+        var redone = await _history.RedoAsync(TestContext.Current.CancellationToken);
+
+        Assert.True(redone.IsSuccess, redone.Error);
+        var created = IoPath.Combine(_root, "domain.adp");
+        Assert.True(File.Exists(created));
+        // The redo re-runs the same command, so the file comes back as it was - MIME type and all.
+        Assert.Equal("c4/context", File.ReadAllText(created).Trim());
+    }
+
+    [Fact]
+    public async Task CommitAsync_WhenTheNameIsAlreadyTaken_RecordsNothingForUndo()
+    {
+        File.WriteAllText(IoPath.Combine(_root, "domain.adp"), "someone else's diagram");
+
+        var commit = await _provider.CommitAsync(
+            FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "c4/context", "domain", TestContext.Current.CancellationToken);
+
+        Assert.False(commit.Completed);
+        Assert.False(_history.CanUndo);
+        Assert.Equal("someone else's diagram", File.ReadAllText(IoPath.Combine(_root, "domain.adp")));
     }
 }
