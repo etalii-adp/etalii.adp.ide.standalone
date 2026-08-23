@@ -5,6 +5,7 @@ import { RibbonBar } from "./ribbon/RibbonBar";
 import { SplitPane } from "./panes/SplitPane";
 import { TabbedPane } from "./panes/TabbedPane";
 import { DiagramTabsPanel } from "./panels/DiagramTabsPanel";
+import { DiagramViewProvider } from "./panels/DiagramViewContext";
 import { ErrorsWarningsPanel } from "./panels/ErrorsWarningsPanel";
 import { HierarchyPanel } from "./panels/HierarchyPanel";
 import { PropertyGridPanel } from "./panels/PropertyGridPanel";
@@ -22,6 +23,7 @@ export function WorkspaceShell({ projectId, projectName, onBack }: WorkspaceShel
     // One context connection per opened project: every panel below reads the shared
     // selection through hooks rather than wiring callbacks to each other.
     <ContextConnectionProvider projectId={projectId}>
+      <DiagramViewProvider>
       <div className="shell">
         <div className="shell-header">
           <button type="button" className="shell-header-back" onClick={onBack}>
@@ -88,6 +90,7 @@ export function WorkspaceShell({ projectId, projectName, onBack }: WorkspaceShel
         </div>
         <ShellPromptHost />
       </div>
+      </DiagramViewProvider>
     </ContextConnectionProvider>
   );
 }

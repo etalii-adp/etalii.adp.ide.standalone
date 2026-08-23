@@ -1,19 +1,21 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fireEvent, render } from "@testing-library/react";
+import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { ElementSchema } from "../../../generated/elements_pb";
 import { MindmapNodePayloadSchema } from "../../../generated/mindmap_pb";
 import { applyDelta, emptyModel, type MindmapModel } from "./mindmapModel";
+import { DiagramViewProvider, useDiagramViewControls, type DiagramViewControls } from "../DiagramViewContext";
 
 const select = vi.fn();
 const executeShortcut = vi.fn<(shortcut: { key: string }, source: { source: { value: { value: string } } }) => Promise<{ accepted: boolean; error: string }>>(async () => ({ accepted: true, error: "" }));
 const moveElement = vi.fn(async () => "");
+let currentReportView: ((viewport: unknown) => void) | null = null;
 let currentModel: MindmapModel = emptyModel;
 let currentFailed = false;
 let currentSelection: unknown = null;
 
 vi.mock("./useMindmapStream", () => ({
-  useMindmapStream: () => ({ model: currentModel, loading: false, failed: currentFailed, reportView: vi.fn(), moveElement }),
+  useMindmapStream: () => ({ model: currentModel, loading: false, failed: currentFailed, reportView: (v: unknown) => currentReportView?.(v), moveElement }),
 }));
 
 vi.mock("../../context/ContextConnectionProvider", () => ({
@@ -201,5 +203,92 @@ describe("MindmapCanvas", () => {
     fireEvent.mouseUp(container.querySelector(".mindmap-canvas-surface")!);
 
     expect(moveElement).not.toHaveBeenCalled();
+  });
+
+  // ---- pan, zoom and fit -------------------------------------------------------------
+
+  const viewBoxOf = (container: HTMLElement) =>
+    (container.querySelector(".mindmap-canvas-surface")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
+
+  it("zooms in about the pointer on a wheel up, and back out on a wheel down", () => {
+    const { container } = render(<MindmapCanvas {...props} />);
+    const surface = container.querySelector(".mindmap-canvas-surface")!;
+    const [, , wBefore] = viewBoxOf(container);
+
+    fireEvent.wheel(surface, { deltaY: -100 });
+    const [, , wIn] = viewBoxOf(container);
+    expect(wIn).toBeLessThan(wBefore);
+
+    fireEvent.wheel(surface, { deltaY: 100 });
+    const [, , wOut] = viewBoxOf(container);
+    expect(wOut).toBeCloseTo(wBefore, 5);
+  });
+
+  it("pans with a background drag, and the trailing click does not deselect", () => {
+    const { container } = render(<MindmapCanvas {...props} />);
+    const surface = container.querySelector(".mindmap-canvas-surface")!;
+    const [xBefore, yBefore] = viewBoxOf(container);
+
+    fireEvent.mouseDown(surface, { clientX: 100, clientY: 100 });
+    fireEvent.mouseMove(surface, { clientX: 60, clientY: 130 });
+    fireEvent.mouseUp(surface);
+    fireEvent.click(surface); // the click that trails the pan
+
+    const [xAfter, yAfter] = viewBoxOf(container);
+    // jsdom has no layout, so one pixel maps to one canvas unit: the view moved opposite
+    // the pointer, and the selection was left alone.
+    expect(xAfter).toBeCloseTo(xBefore + 40, 5);
+    expect(yAfter).toBeCloseTo(yBefore - 30, 5);
+    expect(select).not.toHaveBeenCalled();
+  });
+
+  it("a drag that starts on a node never pans the view", () => {
+    const { container } = render(<MindmapCanvas {...props} />);
+    const surface = container.querySelector(".mindmap-canvas-surface")!;
+    const alpha = container.querySelectorAll(".mindmap-node")[1];
+    const before = viewBoxOf(container);
+
+    fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
+    fireEvent.mouseMove(surface, { clientX: 60, clientY: 40 });
+    fireEvent.mouseUp(surface);
+
+    expect(viewBoxOf(container)).toEqual(before);
+  });
+
+  it("registers zoom and fit for the ribbon, and Fit to View hands the window back to the content", async () => {
+    let controls: DiagramViewControls | null = null;
+    function Probe() {
+      controls = useDiagramViewControls();
+      return null;
+    }
+    const { container } = render(
+      <DiagramViewProvider>
+        <MindmapCanvas {...props} />
+        <Probe />
+      </DiagramViewProvider>,
+    );
+    const fitted = viewBoxOf(container);
+    expect(controls).not.toBeNull();
+
+    act(() => controls!.zoomIn());
+    expect(viewBoxOf(container)[2]).toBeLessThan(fitted[2]);
+
+    act(() => controls!.fitToView());
+    expect(viewBoxOf(container)).toEqual(fitted);
+  });
+
+  it("reports the settled viewport to the backend", async () => {
+    const reportView = vi.fn();
+    currentReportView = reportView;
+    try {
+      render(<MindmapCanvas {...props} />);
+
+      await waitFor(() => expect(reportView).toHaveBeenCalled(), { timeout: 2000 });
+      const viewport = reportView.mock.calls.at(-1)![0];
+      expect(viewport.maxX).toBeGreaterThan(viewport.minX);
+      expect(viewport.maxY).toBeGreaterThan(viewport.minY);
+    } finally {
+      currentReportView = null;
+    }
   });
 });
