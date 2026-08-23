@@ -54,6 +54,20 @@ There is no bidirectional streaming in this system, and no client streaming eith
 * **Per-connection state is keyed by the connection id and dies with the stream.** `IHierarchyModelStore`, `IContextSelectionStore` and `IContextInteractionStore` all hold their state 1:1 per `watch_id` and discard it when the stream ends - never shared with another connection, not even one from the same user on the same project.
 * **Reconnect by reopening `Watch` with the same connection id.** The stream's first message is always the current state, so a reconnected client is re-baselined without a reconciliation protocol of its own.
 
+# Implementation order
+
+Work a feature through these layers in this order, finishing each - including its tests - before starting the next:
+
+1. **Data model.** The POCOs and records the feature is about, in the `_Model` folder of the area they belong to. They depend on nothing else and are testable on their own.
+2. **Persistence.** Reading and writing that model - text files under the opened workspace folder, per *Diagram storage*, never a database.
+3. **Wire protocol.** The `.proto` contract that carries it and the mapping between those messages and the model, per *gRPC call shapes*.
+4. **Client user interface.** Rendering it, and letting the user act on it.
+5. **Additional client and backend business logic.** Whatever the feature still needs once the layers under it hold.
+
+* **Each step carries its own tests.** Unit tests where the step is a unit - a model, a parser/serializer, a mapper, a component - and integration tests where the point is that layers meet, such as a gRPC flow against the real host or a file written and read back. A step is done when something fails without it, not when it compiles. Naming and the arrange/act/assert shape are in *Testing & quality*.
+* **A step with nothing in it is skipped, not invented.** A feature that persists nothing gets no persistence step. This is an order of what comes before what, not a checklist every feature has to fill.
+* **The order runs bottom-up because the dependencies do.** A wire contract designed before the model it carries ends up shaped by the transport rather than by the domain, and a UI built before the contract invents state the backend then has to be talked into providing. Taken in this order, each layer is written against something that already exists and already passes its tests.
+
 # Testing & quality
 
 * Tests should be runnable as part of the same local "F5 experience" - no separate environment or manual setup required to run the test suite.
@@ -104,3 +118,4 @@ Anything that changes state is a command. This is what makes undo/redo a propert
 6. **One context service rather than per-surface selection**: selection and the actions that apply to it are cross-cutting - the explorer, the ribbon, the canvas and search all need the same answer - so they are resolved once and pushed, instead of each surface keeping its own state and asking its own questions. The cost is one indirection when adding a feature; the return is that a new selectable thing or a new action reaches every surface without any of them changing.
 7. **Commands for every state change**: undo/redo is a property users expect of a design tool everywhere, not per feature. Routing changes through `ICommand`/`ICommandHandler` and the history stack makes reversibility the default and forces each change to name its own inverse, rather than leaving each feature to reimplement it or quietly skip it.
 8. **Unary `Action` plus streaming `Watch` instead of bidirectional streaming**: grpc-web offers a browser neither bidirectional nor client streaming, so decision 2's "bi-directional gRPC" is realised as two correlated one-way legs rather than one two-way call. Splitting them is not only a workaround: it makes each client-to-backend call individually authorizable and retryable, and it forces per-connection state to have an explicit owner and an explicit lifetime - the connection id it is keyed by, and the stream whose end discards it.
+9. **Bottom-up implementation order**: data model, persistence, wire protocol, client UI, then the remaining logic - each finished and tested before the next begins. Building in dependency order means every layer is written against one that already exists and already passes its tests, rather than against an assumption about it. The cost is that a feature shows nothing on screen until fairly late, which is accepted deliberately: discovering at the UI that the model is wrong is cheaper than discovering at the model that the UI already depends on it being wrong.

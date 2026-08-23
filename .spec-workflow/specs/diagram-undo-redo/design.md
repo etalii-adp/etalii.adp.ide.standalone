@@ -56,27 +56,28 @@ The one genuinely new piece is a **project-actions channel** on the existing con
 graph TD
     subgraph client ["Client"]
         RB["RibbonBar"] --> RHG["RibbonHistoryGroup"]
-        SHK["useProjectShortcuts<br/>(shell-level keydown)"]
+        SHK["useProjectShortcuts<br/>shell-level keydown"]
         RHG -->|"executeAction"| CCP["ContextConnectionProvider"]
         SHK -->|"executeShortcut"| CCP
         CCP -->|"projectActions"| RHG
         CCP -->|"projectActions"| SHK
     end
-    CCP -->|"ExecuteAction / Watch"| SVC["ContextServiceImpl"]
     subgraph backend ["Backend"]
-        SVC --> RES["IContextActionResolver"]
+        SVC["ContextServiceImpl"] --> RES["IContextActionResolver"]
         RES --> HPROV["HistoryContextActionProvider<br/>scope: PROJECT"]
         HPROV --> STORE["IHistoryStackStore"]
-        STORE --> HS["HistoryStack (per project)"]
+        OTHER["HierarchyContextActionProvider<br/>AddDiagramContextActionProvider"] --> STORE
+        STORE --> HS["HistoryStack, one per project"]
         HS --> DISP["ICommandDispatcher"]
         DISP --> HANDLERS["RenameEntry / DeleteEntry /<br/>CreateDiagramFile handlers"]
+        HANDLERS -->|"file changes"| WATCH["RootFolderWatcher<br/>EntryCreated / Removed / Renamed"]
         HS -.->|"Changed"| BC["HistoryActionsBroadcaster"]
-        BC --> RES
+        BC -->|"discover once"| RES
         BC -->|"PushProjectActions(rootPath)"| SEL["IContextSelectionStore"]
-        SEL -.->|"per connection in that project"| SVC
-        OTHER["HierarchyContextActionProvider<br/>AddDiagramContextActionProvider"] --> STORE
     end
-    HANDLERS -->|"file changes"| WATCH["RootFolderWatcher → EntryCreated/Removed/Renamed"]
+    CCP -->|"ExecuteAction / Watch"| SVC
+    SEL -.->|"ContextProjectActions to every<br/>connection in that project"| CCP
+    WATCH -.->|"hierarchy change feed"| CCP
 ```
 
 The loop worth reading twice: a handler changes the disk, `HistoryStack` records it and raises `Changed`, the broadcaster re-discovers the project's actions **once** and hands the same list to every connection in that project. The change itself reaches clients through the streams that already carry it (Requirement 2.1) — the hierarchy feed for entries, later the delta stream for diagram content. The broadcaster carries only *what can now be undone*, never the change.
@@ -90,23 +91,23 @@ sequenceDiagram
     participant P as ContextConnectionProvider
     participant S as ContextService
     participant PR as HistoryContextActionProvider
-    participant H as HistoryStack (project)
+    participant H as Project HistoryStack
     participant B as HistoryActionsBroadcaster
 
     U->>K: Ctrl+Z
-    K->>K: matches a pushed project action; focus is not in a text field
-    K->>P: executeShortcut(Ctrl+Z, source: project)
-    P->>S: ExecuteAction (shortcut trigger, source = project)
+    K->>K: matches a pushed project action, focus is not in a text field
+    K->>P: executeShortcut Ctrl+Z, source project
+    P->>S: ExecuteAction, shortcut trigger, source project
     S->>S: resolves the project target, scope PROJECT
-    S->>PR: ResolveByShortcutAsync → ExecuteAsync("history.undo")
-    PR->>H: UndoAsync()
+    S->>PR: ResolveByShortcutAsync, then ExecuteAsync history.undo
+    PR->>H: UndoAsync
     H->>H: dispatches the entry's Inverse
     H-->>PR: CommandResult
-    Note over H: the rename is reversed on disk; the watcher pushes EntryRenamed independently
+    Note over H: the rename is reversed on disk, and the<br/>watcher pushes EntryRenamed independently
     H->>B: Changed
     B->>S: discover PROJECT actions once
     B-->>P: ContextProjectActions to every connection in this project
-    PR-->>S: Completed (or Failed with the reason)
+    PR-->>S: Completed, or Failed with the reason
     S-->>P: ExecuteActionResponse
     P-->>K: outcome
 ```
