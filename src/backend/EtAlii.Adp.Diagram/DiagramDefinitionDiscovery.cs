@@ -68,11 +68,10 @@ public sealed class DiagramDefinitionDiscovery
                     var kept = keepExisting ? existing.AssemblyName : assemblyName;
                     var dropped = keepExisting ? assemblyName : existing.AssemblyName;
                     _logger.Warning(
-                        "Diagram origin {Origin} is declared by both {KeptAssembly} and {DroppedAssembly}; keeping the one from {KeptAssembly}",
+                        "Diagram origin {Origin} is declared by both {KeptAssembly} and {DroppedAssembly}; keeping the one from KeptAssembly",
                         definition.Origin.ToString(),
                         kept,
-                        dropped,
-                        kept);
+                        dropped);
 
                     if (!keepExisting)
                     {

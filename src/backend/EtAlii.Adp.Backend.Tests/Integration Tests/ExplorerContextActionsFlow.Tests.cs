@@ -384,7 +384,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         var ownerContextClient = new ContextService.ContextServiceClient(ownerChannel);
         var projectId = await AddProjectAsync(ownerChannel, ownerHeaders);
         var watchId = ShortGuid.NewShortGuid();
-        var entries = await ownerClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, ownerHeaders);
+        var entries = await ownerClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, ownerHeaders, cancellationToken: TestContext.Current.CancellationToken);
         var entryId = entries.Entries.Entries_.Single(e => e.Name == "private.txt").Id;
 
         // A second login is a second session; the project was never added under it, so the
@@ -400,7 +400,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
                 WatchId = watchId,
                 Source = new ContextSource { EntryId = entryId },
             },
-            otherHeaders));
+            otherHeaders, cancellationToken: TestContext.Current.CancellationToken));
 
         Assert.NotNull(ownerContextClient);
         Assert.Equal(StatusCode.Unauthenticated, rpcException.StatusCode);

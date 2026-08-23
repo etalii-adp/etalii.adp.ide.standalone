@@ -358,11 +358,11 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         var otherClient = new ContextService.ContextServiceClient(otherChannel);
 
         var selectFailure = await Assert.ThrowsAsync<RpcException>(async () => await otherClient.SelectAsync(
-            new SelectRequest { ProjectId = owner.ProjectId, WatchId = owner.WatchId }, otherHeaders));
+            new SelectRequest { ProjectId = owner.ProjectId, WatchId = owner.WatchId }, otherHeaders, cancellationToken: TestContext.Current.CancellationToken));
         Assert.Equal(StatusCode.Unauthenticated, selectFailure.StatusCode);
 
         using var cts = CreateMessageTimeout();
-        using var call = otherClient.Watch(new WatchContextRequest { ProjectId = owner.ProjectId, WatchId = owner.WatchId }, otherHeaders);
+        using var call = otherClient.Watch(new WatchContextRequest { ProjectId = owner.ProjectId, WatchId = owner.WatchId }, otherHeaders, cancellationToken: TestContext.Current.CancellationToken);
         var watchFailure = await Assert.ThrowsAsync<RpcException>(async () => await call.ResponseStream.MoveNext(cts.Token));
         Assert.Equal(StatusCode.Unauthenticated, watchFailure.StatusCode);
     }
