@@ -13,7 +13,7 @@ import { create } from "@bufbuild/protobuf";
 import { EmptySchema } from "@bufbuild/protobuf/wkt";
 import { base64Encode } from "@bufbuild/protobuf/wire";
 import { useAuth } from "../../auth/AuthContext";
-import { ContextService, ContextSelectionSchema } from "../../generated/context_pb";
+import { ContextService, ContextSelectionSchema, ContextSourceSchema } from "../../generated/context_pb";
 import type {
   ContextActionGroup,
   ContextLevelDetail,
@@ -28,6 +28,16 @@ import { useCoalescedSelect } from "./useCoalescedSelect";
 
 /** The `none` alternative: a plain selection, nothing more. */
 export const NONE_DETAIL: ContextSelection["detail"] = { case: "none", value: create(EmptySchema) };
+
+/**
+ * Names the project itself as an action's target. Undo and redo belong to the project rather
+ * than to what is selected, so the History group and the global shortcuts pass this as the
+ * source (diagram-undo-redo Requirement 5.1). Empty, not a project id: the call already carries
+ * the project it is scoped to.
+ */
+export const PROJECT_SOURCE: ContextSource = create(ContextSourceSchema, {
+  source: { case: "project", value: create(EmptySchema) },
+});
 
 /** How long a burst of plain selections may keep coalescing before the last one is sent. */
 export const SELECT_COALESCE_MS = 80;
@@ -81,6 +91,9 @@ export interface ContextPromptValue {
 const ConnectionContext = createContext<ContextConnectionValue | undefined>(undefined);
 const SelectionContext = createContext<ContextSelectionValue | undefined>(undefined);
 const PromptContext = createContext<ContextPromptValue | undefined>(undefined);
+// The project's own actions, kept apart from the selection so a project-actions push never
+// re-renders a selection consumer (diagram-undo-redo Deviation 1). Empty until the first push.
+const ProjectActionsContext = createContext<ContextActionGroup[]>([]);
 
 const EMPTY_SELECTION: ContextSelectionValue = {
   selection: null,
@@ -128,6 +141,7 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
 
   const [selectionValue, setSelectionValue] = useState<ContextSelectionValue>(EMPTY_SELECTION);
   const [prompt, setPrompt] = useState<ContextPrompt | null>(null);
+  const [projectActions, setProjectActions] = useState<ContextActionGroup[]>([]);
 
   const setPendingReveal = useCallback(
     (segments: string[] | null) => setSelectionValue((previous) => ({ ...previous, pendingReveal: segments })),
@@ -180,6 +194,12 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
             }
             if (message.message.case === "prompt") {
               setPrompt(message.message.value);
+              continue;
+            }
+            if (message.message.case === "projectActions") {
+              // Its own state, so undo/redo availability updates the History group and the
+              // shortcuts without disturbing the selection (diagram-undo-redo Deviation 1).
+              setProjectActions(message.message.value.actions);
               continue;
             }
             if (message.message.case !== "selection") {
@@ -299,9 +319,11 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
 
   return (
     <ConnectionContext.Provider value={connectionValue}>
-      <SelectionContext.Provider value={selectionValue}>
-        <PromptContext.Provider value={promptValue}>{children}</PromptContext.Provider>
-      </SelectionContext.Provider>
+      <ProjectActionsContext.Provider value={projectActions}>
+        <SelectionContext.Provider value={selectionValue}>
+          <PromptContext.Provider value={promptValue}>{children}</PromptContext.Provider>
+        </SelectionContext.Provider>
+      </ProjectActionsContext.Provider>
     </ConnectionContext.Provider>
   );
 }
@@ -328,6 +350,15 @@ export function useContextPrompt(): ContextPromptValue {
     throw new Error("useContextPrompt must be used within a ContextConnectionProvider.");
   }
   return value;
+}
+
+/**
+ * The project's own actions - undo and redo - as last pushed by the backend. Separate from
+ * the selection, so reading it never couples a consumer to selection changes. Empty until the
+ * first push arrives.
+ */
+export function useProjectActions(): ContextActionGroup[] {
+  return useContext(ProjectActionsContext);
 }
 
 /** Builds a one-level selection message; the explorer's helper for its own entries. */

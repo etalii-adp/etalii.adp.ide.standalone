@@ -17,6 +17,7 @@ import {
   useContextConnection,
   useContextPrompt,
   useContextSelection,
+  useProjectActions,
 } from "./ContextConnectionProvider";
 
 /** A server stream the test feeds by hand and can end (to exercise a reconnect). */
@@ -268,6 +269,73 @@ describe("ContextConnectionProvider", () => {
     await flush();
 
     expect(select).toHaveBeenCalledTimes(2);
+  });
+});
+
+function projectActionsMessage(undoAvailable: boolean): ContextMessage {
+  return create(ContextMessageSchema, {
+    message: {
+      case: "projectActions",
+      value: {
+        actions: [
+          {
+            actions: [
+              { id: "history.undo", label: "Undo", icon: "mdi-undo", available: undoAvailable, unavailableReason: undoAvailable ? "" : "There is nothing to undo." },
+              { id: "history.redo", label: "Redo", icon: "mdi-redo", available: false, unavailableReason: "There is nothing to redo." },
+            ],
+          },
+        ],
+      },
+    },
+  });
+}
+
+describe("ContextConnectionProvider project actions", () => {
+  beforeEach(() => {
+    streams.length = 0;
+    watch.mockClear();
+  });
+
+  it("routes a projectActions message to useProjectActions without touching the selection", async () => {
+    // A selection consumer whose render count the test can watch: a project-actions push must
+    // not re-render it, because project actions are their own state (Deviation 1).
+    let selectionRenders = 0;
+    let projectActionsSeen: string[] = [];
+
+    function SelectionOnly() {
+      selectionRenders++;
+      const { selection } = useContextSelection();
+      return <span data-testid="sel">{innermostKey(selection) ?? "none"}</span>;
+    }
+
+    function ProjectActionsOnly() {
+      const groups = useProjectActions();
+      projectActionsSeen = groups.flatMap((g) => g.actions.map((a) => `${a.id}:${a.available}`));
+      return <span data-testid="project-actions">{projectActionsSeen.join(",")}</span>;
+    }
+
+    render(
+      <ContextConnectionProvider projectId={projectId}>
+        <SelectionOnly />
+        <ProjectActionsOnly />
+      </ContextConnectionProvider>,
+    );
+    await flush();
+
+    // Establish a selection, then note how many times the selection consumer has rendered.
+    streams[0]!.push(selectionMessage(entryA));
+    await waitFor(() => expect(screen.getByTestId("sel").textContent).not.toBe("none"));
+    const rendersBefore = selectionRenders;
+    const selectionBefore = screen.getByTestId("sel").textContent;
+
+    // A project-actions push updates the hook...
+    streams[0]!.push(projectActionsMessage(true));
+    await waitFor(() => expect(screen.getByTestId("project-actions").textContent).toContain("history.undo:true"));
+    expect(projectActionsSeen).toEqual(["history.undo:true", "history.redo:false"]);
+
+    // ...and leaves the selection consumer exactly as it was - same value, no extra render.
+    expect(screen.getByTestId("sel").textContent).toBe(selectionBefore);
+    expect(selectionRenders).toBe(rendersBefore);
   });
 });
 
