@@ -1,0 +1,107 @@
+# Requirements Document
+
+## Introduction
+
+The workspace's centre pane still shows the two hard-coded placeholder tabs ("Diagram 1", "Diagram 2") the `diagram-ide-mockup` spec put there. Everything downstream of them is real: `DiagramService.Open` streams a diagram's deltas, `MindmapCanvas` renders them, and `DiagramPanel` picks the canvas from an `OpenDiagram` value — but nothing ever constructs that value, so a mindmap created through the Add dialog appears in the explorer and nowhere else. This spec replaces the placeholders with a real diagram tab system: activating a diagram file opens it in a tab (or focuses the tab it already has), a newly created diagram opens the same way, tabs can be closed, and closing one ends its sync.
+
+Two upstream requirements already pin the behaviour this spec implements:
+
+- `mindmap-diagram` Requirement 1.7: after creation, the workspace opens the new mindmap in a focused diagram view, concluding this from the pushed selection of a diagram file with no open view — one behaviour for every diagram file, never "because this client was the Add caller".
+- `adp-diagram-ide` Requirements 1.2 and 1.3: opening a file from the explorer opens a tab or focuses the existing one, and closing a file's last tab stops syncing it.
+
+**One deliberate refinement of `mindmap-diagram` 1.7, called out for approval:** the trigger is narrowed from *any* pushed selection to a pushed **activation** (the existing `ACTIVATE` selection gesture — double-click or Enter). The explorer pushes a plain selection for every focus move, so "any selection opens a view" would open a tab for each diagram file the user arrow-keys past. The reveal that follows creation is upgraded to activate the new entry instead of merely focusing it, so creation still opens the diagram through the same pushed-selection path with no caller special-casing — 1.7's actual point.
+
+## Alignment with Product Vision
+
+- **A familiar surface** (product.md): tabs that open on activation, focus on re-activation, and carry a close control are the VS Code interaction model the workspace already imitates statically.
+- **Files are the source of truth**: which tab shows what is derived from files and the pushed selection; the tab system stores nothing about a diagram beyond which file it is.
+- **One selection, held in one place** (tech.md, Context): the tab system is a pure subscriber of the pushed context selection. It adds no RPC, no second selection, and no client-side file-type table — the backend, which alone can read the `.adp` first line, says what is a diagram.
+- **Live, pushed updates**: an open tab is an open `DiagramService.Open` stream; closing the tab ends the stream, which is what "stop syncing" already means in that contract.
+
+## Requirements
+
+### Requirement 1 — The backend names what is a diagram
+
+**User Story:** As the workspace client, I want the pushed selection to tell me whether the selected entry is a diagram and of which type, so that I can open the right canvas without keeping a client-side table of file types or reading files myself.
+
+#### Acceptance Criteria
+
+1. WHEN the backend resolves a hierarchy selection level for a file that is a diagram THEN the level's `EntryDetail` SHALL carry the diagram's MIME type (e.g. `freeplane/mindmap`), resolved through the existing `DiagramFileRouter` — by the `.adp` file's first line, or by a declared document extension for a body without a registration file (`mindmap-diagram` Requirement 2.7).
+2. WHEN the selected file is not a diagram THEN the detail SHALL carry no diagram type, and the client SHALL treat the entry exactly as it does today.
+3. IF the file is a bare diagram body whose extension more than one diagram type claims (the router's ambiguous case) THEN the detail SHALL carry no diagram type — a file the backend refuses to route is not presented as openable.
+4. IF the `.adp` file's first line names a MIME type no discovered definition matches THEN the detail SHALL still identify the entry as a diagram of that named type, so the client can open a tab that reports the type as unavailable (Requirement 4.4) rather than treating the file as plain.
+5. WHEN the diagram type is resolved THEN it SHALL be resolved by the backend only — the client SHALL NOT infer "diagram" or its type from a file extension anywhere in the tab system.
+
+### Requirement 2 — Activation opens a tab, re-activation focuses it
+
+**User Story:** As a diagram author, I want double-clicking a mindmap in the explorer to open it in a diagram tab, and doing it again to bring that tab forward, so that I reach my diagram the way every IDE I know works.
+
+#### Acceptance Criteria
+
+1. WHEN a non-transient selection is pushed whose innermost level is a diagram entry (Requirement 1) carrying the `ACTIVATE` gesture AND no open tab shows that entry THEN the workspace SHALL open a new diagram tab for it and give that tab focus.
+2. WHEN such an activation is pushed for an entry that already has an open tab THEN the workspace SHALL focus that tab and SHALL NOT open a duplicate.
+3. WHEN a plain (gestureless) selection or a transient preview of a diagram entry is pushed THEN the workspace SHALL NOT open or focus any tab — browsing the explorer with the keyboard changes the selection, never the open tabs.
+4. WHEN the tab opens THEN the diagram view SHALL be the existing `DiagramPanel` given the entry's project, entry id, project-relative path and MIME type — the `OpenDiagram` value it already accepts — so a mindmap renders through `MindmapCanvas` with no change to either.
+5. WHEN activation opens or focuses a tab THEN the trigger SHALL be only the pushed selection; the tab system SHALL NOT call the backend to ask what is selected and SHALL NOT react to a selection produced by its own focus handling.
+
+### Requirement 3 — A created diagram opens through the same rule
+
+**User Story:** As a diagram author, I want the mindmap I just added through the dialog to open in a focused tab immediately, so that I can start typing into it instead of hunting for it in the explorer.
+
+#### Acceptance Criteria
+
+1. WHEN creation completes on the connection that requested it and the explorer's existing reveal focuses the new entry THEN the reveal SHALL activate it (push the `ACTIVATE` gesture) rather than plainly select it, so the new diagram opens and focuses through Requirement 2 with no additional path.
+2. WHEN the created entry is activated by the reveal THEN the behaviour SHALL be identical to a user activating the same file by hand — the tab system SHALL NOT know or care that an Add produced it (`mindmap-diagram` Requirement 1.7).
+3. IF the reveal times out because the created entry never appears THEN no tab SHALL open, exactly as no selection would have happened.
+4. WHEN a created non-diagram file is revealed by a future feature through the same path THEN activating it SHALL simply select it, per Requirement 2.3 — the reveal upgrade is safe for entries that are not diagrams.
+
+### Requirement 4 — Tabs are real: labels, close, and the empty pane
+
+**User Story:** As a diagram author, I want the diagram tabs to name my files, to close when I am done with them, and to leave a calm empty pane when nothing is open, so that the workspace reflects what I am actually working on.
+
+#### Acceptance Criteria
+
+1. WHEN a diagram tab is shown THEN its label SHALL be the file's base name (without the `.adp` extension), its icon SHALL be the diagram icon the explorer already uses, and its tooltip SHALL be the project-relative path — so two files with one name in different folders stay distinguishable.
+2. WHEN the user closes a tab (a close control on the tab; middle-click SHOULD also close) THEN the tab SHALL be removed, the diagram's view unmounted, and its `DiagramService.Open` stream ended — closing the last tab for a file stops syncing it (`adp-diagram-ide` Requirement 1.3).
+3. WHEN the focused tab is closed THEN focus SHALL move to an adjacent remaining tab; WHEN the last tab is closed THEN the centre pane SHALL show a neutral empty state inviting the user to open a diagram from the explorer, and the two hard-coded placeholder tabs SHALL be gone entirely.
+4. IF the diagram's type has no canvas in this build (a MIME type without a registered view, including Requirement 1.4's unknown type) THEN the tab SHALL still open and SHALL show a placeholder naming the type it cannot render, rather than a blank canvas or a refusal with no explanation.
+5. WHEN tabs are opened, closed and re-ordered by these rules THEN open tabs SHALL be per-connection, in-memory state only — they die with the page, like every other per-connection state in the system.
+
+### Requirement 5 — An open tab survives what happens to its file
+
+**User Story:** As a diagram author, I want the tab of a diagram whose file just changed underneath me to degrade clearly instead of crashing, so that an external rename or delete never takes the workspace down.
+
+#### Acceptance Criteria
+
+1. IF the file behind an open tab is deleted, renamed or moved, and the diagram's delta stream consequently ends or errors THEN the tab SHALL remain and SHALL show a clear "this diagram is no longer available at this location" state naming the path it had — never a crash, a spinner, or a silently frozen canvas.
+2. WHEN the user re-activates the same diagram under its new name or location THEN a fresh tab SHALL open for it through Requirement 2, and the stale tab SHALL remain independently closable.
+3. WHEN the workspace's context stream reconnects after a drop THEN open tabs SHALL stay open; each diagram view's own stream already re-baselines itself on reconnect, and the tab system SHALL NOT add a reconciliation of its own.
+4. Live-following a rename (the tab retitling itself and its stream continuing under the new path) is explicitly OUT of scope for this spec; the degrade-and-reopen path above is the required behaviour.
+
+## Non-Functional Requirements
+
+### Code Architecture and Modularity
+
+- **Single Responsibility Principle**: the tab model (which diagrams are open, which is focused) is one concern in one place; `TabbedPane` stays a presentation component and gains only what closable, controlled tabs need; `DiagramPanel` is not modified beyond what it already accepts.
+- **Pure subscriber**: the tab system consumes `useContextSelection()` and the existing pushed data; it introduces no new RPC, no new stream, and no polling.
+- **Type-agnostic**: nothing in the tab system names a diagram type; `freeplane/mindmap` appears only where `DiagramPanel` already routes to a canvas. A later diagram module with its own canvas becomes openable without touching the tab system (mirrors `mindmap-diagram` Requirement 13).
+- **Additive wire change only**: the `EntryDetail` extension is a new field with a new number; no existing field changes name, number or meaning, and a client without the field behaves as today.
+
+### Performance
+
+- Resolving whether a selected file is a diagram adds at most one first-line read per pushed selection of a file, through the router's existing logic — no directory scans, no per-keystroke work.
+- Opening a tab mounts one canvas and one `Open` stream; tabs left in the background keep their stream (they stay live, per product.md) but render nothing that is not visible.
+
+### Security
+
+- No new attack surface: no new RPC, and the MIME type added to `EntryDetail` is already user-visible file content resolved inside the project root by existing, containment-checked code.
+
+### Reliability
+
+- A tab whose stream fails degrades per Requirement 5.1 without affecting other tabs or the shell.
+- Every bug found while implementing or verifying this spec SHALL be covered by a unit or integration test, or recorded in `tests.md`, per CLAUDE.md.
+
+### Usability
+
+- Interaction follows VS Code conventions: activate to open, activate again to focus, close control on the tab, adjacent tab focused after close.
+- The empty pane and the no-canvas placeholder say what to do or what is missing in one plain sentence each.
