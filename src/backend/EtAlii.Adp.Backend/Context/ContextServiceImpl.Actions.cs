@@ -252,7 +252,7 @@ public sealed partial class ContextServiceImpl
 
         if (source is null)
         {
-            return _selectionStore.Get(watchId)?.Innermost.Target ?? RootTarget(rootPath);
+            return _selectionStore.Get(watchId)?.Innermost.Target ?? RootTarget(rootPath, watchId);
         }
 
         var resolution = await _selectionResolver.ResolveLevelAsync(
@@ -277,8 +277,8 @@ public sealed partial class ContextServiceImpl
         return relative;
     }
 
-    internal static ContextTarget RootTarget(string rootPath) =>
-        new(ContextScope.Hierarchy, rootPath, IsContainer: true, SourceId: default);
+    internal static ContextTarget RootTarget(string rootPath, ShortGuid watchId = default) =>
+        new(ContextScope.Hierarchy, rootPath, IsContainer: true, SourceId: default, RootPath: rootPath, WatchId: watchId);
 
     private static ContextShortcutDefinition FromProto(ContextShortcut shortcut) =>
         new(shortcut.Key, shortcut.Ctrl, shortcut.Shift, shortcut.Alt, shortcut.Meta);

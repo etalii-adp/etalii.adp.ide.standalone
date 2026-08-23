@@ -6,6 +6,7 @@ using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Diagram.Mindmap;
 using JetBrains.Annotations;
 using Serilog;
 
@@ -65,6 +66,15 @@ builder.Services.AddSingleton<IContextSourceResolver, HierarchyContextSourceReso
 // The dispatcher, the history and every command handler. Every state change the context
 // actions above make travels through here, which is what makes it undoable.
 builder.Services.AddCommands();
+
+// The mindmap module: its commands and document store, its document factory, the resolver
+// that makes a node selectable and the provider that offers what can be done to one. Four
+// seams, one line each, and nothing in core names the module (mindmap-diagram Requirement 13).
+builder.Services.AddMindmapCommands();
+builder.Services.AddSingleton<MindmapViewState>();
+builder.Services.AddSingleton<IDiagramDocumentFactory, MindmapDocumentFactory>();
+builder.Services.AddSingleton<IContextSourceResolver, MindmapContextSourceResolver>();
+builder.Services.AddSingleton<IContextActionProvider, MindmapContextActionProvider>();
 
 var clientAppOptionsSection = builder.Configuration.GetSection(ClientAppOptions.SectionName);
 builder.Services.Configure<ClientAppOptions>(clientAppOptionsSection);

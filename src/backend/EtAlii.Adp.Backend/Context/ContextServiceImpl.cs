@@ -107,7 +107,7 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
 
         // What applies when nothing is selected: the project root's actions, discovered once
         // here and carried on every "nothing selected" message for this connection.
-        var rootActions = await _contextActionResolver.DiscoverAsync(RootTarget(rootPath), context.CancellationToken);
+        var rootActions = await _contextActionResolver.DiscoverAsync(RootTarget(rootPath, watchId), context.CancellationToken);
 
         // Registering writes the baseline first, so a late subscriber is consistent
         // before anything else can arrive.
