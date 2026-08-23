@@ -2,92 +2,125 @@
 
 ## Introduction
 
-This spec moves diagram undo/redo history from a client-local concept to a **server-side, per-diagram** capability. [`adp-diagram-ide`](../adp-diagram-ide/requirements.md) Requirement 6 describes a "local undo stack," but the backend is already the sole, durable owner of diagram element state ([tech.md](../../steering/tech.md); [`grpc-core-communication`](../grpc-core-communication/requirements.md)), and more than one client can be simultaneously connected to the same diagram (`adp-diagram-ide` Requirement 3.2 / `grpc-core-communication` Requirement 3). A history that lives only in one browser tab can't reflect that reality: it fragments across tabs/clients and is lost on reconnect.
+This spec moves undo/redo from a client-local concept to a **server-side** capability, and defines how a client asks for it.
 
-This spec defines a single, server-maintained undo/redo stack scoped to one diagram (identified by its file path), replacing the local-history framing of `adp-diagram-ide` Requirement 6 for the multi-client, backend-authoritative model this product actually has. It does not redefine what counts as an editable change — that remains diagram-module-specific (`grpc-core-communication-specification` Requirement 3's `add`/`remove`/`group`/`ungroup` deltas) — only how the resulting history is tracked, requested, and applied.
+When it was first written, none of the machinery existed. It does now, and this revision corrects the spec against it:
+
+- **Commands.** [tech.md](../../steering/tech.md)'s *Commands* rule already makes every state change an `ICommand` with an `ICommandHandler<TCommand>`, dispatched through `IHistoryStack`, where the handler reports the command that reverses it as `CommandResult.Inverse`. The explorer's rename, delete and add already work this way. Undo/redo therefore no longer needs a history of its own — it needs the existing one scoped and exposed.
+- **Context.** tech.md's *Context* rule means an action a user can perform is offered by an `IContextActionProvider` and reaches every surface through the context stream. Undo and redo are actions like any other, so this spec no longer defines a dedicated gRPC method for them.
+- **The ribbon.** `RibbonBar.tsx` currently carries hard-coded `Undo`/`Redo` buttons whose click handler only toggles a pressed style, under a `TODO(diagram-ide-mockup): wire real command handler`. They are mockup, not behaviour, and this spec replaces them.
+
+It still does not redefine what counts as an editable change — that remains diagram-module-specific ([`grpc-core-communication-specification`](../grpc-core-communication-specification/requirements.md) Requirement 3's `add`/`remove`/`group`/`ungroup` deltas). That vocabulary is not implemented yet; when it is, each delta becomes a command like any other and inherits everything below without this spec changing again.
+
+It replaces the local-history framing of [`adp-diagram-ide`](../adp-diagram-ide/requirements.md) Requirement 6.
 
 ## Alignment with Product Vision
 
 - [product.md](../../steering/product.md)'s **"Live, pushed updates"**: undo/redo is itself a change, and SHALL propagate to every connected viewer the same way any other change does.
 - tech.md's **"the backend is the sole owner of reading/writing diagram files"**: history that determines what gets written back to disk belongs with that same owner, not scattered across clients.
-- tech.md's **frontend-backend synchronization** delta model: this spec reuses the existing `add`/`remove`/`group`/`ungroup` delta vocabulary rather than inventing a parallel change-representation just for undo.
+- tech.md's **Commands** rule: reversibility is a property of the system, not something each feature reimplements. This spec is what makes that property reach the user.
+- tech.md's **Context** rule: undo and redo reach the ribbon, the menu and the keyboard through the one path every other action uses.
 
 ## Requirements
 
-### Requirement 1 — Server-owned, per-diagram undo/redo stack
+### Requirement 1 — One server-owned history per project
 
-**User Story:** As a diagram author, I want undo/redo history to live on the backend per diagram file, so that my ability to undo doesn't depend on which browser tab or client I'm using, and survives reconnects.
+**User Story:** As an author, I want undo to reverse the last thing I did in this project, whichever browser tab I am in, so that my history does not depend on where I happen to be looking and survives a reconnect.
 
 #### Acceptance Criteria
 
-1. WHEN an editable change (a delta, per `grpc-core-communication-specification` Requirement 3) is applied to a diagram THEN the system SHALL record it on a server-side undo history scoped to that diagram's file path, not to the connection/client that produced it.
-2. WHEN a viewing application requests undo for an open diagram THEN the system SHALL revert the diagram to its state before the most recently recorded change on that diagram's server-side stack, regardless of which connection originally made that change.
-3. WHEN a viewing application requests redo after an undo THEN the system SHALL reapply the most recently reverted change from that diagram's server-side stack.
-4. IF a new editable change is applied to a diagram after an undo (from any connected client) THEN the system SHALL discard the stale redo entries for that diagram, consistent with standard undo/redo semantics.
+1. WHEN a command is executed through `IHistoryStack` THEN the system SHALL record it on a history scoped to the project it acted in, not to the connection that produced it and not to the process as a whole.
+2. WHEN a client requests undo THEN the system SHALL execute the `CommandResult.Inverse` of the most recently recorded command for that project, regardless of which connection originally made it.
+3. WHEN a client requests redo after an undo THEN the system SHALL re-execute the most recently reverted command for that project.
+4. IF a new command is executed after an undo (from any connected client) THEN the system SHALL discard the stale redo entries for that project.
+5. WHERE the current implementation registers a single process-wide `HistoryStack`, the system SHALL replace it with a per-project instance, so two users working in different projects never share a history.
+
+> **Correction from the first version.** This originally said "per diagram, identified by its file path". That no longer holds: the commands actually recorded today are hierarchy commands — renaming, deleting and creating files and folders — which belong to a project rather than to any one diagram. Scoping per diagram would leave those in nothing, or in a second stack the user cannot see, and "which stack does Ctrl+Z hit" is exactly the confusion undo must not have. One history per project keeps the user's model simple: undo reverses the last thing *I did here*, in the order I did it.
 
 ### Requirement 2 — Multi-client visibility of undo/redo
 
-**User Story:** As a diagram author collaborating with others (or across my own multiple open tabs) on the same diagram, I want undo/redo to behave consistently for everyone viewing it, so that the diagram's history isn't fragmented per viewer.
+**User Story:** As an author collaborating with others, or across my own tabs, I want undo/redo to behave consistently for everyone in the project, so that history is not fragmented per viewer.
 
 #### Acceptance Criteria
 
-1. WHEN a connected client triggers undo or redo for a diagram THEN the system SHALL apply the resulting change and deliver it to all connections currently viewing that diagram via the existing delta streaming mechanism (`grpc-core-communication` Requirement 3), not only to the client that triggered it.
-2. WHEN multiple clients are connected to the same diagram THEN the system SHALL expose a single, shared undo/redo stack for that diagram rather than maintaining independent per-client histories.
-3. IF two clients trigger undo (or redo) for the same diagram at effectively the same time THEN the system SHALL serialize the requests and apply them one at a time against the shared stack, so the stack's state remains consistent and no entry is double-applied or lost.
+1. WHEN a client triggers undo or redo THEN the system SHALL apply the resulting change and deliver it to every connection currently viewing what changed, through the existing streams — the hierarchy change feed for entries, and the delta stream (`grpc-core-communication` Requirement 3) for diagram content — not only to the client that triggered it.
+2. WHEN multiple clients are connected to the same project THEN the system SHALL expose a single shared history for it rather than independent per-client histories.
+3. IF two clients trigger undo (or redo) at effectively the same time THEN the system SHALL serialize the requests and apply them one at a time, so no entry is double-applied or lost. `HistoryStack` already serializes every operation behind one gate; this requirement is a constraint on the per-project instances of it, not a new mechanism.
 
-### Requirement 3 — Scope of what is undoable
+### Requirement 3 — What is undoable, and what is not
 
-**User Story:** As a diagram author, I want undo to only affect genuine editable changes, not incoming external updates or view state, so that undo behaves predictably.
-
-#### Acceptance Criteria
-
-1. WHEN a change to a diagram originates from an editable action (add/remove/group/ungroup requested through the gRPC contract) THEN the system SHALL record it on the server-side undo stack.
-2. IF a change to a diagram originates from an external file modification detected by the backend (per `adp-diagram-ide` Requirement 2.3) rather than from an editable action THEN the system SHALL NOT record it as an undoable entry on the server-side stack, mirroring the exclusion already defined for local history in `adp-diagram-ide` Requirement 6.5.
-3. WHEN view-state updates (pan/zoom, per `grpc-core-communication-specification` Requirement 2) occur THEN the system SHALL NOT record them on the undo stack, consistent with `mindmap-diagram` Requirement 2.5's treatment of view-only state.
-
-### Requirement 4 — Stack lifetime and persistence
-
-**User Story:** As a diagram author, I want a predictable lifetime for undo history, so I know when I can still undo something and when I can't.
+**User Story:** As an author, I want undo to affect only what I actually did, not incoming external updates or view state, so that undo behaves predictably.
 
 #### Acceptance Criteria
 
-1. WHEN a diagram is opened for the first time in a backend process's lifetime THEN the system SHALL start it with an empty undo/redo stack.
-2. WHILE at least one client remains connected to a diagram THEN the system SHALL retain its undo/redo stack in memory, so undo/redo continues to work across an individual client's disconnect/reconnect (per `grpc-core-communication` Requirement 6).
-3. WHEN the backend process restarts THEN the system is NOT required to retain undo/redo history from before the restart — the on-disk diagram file (last saved/applied state) remains the durable source of truth, not the undo stack itself.
-4. WHEN a diagram's undo/redo stack grows THEN the system SHALL bound its size (e.g. a maximum entry count), so a long editing session cannot cause unbounded server-side memory growth.
+1. WHEN a command's handler reports a `CommandResult.Inverse` THEN the system SHALL record it as undoable. This is the only test; there is no separate list of undoable operations to keep in step.
+2. WHEN a command's handler succeeds without reporting an inverse THEN the system SHALL NOT record it, and undo SHALL skip past it to the last change that can be reversed.
+3. IF a change originates from an external file modification detected by the backend (per `adp-diagram-ide` Requirement 2.3) THEN it SHALL NOT be undoable. This needs no rule of its own in the implementation: such a change arrives through the watcher and never becomes a command.
+4. WHEN view-state updates (pan/zoom, per `grpc-core-communication-specification` Requirement 2) occur THEN they SHALL NOT be recorded, for the same structural reason.
+5. WHERE an action is deliberately irreversible — deleting an entry is the present example, and its confirmation dialog says so — the system SHALL record nothing for it, and SHALL NOT offer the user an undo that would fail or silently do nothing.
 
-### Requirement 5 — Client interaction with server-side undo/redo
+### Requirement 4 — Lifetime and bounds
 
-**User Story:** As a viewing application developer, I want a clear way to trigger undo/redo and know whether it's currently possible, so that I can wire up the IDE's undo/redo UI correctly.
+**User Story:** As an author, I want a predictable lifetime for undo history, so I know when I can still undo something and when I can't.
 
 #### Acceptance Criteria
 
-1. WHEN a viewing application wants to trigger undo or redo THEN the system SHALL provide a gRPC-level way to request it for the diagram it is currently connected to.
-2. WHEN a diagram's undo stack is empty THEN the system SHALL let the client determine that undo is not currently possible, rather than the client needing to guess or attempt-and-fail.
-3. WHEN a diagram's redo stack is empty THEN the system SHALL let the client determine that redo is not currently possible, by the same means.
-4. IF an undo or redo is requested when not possible (empty stack) THEN the system SHALL reject the request with a clear response rather than applying an undefined change.
+1. WHEN a project is opened for the first time in a backend process's lifetime THEN the system SHALL start it with an empty history.
+2. WHILE at least one client remains connected to a project THEN the system SHALL retain its history in memory, so undo/redo survives an individual client's disconnect/reconnect (per `grpc-core-communication` Requirement 6).
+3. WHEN the backend process restarts THEN the system is NOT required to retain history from before the restart — the on-disk state remains the durable source of truth, not the history.
+4. WHEN a history grows THEN the system SHALL bound it. `HistoryStack` already drops the oldest entry past `DefaultCapacity` (100); this requirement fixes that as intended behaviour rather than an implementation detail.
+5. WHEN a project's last client disconnects THEN the system SHOULD release its history rather than hold every project ever opened for the life of the process, in the manner `HierarchyModelStore` and `ContextSelectionStore` already release what they hold.
+
+### Requirement 5 — Undo and redo are context actions
+
+**User Story:** As a viewing application developer, I want undo and redo to arrive the same way every other action does, so that I do not wire up a second mechanism for them and every surface gets them at once.
+
+#### Acceptance Criteria
+
+1. WHEN the backend offers undo and redo THEN it SHALL do so through an `IContextActionProvider`, and the system SHALL NOT add a gRPC method dedicated to undo or redo. Executing them SHALL use the existing `ExecuteAction`.
+2. WHEN undo or redo is not currently possible THEN the provider SHALL report the action with `Available` false and a reason, rather than omitting it — so a consumer shows it disabled and can say why, and never has to attempt an operation to discover it is not possible.
+3. WHEN the history changes — a command recorded, undone or redone — THEN the system SHALL push the updated actions to every connection viewing the project, so an undo button's enabled state follows the history without the client polling for it.
+4. WHEN undo and redo are offered THEN they SHALL carry their conventional shortcuts as a `ContextShortcutDefinition` (Ctrl+Z and Ctrl+Y, with Ctrl+Shift+Z also accepted for redo), so the keyboard path is the same resolution the ribbon and the menu use.
+5. WHERE these actions apply to the project rather than to whatever is selected, they SHALL be offered on the baseline the context stream already carries for "nothing selected", so they remain available and correct while the selection changes underneath them.
+6. IF an undo or redo is requested when it is not possible THEN the system SHALL reject it with a clear reason rather than applying an undefined change. `HistoryStack` already answers "There is nothing to undo."/"There is nothing to redo."
+
+### Requirement 6 — The ribbon stops mocking undo/redo
+
+**User Story:** As an author, I want the ribbon's Undo and Redo buttons to actually undo and redo, and to be greyed out when there is nothing to undo, so that the ribbon tells me the truth about what I can do.
+
+#### Acceptance Criteria
+
+1. WHEN the ribbon renders Undo and Redo THEN it SHALL render them from the actions the context stream pushed, and SHALL NOT keep them in the hard-coded `RIBBON_GROUPS` list.
+2. WHEN the ribbon renders these actions THEN it SHALL call nothing but `ExecuteAction`, holding no undo state of its own, exactly as `RibbonContextualGroups` already does for the selection's actions.
+3. WHEN there is nothing to undo or redo THEN the ribbon SHALL show the button disabled with its reason as the tooltip, which is the behaviour already defined by [`context-service`](../context-service/requirements.md) Requirement 10.7.
+4. WHEN this spec is implemented THEN the `TODO(diagram-ide-mockup): wire real command handler` in `RibbonBar.tsx` and the pressed-state toggle it belongs to SHALL be gone for these two buttons.
 
 ## Non-Functional Requirements
 
 ### Code Architecture and Modularity
 
-- **Single Responsibility**: the undo/redo stack is a core, diagram-type-agnostic capability — it operates on the generic delta vocabulary (`grpc-core-communication-specification` Requirement 3), so it SHALL live in the core communication layer, not be duplicated per diagram module.
-- **Modular Design**: diagram modules SHALL NOT need to implement their own undo/redo logic; they get it for free by producing changes through the existing delta-producing mechanism this spec observes.
+- **Single Responsibility**: undo/redo is a core capability that operates on `ICommand`, so it SHALL stay diagram-type-agnostic and SHALL NOT be duplicated per diagram module.
+- **Modular Design**: diagram modules SHALL NOT implement undo/redo logic. A module gets it by doing what tech.md's *Commands* rule already requires of it — raising a command whose handler names its inverse.
+- **No second mechanism**: this spec SHALL be implementable by scoping the existing `IHistoryStack`, adding one `IContextActionProvider`, and deleting the ribbon's mock buttons. A new history, a new RPC, or a new client-side stack would each be a sign the design has drifted from the two steering rules it rests on.
 
 ### Performance
 
 - Undo/redo application SHALL complete within the same bounded, sub-second latency budget as ordinary delta propagation (`grpc-core-communication` Non-Functional: Performance).
-- Recording a change on the undo stack SHALL NOT add perceptible latency to the change being applied and streamed.
+- Recording a command SHALL NOT add perceptible latency to the change being applied and streamed.
+- Pushing updated undo/redo availability (Requirement 5.3) SHALL NOT cause a re-discovery storm: it is one push per history change, not one per connected client action.
 
 ### Security
 
-- Undo/redo requests SHALL be subject to the same authentication/authorization enforcement as any other gRPC call against a diagram connection (`grpc-core-communication` Requirement 5).
+- Undo/redo requests SHALL be subject to the same authentication and project authorization as any other call, which they inherit by going through `ExecuteAction` (`grpc-core-communication` Requirement 5).
+- A client SHALL NOT be able to undo a command in a project it is not authorized for; per-project scoping (Requirement 1.5) is what makes this structural rather than a check to remember.
 
 ### Reliability
 
-- The shared per-diagram stack (Requirement 2.2–2.3) SHALL be safe under concurrent requests from multiple clients; no undo/redo request SHALL be able to corrupt the stack's ordering or the diagram's on-disk state.
-- Loss of a single client's connection SHALL NOT affect the undo/redo stack's integrity for the diagram's other connected clients.
+- The shared per-project history SHALL be safe under concurrent requests; no request SHALL be able to corrupt its ordering or the on-disk state.
+- Loss of a single client's connection SHALL NOT affect the history's integrity for the project's other clients.
+- WHERE an inverse command fails when applied — the file it would put back has been taken by something else — the entry SHALL stay on the undo stack so the user can retry once the obstacle is gone, which is what `HistoryStack` already does.
 
 ### Usability
 
-- Viewing applications SHOULD be able to reflect undo/redo availability (Requirement 5.2–5.3) in their UI (e.g. disabling an undo button) without needing to attempt an operation just to discover it isn't possible.
+- A viewing application SHALL be able to reflect undo/redo availability without attempting an operation to discover it (Requirement 5.2).
+- The user SHALL NOT be offered an undo for something that was never undoable (Requirement 3.5); a greyed button with a reason is honest, an enabled one that fails is not.
