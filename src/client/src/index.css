@@ -1227,6 +1227,12 @@ button {
   outline: none;
 }
 
+/* The connector from a node to its parent, under the node boxes. */
+.mindmap-edge {
+  stroke: var(--color-border);
+  stroke-width: 1.5;
+}
+
 .mindmap-node {
   cursor: pointer;
 }

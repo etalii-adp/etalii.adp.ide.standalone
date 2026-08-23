@@ -19,6 +19,14 @@ public interface IDiagramSession : IAsyncDisposable
     IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport);
 
     /// <summary>
+    /// Moves an element under a new parent, at <paramref name="index"/> among its children
+    /// (negative appends). The module dispatches this as a command through the project's
+    /// history, so a drag on the canvas is one undo away like every other edit. Returns the
+    /// empty string on success, or the module's own reason for refusing.
+    /// </summary>
+    Task<string> MoveElementAsync(string elementId, string newParentId, int index, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Raised when something changes the diagram - an edit from any connection, an external
     /// file edit, this connection's own fold - with the deltas that carry it into this
     /// connection's view. The core service writes them to the stream.

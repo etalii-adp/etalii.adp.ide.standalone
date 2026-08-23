@@ -62,7 +62,7 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
         }
 
         session.Changed += OnChanged;
-        _viewports.Register(watchId, bodyPath, viewport => Apply(session, viewport, channel));
+        _viewports.Register(watchId, bodyPath, session, viewport => Apply(session, viewport, channel));
         _logger.Information("Opened {BodyPath} on watch {WatchId}", bodyPath, watchId);
 
         try
@@ -102,6 +102,27 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
         return Task.FromResult(_viewports.Report(watchId, bodyPath, viewport)
             ? new UpdateViewResponse()
             : new UpdateViewResponse { Error = "The diagram is not open on this connection." });
+    }
+
+    public override async Task<MoveElementResponse> MoveElement(MoveElementRequest request, ServerCallContext context)
+    {
+        var watchId = (ShortGuid)request.WatchId;
+        if (!TryResolveBody(request.ProjectId, request.Path, context, out _, out var bodyPath, out _))
+        {
+            return new MoveElementResponse { Error = "The diagram is not open." };
+        }
+
+        // The unary leg reaches the stream's session the same way UpdateView does - through
+        // the registry the two correlated legs share. The module decides what a move means
+        // and dispatches it as a command; this method stays type-agnostic.
+        var session = _viewports.Find(watchId, bodyPath);
+        if (session is null)
+        {
+            return new MoveElementResponse { Error = "The diagram is not open on this connection." };
+        }
+
+        var error = await session.MoveElementAsync(request.ElementId, request.NewParentId, request.Index, context.CancellationToken);
+        return new MoveElementResponse { Error = error };
     }
 
     private static void Apply(IDiagramSession session, DiagramViewport viewport, Channel<Delta> channel)

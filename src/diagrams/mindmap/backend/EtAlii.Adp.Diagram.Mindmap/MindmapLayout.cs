@@ -55,8 +55,8 @@ public static class MindmapLayout
             (goesLeft ? left : right).Add(child);
         }
 
-        PlaceColumn(right, rootBox.Right + metrics.HorizontalGap, rootBox.CenterY, towardsRight: true, metrics, isFolded, boxes);
-        PlaceColumn(left, rootBox.X - metrics.HorizontalGap, rootBox.CenterY, towardsRight: false, metrics, isFolded, boxes);
+        PlaceColumn(right, rootBox.Right + metrics.GapBeside(rootBox.Width), rootBox.CenterY, towardsRight: true, metrics, isFolded, boxes);
+        PlaceColumn(left, rootBox.X - metrics.GapBeside(rootBox.Width), rootBox.CenterY, towardsRight: false, metrics, isFolded, boxes);
 
         return boxes;
     }
@@ -77,14 +77,24 @@ public static class MindmapLayout
         }
 
         var heights = siblings.Select(sibling => SubtreeHeight(sibling, metrics, isFolded)).ToArray();
-        var total = heights.Sum() + metrics.VerticalGap * (siblings.Count - 1);
+        var widths = siblings.Select(sibling => metrics.Measure(sibling.Text).Width).ToArray();
+        var total = heights.Sum();
+        for (var i = 0; i < siblings.Count - 1; i++)
+        {
+            total += metrics.GapBetween(widths[i], widths[i + 1]);
+        }
+
         var y = centerY - total / 2;
 
         for (var i = 0; i < siblings.Count; i++)
         {
             var slotCenterY = y + heights[i] / 2;
             PlaceSubtree(siblings[i], edgeX, slotCenterY, towardsRight, metrics, isFolded, boxes);
-            y += heights[i] + metrics.VerticalGap;
+            y += heights[i];
+            if (i < siblings.Count - 1)
+            {
+                y += metrics.GapBetween(widths[i], widths[i + 1]);
+            }
         }
     }
 
@@ -108,7 +118,7 @@ public static class MindmapLayout
             return;
         }
 
-        var childEdge = towardsRight ? box.Right + metrics.HorizontalGap : box.X - metrics.HorizontalGap;
+        var childEdge = towardsRight ? box.Right + metrics.GapBeside(box.Width) : box.X - metrics.GapBeside(box.Width);
         PlaceColumn(node.Children, childEdge, centerY, towardsRight, metrics, isFolded, boxes);
     }
 
@@ -122,7 +132,12 @@ public static class MindmapLayout
         }
 
         var children = node.Children;
-        var stacked = children.Sum(child => SubtreeHeight(child, metrics, isFolded)) + metrics.VerticalGap * (children.Count - 1);
+        var stacked = children.Sum(child => SubtreeHeight(child, metrics, isFolded));
+        for (var i = 0; i < children.Count - 1; i++)
+        {
+            stacked += metrics.GapBetween(metrics.Measure(children[i].Text).Width, metrics.Measure(children[i + 1].Text).Width);
+        }
+
         return Math.Max(own, stacked);
     }
 }

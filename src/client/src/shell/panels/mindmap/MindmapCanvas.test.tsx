@@ -7,12 +7,13 @@ import { applyDelta, emptyModel, type MindmapModel } from "./mindmapModel";
 
 const select = vi.fn();
 const executeShortcut = vi.fn<(shortcut: { key: string }, source: { source: { value: { value: string } } }) => Promise<{ accepted: boolean; error: string }>>(async () => ({ accepted: true, error: "" }));
+const moveElement = vi.fn(async () => "");
 let currentModel: MindmapModel = emptyModel;
 let currentFailed = false;
 let currentSelection: unknown = null;
 
 vi.mock("./useMindmapStream", () => ({
-  useMindmapStream: () => ({ model: currentModel, loading: false, failed: currentFailed, reportView: vi.fn() }),
+  useMindmapStream: () => ({ model: currentModel, loading: false, failed: currentFailed, reportView: vi.fn(), moveElement }),
 }));
 
 vi.mock("../../context/ContextConnectionProvider", () => ({
@@ -23,14 +24,14 @@ vi.mock("../../context/ContextConnectionProvider", () => ({
 // Imported after the mocks so the component picks them up.
 const { MindmapCanvas } = await import("./MindmapCanvas");
 
-function node(id: string, text: string, x = 0, y = 0) {
+function node(id: string, text: string, x = 0, y = 0, parentId = "") {
   return create(ElementSchema, {
     id: { value: id },
     position: { x, y },
     type: "freeplane/mindmap+node",
     payload: {
       typeUrl: "type.googleapis.com/etalii.adp.mindmap.MindmapNodePayload",
-      value: toBinary(MindmapNodePayloadSchema, create(MindmapNodePayloadSchema, { text, hasChildren: id === "root" })),
+      value: toBinary(MindmapNodePayloadSchema, create(MindmapNodePayloadSchema, { text, hasChildren: id === "root", parentId })),
     },
   });
 }
@@ -44,8 +45,9 @@ const props = { projectId: new Uint8Array(16), entryId: new Uint8Array(16).fill(
 describe("MindmapCanvas", () => {
   beforeEach(() => {
     select.mockClear();
+    moveElement.mockClear();
     executeShortcut.mockClear();
-    currentModel = seed(node("root", "Root", 0, 0), node("a", "Alpha", 120, -20));
+    currentModel = seed(node("root", "Root", 0, 0), node("a", "Alpha", 120, -20, "root"));
     currentSelection = null;
     currentFailed = false;
   });
@@ -89,6 +91,9 @@ describe("MindmapCanvas", () => {
     expect(selection.id.source.value.value).toEqual(props.entryId); // the file
     expect(selection.detail.case).toBe("child");
     expect(selection.detail.value.id.source.value.value).toBe("a"); // the node
+    // Empty asks the backend to fill in the full text chain; sending only the node's own
+    // text was rejected as a partial path (found by the manual pass).
+    expect(selection.detail.value.path.segments).toEqual([]);
   });
 
   it("forwards a structural key against the focused node as a shortcut", () => {
@@ -139,5 +144,62 @@ describe("MindmapCanvas", () => {
 
     const alpha = container.querySelectorAll(".mindmap-node")[1];
     expect(alpha.classList.contains("mindmap-node-focused")).toBe(true);
+  });
+
+  it("draws a connector from each child to its parent, under the nodes", () => {
+    const { container } = render(<MindmapCanvas {...props} />);
+
+    const edges = container.querySelectorAll(".mindmap-edge");
+    expect(edges).toHaveLength(1); // one child, one line; the root has no parent to draw to
+    const edge = edges[0];
+    expect(edge.getAttribute("x1")).toBe("0"); // Root's centre
+    expect(edge.getAttribute("x2")).toBe("120"); // Alpha's centre
+  });
+
+  it("clicking the empty canvas deselects", () => {
+    const { container } = render(<MindmapCanvas {...props} />);
+    fireEvent.click(container.querySelectorAll(".mindmap-node")[1]); // select Alpha first
+    select.mockClear();
+    moveElement.mockClear();
+
+    fireEvent.click(container.querySelector(".mindmap-canvas-surface")!);
+
+    expect(select).toHaveBeenCalledWith(null);
+    expect(container.querySelectorAll(".mindmap-node-focused")).toHaveLength(0);
+  });
+
+  it("dragging one node onto another moves it there, and does not also select", () => {
+    const { container } = render(<MindmapCanvas {...props} />);
+    const [root, alpha] = [...container.querySelectorAll(".mindmap-node")];
+
+    fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
+    fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 40, clientY: 0 });
+    fireEvent.mouseUp(root);
+    fireEvent.click(alpha); // the click that trails the gesture
+
+    expect(moveElement).toHaveBeenCalledWith("a", "root");
+    expect(select).not.toHaveBeenCalled();
+  });
+
+  it("a wobbly click stays a click: no move below the drag threshold", () => {
+    const { container } = render(<MindmapCanvas {...props} />);
+    const [root, alpha] = [...container.querySelectorAll(".mindmap-node")];
+
+    fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
+    fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 121, clientY: -19 });
+    fireEvent.mouseUp(root);
+
+    expect(moveElement).not.toHaveBeenCalled();
+  });
+
+  it("releasing a drag over empty canvas moves nothing", () => {
+    const { container } = render(<MindmapCanvas {...props} />);
+    const alpha = container.querySelectorAll(".mindmap-node")[1];
+
+    fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
+    fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 10, clientY: 10 });
+    fireEvent.mouseUp(container.querySelector(".mindmap-canvas-surface")!);
+
+    expect(moveElement).not.toHaveBeenCalled();
   });
 });

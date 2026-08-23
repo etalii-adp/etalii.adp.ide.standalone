@@ -31,6 +31,15 @@ function entryDetail(kind: EntryKind, available = true): ContextLevelDetail {
   return create(ContextLevelDetailSchema, { detail: { case: "entry", value: { kind, available } } });
 }
 
+function elementDetail(text: string, options: { hasChildren?: boolean; folded?: boolean; linked?: boolean } = {}): ContextLevelDetail {
+  return create(ContextLevelDetailSchema, {
+    detail: {
+      case: "element",
+      value: { text, hasChildren: options.hasChildren ?? false, folded: options.folded ?? false, linked: options.linked ?? false },
+    },
+  });
+}
+
 describe("PropertyGridPanel", () => {
   beforeEach(() => {
     contextState.selection = null;
@@ -54,6 +63,25 @@ describe("PropertyGridPanel", () => {
     expect(screen.getByText("File")).toBeTruthy();
     expect(screen.getByText("Yes")).toBeTruthy();
     expect(screen.getByText("Explorer")).toBeTruthy();
+  });
+
+  it("shows a selected diagram element with the backend's own detail for it", () => {
+    // The user's ask behind this: selecting a node on the canvas fills the grid too, not
+    // only files and folders - from the pushed ElementDetail, no lookup of the panel's own.
+    const node = selectionFor(ContextSelectionSource.DIAGRAM_CANVAS, new Uint8Array(16).fill(2), ["Milestones"], NONE_DETAIL);
+    contextState.selection = selectionFor(ContextSelectionSource.EXPLORER, new Uint8Array(16).fill(1), ["roadmap.adp"], {
+      case: "child",
+      value: node,
+    });
+    contextState.levels = [entryDetail(EntryKind.FILE), elementDetail("Milestones", { hasChildren: true, folded: true })];
+
+    render(<PropertyGridPanel />);
+
+    expect(screen.getByRole("heading", { name: "Milestones" })).toBeTruthy();
+    expect(screen.getByText("Node")).toBeTruthy();
+    expect(screen.getByText("Text")).toBeTruthy();
+    expect(screen.getByText("Collapsed")).toBeTruthy();
+    expect(screen.getByText("Linked")).toBeTruthy();
   });
 
   it("shows every level of a chain, outermost first", () => {

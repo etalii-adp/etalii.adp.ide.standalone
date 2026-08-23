@@ -13,6 +13,9 @@ message MindmapNodePayload {
   bool has_children = 3;
   bool folded = 4;
   MindmapLink link = 5;  // absent when the node is not linked
+  // The parent node's element id; empty on the root. What lets the canvas draw the
+  // connector from each node to its parent without a structure query of its own.
+  string parent_id = 6;
 }
 
 // A node's link as the client needs it: the map-relative form the file stores (raw), the

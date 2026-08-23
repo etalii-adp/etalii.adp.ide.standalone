@@ -86,7 +86,10 @@ builder.Services.AddSingleton<MindmapViewState>();
 builder.Services.AddSingleton<IDiagramDocumentFactory, MindmapDocumentFactory>();
 builder.Services.AddSingleton<IContextSourceResolver, MindmapContextSourceResolver>();
 builder.Services.AddSingleton<IContextActionProvider, MindmapContextActionProvider>();
-builder.Services.AddSingleton<MindmapElementMapper>(_ => new MindmapElementMapper(MindmapMetrics.Default));
+// The module's layout numbers, with what appsettings.json's Mindmap section says applied -
+// the minimum gap between elements as a fraction of a node's width, above all.
+var mindmapOptions = builder.Configuration.GetSection(MindmapOptions.SectionName).Get<MindmapOptions>() ?? new MindmapOptions();
+builder.Services.AddSingleton<MindmapElementMapper>(_ => new MindmapElementMapper(mindmapOptions.ToMetrics()));
 builder.Services.AddSingleton<IDiagramSessionFactory, MindmapSessionFactory>();
 
 var clientAppOptionsSection = builder.Configuration.GetSection(ClientAppOptions.SectionName);

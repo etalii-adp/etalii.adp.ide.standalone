@@ -17,6 +17,9 @@ function sourceLabel(source: number): string {
 }
 
 function kindLabel(detail: ContextLevelDetail | undefined): string {
+  if (detail?.detail.case === "element") {
+    return "Node";
+  }
   if (detail?.detail.case !== "entry") {
     return "—";
   }
@@ -66,24 +69,50 @@ export function PropertyGridPanel() {
     <div className="property-grid" data-future-spec="adp-diagram-ide">
       {levelsOf(selection, levels).map(({ level, detail }, index) => {
         const segments = level.path?.segments ?? [];
-        const name = segments[segments.length - 1] ?? "";
+        const element = detail?.detail.case === "element" ? detail.detail.value : undefined;
+        const name = element?.text ?? segments[segments.length - 1] ?? "";
         const available = detail?.detail.case === "entry" ? detail.detail.value.available : true;
         return (
           <section className="property-grid-level" key={index}>
             <h3 className="property-grid-level-title">{name}</h3>
             <dl className="property-grid-rows">
-              <div className="property-grid-row">
-                <dt>Path</dt>
-                <dd>{segments.join("/")}</dd>
-              </div>
+              {element === undefined ? (
+                <div className="property-grid-row">
+                  <dt>Path</dt>
+                  <dd>{segments.join("/")}</dd>
+                </div>
+              ) : (
+                // A selected diagram element: what the backend resolved about the node
+                // itself, straight off the pushed detail - no lookup of this panel's own.
+                <>
+                  <div className="property-grid-row">
+                    <dt>Text</dt>
+                    <dd>{element.text}</dd>
+                  </div>
+                  <div className="property-grid-row">
+                    <dt>Children</dt>
+                    <dd>{element.hasChildren ? "Yes" : "No"}</dd>
+                  </div>
+                  <div className="property-grid-row">
+                    <dt>Collapsed</dt>
+                    <dd>{element.folded ? "Yes" : "No"}</dd>
+                  </div>
+                  <div className="property-grid-row">
+                    <dt>Linked</dt>
+                    <dd>{element.linked ? "Yes" : "No"}</dd>
+                  </div>
+                </>
+              )}
               <div className="property-grid-row">
                 <dt>Kind</dt>
                 <dd>{kindLabel(detail)}</dd>
               </div>
-              <div className="property-grid-row">
-                <dt>Available</dt>
-                <dd>{available ? "Yes" : "No"}</dd>
-              </div>
+              {element === undefined && (
+                <div className="property-grid-row">
+                  <dt>Available</dt>
+                  <dd>{available ? "Yes" : "No"}</dd>
+                </div>
+              )}
               <div className="property-grid-row">
                 <dt>Selected in</dt>
                 <dd>{sourceLabel(level.source)}</dd>

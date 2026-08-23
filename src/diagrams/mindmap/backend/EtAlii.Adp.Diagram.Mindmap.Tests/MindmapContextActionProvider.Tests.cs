@@ -53,13 +53,13 @@ public class MindmapContextActionProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task Discover_ANodeWithChildren_OffersFold_NamedByItsCurrentState()
+    public async Task Discover_ANodeWithChildren_OffersCollapseOrExpand_NamedByItsCurrentState()
     {
         var fold = (await Discover("ID_411002937")).Single(action => action.Id == MindmapContextActionProvider.ToggleFoldActionId);
-        Assert.Equal("Fold", fold.Label);
+        Assert.Equal("Collapse", fold.Label);
 
         var folded = (await Discover("ID_88117425")).Single(action => action.Id == MindmapContextActionProvider.ToggleFoldActionId);
-        Assert.Equal("Unfold", folded.Label); // FOLDED="true" in the file seeds it
+        Assert.Equal("Expand", folded.Label); // FOLDED="true" in the file seeds it
     }
 
     [Fact]

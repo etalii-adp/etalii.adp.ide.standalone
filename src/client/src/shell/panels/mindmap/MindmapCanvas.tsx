@@ -24,11 +24,16 @@ const NODE_HALF_HEIGHT = 16;
  * backend pushes, so a selection made anywhere else moves focus here too.
  */
 export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) {
-  const { model, loading, failed } = useMindmapStream(projectId, path);
+  const { model, loading, failed, moveElement } = useMindmapStream(projectId, path);
   const { select, executeShortcut } = useContextConnection();
   const { selection } = useContextSelection();
 
   const [focusedId, setFocusedId] = useState<string | undefined>(undefined);
+  // A drag in flight: which node it lifted, where it started, and whether it moved far enough
+  // to be a drag rather than a wobbly click. Refs, not state - nothing renders differently
+  // until the drop lands and the backend's deltas come back.
+  const dragRef = useRef<{ id: string; x: number; y: number; moved: boolean } | null>(null);
+  const dragJustEndedRef = useRef(false);
 
   // The node the backend says is selected inside this diagram, so focus follows a selection
   // from anywhere - the canvas reacts to the push, not to its own click (Requirement 10.5).
@@ -42,6 +47,12 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
   const surfaceRef = useRef<SVGSVGElement>(null);
 
   const reportSelection = (element: MindmapElement) => {
+    if (dragJustEndedRef.current) {
+      // The click that trails a completed drag is the same gesture, not a new selection.
+      dragJustEndedRef.current = false;
+      return;
+    }
+
     setFocusedId(element.id);
     // Clicking a node must also give the surface the keyboard: browsers do not reliably move
     // DOM focus into an SVG when a child shape is clicked, and without it every shortcut
@@ -49,6 +60,48 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
     surfaceRef.current?.focus();
     // A nested selection: the .adp file, then the node as a DIAGRAM_CANVAS child.
     select(nodeSelection(entryId, path, element));
+  };
+
+  /** Clicking the empty canvas deselects: the node loses focus and the backend hears the clear. */
+  const onBackgroundClick = (event: React.MouseEvent) => {
+    if (event.target !== event.currentTarget) {
+      return; // a node's own click; its handler answers
+    }
+
+    setFocusedId(undefined);
+    select(null);
+  };
+
+  const onNodePointerDown = (element: MindmapElement, event: React.MouseEvent) => {
+    dragRef.current = { id: element.id, x: event.clientX, y: event.clientY, moved: false };
+  };
+
+  const onSurfacePointerMove = (event: React.MouseEvent) => {
+    const drag = dragRef.current;
+    if (drag && !drag.moved && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) > 4) {
+      drag.moved = true;
+    }
+  };
+
+  /** The drop half of a drag: releasing over another node moves the dragged one under it. */
+  const onNodePointerUp = (element: MindmapElement) => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (!drag || !drag.moved) {
+      return;
+    }
+
+    dragJustEndedRef.current = true;
+    if (drag.id !== element.id) {
+      // Appended as the last child; the backend refuses the moves that make no sense (the
+      // root, a node into its own branch) and the change comes back as ordinary deltas.
+      void moveElement(drag.id, element.id);
+    }
+  };
+
+  const onSurfacePointerUp = () => {
+    // Released over empty canvas: the drag simply ends, nothing moves.
+    dragRef.current = null;
   };
 
   const onKeyDown = (event: React.KeyboardEvent) => {
@@ -99,7 +152,19 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
           role="tree"
           aria-label="Mind map"
           onKeyDown={onKeyDown}
+          onClick={onBackgroundClick}
+          onMouseMove={onSurfacePointerMove}
+          onMouseUp={onSurfacePointerUp}
         >
+          {/* The connectors first, so every line runs under the node boxes. Drawn from the
+              payload's parent id - each node knows whose child it is, and nothing more is
+              needed to see the tree. */}
+          {elements.map((element) => {
+            const parent = element.payload.parentId ? model.elements.get(element.payload.parentId) : undefined;
+            return parent === undefined ? null : (
+              <line key={`edge-${element.id}`} className="mindmap-edge" x1={parent.x} y1={parent.y} x2={element.x} y2={element.y} />
+            );
+          })}
           {elements.map((element) => (
             <MindmapNode
               key={element.id}
@@ -107,6 +172,8 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
               focused={element.id === focusedId}
               folded={isFolded(model, element.id)}
               onSelect={() => reportSelection(element)}
+              onPointerDown={(event) => onNodePointerDown(element, event)}
+              onPointerUp={() => onNodePointerUp(element)}
             />
           ))}
         </svg>
@@ -120,9 +187,11 @@ interface MindmapNodeProps {
   focused: boolean;
   folded: boolean;
   onSelect: () => void;
+  onPointerDown: (event: React.MouseEvent) => void;
+  onPointerUp: () => void;
 }
 
-function MindmapNode({ element, focused, folded, onSelect }: MindmapNodeProps) {
+function MindmapNode({ element, focused, folded, onSelect, onPointerDown, onPointerUp }: MindmapNodeProps) {
   const { text, notes, hasChildren, link } = element.payload;
   const indicators = [notes ? "•" : "", link ? "↗" : "", folded && hasChildren ? "⊕" : ""].join(" ").trim();
 
@@ -131,6 +200,8 @@ function MindmapNode({ element, focused, folded, onSelect }: MindmapNodeProps) {
       className={`mindmap-node${focused ? " mindmap-node-focused" : ""}`}
       transform={`translate(${element.x} ${element.y})`}
       onClick={onSelect}
+      onMouseDown={onPointerDown}
+      onMouseUp={onPointerUp}
       role="treeitem"
       aria-selected={focused}
     >
@@ -166,7 +237,11 @@ function nodeSelection(entryId: Uint8Array, path: readonly string[], element: Mi
   const child = create(ContextSelectionSchema, {
     source: 2, // DIAGRAM_CANVAS
     id: { source: { case: "elementId", value: { value: element.id } } },
-    path: { segments: [element.payload.text] },
+    // Empty asks the backend to fill it in: the node's path is its whole text chain from the
+    // root, which the resolver derives and echoes back - a canvas that sent only the node's
+    // own text was rejected for exactly that partial path (found by the manual pass; the
+    // root's one-segment chain had masked it in every earlier check).
+    path: { segments: [] },
     detail: { case: "none", value: create(EmptySchema) },
   });
 

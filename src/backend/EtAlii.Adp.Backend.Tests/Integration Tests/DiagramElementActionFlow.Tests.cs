@@ -184,16 +184,57 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
     }
 
     /// <summary>The canvas's nested selection: the .adp file, then the node as its child.</summary>
-    private static ContextSelection NodeChain(ShortGuid entryId, string nodeId)
+    private static ContextSelection NodeChain(ShortGuid entryId, string nodeId, string[]? filePath = null, string[]? nodePath = null)
     {
         var chain = FileChain(entryId);
+        chain.Path.Segments.AddRange(filePath ?? []);
         chain.Child = new ContextSelection
         {
             Source = ContextSelectionSource.DiagramCanvas,
             Id = new ContextSource { ElementId = new ElementId { Value = nodeId } },
             Path = new Path(),
         };
+        chain.Child.Path.Segments.AddRange(nodePath ?? []);
         return chain;
+    }
+
+    [Fact]
+    public async Task TheCanvassOwnSelectionShape_OfANonRootNode_IsAccepted()
+    {
+        // What MindmapCanvas actually sends for a click on a non-root node: the file with its
+        // project-relative path, the node as a DIAGRAM_CANVAS child. Found rejected by the
+        // manual pass - every earlier test had clicked only the root, whose one-segment path
+        // happened to satisfy the resolver's full text-chain expectation.
+        await File.WriteAllTextAsync(
+            IoPath.Combine(_projectFolder, "deep.adp"), "freeplane/mindmap\n", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            IoPath.Combine(_projectFolder, "deep.mm"),
+            "<map version=\"freeplane 1.11.5\">\n<node TEXT=\"deep\" ID=\"ID_d0\">\n<node TEXT=\"Alpha\" ID=\"ID_d1\"/>\n</node>\n</map>\n",
+            TestContext.Current.CancellationToken);
+
+        using var channel = CreateChannel();
+        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
+        var contextClient = new ContextService.ContextServiceClient(channel);
+        var headers = await LoginAsync(channel);
+        var projectId = await AddProjectAsync(channel, headers);
+        var watchId = ShortGuid.NewShortGuid();
+
+        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        var entryId = entries.Entries.Entries_.Single(e => e.Name == "deep.adp").Id;
+
+        // The canvas's shape: the file with its project-relative path, the node with an empty
+        // path that asks the backend to fill in the full text chain.
+        var canvasShape = await contextClient.SelectAsync(
+            new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_d1", filePath: ["deep.adp"]) },
+            headers, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal("", canvasShape.Error);
+
+        // A partial node path - the node's own text without its ancestors - is not the node's
+        // path and stays refused: the resolver checks the chain, it does not guess at it.
+        var partialPath = await contextClient.SelectAsync(
+            new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_d1", filePath: ["deep.adp"], nodePath: ["Alpha"]) },
+            headers, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.NotEqual("", partialPath.Error);
     }
 
     private static ContextSelection FileChain(ShortGuid entryId) => new()
