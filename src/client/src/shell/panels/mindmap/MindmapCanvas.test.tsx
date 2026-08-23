@@ -8,10 +8,11 @@ import { applyDelta, emptyModel, type MindmapModel } from "./mindmapModel";
 const select = vi.fn();
 const executeShortcut = vi.fn<(shortcut: { key: string }, source: { source: { value: { value: string } } }) => Promise<{ accepted: boolean; error: string }>>(async () => ({ accepted: true, error: "" }));
 let currentModel: MindmapModel = emptyModel;
+let currentFailed = false;
 let currentSelection: unknown = null;
 
 vi.mock("./useMindmapStream", () => ({
-  useMindmapStream: () => ({ model: currentModel, loading: false, reportView: vi.fn() }),
+  useMindmapStream: () => ({ model: currentModel, loading: false, failed: currentFailed, reportView: vi.fn() }),
 }));
 
 vi.mock("../../context/ContextConnectionProvider", () => ({
@@ -46,6 +47,7 @@ describe("MindmapCanvas", () => {
     executeShortcut.mockClear();
     currentModel = seed(node("root", "Root", 0, 0), node("a", "Alpha", 120, -20));
     currentSelection = null;
+    currentFailed = false;
   });
 
   it("renders a node per streamed element", () => {
@@ -54,6 +56,27 @@ describe("MindmapCanvas", () => {
     expect(container.querySelectorAll(".mindmap-node")).toHaveLength(2);
     expect(container.textContent).toContain("Root");
     expect(container.textContent).toContain("Alpha");
+  });
+
+  it("gives the surface the keyboard when a node is clicked", () => {
+    // Found by the diagram-workspace-tabs manual pass: clicking an SVG child shape does not
+    // reliably move DOM focus into the SVG, so every shortcut kept landing in the explorer.
+    const { container } = render(<MindmapCanvas {...props} />);
+
+    fireEvent.click(container.querySelectorAll(".mindmap-node")[1]);
+
+    expect(document.activeElement).toBe(container.querySelector(".mindmap-canvas-surface"));
+  });
+
+  it("says the diagram is no longer available, naming its path, when the stream failed for good", () => {
+    // diagram-workspace-tabs Requirement 5.1: the tab remains and explains itself - never a
+    // crash, a spinner, or a silently frozen canvas.
+    currentFailed = true;
+
+    const { container } = render(<MindmapCanvas {...props} />);
+
+    expect(container.textContent).toContain("This diagram is no longer available at docs/map.adp.");
+    expect(container.querySelectorAll(".mindmap-node")).toHaveLength(0);
   });
 
   it("reports a nested file->node selection when a node is clicked", () => {

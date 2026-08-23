@@ -60,7 +60,15 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
 
         var detail = new ContextLevelDetail
         {
-            Entry = new EntryDetail { Kind = isFolder ? EntryKind.Folder : EntryKind.File, Available = IsAvailable(fullPath, isFolder) },
+            Entry = new EntryDetail
+            {
+                Kind = isFolder ? EntryKind.Folder : EntryKind.File,
+                Available = IsAvailable(fullPath, isFolder),
+                // The one word the workspace needs to open the right canvas: which diagram
+                // this file is, said by the same routing that opens it - so the client never
+                // grows a file-type table (diagram-workspace-tabs Requirement 1).
+                DiagramMimeType = isFolder ? "" : DiagramMimeTypeOf(fullPath),
+            },
         };
 
         var level = new ContextResolvedLevel(
@@ -155,6 +163,21 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
 
     private static bool IsAvailable(string fullPath, bool isFolder) =>
         isFolder ? Directory.Exists(fullPath) : File.Exists(fullPath);
+
+    /// <summary>
+    /// The routed diagram type of a file, for the selection detail. <c>Routed</c> carries the
+    /// definition's type and <c>UnknownType</c> the type the registration names - the client
+    /// can then open a tab that says the type is unavailable rather than treating the file as
+    /// plain. Everything else - no diagram, unreadable, or an extension more than one type
+    /// claims - is empty: what the backend refuses to route is not presented as openable.
+    /// </summary>
+    private string DiagramMimeTypeOf(string fullPath) =>
+        _router.Route(fullPath) switch
+        {
+            DiagramRouting.Routed routed => routed.Definition.Origin.MimeType,
+            DiagramRouting.UnknownType unknown => unknown.MimeType,
+            _ => "",
+        };
 
     private sealed class Subscription : IDisposable
     {

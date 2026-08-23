@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { createClient } from "@connectrpc/connect";
+import { Code, ConnectError, createClient } from "@connectrpc/connect";
 import { useAuth } from "../../../auth/AuthContext";
 import { DiagramService } from "../../../generated/diagrams_pb";
 import { useContextConnection } from "../../context/ContextConnectionProvider";
@@ -17,6 +17,12 @@ export interface MindmapStream {
   model: MindmapModel;
   /** True until the first delta arrives, so the canvas can show it is loading rather than empty. */
   loading: boolean;
+  /**
+   * True once the backend answered with a permanent error - the diagram cannot be opened at
+   * this path any more (deleted, moved, unroutable). The reconnect loop has stopped; the
+   * canvas shows an unavailable state instead (diagram-workspace-tabs Requirement 5.1).
+   */
+  failed: boolean;
   /** Tells the backend what the canvas can see, so a large map does not stream in full. */
   reportView: (viewport: Viewport) => void;
 }
@@ -32,6 +38,7 @@ export function useMindmapStream(projectId: Uint8Array, path: readonly string[])
   const { watchId } = useContextConnection();
   const [model, setModel] = useState<MindmapModel>(emptyModel);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const clientRef = useRef(createClient(DiagramService, transport));
 
   const pathKey = path.join("/");
@@ -41,6 +48,7 @@ export function useMindmapStream(projectId: Uint8Array, path: readonly string[])
     const controller = new AbortController();
     let active = true;
     setModel(emptyModel);
+    setFailed(false);
     setLoading(true);
 
     void (async () => {
@@ -59,8 +67,20 @@ export function useMindmapStream(projectId: Uint8Array, path: readonly string[])
             setLoading(false);
             setModel((current) => applyDelta(current, delta));
           }
-        } catch {
+        } catch (error) {
           if (!active) {
+            return;
+          }
+          // A permanent answer ends the loop: the backend said this diagram cannot be opened
+          // here - missing, unroutable, or a type without a session. Retrying would spin
+          // forever behind a tab showing nothing (diagram-workspace-tabs Requirement 5.1).
+          // Everything else stays a transient fault and keeps the reconnect behaviour.
+          if (
+            error instanceof ConnectError &&
+            (error.code === Code.FailedPrecondition || error.code === Code.NotFound || error.code === Code.Unimplemented)
+          ) {
+            setFailed(true);
+            setLoading(false);
             return;
           }
           // Brief back-off before re-opening, so a persistent failure does not spin.
@@ -94,5 +114,5 @@ export function useMindmapStream(projectId: Uint8Array, path: readonly string[])
       });
   };
 
-  return { model, loading, reportView };
+  return { model, loading, failed, reportView };
 }

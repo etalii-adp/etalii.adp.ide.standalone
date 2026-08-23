@@ -262,6 +262,38 @@ public sealed partial class ContextServiceImpl
             return HistoryActionsBroadcaster.ProjectTarget(rootPath);
         }
 
+        // An element lives inside a diagram, so a bare element id is resolvable only within
+        // the connection's current selection - whose chain names the file the element is in.
+        // The canvas sends exactly this: a keystroke against its focused node, which is
+        // normally the current innermost already (mindmap-diagram Requirement 8.4). An
+        // element of some other file than the selected one resolves to nothing, as it should.
+        if (source.SourceCase == ContextSource.SourceOneofCase.ElementId)
+        {
+            var record = _selectionStore.Get(watchId);
+            if (record is null)
+            {
+                return null;
+            }
+
+            var innermost = record.Innermost.Target;
+            if (innermost.ElementId == source.ElementId.Value)
+            {
+                return innermost;
+            }
+
+            // Focus moved to another node of the same diagram and the keystroke beat the new
+            // selection's round trip: resolve the element under the selection's file level.
+            var fileLevel = record.Levels.LastOrDefault(level => level.Scope == ContextScope.Hierarchy);
+            if (fileLevel is null)
+            {
+                return null;
+            }
+
+            var elementResolution = await _selectionResolver.ResolveLevelAsync(
+                watchId, rootPath, ContextSelectionSource.Unspecified, source, [], fileLevel, context.CancellationToken);
+            return elementResolution is ContextLevelResolution.Resolved resolvedElement ? resolvedElement.Level.Target : null;
+        }
+
         var resolution = await _selectionResolver.ResolveLevelAsync(
             watchId, rootPath, ContextSelectionSource.Unspecified, source, [], null, context.CancellationToken);
 

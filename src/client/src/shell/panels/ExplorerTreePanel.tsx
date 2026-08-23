@@ -560,6 +560,11 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
     const { leafKey, expandKey } = resolveRevealPath(state, pendingReveal);
     if (leafKey !== undefined) {
       focusNode(leafKey);
+      // Activated, not merely selected: a created diagram opens its view through exactly the
+      // rule a double-click uses, and the gestureKeyRef suppresses the duplicate plain select
+      // the focus above would otherwise push (diagram-workspace-tabs Requirement 3). For an
+      // entry that is no diagram, an activation is just a selection.
+      selectNode(leafKey, { case: "action", value: ContextSelectionAction.ACTIVATE });
       clearReveal();
       return;
     }
@@ -570,7 +575,7 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
         toggleExpand(expandKey, node);
       }
     }
-  }, [clearReveal, focusNode, pendingReveal, state, toggleExpand]);
+  }, [clearReveal, focusNode, pendingReveal, selectNode, state, toggleExpand]);
 
   // Nothing arrived in time - the entry may be somewhere this connection cannot see. Giving
   // up keeps a stale reveal from sitting there and grabbing focus much later.

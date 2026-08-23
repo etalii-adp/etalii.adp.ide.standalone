@@ -4,7 +4,7 @@ import { ShellPromptHost } from "./context/ShellPromptHost";
 import { RibbonBar } from "./ribbon/RibbonBar";
 import { SplitPane } from "./panes/SplitPane";
 import { TabbedPane } from "./panes/TabbedPane";
-import { DiagramPanel } from "./panels/DiagramPanel";
+import { DiagramTabsPanel } from "./panels/DiagramTabsPanel";
 import { ErrorsWarningsPanel } from "./panels/ErrorsWarningsPanel";
 import { HierarchyPanel } from "./panels/HierarchyPanel";
 import { PropertyGridPanel } from "./panels/PropertyGridPanel";
@@ -54,24 +54,7 @@ export function WorkspaceShell({ projectId, projectName, onBack }: WorkspaceShel
                     direction="vertical"
                     initialSplit={0.7}
                     minSize={120}
-                    first={
-                      <TabbedPane
-                        tabs={[
-                          {
-                            id: "diagram-1",
-                            label: "Diagram 1",
-                            icon: "mdi-file-tree-outline",
-                            content: <DiagramPanel />,
-                          },
-                          {
-                            id: "diagram-2",
-                            label: "Diagram 2",
-                            icon: "mdi-file-tree-outline",
-                            content: <DiagramPanel />,
-                          },
-                        ]}
-                      />
-                    }
+                    first={<DiagramTabsPanel projectId={projectId} />}
                     second={
                       <TabbedPane
                         tabs={[

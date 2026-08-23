@@ -147,6 +147,12 @@ message ElementDetail {
 message EntryDetail {
   EntryKind kind = 1;
   bool available = 2;
+  // The diagram type of this entry, resolved by the backend through the same routing that
+  // opens it - the .adp first line, or a declared body extension for a bare body. Empty for
+  // anything that is not an openable diagram, including a body whose extension more than one
+  // type claims: a file the backend refuses to route is not presented as openable
+  // (diagram-workspace-tabs Requirement 1). The client keeps no file-type table of its own.
+  string diagram_mime_type = 3;
 }
 
 message ContextSelectionChanged {

@@ -16,14 +16,24 @@ export interface DiagramPanelProps {
 }
 
 /**
- * Hosts a diagram's canvas. A mindmap renders through {@link MindmapCanvas}; a type without a
- * canvas yet falls back to the placeholder, as does an empty tab. Opening a diagram from a
- * selection - choosing which tab shows which file - belongs to the workspace's tab system
- * (`diagram-ide-mockup`), which is still a mockup; this panel is ready for it.
+ * Hosts a diagram's canvas. A mindmap renders through {@link MindmapCanvas}; an openable type
+ * this build has no canvas for says so by name rather than showing a blank surface
+ * (diagram-workspace-tabs Requirement 4.4). The tab system (`DiagramTabsPanel`) always hands
+ * this panel a diagram; the no-diagram fallback stays only as a safety net.
  */
 export function DiagramPanel({ diagram }: DiagramPanelProps) {
   if (diagram?.mimeType === "freeplane/mindmap") {
     return <MindmapCanvas projectId={diagram.projectId} entryId={diagram.entryId} path={diagram.path} />;
+  }
+
+  if (diagram !== undefined && diagram.mimeType !== "") {
+    return (
+      <PanelPlaceholder
+        title={diagram.path[diagram.path.length - 1] ?? "Diagram"}
+        description={`No canvas can render ${diagram.mimeType} diagrams yet.`}
+        futureSpec="adp-diagram-ide"
+      />
+    );
   }
 
   return (

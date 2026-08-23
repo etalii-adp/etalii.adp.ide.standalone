@@ -35,7 +35,7 @@ describe("App Gate()", () => {
     fireEvent.click(screen.getByText("Select Test Project"));
 
     expect(screen.getByText("Test Project")).toBeTruthy();
-    expect(screen.getAllByRole("tablist")).toHaveLength(3);
+    expect(screen.getAllByRole("tablist")).toHaveLength(2);
     expect(screen.queryByText(/goes here \(adp-diagram-ide\)/)).toBeNull();
   });
 
@@ -43,7 +43,7 @@ describe("App Gate()", () => {
     render(<App />);
 
     fireEvent.click(screen.getByText("Select Test Project"));
-    expect(screen.getAllByRole("tablist")).toHaveLength(3);
+    expect(screen.getAllByRole("tablist")).toHaveLength(2);
 
     fireEvent.click(screen.getByText(/Back to projects/));
 
