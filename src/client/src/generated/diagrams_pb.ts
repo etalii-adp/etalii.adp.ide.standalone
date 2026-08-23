@@ -4,6 +4,8 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { ShortGuid } from "./shared_pb";
+import { file_shared } from "./shared_pb";
 import type { Path, ViewUpdate } from "./connection_pb";
 import { file_connection } from "./connection_pb";
 import type { DeltaSchema } from "./deltas_pb";
@@ -14,50 +16,122 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file diagrams.proto.
  */
 export const file_diagrams: GenFile = /*@__PURE__*/
-  fileDesc("Cg5kaWFncmFtcy5wcm90bxIKZXRhbGlpLmFkcCJuCg1DbGllbnRNZXNzYWdlEiMKB2Nvbm5lY3QYASABKAsyEC5ldGFsaWkuYWRwLlBhdGhIABItCgt2aWV3X3VwZGF0ZRgCIAEoCzIWLmV0YWxpaS5hZHAuVmlld1VwZGF0ZUgAQgkKB3BheWxvYWQyTQoORGlhZ3JhbVNlcnZpY2USOwoHQ29ubmVjdBIZLmV0YWxpaS5hZHAuQ2xpZW50TWVzc2FnZRoRLmV0YWxpaS5hZHAuRGVsdGEoATABQg2qAgpFdEFsaWkuQWRwYgZwcm90bzM", [file_connection, file_deltas]);
+  fileDesc("Cg5kaWFncmFtcy5wcm90bxIKZXRhbGlpLmFkcCKIAQoST3BlbkRpYWdyYW1SZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAyABKAsyEC5ldGFsaWkuYWRwLlBhdGgirQEKEVVwZGF0ZVZpZXdSZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAyABKAsyEC5ldGFsaWkuYWRwLlBhdGgSJAoEdmlldxgEIAEoCzIWLmV0YWxpaS5hZHAuVmlld1VwZGF0ZSIjChJVcGRhdGVWaWV3UmVzcG9uc2USDQoFZXJyb3IYASABKAkymgEKDkRpYWdyYW1TZXJ2aWNlEjsKBE9wZW4SHi5ldGFsaWkuYWRwLk9wZW5EaWFncmFtUmVxdWVzdBoRLmV0YWxpaS5hZHAuRGVsdGEwARJLCgpVcGRhdGVWaWV3Eh0uZXRhbGlpLmFkcC5VcGRhdGVWaWV3UmVxdWVzdBoeLmV0YWxpaS5hZHAuVXBkYXRlVmlld1Jlc3BvbnNlQg2qAgpFdEFsaWkuQWRwYgZwcm90bzM", [file_shared, file_connection, file_deltas]);
 
 /**
- * @generated from message etalii.adp.ClientMessage
+ * @generated from message etalii.adp.OpenDiagramRequest
  */
-export type ClientMessage = Message<"etalii.adp.ClientMessage"> & {
+export type OpenDiagramRequest = Message<"etalii.adp.OpenDiagramRequest"> & {
   /**
-   * @generated from oneof etalii.adp.ClientMessage.payload
+   * @generated from field: etalii.adp.ShortGuid project_id = 1;
    */
-  payload: {
-    /**
-     * expected as the first message on the stream
-     *
-     * @generated from field: etalii.adp.Path connect = 1;
-     */
-    value: Path;
-    case: "connect";
-  } | {
-    /**
-     * @generated from field: etalii.adp.ViewUpdate view_update = 2;
-     */
-    value: ViewUpdate;
-    case: "viewUpdate";
-  } | { case: undefined; value?: undefined };
+  projectId?: ShortGuid | undefined;
+
+  /**
+   * the connection this stream belongs to - the same id the hierarchy and context calls carry
+   *
+   * @generated from field: etalii.adp.ShortGuid watch_id = 2;
+   */
+  watchId?: ShortGuid | undefined;
+
+  /**
+   * project-relative path of the diagram's .adp file, never a filesystem path
+   *
+   * @generated from field: etalii.adp.Path path = 3;
+   */
+  path?: Path | undefined;
 };
 
 /**
- * Describes the message etalii.adp.ClientMessage.
- * Use `create(ClientMessageSchema)` to create a new message.
+ * Describes the message etalii.adp.OpenDiagramRequest.
+ * Use `create(OpenDiagramRequestSchema)` to create a new message.
  */
-export const ClientMessageSchema: GenMessage<ClientMessage> = /*@__PURE__*/
+export const OpenDiagramRequestSchema: GenMessage<OpenDiagramRequest> = /*@__PURE__*/
   messageDesc(file_diagrams, 0);
 
 /**
+ * @generated from message etalii.adp.UpdateViewRequest
+ */
+export type UpdateViewRequest = Message<"etalii.adp.UpdateViewRequest"> & {
+  /**
+   * @generated from field: etalii.adp.ShortGuid project_id = 1;
+   */
+  projectId?: ShortGuid | undefined;
+
+  /**
+   * @generated from field: etalii.adp.ShortGuid watch_id = 2;
+   */
+  watchId?: ShortGuid | undefined;
+
+  /**
+   * @generated from field: etalii.adp.Path path = 3;
+   */
+  path?: Path | undefined;
+
+  /**
+   * @generated from field: etalii.adp.ViewUpdate view = 4;
+   */
+  view?: ViewUpdate | undefined;
+};
+
+/**
+ * Describes the message etalii.adp.UpdateViewRequest.
+ * Use `create(UpdateViewRequestSchema)` to create a new message.
+ */
+export const UpdateViewRequestSchema: GenMessage<UpdateViewRequest> = /*@__PURE__*/
+  messageDesc(file_diagrams, 1);
+
+/**
+ * @generated from message etalii.adp.UpdateViewResponse
+ */
+export type UpdateViewResponse = Message<"etalii.adp.UpdateViewResponse"> & {
+  /**
+   * Empty on success; a diagram that is not open on this connection answers with an error.
+   *
+   * @generated from field: string error = 1;
+   */
+  error: string;
+};
+
+/**
+ * Describes the message etalii.adp.UpdateViewResponse.
+ * Use `create(UpdateViewResponseSchema)` to create a new message.
+ */
+export const UpdateViewResponseSchema: GenMessage<UpdateViewResponse> = /*@__PURE__*/
+  messageDesc(file_diagrams, 2);
+
+/**
+ * One open diagram, as two correlated one-way legs (tech.md's "gRPC call shapes"): a browser
+ * on grpc-web cannot stream a request body, so the bidirectional Connect this service was
+ * first declared with could never have been called from the client. Open returns the delta
+ * stream for a diagram; UpdateView is the unary call that tells the backend what the client
+ * can see, correlated to the stream by the connection's watch_id and the diagram's path.
+ *
  * @generated from service etalii.adp.DiagramService
  */
 export const DiagramService: GenService<{
   /**
-   * @generated from rpc etalii.adp.DiagramService.Connect
+   * Streams the baseline - an Add for everything in view - then every later change, until
+   * the client ends the call. The first message always reflects the current document, which
+   * is what lets a reconnect re-baseline without a reconciliation protocol of its own.
+   *
+   * @generated from rpc etalii.adp.DiagramService.Open
    */
-  connect: {
-    methodKind: "bidi_streaming";
-    input: typeof ClientMessageSchema;
+  open: {
+    methodKind: "server_streaming";
+    input: typeof OpenDiagramRequestSchema;
     output: typeof DeltaSchema;
+  },
+  /**
+   * The client's viewport, so the backend delivers what falls inside it and not the whole
+   * map. Never recorded on the history and never written to a file.
+   *
+   * @generated from rpc etalii.adp.DiagramService.UpdateView
+   */
+  updateView: {
+    methodKind: "unary";
+    input: typeof UpdateViewRequestSchema;
+    output: typeof UpdateViewResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_diagrams, 0);
