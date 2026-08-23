@@ -55,6 +55,14 @@ public interface IContextSelectionStore
     /// <summary>Records "nothing selected" and pushes it.</summary>
     void Clear(ShortGuid watchId);
 
+    /// <summary>
+    /// Re-derives the current selection's actions and pushes the result. A completed action can
+    /// change what applies to the very same selection - a collapse must offer Expand next - and
+    /// the selection itself never moved, so no observation triggers the rediscovery for us.
+    /// Nothing selected, or an unknown connection: nothing happens.
+    /// </summary>
+    void Refresh(ShortGuid watchId);
+
     /// <summary>Pushes a selection without making it current (a preview).</summary>
     void PushTransient(ShortGuid watchId, ContextSelectionRecord record);
 

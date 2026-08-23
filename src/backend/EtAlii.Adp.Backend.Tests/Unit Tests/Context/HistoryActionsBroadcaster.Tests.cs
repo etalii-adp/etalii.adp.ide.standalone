@@ -173,6 +173,8 @@ public class HistoryActionsBroadcasterTests
 
         public void Clear(ShortGuid watchId) => throw new NotSupportedException();
 
+        public void Refresh(ShortGuid watchId) => throw new NotSupportedException();
+
         public void PushTransient(ShortGuid watchId, ContextSelectionRecord record) => throw new NotSupportedException();
 
         public void UpdateFromTrack(ShortGuid watchId, int levelIndex, IReadOnlyList<string>? newRelativePath) => throw new NotSupportedException();

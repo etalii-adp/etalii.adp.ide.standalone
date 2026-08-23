@@ -111,6 +111,31 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         }
     }
 
+    public void Refresh(ShortGuid watchId)
+    {
+        if (!_entries.TryGetValue(watchId, out var entry))
+        {
+            return;
+        }
+
+        ContextSelectionRecord? record;
+        ContextRediscovery? rediscover;
+        lock (entry.Gate)
+        {
+            record = entry.Record;
+            rediscover = entry.Rediscover;
+        }
+
+        if (record is null || rediscover is null)
+        {
+            return;
+        }
+
+        // The same off-thread re-derivation a moved selection gets; a selection replaced in
+        // the meantime supersedes this push inside RediscoverAndPushAsync.
+        _ = RediscoverAndPushAsync(entry, record, rediscover);
+    }
+
     public void PushTransient(ShortGuid watchId, ContextSelectionRecord record)
     {
         if (!_entries.TryGetValue(watchId, out var entry))

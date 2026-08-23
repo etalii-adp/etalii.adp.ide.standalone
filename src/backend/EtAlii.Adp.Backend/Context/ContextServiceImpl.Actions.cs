@@ -84,6 +84,9 @@ public sealed partial class ContextServiceImpl
         if (execution is ContextExecutionResult.Completed)
         {
             _logger.Information("Action {ActionId} completed on {TargetPath}", owner.Action.Id, target.ResolvedFullPath);
+            // The action may have changed what applies to the very same selection - a collapse
+            // must offer Expand next - so its actions are re-derived and pushed.
+            _selectionStore.Refresh(request.WatchId);
             return new ExecuteActionResponse { Accepted = true };
         }
 
@@ -200,6 +203,9 @@ public sealed partial class ContextServiceImpl
             interaction.ActionId,
             interaction.Target.ResolvedFullPath,
             commit.CreatedFullPath.Length > 0 ? $", creating {commit.CreatedFullPath}" : string.Empty);
+        // A commit can change the selection's own actions too - adding a child to a leaf makes
+        // it collapsible - and, like the direct completion above, nothing else re-derives them.
+        _selectionStore.Refresh(interaction.WatchId);
 
         // No hierarchy change is pushed from here - the connection's own RootFolderWatcher
         // observes what happened on disk and reports it through the existing change feed. What

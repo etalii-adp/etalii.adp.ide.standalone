@@ -237,12 +237,77 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         Assert.NotEqual("", partialPath.Error);
     }
 
+    [Fact]
+    public async Task ACompletedAction_RepushesTheSelectionsActions_SoACollapseOffersExpand()
+    {
+        // Found by the bezier-connector manual pass: after Collapse ran from the node's
+        // context menu, re-opening the menu still offered Collapse. The completed action
+        // changed what applies to the very same selection, but nobody re-derived its actions.
+        await File.WriteAllTextAsync(
+            IoPath.Combine(_projectFolder, "fold.adp"), "freeplane/mindmap\n", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(
+            IoPath.Combine(_projectFolder, "fold.mm"),
+            "<map version=\"freeplane 1.11.5\">\n<node TEXT=\"fold\" ID=\"ID_f0\">\n<node TEXT=\"branch\" ID=\"ID_f1\">\n<node TEXT=\"leaf\" ID=\"ID_f2\"/>\n</node>\n</node>\n</map>\n",
+            TestContext.Current.CancellationToken);
+
+        using var channel = CreateChannel();
+        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
+        var contextClient = new ContextService.ContextServiceClient(channel);
+        var headers = await LoginAsync(channel);
+        var projectId = await AddProjectAsync(channel, headers);
+        var watchId = ShortGuid.NewShortGuid();
+
+        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        var entryId = entries.Entries.Entries_.Single(e => e.Name == "fold.adp").Id;
+
+        using var cts = CreateMessageTimeout();
+        using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
+
+        await contextClient.SelectAsync(
+            new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_f1", filePath: ["fold.adp"]) },
+            headers, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Contains("Collapse", ActionLabels(await ReadUntilSelectionActionsAsync(contextCall.ResponseStream, cts.Token)));
+
+        var executed = await contextClient.ExecuteActionAsync(
+            new ExecuteActionRequest
+            {
+                ProjectId = projectId,
+                WatchId = watchId,
+                Source = new ContextSource { ElementId = new ElementId { Value = "ID_f1" } },
+                InteractionId = ShortGuid.NewShortGuid(),
+                ActionId = "mindmap.toggle-fold",
+            },
+            headers, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.True(executed.Accepted, executed.Error);
+
+        Assert.Contains("Expand", ActionLabels(await ReadUntilSelectionActionsAsync(contextCall.ResponseStream, cts.Token)));
+    }
+
     private static ContextSelection FileChain(ShortGuid entryId) => new()
     {
         Source = ContextSelectionSource.Explorer,
         Id = new ContextSource { EntryId = entryId },
         Path = new Path(),
     };
+
+    private static string[] ActionLabels(ContextSelectionChanged changed) =>
+        changed.Actions.SelectMany(group => group.Actions).Select(action => action.Label).ToArray();
+
+    private static async Task<ContextSelectionChanged> ReadUntilSelectionActionsAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
+    {
+        while (await stream.MoveNext(cancellationToken))
+        {
+            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Selection
+                && stream.Current.Selection.Selection is not null
+                && stream.Current.Selection.Actions.Count > 0)
+            {
+                return stream.Current.Selection;
+            }
+        }
+
+        throw new InvalidOperationException("The stream ended before a selection with actions arrived.");
+    }
 
     private static async Task<ContextPrompt> ReadUntilPromptAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
     {
