@@ -250,14 +250,14 @@ public class HierarchyContextSourceResolverTests : IDisposable
     // The workspace opens tabs from the pushed selection, so the detail must say which files
     // are diagrams - through the router, never a client-side file-type table.
 
-    private static readonly EtAlii.Adp.Diagram.DiagramDefinition Mindmap =
-        new(new EtAlii.Adp.Diagram.DiagramOrigin("freeplane", "mindmap"), "Mind map", ".mm");
+    private static readonly Diagram.DiagramDefinition Mindmap =
+        new(new Diagram.DiagramOrigin("freeplane", "mindmap"), "Mind map", ".mm");
 
-    private static readonly EtAlii.Adp.Diagram.DiagramDefinition RivalMindmap =
-        new(new EtAlii.Adp.Diagram.DiagramOrigin("xmind", "mindmap"), "Rival map", ".mm");
+    private static readonly Diagram.DiagramDefinition RivalMindmap =
+        new(new Diagram.DiagramOrigin("xmind", "mindmap"), "Rival map", ".mm");
 
     /// <summary>The resolver over a catalog that knows the given definitions, unlike the class's empty default.</summary>
-    private HierarchyContextSourceResolver ResolverKnowing(params EtAlii.Adp.Diagram.DiagramDefinition[] definitions) =>
+    private HierarchyContextSourceResolver ResolverKnowing(params Diagram.DiagramDefinition[] definitions) =>
         new(_store, new DiagramFileRouter(new KnownCatalog(definitions)));
 
     private async Task<string> DiagramMimeOfAsync(HierarchyContextSourceResolver resolver, params string[] segments)
@@ -314,8 +314,8 @@ public class HierarchyContextSourceResolverTests : IDisposable
         Assert.Equal("", await DiagramMimeOfAsync(resolver, "docs"));
     }
 
-    private sealed class KnownCatalog(IReadOnlyList<EtAlii.Adp.Diagram.DiagramDefinition> definitions) : EtAlii.Adp.Diagram.IDiagramDefinitionCatalog
+    private sealed class KnownCatalog(IReadOnlyList<Diagram.DiagramDefinition> definitions) : Diagram.IDiagramDefinitionCatalog
     {
-        public IReadOnlyList<EtAlii.Adp.Diagram.DiagramDefinition> All { get; } = definitions;
+        public IReadOnlyList<Diagram.DiagramDefinition> All { get; } = definitions;
     }
 }
