@@ -191,7 +191,7 @@ public class ContextSelectionStoreTests : IDisposable
             rediscovered++;
             return ValueTask.FromResult(record with
             {
-                Actions = [new ContextActionGroupDefinition([new ContextActionDefinition("rename", "Rename", "", null, true, "", null)])],
+                Actions = [new ContextActionGroupDefinition([new ContextActionDefinition("rename", "Rename", "")])],
             });
         });
         await ReadAsync(channel.Reader);
