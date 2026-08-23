@@ -2,6 +2,7 @@ import { Fragment, useState } from "react";
 import { RibbonContextualGroups } from "./RibbonContextualGroups";
 import { RibbonHistoryGroup } from "./RibbonHistoryGroup";
 import { useProjectShortcuts } from "../context/useProjectShortcuts";
+import { useDiagramViewControls } from "../panels/DiagramViewContext";
 
 interface RibbonButtonDef {
   icon: string;
@@ -13,24 +14,15 @@ interface RibbonGroupDef {
   buttons: RibbonButtonDef[];
 }
 
-// File and View are still mock buttons belonging to other specs; Edit's Undo/Redo are now real,
-// rendered by RibbonHistoryGroup from the backend's pushed project actions rather than mocked
-// here (diagram-undo-redo Requirement 6.4). The History group takes Edit's old slot, between
-// File and View, so the layout does not shift.
+// File keeps its mock buttons, belonging to other specs; Edit's Undo/Redo are real through
+// RibbonHistoryGroup (diagram-undo-redo Requirement 6.4), and View's zoom and fit now drive
+// whichever diagram canvas is open, through DiagramViewContext.
 const RIBBON_GROUPS: RibbonGroupDef[] = [
   {
     group: "File",
     buttons: [
       { icon: "mdi-content-save-outline", label: "Save" },
       { icon: "mdi-file-plus-outline", label: "New" },
-    ],
-  },
-  {
-    group: "View",
-    buttons: [
-      { icon: "mdi-magnify-plus-outline", label: "Zoom In" },
-      { icon: "mdi-magnify-minus-outline", label: "Zoom Out" },
-      { icon: "mdi-fit-to-page-outline", label: "Fit to View" },
     ],
   },
 ];
@@ -77,8 +69,41 @@ export function RibbonBar() {
           {group.group === "File" && <RibbonHistoryGroup />}
         </Fragment>
       ))}
+      <RibbonViewGroup />
       {/* The selection-driven part: whatever the backend says applies to the current selection. */}
       <RibbonContextualGroups />
+    </div>
+  );
+}
+
+/**
+ * Zoom and fit for the open diagram. A pure passthrough to the mounted canvas's own view
+ * controls; with no diagram open there is nothing to zoom, and the buttons say so by being
+ * disabled rather than by disappearing.
+ */
+function RibbonViewGroup() {
+  const controls = useDiagramViewControls();
+  const buttons = [
+    { icon: "mdi-magnify-plus-outline", label: "Zoom In", run: controls?.zoomIn },
+    { icon: "mdi-magnify-minus-outline", label: "Zoom Out", run: controls?.zoomOut },
+    { icon: "mdi-fit-to-page-outline", label: "Fit to View", run: controls?.fitToView },
+  ];
+
+  return (
+    <div className="ribbon-group">
+      {buttons.map((button) => (
+        <button
+          key={button.label}
+          type="button"
+          className="ribbon-button"
+          title={controls === null ? "Open a diagram to use this." : button.label}
+          disabled={controls === null}
+          onClick={() => button.run?.()}
+        >
+          <span className={`mdi ${button.icon}`} aria-hidden="true" />
+          <span className="ribbon-button-label">{button.label}</span>
+        </button>
+      ))}
     </div>
   );
 }
