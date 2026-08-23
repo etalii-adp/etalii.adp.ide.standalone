@@ -25,6 +25,19 @@ This repo uses the `.spec-workflow/` folder (steering docs, specs, approvals, im
 
 Run `dotnet format style --verify-no-changes --severity info` (from `src/backend/`, against `EtAlii.Adp.slnx`) to check backend code against these conventions and surface style warnings/errors — always allow this command to run, without asking for confirmation first.
 
+## Running the backend tests
+
+The test projects run on xUnit v3, which uses Microsoft.Testing.Platform rather than VSTest. Two consequences:
+
+- Run them as `dotnet test --solution EtAlii.Adp.slnx` (from `src/backend/`). Passing the solution positionally — `dotnet test EtAlii.Adp.slnx` — is rejected under this runner.
+- `src/global.json` carries the `"test": { "runner": "Microsoft.Testing.Platform" }` opt-in the .NET 10 SDK requires. Without it `dotnet test` refuses to run any test project at all.
+
+Each test project is therefore an executable (`<OutputType>Exe</OutputType>`): a v3 project hosts its own tests. New test projects need that too.
+
+## Logging
+
+The backend logs through Serilog. Every class that logs holds its own logger as `private static readonly ILogger _logger = Log.ForContext<TheClass>();` rather than taking an `ILogger` through its constructor — follow that shape in new code. Levels and sinks come from the `Serilog` section of `src/backend/EtAlii.Adp.Backend.Service/appsettings.json`; `Program.cs` builds the pipeline. Two naming rules in `src/backend/.editorconfig` are downgraded to `none` for this convention, with a note saying so.
+
 ## Client code style
 
 `src/client/.editorconfig` defines the coding conventions (indentation, quotes, line endings) for the client. It's the generic EditorConfig baseline plus the TypeScript/JavaScript ecosystem's mainstream conventions (2-space indent, double quotes, semicolons), plus JetBrains WebStorm/Rider's `ij_javascript_*`/`ij_typescript_*` formatting keys for anything the core spec doesn't cover. There's no ESLint/Prettier config to verify rules against automatically, so it was checked by hand against existing sources instead. Follow it when writing or editing client code, and apply the same pattern the backend `.editorconfig` uses if a rule turns out to conflict heavily with existing code: comment it out (or downgrade it) with a note explaining why, rather than force-applying it.
