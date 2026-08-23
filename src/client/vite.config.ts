@@ -9,7 +9,7 @@ export default defineConfig({
   // Must match appsettings.developer.json's Client:DevServerUrl; strictPort so a
   // port conflict fails loudly instead of silently drifting (and breaking the proxy).
   server: {
-    port: 5174,
+    port: 5186,
     strictPort: true,
   },
 });

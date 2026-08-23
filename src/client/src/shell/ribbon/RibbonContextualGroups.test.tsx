@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
 import {
   ContextActionGroupSchema,
+  ContextSelectionSchema,
   ContextSelectionSource,
   ContextShortcutSchema,
   type ContextActionGroup,
@@ -122,6 +123,35 @@ describe("RibbonContextualGroups", () => {
     fireEvent.click(screen.getByRole("button", { name: "Rename…" }));
 
     await waitFor(() => expect(executeAction).toHaveBeenCalledWith("hierarchy.rename"));
+  });
+
+  it("shows a diagram element's actions - a selected node is a selection like any other", () => {
+    // Found by the diagram-workspace-tabs manual pass: innermostKey answered undefined for an
+    // element-innermost chain, so the ribbon treated a selected canvas node as nothing
+    // selected and held the file's actions greyed instead of showing the node's own
+    // (mindmap-diagram Requirement 8.4).
+    const node = create(ContextSelectionSchema, {
+      source: ContextSelectionSource.DIAGRAM_CANVAS,
+      id: { source: { case: "elementId", value: { value: "ID_1" } } },
+      path: { segments: ["roadmap"] },
+      detail: { case: "none", value: {} },
+    });
+    contextState.selection = create(ContextSelectionSchema, {
+      source: ContextSelectionSource.EXPLORER,
+      id: { source: { case: "entryId", value: { value: entryA } } },
+      path: { segments: ["roadmap.adp"] },
+      detail: { case: "child", value: node },
+    });
+    contextState.actions = [
+      create(ContextActionGroupSchema, {
+        actions: [{ id: "mindmap.add-child", label: "Add child", icon: "mdi-subdirectory-arrow-right", available: true }],
+      }),
+    ];
+
+    render(<RibbonContextualGroups />);
+
+    const addChild = screen.getByRole("button", { name: "Add child" }) as HTMLButtonElement;
+    expect(addChild.disabled).toBe(false);
   });
 
   it("keeps the previous buttons, disabled, until the new selection's actions arrive", () => {

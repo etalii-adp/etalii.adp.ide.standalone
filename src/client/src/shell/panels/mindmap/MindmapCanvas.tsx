@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { create } from "@bufbuild/protobuf";
 import { EmptySchema } from "@bufbuild/protobuf/wkt";
 import { useContextConnection, useContextSelection } from "../../context/ContextConnectionProvider";
@@ -39,8 +39,14 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
     }
   }, [selectedNodeId, model]);
 
+  const surfaceRef = useRef<SVGSVGElement>(null);
+
   const reportSelection = (element: MindmapElement) => {
     setFocusedId(element.id);
+    // Clicking a node must also give the surface the keyboard: browsers do not reliably move
+    // DOM focus into an SVG when a child shape is clicked, and without it every shortcut
+    // lands wherever focus last was - the explorer, typically (Requirement 8.4).
+    surfaceRef.current?.focus();
     // A nested selection: the .adp file, then the node as a DIAGRAM_CANVAS child.
     select(nodeSelection(entryId, path, element));
   };
@@ -86,6 +92,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
         </div>
       ) : (
         <svg
+          ref={surfaceRef}
           className="mindmap-canvas-surface"
           viewBox={viewBoxOf(elements)}
           tabIndex={0}

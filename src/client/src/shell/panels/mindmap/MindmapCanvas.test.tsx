@@ -58,6 +58,16 @@ describe("MindmapCanvas", () => {
     expect(container.textContent).toContain("Alpha");
   });
 
+  it("gives the surface the keyboard when a node is clicked", () => {
+    // Found by the diagram-workspace-tabs manual pass: clicking an SVG child shape does not
+    // reliably move DOM focus into the SVG, so every shortcut kept landing in the explorer.
+    const { container } = render(<MindmapCanvas {...props} />);
+
+    fireEvent.click(container.querySelectorAll(".mindmap-node")[1]);
+
+    expect(document.activeElement).toBe(container.querySelector(".mindmap-canvas-surface"));
+  });
+
   it("says the diagram is no longer available, naming its path, when the stream failed for good", () => {
     // diagram-workspace-tabs Requirement 5.1: the tab remains and explains itself - never a
     // crash, a spinner, or a silently frozen canvas.

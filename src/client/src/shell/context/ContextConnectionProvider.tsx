@@ -104,14 +104,22 @@ const EMPTY_SELECTION: ContextSelectionValue = {
   connected: false,
 };
 
-/** The id of a chain's innermost level, as a comparable key, or undefined for no selection. */
+/**
+ * The id of a chain's innermost level, as a comparable key, or undefined for no selection.
+ * An entry keys as its id's base64; a diagram element keys as `element:` plus its id, so a
+ * node selection is a selection to every consumer - the ribbon above all, which would
+ * otherwise treat a selected node as nothing selected and never show its actions.
+ */
 export function innermostKey(selection: ContextSelection | null | undefined): string | undefined {
   let cursor = selection ?? undefined;
   while (cursor?.detail.case === "child") {
     cursor = cursor.detail.value;
   }
   const id = cursor?.id?.source;
-  return id?.case === "entryId" ? base64Encode(id.value.value) : undefined;
+  if (id?.case === "entryId") {
+    return base64Encode(id.value.value);
+  }
+  return id?.case === "elementId" ? `element:${id.value.value}` : undefined;
 }
 
 /** Whether the chain's innermost level carries this gesture. */
