@@ -118,15 +118,17 @@ button {
   gap: 0.625rem;
 }
 
+/* "EtAlii" takes the muted colour and ".Adp" the regular one, so the product's own name
+   is what carries the weight and the house name sits behind it. */
 .adp-logo-name {
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: var(--color-text);
+  color: var(--color-text-muted);
 }
 
 .adp-logo-suffix {
-  color: var(--color-text-muted);
+  color: var(--color-text);
 }
 
 /* Auth page */

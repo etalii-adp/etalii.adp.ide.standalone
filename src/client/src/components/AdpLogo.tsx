@@ -8,8 +8,9 @@ type AdpLogoProps = {
 /**
  * The full ADP lockup: the mark alongside the product name.
  *
- * "EtAlii" carries the regular text colour and ".Adp" the muted one, so the name
- * reads as one word while the mark's highlight stays the only accent in the lockup.
+ * "EtAlii" carries the muted text colour and ".Adp" the regular one, so the product's
+ * own name leads and the house name sits behind it, while the name still reads as one
+ * word and the mark's highlight stays the only accent in the lockup.
  */
 export function AdpLogo({ size = 34 }: AdpLogoProps) {
   return (
