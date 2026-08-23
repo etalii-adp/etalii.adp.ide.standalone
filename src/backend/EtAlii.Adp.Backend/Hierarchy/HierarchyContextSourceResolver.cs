@@ -12,10 +12,14 @@ namespace EtAlii.Adp.Backend.Hierarchy;
 public sealed class HierarchyContextSourceResolver : IContextSourceResolver
 {
     private readonly IHierarchyModelStore _hierarchyModelStore;
+    private readonly DiagramFileRouter _router;
 
-    public HierarchyContextSourceResolver(IHierarchyModelStore hierarchyModelStore)
+    /// <param name="router">Says whether a file is a diagram, which is what decides that it may contain a selected element.</param>
+    public HierarchyContextSourceResolver(IHierarchyModelStore hierarchyModelStore, DiagramFileRouter router)
     {
+        ArgumentNullException.ThrowIfNull(router);
         _hierarchyModelStore = hierarchyModelStore;
+        _router = router;
     }
 
     public bool CanResolve(ContextSource source) => source.SourceCase == ContextSource.SourceOneofCase.EntryId;
@@ -63,15 +67,23 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
             id,
             relativePath,
             ContextScope.Hierarchy,
-            new ContextTarget(ContextScope.Hierarchy, fullPath, isFolder, entryId),
+            new ContextTarget(ContextScope.Hierarchy, fullPath, isFolder, entryId, rootPath, watchId),
             detail,
             this);
 
         return ValueTask.FromResult<ContextLevelResolution>(new ContextLevelResolution.Resolved(level));
     }
 
+    /// <summary>
+    /// A folder contains entries. A file contains nothing of this kind - unless it is a
+    /// diagram, which contains elements: a node selected on the canvas nests under its
+    /// .adp file (mindmap-diagram Requirement 10.1), resolved by the diagram type's own
+    /// resolver rather than this one.
+    /// </summary>
     public ContextNesting NestingOf(ContextResolvedLevel level) =>
-        level.Target.IsContainer ? ContextNesting.Contained : ContextNesting.NotNestable;
+        level.Target.IsContainer || _router.Route(level.Target.ResolvedFullPath) is DiagramRouting.Routed
+            ? ContextNesting.Contained
+            : ContextNesting.NotNestable;
 
     /// <summary>
     /// Any rename or removal in the model may have moved the tracked entry - its own, or

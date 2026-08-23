@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram;
 using Serilog;
 using IoPath = System.IO.Path;
 
@@ -5,7 +6,8 @@ namespace EtAlii.Adp.Backend.Hierarchy;
 
 /// <summary>
 /// Delete the file or folder at <paramref name="FullPath"/> - with everything inside it,
-/// when it is a folder.
+/// when it is a folder, and with its document sibling, when it is a diagram's registration
+/// file (mindmap-diagram Requirement 2.11).
 /// </summary>
 /// <param name="FullPath">Absolute path of the entry to remove.</param>
 public sealed record DeleteEntryCommand(string FullPath) : ICommand;
@@ -28,6 +30,14 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
 {
     private static readonly ILogger _logger = Log.ForContext<DeleteEntryCommandHandler>();
 
+    private readonly IDiagramDefinitionCatalog _catalog;
+
+    public DeleteEntryCommandHandler(IDiagramDefinitionCatalog catalog)
+    {
+        ArgumentNullException.ThrowIfNull(catalog);
+        _catalog = catalog;
+    }
+
     public Task<CommandResult> ExecuteAsync(
         DeleteEntryCommand command,
         CancellationToken cancellationToken = default)
@@ -47,6 +57,10 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
             return Task.FromResult(CommandResult.Failure("The entry no longer exists."));
         }
 
+        // Resolved before the registration file goes: its first line is what names the
+        // sibling, and once it is deleted there is nothing left to ask.
+        var sibling = isDirectory ? null : DiagramFilePair.SiblingOf(path, _catalog);
+
         try
         {
             if (isDirectory)
@@ -56,6 +70,10 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
             else
             {
                 File.Delete(path);
+                if (sibling is not null && File.Exists(sibling))
+                {
+                    File.Delete(sibling);
+                }
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -70,6 +88,11 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
         }
 
         _logger.Information("Deleted {Path}", path);
+        if (sibling is not null)
+        {
+            _logger.Information("Deleted {Path} with its registration file", sibling);
+        }
+
         return Task.FromResult(CommandResult.Success());
     }
 }

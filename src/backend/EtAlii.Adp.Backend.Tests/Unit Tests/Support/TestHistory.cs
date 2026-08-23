@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Backend.Tests;
@@ -15,7 +16,21 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </remarks>
 internal static class TestHistory
 {
-    public static IHistoryStack Create() => Services().GetRequiredService<IHistoryStack>();
+    public static IHistoryStack Create(params DiagramDefinition[] definitions) =>
+        Services(definitions).GetRequiredService<IHistoryStack>();
 
-    private static ServiceProvider Services() => new ServiceCollection().AddCommands().BuildServiceProvider();
+    /// <summary>
+    /// The handlers ask the catalog whether a file is a diagram's registration file with a
+    /// body sibling; a test that cares hands in the definitions it wants known, and one that
+    /// does not gets an empty catalog rather than the process-wide cache.
+    /// </summary>
+    private static ServiceProvider Services(DiagramDefinition[] definitions) => new ServiceCollection()
+        .AddSingleton<IDiagramDefinitionCatalog>(new TestCatalog(definitions))
+        .AddCommands()
+        .BuildServiceProvider();
+
+    private sealed class TestCatalog(IReadOnlyList<DiagramDefinition> definitions) : IDiagramDefinitionCatalog
+    {
+        public IReadOnlyList<DiagramDefinition> All { get; } = definitions;
+    }
 }

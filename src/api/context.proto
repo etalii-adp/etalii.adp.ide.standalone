@@ -5,6 +5,7 @@ package etalii.adp;
 import "shared.proto";     // ShortGuid
 import "connection.proto"; // Path
 import "hierarchy.proto";  // EntryKind (hierarchy.proto does not import this file back)
+import "elements.proto";   // ElementId
 import "google/protobuf/empty.proto";
 
 option csharp_namespace = "EtAlii.Adp";
@@ -40,6 +41,10 @@ service ContextService {
 enum ContextScope {
   CONTEXT_SCOPE_UNSPECIFIED = 0;
   HIERARCHY = 1;
+  // 2 is reserved for the project itself (diagram-undo-redo).
+  // An element inside an open diagram - a mindmap node, later a class or a box - served by
+  // the diagram type's own providers (mindmap-diagram Requirement 10.3).
+  DIAGRAM_ELEMENT = 3;
 }
 
 // What a selection or an action refers to. For the hierarchy this is an entry id,
@@ -51,6 +56,10 @@ enum ContextScope {
 message ContextSource {
   oneof source {
     ShortGuid entry_id = 1;
+    // An element inside the diagram the enclosing selection level names; the same id the
+    // delta stream carries for it, so a selection and an element are one identity
+    // (mindmap-diagram Requirement 10.2). Only meaningful as a child of a diagram file.
+    ElementId element_id = 2;
   }
 }
 
@@ -116,7 +125,17 @@ message WatchContextRequest {
 message ContextLevelDetail {
   oneof detail {
     EntryDetail entry = 1;
+    ElementDetail element = 2;
   }
+}
+
+// What the backend resolved about a selected diagram element, so a consumer can show what
+// is selected without a lookup of its own (mindmap-diagram Requirement 10.6).
+message ElementDetail {
+  string text = 1;
+  bool has_children = 2;
+  bool folded = 3;
+  bool linked = 4;
 }
 
 message EntryDetail {

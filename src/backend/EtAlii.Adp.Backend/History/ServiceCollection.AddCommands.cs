@@ -1,5 +1,7 @@
 using EtAlii.Adp.Backend.Hierarchy;
+using EtAlii.Adp.Diagram;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace EtAlii.Adp.Backend;
 
@@ -17,6 +19,11 @@ public static class ServiceCollectionAddCommandsExtension
     public static IServiceCollection AddCommands(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        // The rename and delete handlers ask the catalog whether a file is a diagram's
+        // registration file with a body sibling to carry along. TryAdd, so a test that
+        // registered its own list first keeps it.
+        services.TryAddSingleton<IDiagramDefinitionCatalog, DiagramDefinitionCatalog>();
 
         services.AddSingleton<ICommandDispatcher, CommandDispatcher>();
 

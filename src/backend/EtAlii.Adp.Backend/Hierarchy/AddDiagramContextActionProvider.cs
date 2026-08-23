@@ -1,6 +1,7 @@
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Diagram;
 using Serilog;
+using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Backend.Hierarchy;
 
@@ -28,23 +29,28 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
 
     private readonly Func<IReadOnlyList<DiagramDefinition>> _definitions;
     private readonly IHistoryStack _history;
+    private readonly DiagramDocumentFactories _documentFactories;
 
     /// <param name="history">Where the create is sent; this provider writes nothing itself.</param>
-    public AddDiagramContextActionProvider(IHistoryStack history)
-        : this(history, null)
+    /// <param name="documentFactories">Where a type that keeps a body sibling gets that body's initial content.</param>
+    public AddDiagramContextActionProvider(IHistoryStack history, DiagramDocumentFactories documentFactories)
+        : this(history, documentFactories, null)
     {
     }
 
     /// <param name="history">Where the create is sent; this provider writes nothing itself.</param>
+    /// <param name="documentFactories">Where a type that keeps a body sibling gets that body's initial content.</param>
     /// <param name="definitions">
     /// The diagram types to offer, read at call time; <c>null</c> means
     /// <see cref="DiagramDefinition.All"/>. Read lazily rather than captured, because the
     /// host fills the cache after the container is built.
     /// </param>
-    public AddDiagramContextActionProvider(IHistoryStack history, IReadOnlyList<DiagramDefinition>? definitions)
+    public AddDiagramContextActionProvider(IHistoryStack history, DiagramDocumentFactories documentFactories, IReadOnlyList<DiagramDefinition>? definitions)
     {
         ArgumentNullException.ThrowIfNull(history);
+        ArgumentNullException.ThrowIfNull(documentFactories);
         _history = history;
+        _documentFactories = documentFactories;
         _definitions = definitions is null ? () => DiagramDefinition.All : () => definitions;
     }
 
@@ -152,10 +158,38 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         var fileName = DiagramFileName.WithExtension(text);
         _logger.Debug("Creating a {Origin} diagram named {FileName} in {Folder}", definition.Origin.Key, fileName, target.ResolvedFullPath);
 
+        // A type that keeps its body in a sibling file gets that body from its own factory,
+        // written by the same command so both files appear or neither does. The factory is
+        // resolved here rather than in the handler so the command stays plain data a redo can
+        // replay, and so the handler never looks a diagram type up.
+        var siblingFileName = "";
+        var siblingContent = "";
+        if (definition.HasDocumentSibling)
+        {
+            var factory = _documentFactories.Find(definition.Origin);
+            if (factory is null)
+            {
+                // The host's startup check makes this unreachable in a consistent deployment;
+                // answered anyway, because a silent .adp without its body is worse than a refusal.
+                _logger.Error("No IDiagramDocumentFactory is registered for {Origin}, which declares {Extension}", definition.Origin.Key, definition.Extension);
+                return ContextCommitResult.Failed("This diagram type cannot be created: its module is incomplete.");
+            }
+
+            var baseName = DiagramFileName.StripExtension(fileName);
+            siblingFileName = baseName + definition.Extension;
+            siblingContent = factory.CreateEmptyDocument(baseName);
+
+            var siblingPath = IoPath.Combine(target.ResolvedFullPath, siblingFileName);
+            if (File.Exists(siblingPath) || Directory.Exists(siblingPath))
+            {
+                return ContextCommitResult.Failed($"An item named '{siblingFileName}' already exists in this folder.");
+            }
+        }
+
         // The write is the command's; this provider only decides what to write and where. The
         // history is what makes the new file one undo away, by way of the delete the handler
         // reports as the inverse.
-        var command = new CreateDiagramFileCommand(target.ResolvedFullPath, fileName, definition.Origin.MimeType);
+        var command = new CreateDiagramFileCommand(target.ResolvedFullPath, fileName, definition.Origin.MimeType, siblingFileName, siblingContent);
         var result = await _history.ExecuteAsync(command, cancellationToken);
 
         return result.IsSuccess

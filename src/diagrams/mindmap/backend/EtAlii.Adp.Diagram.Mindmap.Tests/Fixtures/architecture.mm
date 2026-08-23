@@ -20,7 +20,7 @@
 <html>
   <head/>
   <body>
-    <p>The map ADP's round-trip tests read. Keep it ugly on purpose &#8212; it is here to be hard.</p>
+    <p>The map ADP's round-trip tests read. Keep it ugly on purpose — it is here to be hard.</p>
   </body>
 </html>
 </richcontent>
@@ -34,7 +34,7 @@
 <html>
   <head/>
   <body>
-    <p>Owns the selection. See <b>tech.md</b> &#8250; Context.</p>
+    <p>Owns the selection. See <b>tech.md</b> › Context.</p>
     <p>Nested markup &amp; entities live here: &lt;node&gt; is not a node.</p>
   </body>
 </html>
@@ -49,7 +49,7 @@
 <node TEXT="Hierarchy" FOLDED="true" ID="ID_88117425" CREATED="1755820807000" MODIFIED="1755820907000">
 <node TEXT="HierarchyModel" ID="ID_88117426" CREATED="1755820808000" MODIFIED="1755820908000"/>
 <node TEXT="RootFolderWatcher" ID="ID_88117427" CREATED="1755820809000" MODIFIED="1755820909000">
-<node TEXT="buffer overflow &#8594; reconcile" ID="ID_88117428" CREATED="1755820810000" MODIFIED="1755820910000"/>
+<node TEXT="buffer overflow → reconcile" ID="ID_88117428" CREATED="1755820810000" MODIFIED="1755820910000"/>
 </node>
 </node>
 </node>
@@ -77,7 +77,7 @@
 <attribute NAME="state" VALUE="specified"/>
 </node>
 <node TEXT="c4/context" ID="ID_411002943" CREATED="1755820818000" MODIFIED="1755820918000"/>
-<node TEXT="Ünïcödé — dash, curly &#8216;quotes&#8217;, emoji &#127760;" ID="ID_411002944" CREATED="1755820819000" MODIFIED="1755820919000"/>
+<node TEXT="Ünïcödé — dash, curly ‘quotes’, emoji 🌐" ID="ID_411002944" CREATED="1755820819000" MODIFIED="1755820919000"/>
 </node>
 <node TEXT="Deliberately deep" POSITION="left" ID="ID_411002945" CREATED="1755820820000" MODIFIED="1755820920000">
 <node TEXT="level 2" ID="ID_411002946" CREATED="1755820821000" MODIFIED="1755820921000">

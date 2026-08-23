@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package etalii.adp.mindmap;
+
+option csharp_namespace = "EtAlii.Adp.Diagram.Mindmap";
+
+// The payload of a mindmap node element, packed into the core Element's Any (mindmap-diagram
+// Requirement 11.2). Defined in the module's own api folder; no core proto is edited to add
+// it. Position, id and type live on the core Element; this carries only what is a node's own.
+message MindmapNodePayload {
+  string text = 1;
+  string notes = 2;
+  bool has_children = 3;
+  bool folded = 4;
+  MindmapLink link = 5;  // absent when the node is not linked
+}
+
+// A node's link as the client needs it: the map-relative form the file stores (raw), the
+// project-relative path and the connection's entry id for selecting the target through the
+// context service, and whether it still resolves (Requirement 12.2). The path and id are
+// filled by the session when it can resolve the raw link; a broken or external link carries
+// raw alone.
+message MindmapLink {
+  string raw = 1;
+  repeated string project_relative_path = 2;
+  string target_entry_id = 3;
+  bool broken = 4;
+}

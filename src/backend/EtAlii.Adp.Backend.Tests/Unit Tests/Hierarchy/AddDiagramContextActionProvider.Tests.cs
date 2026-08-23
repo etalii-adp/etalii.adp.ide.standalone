@@ -12,12 +12,13 @@ public class AddDiagramContextActionProviderTests : IDisposable
     private static readonly DiagramDefinition ClassDiagram = new(new DiagramOrigin("uml", "class"), "Class diagram");
 
     private readonly string _root;
+    private static readonly DiagramDocumentFactories NoFactories = new([]);
     private readonly IHistoryStack _history = TestHistory.Create();
     private readonly AddDiagramContextActionProvider _provider;
 
     public AddDiagramContextActionProviderTests()
     {
-        _provider = new AddDiagramContextActionProvider(_history, [SystemContext, ClassDiagram]);
+        _provider = new AddDiagramContextActionProvider(_history, NoFactories, [SystemContext, ClassDiagram]);
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
     }
@@ -94,7 +95,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     [Fact]
     public async Task DiscoverAsync_WithNoDiagramTypes_OffersAddUnavailableWithAReason()
     {
-        var provider = new AddDiagramContextActionProvider(_history, []);
+        var provider = new AddDiagramContextActionProvider(_history, NoFactories, []);
 
         var groups = await provider.DiscoverAsync(FolderTarget(_root), TestContext.Current.CancellationToken);
 
@@ -111,7 +112,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
         // cache at call time. Checked through the public seam: a list that changes after
         // construction is reflected.
         var definitions = new List<DiagramDefinition>();
-        var provider = new AddDiagramContextActionProvider(_history, definitions);
+        var provider = new AddDiagramContextActionProvider(_history, NoFactories, definitions);
         var before = await provider.DiscoverAsync(FolderTarget(_root), TestContext.Current.CancellationToken);
 
         definitions.Add(SystemContext);
@@ -158,7 +159,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     public async Task ExecuteAsync_WithNoDiagramTypes_StillAsksForAChoice_WithAnEmptyTree()
     {
         // The dialog's own empty state is what the user sees; the menu normally prevents this.
-        var provider = new AddDiagramContextActionProvider(_history, []);
+        var provider = new AddDiagramContextActionProvider(_history, NoFactories, []);
 
         var result = await provider.ExecuteAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
 

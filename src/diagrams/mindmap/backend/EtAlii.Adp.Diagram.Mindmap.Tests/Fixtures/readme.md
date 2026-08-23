@@ -37,7 +37,7 @@ Each of these exists to break a naive parser or a naive serializer:
 | Rich text | `richcontent TYPE="NODE"` — a node whose text is markup, not a `TEXT` attribute | A node's text is not always where you expect it |
 | Empty text | a node with `TEXT=""` | Requirement 7.6: empty node text is valid |
 | Unknown to ADP | `hook`, `MapStyle`, `map_styles`, `stylenode`, `properties`, `font`, `edge`, `icon`, `cloud`, `arrowlink`, `attribute` | Requirement 3.2: preserved untouched, never regenerated |
-| Escaping | `&amp;`, `&lt;`, numeric entities, non-ASCII, an emoji | Requirement 3.3: byte-stable serialization |
+| Escaping | `&amp;`, `&lt;`, `&gt;` in attributes; non-ASCII and an emoji written literally, as Freeplane writes them | Requirement 3.3: byte-stable serialization |
 
 A parser that models only "node with TEXT and children" will read this file and lose most of
 it. That is the point.

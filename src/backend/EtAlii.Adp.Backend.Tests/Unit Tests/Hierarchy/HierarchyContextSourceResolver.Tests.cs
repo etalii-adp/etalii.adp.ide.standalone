@@ -16,7 +16,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
     {
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
-        _resolver = new HierarchyContextSourceResolver(_store);
+        _resolver = new HierarchyContextSourceResolver(_store, new DiagramFileRouter(new EmptyCatalog()));
     }
 
     public void Dispose()
