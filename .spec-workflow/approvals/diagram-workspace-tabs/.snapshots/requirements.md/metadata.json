@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/diagram-workspace-tabs/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-23T15:46:53.442Z",
       "trigger": "initial",
+      "approvalId": "approval_1787500013369_wsmri70zy",
+      "approvalTitle": "Diagram Workspace Tabs — Requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-23T15:52:32.482Z",
+      "trigger": "approved",
       "approvalId": "approval_1787500013369_wsmri70zy",
       "approvalTitle": "Diagram Workspace Tabs — Requirements"
     }
