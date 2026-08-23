@@ -31,7 +31,7 @@ public class ContextSelectionResolverTests
         var selection = Level(EntryId(), "docs", "a.mm");
         selection.None = new Empty();
 
-        var result = await resolver.ResolveChainAsync(WatchId, Root, selection, CancellationToken.None);
+        var result = await resolver.ResolveChainAsync(WatchId, Root, selection, TestContext.Current.CancellationToken);
 
         var resolved = Assert.IsType<ChainResolution.Resolved>(result);
         Assert.Single(resolved.Record.Levels);
@@ -45,7 +45,7 @@ public class ContextSelectionResolverTests
     {
         var resolver = new ContextSelectionResolver([new StubResolver()]);
 
-        var result = await resolver.ResolveChainAsync(WatchId, Root, Level(EntryId(), "a"), CancellationToken.None);
+        var result = await resolver.ResolveChainAsync(WatchId, Root, Level(EntryId(), "a"), TestContext.Current.CancellationToken);
 
         var resolved = Assert.IsType<ChainResolution.Resolved>(result);
         Assert.Equal(ContextSelection.DetailOneofCase.None_, resolved.Record.Chain.DetailCase);
@@ -58,7 +58,7 @@ public class ContextSelectionResolverTests
         var selection = Level(EntryId(), "a");
         selection.Action = ContextSelectionAction.ContextMenu;
 
-        var result = await resolver.ResolveChainAsync(WatchId, Root, selection, CancellationToken.None);
+        var result = await resolver.ResolveChainAsync(WatchId, Root, selection, TestContext.Current.CancellationToken);
 
         var resolved = Assert.IsType<ChainResolution.Resolved>(result);
         Assert.Equal(ContextSelectionAction.ContextMenu, resolved.Record.Action);
@@ -69,7 +69,7 @@ public class ContextSelectionResolverTests
     {
         var resolver = new ContextSelectionResolver([new StubResolver(canResolve: false)]);
 
-        var result = await resolver.ResolveChainAsync(WatchId, Root, Level(EntryId(), "a"), CancellationToken.None);
+        var result = await resolver.ResolveChainAsync(WatchId, Root, Level(EntryId(), "a"), TestContext.Current.CancellationToken);
 
         Assert.IsType<ChainResolution.Rejected>(result);
     }
@@ -79,7 +79,7 @@ public class ContextSelectionResolverTests
     {
         var resolver = new ContextSelectionResolver([new StubResolver()]);
 
-        var result = await resolver.ResolveChainAsync(WatchId, Root, Level(new ContextSource(), "a"), CancellationToken.None);
+        var result = await resolver.ResolveChainAsync(WatchId, Root, Level(new ContextSource(), "a"), TestContext.Current.CancellationToken);
 
         Assert.IsType<ChainResolution.Rejected>(result);
     }
@@ -92,7 +92,7 @@ public class ContextSelectionResolverTests
         var parent = Level(EntryId(), "docs");
         parent.Child = Level(EntryId(), "a.mm");
 
-        var result = await resolver.ResolveChainAsync(WatchId, Root, parent, CancellationToken.None);
+        var result = await resolver.ResolveChainAsync(WatchId, Root, parent, TestContext.Current.CancellationToken);
 
         var resolved = Assert.IsType<ChainResolution.Resolved>(result);
         Assert.Equal(2, resolved.Record.Levels.Count);
@@ -108,7 +108,7 @@ public class ContextSelectionResolverTests
         var parent = Level(EntryId(), "a.mm");
         parent.Child = Level(EntryId(), "node");
 
-        var result = await resolver.ResolveChainAsync(WatchId, Root, parent, CancellationToken.None);
+        var result = await resolver.ResolveChainAsync(WatchId, Root, parent, TestContext.Current.CancellationToken);
 
         Assert.IsType<ChainResolution.Rejected>(result);
     }
@@ -121,7 +121,7 @@ public class ContextSelectionResolverTests
         var parent = Level(EntryId(), "docs");
         parent.Child = Level(EntryId(), "elsewhere.mm");
 
-        var result = await resolver.ResolveChainAsync(WatchId, Root, parent, CancellationToken.None);
+        var result = await resolver.ResolveChainAsync(WatchId, Root, parent, TestContext.Current.CancellationToken);
 
         Assert.IsType<ChainResolution.Rejected>(result);
     }
@@ -138,7 +138,7 @@ public class ContextSelectionResolverTests
             cursor = cursor.Child;
         }
 
-        var result = await resolver.ResolveChainAsync(WatchId, Root, outermost, CancellationToken.None);
+        var result = await resolver.ResolveChainAsync(WatchId, Root, outermost, TestContext.Current.CancellationToken);
 
         Assert.IsType<ChainResolution.Rejected>(result);
     }
@@ -148,7 +148,7 @@ public class ContextSelectionResolverTests
     {
         var resolver = new ContextSelectionResolver([new StubResolver(fillPath: ["filled", "in.mm"])]);
 
-        var result = await resolver.ResolveChainAsync(WatchId, Root, Level(EntryId()), CancellationToken.None);
+        var result = await resolver.ResolveChainAsync(WatchId, Root, Level(EntryId()), TestContext.Current.CancellationToken);
 
         var resolved = Assert.IsType<ChainResolution.Resolved>(result);
         Assert.Equal(new[] { "filled", "in.mm" }, resolved.Record.Chain.Path.Segments);
@@ -160,7 +160,7 @@ public class ContextSelectionResolverTests
         var resolver = new ContextSelectionResolver([]);
 
         var result = await resolver.ResolveLevelAsync(
-            WatchId, Root, ContextSelectionSource.Ribbon, EntryId(), [], null, CancellationToken.None);
+            WatchId, Root, ContextSelectionSource.Ribbon, EntryId(), [], null, TestContext.Current.CancellationToken);
 
         Assert.IsType<ContextLevelResolution.Rejected>(result);
     }

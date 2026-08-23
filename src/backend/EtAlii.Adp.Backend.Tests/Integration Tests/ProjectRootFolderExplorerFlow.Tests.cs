@@ -60,6 +60,17 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         }
     }
 
+    /// <summary>
+    /// The per-message timeout, linked to the test's own cancellation token so a stream that
+    /// never delivers gives up as soon as the test is cancelled rather than waiting it out.
+    /// </summary>
+    private static CancellationTokenSource CreateMessageTimeout()
+    {
+        var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cts.CancelAfter(MessageTimeout);
+        return cts;
+    }
+
     private GrpcChannel CreateChannel()
     {
         var httpClient = _factory.CreateDefaultClient();
@@ -68,7 +79,7 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
 
     private static async Task<Metadata> LoginAsync(AuthenticationService.AuthenticationServiceClient authClient)
     {
-        var response = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential });
+        var response = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential }, cancellationToken: TestContext.Current.CancellationToken);
         return new Metadata { { SessionTokenHeader, response.Session.Value } };
     }
 
@@ -76,7 +87,7 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
     {
         var pathMessage = new Path();
         pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers);
+        var response = await projectClient.AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
         return response.Added.Id;
     }
 
@@ -84,7 +95,7 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         AsyncServerStreamingCall<HierarchyMessage> call, CancellationTokenSource cts, Action triggerChange)
     {
         var pendingMoveNext = call.ResponseStream.MoveNext(cts.Token);
-        await Task.Delay(WatcherStartupGrace);
+        await Task.Delay(WatcherStartupGrace, TestContext.Current.CancellationToken);
         triggerChange();
 
         var moved = await pendingMoveNext;
@@ -114,7 +125,8 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
 
         var response = await hierarchyClient.ListEntriesAsync(
             new ListEntriesRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid() },
-            headers);
+            headers,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(ListEntriesResponse.ResultOneofCase.Entries, response.ResultCase);
         var names = response.Entries.Entries_.Select(e => e.Name).ToList();
@@ -137,21 +149,21 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         var watchIdA = ShortGuid.NewShortGuid();
         var watchIdB = ShortGuid.NewShortGuid();
 
-        var entriesA = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchIdA }, headers);
-        var entriesB = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchIdB }, headers);
+        var entriesA = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchIdA }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        var entriesB = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchIdB }, headers, cancellationToken: TestContext.Current.CancellationToken);
 
         var idA = entriesA.Entries.Entries_.Single(e => e.Name == "shared.txt").Id;
         var idB = entriesB.Entries.Entries_.Single(e => e.Name == "shared.txt").Id;
         Assert.NotEqual((ShortGuid)idA, (ShortGuid)idB);
 
-        using var callA = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchIdA }, headers);
-        using var callB = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchIdB }, headers);
-        using var ctsA = new CancellationTokenSource(MessageTimeout);
-        using var ctsB = new CancellationTokenSource(MessageTimeout);
+        using var callA = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchIdA }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var callB = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchIdB }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var ctsA = CreateMessageTimeout();
+        using var ctsB = CreateMessageTimeout();
 
         var pendingA = callA.ResponseStream.MoveNext(ctsA.Token);
         var pendingB = callB.ResponseStream.MoveNext(ctsB.Token);
-        await Task.Delay(WatcherStartupGrace);
+        await Task.Delay(WatcherStartupGrace, TestContext.Current.CancellationToken);
         File.WriteAllText(IoPath.Combine(_projectFolder, "new.txt"), "");
 
         Assert.True(await pendingA, "Expected a HierarchyChange message on connection A but the stream ended or timed out.");
@@ -179,11 +191,11 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         var projectId = await AddProjectAsync(projectClient, headers);
         var watchId = ShortGuid.NewShortGuid();
 
-        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers);
+        var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var originalId = (ShortGuid)entries.Entries.Entries_.Single(e => e.Name == "original.txt").Id;
 
-        using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers);
-        using var cts = new CancellationTokenSource(MessageTimeout);
+        using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var cts = CreateMessageTimeout();
 
         var change = await AwaitTriggeredChangeAsync(call, cts, () =>
             File.Move(originalPath, IoPath.Combine(_projectFolder, "renamed.txt")));
@@ -203,9 +215,9 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         var projectId = await AddProjectAsync(projectClient, headers);
         var watchId = ShortGuid.NewShortGuid();
 
-        await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers);
-        using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers);
-        using var cts = new CancellationTokenSource(MessageTimeout);
+        await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var cts = CreateMessageTimeout();
 
         var change = await AwaitTriggeredChangeAsync(call, cts, () =>
             Directory.Delete(_projectFolder, recursive: true));

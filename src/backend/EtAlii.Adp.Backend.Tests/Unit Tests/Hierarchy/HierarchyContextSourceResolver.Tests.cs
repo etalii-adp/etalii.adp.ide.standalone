@@ -62,7 +62,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
     private static ContextSource Source(ShortGuid id) => new() { EntryId = id };
 
     private ValueTask<ContextLevelResolution> ResolveAsync(ShortGuid id, IReadOnlyList<string>? clientPath = null, ContextResolvedLevel? parent = null) =>
-        _resolver.ResolveAsync(_watchId, _root, ContextSelectionSource.Explorer, Source(id), clientPath ?? [], parent, CancellationToken.None);
+        _resolver.ResolveAsync(_watchId, _root, ContextSelectionSource.Explorer, Source(id), clientPath ?? [], parent, TestContext.Current.CancellationToken);
 
     [Fact]
     public async Task ResolveAsync_NestedFile_YieldsProjectRelativeSegmentsAndDetail()

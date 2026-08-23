@@ -14,7 +14,7 @@ public class SessionInterceptorTests
             host: "localhost",
             deadline: DateTime.UtcNow.AddMinutes(1),
             requestHeaders: requestHeaders ?? new Metadata(),
-            cancellationToken: CancellationToken.None,
+            cancellationToken: TestContext.Current.CancellationToken,
             peer: "test-peer",
             authContext: null,
             contextPropagationToken: null,

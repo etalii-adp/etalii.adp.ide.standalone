@@ -52,7 +52,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     [Fact]
     public async Task DiscoverAsync_OnAFolder_OffersAddWithTheInsertShortcut()
     {
-        var groups = await _provider.DiscoverAsync(FolderTarget(_root), CancellationToken.None);
+        var groups = await _provider.DiscoverAsync(FolderTarget(_root), TestContext.Current.CancellationToken);
 
         var action = Assert.Single(Assert.Single(groups).Actions);
         Assert.Equal(AddDiagramContextActionProvider.AddActionId, action.Id);
@@ -68,7 +68,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     {
         // The root is a folder like any other to this provider; what makes it the root is the
         // service resolving "nothing selected" to it.
-        var groups = await _provider.DiscoverAsync(FolderTarget(_root), CancellationToken.None);
+        var groups = await _provider.DiscoverAsync(FolderTarget(_root), TestContext.Current.CancellationToken);
 
         Assert.NotEmpty(groups);
     }
@@ -76,7 +76,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     [Fact]
     public async Task DiscoverAsync_OnAFile_OffersNothing()
     {
-        var groups = await _provider.DiscoverAsync(FileTarget(CreateFile("a.txt")), CancellationToken.None);
+        var groups = await _provider.DiscoverAsync(FileTarget(CreateFile("a.txt")), TestContext.Current.CancellationToken);
 
         Assert.Empty(groups);
     }
@@ -84,7 +84,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     [Fact]
     public async Task DiscoverAsync_OnAVanishedFolder_OffersNothing()
     {
-        var groups = await _provider.DiscoverAsync(FolderTarget(IoPath.Combine(_root, "gone")), CancellationToken.None);
+        var groups = await _provider.DiscoverAsync(FolderTarget(IoPath.Combine(_root, "gone")), TestContext.Current.CancellationToken);
 
         Assert.Empty(groups);
     }
@@ -94,7 +94,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     {
         var provider = new AddDiagramContextActionProvider([]);
 
-        var groups = await provider.DiscoverAsync(FolderTarget(_root), CancellationToken.None);
+        var groups = await provider.DiscoverAsync(FolderTarget(_root), TestContext.Current.CancellationToken);
 
         var action = Assert.Single(Assert.Single(groups).Actions);
         Assert.False(action.Available);
@@ -110,10 +110,10 @@ public class AddDiagramContextActionProviderTests : IDisposable
         // construction is reflected.
         var definitions = new List<DiagramDefinition>();
         var provider = new AddDiagramContextActionProvider(definitions);
-        var before = await provider.DiscoverAsync(FolderTarget(_root), CancellationToken.None);
+        var before = await provider.DiscoverAsync(FolderTarget(_root), TestContext.Current.CancellationToken);
 
         definitions.Add(SystemContext);
-        var after = await provider.DiscoverAsync(FolderTarget(_root), CancellationToken.None);
+        var after = await provider.DiscoverAsync(FolderTarget(_root), TestContext.Current.CancellationToken);
 
         Assert.False(Assert.Single(Assert.Single(before).Actions).Available);
         Assert.True(Assert.Single(Assert.Single(after).Actions).Available);
@@ -124,7 +124,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_AsksForAChoice_WithTheTypeTreeAndTheAddLabel()
     {
-        var result = await _provider.ExecuteAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, CancellationToken.None);
+        var result = await _provider.ExecuteAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
 
         var choice = Assert.IsType<ContextExecutionResult.RequiresChoice>(result);
         Assert.Equal("Add diagram", choice.Request.Title);
@@ -138,7 +138,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_OnAVanishedFolder_Fails()
     {
-        var result = await _provider.ExecuteAsync(FolderTarget(IoPath.Combine(_root, "gone")), AddDiagramContextActionProvider.AddActionId, CancellationToken.None);
+        var result = await _provider.ExecuteAsync(FolderTarget(IoPath.Combine(_root, "gone")), AddDiagramContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
 
         var failed = Assert.IsType<ContextExecutionResult.Failed>(result);
         Assert.Equal("The folder no longer exists.", failed.Message);
@@ -147,7 +147,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_WithAnUnknownAction_Fails()
     {
-        var result = await _provider.ExecuteAsync(FolderTarget(_root), "hierarchy.something-else", CancellationToken.None);
+        var result = await _provider.ExecuteAsync(FolderTarget(_root), "hierarchy.something-else", TestContext.Current.CancellationToken);
 
         Assert.IsType<ContextExecutionResult.Failed>(result);
     }
@@ -158,7 +158,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
         // The dialog's own empty state is what the user sees; the menu normally prevents this.
         var provider = new AddDiagramContextActionProvider([]);
 
-        var result = await provider.ExecuteAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, CancellationToken.None);
+        var result = await provider.ExecuteAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
 
         var choice = Assert.IsType<ContextExecutionResult.RequiresChoice>(result);
         Assert.Empty(choice.Request.Options);
@@ -169,7 +169,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     [Fact]
     public async Task ValidateAsync_AcceptsAFreeName()
     {
-        var result = await _provider.ValidateAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "domain", CancellationToken.None);
+        var result = await _provider.ValidateAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "domain", TestContext.Current.CancellationToken);
 
         Assert.True(result.Valid);
     }
@@ -177,7 +177,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     [Fact]
     public async Task ValidateAsync_RejectsAnEmptyName()
     {
-        var result = await _provider.ValidateAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "", CancellationToken.None);
+        var result = await _provider.ValidateAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "", TestContext.Current.CancellationToken);
 
         Assert.False(result.Valid);
         Assert.Equal("Enter a name.", result.Reason);
@@ -186,7 +186,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     [Fact]
     public async Task ValidateAsync_RejectsANameThatIsAPath()
     {
-        var result = await _provider.ValidateAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "sub/domain", CancellationToken.None);
+        var result = await _provider.ValidateAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "sub/domain", TestContext.Current.CancellationToken);
 
         Assert.False(result.Valid);
     }
@@ -197,7 +197,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
         // "domain" is free but "domain.adp" is not: the collision that matters is the file.
         CreateFile("domain.adp");
 
-        var result = await _provider.ValidateAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "domain", CancellationToken.None);
+        var result = await _provider.ValidateAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "domain", TestContext.Current.CancellationToken);
 
         Assert.False(result.Valid);
         Assert.Contains("already exists", result.Reason, StringComparison.Ordinal);
@@ -208,7 +208,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     [Fact]
     public async Task CommitAsync_CreatesTheFileWithTheChosenTypesMimeTypeAsItsOnlyLine()
     {
-        var result = await _provider.CommitAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "c4/context", "domain", CancellationToken.None);
+        var result = await _provider.CommitAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "c4/context", "domain", TestContext.Current.CancellationToken);
 
         Assert.True(result.Completed);
         var created = IoPath.Combine(_root, "domain.adp");
@@ -219,7 +219,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     [Fact]
     public async Task CommitAsync_AcceptsANameTypedWithTheExtension_WithoutDoublingIt()
     {
-        await _provider.CommitAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "c4/context", "domain.adp", CancellationToken.None);
+        await _provider.CommitAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "c4/context", "domain.adp", TestContext.Current.CancellationToken);
 
         Assert.True(File.Exists(IoPath.Combine(_root, "domain.adp")));
         Assert.False(File.Exists(IoPath.Combine(_root, "domain.adp.adp")));
@@ -231,7 +231,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
         var existing = IoPath.Combine(_root, "domain.adp");
         File.WriteAllText(existing, "mine");
 
-        var result = await _provider.CommitAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "c4/context", "domain", CancellationToken.None);
+        var result = await _provider.CommitAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "c4/context", "domain", TestContext.Current.CancellationToken);
 
         Assert.False(result.Completed);
         Assert.Contains("already exists", result.Error, StringComparison.Ordinal);
@@ -243,7 +243,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     {
         var before = Listing();
 
-        var result = await _provider.CommitAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "c4/context", "sub/domain", CancellationToken.None);
+        var result = await _provider.CommitAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "c4/context", "sub/domain", TestContext.Current.CancellationToken);
 
         Assert.False(result.Completed);
         Assert.Equal(before, Listing());
@@ -252,7 +252,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     [Fact]
     public async Task CommitAsync_WithAnUnknownOptionId_IsRejected()
     {
-        var result = await _provider.CommitAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "nope/nothing", "domain", CancellationToken.None);
+        var result = await _provider.CommitAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "nope/nothing", "domain", TestContext.Current.CancellationToken);
 
         Assert.False(result.Completed);
         Assert.Equal("That diagram type is not available.", result.Error);
@@ -261,7 +261,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     [Fact]
     public async Task CommitAsync_OnAVanishedFolder_ReportsTheFolder()
     {
-        var result = await _provider.CommitAsync(FolderTarget(IoPath.Combine(_root, "gone")), AddDiagramContextActionProvider.AddActionId, "c4/context", "domain", CancellationToken.None);
+        var result = await _provider.CommitAsync(FolderTarget(IoPath.Combine(_root, "gone")), AddDiagramContextActionProvider.AddActionId, "c4/context", "domain", TestContext.Current.CancellationToken);
 
         Assert.False(result.Completed);
         Assert.Equal("The folder no longer exists.", result.Error);
@@ -272,13 +272,13 @@ public class AddDiagramContextActionProviderTests : IDisposable
     {
         // create-diagram-file Requirement 1.3 pins this order: the folder first, then the
         // type, then the name - each answered on its own terms rather than by whatever fails.
-        var vanished = await _provider.CommitAsync(FolderTarget(IoPath.Combine(_root, "gone")), AddDiagramContextActionProvider.AddActionId, "nope/nothing", "", CancellationToken.None);
+        var vanished = await _provider.CommitAsync(FolderTarget(IoPath.Combine(_root, "gone")), AddDiagramContextActionProvider.AddActionId, "nope/nothing", "", TestContext.Current.CancellationToken);
         Assert.Equal("The folder no longer exists.", vanished.Error);
 
-        var unknownType = await _provider.CommitAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "nope/nothing", "", CancellationToken.None);
+        var unknownType = await _provider.CommitAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "nope/nothing", "", TestContext.Current.CancellationToken);
         Assert.Equal("That diagram type is not available.", unknownType.Error);
 
-        var badName = await _provider.CommitAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "c4/context", "", CancellationToken.None);
+        var badName = await _provider.CommitAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "c4/context", "", TestContext.Current.CancellationToken);
         Assert.Equal("Enter a name.", badName.Error);
     }
 
@@ -286,7 +286,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     public async Task CommitAsync_OnAFileTarget_ReportsTheFolder()
     {
         // A file is never a valid target; it reads as "no folder here" rather than leaking on.
-        var result = await _provider.CommitAsync(FileTarget(CreateFile("a.txt")), AddDiagramContextActionProvider.AddActionId, "c4/context", "domain", CancellationToken.None);
+        var result = await _provider.CommitAsync(FileTarget(CreateFile("a.txt")), AddDiagramContextActionProvider.AddActionId, "c4/context", "domain", TestContext.Current.CancellationToken);
 
         Assert.Equal("The folder no longer exists.", result.Error);
     }
@@ -294,7 +294,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     [Fact]
     public async Task CommitAsync_WithAnUnknownAction_Fails()
     {
-        var result = await _provider.CommitAsync(FolderTarget(_root), "hierarchy.something-else", "c4/context", "domain", CancellationToken.None);
+        var result = await _provider.CommitAsync(FolderTarget(_root), "hierarchy.something-else", "c4/context", "domain", TestContext.Current.CancellationToken);
 
         Assert.False(result.Completed);
         Assert.Contains("Unknown action", result.Error, StringComparison.Ordinal);

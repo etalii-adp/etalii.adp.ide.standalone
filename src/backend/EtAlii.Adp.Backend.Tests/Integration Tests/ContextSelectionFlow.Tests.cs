@@ -59,6 +59,17 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         }
     }
 
+    /// <summary>
+    /// The per-message timeout, linked to the test's own cancellation token so a stream that
+    /// never delivers gives up as soon as the test is cancelled rather than waiting it out.
+    /// </summary>
+    private static CancellationTokenSource CreateMessageTimeout()
+    {
+        var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cts.CancelAfter(MessageTimeout);
+        return cts;
+    }
+
     private GrpcChannel CreateChannel()
     {
         var httpClient = _factory.CreateDefaultClient();
@@ -68,7 +79,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     private static async Task<Metadata> LoginAsync(GrpcChannel channel)
     {
         var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
-        var response = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential });
+        var response = await authClient.LoginAsync(new LoginRequest { Username = DeveloperUsername, Credential = DeveloperCredential }, cancellationToken: TestContext.Current.CancellationToken);
         return new Metadata { { SessionTokenHeader, response.Session.Value } };
     }
 
@@ -77,7 +88,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var pathMessage = new Path();
         pathMessage.Segments.AddRange(_projectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
-        var response = await projectClient.AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers);
+        var response = await projectClient.AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
         return response.Added.Id;
     }
 
@@ -106,7 +117,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     private static async Task<Contracts.ShortGuid> EntryIdOfAsync(Session session, string name)
     {
         var entries = await session.Hierarchy.ListEntriesAsync(
-            new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+            new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         return entries.Entries.Entries_.Single(e => e.Name == name).Id;
     }
 
@@ -139,9 +150,9 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     public async Task Watch_OpensWithAnEmptyBaseline()
     {
         using var session = await OpenSessionAsync();
-        using var cts = new CancellationTokenSource(MessageTimeout);
+        using var cts = CreateMessageTimeout();
 
-        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         var baseline = await ReadSelectionAsync(call.ResponseStream, cts.Token);
 
         Assert.Null(baseline.Selection);
@@ -155,18 +166,18 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         Directory.CreateDirectory(IoPath.Combine(_projectFolder, "docs"));
         File.WriteAllText(IoPath.Combine(_projectFolder, "docs", "design.mm"), "");
         using var session = await OpenSessionAsync();
-        using var cts = new CancellationTokenSource(MessageTimeout);
+        using var cts = CreateMessageTimeout();
         var docsId = await EntryIdOfAsync(session, "docs");
         var listed = await session.Hierarchy.ListEntriesAsync(
-            new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, FolderId = docsId }, session.Headers);
+            new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, FolderId = docsId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         var fileId = listed.Entries.Entries_.Single().Id;
 
-        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);
 
         // An empty path asks the backend to fill it in.
         var response = await session.Context.SelectAsync(
-            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(fileId) }, session.Headers);
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(fileId) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("", response.Error);
 
         var pushed = await ReadSelectionAsync(call.ResponseStream, cts.Token);
@@ -187,17 +198,17 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     {
         File.WriteAllText(IoPath.Combine(_projectFolder, "a.txt"), "");
         using var session = await OpenSessionAsync();
-        using var cts = new CancellationTokenSource(MessageTimeout);
+        using var cts = CreateMessageTimeout();
         var entryId = await EntryIdOfAsync(session, "a.txt");
-        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);
 
         var response = await session.Context.SelectAsync(
-            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryId, "b.txt") }, session.Headers);
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryId, "b.txt") }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.NotEqual("", response.Error);
         var pending = call.ResponseStream.MoveNext(cts.Token);
-        var arrived = await Task.WhenAny(pending, Task.Delay(TimeSpan.FromMilliseconds(500), CancellationToken.None)) == pending;
+        var arrived = await Task.WhenAny(pending, Task.Delay(TimeSpan.FromMilliseconds(500), TestContext.Current.CancellationToken)) == pending;
         Assert.False(arrived, "A rejected Select must not push anything.");
     }
 
@@ -207,19 +218,19 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         File.WriteAllText(IoPath.Combine(_projectFolder, "current.txt"), "");
         File.WriteAllText(IoPath.Combine(_projectFolder, "preview.txt"), "");
         using var session = await OpenSessionAsync();
-        using var cts = new CancellationTokenSource(MessageTimeout);
+        using var cts = CreateMessageTimeout();
         var currentId = await EntryIdOfAsync(session, "current.txt");
         var previewId = await EntryIdOfAsync(session, "preview.txt");
-        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);
         await session.Context.SelectAsync(
-            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(currentId) }, session.Headers);
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(currentId) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);
 
         var preview = Selection(previewId);
         preview.Action = ContextSelectionAction.Preview;
         await session.Context.SelectAsync(
-            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = preview }, session.Headers);
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = preview }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         var transient = await ReadSelectionAsync(call.ResponseStream, cts.Token);
         Assert.True(transient.Transient);
         Assert.Equal(new[] { "preview.txt" }, transient.Selection.Path.Segments);
@@ -234,7 +245,8 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
                 InteractionId = ShortGuid.NewShortGuid(),
                 ActionId = HierarchyContextActionProvider.RenameActionId,
             },
-            session.Headers);
+            session.Headers,
+            cancellationToken: TestContext.Current.CancellationToken);
         while (await call.ResponseStream.MoveNext(cts.Token))
         {
             if (call.ResponseStream.Current.MessageCase == ContextMessage.MessageOneofCase.Prompt)
@@ -253,17 +265,17 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         var original = IoPath.Combine(_projectFolder, "original.txt");
         File.WriteAllText(original, "");
         using var session = await OpenSessionAsync();
-        using var cts = new CancellationTokenSource(MessageTimeout);
+        using var cts = CreateMessageTimeout();
         var entryId = await EntryIdOfAsync(session, "original.txt");
 
-        using var hierarchyCall = session.Hierarchy.WatchHierarchy(new WatchHierarchyRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+        using var hierarchyCall = session.Hierarchy.WatchHierarchy(new WatchHierarchyRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         _ = hierarchyCall.ResponseStream.MoveNext(cts.Token);
-        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);
         await session.Context.SelectAsync(
-            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryId) }, session.Headers);
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryId) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace);
+        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         File.Move(original, IoPath.Combine(_projectFolder, "renamed.txt"));
 
@@ -278,17 +290,17 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         var file = IoPath.Combine(_projectFolder, "doomed.txt");
         File.WriteAllText(file, "");
         using var session = await OpenSessionAsync();
-        using var cts = new CancellationTokenSource(MessageTimeout);
+        using var cts = CreateMessageTimeout();
         var entryId = await EntryIdOfAsync(session, "doomed.txt");
 
-        using var hierarchyCall = session.Hierarchy.WatchHierarchy(new WatchHierarchyRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+        using var hierarchyCall = session.Hierarchy.WatchHierarchy(new WatchHierarchyRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         _ = hierarchyCall.ResponseStream.MoveNext(cts.Token);
-        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
+        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);
         await session.Context.SelectAsync(
-            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryId) }, session.Headers);
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryId) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);
-        await Task.Delay(StreamStartupGrace);
+        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
         File.Delete(file);
 
@@ -303,11 +315,11 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         using var session = await OpenSessionAsync();
         var foreignWatchId = ShortGuid.NewShortGuid();
         var foreignEntries = await session.Hierarchy.ListEntriesAsync(
-            new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = foreignWatchId }, session.Headers);
+            new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = foreignWatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         var foreignId = foreignEntries.Entries.Entries_.Single().Id;
 
         var response = await session.Context.SelectAsync(
-            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(foreignId) }, session.Headers);
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(foreignId) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.NotEqual("", response.Error);
     }
@@ -317,23 +329,23 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     {
         File.WriteAllText(IoPath.Combine(_projectFolder, "shared.txt"), "");
         using var session = await OpenSessionAsync();
-        using var ctsA = new CancellationTokenSource(MessageTimeout);
-        using var ctsB = new CancellationTokenSource(MessageTimeout);
+        using var ctsA = CreateMessageTimeout();
+        using var ctsB = CreateMessageTimeout();
         var watchIdB = ShortGuid.NewShortGuid();
         var entryIdA = await EntryIdOfAsync(session, "shared.txt");
 
-        using var callA = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers);
-        using var callB = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchIdB }, session.Headers);
+        using var callA = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        using var callB = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = watchIdB }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(callA.ResponseStream, ctsA.Token);
         await ReadSelectionAsync(callB.ResponseStream, ctsB.Token);
         var pendingB = callB.ResponseStream.MoveNext(ctsB.Token);
 
         await session.Context.SelectAsync(
-            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryIdA) }, session.Headers);
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryIdA) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
         var pushedA = await ReadSelectionAsync(callA.ResponseStream, ctsA.Token);
         Assert.Equal(new[] { "shared.txt" }, pushedA.Selection.Path.Segments);
-        var arrivedOnB = await Task.WhenAny(pendingB, Task.Delay(TimeSpan.FromSeconds(1), CancellationToken.None)) == pendingB;
+        var arrivedOnB = await Task.WhenAny(pendingB, Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken)) == pendingB;
         Assert.False(arrivedOnB, "Connection B observed a selection made on connection A.");
     }
 
@@ -349,7 +361,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
             new SelectRequest { ProjectId = owner.ProjectId, WatchId = owner.WatchId }, otherHeaders));
         Assert.Equal(StatusCode.Unauthenticated, selectFailure.StatusCode);
 
-        using var cts = new CancellationTokenSource(MessageTimeout);
+        using var cts = CreateMessageTimeout();
         using var call = otherClient.Watch(new WatchContextRequest { ProjectId = owner.ProjectId, WatchId = owner.WatchId }, otherHeaders);
         var watchFailure = await Assert.ThrowsAsync<RpcException>(async () => await call.ResponseStream.MoveNext(cts.Token));
         Assert.Equal(StatusCode.Unauthenticated, watchFailure.StatusCode);

@@ -74,16 +74,21 @@ public class DiagramDefinitionAllTests : IDisposable
         // Test classes build hosts in parallel, so several can reach Initialize at once.
         var scans = 0;
         var gate = new ManualResetEventSlim();
+        // Captured once rather than read inside each task: the same token either way, but it
+        // reads as one decision and keeps the gate's wait and the tasks on the same footing.
+        var cancellationToken = TestContext.Current.CancellationToken;
 
-        var callers = Enumerable.Range(0, 8).Select(_ => Task.Run(() =>
-        {
-            gate.Wait();
-            return DiagramDefinition.Initialize(() =>
+        var callers = Enumerable.Range(0, 8).Select(_ => Task.Run(
+            () =>
             {
-                Interlocked.Increment(ref scans);
-                return [Sample];
-            });
-        })).ToArray();
+                gate.Wait(cancellationToken);
+                return DiagramDefinition.Initialize(() =>
+                {
+                    Interlocked.Increment(ref scans);
+                    return [Sample];
+                });
+            },
+            cancellationToken)).ToArray();
         gate.Set();
         var results = await Task.WhenAll(callers);
 

@@ -19,7 +19,7 @@ public class ContextActionResolverTests
         var other = new StubProvider(ContextScope.Unspecified, "other");
         var resolver = new ContextActionResolver(new IContextActionProvider[] { matching, other });
 
-        var groups = await resolver.DiscoverAsync(Target(), CancellationToken.None);
+        var groups = await resolver.DiscoverAsync(Target(), TestContext.Current.CancellationToken);
 
         Assert.Equal(new[] { "matching" }, groups.SelectMany(g => g.Actions).Select(a => a.Id));
         Assert.False(other.WasConsulted);
@@ -34,7 +34,7 @@ public class ContextActionResolverTests
             new StubProvider(ContextScope.Hierarchy, "second"),
         });
 
-        var groups = await resolver.DiscoverAsync(Target(), CancellationToken.None);
+        var groups = await resolver.DiscoverAsync(Target(), TestContext.Current.CancellationToken);
 
         Assert.Equal(2, groups.Count);
         Assert.Equal("first", groups[0].Actions.Single().Id);
@@ -46,7 +46,7 @@ public class ContextActionResolverTests
     {
         var resolver = new ContextActionResolver(Array.Empty<IContextActionProvider>());
 
-        var groups = await resolver.DiscoverAsync(Target(), CancellationToken.None);
+        var groups = await resolver.DiscoverAsync(Target(), TestContext.Current.CancellationToken);
 
         Assert.Empty(groups);
     }
@@ -61,7 +61,7 @@ public class ContextActionResolverTests
             second,
         });
 
-        var owner = await resolver.ResolveByActionIdAsync(Target(), "second", CancellationToken.None);
+        var owner = await resolver.ResolveByActionIdAsync(Target(), "second", TestContext.Current.CancellationToken);
 
         Assert.NotNull(owner);
         Assert.Same(second, owner.Provider);
@@ -73,7 +73,7 @@ public class ContextActionResolverTests
     {
         var resolver = new ContextActionResolver(new IContextActionProvider[] { new StubProvider(ContextScope.Hierarchy, "known") });
 
-        var owner = await resolver.ResolveByActionIdAsync(Target(), "unknown", CancellationToken.None);
+        var owner = await resolver.ResolveByActionIdAsync(Target(), "unknown", TestContext.Current.CancellationToken);
 
         Assert.Null(owner);
     }
@@ -87,7 +87,7 @@ public class ContextActionResolverTests
             new StubProvider(ContextScope.Hierarchy, "shifted", shortcut: new ContextShortcutDefinition("F2", Shift: true)),
         });
 
-        var owner = await resolver.ResolveByShortcutAsync(Target(), new ContextShortcutDefinition("F2", Shift: true), CancellationToken.None);
+        var owner = await resolver.ResolveByShortcutAsync(Target(), new ContextShortcutDefinition("F2", Shift: true), TestContext.Current.CancellationToken);
 
         Assert.NotNull(owner);
         Assert.Equal("shifted", owner.Action.Id);
@@ -101,7 +101,7 @@ public class ContextActionResolverTests
             new StubProvider(ContextScope.Hierarchy, "blocked", shortcut: new ContextShortcutDefinition("F2"), available: false),
         });
 
-        var owner = await resolver.ResolveByShortcutAsync(Target(), new ContextShortcutDefinition("F2"), CancellationToken.None);
+        var owner = await resolver.ResolveByShortcutAsync(Target(), new ContextShortcutDefinition("F2"), TestContext.Current.CancellationToken);
 
         Assert.Null(owner);
     }
