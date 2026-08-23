@@ -18,7 +18,7 @@ This implements the "Bi-directional gRPC for frontend-backend communication" dec
 
 1. WHEN the core contract is authored THEN it SHALL define a connection-initialization message that carries a path value identifying the target file.
 2. WHEN the path is defined THEN it SHALL be able to represent additional path segments beyond the file itself, not just a single flat filename.
-3. WHEN the initialization message is defined THEN it SHALL be usable as the first message sent on the connection's bidirectional stream.
+3. WHEN the initialization message is defined THEN it SHALL be what opens the connection - the request of the server-streaming `Open` call (Requirement 5.1).
 
 ### Requirement 2 — View update message
 
@@ -28,7 +28,7 @@ This implements the "Bi-directional gRPC for frontend-backend communication" dec
 
 1. WHEN the core contract is authored THEN it SHALL define a view-update message with an xy center position field.
 2. WHEN the core contract is authored THEN it SHALL define a bounding box field alongside (or paired with) the center position.
-3. WHEN the view-update message is defined THEN it SHALL be sendable by the client at any point after connection initialization, on the same stream.
+3. WHEN the view-update message is defined THEN it SHALL be sendable by the client at any point after connection initialization, through the unary `UpdateView` call correlated to the open stream by connection id (Requirement 5.1).
 
 ### Requirement 3 — Delta envelope and action messages
 
@@ -37,9 +37,9 @@ This implements the "Bi-directional gRPC for frontend-backend communication" dec
 #### Acceptance Criteria
 
 1. WHEN the core contract is authored THEN it SHALL define a delta envelope message capable of representing exactly one of: `add`, `remove`, `group`, `ungroup`.
-2. WHEN the `add` action is defined THEN it SHALL carry one or more elements to add.
+2. WHEN the `add` action is defined THEN it SHALL carry one or more elements, and a receiver SHALL treat each as an **upsert** keyed on the element id: an id it does not hold is inserted, an id it already holds is replaced in place. An edit to an existing element therefore travels as an `add` of its new state, never as a `remove` followed by an `add` - which would make the element momentarily absent, indistinguishable from a real deletion, and drop any selection or focus on it. *(Amended for `mindmap-diagram` Requirement 11.3; the message itself is unchanged.)*
 3. WHEN the `remove` action is defined THEN it SHALL carry one or more element identifiers to remove.
-4. WHEN the `group` action is defined THEN it SHALL carry the source element identifiers being grouped and the new grouping element.
+4. WHEN the `group` action is defined THEN it SHALL carry the source element identifiers being grouped and the grouping element. The grouping element MAY be one the receiver already holds - a folded mindmap node stands for its hidden branch - or a new one; a receiver SHALL upsert it by id exactly as it does for `add`. *(Amended for `mindmap-diagram` Requirement 11.4.)*
 5. WHEN the `ungroup` action is defined THEN it SHALL carry the group element's identifier and the resulting elements.
 
 ### Requirement 4 — Extensible, mime-typed element message
@@ -59,7 +59,7 @@ This implements the "Bi-directional gRPC for frontend-backend communication" dec
 
 #### Acceptance Criteria
 
-1. WHEN the core contract is authored THEN it SHALL define a gRPC service with a bidirectional-streaming RPC that accepts the client-to-backend messages (Requirements 1–2) and returns the backend-to-client delta messages (Requirement 3).
+1. WHEN the core contract is authored THEN it SHALL define a gRPC service carrying the client-to-backend messages (Requirements 1–2) one way and the backend-to-client delta messages (Requirement 3) the other, as **two correlated one-way legs** per `tech.md`'s *gRPC call shapes*: a server-streaming `Open` that takes the initialization message and returns the delta stream, and a unary `UpdateView` that takes a view update, both correlated by the connection id the client already carries. *(Amended: this originally asked for one bidirectional-streaming RPC. A browser on grpc-web cannot stream a request body, so that RPC could never be called from the client this product has; `mindmap-diagram` was the first spec to need it and found it unusable. The messages are unchanged - only how they travel.)*
 2. WHEN the core service and its messages are authored THEN they SHALL be placed in the shared `api/` folder described in `structure.md`, separate from any diagram-specific `.proto` files.
 3. WHEN the core `.proto` file(s) are authored THEN they SHALL use package/namespace naming consistent with the `EtAlii.Adp` / `com.etalii.adp` conventions from `tech.md`/`structure.md`.
 
