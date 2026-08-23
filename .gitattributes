@@ -1,0 +1,12 @@
+# Diagram test fixtures are compared byte for byte.
+#
+# `mindmap-diagram` Requirement 3.3 requires that saving a map ADP did not change produces no
+# diff, which its tests check by comparing the serialized bytes against the fixture on disk.
+# With core.autocrlf on - the default on Windows, and set in this repository - git would store
+# these files with LF and check them out with CRLF, so the same fixture would have different
+# bytes on a Windows machine and a Linux one, and the test would be measuring git's line-ending
+# conversion rather than the serializer.
+#
+# `-text` tells git to leave the bytes exactly as committed on every platform. Replace a
+# fixture only by committing what the authoring tool actually wrote.
+*.mm -text
