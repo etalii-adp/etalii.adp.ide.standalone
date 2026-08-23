@@ -15,12 +15,12 @@ public sealed class MindmapDocument
     private const string MapElement = "map";
 
     private readonly XDocument _xml;
-    private readonly bool _endsWithNewline;
+    private readonly string _tail;
 
-    private MindmapDocument(XDocument xml, bool endsWithNewline)
+    private MindmapDocument(XDocument xml, string tail)
     {
         _xml = xml;
-        _endsWithNewline = endsWithNewline;
+        _tail = tail;
     }
 
     /// <summary>
@@ -34,10 +34,22 @@ public sealed class MindmapDocument
     {
         ArgumentNullException.ThrowIfNull(text);
 
+        // XML 1.0 §2.11 obliges every parser to normalize "\r\n" to "\n" while reading -
+        // LoadOptions.PreserveWhitespace keeps whitespace *nodes*, not carriage returns - so a
+        // Freeplane save from Windows (CRLF structure, LF inside its embedded richcontent HTML;
+        // see Fixtures/readme.md) could never come back byte for byte. Escaping the CR first
+        // makes the parser hand it over as a literal '\r' in the text nodes, which the writer
+        // then emits as the raw byte it was: the mixture round-trips exactly (Requirement 3.3).
+        // The whitespace after </map> cannot carry that escape - nothing but literal whitespace
+        // is legal outside the root - so it is split off verbatim here and re-appended by
+        // ToText, which is also what preserves a CRLF final newline.
+        var content = text.TrimEnd('\r', '\n', ' ', '\t');
+        var tail = text[content.Length..];
+
         XDocument xml;
         try
         {
-            xml = XDocument.Parse(text, LoadOptions.PreserveWhitespace);
+            xml = XDocument.Parse(content.Replace("\r\n", "&#xD;\n"), LoadOptions.PreserveWhitespace);
         }
         catch (XmlException exception)
         {
@@ -55,7 +67,7 @@ public sealed class MindmapDocument
             throw new MindmapFormatException($"A map has exactly one root node; this one has {roots}.");
         }
 
-        var document = new MindmapDocument(xml, text.EndsWith('\n'));
+        var document = new MindmapDocument(xml, tail);
         if (assignMissingIds)
         {
             document.AssignMissingIds();
@@ -110,7 +122,7 @@ public sealed class MindmapDocument
         }
 
         var element = NewNodeElement(text);
-        sibling.Element.AddAfterSelf(new XText("\n"), element);
+        sibling.Element.AddAfterSelf(new XText(FreeplaneNewline.Of(sibling.Element)), element);
         return new MindmapNode(element);
     }
 
@@ -156,6 +168,17 @@ public sealed class MindmapDocument
         return new MindmapNode(subtree);
     }
 
+    /// <summary>
+    /// Parses one subtree serialized by <see cref="FreeplaneXmlWriter.ToText"/>, under the same
+    /// carriage-return rule as <see cref="Parse"/> - without it, restoring a branch removed from
+    /// a Windows Freeplane save would put it back with its CRLF structure silently rewritten.
+    /// </summary>
+    public static XElement ParseFragment(string xml)
+    {
+        ArgumentNullException.ThrowIfNull(xml);
+        return XElement.Parse(xml.Replace("\r\n", "&#xD;\n"), LoadOptions.PreserveWhitespace);
+    }
+
     public void SetText(MindmapNode node, string text) => node.SetText(text);
 
     public void SetNotes(MindmapNode node, string notes) => node.SetNotes(notes);
@@ -169,10 +192,9 @@ public sealed class MindmapDocument
     {
         var builder = new StringBuilder();
         FreeplaneXmlWriter.Write(_xml, builder);
-        if (_endsWithNewline && (builder.Length == 0 || builder[^1] != '\n'))
-        {
-            builder.Append('\n');
-        }
+        // The whitespace that followed </map>, exactly as read - Parse split it off because a
+        // character reference is illegal outside the root, so the writer never sees it.
+        builder.Append(_tail);
 
         return builder.ToString();
     }
@@ -225,7 +247,7 @@ public sealed class MindmapDocument
         }
         else
         {
-            children[index].AddBeforeSelf(element, new XText("\n"));
+            children[index].AddBeforeSelf(element, new XText(FreeplaneNewline.Of(parent)));
         }
     }
 
@@ -235,13 +257,14 @@ public sealed class MindmapDocument
     /// </summary>
     private static void AppendChild(XElement parent, XElement element)
     {
+        var newline = FreeplaneNewline.Of(parent);
         if (parent.LastNode is XText { Value: var trailing } && trailing.All(char.IsWhiteSpace) && trailing.Contains('\n'))
         {
-            parent.Add(element, new XText("\n"));
+            parent.Add(element, new XText(newline));
         }
         else
         {
-            parent.Add(new XText("\n"), element, new XText("\n"));
+            parent.Add(new XText(newline), element, new XText(newline));
         }
     }
 }

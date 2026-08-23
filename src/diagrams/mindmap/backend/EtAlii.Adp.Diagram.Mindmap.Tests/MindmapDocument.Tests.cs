@@ -52,14 +52,46 @@ public class MindmapDocumentTests
     }
 
     [Fact]
-    public void AssigningMissingIds_ChangesOnlyTheTwoNodesThatHadNone()
+    public void ParseThenWrite_KeepsMixedLineEndings_AndAnEscapedCarriageReturnInAnAttribute()
     {
-        var document = Load();
+        // The corpus covers the real thing at scale; this pins the rule in miniature: CRLF
+        // structure and an LF line coexist untouched, and a CR in an attribute stays escaped
+        // rather than becoming a raw byte the next parser would fold into a space.
+        const string mixed = "<map version=\"freeplane 1.12.15\">\r\n" +
+            "<node TEXT=\"a&#xd;b\" ID=\"ID_1\">\r\n" +
+            "<node TEXT=\"lf line\" ID=\"ID_2\"/>\n" +
+            "</node>\r\n" +
+            "</map>\r\n";
+
+        var written = MindmapDocument.Parse(mixed, assignMissingIds: false).ToText();
+
+        Assert.Equal(mixed, written);
+    }
+
+    [Fact]
+    public void AssigningMissingIds_ChangesOnlyTheNodesThatHadNone()
+    {
+        // Deliberately hand-written: a genuine Freeplane save always carries IDs (the corpus
+        // guard asserts exactly that), so the one place an ID-less node exists is a file no
+        // Freeplane has saved yet - which is the case this tolerance is for.
+        const string handWritten = """
+            <map version="freeplane 1.11.5">
+            <node TEXT="root" ID="ID_1">
+            <node TEXT="no id yet">
+            <node TEXT="child without one either"/>
+            </node>
+            </node>
+            </map>
+            """;
+
+        var document = MindmapDocument.Parse(handWritten);
 
         Assert.All(document.Nodes, node => Assert.NotEqual("", node.Id));
-        var ribbon = document.Nodes.Single(node => node.Text == "Ribbon");
-        Assert.StartsWith("ID_", ribbon.Id, StringComparison.Ordinal);
-        Assert.Equal("ID_411002938", ribbon.Parent!.Id); // an id the file already had is untouched
+        var assigned = document.Nodes.Single(node => node.Text == "no id yet");
+        Assert.StartsWith("ID_", assigned.Id, StringComparison.Ordinal);
+        Assert.Equal("ID_1", assigned.Parent!.Id); // an id the file already had is untouched
+        // The assignment is persisted on the next save, not only held in memory.
+        Assert.Contains($"ID=\"{assigned.Id}\"", document.ToText(), StringComparison.Ordinal);
     }
 
     // ---- reading ------------------------------------------------------------------------------
@@ -138,7 +170,9 @@ public class MindmapDocumentTests
 
         Assert.Equal("Logging", backend.Children[^1].Text);
         Assert.StartsWith("ID_", added.Id, StringComparison.Ordinal);
-        Assert.Contains("<node TEXT=\"Logging\" ID=\"" + added.Id + "\"/>\n</node>", document.ToText(), StringComparison.Ordinal);
+        // The corpus is a genuine Windows Freeplane save, so a synthesized structural newline
+        // matches its CRLF - an inserted line must not be the one LF line in the file.
+        Assert.Contains("<node TEXT=\"Logging\" ID=\"" + added.Id + "\"/>\r\n</node>", document.ToText(), StringComparison.Ordinal);
     }
 
     [Fact]

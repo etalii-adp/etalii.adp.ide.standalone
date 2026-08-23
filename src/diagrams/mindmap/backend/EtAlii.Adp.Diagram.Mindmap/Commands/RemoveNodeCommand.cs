@@ -42,7 +42,7 @@ internal sealed class RemoveNodeCommandHandler(IMindmapDocumentStore documents)
         Documents.Save(command.BodyPath, new MindmapChange.StructureChanged(removedIds));
 
         return Task.FromResult(CommandResult.Success(
-            new RestoreSubtreeCommand(command.BodyPath, parent.Id, index, subtree.ToString(SaveOptions.DisableFormatting))));
+            new RestoreSubtreeCommand(command.BodyPath, parent.Id, index, FreeplaneXmlWriter.ToText(subtree))));
     }
 }
 
@@ -59,7 +59,7 @@ internal sealed class RestoreSubtreeCommandHandler(IMindmapDocumentStore documen
             return Task.FromResult(failure);
         }
 
-        var subtree = XElement.Parse(command.Subtree, LoadOptions.PreserveWhitespace);
+        var subtree = MindmapDocument.ParseFragment(command.Subtree);
         var restoredId = subtree.Attribute(MindmapNode.IdAttribute)?.Value ?? "";
         if (restoredId.Length > 0 && document.Find(restoredId) is not null)
         {

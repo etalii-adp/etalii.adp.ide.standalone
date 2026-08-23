@@ -61,7 +61,7 @@ public sealed class MindmapNode
     /// <summary>The <c>LINK</c> attribute exactly as stored - map-relative, per Freeplane - or null when the node is not linked.</summary>
     public string? Link => Element.Attribute(LinkAttribute)?.Value;
 
-    /// <summary>Freeplane's <c>POSITION</c> on a first-level node: <c>left</c> or <c>right</c>, or null when unspecified.</summary>
+    /// <summary>Freeplane's <c>POSITION</c> on a first-level node: <c>left</c>/<c>right</c> (1.11) or <c>top_or_left</c>/<c>bottom_or_right</c> (1.12), or null when unspecified.</summary>
     public string? Position => Element.Attribute(PositionAttribute)?.Value;
 
     public MindmapNode? Parent
@@ -129,17 +129,18 @@ public sealed class MindmapNode
             // line, which is how Freeplane lays a node's content out.
             var firstChild = Element.Elements(ElementName).FirstOrDefault();
             var content = new XElement(RichContentElement, new XAttribute(RichContentTypeAttribute, NoteType), html);
+            var newline = FreeplaneNewline.Of(Element);
             if (firstChild is not null)
             {
-                firstChild.AddBeforeSelf(content, new XText("\n"));
+                firstChild.AddBeforeSelf(content, new XText(newline));
             }
             else if (Element.LastNode is XText { Value: var trailing } && trailing.All(char.IsWhiteSpace) && trailing.Contains('\n'))
             {
-                Element.Add(content, new XText("\n"));
+                Element.Add(content, new XText(newline));
             }
             else
             {
-                Element.Add(new XText("\n"), content, new XText("\n"));
+                Element.Add(new XText(newline), content, new XText(newline));
             }
         }
         else
