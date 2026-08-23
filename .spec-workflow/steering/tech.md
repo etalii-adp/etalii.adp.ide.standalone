@@ -80,8 +80,8 @@ Anything that changes state is a command. This is what makes undo/redo a propert
 * **A handler reports the command that reverses it** as `CommandResult.Inverse`, which is what puts the change on the undo stack. A change that is deliberately not undoable returns plain `CommandResult.Success()`, and the reason it is not undoable belongs in the handler's own documentation.
 * **Handlers validate their own preconditions.** Undo and redo dispatch a handler again long after the original call, so it can trust nothing that was checked earlier - not the caller, and not the state of the disk.
 * **A rejected command is a `CommandResult`, not an exception.** A name already taken or a file that has since vanished is an expected outcome carrying a message meant for the user. Exceptions stay reserved for programming errors, such as dispatching a command with no registered handler.
-* A context action's `CommitAsync` is the point where the two rules above meet: it resolves what the user chose and dispatches a command, and does no filesystem work itself.
-* Known gaps to close rather than copy: the hierarchy rename and the Add-diagram commit both still change the filesystem directly, so neither is undoable yet, and `RenameEntryCommandHandler` exists but nothing dispatches it.
+* A context action's `CommitAsync` is the point where the two rules above meet: it resolves what the user chose and dispatches a command, and does no filesystem work itself. The explorer's rename, delete and add are the worked examples.
+* Handlers live in a `Commands` subfolder of the area they belong to, keeping the namespace of that area, and are registered in `AddCommands` rather than one by one in the host - so a new command has one place to be added and a test can wire up the same pipeline the host does.
 
 # Decision log
 
