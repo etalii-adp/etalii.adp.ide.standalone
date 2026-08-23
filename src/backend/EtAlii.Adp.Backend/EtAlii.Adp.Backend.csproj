@@ -21,4 +21,8 @@
     -->
     <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="Both" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Hierarchy\Commands\" />
+  </ItemGroup>
 </Project>
