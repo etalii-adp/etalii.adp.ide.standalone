@@ -158,7 +158,7 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task Add_OnTheRoot_OpensTheChoiceDialog_AndSubmittingCreatesTheDiagram()
     {
-        File.WriteAllText(IoPath.Combine(_projectFolder, "existing.txt"), "x");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "existing.txt"), "x", TestContext.Current.CancellationToken);
 
         using var channel = CreateChannel();
         var headers = await LoginAsync(channel);
@@ -253,7 +253,7 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task DiscoverActions_OnAFile_OffersNoAdd()
     {
-        File.WriteAllText(IoPath.Combine(_projectFolder, "a.txt"), "x");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "a.txt"), "x", TestContext.Current.CancellationToken);
 
         using var channel = CreateChannel();
         var headers = await LoginAsync(channel);
