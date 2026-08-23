@@ -44,12 +44,12 @@ public class ContextSelectionStoreTests : IDisposable
     /// (diagram-undo-redo Deviation 1). A test that goes on to assert the next message reads
     /// past both here, and gets the selection baseline back.
     /// </summary>
-    private static async Task<ContextMessage> ReadBaselineAsync(ChannelReader<ContextMessage> reader)
+    private static async Task TestBaselineAsync(ChannelReader<ContextMessage> reader)
     {
         var selection = await ReadAsync(reader);
         var projectActions = await ReadAsync(reader);
+        Assert.NotNull(selection);
         Assert.Equal(ContextMessage.MessageOneofCase.ProjectActions, projectActions.MessageCase);
-        return selection;
     }
 
     private static ContextActionGroupDefinition RootGroup() =>
@@ -79,7 +79,7 @@ public class ContextSelectionStoreTests : IDisposable
         var watchId = ShortGuid.NewShortGuid();
         var channel = Channel.CreateUnbounded<ContextMessage>();
         _store.Register(watchId, Root, channel.Writer, [RootGroup()], []);
-        await ReadBaselineAsync(channel.Reader);
+        await TestBaselineAsync(channel.Reader);
 
         _store.Set(watchId, Root, Record(new StubResolver(), "a.txt"), NoRediscovery);
         var selected = await ReadAsync(channel.Reader);
@@ -129,8 +129,8 @@ public class ContextSelectionStoreTests : IDisposable
         var theirId = ShortGuid.NewShortGuid();
         _store.Register(myId, Root, mine.Writer, [], []);
         _store.Register(theirId, Root, theirs.Writer, [], []);
-        await ReadBaselineAsync(mine.Reader);
-        await ReadBaselineAsync(theirs.Reader);
+        await TestBaselineAsync(mine.Reader);
+        await TestBaselineAsync(theirs.Reader);
 
         _store.Set(myId, Root, Record(new StubResolver(), "a.txt"), NoRediscovery);
 
@@ -145,7 +145,7 @@ public class ContextSelectionStoreTests : IDisposable
         var watchId = ShortGuid.NewShortGuid();
         var channel = Channel.CreateUnbounded<ContextMessage>();
         _store.Register(watchId, Root, channel.Writer, [], []);
-        await ReadBaselineAsync(channel.Reader);
+        await TestBaselineAsync(channel.Reader);
         var current = Record(new StubResolver(), "current.txt");
         _store.Set(watchId, Root, current, NoRediscovery);
         await ReadAsync(channel.Reader);
@@ -164,7 +164,7 @@ public class ContextSelectionStoreTests : IDisposable
         var watchId = ShortGuid.NewShortGuid();
         var channel = Channel.CreateUnbounded<ContextMessage>();
         _store.Register(watchId, Root, channel.Writer, [], []);
-        await ReadBaselineAsync(channel.Reader);
+        await TestBaselineAsync(channel.Reader);
         var resolver = new StubResolver();
         _store.Set(watchId, Root, Record(resolver, "a.txt"), NoRediscovery);
         await ReadAsync(channel.Reader);
@@ -183,7 +183,7 @@ public class ContextSelectionStoreTests : IDisposable
         var watchId = ShortGuid.NewShortGuid();
         var channel = Channel.CreateUnbounded<ContextMessage>();
         _store.Register(watchId, Root, channel.Writer, [], []);
-        await ReadBaselineAsync(channel.Reader);
+        await TestBaselineAsync(channel.Reader);
         var resolver = new StubResolver();
         var rediscovered = 0;
         _store.Set(watchId, Root, Record(resolver, "a.txt"), (record, _) =>
@@ -234,7 +234,7 @@ public class ContextSelectionStoreTests : IDisposable
         var watchId = ShortGuid.NewShortGuid();
         var channel = Channel.CreateUnbounded<ContextMessage>();
         _store.Register(watchId, Root, channel.Writer, [], []);
-        await ReadBaselineAsync(channel.Reader);
+        await TestBaselineAsync(channel.Reader);
         var resolver = new StubResolver();
         _store.Set(watchId, Root, Record(resolver, "a.txt"), NoRediscovery);
         await ReadAsync(channel.Reader);
@@ -297,9 +297,9 @@ public class ContextSelectionStoreTests : IDisposable
         var first = Channel.CreateUnbounded<ContextMessage>();
         var second = Channel.CreateUnbounded<ContextMessage>();
         _store.Register(watchId, Root, first.Writer, [], []);
-        await ReadBaselineAsync(first.Reader);
+        await TestBaselineAsync(first.Reader);
         _store.Register(watchId, Root, second.Writer, [], []);
-        await ReadBaselineAsync(second.Reader);
+        await TestBaselineAsync(second.Reader);
 
         _store.Set(watchId, Root, Record(new StubResolver(), "a.txt"), NoRediscovery);
 
@@ -333,8 +333,8 @@ public class ContextSelectionStoreTests : IDisposable
         var theirs = Channel.CreateUnbounded<ContextMessage>();
         _store.Register(ShortGuid.NewShortGuid(), Root, mine.Writer, [], [ProjectGroup()]);
         _store.Register(ShortGuid.NewShortGuid(), other, theirs.Writer, [], [ProjectGroup()]);
-        await ReadBaselineAsync(mine.Reader);
-        await ReadBaselineAsync(theirs.Reader);
+        await TestBaselineAsync(mine.Reader);
+        await TestBaselineAsync(theirs.Reader);
 
         _store.PushProjectActions(Root, [ProjectGroup()]);
 
