@@ -303,7 +303,10 @@ dotnet_naming_rule.private_fields_should_be__camelcase.severity = none
 dotnet_naming_rule.private_fields_should_be__camelcase.symbols = private_fields
 dotnet_naming_rule.private_fields_should_be__camelcase.style = _camelcase
 
-dotnet_naming_rule.private_static_fields_should_be_s_camelcase.severity = suggestion
+# Severity 'none' rather than 'suggestion' (IDE1006, "Missing prefix: 's_'"): private
+# fields here are named _camelCase whether or not they are static - see the note on the
+# static readonly rule below. Revisit together with that one.
+dotnet_naming_rule.private_static_fields_should_be_s_camelcase.severity = none
 dotnet_naming_rule.private_static_fields_should_be_s_camelcase.symbols = private_static_fields
 dotnet_naming_rule.private_static_fields_should_be_s_camelcase.style = s_camelcase
 
@@ -319,7 +322,11 @@ dotnet_naming_rule.public_static_readonly_fields_should_be_pascalcase.severity =
 dotnet_naming_rule.public_static_readonly_fields_should_be_pascalcase.symbols = public_static_readonly_fields
 dotnet_naming_rule.public_static_readonly_fields_should_be_pascalcase.style = pascalcase
 
-dotnet_naming_rule.private_static_readonly_fields_should_be_pascalcase.severity = suggestion
+# Severity 'none' rather than 'suggestion' (IDE1006, "Prefix '_' is not expected"): every
+# class that logs holds its logger as `private static readonly ILogger _logger =
+# Log.ForContext<TheClass>()`, which is Serilog's own convention and the shape used
+# throughout this codebase. Enforcing PascalCase here would rename exactly that field.
+dotnet_naming_rule.private_static_readonly_fields_should_be_pascalcase.severity = none
 dotnet_naming_rule.private_static_readonly_fields_should_be_pascalcase.symbols = private_static_readonly_fields
 dotnet_naming_rule.private_static_readonly_fields_should_be_pascalcase.style = pascalcase
 

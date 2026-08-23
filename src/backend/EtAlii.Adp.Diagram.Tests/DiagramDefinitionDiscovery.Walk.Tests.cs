@@ -7,6 +7,7 @@ namespace EtAlii.Adp.Diagram.Tests;
 /// Exercises the assembly walk against this test process's real entry assembly and real
 /// deployment manifest - the one place the manifest seeding can be proven rather than mocked.
 /// </summary>
+[Collection(LogCapture.Collection)]
 public class DiagramDefinitionDiscoveryWalkTests
 {
     [Fact]
@@ -129,13 +130,13 @@ public class DiagramDefinitionDiscoveryWalkTests
     }
 
     [Fact]
-    public void FindApplicationAssemblies_WithALogger_DoesNotWarnOnAHealthyDeployment()
+    public void FindApplicationAssemblies_DoesNotWarnOnAHealthyDeployment()
     {
-        var logger = new ListLogger<DiagramDefinitionDiscovery>();
+        using var logs = LogCapture.Start();
 
-        DiagramDefinitionDiscovery.FindApplicationAssemblies(logger);
+        DiagramDefinitionDiscovery.FindApplicationAssemblies();
 
-        Assert.Empty(logger.Warnings);
+        Assert.Empty(logs.Warnings);
     }
 
     [Fact]
@@ -143,10 +144,9 @@ public class DiagramDefinitionDiscoveryWalkTests
     {
         // The end-to-end shape the host uses: walk, then discover. The fixtures live here, so
         // a walk that really reaches this assembly yields them.
-        var logger = new ListLogger<DiagramDefinitionDiscovery>();
-        var discovery = new DiagramDefinitionDiscovery(logger);
+        var discovery = new DiagramDefinitionDiscovery();
 
-        var result = discovery.Discover(DiagramDefinitionDiscovery.FindApplicationAssemblies(logger));
+        var result = discovery.Discover(DiagramDefinitionDiscovery.FindApplicationAssemblies());
 
         Assert.Contains(result, d => d.Origin.Key == "fixture/valid");
         Assert.Contains(result, d => d.Origin.Key == "alpha/z");

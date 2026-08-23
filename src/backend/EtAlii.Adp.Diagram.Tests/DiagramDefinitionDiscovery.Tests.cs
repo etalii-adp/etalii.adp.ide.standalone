@@ -9,25 +9,19 @@ using Alpha = EtAlii.Adp.Diagram.Tests.Fixtures.Ordering.Alpha;
 
 namespace EtAlii.Adp.Diagram.Tests;
 
-public class DiagramDefinitionDiscoveryTests
+[Collection(LogCapture.Collection)]
+public class DiagramDefinitionDiscoveryTests : IDisposable
 {
-    private readonly ListLogger<DiagramDefinitionDiscovery> _logger = new();
-    private readonly DiagramDefinitionDiscovery _discovery;
+    // Discovery logs through a static Serilog logger, so what it said is read from a capture
+    // over the pipeline rather than from a logger handed to it.
+    private readonly LogCapture _logger = LogCapture.Start();
+    private readonly DiagramDefinitionDiscovery _discovery = new();
 
-    public DiagramDefinitionDiscoveryTests()
-    {
-        _discovery = new DiagramDefinitionDiscovery(_logger);
-    }
+    public void Dispose() => _logger.Dispose();
 
     private static FakeAssembly AssemblyWith(string name, params Type[] types) => new(name, types);
 
     // ---- construction and arguments -----------------------------------------------------
-
-    [Fact]
-    public void Constructor_WithNullLogger_Throws()
-    {
-        Assert.Throws<ArgumentNullException>(() => new DiagramDefinitionDiscovery(null!));
-    }
 
     [Fact]
     public void Discover_WithNullAssemblies_Throws()

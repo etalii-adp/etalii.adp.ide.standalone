@@ -2,7 +2,7 @@ using System.Threading.Channels;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
 using Grpc.Core;
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace EtAlii.Adp.Backend.Context;
 
@@ -19,27 +19,26 @@ namespace EtAlii.Adp.Backend.Context;
 /// </remarks>
 public sealed partial class ContextServiceImpl : ContextService.ContextServiceBase
 {
+    private static readonly ILogger _logger = Log.ForContext<ContextServiceImpl>();
+
     private readonly IProjectStore _projectStore;
     private readonly IContextSelectionStore _selectionStore;
     private readonly ContextSelectionResolver _selectionResolver;
     private readonly IContextActionResolver _contextActionResolver;
     private readonly IContextInteractionStore _contextInteractionStore;
-    private readonly ILogger<ContextServiceImpl> _logger;
 
     public ContextServiceImpl(
         IProjectStore projectStore,
         IContextSelectionStore selectionStore,
         ContextSelectionResolver selectionResolver,
         IContextActionResolver contextActionResolver,
-        IContextInteractionStore contextInteractionStore,
-        ILogger<ContextServiceImpl> logger)
+        IContextInteractionStore contextInteractionStore)
     {
         _projectStore = projectStore;
         _selectionStore = selectionStore;
         _selectionResolver = selectionResolver;
         _contextActionResolver = contextActionResolver;
         _contextInteractionStore = contextInteractionStore;
-        _logger = logger;
     }
 
     public override async Task<SelectResponse> Select(SelectRequest request, ServerCallContext context)
@@ -130,7 +129,7 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _logger.LogWarning(ex, "Discovering actions for the current selection failed; recording it without actions.");
+            _logger.Warning(ex, "Discovering actions for the current selection failed; recording it without actions");
             return record with { Actions = [] };
         }
     }
