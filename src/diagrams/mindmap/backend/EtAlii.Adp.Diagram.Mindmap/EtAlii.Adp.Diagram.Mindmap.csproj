@@ -2,6 +2,24 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+    <!--
+      Core abstractions only: ICommand and its handler, the context resolver and provider
+      seams, the diagram session seam. The dependency runs this way and never back - core must
+      compile and test with this module absent (mindmap-diagram Requirement 13.4).
+    -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The module's own wire payload, packed into the core Element's Any. Lives under the
+      module's api folder; core protos are never edited from here.
+    -->
+    <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" AdditionalImportDirs="..\..\..\..\api" GrpcServices="None" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="EtAlii.Adp.Diagram.Mindmap.Tests" />
   </ItemGroup>
 
 </Project>
