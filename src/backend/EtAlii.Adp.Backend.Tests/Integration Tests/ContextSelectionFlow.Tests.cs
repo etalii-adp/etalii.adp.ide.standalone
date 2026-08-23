@@ -207,9 +207,40 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         var detail = Assert.Single(pushed.Levels);
         Assert.Equal(EntryKind.File, detail.Entry.Kind);
         Assert.True(detail.Entry.Available);
+        // A bare .mm body routes by its declared extension: the pushed detail says which
+        // canvas can open it (diagram-workspace-tabs Requirement 1.1).
+        Assert.Equal("freeplane/mindmap", detail.Entry.DiagramMimeType);
         var actionIds = pushed.Actions.SelectMany(g => g.Actions).Select(a => a.Id).ToList();
         Assert.Contains(HierarchyContextActionProvider.RenameActionId, actionIds);
         Assert.Contains(HierarchyContextActionProvider.DeleteActionId, actionIds);
+    }
+
+    [Fact]
+    public async Task Select_PushesTheDiagramTypeForARegistration_AndNoTypeForAPlainFile()
+    {
+        // The whole tab system hangs off this one field arriving on the pushed detail
+        // (diagram-workspace-tabs Requirement 1), so it is proven over the real resolver,
+        // router and stream rather than against mocks.
+        File.WriteAllText(IoPath.Combine(_projectFolder, "domain.adp"), "freeplane/mindmap\n");
+        File.WriteAllText(IoPath.Combine(_projectFolder, "domain.mm"), "<map version=\"freeplane 1.11.5\">\n<node TEXT=\"domain\" ID=\"ID_1\"/>\n</map>\n");
+        File.WriteAllText(IoPath.Combine(_projectFolder, "readme.txt"), "");
+        using var session = await OpenSessionAsync();
+        using var cts = CreateMessageTimeout();
+        var adpId = await EntryIdOfAsync(session, "domain.adp");
+        var plainId = await EntryIdOfAsync(session, "readme.txt");
+
+        using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        await ReadSelectionAsync(call.ResponseStream, cts.Token);
+
+        await session.Context.SelectAsync(
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(adpId) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        var diagram = await ReadSelectionAsync(call.ResponseStream, cts.Token);
+        Assert.Equal("freeplane/mindmap", Assert.Single(diagram.Levels).Entry.DiagramMimeType);
+
+        await session.Context.SelectAsync(
+            new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(plainId) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        var plain = await ReadSelectionAsync(call.ResponseStream, cts.Token);
+        Assert.Equal("", Assert.Single(plain.Levels).Entry.DiagramMimeType);
     }
 
     [Fact]

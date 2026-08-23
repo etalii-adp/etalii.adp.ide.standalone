@@ -219,4 +219,78 @@ public class HierarchyContextSourceResolverTests : IDisposable
 
         Assert.Empty(reported);
     }
+
+    // ---- the diagram type on the detail (diagram-workspace-tabs Requirement 1) -----------
+    //
+    // The workspace opens tabs from the pushed selection, so the detail must say which files
+    // are diagrams - through the router, never a client-side file-type table.
+
+    private static readonly EtAlii.Adp.Diagram.DiagramDefinition Mindmap =
+        new(new EtAlii.Adp.Diagram.DiagramOrigin("freeplane", "mindmap"), "Mind map", ".mm");
+
+    private static readonly EtAlii.Adp.Diagram.DiagramDefinition RivalMindmap =
+        new(new EtAlii.Adp.Diagram.DiagramOrigin("xmind", "mindmap"), "Rival map", ".mm");
+
+    /// <summary>The resolver over a catalog that knows the given definitions, unlike the class's empty default.</summary>
+    private HierarchyContextSourceResolver ResolverKnowing(params EtAlii.Adp.Diagram.DiagramDefinition[] definitions) =>
+        new(_store, new DiagramFileRouter(new KnownCatalog(definitions)));
+
+    private async Task<string> DiagramMimeOfAsync(HierarchyContextSourceResolver resolver, params string[] segments)
+    {
+        var result = await resolver.ResolveAsync(
+            _watchId, _root, ContextSelectionSource.Explorer, Source(IdOf(segments)), [], null, TestContext.Current.CancellationToken);
+        return Assert.IsType<ContextLevelResolution.Resolved>(result).Level.Detail.Entry.DiagramMimeType;
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ARegisteredDiagram_CarriesItsMimeType()
+    {
+        File.WriteAllText(IoPath.Combine(_root, "domain.adp"), "freeplane/mindmap\n");
+
+        Assert.Equal("freeplane/mindmap", await DiagramMimeOfAsync(ResolverKnowing(Mindmap), "domain.adp"));
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ABareBodyWithADeclaredExtension_CarriesItsMimeType()
+    {
+        // A map created in Freeplane and dropped into the folder (mindmap-diagram Requirement 2.7).
+        CreateFile("dropped.mm");
+
+        Assert.Equal("freeplane/mindmap", await DiagramMimeOfAsync(ResolverKnowing(Mindmap), "dropped.mm"));
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ARegistrationNamingAnUnknownType_CarriesTheNamedType()
+    {
+        // The client can then open a tab that says the type is unavailable, rather than
+        // treating the file as plain (Requirements 1.4, 4.4).
+        File.WriteAllText(IoPath.Combine(_root, "future.adp"), "vendor/unheard-of\n");
+
+        Assert.Equal("vendor/unheard-of", await DiagramMimeOfAsync(ResolverKnowing(Mindmap), "future.adp"));
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ABareBodyWithAnAmbiguousExtension_CarriesNoType()
+    {
+        // Two types claim .mm: the router refuses to guess, so the file is not openable.
+        CreateFile("contested.mm");
+
+        Assert.Equal("", await DiagramMimeOfAsync(ResolverKnowing(Mindmap, RivalMindmap), "contested.mm"));
+    }
+
+    [Fact]
+    public async Task ResolveAsync_APlainFileAndAFolder_CarryNoType()
+    {
+        CreateFile("readme.txt");
+        CreateFolder("docs");
+        var resolver = ResolverKnowing(Mindmap);
+
+        Assert.Equal("", await DiagramMimeOfAsync(resolver, "readme.txt"));
+        Assert.Equal("", await DiagramMimeOfAsync(resolver, "docs"));
+    }
+
+    private sealed class KnownCatalog(IReadOnlyList<EtAlii.Adp.Diagram.DiagramDefinition> definitions) : EtAlii.Adp.Diagram.IDiagramDefinitionCatalog
+    {
+        public IReadOnlyList<EtAlii.Adp.Diagram.DiagramDefinition> All { get; } = definitions;
+    }
 }
