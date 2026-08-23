@@ -195,7 +195,7 @@
   - _Requirements: 8.1, 8.2, 10.1, 10.5, 10.8, 7.8_
   - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/TypeScript developer | Task: Wire node selection, focus following and modal shortcuts per design.md | Restrictions: the canvas keeps no selection of its own and does not re-react to a selection it produced; Escape during an edit dispatches no command and leaves nothing on the undo stack; no key-to-action table — shortcuts come from the backend as data | Success: tests cover focus following a pushed selection, an off-screen node scrolled into view, collapsed ancestors expanded, and Escape discarding an edit_
 
-- [ ] 22. Open and focus a new mindmap — **Gate S**
+- [x] 22. Open and focus a new mindmap — **Gate S**
   - File: `src/client/src/shell/` (modify), tests
   - The `Select` of a newly created `.adp` file that this connection has no view open for is the trigger to open and focus it. Not inferred from having been the caller of the Add
   - Purpose: Requirement 1.7
@@ -213,7 +213,7 @@
   - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5_
   - _Prompt: Implement the task for spec mindmap-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Write the test that proves core does not depend on the mindmap module, and verify the structure and registration claims of Requirement 13 | Restrictions: assert on compiled metadata rather than on source text, so the test cannot be fooled by a comment; if core does turn out to reference the module, fix the dependency rather than weakening the test | Success: the test fails if a mindmap reference is added to any core project, and core builds and tests green with the module removed from the solution_
 
-- [ ] 24. Move the catalog row and run the manual pass
+- [x] 24. Move the catalog row and run the manual pass
   - File: `docs/diagrams.md` (modify), `tests.md` (modify if anything is found)
   - Move `freeplane/mindmap` to 🛠️ when Phase C lands and ✅ when Phase F does. Then, with the app running on a free port pair: create a mindmap and confirm both files appear and it opens focused; add, rename, move and delete nodes with the keyboard alone; fold a branch and confirm it stays folded while another client edits inside it; undo an edit; open the `.mm` in Freeplane and confirm it still opens and shows the same map
   - Purpose: Requirement 13.6 and the parts only a running app shows
