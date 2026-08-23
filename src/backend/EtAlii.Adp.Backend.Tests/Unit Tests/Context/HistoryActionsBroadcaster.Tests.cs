@@ -25,7 +25,7 @@ public class HistoryActionsBroadcasterTests
         store.Raise(Root);
 
         await WaitUntilAsync(() => selection.Pushes.Count >= 1);
-        Assert.Equal(1, selection.Pushes.Count);
+        Assert.Single(selection.Pushes);
         Assert.Equal(Root, selection.Pushes[0].RootPath);
         Assert.Equal(1, resolver.DiscoverCount);
     }
@@ -46,7 +46,7 @@ public class HistoryActionsBroadcasterTests
         await WaitUntilAsync(() => selection.Pushes.Count >= 1);
         // Give any second push its chance to arrive before asserting there is none.
         await Task.Delay(150, TestContext.Current.CancellationToken);
-        Assert.Equal(1, selection.Pushes.Count);
+        Assert.Single(selection.Pushes);
         Assert.Equal(1, resolver.DiscoverCount);
     }
 

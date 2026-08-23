@@ -1,6 +1,7 @@
 using EtAlii.Adp.Backend.Context;
 
-namespace EtAlii.Adp.Backend.History;
+using ContextScope = EtAlii.Adp.ContextScope;
+namespace EtAlii.Adp.Backend;
 
 /// <summary>
 /// Offers undo and redo as ordinary context actions for the project scope, so they reach the

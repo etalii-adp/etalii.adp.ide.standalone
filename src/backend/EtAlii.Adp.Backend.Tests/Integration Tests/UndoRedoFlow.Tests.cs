@@ -1,5 +1,4 @@
 using EtAlii.Adp.Backend.Hierarchy;
-using EtAlii.Adp.Backend.History;
 using EtAlii.Adp.Backend.Projects;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;

@@ -75,7 +75,7 @@ builder.Services.AddCommands();
 
 // Undo and redo, offered as project-scope context actions, and the broadcaster that pushes
 // their availability whenever a project's history changes (diagram-undo-redo).
-builder.Services.AddSingleton<IContextActionProvider, EtAlii.Adp.Backend.History.HistoryContextActionProvider>();
+builder.Services.AddSingleton<IContextActionProvider, HistoryContextActionProvider>();
 builder.Services.AddSingleton<HistoryActionsBroadcaster>();
 
 // The mindmap module: its commands and document store, its document factory, the resolver

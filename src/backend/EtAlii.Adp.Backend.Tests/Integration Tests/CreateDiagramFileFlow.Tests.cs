@@ -142,7 +142,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
             }
         }
 
-        return null!;
+        return null;
     }
 
     private sealed record Session(
