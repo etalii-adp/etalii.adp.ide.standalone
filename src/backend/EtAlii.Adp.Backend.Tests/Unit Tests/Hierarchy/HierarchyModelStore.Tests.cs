@@ -57,7 +57,7 @@ public class HierarchyModelStoreTests : IDisposable
 
         store.Remove(watchId);
         File.WriteAllText(IoPath.Combine(_root, "after-remove.txt"), "");
-        await Task.Delay(TimeSpan.FromMilliseconds(300));
+        await Task.Delay(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
 
         Assert.Equal(0, eventCount);
     }
@@ -69,7 +69,7 @@ public class HierarchyModelStoreTests : IDisposable
         var watchId = ShortGuid.NewShortGuid();
         var first = store.GetOrCreate(watchId, _root);
 
-        await Task.Delay(TimeSpan.FromMilliseconds(300));
+        await Task.Delay(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
 
         var second = store.GetOrCreate(watchId, _root);
         Assert.NotSame(first, second);
@@ -84,7 +84,7 @@ public class HierarchyModelStoreTests : IDisposable
         using var watcher = new RootFolderWatcher(_root, (_, _, _) => { }, _ => { });
         store.AttachWatcher(watchId, watcher);
 
-        await Task.Delay(TimeSpan.FromMilliseconds(300));
+        await Task.Delay(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
 
         var second = store.GetOrCreate(watchId, _root);
         Assert.Same(first, second);

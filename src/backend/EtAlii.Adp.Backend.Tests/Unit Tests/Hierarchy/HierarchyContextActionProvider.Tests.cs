@@ -49,7 +49,7 @@ public class HierarchyContextActionProviderTests : IDisposable
         new(ContextScope.Hierarchy, path, IsContainer: true, ShortGuid.NewShortGuid());
 
     private async Task<IReadOnlyList<ContextActionDefinition>> DiscoverAsync(ContextTarget target) =>
-        (await _provider.DiscoverAsync(target, CancellationToken.None)).SelectMany(g => g.Actions).ToList();
+        (await _provider.DiscoverAsync(target, TestContext.Current.CancellationToken)).SelectMany(g => g.Actions).ToList();
 
     [Fact]
     public async Task DiscoverAsync_ForAnExistingFile_ReportsRenameAndDeleteWithTheirShortcuts()
@@ -83,7 +83,7 @@ public class HierarchyContextActionProviderTests : IDisposable
     {
         var target = FileTarget(IoPath.Combine(_root, "vanished.txt"));
 
-        var groups = await _provider.DiscoverAsync(target, CancellationToken.None);
+        var groups = await _provider.DiscoverAsync(target, TestContext.Current.CancellationToken);
 
         Assert.Empty(groups);
     }
@@ -93,7 +93,7 @@ public class HierarchyContextActionProviderTests : IDisposable
     {
         var target = FileTarget(CreateFile("current.txt"));
 
-        var result = await _provider.ExecuteAsync(target, HierarchyContextActionProvider.RenameActionId, CancellationToken.None);
+        var result = await _provider.ExecuteAsync(target, HierarchyContextActionProvider.RenameActionId, TestContext.Current.CancellationToken);
 
         var input = Assert.IsType<ContextExecutionResult.RequiresInput>(result);
         Assert.Equal("current.txt", input.Request.InitialValue);
@@ -104,7 +104,7 @@ public class HierarchyContextActionProviderTests : IDisposable
     {
         var target = FolderTarget(CreateFolder("sub"));
 
-        var result = await _provider.ExecuteAsync(target, HierarchyContextActionProvider.DeleteActionId, CancellationToken.None);
+        var result = await _provider.ExecuteAsync(target, HierarchyContextActionProvider.DeleteActionId, TestContext.Current.CancellationToken);
 
         var confirmation = Assert.IsType<ContextExecutionResult.RequiresConfirmation>(result);
         Assert.True(confirmation.Request.Danger);
@@ -119,7 +119,7 @@ public class HierarchyContextActionProviderTests : IDisposable
     {
         var target = FileTarget(CreateFile("a.txt"));
 
-        var validation = await _provider.ValidateAsync(target, HierarchyContextActionProvider.RenameActionId, value, CancellationToken.None);
+        var validation = await _provider.ValidateAsync(target, HierarchyContextActionProvider.RenameActionId, value, TestContext.Current.CancellationToken);
 
         Assert.False(validation.Valid);
         Assert.NotEqual("", validation.Reason);
@@ -133,7 +133,7 @@ public class HierarchyContextActionProviderTests : IDisposable
     {
         var target = FileTarget(CreateFile("a.txt"));
 
-        var validation = await _provider.ValidateAsync(target, HierarchyContextActionProvider.RenameActionId, value, CancellationToken.None);
+        var validation = await _provider.ValidateAsync(target, HierarchyContextActionProvider.RenameActionId, value, TestContext.Current.CancellationToken);
 
         Assert.False(validation.Valid);
     }
@@ -143,7 +143,7 @@ public class HierarchyContextActionProviderTests : IDisposable
     {
         var target = FileTarget(CreateFile("a.txt"));
 
-        var validation = await _provider.ValidateAsync(target, HierarchyContextActionProvider.RenameActionId, "a.txt", CancellationToken.None);
+        var validation = await _provider.ValidateAsync(target, HierarchyContextActionProvider.RenameActionId, "a.txt", TestContext.Current.CancellationToken);
 
         Assert.False(validation.Valid);
     }
@@ -154,7 +154,7 @@ public class HierarchyContextActionProviderTests : IDisposable
         CreateFile("taken.txt");
         var target = FileTarget(CreateFile("a.txt"));
 
-        var validation = await _provider.ValidateAsync(target, HierarchyContextActionProvider.RenameActionId, "taken.txt", CancellationToken.None);
+        var validation = await _provider.ValidateAsync(target, HierarchyContextActionProvider.RenameActionId, "taken.txt", TestContext.Current.CancellationToken);
 
         Assert.False(validation.Valid);
         Assert.Contains("already exists", validation.Reason);
@@ -170,7 +170,7 @@ public class HierarchyContextActionProviderTests : IDisposable
         CreateFolder("sub");
         var target = FileTarget(CreateFile("a.txt"));
 
-        var validation = await _provider.ValidateAsync(target, HierarchyContextActionProvider.RenameActionId, value, CancellationToken.None);
+        var validation = await _provider.ValidateAsync(target, HierarchyContextActionProvider.RenameActionId, value, TestContext.Current.CancellationToken);
 
         Assert.False(validation.Valid);
     }
@@ -181,7 +181,7 @@ public class HierarchyContextActionProviderTests : IDisposable
         var target = FileTarget(CreateFile("a.txt"));
         var outside = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", "outside.txt");
 
-        var validation = await _provider.ValidateAsync(target, HierarchyContextActionProvider.RenameActionId, outside, CancellationToken.None);
+        var validation = await _provider.ValidateAsync(target, HierarchyContextActionProvider.RenameActionId, outside, TestContext.Current.CancellationToken);
 
         Assert.False(validation.Valid);
     }
@@ -191,7 +191,7 @@ public class HierarchyContextActionProviderTests : IDisposable
     {
         var target = FileTarget(CreateFile("a.txt"));
 
-        var validation = await _provider.ValidateAsync(target, HierarchyContextActionProvider.RenameActionId, "b.txt", CancellationToken.None);
+        var validation = await _provider.ValidateAsync(target, HierarchyContextActionProvider.RenameActionId, "b.txt", TestContext.Current.CancellationToken);
 
         Assert.True(validation.Valid);
     }
@@ -204,7 +204,7 @@ public class HierarchyContextActionProviderTests : IDisposable
         File.WriteAllText(IoPath.Combine(_root, "sub", "top.txt"), "also kept");
         var target = FolderTarget(IoPath.Combine(_root, "sub"));
 
-        var commit = await _provider.CommitAsync(target, HierarchyContextActionProvider.RenameActionId, "renamed", "", CancellationToken.None);
+        var commit = await _provider.CommitAsync(target, HierarchyContextActionProvider.RenameActionId, "renamed", "", TestContext.Current.CancellationToken);
 
         Assert.True(commit.Completed);
         Assert.False(Directory.Exists(IoPath.Combine(_root, "sub")));
@@ -219,7 +219,7 @@ public class HierarchyContextActionProviderTests : IDisposable
         var path = CreateFile("a.txt");
         var target = FileTarget(path);
 
-        var commit = await _provider.CommitAsync(target, HierarchyContextActionProvider.RenameActionId, "taken.txt", "", CancellationToken.None);
+        var commit = await _provider.CommitAsync(target, HierarchyContextActionProvider.RenameActionId, "taken.txt", "", TestContext.Current.CancellationToken);
 
         Assert.False(commit.Completed);
         Assert.True(File.Exists(path));
@@ -233,7 +233,7 @@ public class HierarchyContextActionProviderTests : IDisposable
         File.WriteAllText(IoPath.Combine(_root, "sub", "inner", "leaf.txt"), "");
         var target = FolderTarget(IoPath.Combine(_root, "sub"));
 
-        var commit = await _provider.CommitAsync(target, HierarchyContextActionProvider.DeleteActionId, "", "", CancellationToken.None);
+        var commit = await _provider.CommitAsync(target, HierarchyContextActionProvider.DeleteActionId, "", "", TestContext.Current.CancellationToken);
 
         Assert.True(commit.Completed);
         Assert.False(Directory.Exists(IoPath.Combine(_root, "sub")));
@@ -249,7 +249,7 @@ public class HierarchyContextActionProviderTests : IDisposable
 
         using (File.Open(lockedPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
         {
-            var commit = await _provider.CommitAsync(target, HierarchyContextActionProvider.DeleteActionId, "", "", CancellationToken.None);
+            var commit = await _provider.CommitAsync(target, HierarchyContextActionProvider.DeleteActionId, "", "", TestContext.Current.CancellationToken);
 
             Assert.False(commit.Completed);
             Assert.NotEqual("", commit.Error);
@@ -268,7 +268,7 @@ public class HierarchyContextActionProviderTests : IDisposable
     [Fact]
     public async Task DiscoverAsync_OnTheProjectRoot_ReportsRenameAndDeleteUnavailable_WithTheReason()
     {
-        var groups = await _provider.DiscoverAsync(RootTarget(_root), CancellationToken.None);
+        var groups = await _provider.DiscoverAsync(RootTarget(_root), TestContext.Current.CancellationToken);
 
         var actions = Assert.Single(groups).Actions;
         Assert.Equal(2, actions.Count);
@@ -279,8 +279,8 @@ public class HierarchyContextActionProviderTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_OnTheProjectRoot_Fails_ForBothActions()
     {
-        var rename = await _provider.ExecuteAsync(RootTarget(_root), HierarchyContextActionProvider.RenameActionId, CancellationToken.None);
-        var delete = await _provider.ExecuteAsync(RootTarget(_root), HierarchyContextActionProvider.DeleteActionId, CancellationToken.None);
+        var rename = await _provider.ExecuteAsync(RootTarget(_root), HierarchyContextActionProvider.RenameActionId, TestContext.Current.CancellationToken);
+        var delete = await _provider.ExecuteAsync(RootTarget(_root), HierarchyContextActionProvider.DeleteActionId, TestContext.Current.CancellationToken);
 
         Assert.IsType<ContextExecutionResult.Failed>(rename);
         Assert.IsType<ContextExecutionResult.Failed>(delete);
@@ -292,7 +292,7 @@ public class HierarchyContextActionProviderTests : IDisposable
         // The most important one: a deleted root is a destroyed project.
         File.WriteAllText(IoPath.Combine(_root, "keep.txt"), "x");
 
-        var result = await _provider.CommitAsync(RootTarget(_root), HierarchyContextActionProvider.DeleteActionId, "", "", CancellationToken.None);
+        var result = await _provider.CommitAsync(RootTarget(_root), HierarchyContextActionProvider.DeleteActionId, "", "", TestContext.Current.CancellationToken);
 
         Assert.False(result.Completed);
         Assert.True(Directory.Exists(_root));
@@ -302,7 +302,7 @@ public class HierarchyContextActionProviderTests : IDisposable
     [Fact]
     public async Task CommitAsync_OnTheProjectRoot_RefusesToRenameIt()
     {
-        var result = await _provider.CommitAsync(RootTarget(_root), HierarchyContextActionProvider.RenameActionId, "renamed", "", CancellationToken.None);
+        var result = await _provider.CommitAsync(RootTarget(_root), HierarchyContextActionProvider.RenameActionId, "renamed", "", TestContext.Current.CancellationToken);
 
         Assert.False(result.Completed);
         Assert.True(Directory.Exists(_root));

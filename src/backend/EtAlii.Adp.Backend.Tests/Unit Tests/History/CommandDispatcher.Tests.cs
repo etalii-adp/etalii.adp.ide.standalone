@@ -51,7 +51,7 @@ public class CommandDispatcherTests
         var (dispatcher, greet) = CreateDispatcher();
         var command = new GreetCommand("ada");
 
-        var result = await dispatcher.DispatchAsync(command);
+        var result = await dispatcher.DispatchAsync(command, TestContext.Current.CancellationToken);
 
         Assert.Same(command, greet.Received);
         Assert.True(result.IsSuccess);
@@ -65,7 +65,7 @@ public class CommandDispatcherTests
 
         // Declared as ICommand, so only the runtime type can pick the handler.
         ICommand shout = new ShoutCommand("ada");
-        var result = await dispatcher.DispatchAsync(shout);
+        var result = await dispatcher.DispatchAsync(shout, TestContext.Current.CancellationToken);
 
         Assert.False(result.IsSuccess);
         Assert.Equal("ADA!", result.Error);
@@ -89,7 +89,7 @@ public class CommandDispatcherTests
         var (dispatcher, _) = CreateDispatcher();
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => dispatcher.DispatchAsync(new UnhandledCommand()));
+            () => dispatcher.DispatchAsync(new UnhandledCommand(), TestContext.Current.CancellationToken));
 
         Assert.Contains(nameof(UnhandledCommand), exception.Message, StringComparison.Ordinal);
     }
@@ -99,7 +99,7 @@ public class CommandDispatcherTests
     {
         var (dispatcher, _) = CreateDispatcher();
 
-        await Assert.ThrowsAsync<ArgumentNullException>(() => dispatcher.DispatchAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => dispatcher.DispatchAsync(null!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -109,9 +109,9 @@ public class CommandDispatcherTests
         // hitting the right handler rather than a stale entry from another test or instance.
         var (dispatcher, greet) = CreateDispatcher();
 
-        await dispatcher.DispatchAsync(new GreetCommand("one"));
-        await dispatcher.DispatchAsync(new GreetCommand("two"));
-        await dispatcher.DispatchAsync(new GreetCommand("three"));
+        await dispatcher.DispatchAsync(new GreetCommand("one"), TestContext.Current.CancellationToken);
+        await dispatcher.DispatchAsync(new GreetCommand("two"), TestContext.Current.CancellationToken);
+        await dispatcher.DispatchAsync(new GreetCommand("three"), TestContext.Current.CancellationToken);
 
         Assert.Equal(3, greet.CallCount);
         Assert.Equal(new GreetCommand("three"), greet.Received);
@@ -125,8 +125,8 @@ public class CommandDispatcherTests
         var (first, firstGreet) = CreateDispatcher();
         var (second, secondGreet) = CreateDispatcher();
 
-        await first.DispatchAsync(new GreetCommand("first"));
-        await second.DispatchAsync(new GreetCommand("second"));
+        await first.DispatchAsync(new GreetCommand("first"), TestContext.Current.CancellationToken);
+        await second.DispatchAsync(new GreetCommand("second"), TestContext.Current.CancellationToken);
 
         Assert.Equal(1, firstGreet.CallCount);
         Assert.Equal(1, secondGreet.CallCount);

@@ -70,7 +70,7 @@ public class LoginProjectSelectionFlowTests : IClassFixture<WebApplicationFactor
         {
             Username = DeveloperUsername,
             Credential = DeveloperCredential,
-        });
+        }, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(LoginResponse.ResultOneofCase.Session, response.ResultCase);
         return response.Session.Value;
     }
@@ -85,23 +85,23 @@ public class LoginProjectSelectionFlowTests : IClassFixture<WebApplicationFactor
         var token = await LoginAsDeveloperAsync(authClient);
         var headers = new Metadata { { SessionTokenHeader, token } };
 
-        var emptyList = await projectClient.ListProjectsAsync(new ListProjectsRequest(), headers);
+        var emptyList = await projectClient.ListProjectsAsync(new ListProjectsRequest(), headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Empty(emptyList.Projects);
 
         var pathMessage = new Path();
         pathMessage.Segments.AddRange(
             _sampleProjectFolder.Split(IoPath.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries));
 
-        var addResponse = await projectClient.AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers);
+        var addResponse = await projectClient.AddProjectAsync(new AddProjectRequest { Path = pathMessage }, headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(AddProjectResponse.ResultOneofCase.Added, addResponse.ResultCase);
 
-        var afterAdd = await projectClient.ListProjectsAsync(new ListProjectsRequest(), headers);
+        var afterAdd = await projectClient.ListProjectsAsync(new ListProjectsRequest(), headers, cancellationToken: TestContext.Current.CancellationToken);
         var added = Assert.Single(afterAdd.Projects);
         Assert.Equal("sample-project", added.Name); // "selecting" it is just handing this record to the client's shell
 
-        await projectClient.RemoveProjectAsync(new RemoveProjectRequest { ProjectId = added.Id }, headers);
+        await projectClient.RemoveProjectAsync(new RemoveProjectRequest { ProjectId = added.Id }, headers, cancellationToken: TestContext.Current.CancellationToken);
 
-        var afterRemove = await projectClient.ListProjectsAsync(new ListProjectsRequest(), headers);
+        var afterRemove = await projectClient.ListProjectsAsync(new ListProjectsRequest(), headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Empty(afterRemove.Projects);
     }
 
@@ -116,13 +116,13 @@ public class LoginProjectSelectionFlowTests : IClassFixture<WebApplicationFactor
         var headers = new Metadata { { SessionTokenHeader, token } };
 
         // Same token, multiple calls, no re-authentication needed.
-        await projectClient.ListProjectsAsync(new ListProjectsRequest(), headers);
-        await projectClient.ListProjectsAsync(new ListProjectsRequest(), headers);
+        await projectClient.ListProjectsAsync(new ListProjectsRequest(), headers, cancellationToken: TestContext.Current.CancellationToken);
+        await projectClient.ListProjectsAsync(new ListProjectsRequest(), headers, cancellationToken: TestContext.Current.CancellationToken);
 
-        await authClient.LogoutAsync(new LogoutRequest { Session = new SessionToken { Value = token } }, headers);
+        await authClient.LogoutAsync(new LogoutRequest { Session = new SessionToken { Value = token } }, headers, cancellationToken: TestContext.Current.CancellationToken);
 
         var exception = await Assert.ThrowsAsync<RpcException>(
-            () => projectClient.ListProjectsAsync(new ListProjectsRequest(), headers).ResponseAsync);
+            () => projectClient.ListProjectsAsync(new ListProjectsRequest(), headers, cancellationToken: TestContext.Current.CancellationToken).ResponseAsync);
         Assert.Equal(StatusCode.Unauthenticated, exception.StatusCode);
     }
 
@@ -136,7 +136,7 @@ public class LoginProjectSelectionFlowTests : IClassFixture<WebApplicationFactor
         {
             Username = DeveloperUsername,
             Credential = "not-the-right-credential",
-        });
+        }, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(LoginResponse.ResultOneofCase.Error, response.ResultCase);
     }

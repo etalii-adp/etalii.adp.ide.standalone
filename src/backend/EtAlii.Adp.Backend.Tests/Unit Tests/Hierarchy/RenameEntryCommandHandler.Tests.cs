@@ -39,7 +39,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
     }
 
     private Task<CommandResult> Rename(string fullPath, string newName)
-        => _handler.ExecuteAsync(new RenameEntryCommand(fullPath, newName));
+        => _handler.ExecuteAsync(new RenameEntryCommand(fullPath, newName), TestContext.Current.CancellationToken);
 
     // ---- the happy paths ---------------------------------------------------------------
 
@@ -100,7 +100,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
         var path = CreateFile("old.txt");
         var result = await Rename(path, "new.txt");
 
-        var undone = await _handler.ExecuteAsync((RenameEntryCommand)result.Inverse!);
+        var undone = await _handler.ExecuteAsync((RenameEntryCommand)result.Inverse!, TestContext.Current.CancellationToken);
 
         Assert.True(undone.IsSuccess);
         Assert.True(File.Exists(path));
@@ -265,7 +265,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_WithANullCommand_Throws()
     {
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _handler.ExecuteAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _handler.ExecuteAsync(null!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -300,16 +300,16 @@ public class RenameEntryCommandHandlerTests : IDisposable
         using var stackGuard = stack;
         var path = CreateFile("old.txt");
 
-        var executed = await stack.ExecuteAsync(new RenameEntryCommand(path, "new.txt"));
+        var executed = await stack.ExecuteAsync(new RenameEntryCommand(path, "new.txt"), TestContext.Current.CancellationToken);
         Assert.True(executed.IsSuccess);
         Assert.True(File.Exists(IoPath.Combine(_root, "new.txt")));
 
-        var undone = await stack.UndoAsync();
+        var undone = await stack.UndoAsync(TestContext.Current.CancellationToken);
         Assert.True(undone.IsSuccess);
         Assert.True(File.Exists(path));
         Assert.False(File.Exists(IoPath.Combine(_root, "new.txt")));
 
-        var redone = await stack.RedoAsync();
+        var redone = await stack.RedoAsync(TestContext.Current.CancellationToken);
         Assert.True(redone.IsSuccess);
         Assert.True(File.Exists(IoPath.Combine(_root, "new.txt")));
         Assert.False(File.Exists(path));
@@ -323,14 +323,14 @@ public class RenameEntryCommandHandlerTests : IDisposable
         using var stackGuard = stack;
         CreateFile("first.txt");
 
-        await stack.ExecuteAsync(new RenameEntryCommand(IoPath.Combine(_root, "first.txt"), "second.txt"));
-        await stack.ExecuteAsync(new RenameEntryCommand(IoPath.Combine(_root, "second.txt"), "third.txt"));
+        await stack.ExecuteAsync(new RenameEntryCommand(IoPath.Combine(_root, "first.txt"), "second.txt"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new RenameEntryCommand(IoPath.Combine(_root, "second.txt"), "third.txt"), TestContext.Current.CancellationToken);
         Assert.Equal(2, stack.UndoCount);
 
-        await stack.UndoAsync();
+        await stack.UndoAsync(TestContext.Current.CancellationToken);
         Assert.True(File.Exists(IoPath.Combine(_root, "second.txt")));
 
-        await stack.UndoAsync();
+        await stack.UndoAsync(TestContext.Current.CancellationToken);
         Assert.True(File.Exists(IoPath.Combine(_root, "first.txt")));
         Assert.False(stack.CanUndo);
     }
@@ -344,7 +344,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
         var path = CreateFile("old.txt");
         CreateFile("taken.txt");
 
-        var result = await stack.ExecuteAsync(new RenameEntryCommand(path, "taken.txt"));
+        var result = await stack.ExecuteAsync(new RenameEntryCommand(path, "taken.txt"), TestContext.Current.CancellationToken);
 
         Assert.False(result.IsSuccess);
         Assert.False(stack.CanUndo);
@@ -358,11 +358,11 @@ public class RenameEntryCommandHandlerTests : IDisposable
         using var scopeGuard = scope;
         using var stackGuard = stack;
         var path = CreateFile("old.txt");
-        await stack.ExecuteAsync(new RenameEntryCommand(path, "new.txt"));
+        await stack.ExecuteAsync(new RenameEntryCommand(path, "new.txt"), TestContext.Current.CancellationToken);
 
         File.Move(IoPath.Combine(_root, "new.txt"), IoPath.Combine(_root, "moved-by-someone-else.txt"));
 
-        var undone = await stack.UndoAsync();
+        var undone = await stack.UndoAsync(TestContext.Current.CancellationToken);
 
         Assert.False(undone.IsSuccess);
         Assert.Equal("The entry no longer exists.", undone.Error);

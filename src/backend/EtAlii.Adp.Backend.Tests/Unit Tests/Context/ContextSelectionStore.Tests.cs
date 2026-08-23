@@ -31,7 +31,10 @@ public class ContextSelectionStoreTests : IDisposable
 
     private static async Task<ContextMessage> ReadAsync(ChannelReader<ContextMessage> reader)
     {
-        using var cts = new CancellationTokenSource(Timeout);
+        // Linked to the test's own token, so a read that would otherwise sit here for the whole
+        // timeout gives up as soon as the test itself is cancelled.
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cts.CancelAfter(Timeout);
         return await reader.ReadAsync(cts.Token);
     }
 
@@ -202,7 +205,7 @@ public class ContextSelectionStoreTests : IDisposable
         var deadline = DateTime.UtcNow + Timeout;
         while (rediscoveredWith is null && DateTime.UtcNow < deadline)
         {
-            await Task.Delay(10);
+            await Task.Delay(10, TestContext.Current.CancellationToken);
         }
 
         Assert.Equal(System.IO.Path.Combine(Root, "documents", "b.txt"), rediscoveredWith!.Innermost.Target.ResolvedFullPath);
@@ -236,7 +239,7 @@ public class ContextSelectionStoreTests : IDisposable
         var deadline = DateTime.UtcNow + Timeout;
         while (store.Get(watchId) is not null && DateTime.UtcNow < deadline)
         {
-            await Task.Delay(10);
+            await Task.Delay(10, TestContext.Current.CancellationToken);
         }
 
         Assert.Null(store.Get(watchId));
@@ -250,7 +253,7 @@ public class ContextSelectionStoreTests : IDisposable
         store.Set(watchId, Root, Record(new StubResolver(), "a.txt"), NoRediscovery);
         store.Register(watchId, Channel.CreateUnbounded<ContextMessage>().Writer, []);
 
-        await Task.Delay(200);
+        await Task.Delay(200, TestContext.Current.CancellationToken);
 
         Assert.NotNull(store.Get(watchId));
     }
