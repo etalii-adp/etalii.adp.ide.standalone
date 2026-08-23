@@ -1,0 +1,58 @@
+using EtAlii.Adp.Diagram;
+
+namespace EtAlii.Adp.Backend.Diagrams;
+
+/// <summary>
+/// One open diagram for one connection, from the type module's side. The core
+/// <c>DiagramService</c> owns the stream, the authorization and the connection lifetime; a
+/// module owns what a diagram <em>is</em> - its elements, its layout, what a viewport shows -
+/// and expresses every change as a <see cref="DiagramDelta"/>. This is the fourth registration
+/// seam a diagram type has, alongside its definition, its resolver and its providers
+/// (mindmap-diagram Requirement 13).
+/// </summary>
+public interface IDiagramSession : IAsyncDisposable
+{
+    /// <summary>The baseline: an add for everything currently in the connection's view (grpc-core-communication Requirement 3.2).</summary>
+    IReadOnlyList<DiagramDelta> Baseline();
+
+    /// <summary>Narrows or widens what is delivered to this connection; returns the deltas that brings it into line.</summary>
+    IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport);
+
+    /// <summary>
+    /// Raised when something changes the diagram - an edit from any connection, an external
+    /// file edit, this connection's own fold - with the deltas that carry it into this
+    /// connection's view. The core service writes them to the stream.
+    /// </summary>
+    event EventHandler<DiagramDeltasEventArgs>? Changed;
+}
+
+/// <summary>
+/// Opens an <see cref="IDiagramSession"/> for one diagram of one type. A module registers one,
+/// keyed by the origin it serves; the core service resolves it from the diagram's declared
+/// type and never learns anything type-specific itself.
+/// </summary>
+public interface IDiagramSessionFactory
+{
+    /// <summary>The diagram type this opens sessions for.</summary>
+    DiagramOrigin Origin { get; }
+
+    /// <summary>
+    /// A session for the diagram whose body is at <paramref name="bodyPath"/>, seen by the
+    /// connection <paramref name="watchId"/> within the project rooted at
+    /// <paramref name="rootPath"/>.
+    /// </summary>
+    IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath);
+}
+
+/// <summary>The visible rectangle a connection reported, in the diagram's own units.</summary>
+public readonly record struct DiagramViewport(double MinX, double MinY, double MaxX, double MaxY)
+{
+    /// <summary>The "everything is in view" viewport a connection has before it reports one.</summary>
+    public static DiagramViewport Unbounded { get; } = new(
+        double.NegativeInfinity, double.NegativeInfinity, double.PositiveInfinity, double.PositiveInfinity);
+}
+
+public sealed class DiagramDeltasEventArgs(IReadOnlyList<DiagramDelta> deltas) : EventArgs
+{
+    public IReadOnlyList<DiagramDelta> Deltas { get; } = deltas;
+}

@@ -6,6 +6,7 @@ using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Backend.Diagrams;
 using EtAlii.Adp.Diagram.Mindmap;
 using JetBrains.Annotations;
 using Serilog;
@@ -56,6 +57,11 @@ builder.Services.AddSingleton<DiagramDocumentFactories>();
 // for a body dropped in without one. The catalog it reads is registered by AddCommands.
 builder.Services.AddSingleton<DiagramFileRouter>();
 
+// The core diagram stream: resolves a diagram's type from its .adp file and hands it to the
+// module's session. Type-agnostic; a module registers an IDiagramSessionFactory to be openable.
+builder.Services.AddSingleton<DiagramSessionFactories>();
+builder.Services.AddSingleton<IDiagramViewportRegistry, DiagramViewportRegistry>();
+
 builder.Services.AddSingleton<IContextSelectionStore, ContextSelectionStore>();
 builder.Services.AddSingleton<ContextSelectionResolver>();
 // Registered through IContextSourceResolver for the same reason as the provider above:
@@ -75,6 +81,8 @@ builder.Services.AddSingleton<MindmapViewState>();
 builder.Services.AddSingleton<IDiagramDocumentFactory, MindmapDocumentFactory>();
 builder.Services.AddSingleton<IContextSourceResolver, MindmapContextSourceResolver>();
 builder.Services.AddSingleton<IContextActionProvider, MindmapContextActionProvider>();
+builder.Services.AddSingleton<MindmapElementMapper>(_ => new MindmapElementMapper(MindmapMetrics.Default));
+builder.Services.AddSingleton<IDiagramSessionFactory, MindmapSessionFactory>();
 
 var clientAppOptionsSection = builder.Configuration.GetSection(ClientAppOptions.SectionName);
 builder.Services.Configure<ClientAppOptions>(clientAppOptionsSection);
@@ -138,7 +146,7 @@ app.MapGrpcService<AuthenticationServiceImpl>();
 app.MapGrpcService<ProjectServiceImpl>();
 app.MapGrpcService<HierarchyServiceImpl>();
 app.MapGrpcService<ContextServiceImpl>();
-// DiagramService (grpc-core-communication) is mapped here once that spec implements it.
+app.MapGrpcService<DiagramServiceImpl>();
 
 app.MapClientApp();
 
