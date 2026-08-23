@@ -27,6 +27,19 @@ internal static class FreeplaneXmlWriter
         }
     }
 
+    /// <summary>
+    /// One element as Freeplane text - what a command that must carry a subtree as immutable
+    /// data stores. The framework's own <c>ToString</c> cannot be used for this: its writer
+    /// rewrites the carriage returns a Windows save carries, and the restore would put the
+    /// branch back with different bytes than it left with.
+    /// </summary>
+    public static string ToText(XElement element)
+    {
+        var output = new StringBuilder();
+        WriteElement(element, output);
+        return output.ToString();
+    }
+
     private static void WriteNode(XNode node, StringBuilder output)
     {
         switch (node)
@@ -103,6 +116,10 @@ internal static class FreeplaneXmlWriter
                 case '>': output.Append("&gt;"); break;
                 case '"': output.Append("&quot;"); break;
                 case '\n': output.Append("&#xa;"); break;
+                // A raw CR in an attribute would be normalized to a space by the next parser,
+                // so it must leave escaped - lowercase, matching the &#xa; Freeplane writes.
+                // In text content a CR stays a raw byte (see MindmapDocument.Parse).
+                case '\r': output.Append("&#xd;"); break;
                 default: output.Append(character); break;
             }
         }

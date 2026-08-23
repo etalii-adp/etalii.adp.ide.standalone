@@ -46,8 +46,12 @@ public static class MindmapLayout
         var alternate = 0;
         foreach (var child in root.Children)
         {
+            // Freeplane 1.12 renamed the values: what 1.11 saved as "left"/"right" a genuine
+            // 1.12 save writes as "top_or_left"/"bottom_or_right" (see Fixtures/readme.md).
+            // Both vocabularies are honoured; anything else alternates like an unpositioned map.
             var side = child.Position?.ToLowerInvariant();
-            var goesLeft = side == "left" || (side != "right" && alternate++ % 2 == 1);
+            var goesLeft = side is "left" or "top_or_left"
+                || (side is not ("right" or "bottom_or_right") && alternate++ % 2 == 1);
             (goesLeft ? left : right).Add(child);
         }
 

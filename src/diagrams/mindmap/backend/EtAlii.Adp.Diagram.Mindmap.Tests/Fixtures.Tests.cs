@@ -47,7 +47,12 @@ public class FixturesTests
         var nodes = Nodes(Load());
 
         Assert.True(nodes.Count >= 20, $"the corpus has shrunk to {nodes.Count} nodes");
-        Assert.Contains(nodes, node => node.Attribute("ID") is null);
+        // A genuine save always carries IDs: Freeplane assigns one to every node it writes,
+        // which is why the corpus - now Freeplane's own output - can never contain an ID-less
+        // node. That tolerance is exercised by the hand-written map inside
+        // MindmapDocumentTests.AssigningMissingIds instead, where it belongs: an ID-less node
+        // only ever occurs in a file no Freeplane has saved yet.
+        Assert.All(nodes, node => Assert.NotNull(node.Attribute("ID")));
         Assert.Contains(nodes, node => node.Attribute("FOLDED")?.Value == "true");
         Assert.Contains(nodes, node => node.Attribute("TEXT")?.Value == "");
         Assert.Contains(nodes, node => node.Attribute("LINK") is not null);
