@@ -40,19 +40,20 @@ export function RibbonContextualGroups() {
   const { selection, actions } = useContextSelection();
   const selectionKey = innermostKey(selection);
 
-  // Between a selection and its actions arriving, keep showing what was there - disabled -
-  // rather than flashing empty and refilling on every arrow-key step.
+  // A contextual button, once shown, stays where it is: between a selection and its actions
+  // arriving, and equally when the selection goes away entirely, the buttons remain in place
+  // and go disabled rather than disappearing. A ribbon that changes shape under the pointer
+  // is worse than one holding greyed-out buttons that say what would apply.
   const lastShownRef = useRef<{ key: string | undefined; groups: ContextActionGroup[] }>({ key: undefined, groups: [] });
-  if (selectionKey === undefined) {
-    lastShownRef.current = { key: undefined, groups: [] };
-    return null;
-  }
-  const current = actions.length > 0 || lastShownRef.current.key === selectionKey;
+  const current = selectionKey !== undefined && (actions.length > 0 || lastShownRef.current.key === selectionKey);
   if (current) {
     lastShownRef.current = { key: selectionKey, groups: actions };
   }
+
   const groups = current ? actions : lastShownRef.current.groups;
   if (groups.length === 0) {
+    // Nothing has ever been shown here, so there is nothing to keep: the ribbon is simply
+    // its static self until the first selection arrives.
     return null;
   }
 
@@ -66,7 +67,16 @@ export function RibbonContextualGroups() {
         <div className="ribbon-group ribbon-group-contextual" key={groupIndex} aria-busy={!current || undefined}>
           {group.actions.map((action) =>
             action.items.length > 0 ? (
-              <RibbonDropdownButton key={action.id} action={action} title={tooltipFor(action)} selectionKey={selectionKey} onSelect={run} />
+              <RibbonDropdownButton
+                key={action.id}
+                action={action}
+                title={tooltipFor(action)}
+                selectionKey={selectionKey}
+                // Held over from a selection that is gone or not answered yet: its children
+                // would be about something no longer selected, so it does not open either.
+                stale={!current}
+                onSelect={run}
+              />
             ) : (
               <button
                 key={action.id}
