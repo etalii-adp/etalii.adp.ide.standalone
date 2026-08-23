@@ -108,7 +108,7 @@ This spec adds the ability to rename and delete a file or folder directly from t
 
 1. IF the file being renamed is currently open in an editor tab THEN the system SHALL keep the tab open against the renamed file rather than closing it or leaving it pointing at the old, now-nonexistent path.
 2. IF the file being renamed has unsaved changes THEN the system SHALL complete the rename without losing those changes, or SHALL block the rename until the changes are saved or discarded — the system SHALL NOT silently discard unsaved edits as a side effect of a rename.
-3. This spec does NOT require rewriting path references held by diagram-type-specific data (e.g. a mindmap node's code-artifact link, per `mindmap-diagram` Requirement 6). Such links already degrade to a clearly-indicated "broken" state when their target no longer exists (`mindmap-diagram` Requirement 6.4); that remains the accepted behavior after a rename, rather than this spec introducing reference-rewriting.
+3. This spec does NOT require rewriting path references held by diagram-type-specific data (e.g. a mindmap node's code-artifact link, per `mindmap-diagram` Requirement 12). Such links already degrade to a clearly-indicated "broken" state when their target no longer exists (`mindmap-diagram` Requirement 12.4); that remains the accepted behavior after a rename, rather than this spec introducing reference-rewriting.
 
 ### Requirement 9 — Deleting a file or folder from the explorer
 
