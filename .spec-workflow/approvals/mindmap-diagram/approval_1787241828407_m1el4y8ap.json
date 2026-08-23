@@ -3,8 +3,10 @@
   "title": "Mindmap Diagram Module — Requirements",
   "filePath": ".spec-workflow/specs/mindmap-diagram/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-20T16:03:48.407Z",
   "category": "spec",
-  "categoryName": "mindmap-diagram"
+  "categoryName": "mindmap-diagram",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-23T11:57:55.313Z"
 }
