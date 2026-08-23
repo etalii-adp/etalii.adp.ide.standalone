@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/diagram-undo-redo/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-23T11:40:53.122Z",
       "trigger": "initial",
+      "approvalId": "approval_1787485253094_35c7lix8j",
+      "approvalTitle": "Design: diagram-undo-redo"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-23T12:25:14.494Z",
+      "trigger": "approved",
       "approvalId": "approval_1787485253094_35c7lix8j",
       "approvalTitle": "Design: diagram-undo-redo"
     }

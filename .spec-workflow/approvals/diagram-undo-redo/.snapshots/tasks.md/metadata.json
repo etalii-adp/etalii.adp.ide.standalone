@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/diagram-undo-redo/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-23T12:38:26.555Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787488706523_p8o00fqda",
+      "approvalTitle": "Diagram Undo/Redo — Tasks"
+    }
+  ]
+}
