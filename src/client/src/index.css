@@ -1227,11 +1227,13 @@ button {
   outline: none;
 }
 
-/* The connector from a node to its parent, under the node boxes. */
+/* The connector from a node to its parent: a bezier from edge to edge, under the boxes. */
 .mindmap-edge {
   stroke: var(--color-border);
   stroke-width: 1.5;
+  fill: none;
 }
+
 
 .mindmap-node {
   cursor: pointer;
@@ -1257,4 +1259,13 @@ button {
 .mindmap-node-focused rect {
   stroke: var(--color-primary);
   stroke-width: 2.5;
+}
+
+/* The node a drag is held over - the drop's outcome, shown before the button is released.
+   After the base and focused rules: a later equal-specificity rule would swallow the
+   highlight (found by the bezier-connector manual pass). */
+.mindmap-node-drop-target rect {
+  stroke: var(--color-primary);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 3;
 }

@@ -192,6 +192,58 @@ public class MindmapLayoutTests
     }
 
     [Fact]
+    public void Compute_ChildrenOfOneParent_ShareTheSameHorizontalDistanceFromIt()
+    {
+        // Their near edges align on one column: on the right side every child's left edge, on
+        // the left side every child's right edge, sits the same distance from the parent.
+        var document = Corpus();
+        var boxes = Layout(document);
+
+        foreach (var parent in document.Nodes.Where(node => node.HasChildren && boxes.ContainsKey(node.Id)))
+        {
+            var childBoxes = parent.Children.Where(child => boxes.ContainsKey(child.Id)).Select(child => boxes[child.Id]).ToArray();
+            if (childBoxes.Length < 2)
+            {
+                continue;
+            }
+
+            // Rounded before comparing: box.Right sums two independently rounded doubles, so
+            // equal edges can differ in the last bits of the mantissa.
+            var onRight = childBoxes[0].CenterX > boxes[parent.Id].CenterX;
+            var nearEdges = childBoxes.Select(box => Math.Round(onRight ? box.X : box.Right, 6)).Distinct().ToArray();
+            // The root splits its children over two sides; group by side there.
+            if (parent.IsRoot)
+            {
+                foreach (var side in childBoxes.GroupBy(box => box.CenterX > boxes[parent.Id].CenterX))
+                {
+                    Assert.Single(side.Select(box => Math.Round(side.Key ? box.X : box.Right, 6)).Distinct());
+                }
+
+                continue;
+            }
+
+            Assert.Single(nearEdges);
+        }
+    }
+
+    [Fact]
+    public void Compute_NoTwoVisibleNodes_Overlap()
+    {
+        var boxes = Layout(Corpus()).Values.ToArray();
+
+        for (var i = 0; i < boxes.Length; i++)
+        {
+            for (var j = i + 1; j < boxes.Length; j++)
+            {
+                var a = boxes[i];
+                var b = boxes[j];
+                var apart = a.Right <= b.X || b.Right <= a.X || a.Bottom <= b.Y || b.Bottom <= a.Y;
+                Assert.True(apart, $"boxes at ({a.X},{a.Y}) and ({b.X},{b.Y}) overlap");
+            }
+        }
+    }
+
+    [Fact]
     public void Compute_ALargerConfiguredRatio_SpreadsTheSiblingsFurther()
     {
         var document = MindmapDocument.Parse(
@@ -205,7 +257,7 @@ public class MindmapLayoutTests
         var near = MindmapLayout.Compute(document.Root, MindmapMetrics.Default with { MinimumGapRatio = 0.1 }, _ => false);
         var far = MindmapLayout.Compute(document.Root, MindmapMetrics.Default with { MinimumGapRatio = 0.5 }, _ => false);
 
-        double Distance(IReadOnlyDictionary<string, MindmapBox> boxes) => boxes["b"].Y - boxes["a"].Bottom;
+        static double Distance(IReadOnlyDictionary<string, MindmapBox> boxes) => boxes["b"].Y - boxes["a"].Bottom;
         Assert.True(Distance(far) > Distance(near), "a larger ratio must push the siblings further apart");
     }
 }

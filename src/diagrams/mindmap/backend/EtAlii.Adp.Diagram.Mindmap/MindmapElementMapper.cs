@@ -53,6 +53,10 @@ public sealed class MindmapElementMapper
             Link = node.Link is { } link ? new MindmapLink { Raw = link } : null,
             // Empty on the root; what the canvas draws each node's connector to.
             ParentId = node.Parent?.Id ?? "",
+            // The measured box, so the canvas draws the node at its true size and anchors
+            // connectors on its actual edges instead of guessing (Requirement 5.7).
+            Width = box.Width,
+            Height = box.Height,
         };
 
         return new DiagramElement(

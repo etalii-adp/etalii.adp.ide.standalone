@@ -16,6 +16,12 @@ message MindmapNodePayload {
   // The parent node's element id; empty on the root. What lets the canvas draw the
   // connector from each node to its parent without a structure query of its own.
   string parent_id = 6;
+  // The box the layout measured for this node, so the canvas draws it at its true size and
+  // anchors connectors on its actual edges - a client-side guess at the size is what made
+  // wide nodes overlap their neighbours (Requirement 5.7: the client draws what the backend
+  // computed rather than re-measuring).
+  double width = 7;
+  double height = 8;
 }
 
 // A node's link as the client needs it: the map-relative form the file stores (raw), the

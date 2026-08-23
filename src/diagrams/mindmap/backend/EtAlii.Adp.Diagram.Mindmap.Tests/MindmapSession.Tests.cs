@@ -80,6 +80,20 @@ public class MindmapSessionTests : IDisposable
     }
 
     [Fact]
+    public void Baseline_PacksTheMeasuredBoxIntoThePayload()
+    {
+        // The canvas draws each node at its true size and anchors connectors on its actual
+        // edges; a payload without the measured box left it guessing a fixed one, and the
+        // guesses overlapped on screen (found by the bezier-connector pass).
+        var element = AddedElements(Open().Baseline()).Single(e => e.Id == "ID_88117420");
+
+        var payload = MindmapNodePayload.Parser.ParseFrom(element.Payload.Span);
+        var expected = MindmapMetrics.Default.Measure("Context service");
+        Assert.Equal(expected.Width, payload.Width, 3);
+        Assert.Equal(expected.Height, payload.Height, 3);
+    }
+
+    [Fact]
     public async Task AnEdit_PushesAnAddOfTheNodesNewState()
     {
         var session = Open();

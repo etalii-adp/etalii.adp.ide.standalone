@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { create } from "@bufbuild/protobuf";
 import { EmptySchema } from "@bufbuild/protobuf/wkt";
-import { useContextConnection, useContextSelection } from "../../context/ContextConnectionProvider";
-import { ContextSelectionSchema, ContextSourceSchema } from "../../../generated/context_pb";
+import { innermostKey, useContextConnection, useContextSelection } from "../../context/ContextConnectionProvider";
+import { ContextSelectionAction, ContextSelectionSchema, ContextSourceSchema } from "../../../generated/context_pb";
 import type { ContextSelection, ContextShortcut } from "../../../generated/context_pb";
+import { ContextMenu } from "../../context/ContextMenu";
+import { toMenuGroups } from "../../context/toMenuGroups";
 import { useRegisterDiagramView, type DiagramViewControls } from "../DiagramViewContext";
 import { isFolded, type MindmapElement, type MindmapModel } from "./mindmapModel";
 import { useMindmapStream } from "./useMindmapStream";
@@ -42,8 +44,8 @@ const NODE_HALF_HEIGHT = 16;
  */
 export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) {
   const { model, loading, failed, moveElement, reportView } = useMindmapStream(projectId, path);
-  const { select, executeShortcut } = useContextConnection();
-  const { selection } = useContextSelection();
+  const { select, executeAction, executeShortcut } = useContextConnection();
+  const { selection, actions } = useContextSelection();
 
   const [focusedId, setFocusedId] = useState<string | undefined>(undefined);
   // A drag in flight: which node it lifted, where it started, and whether it moved far enough
@@ -57,6 +59,24 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
   // there; the map itself never moves - only this window onto it does.
   const [view, setView] = useState<ViewBox | null>(null);
   const panRef = useRef<{ clientX: number; clientY: number; view: ViewBox; moved: boolean } | null>(null);
+
+  // The node a drag is currently held over - highlighted so the drop's outcome is visible
+  // before the button is released. State, not a ref: it is exactly what renders differently.
+  const [dropTargetId, setDropTargetId] = useState<string | undefined>(undefined);
+
+  // A right-click's menu: opened once the pushed selection for that node arrives with its
+  // actions, exactly the explorer's discipline - the menu shows the backend's answer, never
+  // a guess (mindmap-diagram Requirement 8.4).
+  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
+  const pendingMenuRef = useRef<{ nodeId: string; position: { x: number; y: number } } | null>(null);
+  const selectionKey = innermostKey(selection);
+  useEffect(() => {
+    const pending = pendingMenuRef.current;
+    if (pending && selectionKey === `element:${pending.nodeId}`) {
+      pendingMenuRef.current = null;
+      setMenuPosition(pending.position);
+    }
+  }, [selectionKey, actions]);
 
   // The node the backend says is selected inside this diagram, so focus follows a selection
   // from anywhere - the canvas reacts to the push, not to its own click (Requirement 10.5).
@@ -106,6 +126,28 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
     dragRef.current = { id: element.id, x: event.clientX, y: event.clientY, moved: false };
   };
 
+  /** Right-click on a node: select it with the menu gesture and open the menu on the push. */
+  const onNodeContextMenu = (element: MindmapElement, event: React.MouseEvent) => {
+    event.preventDefault();
+    setFocusedId(element.id);
+    surfaceRef.current?.focus();
+    if (selectionKey === `element:${element.id}` && actions.length > 0) {
+      // Already the pushed selection, actions in hand: the menu opens at once.
+      pendingMenuRef.current = null;
+      setMenuPosition({ x: event.clientX, y: event.clientY });
+      return;
+    }
+
+    pendingMenuRef.current = { nodeId: element.id, position: { x: event.clientX, y: event.clientY } };
+    select(nodeSelection(entryId, path, element, ContextSelectionAction.CONTEXT_MENU));
+  };
+
+  /** While a drag is over this node, it is the drop's outcome - shown, not guessed at. */
+  const onNodePointerOver = (element: MindmapElement) => {
+    const drag = dragRef.current;
+    setDropTargetId(drag?.moved === true && drag.id !== element.id ? element.id : undefined);
+  };
+
   /** How many canvas units one screen pixel spans right now - what turns pointer movement into view movement. */
   const unitsPerPixel = (box: ViewBox): number => {
     const rect = surfaceRef.current?.getBoundingClientRect();
@@ -124,6 +166,10 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
     const drag = dragRef.current;
     if (drag && !drag.moved && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) > 4) {
       drag.moved = true;
+    }
+
+    if (event.target === event.currentTarget && dropTargetId !== undefined) {
+      setDropTargetId(undefined); // the drag left every node: empty canvas takes no drop
     }
 
     const pan = panRef.current;
@@ -146,6 +192,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
   const onNodePointerUp = (element: MindmapElement) => {
     const drag = dragRef.current;
     dragRef.current = null;
+    setDropTargetId(undefined);
     if (!drag || !drag.moved) {
       return;
     }
@@ -162,6 +209,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
     // Released over empty canvas: a node drag simply ends, and a pan is done. A pan that
     // moved suppresses the click that trails it, or letting go would also deselect.
     dragRef.current = null;
+    setDropTargetId(undefined);
     const pan = panRef.current;
     panRef.current = null;
     if (pan?.moved) {
@@ -174,6 +222,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
     // next movement panning with a button nobody holds.
     dragRef.current = null;
     panRef.current = null;
+    setDropTargetId(undefined);
   };
 
   const onKeyDown = (event: React.KeyboardEvent) => {
@@ -309,14 +358,12 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
           onMouseUp={onSurfacePointerUp}
           onMouseLeave={onSurfacePointerLeave}
         >
-          {/* The connectors first, so every line runs under the node boxes. Drawn from the
+          {/* The connectors first, so every curve runs under the node boxes. Drawn from the
               payload's parent id - each node knows whose child it is, and nothing more is
               needed to see the tree. */}
           {elements.map((element) => {
             const parent = element.payload.parentId ? model.elements.get(element.payload.parentId) : undefined;
-            return parent === undefined ? null : (
-              <line key={`edge-${element.id}`} className="mindmap-edge" x1={parent.x} y1={parent.y} x2={element.x} y2={element.y} />
-            );
+            return parent === undefined ? null : <MindmapEdge key={`edge-${element.id}`} parent={parent} child={element} />;
           })}
           {elements.map((element) => (
             <MindmapNode
@@ -324,14 +371,58 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
               element={element}
               focused={element.id === focusedId}
               folded={isFolded(model, element.id)}
+              dropTarget={element.id === dropTargetId}
               onSelect={() => reportSelection(element)}
               onPointerDown={(event) => onNodePointerDown(element, event)}
               onPointerUp={() => onNodePointerUp(element)}
+              onPointerOver={() => onNodePointerOver(element)}
+              onContextMenu={(event) => onNodeContextMenu(element, event)}
             />
           ))}
         </svg>
       )}
+      {/* The node's right-click menu: the same shared menu the explorer uses, filled with the
+          actions the backend pushed for this very selection - never a client-side guess. */}
+      <ContextMenu
+        open={menuPosition !== null}
+        groups={toMenuGroups(actions, (action) => {
+          setMenuPosition(null);
+          void executeAction(action.id);
+        })}
+        position={menuPosition ?? { x: 0, y: 0 }}
+        onClose={() => setMenuPosition(null)}
+      />
     </div>
+  );
+}
+
+/** The node's half-size from its payload: the box the backend measured, or the old fixed guess for a payload without one. */
+function halfSizeOf(element: MindmapElement): { halfWidth: number; halfHeight: number } {
+  return {
+    halfWidth: element.payload.width > 0 ? element.payload.width / 2 : NODE_HALF_WIDTH,
+    halfHeight: element.payload.height > 0 ? element.payload.height / 2 : NODE_HALF_HEIGHT,
+  };
+}
+
+/**
+ * The connector from a child to its parent: a horizontal cubic bezier that leaves the
+ * parent's near side at its vertical middle and arrives at the child's near side - never a
+ * centre-to-centre line cutting through boxes. The control points sit halfway, which keeps
+ * the whole curve inside the gap corridor between the two columns, clear of every sibling.
+ */
+function MindmapEdge({ parent, child }: { parent: MindmapElement; child: MindmapElement }) {
+  const parentHalf = halfSizeOf(parent);
+  const childHalf = halfSizeOf(child);
+  const childOnRight = child.x >= parent.x;
+  const startX = childOnRight ? parent.x + parentHalf.halfWidth : parent.x - parentHalf.halfWidth;
+  const endX = childOnRight ? child.x - childHalf.halfWidth : child.x + childHalf.halfWidth;
+  const midX = (startX + endX) / 2;
+
+  return (
+    <path
+      className="mindmap-edge"
+      d={`M ${startX} ${parent.y} C ${midX} ${parent.y}, ${midX} ${child.y}, ${endX} ${child.y}`}
+    />
   );
 }
 
@@ -339,31 +430,37 @@ interface MindmapNodeProps {
   element: MindmapElement;
   focused: boolean;
   folded: boolean;
+  dropTarget: boolean;
   onSelect: () => void;
   onPointerDown: (event: React.MouseEvent) => void;
   onPointerUp: () => void;
+  onPointerOver: () => void;
+  onContextMenu: (event: React.MouseEvent) => void;
 }
 
-function MindmapNode({ element, focused, folded, onSelect, onPointerDown, onPointerUp }: MindmapNodeProps) {
+function MindmapNode({ element, focused, folded, dropTarget, onSelect, onPointerDown, onPointerUp, onPointerOver, onContextMenu }: MindmapNodeProps) {
   const { text, notes, hasChildren, link } = element.payload;
-  const indicators = [notes ? "•" : "", link ? "↗" : "", folded && hasChildren ? "⊕" : ""].join(" ").trim();
+  const { halfWidth, halfHeight } = halfSizeOf(element);
+  const indicators = [notes ? "\u2022" : "", link ? "\u2197" : "", folded && hasChildren ? "\u2295" : ""].join(" ").trim();
 
   return (
     <g
-      className={`mindmap-node${focused ? " mindmap-node-focused" : ""}`}
+      className={`mindmap-node${focused ? " mindmap-node-focused" : ""}${dropTarget ? " mindmap-node-drop-target" : ""}`}
       transform={`translate(${element.x} ${element.y})`}
       onClick={onSelect}
       onMouseDown={onPointerDown}
       onMouseUp={onPointerUp}
+      onMouseOver={onPointerOver}
+      onContextMenu={onContextMenu}
       role="treeitem"
       aria-selected={focused}
     >
-      <rect x={-NODE_HALF_WIDTH} y={-NODE_HALF_HEIGHT} width={NODE_HALF_WIDTH * 2} height={NODE_HALF_HEIGHT * 2} rx={6} />
+      <rect x={-halfWidth} y={-halfHeight} width={halfWidth * 2} height={halfHeight * 2} rx={6} />
       <text textAnchor="middle" dominantBaseline="central">
-        {text || " "}
+        {text || " "}
       </text>
       {indicators && (
-        <text className="mindmap-node-indicators" x={NODE_HALF_WIDTH - 4} y={-NODE_HALF_HEIGHT + 4} textAnchor="end">
+        <text className="mindmap-node-indicators" x={halfWidth - 4} y={-halfHeight + 4} textAnchor="end">
           {indicators}
         </text>
       )}
@@ -386,7 +483,7 @@ function nodeOf(selection: ContextSelection | null, path: readonly string[]): st
 }
 
 /** The nested `file -> node` selection a canvas click reports (Requirement 10.1). */
-function nodeSelection(entryId: Uint8Array, path: readonly string[], element: MindmapElement): ContextSelection {
+function nodeSelection(entryId: Uint8Array, path: readonly string[], element: MindmapElement, gesture?: ContextSelectionAction): ContextSelection {
   const child = create(ContextSelectionSchema, {
     source: 2, // DIAGRAM_CANVAS
     id: { source: { case: "elementId", value: { value: element.id } } },
@@ -395,7 +492,7 @@ function nodeSelection(entryId: Uint8Array, path: readonly string[], element: Mi
     // own text was rejected for exactly that partial path (found by the manual pass; the
     // root's one-segment chain had masked it in every earlier check).
     path: { segments: [] },
-    detail: { case: "none", value: create(EmptySchema) },
+    detail: gesture === undefined ? { case: "none", value: create(EmptySchema) } : { case: "action", value: gesture },
   });
 
   return create(ContextSelectionSchema, {
@@ -425,12 +522,14 @@ function fitBoxOf(elements: readonly MindmapElement[]): ViewBox {
     return { x: -200, y: -150, w: 400, h: 300 };
   }
 
-  const xs = elements.map((element) => element.x);
-  const ys = elements.map((element) => element.y);
-  const minX = Math.min(...xs) - NODE_HALF_WIDTH - 20;
-  const minY = Math.min(...ys) - NODE_HALF_HEIGHT - 20;
-  const maxX = Math.max(...xs) + NODE_HALF_WIDTH + 20;
-  const maxY = Math.max(...ys) + NODE_HALF_HEIGHT + 20;
+  const lefts = elements.map((element) => element.x - halfSizeOf(element).halfWidth);
+  const rights = elements.map((element) => element.x + halfSizeOf(element).halfWidth);
+  const tops = elements.map((element) => element.y - halfSizeOf(element).halfHeight);
+  const bottoms = elements.map((element) => element.y + halfSizeOf(element).halfHeight);
+  const minX = Math.min(...lefts) - 20;
+  const minY = Math.min(...tops) - 20;
+  const maxX = Math.max(...rights) + 20;
+  const maxY = Math.max(...bottoms) + 20;
   return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
 }
 

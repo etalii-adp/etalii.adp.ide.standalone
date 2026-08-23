@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { ElementSchema } from "../../../generated/elements_pb";
+import { ContextSelectionAction } from "../../../generated/context_pb";
 import { MindmapNodePayloadSchema } from "../../../generated/mindmap_pb";
 import { applyDelta, emptyModel, type MindmapModel } from "./mindmapModel";
 import { DiagramViewProvider, useDiagramViewControls, type DiagramViewControls } from "../DiagramViewContext";
@@ -9,31 +10,37 @@ import { DiagramViewProvider, useDiagramViewControls, type DiagramViewControls }
 const select = vi.fn();
 const executeShortcut = vi.fn<(shortcut: { key: string }, source: { source: { value: { value: string } } }) => Promise<{ accepted: boolean; error: string }>>(async () => ({ accepted: true, error: "" }));
 const moveElement = vi.fn(async () => "");
+const executeAction = vi.fn(async () => "");
 let currentReportView: ((viewport: unknown) => void) | null = null;
 let currentModel: MindmapModel = emptyModel;
 let currentFailed = false;
 let currentSelection: unknown = null;
+let currentActions: unknown[] = [];
 
 vi.mock("./useMindmapStream", () => ({
   useMindmapStream: () => ({ model: currentModel, loading: false, failed: currentFailed, reportView: (v: unknown) => currentReportView?.(v), moveElement }),
 }));
 
-vi.mock("../../context/ContextConnectionProvider", () => ({
-  useContextConnection: () => ({ watchId: new Uint8Array(16), select, executeShortcut }),
-  useContextSelection: () => ({ selection: currentSelection }),
-}));
+vi.mock("../../context/ContextConnectionProvider", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../context/ContextConnectionProvider")>();
+  return {
+    ...actual,
+    useContextConnection: () => ({ watchId: new Uint8Array(16), select, executeAction, executeShortcut }),
+    useContextSelection: () => ({ selection: currentSelection, actions: currentActions }),
+  };
+});
 
 // Imported after the mocks so the component picks them up.
 const { MindmapCanvas } = await import("./MindmapCanvas");
 
-function node(id: string, text: string, x = 0, y = 0, parentId = "") {
+function node(id: string, text: string, x = 0, y = 0, parentId = "", width = 0, height = 0) {
   return create(ElementSchema, {
     id: { value: id },
     position: { x, y },
     type: "freeplane/mindmap+node",
     payload: {
       typeUrl: "type.googleapis.com/etalii.adp.mindmap.MindmapNodePayload",
-      value: toBinary(MindmapNodePayloadSchema, create(MindmapNodePayloadSchema, { text, hasChildren: id === "root", parentId })),
+      value: toBinary(MindmapNodePayloadSchema, create(MindmapNodePayloadSchema, { text, hasChildren: id === "root", parentId, width, height })),
     },
   });
 }
@@ -49,8 +56,10 @@ describe("MindmapCanvas", () => {
     select.mockClear();
     moveElement.mockClear();
     executeShortcut.mockClear();
+    executeAction.mockClear();
     currentModel = seed(node("root", "Root", 0, 0), node("a", "Alpha", 120, -20, "root"));
     currentSelection = null;
+    currentActions = [];
     currentFailed = false;
   });
 
@@ -148,14 +157,37 @@ describe("MindmapCanvas", () => {
     expect(alpha.classList.contains("mindmap-node-focused")).toBe(true);
   });
 
-  it("draws a connector from each child to its parent, under the nodes", () => {
+  it("draws a bezier from the parent's near edge, vertically centred, to the child's near edge", () => {
+    // Sizes come from the payload, so the anchors sit on the measured edges - never a
+    // centre-to-centre line cutting through the boxes.
+    currentModel = seed(
+      node("root", "Root", 0, 0, "", 100, 40),
+      node("a", "Alpha", 200, -20, "root", 160, 48),
+      node("b", "Beta", -200, 30, "root", 160, 48),
+    );
+
     const { container } = render(<MindmapCanvas {...props} />);
 
-    const edges = container.querySelectorAll(".mindmap-edge");
-    expect(edges).toHaveLength(1); // one child, one line; the root has no parent to draw to
-    const edge = edges[0];
-    expect(edge.getAttribute("x1")).toBe("0"); // Root's centre
-    expect(edge.getAttribute("x2")).toBe("120"); // Alpha's centre
+    const edges = [...container.querySelectorAll(".mindmap-edge")];
+    expect(edges).toHaveLength(2); // the root has no parent to draw to
+    expect(edges.every((edge) => edge.tagName === "path")).toBe(true);
+    // Alpha sits right: out of the root's right edge (x=50) at the root's middle (y=0), into
+    // Alpha's left edge (x=120) at Alpha's middle, with horizontal control points halfway.
+    expect(edges[0].getAttribute("d")).toBe("M 50 0 C 85 0, 85 -20, 120 -20");
+    // Beta sits left: out of the root's left edge, into Beta's right edge.
+    expect(edges[1].getAttribute("d")).toBe("M -50 0 C -85 0, -85 30, -120 30");
+  });
+
+  it("draws each node box at the size the backend measured", () => {
+    currentModel = seed(node("root", "Root", 0, 0, "", 100, 40), node("a", "Alpha", 200, -20, "root", 160, 48));
+
+    const { container } = render(<MindmapCanvas {...props} />);
+
+    const rect = container.querySelectorAll(".mindmap-node")[1].querySelector("rect")!;
+    expect(rect.getAttribute("x")).toBe("-80");
+    expect(rect.getAttribute("y")).toBe("-24");
+    expect(rect.getAttribute("width")).toBe("160");
+    expect(rect.getAttribute("height")).toBe("48");
   });
 
   it("clicking the empty canvas deselects", () => {
@@ -203,6 +235,65 @@ describe("MindmapCanvas", () => {
     fireEvent.mouseUp(container.querySelector(".mindmap-canvas-surface")!);
 
     expect(moveElement).not.toHaveBeenCalled();
+  });
+
+  it("highlights the node a drag is held over, until the drop lands", () => {
+    const { container } = render(<MindmapCanvas {...props} />);
+    const [root, alpha] = [...container.querySelectorAll(".mindmap-node")];
+
+    fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
+    fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 40, clientY: 0 });
+    fireEvent.mouseOver(root);
+    expect(root.classList.contains("mindmap-node-drop-target")).toBe(true);
+
+    fireEvent.mouseUp(root);
+    expect(root.classList.contains("mindmap-node-drop-target")).toBe(false);
+    expect(moveElement).toHaveBeenCalledWith("a", "root");
+  });
+
+  it("never marks the dragged node itself, and an idle hover marks nothing", () => {
+    const { container } = render(<MindmapCanvas {...props} />);
+    const [root, alpha] = [...container.querySelectorAll(".mindmap-node")];
+
+    fireEvent.mouseOver(root); // no drag in flight
+    expect(root.classList.contains("mindmap-node-drop-target")).toBe(false);
+
+    fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
+    fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 40, clientY: 0 });
+    fireEvent.mouseOver(alpha); // held back over itself
+    expect(alpha.classList.contains("mindmap-node-drop-target")).toBe(false);
+  });
+
+  it("right-clicking a node selects it with the menu gesture, and the menu opens on the backend's answer", () => {
+    const { container, rerender } = render(<MindmapCanvas {...props} />);
+    const alpha = container.querySelectorAll(".mindmap-node")[1];
+
+    fireEvent.contextMenu(alpha);
+
+    // The selection went out carrying the context-menu gesture...
+    expect(select).toHaveBeenCalledTimes(1);
+    const inner = select.mock.calls[0][0].detail.value;
+    expect(inner.id.source.value.value).toBe("a");
+    expect(inner.detail.case).toBe("action");
+    expect(inner.detail.value).toBe(ContextSelectionAction.CONTEXT_MENU);
+    // ...and no menu is open yet: it shows the backend's actions, never a client-side guess.
+    expect(container.querySelector(".context-menu")).toBeNull();
+
+    // The push comes back naming the node, with its actions.
+    currentSelection = {
+      id: { source: { case: "entryId", value: { value: props.entryId } } },
+      detail: { case: "child", value: { id: { source: { case: "elementId", value: { value: "a" } } }, detail: { case: "none" } } },
+    };
+    currentActions = [{ actions: [{ id: "mindmap.rename", label: "Rename", icon: "", available: true, unavailableReason: "", items: [] }] }];
+    rerender(<MindmapCanvas {...props} />);
+
+    expect(container.querySelector(".context-menu")).not.toBeNull();
+    expect(container.textContent).toContain("Rename");
+
+    // Choosing the entry executes the pushed action and the menu closes.
+    fireEvent.click(container.querySelector(".context-menu-item")!);
+    expect(executeAction).toHaveBeenCalledWith("mindmap.rename");
+    expect(container.querySelector(".context-menu")).toBeNull();
   });
 
   // ---- pan, zoom and fit -------------------------------------------------------------
