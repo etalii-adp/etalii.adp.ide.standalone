@@ -15,7 +15,7 @@ internal sealed class MindmapSession : IDiagramSession
     private readonly IMindmapDocumentStore _documents;
     private readonly MindmapViewState _views;
     private readonly MindmapElementMapper _mapper;
-    private readonly EtAlii.Adp.Backend.IHistoryStack _history;
+    private readonly Backend.IHistoryStack _history;
     private DiagramViewport _viewport = DiagramViewport.Unbounded;
 
     public MindmapSession(
@@ -24,7 +24,7 @@ internal sealed class MindmapSession : IDiagramSession
         IMindmapDocumentStore documents,
         MindmapViewState views,
         MindmapElementMapper mapper,
-        EtAlii.Adp.Backend.IHistoryStack history)
+        Backend.IHistoryStack history)
     {
         _watchId = watchId;
         _bodyPath = bodyPath;
