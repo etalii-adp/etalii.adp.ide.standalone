@@ -32,7 +32,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
 
     private const string NodeGone = "The node no longer exists.";
 
-    private static readonly ILogger _logger = Log.ForContext<MindmapContextActionProvider>();
+    private static readonly ILogger Logger = Log.ForContext<MindmapContextActionProvider>();
 
     private static readonly string[] SkippedFolders = [".git", "node_modules", "bin", "obj", ".claude"];
 
@@ -224,7 +224,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
         }
         catch (MindmapFormatException exception)
         {
-            _logger.Warning(exception, "Cannot offer actions on {BodyPath}", target.ResolvedFullPath);
+            Logger.Warning(exception, "Cannot offer actions on {BodyPath}", target.ResolvedFullPath);
             return null;
         }
 
