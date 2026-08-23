@@ -128,7 +128,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
                 {
                     try
                     {
-                        File.Move(sibling!, siblingTarget);
+                        File.Move(sibling, siblingTarget);
                     }
                     catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
                     {

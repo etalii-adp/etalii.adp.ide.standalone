@@ -1,6 +1,5 @@
 using EtAlii.Adp.Backend.Context;
 
-using ContextScope = EtAlii.Adp.ContextScope;
 namespace EtAlii.Adp.Backend;
 
 /// <summary>

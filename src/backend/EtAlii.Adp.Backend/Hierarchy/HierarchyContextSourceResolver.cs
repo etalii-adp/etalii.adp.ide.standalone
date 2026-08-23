@@ -14,6 +14,7 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
     private readonly IHierarchyModelStore _hierarchyModelStore;
     private readonly DiagramFileRouter _router;
 
+    /// <param name="hierarchyModelStore">The hierarchy model store.</param>
     /// <param name="router">Says whether a file is a diagram, which is what decides that it may contain a selected element.</param>
     public HierarchyContextSourceResolver(IHierarchyModelStore hierarchyModelStore, DiagramFileRouter router)
     {

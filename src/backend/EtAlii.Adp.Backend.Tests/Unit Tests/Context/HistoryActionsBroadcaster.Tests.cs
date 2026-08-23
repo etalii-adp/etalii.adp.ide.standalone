@@ -167,7 +167,7 @@ public class HistoryActionsBroadcasterTests
 
         public void Remove(ShortGuid watchId) => throw new NotSupportedException();
 
-        public ContextSelectionRecord? Get(ShortGuid watchId) => throw new NotSupportedException();
+        public ContextSelectionRecord Get(ShortGuid watchId) => throw new NotSupportedException();
 
         public void Set(ShortGuid watchId, string rootPath, ContextSelectionRecord record, ContextRediscovery rediscover) => throw new NotSupportedException();
 
