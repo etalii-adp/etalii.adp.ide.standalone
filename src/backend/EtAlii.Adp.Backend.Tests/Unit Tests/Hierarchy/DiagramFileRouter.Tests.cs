@@ -136,6 +136,78 @@ public class DiagramFileRouterTests : IDisposable
         Assert.IsType<DiagramRouting.NotADiagram>(Router(Mindmap).Route(txt));
     }
 
+    // ---- one document format, several types of one vendor (c4-diagrams Requirements 2.4-2.6) ----
+
+    private static readonly DiagramDefinition C4Context = new(new DiagramOrigin("c4", "context"), "System Context", ".dsl");
+    private static readonly DiagramDefinition C4Container = new(new DiagramOrigin("c4", "container"), "Container", ".dsl");
+    private static readonly DiagramDefinition RivalDsl = new(new DiagramOrigin("other", "thing"), "Rival", ".dsl");
+
+    [Fact]
+    public void Route_ARegistrationNamingASharedBody_ResolvesToThatBody()
+    {
+        Directory.CreateDirectory(IoPath.Combine(_root, "shared"));
+        Write(IoPath.Combine("shared", "model.dsl"), "workspace {}");
+        var adp = Write("containers.adp", "c4/container\nbody: shared/model.dsl\nview: containers\n");
+
+        var routing = Router(C4Context, C4Container).Route(adp, _root);
+
+        var routed = Assert.IsType<DiagramRouting.Routed>(routing);
+        Assert.Equal(IoPath.Combine(_root, "shared", "model.dsl"), routed.BodyPath);
+        Assert.Equal("c4/container", routed.Definition.Origin.Key);
+    }
+
+    [Fact]
+    public void Route_ARegistrationWithNoBodyHeader_StillUsesItsDerivedSibling()
+    {
+        var adp = Write("solo.adp", "c4/context\n");
+
+        var routed = Assert.IsType<DiagramRouting.Routed>(Router(C4Context).Route(adp, _root));
+
+        Assert.Equal(IoPath.Combine(_root, "solo.dsl"), routed.BodyPath);
+    }
+
+    [Fact]
+    public void Route_ABodyHeaderEscapingTheProject_IsRefused()
+    {
+        var adp = Write("escape.adp", "c4/context\nbody: ../outside.dsl\n");
+
+        Assert.IsType<DiagramRouting.Unreadable>(Router(C4Context).Route(adp, _root));
+    }
+
+    [Fact]
+    public void Route_ABareBodyClaimedByOneVendorsFamily_RoutesToThatFamily()
+    {
+        // Seven C4 types share .dsl by design: which one a document is depends on the view it
+        // declares, which only the module can read. Refusing to route would make Requirement
+        // 2.6's "openable without an .adp" impossible.
+        var dsl = Write("model.dsl", "workspace {}");
+
+        var routed = Assert.IsType<DiagramRouting.Routed>(Router(C4Context, C4Container).Route(dsl));
+
+        Assert.Equal("c4", routed.Definition.Origin.Vendor);
+        Assert.Null(routed.RegistrationPath);
+        Assert.Equal(dsl, routed.BodyPath);
+    }
+
+    [Fact]
+    public void Route_ABareBodyClaimedByTwoVendors_IsStillAmbiguous()
+    {
+        // The guard still guards: unrelated modules claiming one extension cannot be resolved
+        // by reading the document, because neither owns it.
+        var dsl = Write("model.dsl", "workspace {}");
+
+        var ambiguous = Assert.IsType<DiagramRouting.Ambiguous>(Router(C4Context, RivalDsl).Route(dsl));
+
+        Assert.Equal(".dsl", ambiguous.Extension);
+    }
+
+    [Fact]
+    public void AmbiguousExtensions_DoesNotReportOneVendorsFamily_ButStillReportsRivalVendors()
+    {
+        Assert.Empty(Router(C4Context, C4Container).AmbiguousExtensions());
+        Assert.Equal([".dsl"], Router(C4Context, RivalDsl).AmbiguousExtensions());
+    }
+
     private sealed class Catalog(IReadOnlyList<DiagramDefinition> definitions) : IDiagramDefinitionCatalog
     {
         public IReadOnlyList<DiagramDefinition> All { get; } = definitions;

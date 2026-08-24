@@ -1,0 +1,303 @@
+using EtAlii.Adp.Diagram;
+using Xunit;
+
+namespace EtAlii.Adp.C4.Tests;
+
+/// <summary>
+/// One test per C4 rule, each written to fail before the rule exists. The validator is a pure
+/// function, so every one of these is a plain string of DSL in and a list of problems out - no
+/// file, no canvas, no connection (c4-diagrams Requirement 10 and its non-functional
+/// requirements).
+/// </summary>
+public class C4RuleSetTests
+{
+    private static IReadOnlyList<DiagramProblem> Validate(string dsl) =>
+        C4RuleSet.Validate(C4Parser.Parse(C4Document.Parse(dsl)));
+
+    private static string[] RuleIds(string dsl) => Validate(dsl).Select(problem => problem.RuleId).ToArray();
+
+    /// <summary>A workspace with everything C4 asks for, so a rule firing here is a false positive.</summary>
+    private const string Clean = """
+        workspace "Clean" {
+            model {
+                u = person "User" "Someone who uses the system."
+                s = softwareSystem "System" "Does the thing." {
+                    web = container "Web App" "Serves pages." "React"
+                    db = container "Database" "Stores things." "PostgreSQL"
+                    web -> db "Reads from and writes to" "SQL/TCP"
+                }
+                u -> web "Visits" "HTTPS"
+            }
+            views {
+                systemContext s "context" {
+                    include *
+                }
+            }
+        }
+        """;
+
+    [Fact]
+    public void ACleanModel_HasNoProblems()
+    {
+        Assert.Empty(Validate(Clean));
+    }
+
+    [Fact]
+    public void AnElementWithoutADescription_IsReported()
+    {
+        var dsl = Clean.Replace("person \"User\" \"Someone who uses the system.\"", "person \"User\"", StringComparison.Ordinal);
+
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4RuleSet.Rules.MissingDescription);
+        Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity);
+        Assert.Contains("User", problem.Message, StringComparison.Ordinal);
+        // Requirement 10.8: a problem names the element, so clicking it can select it.
+        Assert.Equal(new DiagramProblemLocation.ElementId("u"), problem.Location);
+    }
+
+    [Fact]
+    public void AContainerWithoutATechnology_IsReported()
+    {
+        var dsl = Clean.Replace("container \"Web App\" \"Serves pages.\" \"React\"", "container \"Web App\" \"Serves pages.\"", StringComparison.Ordinal);
+
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4RuleSet.Rules.MissingTechnology);
+        Assert.Contains("technology", problem.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void AComponentWithoutATechnology_IsReported()
+    {
+        var dsl = """
+            workspace {
+                model {
+                    s = softwareSystem "S" "desc" {
+                        c = container "C" "desc" "Kotlin" {
+                            comp = component "Comp" "desc"
+                        }
+                    }
+                }
+            }
+            """;
+
+        Assert.Contains(C4RuleSet.Rules.MissingTechnology, RuleIds(dsl));
+    }
+
+    [Fact]
+    public void APersonWithoutATechnology_IsNotReported()
+    {
+        // C4 asks for a technology on containers and components. A person does not have one,
+        // and reporting it would be noise that teaches users to ignore the panel.
+        Assert.DoesNotContain(C4RuleSet.Rules.MissingTechnology, RuleIds(Clean));
+    }
+
+    [Fact]
+    public void AnUnlabelledRelationship_IsReported()
+    {
+        var dsl = Clean.Replace("u -> web \"Visits\" \"HTTPS\"", "u -> web", StringComparison.Ordinal);
+
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4RuleSet.Rules.UnlabelledRelationship);
+        Assert.IsType<DiagramProblemLocation.Line>(problem.Location);
+    }
+
+    [Fact]
+    public void ARelationshipBetweenContainersWithNoProtocol_IsReported()
+    {
+        var dsl = Clean.Replace("web -> db \"Reads from and writes to\" \"SQL/TCP\"", "web -> db \"Reads from and writes to\"", StringComparison.Ordinal);
+
+        Assert.Contains(C4RuleSet.Rules.MissingProtocol, RuleIds(dsl));
+    }
+
+    [Fact]
+    public void ARelationshipFromAPersonWithNoProtocol_IsNotReported()
+    {
+        // A person does not speak a protocol; the rule is about how containers communicate.
+        var dsl = Clean.Replace("u -> web \"Visits\" \"HTTPS\"", "u -> web \"Visits\"", StringComparison.Ordinal);
+
+        Assert.DoesNotContain(C4RuleSet.Rules.MissingProtocol, RuleIds(dsl));
+    }
+
+    [Fact]
+    public void ARelationshipNamingSomethingUndeclared_IsReported()
+    {
+        var dsl = Clean.Replace("u -> web \"Visits\" \"HTTPS\"", "u -> ghost \"Visits\" \"HTTPS\"", StringComparison.Ordinal);
+
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4RuleSet.Rules.DanglingRelationship);
+        Assert.Contains("ghost", problem.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AContainerOnAContextView_IsReported()
+    {
+        // Requirement 5.2: a system context diagram shows people and software systems only.
+        var dsl = """
+            workspace {
+                model {
+                    s = softwareSystem "S" "desc" {
+                        web = container "Web" "desc" "React"
+                    }
+                }
+                views {
+                    systemContext s "context" {
+                        include web
+                    }
+                }
+            }
+            """;
+
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4RuleSet.Rules.KindNotPermitted);
+        Assert.Contains("container", problem.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(new DiagramProblemLocation.ElementId("web"), problem.Location);
+    }
+
+    [Fact]
+    public void AContainerOnAContainerView_IsNotReported()
+    {
+        var dsl = """
+            workspace {
+                model {
+                    s = softwareSystem "S" "desc" {
+                        web = container "Web" "desc" "React"
+                    }
+                }
+                views {
+                    container s "containers" {
+                        include web
+                    }
+                }
+            }
+            """;
+
+        Assert.DoesNotContain(C4RuleSet.Rules.KindNotPermitted, RuleIds(dsl));
+    }
+
+    [Fact]
+    public void ADynamicViewMixingLevels_IsReported()
+    {
+        // Requirement 7.7: a dynamic view draws systems OR containers OR components.
+        var dsl = """
+            workspace {
+                model {
+                    a = softwareSystem "A" "desc" {
+                        web = container "Web" "desc" "React"
+                    }
+                    b = softwareSystem "B" "desc"
+                    web -> b "Calls" "HTTPS"
+                    a -> b "Calls" "HTTPS"
+                }
+                views {
+                    dynamic a "scenario" {
+                        web -> b "Calls"
+                        a -> b "Calls"
+                    }
+                }
+            }
+            """;
+
+        Assert.Contains(C4RuleSet.Rules.MixedAbstractionLevels, RuleIds(dsl));
+    }
+
+    [Fact]
+    public void ADynamicViewAtOneLevel_IsNotReported()
+    {
+        var dsl = """
+            workspace {
+                model {
+                    a = softwareSystem "A" "desc"
+                    b = softwareSystem "B" "desc"
+                    a -> b "Calls" "HTTPS"
+                }
+                views {
+                    dynamic a "scenario" {
+                        a -> b "Calls"
+                    }
+                }
+            }
+            """;
+
+        Assert.DoesNotContain(C4RuleSet.Rules.MixedAbstractionLevels, RuleIds(dsl));
+    }
+
+    [Fact]
+    public void AViewScopedToSomethingUndeclared_IsReported()
+    {
+        var dsl = Clean.Replace("systemContext s \"context\"", "systemContext ghost \"context\"", StringComparison.Ordinal);
+
+        Assert.Contains(C4RuleSet.Rules.UnknownViewScope, RuleIds(dsl));
+    }
+
+    [Fact]
+    public void AnEmptyView_IsReported()
+    {
+        var dsl = """
+            workspace {
+                model {
+                }
+                views {
+                    systemLandscape "all" {
+                    }
+                }
+            }
+            """;
+
+        Assert.Contains(C4RuleSet.Rules.EmptyView, RuleIds(dsl));
+    }
+
+    [Fact]
+    public void EveryProblem_IsAWarning_SoAnUnfinishedModelStillSaves()
+    {
+        // Requirement 10.7: a model mid-edit is routinely incomplete. Anything that cannot be
+        // a work in progress is refused by the command that would create it, not reported here.
+        var dsl = """
+            workspace {
+                model {
+                    u = person "User"
+                    s = softwareSystem "System" {
+                        web = container "Web"
+                    }
+                    u -> web
+                }
+                views {
+                    systemContext s "context" {
+                        include *
+                    }
+                }
+            }
+            """;
+
+        var problems = Validate(dsl);
+
+        Assert.NotEmpty(problems);
+        Assert.All(problems, problem => Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity));
+    }
+
+    [Fact]
+    public void EveryRuleId_IsPrefixedWithTheModulesName()
+    {
+        // Core's convention: "<module>.<rule>", so a problem's origin is readable in the panel.
+        var dsl = "workspace {\n  model {\n    u = person \"U\"\n  }\n  views {\n    systemLandscape \"all\" {\n    }\n  }\n}\n";
+
+        Assert.All(Validate(dsl), problem => Assert.StartsWith("c4.", problem.RuleId, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void PermittedKinds_MatchWhatEachC4ViewShows()
+    {
+        Assert.Equal([C4ElementKind.Person, C4ElementKind.SoftwareSystem], C4RuleSet.PermittedKinds(C4ViewKind.SystemContext));
+        Assert.Equal([C4ElementKind.Person, C4ElementKind.SoftwareSystem], C4RuleSet.PermittedKinds(C4ViewKind.SystemLandscape));
+        Assert.Contains(C4ElementKind.Container, C4RuleSet.PermittedKinds(C4ViewKind.Container));
+        Assert.DoesNotContain(C4ElementKind.Component, C4RuleSet.PermittedKinds(C4ViewKind.Container));
+        Assert.Contains(C4ElementKind.Component, C4RuleSet.PermittedKinds(C4ViewKind.Component));
+        Assert.Contains(C4ElementKind.DeploymentNode, C4RuleSet.PermittedKinds(C4ViewKind.Deployment));
+        Assert.DoesNotContain(C4ElementKind.Person, C4RuleSet.PermittedKinds(C4ViewKind.Deployment));
+    }
+
+    [Fact]
+    public async Task TheValidator_ReachesCoresSeam()
+    {
+        var validator = new C4Validator(new DiagramOrigin("c4", "context"));
+
+        var problems = await validator.ValidateAsync(Clean, "clean", TestContext.Current.CancellationToken);
+
+        Assert.Empty(problems);
+        Assert.Equal("c4/context", validator.Origin.Key);
+    }
+}

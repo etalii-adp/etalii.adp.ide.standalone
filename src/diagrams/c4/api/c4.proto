@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package etalii.adp.c4;
+
+option csharp_namespace = "EtAlii.Adp.C4";
+
+// The C4 family's wire payloads. These ride inside the core Element's `Any`; nothing in the
+// core contract is extended for them (c4-diagrams design, "Data Models").
+
+// Which C4 abstraction an element is. The canvas draws each differently - a person gets the
+// person shape, a data store a cylinder - and each view permits only some of them.
+enum C4ElementKindProto {
+  C4_ELEMENT_KIND_UNSPECIFIED = 0;
+  C4_ELEMENT_KIND_PERSON = 1;
+  C4_ELEMENT_KIND_SOFTWARE_SYSTEM = 2;
+  C4_ELEMENT_KIND_CONTAINER = 3;
+  C4_ELEMENT_KIND_COMPONENT = 4;
+  C4_ELEMENT_KIND_DEPLOYMENT_NODE = 5;
+  C4_ELEMENT_KIND_INFRASTRUCTURE_NODE = 6;
+  C4_ELEMENT_KIND_CONTAINER_INSTANCE = 7;
+  C4_ELEMENT_KIND_SOFTWARE_SYSTEM_INSTANCE = 8;
+}
+
+// How something is drawn. Carried rather than assumed because C4 is explicitly notation
+// independent: ADP's palette is a default a document may override, and the legend has to
+// describe whatever is actually in use.
+message C4Style {
+  string background = 1;
+  string color = 2;
+  string shape = 3;
+  string border = 4;
+}
+
+// One element of the model, at the size the backend measured it.
+message C4ElementPayload {
+  C4ElementKindProto kind = 1;
+  string name = 2;
+  string description = 3;
+  string technology = 4;
+  // The bracketed line the canvas draws under the name - "[Container: React]" - composed here
+  // so client and backend cannot disagree about it.
+  string type_line = 5;
+  // Outside the scope of what this model describes, and drawn muted to say so.
+  bool external = 6;
+  string parent_id = 7;
+  // The measured box. The canvas draws at this size rather than guessing, which is the lesson
+  // the mindmap's overlapping boxes taught.
+  double width = 8;
+  double height = 9;
+  C4Style style = 10;
+}
+
+// A relationship: its own element on the wire, because unlike a mindmap's edges it carries a
+// label, a technology and its own actions.
+message C4RelationshipPayload {
+  string source_id = 1;
+  string destination_id = 2;
+  string description = 3;
+  string technology = 4;
+  // A dynamic view's ordering, including the nested form ("1", "1.1"); empty elsewhere.
+  string interaction_order = 5;
+  // The measured endpoints, so the canvas anchors the line on the boxes' edges.
+  double source_x = 6;
+  double source_y = 7;
+  double source_width = 8;
+  double source_height = 9;
+  double destination_x = 10;
+  double destination_y = 11;
+  double destination_width = 12;
+  double destination_height = 13;
+}
+
+// The dashed rectangle around a system's containers or a container's components.
+message C4BoundaryPayload {
+  string name = 1;
+  // "Software System" or "Container", for the boundary's label.
+  string kind = 2;
+  double width = 3;
+  double height = 4;
+}
+
+// One row of the key: a label and the style it describes.
+message C4LegendEntry {
+  string label = 1;
+  C4Style style = 2;
+}
+
+// The view itself, as one synthetic element. C4 requires every diagram to carry a title and a
+// key, and to be understandable without accompanying narrative.
+//
+// It carries no problems of its own. C4RuleSet reports through core's IDiagramValidator, and
+// core already pushes the project's problems to every connection with an element-id location
+// (context.proto's ProblemLocation), so the canvas reads them from there. A second copy here
+// would be a second thing to keep in step, and the two would eventually disagree.
+message C4ViewPayload {
+  string title = 1;
+  string view_kind = 2;
+  string view_key = 3;
+  repeated C4LegendEntry legend = 4;
+}

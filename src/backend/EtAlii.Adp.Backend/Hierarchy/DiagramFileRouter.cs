@@ -22,28 +22,44 @@ public sealed class DiagramFileRouter
         _catalog = catalog;
     }
 
-    public DiagramRouting Route(string path)
+    /// <param name="projectRoot">
+    /// The project folder, when the caller knows it. Required to follow a registration's
+    /// <c>body:</c> header, which is project-relative and refused if it escapes the root
+    /// (c4-diagrams Requirement 2.4). Callers that only want to know *whether* a file is a
+    /// diagram may omit it: without a root the derived sibling is reported, which answers that
+    /// question just as well.
+    /// </param>
+    public DiagramRouting Route(string path, string? projectRoot = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
         if (DiagramFilePair.IsRegistrationFile(path))
         {
-            return RouteRegistration(path);
+            return RouteRegistration(path, projectRoot);
         }
 
-        return RouteBody(path);
+        return RouteBody(path, projectRoot);
     }
 
-    /// <summary>The extensions more than one discovered type claims - a deployment error, reported once at startup.</summary>
+    /// <summary>
+    /// The extensions that types from **different vendors** claim - a deployment error,
+    /// reported once at startup, because a body dropped in on its own cannot be routed.
+    /// </summary>
+    /// <remarks>
+    /// Several types of one vendor sharing an extension is not an error but a design: the C4
+    /// family is seven types over one document format and one engine, which is exactly what
+    /// "model once, view many" means. Those are disambiguated by the document itself rather
+    /// than by the file name, so they are not reported here (c4-diagrams Requirement 2.6).
+    /// </remarks>
     public IReadOnlyList<string> AmbiguousExtensions() =>
         _catalog.All
             .Where(definition => definition.HasDocumentSibling)
             .GroupBy(definition => definition.Extension, StringComparer.OrdinalIgnoreCase)
-            .Where(group => group.Count() > 1)
+            .Where(group => group.Select(definition => definition.Origin.Vendor).Distinct(StringComparer.Ordinal).Count() > 1)
             .Select(group => group.Key)
             .ToArray();
 
-    private DiagramRouting RouteRegistration(string adpPath)
+    private DiagramRouting RouteRegistration(string adpPath, string? projectRoot)
     {
         var mimeType = DiagramFilePair.ReadMimeType(adpPath);
         if (mimeType is null)
@@ -58,11 +74,25 @@ public sealed class DiagramFileRouter
             return new DiagramRouting.UnknownType(adpPath, mimeType);
         }
 
-        var body = definition.HasDocumentSibling ? DiagramFilePair.SiblingPathFor(adpPath, definition.Extension) : adpPath;
-        return new DiagramRouting.Routed(definition, adpPath, body);
+        if (!definition.HasDocumentSibling)
+        {
+            return new DiagramRouting.Routed(definition, adpPath, adpPath);
+        }
+
+        var body = DiagramFilePair.BodyOf(adpPath, _catalog, projectRoot);
+        if (body is null)
+        {
+            // Only a body: header that escapes the project root gets here - the registration
+            // read fine and its type is known. Refused rather than followed: the header is
+            // user-editable text (Requirement 2.4).
+            _logger.Warning("Not routing {Path}: its body: header names a document outside the project", adpPath);
+            return new DiagramRouting.Unreadable(adpPath);
+        }
+
+        return new DiagramRouting.Routed(definition, adpPath, body.Value.Path);
     }
 
-    private DiagramRouting RouteBody(string bodyPath)
+    private DiagramRouting RouteBody(string bodyPath, string? projectRoot)
     {
         var extension = IoPath.GetExtension(bodyPath);
         if (extension.Length == 0)
@@ -75,7 +105,7 @@ public sealed class DiagramFileRouter
         var registration = IoPath.ChangeExtension(bodyPath, DiagramFileName.Extension);
         if (File.Exists(registration))
         {
-            return RouteRegistration(registration);
+            return RouteRegistration(registration, projectRoot);
         }
 
         var claimants = _catalog.All
@@ -91,6 +121,24 @@ public sealed class DiagramFileRouter
                 return new DiagramRouting.Routed(claimants[0], RegistrationPath: null, bodyPath);
 
             default:
+                var vendors = claimants.Select(definition => definition.Origin.Vendor).Distinct(StringComparer.Ordinal).ToArray();
+                if (vendors.Length == 1)
+                {
+                    // One vendor's family sharing a document format: which of its types this
+                    // document is depends on the view the document declares, which only that
+                    // module can read. They all resolve to the same engine, so routing to the
+                    // family's first type is enough - the module then opens the view the
+                    // document actually declares (Requirement 2.6, and the fallback in the
+                    // session factory).
+                    _logger.Debug(
+                        "Routing {Path} to the {Vendor} family: {Count} of its types share {Extension}, and the document names the view",
+                        bodyPath,
+                        vendors[0],
+                        claimants.Length,
+                        extension);
+                    return new DiagramRouting.Routed(claimants[0], RegistrationPath: null, bodyPath);
+                }
+
                 // Guessing which module owns a body is worse than saying the deployment is
                 // ambiguous, which mirrors how discovery refuses a duplicate origin.
                 _logger.Warning(

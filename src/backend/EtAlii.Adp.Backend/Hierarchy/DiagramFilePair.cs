@@ -12,12 +12,60 @@ namespace EtAlii.Adp.Backend.Hierarchy;
 /// </summary>
 public static class DiagramFilePair
 {
+    /// <summary>The header naming a body document this registration does not own.</summary>
+    private const string BodyHeader = "body:";
+
+    /// <summary>The header naming which view within that document this registration opens.</summary>
+    private const string ViewHeader = "view:";
+
+    /// <summary>How many lines after the MIME line are scanned for headers before giving up.</summary>
+    private const int HeaderScanLimit = 8;
+
     /// <summary>
-    /// The sibling that <paramref name="adpPath"/>'s type declares, whether or not it exists
-    /// on disk - or null when the file is not a registration file, cannot be read, names an
-    /// unknown type, or names a type that keeps no sibling.
+    /// The body document a registration opens, and whether the registration owns it.
+    /// <para>
+    /// Ownership is the whole point of the distinction. A derived sibling belongs to its one
+    /// <c>.adp</c>, so deleting or renaming the registration takes the body with it. A body
+    /// named by a <c>body:</c> header may be shared by several registrations - which is how
+    /// C4's "model once, view many" works - so deleting one view must leave the model alone
+    /// (c4-diagrams Requirement 2.4).
+    /// </para>
     /// </summary>
+    /// <param name="Path">The body document's full path, whether or not it exists on disk.</param>
+    /// <param name="ViewKey">The view within it this registration opens, or null when it names none.</param>
+    /// <param name="IsOwned">Whether the registration owns the body and may take it along on delete and rename.</param>
+    public readonly record struct DiagramBody(string Path, string? ViewKey, bool IsOwned);
+
+    /// <summary>
+    /// The body <paramref name="adpPath"/> **owns** - the sibling derived from its own name -
+    /// or null when the file is not a registration file, cannot be read, names an unknown type,
+    /// names a type that keeps no sibling, **or names a body it does not own**.
+    /// </summary>
+    /// <remarks>
+    /// Delete and rename ask here, so a shared body is never carried off by one of the
+    /// registrations that merely reference it. To resolve the body to *open*, owned or not,
+    /// ask <see cref="BodyOf"/>.
+    /// </remarks>
     public static string? SiblingOf(string adpPath, IDiagramDefinitionCatalog catalog)
+    {
+        ArgumentNullException.ThrowIfNull(catalog);
+
+        var body = BodyOf(adpPath, catalog, projectRoot: null);
+        return body is { IsOwned: true } owned ? owned.Path : null;
+    }
+
+    /// <summary>
+    /// The body <paramref name="adpPath"/> opens: the document its <c>body:</c> header names
+    /// when it has one, and the derived sibling otherwise. Null under the same conditions
+    /// <see cref="SiblingOf"/> returns null, minus the ownership rule - and also when a
+    /// <c>body:</c> header points outside <paramref name="projectRoot"/>, which is refused
+    /// rather than followed (Requirement 2.4).
+    /// </summary>
+    /// <param name="projectRoot">
+    /// The project folder a <c>body:</c> header is resolved against and must stay inside. Null
+    /// means "no header may be followed": the caller only wants the owned sibling.
+    /// </param>
+    public static DiagramBody? BodyOf(string adpPath, IDiagramDefinitionCatalog catalog, string? projectRoot)
     {
         ArgumentNullException.ThrowIfNull(catalog);
 
@@ -26,7 +74,113 @@ public static class DiagramFilePair
             return null;
         }
 
-        return SiblingPathFor(adpPath, definition.Extension);
+        var (body, view) = ReadBodyAndViewHeaders(adpPath);
+        if (body is null)
+        {
+            // No header: the body is the sibling of this file's own name, exactly as every
+            // type has always behaved. A view key without a body still applies - one
+            // registration beside its own document may still name a view within it.
+            return new DiagramBody(SiblingPathFor(adpPath, definition.Extension), view, IsOwned: true);
+        }
+
+        if (projectRoot is null)
+        {
+            // The caller is asking about ownership only - a named body is never owned - and
+            // resolving the path would need the project root it did not supply. Path is empty
+            // rather than wrong; nothing reads it when IsOwned is false.
+            return new DiagramBody(Path: string.Empty, view, IsOwned: false);
+        }
+
+        var resolved = ResolveWithin(projectRoot, body);
+        return resolved is null ? null : new DiagramBody(resolved, view, IsOwned: false);
+    }
+
+    /// <summary>
+    /// <paramref name="relativePath"/> resolved against <paramref name="projectRoot"/>, or null
+    /// when it escapes it. A body outside the project is refused rather than read: the header
+    /// is user-editable text, and following it anywhere on disk would make an <c>.adp</c> file
+    /// a way to read arbitrary files through the backend.
+    /// </summary>
+    private static string? ResolveWithin(string projectRoot, string relativePath)
+    {
+        if (IoPath.IsPathRooted(relativePath))
+        {
+            return null;
+        }
+
+        string fullPath;
+        string fullRoot;
+        try
+        {
+            fullRoot = IoPath.GetFullPath(projectRoot);
+            fullPath = IoPath.GetFullPath(IoPath.Combine(fullRoot, relativePath));
+        }
+        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return null;
+        }
+
+        var normalizedRoot = fullRoot.EndsWith(IoPath.DirectorySeparatorChar)
+            ? fullRoot
+            : fullRoot + IoPath.DirectorySeparatorChar;
+
+        return fullPath.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase) ? fullPath : null;
+    }
+
+    /// <summary>
+    /// The <c>body:</c> and <c>view:</c> headers following the MIME line, or nulls. Scanning
+    /// stops at the first line that is neither a header nor blank, so a document that happens
+    /// to start with prose is not searched to its end.
+    /// </summary>
+    private static (string? Body, string? View) ReadBodyAndViewHeaders(string adpPath)
+    {
+        try
+        {
+            using var reader = new StreamReader(adpPath);
+            reader.ReadLine(); // the MIME line, which DefinitionOf has already used
+
+            string? body = null;
+            string? view = null;
+            for (var scanned = 0; scanned < HeaderScanLimit; scanned++)
+            {
+                var line = reader.ReadLine();
+                if (line is null)
+                {
+                    break;
+                }
+
+                var trimmed = line.Trim();
+                if (trimmed.Length == 0)
+                {
+                    continue;
+                }
+
+                if (trimmed.StartsWith(BodyHeader, StringComparison.OrdinalIgnoreCase))
+                {
+                    body = Value(trimmed, BodyHeader);
+                }
+                else if (trimmed.StartsWith(ViewHeader, StringComparison.OrdinalIgnoreCase))
+                {
+                    view = Value(trimmed, ViewHeader);
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return (body, view);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return (null, null);
+        }
+
+        static string? Value(string line, string header)
+        {
+            var value = line[header.Length..].Trim();
+            return value.Length == 0 ? null : value;
+        }
     }
 
     /// <summary>The sibling path a registration file at <paramref name="adpPath"/> would have for <paramref name="extension"/>.</summary>

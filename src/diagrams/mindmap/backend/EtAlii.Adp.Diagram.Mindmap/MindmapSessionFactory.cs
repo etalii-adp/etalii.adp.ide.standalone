@@ -24,7 +24,7 @@ public sealed class MindmapSessionFactory : IDiagramSessionFactory
 
     public DiagramOrigin Origin => Diagram.Definition.Origin;
 
-    public IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath) =>
+    public IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath, string? registrationPath) =>
         // The project's history, so a drag-move on this session's canvas is one undo away.
         new MindmapSession(watchId, bodyPath, _documents, _views, _mapper, _historyStacks.Get(rootPath));
 }

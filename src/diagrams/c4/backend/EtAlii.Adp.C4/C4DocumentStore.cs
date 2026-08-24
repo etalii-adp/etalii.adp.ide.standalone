@@ -1,0 +1,95 @@
+using System.Collections.Concurrent;
+using Serilog;
+
+namespace EtAlii.Adp.C4;
+
+/// <inheritdoc cref="IC4DocumentStore" />
+public sealed class C4DocumentStore : IC4DocumentStore
+{
+    private static readonly ILogger _logger = Log.ForContext<C4DocumentStore>();
+
+    private readonly ConcurrentDictionary<string, Entry> _entries = new(StringComparer.OrdinalIgnoreCase);
+
+    public event EventHandler<C4DocumentChangedEventArgs>? Changed;
+
+    public C4Document GetOrLoad(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        return Loaded(path).Document;
+    }
+
+    public C4Workspace WorkspaceOf(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        return Loaded(path).Workspace;
+    }
+
+    public void Save(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        var entry = Loaded(path);
+        var text = entry.Document.ToText();
+        try
+        {
+            var directory = System.IO.Path.GetDirectoryName(path);
+            if (directory is { Length: > 0 } && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            File.WriteAllText(path, text);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // The edit stays in memory: losing it because the disk refused would be worse than
+            // a save the user can retry once the file is writable again.
+            _logger.Warning(exception, "Could not write {Path}; the change is kept in memory", path);
+            return;
+        }
+
+        var workspace = C4Parser.Parse(entry.Document);
+        _entries[path] = new Entry(entry.Document, workspace);
+        Changed?.Invoke(this, new C4DocumentChangedEventArgs(path, workspace));
+    }
+
+    public void Forget(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        _entries.TryRemove(path, out _);
+    }
+
+    /// <summary>Re-reads a document an external tool changed, and tells the sessions on it.</summary>
+    public void Reload(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        _entries.TryRemove(path, out _);
+        var entry = Loaded(path);
+        Changed?.Invoke(this, new C4DocumentChangedEventArgs(path, entry.Workspace));
+    }
+
+    private Entry Loaded(string path) => _entries.GetOrAdd(path, Load);
+
+    private static Entry Load(string path)
+    {
+        string text;
+        try
+        {
+            // A body that does not exist yet is an empty document, not an error: the .adp file
+            // may have been created a moment ago, and a diagram that cannot open at all is a
+            // worse answer than an empty one.
+            text = File.Exists(path) ? File.ReadAllText(path) : "";
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            _logger.Warning(exception, "Could not read {Path}; opening it as empty", path);
+            text = "";
+        }
+
+        var document = C4Document.Parse(text);
+        return new Entry(document, C4Parser.Parse(document));
+    }
+
+    private sealed record Entry(C4Document Document, C4Workspace Workspace);
+}

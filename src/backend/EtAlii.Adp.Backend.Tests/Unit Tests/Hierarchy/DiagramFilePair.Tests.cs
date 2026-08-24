@@ -214,6 +214,112 @@ public class DiagramFilePairTests : IDisposable
         Assert.Empty(Directory.GetFiles(_root));
     }
 
+    // ---- body: and view: headers (c4-diagrams Requirement 2.4) --------------------------
+
+    /// <summary>A registration naming a body it does not own, the way a C4 view does.</summary>
+    private string WriteRegistrationNamingBody(string baseName, DiagramDefinition definition, string body, string? view = null)
+    {
+        var path = IoPath.Combine(_root, baseName + ".adp");
+        var text = definition.Origin.MimeType + "\n" + "body: " + body + "\n" + (view is null ? "" : "view: " + view + "\n");
+        File.WriteAllText(path, text);
+        return path;
+    }
+
+    [Fact]
+    public void BodyOf_NoHeaders_IsTheDerivedSibling_AndIsOwned()
+    {
+        // The case every existing type is in, which must behave exactly as it always has.
+        var adp = WriteRegistration("domain", Mindmap);
+
+        var body = DiagramFilePair.BodyOf(adp, _catalog, _root);
+
+        Assert.NotNull(body);
+        Assert.Equal(IoPath.Combine(_root, "domain.mm"), body!.Value.Path);
+        Assert.True(body.Value.IsOwned);
+        Assert.Null(body.Value.ViewKey);
+    }
+
+    [Fact]
+    public void BodyOf_ABodyHeader_ResolvesAgainstTheProjectRoot_AndIsNotOwned()
+    {
+        var adp = WriteRegistrationNamingBody("containers", Mindmap, "shared/model.mm", "containers");
+
+        var body = DiagramFilePair.BodyOf(adp, _catalog, _root);
+
+        Assert.NotNull(body);
+        Assert.Equal(IoPath.Combine(_root, "shared", "model.mm"), body!.Value.Path);
+        Assert.Equal("containers", body.Value.ViewKey);
+        Assert.False(body.Value.IsOwned);
+    }
+
+    [Fact]
+    public void BodyOf_AViewHeaderWithoutABody_StillNamesTheView_AndStaysOwned()
+    {
+        var path = IoPath.Combine(_root, "solo.adp");
+        File.WriteAllText(path, Mindmap.Origin.MimeType + "\nview: context\n");
+
+        var body = DiagramFilePair.BodyOf(path, _catalog, _root);
+
+        Assert.NotNull(body);
+        Assert.Equal("context", body!.Value.ViewKey);
+        Assert.True(body.Value.IsOwned);
+    }
+
+    [Theory]
+    [InlineData("../outside.mm")]
+    [InlineData("nested/../../outside.mm")]
+    // Rooted on both platforms, so the refusal is asserted the same way everywhere. A
+    // Windows-style "C:\..." is deliberately not a case here: it is rooted on Windows and an
+    // ordinary relative file name on Linux, so it would assert two different things.
+    [InlineData("/etc/passwd")]
+    public void BodyOf_ABodyHeaderEscapingTheProject_IsRefused(string escaping)
+    {
+        // The header is user-editable text; following it anywhere on disk would turn an .adp
+        // file into a way to read arbitrary files through the backend.
+        var adp = WriteRegistrationNamingBody("escape", Mindmap, escaping);
+
+        Assert.Null(DiagramFilePair.BodyOf(adp, _catalog, _root));
+    }
+
+    [Fact]
+    public void BodyOf_StopsScanningHeaders_AtTheFirstLineThatIsNotOne()
+    {
+        var path = IoPath.Combine(_root, "prose.adp");
+        File.WriteAllText(path, Mindmap.Origin.MimeType + "\nthis is not a header\nbody: shared/model.mm\n");
+
+        var body = DiagramFilePair.BodyOf(path, _catalog, _root);
+
+        Assert.NotNull(body);
+        Assert.True(body!.Value.IsOwned, "a body: line after prose must not be honoured");
+    }
+
+    [Fact]
+    public void SiblingOf_ARegistrationNamingABodyItDoesNotOwn_IsNull()
+    {
+        // This is what stops a delete or a rename of one C4 view carrying off the shared model
+        // that several other views also open.
+        var adp = WriteRegistrationNamingBody("containers", Mindmap, "shared/model.mm");
+
+        Assert.Null(DiagramFilePair.SiblingOf(adp, _catalog));
+    }
+
+    [Fact]
+    public async Task Delete_ARegistrationNamingASharedBody_LeavesTheBodyAlone()
+    {
+        // The safety property the header introduces: two registrations over one document, and
+        // deleting one must not destroy the model the other still opens.
+        Directory.CreateDirectory(IoPath.Combine(_root, "shared"));
+        var shared = IoPath.Combine(_root, "shared", "model.mm");
+        File.WriteAllText(shared, "<map/>");
+        var adp = WriteRegistrationNamingBody("containers", Mindmap, "shared/model.mm");
+
+        var result = await _history.ExecuteAsync(new DeleteEntryCommand(adp), TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.False(File.Exists(adp));
+        Assert.True(File.Exists(shared), "deleting one view destroyed the shared model");
+    }
+
     private sealed class Catalog(params DiagramDefinition[] definitions) : IDiagramDefinitionCatalog
     {
         public IReadOnlyList<DiagramDefinition> All { get; } = definitions;

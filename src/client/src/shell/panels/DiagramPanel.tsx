@@ -1,5 +1,6 @@
 import { PanelPlaceholder } from "./PanelPlaceholder";
 import { MindmapCanvas } from "./mindmap/MindmapCanvas";
+import { C4Canvas } from "./c4/C4Canvas";
 
 /** Which diagram a panel shows: its project, the `.adp` entry's id, its project-relative path, and its type. */
 export interface OpenDiagram {
@@ -24,6 +25,24 @@ export interface DiagramPanelProps {
 export function DiagramPanel({ diagram }: DiagramPanelProps) {
   if (diagram?.mimeType === "freeplane/mindmap") {
     return <MindmapCanvas projectId={diagram.projectId} entryId={diagram.entryId} path={diagram.path} />;
+  }
+
+  // The six C4 view types share one canvas, because they are six views of one notation.
+  // c4/code is deliberately not among them: C4 specifies UML class or ER notation for that
+  // level and advises generating it rather than drawing it, so it waits on a class diagram
+  // type rather than growing a fourth notation here (c4-diagrams Requirement 11).
+  if (diagram !== undefined && diagram.mimeType.startsWith("c4/") && diagram.mimeType !== "c4/code") {
+    return <C4Canvas projectId={diagram.projectId} entryId={diagram.entryId} path={diagram.path} />;
+  }
+
+  if (diagram?.mimeType === "c4/code") {
+    return (
+      <PanelPlaceholder
+        title={diagram.path[diagram.path.length - 1] ?? "Code diagram"}
+        description="C4 code diagrams use UML class or entity-relationship notation, which ADP does not implement yet - and C4 itself recommends generating this level from an IDE rather than drawing it. Use a Component diagram to describe what is inside a container."
+        futureSpec="c4-diagrams"
+      />
+    );
   }
 
   if (diagram !== undefined && diagram.mimeType !== "") {
