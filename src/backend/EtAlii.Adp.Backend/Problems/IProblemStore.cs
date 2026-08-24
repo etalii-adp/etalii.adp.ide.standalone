@@ -33,6 +33,13 @@ public interface IProblemStore
     /// </summary>
     void Move(string rootPath, string fromRelativePath, string toRelativePath);
 
+    /// <summary>
+    /// Every project root this store has a set for - in memory or on disk. What the startup
+    /// re-validation walks (Requirement 4.8): a project never validated has no cache to
+    /// converge, so it is rightly absent here.
+    /// </summary>
+    IReadOnlyList<string> KnownRoots();
+
     /// <summary>A project's set changed; the payload is its root path.</summary>
     event Action<string>? Changed;
 }

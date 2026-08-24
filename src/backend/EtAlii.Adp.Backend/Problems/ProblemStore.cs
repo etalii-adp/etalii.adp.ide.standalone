@@ -125,6 +125,33 @@ public sealed class ProblemStore : IProblemStore, IDisposable
         });
     }
 
+    public IReadOnlyList<string> KnownRoots()
+    {
+        var roots = new HashSet<string>(_entries.Keys, StringComparer.OrdinalIgnoreCase);
+
+        var cacheFolder = IoPath.Combine(_appDataRoot, "EtAlii.Adp", "problems");
+        if (Directory.Exists(cacheFolder))
+        {
+            foreach (var cachePath in Directory.GetFiles(cacheFolder, "*.json"))
+            {
+                try
+                {
+                    var cache = JsonSerializer.Deserialize<CacheFile>(File.ReadAllText(cachePath));
+                    if (cache is { Version: CacheFormatVersion, RootPath.Length: > 0 })
+                    {
+                        roots.Add(IoPath.GetFullPath(cache.RootPath));
+                    }
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
+                {
+                    _logger.Warning(exception, "Skipping the problem cache at {CachePath}: unreadable", cachePath);
+                }
+            }
+        }
+
+        return roots.Order(StringComparer.OrdinalIgnoreCase).ToArray();
+    }
+
     public void Dispose()
     {
         // A pending debounced write is a promise; keep it on the way out.
