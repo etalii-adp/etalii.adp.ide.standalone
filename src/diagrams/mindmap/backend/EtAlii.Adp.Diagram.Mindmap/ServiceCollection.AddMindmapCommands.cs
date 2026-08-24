@@ -18,6 +18,10 @@ public static class ServiceCollectionAddMindmapCommandsExtension
 
         services.TryAddSingleton<IMindmapDocumentStore, MindmapDocumentStore>();
 
+        // The type's rules, resolved by origin through core's DiagramValidators registry
+        // (errors-and-warnings-panel Requirement 3.1).
+        services.AddSingleton<IDiagramValidator, MindmapValidator>();
+
         services.AddSingleton<ICommandHandler<AddChildNodeCommand>, AddChildNodeCommandHandler>();
         services.AddSingleton<ICommandHandler<AddSiblingNodeCommand>, AddSiblingNodeCommandHandler>();
         services.AddSingleton<ICommandHandler<MoveNodeCommand>, MoveNodeCommandHandler>();

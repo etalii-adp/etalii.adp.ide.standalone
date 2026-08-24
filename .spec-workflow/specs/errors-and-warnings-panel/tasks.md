@@ -84,7 +84,7 @@
   - _Requirements: 2.1, 2.2, 2.6, 5.1, 5.2, 5.3, 6.4, 7.6_
   - _Prompt: Implement the task for spec errors-and-warnings-panel, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA engineer writing gRPC integration tests in xUnit v3 | Task: Add the AddProblems registration extension, wire it in Program.cs, and write the ProblemsFlow integration tests listed | Restrictions: register through the one extension, not line by line in the host; pass TestContext.Current.CancellationToken to every async call as the other tests now do; assert the project folder is byte-for-byte unchanged after every validation; no sleeps - await stream messages with the existing helpers | Success: all flows pass; `dotnet test src/backend/EtAlii.Adp.slnx` green. Mark the task in progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 11. Give the mindmap module its validator
+- [x] 11. Give the mindmap module its validator
   - File: `src/diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/MindmapValidator.cs` (new), `src/diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/ServiceCollection.AddMindmapCommands.cs` (modify), `src/diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap.Tests/MindmapValidator.Tests.cs` (new)
   - The first real validator: parse the document with the module's own store and report what is wrong - a document that will not parse, a missing or empty root node, a node whose link points at a file that is not there. Rule ids prefixed `mindmap.`. Registered in the module's own extension, one line
   - Purpose: proves the seam with a real type, and gives the panel something true to show (Requirements 3.1-3.2)
