@@ -28,6 +28,8 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
     private readonly IContextInteractionStore _contextInteractionStore;
     private readonly IHistoryStackStore _historyStacks;
     private readonly Problems.ProblemBroadcaster _problemBroadcaster;
+    private readonly Problems.ProblemMaintenance _problemMaintenance;
+    private readonly Problems.StartupRevalidation _startupRevalidation;
 
     public ContextServiceImpl(
         IProjectStore projectStore,
@@ -36,7 +38,9 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
         IContextActionResolver contextActionResolver,
         IContextInteractionStore contextInteractionStore,
         IHistoryStackStore historyStacks,
-        Problems.ProblemBroadcaster problemBroadcaster)
+        Problems.ProblemBroadcaster problemBroadcaster,
+        Problems.ProblemMaintenance problemMaintenance,
+        Problems.StartupRevalidation startupRevalidation)
     {
         _projectStore = projectStore;
         _selectionStore = selectionStore;
@@ -45,6 +49,8 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
         _contextInteractionStore = contextInteractionStore;
         _historyStacks = historyStacks;
         _problemBroadcaster = problemBroadcaster;
+        _problemMaintenance = problemMaintenance;
+        _startupRevalidation = startupRevalidation;
     }
 
     public override async Task<SelectResponse> Select(SelectRequest request, ServerCallContext context)
@@ -121,6 +127,13 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
         _historyStacks.Retain(rootPath);
         var projectActions = await _contextActionResolver.DiscoverAsync(
             HistoryActionsBroadcaster.ProjectTarget(rootPath), context.CancellationToken);
+
+        // An open project's problems stay current without anyone asking: the maintenance
+        // watcher follows its files, and if the startup pass is still working through the
+        // backlog this project's turn moves to the front - its freshness is the one the
+        // user can see (errors-and-warnings-panel Requirements 4.2, 5).
+        _problemMaintenance.Track(rootPath);
+        _startupRevalidation.Prioritize(rootPath);
 
         // Registering writes the baseline first, so a late subscriber is consistent
         // before anything else can arrive. The problems ride along as data: only the
