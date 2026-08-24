@@ -6,8 +6,8 @@ The Errors & Warnings panel is the last of the workspace shell's panels still st
 
 Two things feed that list, and they are different in kind:
 
-- **What is open right now.** A diagram the user is editing produces problems as they edit. These arrive the way everything else about the current state arrives — pushed down the connection's own **context `Watch` stream**, which already carries selections, prompts and project actions.
-- **What is not open.** A project's other diagrams are files on disk that nothing has looked at this session. The panel is only honest if it covers those too, so the backend **traverses the project's diagram files** and aggregates what it finds.
+* **What is open right now.** A diagram the user is editing produces problems as they edit. These arrive the way everything else about the current state arrives — pushed down the connection's own **context `Watch` stream**, which already carries selections, prompts and project actions.
+* **What is not open.** A project's other diagrams are files on disk that nothing has looked at this session. The panel is only honest if it covers those too, so the backend **traverses the project's diagram files** and aggregates what it finds.
 
 The second is expensive, so its results are **cached** — keyed per file, persisted so that reopening a project does not mean rechecking every diagram before the panel can say anything. The cache is kept current two ways: **by events**, since the backend already watches the project folder and knows when a diagram changed, and **by explicit request**, because a user who has just fixed something wants to ask rather than wait.
 
@@ -19,11 +19,11 @@ What counts as a problem is deliberately not core's business. Core contributes t
 
 ## Alignment with Product Vision
 
-- [product.md](../../steering/product.md)'s **"A familiar surface"**: every IDE has this panel, and the expectations that come with it — a list you can click to get to the thing, a count, and a way to rebuild it on demand. This spec meets those rather than inventing a new idea of what "problems" means.
-- product.md's **"Files are the source of truth"**: the panel reports on what is *on disk*, not on what happens to be open. A diagram nobody opened this session still appears if it is broken, which is the whole reason for the traversal.
-- [tech.md](../../steering/tech.md)'s **frontend-backend synchronization**: problems are state the backend owns and pushes; the client renders what arrives and never computes a problem itself.
-- tech.md's **Context service** rules: the Validate actions are `IContextActionProvider` contributions with their shortcuts declared as data, so they reach the ribbon, the right-click menu and the keyboard through the one path — no new RPC, no key-to-action table on the client.
-- [structure.md](../../steering/structure.md)'s **Core vs diagram-type plugins**: core knows how to *collect* problems and nothing about what makes a particular diagram wrong. A type's rules live in that type's module, behind a seam shaped like the `IDiagramDocumentFactory` one it already implements.
+* [product.md](../../steering/product.md)'s **"A familiar surface"**: every IDE has this panel, and the expectations that come with it — a list you can click to get to the thing, a count, and a way to rebuild it on demand. This spec meets those rather than inventing a new idea of what "problems" means.
+* product.md's **"Files are the source of truth"**: the panel reports on what is *on disk*, not on what happens to be open. A diagram nobody opened this session still appears if it is broken, which is the whole reason for the traversal.
+* [tech.md](../../steering/tech.md)'s **frontend-backend synchronization**: problems are state the backend owns and pushes; the client renders what arrives and never computes a problem itself.
+* tech.md's **Context service** rules: the Validate actions are `IContextActionProvider` contributions with their shortcuts declared as data, so they reach the ribbon, the right-click menu and the keyboard through the one path — no new RPC, no key-to-action table on the client.
+* [structure.md](../../steering/structure.md)'s **Core vs diagram-type plugins**: core knows how to *collect* problems and nothing about what makes a particular diagram wrong. A type's rules live in that type's module, behind a seam shaped like the `IDiagramDocumentFactory` one it already implements.
 
 ## Requirements
 
@@ -40,6 +40,7 @@ What counts as a problem is deliberately not core's business. Core contributes t
 5. IF the problem set is large THEN the system SHALL bound what it sends, and say that it did, rather than pushing an unbounded list down a stream.
 6. WHEN the panel is rendered THEN the system SHALL show, per problem, its severity, its message and where it is - and when there are none, say so plainly rather than showing an empty box.
 7. WHEN nothing has been validated yet in a fresh project THEN the panel SHALL distinguish **"no problems found"** from **"not checked yet"**, because they mean opposite things to someone deciding whether to trust the list.
+8. WHEN the user wants to filter for either errors, warnings or both THEN the panel SHALL have small icon buttons to do so.
 
 ### Requirement 2 — The list covers the whole project, not just what is open
 
@@ -80,6 +81,7 @@ What counts as a problem is deliberately not core's business. Core contributes t
 5. WHERE the cache is stored THEN it SHALL be per project and SHALL NOT be written inside the project folder itself, so ADP never adds files to a repository the user did not ask for; the application-data location `FileProjectStore` already uses is the precedent.
 6. IF the cache is missing, unreadable or written by an incompatible version THEN the system SHALL start from empty and say the project has not been checked (Requirement 1.7), rather than failing to open the project.
 7. WHEN a diagram type's validator changes what it reports THEN the system SHALL have a way to invalidate entries produced by an older version of that validator, so a rule fixed in a release does not leave stale verdicts behind forever.
+8. When the backend restarts, it will start an asynchronous re-validation of the projects.&#x20;
 
 ### Requirement 5 — Events keep the list current
 
@@ -140,32 +142,32 @@ What counts as a problem is deliberately not core's business. Core contributes t
 
 ### Code Architecture and Modularity
 
-- **Single Responsibility Principle**: traversal (finding diagram files), validation (asking a type what is wrong), the cache (remembering answers), the push (telling connections), and the actions (asking for a recheck) are five concerns in five files.
-- **Modular Design**: core depends only on the validator seam and the router. A diagram type's rules never enter core, and core must remain compilable and testable with zero validators registered.
-- **Dependency Management**: the collector depends on the router and the validator seam, not on `ContextService`; the push is a subscriber to the collector rather than a caller inside it, so a future consumer - a status-bar count, a CI report - attaches without touching either.
-- **Clear Interfaces**: Validate is contributed through the existing `IContextActionProvider`; the panel consumes the existing `Watch` stream. This spec adds one seam, one message and one action provider, and changes no existing abstraction.
-- **Testability**: validation must be exercisable against a temporary folder and a test-supplied validator, without a running host and without depending on which diagram modules happen to be built.
+* **Single Responsibility Principle**: traversal (finding diagram files), validation (asking a type what is wrong), the cache (remembering answers), the push (telling connections), and the actions (asking for a recheck) are five concerns in five files.
+* **Modular Design**: core depends only on the validator seam and the router. A diagram type's rules never enter core, and core must remain compilable and testable with zero validators registered.
+* **Dependency Management**: the collector depends on the router and the validator seam, not on `ContextService`; the push is a subscriber to the collector rather than a caller inside it, so a future consumer - a status-bar count, a CI report - attaches without touching either.
+* **Clear Interfaces**: Validate is contributed through the existing `IContextActionProvider`; the panel consumes the existing `Watch` stream. This spec adds one seam, one message and one action provider, and changes no existing abstraction.
+* **Testability**: validation must be exercisable against a temporary folder and a test-supplied validator, without a running host and without depending on which diagram modules happen to be built.
 
 ### Performance
 
-- Validating one file SHALL cost one file's work: a change to one diagram must not trigger a project-wide traversal.
-- A "Validate all" on a project of a few hundred diagrams SHALL remain responsive - progress visible, the UI usable - rather than delivering nothing until it is finished.
-- Serving the panel from the cache SHALL not require reading the diagram files themselves.
+* Validating one file SHALL cost one file's work: a change to one diagram must not trigger a project-wide traversal.
+* A "Validate all" on a project of a few hundred diagrams SHALL remain responsive - progress visible, the UI usable - rather than delivering nothing until it is finished.
+* Serving the panel from the cache SHALL not require reading the diagram files themselves.
 
 ### Security
 
-- Traversal SHALL stay within the resolved project root, and SHALL NOT follow links out of it.
-- The client SHALL NOT receive or supply an absolute filesystem path at any point; problems name files by project-relative path, as every other message already does.
-- A validator is module code deployed with the application; nothing user-supplied or project-supplied is ever loaded or executed as a validator.
+* Traversal SHALL stay within the resolved project root, and SHALL NOT follow links out of it.
+* The client SHALL NOT receive or supply an absolute filesystem path at any point; problems name files by project-relative path, as every other message already does.
+* A validator is module code deployed with the application; nothing user-supplied or project-supplied is ever loaded or executed as a validator.
 
 ### Reliability
 
-- A validator that throws, hangs, or returns nonsense SHALL cost its own diagrams' results and nothing else (Requirement 3.4-3.5).
-- A corrupt or unreadable cache SHALL never prevent a project from opening (Requirement 4.6).
-- Two connections watching the same project SHALL see the same list (Requirement 6.4).
+* A validator that throws, hangs, or returns nonsense SHALL cost its own diagrams' results and nothing else (Requirement 3.4-3.5).
+* A corrupt or unreadable cache SHALL never prevent a project from opening (Requirement 4.6).
+* Two connections watching the same project SHALL see the same list (Requirement 6.4).
 
 ### Usability
 
-- The panel SHALL be usable by keyboard alone: reaching it, moving through the problems, and activating one to get to the file.
-- A problem SHALL say enough to act on without opening anything: what is wrong, and where.
-- The distinction between "checked, and clean" and "not checked yet" SHALL be visible at a glance (Requirement 1.7).
+* The panel SHALL be usable by keyboard alone: reaching it, moving through the problems, and activating one to get to the file.
+* A problem SHALL say enough to act on without opening anything: what is wrong, and where.
+* The distinction between "checked, and clean" and "not checked yet" SHALL be visible at a glance (Requirement 1.7).
