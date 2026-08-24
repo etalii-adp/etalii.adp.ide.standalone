@@ -30,7 +30,8 @@
 
 ## Phase B — core seams
 
-- [ ] 2. Declare the `.dsl` extension on all seven definitions
+- [x] 2. Declare the `.dsl` extension on all seven definitions
+  - **Done, and it pulled task 32 forward.** Declaring the extension alone broke all 55 host-starting tests: core's `DiagramDocumentFactories.Verify` refuses a type that declares a document extension but registers no `IDiagramDocumentFactory`, by design, so this task was never independently landable. `C4DocumentFactory`, `C4CodeDocumentFactory`, `C4ViewKind` and `AddC4()` were implemented here; **task 32 is consequently mostly done** and should be re-read as "confirm the Add flow needs no changes" rather than "write the factory"
   - File: `src/diagrams/c4-*/backend/EtAlii.Adp.Diagram.C4*/Diagram.cs` (seven files, modify)
   - Set `Extension = ".dsl"` on each existing `DiagramDefinition`
   - Purpose: core can name the sibling by construction (Requirement 2.2)
