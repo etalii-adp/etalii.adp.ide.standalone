@@ -14,9 +14,15 @@ namespace EtAlii.Adp.Backend.Problems;
 /// The <see cref="DiagramValidators.RulesVersion"/> that judged the file, so a module release
 /// invalidates only its own cached verdicts.
 /// </param>
+/// <param name="Stale">
+/// Whether the verdict may no longer hold - the file or its rules moved on since it was
+/// produced. Computed by the store when it answers, never persisted: a stale problem shown
+/// as stale is more useful than a blank panel (Requirement 4.4).
+/// </param>
 public sealed record StoredProblem(
     DiagramProblem Problem,
     string RelativePath,
     DateTime LastWriteTimeUtc,
     long Length,
-    string RulesVersion);
+    string RulesVersion,
+    bool Stale = false);
