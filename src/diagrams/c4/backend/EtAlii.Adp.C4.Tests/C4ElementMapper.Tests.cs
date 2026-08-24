@@ -235,15 +235,34 @@ public class C4ElementMapperTests
     }
 
     [Fact]
-    public void TheViewCarriesTheModelsProblems_EachNamingItsElement()
+    public void TheViewCarriesNoProblemsOfItsOwn_BecauseCoreAlreadyPushesThem()
     {
+        // C4's rules report through IDiagramValidator, and core pushes the project's problems
+        // to every connection with an element-id location of their own. Carrying a second copy
+        // on the view payload would be a second thing to keep in step - and the canvas would
+        // eventually show one set while the errors panel showed another.
         var dsl = Sample.Replace("person \"Customer\" \"A retail banking customer.\"", "person \"Customer\"", StringComparison.Ordinal);
 
         var view = C4ViewPayload.Parser.ParseFrom(
             Visible("context", dsl).Single(e => e.Type == C4ElementMapper.ViewType).Payload.Span);
 
-        var problem = Assert.Single(view.Problems, p => p.RuleId == C4RuleSet.Rules.MissingDescription);
-        Assert.Equal("u", problem.ElementId);
+        Assert.Equal("System Context diagram for Internet Banking", view.Title);
+        Assert.NotEmpty(view.Legend);
+        Assert.DoesNotContain(
+            C4ViewPayload.Descriptor.Fields.InFieldNumberOrder().Select(field => field.Name),
+            name => name.Contains("problem", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void TheRulesStillReachTheUser_ThroughCoresValidatorSeam()
+    {
+        // The same missing description, reported the one way it should be.
+        var dsl = Sample.Replace("person \"Customer\" \"A retail banking customer.\"", "person \"Customer\"", StringComparison.Ordinal);
+
+        var problems = C4RuleSet.Validate(C4Parser.Parse(C4Document.Parse(dsl)));
+
+        var problem = Assert.Single(problems, p => p.RuleId == C4RuleSet.Rules.MissingDescription);
+        Assert.Equal(new EtAlii.Adp.Diagram.DiagramProblemLocation.ElementId("u"), problem.Location);
     }
 
     // ---- the viewport --------------------------------------------------------------------

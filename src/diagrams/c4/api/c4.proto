@@ -79,16 +79,6 @@ message C4BoundaryPayload {
   double height = 4;
 }
 
-// One thing the model gets wrong, as C4RuleSet reports it. Mirrors core's DiagramProblem so the
-// canvas can show inline what the errors and warnings panel shows in a list.
-message C4Problem {
-  // The element it concerns, so clicking it can select that element.
-  string element_id = 1;
-  string rule_id = 2;
-  string message = 3;
-  uint32 line = 4;
-}
-
 // One row of the key: a label and the style it describes.
 message C4LegendEntry {
   string label = 1;
@@ -97,10 +87,14 @@ message C4LegendEntry {
 
 // The view itself, as one synthetic element. C4 requires every diagram to carry a title and a
 // key, and to be understandable without accompanying narrative.
+//
+// It carries no problems of its own. C4RuleSet reports through core's IDiagramValidator, and
+// core already pushes the project's problems to every connection with an element-id location
+// (context.proto's ProblemLocation), so the canvas reads them from there. A second copy here
+// would be a second thing to keep in step, and the two would eventually disagree.
 message C4ViewPayload {
   string title = 1;
   string view_kind = 2;
   string view_key = 3;
   repeated C4LegendEntry legend = 4;
-  repeated C4Problem problems = 5;
 }

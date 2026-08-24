@@ -18,7 +18,7 @@ public sealed class C4ElementMapper
     public const string BoundaryType = "c4/model+boundary";
     public const string ViewType = "c4/model+view";
 
-    /// <summary>The id of the synthetic element carrying the view's title, legend and problems.</summary>
+    /// <summary>The id of the synthetic element carrying the view's title and legend.</summary>
     public const string ViewElementId = "c4:view";
 
     private readonly C4Metrics _metrics;
@@ -83,7 +83,13 @@ public sealed class C4ElementMapper
         return elements;
     }
 
-    /// <summary>The view's own element: its title, the key describing the notation in use, and its problems.</summary>
+    /// <summary>The view's own element: its title and the key describing the notation in use.</summary>
+    /// <remarks>
+    /// Deliberately carries no problems of its own. C4's rules report through core's
+    /// <c>IDiagramValidator</c>, and core already pushes the project's problems to every
+    /// connection with an element-id location, so the canvas reads them from there. A second
+    /// copy here would be a second thing to keep in step, and the two would drift apart.
+    /// </remarks>
     public DiagramElement ViewElement(C4Workspace workspace, C4View view)
     {
         ArgumentNullException.ThrowIfNull(workspace);
@@ -97,13 +103,6 @@ public sealed class C4ElementMapper
         };
 
         payload.Legend.AddRange(LegendFor(workspace, view));
-        payload.Problems.AddRange(C4RuleSet.Validate(workspace).Select(problem => new C4Problem
-        {
-            ElementId = problem.Location is DiagramProblemLocation.ElementId elementId ? elementId.Id : "",
-            RuleId = problem.RuleId,
-            Message = problem.Message,
-            Line = problem.Location is DiagramProblemLocation.Line line ? line.Number : 0,
-        }));
 
         return new DiagramElement(
             ViewElementId,
