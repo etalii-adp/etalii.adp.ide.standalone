@@ -20,7 +20,7 @@
   - _Requirements: 3.1, 3.3, 4.7_
   - _Prompt: Implement the task for spec errors-and-warnings-panel, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add DiagramValidators mirroring DiagramDocumentFactories, plus RulesVersion per origin, and its unit tests | Restrictions: a missing validator is a normal outcome, never an exception; two validators claiming one origin must fail loudly at construction rather than silently picking one; RulesVersion must come from the validator's own assembly so a module release invalidates only its own cached verdicts | Success: `dotnet test src/backend/EtAlii.Adp.Diagram.Tests` passes; removing the duplicate-origin guard fails a test. Mark the task in progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3. Add the problem records and the validation scope
+- [x] 3. Add the problem records and the validation scope
   - File: `src/backend/EtAlii.Adp.Backend/Problems/_Model/StoredProblem.cs` (new), `.../ProjectProblemSet.cs` (new), `.../ProblemSetState.cs` (new), `.../ValidationScope.cs` (new), `.../ValidationOutcome.cs` (new)
   - `StoredProblem(DiagramProblem Problem, string RelativePath, DateTime LastWriteTimeUtc, long Length, string RulesVersion)`; `ProjectProblemSet(ProblemSetState State, IReadOnlyList<StoredProblem> Problems, int ErrorCount, int WarningCount, int TruncatedAt)`; `ProblemSetState` as `NeverValidated`/`Validating`/`Validated`; `ValidationScope` as `File`/`Folder`/`Project` records carrying the root and a project-relative path; `ValidationOutcome(problems, filesConsidered, skipped)`
   - Purpose: the vocabulary tasks 4-6 share (design *Backend records*)
