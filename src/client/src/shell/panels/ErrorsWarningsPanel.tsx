@@ -71,6 +71,9 @@ export function ErrorsWarningsPanel() {
   const [focusedKey, setFocusedKey] = useState<string | undefined>();
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
   const menuPendingRef = useRef<{ x: number; y: number } | null>(null);
+  // A gesture selects the panel itself; the focus it also causes - the menu grabbing its
+  // first item, above all - must not follow up with a plain selection (the explorer's rule).
+  const gestureRef = useRef(false);
   const listRef = useRef<HTMLUListElement>(null);
   const rowRefs = useRef(new Map<string, HTMLLIElement>());
 
@@ -86,6 +89,10 @@ export function ErrorsWarningsPanel() {
   /** Focus arriving from outside the panel is the moment it becomes the selection. */
   const handleFocus = useCallback(
     (event: ReactFocusEvent<HTMLElement>) => {
+      if (gestureRef.current) {
+        gestureRef.current = false;
+        return; // A gesture just selected the panel; this focus is its side effect.
+      }
       const from = event.relatedTarget;
       if (from instanceof Node && event.currentTarget.contains(from)) {
         return; // Focus moved within the panel; it is already the selection.
@@ -109,6 +116,7 @@ export function ErrorsWarningsPanel() {
    */
   const openMenu = useCallback(
     (position: { x: number; y: number }) => {
+      gestureRef.current = true;
       select(panelSelection({ case: "action", value: ContextSelectionAction.CONTEXT_MENU }));
       if (selectionKey === "problems" && actions.length > 0) {
         menuPendingRef.current = null;
