@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/c4-diagrams/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-24T11:11:27.849Z",
       "trigger": "initial",
+      "approvalId": "approval_1787569887814_v8vy7jg17",
+      "approvalTitle": "C4 diagrams — design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-24T11:29:37.297Z",
+      "trigger": "approved",
       "approvalId": "approval_1787569887814_v8vy7jg17",
       "approvalTitle": "C4 diagrams — design"
     }

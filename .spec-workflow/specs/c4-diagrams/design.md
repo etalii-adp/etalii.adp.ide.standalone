@@ -71,23 +71,29 @@ The DSL allows a workspace to pull in other files. ADP reads them to build a com
 
 ```mermaid
 graph TD
-    subgraph seven module projects
-        Ctx[C4Context Diagram.cs] --> Lib
-        Cnt[C4Container Diagram.cs] --> Lib
-        Cmp[C4Component ...] --> Lib
-        Dyn[C4Dynamic / Deployment / Landscape / Code] --> Lib
+    %% Labels use the origin tags: mermaid reserves its own C4 keywords (C4Container,
+    %% C4Component, C4Dynamic), and they break flowchart labels even inside quotes.
+    subgraph Modules["seven module projects"]
+        Ctx["c4/context Diagram.cs"]
+        Cnt["c4/container Diagram.cs"]
+        Cmp["c4/component ..."]
+        Dyn["c4/dynamic, deployment, landscape, code"]
     end
-    subgraph Lib[EtAlii.Adp.Diagram.C4 - shared]
-        Doc[C4Document + C4DocumentStore] --> Model[C4Model + C4Views]
-        Model --> Rules[C4RuleSet - pure validator]
-        Model --> Layout[C4Layout + LayoutSidecar]
-        Model --> Mapper[C4ElementMapper]
-        Session[C4Session] --> Doc
+    subgraph Lib["EtAlii.Adp.Diagram.C4 - shared"]
+        Session["C4Session"] --> Doc["C4Document + C4DocumentStore"]
+        Doc --> Model["C4Model + C4Views"]
+        Model --> Rules["C4RuleSet - pure validator"]
+        Model --> Layout["C4Layout + LayoutSidecar"]
+        Model --> Mapper["C4ElementMapper"]
         Session --> Mapper
-        Cmds[Commands/] --> Doc
+        Cmds["Commands/"] --> Doc
     end
-    Core[EtAlii.Adp.Backend core] -->|Open watchId,rootPath,bodyPath,adpPath| Session
-    Mapper -->|Element/Delta + Any payloads| Client[C4Canvas client]
+    Ctx --> Lib
+    Cnt --> Lib
+    Cmp --> Lib
+    Dyn --> Lib
+    Core["EtAlii.Adp.Backend core"] -->|"Open(watchId, rootPath, bodyPath, adpPath)"| Session
+    Mapper -->|"Element/Delta + Any payloads"| Client["C4Canvas client"]
 ```
 
 The load path: router resolves `.adp` → body `.dsl` + view key → `C4SessionFactory.Open` → store parses `C4Document` → view resolved from `C4Views` → `C4Layout` computes positions, sidecar overrides where authored → `C4RuleSet` validates → `C4ElementMapper` emits the baseline. An edit runs a command against the document, the store raises a change, and every session on that body path re-maps and pushes deltas — including sessions opened through a *different* `.adp` (Requirement 1.2).

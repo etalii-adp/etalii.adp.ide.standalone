@@ -1,5 +1,13 @@
 # EtAlii.Adp
 
+## Chat naming
+
+Whenever a topic or specification is handled in a chat, rename the chat (session title, via the session-management `set_session_title` tool with `"self"`) to `Agent N - <topic/specification>` — e.g. `Agent 3 - wardley-map specification`. Rules:
+
+- If the chat's title already carries an agent number, keep that number intact and replace only the topic part.
+- If the chat has no agent number yet, add the `Agent` prefix and determine the next free number by listing the other sessions' titles and taking the highest existing `Agent N` plus one.
+- When the chat moves on to a new topic, rename again — same number, new topic — so the title always names what the chat is currently about.
+
 ## Git worktrees
 
 Actual development work — writing code, editing specs, running builds/tests — should always happen in a dedicated git worktree (`.claude/worktrees/<name>/`), never directly in this main checkout. Create a new worktree per distinct piece of work and merge it back into `develop` when done. Multiple sessions routinely work against this repository at the same time; working directly in the main checkout risks one session's `git add`/`git commit` sweeping up another's uncommitted changes via a shared index, exactly the kind of cross-contamination a dedicated worktree avoids.
