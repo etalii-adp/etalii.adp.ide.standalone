@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file diagrams.proto.
  */
 export const file_diagrams: GenFile = /*@__PURE__*/
-  fileDesc("Cg5kaWFncmFtcy5wcm90bxIKZXRhbGlpLmFkcCKIAQoST3BlbkRpYWdyYW1SZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAyABKAsyEC5ldGFsaWkuYWRwLlBhdGgirQEKEVVwZGF0ZVZpZXdSZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAyABKAsyEC5ldGFsaWkuYWRwLlBhdGgSJAoEdmlldxgEIAEoCzIWLmV0YWxpaS5hZHAuVmlld1VwZGF0ZSIjChJVcGRhdGVWaWV3UmVzcG9uc2USDQoFZXJyb3IYASABKAkiwgEKEk1vdmVFbGVtZW50UmVxdWVzdBIpCgpwcm9qZWN0X2lkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSJwoId2F0Y2hfaWQYAiABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBIeCgRwYXRoGAMgASgLMhAuZXRhbGlpLmFkcC5QYXRoEhIKCmVsZW1lbnRfaWQYBCABKAkSFQoNbmV3X3BhcmVudF9pZBgFIAEoCRINCgVpbmRleBgGIAEoBSIkChNNb3ZlRWxlbWVudFJlc3BvbnNlEg0KBWVycm9yGAEgASgJMuoBCg5EaWFncmFtU2VydmljZRI7CgRPcGVuEh4uZXRhbGlpLmFkcC5PcGVuRGlhZ3JhbVJlcXVlc3QaES5ldGFsaWkuYWRwLkRlbHRhMAESSwoKVXBkYXRlVmlldxIdLmV0YWxpaS5hZHAuVXBkYXRlVmlld1JlcXVlc3QaHi5ldGFsaWkuYWRwLlVwZGF0ZVZpZXdSZXNwb25zZRJOCgtNb3ZlRWxlbWVudBIeLmV0YWxpaS5hZHAuTW92ZUVsZW1lbnRSZXF1ZXN0Gh8uZXRhbGlpLmFkcC5Nb3ZlRWxlbWVudFJlc3BvbnNlQg2qAgpFdEFsaWkuQWRwYgZwcm90bzM", [file_shared, file_connection, file_deltas]);
+  fileDesc("Cg5kaWFncmFtcy5wcm90bxIKZXRhbGlpLmFkcCKIAQoST3BlbkRpYWdyYW1SZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAyABKAsyEC5ldGFsaWkuYWRwLlBhdGgirQEKEVVwZGF0ZVZpZXdSZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAyABKAsyEC5ldGFsaWkuYWRwLlBhdGgSJAoEdmlldxgEIAEoCzIWLmV0YWxpaS5hZHAuVmlld1VwZGF0ZSIjChJVcGRhdGVWaWV3UmVzcG9uc2USDQoFZXJyb3IYASABKAkiwgEKEk1vdmVFbGVtZW50UmVxdWVzdBIpCgpwcm9qZWN0X2lkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSJwoId2F0Y2hfaWQYAiABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBIeCgRwYXRoGAMgASgLMhAuZXRhbGlpLmFkcC5QYXRoEhIKCmVsZW1lbnRfaWQYBCABKAkSFQoNbmV3X3BhcmVudF9pZBgFIAEoCRINCgVpbmRleBgGIAEoBSIkChNNb3ZlRWxlbWVudFJlc3BvbnNlEg0KBWVycm9yGAEgASgJImMKFkRlc2NyaWJlVG9vbGJveFJlcXVlc3QSKQoKcHJvamVjdF9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAiABKAsyEC5ldGFsaWkuYWRwLlBhdGgiYwoLVG9vbGJveEl0ZW0SCgoCaWQYASABKAkSDQoFbGFiZWwYAiABKAkSDAoEaWNvbhgDIAEoCRITCgtkZXNjcmlwdGlvbhgEIAEoCRIWCg5kcm9wX2FjdGlvbl9pZBgFIAEoCSJBChdEZXNjcmliZVRvb2xib3hSZXNwb25zZRImCgVpdGVtcxgBIAMoCzIXLmV0YWxpaS5hZHAuVG9vbGJveEl0ZW0yxgIKDkRpYWdyYW1TZXJ2aWNlEjsKBE9wZW4SHi5ldGFsaWkuYWRwLk9wZW5EaWFncmFtUmVxdWVzdBoRLmV0YWxpaS5hZHAuRGVsdGEwARJLCgpVcGRhdGVWaWV3Eh0uZXRhbGlpLmFkcC5VcGRhdGVWaWV3UmVxdWVzdBoeLmV0YWxpaS5hZHAuVXBkYXRlVmlld1Jlc3BvbnNlEk4KC01vdmVFbGVtZW50Eh4uZXRhbGlpLmFkcC5Nb3ZlRWxlbWVudFJlcXVlc3QaHy5ldGFsaWkuYWRwLk1vdmVFbGVtZW50UmVzcG9uc2USWgoPRGVzY3JpYmVUb29sYm94EiIuZXRhbGlpLmFkcC5EZXNjcmliZVRvb2xib3hSZXF1ZXN0GiMuZXRhbGlpLmFkcC5EZXNjcmliZVRvb2xib3hSZXNwb25zZUINqgIKRXRBbGlpLkFkcGIGcHJvdG8z", [file_shared, file_connection, file_deltas]);
 
 /**
  * @generated from message etalii.adp.OpenDiagramRequest
@@ -170,6 +170,92 @@ export const MoveElementResponseSchema: GenMessage<MoveElementResponse> = /*@__P
   messageDesc(file_diagrams, 4);
 
 /**
+ * @generated from message etalii.adp.DescribeToolboxRequest
+ */
+export type DescribeToolboxRequest = Message<"etalii.adp.DescribeToolboxRequest"> & {
+  /**
+   * @generated from field: etalii.adp.ShortGuid project_id = 1;
+   */
+  projectId?: ShortGuid | undefined;
+
+  /**
+   * project-relative path of the diagram's .adp file
+   *
+   * @generated from field: etalii.adp.Path path = 2;
+   */
+  path?: Path | undefined;
+};
+
+/**
+ * Describes the message etalii.adp.DescribeToolboxRequest.
+ * Use `create(DescribeToolboxRequestSchema)` to create a new message.
+ */
+export const DescribeToolboxRequestSchema: GenMessage<DescribeToolboxRequest> = /*@__PURE__*/
+  messageDesc(file_diagrams, 5);
+
+/**
+ * One draggable entry in the Toolbox panel. Dropping it on an element executes
+ * `drop_action_id` against that element through the existing context-action path, so the
+ * drop shares one implementation - command, prompt, undo - with the menu and the keyboard.
+ *
+ * @generated from message etalii.adp.ToolboxItem
+ */
+export type ToolboxItem = Message<"etalii.adp.ToolboxItem"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string label = 2;
+   */
+  label: string;
+
+  /**
+   * @mdi/font class, e.g. "mdi-card-plus-outline"
+   *
+   * @generated from field: string icon = 3;
+   */
+  icon: string;
+
+  /**
+   * shown as the entry's tooltip/hint
+   *
+   * @generated from field: string description = 4;
+   */
+  description: string;
+
+  /**
+   * @generated from field: string drop_action_id = 5;
+   */
+  dropActionId: string;
+};
+
+/**
+ * Describes the message etalii.adp.ToolboxItem.
+ * Use `create(ToolboxItemSchema)` to create a new message.
+ */
+export const ToolboxItemSchema: GenMessage<ToolboxItem> = /*@__PURE__*/
+  messageDesc(file_diagrams, 6);
+
+/**
+ * @generated from message etalii.adp.DescribeToolboxResponse
+ */
+export type DescribeToolboxResponse = Message<"etalii.adp.DescribeToolboxResponse"> & {
+  /**
+   * @generated from field: repeated etalii.adp.ToolboxItem items = 1;
+   */
+  items: ToolboxItem[];
+};
+
+/**
+ * Describes the message etalii.adp.DescribeToolboxResponse.
+ * Use `create(DescribeToolboxResponseSchema)` to create a new message.
+ */
+export const DescribeToolboxResponseSchema: GenMessage<DescribeToolboxResponse> = /*@__PURE__*/
+  messageDesc(file_diagrams, 7);
+
+/**
  * One open diagram, as two correlated one-way legs (tech.md's "gRPC call shapes"): a browser
  * on grpc-web cannot stream a request body, so the bidirectional Connect this service was
  * first declared with could never have been called from the client. Open returns the delta
@@ -214,6 +300,19 @@ export const DiagramService: GenService<{
     methodKind: "unary";
     input: typeof MoveElementRequestSchema;
     output: typeof MoveElementResponseSchema;
+  },
+  /**
+   * The toolbox entries the open diagram's type contributes, described as data - the client
+   * renders a palette it does not understand, exactly as it renders context actions
+   * (tech.md's "Specifying a diagram type"). Static per type, so one ask per opened diagram;
+   * a type that contributes nothing answers with an empty list, and the panel says so.
+   *
+   * @generated from rpc etalii.adp.DiagramService.DescribeToolbox
+   */
+  describeToolbox: {
+    methodKind: "unary";
+    input: typeof DescribeToolboxRequestSchema;
+    output: typeof DescribeToolboxResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_diagrams, 0);

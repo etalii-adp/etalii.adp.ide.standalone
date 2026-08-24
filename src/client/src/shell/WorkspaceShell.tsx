@@ -6,6 +6,7 @@ import { SplitPane } from "./panes/SplitPane";
 import { TabbedPane } from "./panes/TabbedPane";
 import { DiagramTabsPanel } from "./panels/DiagramTabsPanel";
 import { DiagramViewProvider } from "./panels/DiagramViewContext";
+import { DiagramToolboxProvider } from "./panels/DiagramToolboxContext";
 import { ErrorsWarningsPanel } from "./panels/ErrorsWarningsPanel";
 import { HierarchyPanel } from "./panels/HierarchyPanel";
 import { PropertyGridPanel } from "./panels/PropertyGridPanel";
@@ -24,6 +25,7 @@ export function WorkspaceShell({ projectId, projectName, onBack }: WorkspaceShel
     // selection through hooks rather than wiring callbacks to each other.
     <ContextConnectionProvider projectId={projectId}>
       <DiagramViewProvider>
+      <DiagramToolboxProvider>
       <div className="shell">
         <div className="shell-header">
           <button type="button" className="shell-header-back" onClick={onBack}>
@@ -90,6 +92,7 @@ export function WorkspaceShell({ projectId, projectName, onBack }: WorkspaceShel
         </div>
         <ShellPromptHost />
       </div>
+      </DiagramToolboxProvider>
       </DiagramViewProvider>
     </ContextConnectionProvider>
   );
