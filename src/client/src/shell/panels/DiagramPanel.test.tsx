@@ -7,6 +7,10 @@ vi.mock("./mindmap/MindmapCanvas", () => ({
   MindmapCanvas: () => <div data-testid="mindmap-canvas" />,
 }));
 
+vi.mock("./c4/C4Canvas", () => ({
+  C4Canvas: () => <div data-testid="c4-canvas" />,
+}));
+
 function diagram(mimeType: string): OpenDiagram {
   return {
     projectId: new Uint8Array(16).fill(1),
@@ -28,6 +32,29 @@ describe("DiagramPanel", () => {
 
     expect(await screen.findByText("No canvas can render vendor/unheard-of diagrams yet.")).toBeTruthy();
     expect(await screen.findByText("architecture.adp")).toBeTruthy();
+  });
+
+  it.each([
+    "c4/context",
+    "c4/container",
+    "c4/component",
+    "c4/system-landscape",
+    "c4/dynamic",
+    "c4/deployment",
+  ])("routes %s to the shared C4 canvas", (mimeType) => {
+    // Six views of one notation, so one canvas - not six.
+    render(<DiagramPanel diagram={diagram(mimeType)} />);
+
+    expect(screen.getByTestId("c4-canvas")).toBeTruthy();
+  });
+
+  it("sends c4/code to its own notice rather than the C4 canvas", async () => {
+    // C4 specifies UML class or ER notation for the code level and advises generating it
+    // rather than drawing it, so this type waits on a class diagram type.
+    render(<DiagramPanel diagram={diagram("c4/code")} />);
+
+    expect(screen.queryByTestId("c4-canvas")).toBeNull();
+    expect(await screen.findByText(/UML class or entity-relationship notation/)).toBeTruthy();
   });
 
   it("keeps the generic fallback for no diagram at all", async () => {

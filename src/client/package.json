@@ -10,7 +10,7 @@
     "build": "tsc --noEmit && vite build",
     "pretypecheck": "npm run generate",
     "typecheck": "tsc --noEmit",
-    "generate": "buf generate ../api && buf generate ../diagrams/mindmap/api",
+    "generate": "buf generate ../api && buf generate ../diagrams/mindmap/api && buf generate ../diagrams/c4/api",
     "preview": "vite preview",
     "pretest": "npm run generate",
     "test": "vitest run"
