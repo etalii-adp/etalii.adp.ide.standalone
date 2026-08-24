@@ -382,4 +382,38 @@ describe("MindmapCanvas", () => {
       currentReportView = null;
     }
   });
+
+  it("reports the area the svg actually shows, not the bare viewBox", async () => {
+    // The svg letterboxes: with the default preserveAspectRatio the viewBox is fitted inside
+    // the element and centred, so the axis with room to spare displays more of the map than
+    // the box asks for. Reporting the box alone had the backend cull nodes that were on screen
+    // in that margin. jsdom reports no layout, so the surface is measured by hand here.
+    const reportView = vi.fn();
+    currentReportView = reportView;
+    const surfaceWidth = 800;
+    const surfaceHeight = 200; // deliberately a different aspect ratio than the content
+    const measure = vi
+      .spyOn(Element.prototype, "getBoundingClientRect")
+      .mockReturnValue({ x: 0, y: 0, width: surfaceWidth, height: surfaceHeight, top: 0, left: 0, right: surfaceWidth, bottom: surfaceHeight, toJSON: () => ({}) } as DOMRect);
+    try {
+      const { container } = render(<MindmapCanvas {...props} />);
+      const [boxX, boxY, boxW, boxH] = viewBoxOf(container);
+
+      await waitFor(() => expect(reportView).toHaveBeenCalled(), { timeout: 2000 });
+
+      const viewport = reportView.mock.calls.at(-1)![0];
+      const scale = Math.min(surfaceWidth / boxW, surfaceHeight / boxH);
+      // The reported rectangle stays centred on the viewBox but spans what the element covers.
+      expect(viewport.maxX - viewport.minX).toBeCloseTo(surfaceWidth / scale, 5);
+      expect(viewport.maxY - viewport.minY).toBeCloseTo(surfaceHeight / scale, 5);
+      expect((viewport.minX + viewport.maxX) / 2).toBeCloseTo(boxX + boxW / 2, 5);
+      expect((viewport.minY + viewport.maxY) / 2).toBeCloseTo(boxY + boxH / 2, 5);
+      // And it never reports less than the box itself, on either axis.
+      expect(viewport.minX).toBeLessThanOrEqual(boxX + 1e-9);
+      expect(viewport.maxY).toBeGreaterThanOrEqual(boxY + boxH - 1e-9);
+    } finally {
+      measure.mockRestore();
+      currentReportView = null;
+    }
+  });
 });

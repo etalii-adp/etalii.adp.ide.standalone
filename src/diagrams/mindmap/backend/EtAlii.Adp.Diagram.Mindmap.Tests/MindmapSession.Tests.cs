@@ -204,14 +204,27 @@ public class MindmapSessionTests : IDisposable
     {
         var session = Open();
         _ = session.Baseline(); // the service always streams the baseline first, which loads the document
-        // A tiny box around the root only.
+        var document = _documents.GetOrLoad(_bodyPath);
+        var grandchild = document.Root.Children.SelectMany(child => child.Children).First();
+
+        // Narrowing to a tiny box around the root. The connection starts unbounded, so this
+        // direction is all removals - asserting over the adds here passed against an empty
+        // collection and proved nothing.
         var narrow = session.UpdateView(new DiagramViewport(-20, -20, 20, 20));
-        Assert.All(AddedElements(narrow), element => Assert.Equal(_documents.GetOrLoad(_bodyPath).Root.Id, element.Id));
+
+        var removed = narrow.OfType<DiagramDelta.Remove>().SelectMany(remove => remove.ElementIds).ToHashSet(StringComparer.Ordinal);
+        Assert.DoesNotContain(document.Root.Id, removed);
+        // The root's children survive the narrowing even though the box does not reach them:
+        // the canvas anchors each connector on the boxes at both of its ends, so culling them
+        // would drop the lines leaving the root (Requirement 11.5).
+        Assert.All(document.Root.Children, child => Assert.DoesNotContain(child.Id, removed));
+        // One hop and no further, or a viewport would drag in the whole map.
+        Assert.Contains(grandchild.Id, removed);
 
         var wide = session.UpdateView(DiagramViewport.Unbounded);
 
-        // Widening brings the branches in; nothing is removed by widening.
-        Assert.Contains(AddedElements(wide), element => element.Id == "ID_411002937");
+        // Widening brings the rest back in; nothing is removed by widening.
+        Assert.Contains(AddedElements(wide), element => element.Id == grandchild.Id);
         Assert.Empty(wide.OfType<DiagramDelta.Remove>().SelectMany(remove => remove.ElementIds));
     }
 

@@ -26,13 +26,45 @@ public sealed class MindmapElementMapper
     /// <summary>
     /// Every node visible to a connection - inside its viewport, not under a fold - as an add.
     /// This is the baseline and the whole answer to a viewport change (Requirement 11.5).
+    /// <para>
+    /// "Inside" is generous on purpose, in two ways. A node the viewport merely overlaps counts
+    /// as in view, because the part of it that is on screen is a node the user can see. And each
+    /// in-view node brings its parent and its children with it, whether or not those fall inside
+    /// the viewport: the canvas draws a connector from the boxes at its two ends, so a node whose
+    /// parent was culled would lose the line running off the edge of the screen towards it.
+    /// </para>
+    /// <para>
+    /// The second rule stops at exactly one hop. Following the partners of partners would walk
+    /// the whole tree and deliver the entire map, which is what the viewport exists to avoid.
+    /// </para>
     /// </summary>
     public IReadOnlyList<DiagramElement> Visible(MindmapDocument document, MindmapViewState.ConnectionView view, DiagramViewport viewport)
     {
         var layout = MindmapLayout.Compute(document.Root, _metrics, view.IsFolded);
-        return document.Nodes
-            .Where(node => layout.ContainsKey(node.Id))
-            .Where(node => Intersects(layout[node.Id], viewport))
+        // Only nodes the layout placed exist at all: a folded branch's descendants have no box,
+        // and must not reappear through the partner rule below.
+        var placed = document.Nodes.Where(node => layout.ContainsKey(node.Id)).ToArray();
+
+        var delivered = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var node in placed.Where(node => Intersects(layout[node.Id], viewport)))
+        {
+            delivered.Add(node.Id);
+            if (node.Parent is { } parent)
+            {
+                delivered.Add(parent.Id);
+            }
+
+            foreach (var child in node.Children)
+            {
+                delivered.Add(child.Id);
+            }
+        }
+
+        // Filtered back over the placed nodes rather than emitted per hop: that dedupes a node
+        // reached several ways, drops any partner the layout never placed, and keeps the order
+        // the document has - so the same viewport always yields the same sequence.
+        return placed
+            .Where(node => delivered.Contains(node.Id))
             .Select(node => ToElement(node, layout[node.Id]))
             .ToArray();
     }

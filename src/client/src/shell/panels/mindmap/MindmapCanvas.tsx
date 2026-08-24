@@ -315,9 +315,8 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
       return;
     }
 
-    const box = viewRef.current;
     const timer = setTimeout(
-      () => reportViewRef.current({ minX: box.x, minY: box.y, maxX: box.x + box.w, maxY: box.y + box.h }),
+      () => reportViewRef.current(shownRectOf(viewRef.current, surfaceRef.current)),
       VIEW_REPORT_DEBOUNCE_MS,
     );
     return () => clearTimeout(timer);
@@ -514,6 +513,36 @@ function shortcutFor(event: React.KeyboardEvent): ContextShortcut | null {
   // the alias is resolved to it here - a key-to-key mapping, never a key-to-action one.
   const key = event.key === "Tab" ? "Insert" : event.key;
   return { key, ctrl: event.ctrlKey, shift: event.shiftKey, alt: event.altKey, meta: event.metaKey } as ContextShortcut;
+}
+
+/**
+ * What the svg actually puts on screen, in canvas units - which is not the viewBox. With the
+ * default `preserveAspectRatio` ("xMidYMid meet") the browser scales the box to fit inside the
+ * element and centres it, so whichever axis has room left over shows more of the map than the
+ * box asked for. Reporting the bare viewBox therefore understates the visible area, and the
+ * backend culls nodes sitting in that margin while the user is looking straight at them.
+ *
+ * Without a laid-out surface - jsdom, or before the first measure - the box is the best answer
+ * available and is reported unchanged.
+ */
+function shownRectOf(box: ViewBox, surface: SVGSVGElement | null): { minX: number; minY: number; maxX: number; maxY: number } {
+  const rect = surface?.getBoundingClientRect();
+  if (rect === undefined || rect.width <= 0 || rect.height <= 0 || box.w <= 0 || box.h <= 0) {
+    return { minX: box.x, minY: box.y, maxX: box.x + box.w, maxY: box.y + box.h };
+  }
+
+  // "meet" scales by whichever axis is the tighter fit; the other one then spans more units.
+  const scale = Math.min(rect.width / box.w, rect.height / box.h);
+  const shownWidth = rect.width / scale;
+  const shownHeight = rect.height / scale;
+  const centerX = box.x + box.w / 2;
+  const centerY = box.y + box.h / 2;
+  return {
+    minX: centerX - shownWidth / 2,
+    minY: centerY - shownHeight / 2,
+    maxX: centerX + shownWidth / 2,
+    maxY: centerY + shownHeight / 2,
+  };
 }
 
 /** The box that fits every element with a margin - what the canvas opens with and Fit to View returns to. */
