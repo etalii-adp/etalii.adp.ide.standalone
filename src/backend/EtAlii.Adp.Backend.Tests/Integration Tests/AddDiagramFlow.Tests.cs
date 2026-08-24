@@ -108,7 +108,7 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         throw new InvalidOperationException("The stream ended before a prompt arrived.");
     }
 
-    private string[] ProjectListing() => Directory.GetFileSystemEntries(_projectFolder, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal).ToArray();
+    //private string[] ProjectListing() => Directory.GetFileSystemEntries(_projectFolder, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal).ToArray();
 
     /// <summary>The first selectable leaf in the tree, depth first - a real diagram type to choose.</summary>
     private static ContextOption FirstLeaf(IEnumerable<ContextOption> options)
