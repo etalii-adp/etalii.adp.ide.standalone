@@ -108,7 +108,7 @@
   - _Requirements: 1.6, 1.7, 1.8, 5.6, 7.3, 7.4, 7.7_
   - _Prompt: Implement the task for spec errors-and-warnings-panel, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/TypeScript developer with accessibility experience | Task: Replace the ErrorsWarningsPanel placeholder with the real panel per design.md, and add its styles | Restrictions: the severity filter is view state only - the counts always show the whole set (design Deviation 3); "not checked yet" and "no problems found" must be visibly different (Requirement 1.7); one Tab stop in the list; the panel must not know what any action means - the menu and the ribbon render pushed data; do not touch RibbonContextualGroups or ContextMenu | Success: `npm run typecheck` clean; task 14's tests pass. Mark the task in progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 14. Test the panel
+- [-] 14. Test the panel
   - File: `src/client/src/shell/panels/ErrorsWarningsPanel.test.tsx` (new)
   - Renders problems with severity, message and path; counts shown; the filters narrow the list while the counts stay whole; `NeverValidated` and `Validated`-and-empty say different things; `Validating` shows progress; a truncated set says so; a stale row is marked; focus reports a `PROBLEMS` selection; right-click opens a menu from pushed actions; activating a row sets `pendingReveal`; exactly one Tab stop; Up/Down move and Enter activates, driven by real key events
   - Purpose: the panel's behaviour pinned so it cannot regress quietly
