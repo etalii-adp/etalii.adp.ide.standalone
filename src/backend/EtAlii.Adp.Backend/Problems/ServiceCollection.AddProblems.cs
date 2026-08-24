@@ -1,12 +1,11 @@
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Hierarchy;
-using EtAlii.Adp.Backend.Problems;
 using EtAlii.Adp.Diagram;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace EtAlii.Adp.Backend;
+namespace EtAlii.Adp.Backend.Problems;
 
 /// <summary>
 /// Registers the whole Problems area: the validator registry, the traversal, the store with

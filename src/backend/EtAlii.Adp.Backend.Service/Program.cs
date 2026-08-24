@@ -7,6 +7,7 @@ using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Backend.Diagrams;
+using EtAlii.Adp.Backend.Problems;
 using EtAlii.Adp.Diagram.Mindmap;
 using JetBrains.Annotations;
 using Serilog;
@@ -151,7 +152,7 @@ if (ambiguousExtensions.Count > 0)
 _ = app.Services.GetRequiredService<HistoryActionsBroadcaster>();
 // Same reason: the problem broadcaster must be subscribed to the problem store before the
 // first validation writes into it (errors-and-warnings-panel Requirement 1.1).
-_ = app.Services.GetRequiredService<EtAlii.Adp.Backend.Problems.ProblemBroadcaster>();
+_ = app.Services.GetRequiredService<ProblemBroadcaster>();
 
 // One summary line per HTTP request - method, path, status, elapsed - instead of the several
 // ASP.NET Core writes by default. The routine ones are filtered out by the Serilog.AspNetCore

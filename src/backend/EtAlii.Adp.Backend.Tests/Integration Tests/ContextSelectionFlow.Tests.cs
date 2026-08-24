@@ -52,8 +52,8 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
                 services.RemoveAll<Problems.IProblemStore>();
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
-                    provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<EtAlii.Adp.Diagram.DiagramValidators>()));
+                    provider.GetRequiredService<DiagramFileRouter>(),
+                    provider.GetRequiredService<Diagram.DiagramValidators>()));
             });
         });
     }
