@@ -1339,3 +1339,138 @@ button {
 .toolbox-panel-item-label {
   font-size: 0.85rem;
 }
+
+/* ---- errors & warnings panel ------------------------------------------------------- */
+
+.problems-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.problems-header {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.problems-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.problems-filter-on {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.problems-filter:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.problems-icon-error {
+  color: var(--color-danger);
+}
+
+.problems-icon-warning {
+  color: #d97706;
+}
+
+.problems-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.problems-validating {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.problems-empty {
+  margin: 0;
+  padding: 0.75rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.problems-list {
+  margin: 0;
+  padding: 0.25rem 0;
+  list-style: none;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.problems-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.85rem;
+  cursor: default;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.problems-row:hover {
+  background: var(--color-bg);
+}
+
+.problems-row:focus-visible {
+  outline: none;
+}
+
+.problems-row-focused {
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.problems-message {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.problems-path {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.problems-row-stale .problems-message,
+.problems-row-stale .problems-path {
+  opacity: 0.6;
+}
+
+.problems-stale {
+  margin-left: auto;
+  padding: 0 0.3rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+}
+
+.problems-truncated {
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}

@@ -70,6 +70,12 @@ export interface ContextConnectionValue {
   executeAction: (actionId: string, source?: ContextSource) => Promise<ActionOutcome>;
   /** Forgets a pending reveal, once whoever shows the hierarchy has acted on it. */
   clearReveal: () => void;
+  /**
+   * Asks whoever shows the hierarchy to reveal a project-relative path - what activating a
+   * problem does (errors-and-warnings-panel Requirement 7.7). The same mechanism a created
+   * file uses, so the explorer expands, focuses and activates it the one way it knows.
+   */
+  revealPath: (segments: string[]) => void;
   executeShortcut: (shortcut: ContextShortcut, source?: ContextSource) => Promise<ActionOutcome>;
 }
 
@@ -134,6 +140,11 @@ export function innermostKey(selection: ContextSelection | null | undefined): st
   const id = cursor?.id?.source;
   if (id?.case === "entryId") {
     return base64Encode(id.value.value);
+  }
+  if (id?.case === "problems") {
+    // The errors-and-warnings panel selecting itself is a selection like any other - above
+    // all to the ribbon, which shows the selection's actions only for a keyed selection.
+    return "problems";
   }
   return id?.case === "elementId" ? `element:${id.value.value}` : undefined;
 }
@@ -293,6 +304,7 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
       select,
       executeAction: (actionId, source) => execute({ case: "actionId", value: actionId }, source),
       clearReveal: () => setPendingReveal(null),
+      revealPath: (segments) => setPendingReveal(segments),
       executeShortcut: (shortcut, source) => execute({ case: "shortcut", value: shortcut }, source),
     }),
     [select, execute, setPendingReveal],
