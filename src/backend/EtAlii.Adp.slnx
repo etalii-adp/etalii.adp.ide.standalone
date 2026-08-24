@@ -17,6 +17,9 @@
   <Folder Name="/Diagrams/">
     <Project Path="../diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/EtAlii.Adp.Diagram.Mindmap.csproj" />
     <Project Path="../diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap.Tests/EtAlii.Adp.Diagram.Mindmap.Tests.csproj" />
+    <!-- The engine the seven c4-* modules share; they hold only their definition and registration. -->
+    <Project Path="../diagrams/c4/backend/EtAlii.Adp.C4/EtAlii.Adp.C4.csproj" />
+    <Project Path="../diagrams/c4/backend/EtAlii.Adp.C4.Tests/EtAlii.Adp.C4.Tests.csproj" />
     <Project Path="../diagrams/archimate-application/backend/EtAlii.Adp.Diagram.ArchimateApplication/EtAlii.Adp.Diagram.ArchimateApplication.csproj" />
     <Project Path="../diagrams/archimate-application/backend/EtAlii.Adp.Diagram.ArchimateApplication.Tests/EtAlii.Adp.Diagram.ArchimateApplication.Tests.csproj" />
     <Project Path="../diagrams/archimate-business/backend/EtAlii.Adp.Diagram.ArchimateBusiness/EtAlii.Adp.Diagram.ArchimateBusiness.csproj" />

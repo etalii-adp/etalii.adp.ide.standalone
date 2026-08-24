@@ -10,3 +10,6 @@
 # `-text` tells git to leave the bytes exactly as committed on every platform. Replace a
 # fixture only by committing what the authoring tool actually wrote.
 *.mm -text
+
+# C4 model documents are compared byte for byte for the same reason (c4-diagrams Requirement 3.1).
+*.dsl -text
