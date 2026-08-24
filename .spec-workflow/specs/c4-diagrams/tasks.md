@@ -48,7 +48,8 @@
   - _Requirements: 2.3, 2.4_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer working in core | Task: Add optional body/view headers to the .adp format and resolve them, falling back to the derived sibling | Restrictions: a file with no headers must behave exactly as today; refuse any body path escaping the project root; do not make core interpret the view key | Success: headered and unheadered files both resolve correctly, escape attempts are refused with a test proving it, and every existing mindmap routing test still passes unchanged_
 
-- [ ] 4. Route a named body, and a bare `.dsl`, to the C4 family
+- [x] 4. Route a named body, and a bare `.dsl`, to the C4 family
+  - **Done, and it required relaxing the shared-extension guard.** All seven C4 types declare `.dsl`, which `AmbiguousExtensions`/`RouteBody` treated as a deployment error - making Requirement 2.6 impossible to satisfy. Several types of *one vendor* sharing a document format is a design, not a collision: the document's declared view picks the type, and all seven resolve to one engine. The guard now fires only across vendors, which is the case it was actually for. The "first declared view" half of 2.6 lands with the parser (task 10) and the session factory (task 24)
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/DiagramFileRouter.cs` (modify), its test file (modify)
   - Use the resolved body from task 3; a `.dsl` present without an `.adp` sibling routes through extension and defaults to the document's first declared view
   - Purpose: Requirements 2.5, 2.6
