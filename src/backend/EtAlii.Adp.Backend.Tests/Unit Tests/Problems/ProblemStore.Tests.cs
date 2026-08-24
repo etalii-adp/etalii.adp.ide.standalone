@@ -58,7 +58,7 @@ public class ProblemStoreTests : IDisposable
     {
         using var store = Store();
 
-        store.Replace(_root, [Problem("a.adp", DiagramProblemSeverity.Error), Problem("b.adp", DiagramProblemSeverity.Warning)]);
+        store.Replace(_root, [Problem("a.adp"), Problem("b.adp", DiagramProblemSeverity.Warning)]);
 
         var set = store.Get(_root);
         Assert.Equal(ProjectProblemSetState.Validated, set.State);
@@ -270,7 +270,7 @@ public class ProblemStoreTests : IDisposable
         using (var store = Store())
         {
             store.Replace(_root, [
-                Problem("a.adp", DiagramProblemSeverity.Error, location: location),
+                Problem("a.adp", location: location),
                 Problem("b.adp", DiagramProblemSeverity.Warning),
             ]);
         } // Dispose keeps the pending debounced write.
@@ -341,8 +341,8 @@ public class ProblemStoreTests : IDisposable
     {
         using var store = Store(maxReported: 2);
         store.Replace(_root, [
-            Problem("a.adp", DiagramProblemSeverity.Error),
-            Problem("b.adp", DiagramProblemSeverity.Error),
+            Problem("a.adp"),
+            Problem("b.adp"),
             Problem("c.adp", DiagramProblemSeverity.Warning),
         ]);
 
