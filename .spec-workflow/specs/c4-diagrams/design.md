@@ -195,7 +195,7 @@ The single-diagram case is still two sibling files with one base name and no hea
 2. **`body:` names a missing file** — the `diagram-workspace-tabs` unavailable state naming the path (2.5).
 3. **`body:` escapes the project root** — routing refuses; the entry is not a diagram (2.4).
 4. **`view:` names no view in the document** — unavailable state listing the views the document does declare.
-5. **Edit landing in an `!include`d file** — command refused: "defined in <file>, which ADP does not edit" (Prerequisite 4).
+5. **Edit landing in an `!include`d file** — command refused: "defined in `<file>`, which ADP does not edit" (Prerequisite 4).
 6. **Sidecar unreadable** — computed layout, diagram opens, sidecar rewritten on next authored move (3.6).
 7. **Structural refusals** — wrong kind for the view (10.1), containment cycle (10.6): refused at the command with the permitted-kinds explanation; never saved, never a violation entry.
 8. **`c4/code` opened** — not-available state naming the class-notation dependency (11.7).
