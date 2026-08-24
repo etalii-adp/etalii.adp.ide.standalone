@@ -28,6 +28,12 @@ service DiagramService {
   // project's history and is one undo away, and the resulting document change reaches every
   // open view as ordinary deltas.
   rpc MoveElement(MoveElementRequest) returns (MoveElementResponse);
+
+  // The toolbox entries the open diagram's type contributes, described as data - the client
+  // renders a palette it does not understand, exactly as it renders context actions
+  // (tech.md's "Specifying a diagram type"). Static per type, so one ask per opened diagram;
+  // a type that contributes nothing answers with an empty list, and the panel says so.
+  rpc DescribeToolbox(DescribeToolboxRequest) returns (DescribeToolboxResponse);
 }
 
 message OpenDiagramRequest {
@@ -60,4 +66,24 @@ message MoveElementRequest {
 message MoveElementResponse {
   // Empty on success; the module's own reason otherwise - a move into its own branch, say.
   string error = 1;
+}
+
+message DescribeToolboxRequest {
+  ShortGuid project_id = 1;
+  Path path = 2; // project-relative path of the diagram's .adp file
+}
+
+// One draggable entry in the Toolbox panel. Dropping it on an element executes
+// `drop_action_id` against that element through the existing context-action path, so the
+// drop shares one implementation - command, prompt, undo - with the menu and the keyboard.
+message ToolboxItem {
+  string id = 1;
+  string label = 2;
+  string icon = 3;        // @mdi/font class, e.g. "mdi-card-plus-outline"
+  string description = 4; // shown as the entry's tooltip/hint
+  string drop_action_id = 5;
+}
+
+message DescribeToolboxResponse {
+  repeated ToolboxItem items = 1;
 }

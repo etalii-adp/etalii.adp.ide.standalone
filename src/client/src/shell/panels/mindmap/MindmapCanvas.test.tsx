@@ -21,6 +21,12 @@ vi.mock("./useMindmapStream", () => ({
   useMindmapStream: () => ({ model: currentModel, loading: false, failed: currentFailed, reportView: (v: unknown) => currentReportView?.(v), moveElement }),
 }));
 
+// The palette fetch talks gRPC through useAuth; the canvas under test gets its answer here.
+let currentToolboxItems: unknown[] = [];
+vi.mock("../useToolboxItems", () => ({
+  useToolboxItems: () => currentToolboxItems,
+}));
+
 vi.mock("../../context/ContextConnectionProvider", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../context/ContextConnectionProvider")>();
   return {
@@ -262,6 +268,74 @@ describe("MindmapCanvas", () => {
     fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 40, clientY: 0 });
     fireEvent.mouseOver(alpha); // held back over itself
     expect(alpha.classList.contains("mindmap-node-drop-target")).toBe(false);
+  });
+
+  it("shows the drag's outcome mid-drag: a ghost at the pointer, a preview connector to the candidate parent", () => {
+    const { container } = render(<MindmapCanvas {...props} />);
+    const [root, alpha] = [...container.querySelectorAll(".mindmap-node")];
+
+    fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
+    expect(container.querySelector("[data-testid=mindmap-drag-preview]")).toBeNull(); // nothing until it moves
+
+    fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 40, clientY: 0 });
+    // Moved: the ghost travels, the original dims, but with no candidate parent no connector yet.
+    expect(container.querySelector("[data-testid=mindmap-drag-preview]")).not.toBeNull();
+    expect(container.querySelector(".mindmap-node-ghost")?.textContent).toContain("Alpha");
+    expect(alpha.classList.contains("mindmap-node-dragging")).toBe(true);
+    expect(container.querySelector(".mindmap-edge-preview")).toBeNull();
+
+    fireEvent.mouseOver(root);
+    // Held over the root: the connector the drop would create is on screen before the release.
+    expect(container.querySelector(".mindmap-edge-preview")).not.toBeNull();
+
+    fireEvent.mouseUp(root);
+    expect(container.querySelector("[data-testid=mindmap-drag-preview]")).toBeNull();
+    expect(alpha.classList.contains("mindmap-node-dragging")).toBe(false);
+  });
+
+  it("does not offer a node inside the dragged branch as a drop target", () => {
+    currentModel = seed(node("root", "Root", 0, 0), node("a", "Alpha", 120, -20, "root"), node("b", "Beta", 240, -20, "a"));
+    const { container } = render(<MindmapCanvas {...props} />);
+    const beta = [...container.querySelectorAll(".mindmap-node")][2];
+
+    fireEvent.mouseDown(container.querySelectorAll(".mindmap-node")[1], { clientX: 120, clientY: -20 });
+    fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 40, clientY: 0 });
+    fireEvent.mouseOver(beta); // Beta sits inside Alpha's branch: the move would be refused
+    expect(beta.classList.contains("mindmap-node-drop-target")).toBe(false);
+    expect(container.querySelector(".mindmap-edge-preview")).toBeNull();
+  });
+
+  it("executes a toolbox entry's action against the node it is dropped on", () => {
+    const { container } = render(<MindmapCanvas {...props} />);
+    const root = container.querySelectorAll(".mindmap-node")[0];
+    const dataTransfer = {
+      types: ["application/x-adp-toolbox-item"],
+      dropEffect: "",
+      getData: (type: string) => (type === "application/x-adp-toolbox-item" ? "mindmap.add-child" : ""),
+    };
+
+    fireEvent.dragOver(root, { dataTransfer });
+    expect(root.classList.contains("mindmap-node-drop-target")).toBe(true);
+
+    fireEvent.drop(root, { dataTransfer });
+    expect(root.classList.contains("mindmap-node-drop-target")).toBe(false);
+    expect(executeAction).toHaveBeenCalledTimes(1);
+    const [actionId, source] = (executeAction as ReturnType<typeof vi.fn>).mock.calls[0] as [string, { source: { case: string; value: { value: string } } }];
+    expect(actionId).toBe("mindmap.add-child");
+    expect(source.source.case).toBe("elementId");
+    expect(source.source.value.value).toBe("root");
+  });
+
+  it("ignores a drag that is not a toolbox entry", () => {
+    const { container } = render(<MindmapCanvas {...props} />);
+    const root = container.querySelectorAll(".mindmap-node")[0];
+    const dataTransfer = { types: ["text/plain"], dropEffect: "", getData: () => "" };
+
+    fireEvent.dragOver(root, { dataTransfer });
+    expect(root.classList.contains("mindmap-node-drop-target")).toBe(false);
+
+    fireEvent.drop(root, { dataTransfer });
+    expect(executeAction).not.toHaveBeenCalled();
   });
 
   it("right-clicking a node selects it with the menu gesture, and the menu opens on the backend's answer", () => {
