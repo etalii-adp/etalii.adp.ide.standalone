@@ -19,4 +19,36 @@ public sealed record ContextSelectionRecord(
 {
     /// <summary>The level the user actually acted on.</summary>
     public ContextResolvedLevel Innermost => Levels[^1];
+
+    /// <summary>
+    /// The one place backend context records become wire messages, shared by the service
+    /// and the selection store so a pushed selection and a discovered action list always
+    /// have the same shape.
+    /// </summary>
+    /// <param name="record">The context selection record to map.</param>
+    /// <param name="rootActions">
+    /// What applies when nothing is selected - the project root's actions. Carried on the
+    /// "nothing selected" message so the explorer's empty space has a menu without a round
+    /// trip; the selection itself stays absent, because nothing is selected.
+    /// </param>
+    /// <param name="transient">Whether the selection is transient.</param>
+    public static ContextMessage ToWire(
+        ContextSelectionRecord? record,
+        IReadOnlyList<ContextActionGroupDefinition>? rootActions = null,
+        bool transient = false)
+    {
+        var changed = new ContextSelectionChanged { Transient = transient };
+        if (record is not null)
+        {
+            changed.Selection = record.Chain;
+            changed.Levels.AddRange(record.Levels.Select(level => level.Detail));
+            changed.Actions.AddRange(record.Actions.Select(ContextActionGroupDefinition.ToProto));
+        }
+        else if (rootActions is not null)
+        {
+            changed.Actions.AddRange(rootActions.Select(ContextActionGroupDefinition.ToProto));
+        }
+
+        return new ContextMessage { Selection = changed };
+    }
 }

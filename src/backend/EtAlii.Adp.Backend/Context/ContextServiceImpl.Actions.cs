@@ -33,7 +33,7 @@ public sealed partial class ContextServiceImpl
         }
 
         var groups = await _contextActionResolver.DiscoverAsync(target, context.CancellationToken);
-        response.Groups.AddRange(groups.Select(ContextMessageMapper.ToProto));
+        response.Groups.AddRange(groups.Select(ContextActionGroupDefinition.ToProto));
         _logger.Debug(
             "Discovered {GroupCount} action groups for {TargetPath} on watch {WatchId}",
             response.Groups.Count,

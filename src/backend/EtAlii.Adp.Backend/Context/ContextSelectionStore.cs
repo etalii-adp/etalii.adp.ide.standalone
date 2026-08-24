@@ -12,7 +12,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
     private static readonly ILogger _logger = Log.ForContext<ContextSelectionStore>();
 
     private readonly TimeSpan _idleTimeout;
-    private readonly ConcurrentDictionary<ShortGuid, Entry> _entries = new();
+    private readonly ConcurrentDictionary<ShortGuid, ContextSelectionStoreEntry> _entries = new();
 
     public ContextSelectionStore(TimeSpan? idleTimeout = null)
     {
@@ -37,14 +37,14 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
             entry.ProjectActions = projectActions;
             // The baseline: the selection (or the root's actions when nothing is selected), and
             // the project's own actions, so a connection is fully current the moment it registers.
-            writer.TryWrite(ContextMessageMapper.ToMessage(entry.Record, entry.RootActions));
-            writer.TryWrite(ContextMessageMapper.ToProjectActionsMessage(projectActions));
+            writer.TryWrite(ContextSelectionRecord.ToWire(entry.Record, entry.RootActions));
+            writer.TryWrite(ContextActionGroupDefinition.ToProto(projectActions));
         }
     }
 
     public void PushProjectActions(string rootPath, IReadOnlyList<ContextActionGroupDefinition> actions)
     {
-        var message = ContextMessageMapper.ToProjectActionsMessage(actions);
+        var message = ContextActionGroupDefinition.ToProto(actions);
         foreach (var entry in _entries.Values)
         {
             lock (entry.Gate)
@@ -96,7 +96,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
 
             entry.Record = record with { Tracks = tracks };
             entry.Rediscover = rediscover;
-            entry.Writer?.TryWrite(ContextMessageMapper.ToMessage(entry.Record));
+            entry.Writer?.TryWrite(ContextSelectionRecord.ToWire(entry.Record));
         }
     }
 
@@ -107,7 +107,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         {
             DisposeTracks(entry.Record);
             entry.Record = null;
-            entry.Writer?.TryWrite(ContextMessageMapper.ToMessage(null, entry.RootActions));
+            entry.Writer?.TryWrite(ContextSelectionRecord.ToWire(null, entry.RootActions));
         }
     }
 
@@ -145,7 +145,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
 
         lock (entry.Gate)
         {
-            entry.Writer?.TryWrite(ContextMessageMapper.ToMessage(record, transient: true));
+            entry.Writer?.TryWrite(ContextSelectionRecord.ToWire(record, transient: true));
         }
     }
 
@@ -189,7 +189,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         }
     }
 
-    private static async Task RediscoverAndPushAsync(Entry entry, ContextSelectionRecord rewritten, ContextRediscovery? rediscover)
+    private static async Task RediscoverAndPushAsync(ContextSelectionStoreEntry entry, ContextSelectionRecord rewritten, ContextRediscovery? rediscover)
     {
         var updated = rewritten;
         if (rediscover is not null)
@@ -218,7 +218,7 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
             }
 
             entry.Record = updated with { Tracks = rewritten.Tracks };
-            entry.Writer?.TryWrite(ContextMessageMapper.ToMessage(entry.Record));
+            entry.Writer?.TryWrite(ContextSelectionRecord.ToWire(entry.Record));
         }
     }
 
@@ -259,14 +259,14 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         return System.IO.Path.Combine([basePath, .. newRelativePath]);
     }
 
-    private Entry GetOrCreate(ShortGuid watchId) => _entries.GetOrAdd(watchId, CreateEntry);
+    private ContextSelectionStoreEntry GetOrCreate(ShortGuid watchId) => _entries.GetOrAdd(watchId, CreateEntry);
 
-    private Entry CreateEntry(ShortGuid watchId)
+    private ContextSelectionStoreEntry CreateEntry(ShortGuid watchId)
     {
         // A selection recorded before any stream opens must not outlive a client that
         // never comes back - the same eviction HierarchyModelStore applies to a model
         // that ListEntries created but no WatchHierarchy ever claimed.
-        return new Entry
+        return new ContextSelectionStoreEntry
         {
             IdleTimer = new Timer(_ => EvictIfIdle(watchId), null, _idleTimeout, Timeout.InfiniteTimeSpan),
         };
@@ -291,27 +291,5 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         {
             track.Dispose();
         }
-    }
-
-    private sealed class Entry
-    {
-        public object Gate { get; } = new();
-        public ChannelWriter<ContextMessage>? Writer { get; set; }
-        public ContextSelectionRecord? Record { get; set; }
-        public ContextRediscovery? Rediscover { get; set; }
-        public Timer? IdleTimer { get; set; }
-
-        /// <summary>
-        /// The project root's actions, given on Register and carried on every "nothing
-        /// selected" message. Computed once per Watch: they depend only on the root existing
-        /// and on the discovered diagram types, both stable for a connection's lifetime.
-        /// </summary>
-        public IReadOnlyList<ContextActionGroupDefinition>? RootActions { get; set; }
-
-        /// <summary>The project this connection belongs to; a project-actions push reaches only matching entries.</summary>
-        public string RootPath { get; set; } = "";
-
-        /// <summary>The project actions last sent, held so a re-registration re-sends them.</summary>
-        public IReadOnlyList<ContextActionGroupDefinition>? ProjectActions { get; set; }
     }
 }
