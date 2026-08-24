@@ -2,9 +2,9 @@
 
 ## Overview
 
-Seven `.adp` types, one engine. The seven scaffolded module projects (`EtAlii.Adp.Diagram.C4Context` … `C4SystemLandscape`) stay as thin as they are today — each keeps its `Diagram.Definition` and registers the shared factories under its own origin — and everything real lives in one shared library, `EtAlii.Adp.Diagram.C4`, plus one client canvas. That is the design expression of Requirement 1's "one model, seven views": the modules differ only in which **view kind** they bind, and the view kind is data, not code.
+Seven `.adp` types, one engine. The seven scaffolded module projects (`EtAlii.Adp.Diagram.C4Context` … `C4SystemLandscape`) stay as thin as they are today — each keeps its `Diagram.Definition` and registers the shared factories under its own origin — and everything real lives in one shared library, `EtAlii.Adp.C4`, plus one client canvas. That is the design expression of Requirement 1's "one model, seven views": the modules differ only in which **view kind** they bind, and the view kind is data, not code.
 
-The model is a Structurizr DSL document (`.dsl`), parsed into a `C4Document` that — like `MindmapDocument` before it — remembers the exact bytes it was given and edits lines rather than regenerating text (Requirement 3). Views resolve against that model; layout is computed in the backend with authored positions layered on top from a sidecar (Requirement 8); the C4 rules are a pure validator whose findings travel to the client as data (Requirement 10); and every element, relationship, boundary and violation reaches the canvas through the existing `Element`/`Delta` vocabulary with `Any` payloads, exactly as the mindmap does.
+The model is a Structurizr DSL document (`.dsl`), parsed into a `C4Document` that — like `MindmapDocument` before it — remembers the exact bytes it was given and edits lines rather than regenerating text (Requirement 3). Views resolve against that model; layout is computed in the backend with authored positions layered on top from a sidecar (Requirement 8); the C4 rules are a pure validator reporting through core's `IDiagramValidator` (Requirement 10); and every element, relationship and boundary reaches the canvas through the existing `Element`/`Delta` vocabulary with `Any` payloads, exactly as the mindmap does.
 
 One core change carries all of this, and it is the one the requirements name (Requirement 2.4): an `.adp` registration file learns to **name** its body document and its view, instead of core deriving the body from the `.adp`'s own base name.
 
@@ -44,7 +44,7 @@ The DSL allows a workspace to pull in other files. ADP reads them to build a com
 
 ### Project Structure (structure.md)
 
-* Shared library at `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/` with `EtAlii.Adp.Diagram.C4.Tests/` beside it, and the wire payloads at `src/diagrams/c4/api/c4.proto` — the mindmap's folder convention, applied to the family.
+* Shared library at `src/diagrams/c4/backend/EtAlii.Adp.C4/` with `EtAlii.Adp.C4.Tests/` beside it, and the wire payloads at `src/diagrams/c4/api/c4.proto` — the mindmap's folder convention, applied to the family. **Named outside the `EtAlii.Adp.Diagram.*` namespace on purpose**: that prefix is the module naming convention, and a discovery test asserts every such assembly declares a `Diagram.Definition`. A shared engine declares none, so it is named out of the convention rather than weakening the guard.
 * The seven existing scaffolds keep their locations and names; each references the shared library. Dependency direction: seven modules → shared library → core. Core references none of them.
 * Client code at `src/client/src/shell/panels/c4/` — `C4Canvas.tsx`, `useC4Stream.ts`, `c4Model.ts` — mirroring `panels/mindmap/`.
 
@@ -107,7 +107,7 @@ The load path: router resolves `.adp` → body `.dsl` + view key → `C4SessionF
 
 ### Modular design principles
 
-Parsing, layout, mapping and validation are four units with no references among them; `C4Session` composes them. `C4RuleSet` is a pure function `(C4Model, C4View) → IReadOnlyList<C4Violation>` (requirements' NFR), so every rule test is a data test.
+Parsing, layout, mapping and validation are four units with no references among them; `C4Session` composes them. `C4RuleSet` is a pure function `C4Workspace → IReadOnlyList<DiagramProblem>` (requirements' NFR), so every rule test is a data test.
 
 ## Components and Interfaces
 
@@ -129,7 +129,9 @@ Immutable-ish object model with the containment invariants of Requirement 10.6 e
 
 ### `C4RuleSet` (shared, new)
 
-Pure validator returning `C4Violation(elementId?, relationshipId?, ruleId, message)` for: kind-not-permitted-on-view, missing description, missing technology on container/component, unlabelled relationship, missing protocol on a boundary-crossing relationship, mixed abstraction levels on a dynamic view. Structural refusals (10.1 placement, 10.6 cycles) are *not* violations — they are command-level refusals that never reach the file.
+Pure validator returning core's own **`DiagramProblem(Severity, Message, RuleId, Location?)`** for: kind-not-permitted-on-view, missing description, missing technology on container/component, unlabelled relationship, missing protocol between containers, dangling relationship, unknown view scope, empty view, mixed abstraction levels on a dynamic view. Rule ids are prefixed `c4.` per core's convention. Structural refusals (10.1 placement, 10.6 cycles) are *not* problems — they are command-level refusals that never reach the file.
+
+**Amended during implementation.** The design named a private `C4Violation`, written before `errors-and-warnings-panel` landed. That spec added `IDiagramValidator`, `DiagramProblem` and a `DiagramProblemLocation.ElementId` whose documented purpose is that "activating the problem can select the element" — exactly Requirement 10.8. A thin `C4Validator : IDiagramValidator` per origin adapts the pure rule set to it, so C4's warnings reach the errors and warnings panel like every other type's, and no private violation type exists.
 
 ### `C4Layout` + `LayoutSidecar` (shared, new)
 
@@ -176,9 +178,8 @@ message C4Style { string background; string text; string shape; string border; }
 message C4ElementPayload { C4ElementKind kind; string name; string description; string technology; bool external; string parent_id; double width; double height; C4Style style; }
 message C4RelationshipPayload { string source_id; string destination_id; string description; string technology; string interaction_order; }
 message C4BoundaryPayload { string name; string kind; double width; double height; }
-message C4Violation { string element_id; string rule_id; string message; }
 message C4LegendEntry { string label; C4Style style; }
-message C4ViewPayload { string title; string view_kind; repeated C4LegendEntry legend; repeated C4Violation violations; }
+message C4ViewPayload { string title; string view_kind; string view_key; repeated C4LegendEntry legend; }
 ```
 
 Width/height are the backend-measured boxes — the lesson the mindmap's overlap bug taught, applied from day one.
@@ -231,6 +232,6 @@ Manual pass per `tests.md` conventions: create context + container views over on
 ## Deviations and notes
 
 * **Relationships are elements on the wire.** The mindmap derives its edges from `parent_id`; C4 relationships carry their own identity, labels, technology and actions, so each is a `DiagramElement`. This stays inside the existing vocabulary — nothing in the contract says an element must be a box.
-* **Violations travel on the view payload,** not a new channel: they are view-state, they change with edits like any other view-state, and the existing delta stream is already the mechanism for view-state.
+* **Problems do *not* travel on the view payload.** The design originally put them there. Core already pushes a project's problems to every connection (`context.proto`'s `ProjectProblems`), located by element id for this very purpose, so a copy on the view payload would be a second delivery of the same facts — two things to keep in step that would eventually disagree. The view payload carries only the title and the legend; the canvas reads problems from the push it already receives.
 * **The layout sidecar is per model document** (`<name>.layout.json`), keyed by view, rather than per `.adp` — positions belong to the view, and the view belongs to the document.
 * **Structurizr DSL parsing is a hand-written subset parser**, like `MindmapDocument`'s XML handling wraps `XDocument`: no Java Structurizr dependency, no ANTLR grammar import; the subset is defined by what the model needs and everything else round-trips untouched.
