@@ -143,7 +143,7 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
     {
         rootPath = "";
         bodyPath = "";
-        origin = default!;
+        origin = null!;
 
         var userId = SessionContext.GetUserId(context);
         if (!ProjectRootResolver.TryResolve(_projectStore, userId, projectId, out rootPath, out _))

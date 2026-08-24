@@ -32,10 +32,17 @@ public sealed class DiagramViewportRegistry : IDiagramViewportRegistry
 {
     private readonly ConcurrentDictionary<(ShortGuid WatchId, string BodyPath), (IDiagramSession Session, Action<DiagramViewport> OnReported)> _byConnection = new();
 
-    public void Register(ShortGuid watchId, string bodyPath, IDiagramSession session, Action<DiagramViewport> onReported) =>
+    public void Register(
+        ShortGuid watchId,
+        string bodyPath,
+        IDiagramSession session,
+        Action<DiagramViewport> onReported) =>
         _byConnection[Key(watchId, bodyPath)] = (session, onReported);
 
-    public bool Report(ShortGuid watchId, string bodyPath, DiagramViewport viewport)
+    public bool Report(
+        ShortGuid watchId,
+        string bodyPath,
+        DiagramViewport viewport)
     {
         if (!_byConnection.TryGetValue(Key(watchId, bodyPath), out var entry))
         {
