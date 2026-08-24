@@ -10,7 +10,7 @@ public interface IProblemStore
     /// <summary>
     /// The project's current set, with each entry's staleness computed against the file as
     /// it is now (Requirement 4.4). A project never validated answers an empty
-    /// <see cref="ProblemSetState.NeverValidated"/> set - which is not the same as clean.
+    /// <see cref="ProjectProblemSetState.NeverValidated"/> set - which is not the same as clean.
     /// </summary>
     ProjectProblemSet Get(string rootPath);
 

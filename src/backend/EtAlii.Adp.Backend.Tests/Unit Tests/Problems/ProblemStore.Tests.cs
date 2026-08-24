@@ -45,7 +45,7 @@ public class ProblemStoreTests : IDisposable
 
         var set = store.Get(_root);
 
-        Assert.Equal(ProblemSetState.NeverValidated, set.State);
+        Assert.Equal(ProjectProblemSetState.NeverValidated, set.State);
         Assert.Empty(set.Problems);
         Assert.Equal(0, set.ErrorCount);
         Assert.Equal(0, set.WarningCount);
@@ -61,7 +61,7 @@ public class ProblemStoreTests : IDisposable
         store.Replace(_root, [Problem("a.adp", DiagramProblemSeverity.Error), Problem("b.adp", DiagramProblemSeverity.Warning)]);
 
         var set = store.Get(_root);
-        Assert.Equal(ProblemSetState.Validated, set.State);
+        Assert.Equal(ProjectProblemSetState.Validated, set.State);
         Assert.Equal(2, set.Problems.Count);
         Assert.Equal(1, set.ErrorCount);
         Assert.Equal(1, set.WarningCount);
@@ -75,7 +75,7 @@ public class ProblemStoreTests : IDisposable
 
         store.Replace(_root, []);
 
-        Assert.Equal(ProblemSetState.Validated, store.Get(_root).State);
+        Assert.Equal(ProjectProblemSetState.Validated, store.Get(_root).State);
     }
 
     [Fact]
@@ -258,7 +258,7 @@ public class ProblemStoreTests : IDisposable
         using var reborn = Store();
         var set = reborn.Get(_root);
 
-        Assert.Equal(ProblemSetState.Validated, set.State);
+        Assert.Equal(ProjectProblemSetState.Validated, set.State);
         Assert.Equal(2, set.Problems.Count);
         Assert.Equal(1, set.ErrorCount);
         Assert.Equal(1, set.WarningCount);
@@ -279,7 +279,7 @@ public class ProblemStoreTests : IDisposable
         using var reborn = Store();
         var set = reborn.Get(_root);
 
-        Assert.Equal(ProblemSetState.NeverValidated, set.State);
+        Assert.Equal(ProjectProblemSetState.NeverValidated, set.State);
         Assert.Empty(set.Problems);
     }
 
@@ -295,7 +295,7 @@ public class ProblemStoreTests : IDisposable
 
         using var reborn = Store();
 
-        Assert.Equal(ProblemSetState.NeverValidated, reborn.Get(_root).State);
+        Assert.Equal(ProjectProblemSetState.NeverValidated, reborn.Get(_root).State);
     }
 
     [Fact]

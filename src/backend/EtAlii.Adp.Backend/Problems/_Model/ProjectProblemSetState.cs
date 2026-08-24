@@ -5,7 +5,7 @@ namespace EtAlii.Adp.Backend.Problems;
 /// never checked and an empty list that was checked and found clean are different truths,
 /// and the panel says different things for them (Requirement 1.7).
 /// </summary>
-public enum ProblemSetState
+public enum ProjectProblemSetState
 {
     /// <summary>No validation has ever run for this project - the list says nothing yet.</summary>
     NeverValidated,

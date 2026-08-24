@@ -149,7 +149,7 @@ public class ProblemMaintenanceTests : IDisposable
             get { lock (_mutations) { return _mutations.ToArray(); } }
         }
 
-        public ProjectProblemSet Get(string rootPath) => new(ProblemSetState.NeverValidated, [], 0, 0, 0);
+        public ProjectProblemSet Get(string rootPath) => new(ProjectProblemSetState.NeverValidated, [], 0, 0, 0);
 
         public void Replace(string rootPath, IReadOnlyList<StoredProblem> problems) => Record("Replace", problems);
 

@@ -18,7 +18,7 @@ namespace EtAlii.Adp.Backend.Problems;
 /// {appDataRoot}/EtAlii.Adp/problems/{hash-of-root}.json - outside the project folder,
 /// which validation never writes into (Requirement 4.5). Written debounced after a change,
 /// read on first touch; a missing, unreadable or version-mismatched cache yields an empty
-/// <see cref="ProblemSetState.NeverValidated"/> set rather than an error into project
+/// <see cref="ProjectProblemSetState.NeverValidated"/> set rather than an error into project
 /// opening (Requirement 4.6).
 /// </remarks>
 public sealed class ProblemStore : IProblemStore, IDisposable
@@ -84,7 +84,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
         {
             entry.Problems.Clear();
             entry.Problems.AddRange(problems);
-            entry.State = ProblemSetState.Validated;
+            entry.State = ProjectProblemSetState.Validated;
         });
     }
 
@@ -96,7 +96,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
         {
             entry.Problems.RemoveAll(problem => relativePaths.Any(path => Covers(path, problem.RelativePath)));
             entry.Problems.AddRange(problems);
-            entry.State = ProblemSetState.Validated;
+            entry.State = ProjectProblemSetState.Validated;
         });
     }
 
@@ -271,7 +271,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
                 return entry;
             }
             entry.Problems.AddRange(cache.Problems.Select(CachedProblem.ToStored));
-            entry.State = ProblemSetState.Validated;
+            entry.State = ProjectProblemSetState.Validated;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
         {
@@ -303,7 +303,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
         public object Gate { get; } = new();
         public string RootPath { get; } = rootPath;
         public List<StoredProblem> Problems { get; } = [];
-        public ProblemSetState State { get; set; } = ProblemSetState.NeverValidated;
+        public ProjectProblemSetState State { get; set; } = ProjectProblemSetState.NeverValidated;
         public Timer? WriteTimer { get; set; }
     }
 

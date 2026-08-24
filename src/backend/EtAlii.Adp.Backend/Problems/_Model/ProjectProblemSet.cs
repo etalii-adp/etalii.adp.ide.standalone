@@ -13,7 +13,7 @@ namespace EtAlii.Adp.Backend.Problems;
 /// stay those of the whole set, so the panel can say how many are not shown (Requirement 5.6).
 /// </param>
 public sealed record ProjectProblemSet(
-    ProblemSetState State,
+    ProjectProblemSetState State,
     IReadOnlyList<StoredProblem> Problems,
     int ErrorCount,
     int WarningCount,

@@ -131,7 +131,7 @@ public class StartupRevalidationTests : IDisposable
             get { lock (_replaced) { return _replaced.ToArray(); } }
         }
 
-        public ProjectProblemSet Get(string rootPath) => new(ProblemSetState.NeverValidated, [], 0, 0, 0);
+        public ProjectProblemSet Get(string rootPath) => new(ProjectProblemSetState.NeverValidated, [], 0, 0, 0);
 
         public void Replace(string rootPath, IReadOnlyList<StoredProblem> problems)
         {
