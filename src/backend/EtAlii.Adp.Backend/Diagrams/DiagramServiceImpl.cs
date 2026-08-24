@@ -42,7 +42,7 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
     public override async Task Open(OpenDiagramRequest request, IServerStreamWriter<Delta> responseStream, ServerCallContext context)
     {
         var watchId = (ShortGuid)request.WatchId;
-        if (!TryResolveBody(request.ProjectId, request.Path, context, out var rootPath, out var bodyPath, out var origin))
+        if (!TryResolveBody(request.ProjectId, request.Path, context, out var rootPath, out var bodyPath, out var origin, out var registrationPath))
         {
             throw new RpcException(new Status(StatusCode.FailedPrecondition, "The diagram cannot be opened."));
         }
@@ -53,7 +53,7 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
             throw new RpcException(new Status(StatusCode.Unimplemented, $"'{origin}' diagrams cannot be opened yet."));
         }
 
-        await using var session = factory.Open(watchId, rootPath, bodyPath);
+        await using var session = factory.Open(watchId, rootPath, bodyPath, registrationPath);
         var channel = Channel.CreateUnbounded<Delta>();
 
         void OnChanged(object? sender, DiagramDeltasEventArgs args)
@@ -95,7 +95,7 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
     public override Task<UpdateViewResponse> UpdateView(UpdateViewRequest request, ServerCallContext context)
     {
         var watchId = (ShortGuid)request.WatchId;
-        if (!TryResolveBody(request.ProjectId, request.Path, context, out _, out var bodyPath, out _))
+        if (!TryResolveBody(request.ProjectId, request.Path, context, out _, out var bodyPath, out _, out _))
         {
             return Task.FromResult(new UpdateViewResponse { Error = "The diagram is not open." });
         }
@@ -110,7 +110,7 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
     public override async Task<MoveElementResponse> MoveElement(MoveElementRequest request, ServerCallContext context)
     {
         var watchId = (ShortGuid)request.WatchId;
-        if (!TryResolveBody(request.ProjectId, request.Path, context, out _, out var bodyPath, out _))
+        if (!TryResolveBody(request.ProjectId, request.Path, context, out _, out var bodyPath, out _, out _))
         {
             return new MoveElementResponse { Error = "The diagram is not open." };
         }
@@ -131,7 +131,7 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
     public override Task<DescribeToolboxResponse> DescribeToolbox(DescribeToolboxRequest request, ServerCallContext context)
     {
         var response = new DescribeToolboxResponse();
-        if (!TryResolveBody(request.ProjectId, request.Path, context, out _, out _, out var origin))
+        if (!TryResolveBody(request.ProjectId, request.Path, context, out _, out _, out var origin, out _))
         {
             // Unresolvable is answered with an empty toolbox, the same non-revealing shape an
             // unauthorized DiscoverActions gets: the palette simply has nothing to offer.
@@ -170,11 +170,13 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
         ServerCallContext context,
         out string rootPath,
         out string bodyPath,
-        out Diagram.DiagramOrigin origin)
+        out Diagram.DiagramOrigin origin,
+        out string? registrationPath)
     {
         rootPath = "";
         bodyPath = "";
         origin = null!;
+        registrationPath = null;
 
         var userId = SessionContext.GetUserId(context);
         if (!ProjectRootResolver.TryResolve(_projectStore, userId, projectId, out rootPath, out _))
@@ -202,6 +204,7 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
 
         bodyPath = routed.BodyPath;
         origin = routed.Definition.Origin;
+        registrationPath = routed.RegistrationPath;
         return true;
     }
 
