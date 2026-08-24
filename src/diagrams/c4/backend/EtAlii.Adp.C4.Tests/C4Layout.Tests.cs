@@ -168,6 +168,80 @@ public class C4LayoutTests
     }
 
     [Fact]
+    public void WhatIsNotInsideTheSystem_IsNotDrawnInsideItsBoundary()
+    {
+        // Found by the manual pass: an external system landed inside the boundary, which says
+        // it is part of the system - the opposite of what the diagram means.
+        var dsl = """
+            workspace {
+                model {
+                    u = person "User" "Uses it."
+                    s = softwareSystem "System" "Does it." {
+                        web = container "Web" "Serves." "React"
+                        api = container "API" "Answers." "Kotlin"
+                        web -> api "Calls" "JSON"
+                    }
+                    ext = softwareSystem "Mainframe" "The old one." "External"
+                    u -> web "Visits" "HTTPS"
+                    api -> ext "Calls" "XML/HTTPS"
+                }
+                views {
+                    container s "containers" {
+                        include *
+                    }
+                }
+            }
+            """;
+
+        var layout = Compute(dsl);
+
+        var boundary = Assert.Single(layout.Boundaries).Box;
+        foreach (var id in new[] { "u", "ext" })
+        {
+            Assert.False(layout.Boxes[id].Overlaps(boundary), $"'{id}' is outside the system but was drawn inside its boundary");
+        }
+
+        // ...and the containers are still inside it.
+        Assert.True(layout.Boxes["web"].Overlaps(boundary));
+        Assert.True(layout.Boxes["api"].Overlaps(boundary));
+    }
+
+    [Fact]
+    public void PushingAnOutsiderOut_DoesNotMakeItOverlapSomethingElse()
+    {
+        var dsl = """
+            workspace {
+                model {
+                    u = person "User" "Uses it."
+                    s = softwareSystem "System" "Does it." {
+                        web = container "Web" "Serves." "React"
+                        api = container "API" "Answers." "Kotlin"
+                        web -> api "Calls" "JSON"
+                    }
+                    ext = softwareSystem "Mainframe" "The old one." "External"
+                    u -> web "Visits" "HTTPS"
+                    api -> ext "Calls" "XML/HTTPS"
+                }
+                views {
+                    container s "containers" {
+                        include *
+                    }
+                }
+            }
+            """;
+
+        var boxes = Compute(dsl).Boxes.Values.ToArray();
+
+        for (var i = 0; i < boxes.Length; i++)
+        {
+            for (var j = i + 1; j < boxes.Length; j++)
+            {
+                Assert.False(boxes[i].Overlaps(boxes[j]), "pushing an outsider out of the boundary made two elements overlap");
+            }
+        }
+    }
+
+    [Fact]
     public void AContextView_DrawsNoBoundary()
     {
         Assert.Empty(Compute(Chain).Boundaries);

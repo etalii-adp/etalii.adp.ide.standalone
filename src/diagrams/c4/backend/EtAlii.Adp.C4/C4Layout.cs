@@ -48,6 +48,7 @@ public static class C4LayoutEngine
 
         var boxes = Place(members, sizes, ranks, direction, rankSeparation, nodeSeparation);
         var boundaries = BoundariesFor(workspace, view, members, boxes, metrics);
+        boundaries = PushOutsiders(workspace, view, members, boxes, boundaries, metrics);
         return new C4Layout(boxes, boundaries);
     }
 
@@ -181,6 +182,59 @@ public static class C4LayoutEngine
                 ? pair.Value with { X = Math.Round(extent - pair.Value.Right, 2) }
                 : pair.Value with { Y = Math.Round(extent - pair.Value.Bottom, 2) },
             StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Moves anything that is *not* inside a boundary out of it, and re-sizes the boundary
+    /// afterwards. A boundary means "these are the parts of that system", so an external system
+    /// drawn inside one says the opposite of what the diagram means - and the layered layout,
+    /// which ranks by relationship distance, has no reason on its own to keep them apart
+    /// (found by the manual pass).
+    /// </summary>
+    private static IReadOnlyList<C4Boundary> PushOutsiders(
+        C4Workspace workspace,
+        C4View view,
+        IReadOnlyList<C4Element> members,
+        Dictionary<string, C4Box> boxes,
+        IReadOnlyList<C4Boundary> boundaries,
+        C4Metrics metrics)
+    {
+        if (boundaries.Count == 0 || view.ScopeId is not { } scopeId)
+        {
+            return boundaries;
+        }
+
+        var inside = members
+            .Where(element => string.Equals(element.ParentId, scopeId, StringComparison.OrdinalIgnoreCase))
+            .Select(element => element.Id)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var boundary = boundaries[0].Box;
+        foreach (var element in members.Where(element => !inside.Contains(element.Id)))
+        {
+            var box = boxes[element.Id];
+            if (!box.Overlaps(boundary))
+            {
+                continue;
+            }
+
+            // Out by the shortest route, so an element that merely clips the edge does not fly
+            // across the diagram.
+            var left = box.Right - boundary.X + metrics.NodeSeparation;
+            var right = boundary.Right - box.X + metrics.NodeSeparation;
+            var up = box.Bottom - boundary.Y + metrics.NodeSeparation;
+            var down = boundary.Bottom - box.Y + metrics.NodeSeparation;
+            var shortest = Math.Min(Math.Min(left, right), Math.Min(up, down));
+
+            boxes[element.Id] = shortest == left ? box with { X = Math.Round(box.X - left, 2) }
+                : shortest == right ? box with { X = Math.Round(box.X + right, 2) }
+                : shortest == up ? box with { Y = Math.Round(box.Y - up, 2) }
+                : box with { Y = Math.Round(box.Y + down, 2) };
+        }
+
+        // The boundary is sized to its members, which did not move - but recomputing keeps this
+        // honest if that ever changes.
+        return BoundariesFor(workspace, view, members, boxes, metrics);
     }
 
     /// <summary>
