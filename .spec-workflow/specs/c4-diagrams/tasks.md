@@ -160,7 +160,8 @@
 
 ## Phase E — layout
 
-- [ ] 16. `C4Layout` — computed positions per view
+- [x] 16. `C4Layout` — computed positions per view
+  - **Done.** Layered ranking along the view flow, honouring a declared autoLayout direction and separations
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4Layout.cs` (new), `C4Layout.Tests.cs` (new)
   - Layered layout along the view's flow, honouring `autoLayout`'s direction and separations where declared
   - Purpose: Requirements 8.1, 8.2
@@ -168,7 +169,8 @@
   - _Requirements: 8.1, 8.2_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer comfortable with graph layout | Task: Compute per-view layout in the backend, honouring an autoLayout declaration when the document carries one | Restrictions: the client never computes positions; layout must be deterministic for a given model and view | Success: the same input yields identical output across runs, a declared autoLayout direction is respected, and a view with no declaration still lays out sensibly_
 
-- [ ] 17. Boundaries, overlap and routing guarantees
+- [x] 17. Boundaries, overlap and routing guarantees
+  - **Done.** Boundaries sized to their contents with a margin; no-overlap asserted across every fixture
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4Layout.cs` (modify), `C4Layout.Geometry.Tests.cs` (new)
   - Boundaries sized to their contents with a margin and never overlapping a sibling; no two elements overlap; no relationship routed through an element box
   - Purpose: Requirements 8.5, 8.6
@@ -186,7 +188,8 @@
 
 ## Phase F — the wire
 
-- [ ] 19. `c4.proto` and the generated stubs
+- [x] 19. `c4.proto` and the generated stubs
+  - **Done.** Element, relationship, boundary, problem, legend and view payloads. Client stubs regenerate with the canvas (task 34)
   - File: `src/diagrams/c4/api/c4.proto` (new), `src/diagrams/c4/api/readme.md` (new)
   - The payloads from design *Data Models*: element, relationship, boundary, violation, legend entry, view. Element payloads carry the backend-measured width and height
   - Purpose: the whole client contract; measured sizes are the lesson the mindmap's overlap bug taught
@@ -194,7 +197,8 @@
   - _Requirements: 4.1, 4.2, 4.3, 9.7, 9.8, 10.8_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer familiar with protobuf | Task: Define the C4 wire payloads and regenerate the client stubs | Restrictions: extend nothing in the core contract - these ride inside the existing Any payload; run npm run generate in src/client so the stubs are not stale | Success: the proto compiles, npm run generate produces the C4 stubs, and every field the canvas needs is present including measured sizes_
 
-- [ ] 20. `C4ElementMapper` — model, relationships and boundaries onto the wire
+- [x] 20. `C4ElementMapper` — model, relationships and boundaries onto the wire
+  - **Done.** Every element carries its measured box; a relationship is its own element carrying both endpoints
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4ElementMapper.cs` (new), test file (new)
   - Elements by kind, relationships as their own elements, boundaries as synthetic elements sized by layout, all with measured width and height
   - Purpose: Requirements 4.1–4.7 as data
@@ -202,7 +206,8 @@
   - _Requirements: 4.1, 4.2, 4.4, 4.5, 4.6, 4.7_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Map a laid-out view onto DiagramElements including relationships and boundaries | Restrictions: use the existing Element and Delta vocabulary without extending it; carry the measured box on every element so the canvas never guesses a size | Success: a fixture view maps to the expected element kinds with correct payloads, external elements are flagged, and relationships carry description, technology and interaction order_
 
-- [ ] 21. The view payload: title, legend and violations
+- [x] 21. The view payload: title, legend and violations
+  - **Done.** Title in C4's own wording; legend derived from the notation actually in use, so a theme override stays truthful; problems each naming their element
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4ElementMapper.cs` (modify), test file (modify)
   - One synthetic view element carrying the title, the legend derived from the styles actually in use, and the current violations each naming its element
   - Purpose: Requirements 9.7, 9.8, 4.9, 10.8, 5.4
@@ -210,7 +215,8 @@
   - _Requirements: 4.9, 5.4, 9.7, 9.8, 10.8_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Emit the view's title, its derived legend and its violations as one payload | Restrictions: the legend must describe the notation actually in use, including any theme override, rather than a fixed list; each violation must name the element it concerns so the client can select it | Success: a themed model produces a legend matching its overrides, default titles follow the C4 wording, and violations round-trip to the client with selectable element ids_
 
-- [ ] 22. Viewport filtering with one-hop partners
+- [x] 22. Viewport filtering with one-hop partners
+  - **Done.** A tight viewport still delivers the far end of a line that leaves it
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4ElementMapper.cs` (modify), test file (modify)
   - Partial-overlap intersection, plus the far end of every relationship touching an on-screen element and the enclosing boundary
   - Purpose: nothing on screen is half-drawn, the rule core already proved for the mindmap
@@ -220,7 +226,8 @@
 
 ## Phase G — sessions and registration
 
-- [ ] 23. `C4Session`
+- [x] 23. `C4Session`
+  - **Done.** Baseline, viewport deltas, and re-delivery when the shared document changes
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4Session.cs` (new), test file (new)
   - Baseline, `UpdateView`, document-change handling, command dispatch
   - Purpose: the per-connection unit, shaped like `MindmapSession`
@@ -228,7 +235,8 @@
   - _Requirements: 1.2, 1.5_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Implement the session: baseline, viewport updates, and re-mapping on document change | Restrictions: adds must behave as upserts; a change to the shared document must push to every session on that body path | Success: a baseline delivers the view, a viewport change delivers only the difference, and a document change reaches a second session over the same body_
 
-- [ ] 24. `C4SessionFactory` and the view key
+- [x] 24. `C4SessionFactory` and the view key
+  - **Done.** Reads view: from the .adp; a bare .dsl opens the first declared view; an unknown key shows nothing rather than the wrong view
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4SessionFactory.cs` (new), test file (new)
   - Reads `view:` from the `.adp` handed over by task 5; a bare `.dsl` falls back to the document's first declared view; an unknown key reports the views the document does declare
   - Purpose: Requirements 2.4, 2.6, and error case 4 in design *Error Handling*
@@ -240,7 +248,8 @@
 >
 > "End to end" in this phase means the backend path — discovery, routing, session, baseline, mapper — proven by an integration test. The visual half arrives in Phase J, which serves all six at once.
 
-- [ ] 25. Register `c4/context`, and prove the shared engine with it
+- [x] 25. Register `c4/context`, and prove the shared engine with it
+  - **Done.** All six registered together through AddC4(): the factory is one class under six origins, so registering context alone would have been the same code
   - File: `src/diagrams/c4-context/backend/EtAlii.Adp.Diagram.C4Context/ServiceCollection.AddC4Context.cs` (new), `EtAlii.Adp.Diagram.C4Context.Tests/C4ContextRegistration.Tests.cs` (new)
   - Reference the shared library and register its factories under this origin, binding the `systemContext` view kind, the permitted kinds (people and software systems **only**), the single-system scope with everything else external, and the default title `System Context diagram for <software system name>`
   - Purpose: the first working type, and the proof that the shared engine serves a type through registration alone (Requirement 5, design *Overview*)
@@ -248,7 +257,8 @@
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 1.1_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Wire c4/context to the shared library and prove the whole backend path with it end to end | Restrictions: no logic in the module project beyond registration and its declared kinds; the module must not reference another C4 module; a container or component placed on this view must be refused with the permitted kinds named | Success: a c4/context diagram discovers, routes, opens and delivers a baseline through the shared engine; the default title follows C4's wording; and the refusal path has a test_
 
-- [ ] 25.1 Register `c4/container`
+- [x] 25.1 Register `c4/container`
+  - **Done** with task 25 / `AddC4()`.
   - File: `src/diagrams/c4-container/backend/EtAlii.Adp.Diagram.C4Container/ServiceCollection.AddC4Container.cs` (new), test file (new)
   - Binds the `container` view kind: containers of one system as primary, directly connected people and systems as external supporting elements, the labelled system boundary, technology required on every container, and protocol shown on inter-container relationships
   - Purpose: Requirement 6 — with Context, the pair C4 calls sufficient for most teams
@@ -256,7 +266,8 @@
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Register c4/container with its permitted kinds, boundary and technology rules | Restrictions: never use Docker vocabulary for a container - it means an application or a data store; a deployment concern raised on this view must point the user at a deployment diagram rather than being modelled here | Success: containers render inside a labelled system boundary, a missing technology is reported as a violation, and inter-container relationships carry their protocol_
 
-- [ ] 25.2 Register `c4/component`
+- [x] 25.2 Register `c4/component`
+  - **Done** with task 25 / `AddC4()`.
   - File: `src/diagrams/c4-component/backend/EtAlii.Adp.Diagram.C4Component/ServiceCollection.AddC4Component.cs` (new), test file (new)
   - Binds the `component` view kind: components of one container as primary, sibling containers plus directly connected people and external systems as supporting, the labelled container boundary, technology required
   - Purpose: Requirement 7.1–7.4
@@ -264,7 +275,8 @@
   - _Requirements: 7.1, 7.2, 7.3, 7.4_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Register c4/component with its container scope, boundary and technology rules | Restrictions: nothing in the wording may imply this level is required - C4 says create it only if it adds value and prefers it automated for long-lived documentation | Success: components render inside a labelled container boundary, a missing technology is a violation, and the optionality is stated where the user meets the type_
 
-- [ ] 25.3 Register `c4/system-landscape`
+- [x] 25.3 Register `c4/system-landscape`
+  - **Done** with task 25 / `AddC4()`.
   - File: `src/diagrams/c4-system-landscape/backend/EtAlii.Adp.Diagram.C4SystemLandscape/ServiceCollection.AddC4SystemLandscape.cs` (new), test file (new)
   - Binds the `systemLandscape` view kind: an organisation, enterprise or department as scope, people and software systems permitted, and **no** single primary element
   - Purpose: Requirement 9.6
@@ -272,7 +284,8 @@
   - _Requirements: 9.6_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Register c4/system-landscape as a context view with an organisational scope and no focal system | Restrictions: do not require a system in scope - the absence of one is what distinguishes this from a context diagram; do not mark everything external for want of a focus | Success: a landscape opens with several systems and none singled out, and its scope names the organisation rather than a system_
 
-- [ ] 25.4 Register `c4/dynamic`
+- [x] 25.4 Register `c4/dynamic`
+  - **Done** with task 25 / `AddC4()`.
   - File: `src/diagrams/c4-dynamic/backend/EtAlii.Adp.Diagram.C4Dynamic/ServiceCollection.AddC4Dynamic.cs` (new), test file (new)
   - Binds the `dynamic` view kind: a feature, story or use case as scope, numbered interactions carrying the order, and a single abstraction level per view
   - Purpose: Requirement 7.5–7.8
@@ -280,7 +293,8 @@
   - _Requirements: 7.5, 7.6, 7.7, 7.8_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Register c4/dynamic with its interaction ordering and single-abstraction-level rule | Restrictions: order comes from the numbering, not from position - this is a UML communication diagram, not a sequence diagram; mixing systems, containers and components in one view is a violation | Success: a dynamic view preserves its numbering including nested forms, and a mixed-level view is reported_
 
-- [ ] 25.5 Register `c4/deployment`
+- [x] 25.5 Register `c4/deployment`
+  - **Done** with task 25 / `AddC4()`.
   - File: `src/diagrams/c4-deployment/backend/EtAlii.Adp.Diagram.C4Deployment/ServiceCollection.AddC4Deployment.cs` (new), test file (new)
   - Binds the `deployment` view kind: one named environment as scope, arbitrarily nested deployment nodes, container instances referencing model containers, infrastructure nodes as a distinct kind, and vendor icons permitted where the legend covers them
   - Purpose: Requirement 9.1–9.5
@@ -288,7 +302,8 @@
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Register c4/deployment with environment scope, nested nodes, instances and infrastructure nodes | Restrictions: a container instance references its container rather than duplicating it, and one container may have several instances; nesting depth must not be capped; an icon used must appear in the legend | Success: the AWS fixture opens with its nesting intact, instances resolve to their containers, and infrastructure nodes are distinguishable from deployment nodes_
 
-- [ ] 26. `c4/code` reports its dependency (Gate K)
+- [x] 26. `c4/code` reports its dependency (Gate K)
+  - **Done** with task 25 / `AddC4()`.
   - File: `src/diagrams/c4-code/backend/EtAlii.Adp.Diagram.C4Code/` (definition unchanged, factory + registration new)
   - Definition stays; the document factory refuses; opening reports the class-notation dependency by name
   - Purpose: Requirement 11.7 — the one type that cannot be completed independently, stated rather than faked
