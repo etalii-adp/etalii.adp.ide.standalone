@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/errors-and-warnings-panel/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-24T11:05:15.814Z",
       "trigger": "initial",
+      "approvalId": "approval_1787569515683_trtcc7gu2",
+      "approvalTitle": "errors-and-warnings-panel: design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-24T11:14:47.984Z",
+      "trigger": "approved",
       "approvalId": "approval_1787569515683_trtcc7gu2",
       "approvalTitle": "errors-and-warnings-panel: design"
     }
