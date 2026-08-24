@@ -130,7 +130,8 @@
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Implement line-level writing, refuse edits targeting included files, and guard the whole round trip over the corpus | Restrictions: never reformat, reorder or re-indent unaffected lines; never rewrite a file that failed to parse; !docs, !adrs, configuration and unknown constructs must survive verbatim | Success: all fixtures round-trip byte-identically, a rename produces exactly one changed line, an unparseable file is left untouched, and an include-targeting edit is refused with the file named_
 
-- [ ] 13. `C4DocumentStore` and the layout sidecar
+- [-] 13. `C4DocumentStore` and the layout sidecar
+  - **Store done; sidecar outstanding.** GetOrLoad/WorkspaceOf/Save/Reload/Forget with change events, one instance per path so several views share one document, a missing file opening as empty, and a save that writes only the edited lines. The layout sidecar half waits on the layout itself (task 18)
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/IC4DocumentStore.cs` (new), `C4DocumentStore.cs` (new), test file (new)
   - `GetOrLoad`, `Save`, change events, one instance per body path; reads and writes `<name>.layout.json`. A missing or unreadable sidecar is not an error
   - Purpose: Requirements 3.5, 3.6, and the shared-document half of Requirement 1
