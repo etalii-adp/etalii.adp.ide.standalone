@@ -100,7 +100,7 @@
   - _Requirements: 1.1, 1.2, 7.4_
   - _Prompt: Implement the task for spec errors-and-warnings-panel, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/TypeScript developer | Task: Add the problems slot and PROBLEMS_SOURCE to the context connection, with tests | Restrictions: the slot holds exactly what the backend sent - no client-side filtering, sorting or counting here; a problems message must not touch the selection or the prompt; follow src/.editorconfig | Success: `npm run typecheck` clean; `npm test` green with the new tests. Mark the task in progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 13. Build the panel
+- [-] 13. Build the panel
   - File: `src/client/src/shell/panels/ErrorsWarningsPanel.tsx` (rewritten), `src/client/src/index.css` (modify)
   - Header: the counts, and small icon toggles for errors and warnings filtering the list without changing the counts (Requirement 1.8). Body: a keyboard-navigable list with one Tab stop, each row showing severity, message, project-relative path and optional location; a stale row marked as such. Empty says "No problems found" when `Validated` and "Not checked yet" when `NeverValidated`; `Validating` shows progress; a truncated set says how many are not shown. On focus, `select(PROBLEMS_SOURCE)`; right-click opens the `ContextMenu` from the pushed actions; activating a row sets `pendingReveal`. New `.problems-*` styles sharing the existing tokens through their own selectors
   - Purpose: Requirements 1.6, 1.7, 1.8, 7.3, 7.4, 7.7 - and the focus line that puts Validate all in the ribbon
