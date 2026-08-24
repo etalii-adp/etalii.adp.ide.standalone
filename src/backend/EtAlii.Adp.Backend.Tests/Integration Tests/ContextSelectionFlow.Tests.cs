@@ -46,6 +46,14 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
             {
                 services.RemoveAll<IProjectStore>();
                 services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
+                // The problem cache must live and die with this test, not in the real user
+                // profile the host's AddProblems registration points at (found by the
+                // errors-and-warnings-panel manual pass: every run left a cache file behind).
+                services.RemoveAll<Problems.IProblemStore>();
+                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
+                    _appDataRoot,
+                    provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
+                    provider.GetRequiredService<EtAlii.Adp.Diagram.DiagramValidators>()));
             });
         });
     }
@@ -154,8 +162,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     /// </summary>
     private static async Task TestBaselineAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
     {
-        // ReSharper disable once UnusedVariable
-        var selection = await ReadSelectionAsync(stream, cancellationToken);
+        _ = await ReadSelectionAsync(stream, cancellationToken);
         while (await stream.MoveNext(cancellationToken))
         {
             if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Problems)

@@ -172,6 +172,26 @@ public class ProblemStoreTests : IDisposable
     // ---- staleness ---------------------------------------------------------------------
 
     [Fact]
+    public async Task AFreshVerdictOnAPair_IsNotStale()
+    {
+        // Found by the manual pass: a pair's problem is attributed to the .adp, so its
+        // pinned stats must be the .adp's too - pinning the body's stats marked every
+        // pair's problem stale the moment it was found.
+        CreatePair("flow");
+        var validator = new ReportingValidator(Mindmap);
+        using var store = Store(validator);
+        var catalog = new TestCatalog([MindmapDefinition]);
+        var projectValidator = new ProjectValidator(new DiagramFileRouter(catalog), new DiagramValidators([validator]));
+
+        var outcome = await projectValidator.ValidateAsync(new ValidationScope.Project(_root), TestContext.Current.CancellationToken);
+        store.Replace(_root, outcome.Problems);
+
+        var stored = Assert.Single(store.Get(_root).Problems);
+        Assert.Equal("flow.adp", stored.RelativePath);
+        Assert.False(stored.Stale);
+    }
+
+    [Fact]
     public void Get_MarksNothingStaleWhileTheFileStandsStill()
     {
         using var store = Store();
@@ -384,5 +404,15 @@ public class ProblemStoreTests : IDisposable
         public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
             string document, string baseName, CancellationToken cancellationToken) =>
             ValueTask.FromResult<IReadOnlyList<DiagramProblem>>([]);
+    }
+
+    private sealed class ReportingValidator(DiagramOrigin origin) : IDiagramValidator
+    {
+        public DiagramOrigin Origin { get; } = origin;
+
+        public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
+            string document, string baseName, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<IReadOnlyList<DiagramProblem>>(
+                [new DiagramProblem(DiagramProblemSeverity.Warning, "Something to remember.", "test.remember")]);
     }
 }

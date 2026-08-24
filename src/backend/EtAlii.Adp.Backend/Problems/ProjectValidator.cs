@@ -278,7 +278,12 @@ public sealed class ProjectValidator
         var rulesVersion = _validators.RulesVersion(origin);
         foreach (var problem in problems)
         {
-            collector.Add(problem, attribution, routed.BodyPath, rulesVersion);
+            // Pinned to the attribution file's stats - the same file the store's staleness
+            // check reads later. Pinning the body's stats against the registration's path
+            // marked every pair's problem stale the moment it was found (caught by the
+            // manual pass); a body-only edit is covered by the watcher and the startup
+            // pass, not by this comparison.
+            collector.Add(problem, attribution, attribution, rulesVersion);
         }
     }
 
