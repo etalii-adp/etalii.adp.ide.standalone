@@ -19,7 +19,8 @@
 
 ## Phase A — the corpus
 
-- [ ] 1. Add the Structurizr DSL round-trip corpus
+- [-] 1. Add the Structurizr DSL round-trip corpus
+  - **In progress.** The nine hand-made edge cases are committed and guarded by 23 tests, along with the shared library and its test project. The two real-world documents are **outstanding**: the `structurizr` GitHub organisation is unreachable from this sandbox (a control fetch of an unrelated public repository succeeds; every `structurizr/*` path 404s, including the repositories' own readme), and this task forbids hand-writing a substitute. `Fixtures/readme.md` records the gap and names the two files to drop in; `FixturesTests.TheCorpusStillLacksTheRealWorldDocuments_AndSaysSoInItsReadme` fails deliberately once they arrive. Until then the round-trip guarantee is proved for the constructs the hand-made corpus covers and unproved beyond them
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/*.dsl` (new), `Fixtures/readme.md` (new)
   - Commit real `.dsl` documents, not hand-written approximations: the canonical Big Bank plc workspace (all four static levels plus dynamic and deployment views), an AWS-style deployment example, and hand-made edge cases covering comments in every position, `!docs`/`!adrs`, unusual indentation, and both CRLF and LF line endings. The readme records each file's provenance and what it exists to prove
   - Purpose: every byte-identical claim in Requirement 3 rests on these files
