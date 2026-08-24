@@ -23,17 +23,20 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
     private readonly DiagramFileRouter _router;
     private readonly DiagramSessionFactories _sessionFactories;
     private readonly IDiagramViewportRegistry _viewports;
+    private readonly IReadOnlyList<Diagram.IDiagramToolboxProvider> _toolboxProviders;
 
     public DiagramServiceImpl(
         IProjectStore projectStore,
         DiagramFileRouter router,
         DiagramSessionFactories sessionFactories,
-        IDiagramViewportRegistry viewports)
+        IDiagramViewportRegistry viewports,
+        IEnumerable<Diagram.IDiagramToolboxProvider> toolboxProviders)
     {
         _projectStore = projectStore;
         _router = router;
         _sessionFactories = sessionFactories;
         _viewports = viewports;
+        _toolboxProviders = [.. toolboxProviders];
     }
 
     public override async Task Open(OpenDiagramRequest request, IServerStreamWriter<Delta> responseStream, ServerCallContext context)
@@ -123,6 +126,34 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
 
         var error = await session.MoveElementAsync(request.ElementId, request.NewParentId, request.Index, context.CancellationToken);
         return new MoveElementResponse { Error = error };
+    }
+
+    public override Task<DescribeToolboxResponse> DescribeToolbox(DescribeToolboxRequest request, ServerCallContext context)
+    {
+        var response = new DescribeToolboxResponse();
+        if (!TryResolveBody(request.ProjectId, request.Path, context, out _, out _, out var origin))
+        {
+            // Unresolvable is answered with an empty toolbox, the same non-revealing shape an
+            // unauthorized DiscoverActions gets: the palette simply has nothing to offer.
+            return Task.FromResult(response);
+        }
+
+        var provider = _toolboxProviders.FirstOrDefault(candidate => candidate.Origin == origin);
+        if (provider is null)
+        {
+            _logger.Debug("No toolbox registered for {Origin}; answering with an empty palette", origin);
+            return Task.FromResult(response);
+        }
+
+        response.Items.AddRange(provider.Items.Select(item => new ToolboxItem
+        {
+            Id = item.Id,
+            Label = item.Label,
+            Icon = item.Icon,
+            Description = item.Description,
+            DropActionId = item.DropActionId,
+        }));
+        return Task.FromResult(response);
     }
 
     private static void Apply(IDiagramSession session, DiagramViewport viewport, Channel<Delta> channel)

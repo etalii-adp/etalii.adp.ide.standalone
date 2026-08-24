@@ -7,6 +7,8 @@ import type { ContextSelection, ContextShortcut } from "../../../generated/conte
 import { ContextMenu } from "../../context/ContextMenu";
 import { toMenuGroups } from "../../context/toMenuGroups";
 import { useRegisterDiagramView, type DiagramViewControls } from "../DiagramViewContext";
+import { TOOLBOX_DRAG_TYPE, useRegisterDiagramToolbox } from "../DiagramToolboxContext";
+import { useToolboxItems } from "../useToolboxItems";
 import { isFolded, type MindmapElement, type MindmapModel } from "./mindmapModel";
 import { useMindmapStream } from "./useMindmapStream";
 
@@ -63,6 +65,17 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
   // The node a drag is currently held over - highlighted so the drop's outcome is visible
   // before the button is released. State, not a ref: it is exactly what renders differently.
   const [dropTargetId, setDropTargetId] = useState<string | undefined>(undefined);
+
+  // Where a node drag currently is, in canvas units - what makes the new location visible
+  // *during* the drag rather than only on the drop: a ghost of the dragged node follows the
+  // pointer, and a dashed connector joins it to the candidate parent, so the tree the drop
+  // would produce is on screen before the button is released.
+  const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
+
+  // The palette this diagram's type contributes, registered for the Toolbox panel while
+  // this canvas is the mounted one - the same discipline the ribbon's View group uses.
+  const toolboxItems = useToolboxItems(projectId, path);
+  useRegisterDiagramToolbox(toolboxItems);
 
   // A right-click's menu: opened once the pushed selection for that node arrives with its
   // actions, exactly the explorer's discipline - the menu shows the backend's answer, never
@@ -142,10 +155,15 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
     select(nodeSelection(entryId, path, element, ContextSelectionAction.CONTEXT_MENU));
   };
 
-  /** While a drag is over this node, it is the drop's outcome - shown, not guessed at. */
+  /**
+   * While a drag is over this node, it is the drop's outcome - shown, not guessed at. A node
+   * inside the dragged branch is no outcome at all (the backend would refuse the move), so it
+   * is not offered as one either.
+   */
   const onNodePointerOver = (element: MindmapElement) => {
     const drag = dragRef.current;
-    setDropTargetId(drag?.moved === true && drag.id !== element.id ? element.id : undefined);
+    const valid = drag?.moved === true && drag.id !== element.id && !isInSubtree(model, element.id, drag.id);
+    setDropTargetId(valid ? element.id : undefined);
   };
 
   /** How many canvas units one screen pixel spans right now - what turns pointer movement into view movement. */
@@ -166,6 +184,11 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
     const drag = dragRef.current;
     if (drag && !drag.moved && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) > 4) {
       drag.moved = true;
+    }
+
+    if (drag?.moved) {
+      // The ghost follows the pointer, so the prospective location is visible mid-drag.
+      setDragPosition(toCanvasPoint(event.clientX, event.clientY, viewRef.current, surfaceRef.current));
     }
 
     if (event.target === event.currentTarget && dropTargetId !== undefined) {
@@ -193,6 +216,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
     const drag = dragRef.current;
     dragRef.current = null;
     setDropTargetId(undefined);
+    setDragPosition(null);
     if (!drag || !drag.moved) {
       return;
     }
@@ -210,6 +234,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
     // moved suppresses the click that trails it, or letting go would also deselect.
     dragRef.current = null;
     setDropTargetId(undefined);
+    setDragPosition(null);
     const pan = panRef.current;
     panRef.current = null;
     if (pan?.moved) {
@@ -223,6 +248,45 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
     dragRef.current = null;
     panRef.current = null;
     setDropTargetId(undefined);
+    setDragPosition(null);
+  };
+
+  /** A toolbox entry held over this node: allowed, and shown as the drop's outcome. */
+  const onNodeDragOver = (element: MindmapElement, event: React.DragEvent) => {
+    if (!event.dataTransfer.types.includes(TOOLBOX_DRAG_TYPE)) {
+      return;
+    }
+
+    event.preventDefault(); // preventDefault is what permits the drop here
+    event.dataTransfer.dropEffect = "copy";
+    if (dropTargetId !== element.id) {
+      setDropTargetId(element.id);
+    }
+  };
+
+  /**
+   * A toolbox entry dropped on a node: the drag carries the backend's own action id, and
+   * dropping executes it against this node - the same add-child flow, prompt and undo the
+   * context menu and the Insert key already share. The panel told the canvas nothing but
+   * the id; what it means stays the backend's business.
+   */
+  const onNodeDrop = (element: MindmapElement, event: React.DragEvent) => {
+    const actionId = event.dataTransfer.getData(TOOLBOX_DRAG_TYPE);
+    setDropTargetId(undefined);
+    if (!actionId) {
+      return;
+    }
+
+    event.preventDefault();
+    setFocusedId(element.id);
+    void executeAction(actionId, create(ContextSourceSchema, { source: { case: "elementId", value: { value: element.id } } }));
+  };
+
+  /** A toolbox drag over empty canvas: no node, no drop - the highlight clears. */
+  const onSurfaceDragOver = (event: React.DragEvent) => {
+    if (event.target === event.currentTarget && dropTargetId !== undefined) {
+      setDropTargetId(undefined);
+    }
   };
 
   const onKeyDown = (event: React.KeyboardEvent) => {
@@ -356,6 +420,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
           onMouseMove={onSurfacePointerMove}
           onMouseUp={onSurfacePointerUp}
           onMouseLeave={onSurfacePointerLeave}
+          onDragOver={onSurfaceDragOver}
         >
           {/* The connectors first, so every curve runs under the node boxes. Drawn from the
               payload's parent id - each node knows whose child it is, and nothing more is
@@ -371,13 +436,20 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
               focused={element.id === focusedId}
               folded={isFolded(model, element.id)}
               dropTarget={element.id === dropTargetId}
+              dragging={dragPosition !== null && element.id === dragRef.current?.id}
               onSelect={() => reportSelection(element)}
               onPointerDown={(event) => onNodePointerDown(element, event)}
               onPointerUp={() => onNodePointerUp(element)}
               onPointerOver={() => onNodePointerOver(element)}
               onContextMenu={(event) => onNodeContextMenu(element, event)}
+              onDragOver={(event) => onNodeDragOver(element, event)}
+              onDrop={(event) => onNodeDrop(element, event)}
             />
           ))}
+          {/* The drag's live preview, last so it rides above everything: a dashed connector
+              from the candidate parent to a ghost of the dragged node at the pointer. The new
+              location is on screen during the drag, not only once the drop lands. */}
+          {dragPreviewOf(model, dragRef.current?.id, dropTargetId, dragPosition)}
         </svg>
       )}
       {/* The node's right-click menu: the same shared menu the explorer uses, filled with the
@@ -409,7 +481,7 @@ function halfSizeOf(element: MindmapElement): { halfWidth: number; halfHeight: n
  * centre-to-centre line cutting through boxes. The control points sit halfway, which keeps
  * the whole curve inside the gap corridor between the two columns, clear of every sibling.
  */
-function MindmapEdge({ parent, child }: { parent: MindmapElement; child: MindmapElement }) {
+function MindmapEdge({ parent, child, preview = false }: { parent: MindmapElement; child: MindmapElement; preview?: boolean }) {
   const parentHalf = halfSizeOf(parent);
   const childHalf = halfSizeOf(child);
   const childOnRight = child.x >= parent.x;
@@ -419,7 +491,7 @@ function MindmapEdge({ parent, child }: { parent: MindmapElement; child: Mindmap
 
   return (
     <path
-      className="mindmap-edge"
+      className={`mindmap-edge${preview ? " mindmap-edge-preview" : ""}`}
       d={`M ${startX} ${parent.y} C ${midX} ${parent.y}, ${midX} ${child.y}, ${endX} ${child.y}`}
     />
   );
@@ -430,27 +502,38 @@ interface MindmapNodeProps {
   focused: boolean;
   folded: boolean;
   dropTarget: boolean;
+  dragging: boolean;
   onSelect: () => void;
   onPointerDown: (event: React.MouseEvent) => void;
   onPointerUp: () => void;
   onPointerOver: () => void;
   onContextMenu: (event: React.MouseEvent) => void;
+  onDragOver: (event: React.DragEvent) => void;
+  onDrop: (event: React.DragEvent) => void;
 }
 
-function MindmapNode({ element, focused, folded, dropTarget, onSelect, onPointerDown, onPointerUp, onPointerOver, onContextMenu }: MindmapNodeProps) {
+function MindmapNode({ element, focused, folded, dropTarget, dragging, onSelect, onPointerDown, onPointerUp, onPointerOver, onContextMenu, onDragOver, onDrop }: MindmapNodeProps) {
   const { text, notes, hasChildren, link } = element.payload;
   const { halfWidth, halfHeight } = halfSizeOf(element);
   const indicators = [notes ? "\u2022" : "", link ? "\u2197" : "", folded && hasChildren ? "\u2295" : ""].join(" ").trim();
+  const classes = [
+    "mindmap-node",
+    focused ? "mindmap-node-focused" : "",
+    dropTarget ? "mindmap-node-drop-target" : "",
+    dragging ? "mindmap-node-dragging" : "",
+  ].filter(Boolean).join(" ");
 
   return (
     <g
-      className={`mindmap-node${focused ? " mindmap-node-focused" : ""}${dropTarget ? " mindmap-node-drop-target" : ""}`}
+      className={classes}
       transform={`translate(${element.x} ${element.y})`}
       onClick={onSelect}
       onMouseDown={onPointerDown}
       onMouseUp={onPointerUp}
       onMouseOver={onPointerOver}
       onContextMenu={onContextMenu}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
       role="treeitem"
       aria-selected={focused}
     >
@@ -465,6 +548,71 @@ function MindmapNode({ element, focused, folded, dropTarget, onSelect, onPointer
       )}
     </g>
   );
+}
+
+/**
+ * The live preview of a node drag: a ghost of the dragged node at the pointer, joined to
+ * the candidate parent by a dashed connector where one is under the pointer. Pointer-events
+ * off, so the ghost never steals the hover that decides the drop target under it.
+ */
+function dragPreviewOf(
+  model: MindmapModel,
+  draggedId: string | undefined,
+  dropTargetId: string | undefined,
+  position: { x: number; y: number } | null,
+) {
+  const dragged = draggedId !== undefined ? model.elements.get(draggedId) : undefined;
+  if (dragged === undefined || position === null) {
+    return null;
+  }
+
+  const ghost: MindmapElement = { ...dragged, x: position.x, y: position.y };
+  const parent = dropTargetId !== undefined ? model.elements.get(dropTargetId) : undefined;
+  const { halfWidth, halfHeight } = halfSizeOf(ghost);
+
+  return (
+    <g className="mindmap-drag-preview" pointerEvents="none" data-testid="mindmap-drag-preview">
+      {parent !== undefined && <MindmapEdge parent={parent} child={ghost} preview />}
+      <g className="mindmap-node mindmap-node-ghost" transform={`translate(${ghost.x} ${ghost.y})`}>
+        <rect x={-halfWidth} y={-halfHeight} width={halfWidth * 2} height={halfHeight * 2} rx={6} />
+        <text textAnchor="middle" dominantBaseline="central">
+          {ghost.payload.text || " "}
+        </text>
+      </g>
+    </g>
+  );
+}
+
+/** Whether `candidateId` sits inside the branch rooted at `rootId` - itself included. */
+function isInSubtree(model: MindmapModel, candidateId: string, rootId: string): boolean {
+  let cursor: string | undefined = candidateId;
+  const seen = new Set<string>(); // a defensive stop; the model never actually cycles
+  while (cursor !== undefined && !seen.has(cursor)) {
+    if (cursor === rootId) {
+      return true;
+    }
+    seen.add(cursor);
+    cursor = model.elements.get(cursor)?.payload.parentId || undefined;
+  }
+  return false;
+}
+
+/**
+ * A client point in canvas units, inverted through the same "meet" fitting `shownRectOf`
+ * describes - the plain viewBox proportion would drift wherever the svg's aspect ratio
+ * differs from the box's, and the ghost would float beside the pointer instead of under it.
+ */
+function toCanvasPoint(clientX: number, clientY: number, box: ViewBox, surface: SVGSVGElement | null): { x: number; y: number } {
+  const rect = surface?.getBoundingClientRect();
+  if (rect === undefined || rect.width <= 0 || rect.height <= 0) {
+    return { x: box.x, y: box.y };
+  }
+
+  const shown = shownRectOf(box, surface);
+  return {
+    x: shown.minX + ((clientX - rect.left) / rect.width) * (shown.maxX - shown.minX),
+    y: shown.minY + ((clientY - rect.top) / rect.height) * (shown.maxY - shown.minY),
+  };
 }
 
 /** The node id the pushed selection names inside this diagram, or undefined. */
