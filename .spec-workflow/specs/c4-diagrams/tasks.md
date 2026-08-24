@@ -373,7 +373,8 @@
 
 ## Phase J — the canvas
 
-- [ ] 34. Client model and stream
+- [x] 34. Client model and stream
+  - **Done.** `c4Model.ts` and `useC4Stream.ts`, with `add` as an upsert so a re-delivered view replaces in place. Client stubs regenerated (`c4_pb.ts`)
   - File: `src/client/src/shell/panels/c4/c4Model.ts` (new), `useC4Stream.ts` (new), tests (new)
   - Delta application, payload decoding, failed state, viewport reporting
   - Purpose: the client half of the contract
@@ -381,7 +382,8 @@
   - _Requirements: 1.5_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Build the client model and streaming hook for C4 diagrams | Restrictions: adds are upserts; report the area actually shown rather than the bare viewBox; keep the hook's identity stable so effects do not churn | Success: deltas apply correctly, a permanently failed stream surfaces as a failed state, and the reported viewport matches what the svg displays_
 
-- [ ] 35. `C4Canvas` — elements, relationships and boundaries
+- [x] 35. `C4Canvas` — elements, relationships and boundaries
+  - **Done.** Boxes at the backend's measured sizes, the person and cylinder shapes, external muting, dashed unidirectional labelled relationships anchored on the boxes' edges, and dashed named boundaries. Pan, zoom and fit reuse the mindmap's mechanics
   - File: `src/client/src/shell/panels/c4/C4Canvas.tsx` (new), test file (new)
   - Boxes with name, bracketed type-and-technology line and description; the shape vocabulary; external muting; dashed unidirectional labelled relationships; dashed named boundaries. Default palette as CSS custom properties, overridable from the payload
   - Purpose: Requirements 4.1–4.8 on screen
@@ -389,7 +391,8 @@
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Render C4 elements, relationships and boundaries to match the reference visuals | Restrictions: draw every element at the size the backend measured; put no C4 rule in terms of colour; the default palette must be overridable per model; give svg paths an explicit fill so curves do not fill solid | Success: a rendered view is recognisable as C4 to someone who has read c4model.com, external elements are visibly out of scope, and a themed model renders in its own palette_
 
-- [ ] 36. Title, legend, violations and interaction numbers
+- [x] 36. Title, legend, violations and interaction numbers
+  - **Done.** Title and legend from the view payload, so a theme override stays truthful. Problems are **not** here: they arrive on core's existing project-problems push, located by element id
   - File: `src/client/src/shell/panels/c4/C4Canvas.tsx` (modify), test file (modify)
   - The title block, the legend from the view payload, the violations list with click-to-select, and numbered interactions on dynamic views
   - Purpose: Requirements 9.7, 9.8, 10.8, 7.5, 7.6
@@ -397,7 +400,8 @@
   - _Requirements: 7.5, 7.6, 9.7, 9.8, 10.8_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Render the furniture that makes a C4 diagram self-describing, plus dynamic interaction numbers | Restrictions: the legend must come from the payload rather than being hard-coded, so a theme override stays truthful; clicking a violation must select through the existing context chain | Success: every view shows a title and a legend covering the notation in use, violations select their element, and a dynamic view shows its ordering including nested numbers_
 
-- [ ] 37. Panel routing
+- [x] 37. Panel routing
+  - **Done.** The six view types share one canvas; `c4/code` gets its own notice naming the dependency
   - File: `src/client/src/shell/panels/DiagramPanel.tsx` (modify), test file (modify)
   - `c4/*` routes to `C4Canvas`, except `c4/code`, which shows the dependency notice
   - Purpose: the tab opens the right canvas
