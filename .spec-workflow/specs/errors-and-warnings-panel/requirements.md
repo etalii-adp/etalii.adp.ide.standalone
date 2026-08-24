@@ -81,7 +81,7 @@ What counts as a problem is deliberately not core's business. Core contributes t
 5. WHERE the cache is stored THEN it SHALL be per project and SHALL NOT be written inside the project folder itself, so ADP never adds files to a repository the user did not ask for; the application-data location `FileProjectStore` already uses is the precedent.
 6. IF the cache is missing, unreadable or written by an incompatible version THEN the system SHALL start from empty and say the project has not been checked (Requirement 1.7), rather than failing to open the project.
 7. WHEN a diagram type's validator changes what it reports THEN the system SHALL have a way to invalidate entries produced by an older version of that validator, so a rule fixed in a release does not leave stale verdicts behind forever.
-8. When the backend restarts, it will start an asynchronous re-validation of the projects.&#x20;
+8. WHEN the backend restarts THEN the system SHALL start an asynchronous re-validation of the known projects, so the cache converges on the truth without anyone having to ask - while a project opened meanwhile is still served from cache at once (Requirement 4.2).
 
 ### Requirement 5 — Events keep the list current
 
