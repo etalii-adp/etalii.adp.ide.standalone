@@ -1,5 +1,7 @@
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Backend.Diagrams;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace EtAlii.Adp.C4;
 
@@ -30,10 +32,23 @@ public static class ServiceCollectionAddC4Extension
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        // One store and one mapper for the whole family: several diagrams open one document,
+        // so they must share the instance that holds it (Requirement 1.2).
+        services.TryAddSingleton<IC4DocumentStore, C4DocumentStore>();
+        services.TryAddSingleton(C4Metrics.Default);
+        services.TryAddSingleton(provider => new C4ElementMapper(provider.GetRequiredService<C4Metrics>()));
+
         foreach (var (type, viewKind) in Types)
         {
             var origin = new DiagramOrigin("c4", type);
             services.AddSingleton<IDiagramDocumentFactory>(_ => new C4DocumentFactory(origin, viewKind));
+
+            // The session seam: which view a session shows comes from the .adp file, so all six
+            // factories are the same code under different origins.
+            services.AddSingleton<IDiagramSessionFactory>(provider => new C4SessionFactory(
+                origin,
+                provider.GetRequiredService<IC4DocumentStore>(),
+                provider.GetRequiredService<C4ElementMapper>()));
 
             // The type's rules, resolved by origin through core's validator registry, so C4's
             // violations reach the errors and warnings panel like any other type's
