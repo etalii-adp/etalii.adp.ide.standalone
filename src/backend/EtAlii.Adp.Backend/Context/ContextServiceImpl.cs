@@ -27,6 +27,7 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
     private readonly IContextActionResolver _contextActionResolver;
     private readonly IContextInteractionStore _contextInteractionStore;
     private readonly IHistoryStackStore _historyStacks;
+    private readonly Problems.ProblemBroadcaster _problemBroadcaster;
 
     public ContextServiceImpl(
         IProjectStore projectStore,
@@ -34,7 +35,8 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
         ContextSelectionResolver selectionResolver,
         IContextActionResolver contextActionResolver,
         IContextInteractionStore contextInteractionStore,
-        IHistoryStackStore historyStacks)
+        IHistoryStackStore historyStacks,
+        Problems.ProblemBroadcaster problemBroadcaster)
     {
         _projectStore = projectStore;
         _selectionStore = selectionStore;
@@ -42,6 +44,7 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
         _contextActionResolver = contextActionResolver;
         _contextInteractionStore = contextInteractionStore;
         _historyStacks = historyStacks;
+        _problemBroadcaster = problemBroadcaster;
     }
 
     public override async Task<SelectResponse> Select(SelectRequest request, ServerCallContext context)
@@ -120,8 +123,9 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
             HistoryActionsBroadcaster.ProjectTarget(rootPath), context.CancellationToken);
 
         // Registering writes the baseline first, so a late subscriber is consistent
-        // before anything else can arrive.
-        _selectionStore.Register(watchId, rootPath, channel.Writer, rootActions, projectActions);
+        // before anything else can arrive. The problems ride along as data: only the
+        // broadcaster knows both stores.
+        _selectionStore.Register(watchId, rootPath, channel.Writer, rootActions, projectActions, _problemBroadcaster.CurrentFor(rootPath));
         _contextInteractionStore.Register(watchId, channel.Writer);
         _logger.Information(
             "Context stream open on watch {WatchId} for project {ProjectId}, with {GroupCount} root action groups",

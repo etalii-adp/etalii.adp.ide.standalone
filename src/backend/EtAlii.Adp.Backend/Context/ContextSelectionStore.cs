@@ -24,7 +24,8 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         string rootPath,
         ChannelWriter<ContextMessage> writer,
         IReadOnlyList<ContextActionGroupDefinition> rootActions,
-        IReadOnlyList<ContextActionGroupDefinition> projectActions)
+        IReadOnlyList<ContextActionGroupDefinition> projectActions,
+        ProjectProblems problems)
     {
         var entry = GetOrCreate(watchId);
         lock (entry.Gate)
@@ -35,10 +36,12 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
             entry.RootPath = rootPath;
             entry.RootActions = rootActions;
             entry.ProjectActions = projectActions;
-            // The baseline: the selection (or the root's actions when nothing is selected), and
-            // the project's own actions, so a connection is fully current the moment it registers.
+            // The baseline: the selection (or the root's actions when nothing is selected), the
+            // project's own actions, and the project's problems, so a connection is fully
+            // current the moment it registers.
             writer.TryWrite(ContextSelectionRecord.ToWire(entry.Record, entry.RootActions));
             writer.TryWrite(ContextActionGroupDefinition.ToProto(projectActions));
+            writer.TryWrite(new ContextMessage { Problems = problems });
         }
     }
 
@@ -55,6 +58,24 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
                 }
 
                 entry.ProjectActions = actions;
+                entry.Writer.TryWrite(message);
+            }
+        }
+    }
+
+    public void PushProblems(string rootPath, ProjectProblems problems)
+    {
+        var message = new ContextMessage { Problems = problems };
+        foreach (var entry in _entries.Values)
+        {
+            lock (entry.Gate)
+            {
+                if (entry.Writer is null || !string.Equals(entry.RootPath, rootPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                // The same message instance for everyone: what one connection reads, all read.
                 entry.Writer.TryWrite(message);
             }
         }

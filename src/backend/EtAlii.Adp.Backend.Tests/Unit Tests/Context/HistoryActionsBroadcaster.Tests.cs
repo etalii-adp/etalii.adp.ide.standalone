@@ -163,7 +163,9 @@ public class HistoryActionsBroadcasterTests
             }
         }
 
-        public void Register(ShortGuid watchId, string rootPath, ChannelWriter<ContextMessage> writer, IReadOnlyList<ContextActionGroupDefinition> rootActions, IReadOnlyList<ContextActionGroupDefinition> projectActions) => throw new NotSupportedException();
+        public void Register(ShortGuid watchId, string rootPath, ChannelWriter<ContextMessage> writer, IReadOnlyList<ContextActionGroupDefinition> rootActions, IReadOnlyList<ContextActionGroupDefinition> projectActions, ProjectProblems problems) => throw new NotSupportedException();
+
+        public void PushProblems(string rootPath, ProjectProblems problems) => throw new NotSupportedException();
 
         public void Remove(ShortGuid watchId) => throw new NotSupportedException();
 

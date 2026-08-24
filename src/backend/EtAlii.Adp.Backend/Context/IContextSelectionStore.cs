@@ -29,12 +29,18 @@ public interface IContextSelectionStore
     /// </param>
     /// <param name="watchId">The connection's id.</param>
     /// <param name="projectActions">The project's actions.</param>
+    /// <param name="problems">
+    /// The project's current problems, carried as part of the baseline so the panel is
+    /// current the moment it connects (errors-and-warnings-panel Requirement 1.2). Data,
+    /// not a store: this store never learns where problems come from.
+    /// </param>
     void Register(
         ShortGuid watchId,
         string rootPath,
         ChannelWriter<ContextMessage> writer,
         IReadOnlyList<ContextActionGroupDefinition> rootActions,
-        IReadOnlyList<ContextActionGroupDefinition> projectActions);
+        IReadOnlyList<ContextActionGroupDefinition> projectActions,
+        ProjectProblems problems);
 
     /// <summary>
     /// Writes one project-actions message to every connection in <paramref name="rootPath"/>'s
@@ -42,6 +48,13 @@ public interface IContextSelectionStore
     /// disturbing anyone's selection (diagram-undo-redo Requirement 5.3, Deviation 1).
     /// </summary>
     void PushProjectActions(string rootPath, IReadOnlyList<ContextActionGroupDefinition> actions);
+
+    /// <summary>
+    /// Writes one problems message to every connection in <paramref name="rootPath"/>'s
+    /// project, and to none in another - the reason two viewers of one project cannot
+    /// disagree about what is wrong (errors-and-warnings-panel Requirements 1.1, 6.4).
+    /// </summary>
+    void PushProblems(string rootPath, ProjectProblems problems);
 
     /// <summary>Drops a connection's stream, selection and observations.</summary>
     void Remove(ShortGuid watchId);

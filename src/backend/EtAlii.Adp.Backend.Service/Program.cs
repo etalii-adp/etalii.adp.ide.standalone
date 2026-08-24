@@ -73,6 +73,10 @@ builder.Services.AddSingleton<IContextSourceResolver, HierarchyContextSourceReso
 // actions above make travels through here, which is what makes it undoable.
 builder.Services.AddCommands();
 
+// The Problems area: validation, the per-project problem cache, the broadcaster and the
+// startup pass that reconciles the cache after a restart (errors-and-warnings-panel).
+builder.Services.AddProblems(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
+
 // Undo and redo, offered as project-scope context actions, and the broadcaster that pushes
 // their availability whenever a project's history changes (diagram-undo-redo).
 builder.Services.AddSingleton<IContextActionProvider, HistoryContextActionProvider>();
@@ -145,6 +149,9 @@ if (ambiguousExtensions.Count > 0)
 // Resolved eagerly so it subscribes to the history store now, at startup, rather than on the
 // first request that happens to touch it - a lazily-created broadcaster would miss changes.
 _ = app.Services.GetRequiredService<HistoryActionsBroadcaster>();
+// Same reason: the problem broadcaster must be subscribed to the problem store before the
+// first validation writes into it (errors-and-warnings-panel Requirement 1.1).
+_ = app.Services.GetRequiredService<EtAlii.Adp.Backend.Problems.ProblemBroadcaster>();
 
 // One summary line per HTTP request - method, path, status, elapsed - instead of the several
 // ASP.NET Core writes by default. The routine ones are filtered out by the Serilog.AspNetCore

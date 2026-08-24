@@ -147,9 +147,10 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     }
 
     /// <summary>
-    /// The full opening of a stream: the selection baseline and then the project's own
-    /// actions - undo and redo - on their own message (diagram-undo-redo Deviation 1). A test
-    /// that then asserts nothing further arrives reads past both here.
+    /// The full opening of a stream: the selection baseline, the project's own actions - undo
+    /// and redo, on their own message (diagram-undo-redo Deviation 1) - and the project's
+    /// problems (errors-and-warnings-panel Requirement 1.2). A test that then asserts nothing
+    /// further arrives reads past all three here.
     /// </summary>
     private static async Task TestBaselineAsync(IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken)
     {
@@ -157,14 +158,13 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         var selection = await ReadSelectionAsync(stream, cancellationToken);
         while (await stream.MoveNext(cancellationToken))
         {
-            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.ProjectActions)
+            if (stream.Current.MessageCase == ContextMessage.MessageOneofCase.Problems)
             {
                 return;
-                //Assert.NotNull(selection);
             }
         }
 
-        throw new InvalidOperationException("The stream ended before the project-actions baseline arrived.");
+        throw new InvalidOperationException("The stream ended before the problems baseline arrived.");
     }
 
     [Fact]
