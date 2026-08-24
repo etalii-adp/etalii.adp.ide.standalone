@@ -52,7 +52,7 @@
   - _Requirements: 4.8, 5.1, 5.2, 5.3, 5.4, 5.5_
   - _Prompt: Implement the task for spec errors-and-warnings-panel, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# backend developer | Task: Implement ProblemMaintenance and StartupRevalidation per design.md, with unit tests | Restrictions: a single file change must cost a single file's validation - assert no project-wide traversal is triggered; a rename must carry the problems, not re-report the file as new; startup revalidation runs sequentially and must not block host startup; a project whose root is gone is skipped once, never retried in a loop | Success: `dotnet test src/backend/EtAlii.Adp.Backend.Tests` green; a test asserts one traversal for one changed file, and another that an opened project jumps the startup queue. Mark the task in progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7. Extend `context.proto` with problems, the scope and the source
+- [-] 7. Extend `context.proto` with problems, the scope and the source
   - File: `src/api/context.proto` (modify)
   - Add `ProblemSeverity`, `ProblemLocation`, `Problem`, `ProblemSetState`, `ProjectProblems`; add `ProjectProblems problems = 4;` to `ContextMessage.message`; add `google.protobuf.Empty problems = 4;` to `ContextSource.source`; add `PROBLEMS = 4;` to `ContextScope`. Comments in the existing style, including why the counts are of the whole set and why a path is project-relative
   - Purpose: the contract everything below carries (design *Data Models*)
