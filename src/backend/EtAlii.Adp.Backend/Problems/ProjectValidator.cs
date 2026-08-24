@@ -41,6 +41,12 @@ public sealed class ProjectValidator
         _validatorTimeout = validatorTimeout ?? DefaultValidatorTimeout;
     }
 
+    /// <summary>
+    /// Whether a validation is running for <paramref name="rootPath"/> right now - what a
+    /// "Validate all" button reads to grey itself while one is in flight (Requirement 6.5).
+    /// </summary>
+    public bool IsValidating(string rootPath) => _running.ContainsKey(IoPath.GetFullPath(rootPath));
+
     public async ValueTask<ValidationOutcome> ValidateAsync(ValidationScope scope, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scope);

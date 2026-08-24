@@ -144,6 +144,8 @@ public class StartupRevalidationTests : IDisposable
 
         public void Move(string rootPath, string fromRelativePath, string toRelativePath) { }
 
+        public void BeginValidating(string rootPath) { }
+
         public IReadOnlyList<string> KnownRoots() => Roots;
     }
 

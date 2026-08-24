@@ -268,6 +268,14 @@ public sealed partial class ContextServiceImpl
             return HistoryActionsBroadcaster.ProjectTarget(rootPath);
         }
 
+        // An explicit problems source names the errors-and-warnings panel itself, for
+        // Validate all, which applies to the problem list rather than to whatever is
+        // selected (errors-and-warnings-panel Requirement 7.4).
+        if (source.SourceCase == ContextSource.SourceOneofCase.Problems)
+        {
+            return new ContextTarget(ContextScope.ProblemsPanel, rootPath, IsContainer: false, SourceId: default, RootPath: rootPath, WatchId: watchId);
+        }
+
         // An element lives inside a diagram, so a bare element id is resolvable only within
         // the connection's current selection - whose chain names the file the element is in.
         // The canvas sends exactly this: a keystroke against its focused node, which is

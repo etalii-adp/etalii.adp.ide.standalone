@@ -147,12 +147,17 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         var add = Assert.Single(actions, action => action.Id == AddDiagramContextActionProvider.AddActionId);
         Assert.True(add.Available);
         Assert.Equal("Insert", add.Shortcut.Key);
+        var validate = Assert.Single(actions, action => action.Id == Problems.ValidateContextActionProvider.ValidateActionId);
+        Assert.True(validate.Available); // Validating the root is validating the whole project - always sensible.
         // The root is a folder, but the one folder the project must not rename or delete.
-        Assert.All(actions.Where(action => action.Id != AddDiagramContextActionProvider.AddActionId), action =>
-        {
-            Assert.False(action.Available);
-            Assert.NotEqual("", action.UnavailableReason);
-        });
+        Assert.All(
+            actions.Where(action => action.Id is not AddDiagramContextActionProvider.AddActionId
+                and not Problems.ValidateContextActionProvider.ValidateActionId),
+            action =>
+            {
+                Assert.False(action.Available);
+                Assert.NotEqual("", action.UnavailableReason);
+            });
     }
 
     [Fact]

@@ -14,6 +14,13 @@ public interface IProblemStore
     /// </summary>
     ProjectProblemSet Get(string rootPath);
 
+    /// <summary>
+    /// A validation just started: the set's state becomes
+    /// <see cref="ProjectProblemSetState.Validating"/> while the list keeps showing what the
+    /// previous run found - so the panel can say it is working (Requirement 1.6).
+    /// </summary>
+    void BeginValidating(string rootPath);
+
     /// <summary>The whole project was validated: this is everything (Validate all).</summary>
     void Replace(string rootPath, IReadOnlyList<StoredProblem> problems);
 

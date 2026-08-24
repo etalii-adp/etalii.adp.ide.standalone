@@ -77,6 +77,9 @@ public sealed class ProblemStore : IProblemStore, IDisposable
         }
     }
 
+    public void BeginValidating(string rootPath) =>
+        Mutate(rootPath, entry => entry.State = ProjectProblemSetState.Validating);
+
     public void Replace(string rootPath, IReadOnlyList<StoredProblem> problems)
     {
         ArgumentNullException.ThrowIfNull(problems);

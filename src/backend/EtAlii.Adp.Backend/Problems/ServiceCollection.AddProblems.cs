@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Backend.Problems;
 using EtAlii.Adp.Diagram;
@@ -38,6 +39,13 @@ public static class ServiceCollectionAddProblemsExtension
         services.AddSingleton<ProblemMaintenance>();
         services.AddSingleton<StartupRevalidation>();
         services.AddSingleton<IHostedService>(provider => provider.GetRequiredService<StartupRevalidation>());
+
+        // Validate on a folder or a diagram, Validate all on the panel itself, and the
+        // resolver that lets the panel select itself - all through the ordinary context
+        // seams, so no surface learns what validation is.
+        services.AddSingleton<IContextActionProvider, ValidateContextActionProvider>();
+        services.AddSingleton<IContextActionProvider, ValidateAllContextActionProvider>();
+        services.AddSingleton<IContextSourceResolver, ProblemsContextSourceResolver>();
 
         return services;
     }

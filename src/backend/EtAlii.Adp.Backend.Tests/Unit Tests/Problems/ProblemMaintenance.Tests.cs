@@ -161,6 +161,8 @@ public class ProblemMaintenanceTests : IDisposable
         public void Move(string rootPath, string fromRelativePath, string toRelativePath) =>
             Record("Move", (fromRelativePath, toRelativePath));
 
+        public void BeginValidating(string rootPath) { }
+
         public IReadOnlyList<string> KnownRoots() => [];
 
         private void Record(string kind, object payload)
