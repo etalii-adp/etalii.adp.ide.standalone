@@ -7,6 +7,7 @@ using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Backend.Diagrams;
+using EtAlii.Adp.C4;
 using EtAlii.Adp.Diagram.Mindmap;
 using JetBrains.Annotations;
 using Serilog;
@@ -91,6 +92,11 @@ builder.Services.AddSingleton<IDiagramDocumentFactory, MindmapDocumentFactory>()
 builder.Services.AddSingleton<IContextSourceResolver, MindmapContextSourceResolver>();
 builder.Services.AddSingleton<IContextActionProvider, MindmapContextActionProvider>();
 builder.Services.AddSingleton<IDiagramToolboxProvider, MindmapToolboxProvider>();
+
+// The C4 family: seven diagram types over one shared engine, so one line registers all of
+// them. They differ only in the view each binds, which is data rather than code
+// (c4-diagrams Requirement 1).
+builder.Services.AddC4();
 // The module's layout numbers, with what appsettings.json's Mindmap section says applied -
 // the minimum gap between elements as a fraction of a node's width, above all.
 var mindmapOptions = builder.Configuration.GetSection(MindmapOptions.SectionName).Get<MindmapOptions>() ?? new MindmapOptions();
