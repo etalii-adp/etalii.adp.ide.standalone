@@ -4,7 +4,7 @@
 >
 > **The one line that matters.** Task 12 makes the panel report itself as the selection on focus. That single line is what puts **Validate all** in the ribbon and in the panel's right-click menu; nothing in `RibbonContextualGroups` or `ContextMenu` is touched by this spec (design *ErrorsWarningsPanel*, Requirement 7.4).
 
-- [ ] 1. Add the `IDiagramValidator` seam and its problem model
+- [-] 1. Add the `IDiagramValidator` seam and its problem model
   - File: `src/backend/EtAlii.Adp.Diagram/IDiagramValidator.cs` (new), `src/backend/EtAlii.Adp.Diagram/_Model/DiagramProblem.cs` (new), `src/backend/EtAlii.Adp.Diagram/_Model/DiagramProblemLocation.cs` (new), `src/backend/EtAlii.Adp.Diagram/_Model/DiagramProblemSeverity.cs` (new)
   - `IDiagramValidator` with `DiagramOrigin Origin` and `ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(string document, string baseName, CancellationToken)`. `DiagramProblem(DiagramProblemSeverity Severity, string Message, string RuleId, DiagramProblemLocation? Location)`; `DiagramProblemLocation` as `ElementId(string)` | `Line(uint)`; severity `Warning`/`Error`. XML docs in the existing style, explaining that a type with no rules simply registers nothing
   - Purpose: the one seam a diagram-type module implements (Requirement 3.1-3.2)
