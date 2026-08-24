@@ -22,6 +22,7 @@ import type {
   ContextSelectionChanged,
   ContextShortcut,
   ContextSource,
+  ProjectProblems,
 } from "../../generated/context_pb";
 import type { ContextPromptSubmission, ContextPromptVerdict } from "./ContextPromptHost";
 import { useCoalescedSelect } from "./useCoalescedSelect";
@@ -37,6 +38,16 @@ export const NONE_DETAIL: ContextSelection["detail"] = { case: "none", value: cr
  */
 export const PROJECT_SOURCE: ContextSource = create(ContextSourceSchema, {
   source: { case: "project", value: create(EmptySchema) },
+});
+
+/**
+ * Names the errors-and-warnings panel itself as a selection or an action's target. What the
+ * panel selects on focus - which is what routes Validate all into the ribbon - and what its
+ * shortcut passes as the source (errors-and-warnings-panel Requirement 7.4). Empty for the
+ * same reason as {@link PROJECT_SOURCE}: the call already carries the project it is scoped to.
+ */
+export const PROBLEMS_SOURCE: ContextSource = create(ContextSourceSchema, {
+  source: { case: "problems", value: create(EmptySchema) },
 });
 
 /** How long a burst of plain selections may keep coalescing before the last one is sent. */
@@ -94,6 +105,11 @@ const PromptContext = createContext<ContextPromptValue | undefined>(undefined);
 // The project's own actions, kept apart from the selection so a project-actions push never
 // re-renders a selection consumer (diagram-undo-redo Deviation 1). Empty until the first push.
 const ProjectActionsContext = createContext<ContextActionGroup[]>([]);
+// The project's problems, apart from the selection for the same reason: a validation
+// finishing must re-render the panel, not every selection consumer (errors-and-warnings-panel
+// Requirement 1.1). Null until the baseline arrives - the panel shows "not checked yet"
+// through the message's own NEVER_VALIDATED state, not through this null.
+const ProblemsContext = createContext<ProjectProblems | null>(null);
 
 const EMPTY_SELECTION: ContextSelectionValue = {
   selection: null,
@@ -150,6 +166,7 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
   const [selectionValue, setSelectionValue] = useState<ContextSelectionValue>(EMPTY_SELECTION);
   const [prompt, setPrompt] = useState<ContextPrompt | null>(null);
   const [projectActions, setProjectActions] = useState<ContextActionGroup[]>([]);
+  const [problems, setProblems] = useState<ProjectProblems | null>(null);
 
   const setPendingReveal = useCallback(
     (segments: string[] | null) => setSelectionValue((previous) => ({ ...previous, pendingReveal: segments })),
@@ -208,6 +225,12 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
               // Its own state, so undo/redo availability updates the History group and the
               // shortcuts without disturbing the selection (diagram-undo-redo Deviation 1).
               setProjectActions(message.message.value.actions);
+              continue;
+            }
+            if (message.message.case === "problems") {
+              // Exactly what the backend sent - no client-side filtering, sorting or
+              // counting here; the panel derives its view from this one message.
+              setProblems(message.message.value);
               continue;
             }
             if (message.message.case !== "selection") {
@@ -328,9 +351,11 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
   return (
     <ConnectionContext.Provider value={connectionValue}>
       <ProjectActionsContext.Provider value={projectActions}>
-        <SelectionContext.Provider value={selectionValue}>
-          <PromptContext.Provider value={promptValue}>{children}</PromptContext.Provider>
-        </SelectionContext.Provider>
+        <ProblemsContext.Provider value={problems}>
+          <SelectionContext.Provider value={selectionValue}>
+            <PromptContext.Provider value={promptValue}>{children}</PromptContext.Provider>
+          </SelectionContext.Provider>
+        </ProblemsContext.Provider>
       </ProjectActionsContext.Provider>
     </ConnectionContext.Provider>
   );
@@ -367,6 +392,16 @@ export function useContextPrompt(): ContextPromptValue {
  */
 export function useProjectActions(): ContextActionGroup[] {
   return useContext(ProjectActionsContext);
+}
+
+/**
+ * The project's problems, as last pushed by the backend - one list for every viewer of the
+ * project. Null until the baseline arrives; after that, exactly what the backend sent,
+ * including the whole-set counts and the NEVER_VALIDATED/VALIDATING/VALIDATED state the
+ * panel words its empty states from.
+ */
+export function useContextProblems(): ProjectProblems | null {
+  return useContext(ProblemsContext);
 }
 
 /** Builds a one-level selection message; the explorer's helper for its own entries. */

@@ -5,17 +5,21 @@ import {
   ContextMessageSchema,
   ContextSelectionAction,
   ContextSelectionSource,
+  ProblemSetState,
+  ProblemSeverity,
   type ContextMessage,
 } from "../../generated/context_pb";
 import {
   ContextConnectionProvider,
   NONE_DETAIL,
+  PROBLEMS_SOURCE,
   SELECT_COALESCE_MS,
   innermostAction,
   innermostKey,
   selectionFor,
   useContextConnection,
   useContextPrompt,
+  useContextProblems,
   useContextSelection,
   useProjectActions,
 } from "./ContextConnectionProvider";
@@ -347,5 +351,104 @@ describe("innermost helpers", () => {
     expect(innermostKey(outer)).toBe(innermostKey(inner));
     expect(innermostAction(outer)).toBe(ContextSelectionAction.ACTIVATE);
     expect(innermostKey(null)).toBeUndefined();
+  });
+});
+
+function problemsMessage(state: ProblemSetState, messages: string[]): ContextMessage {
+  return create(ContextMessageSchema, {
+    message: {
+      case: "problems",
+      value: {
+        state,
+        problems: messages.map((message) => ({
+          severity: ProblemSeverity.ERROR,
+          message,
+          path: { segments: ["flow.adp"] },
+          ruleId: "core.unknown-type",
+        })),
+        errorCount: messages.length,
+      },
+    },
+  });
+}
+
+describe("ContextConnectionProvider problems", () => {
+  beforeEach(() => {
+    streams.length = 0;
+    watch.mockClear();
+  });
+
+  it("routes a problems message to useContextProblems without touching the selection", async () => {
+    // A validation finishing must re-render the panel, not every selection consumer.
+    let selectionRenders = 0;
+
+    function SelectionOnly() {
+      selectionRenders++;
+      const { selection } = useContextSelection();
+      return <span data-testid="sel">{innermostKey(selection) ?? "none"}</span>;
+    }
+
+    function ProblemsOnly() {
+      const problems = useContextProblems();
+      return (
+        <span data-testid="problems">
+          {problems ? `${ProblemSetState[problems.state]}:${problems.problems.map((p) => p.message).join(",")}` : "no baseline"}
+        </span>
+      );
+    }
+
+    render(
+      <ContextConnectionProvider projectId={projectId}>
+        <SelectionOnly />
+        <ProblemsOnly />
+      </ContextConnectionProvider>,
+    );
+    await flush();
+
+    streams[0]!.push(selectionMessage(entryA));
+    await waitFor(() => expect(screen.getByTestId("sel").textContent).not.toBe("none"));
+    const rendersBefore = selectionRenders;
+    const selectionBefore = screen.getByTestId("sel").textContent;
+
+    // A problems push updates the hook - exactly what the backend sent...
+    streams[0]!.push(problemsMessage(ProblemSetState.VALIDATED, ["'vendor/unheard-of' is not a known diagram type."]));
+    await waitFor(() => expect(screen.getByTestId("problems").textContent).toContain("VALIDATED"));
+    expect(screen.getByTestId("problems").textContent).toContain("not a known diagram type");
+
+    // ...and leaves the selection consumer exactly as it was - same value, no extra render.
+    expect(screen.getByTestId("sel").textContent).toBe(selectionBefore);
+    expect(selectionRenders).toBe(rendersBefore);
+  });
+
+  it("keeps the problems through an unrelated selection change", async () => {
+    function ProblemsOnly() {
+      const problems = useContextProblems();
+      return <span data-testid="problems">{problems ? String(problems.problems.length) : "no baseline"}</span>;
+    }
+
+    function SelectionOnly() {
+      const { selection } = useContextSelection();
+      return <span data-testid="sel">{innermostKey(selection) ?? "none"}</span>;
+    }
+
+    render(
+      <ContextConnectionProvider projectId={projectId}>
+        <SelectionOnly />
+        <ProblemsOnly />
+      </ContextConnectionProvider>,
+    );
+    await flush();
+
+    streams[0]!.push(problemsMessage(ProblemSetState.VALIDATED, ["one", "two"]));
+    await waitFor(() => expect(screen.getByTestId("problems").textContent).toBe("2"));
+
+    streams[0]!.push(selectionMessage(entryA));
+    await waitFor(() => expect(screen.getByTestId("sel").textContent).not.toBe("none"));
+
+    expect(screen.getByTestId("problems").textContent).toBe("2");
+  });
+
+  it("names the problems source for the panel", () => {
+    expect(PROBLEMS_SOURCE.source.case).toBe("problems");
   });
 });

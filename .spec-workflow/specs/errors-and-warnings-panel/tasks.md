@@ -92,7 +92,7 @@
   - _Requirements: 3.1, 3.2_
   - _Prompt: Implement the task for spec errors-and-warnings-panel, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer working inside a diagram-type module | Task: Implement MindmapValidator against the module's own document store and register it, with unit tests over the existing .mm fixtures | Restrictions: the module must not reference EtAlii.Adp.Backend - only the EtAlii.Adp.Diagram seam; never throw out of ValidateAsync, return problems; a valid fixture must produce no problems - assert it against Fixtures/architecture.mm, the real Freeplane document already in the test corpus; rule ids prefixed mindmap. | Success: `dotnet test src/diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap.Tests` green; Fixtures/architecture.mm validates clean. Mark the task in progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 12. Carry problems on the client connection, and report the panel as a selection
+- [x] 12. Carry problems on the client connection, and report the panel as a selection
   - File: `src/client/src/shell/context/ContextConnectionProvider.tsx` (modify), `src/client/src/shell/context/ContextConnectionProvider.test.tsx` (modify)
   - One more `ContextMessage` case updating a `problems` slot, exposed as `useContextProblems()`; a `PROBLEMS_SOURCE` constant beside the existing `PROJECT_SOURCE`. Tests: a problems message updates the slot and disturbs nothing else; the slot survives an unrelated selection change
   - Purpose: the client half of the push, and the constant task 13 needs (Requirements 1.1, 7.4)
