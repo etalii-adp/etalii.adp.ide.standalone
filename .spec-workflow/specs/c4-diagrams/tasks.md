@@ -57,7 +57,8 @@
   - _Requirements: 2.5, 2.6_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer working in core | Task: Route registrations with named bodies and bare .dsl bodies to the C4 family | Restrictions: do not create an .adp implicitly for a bare .dsl; a missing named body must produce the unavailable state, never an exception | Success: both routes resolve, a missing body reports the path it looked for, and ambiguous-extension handling is unaffected_
 
-- [ ] 5. Hand the registration path to session factories
+- [x] 5. Hand the registration path to session factories
+  - **Done.** Core passes the `.adp` path and interprets nothing in it
   - File: `src/backend/EtAlii.Adp.Backend/Diagrams/IDiagramSession.cs` (modify), `src/backend/EtAlii.Adp.Backend/Diagrams/DiagramServiceImpl.cs` (modify), `src/diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/MindmapSessionFactory.cs` (modify)
   - `IDiagramSessionFactory.Open` gains the `.adp` path alongside the body path; core passes both and interprets neither. The mindmap factory ignores it
   - Purpose: the C4 module reads its own `view:` key (design *Prerequisites* 1)
@@ -67,7 +68,8 @@
 
 ## Phase C — the document and its round trip
 
-- [ ] 6. `C4Document` skeleton: bytes in, bytes out
+- [x] 6. `C4Document` skeleton: bytes in, bytes out
+  - **Done.** All nine fixtures round-trip byte-identically, CRLF, LF and no-trailing-newline alike
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/_Model/C4Document.cs` (new), `EtAlii.Adp.Diagram.C4.Tests/C4Document.Tests.cs` (new)
   - Hold the original text, split into lines, preserve the trailing newline and the file's line-ending style; `Parse` and `ToText` with nothing modelled yet
   - Purpose: the foundation of Requirement 3.1's byte-identical guarantee
@@ -75,7 +77,8 @@
   - _Requirements: 3.1_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Build the document skeleton that round-trips text unchanged, preserving line endings and the trailing newline | Restrictions: no reformatting, no normalising of line endings, no trimming | Success: every fixture from task 1 round-trips byte-identically through Parse then ToText, CRLF and LF files alike_
 
-- [ ] 7. Parse the static model block
+- [x] 7. Parse the static model block
+  - **Done.** Landed with tasks 8-11: the DSL interleaves them, so separate passes would each re-establish the same nesting state
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/_Model/C4ModelParser.cs` (new), test file (new)
   - `workspace`, `model`, `person`, `softwareSystem`, `container`, `component`, `group`, with identifiers, names, descriptions, technologies and tags; each parsed element remembers the line it came from
   - Purpose: the model half of Requirement 1.1
@@ -83,7 +86,8 @@
   - _Requirements: 1.1, 10.6_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer writing a hand-rolled subset parser | Task: Parse the static model block into elements that each remember their source line | Restrictions: do not take a dependency on the Java Structurizr library or an ANTLR grammar; unknown constructs are retained as raw lines, never dropped | Success: the Big Bank fixture yields the expected people, systems, containers and components with their technologies, and every element maps back to its line_
 
-- [ ] 8. Parse the deployment model
+- [x] 8. Parse the deployment model
+  - **Done.** Landed with task 7
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/_Model/C4DeploymentParser.cs` (new), test file (new)
   - `deploymentEnvironment`, nested `deploymentNode`, `infrastructureNode`, `containerInstance`, `softwareSystemInstance`
   - Purpose: Requirements 9.1–9.4, including arbitrary nesting
@@ -91,7 +95,8 @@
   - _Requirements: 9.1, 9.2, 9.3, 9.4_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Parse deployment environments with arbitrarily nested nodes, infrastructure nodes and container instances | Restrictions: a container instance references the container in the model rather than copying it; nesting depth must not be capped | Success: the AWS fixture parses with correct nesting, instances resolve to their containers, and a container with several instances is represented as such_
 
-- [ ] 9. Parse relationships
+- [x] 9. Parse relationships
+  - **Done.** Landed with task 7
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/_Model/C4RelationshipParser.cs` (new), test file (new)
   - The `->` form in all its positions (inside an element block, at model level), with description, technology and tags
   - Purpose: relationships are first-class elements on the wire (design *Deviations*)
@@ -99,7 +104,8 @@
   - _Requirements: 10.4, 10.5, 4.6_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Parse relationships in every position the DSL allows, capturing description and technology | Restrictions: relationships are unidirectional; do not infer a reverse relationship; keep each one's source line | Success: the fixtures' relationships parse with correct source, destination, description and technology, including ones declared inside element blocks_
 
-- [ ] 10. Parse the views block
+- [x] 10. Parse the views block
+  - **Done.** Landed with task 7
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/_Model/C4ViewsParser.cs` (new), test file (new)
   - `systemLandscape`, `systemContext`, `container`, `component`, `dynamic`, `deployment`, each with its key, scope, `include`/`exclude`, `autoLayout` and `title`; dynamic views keep their ordered, possibly nested interaction numbering
   - Purpose: the view half of Requirement 1.1, plus 7.5–7.6 and 8.2
@@ -107,7 +113,8 @@
   - _Requirements: 1.1, 7.5, 7.6, 8.2_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Parse all six declarable view kinds with their scope, membership, autoLayout and title, preserving dynamic interaction order | Restrictions: do not invent a code view kind - the DSL has none, which is why Requirement 11 delegates; preserve nested numbering exactly as written | Success: the Big Bank fixture's views parse with correct kinds, scopes and membership, and the dynamic view's interaction order round-trips_
 
-- [ ] 11. Parse element styles for the theme override
+- [x] 11. Parse element styles for the theme override
+  - **Done.** Landed with task 7
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/_Model/C4StylesParser.cs` (new), test file (new)
   - Tag-based element styles: background, colour, shape, border
   - Purpose: Requirement 4.8's overridable palette and 4.9's legend reflecting it
@@ -141,7 +148,8 @@
   - _Requirements: 1.1, 10.6_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Build the resolved model and view types, enforcing that a container belongs to one system, a component to one container, and that containment has no cycles | Restrictions: refuse structural impossibilities at construction rather than reporting them as violations; keep the type free of file and wire concerns | Success: valid fixtures build a model, a hand-made cyclic fixture is refused with a clear message, and the type has no dependency on the store or the mapper_
 
-- [ ] 15. `C4RuleSet` — the C4 rules as a pure function
+- [x] 15. `C4RuleSet` — the C4 rules as a pure function
+  - **Done.** 19 rule tests. Wired to core via `IDiagramValidator`/`DiagramProblem` rather than the private `C4Violation` the design named - the errors-and-warnings-panel seam landing first made that possible, and `ElementId` locations give Requirement 10.8 click-to-select for free
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4RuleSet.cs` (new), `C4RuleSet.Tests.cs` (new)
   - `(C4Model, C4View) → IReadOnlyList<C4Violation>`: kind not permitted on the view, missing description, missing technology on a container or component, unlabelled relationship, missing protocol on a boundary-crossing relationship, mixed abstraction levels on a dynamic view
   - Purpose: Requirement 10 in full; the NFR demands a test per rule that fails when the rule is unenforced
