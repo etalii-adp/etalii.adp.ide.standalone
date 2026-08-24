@@ -34,6 +34,11 @@ public static class ServiceCollectionAddC4Extension
         {
             var origin = new DiagramOrigin("c4", type);
             services.AddSingleton<IDiagramDocumentFactory>(_ => new C4DocumentFactory(origin, viewKind));
+
+            // The type's rules, resolved by origin through core's validator registry, so C4's
+            // violations reach the errors and warnings panel like any other type's
+            // (errors-and-warnings-panel Requirement 3.1, c4-diagrams Requirement 10.8).
+            services.AddSingleton<IDiagramValidator>(_ => new C4Validator(origin));
         }
 
         // The seventh type registers a factory that refuses: it is registered so core's startup
