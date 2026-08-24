@@ -193,7 +193,9 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
             return false;
         }
 
-        if (_router.Route(full) is not DiagramRouting.Routed routed)
+        // The root is passed so a registration naming a shared body resolves to it, and so a
+        // body: header pointing outside the project is refused (c4-diagrams Requirement 2.4).
+        if (_router.Route(full, rootPath) is not DiagramRouting.Routed routed)
         {
             return false;
         }
