@@ -141,13 +141,15 @@ if (ambiguousExtensions.Count > 0)
         ambiguousExtensions);
 }
 
-// One summary line per HTTP request - method, path, status, elapsed - instead of the several
-// ASP.NET Core writes by default. It is what makes a slow or failing call visible without
-// turning framework logging up to Information across the board.
 // Resolved eagerly so it subscribes to the history store now, at startup, rather than on the
 // first request that happens to touch it - a lazily-created broadcaster would miss changes.
 _ = app.Services.GetRequiredService<HistoryActionsBroadcaster>();
 
+// One summary line per HTTP request - method, path, status, elapsed - instead of the several
+// ASP.NET Core writes by default. The routine ones are filtered out by the Serilog.AspNetCore
+// override in appsettings.json: a client polling over gRPC-Web buries everything else under
+// them. A request that throws is logged at Error and still comes through; drop that override
+// to Information to watch them all again.
 app.UseSerilogRequestLogging();
 
 // DefaultEnabled so every mapped gRPC service (including DiagramService once that spec
