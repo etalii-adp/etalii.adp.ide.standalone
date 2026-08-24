@@ -39,7 +39,8 @@
   - _Requirements: 2.2_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Add the .dsl extension to the seven C4 diagram definitions | Restrictions: change nothing else in these files; do not introduce a MIME-to-extension mapping anywhere in core | Success: all seven report HasDocumentSibling, discovery still lists them, and the existing definition tests pass_
 
-- [ ] 3. Teach `.adp` files to name their body and view
+- [x] 3. Teach `.adp` files to name their body and view
+  - **Done, and it touched a safety property the task did not mention.** `SiblingOf` drives delete and rename, not only open, so returning a named body from it would have made deleting one C4 view destroy the shared model every other view opens. Ownership is now explicit (`DiagramFilePair.DiagramBody`): a derived sibling is owned and travels with its registration, a `body:` header never is. `BodyOf` resolves what to open either way
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/DiagramFilePair.cs` (modify), `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/DiagramFilePair.Tests.cs` (modify/new)
   - Parse optional `body:` and `view:` header lines following the MIME line. `body:` is project-relative and refused if it escapes the project root; absent headers mean today's derived-sibling behaviour, byte for byte
   - Purpose: several `.adp` files must share one model document (Requirement 2.4)
