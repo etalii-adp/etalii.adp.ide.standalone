@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/c4-diagrams/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-24T10:04:04.241Z",
       "trigger": "initial",
+      "approvalId": "approval_1787565844171_3l5qgicqb",
+      "approvalTitle": "C4 diagrams — requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-24T11:06:34.939Z",
+      "trigger": "approved",
       "approvalId": "approval_1787565844171_3l5qgicqb",
       "approvalTitle": "C4 diagrams — requirements"
     }

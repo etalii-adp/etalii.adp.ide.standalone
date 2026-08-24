@@ -57,12 +57,13 @@ This spec covers the **C4 diagram modules** — the seven diagram types the C4 m
 
 #### Acceptance Criteria
 
-1. WHEN a C4 diagram exists on disk THEN it SHALL be `<name>.adp`, whose first line is the type's MIME line (`c4/context`, `c4/container`, `c4/component`, `c4/code`, `c4/system-landscape`, `c4/dynamic` or `c4/deployment`), plus a Structurizr DSL document holding the model and its views.
-2. WHEN the modules declare themselves THEN each SHALL set `DiagramDefinition.Extension` to `".dsl"`, reusing the member `mindmap-diagram` Requirement 2.2 added; no new core mechanism SHALL be introduced for the extension.
+1. WHEN a C4 diagram exists on disk THEN it SHALL be `<name>.adp`, whose first line is the type's MIME line (`c4/context`, `c4/container`, `c4/component`, `c4/code`, `c4/system-landscape`, `c4/dynamic` or `c4/deployment`), plus a Structurizr DSL document (in a dedicated .dsl file) holding the model and its views.
+2. WHEN the modules declare themselves THEN each SHALL set `DiagramDefinition.Extension` to `".dsl"`.
 3. WHEN a C4 `.adp` file is created alone THEN its body SHALL be the sibling `<name>.dsl`, exactly as every existing type behaves, so the simple case stays simple.
 4. WHEN several C4 `.adp` files are to share one model THEN the `.adp` file SHALL be able to **name** its body document and the view within it, rather than having the body derived from its own base name. This is the one core change this spec asks for (see *What this spec changes in core*); the named path SHALL be project-relative and SHALL be refused if it escapes the project root.
 5. IF the named model document is missing THEN the diagram SHALL open in the unavailable state `diagram-workspace-tabs` Requirement 5 already defines, naming the path it looked for — never a crash and never a silently empty canvas.
 6. WHEN a `.dsl` file is present without an `.adp` sibling THEN it SHALL still be openable through extension routing, defaulting to its first declared view, and the `.adp` file SHALL NOT be created implicitly.
+7. Actions on files with the .dsl extension are "Add view", this will be the add file dialog but filtered to the c4 diagram types.&#x20;
 
 ### Requirement 3 — Round-tripping the DSL without disturbing what a human wrote
 
@@ -186,7 +187,7 @@ This spec covers the **C4 diagram modules** — the seven diagram types the C4 m
 
 1. WHEN a `c4/code` view is opened THEN its scope SHALL be **a single component**, and its primary elements SHALL be code elements — classes, interfaces, objects, functions, database tables — within that component.
 2. WHEN the notation is chosen THEN it SHALL be a **UML class diagram or an entity-relationship diagram**, since that is what C4 specifies for this level, rather than the box notation the other six views use.
-3. **BECAUSE C4 explicitly advises against hand-drawing this level** — "not [recommended], particularly for long-lived documentation because most IDEs can generate this level of detail on demand" — the Add dialog SHALL present `c4/code` as optional and advanced, and SHALL say why, rather than offering it as the natural fourth step after Component.
+3. **BECAUSE C4 explicitly advises against hand-drawing this level** — "not \[recommended], particularly for long-lived documentation because most IDEs can generate this level of detail on demand" — the Add dialog SHALL present `c4/code` as optional and advanced, and SHALL say why, rather than offering it as the natural fourth step after Component.
 4. WHEN a code view is rendered THEN ADP SHALL delegate the notation to an existing class/ERD diagram type (`uml/class`, `mermaid/class` or `erd/entity-relationship`) rather than implementing a fourth notation inside the C4 modules, and the `c4/code` module's own job SHALL be limited to binding that drawing to the component it details.
 5. WHEN a code view is populated THEN it SHALL show only the attributes and methods that tell the intended story, per C4's guidance, rather than every member of every type.
 6. WHERE generation from source is not available THEN the view SHALL still be openable and hand-editable — the advice against it is guidance to the user, not a prohibition ADP enforces.
@@ -222,25 +223,25 @@ This spec covers the **C4 diagram modules** — the seven diagram types the C4 m
 
 ### Code Architecture and Modularity
 
-- **Single Responsibility Principle**: parsing the DSL, computing layout, mapping to `Element`/`Delta`, and validating C4 rules are four separate concerns in four separate units — the split `mindmap-diagram` arrived at, applied from the start.
-- **Modular Design**: the seven modules SHALL share one C4 model library rather than duplicating the abstractions seven times; that shared library depends on core, and core depends on none of them.
-- **Dependency Management**: the C4 modules SHALL NOT reference one another except through the shared model library, so a type can be built or dropped independently — with `c4/code`'s stated exception (Requirement 11.7).
-- **Clear Interfaces**: the rule validator SHALL be a pure function from model plus view to a list of violations, so every rule in Requirement 10 is testable without a canvas, a file or a connection.
+* **Single Responsibility Principle**: parsing the DSL, computing layout, mapping to `Element`/`Delta`, and validating C4 rules are four separate concerns in four separate units — the split `mindmap-diagram` arrived at, applied from the start.
+* **Modular Design**: the seven modules SHALL share one C4 model library rather than duplicating the abstractions seven times; that shared library depends on core, and core depends on none of them.
+* **Dependency Management**: the C4 modules SHALL NOT reference one another except through the shared model library, so a type can be built or dropped independently — with `c4/code`'s stated exception (Requirement 11.7).
+* **Clear Interfaces**: the rule validator SHALL be a pure function from model plus view to a list of violations, so every rule in Requirement 10 is testable without a canvas, a file or a connection.
 
 ### Performance
 
-- A model of 500 elements and 1000 relationships SHALL open and render within the budget `adp-diagram-ide` sets for a diagram of that size.
-- Layout SHALL be computed on the backend and delivered through the viewport contract, so a large landscape does not stream in full before the first paint.
-- Rule validation SHALL run incrementally on edit rather than re-validating the whole model on every keystroke.
+* A model of 500 elements and 1000 relationships SHALL open and render within the budget `adp-diagram-ide` sets for a diagram of that size.
+* Layout SHALL be computed on the backend and delivered through the viewport contract, so a large landscape does not stream in full before the first paint.
+* Rule validation SHALL run incrementally on edit rather than re-validating the whole model on every keystroke.
 
 ### Reliability
 
-- A `.dsl` file ADP did not change SHALL be byte-identical after a save (Requirement 3.1), guarded by a corpus test over real-world Structurizr models including the canonical Big Bank plc example.
-- An unparseable or partially written `.dsl` SHALL never be overwritten (Requirement 3.4).
-- Every C4 rule in Requirement 10 SHALL have a test that fails when the rule is not enforced.
+* A `.dsl` file ADP did not change SHALL be byte-identical after a save (Requirement 3.1), guarded by a corpus test over real-world Structurizr models including the canonical Big Bank plc example.
+* An unparseable or partially written `.dsl` SHALL never be overwritten (Requirement 3.4).
+* Every C4 rule in Requirement 10 SHALL have a test that fails when the rule is not enforced.
 
 ### Usability
 
-- The notation SHALL be recognisable as C4 to someone who has read c4model.com and never seen ADP (Requirement 4).
-- Violations SHALL read as guidance naming the rule, not as error codes (Requirement 10.8).
-- Nothing in the UI SHALL imply the four static levels are all mandatory: C4 states the Context and Container diagrams are sufficient for most teams, Component diagrams are optional, and Code diagrams are discouraged.
+* The notation SHALL be recognisable as C4 to someone who has read c4model.com and never seen ADP (Requirement 4).
+* Violations SHALL read as guidance naming the rule, not as error codes (Requirement 10.8).
+* Nothing in the UI SHALL imply the four static levels are all mandatory: C4 states the Context and Container diagrams are sufficient for most teams, Component diagrams are optional, and Code diagrams are discouraged.
