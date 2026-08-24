@@ -278,14 +278,57 @@ public sealed class C4ElementMapper
             yield break;
         }
 
+        // Relationships are *elevated* to the level the view shows. A container talking to an
+        // external system is, at the system level, that system talking to it - so a context
+        // diagram must draw the line even though neither container appears on it. Without this
+        // a context diagram shows the systems it depends on and no lines to them, which is
+        // worse than showing nothing: it says there is no dependency (found by the manual pass).
+        var drawn = new HashSet<(string, string)>();
         foreach (var relationship in workspace.Relationships)
         {
-            if (layout.Boxes.TryGetValue(relationship.SourceId, out var from) &&
-                layout.Boxes.TryGetValue(relationship.DestinationId, out var to))
+            var sourceId = NearestShown(workspace, layout, relationship.SourceId);
+            var destinationId = NearestShown(workspace, layout, relationship.DestinationId);
+            if (sourceId is null || destinationId is null || string.Equals(sourceId, destinationId, StringComparison.OrdinalIgnoreCase))
             {
-                yield return (relationship, from, to);
+                // Both ends inside one shown element is that element talking to itself, which
+                // is a detail the view has zoomed out past.
+                continue;
             }
+
+            // Several elevated relationships can collapse onto one pair; one line is enough.
+            if (!drawn.Add((sourceId, destinationId)))
+            {
+                continue;
+            }
+
+            var elevated = string.Equals(sourceId, relationship.SourceId, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(destinationId, relationship.DestinationId, StringComparison.OrdinalIgnoreCase)
+                ? relationship
+                : relationship with { SourceId = sourceId, DestinationId = destinationId };
+
+            yield return (elevated, layout.Boxes[sourceId], layout.Boxes[destinationId]);
         }
+    }
+
+    /// <summary>
+    /// The element the view actually draws for <paramref name="id"/>: itself when it is on the
+    /// view, else the nearest ancestor that is - which is what "elevating" a relationship means.
+    /// Null when nothing in its chain appears.
+    /// </summary>
+    private static string? NearestShown(C4Workspace workspace, C4Layout layout, string id)
+    {
+        var current = workspace.Find(id);
+        while (current is not null)
+        {
+            if (layout.Boxes.ContainsKey(current.Id))
+            {
+                return current.Id;
+            }
+
+            current = current.ParentId is { } parentId ? workspace.Find(parentId) : null;
+        }
+
+        return null;
     }
 
     private static bool Intersects(C4Box box, DiagramViewport viewport) =>

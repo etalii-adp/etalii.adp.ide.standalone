@@ -65,13 +65,13 @@ A lightweight, notation-independent hierarchy of zoom levels (Simon Brown, 2006�
 
 | State | Origin | Diagram | Theory | Example |
 |---|---|---|---|---|
-| 📝 Specified | `c4/context` | System Context | [c4model.com](https://c4model.com/diagrams/system-context) | Everyone-facing overview |
-| 📝 Specified | `c4/container` | Container | [c4model.com](https://c4model.com/diagrams/container) | Deployable/runnable units |
-| 📝 Specified | `c4/component` | Component | [c4model.com](https://c4model.com/diagrams/component) | Building blocks inside one container |
+| ✅ Implemented | `c4/context` | System Context | [c4model.com](https://c4model.com/diagrams/system-context) | Everyone-facing overview |
+| ✅ Implemented | `c4/container` | Container | [c4model.com](https://c4model.com/diagrams/container) | Deployable/runnable units |
+| ✅ Implemented | `c4/component` | Component | [c4model.com](https://c4model.com/diagrams/component) | Building blocks inside one container |
 | 📝 Specified | `c4/code` | Code (optional) | [c4model.com](https://c4model.com/diagrams/code) | Usually IDE-generated |
-| 📝 Specified | `c4/system-landscape` | System Landscape (supplementary) | [c4model.com](https://c4model.com/diagrams/system-landscape) | Multiple systems across an org |
-| 📝 Specified | `c4/dynamic` | Dynamic (supplementary) | [c4model.com](https://c4model.com/diagrams/dynamic) | One scenario across containers/components |
-| 📝 Specified | `c4/deployment` | Deployment (supplementary) | [c4model.com](https://c4model.com/diagrams/deployment) | Containers mapped onto infrastructure |
+| ✅ Implemented | `c4/system-landscape` | System Landscape (supplementary) | [c4model.com](https://c4model.com/diagrams/system-landscape) | Multiple systems across an org |
+| ✅ Implemented | `c4/dynamic` | Dynamic (supplementary) | [c4model.com](https://c4model.com/diagrams/dynamic) | One scenario across containers/components |
+| ✅ Implemented | `c4/deployment` | Deployment (supplementary) | [c4model.com](https://c4model.com/diagrams/deployment) | Containers mapped onto infrastructure |
 
 Tooling: [Structurizr](https://structurizr.com/) · [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) · [IcePanel](https://icepanel.io/).
 

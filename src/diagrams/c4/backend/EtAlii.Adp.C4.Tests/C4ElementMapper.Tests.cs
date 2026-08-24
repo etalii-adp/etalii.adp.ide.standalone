@@ -179,6 +179,84 @@ public class C4ElementMapperTests
     }
 
     [Fact]
+    public void AContextView_ElevatesAContainersRelationship_ToTheSystemThatContainsIt()
+    {
+        // Found by the manual pass. The API talks to the Mainframe; at the system level that
+        // is Internet Banking talking to the Mainframe. Without elevating it, a context diagram
+        // shows the systems it depends on and no lines to them - which says there is no
+        // dependency, and is worse than showing nothing.
+        var relationships = Visible("context")
+            .Where(e => e.Type == C4ElementMapper.RelationshipType)
+            .Select(e => C4RelationshipPayload.Parser.ParseFrom(e.Payload.Span))
+            .ToArray();
+
+        Assert.Contains(relationships, r => r.SourceId == "s" && r.DestinationId == "mainframe");
+        Assert.Contains(relationships, r => r.SourceId == "u" && r.DestinationId == "s");
+    }
+
+    [Fact]
+    public void AnElevatedRelationship_IsDrawnOnce_HoweverManyCollapseOntoIt()
+    {
+        // Two containers of one system both talking to the same external system is one line at
+        // the system level, not two on top of each other.
+        var dsl = """
+            workspace {
+                model {
+                    s = softwareSystem "S" "desc" {
+                        a = container "A" "desc" "Tech"
+                        b = container "B" "desc" "Tech"
+                    }
+                    ext = softwareSystem "Ext" "desc" "External"
+                    a -> ext "Calls" "HTTPS"
+                    b -> ext "Calls" "HTTPS"
+                }
+                views {
+                    systemContext s "context" {
+                        include *
+                    }
+                }
+            }
+            """;
+
+        var relationships = Visible("context", dsl).Where(e => e.Type == C4ElementMapper.RelationshipType).ToArray();
+
+        Assert.Single(relationships);
+    }
+
+    [Fact]
+    public void ARelationshipBetweenTwoContainersOfOneSystem_IsNotDrawnOnTheContextView()
+    {
+        // Both ends elevate to the same system, which is that system talking to itself - a
+        // detail the context view has deliberately zoomed out past.
+        var relationships = Visible("context")
+            .Where(e => e.Type == C4ElementMapper.RelationshipType)
+            .Select(e => C4RelationshipPayload.Parser.ParseFrom(e.Payload.Span))
+            .ToArray();
+
+        Assert.DoesNotContain(relationships, r => r.SourceId == "s" && r.DestinationId == "s");
+    }
+
+    [Fact]
+    public void AContainerView_DrawsTheSystemAsItsBoundary_AndNotAlsoAsABox()
+    {
+        // Found by the manual pass: the system in scope was drawn as a box inside its own
+        // boundary. On a container diagram the system *is* the boundary.
+        var nodes = Visible("containers").Where(e => e.Type == C4ElementMapper.NodeType).Select(e => e.Id).ToArray();
+
+        Assert.DoesNotContain("s", nodes);
+        Assert.Contains("web", nodes);
+        Assert.Contains(Visible("containers"), e => e.Type == C4ElementMapper.BoundaryType);
+    }
+
+    [Fact]
+    public void AContextView_StillDrawsItsOwnSystem_BecauseThereItIsThePrimaryElement()
+    {
+        var nodes = Visible("context").Where(e => e.Type == C4ElementMapper.NodeType).Select(e => e.Id).ToArray();
+
+        Assert.Contains("s", nodes);
+    }
+
+    [Fact]
     public void AContainerView_DrawsABoundary()
     {
         var boundaries = Visible("containers").Where(e => e.Type == C4ElementMapper.BoundaryType).ToArray();

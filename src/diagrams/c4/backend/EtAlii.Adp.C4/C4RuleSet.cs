@@ -225,9 +225,21 @@ public static class C4RuleSet
 
         return named
             .Where(element => !view.Excludes.Contains(element.Id, StringComparer.OrdinalIgnoreCase))
+            .Where(element => !IsTheBoundaryItself(view, element))
             .DistinctBy(element => element.Id, StringComparer.OrdinalIgnoreCase)
             .ToArray();
     }
+
+    /// <summary>
+    /// Whether this element is the thing the view is *inside of* rather than something on it. On
+    /// a container diagram the software system in scope is the boundary drawn around the
+    /// containers, and on a component diagram the container is; drawing it as a box as well
+    /// would put the system inside its own boundary (found by the manual pass).
+    /// </summary>
+    private static bool IsTheBoundaryItself(C4View view, C4Element element) =>
+        view.Kind is C4ViewKind.Container or C4ViewKind.Component
+        && view.ScopeId is { } scopeId
+        && string.Equals(element.Id, scopeId, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Whether a kind is something that runs and therefore talks over a protocol.</summary>
     private static bool IsDeployable(C4ElementKind kind) =>
