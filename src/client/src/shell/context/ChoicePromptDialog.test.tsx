@@ -502,7 +502,14 @@ describe("ChoicePromptDialog description", () => {
 
   it("shows nothing until a type is selected", () => {
     // Arrange.
-    render(<ChoicePromptDialog prompt={describedPrompt()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+    render(
+      <ChoicePromptDialog
+        prompt={describedPrompt()}
+        onPropose={vi.fn(async (revision: number) => ({ revision, valid: true, reason: "" }))}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
 
     // Act.
     const panel = screen.getByTestId("choice-description");
@@ -513,7 +520,14 @@ describe("ChoicePromptDialog description", () => {
 
   it("shows the selected type's description, and follows the selection", () => {
     // Arrange.
-    render(<ChoicePromptDialog prompt={describedPrompt()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+    render(
+      <ChoicePromptDialog
+        prompt={describedPrompt()}
+        onPropose={vi.fn(async (revision: number) => ({ revision, valid: true, reason: "" }))}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
 
     // Act.
     fireEvent.click(screen.getByText("System Context"));
