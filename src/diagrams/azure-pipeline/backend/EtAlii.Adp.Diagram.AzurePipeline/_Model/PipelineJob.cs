@@ -10,6 +10,8 @@ namespace EtAlii.Adp.Diagram.AzurePipeline;
 /// <param name="IsDeployment">Whether it was declared as <c>deployment:</c> rather than <c>job:</c>.</param>
 /// <param name="Environment">A deployment job's <c>environment</c>; empty otherwise.</param>
 /// <param name="Strategy">Its <c>strategy</c> block, or <see cref="PipelineStrategy.None"/>.</param>
+/// <param name="Pool">Where it runs, after the schema's inheritance has been applied (Requirement 4.7).</param>
+/// <param name="Execution">What decides whether and how it runs (Requirement 4.5).</param>
 /// <param name="DependsOn">
 /// The names in its <c>dependsOn</c>, in order. Empty covers both "no <c>dependsOn</c> key" and
 /// "<c>dependsOn: []</c>", which mean different things - <paramref name="DependsOnDeclared"/> is
@@ -30,6 +32,8 @@ public sealed record PipelineJob(
     bool IsDeployment,
     string Environment,
     PipelineStrategy Strategy,
+    PipelinePool Pool,
+    PipelineExecution Execution,
     IReadOnlyList<string> DependsOn,
     bool DependsOnDeclared,
     string Gate,

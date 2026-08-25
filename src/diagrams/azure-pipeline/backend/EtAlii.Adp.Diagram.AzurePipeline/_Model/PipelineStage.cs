@@ -7,6 +7,13 @@ namespace EtAlii.Adp.Diagram.AzurePipeline;
 /// <param name="Id">Stable within a document: the stage's name, or its position when it has none.</param>
 /// <param name="Name">Its <c>stage:</c> value; empty for the implicit stage.</param>
 /// <param name="DisplayName">Its <c>displayName</c>, where it has one.</param>
+/// <param name="Pool">Where its jobs run unless they say otherwise (Requirement 4.7).</param>
+/// <param name="Execution">What decides whether and how it runs (Requirement 4.5).</param>
+/// <param name="TriggerIsManual">Whether it declares <c>trigger: manual</c>, so it waits to be started by hand.</param>
+/// <param name="IsSkippable">
+/// Its <c>isSkippable</c>, verbatim. <c>false</c> means the stage runs even when a run is
+/// otherwise skipped, which is exactly the kind of thing a reader of the diagram is asking.
+/// </param>
 /// <param name="DependsOn">
 /// The names in its <c>dependsOn</c>, in order. Empty covers both "no key" and "<c>dependsOn: []</c>";
 /// <paramref name="DependsOnDeclared"/> tells them apart, and for a stage the difference decides
@@ -24,6 +31,10 @@ public sealed record PipelineStage(
     string Id,
     string Name,
     string DisplayName,
+    PipelinePool Pool,
+    PipelineExecution Execution,
+    bool TriggerIsManual,
+    string IsSkippable,
     IReadOnlyList<string> DependsOn,
     bool DependsOnDeclared,
     string Gate,

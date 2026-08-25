@@ -49,6 +49,7 @@ public sealed class PipelineParser
 
     private readonly PipelineDocument _document;
     private readonly List<PipelineTemplateReference> _templates = [];
+    private PipelinePool _pipelinePool = PipelinePool.None;
 
     private PipelineParser(PipelineDocument document)
     {
@@ -101,6 +102,10 @@ public sealed class PipelineParser
     /// </summary>
     private List<PipelineStage> ReadPipelineStages(YamlMappingNode root)
     {
+        // The pipeline's own pool is read first: it is what a stage inherits, and what a stage's
+        // jobs inherit through the stage (Requirement 4.7).
+        _pipelinePool = ReadPool(root, PipelinePoolOrigin.Pipeline);
+
         if (Entry(root, "stages") is YamlSequenceNode stages)
         {
             var read = new List<PipelineStage>();
@@ -110,13 +115,13 @@ public sealed class PipelineParser
 
         if (Entry(root, "jobs") is YamlSequenceNode jobs)
         {
-            return [ImplicitStage(ReadJobsInto(jobs, ImplicitStageId), Range(jobs))];
+            return [ImplicitStage(ReadJobsInto(jobs, ImplicitStageId, _pipelinePool), Range(jobs), _pipelinePool)];
         }
 
         if (Entry(root, "steps") is YamlSequenceNode steps)
         {
-            var job = ImplicitJob(ReadSteps(steps, ImplicitJobId, ""), Range(steps));
-            return [ImplicitStage([job], Range(steps))];
+            var job = ImplicitJob(ReadSteps(steps, ImplicitJobId, ""), Range(steps), _pipelinePool);
+            return [ImplicitStage([job], Range(steps), _pipelinePool)];
         }
 
         return [];
@@ -125,10 +130,29 @@ public sealed class PipelineParser
     private const string ImplicitStageId = "stage-0";
     private const string ImplicitJobId = "stage-0/job-0";
 
-    private static PipelineStage ImplicitStage(IReadOnlyList<PipelineJob> jobs, PipelineLineRange lines) =>
-        new(ImplicitStageId, "", "", [], DependsOnDeclared: false, "", IsImplicit: true, jobs, lines);
+    private static PipelineStage ImplicitStage(
+        IReadOnlyList<PipelineJob> jobs,
+        PipelineLineRange lines,
+        PipelinePool pool) =>
+        new(
+            ImplicitStageId,
+            "",
+            "",
+            pool,
+            PipelineExecution.Default,
+            TriggerIsManual: false,
+            "",
+            [],
+            DependsOnDeclared: false,
+            "",
+            IsImplicit: true,
+            jobs,
+            lines);
 
-    private static PipelineJob ImplicitJob(IReadOnlyList<PipelineStep> steps, PipelineLineRange lines) =>
+    private static PipelineJob ImplicitJob(
+        IReadOnlyList<PipelineStep> steps,
+        PipelineLineRange lines,
+        PipelinePool pool) =>
         new(
             ImplicitJobId,
             "",
@@ -136,6 +160,8 @@ public sealed class PipelineParser
             IsDeployment: false,
             "",
             PipelineStrategy.None,
+            pool,
+            PipelineExecution.Default,
             [],
             DependsOnDeclared: false,
             "",
@@ -171,11 +197,20 @@ public sealed class PipelineParser
             var name = Scalar(mapping, "stage");
             var id = name.Length > 0 ? name : $"stage-{into.Count}";
             var (dependsOn, declared) = ReadDependsOn(mapping);
-            var jobs = Entry(mapping, "jobs") is YamlSequenceNode jobsNode ? ReadJobsInto(jobsNode, id) : [];
+            // A stage's own pool, or the pipeline's where it declares none - and the pool carries
+            // which of those it was, so a reader knows which element to edit to change it.
+            var pool = Inherit(ReadPool(mapping, PipelinePoolOrigin.Stage), _pipelinePool);
+            var jobs = Entry(mapping, "jobs") is YamlSequenceNode jobsNode ? ReadJobsInto(jobsNode, id, pool) : [];
             into.Add(new PipelineStage(
                 id,
                 name,
                 Scalar(mapping, "displayName"),
+                pool,
+                ReadExecution(mapping),
+                // `trigger: manual` on a stage means it waits to be started by hand. Anything else
+                // under `trigger` is a repository trigger, which is not this.
+                string.Equals(Scalar(mapping, "trigger"), "manual", StringComparison.OrdinalIgnoreCase),
+                Scalar(mapping, "isSkippable"),
                 dependsOn,
                 declared,
                 gate,
@@ -185,14 +220,19 @@ public sealed class PipelineParser
         }
     }
 
-    private List<PipelineJob> ReadJobsInto(YamlSequenceNode sequence, string stageId)
+    private List<PipelineJob> ReadJobsInto(YamlSequenceNode sequence, string stageId, PipelinePool inherited)
     {
         var jobs = new List<PipelineJob>();
-        ReadJobs(sequence, stageId, "", jobs);
+        ReadJobs(sequence, stageId, "", inherited, jobs);
         return jobs;
     }
 
-    private void ReadJobs(YamlSequenceNode sequence, string stageId, string gate, List<PipelineJob> into)
+    private void ReadJobs(
+        YamlSequenceNode sequence,
+        string stageId,
+        string gate,
+        PipelinePool inherited,
+        List<PipelineJob> into)
     {
         foreach (var item in sequence.Children)
         {
@@ -203,7 +243,7 @@ public sealed class PipelineParser
 
             if (Gate(mapping) is { } block)
             {
-                ReadJobs(block.Items, stageId, Combine(gate, block.Expression), into);
+                ReadJobs(block.Items, stageId, Combine(gate, block.Expression), inherited, into);
                 continue;
             }
 
@@ -227,6 +267,9 @@ public sealed class PipelineParser
                 isDeployment,
                 Scalar(mapping, "environment"),
                 strategy,
+                // The job's own pool wins over whatever it inherited (Requirement 4.7).
+                Inherit(ReadPool(mapping, PipelinePoolOrigin.Job), inherited),
+                ReadExecution(mapping),
                 dependsOn,
                 declared,
                 gate,
@@ -286,6 +329,7 @@ public sealed class PipelineParser
                 kind,
                 Scalar(mapping, "displayName"),
                 identifier,
+                ReadExecution(mapping),
                 hook,
                 Range(mapping)));
         }
@@ -311,6 +355,10 @@ public sealed class PipelineParser
         return (PipelineStepKind.Unknown, "");
     }
 
+    /// <summary>
+    /// The <c>strategy</c> block, and with it how many jobs one declaration becomes
+    /// (Requirement 4.6).
+    /// </summary>
     private PipelineStrategy ReadStrategy(YamlMappingNode job)
     {
         if (Entry(job, "strategy") is not YamlMappingNode strategy)
@@ -318,16 +366,78 @@ public sealed class PipelineParser
             return PipelineStrategy.None;
         }
 
-        foreach (var (key, _) in Entries(strategy))
+        foreach (var (key, value) in Entries(strategy))
         {
-            if (_strategyKinds.TryGetValue(key, out var kind))
+            if (!_strategyKinds.TryGetValue(key, out var kind))
             {
-                return new PipelineStrategy(kind, Range(strategy));
+                continue;
             }
+
+            var (multiplicity, expression) = ReadMultiplicity(kind, value);
+            return new PipelineStrategy(kind, multiplicity, expression, Range(strategy));
         }
 
         return PipelineStrategy.None;
     }
+
+    /// <summary>
+    /// How many copies of a job a strategy produces.
+    /// </summary>
+    /// <remarks>
+    /// A matrix written out in the file has as many entries as it has keys. A matrix generated by
+    /// an expression, or a <c>parallel</c> given as a variable, has a count nobody knows until the
+    /// run starts - so the expression is carried instead of a guess. A deployment strategy
+    /// multiplies nothing: it decides which hooks run, not how many jobs there are.
+    /// </remarks>
+    private static (int Multiplicity, string Expression) ReadMultiplicity(PipelineStrategyKind kind, YamlNode value) =>
+        (kind, value) switch
+        {
+            (PipelineStrategyKind.Matrix, YamlMappingNode matrix) => (Math.Max(matrix.Children.Count, 1), ""),
+            (PipelineStrategyKind.Matrix, YamlScalarNode { Value: { Length: > 0 } generated }) => (1, generated),
+            (PipelineStrategyKind.Parallel, YamlScalarNode { Value: { Length: > 0 } count }) =>
+                int.TryParse(count, out var parsed) ? (Math.Max(parsed, 1), "") : (1, count),
+            _ => (1, ""),
+        };
+
+    /// <summary>
+    /// The properties deciding whether and how an element runs. Every one of them is read as text,
+    /// because every one of them may be an expression this module will not evaluate.
+    /// </summary>
+    private static PipelineExecution ReadExecution(YamlMappingNode element)
+    {
+        var condition = Scalar(element, "condition");
+        var continueOnError = Scalar(element, "continueOnError");
+        var enabled = Scalar(element, "enabled");
+        var timeout = Scalar(element, "timeoutInMinutes");
+        return condition.Length == 0 && continueOnError.Length == 0 && enabled.Length == 0 && timeout.Length == 0
+            ? PipelineExecution.Default
+            : new PipelineExecution(condition, continueOnError, enabled, timeout);
+    }
+
+    /// <summary>
+    /// A <c>pool</c> as declared at one level, in either of the two shapes the schema allows: a
+    /// bare name, or a mapping of <c>name</c>, <c>vmImage</c> and <c>demands</c>.
+    /// </summary>
+    private PipelinePool ReadPool(YamlMappingNode element, PipelinePoolOrigin origin) => Entry(element, "pool") switch
+    {
+        YamlScalarNode { Value: { Length: > 0 } name } scalar => new PipelinePool(name, "", [], origin, Range(scalar)),
+        YamlMappingNode pool => new PipelinePool(
+            Scalar(pool, "name"),
+            Scalar(pool, "vmImage"),
+            Entry(pool, "demands") is YamlSequenceNode demands
+                ? demands.Children.OfType<YamlScalarNode>().Select(demand => demand.Value ?? "").ToList()
+                : [],
+            origin,
+            Range(pool)),
+        _ => PipelinePool.None,
+    };
+
+    /// <summary>
+    /// The nearer of two pools: an element's own declaration if it made one, and otherwise
+    /// whatever it inherited. The winner keeps the origin it was declared with, so "ubuntu-latest,
+    /// from the pipeline" stays distinguishable from "ubuntu-latest, from this job".
+    /// </summary>
+    private static PipelinePool Inherit(PipelinePool own, PipelinePool inherited) => own.IsDeclared ? own : inherited;
 
     /// <summary>
     /// <c>dependsOn</c> takes either one name or a list of them. The flag says whether the key was

@@ -10,6 +10,7 @@ namespace EtAlii.Adp.Diagram.AzurePipeline;
 /// The value of the key naming the kind - a task's name, a script's text, a template's path. It is
 /// what <see cref="Label"/> falls back to, per Requirement 4.4.
 /// </param>
+/// <param name="Execution">What decides whether and how it runs (Requirement 4.5).</param>
 /// <param name="Hook">
 /// For a step inside a deployment job, the lifecycle hook it belongs to (<c>deploy</c>,
 /// <c>preDeploy</c>, ...); empty for a step declared directly under a plain job.
@@ -20,6 +21,7 @@ public sealed record PipelineStep(
     PipelineStepKind Kind,
     string DisplayName,
     string Identifier,
+    PipelineExecution Execution,
     string Hook,
     PipelineLineRange Lines)
 {
