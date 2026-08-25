@@ -86,14 +86,14 @@
   - _Requirements: 2.1, 11.1_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Scaffold the module projects and declare its Diagram.Definitions entry as a folder-subject type with no extension | Restrictions: follow the per-diagram module layout structure.md defines; the test project must be an executable; do not declare an extension - the .adp is the whole registration | Success: the solution builds, the type appears in DiagramDefinition.All, and the definition-description test still passes_
 
-- [-] 8. Add YamlDotNet centrally
+- [x] 8. Add YamlDotNet centrally
   - File: `src/Directory.Packages.props` (edited), `src/diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure/EtAlii.Adp.Diagram.AnsibleStructure.csproj` (edited)
   - Pin the current release as a `PackageVersion`, and reference it from the module only. This is the tree's first YAML dependency; a read-only module has no reason to hand-roll a parser, and YamlDotNet's node marks are what let a problem point at a line
   - Purpose: `AnsibleYaml` has something to parse with
   - _Requirements: 1.2, 9.2_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer maintaining central package management | Task: Add YamlDotNet to Directory.Packages.props at its current release and reference it from the Ansible module only | Restrictions: version goes in Directory.Packages.props, never in the csproj; do not add the reference to any other project | Success: the module builds against YamlDotNet and no other project gains a YAML dependency_
 
-- [ ] 9. `AnsibleYaml`: one tolerant read
+- [-] 9. `AnsibleYaml`: one tolerant read
   - File: `.../AnsibleYaml.cs` (new), `_Model/AnsibleYamlFailure.cs` (new), `.../AnsibleYaml.Tests.cs` (new)
   - `Read(string path)` returns either a parsed root node **with line marks kept**, or an `AnsibleYamlFailure(Message, Line)` carrying the parser's own message. Never throws for a malformed document. Opened read-only and shared, so validation never contends with an editor
   - Purpose: Requirement 1.2's "degrades that file's detail, never the whole diagram", at its narrowest point
