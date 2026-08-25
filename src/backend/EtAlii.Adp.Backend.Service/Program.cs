@@ -10,6 +10,7 @@ using EtAlii.Adp.Backend.Diagrams;
 using EtAlii.Adp.Backend.Problems;
 using EtAlii.Adp.Diagram.C4;
 using EtAlii.Adp.Diagram.Mindmap;
+using EtAlii.Adp.Diagram.WardleyMap;
 using JetBrains.Annotations;
 using Serilog;
 
@@ -64,6 +65,8 @@ builder.Services.AddProblems(appDataRoot);
 builder.Services.AddMindmap(builder.Configuration);
 // Seven C4 types over one shared engine, differing only in the view each binds.
 builder.Services.AddC4();
+// The map whose coordinates are the author's own claim rather than a computed layout.
+builder.Services.AddWardleyMap();
 
 builder.Services.AddClientAppHosting(builder.Configuration);
 

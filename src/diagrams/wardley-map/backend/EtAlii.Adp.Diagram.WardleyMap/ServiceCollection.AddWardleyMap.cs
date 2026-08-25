@@ -1,0 +1,32 @@
+using Microsoft.Extensions.DependencyInjection;
+
+namespace EtAlii.Adp.Diagram.WardleyMap;
+
+/// <summary>
+/// Registers the Wardley map module against core's seams. One call for the module, as
+/// <c>AddC4</c> and <c>AddMindmap</c> are for theirs - the host names the module once rather
+/// than listing its seams, and a test that needs the real module calls the same method. Core
+/// never names the module back: everything resolves by <see cref="DiagramOrigin"/>
+/// (Requirement 12.3).
+/// </summary>
+/// <remarks>
+/// This currently registers one seam of the eight Requirement 12.3 lists. The document factory
+/// is here first because it is the one seam that is **mandatory the moment the type declares
+/// an extension**: <c>Program.cs</c> fails startup for a type that declares one without a
+/// factory, so task 3 could not land without it. The session factory, resolver, action
+/// provider, toolbox provider, validator, property provider and command handlers join it as
+/// their own tasks land.
+/// </remarks>
+public static class ServiceCollectionAddWardleyMapExtension
+{
+    public static IServiceCollection AddWardleyMap(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        // Writes the empty `.owm` body the shared create-file command puts beside a new `.adp`
+        // (Requirement 1.6). Resolved by origin; core never learns what a Wardley map is.
+        services.AddSingleton<IDiagramDocumentFactory, WardleyDocumentFactory>();
+
+        return services;
+    }
+}
