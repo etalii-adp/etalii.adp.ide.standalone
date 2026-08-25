@@ -228,6 +228,6 @@ public class AddC4ElementTests : IDisposable
         // The point: braces balance whatever order the edits happened in.
         Assert.NotNull(workspace.Find("controller"));
         Assert.Null(workspace.Find("api"));
-        Assert.Empty(C4RuleSet.Validate(workspace).Where(problem => problem.Severity == DiagramProblemSeverity.Error));
+        Assert.DoesNotContain(C4RuleSet.Validate(workspace), problem => problem.Severity == DiagramProblemSeverity.Error);
     }
 }
