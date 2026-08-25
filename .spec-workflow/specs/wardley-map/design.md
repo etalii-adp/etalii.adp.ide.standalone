@@ -17,19 +17,19 @@ Six pieces do the work:
 
 Around them sit the registrations, each one line in `AddWardleyMap`: a document factory, a session factory, a context source resolver, an action provider, a toolbox provider, a property provider, a validator, and the command handlers.
 
-> ### One finding to report before the rest is read
+> ### One finding, reported and now resolved
 >
-> **Requirement 12.4 says this spec anticipates no core change. Designing Requirement 7.2 against the real contract shows that it does — and that the gap is not this type's.**
+> **Requirement 12.4 says this spec anticipates no core change. Designing Requirement 7.2 against the real contract showed that it does — and that the gap was not this type's.**
 >
-> A drag must reach the backend carrying coordinates. The only leg that carries a drag is `DiagramService.MoveElement`, whose request is `element_id` + `new_parent_id` + `index` — a re-parenting shape. It has no field for a position.
+> A drag must reach the backend carrying coordinates. The only leg that carries a drag was `DiagramService.MoveElement`, whose request is `element_id` + `new_parent_id` + `index` — a re-parenting shape with no field for a position.
 >
-> C4 already needed this and solved it by **encoding the coordinates into `new_parent_id` as `"x,y"` and splitting on the comma** (`C4Session.MoveElementAsync`, which also discards `index` with `_ = index;`). It works. But the field is documented in `diagrams.proto` as "the element it lands under", and its documented meaning and its actual use have diverged.
+> C4 had already needed this and solved it by **encoding the coordinates into `new_parent_id` as `"x,y"` and splitting on the comma** (`C4Session.MoveElementAsync`, which also discarded `index` with `_ = index;`). It worked, but `diagrams.proto` documents that field as "the element it lands under", so its stated meaning and its use had parted company.
 >
-> For C4 that is a wart on a secondary interaction. For this type, dragging **is** the interaction — position is the map's meaning (Requirement 7.2) — and every drag would round-trip through string formatting and reparsing of a field named "parent".
+> For C4 that was a wart on a secondary interaction. For this type, dragging **is** the interaction — position is the map's meaning — so the finding was raised per Requirement 12.5 rather than worked around.
 >
-> The minimal, type-agnostic fix is one backward-compatible proto field and one interface method, set out in [Core change: a positional move](#core-change-a-positional-move) below. It **removes** a special case rather than adding one: C4 drops its comma-splitting. Per Requirement 12.5 this is reported rather than taken quietly — it needs a decision, and if the decision is no, the fallback and its cost are stated there too.
+> **It was accepted and is being implemented in a parallel session**, and this design consumes it rather than proposing it. The shape that is landing is in [Core change: a positional move](#core-change-a-positional-move) below. It **removes** a special case rather than adding one: C4 drops its comma-splitting, and each gesture gets a method that refuses the other honestly. One consequence found during that work is worth recording — because the single field carried two meanings, a genuine re-parenting attempt used to come back reported as a malformed coordinate pair.
 >
-> The same gap has a second, smaller instance: a toolbox drop at a position (Requirement 13.4) goes through `ContextService.ExecuteAction`, whose request carries an action id and no parameters at all.
+> The gap has a second, smaller instance this design does **not** ask to fix: a toolbox drop at a position (Requirement 13.4) goes through `ContextService.ExecuteAction`, whose request carries an action id and no parameters at all.
 
 ## Steering Document Alignment
 
@@ -80,7 +80,7 @@ The module references `EtAlii.Adp.Diagram` and `EtAlii.Adp.Backend`; neither ref
 * **`Program.cs`** gains `builder.Services.AddWardleyMap();`.
 * **`Diagram.cs`** gains `Extension: ".owm"` and a `DocumentExtension` constant, mirroring the mindmap's.
 * **`docs/diagrams.md`** — the `wardley/map` row moves 📝 → 🛠️ → ✅ (already at 📝).
-* **`diagrams.proto` / `IDiagramSession`** — one field and one method, if the finding above is accepted.
+* **`diagrams.proto` / `IDiagramSession`** — one field and one method, accepted and landing in a parallel session; this module consumes them rather than adding them.
 
 ### Connectors: what fits, and what does not
 
@@ -141,7 +141,8 @@ sequenceDiagram
     U->>C: drags "Cup of Tea" right, towards commodity
     C->>C: clamp to 0..1 on both axes (Requirement 7.3)
     C->>S: MoveElement(element_id, position)
-    S->>W: MoveElementToAsync(elementId, visibility, maturity)
+    S->>W: MoveElementToAsync(elementId, x, y)
+    W->>W: ToCoordinates(x, y) -> visibility, maturity
     W->>W: read-only? inside a pipeline? (then maturity only)
     W->>H: MoveWardleyElementCommand(path, id, visibility, maturity)
     H->>D: rewrite that one component statement's coordinate pair
@@ -156,7 +157,7 @@ The user has asserted that a component is more evolved than they previously thou
 
 ### Core change: a positional move
 
-The change, stated so it can be accepted or refused as a unit:
+This is landing in a parallel session rather than being proposed here. The shape this design is written against:
 
 ```proto
 message MoveElementRequest {
@@ -166,25 +167,22 @@ message MoveElementRequest {
 }
 ```
 
-and on `IDiagramSession`:
+and on `IDiagramSession`, alongside the existing `MoveElementAsync`:
 
 ```csharp
-/// <summary>
-/// Moves an element to a position, for a type whose coordinates are the document's
-/// (wardley-map Requirement 7.2, c4-diagrams Requirement 8.3). A type whose positions are
-/// computed refuses. Like MoveElementAsync, the module dispatches this as a command.
-/// </summary>
-Task<string> MoveElementToAsync(string elementId, Point2D position, CancellationToken cancellationToken);
+Task<string> MoveElementToAsync(string elementId, double x, double y, CancellationToken cancellationToken);
 ```
+
+with a **default implementation that refuses** — "This diagram cannot be arranged by dragging" — so a type that has thought about neither gesture says so rather than appearing to support both. `DiagramServiceImpl` routes on which gesture arrived: a position means "put it here", its absence means "put it under that".
 
 Why this shape:
 
-* **Backward compatible.** A new proto field; existing clients and modules are untouched. A module that only re-parents implements `MoveElementToAsync` by returning a refusal, exactly as `C4Session.MoveElementAsync` already refuses re-parenting today.
-* **Type-agnostic.** Nothing in it names Wardley. `Point2D` is already the core position type on `Element`.
-* **It removes a special case.** `C4Session` deletes its `newParentId.Split(',')` and its `_ = index;` and implements the new method instead. Net: one field added, one string-encoding convention deleted, and `new_parent_id` goes back to meaning what its comment says.
+* **Backward compatible.** A new proto field, and `Point2D` already exists in `connection.proto` (`elements.proto` uses it), so this is the existing vocabulary rather than a new type. Existing clients and modules are untouched.
+* **Type-agnostic.** Nothing in it names Wardley. Its two beneficiaries are this type and C4; `azure-pipeline-diagram` explicitly does **not** want it (its Requirement 7.4 forbids writing positions to the file), and the mindmap computes its layout, so neither is affected.
+* **It removes a special case.** `C4Session` deletes its `newParentId.Split(',')` and its `_ = index;` and implements both methods, each refusing the other's gesture for its own reason.
 * **It is small.** One field, one method, one implementation per module that wants it.
 
-**If it is refused**, this module works anyway: `WardleySession.MoveElementAsync` parses `"visibility,maturity"` out of `new_parent_id` exactly as C4 does. That is the fallback, and its cost is that the most important interaction in this diagram type is carried by a field named "parent", in a format with no schema, that the next reader has to discover by reading a `Split(',')`. Recording the cost is the point of raising it.
+**What this module implements.** `WardleySession.MoveElementToAsync` converts the incoming canvas point back through `WardleyElementMapper.ToCoordinates`, clamps to `0..1` (Requirement 7.3), narrows to maturity alone for a pipeline child (Requirement 7.4), and dispatches `MoveWardleyElementCommand`. `WardleySession.MoveElementAsync` refuses, except for a pipeline child, where re-parenting is meaningful.
 
 The toolbox-drop instance (Requirement 13.4) has no equally small fix, because `ExecuteActionRequest` carries no parameters at all and widening it touches every action. **This design therefore does not ask for it.** A dropped element is created at the centre of the visible viewport and immediately selected, so the user's next gesture — a drag — puts it where they meant. Requirement 13.4 asks the drop position not be discarded in favour of a *computed* one; a viewport-centre placement the user then adjusts is honest about knowing nothing, which a computed layout would not be.
 
@@ -409,7 +407,11 @@ Per tech.md's preference for local tests over hosted E2E, the end-to-end coverag
 
 ## Deviations and notes
 
-* **Requirement 12.4 is contradicted by this design**, deliberately and reportably: it says no core change is anticipated, and the positional-move gap means one is. This is Requirement 12.5's "finding to report" clause firing as intended. If the change is accepted, Requirement 12.4 should be amended to name it; if refused, the fallback stands and 12.4 remains true at the cost described.
+* **Requirement 12.4 is contradicted by this design** and should be amended. It says no core change is anticipated; the positional-move gap meant one was, it was reported per Requirement 12.5, it was accepted, and it is being implemented. The amendment is small — 12.4 should name the `MoveElementRequest.position` field and `IDiagramSession.MoveElementToAsync` as the one core change this type consumes, and note that it was contributed rather than assumed. **This needs a decision from the approver**, since the requirements document is already approved.
+* **Requirement 15's `Code style` non-functional clause is not achievable as written** and should also be amended. It says backend code "SHALL satisfy `src/.editorconfig` as `dotnet format style --verify-no-changes --severity info` checks it". Measured on an unmodified checkout, that gate reports **115 `IMPORTS` errors, 131 `IDE0130`, 19 `IDE0046`** and a handful of singletons — it does not pass today for anyone, which is why `quality-gates` exists. Two specifics matter to this module rather than being general untidiness:
+    * The `IMPORTS` failures come from a self-contradicting `src/.editorconfig`, where the comment at line 107 says `dotnet_separate_import_directive_groups` is "Commented out" and line 110 sets it to `true`.
+    * **`IDE0130` fires on exactly the folder convention this design follows.** `_Model/` and `Commands/` subfolders with a flat namespace are what `tech.md` and `structure.md` mandate, and the rule wants the namespace to track the folder. A new module obeying the steering documents therefore generates `IDE0130` diagnostics by construction, and cannot avoid them without disobeying them.
+    * The workable wording is that the module introduces **no new** style-diagnostic categories beyond those the repository already reports, with the gate itself owned by `quality-gates` Requirement 5 — which is only at approved requirements, so which rules get fixed and which get downgraded with a note is still open. This design does not assume which way that goes.
 * **`IDiagramSession.MoveElementAsync` is implemented as a refusal** ("Dragging a component changes where it sits on the map, not what contains it"), except for a pipeline child, where re-parenting is meaningful. That mirrors `C4Session`'s own refusal.
 * **The evolution-axis-as-data decision** (above) is a recommendation, not a settled point, and is the one thing in this design most worth a reviewer disagreeing with.
 * **`size` and `style`** (Requirement 5.6) are preserved and carried to the client, but only `size` affects rendering in the first implementation; `style` variants beyond the default are a follow-up, and the round-trip guarantee covers them regardless.
