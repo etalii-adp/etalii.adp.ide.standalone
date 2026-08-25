@@ -6,14 +6,20 @@ namespace EtAlii.Adp.C4;
 /// <param name="Relationships">Every declared relationship, in document order.</param>
 /// <param name="Views">Every declared view, in document order - the first is what a bare document opens.</param>
 /// <param name="Styles">Tag-based element styles, which override ADP's default theme.</param>
+/// <param name="Includes">
+/// The files this document pulls in with <c>!include</c>. ADP does not follow them, so whatever
+/// they declare is missing from the model - which the rule set reports, rather than leaving the
+/// user to wonder where half their diagram went.
+/// </param>
 public sealed record C4Workspace(
     string Name,
     IReadOnlyList<C4Element> Elements,
     IReadOnlyList<C4Relationship> Relationships,
     IReadOnlyList<C4View> Views,
-    IReadOnlyList<C4ElementStyle> Styles)
+    IReadOnlyList<C4ElementStyle> Styles,
+    IReadOnlyList<string> Includes)
 {
-    public static C4Workspace Empty { get; } = new("", [], [], [], []);
+    public static C4Workspace Empty { get; } = new("", [], [], [], [], []);
 
     /// <summary>The element with this id, or null. Ids are case-insensitive in the DSL.</summary>
     public C4Element? Find(string id) =>
@@ -80,10 +86,20 @@ public static class C4Parser
             }
 
             var tokens = C4Tokens.Split(code);
+
+            // Noted, not followed. Reading another file would make the model complete but the
+            // round trip a lie: ADP writes only this document, so an edit landing in an
+            // included file could not be saved (design "Prerequisites and blockers" 4).
+            if (tokens.Count >= 2 && tokens[0].Equals("!include", StringComparison.OrdinalIgnoreCase))
+            {
+                state.Includes.Add(tokens[1]);
+                continue;
+            }
+
             ReadLine(tokens, line.Number, state);
         }
 
-        return new C4Workspace(state.WorkspaceName, state.Elements, state.Relationships, state.Views, state.Styles);
+        return new C4Workspace(state.WorkspaceName, state.Elements, state.Relationships, state.Views, state.Styles, state.Includes);
     }
 
     /// <summary>
@@ -477,6 +493,8 @@ public static class C4Parser
         public List<C4View> Views { get; } = [];
 
         public List<C4ElementStyle> Styles { get; } = [];
+
+        public List<string> Includes { get; } = [];
 
         public int? CurrentViewIndex { get; set; }
 

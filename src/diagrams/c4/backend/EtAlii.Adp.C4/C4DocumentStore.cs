@@ -53,6 +53,12 @@ public sealed class C4DocumentStore : IC4DocumentStore
         Changed?.Invoke(this, new C4DocumentChangedEventArgs(path, workspace));
     }
 
+    public void Touch(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        Changed?.Invoke(this, new C4DocumentChangedEventArgs(path, Loaded(path).Workspace));
+    }
+
     public void Forget(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);

@@ -284,7 +284,7 @@ public class C4ElementMapperTests
     [InlineData(C4ViewKind.Component, "Component diagram for S")]
     public void TheTitleNamesTheDiagramTypeAndItsScope(C4ViewKind kind, string expected)
     {
-        var workspace = new C4Workspace("W", [new C4Element("s", C4ElementKind.SoftwareSystem, "S", "d", "", [], null, 1)], [], [], []);
+        var workspace = new C4Workspace("W", [new C4Element("s", C4ElementKind.SoftwareSystem, "S", "d", "", [], null, 1)], [], [], [], []);
         var view = new C4View(kind, "k", "s", null, null, true, [], [], null, [], 1);
 
         Assert.Equal(expected, C4ElementMapper.TitleOf(workspace, view));
@@ -293,7 +293,7 @@ public class C4ElementMapperTests
     [Fact]
     public void ATitleTheDocumentDeclares_Wins()
     {
-        var workspace = new C4Workspace("W", [], [], [], []);
+        var workspace = new C4Workspace("W", [], [], [], [], []);
         var view = new C4View(C4ViewKind.SystemContext, "k", null, null, "Our own title", true, [], [], null, [], 1);
 
         Assert.Equal("Our own title", C4ElementMapper.TitleOf(workspace, view));

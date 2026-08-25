@@ -40,6 +40,8 @@ public static class ServiceCollectionAddC4Extension
         services.AddSingleton<ICommandHandler<SetElementTechnologyCommand>, SetElementTechnologyCommandHandler>();
         services.AddSingleton<ICommandHandler<SetRelationshipDescriptionCommand>, SetRelationshipDescriptionCommandHandler>();
         services.AddSingleton<ICommandHandler<SetRelationshipTechnologyCommand>, SetRelationshipTechnologyCommandHandler>();
+        services.AddSingleton<ICommandHandler<MoveC4ElementCommand>, MoveC4ElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreC4ElementPositionCommand>, RestoreC4ElementPositionCommandHandler>();
         services.AddSingleton<ICommandHandler<AddC4ViewCommand>, AddC4ViewCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveC4ViewCommand>, RemoveC4ViewCommandHandler>();
 
@@ -72,7 +74,8 @@ public static class ServiceCollectionAddC4Extension
             services.AddSingleton<IDiagramSessionFactory>(provider => new C4SessionFactory(
                 origin,
                 provider.GetRequiredService<IC4DocumentStore>(),
-                provider.GetRequiredService<C4ElementMapper>()));
+                provider.GetRequiredService<C4ElementMapper>(),
+                provider.GetRequiredService<IHistoryStackStore>()));
 
             // The type's rules, resolved by origin through core's validator registry, so C4's
             // violations reach the errors and warnings panel like any other type's

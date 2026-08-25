@@ -35,7 +35,24 @@ public static class C4RuleSet
         public const string MixedAbstractionLevels = "c4.mixed-abstraction-levels";
         public const string EmptyView = "c4.empty-view";
         public const string UnknownViewScope = "c4.unknown-view-scope";
+        public const string MisplacedElement = "c4.misplaced-element";
+        public const string IncludeNotFollowed = "c4.include-not-followed";
     }
+
+    /// <summary>What each kind must sit inside, or null when it sits at the top of the model.</summary>
+    /// <remarks>
+    /// C4's hierarchy is Person -> Software System -> Container -> Component, and the DSL lets a
+    /// document write an element in the wrong place - a component straight inside the model, say.
+    /// A containment <em>cycle</em> is not checked because it cannot be written: the DSL nests
+    /// lexically rather than by reference, so an element cannot contain its own ancestor
+    /// (c4-diagrams Requirement 10.6).
+    /// </remarks>
+    private static C4ElementKind? RequiredParentOf(C4ElementKind kind) => kind switch
+    {
+        C4ElementKind.Container => C4ElementKind.SoftwareSystem,
+        C4ElementKind.Component => C4ElementKind.Container,
+        _ => null,
+    };
 
     /// <summary>Which element kinds each view kind may show (Requirements 5.2, 6.1-6.2, 7.1, 7.7, 9.2-9.4, 9.6).</summary>
     public static IReadOnlyList<C4ElementKind> PermittedKinds(C4ViewKind viewKind) => viewKind switch
@@ -63,6 +80,18 @@ public static class C4RuleSet
         ArgumentNullException.ThrowIfNull(workspace);
 
         var problems = new List<DiagramProblem>();
+
+        // ADP reads only the primary document, so an !include leaves the model incomplete in a
+        // way nothing else on screen would explain (design "Prerequisites and blockers" 4).
+        foreach (var include in workspace.Includes)
+        {
+            problems.Add(new DiagramProblem(
+                DiagramProblemSeverity.Warning,
+                $"This model includes '{include}', which ADP does not read. Anything declared there is missing from this diagram, and ADP will not edit it.",
+                Rules.IncludeNotFollowed,
+                null));
+        }
+
         problems.AddRange(ValidateElements(workspace));
         problems.AddRange(ValidateRelationships(workspace));
         foreach (var view in workspace.Views)
@@ -100,6 +129,23 @@ public static class C4RuleSet
                     $"'{Label(element)}' has no technology. C4 asks for one explicitly on every {element.Kind.ToString().ToLowerInvariant()}.",
                     Rules.MissingTechnology,
                     new DiagramProblemLocation.ElementId(element.Id));
+            }
+
+            // C4's hierarchy is what gives each level its meaning: a component is a part of a
+            // container, and one written outside a container is not a C4 component at all.
+            if (RequiredParentOf(element.Kind) is { } required)
+            {
+                var parent = element.ParentId is { } parentId ? workspace.Find(parentId) : null;
+                if (parent is null || parent.Kind != required)
+                {
+                    yield return new DiagramProblem(
+                        DiagramProblemSeverity.Warning,
+                        parent is null
+                            ? $"'{Label(element)}' is a {Spell(element.Kind)} declared outside any {Spell(required)}. In C4 a {Spell(element.Kind)} is part of a {Spell(required)}."
+                            : $"'{Label(element)}' is a {Spell(element.Kind)} inside a {Spell(parent.Kind)}. In C4 a {Spell(element.Kind)} is part of a {Spell(required)}.",
+                        Rules.MisplacedElement,
+                        new DiagramProblemLocation.ElementId(element.Id));
+                }
             }
         }
     }

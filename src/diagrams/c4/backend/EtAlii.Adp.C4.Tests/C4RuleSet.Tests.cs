@@ -242,6 +242,76 @@ public class C4RuleSetTests
     }
 
     [Fact]
+    public void AComponentDeclaredOutsideAContainer_IsReported()
+    {
+        // C4's hierarchy is what gives each level its meaning: a component is part of a
+        // container, and one written straight into the model is not a C4 component at all
+        // (Requirement 10.6).
+        var dsl = """
+            workspace {
+                model {
+                    stray = component "Stray" "desc" "Kotlin"
+                }
+            }
+            """;
+
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4RuleSet.Rules.MisplacedElement);
+        Assert.Contains("part of a container", problem.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(new DiagramProblemLocation.ElementId("stray"), problem.Location);
+    }
+
+    [Fact]
+    public void AContainerInsideAnotherContainer_IsReported()
+    {
+        var dsl = """
+            workspace {
+                model {
+                    s = softwareSystem "S" "desc" {
+                        outer = container "Outer" "desc" "Kotlin" {
+                            inner = container "Inner" "desc" "Kotlin"
+                        }
+                    }
+                }
+            }
+            """;
+
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4RuleSet.Rules.MisplacedElement);
+        Assert.Equal(new DiagramProblemLocation.ElementId("inner"), problem.Location);
+    }
+
+    [Fact]
+    public void ProperlyNestedElements_AreNotReported()
+    {
+        Assert.DoesNotContain(C4RuleSet.Rules.MisplacedElement, RuleIds(Clean));
+    }
+
+    [Fact]
+    public void AnIncludeIsReported_BecauseWhatItDeclaresIsMissingFromTheDiagram()
+    {
+        // ADP reads only the primary document. Silently showing half a model would be worse
+        // than saying so (design "Prerequisites and blockers" 4).
+        var dsl = """
+            workspace {
+                !include shared/model.dsl
+                model {
+                    s = softwareSystem "S" "desc"
+                }
+            }
+            """;
+
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4RuleSet.Rules.IncludeNotFollowed);
+        Assert.Contains("shared/model.dsl", problem.Message, StringComparison.Ordinal);
+        // The file itself is the subject, so there is no element or line to point at.
+        Assert.Null(problem.Location);
+    }
+
+    [Fact]
+    public void ADocumentWithNoIncludes_IsNotReported()
+    {
+        Assert.DoesNotContain(C4RuleSet.Rules.IncludeNotFollowed, RuleIds(Clean));
+    }
+
+    [Fact]
     public void EveryProblem_IsAWarning_SoAnUnfinishedModelStillSaves()
     {
         // Requirement 10.7: a model mid-edit is routinely incomplete. Anything that cannot be
