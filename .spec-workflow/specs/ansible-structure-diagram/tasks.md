@@ -18,7 +18,7 @@
 
 ## Phase A — the fixture tree
 
-- [ ] 1. Build the Ansible fixture project
+- [-] 1. Build the Ansible fixture project
   - File: `src/diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure.Tests/Fixtures/infrastructure/**` (new), `Fixtures/readme.md` (new)
   - Commit the worked example from the requirements as a real tree: `ansible.cfg`, `site.yml` importing `webservers.yml` and `dbservers.yml`, `inventories/production` and `inventories/staging` with `group_vars`, and `roles/common`, `roles/nginx` (with `handlers`, `templates`, an `include_tasks` to `tls.yml`, and a `meta` dependency) and `roles/postgres`
   - Beside it, a second fixture `broken/` carrying one instance of each Requirement 9.2 mistake, and a third `unconventional/` that is valid Ansible in a layout the model does not recognise (playbooks under `plays/`) — the fixture that must produce **no problems at all**
