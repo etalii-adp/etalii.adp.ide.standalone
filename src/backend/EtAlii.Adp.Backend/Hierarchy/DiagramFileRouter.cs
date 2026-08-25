@@ -118,6 +118,21 @@ public sealed class DiagramFileRouter
             .Where(definition => string.Equals(definition.Extension, extension, StringComparison.OrdinalIgnoreCase))
             .ToArray();
 
+        // An extension every claimant calls shared is one nobody may claim on sight: a repository
+        // is full of .yml files that are not pipelines, and routing one on its extension alone
+        // would present all of them as diagrams. Such a file becomes a diagram when the user
+        // registers it, which writes the .adp the branch above already honours
+        // (azure-pipeline-diagram Requirement 2.2). Checked before the count switch so it applies
+        // whether one type claims the extension or several.
+        if (claimants.Length > 0 && claimants.All(definition => definition.SharedExtension))
+        {
+            _logger.Debug(
+                "Not routing {Path}: {Extension} is shared, so it opens only through an .adp registration",
+                bodyPath,
+                extension);
+            return new NotADiagram(bodyPath);
+        }
+
         switch (claimants.Length)
         {
             case 0:

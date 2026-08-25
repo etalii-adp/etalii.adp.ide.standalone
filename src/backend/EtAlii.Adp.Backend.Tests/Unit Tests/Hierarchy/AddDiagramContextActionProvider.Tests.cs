@@ -334,14 +334,17 @@ public class AddDiagramContextActionProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task CommitAsync_OnAFileTarget_ReportsTheFolder()
+    public async Task CommitAsync_OnAFileNoTypeReads_IsRefused()
     {
-        // Act.
-        // A file is never a valid target; it reads as "no folder here" rather than leaking on.
-        var result = await _provider.CommitAsync(FileTarget(CreateFile("a.txt")), AddDiagramContextActionProvider.AddActionId, "c4/context", "domain", TestContext.Current.CancellationToken);
+        // Arrange: a file is a valid target now - it may be registered as a diagram
+        // (add-diagram-action Requirement 4.3, revised) - but only by a type that reads its
+        // kind of file. Nothing declares .txt.
 
-        // Assert.
-        Assert.Equal("The folder no longer exists.", result.Error);
+        // Act.
+        var result = await _provider.CommitAsync(FileTarget(CreateFile("a.txt")), AddDiagramContextActionProvider.AddActionId, "c4/context", "", TestContext.Current.CancellationToken);
+
+        // Assert: refused by extension, not by "a file is never a target".
+        Assert.Equal("That diagram type is not available for this file.", result.Error);
     }
 
     [Fact]

@@ -13,3 +13,10 @@
 
 # C4 model documents are compared byte for byte for the same reason (c4-diagrams Requirement 3.1).
 *.dsl -text
+
+# Azure Pipelines documents are compared byte for byte too (azure-pipeline-diagram
+# Requirement 3.1), but `.yml` is far too common an extension to mark repository-wide - it
+# would catch every workflow, compose file and configuration document in the tree. The rule
+# is therefore scoped to the fixtures folder, which is the only place the bytes are the
+# subject of a test rather than the content.
+src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline.Tests/Fixtures/** -text
