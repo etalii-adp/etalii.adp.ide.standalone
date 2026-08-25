@@ -15,7 +15,7 @@ public class C4SessionTests : IDisposable
 {
     private readonly string _root;
     private readonly C4DocumentStore _documents = new();
-    private readonly C4ElementMapper _mapper = new(C4Metrics.Default);
+    private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4LayoutSidecar());
 
     public C4SessionTests()
     {

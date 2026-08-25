@@ -117,7 +117,7 @@ public sealed class C4Session : IDiagramSession
     {
         var workspace = _documents.WorkspaceOf(_bodyPath);
         var view = View();
-        return view is null ? [] : _mapper.Visible(workspace, view, _viewport);
+        return view is null ? [] : _mapper.Visible(workspace, view, _viewport, _bodyPath);
     }
 
     private void OnDocumentChanged(object? sender, C4DocumentChangedEventArgs args)

@@ -22,11 +22,14 @@ public sealed class C4ElementMapper
     public const string ViewElementId = "c4:view";
 
     private readonly C4Metrics _metrics;
+    private readonly C4LayoutSidecar _sidecar;
 
-    public C4ElementMapper(C4Metrics metrics)
+    public C4ElementMapper(C4Metrics metrics, C4LayoutSidecar sidecar)
     {
         ArgumentNullException.ThrowIfNull(metrics);
+        ArgumentNullException.ThrowIfNull(sidecar);
         _metrics = metrics;
+        _sidecar = sidecar;
     }
 
     /// <summary>
@@ -35,12 +38,14 @@ public sealed class C4ElementMapper
     /// brings the far end of its relationships and its enclosing boundary with it - or the line
     /// running off the edge of the screen would have nothing to anchor to.
     /// </summary>
-    public IReadOnlyList<DiagramElement> Visible(C4Workspace workspace, C4View view, DiagramViewport viewport)
+    public IReadOnlyList<DiagramElement> Visible(C4Workspace workspace, C4View view, DiagramViewport viewport, string? bodyPath = null)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(view);
 
-        var layout = C4LayoutEngine.Compute(workspace, view, _metrics);
+        // Whatever the user arranged by hand, layered over the computed arrangement.
+        var authored = bodyPath is { Length: > 0 } ? _sidecar.Read(bodyPath, view.Key) : null;
+        var layout = C4LayoutEngine.Compute(workspace, view, _metrics, authored);
         var members = C4RuleSet.MembersOf(workspace, view);
         var shown = members.Where(element => layout.Boxes.ContainsKey(element.Id)).ToArray();
 
