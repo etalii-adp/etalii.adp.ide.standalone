@@ -430,7 +430,8 @@
   - _Requirements: 1.2, 1.3, 1.4, 1.5_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer writing integration tests | Task: Prove that two views over one model stay consistent, over the real host | Restrictions: assert on the deltas actually produced, not on an empty collection - a narrowing viewport produces removals, not adds; use TestContext.Current.CancellationToken | Success: a rename in one tab is observed in the other, the two removal semantics are distinguished, and undo restores both views_
 
-- [ ] 39. Catalog, manual pass and interoperability
+- [-] 39. Catalog, manual pass and interoperability
+  - **Catalog and manual pass done; interop outstanding.** The six working types are ✅ Implemented in `docs/diagrams.md` and `c4/code` stays 📝 Specified. The manual pass ran and found three real C4 defects (relationship elevation, the system drawn inside its own boundary, an external system inside it) - all fixed, all guarded, both symptoms in `tests.md`. **The Structurizr Lite check could not run**: the sandbox has neither Docker nor a JRE. Recorded in `tests.md` as a step-by-step check for a machine that has one
   - File: `docs/diagrams.md` (modify), `tests.md` (modify)
   - Move the six working rows to ✅ Implemented and leave `c4/code` at 📝 Specified with its dependency noted. Run the manual pass: create a context and a container view over one model, verify the shared rename, drill down, drag with the drop-target highlight, and open the resulting `.dsl` in Structurizr Lite to prove the format is genuinely theirs
   - Purpose: the catalog rule in CLAUDE.md, and the interoperability claim behind choosing this format
