@@ -16,7 +16,7 @@
 
 ## Phase A — the corpus
 
-- [ ] 1. Assemble the pipeline round-trip corpus
+- [x] 1. Assemble the pipeline round-trip corpus
   - File: `src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline.Tests/Fixtures/*.yml` (new), `Fixtures/readme.md` (new)
   - Commit real Azure Pipelines documents: a multi-stage build/test/deploy with `dependsOn` fan-out and fan-in, a `deployment` job with an `environment` and a `strategy`, a pipeline using `extends` with parameters, one using `stages`/`jobs`/`steps` templates, a `jobs`-only file and a `steps`-only file (Requirement 4.2), and hand-made edge cases: comments in every position, anchors and aliases, both CRLF and LF, unusual indentation, `${{ }}` and `$[ ]` expressions in `condition`, `dependsOn` and `displayName`
   - The readme records each file's provenance and what it exists to prove. A file written by hand is never called canonical; where possible, validate it against Azure DevOps' own schema so the YAML is not ADP's opinion of the YAML
@@ -27,14 +27,14 @@
 
 ## Phase B — the two core seams
 
-- [ ] 2. Declare a shared extension on `DiagramDefinition`
+- [x] 2. Declare a shared extension on `DiagramDefinition`
   - File: `src/backend/EtAlii.Adp.Diagram/_Model/DiagramDefinition.cs` (edited), `src/backend/EtAlii.Adp.Diagram.Tests/DiagramDefinition.Tests.cs` (edited)
   - Add `bool SharedExtension = false` after `Extension`. Defaulted, so all 57 existing definitions compile and behave unchanged. Document it as "too common for one type to claim on sight"
   - Purpose: lets a type declare `.yml` without claiming every YAML file
   - _Requirements: 2.1_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add a defaulted SharedExtension flag to DiagramDefinition with documentation explaining what it means | Restrictions: it must default to false so no existing definition changes behaviour; do not reorder existing parameters | Success: the solution builds, every existing definition is untouched, and a test asserts the default_
 
-- [ ] 3. Withhold bare-body routing for a shared extension
+- [x] 3. Withhold bare-body routing for a shared extension
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/DiagramFileRouter.cs` (edited), `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/DiagramFileRouter.Tests.cs` (edited)
   - In `RouteBody`, after the claimant search: if every claimant declares the extension shared, return `NotADiagram`. An `.adp` beside the file still wins, because that path runs first
   - Purpose: a stray `.yml` routes nowhere, while `.mm`, `.owm` and `.dsl` keep today's behaviour exactly
@@ -42,14 +42,14 @@
   - _Requirements: 2.2_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add a guard to DiagramFileRouter.RouteBody so a body whose extension every claimant declares shared routes to NotADiagram | Restrictions: distinctive extensions must be entirely unaffected; the .adp registration path must still win | Success: tests prove a bare .yml routes nowhere, the same file with an .adp opens, and a bare .mm still routes_
 
-- [ ] 4. Filter the Add option tree to a set of definitions
+- [x] 4. Filter the Add option tree to a set of definitions
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/DiagramOptionTree.cs` (edited), `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/DiagramOptionTree.Tests.cs` (edited)
   - `Build` already takes the definitions to show. Confirm it needs no change beyond being called with a filtered list, and add a test that a single-vendor filtered list still groups correctly
   - Purpose: the file case shows only the types that claim that extension
   - _Requirements: 2.3_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Verify DiagramOptionTree.Build handles a filtered definition list and cover it with a test | Restrictions: do not change the grouping rules; do not special-case any diagram type | Success: a filtered list of one vendor's types builds a correct tree and the existing tests still pass_
 
-- [ ] 5. Revise `add-diagram-action` Requirement 4.3 — **the gate**
+- [x] 5. Revise `add-diagram-action` Requirement 4.3 — **the gate**
   - File: `.spec-workflow/specs/add-diagram-action/requirements.md` (edited)
   - Requirement 4.3 forbids Add on a file. Revise it to distinguish the two acts: Add on a folder creates a diagram *inside* it; Add on a file registers that file by creating an `.adp` *beside* it, in the file's parent folder. Keep the original reasoning visible rather than deleting it, as that spec's own "Correction from the first version" note does elsewhere
   - Commit the change on `develop` per CLAUDE.md, and raise it for approval — this is a change to an approved document, so it does not go in quietly
@@ -57,7 +57,7 @@
   - _Requirements: 2.3, 2.10_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: technical writer maintaining approved specifications | Task: Revise add-diagram-action Requirement 4.3 so Add on a file is permitted as registration, keeping the original reasoning visible and explaining why it does not cover this case | Restrictions: do not silently delete the old requirement; do not change any other requirement in that spec; commit on develop and raise for approval | Success: the two specs no longer contradict each other and the change is committed and submitted for approval_
 
-- [ ] 6. Offer Add on a file, as registration
+- [x] 6. Offer Add on a file, as registration
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/AddDiagramContextActionProvider.cs` (edited), `.../AddDiagramContextActionProvider.Tests.cs` (edited)
   - Offer the action when the target is a file, at least one definition declares its extension, and no `.adp` sits beside it. Label it as registering rather than adding. `DiscoverAsync` builds the option tree from the matching definitions only; `CommitAsync` writes the `.adp` and nothing else — no body, no name prompt, since the name is the file's own
   - Purpose: the user names the type once, and ADP never guesses

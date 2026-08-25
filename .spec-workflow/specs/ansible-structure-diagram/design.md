@@ -1,0 +1,431 @@
+# Design Document
+
+## Overview
+
+The module lives at `diagrams/ansible-structure/`, registers through the seams the shipped types already use, and — being read-only — registers **fewer** of them than any type before it: no document factory, no toolbox provider, no action provider, no commands. Its shape is closest to the mindmap module (a shared model per open diagram, a computed layout, a per-connection session) and differs from every previous type in one way that drives most of this design: **its subject is a folder, not a file.**
+
+That one difference is not cosmetic, and this design does not pretend otherwise. Three core mechanisms — validation, problem attribution, and revalidation-on-change — are all keyed on *a diagram is one file (or a pair)*. A folder-subject type reads correctly through the routing seam already (`DiagramRouted` with `BodyPath == RegistrationPath` is exactly what a bodyless type gets), but it validates through a seam that hands over **text and a base name and no path at all**, reports problems that can only be attributed to the file the validator was given, and never gets revalidated when a file in its folder changes. Requirement 11 hoped a fully read-only type would need no new seams. It needs three small ones, all type-agnostic — see **Deviations and notes**, which states the disagreement plainly rather than burying it.
+
+Eight pieces do the work:
+
+1. **`AnsibleYaml`** — one tolerant read of one YAML file, with line marks kept (Requirement 1.2).
+2. **`AnsibleProjectReader`** — walks the registered folder and recognises Ansible's conventional shapes (Requirements 3.1, 4).
+3. **`AnsibleProject`** / **`AnsibleGraph`** — the nodes and the four edge kinds, in Ansible's own vocabulary (Requirements 4, 5).
+4. **`AnsibleProjectStore`** — one project per registered folder, watcher-driven, announcing what changed (Requirement 3.5).
+5. **`AnsibleLayout`** — banded, ranked, pure and deterministic (Requirement 6).
+6. **`AnsibleElementMapper`** — model to core `Element`/`Delta` (Requirement 7).
+7. **`AnsibleRuleSet`** — a pure function from project to `DiagramProblem`s (Requirement 9).
+8. **`AnsibleContextPropertyProvider`** — every row, every row read-only, every reason naming a file (Requirement 10).
+
+Around them sit four registrations, and the absence of four more is the point (Requirement 11.2).
+
+## Steering Document Alignment
+
+### Technical Standards (tech.md)
+
+* **Specifying a diagram type** — the four mandated aspects are all here, and two of them are answered with *does not apply, for this reason*, which tech.md explicitly allows:
+  * *File format type*: no format of ADP's own. The `.adp` carries `ansible/structure` and nothing else; the type declares **no `Extension`**, so there is no sibling body and no `IDiagramDocumentFactory` (Requirement 2.1–2.2). A round trip guarantees the strongest thing a round trip can guarantee: **there is no write leg** (Requirement 1.1).
+  * *Visualization*: **computed by the module** — the fork tech.md calls the biggest in a diagram type's design is settled the mindmap's way, and settled harder: the files could not carry positions even if we wanted them to (Requirement 6.1).
+  * *Toolbox*: **no entries, deliberately.** Nothing can be dragged onto a diagram that writes nothing, so the module registers no `IDiagramToolboxProvider` and the panel says what it already says for a type with none (Requirement 7.3).
+  * *Context actions and commands*: **none, deliberately.** tech.md's Commands rule says every functional state change is an `ICommand`; a module with no state changes registers no commands and no `IContextActionProvider`. What is *not* offered is the whole answer, and Requirement 10.2 makes the property grid honour it rather than smuggling an edit in through a side panel.
+* **Implementation order** — model → persistence (here: reading only) → wire → UI → logic; the task breakdown follows it, and the write half of the persistence step is skipped rather than invented.
+* **Context** — one `IContextSourceResolver` makes a node selectable; one `IContextPropertyProvider` says what it shows. No bespoke RPC.
+* **gRPC call shapes** — the module adds no service. It rides `DiagramService.Open` + `UpdateView` and `ContextService`'s unary calls.
+* **Backend** — `_Model` for the POCOs; one entity per file; **no nested types**; Serilog through a `private static readonly ILogger` per class.
+* **Frontend** — the per-play colour of Requirement 6.3 crosses the wire as an **index**, never as a colour: styling stays centralised in the module's stylesheet, per tech.md's Frontend rule.
+
+### Project Structure (structure.md)
+
+```
+src/diagrams/ansible-structure/
+├── api/                  ansible-structure.proto  (the element payload)
+├── backend/
+│   ├── EtAlii.Adp.Diagram.AnsibleStructure/
+│   │   ├── _Model/       AnsibleProject, AnsiblePlaybook, AnsiblePlay, AnsibleRole, ...
+│   │   └── *.cs          reader, store, graph, layout, mapper, rules, session, providers
+│   └── EtAlii.Adp.Diagram.AnsibleStructure.Tests/
+│       └── Fixtures/     infrastructure/ - the worked example, as a real tree
+└── client/               AnsibleCanvas.tsx, ansibleModel.ts, useAnsibleStream.ts, register.ts
+```
+
+Note the missing `Commands/` folder. Every other module has one.
+
+Core stays ignorant: everything resolves by `DiagramOrigin` or `ContextScope`, and the three core changes below name no diagram type.
+
+## Code Reuse Analysis
+
+### Existing Components to Leverage
+
+* **`IDiagramSessionFactory` / `IDiagramSession`** — the open/baseline/viewport/delta lifecycle, exactly as `MindmapSession` implements it. `MoveElementAsync` is the one method a read-only session must answer awkwardly, and it answers by refusing with a sentence (the seam already returns a reason string rather than throwing).
+* **`IContextSourceResolver`** — `MindmapContextSourceResolver` is the worked example, including the `Track` subscription that re-resolves a selection when the underlying document changes. This module's version tracks a folder instead of a file; the shape is unchanged.
+* **`IContextPropertyProvider` + `ContextPropertyDefinition`** — `ReadOnlyReason` and `Group` are exactly what Requirement 10 needs, and `ContextPropertyResolver` refuses a write to a read-only property **server-side** whatever the client claims (property-grid Requirement 4.3). That is what makes Requirement 10.2's "enforced, not styled" true without this module writing a single guard of its own.
+* **`IDiagramValidator` / `DiagramValidators` / `DiagramProblem`** — the rules seam, the per-origin registry, the severity/rule-id/location vocabulary. `ProjectValidator` already bounds a validator with a timeout and survives one that throws; a reader walking a folder tree is exactly the kind of validator that benefits.
+* **`TrackedProblemRoot`'s watcher shape** — a `FileSystemWatcher` with `IncludeSubdirectories`, `NotifyFilters.FileName | DirectoryName | LastWrite | Size`, a settle timer that coalesces a burst, and **guarded event handlers** (an unhandled exception on the watcher thread kills the process — a lesson this repository has already paid for). `AnsibleProjectStore` copies that shape rather than inventing a second one.
+* **`ProblemCollector.MarkFolderVisited`** — the reparse-point canonicalisation that stops a symlink loop from walking forever. The reader needs the same guard and reuses the same technique.
+* **`MindmapLink.project_relative_path`** — the existing precedent for a payload carrying a project-relative path so the client can call `revealPath(segments)`. Requirement 8.1 is that mechanism, applied to every node instead of to linked nodes only.
+* **`MindmapElementMapper`'s viewport rule** — deliver what intersects, plus one hop of graph partners so an edge running off-screen still has both ends. Reused as a rule, not as code.
+
+### Integration Points
+
+* **`DiagramDefinition`** gains `Subject` (core change 1).
+* **`IDiagramValidator.ValidateAsync`** takes a request record instead of two loose strings (core change 2).
+* **`DiagramProblemLocation`** gains a third variant, and `ProjectValidator` / `ProblemCollector` / `CachedProblem` / `ProblemBroadcaster` / `context.proto`'s `ProblemLocation` carry it (core change 3).
+* **`ProblemMaintenance.RevalidateAsync`** walks up from a changed path to the nearest folder-subject registration (core change 1's consumer).
+* **`Program.cs`** gains `builder.Services.AddAnsibleStructure(builder.Configuration);`.
+* **`Directory.Packages.props`** gains `YamlDotNet` — the first YAML dependency in the tree.
+* **`docs/diagrams.md`**'s `ansible/structure` row moves through its states.
+
+## Architecture
+
+```mermaid
+graph TD
+    subgraph client ["Client"]
+        CANVAS["AnsibleCanvas<br/>playbooks, roles, inventories, edges"]
+        GRID["Property Grid<br/>every row greyed, every row explained"]
+        EXPLORER["Explorer<br/>revealPath"]
+    end
+    CANVAS -->|"Open / UpdateView"| SVC["DiagramServiceImpl"]
+    CANVAS -->|"Select"| CTX["ContextServiceImpl"]
+    CANVAS -->|"activate → revealPath(segments)"| EXPLORER
+    GRID -->|"DescribeProperties"| CTX
+    subgraph module ["EtAlii.Adp.Diagram.AnsibleStructure"]
+        SVC --> SESSION["AnsibleSession<br/>read-only; MoveElement refuses"]
+        SESSION --> STORE["AnsibleProjectStore<br/>one project per folder, watched"]
+        STORE --> READER["AnsibleProjectReader<br/>walks the tree"]
+        READER --> YAML["AnsibleYaml<br/>tolerant parse, line marks kept"]
+        READER --> MODEL["AnsibleProject<br/>playbooks / roles / inventories / vars"]
+        MODEL --> GRAPH["AnsibleGraph<br/>4 edge kinds, resolved or not"]
+        GRAPH --> LAYOUT["AnsibleLayout<br/>banded, ranked, deterministic"]
+        LAYOUT --> MAPPER["AnsibleElementMapper"]
+        MAPPER --> SESSION
+        MODEL --> RULES["AnsibleRuleSet"]
+        CTX --> PROV["Context providers:<br/>source, property"]
+    end
+    RULES -->|"IDiagramValidator"| PROBLEMS["Errors & Warnings"]
+```
+
+Read the diagram for what is *missing*: there is no arrow leaving the module towards the disk. Nothing in the module opens a file for writing, and no command handler exists to be dispatched. Requirement 1.1 is satisfied by construction rather than by discipline — there is no code path that could write, so no test needs to prove one is never taken (the byte-for-byte assertion in the testing strategy proves it anyway, because a claim this central deserves a guard).
+
+### Flow: opening a folder, and following it as it changes
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant C as AnsibleCanvas
+    participant S as DiagramService
+    participant F as AnsibleSessionFactory
+    participant T as AnsibleProjectStore
+    participant W as FileSystemWatcher
+
+    U->>C: opens infrastructure.adp
+    C->>S: Open(entry)
+    S->>F: Open(watchId, root, bodyPath = the .adp, registrationPath = the same)
+    F->>T: GetOrLoad(folder of the .adp)
+    T->>T: read the tree once, derive graph + layout
+    T->>W: watch that folder, subdirectories included
+    T-->>F: AnsibleProject
+    F-->>S: AnsibleSession
+    S-->>C: baseline deltas
+    Note over W: someone edits roles/nginx/meta/main.yml
+    W->>T: Changed (coalesced by the settle timer)
+    T->>T: re-read that file, re-derive graph + layout
+    T-->>S: Changed → deltas
+    S-->>C: the open diagram stays true
+```
+
+The loop worth reading twice: **the store is the only reader**, one project per folder shared by every connection, and per-connection state (the viewport) lives in the session. That is the mindmap's split, and it is why two people looking at the same Ansible project cannot see different structures (the Determinism non-functional requirement).
+
+### Why the subject being a folder is a core concern and not a module trick
+
+The module could resolve its own folder from the `.adp` path and stop there — the session factory is handed `bodyPath`, and `Path.GetDirectoryName` is one call. That works for *rendering*. It does not work for the other two things a diagram type does:
+
+* **Validation.** `IDiagramValidator.ValidateAsync(string document, string baseName, CancellationToken)` receives the `.adp` file's **text** — one MIME line — and a base name. There is no path in the call and no way to derive one. `MindmapValidator`'s own remarks already name this limitation as the reason a broken-link rule cannot be written. This module's entire rule set is about files on disk, so it cannot exist behind that seam.
+* **Revalidation.** `ProblemMaintenance.RevalidateAsync` routes each changed path; `roles/nginx/meta/main.yml` routes to `NotADiagram`, so nothing is revalidated and the panel keeps a verdict that is now wrong. Worse, once problems *are* attributed to that file, the same code clears them without re-finding them — the panel would silently lose the problem instead of refreshing it.
+
+Both are the same missing fact: *core does not know that a diagram's subject can be a folder.* One `DiagramSubject` on `DiagramDefinition` tells it, in the same shape as every other fact a definition carries, and both mechanisms then do the right thing without learning what Ansible is.
+
+### Why the model does not resolve expressions, and does not chase variables
+
+Two refusals, for the same reason and with different consequences.
+
+`{{ … }}` is Jinja, evaluated at run time against variables ADP does not have. A `roles:` entry that is an expression may name anything. The graph therefore carries such a target as **opaque text**, marks the edge unresolvable, and the canvas draws it as unresolvable (Requirement 3.4). Nothing guesses, and — importantly — an unresolvable target is *not* reported as a missing role, because it is not missing, it is unknown.
+
+Per-variable usage edges are refused outright (Requirement 5.8). ansible-viz, which attempted them, concedes the analysis guesses. A wrong edge in a diagram whose whole value is "the picture is true" is worse than a missing one, because a reader cannot tell it is wrong. Variable **folders** are drawn as nodes, which is the honest part of the same idea: *these files exist and they feed this play* is a fact; *this play uses that variable* is an inference.
+
+### Why the rules are a pure function over the model
+
+`AnsibleRuleSet` takes an `AnsibleProject` and returns `DiagramProblem`s. It reads no file — the reader already did, once, tolerantly, keeping the line marks and the parse failures. This means every rule of Requirement 9.2 is testable from a temp tree with no gRPC, no store and no watcher, and it means the diagram and the problems panel can never disagree about what is in the folder: they are looking at the same object.
+
+### Modular Design Principles
+
+* **Single file responsibility**: parsing, walking, graph derivation, layout, mapping, validation and property description are seven components, each testable on its own; the store and the session add lifetime and per-connection state and nothing else.
+* **No diagram-type knowledge in core**: the three core changes are an enum on a record, a parameter object, and a third case in a closed set of locations. None of them mentions Ansible, folders-that-are-Ansible, or YAML.
+* **Dependency direction**: the module references `EtAlii.Adp.Diagram` and `EtAlii.Adp.Backend`; neither references it.
+
+## Components and Interfaces
+
+### `AnsibleYaml` (module, new, static)
+
+* **Purpose**: read one YAML file into a DOM, or say why not.
+* **Interface**: `static AnsibleYamlResult Read(string path)` → either a `YamlDocument` root node, or an `AnsibleYamlFailure(string Message, uint Line)`.
+* **Reuses**: **YamlDotNet**'s `YamlStream`, whose nodes carry `Start.Line` marks — which is what lets a problem point at the line that declared it rather than at the file as a whole (Requirement 9.3).
+* **Guarantees**: never throws for a malformed document; a failure degrades exactly that file (Requirement 1.2). Opened read-only and shared, so validation never contends with an editor.
+
+### `AnsibleProjectReader` (module, new)
+
+* **Purpose**: the registered folder → an `AnsibleProject`, recognising Ansible's conventional shapes and ignoring everything else without complaint (Requirements 1.3, 3.1).
+* **Interface**: `AnsibleProject Read(string folder)`; `AnsibleProject Reread(AnsibleProject previous, string changedPath)` — the incremental path the watcher takes.
+* **Recognition**, by Ansible's own conventions and nothing else:
+  * **Playbooks**: root-level and `playbooks/` YAML files whose top level is a *list of mappings* — the shape a play has. A YAML file that is a mapping at the top is not a playbook, which is how `ansible.cfg`-adjacent files and stray data files exclude themselves without a name list.
+  * **Roles**: `roles/<name>/` containing at least one canonical subfolder (`tasks`, `handlers`, `defaults`, `vars`, `files`, `templates`, `meta`, `library`). A `roles/<name>/` with none is still a role node — a *hollow* one, which Requirement 4.2 wants visibly hollow and Requirement 9.2 warns about.
+  * **Inventories**: `inventories/<env>/`, or a root `inventory` / `hosts` / `hosts.yml`, each with its `group_vars/` and `host_vars/`.
+  * **Annotations**: `ansible.cfg`, `collections/requirements.yml`, `requirements.yml` — recorded on the project, drawn as annotations rather than boxes (Requirement 4.1).
+* **Determinism**: every directory enumeration is sorted with `StringComparer.Ordinal` before use. `Directory.EnumerateFiles` order is the filesystem's, which is not a promise.
+* **Safety**: reparse points are canonicalised and a folder already visited is not re-entered — the `ProblemCollector.MarkFolderVisited` technique, so a symlink loop ends the walk rather than the process.
+
+### `AnsibleProject`, `AnsibleGraph` (module, `_Model` and new)
+
+* **Purpose**: Ansible's vocabulary as records, and the four edge kinds Requirement 5 distinguishes.
+* **The subtle part is the edge kinds, and they are four rather than one** because `roles:`, `import_playbook:`, `include_tasks:` and `dependencies:` mean four different things to Ansible and would mean one thing to a reader if drawn alike:
+
+  | Edge kind | Declared by | Drawn |
+  | --- | --- | --- |
+  | `UsesRole` | a play's `roles:`, `import_role`, `include_role` | solid (static) or dashed (`include_role`, dynamic) |
+  | `ImportsPlaybook` | `import_playbook:` | solid |
+  | `IncludesTasks` | `include_tasks:` / `import_tasks:` within a role | dashed / solid, within the role's band |
+  | `DependsOn` | `meta/main.yml`'s `dependencies:` | a third style, distinct from being *listed* by a playbook |
+  | `Targets` | a play's `hosts:` matching a group an inventory defines | into the inventory band, labelled with the pattern |
+
+  Each edge carries the file and the line that declared it, the target **as written**, and any `when:` **as written, never evaluated** (Requirements 5.7, 8.3, 10.6). That is what makes "why is this here" answerable from the property grid.
+* **Resolution states**: an edge target is `Resolved` (a node exists), `Missing` (nothing by that name — a problem), or `Unresolvable` (an expression — not a problem, Requirement 3.4). Three states, because collapsing the last two would report a missing role every time someone parameterises one.
+
+### `AnsibleProjectStore` (module, new)
+
+* **Purpose**: one `AnsibleProject` per registered folder, kept true as the tree changes (Requirement 3.5).
+* **Interface**: `GetOrLoad(string folder)`; `Get(string folder)`; `Release(string folder)`; `event EventHandler<AnsibleProjectChangedEventArgs>? Changed`.
+* **Reuses**: `TrackedProblemRoot`'s watcher shape — subdirectories, content filters, a settle timer coalescing a burst, and guarded handlers.
+* **Behaviour**: a settled burst re-reads the files that changed and re-derives graph and layout; the whole tree is re-read only when a directory was created, deleted or renamed, since that is when the walk itself changes. `Release` drops the project and disposes its watcher when its last viewer leaves.
+* **Deliberately not**: a save method. There is none to write.
+
+### `AnsibleLayout` (module, new, static)
+
+* **Purpose**: positions, computed, deterministic (Requirement 6.1).
+* **Algorithm**: ranks left to right — entry playbooks (those nothing imports), then playbooks and their plays, then roles, then task files — by longest path over the `ImportsPlaybook`/`UsesRole`/`IncludesTasks` edges. Within a rank, declaration order, then name, both ordinal. Inventories and variable folders are **not ranked**: they occupy their own band below the flow (Requirement 6.2), so a play's `Targets` edge drops out of the execution story rather than lengthening it.
+* **Play colour**: each play is assigned an index in declaration order; a role drawn for that play carries the index, and the canvas maps index → colour from the module's stylesheet (Requirement 6.3). A role used by two plays carries the lower index and is drawn once — the alternative, one node per (play, role) pair, turns a shared `common` role into visual noise exactly where a reader most wants to see that it is shared.
+* **Testability**: `IReadOnlyDictionary<string, Point>` from an `AnsibleGraph`. No I/O.
+
+### `AnsibleElementMapper` (module, new)
+
+* **Element types**: `ansible/structure+playbook`, `+play`, `+role`, `+taskfile`, `+inventory`, `+vars`, `+edge`.
+* **Element ids** are folder-relative paths, with a discriminator: `playbook:site.yml`, `play:webservers.yml#0`, `role:nginx`, `taskfile:roles/nginx/tasks/tls.yml`, `inventory:inventories/production`, `vars:inventories/production/group_vars`, and for an edge `edge:<sourceId>|<directive>|<targetAsWritten>`. An id survives an unrelated edit anywhere in the tree, which is what keeps a selection alive across a watcher push.
+* **Viewport**: what intersects, plus one hop of graph partners so an edge leaving the screen keeps both ends — the mindmap's rule, and its reason (the canvas draws a connector from the two boxes, so a culled partner loses the line).
+* **Read-only consequences**: `Group`/`Ungroup` deltas are never emitted (nothing folds), and an edit delta is never emitted (nothing edits). A watcher push is `Remove` + `Add` for what changed.
+
+### `AnsibleSession`, `AnsibleSessionFactory` (module, new)
+
+* `Origin => Diagram.AnsibleStructure.Origin`.
+* `Open` resolves the subject as **the folder the `.adp` sits in** (Requirement 2.2) — `bodyPath` and `registrationPath` are the same file for a bodyless type, which is exactly what `DiagramFileRouter` returns.
+* `MoveElementAsync` **refuses**, returning *"An Ansible structure diagram is drawn from the folder's own files; move a role by moving its folder."* The seam returns a reason rather than throwing, so a read-only type answers it honestly instead of pretending to succeed.
+* No history stack is taken as a dependency. A module with no commands has nothing to put on one.
+
+### `AnsibleContextSourceResolver` (module, new)
+
+* Resolves an `element_id` against the project named by the enclosing hierarchy level, verifies the node is really in that project, and fills the detail a consumer shows (Requirement 8.2) — `MindmapContextSourceResolver`'s shape, with a folder where it has a file.
+* `NestingOf` → `NotNestable`.
+* `Track` re-resolves after every store change: a role whose folder was deleted clears the selection; a renamed file changes the path.
+* The payload carries the node's **project-relative path segments**, which is what the canvas hands to `revealPath` on activation (Requirement 8.1) — the mechanism `MindmapLink.project_relative_path` already established.
+
+### `AnsibleValidator` + `AnsibleRuleSet` (module, new)
+
+* `AnsibleValidator : IDiagramValidator`, `Origin => ansible/structure`, delegating to `AnsibleRuleSet.Judge(AnsibleProject)`.
+* **The rules of Requirement 9.2**, each with a module-prefixed id and a location naming the **declaring file** (core change 3):
+
+  | Rule id | Severity | Fires when |
+  | --- | --- | --- |
+  | `ansible.role-missing` | Error | a playbook or a `meta/main.yml` names a role with no folder |
+  | `ansible.dangling-import` | Error | an `import_playbook` / `include_tasks` target does not exist |
+  | `ansible.unmatched-hosts` | Warning | a play's `hosts:` pattern matches no group any inventory defines |
+  | `ansible.unreadable-yaml` | Error | a file in the model does not parse — carrying the parser's own message and line |
+  | `ansible.empty-role` | Warning | a role folder holds no canonical content |
+
+* **Silence is a valid answer** (Requirement 9.4): a team that keeps playbooks in `plays/` gets an undrawn folder, not a problem. The rule set has no opinion about layouts it does not recognise.
+
+### `AnsibleContextPropertyProvider` (module, new)
+
+* `Scope => ContextScope.DiagramElement`.
+* `DescribeAsync` returns the rows of Requirements 10.3–10.6, grouped: **Identity** / **Runs** / **Targets** for a playbook or play; **Identity** / **Contents** / **Relationships** for a role; **Identity** / **Groups** / **Variables** for an inventory; **Declaration** for an edge.
+* **Every row carries a non-empty `ReadOnlyReason` naming the file the value lives in** (Requirement 10.2) — e.g. *"Defined in roles/nginx/meta/main.yml; edit it in a text editor."* This module offers no editable property at all, which makes it the first exercise of property-grid Requirement 4 at 100%.
+* `SetAsync` **refuses unconditionally**, returning the property's own reason. It is unreachable in practice — `ContextPropertyResolver` refuses the write server-side before the provider is consulted — and it is written anyway, because a provider that would silently accept a write if the resolver ever changed is a trap rather than a design.
+* A property absent from the files is **not contributed** (Requirement 10.7, property-grid Requirement 2.3): a play with no `when:` has no condition row.
+
+### Core changes
+
+#### 1. `DiagramSubject` + `DiagramDefinition.Subject` (new enum, edited record)
+
+```csharp
+public enum DiagramSubject
+{
+    /// <summary>The diagram is the document - the .adp, or the body it names. Every type before ansible/structure.</summary>
+    Document,
+
+    /// <summary>The diagram is the folder the .adp sits in, and the files beneath it.</summary>
+    Folder,
+}
+
+public sealed record DiagramDefinition(
+    DiagramOrigin Origin,
+    string Title,
+    string Description = "",
+    string Extension = "",
+    DiagramSubject Subject = DiagramSubject.Document);
+```
+
+Defaulted, so all existing definitions compile and behave unchanged. `Folder` with a non-empty `Extension` is a contradiction and `DiagramDefinitionDiscovery` refuses it at startup, beside the duplicate-origin check it already makes.
+
+#### 2. `IDiagramValidator.ValidateAsync` takes a request (edited interface)
+
+```csharp
+public sealed record DiagramValidationRequest(
+    string Document,          // the body text; the .adp's own text for a bodyless type
+    string BaseName,
+    string RootPath,
+    string BodyPath,
+    string? RegistrationPath)
+{
+    /// <summary>The folder a Folder-subject type reads. Null for a Document-subject type.</summary>
+    public string? SubjectFolder { get; init; }
+}
+
+ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
+    DiagramValidationRequest request, CancellationToken cancellationToken);
+```
+
+A parameter object rather than a fourth and fifth loose string, so the next fact a validator needs is an added property rather than another signature change. Two implementers (`MindmapValidator`, `C4Validator`) and seven test stubs move over mechanically; **`MindmapValidator` gains for free** the location on disk its own remarks say it needs before a broken-link rule can exist. That rule is not written here — it belongs to the mindmap spec — but the seam stops being the reason it cannot be.
+
+#### 3. `DiagramProblemFileLocation` (new record, and the five places a location travels)
+
+```csharp
+/// <summary>The problem sits in a file other than the diagram's own - the case a folder-subject
+/// type has, where the rule read one file and the diagram is a tree of them.</summary>
+public sealed record DiagramProblemFileLocation(string RelativePath, uint Line = 0) : DiagramProblemLocation;
+```
+
+A third case in a closed set of two. It travels through `context.proto`'s `ProblemLocation` oneof (a new field number — backward compatible), `CachedProblem`, `ProblemBroadcaster`, and the panel, which reveals the named file rather than the diagram.
+
+**`ProjectValidator` uses it for two things**, and the second is the one that matters:
+
+1. **Attribution** — the problem is stored against the named file, so the panel reveals `roles/nginx/meta/main.yml` and not `infrastructure.adp` (Requirement 9.3).
+2. **Staleness** — `ProblemCollector.Add`'s `statsPath` becomes that file, so editing the role's meta marks the verdict stale. Pinning a folder diagram's every problem to an `.adp` that never changes would have left every verdict looking fresh forever.
+
+#### 4. `ProblemMaintenance.RevalidateAsync` walks up (edited)
+
+When a changed path routes to `NotADiagram`, the maintenance loop now also looks for the nearest ancestor folder holding an `.adp` whose definition is `DiagramSubject.Folder`, and validates **that** diagram's scope. Without this, editing `roles/nginx/meta/main.yml` clears the folder diagram's problems without re-finding them — the panel would lose a problem rather than refresh it. The walk stops at the project root and reads only `.adp` files, so a project with no folder-subject diagram pays one directory probe per changed file.
+
+## Data Models
+
+### `ansible-structure.proto` (module)
+
+```proto
+syntax = "proto3";
+
+package etalii.adp.ansible;
+
+option csharp_namespace = "EtAlii.Adp.Diagram.AnsibleStructure";
+
+// The payload of one node or edge of an Ansible structure diagram, packed into the core
+// Element's Any (Requirement 7.1). Position, id and type live on the core Element.
+message AnsibleElementPayload {
+  string name = 1;                 // "nginx", "webservers.yml", "production"
+  AnsibleElementKind kind = 2;     // PLAYBOOK | PLAY | ROLE | TASK_FILE | INVENTORY | VARIABLE_FOLDER | EDGE
+  // Project-relative, never absolute: what the canvas hands to revealPath when the node is
+  // activated (Requirement 8.1), following MindmapLink's precedent.
+  repeated string project_relative_path = 3;
+  // Which play this belongs to, for the per-play colour continuity of Requirement 6.3. An
+  // index, never a colour: styling stays in the module's stylesheet (tech.md, Frontend).
+  int32 play_index = 4;
+  string hosts = 5;                // PLAY only; the pattern as written
+  AnsibleRoleContents contents = 6; // ROLE only; which canonical folders exist, and how full
+  AnsibleEdge edge = 7;            // EDGE only
+  bool unresolvable = 8;           // its target is an expression; shown, never guessed at
+  // ansible.cfg / requirements.yml, as annotations on the project rather than boxes (4.1).
+  repeated string annotations = 9;
+}
+
+// Which canonical subfolders a role has, and how many files each holds - so a hollow role is
+// visibly hollow (Requirement 4.2).
+message AnsibleRoleContents {
+  int32 task_files = 1;
+  int32 handlers = 2;
+  int32 templates = 3;
+  int32 files = 4;
+  int32 defaults = 5;
+  int32 vars = 6;
+  bool has_meta = 7;
+  bool has_library = 8;
+}
+
+message AnsibleEdge {
+  string source_id = 1;
+  string target_id = 2;            // empty when the target is missing or unresolvable
+  AnsibleEdgeKind kind = 3;        // USES_ROLE | IMPORTS_PLAYBOOK | INCLUDES_TASKS | DEPENDS_ON | TARGETS
+  bool dynamic = 4;                // include_* rather than import_*: dashed rather than solid (5.4)
+  string directive = 5;            // "roles:", "import_playbook", "include_tasks", "dependencies"
+  string target_as_written = 6;    // including a {{ expression }}, verbatim
+  string condition = 7;            // a when:, as written, never evaluated (5.7)
+  // Where the edge was declared, for "why is this here" (Requirement 10.6).
+  repeated string declared_in = 8;
+  uint32 declared_at_line = 9;
+}
+```
+
+### Backend records (`_Model`)
+
+`AnsiblePlaybook`, `AnsiblePlay`, `AnsibleRole`, `AnsibleRoleContents`, `AnsibleTaskFile`, `AnsibleInventory`, `AnsibleInventoryGroup`, `AnsibleVariableFolder`, `AnsibleEdge`, `AnsibleEdgeKind`, `AnsibleTargetResolution`, `AnsibleYamlFailure`, `AnsibleProjectChangedEventArgs`, `AnsibleMetrics`.
+
+`AnsibleProject` itself is the aggregate: the folder, the collections above, the annotations, and the parse failures — everything the rule set and the mapper both read, so they cannot disagree.
+
+## Error Handling
+
+1. **A YAML file that does not parse** — that file's detail is lost, the rest of the diagram is drawn, and `ansible.unreadable-yaml` reports the parser's own message at its own line (Requirements 1.2, 9.2). The node for the file still exists; it is simply empty of relationships.
+2. **A folder that cannot be read** — permission denied on a subtree: the subtree is skipped and reported once; the walk continues. The diagram is smaller, not absent.
+3. **A symlink loop** — canonicalised and visited-checked, so the walk terminates. Nothing is reported: a loop is a filesystem fact, not an Ansible mistake.
+4. **A role named but not present** — `ansible.role-missing`, the edge drawn to a missing target, the diagram otherwise complete.
+5. **A target that is an expression** — drawn as unresolvable, labelled with the expression, and **not** reported. Unknown is not wrong (Requirement 3.4).
+6. **The `.adp` is deleted while open** — the session ends the way any diagram's does; the store releases the project and disposes its watcher.
+7. **A file disappears under an open diagram** — its node disappears and edges to it become dangling-target problems rather than silently dropped edges (Requirement 4.3).
+8. **A write is attempted through the property grid** — refused by `ContextPropertyResolver` server-side with the property's reason, before the provider is reached; the provider would refuse it too.
+9. **A very large folder** — the reader is bounded by the validator timeout `ProjectValidator` already imposes; a folder that cannot be read within it costs its own diagram's verdict and nothing more.
+
+## Testing Strategy
+
+### Unit Testing
+
+* **`AnsibleProjectReader.Tests`** — over temp trees: the recommended layout read correctly; a `playbooks/` folder; a root `hosts` file; a hollow role; a `Makefile` and a `docs/` folder ignored without complaint (Requirement 1.3); an unparsable file degrading only itself; a symlink loop terminating; **enumeration order irrelevant** (build twice from two orderings, assert one model).
+* **`AnsibleGraph.Tests`** — one test per edge kind of Requirement 5; static versus dynamic; a `when:` carried verbatim; an expression target marked unresolvable rather than missing; a `hosts:` pattern matched against two inventories.
+* **`AnsibleLayout.Tests`** — determinism (same tree, same positions, twice); ranks in the Requirement 6.2 order; inventories and variable folders banded apart; a role shared by two plays drawn once with the lower play index; no overlap on the fixture.
+* **`AnsibleRuleSet.Tests`** — one test per rule of Requirement 9.2, each from a temp tree; and the silence test: an unconventional-but-valid layout produces nothing.
+* **`AnsibleContextPropertyProvider.Tests`** — the headline: **every property of every node kind carries a non-empty `ReadOnlyReason`, and every reason names an existing file** (Requirement 10.2); `SetAsync` refuses whatever it is given; an absent property is absent rather than empty; groups match Requirements 10.3–10.6.
+* **`AnsibleElementMapper.Tests`** — ids stable across an unrelated edit; viewport culling keeping both ends of an edge; no group and no edit delta ever emitted.
+* **Core**: `DiagramDefinitionDiscovery` refusing `Folder` with an extension; `ProjectValidator` attributing and pinning a `DiagramProblemFileLocation` to the named file; `ProblemMaintenance` walking up to a folder-subject registration; `CachedProblem` round-tripping the third location.
+
+### Integration Testing
+
+* **`AnsibleStructureFlow.Tests`** — Add on a folder writes one `.adp` and nothing else; open it; receive the baseline; select a role; describe its properties; touch `roles/nginx/meta/main.yml` and see the deltas arrive.
+* **`AnsibleValidationFlow.Tests`** — a fixture with each mistake produces each problem, attributed to the declaring file; fixing the file on disk clears it through the watcher rather than through a manual revalidate.
+* **`ZeroWrites.Tests`** — the byte-for-byte assertion the validator tests established, over the whole exercise: snapshot the fixture tree, then open, render, change the viewport, select every node kind, validate, describe every property, attempt a `SetAsync` and a `MoveElementAsync`, close — and assert the tree is identical, `.adp` included, mtimes included.
+
+### End-to-End Testing
+
+A manual pass recorded in `tests.md`: open the fixture project, right-click `infrastructure/` → **Add… → Ansible project structure**, confirm one file appeared; open it; double-click the `nginx` role and confirm the explorer reveals `roles/nginx/tasks/main.yml`; select an edge and read in the grid which file and directive declared it; delete `roles/common/` in a text editor and watch the diagram and the problems panel both follow; confirm the toolbox says the type has no entries and the ribbon offers no edit; and finish with `git status` clean apart from the deletion made by hand.
+
+## Deviations and notes
+
+**Deviation 1 — the requirements say core changes nothing; this design says it changes three things.** Requirement 11's introduction states *"What this spec changes in core: nothing new"*, and for **rendering** that is exactly right: the routing, the session seam and the Add flow already handle a bodyless type whose subject is its own folder. For **validation** and **problem reporting** it is not right, and the reasons are specific rather than incidental: the validator seam passes text with no path (`MindmapValidator`'s own remarks already call this out as a limitation), a problem can only be attributed to the file the validator was handed, and revalidation never fires for a file that is not itself a diagram. The three changes — `DiagramSubject`, a validation request object, a third problem location — are seam widenings, each defaulted or additive, and none of them names a diagram type. The alternative is a diagram that reports nothing (abandoning Requirement 9 entirely) or one whose problems point at the wrong file and never refresh, and either would be worse than a fourth field on a record.
+
+**Deviation 2 — YamlDotNet is the tree's first YAML dependency.** No YAML library is referenced anywhere in `Directory.Packages.props` today. A read-only module has no reason to hand-roll a parser: the round-trip fidelity that would justify one (`azure-pipeline-diagram`'s line-preserving CST, which exists because that module *writes*) buys this module nothing, and YamlDotNet's node marks are what make a problem point at a line. The package is added centrally, so `azure-pipeline-diagram` can decide independently whether its own read leg wants it.
+
+**Note — a role shared by two plays is one node.** Requirement 6.3 asks for per-play colour continuity, which read literally could mean one role node per play that uses it. It does not: `common` used by three plays is drawn once, carrying the lowest play index, because seeing that it is shared is the point of drawing it at all.
+
+**Note — the module takes no `IHistoryStack`.** Not "takes one and never uses it": a module with no commands has no reason to hold the project's history, and the missing constructor parameter is the clearest statement this design makes.
+
+**Out of scope, deliberately**: per-variable usage edges (Requirement 5.8, refused with a reason); Ansible Galaxy and `collections/` contents beyond an annotation; `ansible-lint` integration; roles resolved from outside the registered folder (a `roles_path` in `ansible.cfg` pointing elsewhere is read and *reported* as unfollowed, never followed out of the diagram's folder); and any form of execution — the module runs nothing and reaches no network.

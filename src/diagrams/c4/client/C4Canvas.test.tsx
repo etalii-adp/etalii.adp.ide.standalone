@@ -29,10 +29,29 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
   const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
   return {
     ...actual,
-    useContextConnection: () => ({ watchId: new Uint8Array(16), select }),
+    useContextConnection: () => ({
+      watchId: new Uint8Array(16),
+      select,
+      executeAction: (actionId: string) => {
+        executed.push(actionId);
+        return Promise.resolve({ accepted: true, error: "" });
+      },
+      executeShortcut: () => Promise.resolve({ accepted: true, error: "" }),
+    }),
     useContextSelection: () => ({ selection: null, actions: [] }),
   };
 });
+
+// The palette comes from the backend over its own call; this canvas only registers what it
+// is handed, so the tests here need it to be nothing rather than to be real.
+vi.mock("@client/shell/panels/useToolboxItems", () => ({ useToolboxItems: () => [] }));
+vi.mock("@client/shell/panels/DiagramToolboxContext", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@client/shell/panels/DiagramToolboxContext")>();
+  return { ...actual, useRegisterDiagramToolbox: () => {} };
+});
+
+/** Action ids the canvas asked the backend to run - what a drop and a menu choice produce. */
+const executed: string[] = [];
 
 const { C4Canvas } = await import("./C4Canvas");
 
@@ -72,6 +91,7 @@ const props = { projectId: new Uint8Array(16), entryId: new Uint8Array(16).fill(
 describe("C4Canvas", () => {
   beforeEach(() => {
     select.mockClear();
+    executed.length = 0;
     currentLoading = false;
     currentFailed = false;
     currentModel = seed(
@@ -331,4 +351,87 @@ describe("C4Canvas", () => {
       currentReportView = null;
     }
   });
+
+  // ---- editing: the toolbox and the context menu -----------------------------------------
+
+  /** The drag the Toolbox panel starts, carrying the backend's own action id and nothing else. */
+  function toolboxDrag(actionId: string) {
+    return {
+      dataTransfer: {
+        types: ["application/x-adp-toolbox-item"],
+        getData: () => actionId,
+        dropEffect: "",
+      },
+    };
+  }
+
+  it("runs the backend's own action when a toolbox entry is dropped on an element", () => {
+    // Arrange.
+    // The panel tells the canvas an action id and nothing more; what it means stays the
+    // backend's business. Dropping on an element is how C4 containment gets decided - the
+    // element becomes the new one's parent.
+    const { container } = render(<C4Canvas {...props} />);
+    const alpha = container.querySelectorAll(".c4-node")[0];
+
+    // Act.
+    fireEvent.drop(alpha, toolboxDrag("c4.add-container"));
+
+    // Assert.
+    expect(executed).toEqual(["c4.add-container"]);
+  });
+
+  it("runs the action with no element when a toolbox entry is dropped on empty canvas", () => {
+    // Arrange.
+    // No parent, so only what stands on its own can land. The backend refuses the rest and
+    // says where it should have gone - the canvas does not second-guess it.
+    const { container } = render(<C4Canvas {...props} />);
+    const surface = container.querySelector(".c4-canvas-surface")!;
+
+    // Act.
+    fireEvent.drop(surface, toolboxDrag("c4.add-softwaresystem"));
+
+    // Assert.
+    expect(executed).toEqual(["c4.add-softwaresystem"]);
+  });
+
+  it("highlights the element a toolbox entry is held over, before the drop", () => {
+    // Arrange.
+    // The outcome of the drop should be visible while the button is still down.
+    const { container } = render(<C4Canvas {...props} />);
+    const alpha = container.querySelectorAll(".c4-node")[0];
+
+    // Act.
+    fireEvent.dragOver(alpha, toolboxDrag("c4.add-container"));
+
+    // Assert.
+    expect(container.querySelector(".c4-node-drop-target")).toBeTruthy();
+  });
+
+  it("ignores a drag that is not from the toolbox", () => {
+    // Arrange.
+    const { container } = render(<C4Canvas {...props} />);
+    const alpha = container.querySelectorAll(".c4-node")[0];
+
+    // Act.
+    fireEvent.dragOver(alpha, { dataTransfer: { types: ["text/plain"], getData: () => "", dropEffect: "" } });
+
+    // Assert.
+    expect(container.querySelector(".c4-node-drop-target")).toBeNull();
+  });
+
+  it("selects with the menu gesture on right-click, rather than opening a menu of its own", () => {
+    // Arrange.
+    // The menu shows the backend's answer: the canvas asks for the selection and waits for the
+    // actions to arrive rather than guessing what a C4 element offers.
+    const { container } = render(<C4Canvas {...props} />);
+    const alpha = container.querySelectorAll(".c4-node")[0];
+
+    // Act.
+    fireEvent.contextMenu(alpha);
+
+    // Assert.
+    expect(select).toHaveBeenCalled();
+    expect(container.querySelector(".context-menu")).toBeNull();
+  });
+
 });

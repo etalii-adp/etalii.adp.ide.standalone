@@ -24,6 +24,7 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
 {
     public const string AddActionId = "hierarchy.add";
     private const string NoDiagramTypes = "No diagram types are available.";
+    private const string NotRegistrable = "No diagram type reads this kind of file.";
     private static readonly ContextShortcutDefinition AddShortcut = new("Insert");
     private static readonly ILogger _logger = Log.ForContext<AddDiagramContextActionProvider>();
 
@@ -58,24 +59,58 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
 
     public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
     {
-        // A file cannot contain a new entry, and a folder that is gone cannot either.
-        if (!target.IsContainer || !HierarchyTargets.Exists(target))
+        if (!HierarchyTargets.Exists(target))
         {
             return ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>([]);
         }
 
-        var available = _definitions().Count > 0;
+        // On a file the action means something else: not "create a diagram inside this", which
+        // is impossible, but "this file is a diagram of a type I am about to name", which writes
+        // the .adp beside it (add-diagram-action Requirement 4.3, revised).
+        var (available, label, reason) = target.IsContainer
+            ? (_definitions().Count > 0, "Add…", NoDiagramTypes)
+            : (RegistrableTypesFor(target).Count > 0, "Add as diagram…", NotRegistrable);
+
+        if (!target.IsContainer && !available)
+        {
+            // Nothing claims this extension, or it is already a diagram. Offering a disabled
+            // action on every ordinary file in the tree would be noise, so it is not offered
+            // at all - unlike the folder case, where an empty catalog is worth explaining.
+            return ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>([]);
+        }
+
         var group = new ContextActionGroupDefinition([
             new ContextActionDefinition(
                 AddActionId,
-                "Add…",
+                label,
                 "mdi-plus",
                 AddShortcut,
                 available,
-                available ? "" : NoDiagramTypes),
+                available ? "" : reason),
         ]);
 
         return ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>([group]);
+    }
+
+    /// <summary>
+    /// The diagram types that could claim <paramref name="target"/>, which is a file: those
+    /// declaring its extension. Empty when nothing declares it, or when an <c>.adp</c> already
+    /// sits beside it - a file that is already a diagram is opened, not registered again.
+    /// </summary>
+    private IReadOnlyList<DiagramDefinition> RegistrableTypesFor(ContextTarget target)
+    {
+        var extension = IoPath.GetExtension(target.ResolvedFullPath);
+        if (extension.Length == 0 || string.Equals(extension, DiagramFileName.Extension, StringComparison.OrdinalIgnoreCase))
+        {
+            return [];
+        }
+
+        if (File.Exists(IoPath.ChangeExtension(target.ResolvedFullPath, DiagramFileName.Extension)))
+        {
+            return [];
+        }
+
+        return [.. _definitions().Where(definition => string.Equals(definition.Extension, extension, StringComparison.OrdinalIgnoreCase))];
     }
 
     public ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
@@ -85,9 +120,30 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
             return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionFailed($"Unknown action '{actionId}'."));
         }
 
-        if (!target.IsContainer || !HierarchyTargets.Exists(target))
+        if (!HierarchyTargets.Exists(target))
         {
-            return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionFailed("The folder no longer exists."));
+            return ValueTask.FromResult<ContextExecutionResult>(
+                new ContextExecutionFailed(target.IsContainer ? "The folder no longer exists." : "The file no longer exists."));
+        }
+
+        if (!target.IsContainer)
+        {
+            var registrable = RegistrableTypesFor(target);
+            if (registrable.Count == 0)
+            {
+                return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionFailed(NotRegistrable));
+            }
+
+            // No name field: the file already has its name, and registering must not rename it.
+            // No suggestion either, for the same reason - there is nothing to suggest.
+            return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionRequiresChoice(
+                new ContextChoiceRequest(
+                    Title: $"Open {IoPath.GetFileName(target.ResolvedFullPath)} as",
+                    Icon: "mdi-plus",
+                    ConfirmLabel: "Register",
+                    Options: DiagramOptionTree.Build(registrable),
+                    EmptyMessage: NotRegistrable,
+                    NameField: null)));
         }
 
         return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionRequiresChoice(
@@ -134,10 +190,16 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
             return ContextCommitResult.Failed($"Unknown action '{actionId}'.");
         }
 
-        if (!target.IsContainer || !HierarchyTargets.Exists(target))
+        if (!HierarchyTargets.Exists(target))
         {
-            return ContextCommitResult.Failed("The folder no longer exists.");
+            return ContextCommitResult.Failed(target.IsContainer ? "The folder no longer exists." : "The file no longer exists.");
         }
+
+        if (!target.IsContainer)
+        {
+            return await RegisterAsync(target, value, cancellationToken);
+        }
+
 
         var definition = _definitions().FirstOrDefault(candidate => candidate.Origin.Key == value);
         if (definition is null)
@@ -195,6 +257,45 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         return result.IsSuccess
             // The destination is the command's own, not something the handler had to report:
             // where the file lands follows from the folder and the name it was given.
+            ? ContextCommitResult.Created(CreateDiagramFileCommandHandler.DestinationOf(command))
+            : ContextCommitResult.Failed(result.Error);
+    }
+
+    /// <summary>
+    /// Registers a file the repository already has: writes the <c>.adp</c> beside it naming the
+    /// chosen type, and touches the file itself not at all.
+    /// </summary>
+    /// <remarks>
+    /// The same <see cref="CreateDiagramFileCommand"/> the folder path uses, with no sibling -
+    /// because the body is the file being registered, and it is already there. That is the whole
+    /// difference between creating a diagram and registering one, which is why this is a branch
+    /// rather than a second command: undo removes the registration and leaves the pipeline alone.
+    /// </remarks>
+    private async ValueTask<ContextCommitResult> RegisterAsync(ContextTarget target, string optionId, CancellationToken cancellationToken)
+    {
+        var registrable = RegistrableTypesFor(target);
+        var definition = registrable.FirstOrDefault(candidate => candidate.Origin.Key == optionId);
+        if (definition is null)
+        {
+            // Either a stale dialog, or one built against a different set of modules. Checked
+            // against the registrable list rather than every definition, so a type that does not
+            // read this kind of file cannot be chosen for it.
+            _logger.Warning(
+                "Rejecting the registration: {OptionId} is not one of the {Count} types that read {Extension}",
+                optionId,
+                registrable.Count,
+                IoPath.GetExtension(target.ResolvedFullPath));
+            return ContextCommitResult.Failed("That diagram type is not available for this file.");
+        }
+
+        var folder = IoPath.GetDirectoryName(target.ResolvedFullPath) ?? "";
+        var fileName = DiagramFileName.WithExtension(IoPath.GetFileNameWithoutExtension(target.ResolvedFullPath));
+        _logger.Debug("Registering {File} as a {Origin} diagram", target.ResolvedFullPath, definition.Origin.Key);
+
+        var command = new CreateDiagramFileCommand(folder, fileName, definition.Origin.MimeType);
+        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
+
+        return result.IsSuccess
             ? ContextCommitResult.Created(CreateDiagramFileCommandHandler.DestinationOf(command))
             : ContextCommitResult.Failed(result.Error);
     }
