@@ -131,6 +131,28 @@ public static class C4RuleSet
                     new DiagramProblemElementLocation(element.Id));
             }
 
+            // A deployment node's technology is the thing it actually runs - "Ubuntu 24.04",
+            // "Docker", "Apache Tomcat 10" - and an infrastructure node's is what provides it,
+            // like "Elastic Load Balancer". Structurizr names one rule per kind, and so does
+            // this, so the mirror table can compare them one for one rather than by set.
+            var nodeTechnologyRule = element.Kind switch
+            {
+                C4ElementKind.DeploymentNode => C4Rules.MissingDeploymentTechnology,
+                C4ElementKind.InfrastructureNode => C4Rules.MissingInfrastructureTechnology,
+                _ => null,
+            };
+
+            if (nodeTechnologyRule is not null && element.Technology.Length == 0)
+            {
+                yield return new DiagramProblem(
+                    DiagramProblemSeverity.Warning,
+                    $"'{Label(element)}' names no technology. A deployment diagram is read to find out what actually runs where, so say what this node is.",
+                    nodeTechnologyRule,
+                    // By element id rather than by line, so selecting the problem in the errors
+                    // panel selects the node on the canvas.
+                    new DiagramProblemElementLocation(element.Id));
+            }
+
             // C4's hierarchy is what gives each level its meaning: a component is a part of a
             // container, and one written outside a container is not a C4 component at all.
             if (RequiredParentOf(element.Kind) is { } required)
