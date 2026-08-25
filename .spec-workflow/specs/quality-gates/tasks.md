@@ -36,7 +36,7 @@
   - _Requirements: 1.3, 1.4, 1.9_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Widen c4.missing-protocol to every relationship per Requirement 1.3 | Restrictions: Warning severity; update fixture expectations rather than re-narrowing (Requirement 1.4); the reference example under examples/reference already names a technology on every relationship and must stay clean | Success: builds; ExamplesTests still passes for the reference project. Mark in progress, log when done, then mark complete._
 
-- [-] 4. Add the deployment and infrastructure technology rules
+- [x] 4. Add the deployment and infrastructure technology rules
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4RuleSet.cs` (modify)
   - Implement `c4.missing-deployment-technology` and `c4.missing-infrastructure-technology`, mirroring `model.deploymentnode.technology` and `model.infrastructurenode.technology`
   - Purpose: Requirement 1.1 - two of the gaps where Structurizr has a rule and ADP has none
@@ -44,7 +44,7 @@
   - _Requirements: 1.1, 1.9_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add the two node-technology rules per design.md | Restrictions: Warning severity; locate each problem by element id so the errors panel can select it; do not add a rule for component technology - Structurizr has none, and the probe in requirements.md confirms it | Success: builds; the AWS deployment fixture reports the nodes that lack a technology. Mark in progress, log when done, then mark complete._
 
-- [ ] 5. Add the disconnected-element rule
+- [-] 5. Add the disconnected-element rule
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4RuleSet.cs` (modify)
   - Implement `c4.disconnected-element`: an element in no relationship at all. Suppressed entirely while the model declares no views, per design.md's error-handling item 4
   - Purpose: Requirement 1.5
