@@ -42,6 +42,8 @@ public static class ServiceCollectionAddC4Extension
         services.AddSingleton<ICommandHandler<MoveC4ElementCommand>, MoveC4ElementCommandHandler>();
         services.AddSingleton<ICommandHandler<RestoreC4ElementPositionCommand>, RestoreC4ElementPositionCommandHandler>();
         services.AddSingleton<ICommandHandler<AddC4ViewCommand>, AddC4ViewCommandHandler>();
+        services.AddSingleton<ICommandHandler<AddC4ElementCommand>, AddC4ElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<RemoveC4ElementCommand>, RemoveC4ElementCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveC4ViewCommand>, RemoveC4ViewCommandHandler>();
 
         // Makes a C4 element selectable, once for the whole family: which C4 type a file
