@@ -30,11 +30,14 @@ public sealed record C4Layout(
 /// </remarks>
 public static class C4LayoutEngine
 {
+    /// <param name="view">The view to compute the layout for.</param>
+    /// <param name="metrics">The metrics of the view.</param>
     /// <param name="authored">
     /// Positions the user arranged by hand, from the sidecar. They win over the computed
     /// arrangement - unless the document declares <c>autoLayout</c>, which is the author asking
     /// for a computed one explicitly (Requirements 8.3, 8.4).
     /// </param>
+    /// <param name="workspace">The workspace to compute the layout for.</param>
     public static C4Layout Compute(
         C4Workspace workspace,
         C4View view,

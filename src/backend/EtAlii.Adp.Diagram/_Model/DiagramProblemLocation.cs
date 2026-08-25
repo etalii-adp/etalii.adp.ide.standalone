@@ -10,7 +10,4 @@ namespace EtAlii.Adp.Diagram;
 /// rather than inside it (tech.md's no-nested-types rule), so they cannot reach a private
 /// one. The set stays closed by convention and by the two records being sealed.
 /// </remarks>
-public abstract record DiagramProblemLocation
-{
-    protected DiagramProblemLocation() { }
-}
+public abstract record DiagramProblemLocation;

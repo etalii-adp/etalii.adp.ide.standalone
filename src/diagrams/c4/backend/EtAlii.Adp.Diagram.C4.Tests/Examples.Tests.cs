@@ -139,7 +139,7 @@ public class ExamplesTests
 
             // A readonly record struct, so the nullable is Nullable<T> and needs unwrapping.
             Assert.True(body.HasValue, $"{name} resolves to no body at all.");
-            Assert.True(File.Exists(body!.Value.Path), $"{name} resolves to a body that does not exist: {body.Value.Path}");
+            Assert.True(File.Exists(body.Value.Path), $"{name} resolves to a body that does not exist: {body.Value.Path}");
         }
     }
 

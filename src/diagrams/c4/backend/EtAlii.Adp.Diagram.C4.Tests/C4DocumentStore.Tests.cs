@@ -65,7 +65,7 @@ public class C4DocumentStoreTests : IDisposable
         var document = _store.GetOrLoad(IoPath.Combine(_root, "not-written-yet.dsl"));
 
         // Assert.
-        Assert.Empty(document.Lines.Where(line => line.Length > 0));
+        Assert.DoesNotContain(document.Lines, line => line.Length > 0);
         Assert.Empty(_store.WorkspaceOf(IoPath.Combine(_root, "not-written-yet.dsl")).Elements);
     }
 
