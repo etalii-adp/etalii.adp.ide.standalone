@@ -69,7 +69,7 @@ public class C4MoveElementTests : IDisposable
         await using var session = Open();
 
         // Act.
-        var error = await session.MoveElementAsync("a", "250,400", -1, TestContext.Current.CancellationToken);
+        var error = await session.MoveElementToAsync("a", 250, 400, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("", error);
@@ -84,7 +84,7 @@ public class C4MoveElementTests : IDisposable
     {
         // Arrange.
         await using var session = Open();
-        await session.MoveElementAsync("a", "250,400", -1, TestContext.Current.CancellationToken);
+        await session.MoveElementToAsync("a", 250, 400, TestContext.Current.CancellationToken);
 
         // Act.
         await _history.UndoAsync(TestContext.Current.CancellationToken);
@@ -100,8 +100,8 @@ public class C4MoveElementTests : IDisposable
     {
         // Arrange.
         await using var session = Open();
-        await session.MoveElementAsync("a", "100,100", -1, TestContext.Current.CancellationToken);
-        await session.MoveElementAsync("a", "250,400", -1, TestContext.Current.CancellationToken);
+        await session.MoveElementToAsync("a", 100, 100, TestContext.Current.CancellationToken);
+        await session.MoveElementToAsync("a", 250, 400, TestContext.Current.CancellationToken);
 
         // Act.
         await _history.UndoAsync(TestContext.Current.CancellationToken);
@@ -119,7 +119,7 @@ public class C4MoveElementTests : IDisposable
         session.Changed += (_, _) => pushes++;
 
         // Act.
-        await session.MoveElementAsync("a", "250,400", -1, TestContext.Current.CancellationToken);
+        await session.MoveElementToAsync("a", 250, 400, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(1, pushes);
@@ -130,7 +130,7 @@ public class C4MoveElementTests : IDisposable
     {
         // Arrange.
         await using var session = Open();
-        await session.MoveElementAsync("a", "250,400", -1, TestContext.Current.CancellationToken);
+        await session.MoveElementToAsync("a", 250, 400, TestContext.Current.CancellationToken);
 
         // Act.
         var workspace = _documents.WorkspaceOf(_bodyPath);
@@ -165,9 +165,45 @@ public class C4MoveElementTests : IDisposable
         await using var session = Open();
 
         // Act.
-        var error = await session.MoveElementAsync("ghost", "10,10", -1, TestContext.Current.CancellationToken);
+        var error = await session.MoveElementToAsync("ghost", 10, 10, TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Contains("ghost", error, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task ARePartingRequest_IsRefusedForWhatItIs_NotAsABadCoordinatePair()
+    {
+        // Arrange.
+        await using var session = Open();
+
+        // Act.
+        // Before the contract carried a position, this method did double duty: it split its
+        // parent argument on a comma and took it as coordinates. A real re-parent attempt
+        // therefore failed the parse and came back described as one, which is a different
+        // complaint from the one the user had earned.
+        var error = await session.MoveElementAsync("a", "b", -1, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Contains("not what contains it", error, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(_sidecar.Read(_bodyPath, "all"));
+    }
+
+    [Fact]
+    public async Task ARePartingRequest_IsRefusedEvenWhenItLooksLikeCoordinates()
+    {
+        // Arrange.
+        await using var session = Open();
+
+        // Act.
+        // The sharp end of the old encoding: an element whose id happened to read "12,34" would
+        // have been taken as a position. The two gestures are separate methods now, so what the
+        // argument looks like decides nothing.
+        var error = await session.MoveElementAsync("a", "12,34", -1, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Contains("not what contains it", error, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(_sidecar.Read(_bodyPath, "all"));
+    }
+
 }
