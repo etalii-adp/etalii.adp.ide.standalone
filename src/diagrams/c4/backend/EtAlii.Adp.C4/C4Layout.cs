@@ -7,9 +7,15 @@ namespace EtAlii.Adp.C4;
 public sealed record C4Boundary(string Id, string Name, string Kind, C4Box Box);
 
 /// <summary>Where everything on one view goes.</summary>
+/// <param name="AuthoredPositionsIgnored">
+/// True when the user has arranged this view by hand but the document declares
+/// <c>autoLayout</c>, so the declaration won. The canvas says so rather than letting the
+/// arrangement vanish without explanation (Requirement 8.4).
+/// </param>
 public sealed record C4Layout(
     IReadOnlyDictionary<string, C4Box> Boxes,
-    IReadOnlyList<C4Boundary> Boundaries);
+    IReadOnlyList<C4Boundary> Boundaries,
+    bool AuthoredPositionsIgnored = false);
 
 /// <summary>
 /// Computes where a view's elements go. In the backend, always: the client draws what it is
@@ -24,7 +30,16 @@ public sealed record C4Layout(
 /// </remarks>
 public static class C4LayoutEngine
 {
-    public static C4Layout Compute(C4Workspace workspace, C4View view, C4Metrics metrics)
+    /// <param name="authored">
+    /// Positions the user arranged by hand, from the sidecar. They win over the computed
+    /// arrangement - unless the document declares <c>autoLayout</c>, which is the author asking
+    /// for a computed one explicitly (Requirements 8.3, 8.4).
+    /// </param>
+    public static C4Layout Compute(
+        C4Workspace workspace,
+        C4View view,
+        C4Metrics metrics,
+        IReadOnlyDictionary<string, C4LayoutSidecar.Position>? authored = null)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(view);
@@ -47,9 +62,25 @@ public static class C4LayoutEngine
         var nodeSeparation = view.AutoLayout?.NodeSeparation ?? (int)metrics.NodeSeparation;
 
         var boxes = Place(members, sizes, ranks, direction, rankSeparation, nodeSeparation);
+
+        // A hand-made arrangement wins over the computed one - except where the document asked
+        // for autoLayout, which is the author saying they want it computed (Requirement 8.4).
+        var hasAuthored = authored is { Count: > 0 } && authored.Keys.Any(sizes.ContainsKey);
+        var authoredIgnored = hasAuthored && view.AutoLayout is not null;
+        if (hasAuthored && !authoredIgnored)
+        {
+            foreach (var (id, position) in authored!)
+            {
+                if (sizes.TryGetValue(id, out var size))
+                {
+                    boxes[id] = new C4Box(Math.Round(position.X, 2), Math.Round(position.Y, 2), size.Width, size.Height);
+                }
+            }
+        }
+
         var boundaries = BoundariesFor(workspace, view, members, boxes, metrics);
         boundaries = PushOutsiders(workspace, view, members, boxes, boundaries, metrics);
-        return new C4Layout(boxes, boundaries);
+        return new C4Layout(boxes, boundaries, authoredIgnored);
     }
 
     /// <summary>The bracketed line under an element's name: its type, and its technology where it has one (Requirement 4.2).</summary>

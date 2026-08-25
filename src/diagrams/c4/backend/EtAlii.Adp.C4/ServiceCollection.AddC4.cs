@@ -45,11 +45,16 @@ public static class ServiceCollectionAddC4Extension
         // is does not change what an element is (Requirement 13.2).
         services.AddSingleton<IContextSourceResolver, C4ContextSourceResolver>();
 
+        // What can be done to an element or a relationship, offered through the one path that
+        // reaches the ribbon, the menu and the keyboard (Requirement 13.2).
+        services.AddSingleton<IContextActionProvider, C4ContextActionProvider>();
+
         // One store and one mapper for the whole family: several diagrams open one document,
         // so they must share the instance that holds it (Requirement 1.2).
         services.TryAddSingleton<IC4DocumentStore, C4DocumentStore>();
         services.TryAddSingleton(C4Metrics.Default);
-        services.TryAddSingleton(provider => new C4ElementMapper(provider.GetRequiredService<C4Metrics>()));
+        services.TryAddSingleton<C4LayoutSidecar>();
+        services.TryAddSingleton(provider => new C4ElementMapper(provider.GetRequiredService<C4Metrics>(), provider.GetRequiredService<C4LayoutSidecar>()));
 
         foreach (var (type, viewKind) in Types)
         {
