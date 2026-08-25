@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/azure-pipeline-diagram/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-25T16:11:41.220Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787674301186_k1i7pa4yy",
+      "approvalTitle": "Tasks: azure-pipeline-diagram"
+    }
+  ]
+}
