@@ -130,7 +130,7 @@
   - _Requirements: 5.1, 5.5_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer | Task: Auto-fix the remaining import ordering, committing separately from anything behavioural | Restrictions: this commit contains nothing but the reformatting - a mechanical diff across ~190 files must not be where a reader looks for a logic change; run the full test suite afterwards, since a using change can alter overload resolution | Success: zero IMPORTS diagnostics; 1221+ tests still pass. Mark in progress, log when done, then mark complete._
 
-- [-] 15. Downgrade the two rules that fight a convention
+- [x] 15. Downgrade the two rules that fight a convention
   - File: `src/.editorconfig` (modify), `.spec-workflow/steering/structure.md` (modify)
   - Downgrade `IDE0130` to `none` and `IDE0046` to `silent`, each with a note. Add the `_Model/`-and-`Commands/`-in-parent-namespace convention to structure.md, where it is currently only implicit
   - Purpose: Requirements 5.2, 5.3, 5.6
@@ -138,7 +138,7 @@
   - _Requirements: 5.2, 5.3, 5.6_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer | Task: Downgrade IDE0130 and IDE0046 with notes, and document the namespace convention in structure.md | Restrictions: the IDE0130 note must carry the evidence - 95 in _Model, 16 in Commands, 14 in History, 6 in Support - so a reader can judge whether it is a convention or drift; structure.md is a steering document, keep it short and state the rule rather than arguing it | Success: both diagnostics gone from the gate; structure.md states the convention. Mark in progress, log when done, then mark complete._
 
-- [ ] 16. Fix the nine singletons, and write down what keeps the gate green
+- [-] 16. Fix the nine singletons, and write down what keeps the gate green
   - File: the nine files the gate names (modify), `CLAUDE.md` (modify)
   - Fix `IDE0017`, `IDE0032`, `IDE0053`, `IDE0059`, `IDE0066`, `IDE0270`, `IDE0330` and `IDE1006` in the code. Check `IDE1006` first against the Serilog `_logger` convention - if that is what it is, widen the existing downgrade instead. Then add the pre-merge step to CLAUDE.md beside the existing instruction to run the command
   - Purpose: Requirements 5.1, 5.7 - the gate exits zero, and something keeps it that way
