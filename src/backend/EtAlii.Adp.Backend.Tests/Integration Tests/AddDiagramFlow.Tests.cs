@@ -166,6 +166,7 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
                 and not Problems.ValidateContextActionProvider.ValidateActionId),
             action =>
             {
+                ArgumentNullException.ThrowIfNull(action);
                 Assert.False(action.Available);
                 Assert.NotEqual("", action.UnavailableReason);
             });

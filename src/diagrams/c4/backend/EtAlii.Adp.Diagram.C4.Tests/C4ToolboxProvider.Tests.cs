@@ -69,6 +69,7 @@ public class C4ToolboxProviderTests
         // Arrange, act and assert.
         Assert.All(Items(C4ViewKind.Container), item =>
         {
+            ArgumentNullException.ThrowIfNull(item);
             Assert.NotEmpty(item.DropActionId);
             Assert.StartsWith("c4.", item.Id, StringComparison.Ordinal);
         });

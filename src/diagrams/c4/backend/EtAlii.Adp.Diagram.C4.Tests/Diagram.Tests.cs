@@ -54,6 +54,8 @@ public class DiagramTests
         // Act and assert.
         Assert.All(Diagram.Definitions, definition =>
         {
+            ArgumentNullException.ThrowIfNull(definition);
+
             Assert.Equal("c4", definition.Origin.Vendor);
             Assert.Equal("", definition.Origin.Subtype);
         });
@@ -79,6 +81,7 @@ public class DiagramTests
         // consolidation would show up here rather than in the Add dialog.
         Assert.All(Diagram.Definitions, definition =>
         {
+            ArgumentNullException.ThrowIfNull(definition);
             Assert.NotEmpty(definition.Description);
             Assert.NotEqual(definition.Title, definition.Description);
         });

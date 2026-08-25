@@ -30,6 +30,8 @@ public sealed record C4Layout(
 /// </remarks>
 public static class C4LayoutEngine
 {
+    private const double Tolerance = 0.000001f;
+
     /// <param name="view">The view to compute the layout for.</param>
     /// <param name="metrics">The metrics of the view.</param>
     /// <param name="authored">
@@ -263,11 +265,11 @@ public static class C4LayoutEngine
             var down = boundary.Bottom - box.Y + metrics.NodeSeparation;
             var shortest = Math.Min(Math.Min(left, right), Math.Min(up, down));
 
-            boxes[id] = shortest == left ? box with { X = Math.Round(box.X - left, 2) }
-                : shortest == right ? box with { X = Math.Round(box.X + right, 2) }
-                : shortest == up ? box with { Y = Math.Round(box.Y - up, 2) }
+            boxes[id] = Math.Abs(shortest - left) < Tolerance ? box with { X = Math.Round(box.X - left, 2) }
+                : Math.Abs(shortest - right) < Tolerance ? box with { X = Math.Round(box.X + right, 2) }
+                : Math.Abs(shortest - up) < Tolerance ? box with { Y = Math.Round(box.Y - up, 2) }
                 : box with { Y = Math.Round(box.Y + down, 2) };
-            pushedVertically[id] = shortest == up || shortest == down;
+            pushedVertically[id] = Math.Abs(shortest - up) < Tolerance || Math.Abs(shortest - down) < Tolerance;
         }
 
         Spread(boxes, outsiders, pushedVertically, metrics.NodeSeparation);
@@ -276,6 +278,7 @@ public static class C4LayoutEngine
         // honest if that ever changes.
         return BoundariesFor(workspace, view, members, boxes, metrics);
     }
+
 
     /// <summary>
     /// The boundary a view draws, when it has one: a container view encloses its system's

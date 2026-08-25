@@ -122,7 +122,11 @@ public class BigBankPlcTests
     public void TheStylesBlock_IsRead_SoTheDocumentsPaletteWins()
     {
         // Arrange, act and assert.
-        Assert.Contains(Workspace.Styles, style => style.Tag == "Person");
+        Assert.Contains(Workspace.Styles, style =>
+        {
+            ArgumentNullException.ThrowIfNull(style);
+            return style.Tag == "Person";
+        });
         Assert.Contains(Workspace.Styles, style => style.Tag == "Existing System");
         Assert.Contains(Workspace.Styles, style => style.Tag == "Database");
     }
@@ -131,7 +135,11 @@ public class BigBankPlcTests
     public void RelationshipsAcrossAllLevels_AreRead()
     {
         // Arrange, act and assert.
-        Assert.Contains(Workspace.Relationships, r => r is { SourceId: "customer", DestinationId: "internetBankingSystem" });
+        Assert.Contains(Workspace.Relationships, r =>
+        {
+            ArgumentNullException.ThrowIfNull(r);
+            return r is { SourceId: "customer", DestinationId: "internetBankingSystem" };
+        });
         Assert.Contains(Workspace.Relationships, r => r is { SourceId: "securityComponent", DestinationId: "database", Technology: "SQL/TCP" });
         // Declared inside the deployment environment, between two deployment nodes.
         Assert.Contains(Workspace.Relationships, r => r is { SourceId: "primaryDatabaseServer", DestinationId: "secondaryDatabaseServer" });
