@@ -221,7 +221,7 @@ The `.owm` format has no identifier of any kind (Requirement 4.1). The only stab
 
 | Element | Key | Survives |
 |---|---|---|
-| Component, anchor, market, ecosystem, submap | its name | a move, an `evolve`, a decorator change |
+| Component, anchor, submap | its name | a move, an `evolve`, a decorator change |
 | Link | source name + target name + kind | a move of either endpoint |
 | Pipeline | its parent component's name | a child being added or removed |
 | Note | its text | a move |
@@ -267,7 +267,7 @@ The recommendation is to send it. The cost is about ten lines of proto and mappe
 
 ### `WardleyParser` (module, new)
 
-* **Purpose:** statements from lines — `component`, `anchor`, `market`, `ecosystem`, `submap`, `pipeline`, links, `evolve`, `inertia`, decorators, areas, `accelerator`, `note`, `annotation`, `title`, `size`, `style`.
+* **Purpose:** statements from lines — `component`, `anchor`, `submap`, `pipeline`, links, `evolve`, `inertia`, the five decorators, areas, `accelerator`, `note`, `annotation`, `title`, `size`, `style`. Three statement kinds, not five: `market` and `ecosystem` are decorators on a component (Requirement 6.3), which the task 2 corpus established against the real parser.
 * **Interfaces:** `Parse(WardleyDocument) -> WardleyMap`.
 * **Dependencies:** `WardleyDocument`.
 * **Reuses:** `C4Parser`'s token/scope approach; the grammar is simpler — `.owm` is line-oriented with one nested form (`pipeline { }`), so no scope stack beyond depth one.
@@ -371,8 +371,11 @@ message WardleyElement {
   double visibility = 3;          // the document's own axis, not the canvas's
   double maturity = 4;
   WardleyEvolveTarget evolve = 5; // unset when the component is not evolving
-  bool inertia = 6;
-  WardleyDecorator decorator = 7; // NONE / BUILD / BUY / OUTSOURCE
+  bool inertia = 6;               // a boolean on the component, not a decorator
+  // The five the DSL has - MARKET, ECOSYSTEM, BUILD, BUY, OUTSOURCE - as a set rather than a
+  // single choice, because the real parser carries them as five independent booleans in one
+  // `decorators` object and this module must not narrow what the file can say (Requirement 6.3).
+  repeated WardleyDecorator decorators = 7;
   Point2D label_offset = 8;       // in pixels, the format's own convention
   string url = 9;
   string submap_target = 10;
