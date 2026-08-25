@@ -109,7 +109,7 @@
   - _Requirements: 1.3, 3.1, 4.1, 4.2_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer familiar with Ansible layout conventions | Task: Walk a registered folder into an AnsibleProject, recognising playbooks, roles, inventories and annotations by convention and ignoring everything else | Restrictions: never open a file for writing; sort every directory enumeration ordinally before use; terminate on a symlink loop; unrecognised content is ignored silently, never reported | Success: the fixture tree reads into the expected model, a Makefile and a docs folder are ignored, a hollow role is present and visibly hollow, an unparsable file degrades only itself, and a test builds the same model twice from two enumeration orderings and asserts one answer_
 
-- [ ] 11. `AnsibleGraph`: five edge kinds, three resolution states
+- [-] 11. `AnsibleGraph`: five edge kinds, three resolution states
   - File: `.../AnsibleGraph.cs` (new), `_Model/AnsibleEdge.cs`, `AnsibleEdgeKind.cs`, `AnsibleTargetResolution.cs` (new), `.../AnsibleGraph.Tests.cs` (new)
   - Derive `UsesRole` (`roles:`, `import_role`, `include_role`), `ImportsPlaybook`, `IncludesTasks`, `DependsOn` (`meta/main.yml`) and `Targets` (a play's `hosts:` against a group an inventory defines). Each edge carries the declaring file and line, the target **as written**, the `when:` **as written and never evaluated**, and whether the mechanism is static or dynamic
   - Resolution is three states, not two: `Resolved`, `Missing` (a problem), `Unresolvable` (a `{{ expression }}` — **not** a problem, or every parameterised role becomes a false error)
