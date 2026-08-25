@@ -29,9 +29,10 @@ public sealed class PipelineDocument
 {
     private readonly List<PipelineLine> _lines;
 
-    private PipelineDocument(List<PipelineLine> lines)
+    private PipelineDocument(List<PipelineLine> lines, string dominantEnding)
     {
         _lines = lines;
+        DominantEnding = dominantEnding;
     }
 
     /// <summary>The document's lines, in order.</summary>
@@ -41,7 +42,7 @@ public sealed class PipelineDocument
     /// The terminator most of this document's lines use, which a newly inserted line adopts so
     /// an edit does not introduce a second convention into a consistent file.
     /// </summary>
-    public string DominantEnding { get; private set; }
+    public string DominantEnding { get; }
 
     /// <summary>
     /// Splits <paramref name="text"/> into lines, keeping each line's own terminator.
@@ -87,7 +88,7 @@ public sealed class PipelineDocument
             lines.Add(new PipelineLine(text[start..], ""));
         }
 
-        return new PipelineDocument(lines) { DominantEnding = crlf > lf ? "\r\n" : "\n" };
+        return new PipelineDocument(lines, crlf > lf ? "\r\n" : "\n");
     }
 
     /// <summary>

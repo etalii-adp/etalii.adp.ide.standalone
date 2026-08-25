@@ -15,6 +15,14 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
     <PackageVersion Include="Serilog" Version="4.4.0" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
+    <!--
+      YamlDotNet is used for reading only: its event stream and representation model give
+      correct handling of anchors, aliases, block scalars, flow collections and quoting, plus
+      a line number on every node - which is what lets each element record the lines that
+      declare it. Nothing is ever serialised back through it; writing goes line by line
+      through PipelineDocument, so the round-trip guarantee does not depend on this package.
+    -->
+    <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.0" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
   </ItemGroup>

@@ -12,6 +12,8 @@
   <ItemGroup>
     <!-- Google.Protobuf is the runtime; Grpc.Tools compiles the .proto below at build. -->
     <PackageReference Include="Google.Protobuf" />
+    <!-- Reading only. See the note beside its PackageVersion in src/Directory.Packages.props. -->
+    <PackageReference Include="YamlDotNet" />
     <PackageReference Include="Grpc.Tools">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
