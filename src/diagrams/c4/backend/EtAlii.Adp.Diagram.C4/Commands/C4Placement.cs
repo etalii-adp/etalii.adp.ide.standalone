@@ -143,8 +143,13 @@ internal static class C4Placement
             return false;
         }
 
+        // Any text at all, not just code. `IsBlank` is true for a line carrying only a comment,
+        // so asking it here would let this delete a comment the user wrote inside the block -
+        // exactly the thing Requirement 3.3 forbids and that line surgery exists to avoid.
+        // Refusing to collapse is the safe answer: it leaves an empty block, which parses and
+        // round-trips, where the alternative loses somebody's writing.
         var hasContent = document.CodeLines
-            .Any(line => line.Number > declaration.Number && line.Number < close.Value && !line.IsBlank);
+            .Any(line => line.Number > declaration.Number && line.Number < close.Value && line.Text.Trim().Length > 0);
         if (hasContent)
         {
             return false;
