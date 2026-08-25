@@ -1,3 +1,4 @@
+import { branchAnchorsBetween, horizontalBezierPath, type ConnectorBox } from "@client/canvas/connectors";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { create } from "@bufbuild/protobuf";
 import { EmptySchema } from "@bufbuild/protobuf/wkt";
@@ -468,31 +469,38 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
 }
 
 /** The node's half-size from its payload: the box the backend measured, or the old fixed guess for a payload without one. */
-function halfSizeOf(element: MindmapElement): { halfWidth: number; halfHeight: number } {
+/** An element as the shared connector geometry wants it: a centre, and a real size. */
+function boxOf(element: MindmapElement): ConnectorBox {
   return {
-    halfWidth: element.payload.width > 0 ? element.payload.width / 2 : NODE_HALF_WIDTH,
-    halfHeight: element.payload.height > 0 ? element.payload.height / 2 : NODE_HALF_HEIGHT,
+    x: element.x,
+    y: element.y,
+    // A node the client has not measured yet falls back to the nominal size, so a connector
+    // drawn on the first frame still lands on an edge rather than on the centre.
+    width: element.payload.width > 0 ? element.payload.width : NODE_HALF_WIDTH * 2,
+    height: element.payload.height > 0 ? element.payload.height : NODE_HALF_HEIGHT * 2,
   };
 }
 
+/** The same size, halved - what the node shapes and the bounds calculation ask for. */
+function halfSizeOf(element: MindmapElement): { halfWidth: number; halfHeight: number } {
+  const box = boxOf(element);
+  return { halfWidth: box.width / 2, halfHeight: box.height / 2 };
+}
+
 /**
- * The connector from a child to its parent: a horizontal cubic bezier that leaves the
- * parent's near side at its vertical middle and arrives at the child's near side - never a
- * centre-to-centre line cutting through boxes. The control points sit halfway, which keeps
- * the whole curve inside the gap corridor between the two columns, clear of every sibling.
+ * The connector from a child to its parent.
+ *
+ * The geometry is shared - see `@client/canvas/connectors`. What is mindmap-specific is only
+ * the choice: a tree anchors on the sides facing each other and curves horizontally, rather
+ * than running centre to centre and cutting through whatever sits between.
  */
 function MindmapEdge({ parent, child, preview = false }: { parent: MindmapElement; child: MindmapElement; preview?: boolean }) {
-  const parentHalf = halfSizeOf(parent);
-  const childHalf = halfSizeOf(child);
-  const childOnRight = child.x >= parent.x;
-  const startX = childOnRight ? parent.x + parentHalf.halfWidth : parent.x - parentHalf.halfWidth;
-  const endX = childOnRight ? child.x - childHalf.halfWidth : child.x + childHalf.halfWidth;
-  const midX = (startX + endX) / 2;
+  const [from, to] = branchAnchorsBetween(boxOf(parent), boxOf(child));
 
   return (
     <path
       className={`mindmap-edge${preview ? " mindmap-edge-preview" : ""}`}
-      d={`M ${startX} ${parent.y} C ${midX} ${parent.y}, ${midX} ${child.y}, ${endX} ${child.y}`}
+      d={horizontalBezierPath(from, to)}
     />
   );
 }
