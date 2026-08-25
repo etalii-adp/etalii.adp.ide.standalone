@@ -24,7 +24,7 @@ That third row is what makes this type worth specifying. An `azure-pipelines.yml
 * [`context-service`](../context-service/requirements.md), [`diagram-undo-redo`](../diagram-undo-redo/requirements.md), and `tech.md`'s **Commands** rule.
 * [`errors-and-warnings-panel`](../errors-and-warnings-panel/requirements.md) — `IDiagramValidator`, which this type has unusually much to say through (Requirement 10).
 
-**What this spec changes in core.** One thing, and it is a real gap rather than a convenience: **`DiagramFileRouter` cannot route this type by extension alone** (Requirement 2.3). Everything else is a module registration.
+**What this spec changes in core.** Two things, both type-agnostic and both earned rather than convenient. First, a diagram type must be able to declare an extension **shared** — too common to claim on sight — so a bare `.yml` is not routed to whichever type happens to declare it (Requirement 2.2). Second, **Add must be offered on a file**, listing the types that declare that file's extension, so a user registers an existing file as a diagram by naming its type (Requirement 2.3). The second amends [`add-diagram-action`](../add-diagram-action/requirements.md) Requirement 4.3, which forbids Add on a file; Requirement 2.10 says why that reasoning does not cover this case. Everything else is a module registration.
 
 ## Alignment with Product Vision
 
@@ -37,30 +37,35 @@ That third row is what makes this type worth specifying. An `azure-pipelines.yml
 
 ## Requirements
 
-### Requirement 1 — Recognising a pipeline, and not creating one
+### Requirement 1 — A pipeline the repository already has
 
-**User Story:** As an architect opening a repository that already builds, I want its pipeline to be a diagram I can open, without having to add anything to the repository first.
-
-#### Acceptance Criteria
-
-1. WHEN the explorer shows a file the module recognises as an Azure Pipelines definition (Requirement 2) THEN the system SHALL offer to open it as a pipeline diagram, with no `.adp` registration file present and none created.
-2. WHEN a pipeline diagram is opened this way THEN the system SHALL NOT write to the repository at all. Opening a diagram is a read.
-3. WHEN the Add dialog is shown THEN this diagram type SHALL appear in it, since it is a discovered `Diagram.Definition` like any other; confirming it SHALL create a minimal but **valid and runnable** `azure-pipelines.yml` — a `trigger`, a `pool` and one job with one script step — rather than an empty file, because an Azure Pipelines file that does not run is not a pipeline.
-4. IF a file named `azure-pipelines.yml` already exists in the target folder THEN Add SHALL report the collision through the existing name validation rather than overwriting it, exactly as `create-diagram-file` Requirement 2.8 already requires.
-5. WHERE a repository holds several pipeline files (`azure-pipelines.yml`, `ci/build.yml`, `.azure/release.yml`) THEN each SHALL be openable as its own diagram; the module SHALL NOT assume one pipeline per repository.
-
-### Requirement 2 — Deciding what is a pipeline file
-
-**User Story:** As a developer, I want ADP to recognise my pipeline file without claiming every other YAML file in my repository.
+**User Story:** As an architect opening a repository that already builds, I want its existing pipeline to become a diagram, without that pipeline being rewritten, moved or replaced to make it one.
 
 #### Acceptance Criteria
 
-1. WHEN the module declares itself THEN it SHALL declare `.yml` and `.yaml` as the extensions its documents use.
-2. WHEN a `.yml` or `.yaml` file is considered THEN the system SHALL treat it as an Azure Pipelines definition only if its **content** says so: a mapping at the root carrying at least one of `stages`, `jobs`, `steps`, `extends`, `trigger`, `pr` or `schedules`. A `docker-compose.yml`, a Kubernetes manifest and an OpenAPI document all end in `.yml` and none of them is a pipeline.
-3. WHEN routing is decided THEN this SHALL require a new capability in core: `DiagramFileRouter` today routes a body file by extension alone, and an extension this common cannot be claimed that way. **A diagram type SHALL be able to contribute a content test that the router consults** before accepting an extension match. This is the one core change this spec anticipates, it SHALL be type-agnostic, and it SHALL be usable by any later type whose extension is shared (`.json`, `.xml`).
-4. WHEN the content test is applied THEN it SHALL read no more of the file than it needs to decide, so opening a folder of large YAML files does not read all of them in full.
-5. IF a file passes the content test but then fails to parse THEN the system SHALL report that as a problem on the file (Requirement 10), not silently fall back to treating it as an ordinary file — a pipeline that ADP half-recognises is a bug the user needs to see.
-6. WHEN an `.adp` registration file naming this type is present THEN it SHALL take precedence over the content test, as it does for every type.
+1. WHEN a repository already contains a pipeline file THEN making it a diagram SHALL cost exactly one new file — the `.adp` registration of Requirement 2.4 — and no change whatsoever to the pipeline itself.
+2. WHEN a registered pipeline is opened THEN the system SHALL NOT write to the repository at all. Opening a diagram is a read.
+3. WHEN Add is used on a **folder** THEN this diagram type SHALL appear among the choices, since it is a discovered `Diagram.Definition` like any other; confirming it SHALL create a minimal but **valid and runnable** pipeline — a `trigger`, a `pool` and one job with one script step — rather than an empty file, because an Azure Pipelines file that does not run is not a pipeline.
+4. IF the chosen name is already taken in the target folder THEN Add SHALL report the collision through the existing name validation rather than overwriting anything, exactly as `create-diagram-file` Requirement 2.8 already requires.
+5. WHERE a repository holds several pipeline files (`azure-pipelines.yml`, `ci/build.yml`, `.azure/release.yml`) THEN each SHALL be registerable and openable as its own diagram; the module SHALL NOT assume one pipeline per repository.
+6. WHERE a repository holds pipeline files the user has not registered THEN those SHALL remain ordinary files in the explorer. **Not every pipeline in a repository has to become a diagram**, and one the user never asked about is not ADP's to claim.
+
+### Requirement 2 — Making an existing file a diagram, by saying so
+
+**User Story:** As a developer, I want to point at the YAML file in my repository and say "this is a pipeline diagram", rather than having ADP guess which of my YAML files are pipelines.
+
+#### Acceptance Criteria
+
+1. WHEN the module declares itself THEN it SHALL declare `.yml` and `.yaml` as the extensions its documents use, and SHALL declare them **shared** — an extension too common for any one type to claim on sight. A `docker-compose.yml`, a Kubernetes manifest and an OpenAPI document all end in `.yml`, and none of them is a pipeline.
+2. WHEN a body file carries a **shared** extension and has no `.adp` registration beside it THEN the system SHALL NOT route it to any diagram type. Today's bare-body routing stays exactly as it is for a **distinctive** extension — `.mm`, `.owm`, `.dsl` — which one type or one vendor's family owns outright; only the shared case is withheld.
+3. WHEN the user opens the context menu on a **file** whose extension at least one diagram type declares THEN the system SHALL offer **Add**, and the dialog SHALL list **only the diagram types that declare that file's extension** — for a `.yml`, this type; for a `.dsl`, the C4 family. The user names the type; ADP does not infer it. *(This is what replaces the content sniffing an earlier draft of this requirement proposed: a heuristic that reads a file and guesses is both slower and less honest than an option the user picks once.)*
+4. WHEN the user confirms a type for a file THEN the system SHALL create `<name>.adp` beside it, naming that type's MIME type, and SHALL NOT modify, move or rewrite the body file in any way. Registering a file is a create of one new file, never a change to an existing one.
+5. WHEN the registration exists THEN the file SHALL open as a diagram through the ordinary `.adp`-first routing every type already uses, and no further recognition SHALL be needed.
+6. WHEN Add is offered on a file THEN it SHALL read as **registering an existing file**, distinct from Add on a folder, which creates a new diagram and its body. The two share the dialog and the commit seam but not their meaning, and the action's label SHALL say which one the user is about to do.
+7. IF a file already has an `.adp` registration THEN Add SHALL NOT be offered on it — it is already a diagram — and the existing open action SHALL be offered instead.
+8. IF no diagram type declares a file's extension THEN Add SHALL NOT be offered on that file, rather than opening a dialog with nothing selectable in it.
+9. WHEN the created `.adp` is written THEN it SHALL reach every connected client through the existing watcher and `EntryCreated` path, and be selected on the connection that added it, exactly as `create-diagram-file` Requirement 4 already defines.
+10. **This amends [`add-diagram-action`](../add-diagram-action/requirements.md) Requirement 4.3**, which says Add SHALL NOT be offered on a file because "a file cannot contain a new entry". That reasoning holds for creating a diagram *inside* something, and this is a different act: the new entry is the `.adp` created *beside* the file, in its parent folder. That requirement needs revising alongside this one; it is named here so the contradiction is tracked rather than discovered.
 
 ### Requirement 3 — Reading and writing the file without damaging it
 
@@ -213,9 +218,9 @@ That third row is what makes this type worth specifying. An `azure-pipelines.yml
 
 1. WHEN the backend starts THEN the module SHALL be discovered through the existing `Diagram.Definition` reflection scan, declaring its origin, title, description and extensions.
 2. WHEN the module organises its code THEN it SHALL be `diagrams/azure-pipeline/` with `backend/` (`EtAlii.Adp.Diagram.AzurePipeline` and its `.Tests`), `api/` and `client/`, per `structure.md`.
-3. WHEN the module registers its document factory, content test, source resolver, action providers, toolbox provider, validator and command handlers THEN each SHALL be one registration through an existing extension point, gathered into one `AddAzurePipeline` extension method per tech.md's registration rule.
-4. IF core canvas, storage, sync, context or command code is inspected THEN it SHALL contain no Azure-Pipelines-specific type check, import or branch. The one core change (Requirement 2.3's content test) SHALL be type-agnostic.
-5. WHEN this module is complete THEN the three shipped diagram types SHALL differ in layout ownership, in who owns the document, and in how a file is recognised — and core SHALL be unchanged by those differences apart from the content-test seam. **That is the acceptance test for the pluggable model at this stage**, and any further core change needed is a finding to report rather than a step to take quietly.
+3. WHEN the module registers its document factory, source resolver, action providers, toolbox provider, validator and command handlers THEN each SHALL be one registration through an existing extension point, gathered into one `AddAzurePipeline` extension method per tech.md's registration rule.
+4. IF core canvas, storage, sync, context or command code is inspected THEN it SHALL contain no Azure-Pipelines-specific type check, import or branch. Both core changes (Requirements 2.2 and 2.3) SHALL be type-agnostic, and the next type with a shared extension — `.json`, `.xml` — SHALL need neither of them changed again.
+5. WHEN this module is complete THEN the three shipped diagram types SHALL differ in layout ownership, in who owns the document, and in how a file becomes a diagram — and core SHALL be unchanged by those differences apart from the two seams Requirement 2 names. **That is the acceptance test for the pluggable model at this stage**, and any further core change needed is a finding to report rather than a step to take quietly.
 6. WHEN the module reaches each state THEN `docs/diagrams.md`'s `azure-devops/pipeline` row SHALL be updated per CLAUDE.md.
 
 ## Non-Functional Requirements
@@ -225,12 +230,12 @@ That third row is what makes this type worth specifying. An `azure-pipelines.yml
 * **Single Responsibility**: the YAML CST parser/writer, the template resolver, the pipeline model, the dependency-graph derivation, the layout, the validator, the element/delta mapper, the context resolver and the canvas rendering are separate, independently testable concerns.
 * **Modular Design**: `EtAlii.Adp.Diagram.AzurePipeline`, `diagrams/azure-pipeline/api` and `diagrams/azure-pipeline/client` depend only on core abstractions; nothing in core depends on the module.
 * **Dependency Management**: the parser, the graph derivation and the validator SHALL each be usable without gRPC, the filesystem or a browser — given a YAML string, each returns its result.
-* **Clear Interfaces**: the integration surface is the discovered `Diagram.Definition`, the content test, `IDiagramDocumentFactory`, `IContextSourceResolver`, `IContextActionProvider`(s), `IDiagramToolboxProvider`, `IDiagramValidator` and the `ICommandHandler`s. No other coupling.
+* **Clear Interfaces**: the integration surface is the discovered `Diagram.Definition` — its shared-extension declaration included — plus `IDiagramDocumentFactory`, `IContextSourceResolver`, `IContextActionProvider`(s), `IDiagramToolboxProvider`, `IDiagramValidator` and the `ICommandHandler`s. No other coupling.
 * **No nested types**, per tech.md.
 
 ### Performance
 
-* Deciding whether a `.yml` file is a pipeline SHALL be cheap enough to run over every YAML file in a large repository without a perceptible pause (Requirement 2.4).
+* Offering Add on a file SHALL cost one extension lookup against the discovered definitions. No file is read to decide what a file is, which is the point of Requirement 2.3 over the content test an earlier draft proposed: a repository full of large YAML files costs nothing to browse.
 * Opening a pipeline SHALL be one file read plus one read per followed template; templates SHALL be read once and shared between diagrams that include the same one.
 * Layout SHALL stay comfortable at the schema's own limits — 256 jobs in a stage — and SHALL recompute only what a change can affect.
 
