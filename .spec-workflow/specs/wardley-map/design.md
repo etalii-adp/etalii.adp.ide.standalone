@@ -96,31 +96,50 @@ So the module uses two of the four functions, and it is worth saying which two r
 
 ```mermaid
 graph TD
-    subgraph client ["Client"]
+    subgraph client["Client"]
         CANVAS["WardleyCanvas<br/>axes, bands, elements, links"]
         GRID["Property Grid"]
         TOOLBOX["Toolbox"]
     end
-    CANVAS -->|"Open / UpdateView / MoveElement"| SVC["DiagramServiceImpl"]
-    CANVAS -->|"Select / ExecuteAction"| CTX["ContextServiceImpl"]
+
+    subgraph core["Core — knows no diagram type"]
+        SVC["DiagramServiceImpl"]
+        CTX["ContextServiceImpl"]
+        PROBLEMS["Errors and Warnings"]
+    end
+
+    subgraph module["EtAlii.Adp.Diagram.WardleyMap"]
+        SESSION["WardleySession"]
+        STORE["WardleyDocumentStore"]
+        DOC["WardleyDocument<br/>.owm CST, line-preserving"]
+        IDS["WardleyIdentities<br/>sidecar, best-effort"]
+        MODEL["WardleyMap<br/>components / links / pipelines"]
+        EVO["WardleyEvolution<br/>0.175 / 0.400 / 0.700"]
+        MAPPER["WardleyElementMapper<br/>visibility, maturity → Point2D"]
+        RULES["WardleyRuleSet"]
+        PROV["Context providers:<br/>source, action, property"]
+        CMD["Commands"]
+    end
+
+    CANVAS -->|"Open / UpdateView / MoveElement"| SVC
+    CANVAS -->|"Select / ExecuteAction"| CTX
     GRID -->|"DescribeProperties / SetProperty"| CTX
     TOOLBOX -->|"DescribeToolbox"| SVC
-    subgraph module ["EtAlii.Adp.Diagram.WardleyMap"]
-        SVC --> SESSION["WardleySession"]
-        SESSION --> STORE["WardleyDocumentStore"]
-        STORE --> DOC["WardleyDocument<br/>.owm CST, line-preserving"]
-        STORE --> IDS["WardleyIdentities<br/>sidecar, best-effort"]
-        DOC --> MODEL["WardleyMap<br/>components / links / pipelines"]
-        IDS --> MODEL
-        MODEL --> MAPPER["WardleyElementMapper<br/>visibility,maturity -> Point2D"]
-        EVO["WardleyEvolution<br/>0.175 / 0.400 / 0.700"] --> MAPPER
-        MAPPER --> SESSION
-        MODEL --> RULES["WardleyRuleSet"]
-        CTX --> PROV["Context providers:<br/>source, action, property"]
-        PROV --> CMD["Commands"]
-        CMD -->|"IHistoryStack"| DOC
-    end
-    RULES -->|"IDiagramValidator"| PROBLEMS["Errors & Warnings"]
+
+    SVC --> SESSION
+    CTX --> PROV
+    SESSION --> STORE
+    STORE --> DOC
+    STORE --> IDS
+    DOC --> MODEL
+    IDS --> MODEL
+    MODEL --> MAPPER
+    EVO --> MAPPER
+    MAPPER --> SESSION
+    MODEL --> RULES
+    PROV --> CMD
+    CMD -->|"IHistoryStack"| DOC
+    RULES -->|"IDiagramValidator"| PROBLEMS
 ```
 
 Note what is missing between `MODEL` and `MAPPER`: every other diagram module has a layout box there.
@@ -142,14 +161,14 @@ sequenceDiagram
     C->>C: clamp to 0..1 on both axes (Requirement 7.3)
     C->>S: MoveElement(element_id, position)
     S->>W: MoveElementToAsync(elementId, x, y)
-    W->>W: ToCoordinates(x, y) -> visibility, maturity
+    W->>W: ToCoordinates(x, y) gives visibility, maturity
     W->>W: read-only? inside a pipeline? (then maturity only)
     W->>H: MoveWardleyElementCommand(path, id, visibility, maturity)
     H->>D: rewrite that one component statement's coordinate pair
     D-->>H: inverse = MoveWardleyElementCommand(..., previous pair)
-    Note over D: every other line untouched; comments and blanks intact
+    Note over D: every other line untouched, comments and blanks intact
     H-->>W: CommandResult
-    W-->>S: "" or the reason
+    W-->>S: empty string, or the reason
     Note over C: the new position returns as an ordinary Add delta
 ```
 
