@@ -22,6 +22,7 @@ public class C4ContextPropertyProviderTests : IDisposable
                 u = person "Customer" "A customer."
                 s = softwareSystem "Banking" "Does banking." {
                     web = container "Web" "Serves pages." "React"
+                    batch = container "Batch" "Runs overnight."
                 }
                 u -> web "Uses" "HTTPS"
             }
@@ -96,6 +97,20 @@ public class C4ContextPropertyProviderTests : IDisposable
         // Assert.
         Assert.Equal(ContextPropertyEditor.Text, Property(properties, C4ContextPropertyProvider.DescriptionPropertyId).Editor);
         Assert.Equal(ContextPropertyEditor.Line, Property(properties, C4ContextPropertyProvider.NamePropertyId).Editor);
+    }
+
+    [Fact]
+    public async Task AContainerWithNoTechnologyWritten_StillOffersTheRow_Empty()
+    {
+        // Act.
+        // The other half of the rule the person test pins: absent from the *kind* means no row
+        // at all, but present-and-empty means a row with an empty value. A reader must be able
+        // to tell "this kind has no technology" from "nobody has said what this one is", and a
+        // sentinel value for either would collapse the two.
+        var properties = await DescribeAsync("batch");
+
+        // Assert.
+        Assert.Equal("", Property(properties, C4ContextPropertyProvider.TechnologyPropertyId).Value);
     }
 
     [Fact]
