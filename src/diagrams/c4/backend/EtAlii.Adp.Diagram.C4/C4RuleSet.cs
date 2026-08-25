@@ -345,8 +345,14 @@ public static class C4RuleSet
         // components" strictly - but C4's own worked example mixes them: its sign-in view is
         // scoped to a container and shows that container's components alongside the
         // single-page application and the database, which are containers. A component view
-        // shows sibling containers for the same reason. The canonical example is the better
-        // authority, so the rule went rather than the example being called wrong.
+        // shows sibling containers for the same reason.
+        //
+        // This used to say the canonical example is the better authority, so the rule went
+        // rather than the example being called wrong. That argument is not one to reuse - it
+        // narrowed two other rules that were right, because a published example demonstrates
+        // what is permitted and never what is sufficient. What this removal actually stands on
+        // is that Structurizr's inspector has no such rule at all, which is a fact about the
+        // notation rather than about one file.
 
         if (members.Count == 0 && view.Interactions.Count == 0)
         {
