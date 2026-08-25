@@ -49,11 +49,14 @@ public interface IDiagramSessionFactory
     /// connection <paramref name="watchId"/> within the project rooted at
     /// <paramref name="rootPath"/>.
     /// </summary>
+    /// <param name="bodyPath">The path to the diagram body file.</param>
     /// <param name="registrationPath">
     /// The <c>.adp</c> file this was opened through, or null for a body opened without one.
     /// Core passes it and interprets nothing in it: a type whose registration carries more
     /// than a MIME line - a C4 view key, say - reads its own headers from here, which keeps
     /// that knowledge in the module where it belongs (c4-diagrams Requirement 2.4).
     /// </param>
+    /// <param name="watchId">The connection that opened this session.</param>
+    /// <param name="rootPath">The root path of the project.</param>
     IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath, string? registrationPath);
 }

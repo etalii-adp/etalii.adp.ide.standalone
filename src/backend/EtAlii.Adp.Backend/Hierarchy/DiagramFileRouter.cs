@@ -22,6 +22,7 @@ public sealed class DiagramFileRouter
         _catalog = catalog;
     }
 
+    /// <param name="path">The path to the diagram file.</param>
     /// <param name="projectRoot">
     /// The project folder, when the caller knows it. Required to follow a registration's
     /// <c>body:</c> header, which is project-relative and refused if it escapes the root

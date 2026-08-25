@@ -73,8 +73,7 @@ public static class C4RuleSet
             problems.Add(new DiagramProblem(
                 DiagramProblemSeverity.Warning,
                 $"This model includes '{include}', which ADP does not read. Anything declared there is missing from this diagram, and ADP will not edit it.",
-                C4Rules.IncludeNotFollowed,
-                null));
+                C4Rules.IncludeNotFollowed));
         }
 
         problems.AddRange(ValidateElements(workspace));

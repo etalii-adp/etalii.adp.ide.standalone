@@ -84,7 +84,10 @@ public static class C4Tokens
     /// has only a name gives it an empty description rather than shifting the technology into
     /// the description's place.
     /// </summary>
+    /// <param name="line">The line to modify.</param>
     /// <param name="keywordIndex">Index of the token the arguments follow.</param>
+    /// <param name="argumentIndex">Index of the argument to replace.</param>
+    /// <param name="value">The value to set the argument to.</param>
     public static string ReplaceArgument(string line, int keywordIndex, int argumentIndex, string value)
     {
         ArgumentNullException.ThrowIfNull(line);

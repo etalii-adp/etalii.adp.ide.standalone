@@ -46,10 +46,12 @@ public static class DiagramFilePair
     /// <c>body:</c> header points outside <paramref name="projectRoot"/>, which is refused
     /// rather than followed (Requirement 2.4).
     /// </summary>
+    /// <param name="catalog">The diagram definition catalog.</param>
     /// <param name="projectRoot">
     /// The project folder a <c>body:</c> header is resolved against and must stay inside. Null
     /// means "no header may be followed": the caller only wants the owned sibling.
     /// </param>
+    /// <param name="adpPath">The path to the diagram registration file.</param>
     public static DiagramBodyFile? BodyOf(string adpPath, IDiagramDefinitionCatalog catalog, string? projectRoot)
     {
         ArgumentNullException.ThrowIfNull(catalog);

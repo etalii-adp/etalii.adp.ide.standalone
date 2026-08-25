@@ -66,7 +66,7 @@ public class BigBankPlcTests
         // after the tags, and reading the two the wrong way round turns "4" into a tag and the
         // tags into nothing. The kind of mistake only a realistic model exposes.
         var webServer = Workspace.Elements.Single(element =>
-            element.Kind == C4ElementKind.DeploymentNode && element.Name == "bigbank-web***");
+            element is { Kind: C4ElementKind.DeploymentNode, Name: "bigbank-web***" });
 
         // Assert.
         Assert.Equal("Ubuntu 16.04 LTS", webServer.Technology);
@@ -79,7 +79,7 @@ public class BigBankPlcTests
     {
         // Act and assert, step by step.
         var tomcat = Workspace.Elements.First(element =>
-            element.Kind == C4ElementKind.DeploymentNode && element.Name == "Apache Tomcat");
+            element is { Kind: C4ElementKind.DeploymentNode, Name: "Apache Tomcat" });
         Assert.NotNull(tomcat.ParentId);
 
         var instances = Workspace.Elements.Where(element => element.Kind == C4ElementKind.ContainerInstance).ToArray();
@@ -132,10 +132,10 @@ public class BigBankPlcTests
     public void RelationshipsAcrossAllLevels_AreRead()
     {
         // Arrange, act and assert.
-        Assert.Contains(Workspace.Relationships, r => r.SourceId == "customer" && r.DestinationId == "internetBankingSystem");
-        Assert.Contains(Workspace.Relationships, r => r.SourceId == "securityComponent" && r.DestinationId == "database" && r.Technology == "SQL/TCP");
+        Assert.Contains(Workspace.Relationships, r => r is { SourceId: "customer", DestinationId: "internetBankingSystem" });
+        Assert.Contains(Workspace.Relationships, r => r is { SourceId: "securityComponent", DestinationId: "database", Technology: "SQL/TCP" });
         // Declared inside the deployment environment, between two deployment nodes.
-        Assert.Contains(Workspace.Relationships, r => r.SourceId == "primaryDatabaseServer" && r.DestinationId == "secondaryDatabaseServer");
+        Assert.Contains(Workspace.Relationships, r => r is { SourceId: "primaryDatabaseServer", DestinationId: "secondaryDatabaseServer" });
     }
 
     [Fact]
