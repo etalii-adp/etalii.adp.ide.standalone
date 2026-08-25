@@ -50,7 +50,7 @@
   - _Requirements: 9.1, 9.3_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer performing a seam migration across modules | Task: Replace IDiagramValidator's two loose string parameters with a DiagramValidationRequest record carrying the diagram's location, and migrate both real implementers and all seven test stubs | Restrictions: no behaviour change for any existing validator; do not add a compatibility overload or a default interface method - one door only; keep the migration to one commit | Success: the solution builds, every existing validator test passes unchanged in meaning, and ProjectValidator fills SubjectFolder for a Folder-subject definition_
 
-- [-] 4. Let a problem name a file other than the diagram's own
+- [x] 4. Let a problem name a file other than the diagram's own
   - File: `src/backend/EtAlii.Adp.Diagram/_Model/DiagramProblemFileLocation.cs` (new), `_Model/DiagramProblemLocation.cs` (edited: the remarks naming the closed set), `src/backend/EtAlii.Adp.Backend/Problems/CachedProblem.cs` (edited), `ProblemBroadcaster.cs` (edited), `src/api/context.proto` (edited), `src/client/src/shell/panels/ErrorsWarningsPanel.tsx` (edited)
   - `DiagramProblemFileLocation(string RelativePath, uint Line = 0)` as a third case. Add a new field number to `ProblemLocation`'s oneof — backward compatible. `CachedProblem` round-trips it; the panel reveals the named file rather than the diagram
   - Run `npm run generate` in `src/client/`
@@ -59,7 +59,7 @@
   - _Requirements: 9.3_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# and TypeScript developer working across the problem wire | Task: Add a third DiagramProblemLocation case naming a project-relative file and an optional line, carry it through the cache, the broadcaster, the proto and the panel | Restrictions: use a new proto field number, never reuse one; the path crossing the wire must be project-relative, never absolute; do not change how the two existing cases behave | Success: a problem carrying a file location round-trips through the cache, reaches the panel, and reveals the named file_
 
-- [ ] 5. Attribute and pin a file-located problem to that file
+- [-] 5. Attribute and pin a file-located problem to that file
   - File: `src/backend/EtAlii.Adp.Backend/Problems/ProjectValidator.cs` (edited), `ProblemCollector.cs` (edited), `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Problems/ProjectValidator.Tests.cs` (edited)
   - When a returned `DiagramProblem` carries a `DiagramProblemFileLocation`, use that file for **both** the attribution path and the `statsPath` staleness pin. Pinning a folder diagram's problems to an `.adp` that never changes would leave every verdict looking fresh forever
   - Purpose: the panel reveals the right file, and the verdict goes stale when that file is edited
