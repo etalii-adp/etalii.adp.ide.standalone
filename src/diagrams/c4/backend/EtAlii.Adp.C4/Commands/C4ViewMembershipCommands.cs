@@ -43,7 +43,7 @@ internal sealed class MoveC4ElementCommandHandler(IC4DocumentStore documents, C4
             ? new RestoreC4ElementPositionCommand(command.BodyPath, command.ViewKey, command.ElementId, was.X, was.Y)
             : new RestoreC4ElementPositionCommand(command.BodyPath, command.ViewKey, command.ElementId, null, null);
 
-        sidecar.Write(command.BodyPath, command.ViewKey, command.ElementId, new C4LayoutSidecar.Position(command.X, command.Y));
+        sidecar.Write(command.BodyPath, command.ViewKey, command.ElementId, new C4SidecarPosition(command.X, command.Y));
         documents.Touch(command.BodyPath);
         return Task.FromResult(CommandResult.Success(previous));
     }
@@ -63,7 +63,7 @@ internal sealed class RestoreC4ElementPositionCommandHandler(IC4DocumentStore do
 
         if (command.X is { } x && command.Y is { } y)
         {
-            sidecar.Write(command.BodyPath, command.ViewKey, command.ElementId, new C4LayoutSidecar.Position(x, y));
+            sidecar.Write(command.BodyPath, command.ViewKey, command.ElementId, new C4SidecarPosition(x, y));
         }
         else
         {

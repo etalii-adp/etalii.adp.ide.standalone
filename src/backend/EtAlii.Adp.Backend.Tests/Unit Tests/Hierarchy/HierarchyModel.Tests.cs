@@ -78,7 +78,7 @@ public class HierarchyModelTests : IDisposable
         var newFolder = CreateFolder("new-folder");
         model.OnWatcherEvent(WatcherChangeTypes.Created, null, newFolder);
 
-        var created = Assert.IsType<HierarchyEntryChange.Created>(raised);
+        var created = Assert.IsType<HierarchyEntryCreated>(raised);
         Assert.Null(created.Entry.ParentId);
         Assert.Equal("new-folder", created.Entry.Name);
         Assert.True(created.Entry.IsFolder);
@@ -99,7 +99,7 @@ public class HierarchyModelTests : IDisposable
 
         // The new file itself is discarded (never listed here), but "unlisted" flips from
         // empty to non-empty regardless - that's what unlocks its expand affordance.
-        var updated = Assert.IsType<HierarchyEntryChange.Updated>(raised);
+        var updated = Assert.IsType<HierarchyEntryUpdated>(raised);
         Assert.NotEmpty(unlisted);
         Assert.Equal(unlistedEntry.Id, updated.EntryId);
         Assert.True(updated.HasChildren);
@@ -150,7 +150,7 @@ public class HierarchyModelTests : IDisposable
         File.Delete(filePath);
         model.OnWatcherEvent(WatcherChangeTypes.Deleted, filePath, null);
 
-        var updated = Assert.IsType<HierarchyEntryChange.Updated>(raised);
+        var updated = Assert.IsType<HierarchyEntryUpdated>(raised);
         Assert.NotEmpty(folderPath);
         Assert.Equal(folderEntry.Id, updated.EntryId);
         Assert.False(updated.HasChildren);
@@ -187,7 +187,7 @@ public class HierarchyModelTests : IDisposable
         File.Delete(filePath);
         model.OnWatcherEvent(WatcherChangeTypes.Deleted, filePath, null);
 
-        var removed = Assert.IsType<HierarchyEntryChange.Removed>(raised);
+        var removed = Assert.IsType<HierarchyEntryRemoved>(raised);
         Assert.Equal(entry.Id, removed.EntryId);
     }
 
@@ -204,7 +204,7 @@ public class HierarchyModelTests : IDisposable
         var newPath = IoPath.Combine(_root, "new.txt");
         model.OnWatcherEvent(WatcherChangeTypes.Renamed, filePath, newPath);
 
-        var renamed = Assert.IsType<HierarchyEntryChange.Renamed>(raised);
+        var renamed = Assert.IsType<HierarchyEntryRenamed>(raised);
         Assert.Equal(entry.Id, renamed.EntryId);
         Assert.Equal("new.txt", renamed.NewName);
     }
@@ -379,7 +379,7 @@ public class HierarchyModelTests : IDisposable
 
         // The move is the only announcement the published file gets - a watcher reports it as
         // a rename, not a create - so it must arrive as the creation it actually is.
-        var created = Assert.IsType<HierarchyEntryChange.Created>(Assert.Single(changes));
+        var created = Assert.IsType<HierarchyEntryCreated>(Assert.Single(changes));
         Assert.Equal("domain.adp", created.Entry.Name);
         Assert.Equal("domain.adp", Assert.Single(model.ListChildren(null)).Name);
     }

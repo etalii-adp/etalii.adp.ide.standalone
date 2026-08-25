@@ -189,25 +189,7 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
 
     // ---- plumbing ----------------------------------------------------------------------
 
-    /// <summary>One authenticated connection with its context stream open.</summary>
-    private sealed class Session : IDisposable
-    {
-        public required GrpcChannel Channel { get; init; }
-        public required Metadata Headers { get; init; }
-        public required ShortGuid ProjectId { get; init; }
-        public required ShortGuid WatchId { get; init; }
-        public required AsyncServerStreamingCall<ContextMessage> Call { get; init; }
-
-        public IAsyncStreamReader<ContextMessage> Stream => Call.ResponseStream;
-
-        public void Dispose()
-        {
-            Call.Dispose();
-            Channel.Dispose();
-        }
-    }
-
-    private async Task<Session> OpenAsync(Session? existing = null)
+    private async Task<ProblemsFlowSession> OpenAsync(ProblemsFlowSession? existing = null)
     {
         var channel = CreateChannel();
         var headers = await LoginAsync(channel);
@@ -215,10 +197,10 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         var watchId = ShortGuid.NewShortGuid();
         var contextClient = new ContextService.ContextServiceClient(channel);
         var call = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        return new Session { Channel = channel, Headers = headers, ProjectId = projectId, WatchId = watchId, Call = call };
+        return new ProblemsFlowSession { Channel = channel, Headers = headers, ProjectId = projectId, WatchId = watchId, Call = call };
     }
 
-    private static async Task ExecuteAsync(Session session, string actionId, ContextSource source)
+    private static async Task ExecuteAsync(ProblemsFlowSession session, string actionId, ContextSource source)
     {
         var contextClient = new ContextService.ContextServiceClient(session.Channel);
         var response = await contextClient.ExecuteActionAsync(
@@ -235,7 +217,7 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         Assert.True(response.Accepted, $"Executing {actionId} was rejected: {response.Error}");
     }
 
-    private async Task<ShortGuid> EntryIdAsync(Session session, string name)
+    private async Task<ShortGuid> EntryIdAsync(ProblemsFlowSession session, string name)
     {
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(session.Channel);
         var entries = await hierarchyClient.ListEntriesAsync(

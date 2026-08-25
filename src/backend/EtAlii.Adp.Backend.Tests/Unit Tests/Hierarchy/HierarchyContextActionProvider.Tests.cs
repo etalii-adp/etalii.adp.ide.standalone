@@ -98,7 +98,7 @@ public class HierarchyContextActionProviderTests : IDisposable
 
         var result = await _provider.ExecuteAsync(target, HierarchyContextActionProvider.RenameActionId, TestContext.Current.CancellationToken);
 
-        var input = Assert.IsType<ContextExecutionResult.RequiresInput>(result);
+        var input = Assert.IsType<ContextExecutionRequiresInput>(result);
         Assert.Equal("current.txt", input.Request.InitialValue);
     }
 
@@ -109,7 +109,7 @@ public class HierarchyContextActionProviderTests : IDisposable
 
         var result = await _provider.ExecuteAsync(target, HierarchyContextActionProvider.DeleteActionId, TestContext.Current.CancellationToken);
 
-        var confirmation = Assert.IsType<ContextExecutionResult.RequiresConfirmation>(result);
+        var confirmation = Assert.IsType<ContextExecutionRequiresConfirmation>(result);
         Assert.True(confirmation.Request.Danger);
         Assert.Contains("everything inside it", confirmation.Request.Message);
         Assert.Contains("cannot be undone", confirmation.Request.Message);
@@ -285,8 +285,8 @@ public class HierarchyContextActionProviderTests : IDisposable
         var rename = await _provider.ExecuteAsync(RootTarget(_root), HierarchyContextActionProvider.RenameActionId, TestContext.Current.CancellationToken);
         var delete = await _provider.ExecuteAsync(RootTarget(_root), HierarchyContextActionProvider.DeleteActionId, TestContext.Current.CancellationToken);
 
-        Assert.IsType<ContextExecutionResult.Failed>(rename);
-        Assert.IsType<ContextExecutionResult.Failed>(delete);
+        Assert.IsType<ContextExecutionFailed>(rename);
+        Assert.IsType<ContextExecutionFailed>(delete);
     }
 
     [Fact]

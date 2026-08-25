@@ -278,7 +278,7 @@ public class CommandsTests : IDisposable
     public void Save_NeverLeavesAScratchFileBehind_AndPersistsAssignedIds()
     {
         _ = Document;
-        _documents.Save(_bodyPath, MindmapChange.StructureChanged.Nothing);
+        _documents.Save(_bodyPath, MindmapStructureChanged.Nothing);
 
         Assert.Empty(Directory.GetFiles(_root, "~adp-*"));
         // The first save is the one allowed difference from the corpus: the two id-less nodes

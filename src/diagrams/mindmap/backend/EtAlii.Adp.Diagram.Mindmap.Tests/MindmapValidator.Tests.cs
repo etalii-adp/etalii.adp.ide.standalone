@@ -51,7 +51,7 @@ public class MindmapValidatorTests
         var problem = Assert.Single(problems);
         Assert.Equal("mindmap.unnamed-root", problem.RuleId);
         Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity);
-        Assert.Equal(new DiagramProblemLocation.ElementId("ID_1"), problem.Location);
+        Assert.Equal(new DiagramProblemElementLocation("ID_1"), problem.Location);
     }
 
     [Fact]

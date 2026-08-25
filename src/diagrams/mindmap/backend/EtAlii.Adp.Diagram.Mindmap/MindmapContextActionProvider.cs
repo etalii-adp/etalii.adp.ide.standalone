@@ -104,21 +104,21 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
         var node = Resolve(target, out var view);
         if (node is null)
         {
-            return Result(new ContextExecutionResult.Failed(NodeGone));
+            return Result(new ContextExecutionFailed(NodeGone));
         }
 
         switch (actionId)
         {
             case AddChildActionId:
-                return Result(new ContextExecutionResult.RequiresInput(
+                return Result(new ContextExecutionRequiresInput(
                     new ContextInputRequest("Add child", "mdi-subdirectory-arrow-right", "Text", "", "Add")));
 
             case AddSiblingActionId when !node.IsRoot:
-                return Result(new ContextExecutionResult.RequiresInput(
+                return Result(new ContextExecutionRequiresInput(
                     new ContextInputRequest("Add sibling", "mdi-plus", "Text", "", "Add")));
 
             case RenameActionId:
-                return Result(new ContextExecutionResult.RequiresInput(
+                return Result(new ContextExecutionRequiresInput(
                     new ContextInputRequest("Rename node", "mdi-pencil-outline", "Text", node.Text, "Rename")));
 
             case DeleteActionId when !node.IsRoot:
@@ -129,7 +129,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
                     return DispatchAsync(target, new RemoveNodeCommand(target.ResolvedFullPath, node.Id), cancellationToken);
                 }
 
-                return Result(new ContextExecutionResult.RequiresConfirmation(new ContextConfirmationRequest(
+                return Result(new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
                     "Delete branch?",
                     "mdi-trash-can-outline",
                     $"Delete '{node.Text}' and the {CountDescendants(node)} nodes under it? You can undo this.",
@@ -142,14 +142,14 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
                 // which is what makes the session push the group/ungroup delta - toggling the
                 // view directly would change state no client ever hears of.
                 _views.Toggle(target.WatchId, target.ResolvedFullPath, _documents.GetOrLoad(target.ResolvedFullPath), node.Id);
-                return Result(new ContextExecutionResult.Completed());
+                return Result(new ContextExecutionCompleted());
 
             case EditNotesActionId:
-                return Result(new ContextExecutionResult.RequiresInput(
+                return Result(new ContextExecutionRequiresInput(
                     new ContextInputRequest("Notes", "mdi-note-text-outline", "Notes", node.Notes, "Save")));
 
             case LinkActionId:
-                return Result(new ContextExecutionResult.RequiresChoice(new ContextChoiceRequest(
+                return Result(new ContextExecutionRequiresChoice(new ContextChoiceRequest(
                     "Link to",
                     "mdi-link-variant",
                     "Link",
@@ -160,7 +160,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
                 return DispatchAsync(target, new SetNodeLinkCommand(target.ResolvedFullPath, node.Id, null), cancellationToken);
 
             default:
-                return Result(new ContextExecutionResult.Failed($"Unknown action '{actionId}'."));
+                return Result(new ContextExecutionFailed($"Unknown action '{actionId}'."));
         }
     }
 
@@ -208,10 +208,10 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
     private async ValueTask<ContextExecutionResult> DispatchAsync(ContextTarget target, ICommand command, CancellationToken cancellationToken)
     {
         var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
-        return result.IsSuccess ? new ContextExecutionResult.Completed() : new ContextExecutionResult.Failed(result.Error);
+        return result.IsSuccess ? new ContextExecutionCompleted() : new ContextExecutionFailed(result.Error);
     }
 
-    private MindmapNode? Resolve(ContextTarget target, out MindmapViewState.ConnectionView? view)
+    private MindmapNode? Resolve(ContextTarget target, out MindmapConnectionView? view)
     {
         view = null;
         if (target.Scope != ContextScope.DiagramElement || target.ElementId.Length == 0)

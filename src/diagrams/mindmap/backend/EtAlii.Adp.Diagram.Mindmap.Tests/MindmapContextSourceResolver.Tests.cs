@@ -30,7 +30,7 @@ public class MindmapContextSourceResolverTests : IDisposable
     [Fact]
     public async Task Resolve_ANodeInTheDiagram_GivesItsPathScopeTargetAndDetail()
     {
-        var level = Assert.IsType<ContextLevelResolution.Resolved>(await ResolveAsync("ID_88117420")).Level;
+        var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync("ID_88117420")).Level;
 
         Assert.Equal(["ADP architecture", "Backend", "Context service"], level.RelativePath);
         Assert.Equal(ContextScope.DiagramElement, level.Scope);
@@ -50,7 +50,7 @@ public class MindmapContextSourceResolverTests : IDisposable
     public async Task Resolve_SeedsFoldStateFromTheFile()
     {
         // Requirement 9.3: Hierarchy is FOLDED="true" in the corpus.
-        var level = Assert.IsType<ContextLevelResolution.Resolved>(await ResolveAsync("ID_88117425")).Level;
+        var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync("ID_88117425")).Level;
 
         Assert.True(level.Detail.Element.Folded);
         Assert.True(level.Target.IsContainer);
@@ -59,7 +59,7 @@ public class MindmapContextSourceResolverTests : IDisposable
     [Fact]
     public async Task Resolve_AnUnknownNode_IsRejected()
     {
-        Assert.IsType<ContextLevelResolution.Rejected>(await ResolveAsync("ID_nope"));
+        Assert.IsType<RejectedContextLevel>(await ResolveAsync("ID_nope"));
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class MindmapContextSourceResolverTests : IDisposable
             _project.WatchId, _project.Root, ContextSelectionSource.DiagramCanvas,
             MindmapTestProject.Element("ID_88117420"), [], parent: null, TestContext.Current.CancellationToken);
 
-        Assert.IsType<ContextLevelResolution.Rejected>(resolution);
+        Assert.IsType<RejectedContextLevel>(resolution);
     }
 
     [Fact]
@@ -80,26 +80,26 @@ public class MindmapContextSourceResolverTests : IDisposable
         File.WriteAllText(other, "hello");
         var parent = _project.FileLevel() with { Target = _project.FileLevel().Target with { ResolvedFullPath = other } };
 
-        Assert.IsType<ContextLevelResolution.Rejected>(await ResolveAsync("ID_88117420", parent: parent));
+        Assert.IsType<RejectedContextLevel>(await ResolveAsync("ID_88117420", parent: parent));
     }
 
     [Fact]
     public async Task Resolve_AClientPathThatDoesNotMatch_IsRejected()
     {
-        Assert.IsType<ContextLevelResolution.Rejected>(await ResolveAsync("ID_88117420", ["wrong", "path"]));
+        Assert.IsType<RejectedContextLevel>(await ResolveAsync("ID_88117420", ["wrong", "path"]));
     }
 
     [Fact]
     public async Task Resolve_AMatchingClientPath_IsAccepted()
     {
-        Assert.IsType<ContextLevelResolution.Resolved>(await ResolveAsync("ID_88117420", ["ADP architecture", "Backend", "Context service"]));
+        Assert.IsType<ResolvedContextLevel>(await ResolveAsync("ID_88117420", ["ADP architecture", "Backend", "Context service"]));
     }
 
     [Fact]
     public async Task NestingOf_ANode_IsNotNestable()
     {
         var result = await ResolveAsync("ID_88117420");
-        var level = Assert.IsType<ContextLevelResolution.Resolved>(result).Level;
+        var level = Assert.IsType<ResolvedContextLevel>(result).Level;
 
         Assert.Equal(ContextNesting.NotNestable, _project.Resolver.NestingOf(level));
     }
@@ -107,7 +107,7 @@ public class MindmapContextSourceResolverTests : IDisposable
     [Fact]
     public async Task Track_ReportsTheNewPath_WhenAnAncestorIsRenamed()
     {
-        var level = Assert.IsType<ContextLevelResolution.Resolved>(await ResolveAsync("ID_88117420")).Level;
+        var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync("ID_88117420")).Level;
         IReadOnlyList<string>? reported = ["unchanged"];
         using var track = _project.Resolver.Track(_project.WatchId, _project.Root, level, path => reported = path);
 
@@ -120,7 +120,7 @@ public class MindmapContextSourceResolverTests : IDisposable
     public async Task Track_ReportsNull_WhenTheNodeIsRemoved()
     {
         // Requirement 10.7: the selection clears without the client asking again.
-        var level = Assert.IsType<ContextLevelResolution.Resolved>(await ResolveAsync("ID_88117420")).Level;
+        var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync("ID_88117420")).Level;
         IReadOnlyList<string>? reported = ["unchanged"];
         using var track = _project.Resolver.Track(_project.WatchId, _project.Root, level, path => reported = path);
 
@@ -132,7 +132,7 @@ public class MindmapContextSourceResolverTests : IDisposable
     [Fact]
     public async Task Track_StaysQuiet_ForAChangeThatDoesNotMoveTheNode()
     {
-        var level = Assert.IsType<ContextLevelResolution.Resolved>(await ResolveAsync("ID_88117420")).Level;
+        var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync("ID_88117420")).Level;
         var calls = 0;
         using var track = _project.Resolver.Track(_project.WatchId, _project.Root, level, _ => calls++);
 

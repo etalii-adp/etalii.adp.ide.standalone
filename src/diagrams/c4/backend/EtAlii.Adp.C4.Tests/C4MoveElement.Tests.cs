@@ -70,7 +70,7 @@ public class C4MoveElementTests : IDisposable
         var error = await session.MoveElementAsync("a", "250,400", -1, TestContext.Current.CancellationToken);
 
         Assert.Equal("", error);
-        Assert.Equal(new C4LayoutSidecar.Position(250, 400), _sidecar.Read(_bodyPath, "all")["a"]);
+        Assert.Equal(new C4SidecarPosition(250, 400), _sidecar.Read(_bodyPath, "all")["a"]);
         // The model did not change: a position is view state, and the .dsl is another
         // ecosystem's file (Requirement 3.5).
         Assert.Equal(before, File.ReadAllText(_bodyPath));
@@ -98,7 +98,7 @@ public class C4MoveElementTests : IDisposable
 
         await _history.UndoAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal(new C4LayoutSidecar.Position(100, 100), _sidecar.Read(_bodyPath, "all")["a"]);
+        Assert.Equal(new C4SidecarPosition(100, 100), _sidecar.Read(_bodyPath, "all")["a"]);
     }
 
     [Fact]

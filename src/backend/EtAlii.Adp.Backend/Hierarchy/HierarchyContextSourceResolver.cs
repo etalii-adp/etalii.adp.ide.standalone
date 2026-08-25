@@ -80,7 +80,7 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
             detail,
             this);
 
-        return ValueTask.FromResult<ContextLevelResolution>(new ContextLevelResolution.Resolved(level));
+        return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));
     }
 
     /// <summary>
@@ -90,7 +90,7 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
     /// resolver rather than this one.
     /// </summary>
     public ContextNesting NestingOf(ContextResolvedLevel level) =>
-        level.Target.IsContainer || _router.Route(level.Target.ResolvedFullPath) is DiagramRouting.Routed
+        level.Target.IsContainer || _router.Route(level.Target.ResolvedFullPath) is DiagramRouted
             ? ContextNesting.Contained
             : ContextNesting.NotNestable;
 
@@ -109,7 +109,7 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
 
         void OnEntryChanged(HierarchyEntryChange change)
         {
-            if (disposed || change is not (HierarchyEntryChange.Renamed or HierarchyEntryChange.Removed))
+            if (disposed || change is not (HierarchyEntryRenamed or HierarchyEntryRemoved))
             {
                 return;
             }
@@ -129,7 +129,7 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
         }
 
         model.EntryChanged += OnEntryChanged;
-        return new Subscription(() =>
+        return new HierarchyEntrySubscription(() =>
         {
             disposed = true;
             model.EntryChanged -= OnEntryChanged;
@@ -137,7 +137,7 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
     }
 
     private static ValueTask<ContextLevelResolution> Rejected(string reason) =>
-        ValueTask.FromResult<ContextLevelResolution>(new ContextLevelResolution.Rejected(reason));
+        ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(reason));
 
     private static bool IsInside(string parentFullPath, string fullPath)
     {
@@ -174,23 +174,9 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
     private string DiagramMimeTypeOf(string fullPath) =>
         _router.Route(fullPath) switch
         {
-            DiagramRouting.Routed routed => routed.Definition.Origin.MimeType,
-            DiagramRouting.UnknownType unknown => unknown.MimeType,
+            DiagramRouted routed => routed.Definition.Origin.MimeType,
+            DiagramUnknownType unknown => unknown.MimeType,
             _ => "",
         };
 
-    private sealed class Subscription : IDisposable
-    {
-        private Action? _dispose;
-
-        public Subscription(Action dispose)
-        {
-            _dispose = dispose;
-        }
-
-        public void Dispose()
-        {
-            Interlocked.Exchange(ref _dispose, null)?.Invoke();
-        }
-    }
 }

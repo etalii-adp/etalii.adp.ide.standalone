@@ -52,7 +52,7 @@ public class MindmapSessionTests : IDisposable
     private MindmapSession Open() => new(_watchId, _bodyPath, _documents, _views, _mapper, _history);
 
     private static IReadOnlyList<DiagramElement> AddedElements(IReadOnlyList<DiagramDelta> deltas) =>
-        deltas.OfType<DiagramDelta.Add>().SelectMany(add => add.Elements).ToList();
+        deltas.OfType<DiagramAddDelta>().SelectMany(add => add.Elements).ToList();
 
     [Fact]
     public void Baseline_AddsEveryVisibleNode_AsMindmapNodeElements()
@@ -101,7 +101,7 @@ public class MindmapSessionTests : IDisposable
         session.Changed += (_, args) => pushed = args;
 
         _documents.GetOrLoad(_bodyPath); // ensure loaded, as the service would have
-        _documents.Save(_bodyPath, new MindmapChange.NodeUpdated("ID_88117420"));
+        _documents.Save(_bodyPath, new MindmapNodeUpdated("ID_88117420"));
 
         Assert.NotNull(pushed);
         var element = AddedElements(pushed!.Deltas).Single();
@@ -124,17 +124,17 @@ public class MindmapSessionTests : IDisposable
         _views.Toggle(_watchId, _bodyPath, _documents.GetOrLoad(_bodyPath), "ID_411002937");
 
         var collapse = Assert.Single(pushes);
-        var group = Assert.IsType<DiagramDelta.Group>(collapse[0]);
+        var group = Assert.IsType<DiagramGroupDelta>(collapse[0]);
         Assert.Equal("ID_411002937", group.GroupElement.Id);
         Assert.Contains("ID_88117420", group.SourceElementIds);
         // The freed room moves the survivors: the group travels with a repositioning upsert.
-        var repositioned = Assert.IsType<DiagramDelta.Add>(collapse[1]);
+        var repositioned = Assert.IsType<DiagramAddDelta>(collapse[1]);
         Assert.DoesNotContain(repositioned.Elements, element => element.Id == "ID_88117420");
 
         _views.Toggle(_watchId, _bodyPath, _documents.GetOrLoad(_bodyPath), "ID_411002937");
 
         var expand = pushes[1];
-        var ungroup = Assert.IsType<DiagramDelta.Ungroup>(expand[0]);
+        var ungroup = Assert.IsType<DiagramUngroupDelta>(expand[0]);
         Assert.Equal("ID_411002937", ungroup.GroupElementId);
         Assert.Contains(ungroup.Elements, element => element.Id == "ID_88117420");
     }
@@ -212,7 +212,7 @@ public class MindmapSessionTests : IDisposable
         // collection and proved nothing.
         var narrow = session.UpdateView(new DiagramViewport(-20, -20, 20, 20));
 
-        var removed = narrow.OfType<DiagramDelta.Remove>().SelectMany(remove => remove.ElementIds).ToHashSet(StringComparer.Ordinal);
+        var removed = narrow.OfType<DiagramRemoveDelta>().SelectMany(remove => remove.ElementIds).ToHashSet(StringComparer.Ordinal);
         Assert.DoesNotContain(document.Root.Id, removed);
         // The root's children survive the narrowing even though the box does not reach them:
         // the canvas anchors each connector on the boxes at both of its ends, so culling them
@@ -225,7 +225,7 @@ public class MindmapSessionTests : IDisposable
 
         // Widening brings the rest back in; nothing is removed by widening.
         Assert.Contains(AddedElements(wide), element => element.Id == grandchild.Id);
-        Assert.Empty(wide.OfType<DiagramDelta.Remove>().SelectMany(remove => remove.ElementIds));
+        Assert.Empty(wide.OfType<DiagramRemoveDelta>().SelectMany(remove => remove.ElementIds));
     }
 
     [Fact]

@@ -10,7 +10,7 @@ public class DiagramDocumentFactoriesTests
     [Fact]
     public void Find_ReturnsTheFactoryRegisteredForAnOrigin()
     {
-        var factory = new StubFactory(Mindmap);
+        var factory = new DiagramDocumentFactoriesStubFactory(Mindmap);
         var factories = new DiagramDocumentFactories([factory]);
 
         Assert.Same(factory, factories.Find(Mindmap));
@@ -51,10 +51,4 @@ public class DiagramDocumentFactoriesTests
         Assert.Equal(2, missing.Count);
     }
 
-    private sealed class StubFactory(DiagramOrigin origin) : IDiagramDocumentFactory
-    {
-        public DiagramOrigin Origin { get; } = origin;
-
-        public string CreateEmptyDocument(string baseName) => "";
-    }
 }

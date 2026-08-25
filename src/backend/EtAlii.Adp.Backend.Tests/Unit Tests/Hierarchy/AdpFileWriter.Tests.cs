@@ -31,7 +31,7 @@ public class AdpFileWriterTests : IDisposable
     {
         var result = AdpFileWriter.Create(_folder, "domain.adp", "freeplane/mindmap");
 
-        var created = Assert.IsType<AdpFileWriteResult.Created>(result);
+        var created = Assert.IsType<AdpFileCreated>(result);
         Assert.Equal(IoPath.Combine(_folder, "domain.adp"), created.FullPath);
 
         // Asserting bytes, not the string: a BOM would be invisible in a string comparison.
@@ -55,7 +55,7 @@ public class AdpFileWriterTests : IDisposable
 
         var result = AdpFileWriter.Create(_folder, "domain.adp", "freeplane/mindmap");
 
-        Assert.IsType<AdpFileWriteResult.NameTaken>(result);
+        Assert.IsType<AdpFileNameTaken>(result);
         Assert.Equal("do not touch me", File.ReadAllText(existing));
         Assert.Empty(TempFiles());
     }
@@ -65,7 +65,7 @@ public class AdpFileWriterTests : IDisposable
     {
         Directory.CreateDirectory(IoPath.Combine(_folder, "domain.adp"));
 
-        Assert.IsType<AdpFileWriteResult.NameTaken>(AdpFileWriter.Create(_folder, "domain.adp", "x/y"));
+        Assert.IsType<AdpFileNameTaken>(AdpFileWriter.Create(_folder, "domain.adp", "x/y"));
         Assert.Empty(TempFiles());
     }
 
@@ -76,7 +76,7 @@ public class AdpFileWriterTests : IDisposable
 
         var result = AdpFileWriter.Create(missing, "domain.adp", "freeplane/mindmap");
 
-        var failed = Assert.IsType<AdpFileWriteResult.Failed>(result);
+        var failed = Assert.IsType<AdpFileWriteFailed>(result);
         Assert.NotEqual("", failed.Message);
         Assert.False(Directory.Exists(missing));
     }

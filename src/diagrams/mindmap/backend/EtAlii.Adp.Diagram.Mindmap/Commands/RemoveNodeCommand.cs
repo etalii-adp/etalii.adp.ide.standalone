@@ -38,7 +38,7 @@ internal sealed class RemoveNodeCommandHandler(IMindmapDocumentStore documents)
             .ToArray();
 
         var subtree = document.Remove(node);
-        Documents.Save(command.BodyPath, new MindmapChange.StructureChanged(removedIds));
+        Documents.Save(command.BodyPath, new MindmapStructureChanged(removedIds));
 
         return Task.FromResult(CommandResult.Success(
             new RestoreSubtreeCommand(command.BodyPath, parent.Id, index, FreeplaneXmlWriter.ToText(subtree))));
@@ -68,7 +68,7 @@ internal sealed class RestoreSubtreeCommandHandler(IMindmapDocumentStore documen
         }
 
         document.Restore(subtree, parent, command.Index);
-        Documents.Save(command.BodyPath, MindmapChange.StructureChanged.Nothing);
+        Documents.Save(command.BodyPath, MindmapStructureChanged.Nothing);
 
         return Task.FromResult(CommandResult.Success(new RemoveNodeCommand(command.BodyPath, restoredId)));
     }

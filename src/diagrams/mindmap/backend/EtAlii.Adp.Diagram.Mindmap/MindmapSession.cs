@@ -45,7 +45,7 @@ internal sealed class MindmapSession : IDiagramSession
         var document = _documents.GetOrLoad(_bodyPath);
         var view = _views.For(_watchId, _bodyPath, document);
         var elements = _mapper.Visible(document, view, _viewport);
-        return elements.Count == 0 ? [] : [new DiagramDelta.Add(elements)];
+        return elements.Count == 0 ? [] : [new DiagramAddDelta(elements)];
     }
 
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
@@ -69,12 +69,12 @@ internal sealed class MindmapSession : IDiagramSession
         var deltas = new List<DiagramDelta>();
         if (appeared.Length > 0)
         {
-            deltas.Add(new DiagramDelta.Add(appeared));
+            deltas.Add(new DiagramAddDelta(appeared));
         }
 
         if (removed.Length > 0)
         {
-            deltas.Add(new DiagramDelta.Remove(removed));
+            deltas.Add(new DiagramRemoveDelta(removed));
         }
 
         return deltas;
@@ -121,10 +121,10 @@ internal sealed class MindmapSession : IDiagramSession
         // reclaimed room shifts the surviving subtrees - so the group/ungroup travels with an
         // upsert of the whole visible set, which is what puts every survivor where the new
         // layout wants it. Without it the hidden branch goes but nothing else budges.
-        var repositioned = new DiagramDelta.Add(_mapper.Visible(document, view, _viewport));
+        var repositioned = new DiagramAddDelta(_mapper.Visible(document, view, _viewport));
         if (args.Folded)
         {
-            Changed.Invoke(this, new DiagramDeltasEventArgs([new DiagramDelta.Group(descendantIds, groupElement), repositioned]));
+            Changed.Invoke(this, new DiagramDeltasEventArgs([new DiagramGroupDelta(descendantIds, groupElement), repositioned]));
             return;
         }
 
@@ -132,7 +132,7 @@ internal sealed class MindmapSession : IDiagramSession
             .Where(layout.ContainsKey)
             .Select(id => _mapper.ToElement(document.Find(id)!, layout[id]))
             .ToArray();
-        Changed.Invoke(this, new DiagramDeltasEventArgs([new DiagramDelta.Ungroup(args.NodeId, reappeared), repositioned]));
+        Changed.Invoke(this, new DiagramDeltasEventArgs([new DiagramUngroupDelta(args.NodeId, reappeared), repositioned]));
     }
 
     public ValueTask DisposeAsync()
@@ -159,13 +159,13 @@ internal sealed class MindmapSession : IDiagramSession
         var view = _views.For(_watchId, _bodyPath, document);
         var deltas = args.Change switch
         {
-            MindmapChange.NodeUpdated updated when document.Find(updated.NodeId) is { } node && _mapper.Layout(document, view).TryGetValue(node.Id, out var box) =>
-                (IReadOnlyList<DiagramDelta>)[new DiagramDelta.Add([_mapper.ToElement(node, box)])],
+            MindmapNodeUpdated updated when document.Find(updated.NodeId) is { } node && _mapper.Layout(document, view).TryGetValue(node.Id, out var box) =>
+                (IReadOnlyList<DiagramDelta>)[new DiagramAddDelta([_mapper.ToElement(node, box)])],
 
             // A structure change relays out what is now visible, plus removes for what went -
             // simplest correct answer, and a mindmap edit is not a hot path (Requirement 11.3).
-            MindmapChange.StructureChanged structure => Relayout(document, view, structure.RemovedNodeIds),
-            MindmapChange.Reloaded => Relayout(document, view, []),
+            MindmapStructureChanged structure => Relayout(document, view, structure.RemovedNodeIds),
+            MindmapReloaded => Relayout(document, view, []),
             _ => [],
         };
 
@@ -175,18 +175,18 @@ internal sealed class MindmapSession : IDiagramSession
         }
     }
 
-    private IReadOnlyList<DiagramDelta> Relayout(MindmapDocument document, MindmapViewState.ConnectionView view, IReadOnlyList<string> removedIds)
+    private IReadOnlyList<DiagramDelta> Relayout(MindmapDocument document, MindmapConnectionView view, IReadOnlyList<string> removedIds)
     {
         var visible = _mapper.Visible(document, view, _viewport);
         var deltas = new List<DiagramDelta>();
         if (visible.Count > 0)
         {
-            deltas.Add(new DiagramDelta.Add(visible));
+            deltas.Add(new DiagramAddDelta(visible));
         }
 
         if (removedIds.Count > 0)
         {
-            deltas.Add(new DiagramDelta.Remove(removedIds));
+            deltas.Add(new DiagramRemoveDelta(removedIds));
         }
 
         return deltas;

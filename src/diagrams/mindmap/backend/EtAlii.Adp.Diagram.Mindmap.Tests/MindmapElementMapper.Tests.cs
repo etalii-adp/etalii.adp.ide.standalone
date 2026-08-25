@@ -26,7 +26,7 @@ public class MindmapElementMapperTests
         "</node>\n" +
         "</map>\n");
 
-    private MindmapViewState.ConnectionView View(MindmapDocument document) => _views.For(_watchId, "map.mm", document);
+    private MindmapConnectionView View(MindmapDocument document) => _views.For(_watchId, "map.mm", document);
 
     private string[] VisibleIds(MindmapDocument document, DiagramViewport viewport) =>
         _mapper.Visible(document, View(document), viewport).Select(element => element.Id).ToArray();

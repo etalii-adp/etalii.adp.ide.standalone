@@ -153,23 +153,12 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         return null;
     }
 
-    private sealed record Session(
-        GrpcChannel Channel,
-        Metadata Headers,
-        Contracts.ShortGuid ProjectId,
-        Contracts.ShortGuid WatchId,
-        HierarchyService.HierarchyServiceClient Hierarchy,
-        ContextService.ContextServiceClient Context) : IDisposable
-    {
-        public void Dispose() => Channel.Dispose();
-    }
-
-    private async Task<Session> OpenSessionAsync()
+    private async Task<CreateDiagramFileFlowSession> OpenSessionAsync()
     {
         var channel = CreateChannel();
         var headers = await LoginAsync(channel);
         var projectId = await AddProjectAsync(channel, headers);
-        return new Session(
+        return new CreateDiagramFileFlowSession(
             channel, headers, projectId, ShortGuid.NewShortGuid(),
             new HierarchyService.HierarchyServiceClient(channel),
             new ContextService.ContextServiceClient(channel));
@@ -177,7 +166,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
 
     /// <summary>Opens Add on the given target and returns the prompt it pushed, with its interaction id.</summary>
     private async Task<(ContextPrompt Prompt, Contracts.ShortGuid InteractionId)> OpenAddDialogAsync(
-        Session session, IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken, Contracts.ShortGuid? folderId = null)
+        CreateDiagramFileFlowSession session, IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken, Contracts.ShortGuid? folderId = null)
     {
         var pendingPrompt = ReadUntilPromptAsync(stream, cancellationToken);
         await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);

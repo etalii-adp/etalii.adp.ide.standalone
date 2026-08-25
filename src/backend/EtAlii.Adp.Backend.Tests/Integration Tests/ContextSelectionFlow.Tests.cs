@@ -100,29 +100,18 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         return response.Added.Id;
     }
 
-    private sealed record Session(
-        GrpcChannel Channel,
-        Metadata Headers,
-        Contracts.ShortGuid ProjectId,
-        Contracts.ShortGuid WatchId,
-        HierarchyService.HierarchyServiceClient Hierarchy,
-        ContextService.ContextServiceClient Context) : IDisposable
-    {
-        public void Dispose() => Channel.Dispose();
-    }
-
-    private async Task<Session> OpenSessionAsync()
+    private async Task<ContextSelectionFlowSession> OpenSessionAsync()
     {
         var channel = CreateChannel();
         var headers = await LoginAsync(channel);
         var projectId = await AddProjectAsync(channel, headers);
-        return new Session(
+        return new ContextSelectionFlowSession(
             channel, headers, projectId, ShortGuid.NewShortGuid(),
             new HierarchyService.HierarchyServiceClient(channel),
             new ContextService.ContextServiceClient(channel));
     }
 
-    private static async Task<Contracts.ShortGuid> EntryIdOfAsync(Session session, string name)
+    private static async Task<Contracts.ShortGuid> EntryIdOfAsync(ContextSelectionFlowSession session, string name)
     {
         var entries = await session.Hierarchy.ListEntriesAsync(
             new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);

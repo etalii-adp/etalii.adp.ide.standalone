@@ -339,8 +339,8 @@ public class C4ElementMapperTests
 
         var problems = C4RuleSet.Validate(C4Parser.Parse(C4Document.Parse(dsl)));
 
-        var problem = Assert.Single(problems, p => p.RuleId == C4RuleSet.Rules.MissingDescription);
-        Assert.Equal(new EtAlii.Adp.Diagram.DiagramProblemLocation.ElementId("u"), problem.Location);
+        var problem = Assert.Single(problems, p => p.RuleId == C4Rules.MissingDescription);
+        Assert.Equal(new EtAlii.Adp.Diagram.DiagramProblemElementLocation("u"), problem.Location);
     }
 
     // ---- the viewport --------------------------------------------------------------------

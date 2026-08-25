@@ -4,8 +4,6 @@ namespace EtAlii.Adp.Backend.Tests;
 
 public class CommandResultTests
 {
-    // ReSharper disable once NotAccessedPositionalProperty.Local
-    private sealed record SampleCommand(string Value) : ICommand;
 
     [Fact]
     public void Success_WithoutAnInverse_SucceedsAndRecordsNothing()
@@ -20,7 +18,7 @@ public class CommandResultTests
     [Fact]
     public void Success_WithAnInverse_CarriesThatInverse()
     {
-        var inverse = new SampleCommand("back");
+        var inverse = new CommandResultSampleCommand("back");
 
         var result = CommandResult.Success(inverse);
 

@@ -38,7 +38,7 @@ public class ProjectValidatorTests : IDisposable
         var problem = new DiagramProblem(DiagramProblemSeverity.Warning, "The root is lonely.", "mindmap.lonely-root");
         var validator = Validator(problems: [problem]);
 
-        var outcome = await Validate(validator, new ValidationScope.Project(_root));
+        var outcome = await Validate(validator, new ProjectValidationScope(_root));
 
         var stored = Assert.Single(outcome.Problems);
         Assert.Same(problem, stored.Problem);
@@ -53,7 +53,7 @@ public class ProjectValidatorTests : IDisposable
     {
         CreatePair("flow", "the document");
 
-        var outcome = await Validate(validator: null, new ValidationScope.Project(_root));
+        var outcome = await Validate(validator: null, new ProjectValidationScope(_root));
 
         Assert.Empty(outcome.Problems);
         Assert.Equal(1, outcome.FilesConsidered);
@@ -66,7 +66,7 @@ public class ProjectValidatorTests : IDisposable
         CreatePair("flow", "the document");
         var validator = Validator(problems: []);
 
-        var outcome = await Validate(validator, new ValidationScope.Project(_root));
+        var outcome = await Validate(validator, new ProjectValidationScope(_root));
 
         Assert.Equal(1, validator.Calls);
         Assert.Equal(1, outcome.FilesConsidered);
@@ -77,7 +77,7 @@ public class ProjectValidatorTests : IDisposable
     {
         File.WriteAllText(IoPath.Combine(_root, "strange.adp"), "vendor/unheard-of\n");
 
-        var outcome = await Validate(validator: null, new ValidationScope.Project(_root));
+        var outcome = await Validate(validator: null, new ProjectValidationScope(_root));
 
         var stored = Assert.Single(outcome.Problems);
         Assert.Equal("core.unknown-type", stored.Problem.RuleId);
@@ -93,7 +93,7 @@ public class ProjectValidatorTests : IDisposable
         // An empty .adp has no first line to read - the router calls it unreadable.
         File.WriteAllText(IoPath.Combine(_root, "empty.adp"), "");
 
-        var outcome = await Validate(validator: null, new ValidationScope.Project(_root));
+        var outcome = await Validate(validator: null, new ProjectValidationScope(_root));
 
         var stored = Assert.Single(outcome.Problems);
         Assert.Equal("core.unreadable", stored.Problem.RuleId);
@@ -106,7 +106,7 @@ public class ProjectValidatorTests : IDisposable
         File.WriteAllText(IoPath.Combine(_root, "either.mm"), "a body without a registration");
         var rival = new DiagramDefinition(new DiagramOrigin("rival", "mindmap"), "Rival map", ".mm");
 
-        var outcome = await Validate(validator: null, new ValidationScope.Project(_root), extraDefinitions: [rival]);
+        var outcome = await Validate(validator: null, new ProjectValidationScope(_root), extraDefinitions: [rival]);
 
         var stored = Assert.Single(outcome.Problems);
         Assert.Equal("core.ambiguous-extension", stored.Problem.RuleId);
@@ -119,7 +119,7 @@ public class ProjectValidatorTests : IDisposable
     {
         File.WriteAllText(IoPath.Combine(_root, "notes.txt"), "just notes");
 
-        var outcome = await Validate(validator: null, new ValidationScope.Project(_root));
+        var outcome = await Validate(validator: null, new ProjectValidationScope(_root));
 
         Assert.Empty(outcome.Problems);
         Assert.Equal(0, outcome.FilesConsidered);
@@ -134,7 +134,7 @@ public class ProjectValidatorTests : IDisposable
 
         using (new FileStream(IoPath.Combine(_root, "locked.mm"), FileMode.Open, FileAccess.Read, FileShare.None))
         {
-            var outcome = await Validate(validator, new ValidationScope.Project(_root));
+            var outcome = await Validate(validator, new ProjectValidationScope(_root));
 
             var stored = Assert.Single(outcome.Problems);
             Assert.Equal("core.unreadable", stored.Problem.RuleId);
@@ -153,7 +153,7 @@ public class ProjectValidatorTests : IDisposable
         CreatePair("b", "second");
         var validator = Validator(throwing: true);
 
-        var outcome = await Validate(validator, new ValidationScope.Project(_root));
+        var outcome = await Validate(validator, new ProjectValidationScope(_root));
 
         Assert.Equal(2, outcome.Problems.Count);
         Assert.All(outcome.Problems, stored => Assert.Equal("core.validator-failed", stored.Problem.RuleId));
@@ -166,7 +166,7 @@ public class ProjectValidatorTests : IDisposable
         CreatePair("slow", "the document");
         var validator = Validator(hanging: true);
 
-        var outcome = await Validate(validator, new ValidationScope.Project(_root), timeout: TimeSpan.FromMilliseconds(100));
+        var outcome = await Validate(validator, new ProjectValidationScope(_root), timeout: TimeSpan.FromMilliseconds(100));
 
         var stored = Assert.Single(outcome.Problems);
         Assert.Equal("core.validator-failed", stored.Problem.RuleId);
@@ -183,7 +183,7 @@ public class ProjectValidatorTests : IDisposable
         CreatePair("out", "outside the folder");
         var validator = Validator(problems: [new DiagramProblem(DiagramProblemSeverity.Error, "Broken.", "mindmap.broken")]);
 
-        var outcome = await Validate(validator, new ValidationScope.Folder(_root, "inside"));
+        var outcome = await Validate(validator, new FolderValidationScope(_root, "inside"));
 
         var stored = Assert.Single(outcome.Problems);
         Assert.Equal(IoPath.Combine("inside", "in.adp"), stored.RelativePath);
@@ -197,7 +197,7 @@ public class ProjectValidatorTests : IDisposable
         CreatePair("two", "second");
         var validator = Validator(problems: []);
 
-        var outcome = await Validate(validator, new ValidationScope.File(_root, "one.adp"));
+        var outcome = await Validate(validator, new FileValidationScope(_root, "one.adp"));
 
         Assert.Equal(1, validator.Calls);
         Assert.Equal(1, outcome.FilesConsidered);
@@ -213,7 +213,7 @@ public class ProjectValidatorTests : IDisposable
             File.WriteAllText(IoPath.Combine(elsewhere, "outside.adp"), "freeplane/mindmap\n");
             var validator = Validator(problems: []);
 
-            var outcome = await Validate(validator, new ValidationScope.File(_root, IoPath.Combine("..", IoPath.GetFileName(elsewhere), "outside.adp")));
+            var outcome = await Validate(validator, new FileValidationScope(_root, IoPath.Combine("..", IoPath.GetFileName(elsewhere), "outside.adp")));
 
             Assert.Empty(outcome.Problems);
             Assert.Equal(0, outcome.FilesConsidered);
@@ -236,7 +236,7 @@ public class ProjectValidatorTests : IDisposable
         File.WriteAllText(IoPath.Combine(_root, "notes.txt"), "just notes");
         var before = Snapshot();
 
-        await Validate(Validator(throwing: true), new ValidationScope.Project(_root));
+        await Validate(Validator(throwing: true), new ProjectValidationScope(_root));
 
         var after = Snapshot();
         Assert.Equal(before.Keys.Order(), after.Keys.Order());
@@ -256,12 +256,12 @@ public class ProjectValidatorTests : IDisposable
         validator.Hold = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var subject = Subject(validator);
 
-        var first = subject.ValidateAsync(new ValidationScope.Project(_root), TestContext.Current.CancellationToken).AsTask();
+        var first = subject.ValidateAsync(new ProjectValidationScope(_root), TestContext.Current.CancellationToken).AsTask();
         while (validator.Calls == 0)
         {
             await Task.Yield(); // The first run is inside the validator - the second must join it.
         }
-        var second = subject.ValidateAsync(new ValidationScope.File(_root, "flow.adp"), TestContext.Current.CancellationToken).AsTask();
+        var second = subject.ValidateAsync(new FileValidationScope(_root, "flow.adp"), TestContext.Current.CancellationToken).AsTask();
 
         validator.Hold.SetResult();
         var outcomes = await Task.WhenAll(first, second);
@@ -284,58 +284,26 @@ public class ProjectValidatorTests : IDisposable
         Directory.GetFiles(_root, "*", SearchOption.AllDirectories)
             .ToDictionary(path => path, File.ReadAllBytes);
 
-    private static TestValidator Validator(
+    private static ProjectValidatorTestValidator Validator(
         IReadOnlyList<DiagramProblem>? problems = null, bool throwing = false, bool hanging = false) =>
         new(Mindmap, problems ?? [], throwing, hanging);
 
     private async Task<ValidationOutcome> Validate(
-        TestValidator? validator,
+        ProjectValidatorTestValidator? validator,
         ValidationScope scope,
         IReadOnlyList<DiagramDefinition>? extraDefinitions = null,
         TimeSpan? timeout = null) =>
         await Subject(validator, extraDefinitions, timeout).ValidateAsync(scope, TestContext.Current.CancellationToken);
 
     private static ProjectValidator Subject(
-        TestValidator? validator,
+        ProjectValidatorTestValidator? validator,
         IReadOnlyList<DiagramDefinition>? extraDefinitions = null,
         TimeSpan? timeout = null)
     {
-        var catalog = new TestCatalog([MindmapDefinition, .. extraDefinitions ?? []]);
+        var catalog = new TestDiagramDefinitionCatalog([MindmapDefinition, .. extraDefinitions ?? []]);
         var validators = new DiagramValidators(validator is null ? [] : [validator]);
         return new ProjectValidator(new DiagramFileRouter(catalog), validators, timeout);
     }
 
-    private sealed class TestCatalog(IReadOnlyList<DiagramDefinition> definitions) : IDiagramDefinitionCatalog
-    {
-        public IReadOnlyList<DiagramDefinition> All { get; } = definitions;
-    }
 
-    private sealed class TestValidator(
-        DiagramOrigin origin, IReadOnlyList<DiagramProblem> problems, bool throwing, bool hanging) : IDiagramValidator
-    {
-        private int _calls;
-
-        public DiagramOrigin Origin { get; } = origin;
-        public int Calls => _calls;
-        public TaskCompletionSource? Hold { get; set; }
-
-        public async ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
-            string document, string baseName, CancellationToken cancellationToken)
-        {
-            Interlocked.Increment(ref _calls);
-            if (Hold is not null)
-            {
-                await Hold.Task;
-            }
-            if (throwing)
-            {
-                throw new InvalidOperationException("This module is broken.");
-            }
-            if (hanging)
-            {
-                await Task.Delay(Timeout.InfiniteTimeSpan, CancellationToken.None);
-            }
-            return problems;
-        }
-    }
 }

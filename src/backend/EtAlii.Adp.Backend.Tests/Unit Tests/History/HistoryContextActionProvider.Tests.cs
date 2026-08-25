@@ -113,7 +113,7 @@ public class HistoryContextActionProviderTests : IDisposable
 
         var result = await _provider.ExecuteAsync(ProjectTarget(), HistoryContextActionProvider.UndoActionId, TestContext.Current.CancellationToken);
 
-        Assert.IsType<ContextExecutionResult.Completed>(result);
+        Assert.IsType<ContextExecutionCompleted>(result);
         Assert.True(File.Exists(IoPath.Combine(_root, "before.txt")));
         Assert.False(File.Exists(IoPath.Combine(_root, "after.txt")));
     }
@@ -126,7 +126,7 @@ public class HistoryContextActionProviderTests : IDisposable
 
         var result = await _provider.ExecuteAsync(ProjectTarget(), HistoryContextActionProvider.RedoActionId, TestContext.Current.CancellationToken);
 
-        Assert.IsType<ContextExecutionResult.Completed>(result);
+        Assert.IsType<ContextExecutionCompleted>(result);
         Assert.True(File.Exists(IoPath.Combine(_root, "after.txt")));
         Assert.False(File.Exists(IoPath.Combine(_root, "before.txt")));
     }
@@ -136,7 +136,7 @@ public class HistoryContextActionProviderTests : IDisposable
     {
         var result = await _provider.ExecuteAsync(ProjectTarget(), HistoryContextActionProvider.UndoActionId, TestContext.Current.CancellationToken);
 
-        Assert.IsType<ContextExecutionResult.Failed>(result);
+        Assert.IsType<ContextExecutionFailed>(result);
     }
 
     [Fact]
@@ -144,7 +144,7 @@ public class HistoryContextActionProviderTests : IDisposable
     {
         var result = await _provider.ExecuteAsync(ProjectTarget(), "history.something-else", TestContext.Current.CancellationToken);
 
-        var failed = Assert.IsType<ContextExecutionResult.Failed>(result);
+        var failed = Assert.IsType<ContextExecutionFailed>(result);
         Assert.Contains("Unknown action", failed.Message, StringComparison.Ordinal);
     }
 

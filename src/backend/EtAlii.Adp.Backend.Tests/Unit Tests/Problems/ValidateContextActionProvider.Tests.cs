@@ -25,7 +25,7 @@ public class ValidateContextActionProviderTests : IDisposable
         var scratch = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         _root = IoPath.Combine(scratch, "project");
         Directory.CreateDirectory(_root);
-        var router = new DiagramFileRouter(new TestCatalog([MindmapDefinition]));
+        var router = new DiagramFileRouter(new TestDiagramDefinitionCatalog([MindmapDefinition]));
         var validators = new DiagramValidators([]);
         _store = new ProblemStore(IoPath.Combine(scratch, "appdata"), router, validators, writeDelay: TimeSpan.FromMinutes(5));
         _projectValidator = new ProjectValidator(router, validators);
@@ -100,7 +100,7 @@ public class ValidateContextActionProviderTests : IDisposable
 
         var result = await _provider.ExecuteAsync(FileTarget(IoPath.Combine(_root, "strange.adp")), ValidateContextActionProvider.ValidateActionId, TestContext.Current.CancellationToken);
 
-        Assert.IsType<ContextExecutionResult.Completed>(result);
+        Assert.IsType<ContextExecutionCompleted>(result);
         var set = _store.Get(_root);
         Assert.Equal(ProjectProblemSetState.Validated, set.State);
         Assert.Equal("core.unknown-type", Assert.Single(set.Problems).Problem.RuleId);
@@ -143,7 +143,7 @@ public class ValidateContextActionProviderTests : IDisposable
     {
         var result = await _provider.ExecuteAsync(FileTarget(IoPath.Combine(_root, "gone.adp")), ValidateContextActionProvider.ValidateActionId, TestContext.Current.CancellationToken);
 
-        Assert.IsType<ContextExecutionResult.Failed>(result);
+        Assert.IsType<ContextExecutionFailed>(result);
         Assert.Equal(ProjectProblemSetState.NeverValidated, _store.Get(_root).State);
     }
 
@@ -169,7 +169,7 @@ public class ValidateContextActionProviderTests : IDisposable
 
         var result = await _validateAll.ExecuteAsync(PanelTarget(), ValidateAllContextActionProvider.ValidateAllActionId, TestContext.Current.CancellationToken);
 
-        Assert.IsType<ContextExecutionResult.Completed>(result);
+        Assert.IsType<ContextExecutionCompleted>(result);
         var set = _store.Get(_root);
         Assert.Equal(ProjectProblemSetState.Validated, set.State);
         Assert.Equal(1, set.ErrorCount);
@@ -178,9 +178,9 @@ public class ValidateContextActionProviderTests : IDisposable
     [Fact]
     public async Task NeitherProvider_AnswersAnUnknownActionId()
     {
-        Assert.IsType<ContextExecutionResult.Failed>(
+        Assert.IsType<ContextExecutionFailed>(
             await _provider.ExecuteAsync(RootTarget(), "problems.other", TestContext.Current.CancellationToken));
-        Assert.IsType<ContextExecutionResult.Failed>(
+        Assert.IsType<ContextExecutionFailed>(
             await _validateAll.ExecuteAsync(PanelTarget(), "problems.other", TestContext.Current.CancellationToken));
     }
 
@@ -207,8 +207,4 @@ public class ValidateContextActionProviderTests : IDisposable
     private ContextTarget PanelTarget() =>
         new(ContextScope.ProblemsPanel, _root, IsContainer: false, SourceId: default, RootPath: _root);
 
-    private sealed class TestCatalog(IReadOnlyList<DiagramDefinition> definitions) : IDiagramDefinitionCatalog
-    {
-        public IReadOnlyList<DiagramDefinition> All { get; } = definitions;
-    }
 }

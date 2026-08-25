@@ -147,7 +147,7 @@ public sealed class HierarchyModel
     public void NotifyRootUnavailable(string message)
     {
         _logger.Warning("Telling the client that {RootPath} is unavailable: {Reason}", _rootPath, message);
-        EntryChanged?.Invoke(new HierarchyEntryChange.RootUnavailable(message));
+        EntryChanged?.Invoke(new HierarchyRootUnavailable(message));
     }
 
     /// <summary>
@@ -215,7 +215,7 @@ public sealed class HierarchyModel
 
         var isFolder = Directory.Exists(path);
         var node = AddEntry(parentId, IoPath.GetFileName(path), isFolder, path);
-        EntryChanged?.Invoke(new HierarchyEntryChange.Created(node));
+        EntryChanged?.Invoke(new HierarchyEntryCreated(node));
     }
 
     private void OnRemoved(string path)
@@ -235,12 +235,12 @@ public sealed class HierarchyModel
         }
 
         RemoveSubtree(id);
-        EntryChanged?.Invoke(new HierarchyEntryChange.Removed(id));
+        EntryChanged?.Invoke(new HierarchyEntryRemoved(id));
     }
 
     /// <summary>
     /// Refreshes an already-known folder's <see cref="EntryNode.HasChildren"/> against
-    /// current disk state and pushes an <see cref="HierarchyEntryChange.Updated"/> if it
+    /// current disk state and pushes an <see cref="HierarchyEntryUpdated"/> if it
     /// changed. A no-op for the root (it has no <see cref="EntryNode"/> of its own - the
     /// explorer's root level is always expanded) or a folder this connection doesn't know
     /// as an entry at all yet.
@@ -265,7 +265,7 @@ public sealed class HierarchyModel
         }
 
         _entriesById[folderId] = entry with { HasChildren = hasChildren };
-        EntryChanged?.Invoke(new HierarchyEntryChange.Updated(folderId, hasChildren));
+        EntryChanged?.Invoke(new HierarchyEntryUpdated(folderId, hasChildren));
     }
 
     private static bool SafeHasAnyChild(string path)
@@ -290,7 +290,7 @@ public sealed class HierarchyModel
         var newName = IoPath.GetFileName(newPath);
         RenumberPath(id, oldPath, newPath);
         _entriesById[id] = _entriesById[id] with { Name = newName };
-        EntryChanged?.Invoke(new HierarchyEntryChange.Renamed(id, newName));
+        EntryChanged?.Invoke(new HierarchyEntryRenamed(id, newName));
     }
 
     private IReadOnlyList<EntryNode> SyncFolder(ShortGuid? folderId, bool raiseEvents)
@@ -364,7 +364,7 @@ public sealed class HierarchyModel
 
                 if (raiseEvents)
                 {
-                    EntryChanged?.Invoke(new HierarchyEntryChange.Created(node));
+                    EntryChanged?.Invoke(new HierarchyEntryCreated(node));
                 }
             }
         }
@@ -377,7 +377,7 @@ public sealed class HierarchyModel
             RemoveSubtree(staleId);
             if (raiseEvents)
             {
-                EntryChanged?.Invoke(new HierarchyEntryChange.Removed(staleId));
+                EntryChanged?.Invoke(new HierarchyEntryRemoved(staleId));
             }
         }
 

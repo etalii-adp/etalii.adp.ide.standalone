@@ -85,7 +85,7 @@ public class MindmapContextActionProviderTests : IDisposable
     [Fact]
     public async Task Execute_Rename_AsksWithTheCurrentText()
     {
-        var result = Assert.IsType<ContextExecutionResult.RequiresInput>(await Execute("ID_88117422", MindmapContextActionProvider.RenameActionId));
+        var result = Assert.IsType<ContextExecutionRequiresInput>(await Execute("ID_88117422", MindmapContextActionProvider.RenameActionId));
 
         Assert.Equal("ICommand", result.Request.InitialValue);
     }
@@ -95,7 +95,7 @@ public class MindmapContextActionProviderTests : IDisposable
     {
         var result = await Execute("ID_88117422", MindmapContextActionProvider.DeleteActionId);
 
-        Assert.IsType<ContextExecutionResult.Completed>(result);
+        Assert.IsType<ContextExecutionCompleted>(result);
         Assert.Null(_project.Document.Find("ID_88117422"));
         Assert.True(_project.History.CanUndo);
     }
@@ -103,7 +103,7 @@ public class MindmapContextActionProviderTests : IDisposable
     [Fact]
     public async Task Execute_DeleteOnABranch_AsksFirst_NamingWhatGoes()
     {
-        var result = Assert.IsType<ContextExecutionResult.RequiresConfirmation>(await Execute("ID_411002937", MindmapContextActionProvider.DeleteActionId));
+        var result = Assert.IsType<ContextExecutionRequiresConfirmation>(await Execute("ID_411002937", MindmapContextActionProvider.DeleteActionId));
 
         Assert.Contains("9 nodes", result.Request.Message, StringComparison.Ordinal);
         Assert.True(result.Request.Danger);
@@ -138,7 +138,7 @@ public class MindmapContextActionProviderTests : IDisposable
     {
         var result = await Execute("ID_88117420", MindmapContextActionProvider.UnlinkActionId);
 
-        Assert.IsType<ContextExecutionResult.Completed>(result);
+        Assert.IsType<ContextExecutionCompleted>(result);
         Assert.Null(_project.Document.Find("ID_88117420")!.Link);
 
         await _project.History.UndoAsync(TestContext.Current.CancellationToken);
@@ -150,7 +150,7 @@ public class MindmapContextActionProviderTests : IDisposable
     {
         File.WriteAllText(IoPath.Combine(_project.Root, "README.md"), "");
 
-        var result = Assert.IsType<ContextExecutionResult.RequiresChoice>(await Execute("ID_88117422", MindmapContextActionProvider.LinkActionId));
+        var result = Assert.IsType<ContextExecutionRequiresChoice>(await Execute("ID_88117422", MindmapContextActionProvider.LinkActionId));
 
         Assert.Contains(result.Request.Options, option => option.Id == "README.md" && option.Selectable);
         var docs = Assert.Single(result.Request.Options, option => option.Id == "docs");

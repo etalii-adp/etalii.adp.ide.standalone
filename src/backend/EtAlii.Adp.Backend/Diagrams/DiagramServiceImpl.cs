@@ -197,7 +197,7 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
 
         // The root is passed so a registration naming a shared body resolves to it, and so a
         // body: header pointing outside the project is refused (c4-diagrams Requirement 2.4).
-        if (_router.Route(full, rootPath) is not DiagramRouting.Routed routed)
+        if (_router.Route(full, rootPath) is not DiagramRouted routed)
         {
             return false;
         }
@@ -217,10 +217,10 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
 
     private static Delta ToProto(DiagramDelta delta) => delta switch
     {
-        DiagramDelta.Add add => new Delta { Add = new Add { Elements = { add.Elements.Select(ToProto) } } },
-        DiagramDelta.Remove remove => new Delta { Remove = new Remove { ElementIds = { remove.ElementIds.Select(id => new ElementId { Value = id }) } } },
-        DiagramDelta.Group group => new Delta { Group = new Group { SourceElementIds = { group.SourceElementIds.Select(id => new ElementId { Value = id }) }, GroupElement = ToProto(group.GroupElement) } },
-        DiagramDelta.Ungroup ungroup => new Delta { Ungroup = new Ungroup { GroupElementId = new ElementId { Value = ungroup.GroupElementId }, Elements = { ungroup.Elements.Select(ToProto) } } },
+        DiagramAddDelta add => new Delta { Add = new Add { Elements = { add.Elements.Select(ToProto) } } },
+        DiagramRemoveDelta remove => new Delta { Remove = new Remove { ElementIds = { remove.ElementIds.Select(id => new ElementId { Value = id }) } } },
+        DiagramGroupDelta group => new Delta { Group = new Group { SourceElementIds = { group.SourceElementIds.Select(id => new ElementId { Value = id }) }, GroupElement = ToProto(group.GroupElement) } },
+        DiagramUngroupDelta ungroup => new Delta { Ungroup = new Ungroup { GroupElementId = new ElementId { Value = ungroup.GroupElementId }, Elements = { ungroup.Elements.Select(ToProto) } } },
         _ => throw new ArgumentOutOfRangeException(nameof(delta)),
     };
 

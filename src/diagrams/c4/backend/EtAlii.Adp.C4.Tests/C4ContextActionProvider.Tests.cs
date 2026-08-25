@@ -112,7 +112,7 @@ public class C4ContextActionProviderTests : IDisposable
     {
         var result = await _provider.ExecuteAsync(TargetFor("web"), C4ContextActionProvider.RenameActionId, TestContext.Current.CancellationToken);
 
-        var input = Assert.IsType<ContextExecutionResult.RequiresInput>(result);
+        var input = Assert.IsType<ContextExecutionRequiresInput>(result);
         Assert.Equal("Web", input.Request.InitialValue);
     }
 
@@ -165,7 +165,7 @@ public class C4ContextActionProviderTests : IDisposable
         var result = await _provider.ExecuteAsync(
             TargetFor(relationshipId), C4ContextActionProvider.SetTechnologyActionId, TestContext.Current.CancellationToken);
 
-        var failed = Assert.IsType<ContextExecutionResult.Failed>(result);
+        var failed = Assert.IsType<ContextExecutionFailed>(result);
         Assert.Contains("does not apply", failed.Message, StringComparison.OrdinalIgnoreCase);
     }
 }

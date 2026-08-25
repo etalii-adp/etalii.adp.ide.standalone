@@ -30,8 +30,8 @@ public sealed class ProblemMaintenance : IDisposable
     private readonly IProblemStore _store;
     private readonly ProjectValidator _validator;
     private readonly DiagramFileRouter _router;
-    private readonly TimeSpan _settleDelay;
-    private readonly ConcurrentDictionary<string, TrackedRoot> _tracked = new(StringComparer.OrdinalIgnoreCase);
+    internal readonly TimeSpan _settleDelay;
+    private readonly ConcurrentDictionary<string, TrackedProblemRoot> _tracked = new(StringComparer.OrdinalIgnoreCase);
 
     public ProblemMaintenance(IProblemStore store, ProjectValidator validator, DiagramFileRouter router, TimeSpan? settleDelay = null)
     {
@@ -58,7 +58,7 @@ public sealed class ProblemMaintenance : IDisposable
         _tracked.GetOrAdd(root, key =>
         {
             _logger.Information("Keeping the problems of {RootPath} current", key);
-            return new TrackedRoot(key, this);
+            return new TrackedProblemRoot(key, this);
         });
     }
 
@@ -73,7 +73,7 @@ public sealed class ProblemMaintenance : IDisposable
 
     // ---- what one event means ----------------------------------------------------------
 
-    private void OnCreatedOrChanged(TrackedRoot root, string path)
+    internal void OnCreatedOrChanged(TrackedProblemRoot root, string path)
     {
         if (IsScratch(path) || Directory.Exists(path))
         {
@@ -82,7 +82,7 @@ public sealed class ProblemMaintenance : IDisposable
         root.Enqueue(path);
     }
 
-    private void OnDeleted(TrackedRoot root, string path)
+    internal void OnDeleted(TrackedProblemRoot root, string path)
     {
         if (IsScratch(path))
         {
@@ -101,7 +101,7 @@ public sealed class ProblemMaintenance : IDisposable
         }
     }
 
-    private void OnRenamed(TrackedRoot root, string oldPath, string newPath)
+    internal void OnRenamed(TrackedProblemRoot root, string oldPath, string newPath)
     {
         if (IsScratch(oldPath))
         {
@@ -119,7 +119,7 @@ public sealed class ProblemMaintenance : IDisposable
         _store.Move(root.Path, IoPath.GetRelativePath(root.Path, oldPath), IoPath.GetRelativePath(root.Path, newPath));
     }
 
-    private async Task RevalidateAsync(TrackedRoot root, IReadOnlyList<string> paths)
+    internal async Task RevalidateAsync(TrackedProblemRoot root, IReadOnlyList<string> paths)
     {
         foreach (var path in paths)
         {
@@ -137,7 +137,7 @@ public sealed class ProblemMaintenance : IDisposable
             var covered = new List<string> { relative };
             switch (_router.Route(path))
             {
-                case DiagramRouting.Routed routed:
+                case DiagramRouted routed:
                     if (routed.RegistrationPath is not null)
                     {
                         covered.Add(IoPath.GetRelativePath(root.Path, routed.RegistrationPath));
@@ -145,13 +145,13 @@ public sealed class ProblemMaintenance : IDisposable
                     covered.Add(IoPath.GetRelativePath(root.Path, routed.BodyPath));
                     break;
 
-                case DiagramRouting.NotADiagram when !HasProblemsFor(root.Path, relative):
+                case NotADiagram when !HasProblemsFor(root.Path, relative):
                     continue; // Not a diagram and never was one: nothing to say, nothing to clear.
             }
 
             // One file changed, one file's worth of work (Requirement 5.1): a File scope
             // routes and validates just this pair.
-            var outcome = await _validator.ValidateAsync(new ValidationScope.File(root.Path, relative), CancellationToken.None);
+            var outcome = await _validator.ValidateAsync(new FileValidationScope(root.Path, relative), CancellationToken.None);
             covered.AddRange(outcome.Problems.Select(problem => problem.RelativePath));
             _store.ReplaceFor(root.Path, covered.Distinct(StringComparer.OrdinalIgnoreCase).ToArray(), outcome.Problems);
         }
@@ -167,100 +167,4 @@ public sealed class ProblemMaintenance : IDisposable
                && name.EndsWith(AdpFileWriter.TempExtension, StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>One tracked project: its watcher, and the burst of paths waiting to settle.</summary>
-    private sealed class TrackedRoot : IDisposable
-    {
-        private readonly ProblemMaintenance _owner;
-        private readonly FileSystemWatcher _watcher;
-        private readonly Lock _gate = new();
-        private readonly HashSet<string> _pending = new(StringComparer.OrdinalIgnoreCase);
-        private Timer? _settleTimer;
-
-        public string Path { get; }
-
-        public TrackedRoot(string rootPath, ProblemMaintenance owner)
-        {
-            Path = rootPath;
-            _owner = owner;
-            _watcher = new FileSystemWatcher(rootPath)
-            {
-                IncludeSubdirectories = true,
-                // Unlike the hierarchy's watcher, content matters here: an edit that renames
-                // nothing still invalidates a verdict.
-                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite | NotifyFilters.Size,
-            };
-
-            // Guarded like RootFolderWatcher's dispatch: these run on the watcher's own
-            // thread, where an unhandled exception is the death of the process. One change
-            // that cannot be applied loses that change and says so.
-            _watcher.Created += (_, e) => Guarded(() => owner.OnCreatedOrChanged(this, e.FullPath), e.FullPath);
-            _watcher.Changed += (_, e) => Guarded(() => owner.OnCreatedOrChanged(this, e.FullPath), e.FullPath);
-            _watcher.Deleted += (_, e) => Guarded(() => owner.OnDeleted(this, e.FullPath), e.FullPath);
-            _watcher.Renamed += (_, e) => Guarded(() => owner.OnRenamed(this, e.OldFullPath, e.FullPath), e.FullPath);
-            _watcher.Error += (_, e) => _logger.Warning(e.GetException(), "The problem watcher for {RootPath} stumbled", rootPath);
-
-            _watcher.EnableRaisingEvents = true;
-        }
-
-        public void Enqueue(string path)
-        {
-            lock (_gate)
-            {
-                _pending.Add(path);
-                // Rapid changes coalesce: the timer starts over until the burst settles.
-                _settleTimer?.Dispose();
-                _settleTimer = new Timer(_ => Settle(), null, _owner._settleDelay, Timeout.InfiniteTimeSpan);
-            }
-        }
-
-        public void Dispose()
-        {
-            _watcher.Dispose();
-            lock (_gate)
-            {
-                _settleTimer?.Dispose();
-                _settleTimer = null;
-                _pending.Clear();
-            }
-        }
-
-        private void Settle()
-        {
-            string[] paths;
-            lock (_gate)
-            {
-                _settleTimer?.Dispose();
-                _settleTimer = null;
-                paths = _pending.ToArray();
-                _pending.Clear();
-            }
-            if (paths.Length == 0)
-            {
-                return;
-            }
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await _owner.RevalidateAsync(this, paths);
-                }
-                catch (Exception exception)
-                {
-                    _logger.Error(exception, "Re-validating {Count} changed files under {RootPath} failed; the next change tries again", paths.Length, Path);
-                }
-            });
-        }
-
-        private static void Guarded(Action apply, string path)
-        {
-            try
-            {
-                apply();
-            }
-            catch (Exception exception)
-            {
-                _logger.Error(exception, "Applying a watcher event for {Path} failed; the change is lost until the next validation", path);
-            }
-        }
-    }
 }

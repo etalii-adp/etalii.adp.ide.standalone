@@ -51,7 +51,7 @@ public sealed class C4Session : IDiagramSession
     public IReadOnlyList<DiagramDelta> Baseline()
     {
         var elements = Visible();
-        return elements.Count == 0 ? [] : [new DiagramDelta.Add(elements)];
+        return elements.Count == 0 ? [] : [new DiagramAddDelta(elements)];
     }
 
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
@@ -66,12 +66,12 @@ public sealed class C4Session : IDiagramSession
         var deltas = new List<DiagramDelta>();
         if (appeared.Length > 0)
         {
-            deltas.Add(new DiagramDelta.Add(appeared));
+            deltas.Add(new DiagramAddDelta(appeared));
         }
 
         if (removed.Length > 0)
         {
-            deltas.Add(new DiagramDelta.Remove(removed));
+            deltas.Add(new DiagramRemoveDelta(removed));
         }
 
         return deltas;
@@ -176,7 +176,7 @@ public sealed class C4Session : IDiagramSession
         var elements = Visible();
         if (elements.Count > 0)
         {
-            Changed?.Invoke(this, new DiagramDeltasEventArgs([new DiagramDelta.Add(elements)]));
+            Changed?.Invoke(this, new DiagramDeltasEventArgs([new DiagramAddDelta(elements)]));
         }
 
         _logger.Debug("Pushed {Count} elements to watch {WatchId} after {Path} changed", elements.Count, _watchId, args.Path);

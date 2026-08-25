@@ -15,8 +15,8 @@ public class ContextActionResolverTests
     [Fact]
     public async Task DiscoverAsync_ConsultsOnlyProvidersWhoseScopeMatches()
     {
-        var matching = new StubProvider(ContextScope.Hierarchy, "matching");
-        var other = new StubProvider(ContextScope.Unspecified, "other");
+        var matching = new ContextActionResolverStubProvider(ContextScope.Hierarchy, "matching");
+        var other = new ContextActionResolverStubProvider(ContextScope.Unspecified, "other");
         var resolver = new ContextActionResolver(new IContextActionProvider[] { matching, other });
 
         var groups = await resolver.DiscoverAsync(Target(), TestContext.Current.CancellationToken);
@@ -30,8 +30,8 @@ public class ContextActionResolverTests
     {
         var resolver = new ContextActionResolver(new IContextActionProvider[]
         {
-            new StubProvider(ContextScope.Hierarchy, "first"),
-            new StubProvider(ContextScope.Hierarchy, "second"),
+            new ContextActionResolverStubProvider(ContextScope.Hierarchy, "first"),
+            new ContextActionResolverStubProvider(ContextScope.Hierarchy, "second"),
         });
 
         var groups = await resolver.DiscoverAsync(Target(), TestContext.Current.CancellationToken);
@@ -54,10 +54,10 @@ public class ContextActionResolverTests
     [Fact]
     public async Task ResolveByActionIdAsync_FindsTheProviderOfferingThatAction()
     {
-        var second = new StubProvider(ContextScope.Hierarchy, "second");
+        var second = new ContextActionResolverStubProvider(ContextScope.Hierarchy, "second");
         var resolver = new ContextActionResolver(new IContextActionProvider[]
         {
-            new StubProvider(ContextScope.Hierarchy, "first"),
+            new ContextActionResolverStubProvider(ContextScope.Hierarchy, "first"),
             second,
         });
 
@@ -71,7 +71,7 @@ public class ContextActionResolverTests
     [Fact]
     public async Task ResolveByActionIdAsync_ForAnActionNobodyOffers_ResolvesToNothing()
     {
-        var resolver = new ContextActionResolver(new IContextActionProvider[] { new StubProvider(ContextScope.Hierarchy, "known") });
+        var resolver = new ContextActionResolver(new IContextActionProvider[] { new ContextActionResolverStubProvider(ContextScope.Hierarchy, "known") });
 
         var owner = await resolver.ResolveByActionIdAsync(Target(), "unknown", TestContext.Current.CancellationToken);
 
@@ -83,8 +83,8 @@ public class ContextActionResolverTests
     {
         var resolver = new ContextActionResolver(new IContextActionProvider[]
         {
-            new StubProvider(ContextScope.Hierarchy, "plain", shortcut: new ContextShortcutDefinition("F2")),
-            new StubProvider(ContextScope.Hierarchy, "shifted", shortcut: new ContextShortcutDefinition("F2", Shift: true)),
+            new ContextActionResolverStubProvider(ContextScope.Hierarchy, "plain", shortcut: new ContextShortcutDefinition("F2")),
+            new ContextActionResolverStubProvider(ContextScope.Hierarchy, "shifted", shortcut: new ContextShortcutDefinition("F2", Shift: true)),
         });
 
         var owner = await resolver.ResolveByShortcutAsync(Target(), new ContextShortcutDefinition("F2", Shift: true), TestContext.Current.CancellationToken);
@@ -98,7 +98,7 @@ public class ContextActionResolverTests
     {
         var resolver = new ContextActionResolver(new IContextActionProvider[]
         {
-            new StubProvider(ContextScope.Hierarchy, "blocked", shortcut: new ContextShortcutDefinition("F2"), available: false),
+            new ContextActionResolverStubProvider(ContextScope.Hierarchy, "blocked", shortcut: new ContextShortcutDefinition("F2"), available: false),
         });
 
         var owner = await resolver.ResolveByShortcutAsync(Target(), new ContextShortcutDefinition("F2"), TestContext.Current.CancellationToken);
@@ -106,41 +106,4 @@ public class ContextActionResolverTests
         Assert.Null(owner);
     }
 
-    private sealed class StubProvider : IContextActionProvider
-    {
-        private readonly string _actionId;
-        private readonly ContextShortcutDefinition? _shortcut;
-        private readonly bool _available;
-
-        public StubProvider(ContextScope scope, string actionId, ContextShortcutDefinition? shortcut = null, bool available = true)
-        {
-            Scope = scope;
-            _actionId = actionId;
-            _shortcut = shortcut;
-            _available = available;
-        }
-
-        public ContextScope Scope { get; }
-
-        public bool WasConsulted { get; private set; }
-
-        public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
-        {
-            WasConsulted = true;
-            var group = new ContextActionGroupDefinition(new[]
-            {
-                new ContextActionDefinition(_actionId, _actionId, "mdi-circle", _shortcut, _available),
-            });
-            return ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>(new[] { group });
-        }
-
-        public ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionResult.Completed());
-
-        public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken) =>
-            ValueTask.FromResult(ContextValidationResult.Accepted);
-
-        public ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken) =>
-            ValueTask.FromResult(ContextCommitResult.Succeeded);
-    }
 }

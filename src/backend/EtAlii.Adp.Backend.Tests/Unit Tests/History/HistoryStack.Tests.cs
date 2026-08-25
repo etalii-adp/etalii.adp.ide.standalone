@@ -4,62 +4,10 @@ namespace EtAlii.Adp.Backend.Tests;
 
 public class HistoryStackTests
 {
-    /// <summary>A command that "sets" a value; its inverse sets the previous one back.</summary>
-    private sealed record SetCommand(string Value) : ICommand;
 
-    private sealed record FailingCommand(string Error) : ICommand;
-
-    /// <summary>
-    /// Applies <see cref="SetCommand"/>s to an in-memory value, recording the order every
-    /// command was seen in so tests can assert on what actually ran, not just on counts.
-    /// </summary>
-    private sealed class RecordingDispatcher : ICommandDispatcher
+    private static (HistoryStack Stack, HistoryStackRecordingDispatcher Dispatcher) CreateStack(int capacity = HistoryStack.DefaultCapacity)
     {
-        private readonly List<ICommand> _dispatched = [];
-
-        public IReadOnlyList<ICommand> Dispatched => _dispatched;
-
-        public string Value { get; private set; } = "initial";
-
-        /// <summary>Set to have the next dispatch of a <see cref="SetCommand"/> fail.</summary>
-        public string? FailNextWith { get; set; }
-
-        public Func<Task>? BeforeEachDispatch { get; set; }
-
-        public async Task<CommandResult> DispatchAsync(ICommand command, CancellationToken cancellationToken = default)
-        {
-            if (BeforeEachDispatch is not null)
-            {
-                await BeforeEachDispatch();
-            }
-
-            _dispatched.Add(command);
-
-            if (FailNextWith is { } error)
-            {
-                FailNextWith = null;
-                return CommandResult.Failure(error);
-            }
-
-            return command switch
-            {
-                SetCommand set => Apply(set),
-                FailingCommand failing => CommandResult.Failure(failing.Error),
-                _ => CommandResult.Success(),
-            };
-        }
-
-        private CommandResult Apply(SetCommand command)
-        {
-            var previous = Value;
-            Value = command.Value;
-            return CommandResult.Success(new SetCommand(previous));
-        }
-    }
-
-    private static (HistoryStack Stack, RecordingDispatcher Dispatcher) CreateStack(int capacity = HistoryStack.DefaultCapacity)
-    {
-        var dispatcher = new RecordingDispatcher();
+        var dispatcher = new HistoryStackRecordingDispatcher();
         return (new HistoryStack(dispatcher, capacity), dispatcher);
     }
 
@@ -76,7 +24,7 @@ public class HistoryStackTests
     [InlineData(-1)]
     public void Constructor_WithANonPositiveCapacity_Throws(int capacity)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new HistoryStack(new RecordingDispatcher(), capacity));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HistoryStack(new HistoryStackRecordingDispatcher(), capacity));
     }
 
     [Fact]
@@ -99,7 +47,7 @@ public class HistoryStackTests
         var (stack, dispatcher) = CreateStack();
         using var guard = stack;
 
-        var result = await stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken);
+        var result = await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Equal("a", dispatcher.Value);
@@ -113,8 +61,8 @@ public class HistoryStackTests
         var (stack, dispatcher) = CreateStack();
         using var guard = stack;
 
-        // The fallback branch of RecordingDispatcher returns Success() with no inverse.
-        var result = await stack.ExecuteAsync(new UnrecordedCommand(), TestContext.Current.CancellationToken);
+        // The fallback branch of HistoryStackRecordingDispatcher returns Success() with no inverse.
+        var result = await stack.ExecuteAsync(new HistoryStackUnrecordedCommand(), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Single(dispatcher.Dispatched);
@@ -127,7 +75,7 @@ public class HistoryStackTests
         var (stack, _) = CreateStack();
         using var guard = stack;
 
-        var result = await stack.ExecuteAsync(new FailingCommand("nope"), TestContext.Current.CancellationToken);
+        var result = await stack.ExecuteAsync(new HistoryStackFailingCommand("nope"), TestContext.Current.CancellationToken);
 
         Assert.False(result.IsSuccess);
         Assert.Equal("nope", result.Error);
@@ -163,7 +111,7 @@ public class HistoryStackTests
     {
         var (stack, dispatcher) = CreateStack();
         using var guard = stack;
-        await stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
 
         var result = await stack.UndoAsync(TestContext.Current.CancellationToken);
 
@@ -179,9 +127,9 @@ public class HistoryStackTests
     {
         var (stack, dispatcher) = CreateStack();
         using var guard = stack;
-        await stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken);
-        await stack.ExecuteAsync(new SetCommand("b"), TestContext.Current.CancellationToken);
-        await stack.ExecuteAsync(new SetCommand("c"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("b"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("c"), TestContext.Current.CancellationToken);
 
         await stack.UndoAsync(TestContext.Current.CancellationToken);
         Assert.Equal("b", dispatcher.Value);
@@ -200,7 +148,7 @@ public class HistoryStackTests
     {
         var (stack, dispatcher) = CreateStack();
         using var guard = stack;
-        await stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
 
         dispatcher.FailNextWith = "the file is locked";
         var failed = await stack.UndoAsync(TestContext.Current.CancellationToken);
@@ -224,7 +172,7 @@ public class HistoryStackTests
     {
         var (stack, _) = CreateStack();
         using var guard = stack;
-        await stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
 
         var result = await stack.RedoAsync(TestContext.Current.CancellationToken);
 
@@ -237,7 +185,7 @@ public class HistoryStackTests
     {
         var (stack, dispatcher) = CreateStack();
         using var guard = stack;
-        await stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
         await stack.UndoAsync(TestContext.Current.CancellationToken);
 
         var result = await stack.RedoAsync(TestContext.Current.CancellationToken);
@@ -253,8 +201,8 @@ public class HistoryStackTests
     {
         var (stack, dispatcher) = CreateStack();
         using var guard = stack;
-        await stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken);
-        await stack.ExecuteAsync(new SetCommand("b"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("b"), TestContext.Current.CancellationToken);
 
         await stack.UndoAsync(TestContext.Current.CancellationToken);
         await stack.UndoAsync(TestContext.Current.CancellationToken);
@@ -276,7 +224,7 @@ public class HistoryStackTests
     {
         var (stack, dispatcher) = CreateStack();
         using var guard = stack;
-        await stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
         await stack.UndoAsync(TestContext.Current.CancellationToken);
 
         dispatcher.FailNextWith = "gone";
@@ -292,12 +240,12 @@ public class HistoryStackTests
     {
         var (stack, _) = CreateStack();
         using var guard = stack;
-        await stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken);
-        await stack.ExecuteAsync(new SetCommand("b"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("b"), TestContext.Current.CancellationToken);
         await stack.UndoAsync(TestContext.Current.CancellationToken);
         Assert.True(stack.CanRedo);
 
-        await stack.ExecuteAsync(new SetCommand("c"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("c"), TestContext.Current.CancellationToken);
 
         Assert.False(stack.CanRedo);
         Assert.Equal(0, stack.RedoCount);
@@ -309,10 +257,10 @@ public class HistoryStackTests
         // A rejected attempt changed nothing, so it must not cost the user their redo.
         var (stack, _) = CreateStack();
         using var guard = stack;
-        await stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
         await stack.UndoAsync(TestContext.Current.CancellationToken);
 
-        await stack.ExecuteAsync(new FailingCommand("nope"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackFailingCommand("nope"), TestContext.Current.CancellationToken);
 
         Assert.True(stack.CanRedo);
         Assert.Equal(1, stack.RedoCount);
@@ -326,9 +274,9 @@ public class HistoryStackTests
         var (stack, dispatcher) = CreateStack(capacity: 2);
         using var guard = stack;
 
-        await stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken);
-        await stack.ExecuteAsync(new SetCommand("b"), TestContext.Current.CancellationToken);
-        await stack.ExecuteAsync(new SetCommand("c"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("b"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("c"), TestContext.Current.CancellationToken);
 
         Assert.Equal(2, stack.UndoCount);
 
@@ -348,7 +296,7 @@ public class HistoryStackTests
 
         for (var i = 0; i < 50; i++)
         {
-            await stack.ExecuteAsync(new SetCommand($"v{i}"), TestContext.Current.CancellationToken);
+            await stack.ExecuteAsync(new HistoryStackSetCommand($"v{i}"), TestContext.Current.CancellationToken);
             Assert.True(stack.UndoCount <= 5);
         }
 
@@ -362,8 +310,8 @@ public class HistoryStackTests
     {
         var (stack, dispatcher) = CreateStack();
         using var guard = stack;
-        await stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken);
-        await stack.ExecuteAsync(new SetCommand("b"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("b"), TestContext.Current.CancellationToken);
         await stack.UndoAsync(TestContext.Current.CancellationToken);
 
         stack.Clear();
@@ -397,7 +345,7 @@ public class HistoryStackTests
         };
 
         await Task.WhenAll(Enumerable.Range(0, 20)
-            .Select(i => stack.ExecuteAsync(new SetCommand($"v{i}"), TestContext.Current.CancellationToken)));
+            .Select(i => stack.ExecuteAsync(new HistoryStackSetCommand($"v{i}"), TestContext.Current.CancellationToken)));
 
         Assert.False(overlapDetected);
         Assert.Equal(20, stack.UndoCount);
@@ -410,12 +358,12 @@ public class HistoryStackTests
         using var guard = stack;
         for (var i = 0; i < 10; i++)
         {
-            await stack.ExecuteAsync(new SetCommand($"seed{i}"), TestContext.Current.CancellationToken);
+            await stack.ExecuteAsync(new HistoryStackSetCommand($"seed{i}"), TestContext.Current.CancellationToken);
         }
 
         var operations = Enumerable.Range(0, 10)
             .Select<int, Task>(i => i % 2 == 0
-                ? stack.ExecuteAsync(new SetCommand($"more{i}"), TestContext.Current.CancellationToken)
+                ? stack.ExecuteAsync(new HistoryStackSetCommand($"more{i}"), TestContext.Current.CancellationToken)
                 : stack.UndoAsync(TestContext.Current.CancellationToken));
 
         await Task.WhenAll(operations);
@@ -435,7 +383,7 @@ public class HistoryStackTests
         var (stack, _) = CreateStack();
         stack.Dispose();
 
-        await Assert.ThrowsAsync<ObjectDisposedException>(() => stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken));
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken));
         await Assert.ThrowsAsync<ObjectDisposedException>(() => stack.UndoAsync(TestContext.Current.CancellationToken));
         await Assert.ThrowsAsync<ObjectDisposedException>(() => stack.RedoAsync(TestContext.Current.CancellationToken));
         Assert.Throws<ObjectDisposedException>(() => stack.Clear());
@@ -470,7 +418,7 @@ public class HistoryStackTests
         AssertAgrees(); // empty
         Assert.Equal(new HistoryAvailability(false, false, 0, 0), stack.Availability);
 
-        await stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
         AssertAgrees();
         Assert.Equal(new HistoryAvailability(true, false, 1, 0), stack.Availability);
 
@@ -493,7 +441,7 @@ public class HistoryStackTests
         var changed = 0;
         stack.Changed += (_, _) => changed++;
 
-        await stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
         Assert.Equal(1, changed);
 
         await stack.UndoAsync(TestContext.Current.CancellationToken);
@@ -511,7 +459,7 @@ public class HistoryStackTests
         var changed = 0;
         stack.Changed += (_, _) => changed++;
 
-        await stack.ExecuteAsync(new FailingCommand("nope"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackFailingCommand("nope"), TestContext.Current.CancellationToken);
 
         Assert.Equal(0, changed);
     }
@@ -525,7 +473,7 @@ public class HistoryStackTests
         var changed = 0;
         stack.Changed += (_, _) => changed++;
 
-        await stack.ExecuteAsync(new UnrecordedCommand(), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackUnrecordedCommand(), TestContext.Current.CancellationToken);
 
         Assert.Equal(0, changed);
     }
@@ -535,7 +483,7 @@ public class HistoryStackTests
     {
         var (stack, dispatcher) = CreateStack();
         using var guard = stack;
-        await stack.ExecuteAsync(new SetCommand("a"), TestContext.Current.CancellationToken);
+        await stack.ExecuteAsync(new HistoryStackSetCommand("a"), TestContext.Current.CancellationToken);
 
         var changed = 0;
         stack.Changed += (_, _) => changed++;
@@ -548,5 +496,4 @@ public class HistoryStackTests
         Assert.Equal(0, changed);
     }
 
-    private sealed record UnrecordedCommand : ICommand;
 }

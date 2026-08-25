@@ -30,7 +30,7 @@ internal sealed class AddSiblingNodeCommandHandler(IMindmapDocumentStore documen
 
         var added = document.AddSibling(sibling, command.Text);
         added.SetId(command.NodeId);
-        Documents.Save(command.BodyPath, MindmapChange.StructureChanged.Nothing);
+        Documents.Save(command.BodyPath, MindmapStructureChanged.Nothing);
 
         return Task.FromResult(CommandResult.Success(new RemoveNodeCommand(command.BodyPath, command.NodeId)));
     }

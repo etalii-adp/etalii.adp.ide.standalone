@@ -73,7 +73,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
 
         var result = await ResolveAsync(id);
 
-        var level = Assert.IsType<ContextLevelResolution.Resolved>(result).Level;
+        var level = Assert.IsType<ResolvedContextLevel>(result).Level;
         Assert.Equal(new[] { "docs", "design.mm" }, level.RelativePath);
         Assert.Equal(EntryKind.File, level.Detail.Entry.Kind);
         Assert.True(level.Detail.Entry.Available);
@@ -89,7 +89,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
 
         var result = await ResolveAsync(IdOf("a.txt"), ["a.txt"]);
 
-        Assert.IsType<ContextLevelResolution.Resolved>(result);
+        Assert.IsType<ResolvedContextLevel>(result);
     }
 
     [Fact]
@@ -99,7 +99,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
 
         var result = await ResolveAsync(IdOf("a.txt"), ["b.txt"]);
 
-        Assert.IsType<ContextLevelResolution.Rejected>(result);
+        Assert.IsType<RejectedContextLevel>(result);
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
     {
         var result = await ResolveAsync(ShortGuid.NewShortGuid());
 
-        Assert.IsType<ContextLevelResolution.Rejected>(result);
+        Assert.IsType<RejectedContextLevel>(result);
     }
 
     [Fact]
@@ -119,7 +119,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
 
         var result = await ResolveAsync(foreignId);
 
-        Assert.IsType<ContextLevelResolution.Rejected>(result);
+        Assert.IsType<RejectedContextLevel>(result);
     }
 
     [Fact]
@@ -127,8 +127,8 @@ public class HierarchyContextSourceResolverTests : IDisposable
     {
         CreateFolder("docs");
         CreateFile("a.txt");
-        var folder = Assert.IsType<ContextLevelResolution.Resolved>(await ResolveAsync(IdOf("docs"))).Level;
-        var file = Assert.IsType<ContextLevelResolution.Resolved>(await ResolveAsync(IdOf("a.txt"))).Level;
+        var folder = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("docs"))).Level;
+        var file = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("a.txt"))).Level;
 
         Assert.Equal(ContextNesting.Contained, _resolver.NestingOf(folder));
         Assert.Equal(ContextNesting.NotNestable, _resolver.NestingOf(file));
@@ -139,11 +139,11 @@ public class HierarchyContextSourceResolverTests : IDisposable
     {
         CreateFolder("docs");
         CreateFile("docs", "design.mm");
-        var parent = Assert.IsType<ContextLevelResolution.Resolved>(await ResolveAsync(IdOf("docs"))).Level;
+        var parent = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("docs"))).Level;
 
         var result = await ResolveAsync(IdOf("docs", "design.mm"), parent: parent);
 
-        var level = Assert.IsType<ContextLevelResolution.Resolved>(result).Level;
+        var level = Assert.IsType<ResolvedContextLevel>(result).Level;
         Assert.Equal(new[] { "design.mm" }, level.RelativePath);
     }
 
@@ -153,18 +153,18 @@ public class HierarchyContextSourceResolverTests : IDisposable
         CreateFolder("docs");
         CreateFolder("src");
         CreateFile("src", "a.cs");
-        var parent = Assert.IsType<ContextLevelResolution.Resolved>(await ResolveAsync(IdOf("docs"))).Level;
+        var parent = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("docs"))).Level;
 
         var result = await ResolveAsync(IdOf("src", "a.cs"), parent: parent);
 
-        Assert.IsType<ContextLevelResolution.Rejected>(result);
+        Assert.IsType<RejectedContextLevel>(result);
     }
 
     [Fact]
     public async Task Track_RenameOfTheEntry_ReportsTheNewPath()
     {
         var file = CreateFile("a.txt");
-        var level = Assert.IsType<ContextLevelResolution.Resolved>(await ResolveAsync(IdOf("a.txt"))).Level;
+        var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("a.txt"))).Level;
         var reported = new List<IReadOnlyList<string>?>();
         using var track = _resolver.Track(_watchId, _root, level, reported.Add);
 
@@ -180,7 +180,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
     {
         var folder = CreateFolder("docs");
         CreateFile("docs", "design.mm");
-        var level = Assert.IsType<ContextLevelResolution.Resolved>(await ResolveAsync(IdOf("docs", "design.mm"))).Level;
+        var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("docs", "design.mm"))).Level;
         var reported = new List<IReadOnlyList<string>?>();
         using var track = _resolver.Track(_watchId, _root, level, reported.Add);
 
@@ -195,7 +195,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
     public async Task Track_DeleteOfTheEntry_ReportsNull()
     {
         var file = CreateFile("a.txt");
-        var level = Assert.IsType<ContextLevelResolution.Resolved>(await ResolveAsync(IdOf("a.txt"))).Level;
+        var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("a.txt"))).Level;
         var reported = new List<IReadOnlyList<string>?>();
         using var track = _resolver.Track(_watchId, _root, level, reported.Add);
 
@@ -209,7 +209,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
     public async Task Track_AfterDispose_ReportsNothing()
     {
         var file = CreateFile("a.txt");
-        var level = Assert.IsType<ContextLevelResolution.Resolved>(await ResolveAsync(IdOf("a.txt"))).Level;
+        var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("a.txt"))).Level;
         var reported = new List<IReadOnlyList<string>?>();
         var track = _resolver.Track(_watchId, _root, level, reported.Add);
         track.Dispose();
@@ -230,7 +230,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
         // path, on the watcher's thread, killing the whole backend process.
         var sibling = CreateFile("a.txt");
         var tracked = CreateFile("b.txt");
-        var level = Assert.IsType<ContextLevelResolution.Resolved>(await ResolveAsync(IdOf("b.txt"))).Level;
+        var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("b.txt"))).Level;
         var reported = new List<IReadOnlyList<string>?>();
         using var track = _resolver.Track(_watchId, _root, level, reported.Add);
 
@@ -258,13 +258,13 @@ public class HierarchyContextSourceResolverTests : IDisposable
 
     /// <summary>The resolver over a catalog that knows the given definitions, unlike the class's empty default.</summary>
     private HierarchyContextSourceResolver ResolverKnowing(params Diagram.DiagramDefinition[] definitions) =>
-        new(_store, new DiagramFileRouter(new KnownCatalog(definitions)));
+        new(_store, new DiagramFileRouter(new TestDiagramDefinitionCatalog(definitions)));
 
     private async Task<string> DiagramMimeOfAsync(HierarchyContextSourceResolver resolver, params string[] segments)
     {
         var result = await resolver.ResolveAsync(
             _watchId, _root, ContextSelectionSource.Explorer, Source(IdOf(segments)), [], null, TestContext.Current.CancellationToken);
-        return Assert.IsType<ContextLevelResolution.Resolved>(result).Level.Detail.Entry.DiagramMimeType;
+        return Assert.IsType<ResolvedContextLevel>(result).Level.Detail.Entry.DiagramMimeType;
     }
 
     [Fact]
@@ -314,8 +314,4 @@ public class HierarchyContextSourceResolverTests : IDisposable
         Assert.Equal("", await DiagramMimeOfAsync(resolver, "docs"));
     }
 
-    private sealed class KnownCatalog(IReadOnlyList<Diagram.DiagramDefinition> definitions) : Diagram.IDiagramDefinitionCatalog
-    {
-        public IReadOnlyList<Diagram.DiagramDefinition> All { get; } = definitions;
-    }
 }

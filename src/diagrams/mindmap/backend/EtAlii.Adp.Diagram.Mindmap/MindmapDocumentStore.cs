@@ -73,7 +73,7 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
         }
 
         _documents[bodyPath] = Load(bodyPath);
-        Changed?.Invoke(this, new MindmapChangedEventArgs(bodyPath, new MindmapChange.Reloaded()));
+        Changed?.Invoke(this, new MindmapChangedEventArgs(bodyPath, new MindmapReloaded()));
     }
 
     private MindmapDocument Load(string bodyPath)

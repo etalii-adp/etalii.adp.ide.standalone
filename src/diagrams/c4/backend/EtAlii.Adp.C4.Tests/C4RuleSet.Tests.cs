@@ -47,11 +47,11 @@ public class C4RuleSetTests
     {
         var dsl = Clean.Replace("person \"User\" \"Someone who uses the system.\"", "person \"User\"", StringComparison.Ordinal);
 
-        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4RuleSet.Rules.MissingDescription);
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4Rules.MissingDescription);
         Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity);
         Assert.Contains("User", problem.Message, StringComparison.Ordinal);
         // Requirement 10.8: a problem names the element, so clicking it can select it.
-        Assert.Equal(new DiagramProblemLocation.ElementId("u"), problem.Location);
+        Assert.Equal(new DiagramProblemElementLocation("u"), problem.Location);
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public class C4RuleSetTests
     {
         var dsl = Clean.Replace("container \"Web App\" \"Serves pages.\" \"React\"", "container \"Web App\" \"Serves pages.\"", StringComparison.Ordinal);
 
-        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4RuleSet.Rules.MissingTechnology);
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4Rules.MissingTechnology);
         Assert.Contains("technology", problem.Message, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -78,7 +78,7 @@ public class C4RuleSetTests
             }
             """;
 
-        Assert.Contains(C4RuleSet.Rules.MissingTechnology, RuleIds(dsl));
+        Assert.Contains(C4Rules.MissingTechnology, RuleIds(dsl));
     }
 
     [Fact]
@@ -86,7 +86,7 @@ public class C4RuleSetTests
     {
         // C4 asks for a technology on containers and components. A person does not have one,
         // and reporting it would be noise that teaches users to ignore the panel.
-        Assert.DoesNotContain(C4RuleSet.Rules.MissingTechnology, RuleIds(Clean));
+        Assert.DoesNotContain(C4Rules.MissingTechnology, RuleIds(Clean));
     }
 
     [Fact]
@@ -94,8 +94,8 @@ public class C4RuleSetTests
     {
         var dsl = Clean.Replace("u -> web \"Visits\" \"HTTPS\"", "u -> web", StringComparison.Ordinal);
 
-        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4RuleSet.Rules.UnlabelledRelationship);
-        Assert.IsType<DiagramProblemLocation.Line>(problem.Location);
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4Rules.UnlabelledRelationship);
+        Assert.IsType<DiagramProblemLineLocation>(problem.Location);
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public class C4RuleSetTests
     {
         var dsl = Clean.Replace("web -> db \"Reads from and writes to\" \"SQL/TCP\"", "web -> db \"Reads from and writes to\"", StringComparison.Ordinal);
 
-        Assert.Contains(C4RuleSet.Rules.MissingProtocol, RuleIds(dsl));
+        Assert.Contains(C4Rules.MissingProtocol, RuleIds(dsl));
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public class C4RuleSetTests
         // A person does not speak a protocol; the rule is about how containers communicate.
         var dsl = Clean.Replace("u -> web \"Visits\" \"HTTPS\"", "u -> web \"Visits\"", StringComparison.Ordinal);
 
-        Assert.DoesNotContain(C4RuleSet.Rules.MissingProtocol, RuleIds(dsl));
+        Assert.DoesNotContain(C4Rules.MissingProtocol, RuleIds(dsl));
     }
 
     [Fact]
@@ -120,7 +120,7 @@ public class C4RuleSetTests
     {
         var dsl = Clean.Replace("u -> web \"Visits\" \"HTTPS\"", "u -> ghost \"Visits\" \"HTTPS\"", StringComparison.Ordinal);
 
-        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4RuleSet.Rules.DanglingRelationship);
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4Rules.DanglingRelationship);
         Assert.Contains("ghost", problem.Message, StringComparison.Ordinal);
     }
 
@@ -143,9 +143,9 @@ public class C4RuleSetTests
             }
             """;
 
-        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4RuleSet.Rules.KindNotPermitted);
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4Rules.KindNotPermitted);
         Assert.Contains("container", problem.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(new DiagramProblemLocation.ElementId("web"), problem.Location);
+        Assert.Equal(new DiagramProblemElementLocation("web"), problem.Location);
     }
 
     [Fact]
@@ -166,7 +166,7 @@ public class C4RuleSetTests
             }
             """;
 
-        Assert.DoesNotContain(C4RuleSet.Rules.KindNotPermitted, RuleIds(dsl));
+        Assert.DoesNotContain(C4Rules.KindNotPermitted, RuleIds(dsl));
     }
 
     [Fact]
@@ -192,7 +192,7 @@ public class C4RuleSetTests
             }
             """;
 
-        Assert.Contains(C4RuleSet.Rules.MixedAbstractionLevels, RuleIds(dsl));
+        Assert.Contains(C4Rules.MixedAbstractionLevels, RuleIds(dsl));
     }
 
     [Fact]
@@ -213,7 +213,7 @@ public class C4RuleSetTests
             }
             """;
 
-        Assert.DoesNotContain(C4RuleSet.Rules.MixedAbstractionLevels, RuleIds(dsl));
+        Assert.DoesNotContain(C4Rules.MixedAbstractionLevels, RuleIds(dsl));
     }
 
     [Fact]
@@ -221,7 +221,7 @@ public class C4RuleSetTests
     {
         var dsl = Clean.Replace("systemContext s \"context\"", "systemContext ghost \"context\"", StringComparison.Ordinal);
 
-        Assert.Contains(C4RuleSet.Rules.UnknownViewScope, RuleIds(dsl));
+        Assert.Contains(C4Rules.UnknownViewScope, RuleIds(dsl));
     }
 
     [Fact]
@@ -238,7 +238,7 @@ public class C4RuleSetTests
             }
             """;
 
-        Assert.Contains(C4RuleSet.Rules.EmptyView, RuleIds(dsl));
+        Assert.Contains(C4Rules.EmptyView, RuleIds(dsl));
     }
 
     [Fact]
@@ -255,9 +255,9 @@ public class C4RuleSetTests
             }
             """;
 
-        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4RuleSet.Rules.MisplacedElement);
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4Rules.MisplacedElement);
         Assert.Contains("part of a container", problem.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(new DiagramProblemLocation.ElementId("stray"), problem.Location);
+        Assert.Equal(new DiagramProblemElementLocation("stray"), problem.Location);
     }
 
     [Fact]
@@ -275,14 +275,14 @@ public class C4RuleSetTests
             }
             """;
 
-        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4RuleSet.Rules.MisplacedElement);
-        Assert.Equal(new DiagramProblemLocation.ElementId("inner"), problem.Location);
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4Rules.MisplacedElement);
+        Assert.Equal(new DiagramProblemElementLocation("inner"), problem.Location);
     }
 
     [Fact]
     public void ProperlyNestedElements_AreNotReported()
     {
-        Assert.DoesNotContain(C4RuleSet.Rules.MisplacedElement, RuleIds(Clean));
+        Assert.DoesNotContain(C4Rules.MisplacedElement, RuleIds(Clean));
     }
 
     [Fact]
@@ -299,7 +299,7 @@ public class C4RuleSetTests
             }
             """;
 
-        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4RuleSet.Rules.IncludeNotFollowed);
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4Rules.IncludeNotFollowed);
         Assert.Contains("shared/model.dsl", problem.Message, StringComparison.Ordinal);
         // The file itself is the subject, so there is no element or line to point at.
         Assert.Null(problem.Location);
@@ -308,7 +308,7 @@ public class C4RuleSetTests
     [Fact]
     public void ADocumentWithNoIncludes_IsNotReported()
     {
-        Assert.DoesNotContain(C4RuleSet.Rules.IncludeNotFollowed, RuleIds(Clean));
+        Assert.DoesNotContain(C4Rules.IncludeNotFollowed, RuleIds(Clean));
     }
 
     [Fact]

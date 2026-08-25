@@ -5,7 +5,6 @@ namespace EtAlii.Adp.Tests;
 
 public class ShortGuidJsonConverterTests
 {
-    private sealed record Wrapper(ShortGuid Id);
 
     [Fact]
     public void Serialize_WritesTheBase36StringForm()
@@ -37,10 +36,10 @@ public class ShortGuidJsonConverterTests
     [Fact]
     public void SerializeDeserialize_WhenEmbeddedInAnotherType_RoundTripsExactly()
     {
-        var wrapper = new Wrapper(ShortGuid.NewShortGuid());
+        var wrapper = new ShortGuidJsonConverterWrapper(ShortGuid.NewShortGuid());
 
         var json = JsonSerializer.Serialize(wrapper);
-        var result = JsonSerializer.Deserialize<Wrapper>(json);
+        var result = JsonSerializer.Deserialize<ShortGuidJsonConverterWrapper>(json);
 
         Assert.Equal(wrapper, result);
     }

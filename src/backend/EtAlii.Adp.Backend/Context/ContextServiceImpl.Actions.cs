@@ -75,13 +75,13 @@ public sealed partial class ContextServiceImpl
         }
 
         var execution = await owner.Provider.ExecuteAsync(target, owner.Action.Id, context.CancellationToken);
-        if (execution is ContextExecutionResult.Failed failed)
+        if (execution is ContextExecutionFailed failed)
         {
             _logger.Warning("Action {ActionId} on {TargetPath} failed: {Reason}", owner.Action.Id, target.ResolvedFullPath, failed.Message);
             return Rejected(failed.Message);
         }
 
-        if (execution is ContextExecutionResult.Completed)
+        if (execution is ContextExecutionCompleted)
         {
             _logger.Information("Action {ActionId} completed on {TargetPath}", owner.Action.Id, target.ResolvedFullPath);
             // The action may have changed what applies to the very same selection - a collapse
@@ -111,13 +111,13 @@ public sealed partial class ContextServiceImpl
         var prompt = new ContextPrompt { InteractionId = interactionId };
         switch (execution)
         {
-            case ContextExecutionResult.RequiresInput requiresInput:
+            case ContextExecutionRequiresInput requiresInput:
                 prompt.InputDialog = ToProto(requiresInput.Request);
                 break;
-            case ContextExecutionResult.RequiresConfirmation requiresConfirmation:
+            case ContextExecutionRequiresConfirmation requiresConfirmation:
                 prompt.ConfirmDialog = ToProto(requiresConfirmation.Request);
                 break;
-            case ContextExecutionResult.RequiresChoice requiresChoice:
+            case ContextExecutionRequiresChoice requiresChoice:
                 prompt.ChoiceDialog = ToProto(requiresChoice.Request);
                 break;
         }
@@ -305,13 +305,13 @@ public sealed partial class ContextServiceImpl
 
             var elementResolution = await _selectionResolver.ResolveLevelAsync(
                 watchId, rootPath, ContextSelectionSource.Unspecified, source, [], fileLevel, context.CancellationToken);
-            return elementResolution is ContextLevelResolution.Resolved resolvedElement ? resolvedElement.Level.Target : null;
+            return elementResolution is ResolvedContextLevel resolvedElement ? resolvedElement.Level.Target : null;
         }
 
         var resolution = await _selectionResolver.ResolveLevelAsync(
             watchId, rootPath, ContextSelectionSource.Unspecified, source, [], null, context.CancellationToken);
 
-        return resolution is ContextLevelResolution.Resolved resolved ? resolved.Level.Target : null;
+        return resolution is ResolvedContextLevel resolved ? resolved.Level.Target : null;
     }
 
     /// <summary>

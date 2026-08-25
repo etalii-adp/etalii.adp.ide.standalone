@@ -17,15 +17,15 @@ public class ProblemMaintenanceTests : IDisposable
     private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", ".mm");
 
     private readonly string _root;
-    private readonly RecordingStore _store = new();
-    private readonly CountingValidator _validator = new(Mindmap);
+    private readonly ProblemMaintenanceRecordingStore _store = new();
+    private readonly ProblemMaintenanceCountingValidator _validator = new(Mindmap);
     private readonly ProblemMaintenance _maintenance;
 
     public ProblemMaintenanceTests()
     {
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
-        var router = new DiagramFileRouter(new TestCatalog([MindmapDefinition]));
+        var router = new DiagramFileRouter(new TestDiagramDefinitionCatalog([MindmapDefinition]));
         var projectValidator = new ProjectValidator(router, new DiagramValidators([_validator]));
         _maintenance = new ProblemMaintenance(_store, projectValidator, router, SettleDelay);
     }
@@ -138,56 +138,4 @@ public class ProblemMaintenanceTests : IDisposable
         return default;
     }
 
-    private sealed class RecordingStore : IProblemStore
-    {
-        private readonly List<(string Kind, object Payload)> _mutations = [];
-
-        public event Action<string>? Changed { add { } remove { } }
-
-        public IReadOnlyList<(string Kind, object Payload)> Mutations
-        {
-            get { lock (_mutations) { return _mutations.ToArray(); } }
-        }
-
-        public ProjectProblemSet Get(string rootPath) => new(ProjectProblemSetState.NeverValidated, [], 0, 0, 0);
-
-        public void Replace(string rootPath, IReadOnlyList<StoredProblem> problems) => Record("Replace", problems);
-
-        public void ReplaceFor(string rootPath, IReadOnlyList<string> relativePaths, IReadOnlyList<StoredProblem> problems) =>
-            Record("ReplaceFor", relativePaths);
-
-        public void Remove(string rootPath, string relativePath) => Record("Remove", relativePath);
-
-        public void Move(string rootPath, string fromRelativePath, string toRelativePath) =>
-            Record("Move", (fromRelativePath, toRelativePath));
-
-        public void BeginValidating(string rootPath) { }
-
-        public IReadOnlyList<string> KnownRoots() => [];
-
-        private void Record(string kind, object payload)
-        {
-            lock (_mutations) { _mutations.Add((kind, payload)); }
-        }
-    }
-
-    private sealed class TestCatalog(IReadOnlyList<DiagramDefinition> definitions) : IDiagramDefinitionCatalog
-    {
-        public IReadOnlyList<DiagramDefinition> All { get; } = definitions;
-    }
-
-    private sealed class CountingValidator(DiagramOrigin origin) : IDiagramValidator
-    {
-        private int _calls;
-
-        public DiagramOrigin Origin { get; } = origin;
-        public int Calls => _calls;
-
-        public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
-            string document, string baseName, CancellationToken cancellationToken)
-        {
-            Interlocked.Increment(ref _calls);
-            return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>([]);
-        }
-    }
 }

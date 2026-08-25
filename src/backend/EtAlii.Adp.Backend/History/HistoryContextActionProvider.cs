@@ -52,7 +52,7 @@ public sealed class HistoryContextActionProvider : IContextActionProvider
             _ => CommandResult.Failure($"Unknown action '{actionId}'."),
         };
 
-        return result.IsSuccess ? new ContextExecutionResult.Completed() : new ContextExecutionResult.Failed(result.Error);
+        return result.IsSuccess ? new ContextExecutionCompleted() : new ContextExecutionFailed(result.Error);
     }
 
     // Neither action prompts, so these two are unreachable through the interaction flow;

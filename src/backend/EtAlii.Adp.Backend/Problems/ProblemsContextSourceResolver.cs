@@ -13,7 +13,7 @@ namespace EtAlii.Adp.Backend.Problems;
 /// </remarks>
 public sealed class ProblemsContextSourceResolver : IContextSourceResolver
 {
-    private static readonly NoTracking Untracked = new();
+    private static readonly NoProblemTracking Untracked = new();
 
     public bool CanResolve(ContextSource source) => source.SourceCase == ContextSource.SourceOneofCase.Problems;
 
@@ -28,22 +28,16 @@ public sealed class ProblemsContextSourceResolver : IContextSourceResolver
     {
         if (parent is not null)
         {
-            return ValueTask.FromResult<ContextLevelResolution>(new ContextLevelResolution.Rejected("The problems panel nests under nothing."));
+            return ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel("The problems panel nests under nothing."));
         }
 
         var target = new ContextTarget(ContextScope.ProblemsPanel, rootPath, IsContainer: false, SourceId: default, RootPath: rootPath, WatchId: watchId);
         var level = new ContextResolvedLevel(source, id, [], ContextScope.ProblemsPanel, target, new ContextLevelDetail(), this);
-        return ValueTask.FromResult<ContextLevelResolution>(new ContextLevelResolution.Resolved(level));
+        return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));
     }
 
     public ContextNesting NestingOf(ContextResolvedLevel level) => ContextNesting.NotNestable;
 
     public IDisposable Track(ShortGuid watchId, string rootPath, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange) => Untracked;
 
-    private sealed class NoTracking : IDisposable
-    {
-        public void Dispose()
-        {
-        }
-    }
 }

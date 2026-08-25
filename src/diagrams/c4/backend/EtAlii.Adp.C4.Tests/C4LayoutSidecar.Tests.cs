@@ -60,21 +60,21 @@ public class C4LayoutSidecarTests : IDisposable
     [Fact]
     public void APositionWritten_IsReadBack()
     {
-        _sidecar.Write(_bodyPath, "all", "a", new C4LayoutSidecar.Position(120, 340));
+        _sidecar.Write(_bodyPath, "all", "a", new C4SidecarPosition(120, 340));
 
         var positions = _sidecar.Read(_bodyPath, "all");
 
-        Assert.Equal(new C4LayoutSidecar.Position(120, 340), positions["a"]);
+        Assert.Equal(new C4SidecarPosition(120, 340), positions["a"]);
     }
 
     [Fact]
     public void PositionsAreKeptPerView_SoArrangingOneDoesNotMoveAnother()
     {
-        _sidecar.Write(_bodyPath, "all", "a", new C4LayoutSidecar.Position(10, 10));
-        _sidecar.Write(_bodyPath, "other", "a", new C4LayoutSidecar.Position(99, 99));
+        _sidecar.Write(_bodyPath, "all", "a", new C4SidecarPosition(10, 10));
+        _sidecar.Write(_bodyPath, "other", "a", new C4SidecarPosition(99, 99));
 
-        Assert.Equal(new C4LayoutSidecar.Position(10, 10), _sidecar.Read(_bodyPath, "all")["a"]);
-        Assert.Equal(new C4LayoutSidecar.Position(99, 99), _sidecar.Read(_bodyPath, "other")["a"]);
+        Assert.Equal(new C4SidecarPosition(10, 10), _sidecar.Read(_bodyPath, "all")["a"]);
+        Assert.Equal(new C4SidecarPosition(99, 99), _sidecar.Read(_bodyPath, "other")["a"]);
     }
 
     [Fact]
@@ -95,8 +95,8 @@ public class C4LayoutSidecarTests : IDisposable
     [Fact]
     public void Clear_ForgetsOneViewsPositions()
     {
-        _sidecar.Write(_bodyPath, "all", "a", new C4LayoutSidecar.Position(10, 10));
-        _sidecar.Write(_bodyPath, "other", "b", new C4LayoutSidecar.Position(20, 20));
+        _sidecar.Write(_bodyPath, "all", "a", new C4SidecarPosition(10, 10));
+        _sidecar.Write(_bodyPath, "other", "b", new C4SidecarPosition(20, 20));
 
         _sidecar.Clear(_bodyPath, "all");
 
@@ -111,7 +111,7 @@ public class C4LayoutSidecarTests : IDisposable
     {
         var (workspace, view) = Load();
         var computed = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default);
-        var authored = new Dictionary<string, C4LayoutSidecar.Position> { ["a"] = new(500, 600) };
+        var authored = new Dictionary<string, C4SidecarPosition> { ["a"] = new(500, 600) };
 
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default, authored);
 
@@ -126,7 +126,7 @@ public class C4LayoutSidecarTests : IDisposable
     {
         var (workspace, view) = Load();
         var computed = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default);
-        var authored = new Dictionary<string, C4LayoutSidecar.Position> { ["a"] = new(500, 600) };
+        var authored = new Dictionary<string, C4SidecarPosition> { ["a"] = new(500, 600) };
 
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default, authored);
 
@@ -140,7 +140,7 @@ public class C4LayoutSidecarTests : IDisposable
         // but the user is told rather than watching their arrangement vanish.
         var dsl = Model.Replace("include *", "include *\n            autoLayout lr", StringComparison.Ordinal);
         var (workspace, view) = Load(dsl);
-        var authored = new Dictionary<string, C4LayoutSidecar.Position> { ["a"] = new(500, 600) };
+        var authored = new Dictionary<string, C4SidecarPosition> { ["a"] = new(500, 600) };
 
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default, authored);
 
@@ -163,7 +163,7 @@ public class C4LayoutSidecarTests : IDisposable
     public void AnAuthoredPositionForSomethingNotOnTheView_IsIgnoredQuietly()
     {
         var (workspace, view) = Load();
-        var authored = new Dictionary<string, C4LayoutSidecar.Position> { ["ghost"] = new(500, 600) };
+        var authored = new Dictionary<string, C4SidecarPosition> { ["ghost"] = new(500, 600) };
 
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default, authored);
 

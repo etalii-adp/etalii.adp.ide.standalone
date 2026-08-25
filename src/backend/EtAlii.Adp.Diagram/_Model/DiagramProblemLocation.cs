@@ -5,13 +5,12 @@ namespace EtAlii.Adp.Diagram;
 /// element for a rule that judged the model, a line for one that judged the text. A problem
 /// with neither carries no location at all - the file itself is the subject.
 /// </summary>
+/// <remarks>
+/// The constructor is protected rather than private: the two cases live beside this record
+/// rather than inside it (tech.md's no-nested-types rule), so they cannot reach a private
+/// one. The set stays closed by convention and by the two records being sealed.
+/// </remarks>
 public abstract record DiagramProblemLocation
 {
-    private DiagramProblemLocation() { }
-
-    /// <summary>The problem sits on one diagram element, named by the module's own stable element id.</summary>
-    public sealed record ElementId(string Id) : DiagramProblemLocation;
-
-    /// <summary>The problem sits on one line of the document text, 1-based.</summary>
-    public sealed record Line(uint Number) : DiagramProblemLocation;
+    protected DiagramProblemLocation() { }
 }

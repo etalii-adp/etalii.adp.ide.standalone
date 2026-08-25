@@ -33,14 +33,14 @@ public class DiagramFileRouterTests : IDisposable
         return path;
     }
 
-    private static DiagramFileRouter Router(params DiagramDefinition[] definitions) => new(new Catalog(definitions));
+    private static DiagramFileRouter Router(params DiagramDefinition[] definitions) => new(new TestDiagramDefinitionCatalog(definitions));
 
     [Fact]
     public void Route_ARegistrationFile_ByItsFirstLine()
     {
         var adp = Write("domain.adp", "freeplane/mindmap\n");
 
-        var routed = Assert.IsType<DiagramRouting.Routed>(Router(Mindmap, ClassDiagram).Route(adp));
+        var routed = Assert.IsType<DiagramRouted>(Router(Mindmap, ClassDiagram).Route(adp));
 
         Assert.Same(Mindmap, routed.Definition);
         Assert.Equal(adp, routed.RegistrationPath);
@@ -52,7 +52,7 @@ public class DiagramFileRouterTests : IDisposable
     {
         var adp = Write("classes.adp", "uml/class\n");
 
-        var routed = Assert.IsType<DiagramRouting.Routed>(Router(ClassDiagram).Route(adp));
+        var routed = Assert.IsType<DiagramRouted>(Router(ClassDiagram).Route(adp));
 
         Assert.Equal(adp, routed.BodyPath);
     }
@@ -62,7 +62,7 @@ public class DiagramFileRouterTests : IDisposable
     {
         var adp = Write("mystery.adp", "nobody/knows\n");
 
-        var unknown = Assert.IsType<DiagramRouting.UnknownType>(Router(Mindmap).Route(adp));
+        var unknown = Assert.IsType<DiagramUnknownType>(Router(Mindmap).Route(adp));
 
         Assert.Equal("nobody/knows", unknown.MimeType);
     }
@@ -73,7 +73,7 @@ public class DiagramFileRouterTests : IDisposable
         // A map made in Freeplane and dropped into the folder (Requirement 2.7).
         var mm = Write("dropped.mm", "<map/>");
 
-        var routed = Assert.IsType<DiagramRouting.Routed>(Router(Mindmap).Route(mm));
+        var routed = Assert.IsType<DiagramRouted>(Router(Mindmap).Route(mm));
 
         Assert.Same(Mindmap, routed.Definition);
         Assert.Null(routed.RegistrationPath);
@@ -90,7 +90,7 @@ public class DiagramFileRouterTests : IDisposable
         Write("domain.adp", "uml/class\n");
         var mm = Write("domain.mm", "<map/>");
 
-        var routed = Assert.IsType<DiagramRouting.Routed>(Router(Mindmap, classAsMm).Route(mm));
+        var routed = Assert.IsType<DiagramRouted>(Router(Mindmap, classAsMm).Route(mm));
 
         Assert.Same(classAsMm, routed.Definition);
     }
@@ -101,7 +101,7 @@ public class DiagramFileRouterTests : IDisposable
         var other = new DiagramDefinition(new DiagramOrigin("other", "mindmap"), "Another mindmap", ".mm");
         var mm = Write("which.mm", "<map/>");
 
-        var ambiguous = Assert.IsType<DiagramRouting.Ambiguous>(Router(Mindmap, other).Route(mm));
+        var ambiguous = Assert.IsType<DiagramAmbiguousExtension>(Router(Mindmap, other).Route(mm));
 
         Assert.Equal(".mm", ambiguous.Extension);
         Assert.Equal(2, ambiguous.Claimants.Count);
@@ -114,7 +114,7 @@ public class DiagramFileRouterTests : IDisposable
         var other = new DiagramDefinition(new DiagramOrigin("other", "mindmap"), "Another mindmap", ".mm");
         var adp = Write("domain.adp", "freeplane/mindmap\n");
 
-        var routed = Assert.IsType<DiagramRouting.Routed>(Router(Mindmap, other).Route(adp));
+        var routed = Assert.IsType<DiagramRouted>(Router(Mindmap, other).Route(adp));
 
         Assert.Same(Mindmap, routed.Definition);
     }
@@ -133,7 +133,7 @@ public class DiagramFileRouterTests : IDisposable
     {
         var txt = Write("notes.txt", "hello");
 
-        Assert.IsType<DiagramRouting.NotADiagram>(Router(Mindmap).Route(txt));
+        Assert.IsType<NotADiagram>(Router(Mindmap).Route(txt));
     }
 
     // ---- one document format, several types of one vendor (c4-diagrams Requirements 2.4-2.6) ----
@@ -151,7 +151,7 @@ public class DiagramFileRouterTests : IDisposable
 
         var routing = Router(C4Context, C4Container).Route(adp, _root);
 
-        var routed = Assert.IsType<DiagramRouting.Routed>(routing);
+        var routed = Assert.IsType<DiagramRouted>(routing);
         Assert.Equal(IoPath.Combine(_root, "shared", "model.dsl"), routed.BodyPath);
         Assert.Equal("c4/container", routed.Definition.Origin.Key);
     }
@@ -161,7 +161,7 @@ public class DiagramFileRouterTests : IDisposable
     {
         var adp = Write("solo.adp", "c4/context\n");
 
-        var routed = Assert.IsType<DiagramRouting.Routed>(Router(C4Context).Route(adp, _root));
+        var routed = Assert.IsType<DiagramRouted>(Router(C4Context).Route(adp, _root));
 
         Assert.Equal(IoPath.Combine(_root, "solo.dsl"), routed.BodyPath);
     }
@@ -171,7 +171,7 @@ public class DiagramFileRouterTests : IDisposable
     {
         var adp = Write("escape.adp", "c4/context\nbody: ../outside.dsl\n");
 
-        Assert.IsType<DiagramRouting.Unreadable>(Router(C4Context).Route(adp, _root));
+        Assert.IsType<DiagramUnreadable>(Router(C4Context).Route(adp, _root));
     }
 
     [Fact]
@@ -182,7 +182,7 @@ public class DiagramFileRouterTests : IDisposable
         // 2.6's "openable without an .adp" impossible.
         var dsl = Write("model.dsl", "workspace {}");
 
-        var routed = Assert.IsType<DiagramRouting.Routed>(Router(C4Context, C4Container).Route(dsl));
+        var routed = Assert.IsType<DiagramRouted>(Router(C4Context, C4Container).Route(dsl));
 
         Assert.Equal("c4", routed.Definition.Origin.Vendor);
         Assert.Null(routed.RegistrationPath);
@@ -196,7 +196,7 @@ public class DiagramFileRouterTests : IDisposable
         // by reading the document, because neither owns it.
         var dsl = Write("model.dsl", "workspace {}");
 
-        var ambiguous = Assert.IsType<DiagramRouting.Ambiguous>(Router(C4Context, RivalDsl).Route(dsl));
+        var ambiguous = Assert.IsType<DiagramAmbiguousExtension>(Router(C4Context, RivalDsl).Route(dsl));
 
         Assert.Equal(".dsl", ambiguous.Extension);
     }
@@ -208,8 +208,4 @@ public class DiagramFileRouterTests : IDisposable
         Assert.Equal([".dsl"], Router(C4Context, RivalDsl).AmbiguousExtensions());
     }
 
-    private sealed class Catalog(IReadOnlyList<DiagramDefinition> definitions) : IDiagramDefinitionCatalog
-    {
-        public IReadOnlyList<DiagramDefinition> All { get; } = definitions;
-    }
 }

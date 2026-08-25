@@ -71,7 +71,7 @@ public static class C4Parser
     {
         ArgumentNullException.ThrowIfNull(document);
 
-        var state = new ParseState();
+        var state = new C4ParseState();
         var lines = document.CodeLines.ToArray();
         var index = 0;
         var inBlockComment = false;
@@ -141,7 +141,7 @@ public static class C4Parser
         return result.ToString();
     }
 
-    private static void ReadLine(IReadOnlyList<string> tokens, uint number, ParseState state)
+    private static void ReadLine(IReadOnlyList<string> tokens, uint number, C4ParseState state)
     {
         if (tokens.Count == 0)
         {
@@ -159,7 +159,7 @@ public static class C4Parser
         var body = opensBlock ? tokens.Take(tokens.Count - 1).ToArray() : [.. tokens];
         if (body.Length == 0)
         {
-            state.Push(ParseScope.Unknown);
+            state.Push(C4ParseScope.Unknown);
             return;
         }
 
@@ -176,15 +176,15 @@ public static class C4Parser
 
         switch (state.Current)
         {
-            case ParseScope.Views:
+            case C4ParseScope.Views:
                 ReadInViews(keyword, arguments, identifier, number, opensBlock, state);
                 return;
 
-            case ParseScope.Styles:
+            case C4ParseScope.Styles:
                 ReadInStyles(keyword, arguments, number, opensBlock, state);
                 return;
 
-            case ParseScope.View:
+            case C4ParseScope.View:
                 ReadInsideAView(keyword, arguments, body, number, opensBlock, state);
                 return;
         }
@@ -199,32 +199,32 @@ public static class C4Parser
         string? identifier,
         uint number,
         bool opensBlock,
-        ParseState state)
+        C4ParseState state)
     {
         switch (keyword.ToLowerInvariant())
         {
             case "workspace":
                 state.WorkspaceName = arguments.Length > 0 ? arguments[0] : "";
-                state.Push(opensBlock ? ParseScope.Workspace : ParseScope.Unknown);
+                state.Push(opensBlock ? C4ParseScope.Workspace : C4ParseScope.Unknown);
                 return;
 
             case "model":
-                state.Push(opensBlock ? ParseScope.Model : ParseScope.Unknown);
+                state.Push(opensBlock ? C4ParseScope.Model : C4ParseScope.Unknown);
                 return;
 
             case "views":
-                state.Push(opensBlock ? ParseScope.Views : ParseScope.Unknown);
+                state.Push(opensBlock ? C4ParseScope.Views : C4ParseScope.Unknown);
                 return;
 
             case "deploymentenvironment":
                 state.Environment = arguments.Length > 0 ? arguments[0] : "";
-                state.Push(opensBlock ? ParseScope.Model : ParseScope.Unknown);
+                state.Push(opensBlock ? C4ParseScope.Model : C4ParseScope.Unknown);
                 return;
 
             case "group":
                 // A group is a visual cluster, not an abstraction level: its children belong to
                 // whatever contains the group, so nothing is pushed onto the parent chain.
-                state.Push(opensBlock ? ParseScope.Model : ParseScope.Unknown);
+                state.Push(opensBlock ? C4ParseScope.Model : C4ParseScope.Unknown);
                 return;
         }
 
@@ -240,7 +240,7 @@ public static class C4Parser
                 Line: number));
             if (opensBlock)
             {
-                state.Push(ParseScope.Unknown);
+                state.Push(C4ParseScope.Unknown);
             }
 
             return;
@@ -266,7 +266,7 @@ public static class C4Parser
             // chain stays correct.
             if (opensBlock)
             {
-                state.Push(ParseScope.Unknown);
+                state.Push(C4ParseScope.Unknown);
             }
 
             return;
@@ -292,11 +292,11 @@ public static class C4Parser
         }
     }
 
-    private static void ReadInViews(string keyword, string[] arguments, string? identifier, uint number, bool opensBlock, ParseState state)
+    private static void ReadInViews(string keyword, string[] arguments, string? identifier, uint number, bool opensBlock, C4ParseState state)
     {
         if (keyword.Equals("styles", StringComparison.OrdinalIgnoreCase))
         {
-            state.Push(opensBlock ? ParseScope.Styles : ParseScope.Unknown);
+            state.Push(opensBlock ? C4ParseScope.Styles : C4ParseScope.Unknown);
             return;
         }
 
@@ -305,7 +305,7 @@ public static class C4Parser
             // `theme`, `branding`, `terminology`, `properties` - carried by the document, not modelled.
             if (opensBlock)
             {
-                state.Push(ParseScope.Unknown);
+                state.Push(C4ParseScope.Unknown);
             }
 
             return;
@@ -339,7 +339,7 @@ public static class C4Parser
 
         var view = new C4View(kind, key, scope, environment, Title: null, IncludesEverything: false, [], [], null, [], number);
         state.Views.Add(view);
-        state.Push(opensBlock ? ParseScope.View : ParseScope.Unknown);
+        state.Push(opensBlock ? C4ParseScope.View : C4ParseScope.Unknown);
         if (opensBlock)
         {
             state.CurrentViewIndex = state.Views.Count - 1;
@@ -348,13 +348,13 @@ public static class C4Parser
         _ = identifier;
     }
 
-    private static void ReadInsideAView(string keyword, string[] arguments, string[] body, uint number, bool opensBlock, ParseState state)
+    private static void ReadInsideAView(string keyword, string[] arguments, string[] body, uint number, bool opensBlock, C4ParseState state)
     {
         if (state.CurrentViewIndex is not { } viewIndex)
         {
             if (opensBlock)
             {
-                state.Push(ParseScope.Unknown);
+                state.Push(C4ParseScope.Unknown);
             }
 
             return;
@@ -401,22 +401,22 @@ public static class C4Parser
 
         if (opensBlock)
         {
-            state.Push(ParseScope.Unknown);
+            state.Push(C4ParseScope.Unknown);
         }
     }
 
-    private static void ReadInStyles(string keyword, string[] arguments, uint number, bool opensBlock, ParseState state)
+    private static void ReadInStyles(string keyword, string[] arguments, uint number, bool opensBlock, C4ParseState state)
     {
         if (keyword.Equals("element", StringComparison.OrdinalIgnoreCase) && arguments.Length > 0)
         {
             state.Styles.Add(new C4ElementStyle(arguments[0], null, null, null, null, number));
-            state.Push(opensBlock ? ParseScope.Style : ParseScope.Unknown);
+            state.Push(opensBlock ? C4ParseScope.Style : C4ParseScope.Unknown);
             return;
         }
 
         if (opensBlock)
         {
-            state.Push(ParseScope.Unknown);
+            state.Push(C4ParseScope.Unknown);
         }
     }
 
@@ -460,74 +460,4 @@ public static class C4Parser
     private static IReadOnlyList<string> SplitTags(string tags) =>
         tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-    /// <summary>Which construct the parser is currently inside, so a line is read the right way.</summary>
-    private enum ParseScope
-    {
-        Root,
-        Workspace,
-        Model,
-        Element,
-        Views,
-        View,
-        Styles,
-        Style,
-        Unknown,
-    }
-
-    /// <summary>The parser's running state: the scope stack, the element chain, and what has been read.</summary>
-    private sealed class ParseState
-    {
-        private readonly Stack<(ParseScope Scope, string? ElementId)> _stack = new();
-        private int _generated;
-
-        public ParseState() => _stack.Push((ParseScope.Root, null));
-
-        public string WorkspaceName { get; set; } = "";
-
-        public string? Environment { get; set; }
-
-        public List<C4Element> Elements { get; } = [];
-
-        public List<C4Relationship> Relationships { get; } = [];
-
-        public List<C4View> Views { get; } = [];
-
-        public List<C4ElementStyle> Styles { get; } = [];
-
-        public List<string> Includes { get; } = [];
-
-        public int? CurrentViewIndex { get; set; }
-
-        public ParseScope Current => _stack.Peek().Scope;
-
-        /// <summary>The innermost element block, which is what a nested declaration belongs to.</summary>
-        public string? CurrentElementId => _stack.FirstOrDefault(frame => frame.ElementId is not null).ElementId;
-
-        public void Push(ParseScope scope) => _stack.Push((scope, null));
-
-        public void PushElement(string id) => _stack.Push((ParseScope.Element, id));
-
-        public void Pop()
-        {
-            if (_stack.Count > 1)
-            {
-                var popped = _stack.Pop();
-                if (popped.Scope is ParseScope.View)
-                {
-                    CurrentViewIndex = null;
-                }
-            }
-        }
-
-        /// <summary>
-        /// An id for an element the document declared without one. The DSL allows that; the
-        /// wire does not, because the canvas needs something stable to select and edit.
-        /// </summary>
-        public string GenerateId(C4ElementKind kind, string name)
-        {
-            _generated++;
-            var slug = new string(name.Where(char.IsLetterOrDigit).ToArray());
-            return $"{kind.ToString().ToLowerInvariant()}_{(slug.Length > 0 ? slug : "unnamed")}_{_generated}";
-        }
-    }
 }

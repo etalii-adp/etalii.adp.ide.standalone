@@ -16,7 +16,7 @@ public sealed class HistoryStackStore : IHistoryStackStore, IDisposable
 
     private readonly TimeSpan _grace;
     private readonly Func<IHistoryStack> _create;
-    private readonly ConcurrentDictionary<string, Entry> _entries = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, RetainedHistoryStack> _entries = new(StringComparer.OrdinalIgnoreCase);
 
     public HistoryStackStore(ICommandDispatcher dispatcher, TimeSpan? grace = null)
     {
@@ -78,11 +78,11 @@ public sealed class HistoryStackStore : IHistoryStackStore, IDisposable
         }
     }
 
-    private Entry EntryFor(string rootPath) =>
+    private RetainedHistoryStack EntryFor(string rootPath) =>
         _entries.GetOrAdd(Key(rootPath), key =>
         {
             var stack = _create();
-            var entry = new Entry(key, stack);
+            var entry = new RetainedHistoryStack(key, stack);
             // Aggregate every stack's Changed into the store's own event, tagged with the project.
             entry.Handler = (_, _) => Changed?.Invoke(this, new HistoryChangedEventArgs(entry.RootPath));
             stack.Changed += entry.Handler;
@@ -112,7 +112,7 @@ public sealed class HistoryStackStore : IHistoryStackStore, IDisposable
         }
     }
 
-    private static void Detach(Entry entry)
+    private static void Detach(RetainedHistoryStack entry)
     {
         if (entry.Handler is not null)
         {
@@ -125,18 +125,4 @@ public sealed class HistoryStackStore : IHistoryStackStore, IDisposable
 
     private static string Key(string rootPath) => System.IO.Path.GetFullPath(rootPath);
 
-    private sealed class Entry(string rootPath, IHistoryStack stack)
-    {
-        public string RootPath { get; } = rootPath;
-
-        public IHistoryStack Stack { get; } = stack;
-
-        public object Gate { get; } = new();
-
-        public int RefCount { get; set; }
-
-        public Timer? EvictionTimer { get; set; }
-
-        public EventHandler? Handler { get; set; }
-    }
 }

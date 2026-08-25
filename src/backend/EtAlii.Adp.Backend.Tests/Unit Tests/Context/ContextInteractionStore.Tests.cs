@@ -20,7 +20,7 @@ public class ContextInteractionStoreTests
         WatchId = watchId,
         Target = new ContextTarget(ContextScope.Hierarchy, @"C:\root\item.txt", IsContainer: false, ShortGuid.NewShortGuid()),
         ActionId = "stub.action",
-        Provider = new StubProvider(),
+        Provider = new ContextInteractionStoreStubProvider(),
     };
 
     [Fact]
@@ -111,20 +111,4 @@ public class ContextInteractionStoreTests
         Assert.Null(store.Get(interactionId));
     }
 
-    private sealed class StubProvider : IContextActionProvider
-    {
-        public ContextScope Scope => ContextScope.Hierarchy;
-
-        public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>(Array.Empty<ContextActionGroupDefinition>());
-
-        public ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionResult.Completed());
-
-        public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken) =>
-            ValueTask.FromResult(ContextValidationResult.Accepted);
-
-        public ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken) =>
-            ValueTask.FromResult(ContextCommitResult.Succeeded);
-    }
 }

@@ -178,12 +178,12 @@ public class ProblemStoreTests : IDisposable
         // pinned stats must be the .adp's too - pinning the body's stats marked every
         // pair's problem stale the moment it was found.
         CreatePair("flow");
-        var validator = new ReportingValidator(Mindmap);
+        var validator = new ProblemStoreReportingValidator(Mindmap);
         using var store = Store(validator);
-        var catalog = new TestCatalog([MindmapDefinition]);
+        var catalog = new TestDiagramDefinitionCatalog([MindmapDefinition]);
         var projectValidator = new ProjectValidator(new DiagramFileRouter(catalog), new DiagramValidators([validator]));
 
-        var outcome = await projectValidator.ValidateAsync(new ValidationScope.Project(_root), TestContext.Current.CancellationToken);
+        var outcome = await projectValidator.ValidateAsync(new ProjectValidationScope(_root), TestContext.Current.CancellationToken);
         store.Replace(_root, outcome.Problems);
 
         var stored = Assert.Single(store.Get(_root).Problems);
@@ -240,7 +240,7 @@ public class ProblemStoreTests : IDisposable
     [Fact]
     public void Get_MarksAnEntryStaleWhenItsRulesVersionIsNoLongerCurrent()
     {
-        using var store = Store(new StubValidator(Mindmap));
+        using var store = Store(new ProblemStoreStubValidator(Mindmap));
         CreatePair("flow");
 
         store.Replace(_root, [Pinned("flow.adp", rulesVersion: "an-older-release")]);
@@ -251,9 +251,9 @@ public class ProblemStoreTests : IDisposable
     [Fact]
     public void Get_TrustsACurrentRulesVersion()
     {
-        using var store = Store(new StubValidator(Mindmap));
+        using var store = Store(new ProblemStoreStubValidator(Mindmap));
         CreatePair("flow");
-        var current = typeof(StubValidator).Assembly
+        var current = typeof(ProblemStoreStubValidator).Assembly
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
 
         store.Replace(_root, [Pinned("flow.adp", rulesVersion: current)]);
@@ -266,7 +266,7 @@ public class ProblemStoreTests : IDisposable
     [Fact]
     public void TheSetSurvivesARestart()
     {
-        var location = new DiagramProblemLocation.ElementId("node-1");
+        var location = new DiagramProblemElementLocation("node-1");
         using (var store = Store())
         {
             store.Replace(_root, [
@@ -358,7 +358,7 @@ public class ProblemStoreTests : IDisposable
 
     private ProblemStore Store(IDiagramValidator? validator = null, int maxReported = 1000)
     {
-        var catalog = new TestCatalog([MindmapDefinition]);
+        var catalog = new TestDiagramDefinitionCatalog([MindmapDefinition]);
         return new ProblemStore(
             _appData,
             new DiagramFileRouter(catalog),
@@ -392,27 +392,5 @@ public class ProblemStoreTests : IDisposable
             rulesVersion ?? "");
     }
 
-    private sealed class TestCatalog(IReadOnlyList<DiagramDefinition> definitions) : IDiagramDefinitionCatalog
-    {
-        public IReadOnlyList<DiagramDefinition> All { get; } = definitions;
-    }
 
-    private sealed class StubValidator(DiagramOrigin origin) : IDiagramValidator
-    {
-        public DiagramOrigin Origin { get; } = origin;
-
-        public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
-            string document, string baseName, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<IReadOnlyList<DiagramProblem>>([]);
-    }
-
-    private sealed class ReportingValidator(DiagramOrigin origin) : IDiagramValidator
-    {
-        public DiagramOrigin Origin { get; } = origin;
-
-        public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
-            string document, string baseName, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<IReadOnlyList<DiagramProblem>>(
-                [new DiagramProblem(DiagramProblemSeverity.Warning, "Something to remember.", "test.remember")]);
-    }
 }

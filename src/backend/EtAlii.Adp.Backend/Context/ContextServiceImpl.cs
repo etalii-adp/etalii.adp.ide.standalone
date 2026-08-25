@@ -70,11 +70,11 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
         }
 
         var resolution = await _selectionResolver.ResolveChainAsync(watchId, rootPath, request.Selection, context.CancellationToken);
-        if (resolution is not ChainResolution.Resolved resolved)
+        if (resolution is not ResolvedChain resolved)
         {
             // Unauthorized, unknown, gone, or malformed: one answer for all of them, and
             // the current selection stays exactly as it was.
-            var reason = ((ChainResolution.Rejected)resolution).Reason;
+            var reason = ((RejectedChain)resolution).Reason;
             // The client is told only that it was rejected; the log is the one place the
             // source and id it asked about are kept beside the reason.
             _logger.Warning(

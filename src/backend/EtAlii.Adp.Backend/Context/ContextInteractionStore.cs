@@ -9,14 +9,14 @@ public sealed class ContextInteractionStore : IContextInteractionStore
 {
     private static readonly ILogger _logger = Log.ForContext<ContextInteractionStore>();
 
-    private readonly ConcurrentDictionary<ShortGuid, Connection> _connections = new();
+    private readonly ConcurrentDictionary<ShortGuid, ContextInteractionConnection> _connections = new();
 
     // A second index so an interaction id alone identifies its owning connection; the
     // connection entry remains the authority on what that connection currently holds.
     private readonly ConcurrentDictionary<ShortGuid, ContextInteraction> _interactions = new();
 
     public void Register(ShortGuid watchId, ChannelWriter<ContextMessage> writer) =>
-        _connections[watchId] = new Connection(writer);
+        _connections[watchId] = new ContextInteractionConnection(writer);
 
     public void Remove(ShortGuid watchId)
     {
@@ -86,16 +86,4 @@ public sealed class ContextInteractionStore : IContextInteractionStore
         }
     }
 
-    private sealed class Connection
-    {
-        public Connection(ChannelWriter<ContextMessage> writer)
-        {
-            Writer = writer;
-        }
-
-        public ChannelWriter<ContextMessage> Writer { get; }
-
-        /// <summary>Used as a concurrent set; the byte value carries no meaning.</summary>
-        public ConcurrentDictionary<ShortGuid, byte> InteractionIds { get; } = new();
-    }
 }

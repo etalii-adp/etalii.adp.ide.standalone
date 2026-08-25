@@ -65,14 +65,14 @@ public sealed class CreateDiagramFileCommandHandler : ICommandHandler<CreateDiag
             // The inverse is the delete of exactly what was just written. The delete command
             // removes a registration file's sibling with it, so one inverse covers both files
             // and an accidental Add is one Ctrl+Z away.
-            AdpFileWriteResult.Created created => CommandResult.Success(new DeleteEntryCommand(created.FullPath)),
+            AdpFileCreated created => CommandResult.Success(new DeleteEntryCommand(created.FullPath)),
 
             // Someone got there in the moment between judging the name and using it. The user
             // picks another one; nothing is overwritten and no name is invented for them.
-            AdpFileWriteResult.NameTaken =>
+            AdpFileNameTaken =>
                 CommandResult.Failure($"An item named '{command.FileName}' already exists in this folder."),
 
-            AdpFileWriteResult.Failed failed => CommandResult.Failure($"Could not create the diagram: {failed.Message}"),
+            AdpFileWriteFailed failed => CommandResult.Failure($"Could not create the diagram: {failed.Message}"),
 
             _ => CommandResult.Failure("Could not create the diagram."),
         });

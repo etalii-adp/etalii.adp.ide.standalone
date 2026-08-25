@@ -37,6 +37,20 @@ public sealed class LogCapture : IDisposable
 
     private readonly List<LogEvent> _events = [];
 
+    /// <summary>
+    /// Collects one event into whichever capture is active, dropping it when none is. Called
+    /// by <see cref="LogCaptureCaptureSink"/>, which sits beside this class rather than inside
+    /// it (tech.md is no-nested-types rule) and so cannot reach the gate or the active capture
+    /// directly.
+    /// </summary>
+    internal static void Receive(LogEvent logEvent)
+    {
+        lock (Gate)
+        {
+            _active?._events.Add(logEvent);
+        }
+    }
+
     private LogCapture()
     {
     }
@@ -97,18 +111,7 @@ public sealed class LogCapture : IDisposable
     internal static void Install() =>
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Verbose()
-            .WriteTo.Sink(new CaptureSink())
+            .WriteTo.Sink(new LogCaptureCaptureSink())
             .CreateLogger();
 
-    /// <summary>Hands each event to whichever capture is active, and drops it when none is.</summary>
-    private sealed class CaptureSink : ILogEventSink
-    {
-        public void Emit(LogEvent logEvent)
-        {
-            lock (Gate)
-            {
-                _active?._events.Add(logEvent);
-            }
-        }
-    }
 }

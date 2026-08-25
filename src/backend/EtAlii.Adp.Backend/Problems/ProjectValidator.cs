@@ -89,11 +89,11 @@ public sealed class ProjectValidator
     private async ValueTask<ValidationOutcome> RunAsync(ValidationScope scope, CancellationToken cancellationToken)
     {
         var root = IoPath.GetFullPath(scope.RootPath);
-        var collector = new Collector(root);
+        var collector = new ProblemCollector(root);
 
         switch (scope)
         {
-            case ValidationScope.File file:
+            case FileValidationScope file:
             {
                 var full = IoPath.GetFullPath(IoPath.Combine(root, file.RelativePath));
                 if (!IsInside(root, full) || !File.Exists(full))
@@ -107,7 +107,7 @@ public sealed class ProjectValidator
                 break;
             }
 
-            case ValidationScope.Folder folder:
+            case FolderValidationScope folder:
             {
                 var full = IoPath.GetFullPath(IoPath.Combine(root, folder.RelativePath));
                 if (!IsInside(root, full) || !Directory.Exists(full))
@@ -120,7 +120,7 @@ public sealed class ProjectValidator
                 break;
             }
 
-            case ValidationScope.Project:
+            case ProjectValidationScope:
                 await WalkFolderAsync(root, collector, cancellationToken);
                 break;
         }
@@ -128,7 +128,7 @@ public sealed class ProjectValidator
         return new ValidationOutcome(collector.Problems, collector.FilesConsidered, collector.Skipped);
     }
 
-    private async ValueTask WalkFolderAsync(string folder, Collector collector, CancellationToken cancellationToken)
+    private async ValueTask WalkFolderAsync(string folder, ProblemCollector collector, CancellationToken cancellationToken)
     {
         if (!collector.MarkFolderVisited(folder))
         {
@@ -171,11 +171,11 @@ public sealed class ProjectValidator
         }
     }
 
-    private async ValueTask ConsiderFileAsync(string path, Collector collector, CancellationToken cancellationToken)
+    private async ValueTask ConsiderFileAsync(string path, ProblemCollector collector, CancellationToken cancellationToken)
     {
         switch (_router.Route(path))
         {
-            case DiagramRouting.Routed routed:
+            case DiagramRouted routed:
                 // A pair routes identically through either of its files - judge it once.
                 if (!collector.MarkConsidered(routed.BodyPath))
                 {
@@ -185,7 +185,7 @@ public sealed class ProjectValidator
                 await ValidateRoutedAsync(routed, collector, cancellationToken);
                 return;
 
-            case DiagramRouting.UnknownType unknown:
+            case DiagramUnknownType unknown:
                 if (!collector.MarkConsidered(unknown.Path))
                 {
                     return;
@@ -194,7 +194,7 @@ public sealed class ProjectValidator
                 collector.AddCore(unknown.Path, $"'{unknown.MimeType}' is not a known diagram type.", "core.unknown-type");
                 return;
 
-            case DiagramRouting.Ambiguous ambiguous:
+            case DiagramAmbiguousExtension ambiguous:
                 if (!collector.MarkConsidered(ambiguous.Path))
                 {
                     return;
@@ -207,7 +207,7 @@ public sealed class ProjectValidator
                     "core.ambiguous-extension");
                 return;
 
-            case DiagramRouting.Unreadable unreadable:
+            case DiagramUnreadable unreadable:
                 if (!collector.MarkConsidered(unreadable.Path))
                 {
                     return;
@@ -216,12 +216,12 @@ public sealed class ProjectValidator
                 collector.AddCore(unreadable.Path, "The registration file could not be read.");
                 return;
 
-            case DiagramRouting.NotADiagram:
+            case NotADiagram:
                 return; // Requirement 2.3: not ours to judge.
         }
     }
 
-    private async ValueTask ValidateRoutedAsync(DiagramRouting.Routed routed, Collector collector, CancellationToken cancellationToken)
+    private async ValueTask ValidateRoutedAsync(DiagramRouted routed, ProblemCollector collector, CancellationToken cancellationToken)
     {
         var attribution = routed.RegistrationPath ?? routed.BodyPath;
 
@@ -312,49 +312,4 @@ public sealed class ProjectValidator
         return fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>One run's growing answer: the problems, the counters and the two once-only guards.</summary>
-    private sealed class Collector(string root)
-    {
-        private readonly List<StoredProblem> _problems = [];
-        private readonly HashSet<string> _considered = new(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> _visitedFolders = new(StringComparer.OrdinalIgnoreCase);
-
-        public string Root { get; } = root;
-        public IReadOnlyList<StoredProblem> Problems => _problems;
-        public int FilesConsidered { get; set; }
-        public int Skipped { get; set; }
-
-        public bool MarkConsidered(string path) => _considered.Add(IoPath.GetFullPath(path));
-
-        public bool MarkFolderVisited(string folder)
-        {
-            var info = new DirectoryInfo(folder);
-            var canonical = (info.Attributes & FileAttributes.ReparsePoint) != 0
-                ? info.ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? folder
-                : folder;
-            return _visitedFolders.Add(IoPath.GetFullPath(canonical));
-        }
-
-        public void Add(DiagramProblem problem, string attributionPath, string statsPath, string rulesVersion)
-        {
-            DateTime lastWriteTimeUtc;
-            long length;
-            try
-            {
-                var info = new FileInfo(statsPath);
-                lastWriteTimeUtc = info.Exists ? info.LastWriteTimeUtc : default;
-                length = info.Exists ? info.Length : 0;
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-                lastWriteTimeUtc = default;
-                length = 0;
-            }
-            _problems.Add(new StoredProblem(problem, IoPath.GetRelativePath(Root, attributionPath), lastWriteTimeUtc, length, rulesVersion));
-        }
-
-        /// <summary>A problem core itself found - a rules version of its own would say nothing, so it stays empty.</summary>
-        public void AddCore(string path, string message, string ruleId = "core.unreadable") =>
-            Add(new DiagramProblem(DiagramProblemSeverity.Error, message, ruleId), path, path, rulesVersion: "");
-    }
 }

@@ -47,7 +47,7 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
             return Rejected("A diagram element must be selected within its diagram.");
         }
 
-        if (_router.Route(parent.Target.ResolvedFullPath, rootPath) is not DiagramRouting.Routed routed ||
+        if (_router.Route(parent.Target.ResolvedFullPath, rootPath) is not DiagramRouted routed ||
             routed.Definition.Origin.Vendor != "c4")
         {
             return Rejected("The selected file is not a C4 diagram.");
@@ -117,7 +117,7 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
         }
 
         _documents.Changed += OnChanged;
-        return new Unsubscriber(() => _documents.Changed -= OnChanged);
+        return new C4ElementUnsubscriber(() => _documents.Changed -= OnChanged);
     }
 
     /// <summary>The element's chain of names from the top of the model - what identifies it to a human.</summary>
@@ -173,14 +173,10 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
             // it after the document changes.
             this);
 
-        return ValueTask.FromResult<ContextLevelResolution>(new ContextLevelResolution.Resolved(level));
+        return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));
     }
 
     private static ValueTask<ContextLevelResolution> Rejected(string reason) =>
-        ValueTask.FromResult<ContextLevelResolution>(new ContextLevelResolution.Rejected(reason));
+        ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(reason));
 
-    private sealed class Unsubscriber(Action dispose) : IDisposable
-    {
-        public void Dispose() => dispose();
-    }
 }

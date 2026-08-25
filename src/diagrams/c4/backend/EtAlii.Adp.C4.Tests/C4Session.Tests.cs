@@ -72,7 +72,7 @@ public class C4SessionTests : IDisposable
             .Open(ShortGuid.NewShortGuid(), _root, bodyPath, registrationPath);
 
     private static IReadOnlyList<DiagramElement> Added(IReadOnlyList<DiagramDelta> deltas) =>
-        deltas.OfType<DiagramDelta.Add>().SelectMany(add => add.Elements).ToArray();
+        deltas.OfType<DiagramAddDelta>().SelectMany(add => add.Elements).ToArray();
 
     [Fact]
     public async Task ARegistrationNamingAView_OpensThatView()
@@ -159,7 +159,7 @@ public class C4SessionTests : IDisposable
 
         var deltas = session.UpdateView(new DiagramViewport(100000, 100000, 200000, 200000));
 
-        var removed = deltas.OfType<DiagramDelta.Remove>().SelectMany(remove => remove.ElementIds).ToArray();
+        var removed = deltas.OfType<DiagramRemoveDelta>().SelectMany(remove => remove.ElementIds).ToArray();
         Assert.Contains("u", removed);
         Assert.Contains("s", removed);
     }
@@ -175,7 +175,7 @@ public class C4SessionTests : IDisposable
         var deltas = session.UpdateView(DiagramViewport.Unbounded);
 
         Assert.Contains(Added(deltas), element => element.Id == "s");
-        Assert.Empty(deltas.OfType<DiagramDelta.Remove>().SelectMany(remove => remove.ElementIds));
+        Assert.Empty(deltas.OfType<DiagramRemoveDelta>().SelectMany(remove => remove.ElementIds));
     }
 
     [Fact]

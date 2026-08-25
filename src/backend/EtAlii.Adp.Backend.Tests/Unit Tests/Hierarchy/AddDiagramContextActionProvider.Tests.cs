@@ -131,7 +131,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     {
         var result = await _provider.ExecuteAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
 
-        var choice = Assert.IsType<ContextExecutionResult.RequiresChoice>(result);
+        var choice = Assert.IsType<ContextExecutionRequiresChoice>(result);
         Assert.Equal("Add diagram", choice.Request.Title);
         Assert.Equal("mdi-plus", choice.Request.Icon);
         Assert.Equal("Add", choice.Request.ConfirmLabel);
@@ -145,7 +145,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     {
         var result = await _provider.ExecuteAsync(FolderTarget(IoPath.Combine(_root, "gone")), AddDiagramContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
 
-        var failed = Assert.IsType<ContextExecutionResult.Failed>(result);
+        var failed = Assert.IsType<ContextExecutionFailed>(result);
         Assert.Equal("The folder no longer exists.", failed.Message);
     }
 
@@ -154,7 +154,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     {
         var result = await _provider.ExecuteAsync(FolderTarget(_root), "hierarchy.something-else", TestContext.Current.CancellationToken);
 
-        Assert.IsType<ContextExecutionResult.Failed>(result);
+        Assert.IsType<ContextExecutionFailed>(result);
     }
 
     [Fact]
@@ -165,7 +165,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
 
         var result = await provider.ExecuteAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
 
-        var choice = Assert.IsType<ContextExecutionResult.RequiresChoice>(result);
+        var choice = Assert.IsType<ContextExecutionRequiresChoice>(result);
         Assert.Empty(choice.Request.Options);
     }
 

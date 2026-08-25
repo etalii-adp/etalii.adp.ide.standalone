@@ -84,5 +84,5 @@ public sealed class MindmapValidator : IDiagramValidator
     }
 
     private static DiagramProblemLocation? LocationOf(MindmapNode node) =>
-        node.Id.Length > 0 ? new DiagramProblemLocation.ElementId(node.Id) : null;
+        node.Id.Length > 0 ? new DiagramProblemElementLocation(node.Id) : null;
 }

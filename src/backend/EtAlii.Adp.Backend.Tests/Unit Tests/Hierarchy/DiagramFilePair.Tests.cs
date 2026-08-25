@@ -16,7 +16,7 @@ public class DiagramFilePairTests : IDisposable
 
     private readonly string _root;
     private readonly IHistoryStack _history;
-    private readonly IDiagramDefinitionCatalog _catalog = new Catalog(Mindmap, ClassDiagram);
+    private readonly IDiagramDefinitionCatalog _catalog = new TestDiagramDefinitionCatalog(Mindmap, ClassDiagram);
 
     public DiagramFilePairTests()
     {
@@ -320,8 +320,4 @@ public class DiagramFilePairTests : IDisposable
         Assert.True(File.Exists(shared), "deleting one view destroyed the shared model");
     }
 
-    private sealed class Catalog(params DiagramDefinition[] definitions) : IDiagramDefinitionCatalog
-    {
-        public IReadOnlyList<DiagramDefinition> All { get; } = definitions;
-    }
 }

@@ -43,7 +43,7 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
             return Rejected("A diagram element must be selected within its diagram.");
         }
 
-        if (_router.Route(parent.Target.ResolvedFullPath) is not DiagramRouting.Routed { Definition.Origin: var origin, BodyPath: var bodyPath } ||
+        if (_router.Route(parent.Target.ResolvedFullPath) is not DiagramRouted { Definition.Origin: var origin, BodyPath: var bodyPath } ||
             origin != Diagram.Definition.Origin)
         {
             return Rejected("The selected file is not a mindmap.");
@@ -95,7 +95,7 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
             detail,
             this);
 
-        return ValueTask.FromResult<ContextLevelResolution>(new ContextLevelResolution.Resolved(level));
+        return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(level));
     }
 
     /// <summary>Nothing nests inside a node for selection purposes; multi-level element chains are out of scope (Requirement 10.9).</summary>
@@ -135,7 +135,7 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
         }
 
         _documents.Changed += OnChanged;
-        return new Subscription(() =>
+        return new MindmapNodeSubscription(() =>
         {
             disposed = true;
             _documents.Changed -= OnChanged;
@@ -154,12 +154,6 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
     }
 
     private static ValueTask<ContextLevelResolution> Rejected(string reason) =>
-        ValueTask.FromResult<ContextLevelResolution>(new ContextLevelResolution.Rejected(reason));
+        ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(reason));
 
-    private sealed class Subscription(Action dispose) : IDisposable
-    {
-        private Action? _dispose = dispose;
-
-        public void Dispose() => Interlocked.Exchange(ref _dispose, null)?.Invoke();
-    }
 }
