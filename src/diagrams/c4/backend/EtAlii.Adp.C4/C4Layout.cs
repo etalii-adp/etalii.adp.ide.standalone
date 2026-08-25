@@ -85,8 +85,8 @@ public static class C4LayoutEngine
             ? view.Interactions.Select(interaction => (interaction.SourceId, interaction.DestinationId))
             : workspace.Relationships.Select(relationship => (relationship.SourceId, relationship.DestinationId));
         var outgoing = edges
-            .Where(edge => ids.Contains(edge.Item1) && ids.Contains(edge.Item2))
-            .ToLookup(edge => edge.Item1, edge => edge.Item2, StringComparer.OrdinalIgnoreCase);
+            .Where(edge => ids.Contains(edge.SourceId) && ids.Contains(edge.DestinationId))
+            .ToLookup(edge => edge.SourceId, edge => edge.DestinationId, StringComparer.OrdinalIgnoreCase);
 
         var ranks = members.ToDictionary(element => element.Id, _ => 0, StringComparer.OrdinalIgnoreCase);
 
