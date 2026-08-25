@@ -52,7 +52,7 @@
   - _Requirements: 1.5_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add c4.disconnected-element, suppressed while the model has no views | Restrictions: the suppression is load-bearing - a model being built up incrementally must not be buried in warnings, and a tool that greets a new file with problems teaches people to ignore problems; do not count a relationship where the element is only the destination as "not connected" | Success: builds; a model with one lonely system and no views reports nothing, and the same model with a view reports it. Mark in progress, log when done, then mark complete._
 
-- [-] 6. Add the not-on-any-view rule
+- [x] 6. Add the not-on-any-view rule
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4RuleSet.cs` (modify)
   - Implement `c4.element-not-on-any-view`, mirroring `model.element.noview`. Suppressed while the model declares no views, and also for an element declared in the most recent edit
   - Purpose: Requirement 1.6
@@ -60,7 +60,7 @@
   - _Requirements: 1.6_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add c4.element-not-on-any-view with both suppressions from design.md's error-handling item 4 | Restrictions: reuse MembersOf rather than reimplementing view membership - the two disagreeing would be worse than the rule not existing; the "just added" suppression must not need edit history, derive it from the element being the last declared or drop that half and say so in the log | Success: builds; the reference example stays clean, and an element excluded from every view is reported. Mark in progress, log when done, then mark complete._
 
-- [ ] 7. Test the new rules, and pin the correspondence
+- [-] 7. Test the new rules, and pin the correspondence
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/C4RuleSet.Tests.cs` (modify), `C4StructurizrMirror.Tests.cs` (new)
   - One tripping model and one clean model per new rule, in the style of the existing nineteen. Plus: the mirror table is total - every id in `C4Rules` is either mapped or explicitly ADP-only, so a rule cannot be added without a decision about its counterpart
   - Purpose: the guard for Phase A; Requirement 1.10's first half
