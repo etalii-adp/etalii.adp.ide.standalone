@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/property-grid/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-25T16:17:31.090Z",
       "trigger": "initial",
+      "approvalId": "approval_1787674650985_buw083c79",
+      "approvalTitle": "property-grid - Design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-25T16:18:31.112Z",
+      "trigger": "approved",
       "approvalId": "approval_1787674650985_buw083c79",
       "approvalTitle": "property-grid - Design"
     }
