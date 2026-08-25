@@ -18,7 +18,7 @@
 
 ## Phase A — the fixture tree
 
-- [ ] 1. Build the Ansible fixture project
+- [x] 1. Build the Ansible fixture project
   - File: `src/diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure.Tests/Fixtures/infrastructure/**` (new), `Fixtures/readme.md` (new)
   - Commit the worked example from the requirements as a real tree: `ansible.cfg`, `site.yml` importing `webservers.yml` and `dbservers.yml`, `inventories/production` and `inventories/staging` with `group_vars`, and `roles/common`, `roles/nginx` (with `handlers`, `templates`, an `include_tasks` to `tls.yml`, and a `meta` dependency) and `roles/postgres`
   - Beside it, a second fixture `broken/` carrying one instance of each Requirement 9.2 mistake, and a third `unconventional/` that is valid Ansible in a layout the model does not recognise (playbooks under `plays/`) — the fixture that must produce **no problems at all**
@@ -31,7 +31,7 @@
 
 ## Phase B — the three core seams
 
-- [ ] 2. Declare a diagram's subject on `DiagramDefinition`
+- [-] 2. Declare a diagram's subject on `DiagramDefinition`
   - File: `src/backend/EtAlii.Adp.Diagram/_Model/DiagramSubject.cs` (new), `_Model/DiagramDefinition.cs` (edited), `src/backend/EtAlii.Adp.Diagram/DiagramDefinitionDiscovery.cs` (edited), `src/backend/EtAlii.Adp.Diagram.Tests/DiagramDefinition.Tests.cs` (edited)
   - Add `DiagramSubject { Document, Folder }` and `DiagramSubject Subject = DiagramSubject.Document` after `Extension`. Defaulted, so every existing definition compiles and behaves unchanged. Document `Folder` as "the diagram is the folder the `.adp` sits in, and the files beneath it"
   - In discovery, refuse `Folder` with a non-empty `Extension` — a contradiction — beside the duplicate-origin check already there
