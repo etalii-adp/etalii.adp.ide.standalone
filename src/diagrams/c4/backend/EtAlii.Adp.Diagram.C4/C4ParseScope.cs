@@ -1,0 +1,16 @@
+
+namespace EtAlii.Adp.Diagram.C4;
+
+/// <summary>Which construct the parser is currently inside, so a line is read the right way.</summary>
+internal enum C4ParseScope
+{
+    Root,
+    Workspace,
+    Model,
+    Element,
+    Views,
+    View,
+    Styles,
+    Style,
+    Unknown,
+}

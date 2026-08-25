@@ -17,9 +17,9 @@
   <Folder Name="/Diagrams/">
     <Project Path="../diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/EtAlii.Adp.Diagram.Mindmap.csproj" />
     <Project Path="../diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap.Tests/EtAlii.Adp.Diagram.Mindmap.Tests.csproj" />
-    <!-- The engine the seven c4-* modules share; they hold only their definition and registration. -->
-    <Project Path="../diagrams/c4/backend/EtAlii.Adp.C4/EtAlii.Adp.C4.csproj" />
-    <Project Path="../diagrams/c4/backend/EtAlii.Adp.C4.Tests/EtAlii.Adp.C4.Tests.csproj" />
+    <!-- All seven C4 notations: one engine, one assembly, one Definitions array. -->
+    <Project Path="../diagrams/c4/backend/EtAlii.Adp.Diagram.C4/EtAlii.Adp.Diagram.C4.csproj" />
+    <Project Path="../diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/EtAlii.Adp.Diagram.C4.Tests.csproj" />
     <Project Path="../diagrams/archimate-application/backend/EtAlii.Adp.Diagram.ArchimateApplication/EtAlii.Adp.Diagram.ArchimateApplication.csproj" />
     <Project Path="../diagrams/archimate-application/backend/EtAlii.Adp.Diagram.ArchimateApplication.Tests/EtAlii.Adp.Diagram.ArchimateApplication.Tests.csproj" />
     <Project Path="../diagrams/archimate-business/backend/EtAlii.Adp.Diagram.ArchimateBusiness/EtAlii.Adp.Diagram.ArchimateBusiness.csproj" />
@@ -38,20 +38,6 @@
     <Project Path="../diagrams/azure-architecture/backend/EtAlii.Adp.Diagram.AzureArchitecture.Tests/EtAlii.Adp.Diagram.AzureArchitecture.Tests.csproj" />
     <Project Path="../diagrams/bpmn-process/backend/EtAlii.Adp.Diagram.BpmnProcess/EtAlii.Adp.Diagram.BpmnProcess.csproj" />
     <Project Path="../diagrams/bpmn-process/backend/EtAlii.Adp.Diagram.BpmnProcess.Tests/EtAlii.Adp.Diagram.BpmnProcess.Tests.csproj" />
-    <Project Path="../diagrams/c4-code/backend/EtAlii.Adp.Diagram.C4Code/EtAlii.Adp.Diagram.C4Code.csproj" />
-    <Project Path="../diagrams/c4-code/backend/EtAlii.Adp.Diagram.C4Code.Tests/EtAlii.Adp.Diagram.C4Code.Tests.csproj" />
-    <Project Path="../diagrams/c4-component/backend/EtAlii.Adp.Diagram.C4Component/EtAlii.Adp.Diagram.C4Component.csproj" />
-    <Project Path="../diagrams/c4-component/backend/EtAlii.Adp.Diagram.C4Component.Tests/EtAlii.Adp.Diagram.C4Component.Tests.csproj" />
-    <Project Path="../diagrams/c4-container/backend/EtAlii.Adp.Diagram.C4Container/EtAlii.Adp.Diagram.C4Container.csproj" />
-    <Project Path="../diagrams/c4-container/backend/EtAlii.Adp.Diagram.C4Container.Tests/EtAlii.Adp.Diagram.C4Container.Tests.csproj" />
-    <Project Path="../diagrams/c4-context/backend/EtAlii.Adp.Diagram.C4Context/EtAlii.Adp.Diagram.C4Context.csproj" />
-    <Project Path="../diagrams/c4-context/backend/EtAlii.Adp.Diagram.C4Context.Tests/EtAlii.Adp.Diagram.C4Context.Tests.csproj" />
-    <Project Path="../diagrams/c4-deployment/backend/EtAlii.Adp.Diagram.C4Deployment/EtAlii.Adp.Diagram.C4Deployment.csproj" />
-    <Project Path="../diagrams/c4-deployment/backend/EtAlii.Adp.Diagram.C4Deployment.Tests/EtAlii.Adp.Diagram.C4Deployment.Tests.csproj" />
-    <Project Path="../diagrams/c4-dynamic/backend/EtAlii.Adp.Diagram.C4Dynamic/EtAlii.Adp.Diagram.C4Dynamic.csproj" />
-    <Project Path="../diagrams/c4-dynamic/backend/EtAlii.Adp.Diagram.C4Dynamic.Tests/EtAlii.Adp.Diagram.C4Dynamic.Tests.csproj" />
-    <Project Path="../diagrams/c4-system-landscape/backend/EtAlii.Adp.Diagram.C4SystemLandscape/EtAlii.Adp.Diagram.C4SystemLandscape.csproj" />
-    <Project Path="../diagrams/c4-system-landscape/backend/EtAlii.Adp.Diagram.C4SystemLandscape.Tests/EtAlii.Adp.Diagram.C4SystemLandscape.Tests.csproj" />
     <Project Path="../diagrams/cmap-concept-map/backend/EtAlii.Adp.Diagram.CmapConceptMap/EtAlii.Adp.Diagram.CmapConceptMap.csproj" />
     <Project Path="../diagrams/cmap-concept-map/backend/EtAlii.Adp.Diagram.CmapConceptMap.Tests/EtAlii.Adp.Diagram.CmapConceptMap.Tests.csproj" />
     <Project Path="../diagrams/contextmapper-context-map/backend/EtAlii.Adp.Diagram.ContextmapperContextMap/EtAlii.Adp.Diagram.ContextmapperContextMap.csproj" />
