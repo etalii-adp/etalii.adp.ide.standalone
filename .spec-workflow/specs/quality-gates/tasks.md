@@ -114,7 +114,7 @@
 
 ## Phase D — the style gate passes
 
-- [-] 13. Resolve the editorconfig contradiction
+- [x] 13. Resolve the editorconfig contradiction
   - File: `src/.editorconfig` (modify)
   - The file says `dotnet_separate_import_directive_groups` is commented out and then enables it on the next line. Set it `false`, honouring the note's stated reasoning, and keep `dotnet_sort_system_directives_first = true`. Rewrite the note so it and the setting agree
   - Purpose: Requirement 5.4 - and the cause of 115 of the gate's failures
@@ -122,7 +122,7 @@
   - _Requirements: 5.2, 5.3, 5.4_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer familiar with EditorConfig and .NET analyzers | Task: Make the note and the setting agree per Requirement 5.4 | Restrictions: the blank-line-between-groups rule is the opinionated half and the codebase does not follow it - disable that, keep sorting, which is mechanical and uncontroversial; the note must say what the rule wanted, what the codebase does instead, and why the codebase won | Success: the IMPORTS count drops to sorting-only violations. Mark in progress, log when done, then mark complete._
 
-- [ ] 14. Sort the usings
+- [-] 14. Sort the usings
   - File: every `.cs` file the gate still names (mechanical)
   - Run `dotnet format style` to fix the remaining `IMPORTS` violations, in its own commit
   - Purpose: Requirement 5.1, 5.5
