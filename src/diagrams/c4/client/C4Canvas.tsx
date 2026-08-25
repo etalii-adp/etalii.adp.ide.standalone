@@ -1,3 +1,4 @@
+import { anchorsBetween, midpointOf, straightPath, type ConnectorBox } from "@client/canvas/connectors";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { create } from "@bufbuild/protobuf";
 import { EmptySchema } from "@bufbuild/protobuf/wkt";
@@ -6,6 +7,7 @@ import { ContextSelectionSchema } from "@client/generated/context_pb";
 import type { ContextSelection } from "@client/generated/context_pb";
 import { useRegisterDiagramView, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
 import { boxesOf, type C4BoundaryBox, type C4Model, type C4Node, type C4Relationship } from "./c4Model";
+import type { C4RelationshipPayload } from "@client/generated/c4_pb";
 import { useC4Stream } from "./useC4Stream";
 
 /** The visible rectangle, in canvas units - the svg viewBox as data. */
@@ -312,15 +314,20 @@ function C4NodeShape({ node, focused, onSelect }: { node: C4Node; focused: boole
  */
 function C4RelationshipShape({ relationship }: { relationship: C4Relationship }) {
   const p = relationship.payload;
-  const [x1, y1, x2, y2] = anchorsBetween(p);
+  const [from, to] = anchorsBetween(sourceBoxOf(p), destinationBoxOf(p));
   const label = p.technology ? `${p.description} [${p.technology}]` : p.description;
   const order = p.interactionOrder;
+  const middle = midpointOf(from, to);
 
   return (
     <g className="c4-relationship">
-      <line x1={x1} y1={y1} x2={x2} y2={y2} markerEnd="url(#c4-arrow)" />
+      {/* Straight, deliberately. The shared geometry offers a horizontal bezier - what the
+          mindmap draws - and C4 does not use it: a C4 relationship joins any two elements in
+          any direction, so there is no corridor for a curve to stay inside, and Structurizr
+          and the C4 notation both draw these straight. */}
+      <path d={straightPath(from, to)} markerEnd="url(#c4-arrow)" />
       {label && (
-        <text className="c4-relationship-label" x={(x1 + x2) / 2} y={(y1 + y2) / 2 - 6} textAnchor="middle">
+        <text className="c4-relationship-label" x={middle.x} y={middle.y - 6} textAnchor="middle">
           {order ? `${order}. ${label}` : label}
         </text>
       )}
@@ -342,40 +349,15 @@ function C4BoundaryShape({ boundary }: { boundary: C4BoundaryBox }) {
 }
 
 /**
- * Where a relationship's line starts and ends: on the two boxes' edges, on the straight line
- * between their centres, so an arrow touches the box rather than disappearing under it.
+ * The two ends of a relationship as boxes, which is what the shared connector geometry wants.
+ * The payload carries each end's measured size precisely so an arrow can land on an edge.
  */
-export function anchorsBetween(p: {
-  sourceX: number;
-  sourceY: number;
-  sourceWidth: number;
-  sourceHeight: number;
-  destinationX: number;
-  destinationY: number;
-  destinationWidth: number;
-  destinationHeight: number;
-}): [number, number, number, number] {
-  const dx = p.destinationX - p.sourceX;
-  const dy = p.destinationY - p.sourceY;
-  const from = edgePoint(p.sourceX, p.sourceY, p.sourceWidth, p.sourceHeight, dx, dy);
-  const to = edgePoint(p.destinationX, p.destinationY, p.destinationWidth, p.destinationHeight, -dx, -dy);
-  return [from[0], from[1], to[0], to[1]];
+function sourceBoxOf(p: C4RelationshipPayload): ConnectorBox {
+  return { x: p.sourceX, y: p.sourceY, width: p.sourceWidth, height: p.sourceHeight };
 }
 
-/** The point on a box's edge in the direction (dx, dy) from its centre. */
-function edgePoint(cx: number, cy: number, width: number, height: number, dx: number, dy: number): [number, number] {
-  if (dx === 0 && dy === 0) {
-    return [cx, cy];
-  }
-
-  const halfWidth = width / 2;
-  const halfHeight = height / 2;
-  // Scale the direction until it touches whichever edge it reaches first.
-  const scale = Math.min(
-    dx === 0 ? Number.POSITIVE_INFINITY : halfWidth / Math.abs(dx),
-    dy === 0 ? Number.POSITIVE_INFINITY : halfHeight / Math.abs(dy),
-  );
-  return [cx + dx * scale, cy + dy * scale];
+function destinationBoxOf(p: C4RelationshipPayload): ConnectorBox {
+  return { x: p.destinationX, y: p.destinationY, width: p.destinationWidth, height: p.destinationHeight };
 }
 
 /**

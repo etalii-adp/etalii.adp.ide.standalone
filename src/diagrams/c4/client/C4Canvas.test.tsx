@@ -144,7 +144,7 @@ describe("C4Canvas", () => {
     // Act and assert, step by step.
     const relationships = container.querySelectorAll(".c4-relationship");
     expect(relationships).toHaveLength(1);
-    expect(relationships[0].querySelector("line")!.getAttribute("marker-end")).toBe("url(#c4-arrow)");
+    expect(relationships[0].querySelector("path")!.getAttribute("marker-end")).toBe("url(#c4-arrow)");
     expect(relationships[0].textContent).toContain("Uses [HTTPS]");
   });
 
@@ -153,12 +153,22 @@ describe("C4Canvas", () => {
     // A line drawn centre-to-centre disappears under the boxes at both ends.
     const { container } = render(<C4Canvas {...props} />);
 
-    // Act and assert, step by step.
-    const line = container.querySelector(".c4-relationship line")!;
+    // Act.
+    // Drawn as a path rather than a line, so the same element can carry a curve if C4 ever
+    // wants one - the geometry is shared with the mindmap, only the shape chosen differs.
+    // "M x1 y1 L x2 y2" - read positionally rather than by regex, which is one fewer thing to
+    // get subtly wrong in a test that exists to catch subtle wrongness.
+    const drawn = container.querySelector(".c4-relationship path")!.getAttribute("d")!.split(/\s+/);
+    expect(drawn[0]).toBe("M");
+    expect(drawn[3]).toBe("L");
+    const y1 = Number(drawn[2]);
+    const y2 = Number(drawn[5]);
+
+    // Assert.
     // Alpha is centred at (0,0) and is 80 tall, so the line leaves at its lower edge.
-    expect(Number(line.getAttribute("y1"))).toBeCloseTo(40, 5);
+    expect(y1).toBeCloseTo(40, 5);
     // Beta is centred at (0,200), so the line arrives at its upper edge.
-    expect(Number(line.getAttribute("y2"))).toBeCloseTo(160, 5);
+    expect(y2).toBeCloseTo(160, 5);
   });
 
   it("draws a boundary as a labelled dashed rectangle", () => {
