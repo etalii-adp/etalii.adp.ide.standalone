@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/azure-pipeline-diagram/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-25T16:05:10.405Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787673910379_5d4d2goux",
+      "approvalTitle": "Design: azure-pipeline-diagram"
+    }
+  ]
+}
