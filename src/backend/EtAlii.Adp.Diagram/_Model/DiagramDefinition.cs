@@ -18,10 +18,33 @@ namespace EtAlii.Adp.Diagram;
 /// diagram. Declared here so core can name the sibling by construction, without carrying a
 /// mapping from MIME type to extension for every type (mindmap-diagram Requirement 2.2).
 /// </param>
-public sealed record DiagramDefinition(DiagramOrigin Origin, string Title, string Description = "", string Extension = "")
+/// <param name="SharedExtension">
+/// Whether <paramref name="Extension"/> is too common for this type to claim on sight.
+/// <c>.mm</c>, <c>.owm</c> and <c>.dsl</c> belong to one type or one vendor's family, so a file
+/// carrying one is that type's document and is routed as such. <c>.yml</c> does not: a
+/// repository is full of workflows, compose files and manifests that are not pipelines, and a
+/// type that claimed the extension would claim all of them.
+/// <para>
+/// A shared extension is never routed from a bare body. Such a file becomes a diagram only when
+/// the user says so, by registering it through Add on a file, which writes the <c>.adp</c> that
+/// routes it from then on (azure-pipeline-diagram Requirements 2.1-2.3).
+/// </para>
+/// </param>
+public sealed record DiagramDefinition(
+    DiagramOrigin Origin,
+    string Title,
+    string Description = "",
+    string Extension = "",
+    bool SharedExtension = false)
 {
     /// <summary>Whether this type keeps its body in a sibling file rather than in the <c>.adp</c> file itself.</summary>
     public bool HasDocumentSibling => Extension.Length > 0;
+
+    /// <summary>
+    /// Whether a file carrying this type's extension may be routed to it without an <c>.adp</c>
+    /// registration beside it. False for a shared extension, which the user registers explicitly.
+    /// </summary>
+    public bool RoutesBareBody => HasDocumentSibling && !SharedExtension;
 
     /// <summary>
     /// Every diagram type discovered at startup, in a stable order. Empty until the host has
