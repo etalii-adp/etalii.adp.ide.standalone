@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/plantuml-uml/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-25T16:14:14.773Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787674454674_it32gqw02",
+      "approvalTitle": "Requirements: plantuml-uml"
+    }
+  ]
+}
