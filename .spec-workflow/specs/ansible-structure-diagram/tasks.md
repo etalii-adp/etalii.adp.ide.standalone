@@ -93,7 +93,7 @@
   - _Requirements: 1.2, 9.2_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer maintaining central package management | Task: Add YamlDotNet to Directory.Packages.props at its current release and reference it from the Ansible module only | Restrictions: version goes in Directory.Packages.props, never in the csproj; do not add the reference to any other project | Success: the module builds against YamlDotNet and no other project gains a YAML dependency_
 
-- [-] 9. `AnsibleYaml`: one tolerant read
+- [x] 9. `AnsibleYaml`: one tolerant read
   - File: `.../AnsibleYaml.cs` (new), `_Model/AnsibleYamlFailure.cs` (new), `.../AnsibleYaml.Tests.cs` (new)
   - `Read(string path)` returns either a parsed root node **with line marks kept**, or an `AnsibleYamlFailure(Message, Line)` carrying the parser's own message. Never throws for a malformed document. Opened read-only and shared, so validation never contends with an editor
   - Purpose: Requirement 1.2's "degrades that file's detail, never the whole diagram", at its narrowest point
