@@ -28,7 +28,7 @@
   - _Requirements: 1.2, 1.9_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Widen c4.missing-description to cover deployment and infrastructure nodes, reversing the narrowing made during c4-diagrams task 1 | Restrictions: keep the severity a Warning, per Requirement 1.9 - Structurizr prints these as ERROR but they are recommendations, and that divergence is a recorded decision; do not re-narrow anything to keep a test quiet; fixtures reporting new problems is the rule working (Requirement 1.4) | Success: builds; big-bank-plc.dsl now reports deployment-node descriptions. Mark in progress, log when done, then mark complete._
 
-- [-] 3. Widen the relationship technology rule
+- [x] 3. Widen the relationship technology rule
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4RuleSet.cs` (modify)
   - Widen `c4.missing-protocol` from container-to-container to every relationship, matching `model.relationship.technology`. Replace the "in-process calls have no protocol" comment - Structurizr inspects for one on every relationship and the worked example is not clean by its own tooling
   - Purpose: Requirement 1.3 - the second regression being reversed
@@ -36,7 +36,7 @@
   - _Requirements: 1.3, 1.4, 1.9_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Widen c4.missing-protocol to every relationship per Requirement 1.3 | Restrictions: Warning severity; update fixture expectations rather than re-narrowing (Requirement 1.4); the reference example under examples/reference already names a technology on every relationship and must stay clean | Success: builds; ExamplesTests still passes for the reference project. Mark in progress, log when done, then mark complete._
 
-- [ ] 4. Add the deployment and infrastructure technology rules
+- [-] 4. Add the deployment and infrastructure technology rules
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4RuleSet.cs` (modify)
   - Implement `c4.missing-deployment-technology` and `c4.missing-infrastructure-technology`, mirroring `model.deploymentnode.technology` and `model.infrastructurenode.technology`
   - Purpose: Requirement 1.1 - two of the gaps where Structurizr has a rule and ADP has none
