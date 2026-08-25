@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/quality-gates/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-25T10:07:33.907Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787652453792_soigmirml",
+      "approvalTitle": "quality-gates: requirements"
+    }
+  ]
+}
