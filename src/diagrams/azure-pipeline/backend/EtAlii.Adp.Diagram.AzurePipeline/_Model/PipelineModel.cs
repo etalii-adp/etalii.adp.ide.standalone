@@ -17,13 +17,19 @@ namespace EtAlii.Adp.Diagram.AzurePipeline;
 /// its own: its real shape is the template's, and what it contributes is parameters
 /// (Requirement 5.5).
 /// </param>
+/// <param name="Unresolved">
+/// The templates that were not followed, each with its reason (Requirement 5.3). Empty is not the
+/// same as "no templates": a reference that was followed appears in <paramref name="Templates"/>
+/// and not here.
+/// </param>
 public sealed record PipelineModel(
     IReadOnlyList<PipelineStage> Stages,
     IReadOnlyList<PipelineTemplateReference> Templates,
-    PipelineTemplateReference? Extends)
+    PipelineTemplateReference? Extends,
+    IReadOnlyList<PipelineTemplateUnresolved> Unresolved)
 {
     /// <summary>A file that parsed but declares nothing this module models.</summary>
-    public static PipelineModel Empty { get; } = new([], [], null);
+    public static PipelineModel Empty { get; } = new([], [], null, []);
 
     /// <summary>Every job in the pipeline, stage order then declared order.</summary>
     public IEnumerable<PipelineJob> Jobs => Stages.SelectMany(stage => stage.Jobs);

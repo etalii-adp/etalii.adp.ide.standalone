@@ -15,7 +15,12 @@ namespace EtAlii.Adp.Diagram.AzurePipeline;
 /// For a step inside a deployment job, the lifecycle hook it belongs to (<c>deploy</c>,
 /// <c>preDeploy</c>, ...); empty for a step declared directly under a plain job.
 /// </param>
-/// <param name="Lines">The lines declaring it.</param>
+/// <param name="Template">
+/// The template that contributed this element, as a workspace-relative path; empty when the file
+/// being viewed declares it itself. An element from a template is not editable through the
+/// diagram, because its text lives in another file (Requirement 5.4).
+/// </param>
+/// <param name="Lines">The lines declaring it, in whichever file that is.</param>
 public sealed record PipelineStep(
     string Id,
     PipelineStepKind Kind,
@@ -23,8 +28,12 @@ public sealed record PipelineStep(
     string Identifier,
     PipelineExecution Execution,
     string Hook,
+    string Template,
     PipelineLineRange Lines)
 {
+    /// <summary>Whether this element came from a template, and so may not be edited here.</summary>
+    public bool IsFromTemplate => Template.Length > 0;
+
     /// <summary>
     /// What to show for this step: its <c>displayName</c>, or failing that the identifying value
     /// of its kind, reduced to its first line so a multi-line script does not become the label

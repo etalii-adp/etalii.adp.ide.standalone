@@ -1,6 +1,7 @@
 using Serilog;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
+using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.AzurePipeline;
 
@@ -48,16 +49,30 @@ public sealed class PipelineParser
     };
 
     private readonly PipelineDocument _document;
+    private readonly PipelineTemplates? _resolver;
+    private readonly string _documentPath;
+    private readonly string _source;
+    private readonly HashSet<string> _expanding;
     private readonly List<PipelineTemplateReference> _templates = [];
+    private readonly List<PipelineTemplateUnresolved> _unresolved = [];
     private PipelinePool _pipelinePool = PipelinePool.None;
 
-    private PipelineParser(PipelineDocument document)
+    private PipelineParser(
+        PipelineDocument document,
+        PipelineTemplates? resolver,
+        string documentPath,
+        string source,
+        HashSet<string> expanding)
     {
         _document = document;
+        _resolver = resolver;
+        _documentPath = documentPath;
+        _source = source;
+        _expanding = expanding;
     }
 
     /// <summary>
-    /// Reads <paramref name="document"/> into a model.
+    /// Reads <paramref name="document"/> into a model, without following any template it names.
     /// </summary>
     /// <exception cref="YamlDotNet.Core.YamlException">
     /// The document is not YAML this can read. It carries the line, which is what a reader needs
@@ -66,7 +81,21 @@ public sealed class PipelineParser
     public static PipelineModel Parse(PipelineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
-        return new PipelineParser(document).Read();
+        return new PipelineParser(document, null, "", "", []).Read();
+    }
+
+    /// <summary>
+    /// Reads <paramref name="document"/> into a model, following the templates it names that
+    /// <paramref name="resolver"/> will let it reach.
+    /// </summary>
+    /// <param name="document">The document to read.</param>
+    /// <param name="resolver">Bounds which files may be followed, and remembers what it read.</param>
+    /// <param name="documentPath">Where the document lives, absolute - relative references start here.</param>
+    public static PipelineModel Parse(PipelineDocument document, PipelineTemplates resolver, string documentPath)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(resolver);
+        return new PipelineParser(document, resolver, documentPath, "", []).Read();
     }
 
     private PipelineModel Read()
@@ -80,8 +109,8 @@ public sealed class PipelineParser
         }
 
         var extends = ReadExtends(root);
-        var stages = ReadPipelineStages(root);
-        return new PipelineModel(stages, _templates, extends);
+        var stages = extends is null ? ReadPipelineStages(root) : ExtendedStages(extends);
+        return new PipelineModel(stages, _templates, extends, _unresolved);
     }
 
     private PipelineTemplateReference? ReadExtends(YamlMappingNode root)
@@ -94,6 +123,14 @@ public sealed class PipelineParser
         var path = Scalar(extends, "template");
         return TemplateReference("extends", "", PipelineTemplateSlot.Extends, path, extends, Range(extends));
     }
+
+    /// <summary>
+    /// The stages of an extending file, which are the template's rather than its own
+    /// (Requirement 5.5) - so every one of them is marked as belonging to the other file, and none
+    /// of them is editable here.
+    /// </summary>
+    private List<PipelineStage> ExtendedStages(PipelineTemplateReference extends) =>
+        Follow(extends) is { } expanded ? [.. expanded.Stages] : [];
 
     /// <summary>
     /// The stages, or the implicit stage the schema wraps a <c>jobs</c>-only or <c>steps</c>-only
@@ -115,13 +152,13 @@ public sealed class PipelineParser
 
         if (Entry(root, "jobs") is YamlSequenceNode jobs)
         {
-            return [ImplicitStage(ReadJobsInto(jobs, ImplicitStageId, _pipelinePool), Range(jobs), _pipelinePool)];
+            return [ImplicitStage(ReadJobsInto(jobs, ImplicitStageId, _pipelinePool), Range(jobs), _pipelinePool, _source)];
         }
 
         if (Entry(root, "steps") is YamlSequenceNode steps)
         {
-            var job = ImplicitJob(ReadSteps(steps, ImplicitJobId, ""), Range(steps), _pipelinePool);
-            return [ImplicitStage([job], Range(steps), _pipelinePool)];
+            var job = ImplicitJob(ReadSteps(steps, ImplicitJobId, ""), Range(steps), _pipelinePool, _source);
+            return [ImplicitStage([job], Range(steps), _pipelinePool, _source)];
         }
 
         return [];
@@ -133,7 +170,8 @@ public sealed class PipelineParser
     private static PipelineStage ImplicitStage(
         IReadOnlyList<PipelineJob> jobs,
         PipelineLineRange lines,
-        PipelinePool pool) =>
+        PipelinePool pool,
+        string source) =>
         new(
             ImplicitStageId,
             "",
@@ -147,12 +185,14 @@ public sealed class PipelineParser
             "",
             IsImplicit: true,
             jobs,
+            source,
             lines);
 
     private static PipelineJob ImplicitJob(
         IReadOnlyList<PipelineStep> steps,
         PipelineLineRange lines,
-        PipelinePool pool) =>
+        PipelinePool pool,
+        string source) =>
         new(
             ImplicitJobId,
             "",
@@ -167,6 +207,7 @@ public sealed class PipelineParser
             "",
             IsImplicit: true,
             steps,
+            source,
             lines);
 
     private void ReadStages(YamlSequenceNode sequence, string gate, List<PipelineStage> into)
@@ -189,8 +230,14 @@ public sealed class PipelineParser
 
             if (Scalar(mapping, "template") is { Length: > 0 } template)
             {
-                _templates.Add(TemplateReference(
-                    $"template-{_templates.Count}", "", PipelineTemplateSlot.Stages, template, mapping, Range(mapping)));
+                var reference = TemplateReference(
+                    $"template-{_templates.Count}", "", PipelineTemplateSlot.Stages, template, mapping, Range(mapping));
+                _templates.Add(reference);
+                if (Follow(reference) is { } expanded)
+                {
+                    into.AddRange(expanded.Stages);
+                }
+
                 continue;
             }
 
@@ -216,6 +263,7 @@ public sealed class PipelineParser
                 gate,
                 IsImplicit: false,
                 jobs,
+                _source,
                 Range(mapping)));
         }
     }
@@ -249,8 +297,19 @@ public sealed class PipelineParser
 
             if (Scalar(mapping, "template") is { Length: > 0 } template)
             {
-                _templates.Add(TemplateReference(
-                    $"template-{_templates.Count}", stageId, PipelineTemplateSlot.Jobs, template, mapping, Range(mapping)));
+                var reference = TemplateReference(
+                    $"template-{_templates.Count}", stageId, PipelineTemplateSlot.Jobs, template, mapping, Range(mapping));
+                _templates.Add(reference);
+                if (Follow(reference) is { } expanded)
+                {
+                    // A jobs template is a pipeline in its own right, so its jobs arrive wrapped in
+                    // its own implicit stage and belonging to it. Here they belong to this stage.
+                    foreach (var job in expanded.Stages.SelectMany(stage => stage.Jobs))
+                    {
+                        into.Add(Reparent(job, stageId, into.Count));
+                    }
+                }
+
                 continue;
             }
 
@@ -275,6 +334,7 @@ public sealed class PipelineParser
                 gate,
                 IsImplicit: false,
                 ReadJobSteps(mapping, id, strategy),
+                _source,
                 Range(mapping)));
         }
     }
@@ -331,10 +391,45 @@ public sealed class PipelineParser
                 identifier,
                 ReadExecution(mapping),
                 hook,
+                _source,
                 Range(mapping)));
+
+            if (kind != PipelineStepKind.Template)
+            {
+                continue;
+            }
+
+            // The template stays as a step of its own - the seam is worth seeing - and the steps it
+            // contributes follow it, in the place they would run (Requirements 5.1 and 5.2).
+            var reference = TemplateReference(
+                $"template-{_templates.Count}", jobId, PipelineTemplateSlot.Steps, identifier, mapping, Range(mapping));
+            _templates.Add(reference);
+            if (Follow(reference) is not { } expanded)
+            {
+                continue;
+            }
+
+            foreach (var contributed in expanded.Steps)
+            {
+                steps.Add(contributed with { Id = $"{jobId}/step-{offset + steps.Count}", Hook = hook });
+            }
         }
 
         return steps;
+    }
+
+    /// <summary>
+    /// A job read from a jobs template, as a job of the stage that referenced it: the ids it and
+    /// its steps arrived with name the template's own implicit stage, which is not where they live.
+    /// </summary>
+    private static PipelineJob Reparent(PipelineJob job, string stageId, int index)
+    {
+        var id = $"{stageId}/{(job.Name.Length > 0 ? job.Name : $"job-{index}")}";
+        return job with
+        {
+            Id = id,
+            Steps = [.. job.Steps.Select((step, position) => step with { Id = $"{id}/step-{position}" })],
+        };
     }
 
     /// <summary>
@@ -462,6 +557,76 @@ public sealed class PipelineParser
             _ => ([], true),
         };
     }
+
+    /// <summary>
+    /// Reads the file a reference names, or records why it was not read.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Whatever comes back, the reference itself has already been recorded: Requirement 5.1 wants
+    /// the template shown as an element of its own whether or not it could be followed, so that a
+    /// reader can see the seam rather than a suspiciously flat pipeline.
+    /// </para>
+    /// <para>
+    /// A template already being expanded further up the stack is refused as cyclic rather than
+    /// followed. Azure would reject such a pipeline outright, but a diagram tool that recursed
+    /// until it ran out of stack would be the less useful of the two ways to say so.
+    /// </para>
+    /// </remarks>
+    private PipelineModel? Follow(PipelineTemplateReference reference)
+    {
+        if (_resolver is null)
+        {
+            return null;
+        }
+
+        var (path, reason) = _resolver.Locate(reference, _documentPath);
+        if (reason != PipelineTemplateUnresolvedReason.None)
+        {
+            _unresolved.Add(new PipelineTemplateUnresolved(reference, reason));
+            return null;
+        }
+
+        if (!_expanding.Add(path))
+        {
+            _unresolved.Add(new PipelineTemplateUnresolved(reference, PipelineTemplateUnresolvedReason.Cyclic));
+            return null;
+        }
+
+        try
+        {
+            var document = _resolver.Read(path);
+            if (document is null)
+            {
+                _unresolved.Add(new PipelineTemplateUnresolved(reference, PipelineTemplateUnresolvedReason.Unreadable));
+                return null;
+            }
+
+            var parser = new PipelineParser(document, _resolver, path, Display(path), _expanding);
+            var model = parser.Read();
+            // What the template could not follow is this file's problem too: a gap two files down
+            // is still a gap in the diagram being looked at.
+            _templates.AddRange(model.Templates);
+            _unresolved.AddRange(model.Unresolved);
+            return model;
+        }
+        catch (YamlException error)
+        {
+            _logger.Debug(error, "A template at {Path} is not readable as a pipeline", path);
+            _unresolved.Add(new PipelineTemplateUnresolved(reference, PipelineTemplateUnresolvedReason.Unreadable));
+            return null;
+        }
+        finally
+        {
+            _expanding.Remove(path);
+        }
+    }
+
+    /// <summary>A template's path as the reader should see it: relative to the workspace, with forward slashes.</summary>
+    private string Display(string path) =>
+        _resolver is null
+            ? path
+            : IoPath.GetRelativePath(_resolver.WorkspaceRoot, path).Replace('\\', '/');
 
     private PipelineTemplateReference TemplateReference(
         string id,
