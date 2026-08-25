@@ -56,6 +56,10 @@ public static class ServiceCollectionAddC4Extension
             var origin = new DiagramOrigin("c4", type);
             services.AddSingleton<IDiagramDocumentFactory>(_ => new C4DocumentFactory(origin, viewKind));
 
+            // The palette this view offers: exactly the kinds it permits, drawn from the
+            // same rule the validator uses so the two cannot disagree (Requirement 12.2).
+            services.AddSingleton<IDiagramToolboxProvider>(_ => new C4ToolboxProvider(origin, viewKind));
+
             // The session seam: which view a session shows comes from the .adp file, so all six
             // factories are the same code under different origins.
             services.AddSingleton<IDiagramSessionFactory>(provider => new C4SessionFactory(
