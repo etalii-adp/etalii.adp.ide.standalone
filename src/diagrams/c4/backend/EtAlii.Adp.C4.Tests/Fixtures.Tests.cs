@@ -25,6 +25,8 @@ public class FixturesTests
         "unmodelled-constructs.dsl",
         "deployment-nested.dsl",
         "dynamic-interactions.dsl",
+        "big-bank-plc.dsl",
+        "aws-deployment.dsl",
     ];
 
     [Theory]
@@ -95,22 +97,27 @@ public class FixturesTests
     }
 
     [Fact]
-    public void TheCorpusStillLacksTheRealWorldDocuments_AndSaysSoInItsReadme()
+    public void TheRealWorldDocumentsArePresent_AndTheReadmeSaysWhereTheyCameFrom()
     {
-        // Deliberately asserts the gap rather than hiding it: the canonical Structurizr
-        // documents could not be fetched (Fixtures/readme.md records why). When they are
-        // added, this test fails and is deleted - which is exactly the reminder wanted, so
-        // that "outstanding" cannot quietly become "forgotten".
-        var missing = new[] { "big-bank-plc.dsl", "aws-deployment.dsl" }
-            .Where(name => !File.Exists(IoPath.Combine("Fixtures", name)))
-            .ToArray();
-        if (missing.Length == 0)
+        // These two started out as a recorded gap, on the reading that the canonical files
+        // could not be fetched. That reading was wrong - the repositories task 1 names do not
+        // exist under those names, which is not the same as being unreachable - so they were
+        // written by hand instead and put through the real Structurizr CLI, which certifies
+        // them valid. That is a weaker claim than "canonical" and the readme has to keep
+        // saying so, because a hand-written file quietly relabelled canonical is precisely
+        // what task 1 forbids.
+        var readme = Bytes("readme.md");
+        foreach (var name in new[] { "big-bank-plc.dsl", "aws-deployment.dsl" })
         {
-            Assert.Fail("The real-world fixtures have arrived: update Fixtures/readme.md's table and delete this test.");
+            Assert.True(File.Exists(IoPath.Combine("Fixtures", name)), $"{name} is missing");
+            Assert.Contains(name, readme, StringComparison.Ordinal);
         }
 
-        var readme = Bytes("readme.md");
-        Assert.All(missing, name => Assert.Contains(name, readme, StringComparison.Ordinal));
-        Assert.Contains("outstanding", readme, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("hand-written", readme, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Structurizr CLI", readme, StringComparison.Ordinal);
+        // The disclaimer itself, rather than the absence of the old "outstanding" note: what
+        // has to survive edits to this readme is that nobody reading it comes away thinking
+        // these two files were copied from Structurizr.
+        Assert.Contains("described as canonical", readme, StringComparison.Ordinal);
     }
 }

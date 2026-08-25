@@ -48,7 +48,9 @@ public class C4DocumentFactoryTests
     [InlineData(C4ViewKind.SystemLandscape, "systemLandscape \"landscape\"")]
     [InlineData(C4ViewKind.SystemContext, "systemContext payments \"context\"")]
     [InlineData(C4ViewKind.Container, "container payments \"containers\"")]
-    [InlineData(C4ViewKind.Component, "component payments.application \"components\"")]
+    [InlineData(C4ViewKind.Component, "component application \"components\"")]
+    // Not `payments.application`: identifiers are flat unless the document says otherwise,
+    // and Structurizr rejects the dotted form as a container that does not exist.
     [InlineData(C4ViewKind.Dynamic, "dynamic payments \"scenario\"")]
     [InlineData(C4ViewKind.Deployment, "deployment payments \"Production\" \"deployment\"")]
     public void EachKind_DeclaresItsOwnViewScopedToWhatThatKindRequires(C4ViewKind kind, string expected)

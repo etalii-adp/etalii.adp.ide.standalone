@@ -21,6 +21,8 @@ public class C4DocumentTests
         "unmodelled-constructs.dsl",
         "deployment-nested.dsl",
         "dynamic-interactions.dsl",
+        "big-bank-plc.dsl",
+        "aws-deployment.dsl",
     ];
 
     private static string Read(string name) => File.ReadAllText(IoPath.Combine("Fixtures", name));

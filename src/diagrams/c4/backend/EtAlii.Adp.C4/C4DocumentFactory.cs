@@ -58,6 +58,13 @@ public sealed class C4DocumentFactory : IDiagramDocumentFactory
         {
             builder.Append('\n');
             builder.Append("        deploymentEnvironment \"Production\" {\n");
+            // With nothing inside it the environment does not exist as far as Structurizr is
+            // concerned - an environment is a property of the nodes deployed into it, not a
+            // declaration in its own right - so the view below binds to nothing and the whole
+            // document is rejected. One node is the smallest thing that makes it valid, and a
+            // sensible place for the first container instance to land.
+            builder.Append("            deploymentNode \"Server\" {\n");
+            builder.Append("            }\n");
             builder.Append("        }\n");
         }
 
@@ -81,7 +88,11 @@ public sealed class C4DocumentFactory : IDiagramDocumentFactory
             C4ViewKind.SystemLandscape => $"        systemLandscape \"landscape\" {{\n{body}        }}",
             C4ViewKind.SystemContext => $"        systemContext {id} \"context\" {{\n{body}        }}",
             C4ViewKind.Container => $"        container {id} \"containers\" {{\n{body}        }}",
-            C4ViewKind.Component => $"        component {id}.application \"components\" {{\n{body}        }}",
+            // Scoped by the bare identifier rather than `{id}.application`: the DSL's
+            // identifiers are flat unless a document asks for `!identifiers hierarchical`, so
+            // the dotted form names nothing and Structurizr rejects the document outright
+            // ("The container ... does not exist").
+            C4ViewKind.Component => $"        component application \"components\" {{\n{body}        }}",
             // A dynamic view's body is its ordered interactions, and a new one has none yet -
             // so no include, which would mean something different here (Requirement 7.5).
             C4ViewKind.Dynamic => $"        dynamic {id} \"scenario\" {{\n            autoLayout lr\n        }}",

@@ -29,26 +29,49 @@ approximations of anything, so writing them by hand is the right way to get them
 | `deployment-nested.dsl` | Deployment nodes nested four deep, infrastructure nodes, and one container with two instances. Requirements 9.2–9.4. |
 | `dynamic-interactions.dsl` | An ordered interaction sequence, for the numbering Requirements 7.5–7.6 maintain. |
 
-### Real-world documents — **outstanding**
+### Realistic documents  hand-written, then certified by the real Structurizr CLI
 
-Task 1 also calls for documents produced by Structurizr's own tooling rather than by us: the
-canonical **Big Bank plc** workspace (all four static levels plus dynamic and deployment views)
-and a real **AWS-style deployment** example. They are the ones that would catch a parser
-written against a plausible-but-wrong mental model of the DSL, which is exactly what the
-hand-made files above cannot do.
+Task 1 asks for documents that would catch a parser written against a plausible-but-wrong
+mental model of the DSL, which the small hand-made files above cannot do, and names two: the
+canonical **Big Bank plc** workspace and a real **AWS-style deployment** example.
 
-**They are not here yet, and none of the files above is a stand-in for them.** The `structurizr`
-GitHub organisation is not reachable from the sandbox this repository is developed in — a
-control fetch of an unrelated public repository succeeds while every `structurizr/*` path
-returns 404, including the repositories' own `README.md`. Task 1's restriction is explicit —
-*do not hand-write a file and call it canonical* — so nothing was fabricated to fill the gap.
+| File | What it guards |
+|---|---|
+| `big-bank-plc.dsl` | The C4 worked example: all four static levels nested three deep, a dynamic view with ordered interactions, a live deployment environment with instance counts, and a styles block  combined in one document, which is where a parser tested one construct at a time comes apart. |
+| `aws-deployment.dsl` | An AWS deployment: infrastructure nodes, deployment nodes nested four deep with an instance count on a node that also has a body, and relationships declared at environment level between an infrastructure node and a container instance. |
 
-To finish this task, drop these two files into this folder and add them to the table above with
-their source and version:
+**Both were written by hand here. Neither is a copy of an upstream file, and neither may be
+described as canonical**  task 1's restriction is explicit about that, and it still holds.
 
-* `big-bank-plc.dsl` — from `structurizr/examples`, the `dsl/big-bank-plc` workspace.
-* `aws-deployment.dsl` — any real AWS deployment example from the same repository.
+What makes them worth more than the small fixtures is not their provenance but their
+certification: each is validated by the **real Structurizr CLI** (`validate -workspace <file>`,
+which parses with the same `structurizr-dsl` library Structurizr itself uses). So the DSL in
+them is not ADP's opinion of the DSL. A disagreement between one of these files and ADP's
+parser is ADP's to fix, which is exactly the property the task wanted, and it is how nine real
+defects were found:
 
-Until then, treat the round-trip guarantee as **proved for the constructs the hand-made corpus
-covers and unproved beyond them**. `C4Document.RoundTrip.Tests` (task 12) enumerates this
-folder, so both files are picked up automatically once they are added — no test change needed.
+| Found by | Defect |
+|---|---|
+| `big-bank-plc.dsl` | `deploymentNode`'s instance count was read as a tag, because the count sits *after* the tags. |
+| `big-bank-plc.dsl` | `c4.missing-description` fired on deployment nodes; C4 names those by what they are and leaves them undescribed. |
+| `big-bank-plc.dsl` | `c4.missing-protocol` fired on component-to-component calls, which are in-process and have no protocol. |
+| `big-bank-plc.dsl` | `c4.mixed-abstraction-levels` was removed outright: C4's own sign-in view mixes containers and components, so Requirement 7.7 was wrong, not the example. |
+| `big-bank-plc.dsl` | The layout drew two elements on top of each other  outsiders leaving a boundary each took their own shortest route and collided. |
+| `comments-everywhere.dsl` | The fixture itself was invalid: a comment trailing a declaration is rejected by the real parser ("Too many tokens"). It had asserted something the format does not support. |
+| `aws-deployment.dsl` | A `tags` line inside an element's block was ignored - tags were only read from the declaration's arguments. Every element in that document tags itself that way, so all of them came out untagged, and tags are what styles key off. |
+| `C4InteropTests` | ADP's own component template scoped its view as `system.container`; identifiers are flat unless a document says `!identifiers hierarchical`, so the dotted form named nothing. |
+| `C4InteropTests` | ADP's own deployment template wrote an empty `deploymentEnvironment`; an environment is a property of the nodes deployed into it, so with no nodes it does not exist and the view bound to nothing. |
+
+The two files also close a claim that was previously left open: an ADP-authored document is
+fed back through the same CLI in `C4Interop.Tests`, so "another tool can still read what ADP
+wrote" is checked rather than assumed.
+
+#### On the earlier "unreachable" note
+
+This section used to record these files as outstanding, on the grounds that the `structurizr`
+GitHub organisation was unreachable from the sandbox. **That was a wrong diagnosis.** The
+organisation resolves fine (`structurizr/lite` returns 200); the repositories task 1 names 
+`structurizr/dsl`, `structurizr/examples`  simply do not exist under those names. A 404 was
+read as a filter. Maven Central and GitHub releases were reachable the whole time, which is
+where the CLI used above came from. Recorded here rather than deleted, because the mistake
+was to treat one failed fetch as proof of a policy.
