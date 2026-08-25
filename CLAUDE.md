@@ -12,6 +12,14 @@ Whenever a topic or specification is handled in a chat, rename the chat (session
 
 Actual development work — writing code, editing specs, running builds/tests — should always happen in a dedicated git worktree (`.claude/worktrees/<name>/`), never directly in this main checkout. Create a new worktree per distinct piece of work and merge it back into `develop` when done. Multiple sessions routinely work against this repository at the same time; working directly in the main checkout risks one session's `git add`/`git commit` sweeping up another's uncommitted changes via a shared index, exactly the kind of cross-contamination a dedicated worktree avoids.
 
+**Retire a worktree once its branch is merged into `develop` and its working tree is clean:** `git worktree remove .claude/worktrees/<name>`. A worktree is created per piece of work, so without this they only accumulate — twenty-four of them had built up before anyone counted.
+
+Three rules make this safe, and none of them is optional:
+
+- **Never remove a worktree with uncommitted changes or unmerged commits.** Raise it for a decision instead. Housekeeping that destroys work is not housekeeping.
+- **Removing the worktree does not remove the branch,** so a merged branch's commits stay reachable either way. Do not delete branches as part of this.
+- **Removal often fails on Windows** with `Filename too long` (deep `node_modules` paths) or `Permission denied` (a dev server or IDE holding a file). Git still deregisters the worktree; only the directory deletion fails, leaving a folder of build output behind. **Report those rather than forcing them** — and check before deleting one by hand, because a leftover folder can still hold source.
+
 ## spec-workflow
 
 This repo uses the `.spec-workflow/` folder (steering docs, specs, approvals, implementation logs) to plan and track work before implementation.
