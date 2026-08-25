@@ -1,14 +1,14 @@
 using Xunit;
-using Valid = EtAlii.Adp.Diagram.Tests.Fixtures.Valid;
-using Duplicate = EtAlii.Adp.Diagram.Tests.Fixtures.Duplicate;
-using WrongType = EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.WrongType;
-using NotStatic = EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.NotStatic;
-using Throws = EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.Throws;
-using Zulu = EtAlii.Adp.Diagram.Tests.Fixtures.Ordering.Zulu;
 using Alpha = EtAlii.Adp.Diagram.Tests.Fixtures.Ordering.Alpha;
-using Several = EtAlii.Adp.Diagram.Tests.Fixtures.Several;
+using Duplicate = EtAlii.Adp.Diagram.Tests.Fixtures.Duplicate;
 using EmptyArray = EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.EmptyArray;
+using NotStatic = EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.NotStatic;
 using NullEntry = EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.NullEntry;
+using Several = EtAlii.Adp.Diagram.Tests.Fixtures.Several;
+using Throws = EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.Throws;
+using Valid = EtAlii.Adp.Diagram.Tests.Fixtures.Valid;
+using WrongType = EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.WrongType;
+using Zulu = EtAlii.Adp.Diagram.Tests.Fixtures.Ordering.Zulu;
 
 namespace EtAlii.Adp.Diagram.Tests;
 
