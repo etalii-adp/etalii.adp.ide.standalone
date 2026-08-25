@@ -45,10 +45,28 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
         using var _ = _factory.CreateClient();
 
         // Act.
-        var keys = DiagramDefinition.All.Select(definition => definition.Origin.Key).ToList();
+        var origins = DiagramDefinition.All.Select(definition => definition.Origin).ToList();
 
         // Assert.
-        Assert.Equal(keys.OrderBy(key => key, StringComparer.Ordinal), keys);
+        // Ordered the way discovery orders: vendor, then type, then subtype - which keeps a
+        // vendor's notations together, and is what the Add dialog's grouping relies on.
+        //
+        // This used to sort the full "vendor/type" key ordinally instead, which gave the same
+        // answer for every type then deployed and is not the same rule. The two disagree as
+        // soon as one vendor's name is a prefix of another's followed by a character below '/'
+        // - `azure` and `azure-devops` are the first such pair, since '-' (0x2D) sorts before
+        // '/' (0x2F), so the full-key sort would demand azure-devops/pipeline before
+        // azure/architecture while discovery puts the azure vendor first. Discovery is right
+        // and the old assertion was a coincidence.
+        Assert.Equal(
+            origins
+                .OrderBy(origin => origin.Vendor, StringComparer.Ordinal)
+                .ThenBy(origin => origin.Type, StringComparer.Ordinal)
+                .ThenBy(origin => origin.Subtype, StringComparer.Ordinal)
+                .Select(origin => origin.Key),
+            origins.Select(origin => origin.Key));
+
+        var keys = origins.Select(origin => origin.Key).ToList();
         Assert.Equal(keys.Count, keys.Distinct(StringComparer.Ordinal).Count());
     }
 
@@ -75,10 +93,14 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
             .ToList();
 
         // Assert.
+        // What this test is for is that nothing deployed goes missing, so it compares the two
+        // as sets. Ordering is a separate promise with its own test, and asserting it here too
+        // meant restating discovery's sort rule in a second place - where it was restated
+        // wrongly, and only stayed correct while no two vendors shared a prefix.
         Assert.NotEmpty(declared);
         Assert.Equal(
             declared.OrderBy(key => key, StringComparer.Ordinal),
-            DiagramDefinition.All.Select(definition => definition.Origin.Key));
+            DiagramDefinition.All.Select(definition => definition.Origin.Key).OrderBy(key => key, StringComparer.Ordinal));
     }
 
     [Fact]

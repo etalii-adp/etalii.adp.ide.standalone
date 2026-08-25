@@ -9,6 +9,7 @@ using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Backend.Diagrams;
 using EtAlii.Adp.Backend.Problems;
 using EtAlii.Adp.Diagram.C4;
+using EtAlii.Adp.Diagram.AzurePipeline;
 using EtAlii.Adp.Diagram.Mindmap;
 using JetBrains.Annotations;
 using Serilog;
@@ -64,6 +65,9 @@ builder.Services.AddProblems(appDataRoot);
 builder.Services.AddMindmap(builder.Configuration);
 // Seven C4 types over one shared engine, differing only in the view each binds.
 builder.Services.AddC4();
+// Azure DevOps pipelines: a document the repository already owns, registered by the user
+// rather than routed on sight, because .yml belongs to no one type.
+builder.Services.AddAzurePipeline();
 
 builder.Services.AddClientAppHosting(builder.Configuration);
 

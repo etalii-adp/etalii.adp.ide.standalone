@@ -20,6 +20,9 @@
     <!-- All seven C4 notations: one engine, one assembly, one Definitions array. -->
     <Project Path="../diagrams/c4/backend/EtAlii.Adp.Diagram.C4/EtAlii.Adp.Diagram.C4.csproj" />
     <Project Path="../diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/EtAlii.Adp.Diagram.C4.Tests.csproj" />
+    <!-- Azure DevOps pipelines: a document the repository already owns, not one ADP creates. -->
+    <Project Path="../diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline/EtAlii.Adp.Diagram.AzurePipeline.csproj" />
+    <Project Path="../diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline.Tests/EtAlii.Adp.Diagram.AzurePipeline.Tests.csproj" />
     <Project Path="../diagrams/archimate-application/backend/EtAlii.Adp.Diagram.ArchimateApplication/EtAlii.Adp.Diagram.ArchimateApplication.csproj" />
     <Project Path="../diagrams/archimate-application/backend/EtAlii.Adp.Diagram.ArchimateApplication.Tests/EtAlii.Adp.Diagram.ArchimateApplication.Tests.csproj" />
     <Project Path="../diagrams/archimate-business/backend/EtAlii.Adp.Diagram.ArchimateBusiness/EtAlii.Adp.Diagram.ArchimateBusiness.csproj" />
