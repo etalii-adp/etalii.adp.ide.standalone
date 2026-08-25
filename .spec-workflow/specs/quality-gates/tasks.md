@@ -60,7 +60,7 @@
   - _Requirements: 1.6_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add c4.element-not-on-any-view with both suppressions from design.md's error-handling item 4 | Restrictions: reuse MembersOf rather than reimplementing view membership - the two disagreeing would be worse than the rule not existing; the "just added" suppression must not need edit history, derive it from the element being the last declared or drop that half and say so in the log | Success: builds; the reference example stays clean, and an element excluded from every view is reported. Mark in progress, log when done, then mark complete._
 
-- [-] 7. Test the new rules, and pin the correspondence
+- [x] 7. Test the new rules, and pin the correspondence
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/C4RuleSet.Tests.cs` (modify), `C4StructurizrMirror.Tests.cs` (new)
   - One tripping model and one clean model per new rule, in the style of the existing nineteen. Plus: the mirror table is total - every id in `C4Rules` is either mapped or explicitly ADP-only, so a rule cannot be added without a decision about its counterpart
   - Purpose: the guard for Phase A; Requirement 1.10's first half
@@ -70,7 +70,7 @@
 
 ## Phase B — the interoperability guarantee holds without a JDK
 
-- [ ] 8. Record Structurizr's verdicts as committed baselines
+- [-] 8. Record Structurizr's verdicts as committed baselines
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/verdicts/*.inspect.txt` (new)
   - One verdict per fixture in `C4DocumentTests.Corpus()`, holding the CLI's `inspect` output verbatim under a two-line header naming the CLI version and the date
   - Purpose: Requirements 3.2, 3.3 - the data the everyday run reads instead of invoking Java
