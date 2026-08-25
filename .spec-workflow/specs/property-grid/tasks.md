@@ -4,7 +4,7 @@
 >
 > **Order.** Tasks 1–2 are the backend gap and its tests; 3–4 the client gap and its tests; 5 the regression guards for rules that are honoured today but pinned by nothing; 6 the manual pass. Tasks 1–2 and 3–4 are independent of each other and may land in either order.
 
-- [ ] 1. Isolate a throwing provider while describing
+- [-] 1. Isolate a throwing provider while describing
   - File: `src/backend/EtAlii.Adp.Backend/Context/ContextPropertyResolver.cs` (modify)
   - Wrap each provider's `DescribeAsync` in a `try` so one broken provider costs its own properties and nothing more: the healthy providers' rows still answer, and the failure is logged at `Warning` naming the provider type. Do the same for the describe-to-find-the-owner step inside `SetAsync` - a provider that cannot say what it owns is skipped, not fatal. Leave the **owning** provider's own `SetAsync` throw propagating: a write that failed must never be reported as accepted. Add the class's Serilog logger, which it does not have yet
   - Purpose: design gap 1 / Requirements NFR *Isolation* - today one throwing provider turns `DescribeProperties` into an RPC error and empties the whole panel
