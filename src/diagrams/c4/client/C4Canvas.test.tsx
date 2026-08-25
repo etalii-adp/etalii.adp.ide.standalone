@@ -1,13 +1,13 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, fireEvent, waitFor } from "@testing-library/react";
 import { create, toBinary } from "@bufbuild/protobuf";
-import { ElementSchema } from "../../../generated/elements_pb";
+import { ElementSchema } from "@client/generated/elements_pb";
 import {
   C4BoundaryPayloadSchema,
   C4ElementPayloadSchema,
   C4RelationshipPayloadSchema,
   C4ViewPayloadSchema,
-} from "../../../generated/c4_pb";
+} from "@client/generated/c4_pb";
 import { applyDelta, emptyModel, BOUNDARY_TYPE, NODE_TYPE, RELATIONSHIP_TYPE, VIEW_TYPE, type C4Model } from "./c4Model";
 
 const select = vi.fn();
@@ -25,8 +25,8 @@ vi.mock("./useC4Stream", () => ({
   }),
 }));
 
-vi.mock("../../context/ContextConnectionProvider", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../context/ContextConnectionProvider")>();
+vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
   return {
     ...actual,
     useContextConnection: () => ({ watchId: new Uint8Array(16), select }),

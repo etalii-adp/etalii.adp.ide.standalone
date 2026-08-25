@@ -1,0 +1,102 @@
+/*
+ * Mindmap canvas styling.
+ *
+ * Lives with the module rather than in the shell's index.css: a diagram type you cannot
+ * delete without also editing the shell's stylesheet is not a module. Imported by this
+ * module's register.ts, so it loads exactly when the module does.
+ *
+ * Rule order inside this file is load-bearing - see the drop-target note below.
+ */
+
+/* Mindmap canvas (diagrams/mindmap) */
+
+.mindmap-canvas {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.mindmap-canvas-loading {
+  margin: auto;
+  color: var(--color-text-muted);
+}
+
+/* A diagram whose file is gone or moved: the tab stays, saying so plainly. */
+.mindmap-canvas-unavailable {
+  margin: auto;
+  padding: 0 1.5rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.mindmap-canvas-surface {
+  width: 100%;
+  height: 100%;
+  outline: none;
+}
+
+/* The connector from a node to its parent: a bezier from edge to edge, under the boxes. */
+.mindmap-edge {
+  stroke: var(--color-border);
+  stroke-width: 1.5;
+  fill: none;
+}
+
+
+.mindmap-node {
+  cursor: pointer;
+}
+
+.mindmap-node rect {
+  fill: var(--color-surface);
+  stroke: var(--color-border);
+  stroke-width: 1.5;
+}
+
+.mindmap-node text {
+  fill: var(--color-text);
+  font-size: 12px;
+  user-select: none;
+}
+
+.mindmap-node-indicators {
+  fill: var(--color-text-muted);
+  font-size: 10px;
+}
+
+.mindmap-node-focused rect {
+  stroke: var(--color-primary);
+  stroke-width: 2.5;
+}
+
+/* The node a drag is held over - the drop's outcome, shown before the button is released.
+   After the base and focused rules: a later equal-specificity rule would swallow the
+   highlight (found by the bezier-connector manual pass). */
+.mindmap-node-drop-target rect {
+  stroke: var(--color-primary);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 3;
+}
+
+/* The original of a node being dragged: still in place, dimmed while its ghost travels. */
+.mindmap-node-dragging {
+  opacity: 0.35;
+}
+
+/* The ghost that follows the pointer mid-drag - the drop's outcome, made visible early. */
+.mindmap-node-ghost {
+  opacity: 0.65;
+}
+
+.mindmap-node-ghost rect {
+  stroke: var(--color-primary);
+  stroke-dasharray: 4 3;
+}
+
+/* The connector the drop would create, from the candidate parent to the ghost. */
+.mindmap-edge-preview {
+  stroke: var(--color-primary);
+  stroke-dasharray: 6 3;
+}

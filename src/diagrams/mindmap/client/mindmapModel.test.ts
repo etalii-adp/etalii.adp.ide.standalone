@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { create, toBinary } from "@bufbuild/protobuf";
-import { DeltaSchema, type Delta } from "../../../generated/deltas_pb";
-import { ElementSchema } from "../../../generated/elements_pb";
-import { MindmapNodePayloadSchema } from "../../../generated/mindmap_pb";
+import { DeltaSchema, type Delta } from "@client/generated/deltas_pb";
+import { ElementSchema } from "@client/generated/elements_pb";
+import { MindmapNodePayloadSchema } from "@client/generated/mindmap_pb";
 import { applyDelta, emptyModel, isFolded, nodeIdForPath, type MindmapModel } from "./mindmapModel";
 
 function node(id: string, text: string, x = 0, y = 0): ReturnType<typeof create<typeof ElementSchema>> {

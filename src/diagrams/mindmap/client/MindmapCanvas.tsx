@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { create } from "@bufbuild/protobuf";
 import { EmptySchema } from "@bufbuild/protobuf/wkt";
-import { innermostKey, useContextConnection, useContextSelection } from "../../context/ContextConnectionProvider";
-import { ContextSelectionAction, ContextSelectionSchema, ContextSourceSchema } from "../../../generated/context_pb";
-import type { ContextSelection, ContextShortcut } from "../../../generated/context_pb";
-import { ContextMenu } from "../../context/ContextMenu";
-import { toMenuGroups } from "../../context/toMenuGroups";
-import { useRegisterDiagramView, type DiagramViewControls } from "../DiagramViewContext";
-import { TOOLBOX_DRAG_TYPE, useRegisterDiagramToolbox } from "../DiagramToolboxContext";
-import { useToolboxItems } from "../useToolboxItems";
+import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { ContextSelectionAction, ContextSelectionSchema, ContextSourceSchema } from "@client/generated/context_pb";
+import type { ContextSelection, ContextShortcut } from "@client/generated/context_pb";
+import { ContextMenu } from "@client/shell/context/ContextMenu";
+import { toMenuGroups } from "@client/shell/context/toMenuGroups";
+import { useRegisterDiagramView, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
+import { TOOLBOX_DRAG_TYPE, useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
+import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { isFolded, type MindmapElement, type MindmapModel } from "./mindmapModel";
 import { useMindmapStream } from "./useMindmapStream";
 

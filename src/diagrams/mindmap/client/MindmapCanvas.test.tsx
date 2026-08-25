@@ -1,11 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import { create, toBinary } from "@bufbuild/protobuf";
-import { ElementSchema } from "../../../generated/elements_pb";
-import { ContextSelectionAction } from "../../../generated/context_pb";
-import { MindmapNodePayloadSchema } from "../../../generated/mindmap_pb";
+import { ElementSchema } from "@client/generated/elements_pb";
+import { ContextSelectionAction } from "@client/generated/context_pb";
+import { MindmapNodePayloadSchema } from "@client/generated/mindmap_pb";
 import { applyDelta, emptyModel, type MindmapModel } from "./mindmapModel";
-import { DiagramViewProvider, useDiagramViewControls, type DiagramViewControls } from "../DiagramViewContext";
+import { DiagramViewProvider, useDiagramViewControls, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
 
 const select = vi.fn();
 const executeShortcut = vi.fn<(shortcut: { key: string }, source: { source: { value: { value: string } } }) => Promise<{ accepted: boolean; error: string }>>(async () => ({ accepted: true, error: "" }));
@@ -23,12 +23,12 @@ vi.mock("./useMindmapStream", () => ({
 
 // The palette fetch talks gRPC through useAuth; the canvas under test gets its answer here.
 let currentToolboxItems: unknown[] = [];
-vi.mock("../useToolboxItems", () => ({
+vi.mock("@client/shell/panels/useToolboxItems", () => ({
   useToolboxItems: () => currentToolboxItems,
 }));
 
-vi.mock("../../context/ContextConnectionProvider", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../context/ContextConnectionProvider")>();
+vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
   return {
     ...actual,
     useContextConnection: () => ({ watchId: new Uint8Array(16), select, executeAction, executeShortcut }),

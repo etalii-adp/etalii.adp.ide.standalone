@@ -13,14 +13,14 @@ vi.mock("@connectrpc/connect", async (importOriginal) => {
   };
 });
 
-vi.mock("../../../auth/AuthContext", () => ({
+vi.mock("@client/auth/AuthContext", () => ({
   useAuth: () => ({ transport: {} }),
 }));
 
 // One stable identity: the hook keys its effect on the watchId, so a fresh array per render
 // would churn the effect and reset the very state under test.
 const watchId = new Uint8Array(16);
-vi.mock("../../context/ContextConnectionProvider", () => ({
+vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   useContextConnection: () => ({ watchId }),
 }));
 

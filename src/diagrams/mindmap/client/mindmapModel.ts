@@ -3,9 +3,9 @@
 // is testable without a canvas or a stream (mindmap-diagram Requirement 11).
 
 import { fromBinary } from "@bufbuild/protobuf";
-import type { Delta } from "../../../generated/deltas_pb";
-import type { Element } from "../../../generated/elements_pb";
-import { MindmapNodePayloadSchema, type MindmapNodePayload } from "../../../generated/mindmap_pb";
+import type { Delta } from "@client/generated/deltas_pb";
+import type { Element } from "@client/generated/elements_pb";
+import { MindmapNodePayloadSchema, type MindmapNodePayload } from "@client/generated/mindmap_pb";
 
 /** One node as the canvas holds it: where the backend's layout put it, and its decoded payload. */
 export interface MindmapElement {

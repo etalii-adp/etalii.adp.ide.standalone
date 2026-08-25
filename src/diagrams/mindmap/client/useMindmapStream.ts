@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Code, ConnectError, createClient } from "@connectrpc/connect";
-import { useAuth } from "../../../auth/AuthContext";
-import { DiagramService } from "../../../generated/diagrams_pb";
-import { useContextConnection } from "../../context/ContextConnectionProvider";
+import { useAuth } from "@client/auth/AuthContext";
+import { DiagramService } from "@client/generated/diagrams_pb";
+import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { applyDelta, emptyModel, type MindmapModel } from "./mindmapModel";
 
 /** A viewport the client reports; the backend answers with what falls inside it. */

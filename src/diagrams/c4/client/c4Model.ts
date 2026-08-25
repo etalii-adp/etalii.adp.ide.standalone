@@ -3,7 +3,7 @@
 // applies deltas is testable without a canvas or a stream (c4-diagrams Requirement 1).
 
 import { fromBinary } from "@bufbuild/protobuf";
-import type { Delta } from "../../../generated/deltas_pb";
+import type { Delta } from "@client/generated/deltas_pb";
 import {
   C4BoundaryPayloadSchema,
   C4ElementPayloadSchema,
@@ -13,7 +13,7 @@ import {
   type C4ElementPayload,
   type C4RelationshipPayload,
   type C4ViewPayload,
-} from "../../../generated/c4_pb";
+} from "@client/generated/c4_pb";
 
 /** The element kinds the C4 modules put on the wire; anything else on the stream is ignored. */
 export const NODE_TYPE = "c4/model+node";

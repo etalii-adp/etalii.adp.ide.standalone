@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { create } from "@bufbuild/protobuf";
 import { EmptySchema } from "@bufbuild/protobuf/wkt";
-import { useContextConnection } from "../../context/ContextConnectionProvider";
-import { ContextSelectionSchema } from "../../../generated/context_pb";
-import type { ContextSelection } from "../../../generated/context_pb";
-import { useRegisterDiagramView, type DiagramViewControls } from "../DiagramViewContext";
+import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
+import { ContextSelectionSchema } from "@client/generated/context_pb";
+import type { ContextSelection } from "@client/generated/context_pb";
+import { useRegisterDiagramView, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
 import { boxesOf, type C4BoundaryBox, type C4Model, type C4Node, type C4Relationship } from "./c4Model";
 import { useC4Stream } from "./useC4Stream";
 

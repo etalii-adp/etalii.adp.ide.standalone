@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { create, toBinary } from "@bufbuild/protobuf";
-import { ElementSchema } from "../../../generated/elements_pb";
+import { ElementSchema } from "@client/generated/elements_pb";
 import {
   C4BoundaryPayloadSchema,
   C4ElementPayloadSchema,
   C4RelationshipPayloadSchema,
   C4ViewPayloadSchema,
-} from "../../../generated/c4_pb";
+} from "@client/generated/c4_pb";
 import { applyDelta, boxesOf, emptyModel, BOUNDARY_TYPE, NODE_TYPE, RELATIONSHIP_TYPE, VIEW_TYPE } from "./c4Model";
 
 function element(id: string, type: string, payload: Uint8Array, x = 0, y = 0) {
