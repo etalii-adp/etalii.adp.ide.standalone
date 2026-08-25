@@ -20,7 +20,7 @@
   - _Requirements: 1.1, 1.7, 1.8_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer familiar with the C4 model | Task: Add the six rule ids and create C4StructurizrMirror, a static table of ADP-to-Structurizr rule correspondences plus the two explicit "no counterpart" lists, per design.md's Mirror table | Restrictions: no behaviour change yet - this task adds data only; every entry in the not-implemented list carries a reason naming what would have to exist first; do not invent a Structurizr rule id, use only those observed in design.md | Success: solution builds; every id in C4Rules appears in the mirror table or in the ADP-only list. Mark the task in progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2. Restore descriptions on deployment and infrastructure nodes
+- [x] 2. Restore descriptions on deployment and infrastructure nodes
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4RuleSet.cs` (modify)
   - Widen `c4.missing-description` back to deployment nodes and out to infrastructure nodes. Remove the narrowing comment that cites the worked example, since the reasoning behind it was wrong
   - Purpose: Requirement 1.2 - this is a regression being reversed, not a new rule
@@ -28,7 +28,7 @@
   - _Requirements: 1.2, 1.9_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Widen c4.missing-description to cover deployment and infrastructure nodes, reversing the narrowing made during c4-diagrams task 1 | Restrictions: keep the severity a Warning, per Requirement 1.9 - Structurizr prints these as ERROR but they are recommendations, and that divergence is a recorded decision; do not re-narrow anything to keep a test quiet; fixtures reporting new problems is the rule working (Requirement 1.4) | Success: builds; big-bank-plc.dsl now reports deployment-node descriptions. Mark in progress, log when done, then mark complete._
 
-- [ ] 3. Widen the relationship technology rule
+- [-] 3. Widen the relationship technology rule
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4RuleSet.cs` (modify)
   - Widen `c4.missing-protocol` from container-to-container to every relationship, matching `model.relationship.technology`. Replace the "in-process calls have no protocol" comment - Structurizr inspects for one on every relationship and the worked example is not clean by its own tooling
   - Purpose: Requirement 1.3 - the second regression being reversed
