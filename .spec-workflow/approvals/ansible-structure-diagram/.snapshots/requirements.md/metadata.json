@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/ansible-structure-diagram/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-25T16:08:12.511Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787674092480_k6xjsujch",
+      "approvalTitle": "ansible-structure-diagram - Requirements"
+    }
+  ]
+}
