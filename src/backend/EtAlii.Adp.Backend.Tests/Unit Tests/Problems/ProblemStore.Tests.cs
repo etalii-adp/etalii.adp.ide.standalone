@@ -335,6 +335,50 @@ public class ProblemStoreTests : IDisposable
     }
 
     [Fact]
+    public void AFileLocationSurvivesARestart_AndDoesNotDegradeIntoALineLocation()
+    {
+        // Arrange.
+        // A folder-subject diagram's problem names a file inside the folder. The cache keeps
+        // the two apart deliberately: a line location means "line N of the diagram's own
+        // document", a file location means "line N of that other file", and collapsing them
+        // would reopen the wrong file after a restart.
+        var located = new DiagramProblemFileLocation("infrastructure/playbooks/deploy.yml", 6);
+        using (var store = Store())
+        {
+            store.Replace(_root, [Problem("infrastructure.adp", location: located)]);
+        } // Dispose keeps the pending debounced write.
+
+        // Act.
+        using var reborn = Store();
+        var kept = Assert.Single(reborn.Get(_root).Problems);
+
+        // Assert.
+        Assert.Equal(located, kept.Problem.Location);
+        Assert.IsType<DiagramProblemFileLocation>(kept.Problem.Location);
+    }
+
+    [Fact]
+    public void AFileLocationWithoutALine_SurvivesARestart()
+    {
+        // Arrange.
+        // An empty role folder has no line to point at; 0 must round-trip as 0 rather than
+        // becoming a line-1 location that would look like a real position.
+        var located = new DiagramProblemFileLocation("infrastructure/roles/hollow");
+        using (var store = Store())
+        {
+            store.Replace(_root, [Problem("infrastructure.adp", location: located)]);
+        }
+
+        // Act.
+        using var reborn = Store();
+        var kept = Assert.Single(reborn.Get(_root).Problems);
+
+        // Assert.
+        Assert.Equal(located, kept.Problem.Location);
+        Assert.Equal(0u, Assert.IsType<DiagramProblemFileLocation>(kept.Problem.Location).Line);
+    }
+
+    [Fact]
     public void ACorruptCacheYieldsNeverValidated_NotAThrow()
     {
         using (var store = Store())
