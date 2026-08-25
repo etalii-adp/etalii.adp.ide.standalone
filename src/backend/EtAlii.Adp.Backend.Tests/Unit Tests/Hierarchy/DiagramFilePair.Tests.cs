@@ -275,7 +275,7 @@ public class DiagramFilePairTests : IDisposable
 
         // Assert.
         Assert.NotNull(body);
-        Assert.Equal(IoPath.Combine(_root, "domain.mm"), body!.Value.Path);
+        Assert.Equal(IoPath.Combine(_root, "domain.mm"), body.Value.Path);
         Assert.True(body.Value.IsOwned);
         Assert.Null(body.Value.ViewKey);
     }
@@ -291,7 +291,7 @@ public class DiagramFilePairTests : IDisposable
 
         // Assert.
         Assert.NotNull(body);
-        Assert.Equal(IoPath.Combine(_root, "shared", "model.mm"), body!.Value.Path);
+        Assert.Equal(IoPath.Combine(_root, "shared", "model.mm"), body.Value.Path);
         Assert.Equal("containers", body.Value.ViewKey);
         Assert.False(body.Value.IsOwned);
     }
@@ -308,7 +308,7 @@ public class DiagramFilePairTests : IDisposable
 
         // Assert.
         Assert.NotNull(body);
-        Assert.Equal("context", body!.Value.ViewKey);
+        Assert.Equal("context", body.Value.ViewKey);
         Assert.True(body.Value.IsOwned);
     }
 
@@ -340,7 +340,7 @@ public class DiagramFilePairTests : IDisposable
 
         // Assert.
         Assert.NotNull(body);
-        Assert.True(body!.Value.IsOwned, "a body: line after prose must not be honoured");
+        Assert.True(body.Value.IsOwned, "a body: line after prose must not be honoured");
     }
 
     [Fact]

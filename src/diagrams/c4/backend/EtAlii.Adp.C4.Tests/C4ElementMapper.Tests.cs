@@ -418,7 +418,7 @@ public class C4ElementMapperTests
         var elements = Mapper.Visible(workspace, view, new DiagramViewport(100000, 100000, 200000, 200000));
 
         // Assert.
-        Assert.Empty(elements.Where(e => e.Type == C4ElementMapper.NodeType));
+        Assert.DoesNotContain(elements, e => e.Type == C4ElementMapper.NodeType);
         // ...but the view's own furniture still arrives, so the tab is not blank.
         Assert.Contains(elements, e => e.Type == C4ElementMapper.ViewType);
     }
