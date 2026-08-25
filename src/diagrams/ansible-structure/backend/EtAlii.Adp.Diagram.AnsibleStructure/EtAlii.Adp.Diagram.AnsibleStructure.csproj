@@ -16,6 +16,11 @@
     <PackageReference Include="Grpc.Tools">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <!--
+      Read-only, so the parser only ever has to understand YAML, never reproduce it. Its node
+      marks carry the line a value was declared on, which is what a problem points at.
+    -->
+    <PackageReference Include="YamlDotNet" />
   </ItemGroup>
 
   <ItemGroup>
