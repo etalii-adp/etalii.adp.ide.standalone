@@ -197,12 +197,15 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
 
         // The root is passed so a registration naming a shared body resolves to it, and so a
         // body: header pointing outside the project is refused (c4-diagrams Requirement 2.4).
-        if (_router.Route(full, rootPath) is not DiagramRouted routed)
+        // BodyPath is null only when the router had no root to resolve a body: header against,
+        // and one was passed above - so this refuses a document that genuinely does not resolve
+        // rather than papering over a missing argument.
+        if (_router.Route(full, rootPath) is not DiagramRouted { BodyPath: { } resolvedBody } routed)
         {
             return false;
         }
 
-        bodyPath = routed.BodyPath;
+        bodyPath = resolvedBody;
         origin = routed.Definition.Origin;
         registrationPath = routed.RegistrationPath;
         return true;

@@ -310,6 +310,69 @@ public class ProjectValidatorTests : IDisposable
 
     // ---- plumbing ----------------------------------------------------------------------
 
+    // ---- registrations that name a body they do not own ---------------------------------
+
+    [Fact]
+    public async Task ValidateAsync_FollowsARegistrationsBodyHeader_RatherThanThrowingOnIt()
+    {
+        // Arrange.
+        // Several diagrams over one document is the whole point of a C4 project, and every
+        // registration but the owning one gets there through a `body:` header. Validating such a
+        // project used to throw ArgumentException from deep inside the walk, because the router
+        // was asked to resolve the header without being told which project root to resolve it
+        // against - and handed back an empty path rather than refusing.
+        CreatePair("shared", "the document");
+        File.WriteAllText(IoPath.Combine(_root, "second-view.adp"), "freeplane/mindmap\nbody: shared.mm\n");
+        var problem = new DiagramProblem(DiagramProblemSeverity.Warning, "The root is lonely.", "mindmap.lonely-root");
+
+        // Act.
+        var outcome = await Validate(Validator(problems: [problem]), new ProjectValidationScope(_root));
+
+        // Assert.
+        // One document, so one judgement: the pair and the second registration both resolve to
+        // `shared.mm` and it is considered once.
+        Assert.Single(outcome.Problems);
+        Assert.Equal(1, outcome.FilesConsidered);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ARegistrationWhoseBodyEscapesTheProject_IsReportedNotThrownOn()
+    {
+        // Arrange.
+        // The header is user-editable text, so it may name anything at all. Refusing to follow it
+        // is the documented behaviour (Requirement 2.4); throwing is not - and saying nothing
+        // would leave a diagram that never opens with no explanation anywhere.
+        File.WriteAllText(IoPath.Combine(_root, "escapee.adp"), "freeplane/mindmap\nbody: ../elsewhere.mm\n");
+
+        // Act.
+        var outcome = await Validate(Validator(), new ProjectValidationScope(_root));
+
+        // Assert.
+        var problem = Assert.Single(outcome.Problems);
+        Assert.Equal("escapee.adp", problem.RelativePath);
+        // Named for what it is. This used to be reported as "The registration file could not be
+        // read", which sends a reader looking for a permissions fault: the file read perfectly
+        // well, it is the document it points at that is out of bounds.
+        Assert.Contains("outside the project", problem.Problem.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("could not be read", problem.Problem.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ATypeThatKeepsNoDocument_IsStillConsidered()
+    {
+        // Arrange.
+        // A type with no extension - c4/code is the real one - is its own whole diagram, so its
+        // registration is what gets judged.
+        var bodyless = new DiagramDefinition(new DiagramOrigin("fixture", "bodyless"), "Bodyless");
+        File.WriteAllText(IoPath.Combine(_root, "standalone.adp"), "fixture/bodyless\n");
+        // Act.
+        var outcome = await Validate(Validator(), new ProjectValidationScope(_root), extraDefinitions: [bodyless]);
+
+        // Assert.
+        Assert.Equal(1, outcome.FilesConsidered);
+    }
+
+
     private void CreatePair(string baseName, string body)
     {
         var adp = IoPath.Combine(_root, baseName + ".adp");

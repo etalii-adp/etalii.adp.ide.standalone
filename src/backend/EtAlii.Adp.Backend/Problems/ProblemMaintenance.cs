@@ -135,14 +135,20 @@ public sealed class ProblemMaintenance : IDisposable
             // routing, not from what was found: a pair that just became clean must still
             // clear its old entries.
             var covered = new List<string> { relative };
-            switch (_router.Route(path))
+            // Routed against the root, so a registration naming a shared body resolves to it -
+            // otherwise the pair a stale entry belongs to could not be worked out and the entry
+            // would never be cleared.
+            switch (_router.Route(path, root.Path))
             {
                 case DiagramRouted routed:
                     if (routed.RegistrationPath is not null)
                     {
                         covered.Add(IoPath.GetRelativePath(root.Path, routed.RegistrationPath));
                     }
-                    covered.Add(IoPath.GetRelativePath(root.Path, routed.BodyPath));
+                    if (routed.BodyPath is { } bodyPath)
+                    {
+                        covered.Add(IoPath.GetRelativePath(root.Path, bodyPath));
+                    }
                     break;
 
                 case NotADiagram when !HasProblemsFor(root.Path, relative):

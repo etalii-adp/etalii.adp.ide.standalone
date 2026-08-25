@@ -173,11 +173,23 @@ public sealed class ProjectValidator
 
     private async ValueTask ConsiderFileAsync(string path, ProblemCollector collector, CancellationToken cancellationToken)
     {
-        switch (_router.Route(path))
+        // Routed against the project root, so a registration that names its document through a
+        // `body:` header resolves to that document. Without the root the router cannot follow
+        // the header, and several diagrams over one model - the reason C4 projects are written
+        // the way they are - would each arrive here with nowhere to read.
+        switch (_router.Route(path, collector.Root))
         {
-            case DiagramRouted routed:
+            case DiagramRouted { BodyPath: null }:
+                // The header names something outside the project, or names nothing resolvable.
+                // Refused rather than followed (Requirement 2.4), and counted as skipped so the
+                // run says so rather than quietly judging one file fewer.
+                _logger.Warning("Not validating {Path}: its body: header does not resolve inside the project", path);
+                collector.Skipped++;
+                return;
+
+            case DiagramRouted { BodyPath: { } bodyPath } routed:
                 // A pair routes identically through either of its files - judge it once.
-                if (!collector.MarkConsidered(routed.BodyPath))
+                if (!collector.MarkConsidered(bodyPath))
                 {
                     return;
                 }
@@ -213,7 +225,7 @@ public sealed class ProjectValidator
                     return;
                 }
                 collector.FilesConsidered++;
-                collector.AddCore(unreadable.Path, "The registration file could not be read.");
+                collector.AddCore(unreadable.Path, unreadable.Reason);
                 return;
 
             case NotADiagram:
@@ -221,15 +233,17 @@ public sealed class ProjectValidator
         }
     }
 
+    /// <param name="routed">A route whose <c>BodyPath</c> resolved; the caller refuses the rest.</param>
     private async ValueTask ValidateRoutedAsync(DiagramRouted routed, ProblemCollector collector, CancellationToken cancellationToken)
     {
-        var attribution = routed.RegistrationPath ?? routed.BodyPath;
+        var bodyPath = routed.BodyPath!;
+        var attribution = routed.RegistrationPath ?? bodyPath;
 
         string document;
         try
         {
             // Read-only, shared: validation must never contend with an editor (Requirement 6.7).
-            document = await File.ReadAllTextAsync(routed.BodyPath, cancellationToken);
+            document = await File.ReadAllTextAsync(bodyPath, cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

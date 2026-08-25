@@ -92,13 +92,17 @@ public sealed class ValidateContextActionProvider : IContextActionProvider
         // body's problems live on its registration file. From the routing, not from what
         // was found - a pair that just became clean must still clear its old entries.
         var covered = new List<string> { relative };
-        if (_router.Route(target.ResolvedFullPath) is DiagramRouted routed)
+        // Routed against the root, so a registration naming a shared body resolves to it.
+        if (_router.Route(target.ResolvedFullPath, rootPath) is DiagramRouted routed)
         {
             if (routed.RegistrationPath is not null)
             {
                 covered.Add(IoPath.GetRelativePath(rootPath, routed.RegistrationPath));
             }
-            covered.Add(IoPath.GetRelativePath(rootPath, routed.BodyPath));
+            if (routed.BodyPath is { } bodyPath)
+            {
+                covered.Add(IoPath.GetRelativePath(rootPath, bodyPath));
+            }
         }
 
         var fileOutcome = await _validator.ValidateAsync(new FileValidationScope(rootPath, relative), cancellationToken);
