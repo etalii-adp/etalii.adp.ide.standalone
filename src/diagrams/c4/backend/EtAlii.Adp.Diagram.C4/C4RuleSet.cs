@@ -81,9 +81,65 @@ public static class C4RuleSet
             problems.AddRange(ValidateView(workspace, view));
         }
 
+        problems.AddRange(ValidateCoverage(workspace));
+
         return problems;
     }
 
+    /// <summary>
+    /// Elements the model declares but no view draws, mirroring <c>model.element.noview</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Suppressed entirely while the model declares no views, for the same reason
+    /// <c>c4.disconnected-element</c> is: everything is undrawn in a file that has no views yet,
+    /// and a tool that greets a new file with warnings teaches people to ignore warnings.
+    /// </para>
+    /// <para>
+    /// The design asks for a second suppression - not firing on an element added in the last
+    /// edit - and it is deliberately not implemented. Validation is a pure function of the
+    /// workspace with no edit history to read, and the substitute the task offered, treating
+    /// the last-declared element as the just-added one, is not the same thing: an element
+    /// appended to the model months ago is last-declared forever, and one inserted above it is
+    /// never last-declared however recently it was typed. That would make the rule silent about
+    /// one arbitrary element and no quieter about new ones, which is worse than not having the
+    /// suppression at all.
+    /// </para>
+    /// </remarks>
+    private static IEnumerable<DiagramProblem> ValidateCoverage(C4Workspace workspace)
+    {
+        if (workspace.Views.Count == 0)
+        {
+            yield break;
+        }
+
+        // MembersOf rather than a second reading of the include rules. The two disagreeing
+        // would be worse than this rule not existing: it would report an element the view
+        // panel is visibly drawing.
+        var drawn = workspace.Views
+            .SelectMany(view => MembersOf(workspace, view))
+            .Select(element => element.Id)
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (var element in workspace.Elements)
+        {
+            // An instance has no existence apart from the node it sits in and the container it
+            // instantiates, both of which are drawn or not on their own account.
+            if (element.Kind is C4ElementKind.ContainerInstance or C4ElementKind.SoftwareSystemInstance)
+            {
+                continue;
+            }
+
+            if (!drawn.Contains(element.Id))
+            {
+                yield return new DiagramProblem(
+                    DiagramProblemSeverity.Warning,
+                    $"'{Label(element)}' is on no view. An element the model declares but nothing draws is invisible to every reader of the diagrams.",
+                    C4Rules.ElementNotOnAnyView,
+                    new DiagramProblemElementLocation(element.Id));
+            }
+        }
+    }
     private static IEnumerable<DiagramProblem> ValidateElements(C4Workspace workspace)
     {
         // Both ends, because being pointed at is being connected: a database nothing calls out

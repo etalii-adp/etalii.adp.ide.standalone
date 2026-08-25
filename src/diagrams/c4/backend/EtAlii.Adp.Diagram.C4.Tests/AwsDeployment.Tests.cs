@@ -124,6 +124,11 @@ public class AwsDeploymentTests
         // the example gets away with it, and it is still worth a warning in a document meant
         // to be read by someone who does not. The load balancer is the same story one level
         // down: it is described but never says what provides it.
+        //
+        // The example also draws nothing but its deployment, so the software system and the
+        // containers it deploys are declared and never shown - `model.element.noview` again.
+        // It is a deployment example rather than an incomplete model, which is exactly why the
+        // rule reports it: someone reading only these diagrams never meets them.
         var reported = C4RuleSet.Validate(Workspace)
             .Where(problem => problem.RuleId != C4Rules.EmptyView)
             .Select(problem => problem.RuleId)
@@ -136,6 +141,7 @@ public class AwsDeploymentTests
         // while the known one does not.
         Assert.Equal(
             [
+                C4Rules.ElementNotOnAnyView,
                 C4Rules.MissingDeploymentDescription,
                 C4Rules.MissingDeploymentTechnology,
                 C4Rules.MissingInfrastructureTechnology,

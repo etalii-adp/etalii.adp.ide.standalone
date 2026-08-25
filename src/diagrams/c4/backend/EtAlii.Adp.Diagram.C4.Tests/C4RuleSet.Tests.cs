@@ -31,6 +31,9 @@ public class C4RuleSetTests
                 systemContext s "context" {
                     include *
                 }
+                container s "containers" {
+                    include *
+                }
             }
         }
         """;
@@ -186,6 +189,59 @@ public class C4RuleSetTests
         // person and a container, and between two containers. C4 draws the same conversation at
         // several levels, so a system whose containers talk to the world is not left over.
         Assert.DoesNotContain(C4Rules.DisconnectedElement, RuleIds(Clean));
+    }
+    [Fact]
+    public void AnElementNoViewDraws_IsReported()
+    {
+        // Arrange.
+        // The clean fixture with its container view taken away: `web` and `db` are still
+        // declared, still related, and now drawn nowhere. Someone reading the diagrams never
+        // meets them.
+        var dsl = """
+            workspace "Undrawn" {
+                model {
+                    u = person "User" "Someone who uses the system."
+                    s = softwareSystem "System" "Does the thing." {
+                        web = container "Web App" "Serves pages." "React"
+                        db = container "Database" "Stores things." "PostgreSQL"
+                        web -> db "Reads from and writes to" "SQL/TCP"
+                    }
+                    u -> web "Visits" "HTTPS"
+                }
+                views {
+                    systemContext s "context" {
+                        include *
+                    }
+                }
+            }
+            """;
+
+        // Act.
+        var undrawn = Validate(dsl)
+            .Where(problem => problem.RuleId == C4Rules.ElementNotOnAnyView)
+            .ToArray();
+
+        // Assert.
+        Assert.Equal(2, undrawn.Length);
+        Assert.All(undrawn, problem => Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity));
+    }
+
+    [Fact]
+    public void AnElementEveryLevelDraws_IsNotReported()
+    {
+        // Arrange, act and assert.
+        // The clean fixture draws its system on a context view and its containers on a
+        // container view, so nothing it declares goes unseen.
+        Assert.DoesNotContain(C4Rules.ElementNotOnAnyView, RuleIds(Clean));
+    }
+
+    [Fact]
+    public void AnUndrawnElement_InAModelWithNoViews_IsNotReported()
+    {
+        // Arrange, act and assert.
+        // The same suppression `c4.disconnected-element` has, for the same reason: everything
+        // is undrawn in a file that has no views yet.
+        Assert.DoesNotContain(C4Rules.ElementNotOnAnyView, RuleIds(Lonely));
     }
     [Fact]
     public void ARelationshipNamingSomethingUndeclared_IsReported()
