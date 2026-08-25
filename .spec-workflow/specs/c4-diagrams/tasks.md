@@ -122,7 +122,8 @@
   - _Requirements: 4.8, 4.9_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Parse tag-based element styles so a model can override the default palette | Restrictions: do not bake the default palette into the parser - defaults belong to the mapper; unknown style properties round-trip untouched | Success: a fixture with a styles block yields per-tag styles, and a model without one yields none rather than defaults_
 
-- [ ] 12. Line-level writer, `!include` refusal, and the round-trip guard
+- [x] 12. Line-level writer, `!include` refusal, and the round-trip guard
+  - **Done.** The writer and the round-trip guard landed with task 6. `!include` needed no refusal in the end: the parser does not follow one, so nothing it declares is ever in the model for an edit to target. It is **reported** instead, because silently showing half a model is worse than saying so
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/_Model/C4Document.cs` (modify), `C4Document.RoundTrip.Tests.cs` (new)
   - Editing replaces only the lines an edit affects; an edit that would land inside an `!include`d file is refused naming that file. The guard: every fixture byte-identical on open+save, and a single-field edit producing a single-line diff
   - Purpose: Requirements 3.1–3.4, and design *Prerequisites* 4
@@ -141,7 +142,8 @@
 
 ## Phase D — the model and the C4 rules
 
-- [ ] 14. `C4Model` and `C4Views` with the containment invariants
+- [x] 14. `C4Model` and `C4Views` with the containment invariants
+  - **Done.** Placement is now a rule: a component outside a container, or a container outside a software system, is reported. A containment **cycle** is deliberately not checked - the DSL nests lexically rather than by reference, so an element cannot contain its own ancestor. The invariant is guaranteed by the format, and a test for it could never fail
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/_Model/C4Model.cs` (new), `C4View.cs` (new), test file (new)
   - Resolved object model over the parsed document; containment enforced at construction, cycles refused
   - Purpose: Requirement 10.6, and the "one model" of Requirement 1
@@ -332,7 +334,8 @@
   - _Requirements: 7.6, 13.1_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Implement relationship commands and dynamic interaction renumbering | Restrictions: reversing a relationship must keep the label consistent with the new direction; renumbering must maintain nested numbering as interactions are inserted, reordered or removed | Success: inserting an interaction renumbers its successors correctly, undo restores the previous numbering, and a reversed relationship reads correctly in both directions_
 
-- [ ] 29. View-membership and geometry commands
+- [x] 29. View-membership and geometry commands
+  - **Done.** Dragging places an element and does not re-parent it: containment is the model's to state, so dropping one element onto another is refused with a reason. Positions go to the sidecar, one undo away, and undoing the first drag hands the element back to the layout
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/Commands/` (modify), test file (modify)
   - Add to view, remove from view, delete from model (reporting how many views it affects first), move (sidecar), resize a boundary
   - Purpose: Requirements 1.3, 1.4, 13.5, 8.3
@@ -360,7 +363,8 @@
 
 ## Phase I — creating diagrams and views
 
-- [ ] 32. Empty documents and the Add flow
+- [x] 32. Empty documents and the Add flow
+  - **Done.** Confirmed: `C4DocumentFactory` landed in task 2 (the startup guard forced it), and the Add flow needed no changes - `AddC4ViewTests` and the factory tests cover what it produces
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4DocumentFactory.cs` (new), test file (new)
   - A `workspace` with an empty `model` and one view of the module's kind, titled after the base name; `c4/code` refuses per task 26
   - Purpose: creating each type through the existing Add dialog with no change to that flow
