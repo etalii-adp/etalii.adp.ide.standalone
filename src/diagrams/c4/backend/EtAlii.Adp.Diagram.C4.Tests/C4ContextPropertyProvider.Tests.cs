@@ -148,7 +148,7 @@ public class C4ContextPropertyProviderTests : IDisposable
     public async Task SettingAName_ChangesTheDocument_AndIsOneUndoAway()
     {
         // Arrange.
-        var before = File.ReadAllText(_bodyPath);
+        var before = await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await _provider.SetAsync(
@@ -156,18 +156,18 @@ public class C4ContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Contains("container \"Web Application\"", File.ReadAllText(_bodyPath), StringComparison.Ordinal);
+        Assert.Contains("container \"Web Application\"", await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken), StringComparison.Ordinal);
 
         // The whole reason properties go through commands rather than writing directly.
         await _history.UndoAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(before, File.ReadAllText(_bodyPath));
+        Assert.Equal(before, await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task SettingATechnology_ChangesOnlyTheLineItTouches()
     {
         // Arrange.
-        var before = File.ReadAllText(_bodyPath).Split('\n');
+        var before = (await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken)).Split('\n');
 
         // Act.
         await _provider.SetAsync(
@@ -176,9 +176,9 @@ public class C4ContextPropertyProviderTests : IDisposable
         // Assert.
         // The `.dsl` belongs to another ecosystem, and a property edit is line surgery on it
         // like every other edit ADP makes.
-        var after = File.ReadAllText(_bodyPath).Split('\n');
+        var after = (await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken)).Split('\n');
         Assert.Equal(before.Length, after.Length);
-        Assert.Single(before.Zip(after).Where(pair => pair.First != pair.Second));
+        Assert.Single(before.Zip(after), pair => pair.First != pair.Second);
     }
 
     [Fact]

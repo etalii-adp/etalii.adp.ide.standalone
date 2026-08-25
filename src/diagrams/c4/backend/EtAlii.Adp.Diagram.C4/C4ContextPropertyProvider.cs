@@ -67,7 +67,7 @@ public sealed class C4ContextPropertyProvider : IContextPropertyProvider
             return ValueTask.FromResult<IReadOnlyList<ContextPropertyDefinition>>([]);
         }
 
-        return ValueTask.FromResult<IReadOnlyList<ContextPropertyDefinition>>(
+        return ValueTask.FromResult(
             relationship is not null ? Describe(workspace, relationship) : Describe(element!));
     }
 
