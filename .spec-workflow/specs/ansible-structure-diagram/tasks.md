@@ -40,7 +40,7 @@
   - _Requirements: 2.1, 11.2_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add a defaulted DiagramSubject to DiagramDefinition and refuse the Folder-plus-extension contradiction at discovery | Restrictions: it must default to Document so no existing definition changes behaviour; do not reorder existing parameters; the enum is its own file per the no-nested-types rule | Success: the solution builds, every existing definition is untouched, and tests assert the default and the refusal_
 
-- [-] 3. Widen the validator seam to carry a location
+- [x] 3. Widen the validator seam to carry a location
   - File: `src/backend/EtAlii.Adp.Diagram/_Model/DiagramValidationRequest.cs` (new), `IDiagramValidator.cs` (edited), `src/backend/EtAlii.Adp.Backend/Problems/ProjectValidator.cs` (edited), and every implementer: `MindmapValidator`, `C4Validator`, and the seven test stubs (`ProblemMaintenanceCountingValidator`, `ProblemStoreReportingValidator`, `ProblemStoreStubValidator`, `ProjectValidatorTestValidator`, `StartupRevalidationGatedValidator`, `DiagramValidatorsStubValidator`, `DiagramValidatorsOtherStubValidator`)
   - `ValidateAsync(DiagramValidationRequest request, CancellationToken)` where the request carries `Document`, `BaseName`, `RootPath`, `BodyPath`, `RegistrationPath` and `SubjectFolder` (null for a `Document`-subject type). `ProjectValidator` fills it, setting `SubjectFolder` from the routed definition's `Subject`
   - A parameter object rather than more loose strings, so the next fact a validator needs is an added property rather than another signature change
@@ -50,7 +50,7 @@
   - _Requirements: 9.1, 9.3_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer performing a seam migration across modules | Task: Replace IDiagramValidator's two loose string parameters with a DiagramValidationRequest record carrying the diagram's location, and migrate both real implementers and all seven test stubs | Restrictions: no behaviour change for any existing validator; do not add a compatibility overload or a default interface method - one door only; keep the migration to one commit | Success: the solution builds, every existing validator test passes unchanged in meaning, and ProjectValidator fills SubjectFolder for a Folder-subject definition_
 
-- [ ] 4. Let a problem name a file other than the diagram's own
+- [-] 4. Let a problem name a file other than the diagram's own
   - File: `src/backend/EtAlii.Adp.Diagram/_Model/DiagramProblemFileLocation.cs` (new), `_Model/DiagramProblemLocation.cs` (edited: the remarks naming the closed set), `src/backend/EtAlii.Adp.Backend/Problems/CachedProblem.cs` (edited), `ProblemBroadcaster.cs` (edited), `src/api/context.proto` (edited), `src/client/src/shell/panels/ErrorsWarningsPanel.tsx` (edited)
   - `DiagramProblemFileLocation(string RelativePath, uint Line = 0)` as a third case. Add a new field number to `ProblemLocation`'s oneof — backward compatible. `CachedProblem` round-trips it; the panel reveals the named file rather than the diagram
   - Run `npm run generate` in `src/client/`
