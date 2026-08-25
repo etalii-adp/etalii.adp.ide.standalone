@@ -22,7 +22,7 @@
 
 ## Phase A — the gate, and the corpus
 
-- [ ] 1. Correct the two stale statements in the approved requirements
+- [-] 1. Correct the two stale statements in the approved requirements
   - File: `.spec-workflow/specs/wardley-map/requirements.md` (edited)
   - Requirement 12.4: replace "This spec anticipates no core change at all" with the truth — one core change was found, reported per Requirement 12.5, accepted, and implemented elsewhere: `MoveElementRequest.position` and `IDiagramSession.MoveElementToAsync`. Say that this module **consumes** it rather than adding it, and that it removed C4's `"x,y"` encoding rather than adding a special case
   - The `Code style` bullet under *Code Architecture and Modularity*: replace "SHALL satisfy `src/.editorconfig` as `dotnet format style --verify-no-changes --severity info` checks it" with "SHALL introduce no new style-diagnostic categories beyond those the repository already reports", citing `quality-gates` Requirement 5 for the gate itself. Measured on an untouched checkout the gate reports 115 `IMPORTS` errors, 131 `IDE0130` and 19 `IDE0046`; `IDE0130` fires on the `_Model`/`Commands` folder convention `tech.md` and `structure.md` mandate, so a module obeying the steering documents cannot avoid it
