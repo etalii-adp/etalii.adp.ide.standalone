@@ -148,7 +148,7 @@
 
 ## Phase E — worktrees
 
-- [-] 17. Triage the worktrees and write the retirement rule
+- [x] 17. Triage the worktrees and write the retirement rule
   - File: `CLAUDE.md` (modify), plus `git worktree remove` for those that qualify
   - Classify each of the sixteen worktrees as removed, kept with a stated reason, or needs an owner's decision. Remove those whose branch is merged into develop and whose working tree is clean. Resolve or remove the detached one. Add the retirement step to CLAUDE.md beside the existing creation rule
   - Purpose: Requirement 6 in full
