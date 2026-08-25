@@ -5,15 +5,8 @@ namespace EtAlii.Adp.Backend.Context;
 /// have the user confirm, have the user choose from a tree of options, or nothing at all
 /// (the action already did its work).
 /// </summary>
-public abstract record ContextExecutionResult
-{
-    public sealed record RequiresInput(ContextInputRequest Request) : ContextExecutionResult;
-
-    public sealed record RequiresConfirmation(ContextConfirmationRequest Request) : ContextExecutionResult;
-
-    public sealed record RequiresChoice(ContextChoiceRequest Request) : ContextExecutionResult;
-
-    public sealed record Completed : ContextExecutionResult;
-
-    public sealed record Failed(string Message) : ContextExecutionResult;
-}
+/// <remarks>
+/// A closed set: every case is one of the <c>ContextExecution*</c> records declared beside
+/// this one, each in its own file per tech.md's no-nested-types rule.
+/// </remarks>
+public abstract record ContextExecutionResult;

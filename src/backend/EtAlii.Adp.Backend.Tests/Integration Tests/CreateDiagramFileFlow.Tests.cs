@@ -153,23 +153,12 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         return null;
     }
 
-    private sealed record Session(
-        GrpcChannel Channel,
-        Metadata Headers,
-        Contracts.ShortGuid ProjectId,
-        Contracts.ShortGuid WatchId,
-        HierarchyService.HierarchyServiceClient Hierarchy,
-        ContextService.ContextServiceClient Context) : IDisposable
-    {
-        public void Dispose() => Channel.Dispose();
-    }
-
-    private async Task<Session> OpenSessionAsync()
+    private async Task<CreateDiagramFileFlowSession> OpenSessionAsync()
     {
         var channel = CreateChannel();
         var headers = await LoginAsync(channel);
         var projectId = await AddProjectAsync(channel, headers);
-        return new Session(
+        return new CreateDiagramFileFlowSession(
             channel, headers, projectId, ShortGuid.NewShortGuid(),
             new HierarchyService.HierarchyServiceClient(channel),
             new ContextService.ContextServiceClient(channel));
@@ -177,7 +166,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
 
     /// <summary>Opens Add on the given target and returns the prompt it pushed, with its interaction id.</summary>
     private async Task<(ContextPrompt Prompt, Contracts.ShortGuid InteractionId)> OpenAddDialogAsync(
-        Session session, IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken, Contracts.ShortGuid? folderId = null)
+        CreateDiagramFileFlowSession session, IAsyncStreamReader<ContextMessage> stream, CancellationToken cancellationToken, Contracts.ShortGuid? folderId = null)
     {
         var pendingPrompt = ReadUntilPromptAsync(stream, cancellationToken);
         await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
@@ -204,12 +193,14 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
     [Fact]
     public async Task TheFullArc_JudgesTheNameWhileTyping_ThenCreatesTheDiagramAndReportsWhereItLanded()
     {
+        // Arrange.
         using var session = await OpenSessionAsync();
         using var cts = CreateMessageTimeout();
         using var contextCall = session.Context.Watch(
             new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
 
+        // Act and assert, step by step.
         var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         Assert.Equal(ContextPrompt.PromptOneofCase.ChoiceDialog, prompt.PromptCase);
 
@@ -245,6 +236,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
     [Fact]
     public async Task TheCreatedFile_ArrivesThroughTheOrdinaryHierarchyChangeFeed_AndNoScratchFileEverDoes()
     {
+        // Arrange.
         using var session = await OpenSessionAsync();
         using var cts = CreateMessageTimeout();
 
@@ -256,6 +248,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
             new WatchHierarchyRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         var pendingCreate = ReadUntilChangeAsync(hierarchyCall.ResponseStream, HierarchyChange.ChangeOneofCase.Created, cts.Token);
 
+        // Act and assert, step by step.
         using var contextCall = session.Context.Watch(
             new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
@@ -277,14 +270,17 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
     [Fact]
     public async Task AddingIntoAFolder_CreatesTheDiagramThere_AndReportsAPathRelativeToTheProject()
     {
+        // Arrange.
         Directory.CreateDirectory(IoPath.Combine(_projectFolder, "docs"));
 
+        // Arrange, continued.
         using var session = await OpenSessionAsync();
         using var cts = CreateMessageTimeout();
         var entries = await session.Hierarchy.ListEntriesAsync(
             new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         var folderId = entries.Entries.Entries_.Single(entry => entry.Name == "docs").Id;
 
+        // Arrange, continued.
         using var contextCall = session.Context.Watch(
             new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
@@ -292,9 +288,11 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
         Assert.NotNull(leaf);
 
+        // Act.
         var submitted = await session.Context.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = leaf.Id, Text = "domain" }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(submitted.Completed, submitted.Error);
         Assert.Equal(new[] { "docs", "domain.adp" }, submitted.CreatedPath.Segments);
         Assert.True(File.Exists(IoPath.Combine(_projectFolder, "docs", "domain.adp")));
@@ -304,6 +302,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
     [Fact]
     public async Task ANameTakenBehindTheDialogsBack_IsReported_AndTheExistingFileIsUntouched()
     {
+        // Arrange.
         using var session = await OpenSessionAsync();
         using var cts = CreateMessageTimeout();
         using var contextCall = session.Context.Watch(
@@ -313,13 +312,16 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
         Assert.NotNull(leaf);
 
+        // Arrange, continued.
         // Created while the dialog was open, after its suggestion was computed.
         var existing = IoPath.Combine(_projectFolder, "domain.adp");
         await File.WriteAllTextAsync(existing, "someone else's diagram", cts.Token);
 
+        // Act.
         var submitted = await session.Context.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = leaf.Id, Text = "domain" }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.False(submitted.Completed);
         Assert.Contains("already exists", submitted.Error, StringComparison.Ordinal);
         Assert.Equal("someone else's diagram", await File.ReadAllTextAsync(existing, cts.Token));
@@ -328,6 +330,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
     [Fact]
     public async Task ANameThatIsAPath_IsRefusedServerSide_EvenWithNoProposeBeforeIt()
     {
+        // Arrange.
         using var session = await OpenSessionAsync();
         using var cts = CreateMessageTimeout();
         using var contextCall = session.Context.Watch(
@@ -337,9 +340,11 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
         Assert.NotNull(leaf);
 
+        // Act.
         var submitted = await session.Context.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = leaf.Id, Text = @"..\escaped" }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.False(submitted.Completed);
         Assert.False(File.Exists(IoPath.Combine(_appDataRoot, "escaped.adp")));
         Assert.Empty(Directory.GetFiles(_projectFolder));
@@ -348,6 +353,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
     [Fact]
     public async Task AnEmptyName_IsRefused_RatherThanCreatingAFileCalledJustTheExtension()
     {
+        // Arrange.
         using var session = await OpenSessionAsync();
         using var cts = CreateMessageTimeout();
         using var contextCall = session.Context.Watch(
@@ -357,9 +363,11 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
         Assert.NotNull(leaf);
 
+        // Act.
         var submitted = await session.Context.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = leaf.Id, Text = "" }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.False(submitted.Completed);
         Assert.Equal("Enter a name.", submitted.Error);
         Assert.Empty(Directory.GetFiles(_projectFolder));
@@ -368,12 +376,14 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
     [Fact]
     public async Task TwoDiagramsOfTheSameTypeInOneFolder_BothSucceed_BecauseTheSuggestionCountsUp()
     {
+        // Arrange.
         using var session = await OpenSessionAsync();
         using var cts = CreateMessageTimeout();
         using var contextCall = session.Context.Watch(
             new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
 
+        // Arrange, continued.
         var (first, firstInteraction) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var leaf = FirstLeaf(first.ChoiceDialog.Options);
         Assert.NotNull(leaf);
@@ -382,15 +392,18 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
             new SubmitInteractionRequest { InteractionId = firstInteraction, Value = leaf.Id, Text = firstName }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(firstSubmit.Completed, firstSubmit.Error);
 
+        // Arrange, continued.
         // The second dialog is built after the first file exists, so its suggestion moves on.
         var (second, secondInteraction) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
         var secondLeaf = FirstLeaf(second.ChoiceDialog.Options);
         Assert.NotNull(secondLeaf);
         Assert.Equal($"{firstName}-2", secondLeaf.SuggestedValue);
 
+        // Act.
         var secondSubmit = await session.Context.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = secondInteraction, Value = secondLeaf.Id, Text = secondLeaf.SuggestedValue }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(secondSubmit.Completed, secondSubmit.Error);
         Assert.True(File.Exists(IoPath.Combine(_projectFolder, $"{firstName}.adp")));
         Assert.True(File.Exists(IoPath.Combine(_projectFolder, $"{firstName}-2.adp")));

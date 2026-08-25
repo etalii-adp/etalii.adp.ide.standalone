@@ -23,20 +23,6 @@ namespace EtAlii.Adp.C4;
 /// </remarks>
 public static class C4RuleSet
 {
-    /// <summary>Every rule's stable id, prefixed with the module's short name as core expects.</summary>
-    public static class Rules
-    {
-        public const string MissingDescription = "c4.missing-description";
-        public const string MissingTechnology = "c4.missing-technology";
-        public const string UnlabelledRelationship = "c4.unlabelled-relationship";
-        public const string MissingProtocol = "c4.missing-protocol";
-        public const string DanglingRelationship = "c4.dangling-relationship";
-        public const string KindNotPermitted = "c4.kind-not-permitted-on-view";
-        public const string EmptyView = "c4.empty-view";
-        public const string UnknownViewScope = "c4.unknown-view-scope";
-        public const string MisplacedElement = "c4.misplaced-element";
-        public const string IncludeNotFollowed = "c4.include-not-followed";
-    }
 
     /// <summary>What each kind must sit inside, or null when it sits at the top of the model.</summary>
     /// <remarks>
@@ -87,7 +73,7 @@ public static class C4RuleSet
             problems.Add(new DiagramProblem(
                 DiagramProblemSeverity.Warning,
                 $"This model includes '{include}', which ADP does not read. Anything declared there is missing from this diagram, and ADP will not edit it.",
-                Rules.IncludeNotFollowed,
+                C4Rules.IncludeNotFollowed,
                 null));
         }
 
@@ -122,8 +108,8 @@ public static class C4RuleSet
                 yield return new DiagramProblem(
                     DiagramProblemSeverity.Warning,
                     $"'{Label(element)}' has no description. C4 asks for a short description on every element, so a reader can tell at a glance what it is responsible for.",
-                    Rules.MissingDescription,
-                    new DiagramProblemLocation.ElementId(element.Id));
+                    C4Rules.MissingDescription,
+                    new DiagramProblemElementLocation(element.Id));
             }
 
             // "Every container and component should have a technology explicitly specified."
@@ -132,8 +118,8 @@ public static class C4RuleSet
                 yield return new DiagramProblem(
                     DiagramProblemSeverity.Warning,
                     $"'{Label(element)}' has no technology. C4 asks for one explicitly on every {element.Kind.ToString().ToLowerInvariant()}.",
-                    Rules.MissingTechnology,
-                    new DiagramProblemLocation.ElementId(element.Id));
+                    C4Rules.MissingTechnology,
+                    new DiagramProblemElementLocation(element.Id));
             }
 
             // C4's hierarchy is what gives each level its meaning: a component is a part of a
@@ -148,8 +134,8 @@ public static class C4RuleSet
                         parent is null
                             ? $"'{Label(element)}' is a {Spell(element.Kind)} declared outside any {Spell(required)}. In C4 a {Spell(element.Kind)} is part of a {Spell(required)}."
                             : $"'{Label(element)}' is a {Spell(element.Kind)} inside a {Spell(parent.Kind)}. In C4 a {Spell(element.Kind)} is part of a {Spell(required)}.",
-                        Rules.MisplacedElement,
-                        new DiagramProblemLocation.ElementId(element.Id));
+                        C4Rules.MisplacedElement,
+                        new DiagramProblemElementLocation(element.Id));
                 }
             }
         }
@@ -168,8 +154,8 @@ public static class C4RuleSet
                 yield return new DiagramProblem(
                     DiagramProblemSeverity.Warning,
                     $"The relationship on line {relationship.Line} names '{missing}', which the model does not declare.",
-                    Rules.DanglingRelationship,
-                    new DiagramProblemLocation.Line(relationship.Line));
+                    C4Rules.DanglingRelationship,
+                    new DiagramProblemLineLocation(relationship.Line));
                 continue;
             }
 
@@ -179,8 +165,8 @@ public static class C4RuleSet
                 yield return new DiagramProblem(
                     DiagramProblemSeverity.Warning,
                     $"The relationship from '{Label(source)}' to '{Label(destination)}' has no label. C4 asks what the relationship is for, in the direction of the arrow.",
-                    Rules.UnlabelledRelationship,
-                    new DiagramProblemLocation.Line(relationship.Line));
+                    C4Rules.UnlabelledRelationship,
+                    new DiagramProblemLineLocation(relationship.Line));
             }
 
             // Containers only. Two components of one container call each other in process, and
@@ -192,8 +178,8 @@ public static class C4RuleSet
                 yield return new DiagramProblem(
                     DiagramProblemSeverity.Warning,
                     $"The relationship from '{Label(source)}' to '{Label(destination)}' names no technology. How two containers communicate is what a Container diagram is for.",
-                    Rules.MissingProtocol,
-                    new DiagramProblemLocation.Line(relationship.Line));
+                    C4Rules.MissingProtocol,
+                    new DiagramProblemLineLocation(relationship.Line));
             }
         }
     }
@@ -205,8 +191,8 @@ public static class C4RuleSet
             yield return new DiagramProblem(
                 DiagramProblemSeverity.Warning,
                 $"The '{view.Key}' view is scoped to '{scopeId}', which the model does not declare.",
-                Rules.UnknownViewScope,
-                new DiagramProblemLocation.Line(view.Line));
+                C4Rules.UnknownViewScope,
+                new DiagramProblemLineLocation(view.Line));
         }
 
         var members = MembersOf(workspace, view);
@@ -216,8 +202,8 @@ public static class C4RuleSet
             yield return new DiagramProblem(
                 DiagramProblemSeverity.Warning,
                 $"The '{view.Key}' view shows '{Label(element)}', which is a {Spell(element.Kind)}. A {Spell(view.Kind)} view shows {string.Join(", ", permitted.Select(Spell))}.",
-                Rules.KindNotPermitted,
-                new DiagramProblemLocation.ElementId(element.Id));
+                C4Rules.KindNotPermitted,
+                new DiagramProblemElementLocation(element.Id));
         }
 
         // There is deliberately no "mixed abstraction levels" rule for dynamic views.
@@ -233,8 +219,8 @@ public static class C4RuleSet
             yield return new DiagramProblem(
                 DiagramProblemSeverity.Warning,
                 $"The '{view.Key}' view is empty.",
-                Rules.EmptyView,
-                new DiagramProblemLocation.Line(view.Line));
+                C4Rules.EmptyView,
+                new DiagramProblemLineLocation(view.Line));
         }
     }
 

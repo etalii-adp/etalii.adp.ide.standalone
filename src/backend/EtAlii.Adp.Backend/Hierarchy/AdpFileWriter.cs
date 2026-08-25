@@ -67,7 +67,7 @@ public static class AdpFileWriter
             // Information: files appeared in the user's project because of us, which is
             // exactly the kind of thing worth being able to point at afterwards.
             _logger.Information("Created {FilePaths}", destinations);
-            return new AdpFileWriteResult.Created(destinations[0]);
+            return new AdpFileCreated(destinations[0]);
         }
         catch (IOException) when (destinations.Any(destination => !moved.Contains(destination) && (File.Exists(destination) || Directory.Exists(destination))))
         {
@@ -75,13 +75,13 @@ public static class AdpFileWriter
             // can pick another, so this is a warning about a race, not a failure.
             _logger.Warning("Did not create {FilePaths}: a name was taken while it was being written", destinations);
             RollBack(moved, temporaries);
-            return new AdpFileWriteResult.NameTaken();
+            return new AdpFileNameTaken();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
         {
             _logger.Error(ex, "Failed to create {FilePaths}", destinations);
             RollBack(moved, temporaries);
-            return new AdpFileWriteResult.Failed(ex.Message);
+            return new AdpFileWriteFailed(ex.Message);
         }
     }
 

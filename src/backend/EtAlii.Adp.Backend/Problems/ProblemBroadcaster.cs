@@ -102,10 +102,10 @@ public sealed class ProblemBroadcaster : IDisposable
         };
         switch (stored.Problem.Location)
         {
-            case DiagramProblemLocation.ElementId elementId:
+            case DiagramProblemElementLocation elementId:
                 problem.Location = new ProblemLocation { ElementId = new ElementId { Value = elementId.Id } };
                 break;
-            case DiagramProblemLocation.Line line:
+            case DiagramProblemLineLocation line:
                 problem.Location = new ProblemLocation { Line = line.Number };
                 break;
         }

@@ -9,5 +9,6 @@ public static class Diagram
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("freeplane", "mindmap"),
         "Mind map (radial/hierarchical, single central topic)",
-        DocumentExtension);
+        "Ideas branching from one central topic, for thinking a subject through rather than specifying it.",
+        Extension: DocumentExtension);
 }

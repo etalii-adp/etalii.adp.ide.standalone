@@ -26,7 +26,7 @@ public class MindmapElementMapperTests
         "</node>\n" +
         "</map>\n");
 
-    private MindmapViewState.ConnectionView View(MindmapDocument document) => _views.For(_watchId, "map.mm", document);
+    private MindmapConnectionView View(MindmapDocument document) => _views.For(_watchId, "map.mm", document);
 
     private string[] VisibleIds(MindmapDocument document, DiagramViewport viewport) =>
         _mapper.Visible(document, View(document), viewport).Select(element => element.Id).ToArray();
@@ -41,6 +41,7 @@ public class MindmapElementMapperTests
     [Fact]
     public void Visible_DeliversANodeTheViewportOnlyPartlyCovers()
     {
+        // Arrange and act.
         // A node straddling the edge of the view is half on screen: culling it would blank out
         // a node the user can plainly see part of.
         var document = Document();
@@ -48,29 +49,35 @@ public class MindmapElementMapperTests
         // A viewport whose right edge cuts "a" down the middle, and which reaches no further.
         var viewport = new DiagramViewport(box.CenterX, box.CenterY, box.Right + 1, box.Bottom + 1);
 
+        // Assert.
         Assert.Contains("a", VisibleIds(document, viewport));
     }
 
     [Fact]
     public void Visible_DeliversANodeTheViewportMerelyTouches()
     {
+        // Arrange and act.
         // The boundary case of the rule above: sharing an edge still counts as being in view.
         var document = Document();
         var box = _mapper.Layout(document, View(document))["a"];
         var viewport = new DiagramViewport(box.Right, box.Bottom, box.Right + 100, box.Bottom + 100);
 
+        // Assert.
         Assert.Contains("a", VisibleIds(document, viewport));
     }
 
     [Fact]
     public void Visible_DeliversTheParentOfAnOnScreenNode_EvenWhenTheParentIsOutOfView()
     {
+        // Arrange.
         // The connector from "a" up to "root" leaves the viewport; the canvas draws it from the
         // parent's box, so the parent has to come along or the line is simply not drawn.
         var document = Document();
 
+        // Act.
         var visible = VisibleIds(document, JustAround(document, "a"));
 
+        // Assert.
         Assert.Contains("a", visible);
         Assert.Contains("root", visible);
     }
@@ -78,66 +85,82 @@ public class MindmapElementMapperTests
     [Fact]
     public void Visible_DeliversTheChildrenOfAnOnScreenNode_EvenWhenTheyAreOutOfView()
     {
+        // Arrange.
         // The same rule the other way round: the line from "a" out to "a1" starts on screen.
         var document = Document();
 
+        // Act.
         var visible = VisibleIds(document, JustAround(document, "a"));
 
+        // Assert.
         Assert.Contains("a1", visible);
     }
 
     [Fact]
     public void Visible_StopsAtOneHop_SoAViewportDoesNotDragInTheWholeMap()
     {
+        // Arrange.
         // "b" is a sibling: reachable only through "root", which is itself only here as an
         // anchor. Following partners of partners would deliver the entire tree and defeat the
         // virtualization the viewport exists for.
         var document = Document();
 
+        // Act.
         var visible = VisibleIds(document, JustAround(document, "a"));
 
+        // Assert.
         Assert.DoesNotContain("b", visible);
     }
 
     [Fact]
     public void Visible_DeliversNothingUnreachable_WhenTheViewportIsFarOffTheMap()
     {
+        // Act.
         var document = Document();
 
+        // Assert.
         Assert.Empty(VisibleIds(document, new DiagramViewport(100000, 100000, 200000, 200000)));
     }
 
     [Fact]
     public void Visible_DeliversEveryNode_WhenTheViewportIsUnbounded()
     {
+        // Act.
         var document = Document();
 
+        // Assert.
         Assert.Equal(4, VisibleIds(document, DiagramViewport.Unbounded).Length);
     }
 
     [Fact]
     public void Visible_NeverDeliversANodeTwice_WhenItIsBothInViewAndAPartner()
     {
+        // Arrange.
         // "a" is inside the view and also the parent of "a1" and the child of "root"; the
         // union must still name it once, or the client receives a duplicate add.
         var document = Document();
 
+        // Act.
         var visible = VisibleIds(document, JustAround(document, "a"));
 
+        // Assert.
         Assert.Equal(visible.Length, visible.Distinct(StringComparer.Ordinal).Count());
     }
 
     [Fact]
     public void Visible_NeverDeliversANodeHiddenUnderAFold_EvenAsAPartner()
     {
+        // Arrange.
         // A folded branch's children are not laid out at all; being the partner of an on-screen
         // node must not smuggle one back onto the canvas.
         var document = Document();
         var view = View(document);
         _views.Toggle(_watchId, "map.mm", document, "a"); // collapse "a", hiding "a1"
 
+        // Act.
         var visible = _mapper.Visible(document, view, JustAround(document, "a")).Select(element => element.Id).ToArray();
 
+        // Assert.
         Assert.Contains("a", visible);
         Assert.DoesNotContain("a1", visible);
     }

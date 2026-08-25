@@ -79,20 +79,24 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
     [Fact]
     public async Task TwoRegistrationsOverOneDocument_EachOpenTheirOwnView()
     {
+        // Arrange.
         using var channel = CreateChannel();
         var headers = await LoginAsync(channel);
         var projectId = await AddProjectAsync(channel, headers);
         var client = new DiagramService.DiagramServiceClient(channel);
 
+        // Arrange, continued.
         var context = await ElementIdsAsync(client, headers, projectId, "context.adp");
         var containers = await ElementIdsAsync(client, headers, projectId, "containers.adp");
 
+        // Act.
         // A context view shows people and software systems; a container view shows the
         // containers inside its system. One document, two different answers.
         Assert.Contains("u", context);
         Assert.Contains("s", context);
         Assert.DoesNotContain("web", context);
 
+        // Assert.
         Assert.Contains("web", containers);
         // The system in scope is the boundary on a container view, not a box.
         Assert.DoesNotContain("s", containers);
@@ -101,6 +105,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
     [Fact]
     public async Task ABareDslWithNoRegistration_OpensItsFirstDeclaredView()
     {
+        // Arrange.
         // Requirement 2.6: a document dropped into the project on its own is still openable,
         // and shows the first view it declares.
         using var channel = CreateChannel();
@@ -108,8 +113,10 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
         var projectId = await AddProjectAsync(channel, headers);
         var client = new DiagramService.DiagramServiceClient(channel);
 
+        // Act.
         var ids = await ElementIdsAsync(client, headers, projectId, "banking.dsl");
 
+        // Assert.
         Assert.Contains("s", ids);
         Assert.DoesNotContain("web", ids);
     }
@@ -117,14 +124,17 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
     [Fact]
     public async Task EveryViewCarriesItsOwnTitle_SoTwoTabsOfOneModelAreTellableApart()
     {
+        // Arrange.
         using var channel = CreateChannel();
         var headers = await LoginAsync(channel);
         var projectId = await AddProjectAsync(channel, headers);
         var client = new DiagramService.DiagramServiceClient(channel);
 
+        // Act.
         var context = await TitleOfAsync(client, headers, projectId, "context.adp");
         var containers = await TitleOfAsync(client, headers, projectId, "containers.adp");
 
+        // Assert.
         Assert.Equal("System Context diagram for Banking", context);
         Assert.Equal("Container diagram for Banking", containers);
     }

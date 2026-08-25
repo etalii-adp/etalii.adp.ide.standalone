@@ -16,7 +16,7 @@ public class ContextSelectionStoreTests : IDisposable
 
     private static ContextRediscovery NoRediscovery => (record, _) => ValueTask.FromResult(record);
 
-    private static ContextSelectionRecord Record(StubResolver resolver, params string[] path)
+    private static ContextSelectionRecord Record(ContextSelectionStoreStubResolver resolver, params string[] path)
     {
         var id = new ContextSource { EntryId = ShortGuid.NewShortGuid() };
         var chain = new ContextSelection { Source = ContextSelectionSource.Explorer, Id = id, Path = new Path() };
@@ -63,12 +63,14 @@ public class ContextSelectionStoreTests : IDisposable
     [Fact]
     public async Task Register_WithNothingSelected_CarriesTheRootActionsOnTheBaseline()
     {
+        // Arrange.
         // The explorer's empty space needs a menu without asking; nothing is selected, so the
         // selection stays absent and only the actions travel.
         var channel = Channel.CreateUnbounded<ContextMessage>();
 
         _store.Register(ShortGuid.NewShortGuid(), Root, channel.Writer, [RootGroup()], [], new ProjectProblems());
 
+        // Act and assert, step by step.
         var message = await ReadAsync(channel.Reader);
         Assert.Null(message.Selection.Selection);
         var action = Assert.Single(Assert.Single(message.Selection.Actions).Actions);
@@ -78,17 +80,21 @@ public class ContextSelectionStoreTests : IDisposable
     [Fact]
     public async Task Clear_CarriesTheRootActions_WhileASetCarriesTheSelectionsOwn()
     {
+        // Arrange.
         var watchId = ShortGuid.NewShortGuid();
         var channel = Channel.CreateUnbounded<ContextMessage>();
         _store.Register(watchId, Root, channel.Writer, [RootGroup()], [], new ProjectProblems());
         await TestBaselineAsync(channel.Reader);
 
-        _store.Set(watchId, Root, Record(new StubResolver(), "a.txt"), NoRediscovery);
+        // Arrange, continued.
+        _store.Set(watchId, Root, Record(new ContextSelectionStoreStubResolver(), "a.txt"), NoRediscovery);
         var selected = await ReadAsync(channel.Reader);
 
+        // Act.
         _store.Clear(watchId);
         var cleared = await ReadAsync(channel.Reader);
 
+        // Assert.
         // A selection's message carries that selection's actions (none, for this record) - not the root's.
         Assert.NotNull(selected.Selection.Selection);
         Assert.Empty(selected.Selection.Actions);
@@ -100,10 +106,12 @@ public class ContextSelectionStoreTests : IDisposable
     [Fact]
     public async Task Register_WithNothingSelected_WritesAnEmptyBaseline()
     {
+        // Arrange.
         var channel = Channel.CreateUnbounded<ContextMessage>();
 
         _store.Register(ShortGuid.NewShortGuid(), Root, channel.Writer, [], [], new ProjectProblems());
 
+        // Act and assert, step by step.
         var message = await ReadAsync(channel.Reader);
         Assert.Null(message.Selection.Selection);
         Assert.False(message.Selection.Transient);
@@ -112,12 +120,14 @@ public class ContextSelectionStoreTests : IDisposable
     [Fact]
     public async Task Register_AfterASet_WritesTheCurrentSelectionAsBaseline()
     {
+        // Arrange.
         var watchId = ShortGuid.NewShortGuid();
-        _store.Set(watchId, Root, Record(new StubResolver(), "a.txt"), NoRediscovery);
+        _store.Set(watchId, Root, Record(new ContextSelectionStoreStubResolver(), "a.txt"), NoRediscovery);
         var channel = Channel.CreateUnbounded<ContextMessage>();
 
         _store.Register(watchId, Root, channel.Writer, [], [], new ProjectProblems());
 
+        // Act and assert, step by step.
         var message = await ReadAsync(channel.Reader);
         Assert.Equal(new[] { "a.txt" }, message.Selection.Selection.Path.Segments);
     }
@@ -125,6 +135,7 @@ public class ContextSelectionStoreTests : IDisposable
     [Fact]
     public async Task Set_PushesToTheRegisteredWriterOnly()
     {
+        // Arrange.
         var mine = Channel.CreateUnbounded<ContextMessage>();
         var theirs = Channel.CreateUnbounded<ContextMessage>();
         var myId = ShortGuid.NewShortGuid();
@@ -134,8 +145,9 @@ public class ContextSelectionStoreTests : IDisposable
         await TestBaselineAsync(mine.Reader);
         await TestBaselineAsync(theirs.Reader);
 
-        _store.Set(myId, Root, Record(new StubResolver(), "a.txt"), NoRediscovery);
+        _store.Set(myId, Root, Record(new ContextSelectionStoreStubResolver(), "a.txt"), NoRediscovery);
 
+        // Act and assert, step by step.
         var message = await ReadAsync(mine.Reader);
         Assert.Equal(new[] { "a.txt" }, message.Selection.Selection.Path.Segments);
         Assert.False(theirs.Reader.TryRead(out _));
@@ -144,16 +156,18 @@ public class ContextSelectionStoreTests : IDisposable
     [Fact]
     public async Task PushTransient_PushesTransientAndLeavesGetUnchanged()
     {
+        // Arrange.
         var watchId = ShortGuid.NewShortGuid();
         var channel = Channel.CreateUnbounded<ContextMessage>();
         _store.Register(watchId, Root, channel.Writer, [], [], new ProjectProblems());
         await TestBaselineAsync(channel.Reader);
-        var current = Record(new StubResolver(), "current.txt");
+        var current = Record(new ContextSelectionStoreStubResolver(), "current.txt");
         _store.Set(watchId, Root, current, NoRediscovery);
         await ReadAsync(channel.Reader);
 
-        _store.PushTransient(watchId, Record(new StubResolver(), "preview.txt"));
+        _store.PushTransient(watchId, Record(new ContextSelectionStoreStubResolver(), "preview.txt"));
 
+        // Act and assert, step by step.
         var message = await ReadAsync(channel.Reader);
         Assert.True(message.Selection.Transient);
         Assert.Equal(new[] { "preview.txt" }, message.Selection.Selection.Path.Segments);
@@ -163,16 +177,18 @@ public class ContextSelectionStoreTests : IDisposable
     [Fact]
     public async Task Clear_PushesAnEmptySelectionAndDisposesTracks()
     {
+        // Arrange.
         var watchId = ShortGuid.NewShortGuid();
         var channel = Channel.CreateUnbounded<ContextMessage>();
         _store.Register(watchId, Root, channel.Writer, [], [], new ProjectProblems());
         await TestBaselineAsync(channel.Reader);
-        var resolver = new StubResolver();
+        var resolver = new ContextSelectionStoreStubResolver();
         _store.Set(watchId, Root, Record(resolver, "a.txt"), NoRediscovery);
         await ReadAsync(channel.Reader);
 
         _store.Clear(watchId);
 
+        // Act and assert, step by step.
         var message = await ReadAsync(channel.Reader);
         Assert.Null(message.Selection.Selection);
         Assert.Null(_store.Get(watchId));
@@ -182,11 +198,12 @@ public class ContextSelectionStoreTests : IDisposable
     [Fact]
     public async Task UpdateFromTrack_WithAPath_RewritesTheSelectionAndRediscovers()
     {
+        // Arrange.
         var watchId = ShortGuid.NewShortGuid();
         var channel = Channel.CreateUnbounded<ContextMessage>();
         _store.Register(watchId, Root, channel.Writer, [], [], new ProjectProblems());
         await TestBaselineAsync(channel.Reader);
-        var resolver = new StubResolver();
+        var resolver = new ContextSelectionStoreStubResolver();
         var rediscovered = 0;
         _store.Set(watchId, Root, Record(resolver, "a.txt"), (record, _) =>
         {
@@ -200,6 +217,7 @@ public class ContextSelectionStoreTests : IDisposable
 
         resolver.Fire(["b.txt"]);
 
+        // Act and assert, step by step.
         var message = await ReadAsync(channel.Reader);
         Assert.Equal(new[] { "b.txt" }, message.Selection.Selection.Path.Segments);
         Assert.Equal("rename", message.Selection.Actions.Single().Actions.Single().Id);
@@ -210,8 +228,9 @@ public class ContextSelectionStoreTests : IDisposable
     [Fact]
     public async Task UpdateFromTrack_MovesTheTargetAlongWithThePath()
     {
+        // Arrange.
         var watchId = ShortGuid.NewShortGuid();
-        var resolver = new StubResolver();
+        var resolver = new ContextSelectionStoreStubResolver();
         ContextSelectionRecord? rediscoveredWith = null;
         _store.Set(watchId, Root, Record(resolver, "docs", "a.txt"), (record, _) =>
         {
@@ -219,30 +238,35 @@ public class ContextSelectionStoreTests : IDisposable
             return ValueTask.FromResult(record);
         });
 
+        // Arrange, continued.
         resolver.Fire(["documents", "b.txt"]);
 
+        // Act.
         var deadline = DateTime.UtcNow + Timeout;
         while (rediscoveredWith is null && DateTime.UtcNow < deadline)
         {
             await Task.Delay(10, TestContext.Current.CancellationToken);
         }
 
+        // Assert.
         Assert.Equal(System.IO.Path.Combine(Root, "documents", "b.txt"), rediscoveredWith!.Innermost.Target.ResolvedFullPath);
     }
 
     [Fact]
     public async Task UpdateFromTrack_WithNull_Clears()
     {
+        // Arrange.
         var watchId = ShortGuid.NewShortGuid();
         var channel = Channel.CreateUnbounded<ContextMessage>();
         _store.Register(watchId, Root, channel.Writer, [], [], new ProjectProblems());
         await TestBaselineAsync(channel.Reader);
-        var resolver = new StubResolver();
+        var resolver = new ContextSelectionStoreStubResolver();
         _store.Set(watchId, Root, Record(resolver, "a.txt"), NoRediscovery);
         await ReadAsync(channel.Reader);
 
         resolver.Fire(null);
 
+        // Act and assert, step by step.
         var message = await ReadAsync(channel.Reader);
         Assert.Null(message.Selection.Selection);
         Assert.Null(_store.Get(watchId));
@@ -251,42 +275,51 @@ public class ContextSelectionStoreTests : IDisposable
     [Fact]
     public async Task IdleEviction_RemovesAnEntryNoStreamEverClaimed()
     {
+        // Arrange.
         using var store = new ContextSelectionStore(idleTimeout: TimeSpan.FromMilliseconds(50));
         var watchId = ShortGuid.NewShortGuid();
-        store.Set(watchId, Root, Record(new StubResolver(), "a.txt"), NoRediscovery);
+        store.Set(watchId, Root, Record(new ContextSelectionStoreStubResolver(), "a.txt"), NoRediscovery);
 
+        // Act.
         var deadline = DateTime.UtcNow + Timeout;
         while (store.Get(watchId) is not null && DateTime.UtcNow < deadline)
         {
             await Task.Delay(10, TestContext.Current.CancellationToken);
         }
 
+        // Assert.
         Assert.Null(store.Get(watchId));
     }
 
     [Fact]
     public async Task Register_CancelsIdleEviction()
     {
+        // Arrange.
         using var store = new ContextSelectionStore(idleTimeout: TimeSpan.FromMilliseconds(50));
         var watchId = ShortGuid.NewShortGuid();
-        store.Set(watchId, Root, Record(new StubResolver(), "a.txt"), NoRediscovery);
+        store.Set(watchId, Root, Record(new ContextSelectionStoreStubResolver(), "a.txt"), NoRediscovery);
         store.Register(watchId, Root, Channel.CreateUnbounded<ContextMessage>().Writer, [], [], new ProjectProblems());
 
+        // Act.
         await Task.Delay(200, TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.NotNull(store.Get(watchId));
     }
 
     [Fact]
     public async Task Remove_DisposesTracksAndForgetsTheSelection()
     {
+        // Arrange.
         var watchId = ShortGuid.NewShortGuid();
         _store.Register(watchId, Root, Channel.CreateUnbounded<ContextMessage>().Writer, [], [], new ProjectProblems());
-        var resolver = new StubResolver();
+        var resolver = new ContextSelectionStoreStubResolver();
         _store.Set(watchId, Root, Record(resolver, "a.txt"), NoRediscovery);
 
+        // Act.
         _store.Remove(watchId);
 
+        // Assert.
         Assert.Equal(1, resolver.Disposed);
         Assert.Null(_store.Get(watchId));
         await Task.CompletedTask;
@@ -295,6 +328,7 @@ public class ContextSelectionStoreTests : IDisposable
     [Fact]
     public async Task Register_Twice_SupersedesTheFirstWriter()
     {
+        // Arrange.
         var watchId = ShortGuid.NewShortGuid();
         var first = Channel.CreateUnbounded<ContextMessage>();
         var second = Channel.CreateUnbounded<ContextMessage>();
@@ -303,8 +337,9 @@ public class ContextSelectionStoreTests : IDisposable
         _store.Register(watchId, Root, second.Writer, [], [], new ProjectProblems());
         await TestBaselineAsync(second.Reader);
 
-        _store.Set(watchId, Root, Record(new StubResolver(), "a.txt"), NoRediscovery);
+        _store.Set(watchId, Root, Record(new ContextSelectionStoreStubResolver(), "a.txt"), NoRediscovery);
 
+        // Act and assert, step by step.
         await ReadAsync(second.Reader);
         Assert.False(first.Reader.TryRead(out _));
     }
@@ -314,12 +349,14 @@ public class ContextSelectionStoreTests : IDisposable
     [Fact]
     public async Task Register_CarriesTheProjectActionsOnTheirOwnMessageAfterTheBaseline()
     {
+        // Arrange.
         // Undo and redo belong to the project, not the selection, so they travel on their own
         // message right after the selection baseline (diagram-undo-redo Deviation 1).
         var channel = Channel.CreateUnbounded<ContextMessage>();
 
         _store.Register(ShortGuid.NewShortGuid(), Root, channel.Writer, [], [ProjectGroup()], new ProjectProblems());
 
+        // Act and assert, step by step.
         var selection = await ReadAsync(channel.Reader);
         Assert.Equal(ContextMessage.MessageOneofCase.Selection, selection.MessageCase);
         var projectActions = await ReadAsync(channel.Reader);
@@ -330,6 +367,7 @@ public class ContextSelectionStoreTests : IDisposable
     [Fact]
     public async Task PushProjectActions_ReachesOnlyConnectionsInThatProject()
     {
+        // Arrange.
         const string other = @"C:\other";
         var mine = Channel.CreateUnbounded<ContextMessage>();
         var theirs = Channel.CreateUnbounded<ContextMessage>();
@@ -340,6 +378,7 @@ public class ContextSelectionStoreTests : IDisposable
 
         _store.PushProjectActions(Root, [ProjectGroup()]);
 
+        // Act and assert, step by step.
         var message = await ReadAsync(mine.Reader);
         Assert.Equal(ContextMessage.MessageOneofCase.ProjectActions, message.MessageCase);
         Assert.False(theirs.Reader.TryRead(out _), "A project-actions push reached a connection in another project.");
@@ -350,6 +389,7 @@ public class ContextSelectionStoreTests : IDisposable
     [Fact]
     public async Task Register_CarriesTheProblemsOnTheBaseline()
     {
+        // Arrange.
         // The panel is current the moment it connects (errors-and-warnings-panel
         // Requirement 1.2): the baseline's third message is the project's problems.
         var channel = Channel.CreateUnbounded<ContextMessage>();
@@ -357,6 +397,7 @@ public class ContextSelectionStoreTests : IDisposable
 
         _store.Register(ShortGuid.NewShortGuid(), Root, channel.Writer, [], [], problems);
 
+        // Act and assert, step by step.
         await ReadAsync(channel.Reader); // the selection baseline
         await ReadAsync(channel.Reader); // the project actions
         var message = await ReadAsync(channel.Reader);
@@ -367,6 +408,7 @@ public class ContextSelectionStoreTests : IDisposable
     [Fact]
     public async Task PushProblems_ReachesEveryConnectionInTheProject()
     {
+        // Arrange.
         // Two viewers of one project cannot disagree about what is wrong
         // (errors-and-warnings-panel Requirement 6.4).
         var first = Channel.CreateUnbounded<ContextMessage>();
@@ -379,6 +421,7 @@ public class ContextSelectionStoreTests : IDisposable
         var problems = new ProjectProblems { State = ProblemSetState.Validated, ErrorCount = 1 };
         _store.PushProblems(Root, problems);
 
+        // Act and assert, step by step.
         var toFirst = await ReadAsync(first.Reader);
         var toSecond = await ReadAsync(second.Reader);
         Assert.Equal(ContextMessage.MessageOneofCase.Problems, toFirst.MessageCase);
@@ -389,6 +432,7 @@ public class ContextSelectionStoreTests : IDisposable
     [Fact]
     public async Task PushProblems_ReachesNoConnectionInAnotherProject()
     {
+        // Arrange.
         const string other = @"C:\other";
         var mine = Channel.CreateUnbounded<ContextMessage>();
         var theirs = Channel.CreateUnbounded<ContextMessage>();
@@ -399,6 +443,7 @@ public class ContextSelectionStoreTests : IDisposable
 
         _store.PushProblems(Root, new ProjectProblems());
 
+        // Act and assert, step by step.
         var message = await ReadAsync(mine.Reader);
         Assert.Equal(ContextMessage.MessageOneofCase.Problems, message.MessageCase);
         Assert.False(theirs.Reader.TryRead(out _), "A problems push reached a connection in another project.");
@@ -407,48 +452,22 @@ public class ContextSelectionStoreTests : IDisposable
     [Fact]
     public async Task PushProblems_NeverDisturbsASelection()
     {
+        // Arrange.
         var watchId = ShortGuid.NewShortGuid();
         var channel = Channel.CreateUnbounded<ContextMessage>();
         _store.Register(watchId, Root, channel.Writer, [], [], new ProjectProblems());
         await TestBaselineAsync(channel.Reader);
-        _store.Set(watchId, Root, Record(new StubResolver(), "a.txt"), NoRediscovery);
+        _store.Set(watchId, Root, Record(new ContextSelectionStoreStubResolver(), "a.txt"), NoRediscovery);
         await ReadAsync(channel.Reader);
         var before = _store.Get(watchId);
 
+        // Act.
         _store.PushProblems(Root, new ProjectProblems { State = ProblemSetState.Validated });
 
+        // Assert.
         Assert.Same(before, _store.Get(watchId));
         var message = await ReadAsync(channel.Reader);
         Assert.Equal(ContextMessage.MessageOneofCase.Problems, message.MessageCase);
     }
 
-    /// <summary>A resolver whose tracks the test can fire by hand and count disposals of.</summary>
-    private sealed class StubResolver : IContextSourceResolver
-    {
-        private Action<IReadOnlyList<string>?>? _onChange;
-
-        public int Disposed { get; private set; }
-
-        public void Fire(IReadOnlyList<string>? path) => _onChange?.Invoke(path);
-
-        public bool CanResolve(ContextSource source) => true;
-
-        public ValueTask<ContextLevelResolution> ResolveAsync(
-            ShortGuid watchId, string rootPath, ContextSelectionSource source, ContextSource id,
-            IReadOnlyList<string> clientPath, ContextResolvedLevel? parent, CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
-
-        public ContextNesting NestingOf(ContextResolvedLevel level) => ContextNesting.NotNestable;
-
-        public IDisposable Track(ShortGuid watchId, string rootPath, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange)
-        {
-            _onChange = onChange;
-            return new Subscription(this);
-        }
-
-        private sealed class Subscription(StubResolver owner) : IDisposable
-        {
-            public void Dispose() => owner.Disposed++;
-        }
-    }
 }

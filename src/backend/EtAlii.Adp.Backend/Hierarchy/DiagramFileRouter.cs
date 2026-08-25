@@ -64,19 +64,19 @@ public sealed class DiagramFileRouter
         var mimeType = DiagramFilePair.ReadMimeType(adpPath);
         if (mimeType is null)
         {
-            return new DiagramRouting.Unreadable(adpPath);
+            return new DiagramUnreadable(adpPath);
         }
 
         var definition = _catalog.All.FirstOrDefault(candidate => string.Equals(candidate.Origin.MimeType, mimeType, StringComparison.Ordinal));
         if (definition is null)
         {
             // Named rather than swallowed: the user can tell a missing module from a typo.
-            return new DiagramRouting.UnknownType(adpPath, mimeType);
+            return new DiagramUnknownType(adpPath, mimeType);
         }
 
         if (!definition.HasDocumentSibling)
         {
-            return new DiagramRouting.Routed(definition, adpPath, adpPath);
+            return new DiagramRouted(definition, adpPath, adpPath);
         }
 
         var body = DiagramFilePair.BodyOf(adpPath, _catalog, projectRoot);
@@ -86,10 +86,10 @@ public sealed class DiagramFileRouter
             // read fine and its type is known. Refused rather than followed: the header is
             // user-editable text (Requirement 2.4).
             _logger.Warning("Not routing {Path}: its body: header names a document outside the project", adpPath);
-            return new DiagramRouting.Unreadable(adpPath);
+            return new DiagramUnreadable(adpPath);
         }
 
-        return new DiagramRouting.Routed(definition, adpPath, body.Value.Path);
+        return new DiagramRouted(definition, adpPath, body.Value.Path);
     }
 
     private DiagramRouting RouteBody(string bodyPath, string? projectRoot)
@@ -97,7 +97,7 @@ public sealed class DiagramFileRouter
         var extension = IoPath.GetExtension(bodyPath);
         if (extension.Length == 0)
         {
-            return new DiagramRouting.NotADiagram(bodyPath);
+            return new NotADiagram(bodyPath);
         }
 
         // The registration file wins where it exists; this path is only for a body dropped
@@ -115,10 +115,10 @@ public sealed class DiagramFileRouter
         switch (claimants.Length)
         {
             case 0:
-                return new DiagramRouting.NotADiagram(bodyPath);
+                return new NotADiagram(bodyPath);
 
             case 1:
-                return new DiagramRouting.Routed(claimants[0], RegistrationPath: null, bodyPath);
+                return new DiagramRouted(claimants[0], RegistrationPath: null, bodyPath);
 
             default:
                 var vendors = claimants.Select(definition => definition.Origin.Vendor).Distinct(StringComparer.Ordinal).ToArray();
@@ -136,7 +136,7 @@ public sealed class DiagramFileRouter
                         vendors[0],
                         claimants.Length,
                         extension);
-                    return new DiagramRouting.Routed(claimants[0], RegistrationPath: null, bodyPath);
+                    return new DiagramRouted(claimants[0], RegistrationPath: null, bodyPath);
                 }
 
                 // Guessing which module owns a body is worse than saying the deployment is
@@ -146,7 +146,7 @@ public sealed class DiagramFileRouter
                     bodyPath,
                     extension,
                     claimants.Select(definition => definition.Origin.Key));
-                return new DiagramRouting.Ambiguous(bodyPath, extension, claimants);
+                return new DiagramAmbiguousExtension(bodyPath, extension, claimants);
         }
     }
 }

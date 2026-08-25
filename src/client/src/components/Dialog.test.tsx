@@ -5,22 +5,26 @@ import { Dialog } from "./Dialog";
 
 describe("Dialog", () => {
   it("renders nothing when closed", () => {
+    // Arrange and act.
     const { container } = render(
       <Dialog open={false} title="Title" onClose={() => {}} buttons={[]}>
         Body
       </Dialog>,
     );
 
+    // Assert.
     expect(container.firstChild).toBeNull();
   });
 
   it("renders the icon, title, and body content when open", () => {
+    // Arrange and act.
     render(
       <Dialog open icon="mdi-alert-circle-outline" title="Delete file?" onClose={() => {}} buttons={[]}>
         <p>This cannot be undone.</p>
       </Dialog>,
     );
 
+    // Assert.
     expect(screen.getByRole("dialog")).not.toBeNull();
     expect(screen.getByText("Delete file?")).not.toBeNull();
     expect(screen.getByText("This cannot be undone.")).not.toBeNull();
@@ -28,6 +32,7 @@ describe("Dialog", () => {
   });
 
   it("renders configurable buttons with their label and color, and invokes onClick when clicked", () => {
+    // Arrange.
     const onConfirm = vi.fn();
     render(
       <Dialog
@@ -40,6 +45,7 @@ describe("Dialog", () => {
       </Dialog>,
     );
 
+    // Act and assert, step by step.
     const button = screen.getByRole("button", { name: "Delete" });
     expect(button.className).toContain("dialog-button-danger");
 
@@ -48,6 +54,7 @@ describe("Dialog", () => {
   });
 
   it("does not invoke onClick for a disabled button", () => {
+    // Arrange.
     const onConfirm = vi.fn();
     render(
       <Dialog
@@ -60,11 +67,13 @@ describe("Dialog", () => {
       </Dialog>,
     );
 
+    // Act and assert, step by step.
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
   it("calls onClose when Escape is pressed", () => {
+    // Arrange.
     const onClose = vi.fn();
     render(
       <Dialog open title="Title" onClose={onClose} buttons={[]}>
@@ -72,11 +81,13 @@ describe("Dialog", () => {
       </Dialog>,
     );
 
+    // Act and assert, step by step.
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("calls onClose when the backdrop is clicked, but not when the dialog itself is clicked", () => {
+    // Arrange.
     const onClose = vi.fn();
     const { container } = render(
       <Dialog open title="Title" onClose={onClose} buttons={[]}>
@@ -84,6 +95,7 @@ describe("Dialog", () => {
       </Dialog>,
     );
 
+    // Act and assert, step by step.
     fireEvent.mouseDown(container.querySelector(".dialog") as HTMLElement);
     expect(onClose).not.toHaveBeenCalled();
 
@@ -92,11 +104,13 @@ describe("Dialog", () => {
   });
 
   it("focuses the button flagged autoFocus on open, and returns focus to the trigger on close", () => {
+    // Arrange.
     const trigger = document.createElement("button");
     trigger.textContent = "Open";
     document.body.appendChild(trigger);
     trigger.focus();
 
+    // Arrange, continued.
     const { rerender } = render(
       <Dialog
         open
@@ -111,19 +125,23 @@ describe("Dialog", () => {
       </Dialog>,
     );
 
+    // Arrange, continued.
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Cancel" }));
 
+    // Act.
     rerender(
       <Dialog open={false} title="Title" onClose={() => {}} buttons={[]}>
         Body
       </Dialog>,
     );
 
+    // Assert.
     expect(document.activeElement).toBe(trigger);
     trigger.remove();
   });
 
   it("wraps Tab focus between the first and last focusable elements", () => {
+    // Arrange.
     render(
       <Dialog
         open
@@ -141,6 +159,7 @@ describe("Dialog", () => {
     const cancelButton = screen.getByRole("button", { name: "Cancel" });
     const confirmButton = screen.getByRole("button", { name: "Confirm" });
 
+    // Act and assert, step by step.
     confirmButton.focus();
     fireEvent.keyDown(document, { key: "Tab" });
     expect(document.activeElement).toBe(cancelButton);
@@ -151,6 +170,7 @@ describe("Dialog", () => {
   });
 
   it("supports a custom dialog whose embedded content enables/disables a footer button via its own callback", () => {
+    // Arrange.
     function CustomDialogHarness() {
       const [isValid, setIsValid] = useState(false);
       return (
@@ -170,6 +190,7 @@ describe("Dialog", () => {
 
     render(<CustomDialogHarness />);
 
+    // Act and assert, step by step.
     const saveButton = screen.getByRole("button", { name: "Save" }) as HTMLButtonElement;
     expect(saveButton.disabled).toBe(true);
 

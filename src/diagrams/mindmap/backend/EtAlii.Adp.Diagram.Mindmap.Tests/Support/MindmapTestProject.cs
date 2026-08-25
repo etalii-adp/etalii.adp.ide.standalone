@@ -25,7 +25,7 @@ internal sealed class MindmapTestProject : IDisposable
         File.Copy("Fixtures/architecture.mm", BodyPath);
 
         _services = new ServiceCollection()
-            .AddSingleton<IDiagramDefinitionCatalog>(new Catalog([Diagram.Definition]))
+            .AddSingleton<IDiagramDefinitionCatalog>(new MindmapTestProjectCatalog([Diagram.Definition]))
             .AddSingleton<DiagramFileRouter>()
             .AddSingleton<MindmapViewState>()
             .AddSingleton<MindmapContextSourceResolver>()
@@ -63,7 +63,7 @@ internal sealed class MindmapTestProject : IDisposable
         ContextScope.Hierarchy,
         new ContextTarget(ContextScope.Hierarchy, AdpPath, IsContainer: false, ShortGuid.NewShortGuid(), Root, WatchId),
         new ContextLevelDetail { Entry = new EntryDetail { Kind = EntryKind.File, Available = true } },
-        new NullResolver());
+        new MindmapTestProjectNullResolver());
 
     /// <summary>A provider target for one node, as the resolver would build it.</summary>
     public ContextTarget NodeTarget(string nodeId) =>
@@ -80,21 +80,4 @@ internal sealed class MindmapTestProject : IDisposable
         }
     }
 
-    private sealed class Catalog(IReadOnlyList<DiagramDefinition> definitions) : IDiagramDefinitionCatalog
-    {
-        public IReadOnlyList<DiagramDefinition> All { get; } = definitions;
-    }
-
-    private sealed class NullResolver : IContextSourceResolver
-    {
-        public bool CanResolve(ContextSource source) => false;
-
-        public ValueTask<ContextLevelResolution> ResolveAsync(ShortGuid watchId, string rootPath, ContextSelectionSource source, ContextSource id, IReadOnlyList<string> clientPath, ContextResolvedLevel? parent, CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
-
-        public ContextNesting NestingOf(ContextResolvedLevel level) => ContextNesting.Contained;
-
-        public IDisposable Track(ShortGuid watchId, string rootPath, ContextResolvedLevel level, Action<IReadOnlyList<string>?> onChange) =>
-            throw new NotSupportedException();
-    }
 }

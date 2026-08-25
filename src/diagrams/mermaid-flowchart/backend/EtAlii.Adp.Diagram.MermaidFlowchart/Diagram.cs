@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("mermaid", "flowchart"),
-        "Flowchart");
+        "Flowchart",
+        "A flow of steps and decisions, in Mermaid's flowchart syntax.");
 }

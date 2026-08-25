@@ -50,14 +50,17 @@ public class HistoryContextActionProviderTests : IDisposable
     [Fact]
     public void Scope_IsProject()
     {
+        // Arrange, act and assert.
         Assert.Equal(ContextScope.Project, _provider.Scope);
     }
 
     [Fact]
     public async Task DiscoverAsync_OnAnEmptyHistory_OffersBothUnavailableWithTheirReasons()
     {
+        // Arrange.
         var actions = await DiscoverAsync();
 
+        // Act and assert, step by step.
         var undo = actions.Single(a => a.Id == HistoryContextActionProvider.UndoActionId);
         var redo = actions.Single(a => a.Id == HistoryContextActionProvider.RedoActionId);
         Assert.False(undo.Available);
@@ -69,8 +72,10 @@ public class HistoryContextActionProviderTests : IDisposable
     [Fact]
     public async Task DiscoverAsync_CarriesTheFreeplaneShortcuts()
     {
+        // Arrange.
         var actions = await DiscoverAsync();
 
+        // Act and assert, step by step.
         var undo = actions.Single(a => a.Id == HistoryContextActionProvider.UndoActionId);
         var redo = actions.Single(a => a.Id == HistoryContextActionProvider.RedoActionId);
         Assert.Equal("Z", undo.Shortcut?.Key);
@@ -84,10 +89,12 @@ public class HistoryContextActionProviderTests : IDisposable
     [Fact]
     public async Task DiscoverAsync_AfterARecordedCommand_ReportsUndoAvailableAndRedoNot()
     {
+        // Arrange.
         await RecordARenameAsync();
 
         var actions = await DiscoverAsync();
 
+        // Act and assert, step by step.
         var undo = actions.Single(a => a.Id == HistoryContextActionProvider.UndoActionId);
         var redo = actions.Single(a => a.Id == HistoryContextActionProvider.RedoActionId);
         Assert.True(undo.Available);
@@ -98,22 +105,28 @@ public class HistoryContextActionProviderTests : IDisposable
     [Fact]
     public async Task DiscoverAsync_AfterAnUndo_ReportsRedoAvailable()
     {
+        // Arrange.
         await RecordARenameAsync();
         await _history.UndoAsync(TestContext.Current.CancellationToken);
 
+        // Act.
         var actions = await DiscoverAsync();
 
+        // Assert.
         Assert.True(actions.Single(a => a.Id == HistoryContextActionProvider.RedoActionId).Available);
     }
 
     [Fact]
     public async Task ExecuteAsync_Undo_PerformsTheUndo()
     {
+        // Arrange.
         await RecordARenameAsync();
 
+        // Act.
         var result = await _provider.ExecuteAsync(ProjectTarget(), HistoryContextActionProvider.UndoActionId, TestContext.Current.CancellationToken);
 
-        Assert.IsType<ContextExecutionResult.Completed>(result);
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(result);
         Assert.True(File.Exists(IoPath.Combine(_root, "before.txt")));
         Assert.False(File.Exists(IoPath.Combine(_root, "after.txt")));
     }
@@ -121,12 +134,15 @@ public class HistoryContextActionProviderTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_Redo_ReappliesTheUndoneCommand()
     {
+        // Arrange.
         await RecordARenameAsync();
         await _provider.ExecuteAsync(ProjectTarget(), HistoryContextActionProvider.UndoActionId, TestContext.Current.CancellationToken);
 
+        // Act.
         var result = await _provider.ExecuteAsync(ProjectTarget(), HistoryContextActionProvider.RedoActionId, TestContext.Current.CancellationToken);
 
-        Assert.IsType<ContextExecutionResult.Completed>(result);
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(result);
         Assert.True(File.Exists(IoPath.Combine(_root, "after.txt")));
         Assert.False(File.Exists(IoPath.Combine(_root, "before.txt")));
     }
@@ -134,23 +150,28 @@ public class HistoryContextActionProviderTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_UndoOnAnEmptyHistory_Fails()
     {
+        // Act.
         var result = await _provider.ExecuteAsync(ProjectTarget(), HistoryContextActionProvider.UndoActionId, TestContext.Current.CancellationToken);
 
-        Assert.IsType<ContextExecutionResult.Failed>(result);
+        // Assert.
+        Assert.IsType<ContextExecutionFailed>(result);
     }
 
     [Fact]
     public async Task ExecuteAsync_WithAnUnknownActionId_Fails()
     {
+        // Arrange.
         var result = await _provider.ExecuteAsync(ProjectTarget(), "history.something-else", TestContext.Current.CancellationToken);
 
-        var failed = Assert.IsType<ContextExecutionResult.Failed>(result);
+        // Act and assert, step by step.
+        var failed = Assert.IsType<ContextExecutionFailed>(result);
         Assert.Contains("Unknown action", failed.Message, StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task ValidateAndCommit_AreNotSupported()
     {
+        // Arrange, act and assert.
         // Neither action prompts, so reaching either is a programming error, not a user answer.
         await Assert.ThrowsAsync<NotSupportedException>(async () =>
             await _provider.ValidateAsync(ProjectTarget(), HistoryContextActionProvider.UndoActionId, "", TestContext.Current.CancellationToken));

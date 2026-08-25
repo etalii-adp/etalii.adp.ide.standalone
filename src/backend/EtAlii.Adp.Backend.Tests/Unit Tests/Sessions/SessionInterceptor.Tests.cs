@@ -29,33 +29,41 @@ public class SessionInterceptorTests
     [Fact]
     public async Task UnaryServerHandler_LoginMethod_IsExemptEvenWithoutToken()
     {
+        // Arrange.
         var interceptor = new SessionInterceptor(new InMemorySessionStore());
         var context = CreateContext("/etalii.adp.AuthenticationService/Login");
 
+        // Act.
         var result = await interceptor.UnaryServerHandler("ping", context, Handler);
 
+        // Assert.
         Assert.Equal("ping", result);
     }
 
     [Fact]
     public async Task UnaryServerHandler_WithoutToken_ThrowsUnauthenticated()
     {
+        // Arrange.
         var interceptor = new SessionInterceptor(new InMemorySessionStore());
         var context = CreateContext("/etalii.adp.ProjectService/ListProjects");
 
+        // Act.
         var exception = await Assert.ThrowsAsync<RpcException>(
             () => interceptor.UnaryServerHandler("ping", context, Handler));
 
+        // Assert.
         Assert.Equal(StatusCode.Unauthenticated, exception.StatusCode);
     }
 
     [Fact]
     public async Task UnaryServerHandler_WithInvalidToken_ThrowsUnauthenticated()
     {
+        // Arrange and act.
         var interceptor = new SessionInterceptor(new InMemorySessionStore());
         var headers = new Metadata { { SessionInterceptor.SessionTokenMetadataKey, "not-a-real-token" } };
         var context = CreateContext("/etalii.adp.ProjectService/ListProjects", headers);
 
+        // Assert.
         await Assert.ThrowsAsync<RpcException>(
             () => interceptor.UnaryServerHandler("ping", context, Handler));
     }
@@ -63,6 +71,7 @@ public class SessionInterceptorTests
     [Fact]
     public async Task UnaryServerHandler_WithValidToken_PassesThroughAndSetsUserId()
     {
+        // Arrange.
         var userId = ShortGuid.FromName("developer");
         var sessionStore = new InMemorySessionStore();
         var token = sessionStore.Issue(userId);
@@ -70,8 +79,10 @@ public class SessionInterceptorTests
         var headers = new Metadata { { SessionInterceptor.SessionTokenMetadataKey, token } };
         var context = CreateContext("/etalii.adp.ProjectService/ListProjects", headers);
 
+        // Act.
         var result = await interceptor.UnaryServerHandler("ping", context, Handler);
 
+        // Assert.
         Assert.Equal("ping", result);
         Assert.Equal(userId, SessionContext.GetUserId(context));
     }

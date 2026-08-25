@@ -38,7 +38,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
     private readonly DiagramValidators _validators;
     private readonly TimeSpan _writeDelay;
     private readonly int _maxReported;
-    private readonly ConcurrentDictionary<string, Entry> _entries = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, CachedProjectProblems> _entries = new(StringComparer.OrdinalIgnoreCase);
 
     public event Action<string>? Changed;
 
@@ -139,7 +139,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
             {
                 try
                 {
-                    var cache = JsonSerializer.Deserialize<CacheFile>(File.ReadAllText(cachePath));
+                    var cache = JsonSerializer.Deserialize<ProblemCacheFile>(File.ReadAllText(cachePath));
                     if (cache is { Version: CacheFormatVersion, RootPath.Length: > 0 })
                     {
                         roots.Add(IoPath.GetFullPath(cache.RootPath));
@@ -175,7 +175,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
 
     // ---- the mechanics -----------------------------------------------------------------
 
-    private void Mutate(string rootPath, Action<Entry> mutation)
+    private void Mutate(string rootPath, Action<CachedProjectProblems> mutation)
     {
         var entry = GetOrLoad(rootPath);
         lock (entry.Gate)
@@ -216,18 +216,18 @@ public sealed class ProblemStore : IProblemStore, IDisposable
 
         // A module release invalidates its own verdicts (Requirement 4.7): compare against
         // the rules that would judge the file today.
-        return _router.Route(info.FullName) is DiagramRouting.Routed routed
+        return _router.Route(info.FullName) is DiagramRouted routed
                && !string.Equals(_validators.RulesVersion(routed.Definition.Origin), problem.RulesVersion, StringComparison.Ordinal);
     }
 
-    private Entry GetOrLoad(string rootPath)
+    private CachedProjectProblems GetOrLoad(string rootPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         var key = IoPath.GetFullPath(rootPath);
         return _entries.GetOrAdd(key, Load);
     }
 
-    private void ScheduleWrite(Entry entry)
+    private void ScheduleWrite(CachedProjectProblems entry)
     {
         if (_writeDelay <= TimeSpan.Zero)
         {
@@ -256,9 +256,9 @@ public sealed class ProblemStore : IProblemStore, IDisposable
         return IoPath.Combine(_appDataRoot, "EtAlii.Adp", "problems", hash + ".json");
     }
 
-    private Entry Load(string rootPath)
+    private CachedProjectProblems Load(string rootPath)
     {
-        var entry = new Entry(rootPath);
+        var entry = new CachedProjectProblems(rootPath);
         var cachePath = CacheFilePath(rootPath);
         if (!File.Exists(cachePath))
         {
@@ -267,7 +267,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
 
         try
         {
-            var cache = JsonSerializer.Deserialize<CacheFile>(File.ReadAllText(cachePath));
+            var cache = JsonSerializer.Deserialize<ProblemCacheFile>(File.ReadAllText(cachePath));
             if (cache is null || cache.Version != CacheFormatVersion || cache.Problems is null)
             {
                 _logger.Warning("Ignoring the problem cache at {CachePath}: not this format", cachePath);
@@ -284,13 +284,13 @@ public sealed class ProblemStore : IProblemStore, IDisposable
         return entry;
     }
 
-    private void Persist(Entry entry)
+    private void Persist(CachedProjectProblems entry)
     {
         var cachePath = CacheFilePath(entry.RootPath);
         try
         {
             Directory.CreateDirectory(IoPath.GetDirectoryName(cachePath)!);
-            var cache = new CacheFile(CacheFormatVersion, entry.RootPath, entry.Problems.Select(CachedProblem.From).ToArray());
+            var cache = new ProblemCacheFile(CacheFormatVersion, entry.RootPath, entry.Problems.Select(CachedProblem.From).ToArray());
             File.WriteAllText(cachePath, JsonSerializer.Serialize(cache, new JsonSerializerOptions { WriteIndented = true }));
             _logger.Debug("Wrote {Count} problems for {RootPath} to {CachePath}", entry.Problems.Count, entry.RootPath, cachePath);
         }
@@ -301,51 +301,4 @@ public sealed class ProblemStore : IProblemStore, IDisposable
         }
     }
 
-    private sealed class Entry(string rootPath)
-    {
-        public object Gate { get; } = new();
-        public string RootPath { get; } = rootPath;
-        public List<StoredProblem> Problems { get; } = [];
-        public ProjectProblemSetState State { get; set; } = ProjectProblemSetState.NeverValidated;
-        public Timer? WriteTimer { get; set; }
-    }
-
-    /// <summary>The cache's own shape - flat, so the abstract location needs no JSON polymorphism.</summary>
-    private sealed record CacheFile(int Version, string RootPath, IReadOnlyList<CachedProblem> Problems);
-
-    private sealed record CachedProblem(
-        DiagramProblemSeverity Severity,
-        string Message,
-        string RuleId,
-        string? ElementId,
-        uint? Line,
-        string RelativePath,
-        DateTime LastWriteTimeUtc,
-        long Length,
-        string RulesVersion)
-    {
-        public static CachedProblem From(StoredProblem stored) => new(
-            stored.Problem.Severity,
-            stored.Problem.Message,
-            stored.Problem.RuleId,
-            (stored.Problem.Location as DiagramProblemLocation.ElementId)?.Id,
-            (stored.Problem.Location as DiagramProblemLocation.Line)?.Number,
-            stored.RelativePath,
-            stored.LastWriteTimeUtc,
-            stored.Length,
-            stored.RulesVersion);
-
-        public static StoredProblem ToStored(CachedProblem cached)
-        {
-            DiagramProblemLocation? location = cached.ElementId is not null
-                ? new DiagramProblemLocation.ElementId(cached.ElementId)
-                : cached.Line is { } line ? new DiagramProblemLocation.Line(line) : null;
-            return new StoredProblem(
-                new DiagramProblem(cached.Severity, cached.Message, cached.RuleId, location),
-                cached.RelativePath,
-                cached.LastWriteTimeUtc,
-                cached.Length,
-                cached.RulesVersion);
-        }
-    }
 }

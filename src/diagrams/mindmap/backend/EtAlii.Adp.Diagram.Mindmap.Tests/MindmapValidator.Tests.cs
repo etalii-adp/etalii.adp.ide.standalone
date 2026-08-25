@@ -9,26 +9,32 @@ public class MindmapValidatorTests
     [Fact]
     public void TheValidatorAnswersForTheMindmapOrigin()
     {
+        // Arrange, act and assert.
         Assert.Equal(Diagram.Definition.Origin, _validator.Origin);
     }
 
     [Fact]
     public async Task TheGenuineFreeplaneFixture_ValidatesClean()
     {
+        // Arrange.
         // The reference document, saved by Freeplane itself - including its deliberately
         // empty node, which is style, not a problem.
         var document = await File.ReadAllTextAsync("Fixtures/architecture.mm", TestContext.Current.CancellationToken);
 
+        // Act.
         var problems = await Validate(document);
 
+        // Assert.
         Assert.Empty(problems);
     }
 
     [Fact]
     public async Task AMapThatWillNotParse_IsOneErrorNamingTheFile()
     {
+        // Arrange.
         var problems = await Validate("<map version=\"freeplane 1.12.15\"><node TEXT=\"unclosed\"</map>");
 
+        // Act and assert, step by step.
         var problem = Assert.Single(problems);
         Assert.Equal("mindmap.not-a-map", problem.RuleId);
         Assert.Equal(DiagramProblemSeverity.Error, problem.Severity);
@@ -38,38 +44,46 @@ public class MindmapValidatorTests
     [Fact]
     public async Task AFileThatIsNotAMapAtAll_IsTheSameError()
     {
+        // Act.
         var problems = await Validate("just some text");
 
+        // Assert.
         Assert.Equal("mindmap.not-a-map", Assert.Single(problems).RuleId);
     }
 
     [Fact]
     public async Task AnUnnamedCentralTopic_IsAWarningOnTheRoot()
     {
+        // Arrange.
         var problems = await Validate("<map version=\"freeplane 1.12.15\"><node TEXT=\"\" ID=\"ID_1\"><node TEXT=\"a child\" ID=\"ID_2\"/></node></map>");
 
+        // Act and assert, step by step.
         var problem = Assert.Single(problems);
         Assert.Equal("mindmap.unnamed-root", problem.RuleId);
         Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity);
-        Assert.Equal(new DiagramProblemLocation.ElementId("ID_1"), problem.Location);
+        Assert.Equal(new DiagramProblemElementLocation("ID_1"), problem.Location);
     }
 
     [Fact]
     public async Task AnEmptyOrdinaryNode_IsNotAProblem()
     {
+        // Act.
         // Freeplane keeps empty nodes; only the central topic must say what the map is about.
         var problems = await Validate("<map version=\"freeplane 1.12.15\"><node TEXT=\"root\" ID=\"ID_1\"><node TEXT=\"\" ID=\"ID_2\"/></node></map>");
 
+        // Assert.
         Assert.Empty(problems);
     }
 
     [Fact]
     public async Task TwoNodesSharingAnId_AreAnError()
     {
+        // Arrange.
         var problems = await Validate(
             "<map version=\"freeplane 1.12.15\"><node TEXT=\"root\" ID=\"ID_1\">" +
             "<node TEXT=\"first\" ID=\"ID_2\"/><node TEXT=\"second\" ID=\"ID_2\"/></node></map>");
 
+        // Act and assert, step by step.
         var problem = Assert.Single(problems);
         Assert.Equal("mindmap.duplicate-id", problem.RuleId);
         Assert.Equal(DiagramProblemSeverity.Error, problem.Severity);
@@ -81,10 +95,12 @@ public class MindmapValidatorTests
     [Fact]
     public async Task SeveralRules_CanFireTogether()
     {
+        // Arrange and act.
         var problems = await Validate(
             "<map version=\"freeplane 1.12.15\"><node TEXT=\"\" ID=\"ID_1\">" +
             "<node TEXT=\"first\" ID=\"ID_2\"/><node TEXT=\"second\" ID=\"ID_2\"/></node></map>");
 
+        // Assert.
         Assert.Equal(2, problems.Count);
         Assert.Contains(problems, problem => problem.RuleId == "mindmap.unnamed-root");
         Assert.Contains(problems, problem => problem.RuleId == "mindmap.duplicate-id");

@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("mermaid", "architecture"),
-        "Architecture diagram");
+        "Architecture diagram",
+        "Services and their connections, in Mermaid's architecture syntax.");
 }

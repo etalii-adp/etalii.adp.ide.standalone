@@ -20,12 +20,13 @@ public class ContextInteractionStoreTests
         WatchId = watchId,
         Target = new ContextTarget(ContextScope.Hierarchy, @"C:\root\item.txt", IsContainer: false, ShortGuid.NewShortGuid()),
         ActionId = "stub.action",
-        Provider = new StubProvider(),
+        Provider = new ContextInteractionStoreStubProvider(),
     };
 
     [Fact]
     public void TryPush_ReachesOnlyTheOwningConnectionsWriter()
     {
+        // Arrange.
         var store = new ContextInteractionStore();
         var watchIdA = ShortGuid.NewShortGuid();
         var watchIdB = ShortGuid.NewShortGuid();
@@ -34,8 +35,10 @@ public class ContextInteractionStoreTests
         store.Register(watchIdA, channelA.Writer);
         store.Register(watchIdB, channelB.Writer);
 
+        // Act.
         var pushed = store.TryPush(watchIdA, Prompt(ShortGuid.NewShortGuid()));
 
+        // Assert.
         Assert.True(pushed);
         Assert.True(channelA.Reader.TryRead(out var messageA));
         Assert.Equal(ContextMessage.MessageOneofCase.Prompt, messageA.MessageCase);
@@ -45,16 +48,20 @@ public class ContextInteractionStoreTests
     [Fact]
     public void TryPush_ForAWatchIdThatNeverRegistered_FailsCleanly()
     {
+        // Arrange.
         var store = new ContextInteractionStore();
 
+        // Act.
         var pushed = store.TryPush(ShortGuid.NewShortGuid(), Prompt(ShortGuid.NewShortGuid()));
 
+        // Assert.
         Assert.False(pushed);
     }
 
     [Fact]
     public void Remove_DiscardsBothTheWriterAndThatConnectionsInFlightInteractions()
     {
+        // Arrange.
         var store = new ContextInteractionStore();
         var watchId = ShortGuid.NewShortGuid();
         var interactionId = ShortGuid.NewShortGuid();
@@ -62,8 +69,10 @@ public class ContextInteractionStoreTests
         store.Register(watchId, channel.Writer);
         store.Begin(Interaction(watchId, interactionId));
 
+        // Act.
         store.Remove(watchId);
 
+        // Assert.
         Assert.Null(store.Get(interactionId));
         Assert.False(store.TryPush(watchId, Prompt(interactionId)));
     }
@@ -71,6 +80,7 @@ public class ContextInteractionStoreTests
     [Fact]
     public void Remove_LeavesAnotherConnectionsInteractionsUntouched()
     {
+        // Arrange.
         var store = new ContextInteractionStore();
         var watchIdA = ShortGuid.NewShortGuid();
         var watchIdB = ShortGuid.NewShortGuid();
@@ -79,52 +89,44 @@ public class ContextInteractionStoreTests
         store.Register(watchIdB, Channel.CreateUnbounded<ContextMessage>().Writer);
         store.Begin(Interaction(watchIdB, interactionB));
 
+        // Act.
         store.Remove(watchIdA);
 
+        // Assert.
         Assert.NotNull(store.Get(interactionB));
     }
 
     [Fact]
     public void Complete_RemovesTheInteraction_SoARepeatedSubmitFindsNothingToRunAgain()
     {
+        // Arrange.
         var store = new ContextInteractionStore();
         var watchId = ShortGuid.NewShortGuid();
         var interactionId = ShortGuid.NewShortGuid();
         store.Register(watchId, Channel.CreateUnbounded<ContextMessage>().Writer);
         store.Begin(Interaction(watchId, interactionId));
 
+        // Act.
         store.Complete(interactionId);
         store.Complete(interactionId);
 
+        // Assert.
         Assert.Null(store.Get(interactionId));
     }
 
     [Fact]
     public void Begin_ForAConnectionWithNoOpenStream_RecordsNothing()
     {
+        // Arrange.
         var store = new ContextInteractionStore();
         var watchId = ShortGuid.NewShortGuid();
         var interactionId = ShortGuid.NewShortGuid();
 
+        // Act.
         store.Begin(Interaction(watchId, interactionId));
 
+        // Assert.
         Assert.Null(store.Get(interactionId));
     }
 
-    private sealed class StubProvider : IContextActionProvider
-    {
-        public ContextScope Scope => ContextScope.Hierarchy;
-
-        public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>(Array.Empty<ContextActionGroupDefinition>());
-
-        public ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionResult.Completed());
-
-        public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken) =>
-            ValueTask.FromResult(ContextValidationResult.Accepted);
-
-        public ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken) =>
-            ValueTask.FromResult(ContextCommitResult.Succeeded);
-    }
 }

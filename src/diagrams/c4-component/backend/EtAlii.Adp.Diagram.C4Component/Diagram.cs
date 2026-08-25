@@ -6,6 +6,7 @@ public static class Diagram
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("c4", "component"),
         "Component",
+        "The components inside one container, and how each collaborates with the others.",
         // All seven C4 types keep their model in a Structurizr DSL document, and several of
         // them can share one (c4-diagrams Requirement 2.2).
         ".dsl");

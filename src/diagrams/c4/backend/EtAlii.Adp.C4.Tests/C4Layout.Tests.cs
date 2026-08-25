@@ -46,8 +46,10 @@ public class C4LayoutTests
     [Fact]
     public void EveryMemberOfTheView_GetsABox()
     {
+        // Act.
         var layout = Compute(Chain);
 
+        // Assert.
         Assert.Equal(3, layout.Boxes.Count);
         Assert.All(layout.Boxes.Values, box => Assert.True(box.Width > 0 && box.Height > 0));
     }
@@ -55,18 +57,22 @@ public class C4LayoutTests
     [Fact]
     public void Compute_IsDeterministic()
     {
+        // Arrange and act.
         var first = Compute(Chain);
         var second = Compute(Chain);
 
+        // Assert.
         Assert.Equal(first.Boxes.OrderBy(p => p.Key).ToArray(), second.Boxes.OrderBy(p => p.Key).ToArray());
     }
 
     [Fact]
     public void WhatPointsAtSomething_ComesBeforeIt()
     {
+        // Act.
         // A person ends up before the system they use, and the system before what it sends to.
         var layout = Compute(Chain);
 
+        // Assert.
         Assert.True(layout.Boxes["u"].Y < layout.Boxes["s"].Y, "the user should rank before the system");
         Assert.True(layout.Boxes["s"].Y < layout.Boxes["e"].Y, "the system should rank before the email system");
     }
@@ -74,9 +80,11 @@ public class C4LayoutTests
     [Fact]
     public void NoTwoElements_Overlap()
     {
+        // Arrange.
         var layout = Compute(Chain);
         var boxes = layout.Boxes.Values.ToArray();
 
+        // Act and assert, step by step.
         for (var i = 0; i < boxes.Length; i++)
         {
             for (var j = i + 1; j < boxes.Length; j++)
@@ -93,10 +101,12 @@ public class C4LayoutTests
     [InlineData("dynamic-interactions.dsl")]
     public void NoTwoElements_OverlapOnAnyFixture(string name)
     {
+        // Arrange.
         var (workspace, view) = LoadFixture(name);
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default);
         var boxes = layout.Boxes.Values.ToArray();
 
+        // Act and assert, step by step.
         for (var i = 0; i < boxes.Length; i++)
         {
             for (var j = i + 1; j < boxes.Length; j++)
@@ -109,10 +119,12 @@ public class C4LayoutTests
     [Fact]
     public void ADeclaredAutoLayoutDirection_IsHonoured()
     {
+        // Arrange and act.
         // Requirement 8.2: where the author asked for a direction, it wins over ADP's default.
         var topToBottom = Compute(Chain);
         var leftToRight = Compute(Chain.Replace("include *", "include *\n            autoLayout lr", StringComparison.Ordinal));
 
+        // Assert.
         Assert.True(topToBottom.Boxes["u"].Y < topToBottom.Boxes["s"].Y);
         Assert.True(leftToRight.Boxes["u"].X < leftToRight.Boxes["s"].X, "lr should rank along x");
         Assert.Equal(leftToRight.Boxes["u"].Y, leftToRight.Boxes["s"].Y, 0);
@@ -121,14 +133,17 @@ public class C4LayoutTests
     [Fact]
     public void AReversedDirection_ReadsTheSameLayoutFromTheOtherEnd()
     {
+        // Act.
         var rightToLeft = Compute(Chain.Replace("include *", "include *\n            autoLayout rl", StringComparison.Ordinal));
 
+        // Assert.
         Assert.True(rightToLeft.Boxes["u"].X > rightToLeft.Boxes["s"].X, "rl should put the source on the right");
     }
 
     [Fact]
     public void AContainerView_DrawsABoundaryThatContainsItsContainers()
     {
+        // Arrange.
         var dsl = """
             workspace {
                 model {
@@ -148,8 +163,10 @@ public class C4LayoutTests
             }
             """;
 
+        // Arrange, continued.
         var layout = Compute(dsl);
 
+        // Act.
         var boundary = Assert.Single(layout.Boundaries);
         Assert.Equal("System", boundary.Name);
         Assert.Equal("Software System", boundary.Kind);
@@ -163,6 +180,7 @@ public class C4LayoutTests
             Assert.True(box.Bottom < boundary.Box.Bottom, $"{id} escapes below");
         }
 
+        // Assert.
         // The person is outside the system, so the boundary must not swallow them.
         Assert.False(layout.Boxes["u"].Overlaps(boundary.Box) && layout.Boxes["u"].Y > boundary.Box.Y, "the external person was enclosed");
     }
@@ -170,6 +188,7 @@ public class C4LayoutTests
     [Fact]
     public void WhatIsNotInsideTheSystem_IsNotDrawnInsideItsBoundary()
     {
+        // Arrange.
         // Found by the manual pass: an external system landed inside the boundary, which says
         // it is part of the system - the opposite of what the diagram means.
         var dsl = """
@@ -193,14 +212,17 @@ public class C4LayoutTests
             }
             """;
 
+        // Arrange, continued.
         var layout = Compute(dsl);
 
+        // Act.
         var boundary = Assert.Single(layout.Boundaries).Box;
         foreach (var id in new[] { "u", "ext" })
         {
             Assert.False(layout.Boxes[id].Overlaps(boundary), $"'{id}' is outside the system but was drawn inside its boundary");
         }
 
+        // Assert.
         // ...and the containers are still inside it.
         Assert.True(layout.Boxes["web"].Overlaps(boundary));
         Assert.True(layout.Boxes["api"].Overlaps(boundary));
@@ -209,6 +231,7 @@ public class C4LayoutTests
     [Fact]
     public void PushingAnOutsiderOut_DoesNotMakeItOverlapSomethingElse()
     {
+        // Arrange.
         var dsl = """
             workspace {
                 model {
@@ -232,6 +255,7 @@ public class C4LayoutTests
 
         var boxes = Compute(dsl).Boxes.Values.ToArray();
 
+        // Act and assert, step by step.
         for (var i = 0; i < boxes.Length; i++)
         {
             for (var j = i + 1; j < boxes.Length; j++)
@@ -244,12 +268,14 @@ public class C4LayoutTests
     [Fact]
     public void AContextView_DrawsNoBoundary()
     {
+        // Arrange, act and assert.
         Assert.Empty(Compute(Chain).Boundaries);
     }
 
     [Fact]
     public void ACycleInTheRelationships_DoesNotHangTheLayout()
     {
+        // Arrange.
         var dsl = """
             workspace {
                 model {
@@ -266,18 +292,23 @@ public class C4LayoutTests
             }
             """;
 
+        // Act.
         var layout = Compute(dsl);
 
+        // Assert.
         Assert.Equal(2, layout.Boxes.Count);
     }
 
     [Fact]
     public void AnEmptyView_LaysOutNothing_RatherThanThrowing()
     {
+        // Arrange.
         var dsl = "workspace {\n  model {\n  }\n  views {\n    systemLandscape \"all\" {\n    }\n  }\n}\n";
 
+        // Act.
         var layout = Compute(dsl);
 
+        // Assert.
         Assert.Empty(layout.Boxes);
         Assert.Empty(layout.Boundaries);
     }
@@ -293,18 +324,22 @@ public class C4LayoutTests
     [InlineData(C4ElementKind.Container, "", "[Container]")]
     public void TheBracketedLine_NamesTheTypeAndTechnology(C4ElementKind kind, string technology, string expected)
     {
+        // Act.
         var element = new C4Element("id", kind, "Name", "Description", technology, [], null, 1);
 
+        // Assert.
         Assert.Equal(expected, C4LayoutEngine.TypeLineOf(element));
     }
 
     [Fact]
     public void ALongDescription_WidensAndHeightensTheBox_ButNotWithoutLimit()
     {
+        // Arrange and act.
         var metrics = C4Metrics.Default;
         var small = metrics.Measure("A", "[Person]", "Short.");
         var large = metrics.Measure("A", "[Person]", new string('x', 400));
 
+        // Assert.
         Assert.True(large.Height > small.Height, "a wrapping description should make the box taller");
         Assert.True(large.Width <= metrics.MaximumWidth, "no box may grow past the maximum width");
     }

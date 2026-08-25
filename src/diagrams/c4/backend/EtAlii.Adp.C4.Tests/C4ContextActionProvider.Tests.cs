@@ -71,8 +71,10 @@ public class C4ContextActionProviderTests : IDisposable
     [Fact]
     public async Task AContainer_IsOfferedATechnology()
     {
+        // Act.
         var ids = await ActionIdsFor("web");
 
+        // Assert.
         Assert.Contains(C4ContextActionProvider.RenameActionId, ids);
         Assert.Contains(C4ContextActionProvider.EditDescriptionActionId, ids);
         Assert.Contains(C4ContextActionProvider.SetTechnologyActionId, ids);
@@ -81,10 +83,12 @@ public class C4ContextActionProviderTests : IDisposable
     [Fact]
     public async Task APerson_IsNotOfferedATechnology_BecauseC4GivesThemNone()
     {
+        // Act.
         // Not offered rather than offered-and-refused: C4 asks for a technology on containers
         // and components, and a person simply has none.
         var ids = await ActionIdsFor("u");
 
+        // Assert.
         Assert.Contains(C4ContextActionProvider.RenameActionId, ids);
         Assert.DoesNotContain(C4ContextActionProvider.SetTechnologyActionId, ids);
     }
@@ -92,10 +96,13 @@ public class C4ContextActionProviderTests : IDisposable
     [Fact]
     public async Task ARelationship_IsOfferedARelabelAndAProtocol_AndNotARename()
     {
+        // Arrange.
         var relationshipId = _documents.WorkspaceOf(_bodyPath).Relationships.Single().Id;
 
+        // Act.
         var ids = await ActionIdsFor(relationshipId);
 
+        // Assert.
         Assert.Equal(
             [C4ContextActionProvider.RelabelActionId, C4ContextActionProvider.SetProtocolActionId],
             ids);
@@ -104,23 +111,28 @@ public class C4ContextActionProviderTests : IDisposable
     [Fact]
     public async Task SomethingNoLongerInTheModel_IsOfferedNothing()
     {
+        // Arrange, act and assert.
         Assert.Empty(await ActionIdsFor("ghost"));
     }
 
     [Fact]
     public async Task Rename_AsksForTheNameStartingFromTheCurrentOne()
     {
+        // Arrange.
         var result = await _provider.ExecuteAsync(TargetFor("web"), C4ContextActionProvider.RenameActionId, TestContext.Current.CancellationToken);
 
-        var input = Assert.IsType<ContextExecutionResult.RequiresInput>(result);
+        // Act and assert, step by step.
+        var input = Assert.IsType<ContextExecutionRequiresInput>(result);
         Assert.Equal("Web", input.Request.InitialValue);
     }
 
     [Fact]
     public async Task Rename_CommitsThroughACommand_SoItIsOneUndoAway()
     {
+        // Act.
         await _provider.CommitAsync(TargetFor("web"), C4ContextActionProvider.RenameActionId, "Web Application", "", TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Contains("container \"Web Application\"", File.ReadAllText(_bodyPath), StringComparison.Ordinal);
         Assert.True(_services.GetRequiredService<IHistoryStackStore>().Get(_root).CanUndo);
     }
@@ -128,11 +140,14 @@ public class C4ContextActionProviderTests : IDisposable
     [Fact]
     public async Task Relabel_CommitsThroughACommand()
     {
+        // Arrange.
         var relationshipId = _documents.WorkspaceOf(_bodyPath).Relationships.Single().Id;
 
+        // Act.
         var result = await _provider.CommitAsync(
             TargetFor(relationshipId), C4ContextActionProvider.RelabelActionId, "Views accounts using", "", TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(result.Completed, result.Error);
         Assert.Contains("\"Views accounts using\"", File.ReadAllText(_bodyPath), StringComparison.Ordinal);
     }
@@ -140,8 +155,10 @@ public class C4ContextActionProviderTests : IDisposable
     [Fact]
     public async Task AnEmptyName_IsRefused_BecauseNothingWouldIdentifyTheElement()
     {
+        // Act.
         var result = await _provider.ValidateAsync(TargetFor("web"), C4ContextActionProvider.RenameActionId, "   ", TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.False(result.Valid);
         Assert.Contains("needs a name", result.Reason, StringComparison.OrdinalIgnoreCase);
     }
@@ -149,23 +166,27 @@ public class C4ContextActionProviderTests : IDisposable
     [Fact]
     public async Task AnEmptyDescription_IsAccepted_BecauseAnIncompleteModelIsOrdinary()
     {
+        // Act.
         // C4 asks for a description and C4RuleSet warns when there is none - but a model
         // mid-edit is routinely incomplete, so the rule guides rather than blocks
         // (Requirement 10.7).
         var result = await _provider.ValidateAsync(TargetFor("web"), C4ContextActionProvider.EditDescriptionActionId, "", TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(result.Valid);
     }
 
     [Fact]
     public async Task AnActionThatDoesNotApplyToTheSelection_IsRefusedWithAReason()
     {
+        // Arrange.
         var relationshipId = _documents.WorkspaceOf(_bodyPath).Relationships.Single().Id;
 
         var result = await _provider.ExecuteAsync(
             TargetFor(relationshipId), C4ContextActionProvider.SetTechnologyActionId, TestContext.Current.CancellationToken);
 
-        var failed = Assert.IsType<ContextExecutionResult.Failed>(result);
+        // Act and assert, step by step.
+        var failed = Assert.IsType<ContextExecutionFailed>(result);
         Assert.Contains("does not apply", failed.Message, StringComparison.OrdinalIgnoreCase);
     }
 }

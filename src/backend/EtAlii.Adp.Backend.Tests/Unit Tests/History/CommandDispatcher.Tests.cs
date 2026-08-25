@@ -5,41 +5,13 @@ namespace EtAlii.Adp.Backend.Tests;
 
 public class CommandDispatcherTests
 {
-    private sealed record GreetCommand(string Name) : ICommand;
 
-    private sealed record ShoutCommand(string Name) : ICommand;
-
-    private sealed record UnhandledCommand : ICommand;
-
-    private sealed class GreetHandler : ICommandHandler<GreetCommand>
+    private static (CommandDispatcher Dispatcher, CommandDispatcherGreetHandler Greet) CreateDispatcher()
     {
-        public GreetCommand? Received { get; private set; }
-
-        public CancellationToken ReceivedToken { get; private set; }
-
-        public int CallCount { get; private set; }
-
-        public Task<CommandResult> ExecuteAsync(GreetCommand command, CancellationToken cancellationToken = default)
-        {
-            Received = command;
-            ReceivedToken = cancellationToken;
-            CallCount++;
-            return Task.FromResult(CommandResult.Success(new GreetCommand($"un-{command.Name}")));
-        }
-    }
-
-    private sealed class ShoutHandler : ICommandHandler<ShoutCommand>
-    {
-        public Task<CommandResult> ExecuteAsync(ShoutCommand command, CancellationToken cancellationToken = default)
-            => Task.FromResult(CommandResult.Failure($"{command.Name.ToUpperInvariant()}!"));
-    }
-
-    private static (CommandDispatcher Dispatcher, GreetHandler Greet) CreateDispatcher()
-    {
-        var greet = new GreetHandler();
+        var greet = new CommandDispatcherGreetHandler();
         var services = new ServiceCollection()
-            .AddSingleton<ICommandHandler<GreetCommand>>(greet)
-            .AddSingleton<ICommandHandler<ShoutCommand>, ShoutHandler>()
+            .AddSingleton<ICommandHandler<CommandDispatcherGreetCommand>>(greet)
+            .AddSingleton<ICommandHandler<CommandDispatcherShoutCommand>, CommandDispatcherShoutHandler>()
             .BuildServiceProvider();
 
         return (new CommandDispatcher(services), greet);
@@ -48,25 +20,31 @@ public class CommandDispatcherTests
     [Fact]
     public async Task DispatchAsync_RoutesTheCommandToItsRegisteredHandler()
     {
+        // Arrange.
         var (dispatcher, greet) = CreateDispatcher();
-        var command = new GreetCommand("ada");
+        var command = new CommandDispatcherGreetCommand("ada");
 
+        // Act.
         var result = await dispatcher.DispatchAsync(command, TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Same(command, greet.Received);
         Assert.True(result.IsSuccess);
-        Assert.Equal(new GreetCommand("un-ada"), result.Inverse);
+        Assert.Equal(new CommandDispatcherGreetCommand("un-ada"), result.Inverse);
     }
 
     [Fact]
     public async Task DispatchAsync_PicksTheHandlerByTheCommandsRuntimeType()
     {
+        // Arrange.
         var (dispatcher, greet) = CreateDispatcher();
 
+        // Act.
         // Declared as ICommand, so only the runtime type can pick the handler.
-        ICommand shout = new ShoutCommand("ada");
+        ICommand shout = new CommandDispatcherShoutCommand("ada");
         var result = await dispatcher.DispatchAsync(shout, TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.False(result.IsSuccess);
         Assert.Equal("ADA!", result.Error);
         Assert.Equal(0, greet.CallCount);
@@ -75,68 +53,83 @@ public class CommandDispatcherTests
     [Fact]
     public async Task DispatchAsync_PassesTheCancellationTokenThrough()
     {
+        // Arrange.
         var (dispatcher, greet) = CreateDispatcher();
         using var cts = new CancellationTokenSource();
 
-        await dispatcher.DispatchAsync(new GreetCommand("ada"), cts.Token);
+        // Act.
+        await dispatcher.DispatchAsync(new CommandDispatcherGreetCommand("ada"), cts.Token);
 
+        // Assert.
         Assert.Equal(cts.Token, greet.ReceivedToken);
     }
 
     [Fact]
     public async Task DispatchAsync_WithNoRegisteredHandler_ThrowsNamingTheCommand()
     {
+        // Arrange.
         var (dispatcher, _) = CreateDispatcher();
 
+        // Act.
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => dispatcher.DispatchAsync(new UnhandledCommand(), TestContext.Current.CancellationToken));
+            () => dispatcher.DispatchAsync(new CommandDispatcherUnhandledCommand(), TestContext.Current.CancellationToken));
 
-        Assert.Contains(nameof(UnhandledCommand), exception.Message, StringComparison.Ordinal);
+        // Assert.
+        Assert.Contains(nameof(CommandDispatcherUnhandledCommand), exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task DispatchAsync_WithANullCommand_Throws()
     {
+        // Act.
         var (dispatcher, _) = CreateDispatcher();
 
+        // Assert.
         await Assert.ThrowsAsync<ArgumentNullException>(() => dispatcher.DispatchAsync(null!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task DispatchAsync_CalledRepeatedly_KeepsRoutingCorrectly()
     {
+        // Arrange.
         // The invoker cache is static and keyed by command type; repeated dispatches must keep
         // hitting the right handler rather than a stale entry from another test or instance.
         var (dispatcher, greet) = CreateDispatcher();
 
-        await dispatcher.DispatchAsync(new GreetCommand("one"), TestContext.Current.CancellationToken);
-        await dispatcher.DispatchAsync(new GreetCommand("two"), TestContext.Current.CancellationToken);
-        await dispatcher.DispatchAsync(new GreetCommand("three"), TestContext.Current.CancellationToken);
+        // Act.
+        await dispatcher.DispatchAsync(new CommandDispatcherGreetCommand("one"), TestContext.Current.CancellationToken);
+        await dispatcher.DispatchAsync(new CommandDispatcherGreetCommand("two"), TestContext.Current.CancellationToken);
+        await dispatcher.DispatchAsync(new CommandDispatcherGreetCommand("three"), TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Equal(3, greet.CallCount);
-        Assert.Equal(new GreetCommand("three"), greet.Received);
+        Assert.Equal(new CommandDispatcherGreetCommand("three"), greet.Received);
     }
 
     [Fact]
     public async Task DispatchAsync_FromASecondDispatcher_ResolvesFromItsOwnServices()
     {
+        // Arrange.
         // Guards the shared static invoker cache: it must not capture the first dispatcher's
         // service provider, or a second one would silently run the first one's handlers.
         var (first, firstGreet) = CreateDispatcher();
         var (second, secondGreet) = CreateDispatcher();
 
-        await first.DispatchAsync(new GreetCommand("first"), TestContext.Current.CancellationToken);
-        await second.DispatchAsync(new GreetCommand("second"), TestContext.Current.CancellationToken);
+        // Act.
+        await first.DispatchAsync(new CommandDispatcherGreetCommand("first"), TestContext.Current.CancellationToken);
+        await second.DispatchAsync(new CommandDispatcherGreetCommand("second"), TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Equal(1, firstGreet.CallCount);
         Assert.Equal(1, secondGreet.CallCount);
-        Assert.Equal(new GreetCommand("first"), firstGreet.Received);
-        Assert.Equal(new GreetCommand("second"), secondGreet.Received);
+        Assert.Equal(new CommandDispatcherGreetCommand("first"), firstGreet.Received);
+        Assert.Equal(new CommandDispatcherGreetCommand("second"), secondGreet.Received);
     }
 
     [Fact]
     public void Constructor_WithNullServices_Throws()
     {
+        // Arrange, act and assert.
         Assert.Throws<ArgumentNullException>(() => new CommandDispatcher(null!));
     }
 }

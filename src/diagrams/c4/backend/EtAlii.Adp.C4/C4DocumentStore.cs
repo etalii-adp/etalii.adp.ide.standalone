@@ -8,7 +8,7 @@ public sealed class C4DocumentStore : IC4DocumentStore
 {
     private static readonly ILogger _logger = Log.ForContext<C4DocumentStore>();
 
-    private readonly ConcurrentDictionary<string, Entry> _entries = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, C4DocumentEntry> _entries = new(StringComparer.OrdinalIgnoreCase);
 
     public event EventHandler<C4DocumentChangedEventArgs>? Changed;
 
@@ -49,7 +49,7 @@ public sealed class C4DocumentStore : IC4DocumentStore
         }
 
         var workspace = C4Parser.Parse(entry.Document);
-        _entries[path] = new Entry(entry.Document, workspace);
+        _entries[path] = new C4DocumentEntry(entry.Document, workspace);
         Changed?.Invoke(this, new C4DocumentChangedEventArgs(path, workspace));
     }
 
@@ -75,9 +75,9 @@ public sealed class C4DocumentStore : IC4DocumentStore
         Changed?.Invoke(this, new C4DocumentChangedEventArgs(path, entry.Workspace));
     }
 
-    private Entry Loaded(string path) => _entries.GetOrAdd(path, Load);
+    private C4DocumentEntry Loaded(string path) => _entries.GetOrAdd(path, Load);
 
-    private static Entry Load(string path)
+    private static C4DocumentEntry Load(string path)
     {
         string text;
         try
@@ -94,8 +94,7 @@ public sealed class C4DocumentStore : IC4DocumentStore
         }
 
         var document = C4Document.Parse(text);
-        return new Entry(document, C4Parser.Parse(document));
+        return new C4DocumentEntry(document, C4Parser.Parse(document));
     }
 
-    private sealed record Entry(C4Document Document, C4Workspace Workspace);
 }

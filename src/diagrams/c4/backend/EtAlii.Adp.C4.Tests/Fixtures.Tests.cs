@@ -33,6 +33,7 @@ public class FixturesTests
     [MemberData(nameof(AllFixtures))]
     public void EveryFixture_IsPresentAndNonEmpty(string name)
     {
+        // Arrange, act and assert.
         Assert.True(File.Exists(IoPath.Combine("Fixtures", name)), $"{name} is missing from the corpus");
         Assert.NotEmpty(Bytes(name));
     }
@@ -40,11 +41,13 @@ public class FixturesTests
     [Fact]
     public void TheCrlfAndLfFixtures_DifferOnlyInTheirLineEndings()
     {
+        // Arrange and act.
         // The pair is the whole point: same content, two encodings. If git or an editor
         // normalised one of them they would become identical and prove nothing.
         var crlf = Bytes("crlf-line-endings.dsl");
         var lf = Bytes("lf-line-endings.dsl");
 
+        // Assert.
         Assert.Contains("\r\n", crlf, StringComparison.Ordinal);
         Assert.DoesNotContain("\r", lf, StringComparison.Ordinal);
         Assert.Equal(lf, crlf.Replace("\r\n", "\n", StringComparison.Ordinal));
@@ -53,14 +56,19 @@ public class FixturesTests
     [Fact]
     public void TheNoTrailingNewlineFixture_StillEndsWithoutOne()
     {
+        // Arrange, act and assert.
         Assert.False(Bytes("no-trailing-newline.dsl").EndsWith('\n'));
     }
 
     [Fact]
     public void TheIndentationFixture_StillMixesTabsAndSpaces()
     {
+        // Act.
+        // Act.
         var text = Bytes("unusual-indentation.dsl");
 
+        // Assert.
+        // Assert.
         Assert.Contains("\t", text, StringComparison.Ordinal);
         Assert.Contains("\n          s = softwareSystem", text, StringComparison.Ordinal);
     }
@@ -71,6 +79,7 @@ public class FixturesTests
     [InlineData("/*")]
     public void TheCommentsFixture_StillCarriesEveryCommentForm(string form)
     {
+        // Arrange, act and assert.
         Assert.Contains(form, Bytes("comments-everywhere.dsl"), StringComparison.Ordinal);
     }
 
@@ -83,14 +92,19 @@ public class FixturesTests
     [InlineData("configuration")]
     public void TheUnmodelledFixture_StillCarriesTheConstructsRequirement33Protects(string construct)
     {
+        // Arrange, act and assert.
         Assert.Contains(construct, Bytes("unmodelled-constructs.dsl"), StringComparison.Ordinal);
     }
 
     [Fact]
     public void TheDeploymentFixture_StillNestsAndStillReusesOneContainer()
     {
+        // Act.
+        // Act.
         var text = Bytes("deployment-nested.dsl");
 
+        // Assert.
+        // Assert.
         Assert.Contains("infrastructureNode", text, StringComparison.Ordinal);
         // One container deployed twice - the case Requirement 9.3 calls out.
         Assert.Equal(2, text.Split("containerInstance db").Length - 1);
@@ -99,6 +113,7 @@ public class FixturesTests
     [Fact]
     public void TheRealWorldDocumentsArePresent_AndTheReadmeSaysWhereTheyCameFrom()
     {
+        // Arrange and act.
         // These two started out as a recorded gap, on the reading that the canonical files
         // could not be fetched. That reading was wrong - the repositories task 1 names do not
         // exist under those names, which is not the same as being unreachable - so they were
@@ -113,6 +128,7 @@ public class FixturesTests
             Assert.Contains(name, readme, StringComparison.Ordinal);
         }
 
+        // Assert.
         Assert.Contains("hand-written", readme, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Structurizr CLI", readme, StringComparison.Ordinal);
         // The disclaimer itself, rather than the absence of the old "outstanding" note: what

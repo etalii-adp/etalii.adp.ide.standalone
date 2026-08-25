@@ -47,17 +47,22 @@ describe("PropertyGridPanel", () => {
   });
 
   it("shows an intentional empty state when nothing is selected", () => {
+    // Act.
     render(<PropertyGridPanel />);
 
+    // Assert.
     expect(screen.getByText("Nothing selected")).toBeTruthy();
   });
 
   it("shows a selected file's name, path, kind, availability and source", () => {
+    // Arrange.
     contextState.selection = selectionFor(ContextSelectionSource.EXPLORER, new Uint8Array(16), ["docs", "design.mm"], NONE_DETAIL);
     contextState.levels = [entryDetail(EntryKind.FILE)];
 
+    // Act.
     render(<PropertyGridPanel />);
 
+    // Assert.
     expect(screen.getByRole("heading", { name: "design.mm" })).toBeTruthy();
     expect(screen.getByText("docs/design.mm")).toBeTruthy();
     expect(screen.getByText("File")).toBeTruthy();
@@ -66,6 +71,7 @@ describe("PropertyGridPanel", () => {
   });
 
   it("shows a selected diagram element with the backend's own detail for it", () => {
+    // Arrange.
     // The user's ask behind this: selecting a node on the canvas fills the grid too, not
     // only files and folders - from the pushed ElementDetail, no lookup of the panel's own.
     const node = selectionFor(ContextSelectionSource.DIAGRAM_CANVAS, new Uint8Array(16).fill(2), ["Milestones"], NONE_DETAIL);
@@ -75,8 +81,10 @@ describe("PropertyGridPanel", () => {
     });
     contextState.levels = [entryDetail(EntryKind.FILE), elementDetail("Milestones", { hasChildren: true, folded: true })];
 
+    // Act.
     render(<PropertyGridPanel />);
 
+    // Assert.
     expect(screen.getByRole("heading", { name: "Milestones" })).toBeTruthy();
     expect(screen.getByText("Node")).toBeTruthy();
     expect(screen.getByText("Text")).toBeTruthy();
@@ -85,6 +93,7 @@ describe("PropertyGridPanel", () => {
   });
 
   it("shows every level of a chain, outermost first", () => {
+    // Arrange.
     const inner = selectionFor(ContextSelectionSource.DIAGRAM_CANVAS, new Uint8Array(16).fill(2), ["root", "node"], {
       case: "action",
       value: ContextSelectionAction.ACTIVATE,
@@ -94,6 +103,7 @@ describe("PropertyGridPanel", () => {
 
     render(<PropertyGridPanel />);
 
+    // Act and assert, step by step.
     const headings = screen.getAllByRole("heading").map((h) => h.textContent);
     expect(headings).toEqual(["docs", "node"]);
     expect(screen.getByText("Folder")).toBeTruthy();

@@ -59,17 +59,21 @@ describe("DiagramTabsPanel", () => {
   });
 
   it("shows the empty state until something opens, with no placeholder tabs", () => {
+    // Act.
     renderPanel();
 
+    // Assert.
     expect(screen.getByText("Double-click a diagram in the explorer to open it here.")).toBeTruthy();
     expect(screen.queryByRole("tab")).toBeNull();
   });
 
   it("opens a focused tab on an ACTIVATE push of a diagram entry", () => {
+    // Arrange.
     const { rerender } = renderPanel();
     push(entryA, ["docs", "architecture.adp"], "freeplane/mindmap");
     rerender(<DiagramTabsPanel projectId={projectId} />);
 
+    // Act and assert, step by step.
     const tab = screen.getByRole("tab", { name: /architecture/ });
     expect(tab.getAttribute("aria-selected")).toBe("true");
     expect(tab.title).toBe("docs/architecture.adp");
@@ -77,22 +81,27 @@ describe("DiagramTabsPanel", () => {
   });
 
   it("opens nothing for a plain selection of a diagram entry", () => {
+    // Arrange and act.
     const { rerender } = renderPanel();
     push(entryA, ["docs", "architecture.adp"], "freeplane/mindmap", { plain: true });
     rerender(<DiagramTabsPanel projectId={projectId} />);
 
+    // Assert.
     expect(screen.queryByRole("tab")).toBeNull();
   });
 
   it("opens nothing for an activation of a non-diagram entry", () => {
+    // Arrange and act.
     const { rerender } = renderPanel();
     push(entryA, ["readme.txt"], "");
     rerender(<DiagramTabsPanel projectId={projectId} />);
 
+    // Assert.
     expect(screen.queryByRole("tab")).toBeNull();
   });
 
   it("focuses the existing tab on re-activation instead of opening a duplicate", () => {
+    // Arrange.
     const { rerender } = renderPanel();
     push(entryA, ["a.adp"], "freeplane/mindmap");
     rerender(<DiagramTabsPanel projectId={projectId} />);
@@ -100,48 +109,58 @@ describe("DiagramTabsPanel", () => {
     rerender(<DiagramTabsPanel projectId={projectId} />);
     expect(screen.getByRole("tab", { name: /^b$/ }).getAttribute("aria-selected")).toBe("true");
 
+    // Act.
     push(entryA, ["a.adp"], "freeplane/mindmap");
     rerender(<DiagramTabsPanel projectId={projectId} />);
 
+    // Assert.
     expect(screen.getAllByRole("tab")).toHaveLength(2);
     expect(screen.getByRole("tab", { name: /^a$/ }).getAttribute("aria-selected")).toBe("true");
   });
 
   it("opens a second tab when the same entry arrives under a changed path", () => {
+    // Arrange.
     // A renamed file re-activated under its new name: the stale tab stays, independently
     // closable, and the fresh one opens (Requirement 5.2).
     const { rerender } = renderPanel();
     push(entryA, ["old.adp"], "freeplane/mindmap");
     rerender(<DiagramTabsPanel projectId={projectId} />);
 
+    // Act.
     push(entryA, ["new.adp"], "freeplane/mindmap");
     rerender(<DiagramTabsPanel projectId={projectId} />);
 
+    // Assert.
     expect(screen.getAllByRole("tab")).toHaveLength(2);
     expect(screen.getByRole("tab", { name: /^new$/ }).getAttribute("aria-selected")).toBe("true");
   });
 
   it("does not re-run the rule for the same observed selection object", () => {
+    // Arrange.
     const { rerender } = renderPanel();
     push(entryA, ["a.adp"], "freeplane/mindmap");
     rerender(<DiagramTabsPanel projectId={projectId} />);
     fireEvent.click(screen.getByRole("button", { name: /Close a/ }));
     expect(screen.queryByRole("tab")).toBeNull();
 
+    // Act.
     // The same selection object re-observed (an unrelated re-render): the closed tab must
     // not spring back - only a new push may open one.
     rerender(<DiagramTabsPanel projectId={projectId} />);
 
+    // Assert.
     expect(screen.queryByRole("tab")).toBeNull();
   });
 
   it("closing the active tab focuses the nearest neighbour, and closing the last shows the empty state", () => {
+    // Arrange.
     const { rerender } = renderPanel();
     push(entryA, ["a.adp"], "freeplane/mindmap");
     rerender(<DiagramTabsPanel projectId={projectId} />);
     push(entryB, ["b.adp"], "freeplane/mindmap");
     rerender(<DiagramTabsPanel projectId={projectId} />);
 
+    // Act and assert, step by step.
     fireEvent.click(screen.getByRole("button", { name: /Close b/ }));
     expect(screen.getByRole("tab", { name: /^a$/ }).getAttribute("aria-selected")).toBe("true");
 
@@ -151,10 +170,12 @@ describe("DiagramTabsPanel", () => {
   });
 
   it("names the type it cannot render inside the tab it still opens", async () => {
+    // Arrange and act.
     const { rerender } = renderPanel();
     push(entryA, ["future.adp"], "vendor/unheard-of");
     rerender(<DiagramTabsPanel projectId={projectId} />);
 
+    // Assert.
     expect(screen.getByRole("tab", { name: /future/ })).toBeTruthy();
     expect(await screen.findByText("No canvas can render vendor/unheard-of diagrams yet.")).toBeTruthy();
   });

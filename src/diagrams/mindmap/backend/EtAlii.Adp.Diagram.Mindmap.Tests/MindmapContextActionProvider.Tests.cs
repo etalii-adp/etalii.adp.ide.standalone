@@ -25,8 +25,10 @@ public class MindmapContextActionProviderTests : IDisposable
     [Fact]
     public async Task Discover_ALeaf_OffersEverythingButFoldAndUnlink()
     {
+        // Act.
         var ids = (await Discover("ID_88117422")).Select(action => action.Id).ToList();
 
+        // Assert.
         Assert.Equal(
             [MindmapContextActionProvider.AddChildActionId, MindmapContextActionProvider.AddSiblingActionId,
              MindmapContextActionProvider.RenameActionId, MindmapContextActionProvider.DeleteActionId,
@@ -37,8 +39,10 @@ public class MindmapContextActionProviderTests : IDisposable
     [Fact]
     public async Task Discover_TheRoot_OffersNoSiblingAndNoDelete()
     {
+        // Act.
         var ids = (await Discover(_project.Document.Root.Id)).Select(action => action.Id).ToList();
 
+        // Assert.
         Assert.DoesNotContain(MindmapContextActionProvider.AddSiblingActionId, ids);
         Assert.DoesNotContain(MindmapContextActionProvider.DeleteActionId, ids);
         Assert.Contains(MindmapContextActionProvider.AddChildActionId, ids);
@@ -47,14 +51,17 @@ public class MindmapContextActionProviderTests : IDisposable
     [Fact]
     public async Task Discover_ALinkedNode_OffersUnlink()
     {
+        // Act.
         var ids = (await Discover("ID_88117420")).Select(action => action.Id).ToList();
 
+        // Assert.
         Assert.Contains(MindmapContextActionProvider.UnlinkActionId, ids);
     }
 
     [Fact]
     public async Task Discover_ANodeWithChildren_OffersCollapseOrExpand_NamedByItsCurrentState()
     {
+        // Act and assert, step by step.
         var fold = (await Discover("ID_411002937")).Single(action => action.Id == MindmapContextActionProvider.ToggleFoldActionId);
         Assert.Equal("Collapse", fold.Label);
 
@@ -65,9 +72,11 @@ public class MindmapContextActionProviderTests : IDisposable
     [Fact]
     public async Task Discover_CarriesFreeplanesShortcutsAsData()
     {
+        // Act.
         // Requirement 8.4: the client holds no key table; these are the only source.
         var actions = await Discover("ID_88117422");
 
+        // Assert.
         Assert.Equal("Insert", actions.Single(a => a.Id == MindmapContextActionProvider.AddChildActionId).Shortcut!.Key);
         Assert.Equal("Enter", actions.Single(a => a.Id == MindmapContextActionProvider.AddSiblingActionId).Shortcut!.Key);
         Assert.Equal("F2", actions.Single(a => a.Id == MindmapContextActionProvider.RenameActionId).Shortcut!.Key);
@@ -77,6 +86,7 @@ public class MindmapContextActionProviderTests : IDisposable
     [Fact]
     public async Task Discover_AnUnknownNode_OffersNothing()
     {
+        // Arrange, act and assert.
         Assert.Empty(await Discover("ID_nope"));
     }
 
@@ -85,17 +95,21 @@ public class MindmapContextActionProviderTests : IDisposable
     [Fact]
     public async Task Execute_Rename_AsksWithTheCurrentText()
     {
-        var result = Assert.IsType<ContextExecutionResult.RequiresInput>(await Execute("ID_88117422", MindmapContextActionProvider.RenameActionId));
+        // Act.
+        var result = Assert.IsType<ContextExecutionRequiresInput>(await Execute("ID_88117422", MindmapContextActionProvider.RenameActionId));
 
+        // Assert.
         Assert.Equal("ICommand", result.Request.InitialValue);
     }
 
     [Fact]
     public async Task Execute_DeleteOnALeaf_RemovesItAtOnce_AndItIsUndoable()
     {
+        // Act.
         var result = await Execute("ID_88117422", MindmapContextActionProvider.DeleteActionId);
 
-        Assert.IsType<ContextExecutionResult.Completed>(result);
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(result);
         Assert.Null(_project.Document.Find("ID_88117422"));
         Assert.True(_project.History.CanUndo);
     }
@@ -103,8 +117,10 @@ public class MindmapContextActionProviderTests : IDisposable
     [Fact]
     public async Task Execute_DeleteOnABranch_AsksFirst_NamingWhatGoes()
     {
-        var result = Assert.IsType<ContextExecutionResult.RequiresConfirmation>(await Execute("ID_411002937", MindmapContextActionProvider.DeleteActionId));
+        // Act.
+        var result = Assert.IsType<ContextExecutionRequiresConfirmation>(await Execute("ID_411002937", MindmapContextActionProvider.DeleteActionId));
 
+        // Assert.
         Assert.Contains("9 nodes", result.Request.Message, StringComparison.Ordinal);
         Assert.True(result.Request.Danger);
         Assert.NotNull(_project.Document.Find("ID_411002937"));
@@ -113,11 +129,14 @@ public class MindmapContextActionProviderTests : IDisposable
     [Fact]
     public async Task Execute_ToggleFold_ChangesViewStateOnly_AndRecordsNothing()
     {
+        // Arrange.
         // Requirements 9.4, 9.6: no command, no history entry, no write.
         var before = File.ReadAllText(_project.BodyPath);
 
+        // Act.
         await Execute("ID_411002937", MindmapContextActionProvider.ToggleFoldActionId);
 
+        // Assert.
         Assert.True(_project.Views.Find(_project.WatchId, _project.BodyPath)!.IsFolded("ID_411002937"));
         Assert.False(_project.History.CanUndo);
         Assert.Equal(before, File.ReadAllText(_project.BodyPath));
@@ -126,19 +145,24 @@ public class MindmapContextActionProviderTests : IDisposable
     [Fact]
     public async Task Execute_ToggleFold_IsPerConnection()
     {
+        // Arrange.
         await Execute("ID_411002937", MindmapContextActionProvider.ToggleFoldActionId);
 
+        // Act.
         var other = _project.Views.For(ShortGuid.NewShortGuid(), _project.BodyPath, _project.Document);
 
+        // Assert.
         Assert.False(other.IsFolded("ID_411002937"));
     }
 
     [Fact]
     public async Task Execute_Unlink_DispatchesACommand_SoItIsUndoable()
     {
+        // Arrange.
         var result = await Execute("ID_88117420", MindmapContextActionProvider.UnlinkActionId);
 
-        Assert.IsType<ContextExecutionResult.Completed>(result);
+        // Act and assert, step by step.
+        Assert.IsType<ContextExecutionCompleted>(result);
         Assert.Null(_project.Document.Find("ID_88117420")!.Link);
 
         await _project.History.UndoAsync(TestContext.Current.CancellationToken);
@@ -148,10 +172,13 @@ public class MindmapContextActionProviderTests : IDisposable
     [Fact]
     public async Task Execute_Link_OffersTheProjectsFilesToPickFrom()
     {
+        // Arrange.
         File.WriteAllText(IoPath.Combine(_project.Root, "README.md"), "");
 
-        var result = Assert.IsType<ContextExecutionResult.RequiresChoice>(await Execute("ID_88117422", MindmapContextActionProvider.LinkActionId));
+        // Act.
+        var result = Assert.IsType<ContextExecutionRequiresChoice>(await Execute("ID_88117422", MindmapContextActionProvider.LinkActionId));
 
+        // Assert.
         Assert.Contains(result.Request.Options, option => option.Id == "README.md" && option.Selectable);
         var docs = Assert.Single(result.Request.Options, option => option.Id == "docs");
         Assert.Contains(docs.Children!, option => option.Id == "docs/architecture.mm");
@@ -162,8 +189,10 @@ public class MindmapContextActionProviderTests : IDisposable
     [Fact]
     public async Task Commit_AddChild_AddsAnUndoableNode()
     {
+        // Act.
         var result = await Commit("ID_88117422", MindmapContextActionProvider.AddChildActionId, "a child");
 
+        // Assert.
         Assert.True(result.Completed, result.Error);
         Assert.Equal("a child", _project.Document.Find("ID_88117422")!.Children.Single().Text);
         Assert.True(_project.History.CanUndo);
@@ -172,8 +201,10 @@ public class MindmapContextActionProviderTests : IDisposable
     [Fact]
     public async Task Commit_Rename_ToEmpty_IsAccepted()
     {
+        // Act.
         var result = await Commit("ID_88117422", MindmapContextActionProvider.RenameActionId, "");
 
+        // Assert.
         Assert.True(result.Completed, result.Error);
         Assert.Equal("", _project.Document.Find("ID_88117422")!.Text);
     }
@@ -181,9 +212,11 @@ public class MindmapContextActionProviderTests : IDisposable
     [Fact]
     public async Task Commit_Link_StoresItMapRelative()
     {
+        // Act.
         // Picked as a project-relative id; stored as Freeplane would (Requirement 12.1).
         var result = await Commit("ID_88117422", MindmapContextActionProvider.LinkActionId, "docs/architecture.mm");
 
+        // Assert.
         Assert.True(result.Completed, result.Error);
         Assert.Equal("architecture.mm", _project.Document.Find("ID_88117422")!.Link);
     }
@@ -191,8 +224,10 @@ public class MindmapContextActionProviderTests : IDisposable
     [Fact]
     public async Task Commit_OnANodeThatIsGone_Fails()
     {
+        // Act.
         var result = await Commit("ID_nope", MindmapContextActionProvider.RenameActionId, "x");
 
+        // Assert.
         Assert.False(result.Completed);
         Assert.Equal("The node no longer exists.", result.Error);
     }

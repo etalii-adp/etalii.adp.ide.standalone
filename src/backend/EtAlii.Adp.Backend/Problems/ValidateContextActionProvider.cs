@@ -40,7 +40,7 @@ public sealed class ValidateContextActionProvider : IContextActionProvider
         {
             label = "Validate folder";
         }
-        else if (!target.IsContainer && File.Exists(target.ResolvedFullPath) && _router.Route(target.ResolvedFullPath) is DiagramRouting.Routed)
+        else if (!target.IsContainer && File.Exists(target.ResolvedFullPath) && _router.Route(target.ResolvedFullPath) is DiagramRouted)
         {
             label = "Validate";
         }
@@ -60,11 +60,11 @@ public sealed class ValidateContextActionProvider : IContextActionProvider
     {
         if (actionId != ValidateActionId)
         {
-            return new ContextExecutionResult.Failed($"Unknown action '{actionId}'.");
+            return new ContextExecutionFailed($"Unknown action '{actionId}'.");
         }
         if (!HierarchyTargets.Exists(target))
         {
-            return new ContextExecutionResult.Failed("This item is no longer there.");
+            return new ContextExecutionFailed("This item is no longer there.");
         }
 
         var rootPath = target.RootPath;
@@ -75,15 +75,15 @@ public sealed class ValidateContextActionProvider : IContextActionProvider
             if (HierarchyTargets.IsRoot(target))
             {
                 // Validating the root folder is validating the whole project.
-                var everything = await _validator.ValidateAsync(new ValidationScope.Project(rootPath), cancellationToken);
+                var everything = await _validator.ValidateAsync(new ProjectValidationScope(rootPath), cancellationToken);
                 _store.Replace(rootPath, everything.Problems);
-                return new ContextExecutionResult.Completed();
+                return new ContextExecutionCompleted();
             }
 
             var relativeFolder = IoPath.GetRelativePath(rootPath, target.ResolvedFullPath);
-            var outcome = await _validator.ValidateAsync(new ValidationScope.Folder(rootPath, relativeFolder), cancellationToken);
+            var outcome = await _validator.ValidateAsync(new FolderValidationScope(rootPath, relativeFolder), cancellationToken);
             _store.ReplaceFor(rootPath, [relativeFolder], outcome.Problems);
-            return new ContextExecutionResult.Completed();
+            return new ContextExecutionCompleted();
         }
 
         var relative = IoPath.GetRelativePath(rootPath, target.ResolvedFullPath);
@@ -92,7 +92,7 @@ public sealed class ValidateContextActionProvider : IContextActionProvider
         // body's problems live on its registration file. From the routing, not from what
         // was found - a pair that just became clean must still clear its old entries.
         var covered = new List<string> { relative };
-        if (_router.Route(target.ResolvedFullPath) is DiagramRouting.Routed routed)
+        if (_router.Route(target.ResolvedFullPath) is DiagramRouted routed)
         {
             if (routed.RegistrationPath is not null)
             {
@@ -101,10 +101,10 @@ public sealed class ValidateContextActionProvider : IContextActionProvider
             covered.Add(IoPath.GetRelativePath(rootPath, routed.BodyPath));
         }
 
-        var fileOutcome = await _validator.ValidateAsync(new ValidationScope.File(rootPath, relative), cancellationToken);
+        var fileOutcome = await _validator.ValidateAsync(new FileValidationScope(rootPath, relative), cancellationToken);
         covered.AddRange(fileOutcome.Problems.Select(problem => problem.RelativePath));
         _store.ReplaceFor(rootPath, covered.Distinct(StringComparer.OrdinalIgnoreCase).ToArray(), fileOutcome.Problems);
-        return new ContextExecutionResult.Completed();
+        return new ContextExecutionCompleted();
     }
 
     // Validation never prompts, so these two are unreachable through the interaction flow;

@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("cmap", "concept-map"),
-        "Concept map (free-form network of concepts with labeled relationships)");
+        "Concept map (free-form network of concepts with labeled relationships)",
+        "Concepts joined by labelled phrases, so each connection states a proposition.");
 }

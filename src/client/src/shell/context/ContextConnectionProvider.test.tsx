@@ -156,6 +156,7 @@ describe("ContextConnectionProvider", () => {
   });
 
   it("opens exactly one Watch stream for any number of consumers", async () => {
+    // Arrange and act.
     render(
       <ContextConnectionProvider projectId={projectId}>
         <Probe />
@@ -164,23 +165,28 @@ describe("ContextConnectionProvider", () => {
     );
     await flush();
 
+    // Assert.
     expect(watch).toHaveBeenCalledTimes(1);
   });
 
   it("applies a pushed selection with its actions and marks the connection live", async () => {
+    // Arrange.
     renderProvider();
     await flush();
     streams[0]!.push(selectionMessage(null));
     await flush();
     expect(screen.getByTestId("connected").textContent).toBe("true");
 
+    // Act.
     streams[0]!.push(selectionMessage(entryA));
 
+    // Assert.
     await waitFor(() => expect(screen.getByTestId("selection").textContent).toBe(innermostKey(selectionFor(0, entryA, [], NONE_DETAIL))));
     expect(screen.getByTestId("actions").textContent).toBe("hierarchy.rename");
   });
 
   it("keeps a transient message as a preview without replacing the current selection", async () => {
+    // Act and assert, step by step.
     renderProvider();
     await flush();
     streams[0]!.push(selectionMessage(entryA));
@@ -197,25 +203,30 @@ describe("ContextConnectionProvider", () => {
   });
 
   it("surfaces a pushed prompt and clears it on a completed submit", async () => {
+    // Arrange.
     renderProvider();
     await flush();
     streams[0]!.push(promptMessage());
     await waitFor(() => expect(screen.getByTestId("prompt").textContent).toBe("inputDialog"));
 
+    // Act.
     await act(async () => {
       await promptValue!.onSubmit("b.txt");
     });
 
+    // Assert.
     expect(submitInteraction).toHaveBeenCalled();
     expect(screen.getByTestId("prompt").textContent).toBe("none");
   });
 
   it("coalesces plain selections and flushes a gesture at once", async () => {
+    // Arrange.
     vi.useFakeTimers();
     renderProvider();
     const plain = selectionFor(ContextSelectionSource.EXPLORER, entryA, ["a.txt"], NONE_DETAIL);
     const gesture = selectionFor(ContextSelectionSource.EXPLORER, entryB, ["b.txt"], { case: "action", value: ContextSelectionAction.CONTEXT_MENU });
 
+    // Act and assert, step by step.
     act(() => {
       connection!.select(plain);
       connection!.select(plain);
@@ -236,6 +247,7 @@ describe("ContextConnectionProvider", () => {
   });
 
   it("sends executeAction without a scope and only with the source it was given", async () => {
+    // Arrange.
     renderProvider();
     await flush();
 
@@ -243,6 +255,7 @@ describe("ContextConnectionProvider", () => {
       await connection!.executeAction("hierarchy.rename");
     });
 
+    // Act and assert, step by step.
     const request = (executeAction.mock.calls[0] as unknown as [Record<string, unknown>])[0];
     expect(request).not.toHaveProperty("scope");
     expect(request.source).toBeUndefined();
@@ -250,6 +263,7 @@ describe("ContextConnectionProvider", () => {
   });
 
   it("re-sends its last selection when a reconnected stream reports nothing selected", async () => {
+    // Arrange.
     vi.useFakeTimers();
     renderProvider();
     await flush();
@@ -260,6 +274,7 @@ describe("ContextConnectionProvider", () => {
     });
     expect(select).toHaveBeenCalledTimes(1);
 
+    // Arrange, continued.
     streams[0]!.end();
     await flush();
     await act(async () => {
@@ -269,9 +284,11 @@ describe("ContextConnectionProvider", () => {
     await flush();
     expect(watch).toHaveBeenCalledTimes(2);
 
+    // Act.
     streams[1]!.push(selectionMessage(null));
     await flush();
 
+    // Assert.
     expect(select).toHaveBeenCalledTimes(2);
   });
 });
@@ -301,23 +318,27 @@ describe("ContextConnectionProvider project actions", () => {
   });
 
   it("routes a projectActions message to useProjectActions without touching the selection", async () => {
+    // Arrange.
     // A selection consumer whose render count the test can watch: a project-actions push must
     // not re-render it, because project actions are their own state (Deviation 1).
     let selectionRenders = 0;
     let projectActionsSeen: string[] = [];
 
+    // Arrange, continued.
     function SelectionOnly() {
       selectionRenders++;
       const { selection } = useContextSelection();
       return <span data-testid="sel">{innermostKey(selection) ?? "none"}</span>;
     }
 
+    // Arrange, continued.
     function ProjectActionsOnly() {
       const groups = useProjectActions();
       projectActionsSeen = groups.flatMap((g) => g.actions.map((a) => `${a.id}:${a.available}`));
       return <span data-testid="project-actions">{projectActionsSeen.join(",")}</span>;
     }
 
+    // Arrange, continued.
     render(
       <ContextConnectionProvider projectId={projectId}>
         <SelectionOnly />
@@ -326,17 +347,20 @@ describe("ContextConnectionProvider project actions", () => {
     );
     await flush();
 
+    // Arrange, continued.
     // Establish a selection, then note how many times the selection consumer has rendered.
     streams[0]!.push(selectionMessage(entryA));
     await waitFor(() => expect(screen.getByTestId("sel").textContent).not.toBe("none"));
     const rendersBefore = selectionRenders;
     const selectionBefore = screen.getByTestId("sel").textContent;
 
+    // Act.
     // A project-actions push updates the hook...
     streams[0]!.push(projectActionsMessage(true));
     await waitFor(() => expect(screen.getByTestId("project-actions").textContent).toContain("history.undo:true"));
     expect(projectActionsSeen).toEqual(["history.undo:true", "history.redo:false"]);
 
+    // Assert.
     // ...and leaves the selection consumer exactly as it was - same value, no extra render.
     expect(screen.getByTestId("sel").textContent).toBe(selectionBefore);
     expect(selectionRenders).toBe(rendersBefore);
@@ -345,9 +369,11 @@ describe("ContextConnectionProvider project actions", () => {
 
 describe("innermost helpers", () => {
   it("walk a chain to its innermost level", () => {
+    // Arrange and act.
     const inner = selectionFor(ContextSelectionSource.DIAGRAM_CANVAS, entryB, ["node"], { case: "action", value: ContextSelectionAction.ACTIVATE });
     const outer = selectionFor(ContextSelectionSource.EXPLORER, entryA, ["a.mm"], { case: "child", value: inner });
 
+    // Assert.
     expect(innermostKey(outer)).toBe(innermostKey(inner));
     expect(innermostAction(outer)).toBe(ContextSelectionAction.ACTIVATE);
     expect(innermostKey(null)).toBeUndefined();
@@ -379,15 +405,18 @@ describe("ContextConnectionProvider problems", () => {
   });
 
   it("routes a problems message to useContextProblems without touching the selection", async () => {
+    // Arrange.
     // A validation finishing must re-render the panel, not every selection consumer.
     let selectionRenders = 0;
 
+    // Arrange, continued.
     function SelectionOnly() {
       selectionRenders++;
       const { selection } = useContextSelection();
       return <span data-testid="sel">{innermostKey(selection) ?? "none"}</span>;
     }
 
+    // Arrange, continued.
     function ProblemsOnly() {
       const problems = useContextProblems();
       return (
@@ -397,6 +426,7 @@ describe("ContextConnectionProvider problems", () => {
       );
     }
 
+    // Arrange, continued.
     render(
       <ContextConnectionProvider projectId={projectId}>
         <SelectionOnly />
@@ -405,32 +435,38 @@ describe("ContextConnectionProvider problems", () => {
     );
     await flush();
 
+    // Arrange, continued.
     streams[0]!.push(selectionMessage(entryA));
     await waitFor(() => expect(screen.getByTestId("sel").textContent).not.toBe("none"));
     const rendersBefore = selectionRenders;
     const selectionBefore = screen.getByTestId("sel").textContent;
 
+    // Act.
     // A problems push updates the hook - exactly what the backend sent...
     streams[0]!.push(problemsMessage(ProblemSetState.VALIDATED, ["'vendor/unheard-of' is not a known diagram type."]));
     await waitFor(() => expect(screen.getByTestId("problems").textContent).toContain("VALIDATED"));
     expect(screen.getByTestId("problems").textContent).toContain("not a known diagram type");
 
+    // Assert.
     // ...and leaves the selection consumer exactly as it was - same value, no extra render.
     expect(screen.getByTestId("sel").textContent).toBe(selectionBefore);
     expect(selectionRenders).toBe(rendersBefore);
   });
 
   it("keeps the problems through an unrelated selection change", async () => {
+    // Arrange.
     function ProblemsOnly() {
       const problems = useContextProblems();
       return <span data-testid="problems">{problems ? String(problems.problems.length) : "no baseline"}</span>;
     }
 
+    // Arrange, continued.
     function SelectionOnly() {
       const { selection } = useContextSelection();
       return <span data-testid="sel">{innermostKey(selection) ?? "none"}</span>;
     }
 
+    // Arrange, continued.
     render(
       <ContextConnectionProvider projectId={projectId}>
         <SelectionOnly />
@@ -439,16 +475,20 @@ describe("ContextConnectionProvider problems", () => {
     );
     await flush();
 
+    // Arrange, continued.
     streams[0]!.push(problemsMessage(ProblemSetState.VALIDATED, ["one", "two"]));
     await waitFor(() => expect(screen.getByTestId("problems").textContent).toBe("2"));
 
+    // Act.
     streams[0]!.push(selectionMessage(entryA));
     await waitFor(() => expect(screen.getByTestId("sel").textContent).not.toBe("none"));
 
+    // Assert.
     expect(screen.getByTestId("problems").textContent).toBe("2");
   });
 
   it("names the problems source for the panel", () => {
+    // Arrange, act and assert.
     expect(PROBLEMS_SOURCE.source.case).toBe("problems");
   });
 });

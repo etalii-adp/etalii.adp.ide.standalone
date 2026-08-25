@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("mermaid", "state"),
-        "State diagram");
+        "State diagram",
+        "States and the events that move between them, in Mermaid's state syntax.");
 }

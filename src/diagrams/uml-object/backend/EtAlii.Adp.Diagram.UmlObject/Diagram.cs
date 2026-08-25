@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("uml", "object"),
-        "Object diagram");
+        "Object diagram",
+        "A snapshot of instances and their links at one moment, to make a class diagram concrete.");
 }

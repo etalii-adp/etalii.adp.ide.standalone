@@ -113,7 +113,7 @@ public sealed class StartupRevalidation : IHostedService
             try
             {
                 _logger.Information("Re-validating {RootPath} in the background", root);
-                var outcome = await _validator.ValidateAsync(new ValidationScope.Project(root), cancellationToken);
+                var outcome = await _validator.ValidateAsync(new ProjectValidationScope(root), cancellationToken);
                 _store.Replace(root, outcome.Problems);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

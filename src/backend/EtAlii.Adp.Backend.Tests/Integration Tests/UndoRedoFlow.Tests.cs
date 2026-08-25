@@ -71,6 +71,7 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
     [Fact]
     public async Task RenameThroughAContextAction_MakesUndoAvailable_AndUndoReversesItOnDiskAndOnTheStream()
     {
+        // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "original.txt"), "content", TestContext.Current.CancellationToken);
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
@@ -84,6 +85,7 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
 
+        // Act and assert, step by step.
         // Rename original.txt -> renamed.txt through the context action, then let the first
         // (forward) rename change drain off the hierarchy stream.
         var pendingForward = ReadUntilChangeAsync(hierarchyCall.ResponseStream, HierarchyChange.ChangeOneofCase.Renamed, cts.Token);
@@ -109,6 +111,7 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
     [Fact]
     public async Task TwoProjects_KeepSeparateHistories_SoUndoInOneLeavesTheOtherUntouched()
     {
+        // Arrange.
         var otherFolder = IoPath.Combine(_appDataRoot, "other-project");
         Directory.CreateDirectory(otherFolder);
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "a.txt"), "", TestContext.Current.CancellationToken);
@@ -129,6 +132,7 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         using var contextA = contextClient.Watch(new WatchContextRequest { ProjectId = projectA, WatchId = watchA }, headers, cancellationToken: TestContext.Current.CancellationToken);
         using var contextB = contextClient.Watch(new WatchContextRequest { ProjectId = projectB, WatchId = watchB }, headers, cancellationToken: TestContext.Current.CancellationToken);
 
+        // Act and assert, step by step.
         await RenameViaContextAsync(contextClient, projectA, watchA, headers, entryA, contextA.ResponseStream, cts.Token, "a-renamed.txt");
         await RenameViaContextAsync(contextClient, projectB, watchB, headers, entryB, contextB.ResponseStream, cts.Token, "b-renamed.txt");
         Assert.True(File.Exists(IoPath.Combine(_projectFolder, "a-renamed.txt")));
@@ -148,6 +152,7 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
     [Fact]
     public async Task TwoConnectionsInOneProject_ShareOneHistory_SoACommandOnAMakesUndoAvailableOnBAndBsUndoReachesA()
     {
+        // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "shared.txt"), "content", TestContext.Current.CancellationToken);
 
         using var channel = CreateChannel();
@@ -168,6 +173,7 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
 
         await RenameViaContextAsync(contextClient, projectId, watchA, headers, entryId, contextA.ResponseStream, cts.Token, "shared-renamed.txt");
 
+        // Act and assert, step by step.
         // The command on A made Undo available on B, though B selected nothing and did nothing.
         var onB = await pendingUndoAvailableOnB;
         Assert.True(UndoOf(onB).Available);
@@ -186,6 +192,7 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
     [Fact]
     public async Task DeletingAnEntry_RecordsNothing_SoUndoStillReversesTheRenameBeforeIt()
     {
+        // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "keep.txt"), "content", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "doomed.txt"), "", TestContext.Current.CancellationToken);
 
@@ -201,6 +208,7 @@ public class UndoRedoFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
 
+        // Act and assert, step by step.
         // Rename keep.txt (recorded), then delete doomed.txt (a one-way action that records nothing).
         await RenameViaContextAsync(contextClient, projectId, watchId, headers, keepId, contextCall.ResponseStream, cts.Token, "kept.txt");
         await DeleteViaContextAsync(contextClient, projectId, watchId, headers, doomedId, contextCall.ResponseStream, cts.Token);

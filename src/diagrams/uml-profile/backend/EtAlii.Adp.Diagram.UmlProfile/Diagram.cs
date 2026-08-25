@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("uml", "profile"),
-        "Profile diagram");
+        "Profile diagram",
+        "A UML extension: the stereotypes and tagged values that adapt UML to a domain.");
 }

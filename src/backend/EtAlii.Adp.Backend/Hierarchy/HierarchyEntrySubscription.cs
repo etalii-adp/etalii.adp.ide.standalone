@@ -1,0 +1,19 @@
+using EtAlii.Adp.Backend.Context;
+using IoPath = System.IO.Path;
+
+namespace EtAlii.Adp.Backend.Hierarchy;
+
+internal sealed class HierarchyEntrySubscription : IDisposable
+{
+    private Action? _dispose;
+
+    public HierarchyEntrySubscription(Action dispose)
+    {
+        _dispose = dispose;
+    }
+
+    public void Dispose()
+    {
+        Interlocked.Exchange(ref _dispose, null)?.Invoke();
+    }
+}

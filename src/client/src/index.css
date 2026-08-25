@@ -840,9 +840,12 @@ button {
 }
 
 .dialog {
-  width: 100%;
-  max-width: 420px;
-  max-height: 100%;
+  /* Exactly half the page, fixed: not min/max, so the box never resizes as its content
+     changes - a tree that grows while a name is validated used to move the buttons under
+     the pointer. Measured against the viewport rather than the overlay, so it is half the
+     page itself and not half of what the overlay padding leaves. */
+  width: 50vw;
+  height: 50vh;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
@@ -875,6 +878,12 @@ button {
   color: var(--color-text);
   font-size: 0.875rem;
   overflow: auto;
+  /* Absorbs whatever height the header and footer leave, so the fixed box is filled and
+     the content scrolls rather than the dialog growing. */
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .dialog-message {
@@ -949,7 +958,9 @@ button {
 }
 
 .choice-tree {
-  max-height: 50vh;
+  /* Fills whatever the fixed dialog leaves, rather than measuring the viewport itself. */
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -1589,4 +1600,17 @@ button {
   height: 12px;
   border: 1px solid var(--color-border);
   border-radius: 3px;
+}
+
+/* What the selected diagram type is for, under the Add dialog's type tree. Reserves its own
+   height whether or not something is selected, so choosing a type never shifts the tree. */
+.choice-description {
+  margin: 0.5rem 0 0;
+  min-height: 2.4em;
+  padding: 0.5rem 0.6rem;
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.2;
 }

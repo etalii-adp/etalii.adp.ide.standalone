@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("bpmn", "process"),
-        "BPMN process diagram");
+        "BPMN process diagram",
+        "A business process as an executable flow: events, tasks, gateways and the lanes that own them.");
 }

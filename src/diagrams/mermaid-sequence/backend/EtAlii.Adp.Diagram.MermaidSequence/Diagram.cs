@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("mermaid", "sequence"),
-        "Sequence diagram");
+        "Sequence diagram",
+        "Messages exchanged between participants over time, in Mermaid's sequence syntax.");
 }

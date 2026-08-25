@@ -43,15 +43,15 @@ public sealed class ValidateAllContextActionProvider : IContextActionProvider
     {
         if (actionId != ValidateAllActionId)
         {
-            return new ContextExecutionResult.Failed($"Unknown action '{actionId}'.");
+            return new ContextExecutionFailed($"Unknown action '{actionId}'.");
         }
 
         // A second request while one runs joins the running traversal inside the validator
         // (Requirement 6.5, design deviation 2) - both callers get the same fresh answer.
         _store.BeginValidating(target.RootPath);
-        var outcome = await _validator.ValidateAsync(new ValidationScope.Project(target.RootPath), cancellationToken);
+        var outcome = await _validator.ValidateAsync(new ProjectValidationScope(target.RootPath), cancellationToken);
         _store.Replace(target.RootPath, outcome.Problems);
-        return new ContextExecutionResult.Completed();
+        return new ContextExecutionCompleted();
     }
 
     // Validate all never prompts, so these two are unreachable through the interaction flow;

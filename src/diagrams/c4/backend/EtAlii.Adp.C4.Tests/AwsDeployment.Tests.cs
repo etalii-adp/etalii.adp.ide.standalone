@@ -25,6 +25,7 @@ public class AwsDeploymentTests
     [Fact]
     public void InfrastructureNodes_AreTheirOwnKind_NotDeploymentNodes()
     {
+        // Arrange, act and assert.
         // They nest in the same place and read almost the same, which is exactly why a parser
         // that treats them as one gets away with it until something asks (Requirement 9.4).
         Assert.Equal(C4ElementKind.InfrastructureNode, Node("Route 53").Kind);
@@ -35,12 +36,14 @@ public class AwsDeploymentTests
     [Fact]
     public void DeploymentNodesNest_FourDeep()
     {
+        // Arrange and act.
         // Amazon Web Services > US-East-1 > Autoscaling group > Amazon EC2.
         var ec2 = Node("Amazon EC2");
         var autoscaling = Workspace.Find(ec2.ParentId!)!;
         var region = Workspace.Find(autoscaling.ParentId!)!;
         var cloud = Workspace.Find(region.ParentId!)!;
 
+        // Assert.
         Assert.Equal("Autoscaling group", autoscaling.Name);
         Assert.Equal("US-East-1", region.Name);
         Assert.Equal("Amazon Web Services", cloud.Name);
@@ -65,6 +68,7 @@ public class AwsDeploymentTests
     [Fact]
     public void TagsDeclaredInsideABlock_ReachTheElement()
     {
+        // Arrange, act and assert.
         Assert.Contains("Amazon Web Services - Route 53", Node("Route 53").Tags);
         Assert.Contains("Amazon Web Services - Region", Node("US-East-1").Tags);
     }
@@ -72,8 +76,10 @@ public class AwsDeploymentTests
     [Fact]
     public void ContainerInstances_ResolveToTheContainersTheyDeploy()
     {
+        // Act.
         var instances = Workspace.Elements.Where(element => element.Kind == C4ElementKind.ContainerInstance).ToArray();
 
+        // Assert.
         Assert.Equal(2, instances.Length);
         Assert.Contains(instances, instance => instance.ReferencedId == "webApplication");
         Assert.Contains(instances, instance => instance.ReferencedId == "database");
@@ -82,6 +88,7 @@ public class AwsDeploymentTests
     [Fact]
     public void RelationshipsDeclaredInTheEnvironment_ReachInfrastructureAndInstancesAlike()
     {
+        // Arrange, act and assert.
         // Both ends are declared inside the deployment environment rather than the model, and
         // one of them is a container instance identified by its own name.
         Assert.Contains(Workspace.Relationships, r =>
@@ -93,8 +100,10 @@ public class AwsDeploymentTests
     [Fact]
     public void TheDeploymentView_KnowsItsEnvironment_AndItsScope()
     {
+        // Act.
         var view = Assert.Single(Workspace.Views);
 
+        // Assert.
         Assert.Equal(C4ViewKind.Deployment, view.Kind);
         Assert.Equal("AmazonWebServicesDeployment", view.Key);
         Assert.Equal("Live", view.Environment);
@@ -104,19 +113,23 @@ public class AwsDeploymentTests
     [Fact]
     public void TheModelIsClean_ByC4sOwnRules()
     {
+        // Arrange and act.
         var problems = C4RuleSet.Validate(Workspace)
-            .Where(problem => problem.RuleId != C4RuleSet.Rules.EmptyView)
+            .Where(problem => problem.RuleId != C4Rules.EmptyView)
             .ToArray();
 
+        // Assert.
         Assert.Empty(problems.Select(problem => $"{problem.RuleId}: {problem.Message}"));
     }
 
     [Fact]
     public void TheDeploymentViewLaysOutWithoutOverlaps()
     {
+        // Arrange.
         var layout = C4LayoutEngine.Compute(Workspace, Workspace.Views[0], C4Metrics.Default);
         var boxes = layout.Boxes.ToArray();
 
+        // Act and assert, step by step.
         for (var i = 0; i < boxes.Length; i++)
         {
             for (var j = i + 1; j < boxes.Length; j++)

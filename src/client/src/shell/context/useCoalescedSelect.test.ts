@@ -12,9 +12,11 @@ describe("useCoalescedSelect", () => {
   });
 
   it("sends a burst of plain selections once, with the last value, after the delay", () => {
+    // Arrange.
     const send = vi.fn();
     const { result } = renderHook(() => useCoalescedSelect<string>(send, 80));
 
+    // Act and assert, step by step.
     act(() => {
       result.current("a", false);
       result.current("b", false);
@@ -30,9 +32,11 @@ describe("useCoalescedSelect", () => {
   });
 
   it("sends an immediate value at once and drops the pending plain one", () => {
+    // Arrange.
     const send = vi.fn();
     const { result } = renderHook(() => useCoalescedSelect<string>(send, 80));
 
+    // Act and assert, step by step.
     act(() => {
       result.current("plain", false);
       result.current("gesture", true);
@@ -47,20 +51,25 @@ describe("useCoalescedSelect", () => {
   });
 
   it("sends an immediate null (a clear) at once", () => {
+    // Arrange.
     const send = vi.fn();
     const { result } = renderHook(() => useCoalescedSelect<string | null>(send, 80));
 
+    // Act.
     act(() => {
       result.current(null, true);
     });
 
+    // Assert.
     expect(send).toHaveBeenCalledWith(null);
   });
 
   it("sends nothing when unmounted inside the window", () => {
+    // Arrange.
     const send = vi.fn();
     const { result, unmount } = renderHook(() => useCoalescedSelect<string>(send, 80));
 
+    // Act.
     act(() => {
       result.current("a", false);
     });
@@ -69,15 +78,19 @@ describe("useCoalescedSelect", () => {
       vi.advanceTimersByTime(200);
     });
 
+    // Assert.
     expect(send).not.toHaveBeenCalled();
   });
 
   it("keeps a stable function identity across renders", () => {
+    // Arrange.
     const { result, rerender } = renderHook(() => useCoalescedSelect<string>(() => {}, 80));
     const first = result.current;
 
+    // Act.
     rerender();
 
+    // Assert.
     expect(result.current).toBe(first);
   });
 });

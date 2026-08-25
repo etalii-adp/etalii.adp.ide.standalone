@@ -7,8 +7,10 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
+        // Act.
         var origin = Diagram.Definition.Origin;
 
+        // Assert.
         Assert.Equal("c4", origin.Vendor);
         Assert.Equal("code", origin.Type);
         Assert.Equal("", origin.Subtype);
@@ -17,6 +19,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Title_MatchesTheCatalogedDiagramName()
     {
+        // Arrange, act and assert.
         Assert.Equal(
             "Code (optional)",
             Diagram.Definition.Title);
@@ -25,6 +28,7 @@ public class DiagramTests
     [Fact]
     public void Definition_ClaimsNoExtension_UnlikeItsSixSiblings()
     {
+        // Arrange, act and assert.
         // The other C4 types keep their model in a Structurizr DSL document; the code level
         // does not, because the DSL declares no code view and C4 specifies UML class or ER
         // notation for it. Claiming .dsl also made this - the one C4 type that cannot open

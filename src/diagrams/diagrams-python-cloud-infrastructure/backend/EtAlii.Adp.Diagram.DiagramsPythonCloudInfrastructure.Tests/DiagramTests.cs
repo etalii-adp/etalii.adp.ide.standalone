@@ -7,8 +7,10 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
+        // Act.
         var origin = Diagram.Definition.Origin;
 
+        // Assert.
         Assert.Equal("diagrams-python", origin.Vendor);
         Assert.Equal("cloud-infrastructure", origin.Type);
         Assert.Equal("", origin.Subtype);
@@ -17,6 +19,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Title_MatchesTheCatalogedDiagramName()
     {
+        // Arrange, act and assert.
         Assert.Equal(
             "Cloud/infrastructure diagram with official-style vendor icons",
             Diagram.Definition.Title);

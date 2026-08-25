@@ -43,14 +43,14 @@ public sealed class ContextSelectionResolver
         {
             if (levels.Count >= MaxDepth)
             {
-                return new ChainResolution.Rejected(GenericRejection);
+                return new RejectedChain(GenericRejection);
             }
 
             var resolution = await ResolveLevelAsync(
                 watchId, rootPath, current.Source, current.Id, current.Path?.Segments ?? [], parent, cancellationToken);
-            if (resolution is not ContextLevelResolution.Resolved resolved)
+            if (resolution is not ResolvedContextLevel resolved)
             {
-                return new ChainResolution.Rejected(((ContextLevelResolution.Rejected)resolution).Reason);
+                return new RejectedChain(((RejectedContextLevel)resolution).Reason);
             }
 
             var level = resolved.Level;
@@ -66,7 +66,7 @@ public sealed class ContextSelectionResolver
                 case ContextSelection.DetailOneofCase.Child:
                     if (level.Resolver.NestingOf(level) == ContextNesting.NotNestable)
                     {
-                        return new ChainResolution.Rejected(GenericRejection);
+                        return new RejectedChain(GenericRejection);
                     }
 
                     acceptedCursor.Child = new ContextSelection();
@@ -90,7 +90,7 @@ public sealed class ContextSelectionResolver
             break;
         }
 
-        return new ChainResolution.Resolved(new ContextSelectionRecord(acceptedChain, levels, [], action, []));
+        return new ResolvedChain(new ContextSelectionRecord(acceptedChain, levels, [], action, []));
     }
 
     /// <summary>
@@ -108,7 +108,7 @@ public sealed class ContextSelectionResolver
     {
         if (id is null || id.SourceCase == ContextSource.SourceOneofCase.None)
         {
-            return ValueTask.FromResult<ContextLevelResolution>(new ContextLevelResolution.Rejected(GenericRejection));
+            return ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(GenericRejection));
         }
 
         var resolver = _resolvers.FirstOrDefault(r => r.CanResolve(id));
@@ -116,7 +116,7 @@ public sealed class ContextSelectionResolver
         {
             // No resolver means no way to verify anything about this level; recording
             // it on trust is exactly what the seam exists to prevent.
-            return ValueTask.FromResult<ContextLevelResolution>(new ContextLevelResolution.Rejected(GenericRejection));
+            return ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(GenericRejection));
         }
 
         return ResolveThroughAsync(resolver, watchId, rootPath, source, id, clientPath, parent, cancellationToken);
@@ -135,8 +135,8 @@ public sealed class ContextSelectionResolver
         var resolution = await resolver.ResolveAsync(watchId, rootPath, source, id, clientPath, parent, cancellationToken);
 
         // A resolver may word its own reason for logging; the caller only ever sees the generic one.
-        return resolution is ContextLevelResolution.Rejected
-            ? new ContextLevelResolution.Rejected(GenericRejection)
+        return resolution is RejectedContextLevel
+            ? new RejectedContextLevel(GenericRejection)
             : resolution;
     }
 }

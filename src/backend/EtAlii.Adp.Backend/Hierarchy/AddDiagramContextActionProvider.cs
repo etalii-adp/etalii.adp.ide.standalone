@@ -82,15 +82,15 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
     {
         if (actionId != AddActionId)
         {
-            return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionResult.Failed($"Unknown action '{actionId}'."));
+            return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionFailed($"Unknown action '{actionId}'."));
         }
 
         if (!target.IsContainer || !HierarchyTargets.Exists(target))
         {
-            return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionResult.Failed("The folder no longer exists."));
+            return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionFailed("The folder no longer exists."));
         }
 
-        return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionResult.RequiresChoice(
+        return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionRequiresChoice(
             new ContextChoiceRequest(
                 Title: "Add diagram",
                 Icon: "mdi-plus",

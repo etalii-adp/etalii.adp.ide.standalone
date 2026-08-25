@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("mermaid", "gantt"),
-        "Gantt chart");
+        "Gantt chart",
+        "Tasks over time, with dependencies and milestones, in Mermaid's Gantt syntax.");
 }

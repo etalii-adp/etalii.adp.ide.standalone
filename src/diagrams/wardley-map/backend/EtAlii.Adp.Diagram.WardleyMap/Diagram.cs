@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("wardley", "map"),
-        "Wardley Map");
+        "Wardley Map",
+        "A value chain positioned against evolution, so a strategy can be argued about rather than asserted.");
 }

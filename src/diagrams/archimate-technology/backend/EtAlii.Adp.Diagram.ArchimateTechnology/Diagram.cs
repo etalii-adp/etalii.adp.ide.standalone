@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("archimate", "technology"),
-        "ArchiMate — Technology layer");
+        "ArchiMate — Technology layer",
+        "The nodes, devices and system software applications actually run on.");
 }

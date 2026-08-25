@@ -44,12 +44,14 @@ describe("useMindmapStream failure policy", () => {
   });
 
   it("stops for good on a permanent answer, reporting failed", async () => {
+    // Arrange.
     // FailedPrecondition is the backend's "this diagram cannot be opened": deleted, moved,
     // or unroutable. Retrying would spin forever behind the tab (Requirement 5.1).
     open.mockImplementation(() => failingStream(new ConnectError("cannot be opened", Code.FailedPrecondition)));
 
     const { result } = renderHook(() => useMindmapStream(projectId, ["docs", "gone.adp"]));
 
+    // Act and assert, step by step.
     await waitFor(() => expect(result.current.failed).toBe(true));
     expect(result.current.loading).toBe(false);
 
@@ -59,10 +61,13 @@ describe("useMindmapStream failure policy", () => {
   }, 10000);
 
   it("keeps reconnecting on a transient error, never reporting failed", async () => {
+    // Arrange.
     open.mockImplementation(() => failingStream(new ConnectError("backend restarting", Code.Unavailable)));
 
+    // Act.
     const { result } = renderHook(() => useMindmapStream(projectId, ["docs", "map.adp"]));
 
+    // Assert.
     await waitFor(() => expect(open.mock.calls.length).toBeGreaterThanOrEqual(2), { timeout: 5000 });
     expect(result.current.failed).toBe(false);
   }, 10000);

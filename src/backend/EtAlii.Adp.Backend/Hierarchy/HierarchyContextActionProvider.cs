@@ -65,19 +65,19 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
         if (!Exists(target))
         {
             return ValueTask.FromResult<ContextExecutionResult>(
-                new ContextExecutionResult.Failed("This item no longer exists."));
+                new ContextExecutionFailed("This item no longer exists."));
         }
 
         if (HierarchyTargets.IsRoot(target))
         {
-            return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionResult.Failed(RootUntouchable));
+            return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionFailed(RootUntouchable));
         }
 
         var name = IoPath.GetFileName(target.ResolvedFullPath);
 
         return ValueTask.FromResult<ContextExecutionResult>(actionId switch
         {
-            RenameActionId => new ContextExecutionResult.RequiresInput(
+            RenameActionId => new ContextExecutionRequiresInput(
                 new ContextInputRequest(
                     Title: target.IsContainer ? "Rename folder" : "Rename file",
                     Icon: "mdi-pencil-outline",
@@ -85,7 +85,7 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
                     InitialValue: name,
                     ConfirmLabel: "Rename")),
 
-            DeleteActionId => new ContextExecutionResult.RequiresConfirmation(
+            DeleteActionId => new ContextExecutionRequiresConfirmation(
                 new ContextConfirmationRequest(
                     Title: target.IsContainer ? "Delete folder?" : "Delete file?",
                     Icon: "mdi-trash-can-outline",
@@ -93,7 +93,7 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
                     ConfirmLabel: "Delete",
                     Danger: true)),
 
-            _ => new ContextExecutionResult.Failed($"Unknown action '{actionId}'."),
+            _ => new ContextExecutionFailed($"Unknown action '{actionId}'."),
         });
     }
 

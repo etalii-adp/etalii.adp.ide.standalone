@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("uml", "communication"),
-        "Communication diagram");
+        "Communication diagram",
+        "The same collaboration as a sequence diagram, arranged by who talks to whom rather than by time.");
 }

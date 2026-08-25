@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("uml", "deployment"),
-        "Deployment diagram");
+        "Deployment diagram",
+        "Artifacts placed on nodes: what is installed where, and over which links.");
 }

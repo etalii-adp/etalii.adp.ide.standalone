@@ -22,21 +22,6 @@ public static class DiagramFilePair
     private const int HeaderScanLimit = 8;
 
     /// <summary>
-    /// The body document a registration opens, and whether the registration owns it.
-    /// <para>
-    /// Ownership is the whole point of the distinction. A derived sibling belongs to its one
-    /// <c>.adp</c>, so deleting or renaming the registration takes the body with it. A body
-    /// named by a <c>body:</c> header may be shared by several registrations - which is how
-    /// C4's "model once, view many" works - so deleting one view must leave the model alone
-    /// (c4-diagrams Requirement 2.4).
-    /// </para>
-    /// </summary>
-    /// <param name="Path">The body document's full path, whether or not it exists on disk.</param>
-    /// <param name="ViewKey">The view within it this registration opens, or null when it names none.</param>
-    /// <param name="IsOwned">Whether the registration owns the body and may take it along on delete and rename.</param>
-    public readonly record struct DiagramBody(string Path, string? ViewKey, bool IsOwned);
-
-    /// <summary>
     /// The body <paramref name="adpPath"/> **owns** - the sibling derived from its own name -
     /// or null when the file is not a registration file, cannot be read, names an unknown type,
     /// names a type that keeps no sibling, **or names a body it does not own**.
@@ -65,7 +50,7 @@ public static class DiagramFilePair
     /// The project folder a <c>body:</c> header is resolved against and must stay inside. Null
     /// means "no header may be followed": the caller only wants the owned sibling.
     /// </param>
-    public static DiagramBody? BodyOf(string adpPath, IDiagramDefinitionCatalog catalog, string? projectRoot)
+    public static DiagramBodyFile? BodyOf(string adpPath, IDiagramDefinitionCatalog catalog, string? projectRoot)
     {
         ArgumentNullException.ThrowIfNull(catalog);
 
@@ -80,7 +65,7 @@ public static class DiagramFilePair
             // No header: the body is the sibling of this file's own name, exactly as every
             // type has always behaved. A view key without a body still applies - one
             // registration beside its own document may still name a view within it.
-            return new DiagramBody(SiblingPathFor(adpPath, definition.Extension), view, IsOwned: true);
+            return new DiagramBodyFile(SiblingPathFor(adpPath, definition.Extension), view, IsOwned: true);
         }
 
         if (projectRoot is null)
@@ -88,11 +73,11 @@ public static class DiagramFilePair
             // The caller is asking about ownership only - a named body is never owned - and
             // resolving the path would need the project root it did not supply. Path is empty
             // rather than wrong; nothing reads it when IsOwned is false.
-            return new DiagramBody(Path: string.Empty, view, IsOwned: false);
+            return new DiagramBodyFile(Path: string.Empty, view, IsOwned: false);
         }
 
         var resolved = ResolveWithin(projectRoot, body);
-        return resolved is null ? null : new DiagramBody(resolved, view, IsOwned: false);
+        return resolved is null ? null : new DiagramBodyFile(resolved, view, IsOwned: false);
     }
 
     /// <summary>

@@ -86,6 +86,7 @@ public class LoginProjectSelectionFlowTests : IClassFixture<WebApplicationFactor
     [Fact]
     public async Task FullFlow_LoginThenAddSelectRemove_Works()
     {
+        // Arrange.
         using var channel = CreateChannel();
         var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
         var projectClient = new ProjectService.ProjectServiceClient(channel);
@@ -93,6 +94,7 @@ public class LoginProjectSelectionFlowTests : IClassFixture<WebApplicationFactor
         var token = await LoginAsDeveloperAsync(authClient);
         var headers = new Metadata { { SessionTokenHeader, token } };
 
+        // Act and assert, step by step.
         var emptyList = await projectClient.ListProjectsAsync(new ListProjectsRequest(), headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Empty(emptyList.Projects);
 
@@ -116,6 +118,7 @@ public class LoginProjectSelectionFlowTests : IClassFixture<WebApplicationFactor
     [Fact]
     public async Task Session_PersistsAcrossAuthenticationAndProjectService_AndIsRejectedAfterLogout()
     {
+        // Arrange.
         using var channel = CreateChannel();
         var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
         var projectClient = new ProjectService.ProjectServiceClient(channel);
@@ -129,6 +132,7 @@ public class LoginProjectSelectionFlowTests : IClassFixture<WebApplicationFactor
 
         await authClient.LogoutAsync(new LogoutRequest { Session = new SessionToken { Value = token } }, headers, cancellationToken: TestContext.Current.CancellationToken);
 
+        // Act and assert, step by step.
         var exception = await Assert.ThrowsAsync<RpcException>(
             () => projectClient.ListProjectsAsync(new ListProjectsRequest(), headers, cancellationToken: TestContext.Current.CancellationToken).ResponseAsync);
         Assert.Equal(StatusCode.Unauthenticated, exception.StatusCode);
@@ -137,15 +141,18 @@ public class LoginProjectSelectionFlowTests : IClassFixture<WebApplicationFactor
     [Fact]
     public async Task InvalidCredentials_AreRejectedWithoutIssuingASession()
     {
+        // Arrange.
         using var channel = CreateChannel();
         var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
 
+        // Act.
         var response = await authClient.LoginAsync(new LoginRequest
         {
             Username = DeveloperUsername,
             Credential = "not-the-right-credential",
         }, cancellationToken: TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Equal(LoginResponse.ResultOneofCase.Error, response.ResultCase);
     }
 }

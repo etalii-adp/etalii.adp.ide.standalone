@@ -38,7 +38,7 @@ public sealed class MindmapElementMapper
     /// the whole tree and deliver the entire map, which is what the viewport exists to avoid.
     /// </para>
     /// </summary>
-    public IReadOnlyList<DiagramElement> Visible(MindmapDocument document, MindmapViewState.ConnectionView view, DiagramViewport viewport)
+    public IReadOnlyList<DiagramElement> Visible(MindmapDocument document, MindmapConnectionView view, DiagramViewport viewport)
     {
         var layout = MindmapLayout.Compute(document.Root, _metrics, view.IsFolded);
         // Only nodes the layout placed exist at all: a folded branch's descendants have no box,
@@ -70,7 +70,7 @@ public sealed class MindmapElementMapper
     }
 
     /// <summary>The layout for a document and a view - shared with the session, which needs positions for a group's parent.</summary>
-    public IReadOnlyDictionary<string, MindmapBox> Layout(MindmapDocument document, MindmapViewState.ConnectionView view) =>
+    public IReadOnlyDictionary<string, MindmapBox> Layout(MindmapDocument document, MindmapConnectionView view) =>
         MindmapLayout.Compute(document.Root, _metrics, view.IsFolded);
 
     /// <summary>One node as an element at a known box.</summary>

@@ -5,7 +5,8 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("c4", "code"),
-        "Code (optional)");
+        "Code (optional)",
+        "The classes and their relations inside one component, at the level source code is written.");
 
     // Deliberately no extension, unlike its six siblings. The other C4 types keep their
     // model in a Structurizr DSL document; the code level does not, because the DSL declares

@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("uml", "composite-structure"),
-        "Composite structure diagram");
+        "Composite structure diagram",
+        "What one class is made of internally: its parts, ports and connectors.");
 }

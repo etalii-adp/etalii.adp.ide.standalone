@@ -32,81 +32,40 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Services(services)
     .Enrich.FromLogContext());
 
-var localAuthenticationOptionsSection = builder.Configuration.GetSection(LocalAuthenticatorOptions.SectionName);
-builder.Services.Configure<LocalAuthenticatorOptions>(localAuthenticationOptionsSection);
-builder.Services.AddSingleton<IAuthenticator, LocalAuthenticator>();
-builder.Services.AddSingleton<ISessionStore, InMemorySessionStore>();
-builder.Services.AddSingleton<IProjectStore>(_ => new FileProjectStore(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)));
-builder.Services.AddSingleton<IHierarchyModelStore, HierarchyModelStore>();
-builder.Services.AddSingleton<IContextInteractionStore, ContextInteractionStore>();
-builder.Services.AddSingleton<IContextActionResolver, ContextActionResolver>();
-// Registered through IContextActionProvider so the resolver picks it up from
-// IEnumerable<IContextActionProvider> - a later module contributing its own actions
-// (and their shortcuts) is one more line here and no change anywhere else.
-builder.Services.AddSingleton<IContextActionProvider, HierarchyContextActionProvider>();
-// Built by hand: the provider's other constructor takes the diagram definitions a test hands
-// it, and letting the container choose between the two would leave which one it picks to
-// depend on what else happens to be registered.
-builder.Services.AddSingleton<IContextActionProvider>(services =>
-    new AddDiagramContextActionProvider(
-        services.GetRequiredService<IHistoryStackStore>(),
-        services.GetRequiredService<DiagramDocumentFactories>()));
+// Every area registers itself through one extension method of its own, so this file names
+// what the host is made of rather than listing how each part is wired. A new area is one
+// more line here and a ServiceCollection.Add<Area>.cs beside the code it registers.
+var appDataRoot = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
-// Every IDiagramDocumentFactory a module registers, looked up by origin by the create-file
-// command. A module that keeps its body in a sibling file is one registration line here.
-builder.Services.AddSingleton<DiagramDocumentFactories>();
-// Which type a file on disk belongs to - by its .adp first line, or by a declared extension
-// for a body dropped in without one. The catalog it reads is registered by AddCommands.
-builder.Services.AddSingleton<DiagramFileRouter>();
-
-// The core diagram stream: resolves a diagram's type from its .adp file and hands it to the
-// module's session. Type-agnostic; a module registers an IDiagramSessionFactory to be openable.
-builder.Services.AddSingleton<DiagramSessionFactories>();
-builder.Services.AddSingleton<IDiagramViewportRegistry, DiagramViewportRegistry>();
-
-builder.Services.AddSingleton<IContextSelectionStore, ContextSelectionStore>();
-builder.Services.AddSingleton<ContextSelectionResolver>();
-// Registered through IContextSourceResolver for the same reason as the provider above:
-// a later module that makes a new kind of thing selectable (a diagram element, a
-// location in a file) is one more line here and no change anywhere else.
-builder.Services.AddSingleton<IContextSourceResolver, HierarchyContextSourceResolver>();
+// Who is calling: the authenticator, its options, and the store a login lands in.
+builder.Services.AddSessions(builder.Configuration);
+// Which folders a user has opened.
+builder.Services.AddProjects(appDataRoot);
+// The per-connection selection and interaction stores, and the resolvers over them.
+builder.Services.AddContext();
+// The project's folders and files, the file-to-type router, and the hierarchy's own
+// context seams - including the Add action that creates a new diagram.
+builder.Services.AddHierarchy();
+// The type-agnostic half of diagramming: document factories, session factories, viewports.
+builder.Services.AddDiagrams();
 
 // The dispatcher, the history and every command handler. Every state change the context
 // actions above make travels through here, which is what makes it undoable.
 builder.Services.AddCommands();
+// Undo and redo offered to a user, and the broadcaster that pushes their availability.
+builder.Services.AddHistoryActions();
 
 // The Problems area: validation, the per-project problem cache, the broadcaster and the
 // startup pass that reconciles the cache after a restart (errors-and-warnings-panel).
-builder.Services.AddProblems(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
+builder.Services.AddProblems(appDataRoot);
 
-// Undo and redo, offered as project-scope context actions, and the broadcaster that pushes
-// their availability whenever a project's history changes (diagram-undo-redo).
-builder.Services.AddSingleton<IContextActionProvider, HistoryContextActionProvider>();
-builder.Services.AddSingleton<HistoryActionsBroadcaster>();
-
-// The mindmap module: its commands and document store, its document factory, the resolver
-// that makes a node selectable and the provider that offers what can be done to one. Four
-// seams, one line each, and nothing in core names the module (mindmap-diagram Requirement 13).
-builder.Services.AddMindmapCommands();
-builder.Services.AddSingleton<MindmapViewState>();
-builder.Services.AddSingleton<IDiagramDocumentFactory, MindmapDocumentFactory>();
-builder.Services.AddSingleton<IContextSourceResolver, MindmapContextSourceResolver>();
-builder.Services.AddSingleton<IContextActionProvider, MindmapContextActionProvider>();
-builder.Services.AddSingleton<IDiagramToolboxProvider, MindmapToolboxProvider>();
-
-// The C4 family: seven diagram types over one shared engine, so one line registers all of
-// them. They differ only in the view each binds, which is data rather than code
-// (c4-diagrams Requirement 1).
+// The diagram modules. Each contributes its own seams and core names none of them back:
+// everything resolves by DiagramOrigin (mindmap-diagram Requirement 13).
+builder.Services.AddMindmap(builder.Configuration);
+// Seven C4 types over one shared engine, differing only in the view each binds.
 builder.Services.AddC4();
-// The module's layout numbers, with what appsettings.json's Mindmap section says applied -
-// the minimum gap between elements as a fraction of a node's width, above all.
-var mindmapOptions = builder.Configuration.GetSection(MindmapOptions.SectionName).Get<MindmapOptions>() ?? new MindmapOptions();
-builder.Services.AddSingleton<MindmapElementMapper>(_ => new MindmapElementMapper(mindmapOptions.ToMetrics()));
-builder.Services.AddSingleton<IDiagramSessionFactory, MindmapSessionFactory>();
 
-var clientAppOptionsSection = builder.Configuration.GetSection(ClientAppOptions.SectionName);
-builder.Services.Configure<ClientAppOptions>(clientAppOptionsSection);
-builder.Services.AddClientAppHosting();
+builder.Services.AddClientAppHosting(builder.Configuration);
 
 builder.Services.AddGrpc(options =>
 {

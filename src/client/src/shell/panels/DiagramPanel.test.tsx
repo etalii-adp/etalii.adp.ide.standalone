@@ -22,14 +22,18 @@ function diagram(mimeType: string): OpenDiagram {
 
 describe("DiagramPanel", () => {
   it("routes a mindmap to its canvas", () => {
+    // Act.
     render(<DiagramPanel diagram={diagram("freeplane/mindmap")} />);
 
+    // Assert.
     expect(screen.getByTestId("mindmap-canvas")).toBeTruthy();
   });
 
   it("names the type it has no canvas for, rather than showing a blank surface", async () => {
+    // Act.
     render(<DiagramPanel diagram={diagram("vendor/unheard-of")} />);
 
+    // Assert.
     expect(await screen.findByText("No canvas can render vendor/unheard-of diagrams yet.")).toBeTruthy();
     expect(await screen.findByText("architecture.adp")).toBeTruthy();
   });
@@ -49,17 +53,21 @@ describe("DiagramPanel", () => {
   });
 
   it("sends c4/code to its own notice rather than the C4 canvas", async () => {
+    // Act.
     // C4 specifies UML class or ER notation for the code level and advises generating it
     // rather than drawing it, so this type waits on a class diagram type.
     render(<DiagramPanel diagram={diagram("c4/code")} />);
 
+    // Assert.
     expect(screen.queryByTestId("c4-canvas")).toBeNull();
     expect(await screen.findByText(/UML class or entity-relationship notation/)).toBeTruthy();
   });
 
   it("keeps the generic fallback for no diagram at all", async () => {
+    // Act.
     render(<DiagramPanel />);
 
+    // Assert.
     expect(await screen.findByText("The diagram canvas for viewing and editing.")).toBeTruthy();
   });
 });

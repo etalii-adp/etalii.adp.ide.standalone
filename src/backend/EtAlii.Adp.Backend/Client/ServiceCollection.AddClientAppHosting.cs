@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -6,8 +7,17 @@ namespace EtAlii.Adp.Backend.Client;
 
 public static class ServiceCollectionAddClientAppHostingExtensions
 {
-    public static IServiceCollection AddClientAppHosting(this IServiceCollection services)
+    /// <summary>
+    /// Registers how the client app is served: its options, and the HTTP client the dev-server
+    /// proxy uses. The options binding lives here rather than in the host, so the area is
+    /// registered by one call like every other.
+    /// </summary>
+    public static IServiceCollection AddClientAppHosting(this IServiceCollection services, IConfiguration configuration)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        services.Configure<ClientAppOptions>(configuration.GetSection(ClientAppOptions.SectionName));
         services.AddHttpClient(ClientDevServerProxy.HttpClientName);
         return services;
     }

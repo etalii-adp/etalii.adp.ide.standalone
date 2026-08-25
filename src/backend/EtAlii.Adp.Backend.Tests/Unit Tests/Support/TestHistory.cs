@@ -41,12 +41,8 @@ internal static class TestHistory
     /// does not gets an empty catalog rather than the process-wide cache.
     /// </summary>
     private static ServiceProvider Services(DiagramDefinition[] definitions) => new ServiceCollection()
-        .AddSingleton<IDiagramDefinitionCatalog>(new TestCatalog(definitions))
+        .AddSingleton<IDiagramDefinitionCatalog>(new TestDiagramDefinitionCatalog(definitions))
         .AddCommands()
         .BuildServiceProvider();
 
-    private sealed class TestCatalog(IReadOnlyList<DiagramDefinition> definitions) : IDiagramDefinitionCatalog
-    {
-        public IReadOnlyList<DiagramDefinition> All { get; } = definitions;
-    }
 }

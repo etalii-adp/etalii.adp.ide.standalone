@@ -47,10 +47,13 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_RenamesAFile()
     {
+        // Arrange.
         var path = CreateFile("old.txt");
 
+        // Act.
         var result = await Rename(path, "new.txt");
 
+        // Assert.
         Assert.True(result.IsSuccess);
         Assert.False(File.Exists(path));
         Assert.True(File.Exists(IoPath.Combine(_root, "new.txt")));
@@ -60,10 +63,13 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_RenamesAFolder()
     {
+        // Arrange.
         var path = CreateFolder("old-folder");
 
+        // Act.
         var result = await Rename(path, "new-folder");
 
+        // Assert.
         Assert.True(result.IsSuccess);
         Assert.False(Directory.Exists(path));
         Assert.True(Directory.Exists(IoPath.Combine(_root, "new-folder")));
@@ -72,12 +78,14 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_RenamingAFolder_KeepsItsContents()
     {
+        // Arrange.
         var folder = CreateFolder("old-folder");
         Directory.CreateDirectory(IoPath.Combine(folder, "nested"));
         File.WriteAllText(IoPath.Combine(folder, "nested", "child.txt"), "child");
 
         await Rename(folder, "new-folder");
 
+        // Act and assert, step by step.
         var moved = IoPath.Combine(_root, "new-folder", "nested", "child.txt");
         Assert.True(File.Exists(moved));
         Assert.Equal("child", File.ReadAllText(moved));
@@ -86,10 +94,12 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_ReportsAnInverseThatNamesTheNewPathAndTheOldName()
     {
+        // Arrange.
         var path = CreateFile("old.txt");
 
         var result = await Rename(path, "new.txt");
 
+        // Act and assert, step by step.
         var inverse = Assert.IsType<RenameEntryCommand>(result.Inverse);
         Assert.Equal(IoPath.Combine(_root, "new.txt"), inverse.FullPath);
         Assert.Equal("old.txt", inverse.NewName);
@@ -98,11 +108,14 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_TheReportedInverse_PutsTheFileBack()
     {
+        // Arrange.
         var path = CreateFile("old.txt");
         var result = await Rename(path, "new.txt");
 
+        // Act.
         var undone = await _handler.ExecuteAsync((RenameEntryCommand)result.Inverse!, TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(undone.IsSuccess);
         Assert.True(File.Exists(path));
         Assert.False(File.Exists(IoPath.Combine(_root, "new.txt")));
@@ -111,10 +124,12 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_ToleratesATrailingSeparatorOnAFolderPath()
     {
+        // Arrange.
         var folder = CreateFolder("old-folder");
 
         var result = await Rename(folder + IoPath.DirectorySeparatorChar, "new-folder");
 
+        // Act and assert, step by step.
         Assert.True(result.IsSuccess);
         Assert.True(Directory.Exists(IoPath.Combine(_root, "new-folder")));
 
@@ -126,12 +141,15 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_ChangingOnlyCapitalisation_IsAllowed()
     {
+        // Arrange.
         // On a case-insensitive filesystem the target "exists" because it is the source; that
         // must not be mistaken for a name collision.
         var path = CreateFile("readme.txt");
 
+        // Act.
         var result = await Rename(path, "README.TXT");
 
+        // Assert.
         Assert.True(result.IsSuccess);
         Assert.Equal(
             "README.TXT",
@@ -145,10 +163,13 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [InlineData("   ")]
     public async Task ExecuteAsync_WithoutAName_IsRejected(string newName)
     {
+        // Arrange.
         var path = CreateFile("old.txt");
 
+        // Act.
         var result = await Rename(path, newName);
 
+        // Assert.
         Assert.False(result.IsSuccess);
         Assert.Equal("A name is required.", result.Error);
         Assert.True(File.Exists(path));
@@ -159,10 +180,13 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [InlineData("..")]
     public async Task ExecuteAsync_WithADotName_IsRejected(string newName)
     {
+        // Arrange.
         var path = CreateFile("old.txt");
 
+        // Act.
         var result = await Rename(path, newName);
 
+        // Assert.
         Assert.False(result.IsSuccess);
         Assert.True(File.Exists(path));
     }
@@ -174,11 +198,14 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [InlineData("..\\escaped.txt")]
     public async Task ExecuteAsync_WithASeparatorInTheName_IsRejected(string newName)
     {
+        // Arrange.
         // Also the guard against a rename being used to move an entry out of its folder.
         var path = CreateFile("old.txt");
 
+        // Act.
         var result = await Rename(path, newName);
 
+        // Assert.
         Assert.False(result.IsSuccess);
         Assert.Equal("A name cannot contain a path separator.", result.Error);
         Assert.True(File.Exists(path));
@@ -187,10 +214,13 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_WithAnInvalidCharacterInTheName_IsRejected()
     {
+        // Arrange.
         var path = CreateFile("old.txt");
 
+        // Act.
         var result = await Rename(path, "bad\0name.txt");
 
+        // Assert.
         Assert.False(result.IsSuccess);
         Assert.Contains("cannot contain", result.Error, StringComparison.Ordinal);
         Assert.True(File.Exists(path));
@@ -199,10 +229,13 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_WithTheSameNameItAlreadyHas_IsRejected()
     {
+        // Arrange.
         var path = CreateFile("old.txt");
 
+        // Act.
         var result = await Rename(path, "old.txt");
 
+        // Assert.
         Assert.False(result.IsSuccess);
         Assert.Equal("The new name is the same as the current name.", result.Error);
         Assert.True(File.Exists(path));
@@ -213,11 +246,14 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_WhenAFileWithThatNameExists_IsRejectedWithoutOverwriting()
     {
+        // Arrange.
         var path = CreateFile("old.txt", "original");
         CreateFile("taken.txt", "do not clobber");
 
+        // Act.
         var result = await Rename(path, "taken.txt");
 
+        // Assert.
         Assert.False(result.IsSuccess);
         // Matched exactly, not by substring: the OS raises its own "...already exists" IOException
         // if the guard is removed, so a loose match would pass either way and prove nothing.
@@ -229,11 +265,14 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_WhenAFolderWithThatNameExists_IsRejected()
     {
+        // Arrange.
         var path = CreateFile("old.txt");
         CreateFolder("taken");
 
+        // Act.
         var result = await Rename(path, "taken");
 
+        // Assert.
         Assert.False(result.IsSuccess);
         Assert.Equal("'taken' already exists in this folder.", result.Error);
         Assert.True(File.Exists(path));
@@ -244,10 +283,13 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_WhenTheEntryIsGone_IsRejected()
     {
+        // Arrange.
         var missing = IoPath.Combine(_root, "never-existed.txt");
 
+        // Act.
         var result = await Rename(missing, "new.txt");
 
+        // Assert.
         Assert.False(result.IsSuccess);
         Assert.Equal("The entry no longer exists.", result.Error);
     }
@@ -257,8 +299,10 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [InlineData("   ")]
     public async Task ExecuteAsync_WithoutAPath_IsRejected(string fullPath)
     {
+        // Act.
         var result = await Rename(fullPath, "new.txt");
 
+        // Assert.
         Assert.False(result.IsSuccess);
         Assert.Equal("No entry was given to rename.", result.Error);
     }
@@ -266,19 +310,23 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [Fact]
     public async Task ExecuteAsync_WithANullCommand_Throws()
     {
+        // Arrange, act and assert.
         await Assert.ThrowsAsync<ArgumentNullException>(() => _handler.ExecuteAsync(null!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task ExecuteAsync_WithAnAlreadyCancelledToken_Throws()
     {
+        // Arrange.
         var path = CreateFile("old.txt");
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
+        // Act.
         await Assert.ThrowsAsync<OperationCanceledException>(
             () => _handler.ExecuteAsync(new RenameEntryCommand(path, "new.txt"), cts.Token));
 
+        // Assert.
         Assert.True(File.Exists(path));
     }
 
@@ -296,11 +344,13 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [Fact]
     public async Task ThroughTheHistoryStack_ARenameCanBeUndoneAndRedone()
     {
+        // Arrange.
         var (stack, scope) = CreateHistory();
         using var scopeGuard = scope;
         using var stackGuard = stack;
         var path = CreateFile("old.txt");
 
+        // Act and assert, step by step.
         var executed = await stack.ExecuteAsync(new RenameEntryCommand(path, "new.txt"), TestContext.Current.CancellationToken);
         Assert.True(executed.IsSuccess);
         Assert.True(File.Exists(IoPath.Combine(_root, "new.txt")));
@@ -319,11 +369,13 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [Fact]
     public async Task ThroughTheHistoryStack_SeveralRenamesUnwindInReverseOrder()
     {
+        // Arrange.
         var (stack, scope) = CreateHistory();
         using var scopeGuard = scope;
         using var stackGuard = stack;
         CreateFile("first.txt");
 
+        // Act and assert, step by step.
         await stack.ExecuteAsync(new RenameEntryCommand(IoPath.Combine(_root, "first.txt"), "second.txt"), TestContext.Current.CancellationToken);
         await stack.ExecuteAsync(new RenameEntryCommand(IoPath.Combine(_root, "second.txt"), "third.txt"), TestContext.Current.CancellationToken);
         Assert.Equal(2, stack.UndoCount);
@@ -339,14 +391,17 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [Fact]
     public async Task ThroughTheHistoryStack_ARejectedRenameIsNotRecorded()
     {
+        // Arrange.
         var (stack, scope) = CreateHistory();
         using var scopeGuard = scope;
         using var stackGuard = stack;
         var path = CreateFile("old.txt");
         CreateFile("taken.txt");
 
+        // Act.
         var result = await stack.ExecuteAsync(new RenameEntryCommand(path, "taken.txt"), TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.False(result.IsSuccess);
         Assert.False(stack.CanUndo);
     }
@@ -354,6 +409,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
     [Fact]
     public async Task ThroughTheHistoryStack_UndoFailsWhenTheEntryWasRenamedBehindOurBack()
     {
+        // Arrange.
         // The undo has to re-validate: by the time it runs, the world may have moved on.
         var (stack, scope) = CreateHistory();
         using var scopeGuard = scope;
@@ -361,10 +417,13 @@ public class RenameEntryCommandHandlerTests : IDisposable
         var path = CreateFile("old.txt");
         await stack.ExecuteAsync(new RenameEntryCommand(path, "new.txt"), TestContext.Current.CancellationToken);
 
+        // Arrange, continued.
         File.Move(IoPath.Combine(_root, "new.txt"), IoPath.Combine(_root, "moved-by-someone-else.txt"));
 
+        // Act.
         var undone = await stack.UndoAsync(TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.False(undone.IsSuccess);
         Assert.Equal("The entry no longer exists.", undone.Error);
         Assert.True(stack.CanUndo);

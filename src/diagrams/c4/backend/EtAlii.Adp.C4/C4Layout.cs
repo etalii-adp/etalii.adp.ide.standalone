@@ -39,7 +39,7 @@ public static class C4LayoutEngine
         C4Workspace workspace,
         C4View view,
         C4Metrics metrics,
-        IReadOnlyDictionary<string, C4LayoutSidecar.Position>? authored = null)
+        IReadOnlyDictionary<string, C4SidecarPosition>? authored = null)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(view);

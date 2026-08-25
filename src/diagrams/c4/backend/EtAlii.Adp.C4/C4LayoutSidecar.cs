@@ -29,9 +29,6 @@ public sealed class C4LayoutSidecar
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    /// <summary>One element's authored position, in canvas units.</summary>
-    public sealed record Position(double X, double Y);
-
     /// <summary>The sidecar beside <paramref name="bodyPath"/> - the same base name, `.layout.json`.</summary>
     public static string PathFor(string bodyPath)
     {
@@ -46,31 +43,31 @@ public sealed class C4LayoutSidecar
     /// The authored positions for <paramref name="viewKey"/>, or none. Anything that cannot be
     /// read yields none rather than throwing.
     /// </summary>
-    public IReadOnlyDictionary<string, Position> Read(string bodyPath, string viewKey)
+    public IReadOnlyDictionary<string, C4SidecarPosition> Read(string bodyPath, string viewKey)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(viewKey);
 
         var all = ReadAll(bodyPath);
-        return all.TryGetValue(viewKey, out var positions) ? positions : new Dictionary<string, Position>(StringComparer.OrdinalIgnoreCase);
+        return all.TryGetValue(viewKey, out var positions) ? positions : new Dictionary<string, C4SidecarPosition>(StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>Records one element's position on one view, leaving every other view's alone.</summary>
-    public void Write(string bodyPath, string viewKey, string elementId, Position position)
+    public void Write(string bodyPath, string viewKey, string elementId, C4SidecarPosition position)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(viewKey);
         ArgumentException.ThrowIfNullOrWhiteSpace(elementId);
         ArgumentNullException.ThrowIfNull(position);
 
-        var all = new Dictionary<string, Dictionary<string, Position>>(ReadAll(bodyPath).ToDictionary(
+        var all = new Dictionary<string, Dictionary<string, C4SidecarPosition>>(ReadAll(bodyPath).ToDictionary(
             pair => pair.Key,
-            pair => new Dictionary<string, Position>(pair.Value, StringComparer.OrdinalIgnoreCase),
+            pair => new Dictionary<string, C4SidecarPosition>(pair.Value, StringComparer.OrdinalIgnoreCase),
             StringComparer.OrdinalIgnoreCase), StringComparer.OrdinalIgnoreCase);
 
         if (!all.TryGetValue(viewKey, out var view))
         {
-            view = new Dictionary<string, Position>(StringComparer.OrdinalIgnoreCase);
+            view = new Dictionary<string, C4SidecarPosition>(StringComparer.OrdinalIgnoreCase);
             all[viewKey] = view;
         }
 
@@ -140,9 +137,9 @@ public sealed class C4LayoutSidecar
         }
     }
 
-    private static Dictionary<string, IReadOnlyDictionary<string, Position>> ReadAll(string bodyPath)
+    private static Dictionary<string, IReadOnlyDictionary<string, C4SidecarPosition>> ReadAll(string bodyPath)
     {
-        var empty = new Dictionary<string, IReadOnlyDictionary<string, Position>>(StringComparer.OrdinalIgnoreCase);
+        var empty = new Dictionary<string, IReadOnlyDictionary<string, C4SidecarPosition>>(StringComparer.OrdinalIgnoreCase);
         var path = PathFor(bodyPath);
         if (!File.Exists(path))
         {
@@ -151,7 +148,7 @@ public sealed class C4LayoutSidecar
 
         try
         {
-            var parsed = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, Position>>>(File.ReadAllText(path), Options);
+            var parsed = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, C4SidecarPosition>>>(File.ReadAllText(path), Options);
             if (parsed is null)
             {
                 return empty;
@@ -159,7 +156,7 @@ public sealed class C4LayoutSidecar
 
             return parsed.ToDictionary(
                 pair => pair.Key,
-                pair => (IReadOnlyDictionary<string, Position>)new Dictionary<string, Position>(pair.Value, StringComparer.OrdinalIgnoreCase),
+                pair => (IReadOnlyDictionary<string, C4SidecarPosition>)new Dictionary<string, C4SidecarPosition>(pair.Value, StringComparer.OrdinalIgnoreCase),
                 StringComparer.OrdinalIgnoreCase);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)

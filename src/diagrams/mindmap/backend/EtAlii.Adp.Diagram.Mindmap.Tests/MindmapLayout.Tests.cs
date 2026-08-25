@@ -17,11 +17,14 @@ public class MindmapLayoutTests
     [Fact]
     public void Compute_IsDeterministic()
     {
+        // Arrange.
         var document = Corpus();
 
+        // Act.
         var first = Layout(document);
         var second = Layout(document);
 
+        // Assert.
         Assert.Equal(first.Count, second.Count);
         Assert.All(first, entry => Assert.Equal(entry.Value, second[entry.Key]));
     }
@@ -29,9 +32,11 @@ public class MindmapLayoutTests
     [Fact]
     public void Compute_CentresTheRootOnTheOrigin()
     {
+        // Arrange and act.
         var boxes = Layout(Corpus());
         var root = boxes[Corpus().Root.Id];
 
+        // Assert.
         Assert.Equal(0, root.CenterX, 3);
         Assert.Equal(0, root.CenterY, 3);
     }
@@ -39,20 +44,26 @@ public class MindmapLayoutTests
     [Fact]
     public void Compute_PlacesEveryVisibleNode_AndNoOthers()
     {
+        // Arrange.
         var document = Corpus();
 
+        // Act.
         var boxes = Layout(document);
 
+        // Assert.
         Assert.Equal(document.Nodes.Count(), boxes.Count);
     }
 
     [Fact]
     public void Compute_HonoursFreeplanesPositionAttribute()
     {
+        // Arrange.
         var document = Corpus();
 
+        // Act.
         var boxes = Layout(document);
 
+        // Assert.
         Assert.True(boxes["ID_411002937"].X > 0, "Backend is POSITION=right");
         Assert.True(boxes["ID_411002941"].Right < 0, "Diagram types is POSITION=left");
     }
@@ -60,12 +71,15 @@ public class MindmapLayoutTests
     [Fact]
     public void Compute_AlternatesSidesForUnpositionedBranches()
     {
+        // Arrange.
         var document = MindmapDocument.Parse(
             "<map version=\"freeplane 1.11.5\"><node TEXT=\"r\" ID=\"r\">" +
             "<node TEXT=\"a\" ID=\"a\"/><node TEXT=\"b\" ID=\"b\"/><node TEXT=\"c\" ID=\"c\"/></node></map>");
 
+        // Act.
         var boxes = Layout(document);
 
+        // Assert.
         Assert.True(boxes["a"].X > 0);
         Assert.True(boxes["b"].Right < 0);
         Assert.True(boxes["c"].X > 0);
@@ -74,10 +88,12 @@ public class MindmapLayoutTests
     [Fact]
     public void Compute_SiblingsDoNotOverlap()
     {
+        // Arrange.
         var document = Corpus();
 
         var boxes = Layout(document);
 
+        // Act and assert, step by step.
         foreach (var node in document.Nodes)
         {
             // The root's children split across two sides; only siblings on one side share a column.
@@ -97,10 +113,12 @@ public class MindmapLayoutTests
     [Fact]
     public void Compute_PutsChildrenBeyondTheirParent_OnTheParentsSide()
     {
+        // Arrange.
         var document = Corpus();
 
         var boxes = Layout(document);
 
+        // Act and assert, step by step.
         var backend = boxes["ID_411002937"];
         foreach (var child in document.Find("ID_411002937")!.Children)
         {
@@ -117,12 +135,15 @@ public class MindmapLayoutTests
     [Fact]
     public void Compute_AFoldedBranch_HidesItsDescendantsAndTakesNoRoomForThem()
     {
+        // Arrange.
         var document = Corpus();
         var hierarchy = document.Find("ID_88117425")!;
 
+        // Act.
         var unfolded = Layout(document);
         var folded = Layout(document, node => node.Id == hierarchy.Id);
 
+        // Assert.
         Assert.True(unfolded.ContainsKey("ID_88117426"));
         Assert.False(folded.ContainsKey("ID_88117426"), "a descendant of a folded node was laid out");
         Assert.True(folded.ContainsKey(hierarchy.Id), "the folded node itself must stay visible");
@@ -133,24 +154,29 @@ public class MindmapLayoutTests
     [Fact]
     public void Compute_ALongerTextWidensTheNode()
     {
+        // Arrange.
         var document = Corpus();
         var node = document.Find("ID_88117422")!;
         var before = Layout(document)[node.Id].Width;
 
+        // Act.
         document.SetText(node, node.Text + " with a considerably longer label");
 
+        // Assert.
         Assert.True(Layout(document)[node.Id].Width > before);
     }
 
     [Fact]
     public void Compute_AnEditInOneBranch_LeavesTheOtherSideWhereItWas()
     {
+        // Arrange.
         // Stability of unaffected subtrees: the left side does not move when the right side grows.
         var document = Corpus();
         var before = Layout(document);
 
         document.AddChild(document.Find("ID_88117422")!, "new");
 
+        // Act and assert, step by step.
         var after = Layout(document);
         foreach (var id in new[] { "ID_411002941", "ID_411002942", "ID_411002945", "ID_411002949" })
         {
@@ -161,12 +187,14 @@ public class MindmapLayoutTests
     [Fact]
     public void Measure_GivesAnEmptyNodeAMinimumWidth()
     {
+        // Arrange, act and assert.
         Assert.Equal(Metrics.MinimumWidth, Metrics.Measure("").Width);
     }
 
     [Fact]
     public void Compute_KeepsAtLeastTheConfiguredShareOfANodesWidthAroundIt()
     {
+        // Arrange.
         // Two long siblings under one parent: the fixed VerticalGap alone would leave them
         // closer than a tenth of their width; the ratio must win (appsettings' Mindmap:MinimumGapRatio).
         var document = MindmapDocument.Parse(
@@ -180,6 +208,7 @@ public class MindmapLayoutTests
 
         var boxes = MindmapLayout.Compute(document.Root, metrics, _ => false);
 
+        // Act and assert, step by step.
         var a = boxes["a"];
         var b = boxes["b"];
         var widest = Math.Max(a.Width, b.Width);
@@ -194,11 +223,13 @@ public class MindmapLayoutTests
     [Fact]
     public void Compute_ChildrenOfOneParent_ShareTheSameHorizontalDistanceFromIt()
     {
+        // Arrange.
         // Their near edges align on one column: on the right side every child's left edge, on
         // the left side every child's right edge, sits the same distance from the parent.
         var document = Corpus();
         var boxes = Layout(document);
 
+        // Arrange, continued.
         foreach (var parent in document.Nodes.Where(node => node.HasChildren && boxes.ContainsKey(node.Id)))
         {
             var childBoxes = parent.Children.Where(child => boxes.ContainsKey(child.Id)).Select(child => boxes[child.Id]).ToArray();
@@ -207,6 +238,7 @@ public class MindmapLayoutTests
                 continue;
             }
 
+        // Arrange, continued.
             // Rounded before comparing: box.Right sums two independently rounded doubles, so
             // equal edges can differ in the last bits of the mantissa.
             var onRight = childBoxes[0].CenterX > boxes[parent.Id].CenterX;
@@ -219,9 +251,11 @@ public class MindmapLayoutTests
                     Assert.Single(side.Select(box => Math.Round(side.Key ? box.X : box.Right, 6)).Distinct());
                 }
 
+        // Act.
                 continue;
             }
 
+        // Assert.
             Assert.Single(nearEdges);
         }
     }
@@ -229,8 +263,10 @@ public class MindmapLayoutTests
     [Fact]
     public void Compute_NoTwoVisibleNodes_Overlap()
     {
+        // Arrange.
         var boxes = Layout(Corpus()).Values.ToArray();
 
+        // Act and assert, step by step.
         for (var i = 0; i < boxes.Length; i++)
         {
             for (var j = i + 1; j < boxes.Length; j++)
@@ -246,6 +282,7 @@ public class MindmapLayoutTests
     [Fact]
     public void Compute_ALargerConfiguredRatio_SpreadsTheSiblingsFurther()
     {
+        // Arrange.
         var document = MindmapDocument.Parse(
             "<map version=\"freeplane 1.11.5\">\n" +
             "<node TEXT=\"r\" ID=\"root\">\n" +
@@ -257,6 +294,7 @@ public class MindmapLayoutTests
         var near = MindmapLayout.Compute(document.Root, MindmapMetrics.Default with { MinimumGapRatio = 0.1 }, _ => false);
         var far = MindmapLayout.Compute(document.Root, MindmapMetrics.Default with { MinimumGapRatio = 0.5 }, _ => false);
 
+        // Act and assert, step by step.
         static double Distance(IReadOnlyDictionary<string, MindmapBox> boxes) => boxes["b"].Y - boxes["a"].Bottom;
         Assert.True(Distance(far) > Distance(near), "a larger ratio must push the siblings further apart");
     }

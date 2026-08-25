@@ -22,6 +22,7 @@ public class BigBankPlcTests
     [Fact]
     public void TheFourStaticLevels_AllParse()
     {
+        // Arrange, act and assert.
         Assert.Equal(C4ElementKind.Person, Workspace.Find("customer")!.Kind);
         Assert.Equal(C4ElementKind.SoftwareSystem, Workspace.Find("internetBankingSystem")!.Kind);
         Assert.Equal(C4ElementKind.Container, Workspace.Find("apiApplication")!.Kind);
@@ -31,6 +32,7 @@ public class BigBankPlcTests
     [Fact]
     public void TheHierarchyIsNested_ThreeLevelsDeep()
     {
+        // Arrange, act and assert.
         Assert.Equal("internetBankingSystem", Workspace.Find("apiApplication")!.ParentId);
         Assert.Equal("apiApplication", Workspace.Find("securityComponent")!.ParentId);
     }
@@ -38,6 +40,7 @@ public class BigBankPlcTests
     [Fact]
     public void ExistingSystemsAreExternal_AndTheSubjectIsNot()
     {
+        // Arrange, act and assert.
         Assert.True(Workspace.Find("mainframeBankingSystem")!.IsExternal);
         Assert.True(Workspace.Find("emailSystem")!.IsExternal);
         Assert.False(Workspace.Find("internetBankingSystem")!.IsExternal);
@@ -46,8 +49,10 @@ public class BigBankPlcTests
     [Fact]
     public void ContainersKeepTheirTechnology_AndTheirTags()
     {
+        // Act.
         var database = Workspace.Find("database")!;
 
+        // Assert.
         Assert.Equal("Oracle Database Schema", database.Technology);
         Assert.Contains("Database", database.Tags);
         Assert.Equal("Cylinder", C4Theme.ShapeOf(database));
@@ -56,12 +61,14 @@ public class BigBankPlcTests
     [Fact]
     public void ADeploymentNodeWithAnInstanceCount_DoesNotMistakeTheCountForATag()
     {
+        // Arrange and act.
         // `deploymentNode <name> [description] [technology] [tags] [instances]` - the count sits
         // after the tags, and reading the two the wrong way round turns "4" into a tag and the
         // tags into nothing. The kind of mistake only a realistic model exposes.
         var webServer = Workspace.Elements.Single(element =>
             element.Kind == C4ElementKind.DeploymentNode && element.Name == "bigbank-web***");
 
+        // Assert.
         Assert.Equal("Ubuntu 16.04 LTS", webServer.Technology);
         Assert.DoesNotContain("4", webServer.Tags);
         Assert.Empty(webServer.Tags);
@@ -70,6 +77,7 @@ public class BigBankPlcTests
     [Fact]
     public void DeploymentNodesNest_AndInstancesResolveToTheirContainers()
     {
+        // Act and assert, step by step.
         var tomcat = Workspace.Elements.First(element =>
             element.Kind == C4ElementKind.DeploymentNode && element.Name == "Apache Tomcat");
         Assert.NotNull(tomcat.ParentId);
@@ -83,6 +91,7 @@ public class BigBankPlcTests
     [Fact]
     public void EveryDeclaredView_IsRead()
     {
+        // Arrange, act and assert.
         Assert.Equal(
             ["SystemLandscape", "SystemContext", "Containers", "Components", "SignIn", "LiveDeployment"],
             Workspace.Views.Select(view => view.Key));
@@ -91,8 +100,10 @@ public class BigBankPlcTests
     [Fact]
     public void TheDynamicView_KeepsItsInteractionsInOrder()
     {
+        // Act.
         var signIn = Workspace.FindView("SignIn")!;
 
+        // Assert.
         Assert.Equal(C4ViewKind.Dynamic, signIn.Kind);
         Assert.Equal(6, signIn.Interactions.Count);
         Assert.Equal("singlePageApplication", signIn.Interactions[0].SourceId);
@@ -103,6 +114,7 @@ public class BigBankPlcTests
     [Fact]
     public void AutoLayoutWithNoDirection_IsStillRead()
     {
+        // Arrange, act and assert.
         // The example writes a bare `autoLayout`, which is legal and means the default direction.
         Assert.NotNull(Workspace.FindView("Containers")!.AutoLayout);
     }
@@ -110,6 +122,7 @@ public class BigBankPlcTests
     [Fact]
     public void TheStylesBlock_IsRead_SoTheDocumentsPaletteWins()
     {
+        // Arrange, act and assert.
         Assert.Contains(Workspace.Styles, style => style.Tag == "Person");
         Assert.Contains(Workspace.Styles, style => style.Tag == "Existing System");
         Assert.Contains(Workspace.Styles, style => style.Tag == "Database");
@@ -118,6 +131,7 @@ public class BigBankPlcTests
     [Fact]
     public void RelationshipsAcrossAllLevels_AreRead()
     {
+        // Arrange, act and assert.
         Assert.Contains(Workspace.Relationships, r => r.SourceId == "customer" && r.DestinationId == "internetBankingSystem");
         Assert.Contains(Workspace.Relationships, r => r.SourceId == "securityComponent" && r.DestinationId == "database" && r.Technology == "SQL/TCP");
         // Declared inside the deployment environment, between two deployment nodes.
@@ -127,6 +141,7 @@ public class BigBankPlcTests
     [Fact]
     public void EveryViewLaysOutWithoutOverlaps()
     {
+        // Act and assert, step by step.
         foreach (var view in Workspace.Views)
         {
             var layout = C4LayoutEngine.Compute(Workspace, view, C4Metrics.Default);
@@ -146,6 +161,7 @@ public class BigBankPlcTests
     [Fact]
     public void TheModelIsClean_ByC4sOwnRules_SaveForOneKnownWarning()
     {
+        // Arrange.
         // The worked example is what C4 holds up as done properly, so anything reported here is
         // either a real gap in the fixture or a rule of ADP's that C4 does not actually have.
         // Three of ADP's rules were found over-reaching this way and were narrowed or removed.
@@ -157,11 +173,12 @@ public class BigBankPlcTests
         // over HTTPS like everything else, so a warning suggesting the document say so is
         // useful. Pinning it exactly means a *new* complaint fails this test.
         var problems = C4RuleSet.Validate(Workspace)
-            .Where(problem => problem.RuleId != C4RuleSet.Rules.EmptyView)
+            .Where(problem => problem.RuleId != C4Rules.EmptyView)
             .ToArray();
 
+        // Act and assert, step by step.
         var problem = Assert.Single(problems);
-        Assert.Equal(C4RuleSet.Rules.MissingProtocol, problem.RuleId);
+        Assert.Equal(C4Rules.MissingProtocol, problem.RuleId);
         Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity);
         Assert.Contains("Web Application", problem.Message, StringComparison.Ordinal);
         Assert.Contains("Single-Page Application", problem.Message, StringComparison.Ordinal);

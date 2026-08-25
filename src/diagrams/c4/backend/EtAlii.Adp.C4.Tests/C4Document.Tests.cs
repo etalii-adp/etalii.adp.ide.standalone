@@ -31,8 +31,10 @@ public class C4DocumentTests
     [MemberData(nameof(Corpus))]
     public void EveryFixture_RoundTripsByteForByte(string name)
     {
+        // Act.
         var text = Read(name);
 
+        // Assert.
         Assert.Equal(text, C4Document.Parse(text).ToText());
     }
 
@@ -40,10 +42,12 @@ public class C4DocumentTests
     [MemberData(nameof(Corpus))]
     public void EveryFixture_KeepsItsOwnLineEndings(string name)
     {
+        // Arrange.
         var text = Read(name);
 
         var document = C4Document.Parse(text);
 
+        // Act and assert, step by step.
         var expected = text.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
         Assert.Equal(expected, document.Newline);
     }
@@ -51,8 +55,10 @@ public class C4DocumentTests
     [Fact]
     public void AFileWithoutATrailingNewline_StillHasNoneAfterARoundTrip()
     {
+        // Act.
         var document = C4Document.Parse(Read("no-trailing-newline.dsl"));
 
+        // Assert.
         Assert.False(document.EndsWithNewline);
         Assert.False(document.ToText().EndsWith('\n'));
     }
@@ -60,12 +66,14 @@ public class C4DocumentTests
     [Fact]
     public void AnEditChangesOnlyTheLineItTouches()
     {
+        // Arrange.
         var text = Read("minimal.dsl");
         var document = C4Document.Parse(text);
         var target = document.CodeLines.First(line => line.Code.Contains("softwareSystem", StringComparison.Ordinal));
 
         document.ReplaceLine(target.Number, target.Text.Replace("\"System\"", "\"Renamed\"", StringComparison.Ordinal));
 
+        // Act and assert, step by step.
         var before = text.Split('\n');
         var after = document.ToText().Split('\n');
         Assert.Equal(before.Length, after.Length);
@@ -83,18 +91,22 @@ public class C4DocumentTests
     [InlineData("a\n\n\nb\n", "a\n\n\nb\n")]
     public void DegenerateTexts_RoundTripToo(string text, string expected)
     {
+        // Arrange, act and assert.
         Assert.Equal(expected, C4Document.Parse(text).ToText());
     }
 
     [Fact]
     public void MixedLineEndings_ReuseTheDominantOne_AndTheOthersSurviveUntouched()
     {
+        // Arrange.
         // A document edited on two platforms is an ordinary thing to find in a repository;
         // rewriting it wholesale to one style would be exactly the diff Requirement 3.1 forbids.
         var text = "a\r\nb\r\nc\nd\r\n";
 
+        // Act.
         var document = C4Document.Parse(text);
 
+        // Assert.
         Assert.Equal("\r\n", document.Newline);
         Assert.Equal(4, document.Lines.Count);
     }
@@ -110,14 +122,17 @@ public class C4DocumentTests
     [InlineData("url \"https://example.com\"", "url \"https://example.com\"")]
     public void ALinesCode_DropsCommentsButNotWhatLooksLikeOneInsideAName(string text, string expected)
     {
+        // Arrange, act and assert.
         Assert.Equal(expected, new C4Line(text, 1).Code);
     }
 
     [Fact]
     public void TheCommentsFixture_HasCodeOnPreciselyTheLinesThatAreNotComments()
     {
+        // Act.
         var document = C4Document.Parse(Read("comments-everywhere.dsl"));
 
+        // Assert.
         // The five leading comment lines and the trailing one carry no code at all.
         Assert.True(document.CodeLines.First().IsBlank);
         Assert.True(document.CodeLines.Last(line => line.Text.Length > 0).IsBlank);

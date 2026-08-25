@@ -85,29 +85,29 @@ public sealed class C4ContextActionProvider : IContextActionProvider
 
         if (!TryResolve(target, out _, out var element, out var relationship))
         {
-            return Result(new ContextExecutionResult.Failed(Gone));
+            return Result(new ContextExecutionFailed(Gone));
         }
 
         // Every one of these asks for text first; the commit below turns the answer into a
         // command. The current value is the initial one, so an edit starts from what is there.
         return actionId switch
         {
-            RenameActionId when element is not null => Result(new ContextExecutionResult.RequiresInput(
+            RenameActionId when element is not null => Result(new ContextExecutionRequiresInput(
                 new ContextInputRequest("Rename element", "mdi-pencil-outline", "Name", element.Name, "Rename"))),
 
-            EditDescriptionActionId when element is not null => Result(new ContextExecutionResult.RequiresInput(
+            EditDescriptionActionId when element is not null => Result(new ContextExecutionRequiresInput(
                 new ContextInputRequest("Describe element", "mdi-text-box-outline", "Description", element.Description, "Save"))),
 
-            SetTechnologyActionId when element is not null => Result(new ContextExecutionResult.RequiresInput(
+            SetTechnologyActionId when element is not null => Result(new ContextExecutionRequiresInput(
                 new ContextInputRequest("Set technology", "mdi-tools", "Technology", element.Technology, "Save"))),
 
-            RelabelActionId when relationship is not null => Result(new ContextExecutionResult.RequiresInput(
+            RelabelActionId when relationship is not null => Result(new ContextExecutionRequiresInput(
                 new ContextInputRequest("Relabel relationship", "mdi-pencil-outline", "Description", relationship.Description, "Save"))),
 
-            SetProtocolActionId when relationship is not null => Result(new ContextExecutionResult.RequiresInput(
+            SetProtocolActionId when relationship is not null => Result(new ContextExecutionRequiresInput(
                 new ContextInputRequest("Set technology", "mdi-transit-connection-variant", "Technology", relationship.Technology, "Save"))),
 
-            _ => Result(new ContextExecutionResult.Failed($"'{actionId}' does not apply to this selection.")),
+            _ => Result(new ContextExecutionFailed($"'{actionId}' does not apply to this selection.")),
         };
     }
 

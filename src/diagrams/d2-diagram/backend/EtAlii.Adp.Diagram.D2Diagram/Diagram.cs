@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("d2", "diagram"),
-        "General-purpose declarative diagram");
+        "General-purpose declarative diagram",
+        "A general-purpose diagram written as text and laid out automatically by D2.");
 }

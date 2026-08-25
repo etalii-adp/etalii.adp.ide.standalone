@@ -10,7 +10,7 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
     private static readonly ILogger _logger = Log.ForContext<HierarchyModelStore>();
 
     private readonly TimeSpan _idleTimeout;
-    private readonly ConcurrentDictionary<ShortGuid, Entry> _entries = new();
+    private readonly ConcurrentDictionary<ShortGuid, HierarchyModelEntry> _entries = new();
 
     public HierarchyModelStore(TimeSpan? idleTimeout = null)
     {
@@ -50,9 +50,9 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
         }
     }
 
-    private Entry CreateEntry(ShortGuid watchId, string rootPath)
+    private HierarchyModelEntry CreateEntry(ShortGuid watchId, string rootPath)
     {
-        var entry = new Entry { Model = new HierarchyModel(rootPath) };
+        var entry = new HierarchyModelEntry { Model = new HierarchyModel(rootPath) };
         entry.IdleTimer = new Timer(_ => EvictIfIdle(watchId), null, _idleTimeout, Timeout.InfiniteTimeSpan);
         return entry;
     }
@@ -72,10 +72,4 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
         }
     }
 
-    private sealed class Entry
-    {
-        public required HierarchyModel Model { get; init; }
-        public RootFolderWatcher? Watcher { get; set; }
-        public Timer? IdleTimer { get; set; }
-    }
 }

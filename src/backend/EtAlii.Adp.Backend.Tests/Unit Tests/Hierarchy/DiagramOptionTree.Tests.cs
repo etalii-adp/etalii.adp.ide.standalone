@@ -13,24 +13,28 @@ public class DiagramOptionTreeTests
     [Fact]
     public void Build_WithNoDefinitions_ReturnsNoOptions()
     {
+        // Arrange, act and assert.
         Assert.Empty(DiagramOptionTree.Build([]));
     }
 
     [Fact]
     public void Build_WithNull_Throws()
     {
+        // Arrange, act and assert.
         Assert.Throws<ArgumentNullException>(() => DiagramOptionTree.Build(null!));
     }
 
     [Fact]
     public void Build_GroupsByVendor_WithVendorsAsNonSelectableGroups()
     {
+        // Arrange and act.
         var tree = DiagramOptionTree.Build([
             Definition("c4", "context", "System Context"),
             Definition("uml", "class", "Class diagram"),
             Definition("c4", "container", "Container"),
         ]);
 
+        // Assert.
         Assert.Equal(["c4", "uml"], tree.Select(vendor => vendor.Label));
         Assert.All(tree, vendor => Assert.False(vendor.Selectable));
         Assert.All(tree, vendor => Assert.Equal(vendor.Label, vendor.Id));
@@ -39,11 +43,13 @@ public class DiagramOptionTreeTests
     [Fact]
     public void Build_ListsEachTypeUnderItsVendor_ByTitle_WithTheOriginKeyAsId()
     {
+        // Arrange.
         var tree = DiagramOptionTree.Build([
             Definition("c4", "context", "System Context"),
             Definition("c4", "container", "Container"),
         ]);
 
+        // Act and assert, step by step.
         var c4 = Assert.Single(tree);
         Assert.NotNull(c4.Children);
         Assert.Equal(["Container", "System Context"], c4.Children.Select(node => node.Label));
@@ -54,9 +60,11 @@ public class DiagramOptionTreeTests
     [Fact]
     public void Build_DoesNotGroupByType()
     {
+        // Arrange.
         // Requirement 5.2: Type is the diagram type itself, so it is never a group of one.
         var tree = DiagramOptionTree.Build([Definition("c4", "context", "System Context")]);
 
+        // Act and assert, step by step.
         var leaf = Assert.Single(Assert.Single(tree).Children!);
         Assert.Equal("System Context", leaf.Label);
         Assert.True(leaf.Selectable);
@@ -66,11 +74,13 @@ public class DiagramOptionTreeTests
     [Fact]
     public void Build_NestsASubtypeUnderTheTypeItRefines()
     {
+        // Arrange.
         var tree = DiagramOptionTree.Build([
             Definition("c4", "component", "Component"),
             Definition("c4", "component", "Code", subtype: "code"),
         ]);
 
+        // Act and assert, step by step.
         var component = Assert.Single(Assert.Single(tree).Children!);
         Assert.Equal("c4/component", component.Id);
         Assert.True(component.Selectable);
@@ -83,11 +93,13 @@ public class DiagramOptionTreeTests
     [Fact]
     public void Build_SynthesisesANonSelectableParent_WhenOnlySubtypesExist()
     {
+        // Arrange.
         var tree = DiagramOptionTree.Build([
             Definition("archimate", "layer", "Business", subtype: "business"),
             Definition("archimate", "layer", "Application", subtype: "application"),
         ]);
 
+        // Act and assert, step by step.
         var layer = Assert.Single(Assert.Single(tree).Children!);
         Assert.Equal("archimate/layer", layer.Id);
         Assert.Equal("layer", layer.Label);
@@ -99,6 +111,7 @@ public class DiagramOptionTreeTests
     [Fact]
     public void Build_IsDeterministic_RegardlessOfInputOrder()
     {
+        // Arrange and act.
         var forward = DiagramOptionTree.Build([
             Definition("uml", "class", "Class"),
             Definition("c4", "context", "System Context"),
@@ -110,6 +123,7 @@ public class DiagramOptionTreeTests
             Definition("uml", "class", "Class"),
         ]);
 
+        // Assert.
         // Projected, because a record holding an array compares that array by reference.
         Assert.Equal(Shape(forward), Shape(backward));
     }
@@ -120,6 +134,7 @@ public class DiagramOptionTreeTests
     [Fact]
     public void Build_EverySelectableIdIsAnOriginKey_AndUnique()
     {
+        // Arrange.
         var definitions = new[]
         {
             Definition("c4", "context", "System Context"),
@@ -128,11 +143,13 @@ public class DiagramOptionTreeTests
             Definition("uml", "class", "Class"),
         };
 
+        // Act.
         var ids = Flatten(DiagramOptionTree.Build(definitions))
             .Where(node => node.Selectable)
             .Select(node => node.Id)
             .ToList();
 
+        // Assert.
         Assert.Equal(definitions.Select(d => d.Origin.Key).OrderBy(k => k, StringComparer.Ordinal), ids.OrderBy(k => k, StringComparer.Ordinal));
         Assert.Equal(ids.Count, ids.Distinct(StringComparer.Ordinal).Count());
     }

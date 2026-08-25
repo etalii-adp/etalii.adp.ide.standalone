@@ -7,8 +7,10 @@ public class DiagramTests
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
+        // Act.
         var origin = Diagram.Definition.Origin;
 
+        // Assert.
         Assert.Equal("c4", origin.Vendor);
         Assert.Equal("system-landscape", origin.Type);
         Assert.Equal("", origin.Subtype);
@@ -17,6 +19,7 @@ public class DiagramTests
     [Fact]
     public void Definition_Title_MatchesTheCatalogedDiagramName()
     {
+        // Arrange, act and assert.
         Assert.Equal(
             "System Landscape (supplementary)",
             Diagram.Definition.Title);
@@ -25,6 +28,7 @@ public class DiagramTests
     [Fact]
     public void Definition_KeepsItsBody_InAStructurizrDslSibling()
     {
+        // Arrange, act and assert.
         // Several C4 diagrams can share one model document, so every C4 type declares the
         // same extension and core names the sibling by construction (c4-diagrams
         // Requirement 2.2).
