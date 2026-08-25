@@ -190,7 +190,7 @@ Text-based tools that render many of the notations above from plain text, well s
 
 | State | Origin | Diagram | Theory | Example |
 |---|---|---|---|---|
-| 💡 Identified | `plantuml/uml` | Full UML set (see section 1) | [plantuml.com](https://plantuml.com/) | [Real World PlantUML gallery](https://real-world-plantuml.com/) |
+| 📝 Specified | `plantuml/uml` | Full UML set (see section 1); [`plantuml-uml`](../.spec-workflow/specs/plantuml-uml/requirements.md) specifies class and sequence first | [plantuml.com](https://plantuml.com/) | [Real World PlantUML gallery](https://real-world-plantuml.com/) |
 | 💡 Identified | `plantuml/c4` | C4 diagram, via C4-PlantUML | [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) | [Real World PlantUML gallery](https://real-world-plantuml.com/) |
 
 ### 11c. Structurizr
