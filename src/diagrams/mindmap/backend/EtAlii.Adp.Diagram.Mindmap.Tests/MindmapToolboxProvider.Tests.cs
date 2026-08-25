@@ -41,6 +41,6 @@ public class MindmapToolboxProviderTests
         var provider = new MindmapToolboxProvider();
 
         // Act & Assert: the shared diagram service routes DescribeToolbox by origin.
-        Assert.Equal(Diagram.Definition.Origin, provider.Origin);
+        Assert.Equal(Diagram.Mindmap.Origin, provider.Origin);
     }
 }

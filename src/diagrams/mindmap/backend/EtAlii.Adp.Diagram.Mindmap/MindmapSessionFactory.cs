@@ -22,7 +22,7 @@ public sealed class MindmapSessionFactory : IDiagramSessionFactory
         _historyStacks = historyStacks;
     }
 
-    public DiagramOrigin Origin => Diagram.Definition.Origin;
+    public DiagramOrigin Origin => Diagram.Mindmap.Origin;
 
     public IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath, string? registrationPath) =>
         // The project's history, so a drag-move on this session's canvas is one undo away.

@@ -12,9 +12,19 @@ import { EntryKind } from "../../generated/hierarchy_pb";
 import { NONE_DETAIL, selectionFor } from "../context/ContextConnectionProvider";
 import { DiagramTabsPanel } from "./DiagramTabsPanel";
 
-// The canvas would open a stream; the tab model is what is under test.
-vi.mock("./mindmap/MindmapCanvas", () => ({
-  MindmapCanvas: ({ path }: { path: string[] }) => <div data-testid="mindmap-canvas">{path.join("/")}</div>,
+// The canvas would open a stream; the tab model is what is under test. Mocked at the registry
+// rather than at any one canvas, because this panel routes through the registry and knows no
+// diagram type by name - the path shown is what proves the right diagram reached the panel.
+vi.mock("./diagramCanvases", () => ({
+  // One claimed type and everything else unclaimed, so both halves of the panel stay
+  // exercised: the tab that renders, and the tab that says what it cannot render.
+  canvasFor: (mimeType: string) =>
+    mimeType === "freeplane/mindmap"
+      ? {
+          matches: () => true,
+          Canvas: ({ path }: { path: string[] }) => <div data-testid="mindmap-canvas">{path.join("/")}</div>,
+        }
+      : undefined,
 }));
 
 const contextState: { selection: ContextSelection | null; levels: ContextLevelDetail[] } = { selection: null, levels: [] };

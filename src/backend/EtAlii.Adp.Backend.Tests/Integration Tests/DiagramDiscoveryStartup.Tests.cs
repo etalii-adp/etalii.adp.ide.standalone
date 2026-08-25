@@ -1,3 +1,4 @@
+using System.Reflection;
 using EtAlii.Adp.Diagram;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -52,22 +53,51 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public void AfterStartup_EveryDeployedModuleWithADefinitionIsFound()
+    public void AfterStartup_EveryDefinitionEveryDeployedModuleDeclaresIsFound()
     {
         // Arrange.
-        // Every EtAlii.Adp.Diagram.* assembly deployed beside the host is a module. Each one
-        // that declares a Definition must be in All; this pins the count to the deployment
-        // rather than to a number that goes stale as modules are added.
+        // Every EtAlii.Adp.Diagram.* assembly deployed beside the host is a module, and each
+        // declares one or more definitions through its own Diagram.Definitions array. Reading
+        // those arrays pins this test to the deployment rather than to a number that goes stale
+        // as modules are added - and it counts definitions rather than assemblies, which is not
+        // the same thing since C4 carries seven notations in one module.
         using var _ = _factory.CreateClient();
 
         // Act.
-        var deployedModules = Directory.GetFiles(AppContext.BaseDirectory, "EtAlii.Adp.Diagram.*.dll")
+        var declared = Directory.GetFiles(AppContext.BaseDirectory, "EtAlii.Adp.Diagram.*.dll")
             .Select(IoPath.GetFileNameWithoutExtension)
             .Where(name => name is not null && !name.EndsWith(".Tests", StringComparison.Ordinal))
+            .Select(name => Assembly.Load(name!))
+            .Select(assembly => assembly.GetTypes().FirstOrDefault(type => type.Name == "Diagram"))
+            .Where(type => type is not null)
+            .SelectMany(type => (DiagramDefinition[])type!.GetProperty("Definitions")!.GetValue(null)!)
+            .Select(definition => definition.Origin.Key)
             .ToList();
 
         // Assert.
-        Assert.NotEmpty(deployedModules);
-        Assert.Equal(deployedModules.Count, DiagramDefinition.All.Count);
+        Assert.NotEmpty(declared);
+        Assert.Equal(
+            declared.OrderBy(key => key, StringComparer.Ordinal),
+            DiagramDefinition.All.Select(definition => definition.Origin.Key));
+    }
+
+    [Fact]
+    public void AfterStartup_TheModuleCarryingSeveralNotations_ContributesAllOfThem()
+    {
+        // Arrange.
+        // C4 is the reason discovery reads an array. One module, seven notations - and a
+        // regression to a singular read would show up here as one of them rather than all.
+        using var _ = _factory.CreateClient();
+
+        // Act.
+        var c4 = DiagramDefinition.All
+            .Where(definition => definition.Origin.Vendor == "c4")
+            .Select(definition => definition.Origin.Key)
+            .ToList();
+
+        // Assert.
+        Assert.Equal(
+            ["c4/code", "c4/component", "c4/container", "c4/context", "c4/deployment", "c4/dynamic", "c4/system-landscape"],
+            c4);
     }
 }

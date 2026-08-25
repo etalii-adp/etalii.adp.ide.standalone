@@ -2,8 +2,9 @@ namespace EtAlii.Adp.Diagram;
 
 /// <summary>
 /// What a diagram-type module is: its origin/notation and its display title - mirroring one row
-/// of docs/diagrams.md's catalog table. Each diagram-type project exposes exactly one of these
-/// through its own static <c>Diagram.Definition</c>.
+/// of docs/diagrams.md's catalog table. Each diagram-type project exposes one or more of these
+/// through its own static <c>Diagram.Definitions</c> array - one entry for most types, seven
+/// for C4, whose types share a single engine and have no reason to be seven assemblies.
 /// </summary>
 /// <param name="Description">
 /// One sentence saying what this diagram type is for, shown beside the choice when a user

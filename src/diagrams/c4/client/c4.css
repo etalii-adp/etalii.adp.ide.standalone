@@ -1,0 +1,125 @@
+/*
+ * C4 canvas styling.
+ *
+ * Lives with the module rather than in the shell's index.css: a diagram type you cannot
+ * delete without also editing the shell's stylesheet is not a module. Imported by this
+ * module's register.ts, so it loads exactly when the module does.
+ *
+ * Rule order inside this file is load-bearing - see `.c4-node-focused rect` after `.c4-node rect`.
+ */
+
+/* ---- C4 diagrams ------------------------------------------------------------------- */
+
+.c4-canvas {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-surface);
+}
+
+.c4-canvas-surface {
+  flex: 1;
+  min-height: 0;
+  outline: none;
+  touch-action: none;
+}
+
+/* C4 requires a title naming the diagram's type and scope, on every diagram. */
+.c4-canvas-title {
+  padding: 8px 12px 4px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.c4-canvas-loading,
+.c4-canvas-unavailable {
+  padding: 16px;
+  color: var(--color-text-muted);
+}
+
+.c4-node {
+  cursor: pointer;
+}
+
+.c4-node rect,
+.c4-node circle,
+.c4-node ellipse {
+  stroke: none;
+}
+
+.c4-node-focused rect {
+  stroke: var(--color-primary);
+  stroke-width: 2.5;
+}
+
+.c4-node-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.c4-node-type,
+.c4-node-description {
+  font-size: 10px;
+  opacity: 0.9;
+}
+
+/* Relationships are dashed, unidirectional and labelled - the notation C4 shows. */
+.c4-relationship line {
+  stroke: var(--color-border);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+  fill: none;
+}
+
+.c4-arrowhead {
+  fill: var(--color-border);
+}
+
+.c4-relationship-label {
+  font-size: 10px;
+  fill: var(--color-text-muted);
+}
+
+/* A boundary is a dashed rectangle labelled with what it encloses. */
+.c4-boundary rect {
+  fill: none;
+  stroke: var(--color-text-muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 8 6;
+}
+
+.c4-boundary-label {
+  font-size: 11px;
+  fill: var(--color-text-muted);
+}
+
+/* The key, which C4 requires so a diagram can be read without accompanying narrative. */
+.c4-canvas-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 6px 12px;
+  border-top: 1px solid var(--color-border);
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.c4-legend-title {
+  font-weight: 600;
+}
+
+.c4-legend-entry {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.c4-legend-swatch {
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+}

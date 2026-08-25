@@ -16,7 +16,7 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// </remarks>
 public sealed class MindmapValidator : IDiagramValidator
 {
-    public DiagramOrigin Origin => Diagram.Definition.Origin;
+    public DiagramOrigin Origin => Diagram.Mindmap.Origin;
 
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
         string document, string baseName, CancellationToken cancellationToken)

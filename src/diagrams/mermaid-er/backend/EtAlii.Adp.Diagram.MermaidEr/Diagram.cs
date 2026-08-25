@@ -3,8 +3,11 @@ namespace EtAlii.Adp.Diagram.MermaidEr;
 /// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `mermaid/er`.</summary>
 public static class Diagram
 {
-    public static DiagramDefinition Definition { get; } = new(
-        new DiagramOrigin("mermaid", "er"),
-        "Entity-Relationship diagram",
-        "Entities and relationships, in Mermaid's ER syntax.");
+    public static DiagramDefinition[] Definitions { get; } =
+    [
+        new(
+            new DiagramOrigin("mermaid", "er"),
+            "Entity-Relationship diagram",
+            "Entities and relationships, in Mermaid's ER syntax."),
+    ];
 }

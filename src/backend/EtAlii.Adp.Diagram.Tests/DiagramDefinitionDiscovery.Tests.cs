@@ -6,6 +6,9 @@ using NotStatic = EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.NotStatic;
 using Throws = EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.Throws;
 using Zulu = EtAlii.Adp.Diagram.Tests.Fixtures.Ordering.Zulu;
 using Alpha = EtAlii.Adp.Diagram.Tests.Fixtures.Ordering.Alpha;
+using Several = EtAlii.Adp.Diagram.Tests.Fixtures.Several;
+using EmptyArray = EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.EmptyArray;
+using NullEntry = EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.NullEntry;
 
 namespace EtAlii.Adp.Diagram.Tests;
 
@@ -94,7 +97,13 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
         Assert.Contains(result, d => d.Origin == new DiagramOrigin("alpha", "z"));
         Assert.Contains(result, d => d.Origin == new DiagramOrigin("zulu", "a"));
         Assert.DoesNotContain(result, d => d.Origin == new DiagramOrigin("fixture", "not-static"));
-        Assert.Equal(3, result.Count);
+        // The three types the Several fixture declares from one class - the shape that made the
+        // property plural - and the survivor from the array with a null in it.
+        Assert.Contains(result, d => d.Origin == new DiagramOrigin("several", "first"));
+        Assert.Contains(result, d => d.Origin == new DiagramOrigin("several", "second"));
+        Assert.Contains(result, d => d.Origin == new DiagramOrigin("several", "third"));
+        Assert.Contains(result, d => d.Origin == new DiagramOrigin("fixture", "survivor"));
+        Assert.Equal(7, result.Count);
     }
 
     // ---- ordering -----------------------------------------------------------------------
@@ -125,7 +134,7 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
         var warning = Assert.Single(_logger.Warnings, w => w.Contains("malformed", StringComparison.Ordinal));
         Assert.Contains(typeof(WrongType.Diagram).FullName!, warning, StringComparison.Ordinal);
         Assert.Contains("Fixture.A", warning, StringComparison.Ordinal);
-        Assert.Contains("not a DiagramDefinition", warning, StringComparison.Ordinal);
+        Assert.Contains("not a sequence of DiagramDefinition", warning, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -161,6 +170,73 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
 
         // Assert.
         Assert.Single(result);
+    }
+
+    // ---- several definitions from one class ----------------------------------------------
+
+    [Fact]
+    public void Discover_ReadsEveryDefinitionAClassDeclares_NotJustTheFirst()
+    {
+        // Act.
+        var result = _discovery.Discover([AssemblyWith("Fixture.A", typeof(Several.Diagram))]);
+
+        // Assert.
+        Assert.Equal(
+            ["several/first", "several/second", "several/third"],
+            result.Select(definition => definition.Origin.Key));
+    }
+
+    [Fact]
+    public void Discover_LogsEachDefinitionSeparately_EvenWhenOneClassDeclaresThemAll()
+    {
+        // Act.
+        // Otherwise a module carrying seven types would announce itself once and leave the log
+        // disagreeing with the count in the summary line underneath it.
+        _discovery.Discover([AssemblyWith("Fixture.A", typeof(Several.Diagram))]);
+
+        // Assert.
+        Assert.Equal(3, _logger.Informations.Count(entry => entry.Contains("Discovered diagram type", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public void Discover_MixesDefinitionsFromOneClassAndManyIntoOneOrderedResult()
+    {
+        // Act.
+        // Ordering is over definitions, not over the classes they came from - a module that
+        // declares three must not arrive as a block wherever its class happened to be scanned.
+        var result = _discovery.Discover([AssemblyWith("Fixture.A", typeof(Several.Diagram), typeof(Alpha.Diagram), typeof(Zulu.Diagram))]);
+
+        // Assert.
+        Assert.Equal(
+            ["alpha/z", "several/first", "several/second", "several/third", "zulu/a"],
+            result.Select(definition => definition.Origin.Key));
+    }
+
+    [Fact]
+    public void Discover_ADefinitionsArrayDeclaringNothing_IsReportedRatherThanPassedOver()
+    {
+        // Act.
+        // A module that ships no types is almost certainly a mistake, and it is a mistake the
+        // singular property could not express - so it is new here and worth saying out loud.
+        var result = _discovery.Discover([AssemblyWith("Fixture.A", typeof(EmptyArray.Diagram))]);
+
+        // Assert.
+        Assert.Empty(result);
+        var warning = Assert.Single(_logger.Warnings, w => w.Contains("malformed", StringComparison.Ordinal));
+        Assert.Contains("declares nothing", warning, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Discover_ANullAmongTheDefinitions_CostsThatEntryAndNotTheGoodOnesBesideIt()
+    {
+        // Act.
+        var result = _discovery.Discover([AssemblyWith("Fixture.A", typeof(NullEntry.Diagram))]);
+
+        // Assert.
+        var definition = Assert.Single(result);
+        Assert.Equal("fixture/survivor", definition.Origin.Key);
+        var warning = Assert.Single(_logger.Warnings, w => w.Contains("malformed", StringComparison.Ordinal));
+        Assert.Contains("1 null entry", warning, StringComparison.Ordinal);
     }
 
     // ---- origin collisions --------------------------------------------------------------

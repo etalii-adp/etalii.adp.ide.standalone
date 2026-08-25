@@ -167,7 +167,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
     {
         var elements = await BaselineAsync(client, headers, projectId, fileName);
         var view = elements.Single(element => element.Type == "c4/model+view");
-        return C4.C4ViewPayload.Parser.ParseFrom(view.Payload.Value.Span).Title;
+        return Diagram.C4.C4ViewPayload.Parser.ParseFrom(view.Payload.Value.Span).Title;
     }
 
     /// <summary>Opens a diagram and reads the one add that carries its baseline.</summary>

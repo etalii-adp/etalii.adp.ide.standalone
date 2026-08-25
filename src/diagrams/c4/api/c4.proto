@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package etalii.adp.c4;
 
-option csharp_namespace = "EtAlii.Adp.C4";
+option csharp_namespace = "EtAlii.Adp.Diagram.C4";
 
 // The C4 family's wire payloads. These ride inside the core Element's `Any`; nothing in the
 // core contract is extended for them (c4-diagrams design, "Data Models").
