@@ -3,8 +3,10 @@
   "title": "Requirements: wardley-map",
   "filePath": ".spec-workflow/specs/wardley-map/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-23T14:50:44.944Z",
   "category": "spec",
-  "categoryName": "wardley-map"
+  "categoryName": "wardley-map",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-25T16:51:55.063Z"
 }

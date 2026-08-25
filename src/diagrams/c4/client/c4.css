@@ -54,6 +54,17 @@
   stroke-width: 2.5;
 }
 
+/* An element being dragged. Semi-transparent so whatever it passes over stays readable, and
+   the pointer keeps the grabbing cursor for as long as the button is down. */
+.c4-node-dragging {
+  opacity: 0.75;
+  cursor: grabbing;
+}
+
+.c4-node {
+  cursor: grab;
+}
+
 /* The element a toolbox entry is held over, so the drop's outcome is visible before the button
    is released. After the focused rule on purpose: the two have equal specificity, and a drop
    target that is also focused should read as a drop target. The mindmap learned this the hard

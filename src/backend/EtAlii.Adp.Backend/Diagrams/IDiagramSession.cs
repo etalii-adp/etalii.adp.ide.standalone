@@ -27,6 +27,22 @@ public interface IDiagramSession : IAsyncDisposable
     Task<string> MoveElementAsync(string elementId, string newParentId, int index, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Moves an element to a place on the canvas, for a diagram that is arranged rather than
+    /// nested. Dispatched as a command like every other edit, and returns the empty string on
+    /// success or the module's own reason for refusing.
+    /// </summary>
+    /// <remarks>
+    /// A separate method rather than more arguments on the one above, because the two gestures
+    /// are different questions and a type usually answers only one. A mindmap has no free
+    /// coordinates to land on - its tree is its layout - so it refuses this; a C4 element has
+    /// no parent a drag may change - a container belongs to the system that declares it - so it
+    /// refuses the other. Refusing by default means a type that has thought about neither says
+    /// so rather than appearing to support both.
+    /// </remarks>
+    Task<string> MoveElementToAsync(string elementId, double x, double y, CancellationToken cancellationToken) =>
+        Task.FromResult("This diagram cannot be arranged by dragging.");
+
+    /// <summary>
     /// Raised when something changes the diagram - an edit from any connection, an external
     /// file edit, this connection's own fold - with the deltas that carry it into this
     /// connection's view. The core service writes them to the stream.

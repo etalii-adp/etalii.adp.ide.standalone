@@ -3,8 +3,10 @@
   "title": "Revision: add-diagram-action Requirement 4.3 (Add on a file)",
   "filePath": ".spec-workflow/specs/add-diagram-action/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-25T16:27:34.087Z",
   "category": "spec",
-  "categoryName": "add-diagram-action"
+  "categoryName": "add-diagram-action",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-25T16:50:29.674Z"
 }

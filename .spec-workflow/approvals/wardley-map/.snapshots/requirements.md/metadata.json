@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/wardley-map/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-23T14:50:45.022Z",
       "trigger": "initial",
+      "approvalId": "approval_1787496644944_p59t7g49y",
+      "approvalTitle": "Requirements: wardley-map"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-25T16:51:55.057Z",
+      "trigger": "approved",
       "approvalId": "approval_1787496644944_p59t7g49y",
       "approvalTitle": "Requirements: wardley-map"
     }

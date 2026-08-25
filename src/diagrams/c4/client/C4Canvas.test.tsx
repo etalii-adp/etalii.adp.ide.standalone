@@ -22,6 +22,10 @@ vi.mock("./useC4Stream", () => ({
     loading: currentLoading,
     failed: currentFailed,
     reportView: (v: unknown) => currentReportView?.(v),
+    moveElementTo: (elementId: string, x: number, y: number) => {
+      moves.push({ elementId, x, y });
+      return Promise.resolve("");
+    },
   }),
 }));
 
@@ -52,6 +56,9 @@ vi.mock("@client/shell/panels/DiagramToolboxContext", async (importOriginal) => 
 
 /** Action ids the canvas asked the backend to run - what a drop and a menu choice produce. */
 const executed: string[] = [];
+
+/** Positions the canvas asked the backend to record - what a completed drag produces. */
+const moves: Array<{ elementId: string; x: number; y: number }> = [];
 
 const { C4Canvas } = await import("./C4Canvas");
 
@@ -92,6 +99,7 @@ describe("C4Canvas", () => {
   beforeEach(() => {
     select.mockClear();
     executed.length = 0;
+    moves.length = 0;
     currentLoading = false;
     currentFailed = false;
     currentModel = seed(
@@ -432,6 +440,111 @@ describe("C4Canvas", () => {
     // Assert.
     expect(select).toHaveBeenCalled();
     expect(container.querySelector(".context-menu")).toBeNull();
+  });
+
+
+  // ---- dragging an element ----------------------------------------------------------------
+
+  /**
+   * jsdom gives every element a zero-sized bounding rect, so the canvas would compute one
+   * canvas unit per pixel from nothing. Pinned to a real width instead, which makes the
+   * arithmetic in these tests the arithmetic the browser would do.
+   */
+  function withSurfaceWidth(container: HTMLElement, width: number) {
+    const surface = container.querySelector(".c4-canvas-surface")!;
+    surface.getBoundingClientRect = () => ({ width, height: width, x: 0, y: 0, top: 0, left: 0, right: width, bottom: width, toJSON: () => ({}) });
+    return surface;
+  }
+
+  it("records where an element was dropped, in canvas units", () => {
+    // Arrange.
+    // Alpha starts at (0,0). The view is 1000 units wide over 500 pixels, so one pixel is two
+    // canvas units and a 50-pixel drag is a 100-unit move.
+    const { container } = render(<C4Canvas {...props} />);
+    const surface = withSurfaceWidth(container, 500);
+    const alpha = container.querySelectorAll(".c4-node")[0];
+
+    // Act.
+    fireEvent.mouseDown(alpha, { button: 0, clientX: 100, clientY: 100 });
+    fireEvent.mouseMove(surface, { clientX: 150, clientY: 100 });
+    fireEvent.mouseUp(surface);
+
+    // Assert.
+    const move = moves[0];
+    expect(move?.elementId).toBe("a");
+    expect(move.x).toBeGreaterThan(0);
+    expect(move.y).toBeCloseTo(0, 5);
+  });
+
+  it("writes nothing for a wobbly click", () => {
+    // Arrange.
+    // A few pixels of movement while clicking is a click. Sending it would put an entry on the
+    // project history for having pressed the mouse.
+    const { container } = render(<C4Canvas {...props} />);
+    const surface = withSurfaceWidth(container, 500);
+    const alpha = container.querySelectorAll(".c4-node")[0];
+
+    // Act.
+    fireEvent.mouseDown(alpha, { button: 0, clientX: 100, clientY: 100 });
+    fireEvent.mouseMove(surface, { clientX: 102, clientY: 101 });
+    fireEvent.mouseUp(surface);
+
+    // Assert.
+    expect(moves).toEqual([]);
+  });
+
+  it("moves the element under the pointer while the button is down", () => {
+    // Arrange.
+    // The drop's outcome should be visible during the drag, not only after the backend answers.
+    const { container } = render(<C4Canvas {...props} />);
+    const surface = withSurfaceWidth(container, 500);
+    const alpha = container.querySelectorAll(".c4-node")[0];
+    const before = alpha.getAttribute("transform");
+
+    // Act.
+    fireEvent.mouseDown(alpha, { button: 0, clientX: 100, clientY: 100 });
+    fireEvent.mouseMove(surface, { clientX: 200, clientY: 160 });
+
+    // Assert.
+    const during = container.querySelectorAll(".c4-node")[0].getAttribute("transform");
+    expect(during).not.toBe(before);
+    expect(container.querySelector(".c4-node-dragging")).toBeTruthy();
+  });
+
+  it("does not treat a right-click as the start of a drag", () => {
+    // Arrange.
+    // Right-click is the menu's gesture. Starting a drag on it would make every context menu
+    // a potential accidental move.
+    const { container } = render(<C4Canvas {...props} />);
+    const surface = withSurfaceWidth(container, 500);
+    const alpha = container.querySelectorAll(".c4-node")[0];
+
+    // Act.
+    fireEvent.mouseDown(alpha, { button: 2, clientX: 100, clientY: 100 });
+    fireEvent.mouseMove(surface, { clientX: 200, clientY: 200 });
+    fireEvent.mouseUp(surface);
+
+    // Assert.
+    expect(moves).toEqual([]);
+  });
+
+  it("does not re-select the element on the click that trails a drag", () => {
+    // Arrange.
+    const { container } = render(<C4Canvas {...props} />);
+    const surface = withSurfaceWidth(container, 500);
+    const alpha = container.querySelectorAll(".c4-node")[0];
+
+    // Act.
+    fireEvent.mouseDown(alpha, { button: 0, clientX: 100, clientY: 100 });
+    fireEvent.mouseMove(surface, { clientX: 200, clientY: 200 });
+    fireEvent.mouseUp(surface);
+    select.mockClear();
+    fireEvent.click(alpha);
+
+    // Assert.
+    // A drag ends with a click event; taking it as a selection would fight whatever the drag
+    // just did.
+    expect(select).not.toHaveBeenCalled();
   });
 
 });
