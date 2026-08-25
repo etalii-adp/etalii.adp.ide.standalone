@@ -40,7 +40,7 @@ export interface C4CanvasProps {
  * (c4-diagrams Requirement 4).
  */
 export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
-  const { model, loading, failed, reportView } = useC4Stream(projectId, path);
+  const { model, loading, failed, reportView, moveElementTo } = useC4Stream(projectId, path);
   const { select, executeAction, executeShortcut } = useContextConnection();
   const { selection, actions } = useContextSelection();
 
@@ -64,6 +64,14 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
   // The element a toolbox drag is held over - highlighted so the drop's outcome is visible
   // before the button is released.
   const [dropTargetId, setDropTargetId] = useState<string | undefined>(undefined);
+
+  // A drag of an element in flight: which one, where the pointer started, where the element
+  // started, and whether it has moved far enough to be a drag rather than a wobbly click. A
+  // ref for the parts nothing renders from; the live offset is state, because it is exactly
+  // what renders differently while the button is down.
+  const dragRef = useRef<{ id: string; clientX: number; clientY: number; x: number; y: number; moved: boolean } | null>(null);
+  const [dragOffset, setDragOffset] = useState<{ id: string; dx: number; dy: number } | null>(null);
+  const dragJustEndedRef = useRef(false);
 
   const [focusedId, setFocusedId] = useState<string | undefined>(undefined);
   const [view, setView] = useState<ViewBox | null>(null);
@@ -148,6 +156,24 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
   };
 
   const onSurfacePointerMove = (event: React.MouseEvent) => {
+    const drag = dragRef.current;
+    if (drag) {
+      // A few pixels of wobble while clicking is not a drag, and treating it as one would put
+      // an entry on the history for having clicked something.
+      if (!drag.moved && Math.hypot(event.clientX - drag.clientX, event.clientY - drag.clientY) <= 4) {
+        return;
+      }
+
+      drag.moved = true;
+      const scale = unitsPerPixel(viewRef.current);
+      setDragOffset({
+        id: drag.id,
+        dx: (event.clientX - drag.clientX) * scale,
+        dy: (event.clientY - drag.clientY) * scale,
+      });
+      return;
+    }
+
     const pan = panRef.current;
     if (!pan) {
       return;
@@ -165,6 +191,23 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
   };
 
   const onSurfacePointerUp = () => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (drag?.moved) {
+      const offset = dragOffset;
+      setDragOffset(null);
+      // The click that trails a completed drag is the same gesture, not a new selection.
+      dragJustEndedRef.current = true;
+      if (offset && offset.id === drag.id) {
+        // Nothing optimistic: the element stays where it was until the backend's delta says
+        // otherwise, so what is drawn is always what was recorded.
+        void moveElementTo(drag.id, drag.x + offset.dx, drag.y + offset.dy);
+      }
+
+      return;
+    }
+
+    setDragOffset(null);
     const pan = panRef.current;
     panRef.current = null;
     if (pan?.moved) {
@@ -186,9 +229,23 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
   };
 
   const onNodeClick = (node: C4Node) => {
+    if (dragJustEndedRef.current) {
+      // The click a completed drag fires is the same gesture, not a new selection.
+      dragJustEndedRef.current = false;
+      return;
+    }
+
     setFocusedId(node.id);
     surfaceRef.current?.focus();
     select(nodeSelection(entryId, path, node.id));
+  };
+
+  const onNodePointerDown = (node: C4Node, event: React.MouseEvent) => {
+    if (event.button !== 0) {
+      return; // a right-click is the menu's gesture, not a drag
+    }
+
+    dragRef.current = { id: node.id, clientX: event.clientX, clientY: event.clientY, x: node.x, y: node.y, moved: false };
   };
 
   /** Right-click an element: select it with the menu gesture, open the menu on the push. */
@@ -350,7 +407,9 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
                 node={node}
                 focused={node.id === focusedId}
                 dropTarget={node.id === dropTargetId}
+                offset={dragOffset?.id === node.id ? dragOffset : undefined}
                 onSelect={() => onNodeClick(node)}
+                onPointerDown={(event) => onNodePointerDown(node, event)}
                 onContextMenu={(event) => onNodeContextMenu(node, event)}
                 onDragOver={(event) => onNodeDragOver(node, event)}
                 onDrop={(event) => onNodeDrop(node, event)}
@@ -396,7 +455,9 @@ function C4NodeShape({
   node,
   focused,
   dropTarget,
+  offset,
   onSelect,
+  onPointerDown,
   onContextMenu,
   onDragOver,
   onDrop,
@@ -404,7 +465,10 @@ function C4NodeShape({
   node: C4Node;
   focused: boolean;
   dropTarget: boolean;
+  /** How far the pointer has carried this element in the drag currently in flight. */
+  offset?: { dx: number; dy: number };
   onSelect: () => void;
+  onPointerDown: (event: React.MouseEvent) => void;
   onContextMenu: (event: React.MouseEvent) => void;
   onDragOver: (event: React.DragEvent) => void;
   onDrop: (event: React.DragEvent) => void;
@@ -418,9 +482,10 @@ function C4NodeShape({
 
   return (
     <g
-      className={`c4-node${focused ? " c4-node-focused" : ""}${dropTarget ? " c4-node-drop-target" : ""}`}
-      transform={`translate(${node.x} ${node.y})`}
+      className={`c4-node${focused ? " c4-node-focused" : ""}${dropTarget ? " c4-node-drop-target" : ""}${offset ? " c4-node-dragging" : ""}`}
+      transform={`translate(${node.x + (offset?.dx ?? 0)} ${node.y + (offset?.dy ?? 0)})`}
       onClick={onSelect}
+      onMouseDown={onPointerDown}
       onContextMenu={onContextMenu}
       onDragOver={onDragOver}
       onDrop={onDrop}

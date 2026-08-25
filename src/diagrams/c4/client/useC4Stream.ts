@@ -23,6 +23,14 @@ export interface C4Stream {
    * state instead (diagram-workspace-tabs Requirement 5.1).
    */
   failed: boolean;
+  /**
+   * Records where the user dropped an element, in canvas units.
+   *
+   * A position rather than a parent: a C4 element belongs to whatever declares it in the
+   * document, and no drag says otherwise. The backend keeps this in the layout sidecar beside
+   * the `.dsl` rather than in it, and dispatches it as a command - so a drag is one undo away.
+   */
+  moveElementTo: (elementId: string, x: number, y: number) => Promise<string>;
   /** Tells the backend what the canvas can see, so a large model does not stream in full. */
   reportView: (viewport: Viewport) => void;
 }
@@ -109,5 +117,22 @@ export function useC4Stream(projectId: Uint8Array, path: readonly string[]): C4S
       });
   };
 
-  return { model, loading, failed, reportView };
+  const moveElementTo = async (elementId: string, x: number, y: number): Promise<string> => {
+    try {
+      const response = await clientRef.current.moveElement({
+        projectId: { value: projectId },
+        watchId: { value: watchId },
+        path: { segments: [...path] },
+        elementId,
+        // The position is what makes this an arrangement rather than a re-parenting; the
+        // backend routes on its presence.
+        position: { x, y },
+      });
+      return response.error;
+    } catch (error) {
+      return error instanceof Error ? error.message : "The move could not be sent.";
+    }
+  };
+
+  return { model, loading, failed, reportView, moveElementTo };
 }
