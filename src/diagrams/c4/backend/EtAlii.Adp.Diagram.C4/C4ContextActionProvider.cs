@@ -22,6 +22,22 @@ public sealed class C4ContextActionProvider : IContextActionProvider
     public const string RelabelActionId = "c4.relabel";
     public const string SetProtocolActionId = "c4.set-protocol";
 
+    /// <summary>
+    /// The add actions the toolbox names. `C4ToolboxProvider` builds these ids from the kinds a
+    /// view permits, and they were dangling until now - a palette whose entries named actions
+    /// nothing implemented.
+    /// </summary>
+    public static string AddActionIdFor(C4ElementKind kind) => $"c4.add-{kind.ToString().ToLowerInvariant()}";
+
+    /// <summary>The kinds the toolbox can currently add; the rest live in a deployment environment.</summary>
+    private static readonly C4ElementKind[] AddableKinds =
+    [
+        C4ElementKind.Person,
+        C4ElementKind.SoftwareSystem,
+        C4ElementKind.Container,
+        C4ElementKind.Component,
+    ];
+
     private const string Gone = "That element is no longer in this model.";
 
     private readonly IHistoryStackStore _historyStacks;
@@ -44,7 +60,10 @@ public sealed class C4ContextActionProvider : IContextActionProvider
 
         if (!TryResolve(target, out var workspace, out var element, out var relationship))
         {
-            return Empty();
+            // No element: the diagram itself. Only the adds that need no parent apply.
+            return target.ElementId.Length == 0
+                ? Groups(new ContextActionGroupDefinition(AddActionsFor(parent: null)))
+                : Empty();
         }
 
         if (relationship is not null)
@@ -75,13 +94,29 @@ public sealed class C4ContextActionProvider : IContextActionProvider
         }
 
         _ = workspace;
-        return Groups(new ContextActionGroupDefinition(actions));
+
+        var adds = AddActionsFor(element);
+        return adds.Count == 0
+            ? Groups(new ContextActionGroupDefinition(actions))
+            : Groups(new ContextActionGroupDefinition(actions), new ContextActionGroupDefinition(adds));
     }
 
     public ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
+
+        if (KindOfAdd(actionId) is { } adding)
+        {
+            // Asked before anything is written, so the element arrives named rather than as
+            // "New container" for the user to find and rename.
+            return Result(new ContextExecutionRequiresInput(new ContextInputRequest(
+                $"Add {Spell(adding).ToLowerInvariant()}",
+                "mdi-plus",
+                "Name",
+                "",
+                "Add")));
+        }
 
         if (!TryResolve(target, out _, out var element, out var relationship))
         {
@@ -126,7 +161,7 @@ public sealed class C4ContextActionProvider : IContextActionProvider
         cancellationToken.ThrowIfCancellationRequested();
         _ = target;
 
-        if (actionId == RenameActionId && string.IsNullOrWhiteSpace(value))
+        if ((actionId == RenameActionId || KindOfAdd(actionId) is not null) && string.IsNullOrWhiteSpace(value))
         {
             return ValueTask.FromResult(ContextValidationResult.Rejected("Every C4 element needs a name."));
         }
@@ -137,6 +172,16 @@ public sealed class C4ContextActionProvider : IContextActionProvider
     public async ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
+
+        if (KindOfAdd(actionId) is { } adding)
+        {
+            // The parent is whatever the element was dropped on - a software system for a
+            // container, a container for a component, and nothing at all for a drop on empty
+            // canvas. The command judges whether that pairing is legal and says so if not.
+            var add = new AddC4ElementCommand(target.ResolvedFullPath, adding, value, target.ElementId);
+            var added = await _historyStacks.Get(target.RootPath).ExecuteAsync(add, cancellationToken);
+            return added.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(added.Error);
+        }
 
         if (!TryResolve(target, out _, out var element, out var relationship))
         {
@@ -168,6 +213,43 @@ public sealed class C4ContextActionProvider : IContextActionProvider
     /// DSL identifier of its own, so it is looked up by the composite id the mapper puts on the
     /// wire for it.
     /// </summary>
+    /// <summary>The kind an add action adds, or null when the id is not an add.</summary>
+    private static C4ElementKind? KindOfAdd(string actionId)
+    {
+        foreach (var kind in AddableKinds)
+        {
+            if (actionId == AddActionIdFor(kind))
+            {
+                return kind;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>What may be added inside <paramref name="parent"/> - or at the top, when it is null.</summary>
+    private static IReadOnlyList<ContextActionDefinition> AddActionsFor(C4Element? parent) =>
+        AddableKinds
+            .Where(kind => C4Placement.Refuse(C4Workspace.Empty, kind, parentId: "") is null)
+            .Where(kind => FitsInside(kind, parent))
+            .Select(kind => new ContextActionDefinition(AddActionIdFor(kind), $"Add {Spell(kind).ToLowerInvariant()}&", "mdi-plus"))
+            .ToArray();
+
+    /// <summary>C4's containment rule, as the menu needs it: what belongs inside what.</summary>
+    private static bool FitsInside(C4ElementKind kind, C4Element? parent) => kind switch
+    {
+        C4ElementKind.Person or C4ElementKind.SoftwareSystem => parent is null,
+        C4ElementKind.Container => parent?.Kind == C4ElementKind.SoftwareSystem,
+        C4ElementKind.Component => parent?.Kind == C4ElementKind.Container,
+        _ => false,
+    };
+
+    private static string Spell(C4ElementKind kind) => kind switch
+    {
+        C4ElementKind.SoftwareSystem => "Software system",
+        _ => kind.ToString(),
+    };
+
     private bool TryResolve(ContextTarget target, out C4Workspace workspace, out C4Element? element, out C4Relationship? relationship)
     {
         workspace = C4Workspace.Empty;

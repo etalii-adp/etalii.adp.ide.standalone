@@ -54,6 +54,17 @@
   stroke-width: 2.5;
 }
 
+/* The element a toolbox entry is held over, so the drop's outcome is visible before the button
+   is released. After the focused rule on purpose: the two have equal specificity, and a drop
+   target that is also focused should read as a drop target. The mindmap learned this the hard
+   way - see its stylesheet and the entry in tests.md. */
+.c4-node-drop-target rect,
+.c4-node-drop-target ellipse {
+  stroke: var(--color-success, #2e7d32);
+  stroke-width: 3;
+  stroke-dasharray: 6 3;
+}
+
 .c4-node-name {
   font-size: 13px;
   font-weight: 600;
