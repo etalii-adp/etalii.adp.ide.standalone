@@ -92,9 +92,9 @@ public class AwsDeploymentTests
         // Both ends are declared inside the deployment environment rather than the model, and
         // one of them is a container instance identified by its own name.
         Assert.Contains(Workspace.Relationships, r =>
-            r.SourceId == "route53" && r.DestinationId == "elb" && r.Technology == "HTTPS");
+            r is { SourceId: "route53", DestinationId: "elb", Technology: "HTTPS" });
         Assert.Contains(Workspace.Relationships, r =>
-            r.SourceId == "elb" && r.DestinationId == "webApplicationInstance");
+            r is { SourceId: "elb", DestinationId: "webApplicationInstance" });
     }
 
     [Fact]

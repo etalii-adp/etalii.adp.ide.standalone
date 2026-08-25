@@ -1,9 +1,5 @@
-using System.Globalization;
-using System.Runtime.CompilerServices;
-using Serilog;
 using Serilog.Core;
 using Serilog.Events;
-using Serilog.Formatting.Display;
 
 namespace EtAlii.Adp.Diagram.Tests;
 

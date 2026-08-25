@@ -1,5 +1,3 @@
-using EtAlii.Adp.Diagram;
-
 namespace EtAlii.Adp.Backend.Hierarchy;
 
 /// <summary>What <see cref="DiagramFileRouter"/> decided about a file.</summary>

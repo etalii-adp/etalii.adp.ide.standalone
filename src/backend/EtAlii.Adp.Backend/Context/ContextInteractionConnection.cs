@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
-using Serilog;
 
 namespace EtAlii.Adp.Backend.Context;
 

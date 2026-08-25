@@ -1,6 +1,3 @@
-using EtAlii.Adp.Backend.Context;
-using EtAlii.Adp.Backend.Hierarchy;
-
 namespace EtAlii.Adp.Diagram.Mindmap;
 
 internal sealed class MindmapNodeSubscription(Action dispose) : IDisposable

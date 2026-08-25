@@ -1,5 +1,3 @@
-using EtAlii.Adp.Diagram;
-
 namespace EtAlii.Adp.C4;
 
 /// <summary>Every rule's stable id, prefixed with the module's short name as core expects.</summary>

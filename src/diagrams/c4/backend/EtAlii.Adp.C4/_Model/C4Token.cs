@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace EtAlii.Adp.C4;
 
 /// <summary>One token and where it sits in the line it came from, quotes included.</summary>

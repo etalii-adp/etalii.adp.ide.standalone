@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace EtAlii.Adp.Diagram.Tests;
 
 internal sealed class DiagramDocumentFactoriesStubFactory(DiagramOrigin origin) : IDiagramDocumentFactory

@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-
 namespace EtAlii.Adp.Backend;
 
 internal sealed class CommandHandlerInvoker<TCommand> : ICommandHandlerInvoker

@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace EtAlii.Adp.Backend.Tests;
 
 // ReSharper disable once NotAccessedPositionalProperty.Local

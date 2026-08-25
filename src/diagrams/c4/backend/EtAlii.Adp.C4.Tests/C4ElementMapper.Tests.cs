@@ -1,5 +1,4 @@
 using EtAlii.Adp.Backend.Diagrams;
-using Google.Protobuf;
 using Xunit;
 
 namespace EtAlii.Adp.C4.Tests;
@@ -385,7 +384,7 @@ public class C4ElementMapperTests
 
         // Act and assert, step by step.
         var problem = Assert.Single(problems, p => p.RuleId == C4Rules.MissingDescription);
-        Assert.Equal(new EtAlii.Adp.Diagram.DiagramProblemElementLocation("u"), problem.Location);
+        Assert.Equal(new Diagram.DiagramProblemElementLocation("u"), problem.Location);
     }
 
     // ---- the viewport --------------------------------------------------------------------

@@ -1,6 +1,5 @@
 using System.Threading.Channels;
 using EtAlii.Adp.Backend.Context;
-using Xunit;
 
 namespace EtAlii.Adp.Backend.Tests;
 
