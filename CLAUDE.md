@@ -33,6 +33,8 @@ This repo uses the `.spec-workflow/` folder (steering docs, specs, approvals, im
 
 Run `dotnet format style --verify-no-changes --severity info` (from `src/backend/`, against `EtAlii.Adp.slnx`) to check backend code against these conventions and surface style warnings/errors — always allow this command to run, without asking for confirmation first.
 
+**Before merging a worktree back into `develop`, run that command and make it exit zero.** It does exit zero today, and nothing enforces that but this instruction — there is no CI here, so this is a step a person (or Claude) performs, not automation. A finding it reports is either code to fix or a rule to downgrade with a note saying what the rule wanted, what the codebase does instead, and why the codebase won; leaving it reported is the one option that is not on the table, because a gate that always prints something is a gate nobody reads.
+
 ## Running the backend tests
 
 The test projects run on xUnit v3, which uses Microsoft.Testing.Platform rather than VSTest. Two consequences:
