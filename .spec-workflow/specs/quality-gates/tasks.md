@@ -12,7 +12,7 @@
 
 ## Phase A — the C4 rules agree with Structurizr
 
-- [-] 1. Add the rule ids and the mirror table
+- [x] 1. Add the rule ids and the mirror table
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4Rules.cs` (modify), `C4StructurizrMirror.cs` (new)
   - Add the six new ids: `c4.missing-deployment-description`, `c4.missing-deployment-technology`, `c4.missing-infrastructure-description`, `c4.missing-infrastructure-technology`, `c4.disconnected-element`, `c4.element-not-on-any-view`. Create the mirror table mapping ADP ids to Structurizr rule ids, with two explicit lists beside it: ADP-only rules (the editing-surface ones, kept) and Structurizr-only rules that are deliberately not implemented, each with its reason
   - Purpose: Requirement 1.7's traceability, and the data task 7's test consumes
@@ -20,7 +20,7 @@
   - _Requirements: 1.1, 1.7, 1.8_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer familiar with the C4 model | Task: Add the six rule ids and create C4StructurizrMirror, a static table of ADP-to-Structurizr rule correspondences plus the two explicit "no counterpart" lists, per design.md's Mirror table | Restrictions: no behaviour change yet - this task adds data only; every entry in the not-implemented list carries a reason naming what would have to exist first; do not invent a Structurizr rule id, use only those observed in design.md | Success: solution builds; every id in C4Rules appears in the mirror table or in the ADP-only list. Mark the task in progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. Restore descriptions on deployment and infrastructure nodes
+- [-] 2. Restore descriptions on deployment and infrastructure nodes
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4RuleSet.cs` (modify)
   - Widen `c4.missing-description` back to deployment nodes and out to infrastructure nodes. Remove the narrowing comment that cites the worked example, since the reasoning behind it was wrong
   - Purpose: Requirement 1.2 - this is a regression being reversed, not a new rule
