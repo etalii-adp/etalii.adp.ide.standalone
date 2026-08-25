@@ -1,3 +1,5 @@
+using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Backend.Diagrams;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +34,17 @@ public static class ServiceCollectionAddC4Extension
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        // The type's commands, so every edit is one undo away (tech.md's Commands rule).
+        services.AddSingleton<ICommandHandler<SetElementNameCommand>, SetElementNameCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetElementDescriptionCommand>, SetElementDescriptionCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetElementTechnologyCommand>, SetElementTechnologyCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetRelationshipDescriptionCommand>, SetRelationshipDescriptionCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetRelationshipTechnologyCommand>, SetRelationshipTechnologyCommandHandler>();
+
+        // Makes a C4 element selectable, once for the whole family: which C4 type a file
+        // is does not change what an element is (Requirement 13.2).
+        services.AddSingleton<IContextSourceResolver, C4ContextSourceResolver>();
+
         // One store and one mapper for the whole family: several diagrams open one document,
         // so they must share the instance that holds it (Requirement 1.2).
         services.TryAddSingleton<IC4DocumentStore, C4DocumentStore>();
@@ -42,6 +55,10 @@ public static class ServiceCollectionAddC4Extension
         {
             var origin = new DiagramOrigin("c4", type);
             services.AddSingleton<IDiagramDocumentFactory>(_ => new C4DocumentFactory(origin, viewKind));
+
+            // The palette this view offers: exactly the kinds it permits, drawn from the
+            // same rule the validator uses so the two cannot disagree (Requirement 12.2).
+            services.AddSingleton<IDiagramToolboxProvider>(_ => new C4ToolboxProvider(origin, viewKind));
 
             // The session seam: which view a session shows comes from the .adp file, so all six
             // factories are the same code under different origins.

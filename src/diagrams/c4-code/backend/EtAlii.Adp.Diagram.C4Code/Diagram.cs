@@ -5,8 +5,13 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("c4", "code"),
-        "Code (optional)",
-        // All seven C4 types keep their model in a Structurizr DSL document, and several of
-        // them can share one (c4-diagrams Requirement 2.2).
-        ".dsl");
+        "Code (optional)");
+
+    // Deliberately no extension, unlike its six siblings. The other C4 types keep their
+    // model in a Structurizr DSL document; the code level does not, because the DSL declares
+    // no code view and C4 specifies UML class or ER notation for it instead. Claiming .dsl
+    // would also make this - the one C4 type that cannot open anything - the first claimant
+    // of that extension in catalog order, which broke opening a .dsl that has no .adp beside
+    // it (found by the shared-model integration test). A deviation from Requirement 2.2,
+    // recorded in tasks.md.
 }
