@@ -94,18 +94,30 @@ public static class C4RuleSet
                 continue;
             }
 
-            // Only the static abstractions. C4 asks for a description so a reader can tell what
-            // an element is *responsible for*, which is a question about people, systems,
-            // containers and components. A deployment node is named by what it is - "Apache
-            // Tomcat", "bigbank-web***" - and C4's own worked example leaves those undescribed,
-            // which is how this rule was found to be over-reaching.
-            if (element.Description.Length == 0 && element.Kind is
-                C4ElementKind.Person or C4ElementKind.SoftwareSystem or C4ElementKind.Container or C4ElementKind.Component)
+            // Every element that is not an instance of another. This rule was once narrowed to
+            // the four static kinds, on the reasoning that a deployment node is named by what it
+            // is - "Apache Tomcat", "bigbank-web***" - and that C4's own worked example leaves
+            // those undescribed. Structurizr's own inspector reports
+            // `model.deploymentnode.description` on exactly those nodes, so the example is
+            // authoritative about syntax and not about quality. The narrowing was the error.
+            if (element.Description.Length == 0)
             {
+                // A separate id per kind, because Structurizr names one per kind and the mirror
+                // table compares by id. Same question, same wording, different rule.
+                var ruleId = element.Kind switch
+                {
+                    C4ElementKind.DeploymentNode => C4Rules.MissingDeploymentDescription,
+                    C4ElementKind.InfrastructureNode => C4Rules.MissingInfrastructureDescription,
+                    _ => C4Rules.MissingDescription,
+                };
+
                 yield return new DiagramProblem(
+                    // A Warning, where Structurizr prints ERROR. These are recommendations
+                    // rather than syntax faults, and the divergence is a recorded decision
+                    // (quality-gates Requirement 1.9).
                     DiagramProblemSeverity.Warning,
                     $"'{Label(element)}' has no description. C4 asks for a short description on every element, so a reader can tell at a glance what it is responsible for.",
-                    C4Rules.MissingDescription,
+                    ruleId,
                     new DiagramProblemElementLocation(element.Id));
             }
 

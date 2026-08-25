@@ -114,15 +114,25 @@ public class AwsDeploymentTests
     }
 
     [Fact]
-    public void TheModelIsClean_ByC4sOwnRules()
+    public void TheAwsExample_ReportsOnlyItsUndescribedDeploymentNodes()
     {
-        // Arrange and act.
-        var problems = C4RuleSet.Validate(Workspace)
+        // Arrange.
+        // Structurizr publishes this example, and its own inspector reports the same thing:
+        // every deployment node here is named for the AWS service it is - `Amazon RDS`,
+        // `Amazon EC2` - and left without a description. The names carry the meaning for a
+        // reader who knows AWS, which is why the example gets away with it, and it is still
+        // worth a warning in a document meant to be read by someone who does not.
+        var reported = C4RuleSet.Validate(Workspace)
             .Where(problem => problem.RuleId != C4Rules.EmptyView)
+            .Select(problem => problem.RuleId)
+            .Distinct()
+            .Order(StringComparer.Ordinal)
             .ToArray();
 
-        // Assert.
-        Assert.Empty(problems.Select(problem => $"{problem.RuleId}: {problem.Message}"));
+        // Act and assert.
+        // Asserting the set rather than the count, so a *new* kind of complaint fails here
+        // while the known one does not.
+        Assert.Equal([C4Rules.MissingDeploymentDescription], reported);
     }
 
     [Fact]
