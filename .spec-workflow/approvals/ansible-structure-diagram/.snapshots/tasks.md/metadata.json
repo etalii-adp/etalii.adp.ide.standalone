@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/ansible-structure-diagram/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-25T16:57:37.471Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787677057448_jyrfffbyg",
+      "approvalTitle": "ansible-structure-diagram - Tasks"
+    }
+  ]
+}
