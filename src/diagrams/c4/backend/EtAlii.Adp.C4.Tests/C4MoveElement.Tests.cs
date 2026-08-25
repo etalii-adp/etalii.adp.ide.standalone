@@ -65,7 +65,7 @@ public class C4MoveElementTests : IDisposable
     public async Task ADrag_RecordsThePositionInTheSidecar_AndLeavesTheDocumentAlone()
     {
         // Arrange.
-        var before = File.ReadAllText(_bodyPath);
+        var before = await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken);
         await using var session = Open();
 
         // Act.
@@ -76,7 +76,7 @@ public class C4MoveElementTests : IDisposable
         Assert.Equal(new C4SidecarPosition(250, 400), _sidecar.Read(_bodyPath, "all")["a"]);
         // The model did not change: a position is view state, and the .dsl is another
         // ecosystem's file (Requirement 3.5).
-        Assert.Equal(before, File.ReadAllText(_bodyPath));
+        Assert.Equal(before, await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken));
     }
 
     [Fact]

@@ -121,7 +121,7 @@ public class C4InteropTests : IDisposable
         var history = services.GetRequiredService<IHistoryStackStore>().Get(_root);
 
         var path = IoPath.Combine(_root, "acme.dsl");
-        File.WriteAllText(path, factory.CreateEmptyDocument("Acme Banking"));
+        await File.WriteAllTextAsync(path, factory.CreateEmptyDocument("Acme Banking"), TestContext.Current.CancellationToken);
 
         var edits = new ICommand[]
         {

@@ -76,11 +76,11 @@ public class AddC4ViewTests : IDisposable
         var workspace = _documents.WorkspaceOf(_bodyPath);
         var view = workspace.FindView("containers");
         Assert.NotNull(view);
-        Assert.Equal(C4ViewKind.Container, view!.Kind);
+        Assert.Equal(C4ViewKind.Container, view.Kind);
         Assert.Equal("s", view.ScopeId);
 
         // ...and the .adp names that body and that view.
-        var registration = File.ReadAllText(IoPath.Combine(_root, "containers.adp"));
+        var registration = await File.ReadAllTextAsync(IoPath.Combine(_root, "containers.adp"), TestContext.Current.CancellationToken);
         Assert.StartsWith("c4/container\n", registration, StringComparison.Ordinal);
         Assert.Contains("body: banking.dsl", registration, StringComparison.Ordinal);
         Assert.Contains("view: containers", registration, StringComparison.Ordinal);
@@ -90,12 +90,12 @@ public class AddC4ViewTests : IDisposable
     public async Task AddingAView_LeavesTheRestOfTheDocumentExactlyAsItWas()
     {
         // Arrange.
-        var before = File.ReadAllLines(_bodyPath);
+        var before = await File.ReadAllLinesAsync(_bodyPath, TestContext.Current.CancellationToken);
 
         await _history.ExecuteAsync(AddContainers(), TestContext.Current.CancellationToken);
 
         // Act and assert, step by step.
-        var after = File.ReadAllLines(_bodyPath);
+        var after = await File.ReadAllLinesAsync(_bodyPath, TestContext.Current.CancellationToken);
         // Only the appended block is new; every line that was there is still there, in order.
         Assert.Equal(before.Length + 4, after.Length);
         Assert.Equal(before.Take(10), after.Take(10));
@@ -117,14 +117,14 @@ public class AddC4ViewTests : IDisposable
     public async Task AddingAView_Undoes_RemovingBothTheBlockAndTheRegistration()
     {
         // Arrange.
-        var before = File.ReadAllText(_bodyPath);
+        var before = await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken);
         await _history.ExecuteAsync(AddContainers(), TestContext.Current.CancellationToken);
 
         // Act.
         await _history.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal(before, File.ReadAllText(_bodyPath));
+        Assert.Equal(before, await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken));
         Assert.False(File.Exists(IoPath.Combine(_root, "containers.adp")));
     }
 
@@ -189,7 +189,7 @@ public class AddC4ViewTests : IDisposable
         await _history.ExecuteAsync(command, TestContext.Current.CancellationToken);
 
         // Assert.
-        var document = File.ReadAllText(_bodyPath);
+        var document = await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken);
         var block = document[document.IndexOf("dynamic s \"scenario\"", StringComparison.Ordinal)..];
         Assert.DoesNotContain("include *", block[..block.IndexOf('}')], StringComparison.Ordinal);
     }
@@ -199,7 +199,7 @@ public class AddC4ViewTests : IDisposable
     {
         // Arrange.
         var empty = IoPath.Combine(_root, "empty.dsl");
-        File.WriteAllText(empty, "workspace {\n    model {\n    }\n    views {\n    }\n}\n");
+        await File.WriteAllTextAsync(empty, "workspace {\n    model {\n    }\n    views {\n    }\n}\n", TestContext.Current.CancellationToken);
 
         // Act.
         var command = new AddC4ViewCommand(
@@ -219,7 +219,7 @@ public class AddC4ViewTests : IDisposable
         await _history.ExecuteAsync(AddContainers(), TestContext.Current.CancellationToken);
 
         // Act.
-        var workspace = C4Parser.Parse(C4Document.Parse(File.ReadAllText(_bodyPath)));
+        var workspace = C4Parser.Parse(C4Document.Parse(await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken)));
         var view = workspace.FindView("containers")!;
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default);
 

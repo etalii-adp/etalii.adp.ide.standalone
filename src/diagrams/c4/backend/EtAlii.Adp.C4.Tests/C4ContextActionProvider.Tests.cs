@@ -133,7 +133,7 @@ public class C4ContextActionProviderTests : IDisposable
         await _provider.CommitAsync(TargetFor("web"), C4ContextActionProvider.RenameActionId, "Web Application", "", TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Contains("container \"Web Application\"", File.ReadAllText(_bodyPath), StringComparison.Ordinal);
+        Assert.Contains("container \"Web Application\"", await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken), StringComparison.Ordinal);
         Assert.True(_services.GetRequiredService<IHistoryStackStore>().Get(_root).CanUndo);
     }
 
@@ -149,7 +149,7 @@ public class C4ContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Contains("\"Views accounts using\"", File.ReadAllText(_bodyPath), StringComparison.Ordinal);
+        Assert.Contains("\"Views accounts using\"", await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
