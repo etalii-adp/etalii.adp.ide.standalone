@@ -59,7 +59,7 @@
   - _Requirements: 9.3_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# and TypeScript developer working across the problem wire | Task: Add a third DiagramProblemLocation case naming a project-relative file and an optional line, carry it through the cache, the broadcaster, the proto and the panel | Restrictions: use a new proto field number, never reuse one; the path crossing the wire must be project-relative, never absolute; do not change how the two existing cases behave | Success: a problem carrying a file location round-trips through the cache, reaches the panel, and reveals the named file_
 
-- [-] 5. Attribute and pin a file-located problem to that file
+- [x] 5. Attribute and pin a file-located problem to that file
   - File: `src/backend/EtAlii.Adp.Backend/Problems/ProjectValidator.cs` (edited), `ProblemCollector.cs` (edited), `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Problems/ProjectValidator.Tests.cs` (edited)
   - When a returned `DiagramProblem` carries a `DiagramProblemFileLocation`, use that file for **both** the attribution path and the `statsPath` staleness pin. Pinning a folder diagram's problems to an `.adp` that never changes would leave every verdict looking fresh forever
   - Purpose: the panel reveals the right file, and the verdict goes stale when that file is edited
@@ -67,7 +67,7 @@
   - _Requirements: 9.3_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Make ProjectValidator attribute and staleness-pin a file-located problem to the file it names | Restrictions: a problem with no location or an element/line location must behave exactly as today; the named file must be containment-checked against the root before it is used | Success: a test proves a file-located problem is stored against that file and marked stale when that file changes, and every existing attribution test still passes_
 
-- [ ] 6. Revalidate a folder diagram when a file beneath it changes
+- [-] 6. Revalidate a folder diagram when a file beneath it changes
   - File: `src/backend/EtAlii.Adp.Backend/Problems/ProblemMaintenance.cs` (edited), `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Problems/ProblemMaintenance.Tests.cs` (edited)
   - In `RevalidateAsync`, when a changed path routes to `NotADiagram`, walk up to the nearest ancestor folder holding an `.adp` whose definition is `DiagramSubject.Folder`, and validate that diagram's scope. Stop at the project root; read only `.adp` files
   - Without this, editing a role file **clears** the folder diagram's problems without re-finding them — the panel loses a problem rather than refreshing it, which is worse than not watching at all
