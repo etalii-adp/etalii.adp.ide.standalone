@@ -78,7 +78,7 @@
 
 ## Phase C — reading the tree
 
-- [ ] 7. Scaffold the module
+- [-] 7. Scaffold the module
   - File: `src/diagrams/ansible-structure/**` (new), `src/backend/EtAlii.Adp.slnx` (edited)
   - `backend/EtAlii.Adp.Diagram.AnsibleStructure` and `.Tests` (the test project an executable, for xUnit v3), `api/`, `client/`, following the mindmap module's layout. `Diagram.cs` declares one `Definitions` entry: origin `ansible/structure`, title, description, **no `Extension`**, `Subject = DiagramSubject.Folder`
   - Purpose: the module exists and is discovered
