@@ -26,6 +26,13 @@ public interface IC4DocumentStore
     /// </summary>
     void Save(string path);
 
+    /// <summary>
+    /// Tells every session on this document to re-deliver, without changing the document.
+    /// A drag changes where an element is drawn but not what the model says, so it has a
+    /// sidecar to write and nothing to save (Requirement 8.3).
+    /// </summary>
+    void Touch(string path);
+
     /// <summary>Forgets a document, so the next open reads it afresh.</summary>
     void Forget(string path);
 

@@ -1,6 +1,7 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Diagrams;
 using EtAlii.Adp.Diagram;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -16,6 +17,7 @@ public class C4SessionTests : IDisposable
     private readonly string _root;
     private readonly C4DocumentStore _documents = new();
     private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4LayoutSidecar());
+    private readonly IHistoryStackStore _historyStacks = new ServiceCollection().AddCommands().AddC4().BuildServiceProvider().GetRequiredService<IHistoryStackStore>();
 
     public C4SessionTests()
     {
@@ -66,7 +68,7 @@ public class C4SessionTests : IDisposable
     }
 
     private C4Session Open(string bodyPath, string? registrationPath) =>
-        (C4Session)new C4SessionFactory(new DiagramOrigin("c4", "context"), _documents, _mapper)
+        (C4Session)new C4SessionFactory(new DiagramOrigin("c4", "context"), _documents, _mapper, _historyStacks)
             .Open(ShortGuid.NewShortGuid(), _root, bodyPath, registrationPath);
 
     private static IReadOnlyList<DiagramElement> Added(IReadOnlyList<DiagramDelta> deltas) =>

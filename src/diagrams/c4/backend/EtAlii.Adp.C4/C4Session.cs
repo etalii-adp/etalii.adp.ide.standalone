@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Diagrams;
 using Serilog;
 
@@ -19,9 +20,18 @@ public sealed class C4Session : IDiagramSession
     private readonly IC4DocumentStore _documents;
     private readonly C4ElementMapper _mapper;
 
+    /// <summary>The project's history, so a drag is one undo away. Null makes the diagram read-only.</summary>
+    private readonly IHistoryStack? _history;
+
     private DiagramViewport _viewport = DiagramViewport.Unbounded;
 
-    public C4Session(ShortGuid watchId, string bodyPath, string? viewKey, IC4DocumentStore documents, C4ElementMapper mapper)
+    public C4Session(
+        ShortGuid watchId,
+        string bodyPath,
+        string? viewKey,
+        IC4DocumentStore documents,
+        C4ElementMapper mapper,
+        IHistoryStack? history = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(documents);
@@ -32,6 +42,7 @@ public sealed class C4Session : IDiagramSession
         _viewKey = viewKey;
         _documents = documents;
         _mapper = mapper;
+        _history = history;
         _documents.Changed += OnDocumentChanged;
     }
 
@@ -66,16 +77,49 @@ public sealed class C4Session : IDiagramSession
         return deltas;
     }
 
-    public Task<string> MoveElementAsync(string elementId, string newParentId, int index, CancellationToken cancellationToken)
+    /// <summary>
+    /// The drop half of a drag. On a C4 diagram a drag places an element on the canvas rather
+    /// than re-parenting it: containment is what the model says, and dropping a container onto
+    /// another system would be a claim about the architecture, not an arrangement. So the
+    /// position is recorded and the containment is left alone (Requirement 8.3).
+    /// </summary>
+    /// <remarks>
+    /// The core contract's <c>MoveElement</c> carries a parent and an index because a tree
+    /// needs them. Where the canvas sends a position instead, it packs it into
+    /// <paramref name="newParentId"/> as "x,y" - the one place the generic call shape and this
+    /// type's meaning have to be reconciled.
+    /// </remarks>
+    public async Task<string> MoveElementAsync(string elementId, string newParentId, int index, CancellationToken cancellationToken)
     {
-        // Moving an element between parents changes the model's containment - a container into
-        // another system - which the commands implement. Until they land, refusing plainly is
-        // better than moving something the document would then disagree about.
-        _ = elementId;
-        _ = newParentId;
         _ = index;
         cancellationToken.ThrowIfCancellationRequested();
-        return Task.FromResult("Rearranging a C4 model by dragging is not available yet.");
+
+        var view = View();
+        if (view is null)
+        {
+            return "This diagram has no view to arrange.";
+        }
+
+        var parts = newParentId.Split(',');
+        if (parts.Length != 2
+            || !double.TryParse(parts[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var x)
+            || !double.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var y))
+        {
+            // Re-parenting is a change to the model, and the canvas has no business making one
+            // by dragging: a container belongs to the system that declares it.
+            return "Dragging changes where an element is drawn, not what contains it.";
+        }
+
+        if (_history is null)
+        {
+            return "This diagram is read-only.";
+        }
+
+        var result = await _history.ExecuteAsync(
+            new MoveC4ElementCommand(_bodyPath, view.Key, elementId, x, y),
+            cancellationToken);
+
+        return result.IsSuccess ? "" : result.Error;
     }
 
     public ValueTask DisposeAsync()

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Diagrams;
 using EtAlii.Adp.Diagram;
 
@@ -13,25 +14,28 @@ public sealed class C4SessionFactory : IDiagramSessionFactory
 {
     private readonly IC4DocumentStore _documents;
     private readonly C4ElementMapper _mapper;
+    private readonly IHistoryStackStore _historyStacks;
 
-    public C4SessionFactory(DiagramOrigin origin, IC4DocumentStore documents, C4ElementMapper mapper)
+    public C4SessionFactory(DiagramOrigin origin, IC4DocumentStore documents, C4ElementMapper mapper, IHistoryStackStore historyStacks)
     {
         ArgumentNullException.ThrowIfNull(origin);
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(mapper);
+        ArgumentNullException.ThrowIfNull(historyStacks);
 
         Origin = origin;
         _documents = documents;
         _mapper = mapper;
+        _historyStacks = historyStacks;
     }
 
     public DiagramOrigin Origin { get; }
 
     public IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath, string? registrationPath)
     {
-        _ = rootPath;
         var viewKey = registrationPath is { Length: > 0 } ? ReadViewKey(registrationPath) : null;
-        return new C4Session(watchId, bodyPath, viewKey, _documents, _mapper);
+        // The project's history, so a drag on this canvas is one undo away like every other edit.
+        return new C4Session(watchId, bodyPath, viewKey, _documents, _mapper, _historyStacks.Get(rootPath));
     }
 
     /// <summary>

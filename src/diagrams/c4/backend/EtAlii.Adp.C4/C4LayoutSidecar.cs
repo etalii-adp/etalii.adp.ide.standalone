@@ -88,6 +88,29 @@ public sealed class C4LayoutSidecar
         }
     }
 
+    /// <summary>Forgets one element's authored position, handing it back to the layout.</summary>
+    public void Remove(string bodyPath, string viewKey, string elementId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
+        ArgumentNullException.ThrowIfNull(viewKey);
+        ArgumentException.ThrowIfNullOrWhiteSpace(elementId);
+
+        var all = ReadAll(bodyPath).ToDictionary(
+            pair => pair.Key,
+            pair => pair.Value.Where(entry => !entry.Key.Equals(elementId, StringComparison.OrdinalIgnoreCase))
+                .ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.OrdinalIgnoreCase),
+            StringComparer.OrdinalIgnoreCase);
+
+        try
+        {
+            File.WriteAllText(PathFor(bodyPath), JsonSerializer.Serialize(all, Options));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            _logger.Warning(exception, "Could not update the layout sidecar beside {BodyPath}", bodyPath);
+        }
+    }
+
     /// <summary>Forgets every authored position for one view - what "reset layout" would do.</summary>
     public void Clear(string bodyPath, string viewKey)
     {
