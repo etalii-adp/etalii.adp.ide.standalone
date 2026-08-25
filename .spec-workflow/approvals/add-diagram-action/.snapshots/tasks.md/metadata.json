@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/add-diagram-action/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-22T16:56:04.142Z",
       "trigger": "initial",
+      "approvalId": "approval_1787417764115_8vorqsyp3",
+      "approvalTitle": "add-diagram-action: tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-25T16:51:48.352Z",
+      "trigger": "approved",
       "approvalId": "approval_1787417764115_8vorqsyp3",
       "approvalTitle": "add-diagram-action: tasks"
     }

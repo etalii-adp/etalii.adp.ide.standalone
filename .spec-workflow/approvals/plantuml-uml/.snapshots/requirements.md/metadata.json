@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/plantuml-uml/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-25T16:14:14.773Z",
       "trigger": "initial",
+      "approvalId": "approval_1787674454674_it32gqw02",
+      "approvalTitle": "Requirements: plantuml-uml"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-25T16:52:07.136Z",
+      "trigger": "approved",
       "approvalId": "approval_1787674454674_it32gqw02",
       "approvalTitle": "Requirements: plantuml-uml"
     }

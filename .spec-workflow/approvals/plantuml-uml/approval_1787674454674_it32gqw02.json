@@ -3,8 +3,10 @@
   "title": "Requirements: plantuml-uml",
   "filePath": ".spec-workflow/specs/plantuml-uml/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-25T16:14:14.674Z",
   "category": "spec",
-  "categoryName": "plantuml-uml"
+  "categoryName": "plantuml-uml",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-25T16:52:07.141Z"
 }
