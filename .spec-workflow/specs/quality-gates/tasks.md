@@ -122,7 +122,7 @@
   - _Requirements: 5.2, 5.3, 5.4_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer familiar with EditorConfig and .NET analyzers | Task: Make the note and the setting agree per Requirement 5.4 | Restrictions: the blank-line-between-groups rule is the opinionated half and the codebase does not follow it - disable that, keep sorting, which is mechanical and uncontroversial; the note must say what the rule wanted, what the codebase does instead, and why the codebase won | Success: the IMPORTS count drops to sorting-only violations. Mark in progress, log when done, then mark complete._
 
-- [-] 14. Sort the usings
+- [x] 14. Sort the usings
   - File: every `.cs` file the gate still names (mechanical)
   - Run `dotnet format style` to fix the remaining `IMPORTS` violations, in its own commit
   - Purpose: Requirement 5.1, 5.5
@@ -130,7 +130,7 @@
   - _Requirements: 5.1, 5.5_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer | Task: Auto-fix the remaining import ordering, committing separately from anything behavioural | Restrictions: this commit contains nothing but the reformatting - a mechanical diff across ~190 files must not be where a reader looks for a logic change; run the full test suite afterwards, since a using change can alter overload resolution | Success: zero IMPORTS diagnostics; 1221+ tests still pass. Mark in progress, log when done, then mark complete._
 
-- [ ] 15. Downgrade the two rules that fight a convention
+- [-] 15. Downgrade the two rules that fight a convention
   - File: `src/.editorconfig` (modify), `.spec-workflow/steering/structure.md` (modify)
   - Downgrade `IDE0130` to `none` and `IDE0046` to `silent`, each with a note. Add the `_Model/`-and-`Commands/`-in-parent-namespace convention to structure.md, where it is currently only implicit
   - Purpose: Requirements 5.2, 5.3, 5.6
