@@ -299,6 +299,23 @@ The recommendation is to send it. The cost is about ten lines of proto and mappe
 * **Purpose:** selectability, verbs, values and palette.
 * **Reuses:** the C4 quartet, one for one. The property provider follows `C4ContextPropertyProvider`'s layout exactly — `public const string` ids prefixed `wardley.`, a `Describe` per element kind, `SetAsync` dispatching the same command the canvas uses (Requirement 15.7).
 
+#### Read-only reasons: the house form, and why it is not a tooltip
+
+The repository already has a form for these, in `MindmapContextPropertyProvider`'s two read-only rows: **cause, then remedy** — descriptive for the cause ("X is Y, so it is not Z"), imperative for the remedy, full sentences, no leading "This property is". The second row earns a second sentence by having somewhere to send the reader; the first stops because it has nowhere. This module follows it. Where the mindmap's cause slot names another tool and `ansible-structure-diagram`'s names a file, this type's values are **derived**, so the cause slot names the value they are derived from and the remedy points at it:
+
+* Evolution stage — *"The evolution stage is derived from the component's maturity, so it is not set directly. Change Maturity instead."*
+* Pipeline child visibility — *"A pipeline child takes its visibility from its parent, so it is not its own. Change it on `<parent name>`."*
+
+Three properties of the mechanism decide how these are written, each verified against the code rather than assumed:
+
+* **The reason is user-facing error text, not a hint.** `ContextPropertyResolver` refuses a write to a non-editable property with `ContextPropertyResult.Failure(match.ReadOnlyReason)` — the reason travels back verbatim as the failure the user reads. It is shown *and* thrown, so it must read as both.
+* **A blank reason silently means editable.** Both `ContextPropertyDefinition.IsEditable` and the client's `PropertyRow` test `readOnlyReason.length === 0` — a length test, not a whitespace test. A reason of `" "` would render the row editable *and* let the write through. This is a test, not a comment (see Testing Strategy).
+* **A long reason grows the row.** `.property-grid-readonly-reason` is a `display: block` span with no truncation and no ellipsis, so a reason wraps rather than clipping. Two sentences is the budget; a paragraph would look like one.
+
+On **read-only mode** (Requirement 15.11): every property still carries a reason, because that is what makes the server-side refusal meaningful — a mode communicated only in the panel would leave a non-grid caller able to write. But every row then carries near-identical text, so the reason is kept short and uniform, and **de-duplicating identical reasons for display is the panel's judgement, not this provider's**. The provider's job is that each refusal can explain itself.
+
+`SafelyDescribeAsync` in `ContextPropertyResolver` means a provider that throws in `DescribeAsync` costs only its own rows rather than blanking the panel, so this provider is written for its own correctness and not defensively on other providers' behalf.
+
 ### `Commands/` (module, new)
 
 One file per command-and-handler pair, per tech.md's exception to one-entity-per-file. Covering Requirement 9.3:
@@ -389,6 +406,7 @@ message WardleyEvolutionStage {
 * **`WardleyEvolution`** — the three boundaries against the `EvoOffsets` derivation; `StageOf` at each boundary exactly (Requirement 8.2).
 * **`WardleyIdentities`** — assign, match, rename-preserves-id, stale-entry-discarded, unreadable-sidecar-degrades (Requirement 4).
 * **`WardleyRuleSet`** — one test per rule in Requirement 14, each from a plain string.
+* **`WardleyContextPropertyProvider`** — every contributed `ReadOnlyReason` is **non-blank**, asserted with `IsNullOrWhiteSpace` rather than a null check. Both `IsEditable` and the client's `PropertyRow` decide editability on `length === 0`, so a whitespace-only reason would make a derived value writable — a failure that looks like nothing on screen and silently accepts a write. Also: a derived property is contributed and refused rather than omitted, and `SetAsync` on it returns the reason rather than throwing.
 * **Commands** — each handler's inverse restores prior state, including the multi-statement rename (Requirement 9.6).
 * **Client** — `wardleyModel.applyDelta`, and `WardleyCanvas` rendering the bands from a supplied axis element rather than from constants.
 
