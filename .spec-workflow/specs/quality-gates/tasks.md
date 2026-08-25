@@ -44,7 +44,7 @@
   - _Requirements: 1.1, 1.9_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add the two node-technology rules per design.md | Restrictions: Warning severity; locate each problem by element id so the errors panel can select it; do not add a rule for component technology - Structurizr has none, and the probe in requirements.md confirms it | Success: builds; the AWS deployment fixture reports the nodes that lack a technology. Mark in progress, log when done, then mark complete._
 
-- [-] 5. Add the disconnected-element rule
+- [x] 5. Add the disconnected-element rule
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4RuleSet.cs` (modify)
   - Implement `c4.disconnected-element`: an element in no relationship at all. Suppressed entirely while the model declares no views, per design.md's error-handling item 4
   - Purpose: Requirement 1.5
@@ -52,7 +52,7 @@
   - _Requirements: 1.5_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add c4.disconnected-element, suppressed while the model has no views | Restrictions: the suppression is load-bearing - a model being built up incrementally must not be buried in warnings, and a tool that greets a new file with problems teaches people to ignore problems; do not count a relationship where the element is only the destination as "not connected" | Success: builds; a model with one lonely system and no views reports nothing, and the same model with a view reports it. Mark in progress, log when done, then mark complete._
 
-- [ ] 6. Add the not-on-any-view rule
+- [-] 6. Add the not-on-any-view rule
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4RuleSet.cs` (modify)
   - Implement `c4.element-not-on-any-view`, mirroring `model.element.noview`. Suppressed while the model declares no views, and also for an element declared in the most recent edit
   - Purpose: Requirement 1.6
