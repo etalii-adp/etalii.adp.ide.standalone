@@ -32,7 +32,6 @@ public static class C4RuleSet
         public const string MissingProtocol = "c4.missing-protocol";
         public const string DanglingRelationship = "c4.dangling-relationship";
         public const string KindNotPermitted = "c4.kind-not-permitted-on-view";
-        public const string MixedAbstractionLevels = "c4.mixed-abstraction-levels";
         public const string EmptyView = "c4.empty-view";
         public const string UnknownViewScope = "c4.unknown-view-scope";
         public const string MisplacedElement = "c4.misplaced-element";
@@ -112,7 +111,13 @@ public static class C4RuleSet
                 continue;
             }
 
-            if (element.Description.Length == 0)
+            // Only the static abstractions. C4 asks for a description so a reader can tell what
+            // an element is *responsible for*, which is a question about people, systems,
+            // containers and components. A deployment node is named by what it is - "Apache
+            // Tomcat", "bigbank-web***" - and C4's own worked example leaves those undescribed,
+            // which is how this rule was found to be over-reaching.
+            if (element.Description.Length == 0 && element.Kind is
+                C4ElementKind.Person or C4ElementKind.SoftwareSystem or C4ElementKind.Container or C4ElementKind.Component)
             {
                 yield return new DiagramProblem(
                     DiagramProblemSeverity.Warning,
@@ -178,10 +183,11 @@ public static class C4RuleSet
                     new DiagramProblemLocation.Line(relationship.Line));
             }
 
-            // A relationship between containers is where the protocol matters, because that is
-            // what a Container diagram exists to communicate (Requirement 6.6).
-            var crossesABoundary = IsDeployable(source.Kind) && IsDeployable(destination.Kind);
-            if (crossesABoundary && relationship.Technology.Length == 0)
+            // Containers only. Two components of one container call each other in process, and
+            // there is no protocol to name - C4's worked example leaves those undecorated, which
+            // is how this rule was found to be over-reaching.
+            var betweenContainers = source.Kind == C4ElementKind.Container && destination.Kind == C4ElementKind.Container;
+            if (betweenContainers && relationship.Technology.Length == 0)
             {
                 yield return new DiagramProblem(
                     DiagramProblemSeverity.Warning,
@@ -214,28 +220,13 @@ public static class C4RuleSet
                 new DiagramProblemLocation.ElementId(element.Id));
         }
 
-        // A dynamic view tells one story at one level: mixing systems with the components
-        // inside them makes the story unreadable (Requirement 7.7).
-        if (view.Kind == C4ViewKind.Dynamic)
-        {
-            var levels = view.Interactions
-                .SelectMany(interaction => new[] { interaction.SourceId, interaction.DestinationId })
-                .Select(workspace.Find)
-                .Where(element => element is not null)
-                .Select(element => element!.Kind)
-                .Where(kind => kind != C4ElementKind.Person)
-                .Distinct()
-                .ToArray();
-
-            if (levels.Length > 1)
-            {
-                yield return new DiagramProblem(
-                    DiagramProblemSeverity.Warning,
-                    $"The '{view.Key}' view mixes {string.Join(" and ", levels.Select(Spell))}. A dynamic view stays at one level of abstraction.",
-                    Rules.MixedAbstractionLevels,
-                    new DiagramProblemLocation.Line(view.Line));
-            }
-        }
+        // There is deliberately no "mixed abstraction levels" rule for dynamic views.
+        // Requirement 7.7 asserted one, reading C4's "software systems, containers or
+        // components" strictly - but C4's own worked example mixes them: its sign-in view is
+        // scoped to a container and shows that container's components alongside the
+        // single-page application and the database, which are containers. A component view
+        // shows sibling containers for the same reason. The canonical example is the better
+        // authority, so the rule went rather than the example being called wrong.
 
         if (members.Count == 0 && view.Interactions.Count == 0)
         {

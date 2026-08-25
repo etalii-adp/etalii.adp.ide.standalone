@@ -259,9 +259,23 @@ public static class C4Parser
             return;
         }
 
+        // `tags "A" "B"` on a line of its own inside an element's block. The DSL takes tags
+        // either as a declaration argument or as their own line, and a document whose elements
+        // have bodies - which every nested deployment node has - reaches for the second form.
+        // Reading only the first left them untagged, and tags are what styles key off, so the
+        // elements also came out unstyled (found by the AWS deployment fixture, where every
+        // tag is written this way).
+        if (keyword.Equals("tags", StringComparison.OrdinalIgnoreCase)
+            && arguments.Length > 0
+            && state.CurrentElementId is { } tagged)
+        {
+            state.AddTags(tagged, arguments.SelectMany(SplitTags));
+            return;
+        }
+
         if (!ElementKeywords.TryGetValue(keyword, out var kind))
         {
-            // Not something this parser models - `!docs`, `properties`, `url`, `tags`... The
+            // Not something this parser models - `!docs`, `properties`, `url`... The
             // document keeps the text; only a block's nesting has to be tracked so the parent
             // chain stays correct.
             if (opensBlock)
@@ -441,16 +455,13 @@ public static class C4Parser
                 return ("", arguments.Length > 2 ? SplitTags(arguments[2]) : []);
 
             case C4ElementKind.DeploymentNode:
-                // `deploymentNode <name> [description] [technology] [instances] [tags]`, where
-                // the instance count is a bare number that must not be read as a tag.
-                var technology = arguments.Length > 2 ? arguments[2] : "";
-                if (arguments.Length > 4)
-                {
-                    return (technology, SplitTags(arguments[4]));
-                }
-
-                var isInstanceCount = arguments.Length > 3 && int.TryParse(arguments[3], out _);
-                return (technology, arguments.Length > 3 && !isInstanceCount ? SplitTags(arguments[3]) : []);
+                // `deploymentNode <name> [description] [technology] [tags] [instances]`. The
+                // instance count comes *after* the tags, and reading the two the wrong way round
+                // turns the count into a tag - which is what it did until the C4 worked example,
+                // whose `deploymentNode "bigbank-web***" "" "Ubuntu 16.04 LTS" "" 4` exposed it.
+                return (
+                    arguments.Length > 2 ? arguments[2] : "",
+                    arguments.Length > 3 ? SplitTags(arguments[3]) : []);
 
             default:
                 return (arguments.Length > 2 ? arguments[2] : "", arguments.Length > 3 ? SplitTags(arguments[3]) : []);
@@ -502,6 +513,18 @@ public static class C4Parser
 
         /// <summary>The innermost element block, which is what a nested declaration belongs to.</summary>
         public string? CurrentElementId => _stack.FirstOrDefault(frame => frame.ElementId is not null).ElementId;
+
+        /// <summary>Adds tags to an element already read, for a `tags` line inside its block.</summary>
+        public void AddTags(string id, IEnumerable<string> tags)
+        {
+            var at = Elements.FindIndex(element => string.Equals(element.Id, id, StringComparison.OrdinalIgnoreCase));
+            if (at < 0)
+            {
+                return;
+            }
+
+            Elements[at] = Elements[at] with { Tags = [.. Elements[at].Tags, .. tags] };
+        }
 
         public void Push(ParseScope scope) => _stack.Push((scope, null));
 

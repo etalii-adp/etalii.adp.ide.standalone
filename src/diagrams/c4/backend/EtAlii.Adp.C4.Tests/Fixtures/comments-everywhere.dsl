@@ -3,14 +3,18 @@
 /*
  * a block comment spanning lines
  */
-workspace "Comments" "Every comment form, in every position." {
+workspace "Comments" "Every comment form the DSL actually accepts." {
 
-    model { // trailing comment on an opening brace
+    model { // trailing a brace is legal
         # hash comment inside the model
-        u = person "User" "A user." // trailing comment on an element
+        // Trailing a declaration is NOT: the real parser reads the comment as extra
+        // arguments and refuses the line. ADP accepts it anyway, which is harmless -
+        // a reader that takes more than the writer emits - but the corpus must not
+        // claim the format allows something it does not.
+        u = person "User" "A user."
         /* block comment between elements */
         s = softwareSystem "System" "A system." {
-            web = container "Web App" "Serves pages." "React" // technology last
+            web = container "Web App" "Serves pages." "React"
             db = container "Database" "Stores things." "PostgreSQL"
             web -> db "Reads from and writes to" "SQL/TCP"
         }

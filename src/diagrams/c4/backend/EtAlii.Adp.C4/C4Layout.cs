@@ -158,7 +158,7 @@ public static class C4LayoutEngine
         Dictionary<string, int> ranks,
         string direction,
         int rankSeparation,
-        int nodeSeparation)
+        double nodeSeparation)
     {
         var horizontal = direction is "lr" or "rl";
         var reversed = direction is "rl" or "bt";
@@ -241,9 +241,12 @@ public static class C4LayoutEngine
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var boundary = boundaries[0].Box;
-        foreach (var element in members.Where(element => !inside.Contains(element.Id)))
+        var outsiders = members.Where(element => !inside.Contains(element.Id)).Select(element => element.Id).ToArray();
+        var pushedVertically = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var id in outsiders)
         {
-            var box = boxes[element.Id];
+            var box = boxes[id];
             if (!box.Overlaps(boundary))
             {
                 continue;
@@ -257,11 +260,14 @@ public static class C4LayoutEngine
             var down = boundary.Bottom - box.Y + metrics.NodeSeparation;
             var shortest = Math.Min(Math.Min(left, right), Math.Min(up, down));
 
-            boxes[element.Id] = shortest == left ? box with { X = Math.Round(box.X - left, 2) }
+            boxes[id] = shortest == left ? box with { X = Math.Round(box.X - left, 2) }
                 : shortest == right ? box with { X = Math.Round(box.X + right, 2) }
                 : shortest == up ? box with { Y = Math.Round(box.Y - up, 2) }
                 : box with { Y = Math.Round(box.Y + down, 2) };
+            pushedVertically[id] = shortest == up || shortest == down;
         }
+
+        Spread(boxes, outsiders, pushedVertically, metrics.NodeSeparation);
 
         // The boundary is sized to its members, which did not move - but recomputing keeps this
         // honest if that ever changes.
@@ -310,5 +316,72 @@ public static class C4LayoutEngine
 
         var kind = view.Kind == C4ViewKind.Container ? "Software System" : "Container";
         return [new C4Boundary($"boundary:{scope.Id}", scope.Name, kind, new C4Box(Math.Round(x, 2), Math.Round(y, 2), Math.Round(right - x, 2), Math.Round(bottom - y, 2)))];
+    }
+
+    /// <summary>
+    /// Separates outsiders that landed on each other on the way out of a boundary.
+    /// </summary>
+    /// <remarks>
+    /// Each one leaves by its own shortest route, knowing nothing of the others, so two that
+    /// share an edge arrive at the same place: on the C4 worked example's container view the
+    /// customer and the mainframe banking system both left through the top and ended up drawn
+    /// one on top of the other.
+    ///
+    /// They are spread along the axis they were <em>not</em> pushed along, which is what makes
+    /// this safe: the coordinate that carried an element clear of the boundary is the one left
+    /// untouched, so separating them cannot walk one back inside.
+    /// </remarks>
+    private static void Spread(
+        Dictionary<string, C4Box> boxes,
+        IReadOnlyList<string> outsiders,
+        Dictionary<string, bool> pushedVertically,
+        double nodeSeparation)
+    {
+        if (pushedVertically.Count == 0)
+        {
+            return;
+        }
+
+        // Bounded, so a set that cannot be separated cannot spin either.
+        for (var pass = 0; pass < outsiders.Count; pass++)
+        {
+            var moved = false;
+            foreach (var (id, vertically) in pushedVertically)
+            {
+                foreach (var other in outsiders)
+                {
+                    if (string.Equals(other, id, StringComparison.OrdinalIgnoreCase) || !boxes[id].Overlaps(boxes[other]))
+                    {
+                        continue;
+                    }
+
+                    var box = boxes[id];
+                    var blocker = boxes[other];
+                    if (vertically)
+                    {
+                        var toLeft = box.Right - blocker.X + nodeSeparation;
+                        var toRight = blocker.Right - box.X + nodeSeparation;
+                        boxes[id] = toLeft <= toRight
+                            ? box with { X = Math.Round(box.X - toLeft, 2) }
+                            : box with { X = Math.Round(box.X + toRight, 2) };
+                    }
+                    else
+                    {
+                        var up = box.Bottom - blocker.Y + nodeSeparation;
+                        var down = blocker.Bottom - box.Y + nodeSeparation;
+                        boxes[id] = up <= down
+                            ? box with { Y = Math.Round(box.Y - up, 2) }
+                            : box with { Y = Math.Round(box.Y + down, 2) };
+                    }
+
+                    moved = true;
+                }
+            }
+
+            if (!moved)
+            {
+                return;
+            }
+        }
     }
 }

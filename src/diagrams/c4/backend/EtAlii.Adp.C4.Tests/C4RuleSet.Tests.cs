@@ -170,9 +170,14 @@ public class C4RuleSetTests
     }
 
     [Fact]
-    public void ADynamicViewMixingLevels_IsReported()
+    public void ADynamicViewMixingLevels_IsNotReported_BecauseTheWorkedExampleMixesThem()
     {
-        // Requirement 7.7: a dynamic view draws systems OR containers OR components.
+        // Requirement 7.7 said a dynamic view draws systems OR containers OR components, and
+        // there was a rule here enforcing it - until the C4 worked example joined the corpus
+        // and broke it. Its sign-in view is scoped to a container and shows that container's
+        // components talking to the single-page application and the database, which are
+        // containers. That is C4's own canonical dynamic view, so the requirement was the
+        // thing that was wrong, and the rule went. What follows is the same shape.
         var dsl = """
             workspace {
                 model {
@@ -192,28 +197,7 @@ public class C4RuleSetTests
             }
             """;
 
-        Assert.Contains(C4RuleSet.Rules.MixedAbstractionLevels, RuleIds(dsl));
-    }
-
-    [Fact]
-    public void ADynamicViewAtOneLevel_IsNotReported()
-    {
-        var dsl = """
-            workspace {
-                model {
-                    a = softwareSystem "A" "desc"
-                    b = softwareSystem "B" "desc"
-                    a -> b "Calls" "HTTPS"
-                }
-                views {
-                    dynamic a "scenario" {
-                        a -> b "Calls"
-                    }
-                }
-            }
-            """;
-
-        Assert.DoesNotContain(C4RuleSet.Rules.MixedAbstractionLevels, RuleIds(dsl));
+        Assert.DoesNotContain("c4.mixed-abstraction-levels", RuleIds(dsl));
     }
 
     [Fact]
