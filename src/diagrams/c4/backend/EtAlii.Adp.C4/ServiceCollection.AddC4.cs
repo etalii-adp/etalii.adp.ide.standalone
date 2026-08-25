@@ -1,3 +1,5 @@
+using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Backend.Diagrams;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,6 +33,17 @@ public static class ServiceCollectionAddC4Extension
     public static IServiceCollection AddC4(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        // The type's commands, so every edit is one undo away (tech.md's Commands rule).
+        services.AddSingleton<ICommandHandler<SetElementNameCommand>, SetElementNameCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetElementDescriptionCommand>, SetElementDescriptionCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetElementTechnologyCommand>, SetElementTechnologyCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetRelationshipDescriptionCommand>, SetRelationshipDescriptionCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetRelationshipTechnologyCommand>, SetRelationshipTechnologyCommandHandler>();
+
+        // Makes a C4 element selectable, once for the whole family: which C4 type a file
+        // is does not change what an element is (Requirement 13.2).
+        services.AddSingleton<IContextSourceResolver, C4ContextSourceResolver>();
 
         // One store and one mapper for the whole family: several diagrams open one document,
         // so they must share the instance that holds it (Requirement 1.2).
