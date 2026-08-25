@@ -34,6 +34,11 @@ service ContextService {
   rpc ProposeInput(ProposeInputRequest) returns (ProposeInputResponse);
   rpc SubmitInteraction(SubmitInteractionRequest) returns (SubmitInteractionResponse);
   rpc CancelInteraction(CancelInteractionRequest) returns (CancelInteractionResponse);
+
+  // Properties of whatever is selected, and changing one. Described as data so the property
+  // grid renders rows it does not understand, exactly as the context menu renders actions.
+  rpc DescribeProperties(DescribePropertiesRequest) returns (DescribePropertiesResponse);
+  rpc SetProperty(SetPropertyRequest) returns (SetPropertyResponse);
 }
 
 // Routes context actions to the providers that serve a kind of thing. Never sent by
@@ -344,6 +349,45 @@ message DiscoverActionsRequest {
 
 message DiscoverActionsResponse {
   repeated ContextActionGroup groups = 1;
+}
+
+// How a property is edited, which is all the grid knows about its type.
+enum ContextPropertyEditor {
+  CONTEXT_PROPERTY_EDITOR_LINE = 0;   // a single line: a name, a technology
+  CONTEXT_PROPERTY_EDITOR_TEXT = 1;   // several lines: a description, a note
+  CONTEXT_PROPERTY_EDITOR_TOGGLE = 2; // yes or no; value carries "true" or "false"
+}
+
+message ContextProperty {
+  string id = 1;                    // stable within its provider, prefixed like an action id
+  string label = 2;
+  string value = 3;                 // always text, whatever the editor
+  ContextPropertyEditor editor = 4;
+  // Empty when the property can be edited. Otherwise a sentence saying why it cannot be,
+  // shown beside the value: a property whose source is elsewhere is worth showing, and a
+  // reader who cannot change it deserves to know what would have to change instead. This
+  // mirrors how an unavailable action carries a reason rather than being omitted.
+  string read_only_reason = 5;
+  string group = 6;                 // optional heading; empty means ungrouped
+}
+message DescribePropertiesRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;
+  ContextSource source = 3; // unset = the current selection of the connection
+}
+message DescribePropertiesResponse {
+  repeated ContextProperty properties = 1;
+}
+message SetPropertyRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;
+  ContextSource source = 3; // unset = the current selection of the connection
+  string property_id = 4;
+  string value = 5;
+}
+message SetPropertyResponse {
+  bool accepted = 1;
+  string error = 2;
 }
 
 message ExecuteActionRequest {

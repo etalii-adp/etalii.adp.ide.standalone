@@ -20,6 +20,7 @@ public static class ServiceCollectionAddContextExtension
 
         services.AddSingleton<IContextInteractionStore, ContextInteractionStore>();
         services.AddSingleton<IContextActionResolver, ContextActionResolver>();
+        services.AddSingleton<IContextPropertyResolver, ContextPropertyResolver>();
         services.AddSingleton<IContextSelectionStore, ContextSelectionStore>();
         services.AddSingleton<ContextSelectionResolver>();
 

@@ -20,6 +20,7 @@ import type {
   ContextPrompt,
   ContextSelection,
   ContextSelectionChanged,
+  ContextProperty,
   ContextShortcut,
   ContextSource,
   ProjectProblems,
@@ -77,6 +78,14 @@ export interface ContextConnectionValue {
    */
   revealPath: (segments: string[]) => void;
   executeShortcut: (shortcut: ContextShortcut, source?: ContextSource) => Promise<ActionOutcome>;
+  /**
+   * The properties of what is selected, described by whichever module owns it. Asked for
+   * rather than pushed: the property grid is the only thing that wants them, and asking keeps
+   * them off the selection stream every other panel reads.
+   */
+  describeProperties: (source?: ContextSource) => Promise<ContextProperty[]>;
+  /** Writes one property, through a command on the backend. Rejected values come back as an error to show. */
+  setProperty: (propertyId: string, value: string, source?: ContextSource) => Promise<ActionOutcome>;
 }
 
 /** What a consumer of selections reads: updated on every push. */
@@ -281,6 +290,32 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const describeProperties = useCallback(
+    async (source?: ContextSource): Promise<ContextProperty[]> => {
+      const response = await client.describeProperties({
+        projectId: { value: projectId },
+        watchId: { value: watchIdRef.current },
+        source,
+      });
+      return response.properties;
+    },
+    [client, projectId],
+  );
+
+  const setProperty = useCallback(
+    async (propertyId: string, value: string, source?: ContextSource): Promise<ActionOutcome> => {
+      const response = await client.setProperty({
+        projectId: { value: projectId },
+        watchId: { value: watchIdRef.current },
+        source,
+        propertyId,
+        value,
+      });
+      return { accepted: response.accepted, error: response.error };
+    },
+    [client, projectId],
+  );
+
   const execute = useCallback(
     async (
       trigger: { case: "actionId"; value: string } | { case: "shortcut"; value: ContextShortcut },
@@ -306,8 +341,10 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
       clearReveal: () => setPendingReveal(null),
       revealPath: (segments) => setPendingReveal(segments),
       executeShortcut: (shortcut, source) => execute({ case: "shortcut", value: shortcut }, source),
+      describeProperties,
+      setProperty,
     }),
-    [select, execute, setPendingReveal],
+    [select, execute, setPendingReveal, describeProperties, setProperty],
   );
 
   const promptInteractionId = prompt?.interactionId?.value;

@@ -30,6 +30,7 @@ public static class ServiceCollectionAddMindmapExtension
         services.AddSingleton<IDiagramDocumentFactory, MindmapDocumentFactory>();
         services.AddSingleton<IContextSourceResolver, MindmapContextSourceResolver>();
         services.AddSingleton<IContextActionProvider, MindmapContextActionProvider>();
+        services.AddSingleton<IContextPropertyProvider, MindmapContextPropertyProvider>();
         services.AddSingleton<IDiagramToolboxProvider, MindmapToolboxProvider>();
 
         // The module's layout numbers, with what appsettings.json's Mindmap section says

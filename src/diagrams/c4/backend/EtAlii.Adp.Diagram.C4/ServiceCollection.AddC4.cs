@@ -51,6 +51,7 @@ public static class ServiceCollectionAddC4Extension
         // What can be done to an element or a relationship, offered through the one path that
         // reaches the ribbon, the menu and the keyboard (Requirement 13.2).
         services.AddSingleton<IContextActionProvider, C4ContextActionProvider>();
+        services.AddSingleton<IContextPropertyProvider, C4ContextPropertyProvider>();
 
         // One store and one mapper for the whole family: several diagrams open one document,
         // so they must share the instance that holds it (Requirement 1.2).
