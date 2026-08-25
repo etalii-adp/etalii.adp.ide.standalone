@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("uml", "interaction-overview"),
-        "Interaction overview diagram");
+        "Interaction overview diagram",
+        "Several interactions stitched into one flow, so an activity's branches lead into scenarios.");
 }

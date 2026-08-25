@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("uml", "state-machine"),
-        "State machine diagram");
+        "State machine diagram",
+        "The states an object can be in, and the events and guards that move it between them.");
 }

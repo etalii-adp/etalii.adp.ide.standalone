@@ -34,7 +34,7 @@ public class DiagramDefinitionTests
     public void Constructor_WithAnExtension_DeclaresADocumentSibling()
     {
         // Act.
-        var definition = new DiagramDefinition(new DiagramOrigin("freeplane", "mindmap"), "Mind map", ".mm");
+        var definition = new DiagramDefinition(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
 
         // Assert.
         Assert.Equal(".mm", definition.Extension);

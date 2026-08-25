@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("archimate", "implementation-migration"),
-        "ArchiMate — Implementation & Migration layer");
+        "ArchiMate — Implementation & Migration layer",
+        "The work packages, deliverables and plateaus that carry an architecture from where it is to where it should be.");
 }

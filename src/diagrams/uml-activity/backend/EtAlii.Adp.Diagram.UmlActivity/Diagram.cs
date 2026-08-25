@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("uml", "activity"),
-        "Activity diagram");
+        "Activity diagram",
+        "A workflow as actions, decisions and parallel branches - the UML take on a flowchart.");
 }

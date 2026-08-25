@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("uml", "package"),
-        "Package diagram");
+        "Package diagram",
+        "How a model is grouped into packages, and which package depends on which.");
 }

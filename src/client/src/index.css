@@ -1590,3 +1590,16 @@ button {
   border: 1px solid var(--color-border);
   border-radius: 3px;
 }
+
+/* What the selected diagram type is for, under the Add dialog's type tree. Reserves its own
+   height whether or not something is selected, so choosing a type never shifts the tree. */
+.choice-description {
+  margin: 0.5rem 0 0;
+  min-height: 2.4em;
+  padding: 0.5rem 0.6rem;
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.2;
+}

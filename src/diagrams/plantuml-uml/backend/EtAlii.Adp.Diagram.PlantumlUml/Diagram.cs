@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("plantuml", "uml"),
-        "Full UML set (see section 1)");
+        "Full UML set (see section 1)",
+        "UML written as PlantUML text and rendered from it.");
 }

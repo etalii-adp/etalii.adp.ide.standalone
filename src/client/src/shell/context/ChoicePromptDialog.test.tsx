@@ -477,3 +477,54 @@ describe("ChoicePromptDialog name field", () => {
     expect(screen.queryByLabelText("Name")).toBeNull();
   });
 });
+
+describe("ChoicePromptDialog description", () => {
+  /** A prompt whose leaves describe themselves, as a real Add prompt does. */
+  function describedPrompt(): ChoiceDialogPrompt {
+    return create(ChoiceDialogPromptSchema, {
+      title: "Add diagram",
+      icon: "mdi-plus",
+      confirmLabel: "Add",
+      emptyMessage: "No diagram types are available.",
+      options: [
+        {
+          id: "c4",
+          label: "c4",
+          selectable: false,
+          children: [
+            { id: "c4/context", label: "System Context", selectable: true, description: "The system in its world." },
+            { id: "c4/container", label: "Container", selectable: true, description: "The applications that make it up." },
+          ],
+        },
+      ] as ContextOption[],
+    });
+  }
+
+  it("shows nothing until a type is selected", () => {
+    // Arrange.
+    render(<ChoicePromptDialog prompt={describedPrompt()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+
+    // Act.
+    const panel = screen.getByTestId("choice-description");
+
+    // Assert: the panel is present but empty, so the tree does not shift on the first pick.
+    expect(panel.textContent).toBe("");
+  });
+
+  it("shows the selected type's description, and follows the selection", () => {
+    // Arrange.
+    render(<ChoicePromptDialog prompt={describedPrompt()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
+
+    // Act.
+    fireEvent.click(screen.getByText("System Context"));
+
+    // Assert.
+    expect(screen.getByTestId("choice-description").textContent).toBe("The system in its world.");
+
+    // Act: moving to another type replaces it rather than appending.
+    fireEvent.click(screen.getByText("Container"));
+
+    // Assert.
+    expect(screen.getByTestId("choice-description").textContent).toBe("The applications that make it up.");
+  });
+});

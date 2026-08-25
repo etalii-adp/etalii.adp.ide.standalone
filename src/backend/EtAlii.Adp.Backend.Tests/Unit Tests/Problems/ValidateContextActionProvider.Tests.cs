@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Backend.Tests;
 public class ValidateContextActionProviderTests : IDisposable
 {
     private static readonly DiagramOrigin Mindmap = new("freeplane", "mindmap");
-    private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", ".mm");
+    private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", Extension: ".mm");
 
     private readonly string _root;
     private readonly ProblemStore _store;

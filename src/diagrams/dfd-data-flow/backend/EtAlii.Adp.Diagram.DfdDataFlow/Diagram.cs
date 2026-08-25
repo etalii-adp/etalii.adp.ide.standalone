@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("dfd", "data-flow"),
-        "Data Flow Diagram (Yourdon/DeMarco or Gane–Sarson notation)");
+        "Data Flow Diagram (Yourdon/DeMarco or Gane–Sarson notation)",
+        "How data moves between processes, stores and outside parties - and where it crosses a trust boundary.");
 }

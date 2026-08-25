@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("togaf", "adm"),
-        "TOGAF ADM cycle diagram");
+        "TOGAF ADM cycle diagram",
+        "The TOGAF Architecture Development Method cycle and where a piece of work sits in it.");
 }

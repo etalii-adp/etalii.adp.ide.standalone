@@ -11,7 +11,7 @@ namespace EtAlii.Adp.Backend.Tests;
 public class ProjectValidatorTests : IDisposable
 {
     private static readonly DiagramOrigin Mindmap = new("freeplane", "mindmap");
-    private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", ".mm");
+    private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", Extension: ".mm");
 
     private readonly string _root;
 
@@ -117,7 +117,7 @@ public class ProjectValidatorTests : IDisposable
     {
         // Arrange.
         File.WriteAllText(IoPath.Combine(_root, "either.mm"), "a body without a registration");
-        var rival = new DiagramDefinition(new DiagramOrigin("rival", "mindmap"), "Rival map", ".mm");
+        var rival = new DiagramDefinition(new DiagramOrigin("rival", "mindmap"), "Rival map", Extension: ".mm");
 
         var outcome = await Validate(validator: null, new ProjectValidationScope(_root), extraDefinitions: [rival]);
 

@@ -14,7 +14,7 @@ public class ProblemMaintenanceTests : IDisposable
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(15);
 
     private static readonly DiagramOrigin Mindmap = new("freeplane", "mindmap");
-    private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", ".mm");
+    private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", Extension: ".mm");
 
     private readonly string _root;
     private readonly ProblemMaintenanceRecordingStore _store = new();

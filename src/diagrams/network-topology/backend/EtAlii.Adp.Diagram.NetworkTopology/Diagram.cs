@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("network", "topology"),
-        "Network topology diagram");
+        "Network topology diagram",
+        "Hosts, links and segments: what is connected to what, and how.");
 }

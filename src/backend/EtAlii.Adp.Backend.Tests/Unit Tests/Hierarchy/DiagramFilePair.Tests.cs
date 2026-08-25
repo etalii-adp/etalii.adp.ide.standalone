@@ -11,7 +11,7 @@ namespace EtAlii.Adp.Backend.Tests;
 /// </summary>
 public class DiagramFilePairTests : IDisposable
 {
-    private static readonly DiagramDefinition Mindmap = new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", ".mm");
+    private static readonly DiagramDefinition Mindmap = new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
     private static readonly DiagramDefinition ClassDiagram = new(new DiagramOrigin("uml", "class"), "Class diagram");
 
     private readonly string _root;

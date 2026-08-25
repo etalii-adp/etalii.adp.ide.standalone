@@ -380,6 +380,7 @@ public sealed partial class ContextServiceImpl
             Label = node.Label,
             Selectable = node.Selectable,
             SuggestedValue = node.SuggestedValue,
+            Description = node.Description,
         };
         if (node.Children is { Count: > 0 } children)
         {

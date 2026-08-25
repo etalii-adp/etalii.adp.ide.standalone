@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("structurizr", "c4"),
-        "C4 model (\"model once, view many\")");
+        "C4 model (\"model once, view many\")",
+        "One C4 model in the Structurizr DSL, with several views generated from it.");
 }

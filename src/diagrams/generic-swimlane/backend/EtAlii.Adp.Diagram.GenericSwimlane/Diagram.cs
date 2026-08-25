@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("generic", "swimlane"),
-        "Swimlane diagram");
+        "Swimlane diagram",
+        "A process split into lanes, so each step is visibly somebody's responsibility.");
 }

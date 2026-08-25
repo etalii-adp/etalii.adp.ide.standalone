@@ -286,10 +286,10 @@ public class HierarchyContextSourceResolverTests : IDisposable
     // are diagrams - through the router, never a client-side file-type table.
 
     private static readonly Diagram.DiagramDefinition Mindmap =
-        new(new Diagram.DiagramOrigin("freeplane", "mindmap"), "Mind map", ".mm");
+        new(new Diagram.DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
 
     private static readonly Diagram.DiagramDefinition RivalMindmap =
-        new(new Diagram.DiagramOrigin("xmind", "mindmap"), "Rival map", ".mm");
+        new(new Diagram.DiagramOrigin("xmind", "mindmap"), "Rival map", Extension: ".mm");
 
     /// <summary>The resolver over a catalog that knows the given definitions, unlike the class's empty default.</summary>
     private HierarchyContextSourceResolver ResolverKnowing(params Diagram.DiagramDefinition[] definitions) =>

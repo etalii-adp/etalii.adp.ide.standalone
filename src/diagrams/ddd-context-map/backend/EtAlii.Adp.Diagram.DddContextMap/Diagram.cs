@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("ddd", "context-map"),
-        "Bounded Context / Context Map");
+        "Bounded Context / Context Map",
+        "Where each bounded context ends, and which pattern governs each boundary between them.");
 }

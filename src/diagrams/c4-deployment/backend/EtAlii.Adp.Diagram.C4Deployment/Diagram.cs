@@ -6,6 +6,7 @@ public static class Diagram
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("c4", "deployment"),
         "Deployment (supplementary)",
+        "Which containers run on which infrastructure, in one environment.",
         // All seven C4 types keep their model in a Structurizr DSL document, and several of
         // them can share one (c4-diagrams Requirement 2.2).
         ".dsl");

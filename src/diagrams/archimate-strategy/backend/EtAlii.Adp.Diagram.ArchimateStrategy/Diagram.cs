@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("archimate", "strategy"),
-        "ArchiMate — Strategy layer");
+        "ArchiMate — Strategy layer",
+        "Capabilities, resources and courses of action, above the level of any single system.");
 }

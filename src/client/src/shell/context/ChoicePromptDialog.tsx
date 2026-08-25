@@ -15,6 +15,27 @@ export interface ChoicePromptDialogProps {
 }
 
 /** The suggestion a selectable option carries for the text field, if the prompt has one. */
+/** The selected option is own description, or empty when nothing (or a group) is selected. */
+export function descriptionFor(options: ContextOption[], id: string | null): string {
+  if (id === null) {
+    return "";
+  }
+
+  const walk = (nodes: ContextOption[]): string => {
+    for (const node of nodes) {
+      if (node.id === id) {
+        return node.description;
+      }
+      const found = walk(node.children);
+      if (found) {
+        return found;
+      }
+    }
+    return "";
+  };
+  return walk(options);
+}
+
 export function suggestionFor(options: ContextOption[], id: string | null): string {
   if (id === null) {
     return "";
@@ -311,6 +332,13 @@ export function ChoicePromptDialog({ prompt, onPropose, onSubmit, onCancel }: Ch
             />
           ))}
         </ul>
+      )}
+      {/* What the selected type is for, in the backend's own words. Rendered even when empty
+          so the dialog keeps its height and the tree does not jump as the selection moves. */}
+      {!isEmpty && (
+        <p className="choice-description" data-testid="choice-description">
+          {descriptionFor(prompt.options, selectedId)}
+        </p>
       )}
       {!isEmpty && nameField !== undefined && (
         <div className="field choice-name-field">

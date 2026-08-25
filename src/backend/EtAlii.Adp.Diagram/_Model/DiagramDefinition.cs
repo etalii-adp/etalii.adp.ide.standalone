@@ -5,13 +5,19 @@ namespace EtAlii.Adp.Diagram;
 /// of docs/diagrams.md's catalog table. Each diagram-type project exposes exactly one of these
 /// through its own static <c>Diagram.Definition</c>.
 /// </summary>
+/// <param name="Description">
+/// One sentence saying what this diagram type is for, shown beside the choice when a user
+/// picks a type in the Add dialog. Written from the reader's point of view - what the diagram
+/// answers - rather than restating the title, so a user meeting a notation for the first time
+/// can tell whether it is the one they want.
+/// </param>
 /// <param name="Extension">
 /// The extension, dot included, of the sibling file that holds this type's document body -
 /// <c>".mm"</c> for a mindmap. Empty means the <c>.adp</c> registration file is the whole
 /// diagram. Declared here so core can name the sibling by construction, without carrying a
 /// mapping from MIME type to extension for every type (mindmap-diagram Requirement 2.2).
 /// </param>
-public sealed record DiagramDefinition(DiagramOrigin Origin, string Title, string Extension = "")
+public sealed record DiagramDefinition(DiagramOrigin Origin, string Title, string Description = "", string Extension = "")
 {
     /// <summary>Whether this type keeps its body in a sibling file rather than in the <c>.adp</c> file itself.</summary>
     public bool HasDocumentSibling => Extension.Length > 0;

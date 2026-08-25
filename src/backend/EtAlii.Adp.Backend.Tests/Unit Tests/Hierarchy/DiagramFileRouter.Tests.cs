@@ -7,7 +7,7 @@ namespace EtAlii.Adp.Backend.Tests;
 
 public class DiagramFileRouterTests : IDisposable
 {
-    private static readonly DiagramDefinition Mindmap = new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", ".mm");
+    private static readonly DiagramDefinition Mindmap = new(new DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
     private static readonly DiagramDefinition ClassDiagram = new(new DiagramOrigin("uml", "class"), "Class diagram");
 
     private readonly string _root;
@@ -99,7 +99,7 @@ public class DiagramFileRouterTests : IDisposable
         // Arrange.
         // The .adp file decides, not the extension (Requirement 2.3): here the registration
         // says the body is a class diagram even though its extension says mindmap.
-        var classAsMm = new DiagramDefinition(new DiagramOrigin("uml", "class"), "Class diagram", ".mm");
+        var classAsMm = new DiagramDefinition(new DiagramOrigin("uml", "class"), "Class diagram", Extension: ".mm");
         Write("domain.adp", "uml/class\n");
         var mm = Write("domain.mm", "<map/>");
 
@@ -114,7 +114,7 @@ public class DiagramFileRouterTests : IDisposable
     public void Route_AnExtensionTwoTypesClaim_RefusesToGuess()
     {
         // Arrange.
-        var other = new DiagramDefinition(new DiagramOrigin("other", "mindmap"), "Another mindmap", ".mm");
+        var other = new DiagramDefinition(new DiagramOrigin("other", "mindmap"), "Another mindmap", Extension: ".mm");
         var mm = Write("which.mm", "<map/>");
 
         // Act.
@@ -130,7 +130,7 @@ public class DiagramFileRouterTests : IDisposable
     {
         // Arrange.
         // Requirement 2.8: the ambiguity disables extension routing, not the .adp route.
-        var other = new DiagramDefinition(new DiagramOrigin("other", "mindmap"), "Another mindmap", ".mm");
+        var other = new DiagramDefinition(new DiagramOrigin("other", "mindmap"), "Another mindmap", Extension: ".mm");
         var adp = Write("domain.adp", "freeplane/mindmap\n");
 
         // Act.
@@ -144,7 +144,7 @@ public class DiagramFileRouterTests : IDisposable
     public void AmbiguousExtensions_NamesEveryExtensionClaimedTwice()
     {
         // Act.
-        var other = new DiagramDefinition(new DiagramOrigin("other", "mindmap"), "Another mindmap", ".mm");
+        var other = new DiagramDefinition(new DiagramOrigin("other", "mindmap"), "Another mindmap", Extension: ".mm");
 
         // Assert.
         Assert.Equal([".mm"], Router(Mindmap, other, ClassDiagram).AmbiguousExtensions());
@@ -163,9 +163,9 @@ public class DiagramFileRouterTests : IDisposable
 
     // ---- one document format, several types of one vendor (c4-diagrams Requirements 2.4-2.6) ----
 
-    private static readonly DiagramDefinition C4Context = new(new DiagramOrigin("c4", "context"), "System Context", ".dsl");
-    private static readonly DiagramDefinition C4Container = new(new DiagramOrigin("c4", "container"), "Container", ".dsl");
-    private static readonly DiagramDefinition RivalDsl = new(new DiagramOrigin("other", "thing"), "Rival", ".dsl");
+    private static readonly DiagramDefinition C4Context = new(new DiagramOrigin("c4", "context"), "System Context", Extension: ".dsl");
+    private static readonly DiagramDefinition C4Container = new(new DiagramOrigin("c4", "container"), "Container", Extension: ".dsl");
+    private static readonly DiagramDefinition RivalDsl = new(new DiagramOrigin("other", "thing"), "Rival", Extension: ".dsl");
 
     [Fact]
     public void Route_ARegistrationNamingASharedBody_ResolvesToThatBody()

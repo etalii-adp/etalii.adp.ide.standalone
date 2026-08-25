@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("uml", "timing"),
-        "Timing diagram");
+        "Timing diagram",
+        "How states change against an explicit time axis, for timing-sensitive behaviour.");
 }

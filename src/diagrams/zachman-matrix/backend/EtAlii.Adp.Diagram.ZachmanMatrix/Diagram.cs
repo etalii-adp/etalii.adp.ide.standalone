@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("zachman", "matrix"),
-        "Zachman Framework matrix");
+        "Zachman Framework matrix",
+        "The Zachman grid: six questions against six perspectives, as a checklist of what is documented.");
 }

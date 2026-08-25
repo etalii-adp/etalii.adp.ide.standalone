@@ -24,7 +24,7 @@ public class DiagramDocumentFactoriesTests
     {
         // Arrange.
         var factories = new DiagramDocumentFactories([]);
-        var orphan = new DiagramDefinition(Mindmap, "Mind map", ".mm");
+        var orphan = new DiagramDefinition(Mindmap, "Mind map", Extension: ".mm");
 
         // Act.
         var missing = factories.Verify([orphan]);
@@ -52,8 +52,8 @@ public class DiagramDocumentFactoriesTests
     {
         // Arrange.
         var factories = new DiagramDocumentFactories([]);
-        var first = new DiagramDefinition(Mindmap, "Mind map", ".mm");
-        var second = new DiagramDefinition(new DiagramOrigin("d2", "diagram"), "D2", ".d2");
+        var first = new DiagramDefinition(Mindmap, "Mind map", Extension: ".mm");
+        var second = new DiagramDefinition(new DiagramOrigin("d2", "diagram"), "D2", Extension: ".d2");
 
         // Act.
         var missing = factories.Verify([first, second]);

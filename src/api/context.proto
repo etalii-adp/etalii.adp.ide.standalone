@@ -301,6 +301,9 @@ message ContextOption {
   // long as the user has not typed a value of their own. Computed when the prompt is
   // built, so picking an option costs no round trip. Empty for a group.
   string suggested_value = 5;
+  // One sentence on what the diagram type is for, shown when this option is selected.
+  // Empty for a group, which is a heading rather than a thing that can be created.
+  string description = 6;
 }
 
 // A text field a dialog carries beside its primary answer, described as data like every

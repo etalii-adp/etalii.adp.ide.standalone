@@ -5,5 +5,6 @@ public static class Diagram
 {
     public static DiagramDefinition Definition { get; } = new(
         new DiagramOrigin("mermaid", "er"),
-        "Entity-Relationship diagram");
+        "Entity-Relationship diagram",
+        "Entities and relationships, in Mermaid's ER syntax.");
 }
