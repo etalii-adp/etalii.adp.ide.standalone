@@ -31,7 +31,7 @@
 
 ## Phase B — the three core seams
 
-- [-] 2. Declare a diagram's subject on `DiagramDefinition`
+- [x] 2. Declare a diagram's subject on `DiagramDefinition`
   - File: `src/backend/EtAlii.Adp.Diagram/_Model/DiagramSubject.cs` (new), `_Model/DiagramDefinition.cs` (edited), `src/backend/EtAlii.Adp.Diagram/DiagramDefinitionDiscovery.cs` (edited), `src/backend/EtAlii.Adp.Diagram.Tests/DiagramDefinition.Tests.cs` (edited)
   - Add `DiagramSubject { Document, Folder }` and `DiagramSubject Subject = DiagramSubject.Document` after `Extension`. Defaulted, so every existing definition compiles and behaves unchanged. Document `Folder` as "the diagram is the folder the `.adp` sits in, and the files beneath it"
   - In discovery, refuse `Folder` with a non-empty `Extension` — a contradiction — beside the duplicate-origin check already there
@@ -40,7 +40,7 @@
   - _Requirements: 2.1, 11.2_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add a defaulted DiagramSubject to DiagramDefinition and refuse the Folder-plus-extension contradiction at discovery | Restrictions: it must default to Document so no existing definition changes behaviour; do not reorder existing parameters; the enum is its own file per the no-nested-types rule | Success: the solution builds, every existing definition is untouched, and tests assert the default and the refusal_
 
-- [ ] 3. Widen the validator seam to carry a location
+- [-] 3. Widen the validator seam to carry a location
   - File: `src/backend/EtAlii.Adp.Diagram/_Model/DiagramValidationRequest.cs` (new), `IDiagramValidator.cs` (edited), `src/backend/EtAlii.Adp.Backend/Problems/ProjectValidator.cs` (edited), and every implementer: `MindmapValidator`, `C4Validator`, and the seven test stubs (`ProblemMaintenanceCountingValidator`, `ProblemStoreReportingValidator`, `ProblemStoreStubValidator`, `ProjectValidatorTestValidator`, `StartupRevalidationGatedValidator`, `DiagramValidatorsStubValidator`, `DiagramValidatorsOtherStubValidator`)
   - `ValidateAsync(DiagramValidationRequest request, CancellationToken)` where the request carries `Document`, `BaseName`, `RootPath`, `BodyPath`, `RegistrationPath` and `SubjectFolder` (null for a `Document`-subject type). `ProjectValidator` fills it, setting `SubjectFolder` from the routed definition's `Subject`
   - A parameter object rather than more loose strings, so the next fact a validator needs is an added property rather than another signature change
