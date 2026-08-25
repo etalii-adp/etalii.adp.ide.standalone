@@ -392,7 +392,7 @@ public static class C4LayoutEngine
                     {
                         var toLeft = box.Right - blocker.X + nodeSeparation;
                         var toRight = blocker.Right - box.X + nodeSeparation;
-                        boxes[id] = (toLeft < toRight || (toLeft == toRight && goesFirst))
+                        boxes[id] = (toLeft < toRight || (Math.Abs(toLeft - toRight) < Tolerance && goesFirst))
                             ? box with { X = Math.Round(box.X - toLeft, 2) }
                             : box with { X = Math.Round(box.X + toRight, 2) };
                     }
@@ -400,7 +400,7 @@ public static class C4LayoutEngine
                     {
                         var up = box.Bottom - blocker.Y + nodeSeparation;
                         var down = blocker.Bottom - box.Y + nodeSeparation;
-                        boxes[id] = (up < down || (up == down && goesFirst))
+                        boxes[id] = (up < down || (Math.Abs(up - down) < Tolerance && goesFirst))
                             ? box with { Y = Math.Round(box.Y - up, 2) }
                             : box with { Y = Math.Round(box.Y + down, 2) };
                     }
