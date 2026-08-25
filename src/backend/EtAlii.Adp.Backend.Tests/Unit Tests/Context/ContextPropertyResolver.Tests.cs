@@ -1,5 +1,4 @@
 using EtAlii.Adp.Backend.Context;
-using EtAlii.Adp.Contracts;
 using Xunit;
 
 namespace EtAlii.Adp.Backend.Tests;
@@ -45,7 +44,7 @@ public class ContextPropertyResolverTests
         var resolver = new ContextPropertyResolver([elsewhere]);
 
         // Act.
-        var properties = await resolver.DescribeAsync(Target(ContextScope.DiagramElement), TestContext.Current.CancellationToken);
+        var properties = await resolver.DescribeAsync(Target(), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Empty(properties);
