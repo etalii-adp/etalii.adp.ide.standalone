@@ -309,8 +309,44 @@ public sealed class ProjectValidator
             // marked every pair's problem stale the moment it was found (caught by the
             // manual pass); a body-only edit is covered by the watcher and the startup
             // pass, not by this comparison.
-            collector.Add(problem, attribution, attribution, rulesVersion);
+            var located = LocatedFile(problem, collector.Root) ?? attribution;
+            collector.Add(problem, located, located, rulesVersion);
         }
+    }
+
+    /// <summary>
+    /// The file a <see cref="DiagramProblemFileLocation"/> named, when the rule named one that
+    /// really is inside the project.
+    /// </summary>
+    /// <remarks>
+    /// It becomes both the attribution and the staleness pin, and the second is the one that
+    /// matters: a folder diagram's registration never changes, so pinning its problems to the
+    /// <c>.adp</c> would leave every verdict looking fresh for ever. Editing the file that
+    /// declared the mistake is what should mark the verdict stale.
+    /// <para>
+    /// A path that escapes the root is refused rather than followed - the location comes from a
+    /// module, and a module is not trusted to stay inside the project any more than a
+    /// user-editable <c>body:</c> header is. Refusing falls back to the diagram's own file, so
+    /// the problem is still reported, merely attributed less precisely.
+    /// </para>
+    /// </remarks>
+    private static string? LocatedFile(DiagramProblem problem, string root)
+    {
+        if (problem.Location is not DiagramProblemFileLocation { RelativePath: var relative } ||
+            relative.Length == 0 ||
+            IoPath.IsPathRooted(relative))
+        {
+            return null;
+        }
+
+        var full = IoPath.GetFullPath(IoPath.Combine(root, relative));
+        if (!IsInside(IoPath.GetFullPath(root), full))
+        {
+            _logger.Warning("Ignoring a problem location naming {Path}, which is outside the project", relative);
+            return null;
+        }
+
+        return full;
     }
 
     private static bool LeavesRoot(string root, string folder)
