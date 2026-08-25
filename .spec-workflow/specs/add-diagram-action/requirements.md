@@ -74,12 +74,15 @@ This spec therefore contributes Add through those same unchanged abstractions, a
 
 1. WHEN the user opens the context menu on a **folder** in the hierarchy THEN the system SHALL offer an **Add** action among that folder's actions.
 2. WHEN the user opens the context menu on the hierarchy's **empty space**, with no entry selected THEN the system SHALL offer the same Add action, targeting the **project root folder**. This is the one case the current `ContextSource` cannot express - it carries an `entry_id` and nothing else - so the contract SHALL gain a way to name the root without naming an entry.
-3. WHEN the user opens the context menu on a **file** THEN the system SHALL NOT offer Add - a file cannot contain a new entry.
+3. WHEN the user opens the context menu on a **file** THEN the system SHALL offer Add only as **registration**: the file becomes a diagram of a type the user names, by writing an `.adp` beside it. The dialog SHALL list only the diagram types that declare that file's extension, and the action SHALL NOT be offered on a file that already has an `.adp`, or whose extension no type declares. Nothing in the file itself is created, modified or moved.
 4. WHEN Add is triggered THEN the system SHALL open a dialog for choosing a diagram type, following the same backend-initiated prompt flow the existing rename and delete actions use.
 5. IF the target folder no longer exists when Add is triggered THEN the system SHALL report that rather than creating anything.
 6. WHEN the action is offered THEN its availability and any keyboard shortcut SHALL be described by the backend as data, exactly as existing actions are, so the client gains no knowledge of what Add means.
+7. WHEN Add is offered on a folder or the root, and when it is offered on a file, THEN the two SHALL read as different acts and the action's label SHALL say which: on a folder it **creates** a diagram inside it; on a file it **registers** that file. They share the dialog, the option tree and the commit seam, but not their meaning.
 
-### Requirement 5 — The dialog lists diagram types by title, grouped by origin
+> **Correction to Requirement 4.3.** The first version said Add SHALL NOT be offered on a file, because "a file cannot contain a new entry". That reasoning is sound and it is also narrower than it looked: it rules out creating a diagram *inside* a file, which nothing has ever wanted to do. It does not cover creating an `.adp` *beside* a file, in the folder that already contains it — which is an ordinary create in an ordinary folder, and the only way a repository's existing document becomes a diagram without ADP guessing at it.
+>
+> The case that forced this was [`azure-pipeline-diagram`](../azure-pipeline-diagram/requirements.md) Requirement 2.3. Its documents are `azure-pipelines.yml` files a repository already has, and `.yml` is far too common an extension to route on sight — a repository is full of workflows, compose files and manifests that are not pipelines. The alternative considered was sniffing each file's content to guess which ones were pipelines; that was rejected as both slower and less honest than an option the user picks once. Registration needs Add on a file, so Requirement 4.3 was revised rather than worked around.
 
 **User Story:** As an architect choosing a diagram type, I want the choices organised the way the notations themselves are, so that I can find the one I want among dozens.
 

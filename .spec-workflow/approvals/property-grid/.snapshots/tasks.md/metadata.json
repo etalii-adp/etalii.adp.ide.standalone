@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/property-grid/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-25T16:21:30.457Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787674890356_7zdwaol6e",
+      "approvalTitle": "property-grid - Tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-25T16:23:50.597Z",
+      "trigger": "approved",
+      "approvalId": "approval_1787674890356_7zdwaol6e",
+      "approvalTitle": "property-grid - Tasks"
+    }
+  ]
+}
