@@ -94,7 +94,7 @@
   - _Requirements: 3.4, 3.6, 3.7, 3.8_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add the verdict-currency test and improve the skip reporting per Requirements 3.4 and 3.6-3.8 | Restrictions: the currency test is the only thing allowed to need a JDK; record where the CLI comes from (Maven Central coordinates) per Requirement 3.8, since a previous session wrongly concluded it was unreachable; do not let a stale baseline fail the everyday run - that is a different fault with a different owner | Success: with a CLI, a hand-edited verdict fails the currency test; without one, everything else still passes. Mark in progress, log when done, then mark complete._
 
-- [-] 11. Correct the record
+- [x] 11. Correct the record
   - File: `.spec-workflow/specs/c4-diagrams/design.md` (modify), `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/readme.md` (modify)
   - Replace the deviations claiming `c4.missing-protocol` and `c4.missing-description` were over-reaching with the finding that the narrowing was itself the error. Restate the two defect-table entries in the fixtures readme. Note that the `c4.mixed-abstraction-levels` removal stands on Structurizr's inspector having no such rule, not on the worked-example argument. Record the general lesson in a form that applies to future diagram types
   - Purpose: Requirement 2 in full - a wrong reason corrected in place, not silently deleted
@@ -114,7 +114,7 @@
 
 ## Phase D — the style gate passes
 
-- [ ] 13. Resolve the editorconfig contradiction
+- [-] 13. Resolve the editorconfig contradiction
   - File: `src/.editorconfig` (modify)
   - The file says `dotnet_separate_import_directive_groups` is commented out and then enables it on the next line. Set it `false`, honouring the note's stated reasoning, and keep `dotnet_sort_system_directives_first = true`. Rewrite the note so it and the setting agree
   - Purpose: Requirement 5.4 - and the cause of 115 of the gate's failures
