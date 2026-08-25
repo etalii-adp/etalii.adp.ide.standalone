@@ -6,7 +6,7 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { ShortGuid } from "./shared_pb";
 import { file_shared } from "./shared_pb";
-import type { Path, ViewUpdate } from "./connection_pb";
+import type { Path, Point2D, ViewUpdate } from "./connection_pb";
 import { file_connection } from "./connection_pb";
 import type { DeltaSchema } from "./deltas_pb";
 import { file_deltas } from "./deltas_pb";
@@ -16,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file diagrams.proto.
  */
 export const file_diagrams: GenFile = /*@__PURE__*/
-  fileDesc("Cg5kaWFncmFtcy5wcm90bxIKZXRhbGlpLmFkcCKIAQoST3BlbkRpYWdyYW1SZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAyABKAsyEC5ldGFsaWkuYWRwLlBhdGgirQEKEVVwZGF0ZVZpZXdSZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAyABKAsyEC5ldGFsaWkuYWRwLlBhdGgSJAoEdmlldxgEIAEoCzIWLmV0YWxpaS5hZHAuVmlld1VwZGF0ZSIjChJVcGRhdGVWaWV3UmVzcG9uc2USDQoFZXJyb3IYASABKAkiwgEKEk1vdmVFbGVtZW50UmVxdWVzdBIpCgpwcm9qZWN0X2lkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSJwoId2F0Y2hfaWQYAiABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBIeCgRwYXRoGAMgASgLMhAuZXRhbGlpLmFkcC5QYXRoEhIKCmVsZW1lbnRfaWQYBCABKAkSFQoNbmV3X3BhcmVudF9pZBgFIAEoCRINCgVpbmRleBgGIAEoBSIkChNNb3ZlRWxlbWVudFJlc3BvbnNlEg0KBWVycm9yGAEgASgJImMKFkRlc2NyaWJlVG9vbGJveFJlcXVlc3QSKQoKcHJvamVjdF9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAiABKAsyEC5ldGFsaWkuYWRwLlBhdGgiYwoLVG9vbGJveEl0ZW0SCgoCaWQYASABKAkSDQoFbGFiZWwYAiABKAkSDAoEaWNvbhgDIAEoCRITCgtkZXNjcmlwdGlvbhgEIAEoCRIWCg5kcm9wX2FjdGlvbl9pZBgFIAEoCSJBChdEZXNjcmliZVRvb2xib3hSZXNwb25zZRImCgVpdGVtcxgBIAMoCzIXLmV0YWxpaS5hZHAuVG9vbGJveEl0ZW0yxgIKDkRpYWdyYW1TZXJ2aWNlEjsKBE9wZW4SHi5ldGFsaWkuYWRwLk9wZW5EaWFncmFtUmVxdWVzdBoRLmV0YWxpaS5hZHAuRGVsdGEwARJLCgpVcGRhdGVWaWV3Eh0uZXRhbGlpLmFkcC5VcGRhdGVWaWV3UmVxdWVzdBoeLmV0YWxpaS5hZHAuVXBkYXRlVmlld1Jlc3BvbnNlEk4KC01vdmVFbGVtZW50Eh4uZXRhbGlpLmFkcC5Nb3ZlRWxlbWVudFJlcXVlc3QaHy5ldGFsaWkuYWRwLk1vdmVFbGVtZW50UmVzcG9uc2USWgoPRGVzY3JpYmVUb29sYm94EiIuZXRhbGlpLmFkcC5EZXNjcmliZVRvb2xib3hSZXF1ZXN0GiMuZXRhbGlpLmFkcC5EZXNjcmliZVRvb2xib3hSZXNwb25zZUINqgIKRXRBbGlpLkFkcGIGcHJvdG8z", [file_shared, file_connection, file_deltas]);
+  fileDesc("Cg5kaWFncmFtcy5wcm90bxIKZXRhbGlpLmFkcCKIAQoST3BlbkRpYWdyYW1SZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAyABKAsyEC5ldGFsaWkuYWRwLlBhdGgirQEKEVVwZGF0ZVZpZXdSZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgCIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAyABKAsyEC5ldGFsaWkuYWRwLlBhdGgSJAoEdmlldxgEIAEoCzIWLmV0YWxpaS5hZHAuVmlld1VwZGF0ZSIjChJVcGRhdGVWaWV3UmVzcG9uc2USDQoFZXJyb3IYASABKAki6QEKEk1vdmVFbGVtZW50UmVxdWVzdBIpCgpwcm9qZWN0X2lkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSJwoId2F0Y2hfaWQYAiABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBIeCgRwYXRoGAMgASgLMhAuZXRhbGlpLmFkcC5QYXRoEhIKCmVsZW1lbnRfaWQYBCABKAkSFQoNbmV3X3BhcmVudF9pZBgFIAEoCRINCgVpbmRleBgGIAEoBRIlCghwb3NpdGlvbhgHIAEoCzITLmV0YWxpaS5hZHAuUG9pbnQyRCIkChNNb3ZlRWxlbWVudFJlc3BvbnNlEg0KBWVycm9yGAEgASgJImMKFkRlc2NyaWJlVG9vbGJveFJlcXVlc3QSKQoKcHJvamVjdF9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEh4KBHBhdGgYAiABKAsyEC5ldGFsaWkuYWRwLlBhdGgiYwoLVG9vbGJveEl0ZW0SCgoCaWQYASABKAkSDQoFbGFiZWwYAiABKAkSDAoEaWNvbhgDIAEoCRITCgtkZXNjcmlwdGlvbhgEIAEoCRIWCg5kcm9wX2FjdGlvbl9pZBgFIAEoCSJBChdEZXNjcmliZVRvb2xib3hSZXNwb25zZRImCgVpdGVtcxgBIAMoCzIXLmV0YWxpaS5hZHAuVG9vbGJveEl0ZW0yxgIKDkRpYWdyYW1TZXJ2aWNlEjsKBE9wZW4SHi5ldGFsaWkuYWRwLk9wZW5EaWFncmFtUmVxdWVzdBoRLmV0YWxpaS5hZHAuRGVsdGEwARJLCgpVcGRhdGVWaWV3Eh0uZXRhbGlpLmFkcC5VcGRhdGVWaWV3UmVxdWVzdBoeLmV0YWxpaS5hZHAuVXBkYXRlVmlld1Jlc3BvbnNlEk4KC01vdmVFbGVtZW50Eh4uZXRhbGlpLmFkcC5Nb3ZlRWxlbWVudFJlcXVlc3QaHy5ldGFsaWkuYWRwLk1vdmVFbGVtZW50UmVzcG9uc2USWgoPRGVzY3JpYmVUb29sYm94EiIuZXRhbGlpLmFkcC5EZXNjcmliZVRvb2xib3hSZXF1ZXN0GiMuZXRhbGlpLmFkcC5EZXNjcmliZVRvb2xib3hSZXNwb25zZUINqgIKRXRBbGlpLkFkcGIGcHJvdG8z", [file_shared, file_connection, file_deltas]);
 
 /**
  * @generated from message etalii.adp.OpenDiagramRequest
@@ -141,6 +141,25 @@ export type MoveElementRequest = Message<"etalii.adp.MoveElementRequest"> & {
    * @generated from field: int32 index = 6;
    */
   index: number;
+
+  /**
+   * Where it lands, for a diagram that is arranged rather than nested. Unset means the move is
+   * a re-parenting, described by the two fields above.
+   * 
+   * The two gestures are genuinely different and a type usually supports one of them. Dragging
+   * a mindmap node re-parents it: the tree *is* the layout, and there are no free coordinates
+   * to land on. Dragging a C4 element moves it on the canvas and changes nothing about the
+   * model, because a container belongs to the software system that declares it and no drag
+   * should say otherwise.
+   * 
+   * Before this field existed, a type that needed a position encoded "x,y" into new_parent_id
+   * and split it on the comma. That worked and was tested, but the field's documented meaning
+   * and its use had parted company, and the encoding had no schema for the next reader to
+   * find - so a re-parent attempt came back reported as a malformed coordinate pair.
+   *
+   * @generated from field: etalii.adp.Point2D position = 7;
+   */
+  position?: Point2D | undefined;
 };
 
 /**
