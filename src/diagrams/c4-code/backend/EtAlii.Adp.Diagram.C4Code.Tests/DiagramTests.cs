@@ -4,11 +4,18 @@ namespace EtAlii.Adp.Diagram.C4Code.Tests;
 
 public class DiagramTests
 {
+    /// <summary>
+    /// This module declares exactly one type, so Single() is the assertion as well as the
+    /// accessor: if it ever grows a second, these tests fail rather than silently checking
+    /// whichever one happened to be first.
+    /// </summary>
+    private static DiagramDefinition Definition => Assert.Single(Diagram.Definitions);
+
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
         // Act.
-        var origin = Diagram.Definition.Origin;
+        var origin = Definition.Origin;
 
         // Assert.
         Assert.Equal("c4", origin.Vendor);
@@ -22,7 +29,7 @@ public class DiagramTests
         // Arrange, act and assert.
         Assert.Equal(
             "Code (optional)",
-            Diagram.Definition.Title);
+            Definition.Title);
     }
 
     [Fact]
@@ -35,7 +42,7 @@ public class DiagramTests
         // anything - the first claimant of that extension in catalog order, which broke
         // opening a .dsl with no .adp beside it (c4-diagrams Requirement 11, deviating from
         // Requirement 2.2).
-        Assert.Equal("", Diagram.Definition.Extension);
-        Assert.False(Diagram.Definition.HasDocumentSibling);
+        Assert.Equal("", Definition.Extension);
+        Assert.False(Definition.HasDocumentSibling);
     }
 }

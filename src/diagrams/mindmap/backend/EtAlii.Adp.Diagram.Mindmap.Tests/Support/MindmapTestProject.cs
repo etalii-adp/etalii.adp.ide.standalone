@@ -21,11 +21,11 @@ internal sealed class MindmapTestProject : IDisposable
         Directory.CreateDirectory(IoPath.Combine(Root, "docs"));
         AdpPath = IoPath.Combine(Root, "docs", "architecture.adp");
         BodyPath = IoPath.Combine(Root, "docs", "architecture.mm");
-        File.WriteAllText(AdpPath, Diagram.Definition.Origin.MimeType + "\n");
+        File.WriteAllText(AdpPath, Diagram.Mindmap.Origin.MimeType + "\n");
         File.Copy("Fixtures/architecture.mm", BodyPath);
 
         _services = new ServiceCollection()
-            .AddSingleton<IDiagramDefinitionCatalog>(new MindmapTestProjectCatalog([Diagram.Definition]))
+            .AddSingleton<IDiagramDefinitionCatalog>(new MindmapTestProjectCatalog([Diagram.Mindmap]))
             .AddSingleton<DiagramFileRouter>()
             .AddSingleton<MindmapViewState>()
             .AddSingleton<MindmapContextSourceResolver>()

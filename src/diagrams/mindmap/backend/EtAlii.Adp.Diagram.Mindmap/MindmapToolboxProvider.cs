@@ -8,7 +8,7 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// </summary>
 public sealed class MindmapToolboxProvider : IDiagramToolboxProvider
 {
-    public DiagramOrigin Origin { get; } = Diagram.Definition.Origin;
+    public DiagramOrigin Origin { get; } = Diagram.Mindmap.Origin;
 
     public IReadOnlyList<ToolboxItemDefinition> Items { get; } =
     [

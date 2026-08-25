@@ -44,7 +44,7 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
         }
 
         if (_router.Route(parent.Target.ResolvedFullPath) is not DiagramRouted { Definition.Origin: var origin, BodyPath: var bodyPath } ||
-            origin != Diagram.Definition.Origin)
+            origin != Diagram.Mindmap.Origin)
         {
             return Rejected("The selected file is not a mindmap.");
         }

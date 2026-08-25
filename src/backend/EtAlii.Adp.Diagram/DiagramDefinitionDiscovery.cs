@@ -7,7 +7,7 @@ namespace EtAlii.Adp.Diagram;
 /// <summary>
 /// Finds every diagram type the application carries by looking, in each of its own
 /// assemblies, for a static class named <c>Diagram</c> with a public static
-/// <c>Definition</c> property of type <see cref="DiagramDefinition"/> - the shape every
+/// <c>Definitions</c> property holding <see cref="DiagramDefinition"/>s - the shape every
 /// diagram-type module already exposes.
 /// </summary>
 /// <remarks>
@@ -26,7 +26,7 @@ public sealed class DiagramDefinitionDiscovery
     public const string AssemblyPrefix = "EtAlii.Adp";
 
     private const string CandidateTypeName = "Diagram";
-    private const string DefinitionPropertyName = "Definition";
+    private const string DefinitionsPropertyName = "Definitions";
 
     private static readonly ILogger _logger = Log.ForContext<DiagramDefinitionDiscovery>();
 
@@ -55,41 +55,39 @@ public sealed class DiagramDefinitionDiscovery
                     continue;
                 }
 
-                if (TryReadDefinition(type, assemblyName) is not { } definition)
+                foreach (var definition in TryReadDefinitions(type, assemblyName))
                 {
-                    continue;
-                }
-
-                if (found.TryGetValue(definition.Origin, out var existing))
-                {
-                    // Keep the ordinal-smaller assembly name so the winner does not depend on
-                    // the order assemblies happened to be handed in.
-                    var keepExisting = string.CompareOrdinal(existing.AssemblyName, assemblyName) <= 0;
-                    var kept = keepExisting ? existing.AssemblyName : assemblyName;
-                    var dropped = keepExisting ? assemblyName : existing.AssemblyName;
-                    // Each property is named exactly once. An earlier wording mentioned the
-                    // kept assembly twice, and a template that repeats a property leaves the
-                    // second occurrence unbound - it renders as the bare property name.
-                    _logger.Warning(
-                        "Diagram origin {Origin} is declared more than once; dropping {DroppedAssembly} and keeping the one from {KeptAssembly}",
-                        definition.Origin.ToString(),
-                        dropped,
-                        kept);
-
-                    if (!keepExisting)
+                    if (found.TryGetValue(definition.Origin, out var existing))
                     {
-                        found[definition.Origin] = (definition, assemblyName);
+                        // Keep the ordinal-smaller assembly name so the winner does not depend on
+                        // the order assemblies happened to be handed in.
+                        var keepExisting = string.CompareOrdinal(existing.AssemblyName, assemblyName) <= 0;
+                        var kept = keepExisting ? existing.AssemblyName : assemblyName;
+                        var dropped = keepExisting ? assemblyName : existing.AssemblyName;
+                        // Each property is named exactly once. An earlier wording mentioned the
+                        // kept assembly twice, and a template that repeats a property leaves the
+                        // second occurrence unbound - it renders as the bare property name.
+                        _logger.Warning(
+                            "Diagram origin {Origin} is declared more than once; dropping {DroppedAssembly} and keeping the one from {KeptAssembly}",
+                            definition.Origin.ToString(),
+                            dropped,
+                            kept);
+
+                        if (!keepExisting)
+                        {
+                            found[definition.Origin] = (definition, assemblyName);
+                        }
+
+                        continue;
                     }
 
-                    continue;
+                    found[definition.Origin] = (definition, assemblyName);
+                    _logger.Information(
+                        "Discovered diagram type {Origin}: {Title} ({Assembly})",
+                        definition.Origin.ToString(),
+                        definition.Title,
+                        assemblyName);
                 }
-
-                found[definition.Origin] = (definition, assemblyName);
-                _logger.Information(
-                    "Discovered diagram type {Origin}: {Title} ({Assembly})",
-                    definition.Origin.ToString(),
-                    definition.Title,
-                    assemblyName);
             }
         }
 
@@ -258,40 +256,69 @@ public sealed class DiagramDefinitionDiscovery
     private static bool IsCandidate(Type type) =>
         type is { IsClass: true, IsAbstract: true, IsSealed: true } && type.Name == CandidateTypeName;
 
-    private DiagramDefinition? TryReadDefinition(Type type, string assemblyName)
+    /// <summary>
+    /// Every definition a <c>Diagram</c> class declares. A module may declare more than one:
+    /// the seven C4 types share one engine and one assembly, and splitting them across seven
+    /// projects only to satisfy a singular property was the tail wagging the dog.
+    /// </summary>
+    /// <returns>
+    /// Empty for any malformed class, never null - a module that declares its definitions
+    /// wrongly costs its own entries and a warning, never anyone else's.
+    /// </returns>
+    private IReadOnlyList<DiagramDefinition> TryReadDefinitions(Type type, string assemblyName)
     {
-        var property = type.GetProperty(DefinitionPropertyName, BindingFlags.Public | BindingFlags.Static);
+        var property = type.GetProperty(DefinitionsPropertyName, BindingFlags.Public | BindingFlags.Static);
         if (property is null)
         {
-            LogMalformed(type, assemblyName, "it has no public static Definition property");
-            return null;
+            LogMalformed(type, assemblyName, $"it has no public static {DefinitionsPropertyName} property");
+            return [];
         }
 
-        if (!typeof(DiagramDefinition).IsAssignableFrom(property.PropertyType))
+        // Any read-only sequence will do - an array, an ImmutableArray, a List. The property is
+        // declared `DiagramDefinition[]` by convention, but insisting on that exact type would
+        // reject a module over a choice that makes no difference to anyone reading the result.
+        if (!typeof(IReadOnlyList<DiagramDefinition>).IsAssignableFrom(property.PropertyType))
         {
             LogMalformed(
                 type,
                 assemblyName,
-                $"its Definition property is a {property.PropertyType.Name}, not a {nameof(DiagramDefinition)}");
-            return null;
+                $"its {DefinitionsPropertyName} property is a {property.PropertyType.Name}, not a sequence of {nameof(DiagramDefinition)}");
+            return [];
         }
 
         try
         {
-            if (property.GetValue(null) is DiagramDefinition definition)
+            if (property.GetValue(null) is not IReadOnlyList<DiagramDefinition> definitions)
             {
-                return definition;
+                LogMalformed(type, assemblyName, $"its {DefinitionsPropertyName} property returned null");
+                return [];
             }
 
-            LogMalformed(type, assemblyName, "its Definition property returned null");
-            return null;
+            // A null *inside* the array is its own mistake, and one bad entry should not cost
+            // the module its good ones.
+            var declared = definitions.Where(definition => definition is not null).ToArray();
+            var nulls = definitions.Count - declared.Length;
+            if (nulls > 0)
+            {
+                LogMalformed(
+                    type,
+                    assemblyName,
+                    $"its {DefinitionsPropertyName} property contains {nulls} null {(nulls == 1 ? "entry" : "entries")}");
+            }
+
+            if (declared.Length == 0)
+            {
+                LogMalformed(type, assemblyName, $"its {DefinitionsPropertyName} property declares nothing");
+            }
+
+            return declared;
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {
             // GetValue wraps whatever the getter threw.
             var cause = exception is TargetInvocationException { InnerException: { } inner } ? inner : exception;
-            LogMalformed(type, assemblyName, $"reading its Definition property threw: {cause.Message}");
-            return null;
+            LogMalformed(type, assemblyName, $"reading its {DefinitionsPropertyName} property threw: {cause.Message}");
+            return [];
         }
     }
 

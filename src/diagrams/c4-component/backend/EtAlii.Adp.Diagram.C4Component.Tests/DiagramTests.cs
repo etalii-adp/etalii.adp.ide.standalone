@@ -4,11 +4,18 @@ namespace EtAlii.Adp.Diagram.C4Component.Tests;
 
 public class DiagramTests
 {
+    /// <summary>
+    /// This module declares exactly one type, so Single() is the assertion as well as the
+    /// accessor: if it ever grows a second, these tests fail rather than silently checking
+    /// whichever one happened to be first.
+    /// </summary>
+    private static DiagramDefinition Definition => Assert.Single(Diagram.Definitions);
+
     [Fact]
     public void Definition_Origin_MatchesTheCatalogedOriginTag()
     {
         // Act.
-        var origin = Diagram.Definition.Origin;
+        var origin = Definition.Origin;
 
         // Assert.
         Assert.Equal("c4", origin.Vendor);
@@ -22,7 +29,7 @@ public class DiagramTests
         // Arrange, act and assert.
         Assert.Equal(
             "Component",
-            Diagram.Definition.Title);
+            Definition.Title);
     }
 
     [Fact]
@@ -32,7 +39,7 @@ public class DiagramTests
         // Several C4 diagrams can share one model document, so every C4 type declares the
         // same extension and core names the sibling by construction (c4-diagrams
         // Requirement 2.2).
-        Assert.Equal(".dsl", Diagram.Definition.Extension);
-        Assert.True(Diagram.Definition.HasDocumentSibling);
+        Assert.Equal(".dsl", Definition.Extension);
+        Assert.True(Definition.HasDocumentSibling);
     }
 }

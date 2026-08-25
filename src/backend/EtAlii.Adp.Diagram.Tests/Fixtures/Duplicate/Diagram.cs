@@ -6,7 +6,10 @@ namespace EtAlii.Adp.Diagram.Tests.Fixtures.Duplicate;
 /// </summary>
 public static class Diagram
 {
-    public static DiagramDefinition Definition { get; } = new(
-        new DiagramOrigin("fixture", "valid"),
-        "Duplicate Of Valid");
+    public static DiagramDefinition[] Definitions { get; } =
+    [
+        new(
+            new DiagramOrigin("fixture", "valid"),
+            "Duplicate Of Valid"),
+    ];
 }

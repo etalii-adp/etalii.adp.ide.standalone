@@ -10,7 +10,7 @@ public class MindmapValidatorTests
     public void TheValidatorAnswersForTheMindmapOrigin()
     {
         // Arrange, act and assert.
-        Assert.Equal(Diagram.Definition.Origin, _validator.Origin);
+        Assert.Equal(Diagram.Mindmap.Origin, _validator.Origin);
     }
 
     [Fact]

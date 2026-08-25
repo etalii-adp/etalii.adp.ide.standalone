@@ -6,5 +6,5 @@ namespace EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.NotStatic;
 /// </summary>
 public sealed class Diagram
 {
-    public DiagramDefinition Definition { get; } = new(new DiagramOrigin("fixture", "not-static"), "Not Static");
+    public DiagramDefinition[] Definitions { get; } = [new(new DiagramOrigin("fixture", "not-static"), "Not Static")];
 }

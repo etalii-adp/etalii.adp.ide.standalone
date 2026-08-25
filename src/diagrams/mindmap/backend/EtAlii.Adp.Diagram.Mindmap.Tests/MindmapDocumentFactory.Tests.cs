@@ -10,7 +10,7 @@ public class MindmapDocumentFactoryTests
     public void Origin_IsTheModulesOwn()
     {
         // Arrange, act and assert.
-        Assert.Equal(Diagram.Definition.Origin, _factory.Origin);
+        Assert.Equal(Diagram.Mindmap.Origin, _factory.Origin);
     }
 
     [Fact]
@@ -51,7 +51,7 @@ public class MindmapDocumentFactoryTests
     public void Definition_DeclaresTheMmExtension()
     {
         // Arrange, act and assert.
-        Assert.Equal(".mm", Diagram.Definition.Extension);
-        Assert.True(Diagram.Definition.HasDocumentSibling);
+        Assert.Equal(".mm", Diagram.Mindmap.Extension);
+        Assert.True(Diagram.Mindmap.HasDocumentSibling);
     }
 }
