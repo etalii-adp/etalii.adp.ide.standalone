@@ -78,7 +78,7 @@
 
 ## Phase C — reading the tree
 
-- [-] 7. Scaffold the module
+- [x] 7. Scaffold the module
   - File: `src/diagrams/ansible-structure/**` (new), `src/backend/EtAlii.Adp.slnx` (edited)
   - `backend/EtAlii.Adp.Diagram.AnsibleStructure` and `.Tests` (the test project an executable, for xUnit v3), `api/`, `client/`, following the mindmap module's layout. `Diagram.cs` declares one `Definitions` entry: origin `ansible/structure`, title, description, **no `Extension`**, `Subject = DiagramSubject.Folder`
   - Purpose: the module exists and is discovered
@@ -86,7 +86,7 @@
   - _Requirements: 2.1, 11.1_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Scaffold the module projects and declare its Diagram.Definitions entry as a folder-subject type with no extension | Restrictions: follow the per-diagram module layout structure.md defines; the test project must be an executable; do not declare an extension - the .adp is the whole registration | Success: the solution builds, the type appears in DiagramDefinition.All, and the definition-description test still passes_
 
-- [ ] 8. Add YamlDotNet centrally
+- [-] 8. Add YamlDotNet centrally
   - File: `src/Directory.Packages.props` (edited), `src/diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure/EtAlii.Adp.Diagram.AnsibleStructure.csproj` (edited)
   - Pin the current release as a `PackageVersion`, and reference it from the module only. This is the tree's first YAML dependency; a read-only module has no reason to hand-roll a parser, and YamlDotNet's node marks are what let a problem point at a line
   - Purpose: `AnsibleYaml` has something to parse with
