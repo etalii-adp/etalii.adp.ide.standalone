@@ -178,15 +178,21 @@ public static class C4RuleSet
                     new DiagramProblemLineLocation(relationship.Line));
             }
 
-            // Containers only. Two components of one container call each other in process, and
-            // there is no protocol to name - C4's worked example leaves those undecorated, which
-            // is how this rule was found to be over-reaching.
-            var betweenContainers = source.Kind == C4ElementKind.Container && destination.Kind == C4ElementKind.Container;
-            if (betweenContainers && relationship.Technology.Length == 0)
+            // Every relationship, matching `model.relationship.technology`. This was once
+            // narrowed to container-to-container, reasoning that two components of one
+            // container call each other in process and have no protocol to name, and that
+            // C4's worked example leaves those undecorated. Structurizr inspects every
+            // relationship and reports 26 findings on that same example, so the narrowing
+            // rested on a fixture rather than on the notation.
+            //
+            // An in-process call does have something worth naming - the example's own
+            // component relationships say "JDBC", and a plain method call is worth writing
+            // down as one when a reader is trying to tell it from a network hop.
+            if (relationship.Technology.Length == 0)
             {
                 yield return new DiagramProblem(
                     DiagramProblemSeverity.Warning,
-                    $"The relationship from '{Label(source)}' to '{Label(destination)}' names no technology. How two containers communicate is what a Container diagram is for.",
+                    $"The relationship from '{Label(source)}' to '{Label(destination)}' names no technology. How two elements communicate - a protocol, a library, a call - is what tells a reader where a boundary really is.",
                     C4Rules.MissingProtocol,
                     new DiagramProblemLineLocation(relationship.Line));
             }

@@ -120,16 +120,19 @@ public class C4RuleSetTests
     }
 
     [Fact]
-    public void ARelationshipFromAPersonWithNoProtocol_IsNotReported()
+    public void ARelationshipFromAPersonWithNoProtocol_IsReported()
     {
-        // Act.
-        // Act.
-        // A person does not speak a protocol; the rule is about how containers communicate.
+        // Arrange.
+        // This test used to assert the opposite, on the reasoning that a person does not speak
+        // a protocol and the rule is about how containers communicate. But a person visiting a
+        // web application does so over something - HTTPS, here, which is what the fixture says
+        // before this line strips it - and Structurizr inspects every relationship for a
+        // technology rather than only the container-to-container ones
+        // (quality-gates Requirement 1.3).
         var dsl = Clean.Replace("u -> web \"Visits\" \"HTTPS\"", "u -> web \"Visits\"", StringComparison.Ordinal);
 
-        // Assert.
-        // Assert.
-        Assert.DoesNotContain(C4Rules.MissingProtocol, RuleIds(dsl));
+        // Act and assert.
+        Assert.Contains(C4Rules.MissingProtocol, RuleIds(dsl));
     }
 
     [Fact]
