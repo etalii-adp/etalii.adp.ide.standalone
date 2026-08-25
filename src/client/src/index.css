@@ -1209,6 +1209,69 @@ button {
   overflow-wrap: anywhere;
 }
 
+/* An editable value. Deliberately quiet until focused: a panel of boxes reads as a form to
+   fill in, when most of the time it is a panel to read. */
+.property-grid-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.property-grid-input:hover {
+  border-color: var(--color-border);
+}
+
+.property-grid-input:focus {
+  border-color: var(--color-primary);
+  background: var(--color-bg);
+  outline: none;
+}
+
+.property-grid-input-text {
+  resize: vertical;
+  min-height: 3.4em;
+}
+
+.property-grid-input-toggle {
+  width: auto;
+}
+
+.property-grid-group-title {
+  margin: 0.6rem 0 0.2rem;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Why a value cannot be changed here, under the value itself - an explanation rather than a
+   disabled control, so the reader learns what would have to change instead. */
+.property-grid-readonly-reason {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+
+.property-grid-row-readonly dd .property-grid-value {
+  color: var(--color-text-muted);
+}
+
+.property-grid-error {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--color-error, #c0392b);
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+
 /* The Toolbox panel: the palette of entries the open diagram's type contributes. */
 .toolbox-panel {
   padding: 0.5rem;

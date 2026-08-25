@@ -25,6 +25,7 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
     private readonly IContextSelectionStore _selectionStore;
     private readonly ContextSelectionResolver _selectionResolver;
     private readonly IContextActionResolver _contextActionResolver;
+    private readonly IContextPropertyResolver _contextPropertyResolver;
     private readonly IContextInteractionStore _contextInteractionStore;
     private readonly IHistoryStackStore _historyStacks;
     private readonly Problems.ProblemBroadcaster _problemBroadcaster;
@@ -36,6 +37,7 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
         IContextSelectionStore selectionStore,
         ContextSelectionResolver selectionResolver,
         IContextActionResolver contextActionResolver,
+        IContextPropertyResolver contextPropertyResolver,
         IContextInteractionStore contextInteractionStore,
         IHistoryStackStore historyStacks,
         Problems.ProblemBroadcaster problemBroadcaster,
@@ -46,6 +48,7 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
         _selectionStore = selectionStore;
         _selectionResolver = selectionResolver;
         _contextActionResolver = contextActionResolver;
+        _contextPropertyResolver = contextPropertyResolver;
         _contextInteractionStore = contextInteractionStore;
         _historyStacks = historyStacks;
         _problemBroadcaster = problemBroadcaster;

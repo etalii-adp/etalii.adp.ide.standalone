@@ -30,6 +30,7 @@ internal sealed class MindmapTestProject : IDisposable
             .AddSingleton<MindmapViewState>()
             .AddSingleton<MindmapContextSourceResolver>()
             .AddSingleton<MindmapContextActionProvider>()
+            .AddSingleton<MindmapContextPropertyProvider>()
             .AddCommands()
             .AddMindmapCommands()
             .BuildServiceProvider();
@@ -52,6 +53,8 @@ internal sealed class MindmapTestProject : IDisposable
     public MindmapContextSourceResolver Resolver => _services.GetRequiredService<MindmapContextSourceResolver>();
 
     public MindmapContextActionProvider Provider => _services.GetRequiredService<MindmapContextActionProvider>();
+
+    public MindmapContextPropertyProvider Properties => _services.GetRequiredService<MindmapContextPropertyProvider>();
 
     public MindmapDocument Document => Documents.GetOrLoad(BodyPath);
 
