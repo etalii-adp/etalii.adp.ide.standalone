@@ -57,17 +57,37 @@ the same reason: the containers looked right, and only the boundary's geometry g
 ## A C4 document ADP wrote opens in Structurizr Lite (c4-diagrams, task 39)
 
 The reason for choosing the Structurizr DSL over a format of ADP's own was interoperability, and
-that claim is only worth something if it is checked against the real tool. It cannot be checked
-in the sandbox this repository is developed in: neither Docker nor a JRE is available there, and
-Structurizr Lite needs one of them.
+that claim is only worth something checked against the real tool.
 
-- **Preconditions**: Docker (or a JRE and the Structurizr Lite jar) on the machine running the
-  check. A project containing a C4 model ADP created and then edited - rename an element, set a
-  technology, add a second view - so the file under test is one ADP wrote, not one it only read.
+**The parsing half of this is now automated** and no longer needs a manual pass. `C4InteropTests`
+hands ADP's own output to the real Structurizr CLI - the `structurizr-dsl` library Lite itself
+parses with - covering the new-document template for all six working types, a document ADP
+created and then edited (rename, description, added view) and then undid, and every fixture in
+the corpus. It skips unless a CLI is provided, so run it as:
+
+```powershell
+$env:ADP_STRUCTURIZR_CLI = "<structurizr-cli>lib"; dotnet test --solution EtAlii.Adp.slnx
+```
+
+That check found two defects in ADP's own templates on its first run: a component view scoped as
+`system.container` (identifiers are flat unless a document says `!identifiers hierarchical`, so
+the dotted form named nothing), and a `deploymentEnvironment` with no nodes in it (an environment
+is a property of the nodes deployed into it, so an empty one does not exist and the view bound to
+nothing). Both are fixed and guarded.
+
+An earlier version of this entry said the check could not run here because there was neither
+Docker nor a JRE. A JDK has since been installed, and the CLI comes from Maven Central, which was
+reachable all along - the entry was wrong, not the environment.
+
+**What is still manual** is the rendering half: that Lite *draws* what it parses.
+
+- **Preconditions**: Docker (or a JRE and the Structurizr Lite jar). A project containing a C4
+  model ADP created and then edited - rename an element, set a technology, add a second view - so
+  the file under test is one ADP wrote, not one it only read.
 - **Actions**: run Structurizr Lite against the folder holding the `.dsl`
   (`docker run -it --rm -p 8080:8080 -v /path/to/folder:/usr/local/structurizr structurizr/lite`)
   and open `http://localhost:8080`.
-- **Expected**: Lite parses the workspace without error and renders every view ADP declared -
-  the ones it created and the one added through "Add view". The element names, descriptions and
-  technologies ADP edited appear as edited. ADP's `.layout.json` sidecar is ignored by Lite and
-  causes no complaint, because it is ADP's own file and not part of the workspace.
+- **Expected**: Lite renders every view ADP declared - the ones it created and the one added
+  through "Add view". The element names, descriptions and technologies ADP edited appear as
+  edited. ADP's `.layout.json` sidecar is ignored by Lite and causes no complaint, because it is
+  ADP's own file and not part of the workspace.
