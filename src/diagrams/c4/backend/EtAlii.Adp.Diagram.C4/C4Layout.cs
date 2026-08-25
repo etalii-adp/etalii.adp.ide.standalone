@@ -320,19 +320,34 @@ public static class C4LayoutEngine
         var kind = view.Kind == C4ViewKind.Container ? "Software System" : "Container";
         return [new C4Boundary($"boundary:{scope.Id}", scope.Name, kind, new C4Box(Math.Round(x, 2), Math.Round(y, 2), Math.Round(right - x, 2), Math.Round(bottom - y, 2)))];
     }
-
     /// <summary>
     /// Separates outsiders that landed on each other on the way out of a boundary.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Each one leaves by its own shortest route, knowing nothing of the others, so two that
     /// share an edge arrive at the same place: on the C4 worked example's container view the
     /// customer and the mainframe banking system both left through the top and ended up drawn
     /// one on top of the other.
-    ///
-    /// They are spread along the axis they were <em>not</em> pushed along, which is what makes
-    /// this safe: the coordinate that carried an element clear of the boundary is the one left
-    /// untouched, so separating them cannot walk one back inside.
+    /// </para>
+    /// <para>
+    /// This runs in two stages, and the first is the one that matters. Nudging pairs apart one
+    /// at a time - which is all this used to do - cannot separate two boxes that are exactly
+    /// coincident: identical geometry means identical arithmetic, so both compute the same
+    /// escape and move together, in lockstep, for as many passes as they are given. Coincidence
+    /// is not a corner case either. Two elements in different ranks routinely share a position
+    /// along their rank, and pushing both out of the same edge sets the other coordinate equal
+    /// as well.
+    /// </para>
+    /// <para>
+    /// So the first stage sweeps rather than nudges: everything pushed off the same axis is laid
+    /// out in order along the perpendicular one, each element placed after the last. That
+    /// terminates in a single pass, cannot leave two members of a group overlapping, and moves
+    /// elements only forwards - so the coordinate that carried them clear of the boundary is
+    /// never touched and nothing walks back inside. The second stage is the old pairwise nudge,
+    /// kept for the collisions a per-axis sweep cannot see: a vertically pushed element against
+    /// a horizontally pushed one, or against an outsider that never needed pushing at all.
+    /// </para>
     /// </remarks>
     private static void Spread(
         Dictionary<string, C4Box> boxes,
@@ -345,7 +360,12 @@ public static class C4LayoutEngine
             return;
         }
 
-        // Bounded, so a set that cannot be separated cannot spin either.
+        // Stage one: everything pushed vertically spreads along X, everything pushed
+        // horizontally spreads along Y.
+        SweepApart(boxes, pushedVertically.Where(entry => entry.Value).Select(entry => entry.Key), horizontally: true, nodeSeparation);
+        SweepApart(boxes, pushedVertically.Where(entry => !entry.Value).Select(entry => entry.Key), horizontally: false, nodeSeparation);
+
+        // Stage two, bounded so a set that cannot be separated cannot spin either.
         for (var pass = 0; pass < outsiders.Count; pass++)
         {
             var moved = false;
@@ -360,11 +380,16 @@ public static class C4LayoutEngine
 
                     var box = boxes[id];
                     var blocker = boxes[other];
+
+                    // A tie means the two are symmetric about each other, and answering it the
+                    // same way for both is how lockstep starts. The ordinally smaller id goes
+                    // first, which is arbitrary but never the same answer for both.
+                    var goesFirst = string.CompareOrdinal(id, other) < 0;
                     if (vertically)
                     {
                         var toLeft = box.Right - blocker.X + nodeSeparation;
                         var toRight = blocker.Right - box.X + nodeSeparation;
-                        boxes[id] = toLeft <= toRight
+                        boxes[id] = (toLeft < toRight || (toLeft == toRight && goesFirst))
                             ? box with { X = Math.Round(box.X - toLeft, 2) }
                             : box with { X = Math.Round(box.X + toRight, 2) };
                     }
@@ -372,7 +397,7 @@ public static class C4LayoutEngine
                     {
                         var up = box.Bottom - blocker.Y + nodeSeparation;
                         var down = blocker.Bottom - box.Y + nodeSeparation;
-                        boxes[id] = up <= down
+                        boxes[id] = (up < down || (up == down && goesFirst))
                             ? box with { Y = Math.Round(box.Y - up, 2) }
                             : box with { Y = Math.Round(box.Y + down, 2) };
                     }
@@ -385,6 +410,47 @@ public static class C4LayoutEngine
             {
                 return;
             }
+        }
+    }
+
+    /// <summary>
+    /// Lays <paramref name="ids"/> out in a row (or a column) so no two of them overlap on that
+    /// axis - and therefore not at all.
+    /// </summary>
+    /// <remarks>
+    /// Order is by current position and then by id, so the result is what the rank layout already
+    /// intended and is the same on every run rather than the order a dictionary happened to
+    /// enumerate. Elements only ever move forwards along the axis: an element already clear of
+    /// its predecessor is left exactly where it was.
+    /// </remarks>
+    private static void SweepApart(
+        Dictionary<string, C4Box> boxes,
+        IEnumerable<string> ids,
+        bool horizontally,
+        double nodeSeparation)
+    {
+        var ordered = ids
+            .OrderBy(id => horizontally ? boxes[id].X : boxes[id].Y)
+            .ThenBy(id => id, StringComparer.Ordinal)
+            .ToArray();
+
+        double? cursor = null;
+        foreach (var id in ordered)
+        {
+            var box = boxes[id];
+            var start = horizontally ? box.X : box.Y;
+            var size = horizontally ? box.Width : box.Height;
+
+            if (cursor is { } from && start < from)
+            {
+                box = horizontally
+                    ? box with { X = Math.Round(from, 2) }
+                    : box with { Y = Math.Round(from, 2) };
+                boxes[id] = box;
+                start = from;
+            }
+
+            cursor = start + size + nodeSeparation;
         }
     }
 }

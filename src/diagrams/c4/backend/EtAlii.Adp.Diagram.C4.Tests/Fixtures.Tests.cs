@@ -27,6 +27,7 @@ public class FixturesTests
         "dynamic-interactions.dsl",
         "big-bank-plc.dsl",
         "aws-deployment.dsl",
+        "crowded-component-view.dsl",
     ];
 
     [Theory]

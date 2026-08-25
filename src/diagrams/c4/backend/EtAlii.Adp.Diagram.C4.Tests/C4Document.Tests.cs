@@ -23,6 +23,7 @@ public class C4DocumentTests
         "dynamic-interactions.dsl",
         "big-bank-plc.dsl",
         "aws-deployment.dsl",
+        "crowded-component-view.dsl",
     ];
 
     private static string Read(string name) => File.ReadAllText(IoPath.Combine("Fixtures", name));
