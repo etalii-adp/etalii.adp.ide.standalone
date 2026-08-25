@@ -144,6 +144,7 @@ Not tied to one methodology — each cloud vendor's official icon set functions 
 | 💡 Identified | `aws/architecture` | AWS architecture diagram | [AWS Architecture Icons](https://aws.amazon.com/architecture/icons/) | [AWS Architecture Center](https://aws.amazon.com/architecture/) |
 | 💡 Identified | `azure/architecture` | Azure architecture diagram | [Azure Architecture Icons](https://learn.microsoft.com/en-us/azure/architecture/icons/) | [Azure Architecture Center](https://learn.microsoft.com/en-us/azure/architecture/browse/) |
 | 💡 Identified | `gcp/architecture` | GCP architecture diagram | [Google Cloud Architecture Icons](https://cloud.google.com/icons) | [Google Cloud Architecture Center](https://cloud.google.com/architecture) |
+| 📝 Specified | `azure-devops/pipeline` | Azure DevOps pipeline diagram | [Azure Pipelines YAML schema](https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/) · [Key pipelines concepts](https://learn.microsoft.com/en-us/azure/devops/pipelines/get-started/key-pipelines-concepts) | [Stages, dependsOn and conditions](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/stages) · the pipeline `.yml` a repository already has |
 
 ---
 
