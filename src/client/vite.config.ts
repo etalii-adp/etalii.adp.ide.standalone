@@ -1,5 +1,5 @@
 import { fileURLToPath, URL } from "node:url";
-import { defineConfig } from "vite";
+import { defineConfig, searchForWorkspaceRoot } from "vite";
 import react from "@vitejs/plugin-react";
 
 // ASP.NET Core proxies frontend requests to this dev server during the F5
@@ -22,9 +22,14 @@ export default defineConfig({
     port: 5174,
     strictPort: true,
     fs: {
-      // The dev server has to be allowed to read the diagram modules, which sit beside this
-      // project rather than inside it.
-      allow: [fileURLToPath(new URL(".", import.meta.url)), fileURLToPath(new URL("../diagrams", import.meta.url))],
+      // The npm workspace root (`src/`), which covers all three places the dev server has to
+      // read from: this project, the diagram modules beside it, and `src/node_modules`, where
+      // the workspace hoists dependencies shared between them - `@mdi/font` among them.
+      //
+      // This is what Vite allows by default when `fs.allow` is not set. Setting it replaces
+      // that default rather than adding to it, so listing only this project and the diagram
+      // modules silently dropped the hoisted node_modules and every icon 403'd.
+      allow: [searchForWorkspaceRoot(fileURLToPath(new URL(".", import.meta.url)))],
     },
   },
 });
