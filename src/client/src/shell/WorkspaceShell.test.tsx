@@ -19,20 +19,25 @@ function renderShell(props: Partial<ComponentProps<typeof WorkspaceShell>> = {})
 
 describe("WorkspaceShell", () => {
   it("renders the default pane/tab arrangement, with Toolbox and Properties in the rightmost column", () => {
+    // Arrange.
     renderShell();
 
+    // Arrange, continued.
     const tabLists = screen.getAllByRole("tablist");
     expect(tabLists).toHaveLength(2);
 
+    // Arrange, continued.
     const labelsFor = (tabList: HTMLElement) =>
       within(tabList)
         .getAllByRole("tab")
         .map((tab) => tab.textContent);
 
+    // Act.
     const [left, right] = tabLists;
     expect(labelsFor(left)).toEqual(["Hierarchy", "Search"]);
     expect(labelsFor(right)).toEqual(["Toolbox", "Properties"]);
 
+    // Assert.
     // The centre pane is the diagram tab system: no mock "Diagram 1"/"Diagram 2" tabs any
     // more (diagram-workspace-tabs Requirement 4.3) - until something opens, it shows its
     // empty state and renders no tablist. Errors & Warnings is alone in its pane, so its
@@ -42,16 +47,21 @@ describe("WorkspaceShell", () => {
   });
 
   it("displays the project name", () => {
+    // Arrange and act.
     renderShell();
+    // Assert.
     expect(screen.getByText("Test Project")).toBeTruthy();
   });
 
   it("calls onBack when the back affordance is used", () => {
+    // Arrange.
     const onBack = vi.fn();
     renderShell({ onBack });
 
+    // Act.
     fireEvent.click(screen.getByText(/Back to projects/));
 
+    // Assert.
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 });

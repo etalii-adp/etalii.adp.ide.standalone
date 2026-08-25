@@ -54,12 +54,15 @@ describe("RibbonContextualGroups", () => {
   });
 
   it("renders nothing before anything has ever been selected", () => {
+    // Act.
     const { container } = render(<RibbonContextualGroups />);
 
+    // Assert.
     expect(container.querySelector(".ribbon-group-contextual")).toBeNull();
   });
 
   it("keeps its buttons, disabled, once the selection goes away", () => {
+    // Act and assert, step by step.
     select(entryA, renameAndDelete());
     const { rerender } = render(<RibbonContextualGroups />);
     expect((screen.getByRole("button", { name: "Rename…" }) as HTMLButtonElement).disabled).toBe(false);
@@ -76,6 +79,7 @@ describe("RibbonContextualGroups", () => {
   });
 
   it("does not open a drop-down that is only being held over", async () => {
+    // Arrange.
     const groups = [
       create(ContextActionGroupSchema, {
         actions: [{ id: "convert", label: "Convert to…", icon: "", available: true, items: [{ actions: [{ id: "x", label: "X", icon: "", available: true }] }] }],
@@ -84,19 +88,23 @@ describe("RibbonContextualGroups", () => {
     select(entryA, groups);
     const { rerender } = render(<RibbonContextualGroups />);
 
+    // Act.
     contextState.selection = null;
     contextState.actions = [];
     rerender(<RibbonContextualGroups />);
     fireEvent.click(screen.getByRole("button", { name: /Convert to…/ }));
 
+    // Assert.
     await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
   });
 
   it("renders one button per action with icon, label and tooltip, after the static groups", () => {
+    // Arrange.
     select(entryA, renameAndDelete());
 
     render(<RibbonBar />);
 
+    // Act and assert, step by step.
     const groups = screen.getAllByRole("button").map((button) => button.closest(".ribbon-group"));
     const contextual = document.querySelector(".ribbon-group-contextual") as HTMLElement;
     expect(groups.indexOf(contextual)).toBeGreaterThan(0);
@@ -107,25 +115,31 @@ describe("RibbonContextualGroups", () => {
   });
 
   it("greys an unavailable action out with its reason as tooltip, rather than hiding it", () => {
+    // Arrange.
     select(entryA, renameAndDelete());
 
     render(<RibbonContextualGroups />);
 
+    // Act and assert, step by step.
     const del = screen.getByRole("button", { name: "Delete" }) as HTMLButtonElement;
     expect(del.disabled).toBe(true);
     expect(del.title).toBe("Locked.");
   });
 
   it("runs an action against the current selection, with no source of its own", async () => {
+    // Arrange.
     select(entryA, renameAndDelete());
     render(<RibbonContextualGroups />);
 
+    // Act.
     fireEvent.click(screen.getByRole("button", { name: "Rename…" }));
 
+    // Assert.
     await waitFor(() => expect(executeAction).toHaveBeenCalledWith("hierarchy.rename"));
   });
 
   it("shows a diagram element's actions - a selected node is a selection like any other", () => {
+    // Arrange.
     // Found by the diagram-workspace-tabs manual pass: innermostKey answered undefined for an
     // element-innermost chain, so the ribbon treated a selected canvas node as nothing
     // selected and held the file's actions greyed instead of showing the node's own
@@ -150,11 +164,13 @@ describe("RibbonContextualGroups", () => {
 
     render(<RibbonContextualGroups />);
 
+    // Act and assert, step by step.
     const addChild = screen.getByRole("button", { name: "Add child" }) as HTMLButtonElement;
     expect(addChild.disabled).toBe(false);
   });
 
   it("keeps the previous buttons, disabled, until the new selection's actions arrive", () => {
+    // Act and assert, step by step.
     select(entryA, renameAndDelete());
     const { rerender } = render(<RibbonContextualGroups />);
     expect((screen.getByRole("button", { name: "Rename…" }) as HTMLButtonElement).disabled).toBe(false);
@@ -170,6 +186,7 @@ describe("RibbonContextualGroups", () => {
   });
 
   it("renders an action with children as a drop-down that opens the shared menu and runs a child", async () => {
+    // Arrange.
     select(entryA, [
       create(ContextActionGroupSchema, {
         actions: [
@@ -185,18 +202,22 @@ describe("RibbonContextualGroups", () => {
     ]);
     render(<RibbonContextualGroups />);
 
+    // Arrange, continued.
     const dropdown = screen.getByRole("button", { name: /Convert to…/ });
     expect(dropdown.querySelector(".ribbon-chevron")).toBeTruthy();
     expect(dropdown.getAttribute("aria-haspopup")).toBe("menu");
 
+    // Act.
     fireEvent.keyDown(dropdown, { key: "ArrowDown" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Mindmap" }));
 
+    // Assert.
     await waitFor(() => expect(executeAction).toHaveBeenCalledWith("convert.mindmap"));
     await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
   });
 
   it("closes an open drop-down when the selection changes", async () => {
+    // Arrange.
     const groups = [
       create(ContextActionGroupSchema, {
         actions: [{ id: "convert", label: "Convert to…", icon: "", available: true, items: [{ actions: [{ id: "x", label: "X", icon: "", available: true }] }] }],
@@ -207,22 +228,27 @@ describe("RibbonContextualGroups", () => {
     fireEvent.click(screen.getByRole("button", { name: /Convert to…/ }));
     await screen.findByRole("menu");
 
+    // Act.
     select(entryB, groups);
     rerender(<RibbonContextualGroups />);
 
+    // Assert.
     await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
   });
 });
 
 describe("formatShortcut / tooltipFor", () => {
   it("formats modifiers in a fixed order and upper-cases a single-character key", () => {
+    // Arrange, act and assert.
     expect(formatShortcut(create(ContextShortcutSchema, { key: "s", ctrl: true, shift: true }))).toBe("Ctrl+Shift+S");
     expect(formatShortcut(create(ContextShortcutSchema, { key: "Delete" }))).toBe("Delete");
   });
 
   it("uses the label alone when there is no shortcut", () => {
+    // Arrange and act.
     const action = renameAndDelete()[0]!.actions[1]!;
     const available = { ...action, available: true, unavailableReason: "" };
+    // Assert.
     expect(tooltipFor(available)).toBe("Delete");
   });
 });

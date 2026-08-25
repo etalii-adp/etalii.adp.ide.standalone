@@ -121,21 +121,25 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
     [Fact]
     public async Task ListEntries_ForARootWithNestedFolders_ReturnsOnlyDirectChildren()
     {
+        // Arrange.
         Directory.CreateDirectory(IoPath.Combine(_projectFolder, "sub"));
         File.WriteAllText(IoPath.Combine(_projectFolder, "sub", "nested.txt"), "");
         File.WriteAllText(IoPath.Combine(_projectFolder, "top.txt"), "");
 
+        // Arrange, continued.
         using var channel = CreateChannel();
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var headers = await LoginAsync(new AuthenticationService.AuthenticationServiceClient(channel));
         var projectId = await AddProjectAsync(projectClient, headers);
 
+        // Act.
         var response = await hierarchyClient.ListEntriesAsync(
             new ListEntriesRequest { ProjectId = projectId, WatchId = ShortGuid.NewShortGuid() },
             headers,
             cancellationToken: TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Equal(ListEntriesResponse.ResultOneofCase.Entries, response.ResultCase);
         var names = response.Entries.Entries_.Select(e => e.Name).ToList();
         Assert.Contains("sub", names);
@@ -146,39 +150,48 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
     [Fact]
     public async Task TwoConnectionsToTheSameProject_AssignDifferentIdsAndNeverObserveEachOthersChanges()
     {
+        // Arrange.
         File.WriteAllText(IoPath.Combine(_projectFolder, "shared.txt"), "");
 
+        // Arrange, continued.
         using var channel = CreateChannel();
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var headers = await LoginAsync(new AuthenticationService.AuthenticationServiceClient(channel));
         var projectId = await AddProjectAsync(projectClient, headers);
 
+        // Arrange, continued.
         var watchIdA = ShortGuid.NewShortGuid();
         var watchIdB = ShortGuid.NewShortGuid();
 
+        // Arrange, continued.
         var entriesA = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchIdA }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var entriesB = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchIdB }, headers, cancellationToken: TestContext.Current.CancellationToken);
 
+        // Arrange, continued.
         var idA = entriesA.Entries.Entries_.Single(e => e.Name == "shared.txt").Id;
         var idB = entriesB.Entries.Entries_.Single(e => e.Name == "shared.txt").Id;
         Assert.NotEqual((ShortGuid)idA, (ShortGuid)idB);
 
+        // Arrange, continued.
         using var callA = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchIdA }, headers, cancellationToken: TestContext.Current.CancellationToken);
         using var callB = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchIdB }, headers, cancellationToken: TestContext.Current.CancellationToken);
         using var ctsA = CreateMessageTimeout();
         using var ctsB = CreateMessageTimeout();
 
+        // Arrange, continued.
         var pendingA = callA.ResponseStream.MoveNext(ctsA.Token);
         var pendingB = callB.ResponseStream.MoveNext(ctsB.Token);
         await Task.Delay(WatcherStartupGrace, TestContext.Current.CancellationToken);
         File.WriteAllText(IoPath.Combine(_projectFolder, "new.txt"), "");
 
+        // Act.
         Assert.True(await pendingA, "Expected a HierarchyChange message on connection A but the stream ended or timed out.");
         Assert.True(await pendingB, "Expected a HierarchyChange message on connection B but the stream ended or timed out.");
         var changeA = ChangeOf(callA.ResponseStream.Current);
         var changeB = ChangeOf(callB.ResponseStream.Current);
 
+        // Assert.
         Assert.Equal(HierarchyChange.ChangeOneofCase.Created, changeA.ChangeCase);
         Assert.Equal(HierarchyChange.ChangeOneofCase.Created, changeB.ChangeCase);
         Assert.Equal("new.txt", changeA.Created.Entry.Name);
@@ -189,9 +202,11 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
     [Fact]
     public async Task RealFileSystemWatcher_RenameOfAKnownEntry_PushesARenamedMessagePreservingItsId()
     {
+        // Arrange.
         var originalPath = IoPath.Combine(_projectFolder, "original.txt");
         File.WriteAllText(originalPath, "");
 
+        // Arrange, continued.
         using var channel = CreateChannel();
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
@@ -199,15 +214,19 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         var projectId = await AddProjectAsync(projectClient, headers);
         var watchId = ShortGuid.NewShortGuid();
 
+        // Arrange, continued.
         var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var originalId = (ShortGuid)entries.Entries.Entries_.Single(e => e.Name == "original.txt").Id;
 
+        // Arrange, continued.
         using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         using var cts = CreateMessageTimeout();
 
+        // Act.
         var change = await AwaitTriggeredChangeAsync(call, cts, () =>
             File.Move(originalPath, IoPath.Combine(_projectFolder, "renamed.txt")));
 
+        // Assert.
         Assert.Equal(HierarchyChange.ChangeOneofCase.Renamed, change.ChangeCase);
         Assert.Equal(originalId, (ShortGuid)change.Renamed.EntryId);
         Assert.Equal("renamed.txt", change.Renamed.NewName);
@@ -216,6 +235,7 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
     [Fact]
     public async Task RootFolderDeletedWhileWatched_PushesRootUnavailable_AndRecoversOnceRecreated()
     {
+        // Arrange.
         using var channel = CreateChannel();
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
@@ -230,6 +250,7 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
         var change = await AwaitTriggeredChangeAsync(call, cts, () =>
             Directory.Delete(_projectFolder, recursive: true));
 
+        // Act and assert, step by step.
         Assert.Equal(HierarchyChange.ChangeOneofCase.RootUnavailable, change.ChangeCase);
 
         // Recreate the root; the watcher's recovery loop should notice and reconcile

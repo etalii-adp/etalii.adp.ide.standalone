@@ -24,6 +24,7 @@ public class DiagramDefinitionAllTests : IDisposable
     [Fact]
     public void All_BeforeInitialize_IsEmptyNotNull()
     {
+        // Arrange, act and assert.
         Assert.NotNull(DiagramDefinition.All);
         Assert.Empty(DiagramDefinition.All);
         Assert.False(DiagramDefinition.IsInitialized);
@@ -32,8 +33,10 @@ public class DiagramDefinitionAllTests : IDisposable
     [Fact]
     public void Initialize_RunsTheScanAndFillsAll()
     {
+        // Act.
         var filledNow = DiagramDefinition.Initialize(() => [Sample]);
 
+        // Assert.
         Assert.True(filledNow);
         Assert.Same(Sample, Assert.Single(DiagramDefinition.All));
         Assert.True(DiagramDefinition.IsInitialized);
@@ -42,27 +45,32 @@ public class DiagramDefinitionAllTests : IDisposable
     [Fact]
     public void All_ReturnsTheSameCollectionOnEveryRead()
     {
+        // Act.
         // Requirement 1.3: a second read must not re-run anything - it is the cached list.
         DiagramDefinition.Initialize(() => [Sample]);
 
+        // Assert.
         Assert.Same(DiagramDefinition.All, DiagramDefinition.All);
     }
 
     [Fact]
     public void Initialize_CalledTwice_DoesNotRunTheSecondScanAndKeepsTheFirstList()
     {
+        // Arrange.
         // A second host in the same process (WebApplicationFactory per test) runs the same
         // startup; the cache is per process, so the first fill stands and the second scan
         // never even runs.
         DiagramDefinition.Initialize(() => [Sample]);
         var secondScanRan = false;
 
+        // Act.
         var filledNow = DiagramDefinition.Initialize(() =>
         {
             secondScanRan = true;
             return [new DiagramDefinition(new DiagramOrigin("fixture", "other"), "Other")];
         });
 
+        // Assert.
         Assert.False(filledNow);
         Assert.False(secondScanRan);
         Assert.Same(Sample, Assert.Single(DiagramDefinition.All));
@@ -71,6 +79,7 @@ public class DiagramDefinitionAllTests : IDisposable
     [Fact]
     public async Task Initialize_UnderConcurrentCallers_RunsTheScanExactlyOnce()
     {
+        // Arrange.
         // Test classes build hosts in parallel, so several can reach Initialize at once.
         var scans = 0;
         var gate = new ManualResetEventSlim();
@@ -78,6 +87,7 @@ public class DiagramDefinitionAllTests : IDisposable
         // reads as one decision and keeps the gate's wait and the tasks on the same footing.
         var cancellationToken = TestContext.Current.CancellationToken;
 
+        // Act.
         var callers = Enumerable.Range(0, 8).Select(_ => Task.Run(
             () =>
             {
@@ -92,6 +102,7 @@ public class DiagramDefinitionAllTests : IDisposable
         gate.Set();
         var results = await Task.WhenAll(callers);
 
+        // Assert.
         Assert.Equal(1, scans);
         Assert.Equal(1, results.Count(filledNow => filledNow));
         Assert.Single(DiagramDefinition.All);
@@ -100,8 +111,10 @@ public class DiagramDefinitionAllTests : IDisposable
     [Fact]
     public void IsInitialized_TracksWhetherTheScanRan_NotWhetherAnythingWasFound()
     {
+        // Act.
         DiagramDefinition.Initialize(() => []);
 
+        // Assert.
         Assert.True(DiagramDefinition.IsInitialized);
         Assert.Empty(DiagramDefinition.All);
         // ...and an empty first result is still the result: no later scan replaces it.
@@ -112,14 +125,17 @@ public class DiagramDefinitionAllTests : IDisposable
     [Fact]
     public void Initialize_WithNull_Throws()
     {
+        // Arrange, act and assert.
         Assert.Throws<ArgumentNullException>(() => DiagramDefinition.Initialize(null!));
     }
 
     [Fact]
     public void Initialize_WhenTheScanReturnsNull_ThrowsAndStaysUninitialized()
     {
+        // Act.
         Assert.Throws<InvalidOperationException>(() => DiagramDefinition.Initialize(() => null!));
 
+        // Assert.
         Assert.False(DiagramDefinition.IsInitialized);
         Assert.Empty(DiagramDefinition.All);
     }

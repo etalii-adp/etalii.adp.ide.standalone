@@ -15,24 +15,30 @@ public class LocalAuthenticatorTests
     [Fact]
     public void Validate_WithMatchingCredentials_ReturnsTrue()
     {
+        // Act.
         var authenticator = CreateAuthenticator("developer", "secret");
 
+        // Assert.
         Assert.True(authenticator.Validate("developer", "secret"));
     }
 
     [Fact]
     public void Validate_WithWrongCredential_ReturnsFalse()
     {
+        // Act.
         var authenticator = CreateAuthenticator("developer", "secret");
 
+        // Assert.
         Assert.False(authenticator.Validate("developer", "wrong"));
     }
 
     [Fact]
     public void Validate_WithWrongUsername_ReturnsFalse()
     {
+        // Act.
         var authenticator = CreateAuthenticator("developer", "secret");
 
+        // Assert.
         Assert.False(authenticator.Validate("someone-else", "secret"));
     }
 }

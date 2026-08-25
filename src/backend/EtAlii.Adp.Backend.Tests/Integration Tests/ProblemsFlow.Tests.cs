@@ -72,11 +72,14 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
     [Fact]
     public async Task TheBaseline_CarriesNeverValidated()
     {
+        // Arrange.
         using var session = await OpenAsync();
         using var cts = CreateMessageTimeout();
 
+        // Act.
         var problems = await ReadProblemsAsync(session.Stream, cts.Token);
 
+        // Assert.
         Assert.Equal(ProblemSetState.NeverValidated, problems.State);
         Assert.Empty(problems.Problems);
     }
@@ -84,12 +87,14 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
     [Fact]
     public async Task ValidateAll_ProducesTheExpectedProblems_AndASecondConnectionReadsTheSameSet()
     {
+        // Arrange.
         SeedPair("good");
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "strange.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "empty.adp"), "", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "notes.txt"), "just notes", TestContext.Current.CancellationToken);
         var before = Snapshot();
 
+        // Arrange, continued.
         using var session = await OpenAsync();
         using var second = await OpenAsync(session);
         using (var baselines = CreateMessageTimeout())
@@ -98,12 +103,15 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
             await ReadProblemsAsync(second.Stream, baselines.Token);
         }
 
+        // Arrange, continued.
         await ExecuteAsync(session, ValidateAllContextActionProvider.ValidateAllActionId, ProblemsSource());
 
+        // Arrange, continued.
         using var cts = CreateMessageTimeout();
         var mine = await ReadValidatedProblemsAsync(session.Stream, cts.Token);
         var theirs = await ReadValidatedProblemsAsync(second.Stream, cts.Token);
 
+        // Act.
         foreach (var set in new[] { mine, theirs })
         {
             Assert.Equal(2, set.Problems.Count); // the unknown type and the unreadable one - never the .txt or the healthy pair
@@ -113,12 +121,14 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
             Assert.Contains(set.Problems, problem => problem.RuleId == "core.unreadable" && problem.Path.Segments.Single() == "empty.adp");
         }
 
+        // Assert.
         Assert.Equal(before, Snapshot()); // Requirement 6.7: validation never writes a project file.
     }
 
     [Fact]
     public async Task Validate_OnAFolder_TouchesOnlyThatFolder()
     {
+        // Arrange.
         Directory.CreateDirectory(IoPath.Combine(_projectFolder, "inside"));
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "inside", "bad.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "also-bad.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
@@ -132,6 +142,7 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
 
         await ExecuteAsync(session, ValidateContextActionProvider.ValidateActionId, new ContextSource { EntryId = folderId });
 
+        // Act and assert, step by step.
         using var cts = CreateMessageTimeout();
         var set = await ReadValidatedProblemsAsync(session.Stream, cts.Token);
         var problem = Assert.Single(set.Problems);
@@ -141,8 +152,10 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
     [Fact]
     public async Task DeletingADiagram_DropsItsProblems()
     {
+        // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "doomed.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
 
+        // Act and assert, step by step.
         using var session = await OpenAsync();
         using (var baseline = CreateMessageTimeout())
         {
@@ -165,6 +178,7 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
     [Fact]
     public async Task RenamingADiagram_CarriesItsProblems()
     {
+        // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "old.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
 
         using var session = await OpenAsync();
@@ -180,6 +194,7 @@ public class ProblemsFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
 
         File.Move(IoPath.Combine(_projectFolder, "old.adp"), IoPath.Combine(_projectFolder, "new.adp"));
 
+        // Act and assert, step by step.
         using var cts = CreateMessageTimeout();
         var after = await ReadUntilAsync(session.Stream, cts.Token,
             problems => problems.Problems.Count == 1 && problems.Problems[0].Path.Segments.Single() == "new.adp");

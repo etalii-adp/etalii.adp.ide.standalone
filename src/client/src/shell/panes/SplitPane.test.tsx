@@ -34,6 +34,7 @@ function mockRect(element: HTMLElement, rect: Partial<DOMRect>) {
 
 describe("SplitPane", () => {
   it("renders both panes sized by the initial split ratio", () => {
+    // Arrange and act.
     const { getByText } = render(
       <SplitPane
         direction="horizontal"
@@ -44,11 +45,13 @@ describe("SplitPane", () => {
       />,
     );
 
+    // Assert.
     expect(getByText("First").parentElement).toHaveProperty("style.width", "30%");
     expect(getByText("Second").parentElement).toHaveProperty("style.width", "70%");
   });
 
   it("updates the split ratio when the divider is dragged (horizontal)", () => {
+    // Arrange.
     const { container, getByText, getByRole } = render(
       <SplitPane
         direction="horizontal"
@@ -61,13 +64,16 @@ describe("SplitPane", () => {
     const root = container.querySelector(".split-pane") as HTMLElement;
     mockRect(root, { width: 1000, height: 500 });
 
+    // Act.
     fireEvent.pointerDown(getByRole("separator"));
     firePointerMove(250, 0);
 
+    // Assert.
     expect(getByText("First").parentElement).toHaveProperty("style.width", "25%");
   });
 
   it("clamps the split ratio at minSize on both ends", () => {
+    // Arrange.
     const { container, getByText, getByRole } = render(
       <SplitPane
         direction="horizontal"
@@ -82,6 +88,7 @@ describe("SplitPane", () => {
 
     fireEvent.pointerDown(getByRole("separator"));
 
+    // Act and assert, step by step.
     firePointerMove(-500, 0);
     expect(getByText("First").parentElement).toHaveProperty("style.width", "10%");
 
@@ -90,6 +97,7 @@ describe("SplitPane", () => {
   });
 
   it("supports vertical orientation", () => {
+    // Arrange.
     const { container, getByText, getByRole } = render(
       <SplitPane
         direction="vertical"
@@ -102,9 +110,11 @@ describe("SplitPane", () => {
     const root = container.querySelector(".split-pane") as HTMLElement;
     mockRect(root, { width: 500, height: 1000 });
 
+    // Act.
     fireEvent.pointerDown(getByRole("separator"));
     firePointerMove(0, 250);
 
+    // Assert.
     expect(getByText("First").parentElement).toHaveProperty("style.height", "25%");
   });
 });

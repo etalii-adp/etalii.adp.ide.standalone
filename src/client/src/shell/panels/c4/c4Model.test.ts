@@ -41,6 +41,7 @@ function add(...elements: ReturnType<typeof element>[]) {
 
 describe("c4Model", () => {
   it("decodes nodes, relationships, boundaries and the view into their own collections", () => {
+    // Arrange and act.
     const model = applyDelta(
       emptyModel,
       add(
@@ -66,6 +67,7 @@ describe("c4Model", () => {
       ),
     );
 
+    // Assert.
     expect(model.nodes.get("a")?.payload.name).toBe("Alpha");
     expect(model.relationships.get("a->b")?.payload.technology).toBe("HTTPS");
     expect(model.boundaries.get("boundary:s")?.payload.name).toBe("System");
@@ -73,17 +75,21 @@ describe("c4Model", () => {
   });
 
   it("treats add as an upsert, so a re-delivered element replaces the old one", () => {
+    // Arrange.
     // The backend re-delivers the whole view when the shared document changes, which is how a
     // rename made through another view reaches this one.
     const first = applyDelta(emptyModel, add(node("a", "Alpha")));
 
+    // Act.
     const second = applyDelta(first, add(node("a", "Renamed")));
 
+    // Assert.
     expect(second.nodes.size).toBe(1);
     expect(second.nodes.get("a")?.payload.name).toBe("Renamed");
   });
 
   it("removes ids from whichever collection holds them", () => {
+    // Arrange.
     const model = applyDelta(
       emptyModel,
       add(
@@ -92,13 +98,16 @@ describe("c4Model", () => {
       ),
     );
 
+    // Act.
     const after = applyDelta(model, { action: { case: "remove", value: { elementIds: [{ value: "a" }, { value: "a->b" }] } } } as never);
 
+    // Assert.
     expect(after.nodes.size).toBe(0);
     expect(after.relationships.size).toBe(0);
   });
 
   it("keeps the view payload when a later delta carries none", () => {
+    // Arrange.
     // Only the baseline and a document change carry the view; a viewport delta must not blank
     // out the title and legend the diagram already showed.
     const model = applyDelta(
@@ -106,36 +115,47 @@ describe("c4Model", () => {
       add(element("c4:view", VIEW_TYPE, toBinary(C4ViewPayloadSchema, create(C4ViewPayloadSchema, { title: "A title" })))),
     );
 
+    // Act.
     const after = applyDelta(model, add(node("a", "Alpha")));
 
+    // Assert.
     expect(after.view?.title).toBe("A title");
   });
 
   it("ignores element types it does not know", () => {
+    // Act.
     const model = applyDelta(emptyModel, add(element("x", "some/other+thing", new Uint8Array([1, 2, 3]))));
 
+    // Assert.
     expect(model.nodes.size).toBe(0);
     expect(model.relationships.size).toBe(0);
   });
 
   it("never mutates the model it was given", () => {
+    // Arrange.
     const before = applyDelta(emptyModel, add(node("a", "Alpha")));
 
+    // Act.
     applyDelta(before, add(node("b", "Beta")));
 
+    // Assert.
     expect(before.nodes.size).toBe(1);
   });
 
   it("measures boxes from the backend's sizes, for fit-to-view", () => {
+    // Arrange.
     const model = applyDelta(emptyModel, add(node("a", "Alpha", 100, 50, 160, 80)));
 
+    // Act.
     const [box] = boxesOf(model);
 
+    // Assert.
     // Positions are centres on the wire; the box is what the canvas actually draws.
     expect(box).toEqual({ x: 20, y: 10, width: 160, height: 80 });
   });
 
   it("includes boundaries in the measured boxes, so fit-to-view does not clip them", () => {
+    // Arrange and act.
     const model = applyDelta(
       emptyModel,
       add(element("boundary:s", BOUNDARY_TYPE, toBinary(C4BoundaryPayloadSchema, create(C4BoundaryPayloadSchema, {
@@ -146,6 +166,7 @@ describe("c4Model", () => {
       })))),
     );
 
+    // Assert.
     expect(boxesOf(model)).toHaveLength(1);
   });
 });

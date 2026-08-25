@@ -47,16 +47,20 @@ describe("RibbonHistoryGroup", () => {
   });
 
   it("renders nothing before the backend has pushed any project actions", () => {
+    // Act.
     const { container } = render(<RibbonHistoryGroup />);
 
+    // Assert.
     expect(container.querySelector(".ribbon-group-history")).toBeNull();
   });
 
   it("renders a button per pushed action, with its icon, label and shortcut tooltip", () => {
+    // Arrange.
     projectActionsState.groups = undoAndRedo(true, false);
 
     render(<RibbonHistoryGroup />);
 
+    // Act and assert, step by step.
     const undo = screen.getByRole("button", { name: "Undo" });
     expect(undo.title).toBe("Undo (Ctrl+Z)");
     expect(undo.querySelector(".mdi-undo")).toBeTruthy();
@@ -64,21 +68,26 @@ describe("RibbonHistoryGroup", () => {
   });
 
   it("greys an unavailable action out with its reason as tooltip, rather than hiding it", () => {
+    // Arrange.
     projectActionsState.groups = undoAndRedo(true, false);
 
     render(<RibbonHistoryGroup />);
 
+    // Act and assert, step by step.
     const redo = screen.getByRole("button", { name: "Redo" }) as HTMLButtonElement;
     expect(redo.disabled).toBe(true);
     expect(redo.title).toBe("There is nothing to redo.");
   });
 
   it("runs the action against the project as its source", async () => {
+    // Arrange.
     projectActionsState.groups = undoAndRedo(true, false);
     render(<RibbonHistoryGroup />);
 
+    // Act.
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
 
+    // Assert.
     await waitFor(() => expect(executeAction).toHaveBeenCalledWith("history.undo", PROJECT_SOURCE));
   });
 });

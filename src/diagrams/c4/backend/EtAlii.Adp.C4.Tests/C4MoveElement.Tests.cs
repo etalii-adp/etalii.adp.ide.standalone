@@ -64,11 +64,14 @@ public class C4MoveElementTests : IDisposable
     [Fact]
     public async Task ADrag_RecordsThePositionInTheSidecar_AndLeavesTheDocumentAlone()
     {
+        // Arrange.
         var before = File.ReadAllText(_bodyPath);
         await using var session = Open();
 
+        // Act.
         var error = await session.MoveElementAsync("a", "250,400", -1, TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Equal("", error);
         Assert.Equal(new C4SidecarPosition(250, 400), _sidecar.Read(_bodyPath, "all")["a"]);
         // The model did not change: a position is view state, and the .dsl is another
@@ -79,11 +82,14 @@ public class C4MoveElementTests : IDisposable
     [Fact]
     public async Task ADrag_IsOneUndoAway()
     {
+        // Arrange.
         await using var session = Open();
         await session.MoveElementAsync("a", "250,400", -1, TestContext.Current.CancellationToken);
 
+        // Act.
         await _history.UndoAsync(TestContext.Current.CancellationToken);
 
+        // Assert.
         // Undoing the first drag of an element hands it back to the layout rather than pinning
         // it wherever it happened to have been computed.
         Assert.DoesNotContain("a", _sidecar.Read(_bodyPath, "all").Keys);
@@ -92,37 +98,46 @@ public class C4MoveElementTests : IDisposable
     [Fact]
     public async Task UndoingASecondDrag_RestoresTheFirstPosition()
     {
+        // Arrange.
         await using var session = Open();
         await session.MoveElementAsync("a", "100,100", -1, TestContext.Current.CancellationToken);
         await session.MoveElementAsync("a", "250,400", -1, TestContext.Current.CancellationToken);
 
+        // Act.
         await _history.UndoAsync(TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Equal(new C4SidecarPosition(100, 100), _sidecar.Read(_bodyPath, "all")["a"]);
     }
 
     [Fact]
     public async Task ADrag_TellsTheSessionsSoTheOtherTabRedraws()
     {
+        // Arrange.
         await using var session = Open();
         var pushes = 0;
         session.Changed += (_, _) => pushes++;
 
+        // Act.
         await session.MoveElementAsync("a", "250,400", -1, TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Equal(1, pushes);
     }
 
     [Fact]
     public async Task ADroppedPositionIsHonouredByTheNextLayout()
     {
+        // Arrange.
         await using var session = Open();
         await session.MoveElementAsync("a", "250,400", -1, TestContext.Current.CancellationToken);
 
+        // Act.
         var workspace = _documents.WorkspaceOf(_bodyPath);
         var layout = C4LayoutEngine.Compute(
             workspace, workspace.Views[0], C4Metrics.Default, _sidecar.Read(_bodyPath, "all"));
 
+        // Assert.
         Assert.Equal(250, layout.Boxes["a"].X);
         Assert.Equal(400, layout.Boxes["a"].Y);
     }
@@ -130,12 +145,15 @@ public class C4MoveElementTests : IDisposable
     [Fact]
     public async Task DroppingOneElementOntoAnother_IsRefused_BecauseContainmentIsTheModelsToSay()
     {
+        // Arrange.
         // The core contract's MoveElement carries a parent id because a tree needs one; on a C4
         // diagram that would be a claim about the architecture, not an arrangement.
         await using var session = Open();
 
+        // Act.
         var error = await session.MoveElementAsync("a", "b", -1, TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Contains("not what contains it", error, StringComparison.OrdinalIgnoreCase);
         Assert.Empty(_sidecar.Read(_bodyPath, "all"));
     }
@@ -143,10 +161,13 @@ public class C4MoveElementTests : IDisposable
     [Fact]
     public async Task DraggingSomethingNoLongerInTheModel_IsRefused()
     {
+        // Arrange.
         await using var session = Open();
 
+        // Act.
         var error = await session.MoveElementAsync("ghost", "10,10", -1, TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Contains("ghost", error, StringComparison.Ordinal);
     }
 }

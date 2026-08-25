@@ -72,6 +72,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
     [Fact]
     public async Task AKeystrokeAgainstTheSelectedNode_ReachesItsActionAndPromptsForTheChild()
     {
+        // Arrange.
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
@@ -79,20 +80,24 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         var projectId = await AddProjectAsync(channel, headers);
         var watchId = ShortGuid.NewShortGuid();
 
+        // Arrange, continued.
         var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var entryId = entries.Entries.Entries_.Single(e => e.Name == "roadmap.adp").Id;
 
+        // Arrange, continued.
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
         await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
+        // Arrange, continued.
         // The canvas's click: the nested file -> node selection.
         var selectResponse = await contextClient.SelectAsync(
             new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_1") },
             headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("", selectResponse.Error);
 
+        // Act.
         // The canvas's keystroke: Insert against the focused node, source = the bare element id.
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
@@ -105,6 +110,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
             },
             headers, cancellationToken: TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(executed.Accepted, executed.Error);
         var prompt = await pendingPrompt;
         Assert.Equal(ContextPrompt.PromptOneofCase.InputDialog, prompt.PromptCase);
@@ -114,6 +120,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
     [Fact]
     public async Task AKeystrokeAgainstAnotherNodeOfTheSelectedDiagram_ResolvesUnderTheSelectionsFile()
     {
+        // Arrange.
         // Focus moved on the canvas and the keystroke beat the new selection's round trip:
         // only the file is selected, yet the element must still resolve - under that file.
         await File.WriteAllTextAsync(
@@ -123,6 +130,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
             "<map version=\"freeplane 1.11.5\">\n<node TEXT=\"wide\" ID=\"ID_root\">\n<node TEXT=\"child\" ID=\"ID_child\"/>\n</node>\n</map>\n",
             TestContext.Current.CancellationToken);
 
+        // Arrange, continued.
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
@@ -130,19 +138,23 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         var projectId = await AddProjectAsync(channel, headers);
         var watchId = ShortGuid.NewShortGuid();
 
+        // Arrange, continued.
         var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var entryId = entries.Entries.Entries_.Single(e => e.Name == "wide.adp").Id;
 
+        // Arrange, continued.
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
         await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
+        // Arrange, continued.
         // Only the file is selected - no node level in the chain.
         await contextClient.SelectAsync(
             new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = FileChain(entryId) },
             headers, cancellationToken: TestContext.Current.CancellationToken);
 
+        // Act.
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
@@ -154,6 +166,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
             },
             headers, cancellationToken: TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(executed.Accepted, executed.Error);
         var prompt = await pendingPrompt;
         Assert.Equal(ContextPrompt.PromptOneofCase.InputDialog, prompt.PromptCase);
@@ -209,6 +222,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
     [Fact]
     public async Task TheCanvassOwnSelectionShape_OfANonRootNode_IsAccepted()
     {
+        // Arrange.
         // What MindmapCanvas actually sends for a click on a non-root node: the file with its
         // project-relative path, the node as a DIAGRAM_CANVAS child. Found rejected by the
         // manual pass - every earlier test had clicked only the root, whose one-segment path
@@ -230,6 +244,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var entryId = entries.Entries.Entries_.Single(e => e.Name == "deep.adp").Id;
 
+        // Act and assert, step by step.
         // The canvas's shape: the file with its project-relative path, the node with an empty
         // path that asks the backend to fill in the full text chain.
         var canvasShape = await contextClient.SelectAsync(
@@ -248,6 +263,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
     [Fact]
     public async Task ACompletedAction_RepushesTheSelectionsActions_SoACollapseOffersExpand()
     {
+        // Arrange.
         // Found by the bezier-connector manual pass: after Collapse ran from the node's
         // context menu, re-opening the menu still offered Collapse. The completed action
         // changed what applies to the very same selection, but nobody re-derived its actions.
@@ -258,6 +274,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
             "<map version=\"freeplane 1.11.5\">\n<node TEXT=\"fold\" ID=\"ID_f0\">\n<node TEXT=\"branch\" ID=\"ID_f1\">\n<node TEXT=\"leaf\" ID=\"ID_f2\"/>\n</node>\n</node>\n</map>\n",
             TestContext.Current.CancellationToken);
 
+        // Arrange, continued.
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
@@ -265,18 +282,22 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         var projectId = await AddProjectAsync(channel, headers);
         var watchId = ShortGuid.NewShortGuid();
 
+        // Arrange, continued.
         var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var entryId = entries.Entries.Entries_.Single(e => e.Name == "fold.adp").Id;
 
+        // Arrange, continued.
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
+        // Arrange, continued.
         await contextClient.SelectAsync(
             new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_f1", filePath: ["fold.adp"]) },
             headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Contains("Collapse", ActionLabels(await ReadUntilSelectionActionsAsync(contextCall.ResponseStream, cts.Token)));
 
+        // Act.
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
@@ -289,6 +310,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
             headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(executed.Accepted, executed.Error);
 
+        // Assert.
         Assert.Contains("Expand", ActionLabels(await ReadUntilSelectionActionsAsync(contextCall.ResponseStream, cts.Token)));
     }
 

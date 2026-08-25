@@ -77,11 +77,14 @@ public class C4SessionTests : IDisposable
     [Fact]
     public async Task ARegistrationNamingAView_OpensThatView()
     {
+        // Arrange.
         var body = WriteModel();
         var adp = WriteRegistration("containers.adp", "c4/container", "model.dsl", "containers");
 
+        // Act.
         await using var session = Open(body, adp);
 
+        // Assert.
         Assert.Equal("containers", session.View()!.Key);
         // The container view shows the container; the context view would not.
         Assert.Contains(Added(session.Baseline()), element => element.Id == "web");
@@ -90,22 +93,28 @@ public class C4SessionTests : IDisposable
     [Fact]
     public async Task ADocumentOpenedWithoutARegistration_ShowsItsFirstView()
     {
+        // Arrange.
         // Requirement 2.6: a .dsl dropped into the project on its own is still openable.
         var body = WriteModel();
 
+        // Act.
         await using var session = Open(body, registrationPath: null);
 
+        // Assert.
         Assert.Equal("context", session.View()!.Key);
     }
 
     [Fact]
     public async Task ARegistrationNamingAViewTheDocumentDoesNotDeclare_ShowsNothing_RatherThanTheWrongOne()
     {
+        // Arrange.
         var body = WriteModel();
         var adp = WriteRegistration("ghost.adp", "c4/context", "model.dsl", "ghost");
 
+        // Act.
         await using var session = Open(body, adp);
 
+        // Assert.
         Assert.Null(session.View());
         Assert.Empty(Added(session.Baseline()));
     }
@@ -113,10 +122,12 @@ public class C4SessionTests : IDisposable
     [Fact]
     public async Task TheBaseline_CarriesTheViewsFurnitureAsWellAsItsElements()
     {
+        // Arrange.
         var body = WriteModel();
 
         await using var session = Open(body, null);
 
+        // Act and assert, step by step.
         var elements = Added(session.Baseline());
         Assert.Contains(elements, element => element.Type == C4ElementMapper.NodeType);
         Assert.Contains(elements, element => element.Type == C4ElementMapper.ViewType);
@@ -125,26 +136,31 @@ public class C4SessionTests : IDisposable
     [Fact]
     public async Task AnEditThroughOneView_ReachesASessionOnAnotherViewOfTheSameModel()
     {
+        // Arrange.
         // The premise of the whole spec: one model, several views, and a rename in one is a
         // rename in all of them because there is one element and not several.
         var body = WriteModel();
         var contextAdp = WriteRegistration("context.adp", "c4/context", "model.dsl", "context");
         var containersAdp = WriteRegistration("containers.adp", "c4/container", "model.dsl", "containers");
 
+        // Arrange, continued.
         await using var context = Open(body, contextAdp);
         await using var containers = Open(body, containersAdp);
         _ = context.Baseline();
         _ = containers.Baseline();
 
+        // Arrange, continued.
         DiagramDeltasEventArgs? pushedToContext = null;
         context.Changed += (_, args) => pushedToContext = args;
 
+        // Act.
         // Edit through the document the containers view holds, and save.
         var document = _documents.GetOrLoad(body);
         var line = document.CodeLines.First(l => l.Code.Contains("softwareSystem", StringComparison.Ordinal));
         document.ReplaceLine(line.Number, line.Text.Replace("\"Banking\"", "\"Renamed\"", StringComparison.Ordinal));
         _documents.Save(body);
 
+        // Assert.
         Assert.NotNull(pushedToContext);
         var renamed = Added(pushedToContext!.Deltas).Single(element => element.Id == "s");
         Assert.Equal("Renamed", C4ElementPayload.Parser.ParseFrom(renamed.Payload.Span).Name);
@@ -153,12 +169,14 @@ public class C4SessionTests : IDisposable
     [Fact]
     public async Task UpdateView_NarrowingToNothing_RemovesWhatLeft()
     {
+        // Arrange.
         var body = WriteModel();
         await using var session = Open(body, null);
         _ = session.Baseline();
 
         var deltas = session.UpdateView(new DiagramViewport(100000, 100000, 200000, 200000));
 
+        // Act and assert, step by step.
         var removed = deltas.OfType<DiagramRemoveDelta>().SelectMany(remove => remove.ElementIds).ToArray();
         Assert.Contains("u", removed);
         Assert.Contains("s", removed);
@@ -167,13 +185,16 @@ public class C4SessionTests : IDisposable
     [Fact]
     public async Task UpdateView_WideningAgain_BringsThemBack()
     {
+        // Arrange.
         var body = WriteModel();
         await using var session = Open(body, null);
         _ = session.Baseline();
         _ = session.UpdateView(new DiagramViewport(100000, 100000, 200000, 200000));
 
+        // Act.
         var deltas = session.UpdateView(DiagramViewport.Unbounded);
 
+        // Assert.
         Assert.Contains(Added(deltas), element => element.Id == "s");
         Assert.Empty(deltas.OfType<DiagramRemoveDelta>().SelectMany(remove => remove.ElementIds));
     }
@@ -181,8 +202,10 @@ public class C4SessionTests : IDisposable
     [Fact]
     public async Task ADocumentThatDoesNotExistYet_OpensEmpty_RatherThanFailing()
     {
+        // Act.
         await using var session = Open(IoPath.Combine(_root, "not-yet.dsl"), null);
 
+        // Assert.
         Assert.Null(session.View());
         Assert.Empty(session.Baseline());
     }
@@ -190,16 +213,20 @@ public class C4SessionTests : IDisposable
     [Fact]
     public async Task DisposingASession_StopsItListeningToTheDocument()
     {
+        // Arrange.
         var body = WriteModel();
         var session = Open(body, null);
         _ = session.Baseline();
 
+        // Arrange, continued.
         var pushes = 0;
         session.Changed += (_, _) => pushes++;
         await session.DisposeAsync();
 
+        // Act.
         _documents.Save(body);
 
+        // Assert.
         Assert.Equal(0, pushes);
     }
 }

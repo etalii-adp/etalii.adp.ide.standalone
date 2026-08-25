@@ -4,6 +4,7 @@ import { ConfirmDialog } from "./ConfirmDialog";
 
 describe("ConfirmDialog", () => {
   it("renders the default icon and Confirm/Cancel buttons", () => {
+    // Arrange and act.
     render(
       <ConfirmDialog
         open
@@ -14,6 +15,7 @@ describe("ConfirmDialog", () => {
       />,
     );
 
+    // Assert.
     expect(screen.getByText("Remove project?")).not.toBeNull();
     expect(screen.getByText("This can't be undone.")).not.toBeNull();
     expect(document.querySelector(".dialog-header-icon.mdi-help-circle-outline")).not.toBeNull();
@@ -22,6 +24,7 @@ describe("ConfirmDialog", () => {
   });
 
   it("invokes onConfirm and onCancel from their respective buttons", () => {
+    // Arrange.
     const onConfirm = vi.fn();
     const onCancel = vi.fn();
     render(
@@ -34,6 +37,7 @@ describe("ConfirmDialog", () => {
       />,
     );
 
+    // Act and assert, step by step.
     fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(onCancel).not.toHaveBeenCalled();
@@ -43,6 +47,7 @@ describe("ConfirmDialog", () => {
   });
 
   it("calls onCancel when Escape is pressed or the backdrop is clicked", () => {
+    // Arrange.
     const onCancel = vi.fn();
     const { container } = render(
       <ConfirmDialog
@@ -54,6 +59,7 @@ describe("ConfirmDialog", () => {
       />,
     );
 
+    // Act and assert, step by step.
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onCancel).toHaveBeenCalledTimes(1);
 
@@ -62,6 +68,7 @@ describe("ConfirmDialog", () => {
   });
 
   it("supports custom labels and a danger confirm color for destructive actions", () => {
+    // Arrange and act.
     render(
       <ConfirmDialog
         open
@@ -76,6 +83,7 @@ describe("ConfirmDialog", () => {
       />,
     );
 
+    // Assert.
     expect(document.querySelector(".dialog-header-icon.mdi-trash-can-outline")).not.toBeNull();
     const deleteButton = screen.getByRole("button", { name: "Delete" });
     expect(deleteButton.className).toContain("dialog-button-danger");

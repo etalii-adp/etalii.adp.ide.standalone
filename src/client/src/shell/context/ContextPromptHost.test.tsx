@@ -74,36 +74,45 @@ describe("ContextPromptHost input dialog", () => {
   });
 
   it("renders nothing when there is no prompt", () => {
+    // Arrange and act.
     const { container } = render(
       <ContextPromptHost prompt={null} onPropose={acceptEverything()} onSubmit={vi.fn()} onCancel={vi.fn()} />,
     );
 
+    // Assert.
     expect(container.innerHTML).toBe("");
   });
 
   it("opens pre-filled with the current name and its confirm button disabled", () => {
+    // Act.
     render(<ContextPromptHost prompt={inputPrompt()} onPropose={acceptEverything()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
 
+    // Assert.
     expect(nameField().value).toBe("original.txt");
     expect(confirmButton("Rename").disabled).toBe(true);
   });
 
   it("issues no validation call before the input has been quiet for the whole window", async () => {
+    // Arrange.
     const onPropose = acceptEverything();
     render(<ContextPromptHost prompt={inputPrompt()} onPropose={onPropose} onSubmit={vi.fn()} onCancel={vi.fn()} />);
 
+    // Act.
     type("renamed.txt");
     await act(async () => {
       vi.advanceTimersByTime(DEBOUNCE_MS - 1);
     });
 
+    // Assert.
     expect(onPropose).not.toHaveBeenCalled();
   });
 
   it("issues exactly one validation call for a burst of typing, carrying the final text", async () => {
+    // Arrange.
     const onPropose = acceptEverything();
     render(<ContextPromptHost prompt={inputPrompt()} onPropose={onPropose} onSubmit={vi.fn()} onCancel={vi.fn()} />);
 
+    // Act.
     for (const value of ["r", "re", "ren", "renamed.txt"]) {
       type(value);
       await act(async () => {
@@ -112,36 +121,46 @@ describe("ContextPromptHost input dialog", () => {
     }
     await settleDebounce();
 
+    // Assert.
     expect(onPropose).toHaveBeenCalledTimes(1);
     expect(onPropose.mock.calls[0]?.[1]).toBe("renamed.txt");
   });
 
   it("enables the confirm button only once a valid verdict for the current text arrives", async () => {
+    // Arrange.
     render(<ContextPromptHost prompt={inputPrompt()} onPropose={acceptEverything()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
 
+    // Arrange, continued.
     type("renamed.txt");
     expect(confirmButton("Rename").disabled).toBe(true); // still inside the window
 
+    // Act.
     await settleDebounce();
 
+    // Assert.
     expect(confirmButton("Rename").disabled).toBe(false);
   });
 
   it("disables the confirm button again the moment the text changes after a valid verdict", async () => {
+    // Arrange.
     render(<ContextPromptHost prompt={inputPrompt()} onPropose={acceptEverything()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
 
+    // Arrange, continued.
     type("renamed.txt");
     await settleDebounce();
     expect(confirmButton("Rename").disabled).toBe(false);
 
+    // Act.
     // The verdict now describes text the user has moved past; submitting it would rename
     // to something they no longer typed, so the button must go dead until it is re-judged.
     type("renamed-again.txt");
 
+    // Assert.
     expect(confirmButton("Rename").disabled).toBe(true);
   });
 
   it("shows the backend's reason and keeps the button disabled for a rejected name", async () => {
+    // Arrange.
     const onPropose = vi.fn(async (revision: number): Promise<ContextPromptVerdict> => ({
       revision,
       valid: false,
@@ -149,34 +168,42 @@ describe("ContextPromptHost input dialog", () => {
     }));
     render(<ContextPromptHost prompt={inputPrompt()} onPropose={onPropose} onSubmit={vi.fn()} onCancel={vi.fn()} />);
 
+    // Act.
     type("taken.txt");
     await settleDebounce();
 
+    // Assert.
     expect(screen.getByRole("alert").textContent).toContain("already exists");
     expect(confirmButton("Rename").disabled).toBe(true);
   });
 
   it("keeps the dialog open with the typed text intact when the submit fails", async () => {
+    // Arrange.
     const onSubmit = vi.fn(async () => ({ completed: false, error: "Could not rename this item: the file is in use." }));
     render(<ContextPromptHost prompt={inputPrompt()} onPropose={acceptEverything()} onSubmit={onSubmit} onCancel={vi.fn()} />);
 
+    // Act.
     type("renamed.txt");
     await settleDebounce();
     await act(async () => {
       fireEvent.click(confirmButton("Rename"));
     });
 
+    // Assert.
     expect(screen.getByRole("alert").textContent).toContain("in use");
     expect(nameField().value).toBe("renamed.txt");
   });
 
   it("cancels without submitting anything", () => {
+    // Arrange.
     const onCancel = vi.fn();
     const onSubmit = vi.fn();
     render(<ContextPromptHost prompt={inputPrompt()} onPropose={acceptEverything()} onSubmit={onSubmit} onCancel={onCancel} />);
 
+    // Act.
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
+    // Assert.
     expect(onCancel).toHaveBeenCalled();
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -184,19 +211,23 @@ describe("ContextPromptHost input dialog", () => {
 
 describe("ContextPromptHost confirm dialog", () => {
   it("renders the backend's own message with a danger-coloured confirm button", () => {
+    // Act.
     render(<ContextPromptHost prompt={confirmPrompt()} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
 
+    // Assert.
     expect(screen.getByText(/everything inside it/)).toBeTruthy();
     expect(confirmButton("Delete").className).toContain("dialog-button-danger");
   });
 
   it("submits on confirm and does nothing to disk on cancel", () => {
+    // Arrange.
     const onSubmit = vi.fn();
     const onCancel = vi.fn();
     const { rerender } = render(
       <ContextPromptHost prompt={confirmPrompt()} onPropose={vi.fn()} onSubmit={onSubmit} onCancel={onCancel} />,
     );
 
+    // Act and assert, step by step.
     fireEvent.click(confirmButton("Delete"));
     expect(onSubmit).toHaveBeenCalled();
 
@@ -224,22 +255,27 @@ function choicePrompt(interactionByte = 3): ContextPrompt {
 
 describe("ContextPromptHost choice dialog", () => {
   it("renders the choice dialog for a choiceDialog prompt", () => {
+    // Act.
     render(<ContextPromptHost prompt={choicePrompt()} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
 
+    // Assert.
     expect(screen.getByText("Add diagram")).toBeTruthy();
     expect(screen.getByRole("tree")).toBeTruthy();
     expect(confirmButton("Add")).toHaveProperty("disabled", true);
   });
 
   it("remounts for a new interaction, so a choice made in one never leaks into the next", () => {
+    // Arrange.
     const { rerender } = render(
       <ContextPromptHost prompt={choicePrompt(3)} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={vi.fn()} />,
     );
     fireEvent.click(screen.getByText("System Context").closest("button")!);
     expect(confirmButton("Add")).toHaveProperty("disabled", false);
 
+    // Act.
     rerender(<ContextPromptHost prompt={choicePrompt(4)} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
 
+    // Assert.
     expect(confirmButton("Add")).toHaveProperty("disabled", true);
   });
 });
@@ -253,45 +289,59 @@ describe("ContextPromptHost with a prompt this build cannot render", () => {
   }
 
   it("cancels the interaction rather than leaving it open with nothing on screen", () => {
+    // Arrange.
     const onCancel = vi.fn();
 
+    // Act.
     render(<ContextPromptHost prompt={unknownPrompt()} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={onCancel} />);
 
+    // Assert.
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
   it("tells the user the action ended, instead of a click that does nothing", () => {
+    // Act.
     render(<ContextPromptHost prompt={unknownPrompt()} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
 
+    // Assert.
     expect(screen.getByText("Action not supported")).toBeTruthy();
     expect(screen.getByText(/needs a newer version/)).toBeTruthy();
   });
 
   it("closes that notice when dismissed", () => {
+    // Arrange.
     render(<ContextPromptHost prompt={unknownPrompt()} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
 
+    // Act.
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
 
+    // Assert.
     expect(screen.queryByText("Action not supported")).toBeNull();
   });
 
   it("shows nothing at all when there is simply no prompt", () => {
+    // Arrange.
     const onCancel = vi.fn();
 
+    // Act.
     render(<ContextPromptHost prompt={null} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={onCancel} />);
 
+    // Assert.
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(onCancel).not.toHaveBeenCalled();
   });
 
   it("lets a prompt it can render take over from the notice", () => {
+    // Arrange.
     const { rerender } = render(
       <ContextPromptHost prompt={unknownPrompt()} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={vi.fn()} />,
     );
     expect(screen.getByText("Action not supported")).toBeTruthy();
 
+    // Act.
     rerender(<ContextPromptHost prompt={confirmPrompt()} onPropose={vi.fn()} onSubmit={vi.fn()} onCancel={vi.fn()} />);
 
+    // Assert.
     expect(screen.queryByText("Action not supported")).toBeNull();
     expect(screen.getByText("Delete folder?")).toBeTruthy();
   });

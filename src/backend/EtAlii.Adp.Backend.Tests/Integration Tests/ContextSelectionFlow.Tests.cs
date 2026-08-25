@@ -166,12 +166,15 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     [Fact]
     public async Task Watch_OpensWithAnEmptyBaseline()
     {
+        // Arrange.
         using var session = await OpenSessionAsync();
         using var cts = CreateMessageTimeout();
 
+        // Act.
         using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         var baseline = await ReadSelectionAsync(call.ResponseStream, cts.Token);
 
+        // Assert.
         Assert.Null(baseline.Selection);
         Assert.Empty(baseline.Levels);
         Assert.False(baseline.Transient);
@@ -180,6 +183,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     [Fact]
     public async Task Select_AFile_PushesTheChainWithFilledPathDetailAndActions()
     {
+        // Arrange.
         Directory.CreateDirectory(IoPath.Combine(_projectFolder, "docs"));
         File.WriteAllText(IoPath.Combine(_projectFolder, "docs", "design.mm"), "");
         using var session = await OpenSessionAsync();
@@ -192,6 +196,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);
 
+        // Act and assert, step by step.
         // An empty path asks the backend to fill it in.
         var response = await session.Context.SelectAsync(
             new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(fileId) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
@@ -216,6 +221,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     [Fact]
     public async Task Select_PushesTheDiagramTypeForARegistration_AndNoTypeForAPlainFile()
     {
+        // Arrange.
         // The whole tab system hangs off this one field arriving on the pushed detail
         // (diagram-workspace-tabs Requirement 1), so it is proven over the real resolver,
         // router and stream rather than against mocks.
@@ -230,6 +236,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);
 
+        // Act and assert, step by step.
         await session.Context.SelectAsync(
             new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(adpId) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         var diagram = await ReadSelectionAsync(call.ResponseStream, cts.Token);
@@ -244,6 +251,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     [Fact]
     public async Task Select_WithAMismatchingPath_IsRejectedAndPushesNothing()
     {
+        // Arrange.
         File.WriteAllText(IoPath.Combine(_projectFolder, "a.txt"), "");
         using var session = await OpenSessionAsync();
         using var cts = CreateMessageTimeout();
@@ -251,9 +259,11 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         using var call = session.Context.Watch(new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await TestBaselineAsync(call.ResponseStream, cts.Token);
 
+        // Act.
         var response = await session.Context.SelectAsync(
             new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryId, "b.txt") }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.NotEqual("", response.Error);
         var pending = call.ResponseStream.MoveNext(cts.Token);
         var arrived = await Task.WhenAny(pending, Task.Delay(TimeSpan.FromMilliseconds(500), TestContext.Current.CancellationToken)) == pending;
@@ -263,6 +273,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     [Fact]
     public async Task Select_Preview_PushesTransientAndLeavesTheCurrentSelectionAlone()
     {
+        // Arrange.
         File.WriteAllText(IoPath.Combine(_projectFolder, "current.txt"), "");
         File.WriteAllText(IoPath.Combine(_projectFolder, "preview.txt"), "");
         using var session = await OpenSessionAsync();
@@ -275,6 +286,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
             new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(currentId) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadSelectionAsync(call.ResponseStream, cts.Token);
 
+        // Arrange, continued.
         var preview = Selection(previewId);
         preview.Action = ContextSelectionAction.Preview;
         await session.Context.SelectAsync(
@@ -283,6 +295,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         Assert.True(transient.Transient);
         Assert.Equal(new[] { "preview.txt" }, transient.Selection.Path.Segments);
 
+        // Act.
         // An action without a source runs against what is actually current - which the
         // preview must not have touched.
         await session.Context.ExecuteActionAsync(
@@ -304,12 +317,14 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
             }
         }
 
+        // Assert.
         Assert.Fail("No prompt arrived for the action on the current selection.");
     }
 
     [Fact]
     public async Task RenameOnDisk_PushesTheSelectionWithItsNewPathAndTheSameId()
     {
+        // Arrange.
         var original = IoPath.Combine(_projectFolder, "original.txt");
         File.WriteAllText(original, "");
         using var session = await OpenSessionAsync();
@@ -327,6 +342,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
 
         File.Move(original, IoPath.Combine(_projectFolder, "renamed.txt"));
 
+        // Act and assert, step by step.
         var pushed = await ReadSelectionAsync(call.ResponseStream, cts.Token);
         Assert.Equal(new[] { "renamed.txt" }, pushed.Selection.Path.Segments);
         Assert.Equal(entryId, pushed.Selection.Id.EntryId);
@@ -335,6 +351,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     [Fact]
     public async Task DeleteOnDisk_PushesAnEmptySelection()
     {
+        // Arrange.
         var file = IoPath.Combine(_projectFolder, "doomed.txt");
         File.WriteAllText(file, "");
         using var session = await OpenSessionAsync();
@@ -352,6 +369,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
 
         File.Delete(file);
 
+        // Act and assert, step by step.
         var pushed = await ReadSelectionAsync(call.ResponseStream, cts.Token);
         Assert.Null(pushed.Selection);
     }
@@ -359,6 +377,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     [Fact]
     public async Task Select_WithAnIdFromAnotherConnection_IsRejected()
     {
+        // Arrange.
         File.WriteAllText(IoPath.Combine(_projectFolder, "shared.txt"), "");
         using var session = await OpenSessionAsync();
         var foreignWatchId = ShortGuid.NewShortGuid();
@@ -366,15 +385,18 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
             new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = foreignWatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         var foreignId = foreignEntries.Entries.Entries_.Single().Id;
 
+        // Act.
         var response = await session.Context.SelectAsync(
             new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(foreignId) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.NotEqual("", response.Error);
     }
 
     [Fact]
     public async Task ASelectionOnOneConnection_IsNeverObservedOnAnothersStream()
     {
+        // Arrange.
         File.WriteAllText(IoPath.Combine(_projectFolder, "shared.txt"), "");
         using var session = await OpenSessionAsync();
         using var ctsA = CreateMessageTimeout();
@@ -391,6 +413,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         await session.Context.SelectAsync(
             new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(entryIdA) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
 
+        // Act and assert, step by step.
         var pushedA = await ReadSelectionAsync(callA.ResponseStream, ctsA.Token);
         Assert.Equal(new[] { "shared.txt" }, pushedA.Selection.Path.Segments);
         var arrivedOnB = await Task.WhenAny(pendingB, Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken)) == pendingB;
@@ -400,11 +423,13 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     [Fact]
     public async Task SelectAndWatch_ForAProjectTheCallerIsNotAuthorizedFor_AreRejected()
     {
+        // Arrange.
         using var owner = await OpenSessionAsync();
         using var otherChannel = CreateChannel();
         var otherHeaders = new Metadata { { SessionTokenHeader, "not-a-valid-session" } };
         var otherClient = new ContextService.ContextServiceClient(otherChannel);
 
+        // Act and assert, step by step.
         var selectFailure = await Assert.ThrowsAsync<RpcException>(async () => await otherClient.SelectAsync(
             new SelectRequest { ProjectId = owner.ProjectId, WatchId = owner.WatchId }, otherHeaders, cancellationToken: TestContext.Current.CancellationToken));
         Assert.Equal(StatusCode.Unauthenticated, selectFailure.StatusCode);

@@ -64,18 +64,23 @@ const treeItems = () => screen.getAllByRole("treeitem");
 
 describe("visibleRows", () => {
   it("lists only what is on screen, in reading order", () => {
+    // Arrange.
     const options = twoVendorPrompt().options;
 
+    // Act.
     const closed = visibleRows(options, new Set());
     const c4Open = visibleRows(options, new Set(["c4"]));
 
+    // Assert.
     expect(closed.map((r) => r.option.id)).toEqual(["c4", "uml"]);
     expect(c4Open.map((r) => r.option.id)).toEqual(["c4", "c4/component", "c4/context", "uml"]);
   });
 
   it("records depth and parent so the keyboard can move up and in", () => {
+    // Arrange.
     const rows = visibleRows(twoVendorPrompt().options, new Set(["c4", "c4/component"]));
 
+    // Act and assert, step by step.
     const code = rows.find((r) => r.option.id === "c4/component/code")!;
     expect(code.depth).toBe(2);
     expect(code.parentId).toBe("c4/component");
@@ -85,20 +90,26 @@ describe("visibleRows", () => {
 
 describe("ChoicePromptDialog rendering", () => {
   it("shows the vendors closed when there is more than one", () => {
+    // Act.
     renderDialog(twoVendorPrompt());
 
+    // Assert.
     expect(treeItems().map((item) => item.textContent)).toEqual(["c4", "uml"]);
   });
 
   it("opens the only vendor when there is just one, so a choice is one click away", () => {
+    // Act.
     renderDialog(oneVendorPrompt());
 
+    // Assert.
     expect(screen.getByText("System Context")).toBeTruthy();
   });
 
   it("marks groups and leaves apart", () => {
+    // Arrange.
     renderDialog(oneVendorPrompt());
 
+    // Act and assert, step by step.
     const [group, leaf] = treeItems();
     expect(group.className).toContain("choice-tree-row-group");
     expect(group.getAttribute("aria-selected")).toBeNull();
@@ -107,16 +118,20 @@ describe("ChoicePromptDialog rendering", () => {
   });
 
   it("shows the empty message and keeps confirm disabled when there are no options", () => {
+    // Act.
     renderDialog(emptyPrompt());
 
+    // Assert.
     expect(screen.getByText("No diagram types are available.")).toBeTruthy();
     expect(screen.queryByRole("tree")).toBeNull();
     expect(confirmButton()).toHaveProperty("disabled", true);
   });
 
   it("is a single Tab stop: exactly one row is tabbable", () => {
+    // Arrange.
     renderDialog(twoVendorPrompt());
 
+    // Act and assert, step by step.
     const tabbable = screen
       .getAllByRole("button")
       .filter((button) => button.className.includes("choice-tree-label") && button.tabIndex === 0);
@@ -124,14 +139,17 @@ describe("ChoicePromptDialog rendering", () => {
   });
 
   it("keeps the chevron out of the tab order", () => {
+    // Act.
     renderDialog(twoVendorPrompt());
 
+    // Assert.
     expect(screen.getByRole("button", { name: "Expand c4" }).tabIndex).toBe(-1);
   });
 });
 
 describe("ChoicePromptDialog choosing", () => {
   it("keeps confirm disabled until a leaf is chosen, and a group never enables it", () => {
+    // Act and assert, step by step.
     renderDialog(twoVendorPrompt());
     expect(confirmButton()).toHaveProperty("disabled", true);
 
@@ -143,8 +161,10 @@ describe("ChoicePromptDialog choosing", () => {
   });
 
   it("clicking a group toggles it open and closed", () => {
+    // Arrange.
     renderDialog(twoVendorPrompt());
 
+    // Act and assert, step by step.
     fireEvent.click(row("c4"));
     expect(screen.getByText("System Context")).toBeTruthy();
 
@@ -153,9 +173,11 @@ describe("ChoicePromptDialog choosing", () => {
   });
 
   it("the chevron toggles on one click and ignores the second click of a double click", () => {
+    // Arrange.
     renderDialog(twoVendorPrompt());
     const chevron = () => screen.getByRole("button", { name: /^(Expand|Collapse) c4$/ });
 
+    // Act and assert, step by step.
     fireEvent.click(chevron(), { detail: 1 });
     expect(screen.getByText("System Context")).toBeTruthy();
 
@@ -168,36 +190,45 @@ describe("ChoicePromptDialog choosing", () => {
   });
 
   it("submits the chosen leaf's id on confirm", async () => {
+    // Arrange.
     const { onSubmit } = renderDialog(twoVendorPrompt());
     fireEvent.click(row("c4"));
     fireEvent.click(row("System Context"));
 
+    // Act.
     await act(async () => {
       fireEvent.click(confirmButton());
     });
 
+    // Assert.
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(onSubmit).toHaveBeenCalledWith("c4/context");
   });
 
   it("double-clicking a leaf chooses it and submits in one go", async () => {
+    // Arrange.
     const { onSubmit } = renderDialog(oneVendorPrompt());
 
+    // Act.
     await act(async () => {
       fireEvent.doubleClick(screen.getByText("System Context").closest("li")!);
     });
 
+    // Assert.
     expect(onSubmit).toHaveBeenCalledWith("c4/context");
   });
 
   it("shows a failed submission's error and stays open with the choice intact", async () => {
+    // Arrange.
     const { onSubmit } = renderDialog(oneVendorPrompt(), { completed: false, error: "Creating a System Context diagram is not supported yet." });
     fireEvent.click(row("System Context"));
 
+    // Act.
     await act(async () => {
       fireEvent.click(confirmButton());
     });
 
+    // Assert.
     expect(screen.getByRole("alert").textContent).toBe("Creating a System Context diagram is not supported yet.");
     expect(screen.getByRole("tree")).toBeTruthy();
     expect(row("System Context").closest("li")!.getAttribute("aria-selected")).toBe("true");
@@ -205,12 +236,15 @@ describe("ChoicePromptDialog choosing", () => {
   });
 
   it("cancel and Escape call onCancel without submitting", () => {
+    // Arrange.
     const { onSubmit, onCancel } = renderDialog(oneVendorPrompt());
     fireEvent.click(row("System Context"));
 
+    // Act.
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     fireEvent.keyDown(document, { key: "Escape" });
 
+    // Assert.
     expect(onCancel).toHaveBeenCalled();
     expect(onSubmit).not.toHaveBeenCalled();
   });
@@ -222,9 +256,11 @@ describe("ChoicePromptDialog keyboard", () => {
   }
 
   it("ArrowDown and ArrowUp move through the visible rows", () => {
+    // Arrange.
     renderDialog(twoVendorPrompt());
     focusRow("c4");
 
+    // Act and assert, step by step.
     fireEvent.keyDown(tree(), { key: "ArrowDown" });
     expect(document.activeElement).toBe(row("uml"));
 
@@ -233,9 +269,11 @@ describe("ChoicePromptDialog keyboard", () => {
   });
 
   it("ArrowRight opens a closed group, then moves into it; ArrowLeft closes or moves to the parent", () => {
+    // Arrange.
     renderDialog(twoVendorPrompt());
     focusRow("c4");
 
+    // Act and assert, step by step.
     fireEvent.keyDown(tree(), { key: "ArrowRight" });
     expect(screen.getByText("Component")).toBeTruthy();
     expect(document.activeElement).toBe(row("c4"));
@@ -251,6 +289,7 @@ describe("ChoicePromptDialog keyboard", () => {
   });
 
   it("acts on the row that has focus even when the key arrives in the same tick as the focus", () => {
+    // Arrange.
     // Found in the manual pass (task 17): focus() and an immediate keydown, with no render
     // in between, left the handler acting on the previously focused row - the onFocus
     // state update had not been committed yet. The key must follow the DOM's focus, not
@@ -261,27 +300,34 @@ describe("ChoicePromptDialog keyboard", () => {
     fireEvent.keyDown(tree(), { key: "ArrowRight" });
     expect(screen.getByText("System Context")).toBeTruthy();
 
+    // Act.
     row("uml").focus();
     fireEvent.keyDown(tree(), { key: "ArrowRight" });
 
+    // Assert.
     expect(screen.getByText("Class diagram")).toBeTruthy();
     // ...and c4 was not toggled again by the stale id.
     expect(screen.getByText("System Context")).toBeTruthy();
   });
 
   it("ArrowRight on a leaf does nothing", () => {
+    // Arrange.
     renderDialog(oneVendorPrompt());
     focusRow("System Context");
 
+    // Act.
     fireEvent.keyDown(tree(), { key: "ArrowRight" });
 
+    // Assert.
     expect(document.activeElement).toBe(row("System Context"));
   });
 
   it("Space chooses a leaf; Enter on the chosen leaf confirms", async () => {
+    // Arrange.
     const { onSubmit } = renderDialog(oneVendorPrompt());
     focusRow("System Context");
 
+    // Act and assert, step by step.
     fireEvent.keyDown(tree(), { key: " " });
     expect(confirmButton()).toHaveProperty("disabled", false);
 
@@ -292,23 +338,29 @@ describe("ChoicePromptDialog keyboard", () => {
   });
 
   it("Enter on an unchosen leaf chooses it rather than submitting", async () => {
+    // Arrange.
     const { onSubmit } = renderDialog(oneVendorPrompt());
     focusRow("System Context");
 
+    // Act.
     await act(async () => {
       fireEvent.keyDown(tree(), { key: "Enter" });
     });
 
+    // Assert.
     expect(confirmButton()).toHaveProperty("disabled", false);
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it("Enter on a group toggles it", () => {
+    // Arrange.
     renderDialog(twoVendorPrompt());
     focusRow("c4");
 
+    // Act.
     fireEvent.keyDown(tree(), { key: "Enter" });
 
+    // Assert.
     expect(screen.getByText("System Context")).toBeTruthy();
   });
 });
@@ -334,24 +386,31 @@ const nameInput = () => screen.getByLabelText("Name") as HTMLInputElement;
 
 describe("ChoicePromptDialog name field", () => {
   it("starts out holding the first selectable option's suggestion", () => {
+    // Act.
     renderDialog(namedPrompt());
 
+    // Assert.
     expect(nameInput().value).toBe("context");
   });
 
   it("follows the selected option until the user types, and never after", () => {
+    // Arrange.
     renderDialog(namedPrompt());
 
+    // Arrange, continued.
     fireEvent.click(row("Container"));
     expect(nameInput().value).toBe("container");
 
+    // Act.
     fireEvent.change(nameInput(), { target: { value: "domain" } });
     fireEvent.click(row("System Context"));
 
+    // Assert.
     expect(nameInput().value).toBe("domain");
   });
 
   it("submits the chosen option together with the name", async () => {
+    // Arrange.
     const { onSubmit } = renderDialog(namedPrompt());
 
     fireEvent.click(row("System Context"));
@@ -362,13 +421,16 @@ describe("ChoicePromptDialog name field", () => {
     });
     fireEvent.click(confirmButton());
 
+    // Act and assert, step by step.
     await act(async () => {});
     expect(onSubmit).toHaveBeenCalledWith("c4/context", "domain");
   });
 
   it("can be confirmed on the untouched suggestion without any round trip", async () => {
+    // Arrange.
     const { onSubmit, onPropose } = renderDialog(namedPrompt());
 
+    // Act and assert, step by step.
     fireEvent.click(row("System Context"));
     expect(confirmButton()).toHaveProperty("disabled", false);
     fireEvent.click(confirmButton());
@@ -379,31 +441,39 @@ describe("ChoicePromptDialog name field", () => {
   });
 
   it("keeps the confirm button disabled while a typed name has no verdict yet", () => {
+    // Arrange.
     renderDialog(namedPrompt());
 
+    // Act.
     fireEvent.click(row("System Context"));
     fireEvent.change(nameInput(), { target: { value: "domain" } });
 
+    // Assert.
     // The verdict for this revision has not arrived, so the name is not yet acceptable.
     expect(confirmButton()).toHaveProperty("disabled", true);
   });
 
   it("shows the reason a name was refused and keeps the confirm button disabled", async () => {
+    // Arrange.
     renderDialog(namedPrompt(), { completed: true, error: "" }, { valid: false, reason: "An item named 'taken.adp' already exists in this folder." });
 
+    // Act.
     fireEvent.click(row("System Context"));
     fireEvent.change(nameInput(), { target: { value: "taken" } });
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 250));
     });
 
+    // Assert.
     expect(screen.getByRole("alert").textContent).toContain("already exists");
     expect(confirmButton()).toHaveProperty("disabled", true);
   });
 
   it("renders no name field for a prompt that does not ask for one", () => {
+    // Act.
     renderDialog(oneVendorPrompt());
 
+    // Assert.
     expect(screen.queryByLabelText("Name")).toBeNull();
   });
 });

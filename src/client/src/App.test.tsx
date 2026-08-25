@@ -30,23 +30,30 @@ vi.mock("./pages/ProjectGridPage", () => ({
 
 describe("App Gate()", () => {
   it("renders WorkspaceShell (not the old placeholder text) after a project is selected", () => {
+    // Arrange.
     render(<App />);
 
+    // Act.
     fireEvent.click(screen.getByText("Select Test Project"));
 
+    // Assert.
     expect(screen.getByText("Test Project")).toBeTruthy();
     expect(screen.getAllByRole("tablist")).toHaveLength(2);
     expect(screen.queryByText(/goes here \(adp-diagram-ide\)/)).toBeNull();
   });
 
   it("returns to the project grid when 'Back to projects' is used", () => {
+    // Arrange.
     render(<App />);
 
+    // Arrange, continued.
     fireEvent.click(screen.getByText("Select Test Project"));
     expect(screen.getAllByRole("tablist")).toHaveLength(2);
 
+    // Act.
     fireEvent.click(screen.getByText(/Back to projects/));
 
+    // Assert.
     expect(screen.getByText("Select Test Project")).toBeTruthy();
     expect(screen.queryAllByRole("tablist")).toHaveLength(0);
   });

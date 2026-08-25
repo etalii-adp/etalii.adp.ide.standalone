@@ -140,16 +140,19 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task Baseline_WithNothingSelected_CarriesAddForTheRoot_EnabledBesideGreyedRenameAndDelete()
     {
+        // Arrange.
         using var channel = CreateChannel();
         var headers = await LoginAsync(channel);
         var projectId = await AddProjectAsync(channel, headers);
         var contextClient = new ContextService.ContextServiceClient(channel);
         var watchId = ShortGuid.NewShortGuid();
 
+        // Act.
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var baseline = await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
 
+        // Assert.
         Assert.Null(baseline.Selection);
         var actions = baseline.Actions.SelectMany(group => group.Actions).ToList();
         var add = Assert.Single(actions, action => action.Id == AddDiagramContextActionProvider.AddActionId);
@@ -171,20 +174,24 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task Add_OnTheRoot_OpensTheChoiceDialog_AndSubmittingCreatesTheDiagram()
     {
+        // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "existing.txt"), "x", TestContext.Current.CancellationToken);
 
+        // Arrange, continued.
         using var channel = CreateChannel();
         var headers = await LoginAsync(channel);
         var projectId = await AddProjectAsync(channel, headers);
         var contextClient = new ContextService.ContextServiceClient(channel);
         var watchId = ShortGuid.NewShortGuid();
 
+        // Arrange, continued.
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
         await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
+        // Arrange, continued.
         // No source: the explorer's empty space.
         var interactionId = ShortGuid.NewShortGuid();
         var executed = await contextClient.ExecuteActionAsync(
@@ -193,6 +200,7 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(executed.Accepted, executed.Error);
 
+        // Arrange, continued.
         var prompt = await pendingPrompt;
         Assert.Equal(ContextPrompt.PromptOneofCase.ChoiceDialog, prompt.PromptCase);
         Assert.Equal("Add diagram", prompt.ChoiceDialog.Title);
@@ -202,15 +210,18 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.All(prompt.ChoiceDialog.Options, vendor => Assert.False(vendor.Selectable));
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
 
+        // Arrange, continued.
         // The dialog also carries a name field, and each selectable option a suggestion for it.
         Assert.Equal("Name", prompt.ChoiceDialog.NameField.Label);
         Assert.NotEqual("", leaf.SuggestedValue);
 
+        // Act.
         var submitted = await contextClient.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = leaf.Id, Text = leaf.SuggestedValue },
             headers,
             cancellationToken: TestContext.Current.CancellationToken);
 
+        // Assert.
         // create-diagram-file replaced this spec's "not supported yet" answer with the real
         // thing: a file on disk, and its project-relative path reported back.
         Assert.True(submitted.Completed, submitted.Error);
@@ -221,6 +232,7 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task Add_OnAFolder_ViaItsEntryId_OpensTheChoiceDialog()
     {
+        // Arrange.
         Directory.CreateDirectory(IoPath.Combine(_projectFolder, "docs"));
 
         using var channel = CreateChannel();
@@ -239,6 +251,7 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
         await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
+        // Act and assert, step by step.
         var discovered = await contextClient.DiscoverActionsAsync(
             new DiscoverActionsRequest { ProjectId = projectId, WatchId = watchId, Source = new ContextSource { EntryId = folderId } },
             headers,
@@ -266,8 +279,10 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task DiscoverActions_OnAFile_OffersNoAdd()
     {
+        // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "a.txt"), "x", TestContext.Current.CancellationToken);
 
+        // Arrange, continued.
         using var channel = CreateChannel();
         var headers = await LoginAsync(channel);
         var projectId = await AddProjectAsync(channel, headers);
@@ -275,14 +290,17 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         var contextClient = new ContextService.ContextServiceClient(channel);
         var watchId = ShortGuid.NewShortGuid();
 
+        // Arrange, continued.
         var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var fileId = entries.Entries.Entries_.Single(e => e.Name == "a.txt").Id;
 
+        // Act.
         var discovered = await contextClient.DiscoverActionsAsync(
             new DiscoverActionsRequest { ProjectId = projectId, WatchId = watchId, Source = new ContextSource { EntryId = fileId } },
             headers,
             cancellationToken: TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.DoesNotContain(discovered.Groups.SelectMany(g => g.Actions), a => a.Id == AddDiagramContextActionProvider.AddActionId);
         // ...while the file's own actions are still there.
         Assert.Contains(discovered.Groups.SelectMany(g => g.Actions), a => a.Id == HierarchyContextActionProvider.RenameActionId);
@@ -291,9 +309,11 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task Submit_AfterTheFolderVanished_ReportsTheFolder()
     {
+        // Arrange.
         var folder = IoPath.Combine(_projectFolder, "doomed");
         Directory.CreateDirectory(folder);
 
+        // Arrange, continued.
         using var channel = CreateChannel();
         var headers = await LoginAsync(channel);
         var projectId = await AddProjectAsync(channel, headers);
@@ -301,15 +321,18 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         var contextClient = new ContextService.ContextServiceClient(channel);
         var watchId = ShortGuid.NewShortGuid();
 
+        // Arrange, continued.
         var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var folderId = entries.Entries.Entries_.Single(e => e.Name == "doomed").Id;
 
+        // Arrange, continued.
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         await ReadBaselineAsync(contextCall.ResponseStream, cts.Token);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
         await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
+        // Arrange, continued.
         var interactionId = ShortGuid.NewShortGuid();
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
@@ -326,14 +349,17 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         var prompt = await pendingPrompt;
         var leaf = FirstLeaf(prompt.ChoiceDialog.Options);
 
+        // Arrange, continued.
         // The dialog is open; the folder goes away underneath it.
         Directory.Delete(folder, recursive: true);
 
+        // Act.
         var submitted = await contextClient.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = leaf.Id },
             headers,
             cancellationToken: TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.False(submitted.Completed);
         Assert.Equal("The folder no longer exists.", submitted.Error);
     }

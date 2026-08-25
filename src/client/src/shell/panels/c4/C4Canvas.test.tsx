@@ -98,8 +98,10 @@ describe("C4Canvas", () => {
   });
 
   it("renders a box per element, at the size the backend measured", () => {
+    // Arrange.
     const { container } = render(<C4Canvas {...props} />);
 
+    // Act and assert, step by step.
     const nodes = container.querySelectorAll(".c4-node");
     expect(nodes).toHaveLength(2);
     const rect = nodes[0].querySelector("rect")!;
@@ -108,30 +110,38 @@ describe("C4Canvas", () => {
   });
 
   it("shows the three lines C4 asks for: name, bracketed type, and description", () => {
+    // Act.
     const { container } = render(<C4Canvas {...props} />);
 
+    // Assert.
     expect(container.textContent).toContain("Alpha");
     expect(container.textContent).toContain("[Software System]");
     expect(container.textContent).toContain("A description.");
   });
 
   it("carries the title C4 requires on every diagram", () => {
+    // Act.
     const { getByTestId } = render(<C4Canvas {...props} />);
 
+    // Assert.
     expect(getByTestId("c4-title").textContent).toBe("System Context diagram for Alpha");
   });
 
   it("carries a key explaining the notation, so the diagram reads without narrative", () => {
+    // Arrange.
     const { getByTestId } = render(<C4Canvas {...props} />);
 
+    // Act and assert, step by step.
     const legend = getByTestId("c4-legend");
     expect(legend.textContent).toContain("Software System");
     expect(legend.textContent).toContain("Person");
   });
 
   it("draws each relationship as one arrow, labelled with its intent and technology", () => {
+    // Arrange.
     const { container } = render(<C4Canvas {...props} />);
 
+    // Act and assert, step by step.
     const relationships = container.querySelectorAll(".c4-relationship");
     expect(relationships).toHaveLength(1);
     expect(relationships[0].querySelector("line")!.getAttribute("marker-end")).toBe("url(#c4-arrow)");
@@ -139,9 +149,11 @@ describe("C4Canvas", () => {
   });
 
   it("anchors a relationship on the boxes' edges, not their centres", () => {
+    // Arrange.
     // A line drawn centre-to-centre disappears under the boxes at both ends.
     const { container } = render(<C4Canvas {...props} />);
 
+    // Act and assert, step by step.
     const line = container.querySelector(".c4-relationship line")!;
     // Alpha is centred at (0,0) and is 80 tall, so the line leaves at its lower edge.
     expect(Number(line.getAttribute("y1"))).toBeCloseTo(40, 5);
@@ -150,6 +162,7 @@ describe("C4Canvas", () => {
   });
 
   it("draws a boundary as a labelled dashed rectangle", () => {
+    // Arrange.
     currentModel = seed(
       node("a", "Alpha", 0, 0),
       element("boundary:s", BOUNDARY_TYPE, toBinary(C4BoundaryPayloadSchema, create(C4BoundaryPayloadSchema, {
@@ -162,12 +175,14 @@ describe("C4Canvas", () => {
 
     const { container } = render(<C4Canvas {...props} />);
 
+    // Act and assert, step by step.
     const boundary = container.querySelector(".c4-boundary")!;
     expect(boundary.textContent).toContain("Internet Banking [Software System]");
     expect(boundary.querySelector("rect")!.getAttribute("width")).toBe("400");
   });
 
   it("draws a person with the person shape and a data store as a cylinder", () => {
+    // Arrange.
     currentModel = seed(
       node("p", "Customer", 0, 0, { style: { background: "#08427b", color: "#ffffff", shape: "Person" } }),
       node("d", "Database", 0, 200, { style: { background: "#438dd5", color: "#ffffff", shape: "Cylinder" } }),
@@ -175,24 +190,31 @@ describe("C4Canvas", () => {
 
     const { container } = render(<C4Canvas {...props} />);
 
+    // Act and assert, step by step.
     const [person, store] = [...container.querySelectorAll(".c4-node")];
     expect(person.querySelector("circle")).not.toBeNull();
     expect(store.querySelectorAll("ellipse")).toHaveLength(2);
   });
 
   it("uses the palette the backend resolved, so a themed model renders in its own colours", () => {
+    // Arrange.
     currentModel = seed(node("a", "Alpha", 0, 0, { style: { background: "#ff0000", color: "#000000", shape: "RoundedBox" } }));
 
+    // Act.
     const { container } = render(<C4Canvas {...props} />);
 
+    // Assert.
     expect(container.querySelector(".c4-node rect")!.getAttribute("fill")).toBe("#ff0000");
   });
 
   it("reports a nested file->element selection when an element is clicked", () => {
+    // Arrange.
     const { container } = render(<C4Canvas {...props} />);
 
+    // Act.
     fireEvent.click(container.querySelectorAll(".c4-node")[0]);
 
+    // Assert.
     expect(select).toHaveBeenCalledTimes(1);
     const selection = select.mock.calls[0][0];
     expect(selection.id.source.value.value).toEqual(props.entryId);
@@ -202,29 +224,38 @@ describe("C4Canvas", () => {
   });
 
   it("clicking the empty canvas deselects", () => {
+    // Arrange.
     const { container } = render(<C4Canvas {...props} />);
     fireEvent.click(container.querySelectorAll(".c4-node")[0]);
     select.mockClear();
 
+    // Act.
     fireEvent.click(container.querySelector(".c4-canvas-surface")!);
 
+    // Assert.
     expect(select).toHaveBeenCalledWith(null);
   });
 
   it("says the diagram is no longer available, naming its path, when the stream failed", () => {
+    // Arrange.
     currentFailed = true;
 
+    // Act.
     const { container } = render(<C4Canvas {...props} />);
 
+    // Assert.
     expect(container.textContent).toContain("This diagram is no longer available at docs/model.adp.");
     expect(container.querySelectorAll(".c4-node")).toHaveLength(0);
   });
 
   it("shows it is loading rather than an empty diagram", () => {
+    // Arrange.
     currentLoading = true;
 
+    // Act.
     const { container } = render(<C4Canvas {...props} />);
 
+    // Assert.
     expect(container.querySelector('[role="status"]')).not.toBeNull();
   });
 
@@ -234,10 +265,12 @@ describe("C4Canvas", () => {
     (container.querySelector(".c4-canvas-surface")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
 
   it("zooms in about the pointer on a wheel up, and back out on a wheel down", () => {
+    // Arrange.
     const { container } = render(<C4Canvas {...props} />);
     const surface = container.querySelector(".c4-canvas-surface")!;
     const [, , wBefore] = viewBoxOf(container);
 
+    // Act and assert, step by step.
     fireEvent.wheel(surface, { deltaY: -100 });
     expect(viewBoxOf(container)[2]).toBeLessThan(wBefore);
 
@@ -246,20 +279,24 @@ describe("C4Canvas", () => {
   });
 
   it("pans with a background drag, and the trailing click does not deselect", () => {
+    // Arrange.
     const { container } = render(<C4Canvas {...props} />);
     const surface = container.querySelector(".c4-canvas-surface")!;
     const [xBefore] = viewBoxOf(container);
 
+    // Act.
     fireEvent.mouseDown(surface, { clientX: 100, clientY: 100 });
     fireEvent.mouseMove(surface, { clientX: 60, clientY: 100 });
     fireEvent.mouseUp(surface);
     fireEvent.click(surface);
 
+    // Assert.
     expect(viewBoxOf(container)[0]).toBeCloseTo(xBefore + 40, 5);
     expect(select).not.toHaveBeenCalled();
   });
 
   it("reports the area the svg actually shows, not the bare viewBox", async () => {
+    // Arrange.
     // The svg letterboxes: whichever axis has room to spare displays more of the model than
     // the box asks for, and reporting the box alone would have the backend cull elements the
     // user is looking straight at.
@@ -272,6 +309,7 @@ describe("C4Canvas", () => {
       const { container } = render(<C4Canvas {...props} />);
       const [, , boxW, boxH] = viewBoxOf(container);
 
+    // Act and assert, step by step.
       await waitFor(() => expect(reportView).toHaveBeenCalled(), { timeout: 2000 });
 
       const viewport = reportView.mock.calls.at(-1)![0];

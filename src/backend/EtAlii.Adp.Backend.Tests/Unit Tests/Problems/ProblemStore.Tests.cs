@@ -41,10 +41,13 @@ public class ProblemStoreTests : IDisposable
     [Fact]
     public void Get_AnswersNeverValidatedForAFreshProject()
     {
+        // Arrange.
         using var store = Store();
 
+        // Act.
         var set = store.Get(_root);
 
+        // Assert.
         Assert.Equal(ProjectProblemSetState.NeverValidated, set.State);
         Assert.Empty(set.Problems);
         Assert.Equal(0, set.ErrorCount);
@@ -56,10 +59,12 @@ public class ProblemStoreTests : IDisposable
     [Fact]
     public void Replace_MakesTheSetValidated_AndCounts()
     {
+        // Arrange.
         using var store = Store();
 
         store.Replace(_root, [Problem("a.adp"), Problem("b.adp", DiagramProblemSeverity.Warning)]);
 
+        // Act and assert, step by step.
         var set = store.Get(_root);
         Assert.Equal(ProjectProblemSetState.Validated, set.State);
         Assert.Equal(2, set.Problems.Count);
@@ -71,16 +76,20 @@ public class ProblemStoreTests : IDisposable
     [Fact]
     public void Replace_WithNothing_IsValidatedAndClean_NotNeverValidated()
     {
+        // Arrange.
         using var store = Store();
 
+        // Act.
         store.Replace(_root, []);
 
+        // Assert.
         Assert.Equal(ProjectProblemSetState.Validated, store.Get(_root).State);
     }
 
     [Fact]
     public void ReplaceFor_ReplacesOnlyTheCoveredPaths()
     {
+        // Arrange.
         using var store = Store();
         store.Replace(_root, [
             Problem("kept.adp"),
@@ -91,6 +100,7 @@ public class ProblemStoreTests : IDisposable
         // One file and one folder were re-validated; the folder is now clean.
         store.ReplaceFor(_root, ["replaced.adp", "folder"], [Problem("replaced.adp", message: "Still wrong.")]);
 
+        // Act and assert, step by step.
         var set = store.Get(_root);
         Assert.Equal(2, set.Problems.Count);
         Assert.Contains(set.Problems, problem => problem.RelativePath == "kept.adp");
@@ -100,22 +110,27 @@ public class ProblemStoreTests : IDisposable
     [Fact]
     public void ReplaceFor_DoesNotSweepUpAPathThatMerelySharesAPrefix()
     {
+        // Arrange.
         using var store = Store();
         store.Replace(_root, [Problem("folder2.adp")]);
 
+        // Act.
         store.ReplaceFor(_root, ["folder"], []);
 
+        // Assert.
         Assert.Single(store.Get(_root).Problems);
     }
 
     [Fact]
     public void Remove_DropsAFilesProblems()
     {
+        // Arrange.
         using var store = Store();
         store.Replace(_root, [Problem("gone.adp"), Problem("stays.adp")]);
 
         store.Remove(_root, "gone.adp");
 
+        // Act and assert, step by step.
         var set = store.Get(_root);
         Assert.Equal("stays.adp", Assert.Single(set.Problems).RelativePath);
     }
@@ -123,48 +138,60 @@ public class ProblemStoreTests : IDisposable
     [Fact]
     public void Remove_OfAFolder_DropsEverythingBeneathIt()
     {
+        // Arrange.
         using var store = Store();
         store.Replace(_root, [Problem(IoPath.Combine("folder", "a.adp")), Problem(IoPath.Combine("folder", "deep", "b.adp")), Problem("outside.adp")]);
 
+        // Act.
         store.Remove(_root, "folder");
 
+        // Assert.
         Assert.Equal("outside.adp", Assert.Single(store.Get(_root).Problems).RelativePath);
     }
 
     [Fact]
     public void Move_CarriesAFilesProblemsToTheNewPath()
     {
+        // Arrange.
         using var store = Store();
         store.Replace(_root, [Problem("old.adp")]);
 
+        // Act.
         store.Move(_root, "old.adp", "new.adp");
 
+        // Assert.
         Assert.Equal("new.adp", Assert.Single(store.Get(_root).Problems).RelativePath);
     }
 
     [Fact]
     public void Move_OfAFolder_CarriesEverythingBeneathIt()
     {
+        // Arrange.
         using var store = Store();
         store.Replace(_root, [Problem(IoPath.Combine("before", "deep", "a.adp"))]);
 
+        // Act.
         store.Move(_root, "before", "after");
 
+        // Assert.
         Assert.Equal(IoPath.Combine("after", "deep", "a.adp"), Assert.Single(store.Get(_root).Problems).RelativePath);
     }
 
     [Fact]
     public void Changed_IsRaisedExactlyOncePerMutation()
     {
+        // Arrange.
         using var store = Store();
         var raised = new List<string>();
         store.Changed += rootPath => raised.Add(rootPath);
 
+        // Act.
         store.Replace(_root, [Problem("a.adp")]);
         store.ReplaceFor(_root, ["a.adp"], []);
         store.Remove(_root, "a.adp");
         store.Move(_root, "a.adp", "b.adp");
 
+        // Assert.
         Assert.Equal(4, raised.Count);
         Assert.All(raised, rootPath => Assert.Equal(IoPath.GetFullPath(_root), rootPath));
     }
@@ -174,6 +201,7 @@ public class ProblemStoreTests : IDisposable
     [Fact]
     public async Task AFreshVerdictOnAPair_IsNotStale()
     {
+        // Arrange.
         // Found by the manual pass: a pair's problem is attributed to the .adp, so its
         // pinned stats must be the .adp's too - pinning the body's stats marked every
         // pair's problem stale the moment it was found.
@@ -186,6 +214,7 @@ public class ProblemStoreTests : IDisposable
         var outcome = await projectValidator.ValidateAsync(new ProjectValidationScope(_root), TestContext.Current.CancellationToken);
         store.Replace(_root, outcome.Problems);
 
+        // Act and assert, step by step.
         var stored = Assert.Single(store.Get(_root).Problems);
         Assert.Equal("flow.adp", stored.RelativePath);
         Assert.False(stored.Stale);
@@ -194,70 +223,86 @@ public class ProblemStoreTests : IDisposable
     [Fact]
     public void Get_MarksNothingStaleWhileTheFileStandsStill()
     {
+        // Arrange and act.
         using var store = Store();
         CreatePair("flow");
         store.Replace(_root, [Pinned("flow.adp")]);
 
+        // Assert.
         Assert.False(Assert.Single(store.Get(_root).Problems).Stale);
     }
 
     [Fact]
     public void Get_MarksAnEntryStaleWhenTheFileWasWrittenSince()
     {
+        // Arrange.
         using var store = Store();
         CreatePair("flow");
         store.Replace(_root, [Pinned("flow.adp")]);
 
+        // Act.
         File.SetLastWriteTimeUtc(IoPath.Combine(_root, "flow.adp"), DateTime.UtcNow.AddMinutes(1));
 
+        // Assert.
         Assert.True(Assert.Single(store.Get(_root).Problems).Stale);
     }
 
     [Fact]
     public void Get_MarksAnEntryStaleWhenTheFilesLengthChanged()
     {
+        // Arrange.
         using var store = Store();
         CreatePair("flow");
         var path = IoPath.Combine(_root, "flow.adp");
         var pinned = Pinned("flow.adp");
         store.Replace(_root, [pinned]);
 
+        // Act.
         File.AppendAllText(path, "more");
         File.SetLastWriteTimeUtc(path, pinned.LastWriteTimeUtc); // Only the length differs.
 
+        // Assert.
         Assert.True(Assert.Single(store.Get(_root).Problems).Stale);
     }
 
     [Fact]
     public void Get_MarksAnEntryStaleWhenTheFileIsGone()
     {
+        // Arrange and act.
         using var store = Store();
         store.Replace(_root, [Problem("vanished.adp")]);
 
+        // Assert.
         Assert.True(Assert.Single(store.Get(_root).Problems).Stale);
     }
 
     [Fact]
     public void Get_MarksAnEntryStaleWhenItsRulesVersionIsNoLongerCurrent()
     {
+        // Arrange.
         using var store = Store(new ProblemStoreStubValidator(Mindmap));
         CreatePair("flow");
 
+        // Act.
         store.Replace(_root, [Pinned("flow.adp", rulesVersion: "an-older-release")]);
 
+        // Assert.
         Assert.True(Assert.Single(store.Get(_root).Problems).Stale);
     }
 
     [Fact]
     public void Get_TrustsACurrentRulesVersion()
     {
+        // Arrange.
         using var store = Store(new ProblemStoreStubValidator(Mindmap));
         CreatePair("flow");
         var current = typeof(ProblemStoreStubValidator).Assembly
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
 
+        // Act.
         store.Replace(_root, [Pinned("flow.adp", rulesVersion: current)]);
 
+        // Assert.
         Assert.False(Assert.Single(store.Get(_root).Problems).Stale);
     }
 
@@ -266,6 +311,7 @@ public class ProblemStoreTests : IDisposable
     [Fact]
     public void TheSetSurvivesARestart()
     {
+        // Arrange.
         var location = new DiagramProblemElementLocation("node-1");
         using (var store = Store())
         {
@@ -275,9 +321,11 @@ public class ProblemStoreTests : IDisposable
             ]);
         } // Dispose keeps the pending debounced write.
 
+        // Act.
         using var reborn = Store();
         var set = reborn.Get(_root);
 
+        // Assert.
         Assert.Equal(ProjectProblemSetState.Validated, set.State);
         Assert.Equal(2, set.Problems.Count);
         Assert.Equal(1, set.ErrorCount);
@@ -306,6 +354,7 @@ public class ProblemStoreTests : IDisposable
     [Fact]
     public void ACacheFromAnotherFormatYieldsNeverValidated()
     {
+        // Arrange.
         using (var store = Store())
         {
             store.Replace(_root, [Problem("a.adp")]);
@@ -313,14 +362,17 @@ public class ProblemStoreTests : IDisposable
         var cache = Assert.Single(Directory.GetFiles(IoPath.Combine(_appData, "EtAlii.Adp", "problems")));
         File.WriteAllText(cache, File.ReadAllText(cache).Replace("\"Version\": 1", "\"Version\": 999"));
 
+        // Act.
         using var reborn = Store();
 
+        // Assert.
         Assert.Equal(ProjectProblemSetState.NeverValidated, reborn.Get(_root).State);
     }
 
     [Fact]
     public void TheStoreNeverWritesInsideTheProjectFolder()
     {
+        // Arrange.
         CreatePair("flow");
         var before = Directory.GetFileSystemEntries(_root, "*", SearchOption.AllDirectories).Order().ToArray();
 
@@ -330,6 +382,7 @@ public class ProblemStoreTests : IDisposable
             store.Get(_root);
         }
 
+        // Act and assert, step by step.
         var after = Directory.GetFileSystemEntries(_root, "*", SearchOption.AllDirectories).Order().ToArray();
         Assert.Equal(before, after);
     }
@@ -339,6 +392,7 @@ public class ProblemStoreTests : IDisposable
     [Fact]
     public void Get_BoundsWhatItSends_ButCountsTheWholeSet()
     {
+        // Arrange.
         using var store = Store(maxReported: 2);
         store.Replace(_root, [
             Problem("a.adp"),
@@ -346,8 +400,10 @@ public class ProblemStoreTests : IDisposable
             Problem("c.adp", DiagramProblemSeverity.Warning),
         ]);
 
+        // Act.
         var set = store.Get(_root);
 
+        // Assert.
         Assert.Equal(2, set.Problems.Count);
         Assert.Equal(2, set.TruncatedAt);
         Assert.Equal(2, set.ErrorCount); // Of the whole set...

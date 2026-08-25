@@ -34,12 +34,14 @@ public class ProjectValidatorTests : IDisposable
     [Fact]
     public async Task ValidateAsync_ReportsWhatTheTypesValidatorFinds()
     {
+        // Arrange.
         CreatePair("flow", "the document");
         var problem = new DiagramProblem(DiagramProblemSeverity.Warning, "The root is lonely.", "mindmap.lonely-root");
         var validator = Validator(problems: [problem]);
 
         var outcome = await Validate(validator, new ProjectValidationScope(_root));
 
+        // Act and assert, step by step.
         var stored = Assert.Single(outcome.Problems);
         Assert.Same(problem, stored.Problem);
         Assert.Equal("flow.adp", stored.RelativePath);
@@ -51,10 +53,13 @@ public class ProjectValidatorTests : IDisposable
     [Fact]
     public async Task ValidateAsync_IsSilentForATypeWithoutRules()
     {
+        // Arrange.
         CreatePair("flow", "the document");
 
+        // Act.
         var outcome = await Validate(validator: null, new ProjectValidationScope(_root));
 
+        // Assert.
         Assert.Empty(outcome.Problems);
         Assert.Equal(1, outcome.FilesConsidered);
     }
@@ -62,12 +67,15 @@ public class ProjectValidatorTests : IDisposable
     [Fact]
     public async Task ValidateAsync_JudgesAPairOnce_NotOncePerFile()
     {
+        // Arrange.
         // flow.adp and flow.mm route to the same pair; the walk visits both files.
         CreatePair("flow", "the document");
         var validator = Validator(problems: []);
 
+        // Act.
         var outcome = await Validate(validator, new ProjectValidationScope(_root));
 
+        // Assert.
         Assert.Equal(1, validator.Calls);
         Assert.Equal(1, outcome.FilesConsidered);
     }
@@ -75,10 +83,12 @@ public class ProjectValidatorTests : IDisposable
     [Fact]
     public async Task ValidateAsync_ReportsAnUnknownType()
     {
+        // Arrange.
         File.WriteAllText(IoPath.Combine(_root, "strange.adp"), "vendor/unheard-of\n");
 
         var outcome = await Validate(validator: null, new ProjectValidationScope(_root));
 
+        // Act and assert, step by step.
         var stored = Assert.Single(outcome.Problems);
         Assert.Equal("core.unknown-type", stored.Problem.RuleId);
         Assert.Equal(DiagramProblemSeverity.Error, stored.Problem.Severity);
@@ -90,11 +100,13 @@ public class ProjectValidatorTests : IDisposable
     [Fact]
     public async Task ValidateAsync_ReportsAnUnreadableRegistration()
     {
+        // Arrange.
         // An empty .adp has no first line to read - the router calls it unreadable.
         File.WriteAllText(IoPath.Combine(_root, "empty.adp"), "");
 
         var outcome = await Validate(validator: null, new ProjectValidationScope(_root));
 
+        // Act and assert, step by step.
         var stored = Assert.Single(outcome.Problems);
         Assert.Equal("core.unreadable", stored.Problem.RuleId);
         Assert.Equal("empty.adp", stored.RelativePath);
@@ -103,11 +115,13 @@ public class ProjectValidatorTests : IDisposable
     [Fact]
     public async Task ValidateAsync_ReportsAnAmbiguousExtension()
     {
+        // Arrange.
         File.WriteAllText(IoPath.Combine(_root, "either.mm"), "a body without a registration");
         var rival = new DiagramDefinition(new DiagramOrigin("rival", "mindmap"), "Rival map", ".mm");
 
         var outcome = await Validate(validator: null, new ProjectValidationScope(_root), extraDefinitions: [rival]);
 
+        // Act and assert, step by step.
         var stored = Assert.Single(outcome.Problems);
         Assert.Equal("core.ambiguous-extension", stored.Problem.RuleId);
         Assert.Contains("freeplane/mindmap", stored.Problem.Message);
@@ -117,10 +131,13 @@ public class ProjectValidatorTests : IDisposable
     [Fact]
     public async Task ValidateAsync_IgnoresAFileNoTypeClaims()
     {
+        // Arrange.
         File.WriteAllText(IoPath.Combine(_root, "notes.txt"), "just notes");
 
+        // Act.
         var outcome = await Validate(validator: null, new ProjectValidationScope(_root));
 
+        // Assert.
         Assert.Empty(outcome.Problems);
         Assert.Equal(0, outcome.FilesConsidered);
     }
@@ -128,6 +145,7 @@ public class ProjectValidatorTests : IDisposable
     [Fact]
     public async Task ValidateAsync_ReportsABodyItCannotRead_AndWalksOn()
     {
+        // Arrange.
         CreatePair("locked", "unreachable");
         CreatePair("open", "reachable");
         var validator = Validator(problems: []);
@@ -136,6 +154,7 @@ public class ProjectValidatorTests : IDisposable
         {
             var outcome = await Validate(validator, new ProjectValidationScope(_root));
 
+        // Act and assert, step by step.
             var stored = Assert.Single(outcome.Problems);
             Assert.Equal("core.unreadable", stored.Problem.RuleId);
             Assert.Equal("locked.adp", stored.RelativePath);
@@ -149,12 +168,15 @@ public class ProjectValidatorTests : IDisposable
     [Fact]
     public async Task ValidateAsync_SurvivesAThrowingValidator_AndWalksOn()
     {
+        // Arrange.
         CreatePair("a", "first");
         CreatePair("b", "second");
         var validator = Validator(throwing: true);
 
+        // Act.
         var outcome = await Validate(validator, new ProjectValidationScope(_root));
 
+        // Assert.
         Assert.Equal(2, outcome.Problems.Count);
         Assert.All(outcome.Problems, stored => Assert.Equal("core.validator-failed", stored.Problem.RuleId));
         Assert.Equal(2, validator.Calls);
@@ -163,11 +185,13 @@ public class ProjectValidatorTests : IDisposable
     [Fact]
     public async Task ValidateAsync_AbandonsAHangingValidator()
     {
+        // Arrange.
         CreatePair("slow", "the document");
         var validator = Validator(hanging: true);
 
         var outcome = await Validate(validator, new ProjectValidationScope(_root), timeout: TimeSpan.FromMilliseconds(100));
 
+        // Act and assert, step by step.
         var stored = Assert.Single(outcome.Problems);
         Assert.Equal("core.validator-failed", stored.Problem.RuleId);
         Assert.Contains("did not answer", stored.Problem.Message);
@@ -178,6 +202,7 @@ public class ProjectValidatorTests : IDisposable
     [Fact]
     public async Task ValidateAsync_FolderScope_TouchesOnlyThatFolder()
     {
+        // Arrange.
         Directory.CreateDirectory(IoPath.Combine(_root, "inside"));
         CreatePair(IoPath.Combine("inside", "in"), "inside the folder");
         CreatePair("out", "outside the folder");
@@ -185,6 +210,7 @@ public class ProjectValidatorTests : IDisposable
 
         var outcome = await Validate(validator, new FolderValidationScope(_root, "inside"));
 
+        // Act and assert, step by step.
         var stored = Assert.Single(outcome.Problems);
         Assert.Equal(IoPath.Combine("inside", "in.adp"), stored.RelativePath);
         Assert.Equal(1, validator.Calls);
@@ -193,12 +219,15 @@ public class ProjectValidatorTests : IDisposable
     [Fact]
     public async Task ValidateAsync_FileScope_TouchesOnlyThatFile()
     {
+        // Arrange.
         CreatePair("one", "first");
         CreatePair("two", "second");
         var validator = Validator(problems: []);
 
+        // Act.
         var outcome = await Validate(validator, new FileValidationScope(_root, "one.adp"));
 
+        // Assert.
         Assert.Equal(1, validator.Calls);
         Assert.Equal(1, outcome.FilesConsidered);
     }
@@ -206,6 +235,7 @@ public class ProjectValidatorTests : IDisposable
     [Fact]
     public async Task ValidateAsync_RefusesAPathThatLeavesTheRoot()
     {
+        // Arrange.
         var elsewhere = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(elsewhere);
         try
@@ -213,8 +243,10 @@ public class ProjectValidatorTests : IDisposable
             File.WriteAllText(IoPath.Combine(elsewhere, "outside.adp"), "freeplane/mindmap\n");
             var validator = Validator(problems: []);
 
+        // Act.
             var outcome = await Validate(validator, new FileValidationScope(_root, IoPath.Combine("..", IoPath.GetFileName(elsewhere), "outside.adp")));
 
+        // Assert.
             Assert.Empty(outcome.Problems);
             Assert.Equal(0, outcome.FilesConsidered);
             Assert.Equal(1, outcome.Skipped);
@@ -231,6 +263,7 @@ public class ProjectValidatorTests : IDisposable
     [Fact]
     public async Task ValidateAsync_LeavesTheProjectByteForByteUnchanged()
     {
+        // Arrange.
         CreatePair("flow", "the document");
         File.WriteAllText(IoPath.Combine(_root, "strange.adp"), "vendor/unheard-of\n");
         File.WriteAllText(IoPath.Combine(_root, "notes.txt"), "just notes");
@@ -238,6 +271,7 @@ public class ProjectValidatorTests : IDisposable
 
         await Validate(Validator(throwing: true), new ProjectValidationScope(_root));
 
+        // Act and assert, step by step.
         var after = Snapshot();
         Assert.Equal(before.Keys.Order(), after.Keys.Order());
         foreach (var (path, bytes) in before)
@@ -251,11 +285,13 @@ public class ProjectValidatorTests : IDisposable
     [Fact]
     public async Task ValidateAsync_ASecondRequestJoinsTheRunningOne()
     {
+        // Arrange.
         CreatePair("flow", "the document");
         var validator = Validator(problems: []);
         validator.Hold = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var subject = Subject(validator);
 
+        // Arrange, continued.
         var first = subject.ValidateAsync(new ProjectValidationScope(_root), TestContext.Current.CancellationToken).AsTask();
         while (validator.Calls == 0)
         {
@@ -263,9 +299,11 @@ public class ProjectValidatorTests : IDisposable
         }
         var second = subject.ValidateAsync(new FileValidationScope(_root, "flow.adp"), TestContext.Current.CancellationToken).AsTask();
 
+        // Act.
         validator.Hold.SetResult();
         var outcomes = await Task.WhenAll(first, second);
 
+        // Assert.
         Assert.Equal(1, validator.Calls); // One traversal...
         Assert.Same(outcomes[0], outcomes[1]); // ...two identical answers.
     }

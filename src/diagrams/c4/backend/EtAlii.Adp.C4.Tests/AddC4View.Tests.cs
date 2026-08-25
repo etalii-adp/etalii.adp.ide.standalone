@@ -66,8 +66,10 @@ public class AddC4ViewTests : IDisposable
     [Fact]
     public async Task AddingAView_AppendsItToTheDocument_AndCreatesTheRegistrationThatOpensIt()
     {
+        // Arrange.
         var result = await _history.ExecuteAsync(AddContainers(), TestContext.Current.CancellationToken);
 
+        // Act and assert, step by step.
         Assert.True(result.IsSuccess, result.Error);
 
         // The view is in the document...
@@ -87,10 +89,12 @@ public class AddC4ViewTests : IDisposable
     [Fact]
     public async Task AddingAView_LeavesTheRestOfTheDocumentExactlyAsItWas()
     {
+        // Arrange.
         var before = File.ReadAllLines(_bodyPath);
 
         await _history.ExecuteAsync(AddContainers(), TestContext.Current.CancellationToken);
 
+        // Act and assert, step by step.
         var after = File.ReadAllLines(_bodyPath);
         // Only the appended block is new; every line that was there is still there, in order.
         Assert.Equal(before.Length + 4, after.Length);
@@ -100,8 +104,10 @@ public class AddC4ViewTests : IDisposable
     [Fact]
     public async Task TheExistingViewStillOpens_AfterASecondIsAdded()
     {
+        // Arrange.
         await _history.ExecuteAsync(AddContainers(), TestContext.Current.CancellationToken);
 
+        // Act and assert, step by step.
         var workspace = _documents.WorkspaceOf(_bodyPath);
         Assert.NotNull(workspace.FindView("context"));
         Assert.Equal(2, workspace.Views.Count);
@@ -110,11 +116,14 @@ public class AddC4ViewTests : IDisposable
     [Fact]
     public async Task AddingAView_Undoes_RemovingBothTheBlockAndTheRegistration()
     {
+        // Arrange.
         var before = File.ReadAllText(_bodyPath);
         await _history.ExecuteAsync(AddContainers(), TestContext.Current.CancellationToken);
 
+        // Act.
         await _history.UndoAsync(TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Equal(before, File.ReadAllText(_bodyPath));
         Assert.False(File.Exists(IoPath.Combine(_root, "containers.adp")));
     }
@@ -122,10 +131,13 @@ public class AddC4ViewTests : IDisposable
     [Fact]
     public async Task AddingAViewTwiceUnderOneKey_IsRefused()
     {
+        // Arrange.
         await _history.ExecuteAsync(AddContainers(), TestContext.Current.CancellationToken);
 
+        // Act.
         var result = await _history.ExecuteAsync(AddContainers(), TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.False(result.IsSuccess);
         Assert.Contains("already has a view", result.Error, StringComparison.OrdinalIgnoreCase);
     }
@@ -133,13 +145,16 @@ public class AddC4ViewTests : IDisposable
     [Fact]
     public async Task ALandscapeView_IsAddedWithNoScope()
     {
+        // Arrange.
         // A landscape is a context diagram without a focus, so it takes no scope element.
         var command = new AddC4ViewCommand(
             _bodyPath, IoPath.Combine(_root, "landscape.adp"), "c4/system-landscape",
             C4ViewKind.SystemLandscape, "landscape", "banking.dsl");
 
+        // Act.
         var result = await _history.ExecuteAsync(command, TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(result.IsSuccess, result.Error);
         var view = _documents.WorkspaceOf(_bodyPath).FindView("landscape")!;
         Assert.Equal(C4ViewKind.SystemLandscape, view.Kind);
@@ -149,26 +164,31 @@ public class AddC4ViewTests : IDisposable
     [Fact]
     public async Task AComponentView_IsScopedToAContainer_NotASystem()
     {
+        // Arrange.
         var command = new AddC4ViewCommand(
             _bodyPath, IoPath.Combine(_root, "components.adp"), "c4/component",
             C4ViewKind.Component, "components", "banking.dsl");
 
+        // Act.
         await _history.ExecuteAsync(command, TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Equal("web", _documents.WorkspaceOf(_bodyPath).FindView("components")!.ScopeId);
     }
 
     [Fact]
     public async Task ADynamicView_IsAddedWithNoIncludeAll()
     {
-        // "include *" means something different on a dynamic view: its body is its ordered
+        // Arrange: "include *" means something different on a dynamic view: its body is its ordered
         // interactions, and a new one has none.
         var command = new AddC4ViewCommand(
             _bodyPath, IoPath.Combine(_root, "scenario.adp"), "c4/dynamic",
             C4ViewKind.Dynamic, "scenario", "banking.dsl");
 
+        // Act.
         await _history.ExecuteAsync(command, TestContext.Current.CancellationToken);
 
+        // Assert.
         var document = File.ReadAllText(_bodyPath);
         var block = document[document.IndexOf("dynamic s \"scenario\"", StringComparison.Ordinal)..];
         Assert.DoesNotContain("include *", block[..block.IndexOf('}')], StringComparison.Ordinal);
@@ -177,13 +197,16 @@ public class AddC4ViewTests : IDisposable
     [Fact]
     public async Task AddingAViewToAModelWithNoSystem_IsRefusedRatherThanWritingSomethingBroken()
     {
+        // Arrange.
         var empty = IoPath.Combine(_root, "empty.dsl");
         File.WriteAllText(empty, "workspace {\n    model {\n    }\n    views {\n    }\n}\n");
 
+        // Act.
         var command = new AddC4ViewCommand(
             empty, IoPath.Combine(_root, "x.adp"), "c4/container", C4ViewKind.Container, "containers", "empty.dsl");
         var result = await _history.ExecuteAsync(command, TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.False(result.IsSuccess);
         Assert.Contains("no software system", result.Error, StringComparison.OrdinalIgnoreCase);
         Assert.False(File.Exists(IoPath.Combine(_root, "x.adp")));
@@ -192,12 +215,15 @@ public class AddC4ViewTests : IDisposable
     [Fact]
     public async Task TheAddedDocumentStillParses_AndTheNewViewLaysOut()
     {
+        // Arrange.
         await _history.ExecuteAsync(AddContainers(), TestContext.Current.CancellationToken);
 
+        // Act.
         var workspace = C4Parser.Parse(C4Document.Parse(File.ReadAllText(_bodyPath)));
         var view = workspace.FindView("containers")!;
         var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default);
 
+        // Assert.
         Assert.Contains("web", layout.Boxes.Keys);
         Assert.Single(layout.Boundaries);
     }

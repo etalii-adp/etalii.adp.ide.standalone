@@ -15,16 +15,20 @@ public class C4ToolboxProviderTests
     [Fact]
     public void AContextView_OffersPeopleAndSoftwareSystemsOnly()
     {
+        // Act.
         var labels = Items(C4ViewKind.SystemContext).Select(item => item.Label).ToArray();
 
+        // Assert.
         Assert.Equal(["Person", "Software System"], labels);
     }
 
     [Fact]
     public void AContainerView_OffersContainers_ButNotComponents()
     {
+        // Act.
         var labels = Items(C4ViewKind.Container).Select(item => item.Label).ToArray();
 
+        // Assert.
         Assert.Contains("Container", labels);
         Assert.DoesNotContain("Component", labels);
     }
@@ -32,8 +36,10 @@ public class C4ToolboxProviderTests
     [Fact]
     public void ADeploymentView_OffersNodesAndInstances_AndNoPeople()
     {
+        // Act.
         var labels = Items(C4ViewKind.Deployment).Select(item => item.Label).ToArray();
 
+        // Assert.
         Assert.Contains("Deployment Node", labels);
         Assert.Contains("Infrastructure Node", labels);
         Assert.Contains("Container Instance", labels);
@@ -49,16 +55,19 @@ public class C4ToolboxProviderTests
     [InlineData(C4ViewKind.Deployment)]
     public void NoViewOffersAKindItWouldThenRefuse(C4ViewKind kind)
     {
+        // Act.
         // The palette and the validator read the same rule, so a user cannot be offered
         // something that is immediately reported as a violation.
         var permitted = C4RuleSet.PermittedKinds(kind);
 
+        // Assert.
         Assert.Equal(permitted.Count, Items(kind).Count);
     }
 
     [Fact]
     public void EveryItem_IsBackedByAnAction_SoADropDoesWhatTheMenuDoes()
     {
+        // Arrange, act and assert.
         Assert.All(Items(C4ViewKind.Container), item =>
         {
             Assert.NotEmpty(item.DropActionId);
@@ -69,10 +78,12 @@ public class C4ToolboxProviderTests
     [Fact]
     public void AContainersDescription_SaysItIsNotADockerContainer()
     {
+        // Act.
         // C4 is explicit that a container is an application or a data store, and the word
         // misleads almost everyone who has met Docker first (Requirement 6.3).
         var container = Items(C4ViewKind.Container).Single(item => item.Label == "Container");
 
+        // Assert.
         Assert.Contains("not a Docker container", container.Description, StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -21,18 +21,21 @@ const nodeItem = create(ToolboxItemSchema, {
 
 describe("ToolboxPanel", () => {
   it("shows the open-a-diagram placeholder while no canvas is registered", () => {
+    // Arrange and act.
     const { container } = render(
       <DiagramToolboxProvider>
         <ToolboxPanel />
       </DiagramToolboxProvider>,
     );
 
+    // Assert.
     // The placeholder opens with its loading shim; its label is the immediate, stable part.
     expect(container.querySelector("[aria-label='Loading Toolbox']")).not.toBeNull();
     expect(container.querySelector(".toolbox-panel-item")).toBeNull();
   });
 
   it("renders the entries the backend described, without interpreting them", () => {
+    // Arrange.
     const { container } = render(
       <DiagramToolboxProvider>
         <Registrar items={[nodeItem]} />
@@ -40,6 +43,7 @@ describe("ToolboxPanel", () => {
       </DiagramToolboxProvider>,
     );
 
+    // Act and assert, step by step.
     const entry = container.querySelector(".toolbox-panel-item")!;
     expect(entry.textContent).toContain("Node");
     expect(entry.getAttribute("title")).toContain("add a child");
@@ -47,6 +51,7 @@ describe("ToolboxPanel", () => {
   });
 
   it("says so when the registered diagram type contributes nothing", () => {
+    // Arrange and act.
     const { container } = render(
       <DiagramToolboxProvider>
         <Registrar items={[]} />
@@ -54,10 +59,12 @@ describe("ToolboxPanel", () => {
       </DiagramToolboxProvider>,
     );
 
+    // Assert.
     expect(container.textContent).toContain("no toolbox elements");
   });
 
   it("a drag carries the backend's drop action id and nothing else", () => {
+    // Arrange.
     const { container } = render(
       <DiagramToolboxProvider>
         <Registrar items={[nodeItem]} />
@@ -65,16 +72,19 @@ describe("ToolboxPanel", () => {
       </DiagramToolboxProvider>,
     );
 
+    // Act.
     const setData = vi.fn();
     fireEvent.dragStart(container.querySelector(".toolbox-panel-item")!, {
       dataTransfer: { setData, effectAllowed: "" },
     });
 
+    // Assert.
     expect(setData).toHaveBeenCalledWith(TOOLBOX_DRAG_TYPE, "mindmap.add-child");
     expect(setData).toHaveBeenCalledTimes(1);
   });
 
   it("the placeholder returns when the registering canvas unmounts", () => {
+    // Act and assert, step by step.
     const { container, rerender } = render(
       <DiagramToolboxProvider>
         <Registrar items={[nodeItem]} />

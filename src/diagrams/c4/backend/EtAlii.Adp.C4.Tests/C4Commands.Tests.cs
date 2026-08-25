@@ -68,10 +68,13 @@ public class C4CommandsTests : IDisposable
     [Fact]
     public async Task Rename_ChangesTheNameAndNothingElseOnTheLine()
     {
+        // Arrange.
         var before = OnDisk();
 
+        // Act.
         var result = await _history.ExecuteAsync(new SetElementNameCommand(_bodyPath, "web", "Web Application"), TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(result.IsSuccess, result.Error);
         var after = OnDisk();
         Assert.Contains("container \"Web Application\" \"Serves.\" \"React\"", after, StringComparison.Ordinal);
@@ -81,39 +84,49 @@ public class C4CommandsTests : IDisposable
     [Fact]
     public async Task Rename_Undoes_ToTheExactBytesItStartedFrom()
     {
+        // Arrange.
         var before = OnDisk();
         await _history.ExecuteAsync(new SetElementNameCommand(_bodyPath, "web", "Renamed"), TestContext.Current.CancellationToken);
 
+        // Act.
         await _history.UndoAsync(TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Equal(before, OnDisk());
     }
 
     [Fact]
     public async Task SetDescription_ChangesTheDescription()
     {
+        // Act.
         await _history.ExecuteAsync(new SetElementDescriptionCommand(_bodyPath, "u", "A retail banking customer."), TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Contains("person \"Customer\" \"A retail banking customer.\"", OnDisk(), StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task SetTechnology_OnAContainer_Works()
     {
+        // Act.
         await _history.ExecuteAsync(new SetElementTechnologyCommand(_bodyPath, "web", "Java and Spring MVC"), TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Contains("\"Serves.\" \"Java and Spring MVC\"", OnDisk(), StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task SetTechnology_OnAPerson_IsRefused_BecauseC4GivesThemNone()
     {
+        // Arrange.
         // A person takes (name, description, tags); writing a technology into position 2 would
         // silently turn their tags into one - the same shape of bug the parser had.
         var before = OnDisk();
 
+        // Act.
         var result = await _history.ExecuteAsync(new SetElementTechnologyCommand(_bodyPath, "u", "React"), TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.False(result.IsSuccess);
         Assert.Contains("no technology", result.Error, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(before, OnDisk());
@@ -122,12 +135,15 @@ public class C4CommandsTests : IDisposable
     [Fact]
     public async Task SetRelationshipDescription_RelabelsTheRelationship()
     {
+        // Arrange.
         var relationshipId = _documents.WorkspaceOf(_bodyPath).Relationships.Single().Id;
 
+        // Act.
         var result = await _history.ExecuteAsync(
             new SetRelationshipDescriptionCommand(_bodyPath, relationshipId, "Views accounts using"),
             TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(result.IsSuccess, result.Error);
         Assert.Contains("u -> web \"Views accounts using\" \"HTTPS\"", OnDisk(), StringComparison.Ordinal);
     }
@@ -135,21 +151,26 @@ public class C4CommandsTests : IDisposable
     [Fact]
     public async Task SetRelationshipTechnology_SetsTheProtocol()
     {
+        // Arrange.
         var relationshipId = _documents.WorkspaceOf(_bodyPath).Relationships.Single().Id;
 
+        // Act.
         await _history.ExecuteAsync(
             new SetRelationshipTechnologyCommand(_bodyPath, relationshipId, "JSON/HTTPS"),
             TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Contains("u -> web \"Uses\" \"JSON/HTTPS\"", OnDisk(), StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task AnEditToSomethingAlreadyDeleted_IsRefusedRatherThanThrowing()
     {
+        // Act.
         // An ordinary race: the canvas is a moment behind the document.
         var result = await _history.ExecuteAsync(new SetElementNameCommand(_bodyPath, "ghost", "Anything"), TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.False(result.IsSuccess);
         Assert.Contains("ghost", result.Error, StringComparison.Ordinal);
     }
@@ -157,11 +178,13 @@ public class C4CommandsTests : IDisposable
     [Fact]
     public async Task EveryEdit_LeavesTheDocumentParseable_AndTheOtherLinesUntouched()
     {
+        // Arrange.
         var before = OnDisk();
 
         await _history.ExecuteAsync(new SetElementNameCommand(_bodyPath, "s", "Internet Banking"), TestContext.Current.CancellationToken);
         await _history.ExecuteAsync(new SetElementDescriptionCommand(_bodyPath, "web", "Delivers the app."), TestContext.Current.CancellationToken);
 
+        // Act and assert, step by step.
         var after = OnDisk();
         Assert.Equal(2, DifferingLines(before, after));
         var workspace = C4Parser.Parse(C4Document.Parse(after));
@@ -172,25 +195,31 @@ public class C4CommandsTests : IDisposable
     [Fact]
     public async Task UndoingBothEdits_RestoresTheOriginalBytes()
     {
+        // Arrange.
         var before = OnDisk();
         await _history.ExecuteAsync(new SetElementNameCommand(_bodyPath, "s", "Internet Banking"), TestContext.Current.CancellationToken);
         await _history.ExecuteAsync(new SetElementDescriptionCommand(_bodyPath, "web", "Delivers the app."), TestContext.Current.CancellationToken);
 
+        // Act.
         await _history.UndoAsync(TestContext.Current.CancellationToken);
         await _history.UndoAsync(TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Equal(before, OnDisk());
     }
 
     [Fact]
     public async Task AnEdit_ReachesTheSessionsOnThatDocument()
     {
+        // Arrange.
         // The command edits the shared document, so every view of it hears about the change.
         var raised = 0;
         _documents.Changed += (_, _) => raised++;
 
+        // Act.
         await _history.ExecuteAsync(new SetElementNameCommand(_bodyPath, "web", "Renamed"), TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Equal(1, raised);
     }
 }

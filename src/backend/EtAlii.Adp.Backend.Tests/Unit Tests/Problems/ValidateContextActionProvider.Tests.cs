@@ -48,11 +48,13 @@ public class ValidateContextActionProviderTests : IDisposable
     [Fact]
     public async Task AFolder_IsOfferedValidateFolder_WithF6()
     {
+        // Arrange.
         var folder = IoPath.Combine(_root, "docs");
         Directory.CreateDirectory(folder);
 
         var groups = await Discover(FolderTarget(folder));
 
+        // Act and assert, step by step.
         var action = Assert.Single(Assert.Single(groups).Actions);
         Assert.Equal(ValidateContextActionProvider.ValidateActionId, action.Id);
         Assert.Equal("Validate folder", action.Label);
@@ -64,10 +66,12 @@ public class ValidateContextActionProviderTests : IDisposable
     [Fact]
     public async Task ADiagram_IsOfferedValidate()
     {
+        // Arrange.
         CreatePair("flow");
 
         var groups = await Discover(FileTarget(IoPath.Combine(_root, "flow.adp")));
 
+        // Act and assert, step by step.
         var action = Assert.Single(Assert.Single(groups).Actions);
         Assert.Equal("Validate", action.Label);
     }
@@ -75,19 +79,24 @@ public class ValidateContextActionProviderTests : IDisposable
     [Fact]
     public async Task AFileNoTypeClaims_GetsNoEntryAtAll_NotAGreyedOne()
     {
+        // Arrange.
         var path = IoPath.Combine(_root, "notes.txt");
         File.WriteAllText(path, "just notes");
 
+        // Act.
         var groups = await Discover(FileTarget(path));
 
+        // Assert.
         Assert.Empty(groups);
     }
 
     [Fact]
     public async Task AVanishedTarget_GetsNoEntry()
     {
+        // Act.
         var groups = await Discover(FileTarget(IoPath.Combine(_root, "gone.adp")));
 
+        // Assert.
         Assert.Empty(groups);
     }
 
@@ -96,10 +105,13 @@ public class ValidateContextActionProviderTests : IDisposable
     [Fact]
     public async Task Validate_OnADiagram_PutsItsProblemsInTheStore()
     {
+        // Arrange.
         File.WriteAllText(IoPath.Combine(_root, "strange.adp"), "vendor/unheard-of\n");
 
+        // Act.
         var result = await _provider.ExecuteAsync(FileTarget(IoPath.Combine(_root, "strange.adp")), ValidateContextActionProvider.ValidateActionId, TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
         var set = _store.Get(_root);
         Assert.Equal(ProjectProblemSetState.Validated, set.State);
@@ -109,6 +121,7 @@ public class ValidateContextActionProviderTests : IDisposable
     [Fact]
     public async Task Validate_OnAFolder_TouchesOnlyThatFolder()
     {
+        // Arrange.
         Directory.CreateDirectory(IoPath.Combine(_root, "inside"));
         File.WriteAllText(IoPath.Combine(_root, "inside", "bad.adp"), "vendor/unheard-of\n");
         File.WriteAllText(IoPath.Combine(_root, "outside.adp"), "vendor/unheard-of\n");
@@ -118,6 +131,7 @@ public class ValidateContextActionProviderTests : IDisposable
 
         await _provider.ExecuteAsync(FolderTarget(IoPath.Combine(_root, "inside")), ValidateContextActionProvider.ValidateActionId, TestContext.Current.CancellationToken);
 
+        // Act and assert, step by step.
         var set = _store.Get(_root);
         Assert.Equal(2, set.Problems.Count);
         Assert.Contains(set.Problems, problem => problem.Problem.RuleId == "test.old");
@@ -127,6 +141,7 @@ public class ValidateContextActionProviderTests : IDisposable
     [Fact]
     public async Task Validate_OnTheRoot_IsValidateAll()
     {
+        // Arrange.
         File.WriteAllText(IoPath.Combine(_root, "bad.adp"), "vendor/unheard-of\n");
         // A verdict for a file that no longer exists: a whole-project run must sweep it out.
         _store.Replace(_root, [new StoredProblem(
@@ -134,6 +149,7 @@ public class ValidateContextActionProviderTests : IDisposable
 
         await _provider.ExecuteAsync(RootTarget(), ValidateContextActionProvider.ValidateActionId, TestContext.Current.CancellationToken);
 
+        // Act and assert, step by step.
         var set = _store.Get(_root);
         Assert.Equal("core.unknown-type", Assert.Single(set.Problems).Problem.RuleId);
     }
@@ -141,8 +157,10 @@ public class ValidateContextActionProviderTests : IDisposable
     [Fact]
     public async Task Validate_OnAVanishedTarget_FailsWithoutWriting()
     {
+        // Act.
         var result = await _provider.ExecuteAsync(FileTarget(IoPath.Combine(_root, "gone.adp")), ValidateContextActionProvider.ValidateActionId, TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.IsType<ContextExecutionFailed>(result);
         Assert.Equal(ProjectProblemSetState.NeverValidated, _store.Get(_root).State);
     }
@@ -152,8 +170,10 @@ public class ValidateContextActionProviderTests : IDisposable
     [Fact]
     public async Task ValidateAll_IsAlwaysOffered_EvenWithNoValidators()
     {
+        // Arrange.
         var groups = await _validateAll.DiscoverAsync(PanelTarget(), TestContext.Current.CancellationToken);
 
+        // Act and assert, step by step.
         var action = Assert.Single(Assert.Single(groups).Actions);
         Assert.Equal(ValidateAllContextActionProvider.ValidateAllActionId, action.Id);
         Assert.Equal("Validate all", action.Label);
@@ -165,10 +185,13 @@ public class ValidateContextActionProviderTests : IDisposable
     [Fact]
     public async Task ValidateAll_ValidatesTheWholeProject()
     {
+        // Arrange.
         File.WriteAllText(IoPath.Combine(_root, "bad.adp"), "vendor/unheard-of\n");
 
+        // Act.
         var result = await _validateAll.ExecuteAsync(PanelTarget(), ValidateAllContextActionProvider.ValidateAllActionId, TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
         var set = _store.Get(_root);
         Assert.Equal(ProjectProblemSetState.Validated, set.State);
@@ -178,6 +201,7 @@ public class ValidateContextActionProviderTests : IDisposable
     [Fact]
     public async Task NeitherProvider_AnswersAnUnknownActionId()
     {
+        // Arrange, act and assert.
         Assert.IsType<ContextExecutionFailed>(
             await _provider.ExecuteAsync(RootTarget(), "problems.other", TestContext.Current.CancellationToken));
         Assert.IsType<ContextExecutionFailed>(

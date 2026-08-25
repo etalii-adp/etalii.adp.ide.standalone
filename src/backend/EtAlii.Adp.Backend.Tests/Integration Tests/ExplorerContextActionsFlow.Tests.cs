@@ -141,6 +141,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
     [Fact]
     public async Task TheFullRenameArc_ValidatesThenRenamesOnDisk_AndReportsTheRenameOnTheSameStream()
     {
+        // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "original.txt"), "content", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "taken.txt"), "", TestContext.Current.CancellationToken);
 
@@ -160,6 +161,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
         await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
+        // Act and assert, step by step.
         var source = new ContextSource { EntryId = entryId };
         var discovered = await contextClient.DiscoverActionsAsync(
             new DiscoverActionsRequest { ProjectId = projectId, WatchId = watchId, Source = source },
@@ -213,6 +215,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
     [Fact]
     public async Task TheFullDeleteArc_ConfirmsThenRemovesAPopulatedFolderRecursively_AndReportsTheRemoval()
     {
+        // Arrange.
         var folder = IoPath.Combine(_projectFolder, "doomed");
         Directory.CreateDirectory(IoPath.Combine(folder, "inner"));
         await File.WriteAllTextAsync(IoPath.Combine(folder, "inner", "leaf.txt"), "", TestContext.Current.CancellationToken);
@@ -233,6 +236,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
         await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
+        // Act and assert, step by step.
         var interactionId = ShortGuid.NewShortGuid();
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
@@ -266,8 +270,10 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
     [Fact]
     public async Task ExecuteAction_TriggeredByShortcutWithNoPriorDiscovery_ProducesTheSamePromptAsTheActionIdPath()
     {
+        // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "shortcut.txt"), "", TestContext.Current.CancellationToken);
 
+        // Arrange, continued.
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
@@ -275,15 +281,18 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         var projectId = await AddProjectAsync(channel, headers);
         var watchId = ShortGuid.NewShortGuid();
 
+        // Arrange, continued.
         var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var entryId = entries.Entries.Entries_.Single(e => e.Name == "shortcut.txt").Id;
 
+        // Arrange, continued.
         using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
         await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
+        // Act.
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
@@ -296,6 +305,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
             headers,
             cancellationToken: TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(executed.Accepted);
         var prompt = await pendingPrompt;
         Assert.Equal(ContextPrompt.PromptOneofCase.InputDialog, prompt.PromptCase);
@@ -305,6 +315,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
     [Fact]
     public async Task APromptRaisedOnOneConnection_IsNeverObservedOnAnothersStream()
     {
+        // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "shared.txt"), "", TestContext.Current.CancellationToken);
 
         using var channel = CreateChannel();
@@ -324,6 +335,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         using var ctsA = CreateMessageTimeout();
         using var ctsB = CreateMessageTimeout();
 
+        // Act and assert, step by step.
         // Both streams open with three baseline messages: the "nothing selected" selection,
         // the project's own actions - undo and redo (diagram-undo-redo Deviation 1) - and
         // the project's problems (errors-and-warnings-panel Requirement 1.2). What matters
@@ -365,8 +377,10 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
     [Fact]
     public async Task DiscoverActions_ForAnEntryIdBelongingToAnotherConnection_ReportsNothing()
     {
+        // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "shared.txt"), "", TestContext.Current.CancellationToken);
 
+        // Arrange, continued.
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
@@ -375,9 +389,11 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         var watchIdA = ShortGuid.NewShortGuid();
         var watchIdB = ShortGuid.NewShortGuid();
 
+        // Arrange, continued.
         var entriesA = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchIdA }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var entryIdA = entriesA.Entries.Entries_.Single(e => e.Name == "shared.txt").Id;
 
+        // Act.
         var discovered = await contextClient.DiscoverActionsAsync(
             new DiscoverActionsRequest
             {
@@ -388,14 +404,17 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
             headers,
             cancellationToken: TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Empty(discovered.Groups);
     }
 
     [Fact]
     public async Task DiscoverActions_ForAProjectTheCallerIsNotAuthorizedFor_ReportsNothing()
     {
+        // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "private.txt"), "", TestContext.Current.CancellationToken);
 
+        // Arrange, continued.
         using var ownerChannel = CreateChannel();
         var ownerHeaders = await LoginAsync(ownerChannel);
         var ownerClient = new HierarchyService.HierarchyServiceClient(ownerChannel);
@@ -405,12 +424,14 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         var entries = await ownerClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, ownerHeaders, cancellationToken: TestContext.Current.CancellationToken);
         var entryId = entries.Entries.Entries_.Single(e => e.Name == "private.txt").Id;
 
+        // Arrange, continued.
         // A second login is a second session; the project was never added under it, so the
         // project id resolves to nothing for this caller.
         using var otherChannel = CreateChannel();
         var otherHeaders = new Metadata { { SessionTokenHeader, "not-a-valid-session" } };
         var otherContextClient = new ContextService.ContextServiceClient(otherChannel);
 
+        // Act.
         var rpcException = await Assert.ThrowsAsync<RpcException>(async () => await otherContextClient.DiscoverActionsAsync(
             new DiscoverActionsRequest
             {
@@ -420,6 +441,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
             },
             otherHeaders, cancellationToken: TestContext.Current.CancellationToken));
 
+        // Assert.
         Assert.NotNull(ownerContextClient);
         Assert.Equal(StatusCode.Unauthenticated, rpcException.StatusCode);
     }
@@ -427,8 +449,10 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
     [Fact]
     public async Task ExecuteAction_WithoutASource_ActsOnTheConnectionsCurrentSelection()
     {
+        // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "selected.txt"), "", TestContext.Current.CancellationToken);
 
+        // Arrange, continued.
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
@@ -436,14 +460,17 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         var projectId = await AddProjectAsync(channel, headers);
         var watchId = ShortGuid.NewShortGuid();
 
+        // Arrange, continued.
         var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var entryId = entries.Entries.Entries_.Single(e => e.Name == "selected.txt").Id;
 
+        // Arrange, continued.
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
         await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
+        // Arrange, continued.
         var nothingSelected = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
@@ -456,10 +483,12 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.False(nothingSelected.Accepted);
 
+        // Arrange, continued.
         var selection = new ContextSelection { Source = ContextSelectionSource.Explorer, Id = new ContextSource { EntryId = entryId } };
         var selected = await contextClient.SelectAsync(new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = selection }, headers, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("", selected.Error);
 
+        // Act.
         var executed = await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
             {
@@ -471,6 +500,7 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
             headers,
             cancellationToken: TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(executed.Accepted);
         var prompt = await pendingPrompt;
         Assert.Equal("selected.txt", prompt.InputDialog.InitialValue);
@@ -479,8 +509,10 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
     [Fact]
     public async Task SubmitInteraction_RepeatedForTheSameId_DoesNothingTheSecondTime()
     {
+        // Arrange.
         await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "once.txt"), "", TestContext.Current.CancellationToken);
 
+        // Arrange, continued.
         using var channel = CreateChannel();
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
         var contextClient = new ContextService.ContextServiceClient(channel);
@@ -488,15 +520,18 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
         var projectId = await AddProjectAsync(channel, headers);
         var watchId = ShortGuid.NewShortGuid();
 
+        // Arrange, continued.
         var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var entryId = entries.Entries.Entries_.Single(e => e.Name == "once.txt").Id;
 
+        // Arrange, continued.
         using var call = hierarchyClient.WatchHierarchy(new WatchHierarchyRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         using var cts = CreateMessageTimeout();
         using var contextCall = contextClient.Watch(new WatchContextRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var pendingPrompt = ReadUntilPromptAsync(contextCall.ResponseStream, cts.Token);
         await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
 
+        // Arrange, continued.
         var interactionId = ShortGuid.NewShortGuid();
         await contextClient.ExecuteActionAsync(
             new ExecuteActionRequest
@@ -511,11 +546,13 @@ public class ExplorerContextActionsFlowTests : IClassFixture<WebApplicationFacto
             cancellationToken: TestContext.Current.CancellationToken);
         await pendingPrompt;
 
+        // Act.
         var first = await contextClient.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = "twice.txt" }, headers, cancellationToken: TestContext.Current.CancellationToken);
         var second = await contextClient.SubmitInteractionAsync(
             new SubmitInteractionRequest { InteractionId = interactionId, Value = "thrice.txt" }, headers, cancellationToken: TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(first.Completed);
         Assert.False(second.Completed);
         Assert.True(File.Exists(IoPath.Combine(_projectFolder, "twice.txt")));

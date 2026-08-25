@@ -42,12 +42,14 @@ public class ProblemMaintenanceTests : IDisposable
     [Fact]
     public async Task AChangedDiagramCostsOneFilesValidation_NotATraversal()
     {
+        // Arrange.
         CreatePair("a");
         CreatePair("b");
         _maintenance.Track(_root);
 
         File.AppendAllText(IoPath.Combine(_root, "a.mm"), " and more");
 
+        // Act and assert, step by step.
         var (_, payload) = await WaitForMutation("ReplaceFor");
         // One file changed, one validation - project-wide traversal would have made two.
         Assert.Equal(1, _validator.Calls);
@@ -59,11 +61,13 @@ public class ProblemMaintenanceTests : IDisposable
     [Fact]
     public async Task ARemovedDiagramLosesItsEntries()
     {
+        // Arrange.
         CreatePair("gone");
         _maintenance.Track(_root);
 
         File.Delete(IoPath.Combine(_root, "gone.adp"));
 
+        // Act and assert, step by step.
         var (_, payload) = await WaitForMutation("Remove");
         Assert.Equal("gone.adp", payload);
     }
@@ -71,11 +75,13 @@ public class ProblemMaintenanceTests : IDisposable
     [Fact]
     public async Task ARenamedDiagramKeepsItsProblemsAtTheNewPath()
     {
+        // Arrange.
         CreatePair("old");
         _maintenance.Track(_root);
 
         File.Move(IoPath.Combine(_root, "old.adp"), IoPath.Combine(_root, "new.adp"));
 
+        // Act and assert, step by step.
         var (_, payload) = await WaitForMutation("Move");
         Assert.Equal(("old.adp", "new.adp"), payload);
         // Moved, never dropped: the problems were not re-reported as unchecked.
@@ -85,6 +91,7 @@ public class ProblemMaintenanceTests : IDisposable
     [Fact]
     public async Task RapidChangesCoalesceIntoOneValidation()
     {
+        // Arrange.
         CreatePair("busy");
         _maintenance.Track(_root);
 
@@ -93,6 +100,7 @@ public class ProblemMaintenanceTests : IDisposable
             File.AppendAllText(IoPath.Combine(_root, "busy.mm"), " more");
         }
 
+        // Act and assert, step by step.
         await WaitForMutation("ReplaceFor");
         await Task.Delay(SettleDelay + SettleDelay, TestContext.Current.CancellationToken);
         Assert.Equal(1, _validator.Calls);
@@ -101,11 +109,13 @@ public class ProblemMaintenanceTests : IDisposable
     [Fact]
     public async Task AChangeToAFileNoTypeClaims_IsIgnored()
     {
+        // Arrange.
         CreatePair("real");
         _maintenance.Track(_root);
 
         File.WriteAllText(IoPath.Combine(_root, "notes.txt"), "just notes");
 
+        // Act and assert, step by step.
         // The real pair's change proves events flow; the .txt must not have caused anything.
         File.AppendAllText(IoPath.Combine(_root, "real.mm"), " and more");
         var (_, payload) = await WaitForMutation("ReplaceFor");

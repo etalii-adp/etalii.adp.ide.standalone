@@ -45,34 +45,42 @@ public class DiagramFilePairTests : IDisposable
     [Fact]
     public void SiblingOf_ARegistrationWhoseTypeKeepsABody_NamesTheSibling()
     {
+        // Act.
         var adp = WriteRegistration("domain", Mindmap);
 
+        // Assert.
         Assert.Equal(IoPath.Combine(_root, "domain.mm"), DiagramFilePair.SiblingOf(adp, _catalog));
     }
 
     [Fact]
     public void SiblingOf_ARegistrationWhoseTypeKeepsNoBody_IsNull()
     {
+        // Act.
         var adp = WriteRegistration("classes", ClassDiagram);
 
+        // Assert.
         Assert.Null(DiagramFilePair.SiblingOf(adp, _catalog));
     }
 
     [Fact]
     public void SiblingOf_AnUnknownMimeType_IsNull()
     {
+        // Arrange and act.
         var adp = IoPath.Combine(_root, "mystery.adp");
         File.WriteAllText(adp, "nobody/knows\n");
 
+        // Assert.
         Assert.Null(DiagramFilePair.SiblingOf(adp, _catalog));
     }
 
     [Fact]
     public void SiblingOf_APlainFile_IsNull()
     {
+        // Arrange and act.
         var txt = IoPath.Combine(_root, "notes.txt");
         File.WriteAllText(txt, "freeplane/mindmap\n"); // the content is not what makes a registration file
 
+        // Assert.
         Assert.Null(DiagramFilePair.SiblingOf(txt, _catalog));
     }
 
@@ -81,10 +89,13 @@ public class DiagramFilePairTests : IDisposable
     [Fact]
     public async Task Create_WithASibling_WritesBothFiles()
     {
+        // Arrange.
         var command = new CreateDiagramFileCommand(_root, "domain.adp", "freeplane/mindmap", "domain.mm", "<map/>");
 
+        // Act.
         var result = await _history.ExecuteAsync(command, TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(result.IsSuccess, result.Error);
         Assert.Equal("freeplane/mindmap\n", File.ReadAllText(IoPath.Combine(_root, "domain.adp")));
         Assert.Equal("<map/>", File.ReadAllText(IoPath.Combine(_root, "domain.mm")));
@@ -93,13 +104,16 @@ public class DiagramFilePairTests : IDisposable
     [Fact]
     public async Task Create_WhenTheSiblingNameIsTaken_LeavesNeitherBehind()
     {
+        // Arrange.
         // The registration file would have been created fine; the sibling's name is what
         // collides. A half-created pair must never be observable (Requirement 1.6).
         File.WriteAllText(IoPath.Combine(_root, "domain.mm"), "someone else's map");
         var command = new CreateDiagramFileCommand(_root, "domain.adp", "freeplane/mindmap", "domain.mm", "<map/>");
 
+        // Act.
         var result = await _history.ExecuteAsync(command, TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.False(result.IsSuccess);
         Assert.False(File.Exists(IoPath.Combine(_root, "domain.adp")), "the registration file was left behind");
         Assert.Equal("someone else's map", File.ReadAllText(IoPath.Combine(_root, "domain.mm")));
@@ -109,11 +123,14 @@ public class DiagramFilePairTests : IDisposable
     [Fact]
     public async Task Create_WithASibling_UndoRemovesBoth()
     {
+        // Arrange.
         var command = new CreateDiagramFileCommand(_root, "domain.adp", "freeplane/mindmap", "domain.mm", "<map/>");
         await _history.ExecuteAsync(command, TestContext.Current.CancellationToken);
 
+        // Act.
         var undone = await _history.UndoAsync(TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(undone.IsSuccess, undone.Error);
         Assert.False(File.Exists(IoPath.Combine(_root, "domain.adp")));
         Assert.False(File.Exists(IoPath.Combine(_root, "domain.mm")));
@@ -122,10 +139,13 @@ public class DiagramFilePairTests : IDisposable
     [Fact]
     public async Task Create_WithoutASibling_BehavesExactlyAsBefore()
     {
+        // Arrange.
         var command = new CreateDiagramFileCommand(_root, "classes.adp", "uml/class");
 
+        // Act.
         var result = await _history.ExecuteAsync(command, TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(result.IsSuccess, result.Error);
         Assert.Single(Directory.GetFiles(_root));
     }
@@ -135,11 +155,14 @@ public class DiagramFilePairTests : IDisposable
     [Fact]
     public async Task Rename_ARegistrationFile_RenamesItsSiblingWithIt()
     {
+        // Arrange.
         var adp = WriteRegistration("domain", Mindmap);
         File.WriteAllText(IoPath.Combine(_root, "domain.mm"), "<map/>");
 
+        // Act.
         var result = await _history.ExecuteAsync(new RenameEntryCommand(adp, "renamed.adp"), TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(result.IsSuccess, result.Error);
         Assert.True(File.Exists(IoPath.Combine(_root, "renamed.adp")));
         Assert.True(File.Exists(IoPath.Combine(_root, "renamed.mm")));
@@ -149,12 +172,15 @@ public class DiagramFilePairTests : IDisposable
     [Fact]
     public async Task Rename_ARegistrationFile_UndoRestoresBothNames()
     {
+        // Arrange.
         var adp = WriteRegistration("domain", Mindmap);
         File.WriteAllText(IoPath.Combine(_root, "domain.mm"), "<map/>");
         await _history.ExecuteAsync(new RenameEntryCommand(adp, "renamed.adp"), TestContext.Current.CancellationToken);
 
+        // Act.
         var undone = await _history.UndoAsync(TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(undone.IsSuccess, undone.Error);
         Assert.True(File.Exists(IoPath.Combine(_root, "domain.adp")));
         Assert.True(File.Exists(IoPath.Combine(_root, "domain.mm")));
@@ -164,12 +190,15 @@ public class DiagramFilePairTests : IDisposable
     [Fact]
     public async Task Rename_WhenTheSiblingsNewNameIsTaken_ChangesNothing()
     {
+        // Arrange.
         var adp = WriteRegistration("domain", Mindmap);
         File.WriteAllText(IoPath.Combine(_root, "domain.mm"), "<map/>");
         File.WriteAllText(IoPath.Combine(_root, "renamed.mm"), "in the way");
 
+        // Act.
         var result = await _history.ExecuteAsync(new RenameEntryCommand(adp, "renamed.adp"), TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.False(result.IsSuccess);
         Assert.Contains("renamed.mm", result.Error, StringComparison.Ordinal);
         Assert.True(File.Exists(adp), "the registration file was moved although its sibling could not follow");
@@ -179,11 +208,14 @@ public class DiagramFilePairTests : IDisposable
     [Fact]
     public async Task Rename_ARegistrationWhoseBodyIsMissing_RenamesTheRegistrationAlone()
     {
+        // Arrange.
         // Requirement 2.12: a missing body is a recoverable state, not a broken diagram.
         var adp = WriteRegistration("domain", Mindmap);
 
+        // Act.
         var result = await _history.ExecuteAsync(new RenameEntryCommand(adp, "renamed.adp"), TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(result.IsSuccess, result.Error);
         Assert.True(File.Exists(IoPath.Combine(_root, "renamed.adp")));
     }
@@ -193,11 +225,14 @@ public class DiagramFilePairTests : IDisposable
     [Fact]
     public async Task Delete_ARegistrationFile_DeletesItsSiblingWithIt()
     {
+        // Arrange.
         var adp = WriteRegistration("domain", Mindmap);
         File.WriteAllText(IoPath.Combine(_root, "domain.mm"), "<map/>");
 
+        // Act.
         var result = await _history.ExecuteAsync(new DeleteEntryCommand(adp), TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(result.IsSuccess, result.Error);
         Assert.False(File.Exists(adp));
         Assert.False(File.Exists(IoPath.Combine(_root, "domain.mm")), "the body was orphaned");
@@ -206,10 +241,13 @@ public class DiagramFilePairTests : IDisposable
     [Fact]
     public async Task Delete_ARegistrationWithNoBody_DeletesJustTheRegistration()
     {
+        // Arrange.
         var adp = WriteRegistration("classes", ClassDiagram);
 
+        // Act.
         var result = await _history.ExecuteAsync(new DeleteEntryCommand(adp), TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(result.IsSuccess, result.Error);
         Assert.Empty(Directory.GetFiles(_root));
     }
@@ -228,11 +266,14 @@ public class DiagramFilePairTests : IDisposable
     [Fact]
     public void BodyOf_NoHeaders_IsTheDerivedSibling_AndIsOwned()
     {
+        // Arrange.
         // The case every existing type is in, which must behave exactly as it always has.
         var adp = WriteRegistration("domain", Mindmap);
 
+        // Act.
         var body = DiagramFilePair.BodyOf(adp, _catalog, _root);
 
+        // Assert.
         Assert.NotNull(body);
         Assert.Equal(IoPath.Combine(_root, "domain.mm"), body!.Value.Path);
         Assert.True(body.Value.IsOwned);
@@ -242,10 +283,13 @@ public class DiagramFilePairTests : IDisposable
     [Fact]
     public void BodyOf_ABodyHeader_ResolvesAgainstTheProjectRoot_AndIsNotOwned()
     {
+        // Arrange.
         var adp = WriteRegistrationNamingBody("containers", Mindmap, "shared/model.mm", "containers");
 
+        // Act.
         var body = DiagramFilePair.BodyOf(adp, _catalog, _root);
 
+        // Assert.
         Assert.NotNull(body);
         Assert.Equal(IoPath.Combine(_root, "shared", "model.mm"), body!.Value.Path);
         Assert.Equal("containers", body.Value.ViewKey);
@@ -255,11 +299,14 @@ public class DiagramFilePairTests : IDisposable
     [Fact]
     public void BodyOf_AViewHeaderWithoutABody_StillNamesTheView_AndStaysOwned()
     {
+        // Arrange.
         var path = IoPath.Combine(_root, "solo.adp");
         File.WriteAllText(path, Mindmap.Origin.MimeType + "\nview: context\n");
 
+        // Act.
         var body = DiagramFilePair.BodyOf(path, _catalog, _root);
 
+        // Assert.
         Assert.NotNull(body);
         Assert.Equal("context", body!.Value.ViewKey);
         Assert.True(body.Value.IsOwned);
@@ -284,11 +331,14 @@ public class DiagramFilePairTests : IDisposable
     [Fact]
     public void BodyOf_StopsScanningHeaders_AtTheFirstLineThatIsNotOne()
     {
+        // Arrange.
         var path = IoPath.Combine(_root, "prose.adp");
         File.WriteAllText(path, Mindmap.Origin.MimeType + "\nthis is not a header\nbody: shared/model.mm\n");
 
+        // Act.
         var body = DiagramFilePair.BodyOf(path, _catalog, _root);
 
+        // Assert.
         Assert.NotNull(body);
         Assert.True(body!.Value.IsOwned, "a body: line after prose must not be honoured");
     }
@@ -296,16 +346,19 @@ public class DiagramFilePairTests : IDisposable
     [Fact]
     public void SiblingOf_ARegistrationNamingABodyItDoesNotOwn_IsNull()
     {
+        // Act.
         // This is what stops a delete or a rename of one C4 view carrying off the shared model
         // that several other views also open.
         var adp = WriteRegistrationNamingBody("containers", Mindmap, "shared/model.mm");
 
+        // Assert.
         Assert.Null(DiagramFilePair.SiblingOf(adp, _catalog));
     }
 
     [Fact]
     public async Task Delete_ARegistrationNamingASharedBody_LeavesTheBodyAlone()
     {
+        // Arrange.
         // The safety property the header introduces: two registrations over one document, and
         // deleting one must not destroy the model the other still opens.
         Directory.CreateDirectory(IoPath.Combine(_root, "shared"));
@@ -313,8 +366,10 @@ public class DiagramFilePairTests : IDisposable
         File.WriteAllText(shared, "<map/>");
         var adp = WriteRegistrationNamingBody("containers", Mindmap, "shared/model.mm");
 
+        // Act.
         var result = await _history.ExecuteAsync(new DeleteEntryCommand(adp), TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.True(result.IsSuccess, result.Error);
         Assert.False(File.Exists(adp));
         Assert.True(File.Exists(shared), "deleting one view destroyed the shared model");

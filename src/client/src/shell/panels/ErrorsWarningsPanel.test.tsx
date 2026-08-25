@@ -97,9 +97,11 @@ beforeEach(() => {
 
 describe("visibleProblems", () => {
   it("filters by severity", () => {
+    // Arrange and act.
     const error = problem();
     const warning = problem({ severity: ProblemSeverity.WARNING, ruleId: "mindmap.unnamed-root" });
 
+    // Assert.
     expect(visibleProblems([error, warning], true, true)).toEqual([error, warning]);
     expect(visibleProblems([error, warning], true, false)).toEqual([error]);
     expect(visibleProblems([error, warning], false, true)).toEqual([warning]);
@@ -108,13 +110,16 @@ describe("visibleProblems", () => {
 
 describe("ErrorsWarningsPanel", () => {
   it("renders each problem with severity, message and path", () => {
+    // Arrange.
     contextState.problems = problemsOf(ProblemSetState.VALIDATED, [
       {},
       { severity: ProblemSeverity.WARNING, message: "The map 'flow' has an unnamed central topic.", path: { segments: ["docs", "flow.adp"] } as Problem["path"], ruleId: "mindmap.unnamed-root" },
     ]);
 
+    // Act.
     render(<ErrorsWarningsPanel />);
 
+    // Assert.
     expect(screen.getByText("'vendor/unheard-of' is not a known diagram type.")).toBeTruthy();
     expect(screen.getByText("strange.adp")).toBeTruthy();
     expect(screen.getByText("The map 'flow' has an unnamed central topic.")).toBeTruthy();
@@ -122,25 +127,32 @@ describe("ErrorsWarningsPanel", () => {
   });
 
   it("shows a line location beside the path", () => {
+    // Arrange.
     contextState.problems = problemsOf(ProblemSetState.VALIDATED, [
       { location: { location: { case: "line", value: 12 } } as Problem["location"] },
     ]);
 
+    // Act.
     render(<ErrorsWarningsPanel />);
 
+    // Assert.
     expect(screen.getByText("strange.adp:12")).toBeTruthy();
   });
 
   it("keeps the whole-set counts while a filter narrows the list", () => {
+    // Arrange.
     contextState.problems = problemsOf(ProblemSetState.VALIDATED, [
       {},
       { severity: ProblemSeverity.WARNING, message: "A warning.", ruleId: "mindmap.unnamed-root" },
     ]);
 
+    // Arrange, continued.
     render(<ErrorsWarningsPanel />);
 
+    // Act.
     fireEvent.click(screen.getByTitle("Hide warnings"));
 
+    // Assert.
     // The warning row is gone...
     expect(screen.queryByText("A warning.")).toBeNull();
     // ...but both counts still say what the whole set holds (Requirement 1.8).
@@ -149,6 +161,7 @@ describe("ErrorsWarningsPanel", () => {
   });
 
   it("says 'not checked yet' and 'no problems found' differently", () => {
+    // Act and assert, step by step.
     contextState.problems = problemsOf(ProblemSetState.NEVER_VALIDATED, []);
     const { rerender } = render(<ErrorsWarningsPanel />);
     expect(screen.getByText("Not checked yet.")).toBeTruthy();
@@ -161,38 +174,50 @@ describe("ErrorsWarningsPanel", () => {
   });
 
   it("shows progress while validating", () => {
+    // Arrange.
     contextState.problems = problemsOf(ProblemSetState.VALIDATING, [{}]);
 
+    // Act.
     render(<ErrorsWarningsPanel />);
 
+    // Assert.
     expect(screen.getByText(/Checking/)).toBeTruthy();
     // The old list stands while the new answer is computed.
     expect(screen.getByText("'vendor/unheard-of' is not a known diagram type.")).toBeTruthy();
   });
 
   it("says how many problems a truncated set is not showing", () => {
+    // Arrange.
     contextState.problems = problemsOf(ProblemSetState.VALIDATED, [{}, {}], { errorCount: 5, truncatedAt: 2 });
 
+    // Act.
     render(<ErrorsWarningsPanel />);
 
+    // Assert.
     expect(screen.getByText("3 more problems are not shown.")).toBeTruthy();
   });
 
   it("marks a stale row as stale", () => {
+    // Arrange.
     contextState.problems = problemsOf(ProblemSetState.VALIDATED, [{ stale: true }]);
 
+    // Act.
     render(<ErrorsWarningsPanel />);
 
+    // Assert.
     expect(screen.getByText("stale")).toBeTruthy();
     expect(screen.getByRole("option").className).toContain("problems-row-stale");
   });
 
   it("selects the panel itself when focus arrives from outside", () => {
+    // Arrange.
     contextState.problems = problemsOf(ProblemSetState.VALIDATED, [{}]);
 
+    // Act.
     render(<ErrorsWarningsPanel />);
     fireEvent.focus(screen.getByRole("option"));
 
+    // Assert.
     expect(select).toHaveBeenCalledTimes(1);
     const sent = select.mock.calls[0]![0]!;
     expect(sent.source).toBe(ContextSelectionSource.PROBLEMS);
@@ -200,13 +225,16 @@ describe("ErrorsWarningsPanel", () => {
   });
 
   it("opens the context menu from pushed actions on right-click", () => {
+    // Arrange.
     contextState.problems = problemsOf(ProblemSetState.VALIDATED, [{}]);
     contextState.selection = panelSelectionEcho();
     contextState.actions = [validateAllGroup()];
 
+    // Act.
     render(<ErrorsWarningsPanel />);
     fireEvent.contextMenu(screen.getByRole("listbox"));
 
+    // Assert.
     expect(screen.getByRole("menuitem", { name: /Validate all/ })).toBeTruthy();
     // Selecting with CONTEXT_MENU is what asked the backend for these actions.
     const sent = select.mock.calls.at(-1)![0]!;
@@ -215,14 +243,17 @@ describe("ErrorsWarningsPanel", () => {
   });
 
   it("executes a menu action against the panel source", () => {
+    // Arrange.
     contextState.problems = problemsOf(ProblemSetState.VALIDATED, [{}]);
     contextState.selection = panelSelectionEcho();
     contextState.actions = [validateAllGroup()];
 
+    // Act.
     render(<ErrorsWarningsPanel />);
     fireEvent.contextMenu(screen.getByRole("listbox"));
     fireEvent.click(screen.getByRole("menuitem", { name: /Validate all/ }));
 
+    // Assert.
     expect(executeAction).toHaveBeenCalledTimes(1);
     const [actionId, source] = executeAction.mock.calls[0] as unknown as [string, { source: { case: string } }];
     expect(actionId).toBe("problems.validate.all");
@@ -230,6 +261,7 @@ describe("ErrorsWarningsPanel", () => {
   });
 
   it("runs a pushed shortcut against the panel - and only a pushed one", () => {
+    // Arrange.
     contextState.problems = problemsOf(ProblemSetState.VALIDATED, [{}]);
     contextState.selection = panelSelectionEcho();
     contextState.actions = [validateAllGroup()];
@@ -237,6 +269,7 @@ describe("ErrorsWarningsPanel", () => {
     render(<ErrorsWarningsPanel />);
     const list = screen.getByRole("listbox");
 
+    // Act and assert, step by step.
     fireEvent.keyDown(list, { key: "B", ctrlKey: true, shiftKey: true });
     expect(executeAction).toHaveBeenCalledWith("problems.validate.all", expect.anything());
 
@@ -246,15 +279,18 @@ describe("ErrorsWarningsPanel", () => {
   });
 
   it("keeps exactly one row in the tab order", () => {
+    // Arrange.
     contextState.problems = problemsOf(ProblemSetState.VALIDATED, [{}, { message: "Second.", path: { segments: ["b.adp"] } as Problem["path"] }]);
 
     render(<ErrorsWarningsPanel />);
 
+    // Act and assert, step by step.
     const rows = screen.getAllByRole("option");
     expect(rows.map((row) => row.tabIndex)).toEqual([0, -1]);
   });
 
   it("moves with the arrows and reveals with Enter, driven by real key events", () => {
+    // Arrange.
     contextState.problems = problemsOf(ProblemSetState.VALIDATED, [
       {},
       { message: "Second.", path: { segments: ["docs", "b.adp"] } as Problem["path"] },
@@ -265,6 +301,7 @@ describe("ErrorsWarningsPanel", () => {
     const rows = screen.getAllByRole("option");
     rows[0]!.focus();
 
+    // Act and assert, step by step.
     fireEvent.keyDown(list, { key: "ArrowDown" });
     expect(document.activeElement).toBe(rows[1]);
 
@@ -276,29 +313,36 @@ describe("ErrorsWarningsPanel", () => {
   });
 
   it("acts on the row the same tick's focus just reached", () => {
+    // Arrange.
     // The choice dialog's race: focus and keydown in one tick, with no re-render between.
     contextState.problems = problemsOf(ProblemSetState.VALIDATED, [
       {},
       { message: "Second.", path: { segments: ["b.adp"] } as Problem["path"] },
     ]);
 
+    // Arrange, continued.
     render(<ErrorsWarningsPanel />);
     const list = screen.getByRole("listbox");
     const rows = screen.getAllByRole("option");
 
+    // Act.
     // Focus the second row and press Enter without letting React flush focusedKey state.
     rows[1]!.focus();
     fireEvent.keyDown(list, { key: "Enter" });
 
+    // Assert.
     expect(revealPath).toHaveBeenCalledWith(["b.adp"]);
   });
 
   it("double-clicking a row reveals its file", () => {
+    // Arrange.
     contextState.problems = problemsOf(ProblemSetState.VALIDATED, [{}]);
 
+    // Act.
     render(<ErrorsWarningsPanel />);
     fireEvent.doubleClick(screen.getByRole("option"));
 
+    // Assert.
     expect(revealPath).toHaveBeenCalledWith(["strange.adp"]);
   });
 });

@@ -47,50 +47,66 @@ describe("useProjectShortcuts", () => {
   });
 
   it("runs the matched action on Ctrl+Z", () => {
+    // Arrange.
     render(createElement(Harness));
 
+    // Act.
     fireEvent.keyDown(document.body, { key: "z", ctrlKey: true });
 
+    // Assert.
     expect(executeAction).toHaveBeenCalledWith("history.undo", PROJECT_SOURCE);
   });
 
   it("reaches redo on Ctrl+Shift+Z, the alias normalised to Ctrl+Y", () => {
+    // Arrange.
     render(createElement(Harness));
 
+    // Act.
     fireEvent.keyDown(document.body, { key: "z", ctrlKey: true, shiftKey: true });
 
+    // Assert.
     expect(executeAction).toHaveBeenCalledWith("history.redo", PROJECT_SOURCE);
   });
 
   it("leaves a key it does not match entirely alone", () => {
+    // Arrange.
     render(createElement(Harness));
 
+    // Act.
     fireEvent.keyDown(document.body, { key: "a", ctrlKey: true });
 
+    // Assert.
     expect(executeAction).not.toHaveBeenCalled();
   });
 
   it("ignores the shortcut while typing in an input", () => {
+    // Arrange.
     render(createElement(Harness));
     const input = document.createElement("input");
     document.body.appendChild(input);
 
+    // Act.
     fireEvent.keyDown(input, { key: "z", ctrlKey: true });
 
+    // Assert.
     expect(executeAction).not.toHaveBeenCalled();
   });
 
   it("ignores the shortcut while typing in a textarea", () => {
+    // Arrange.
     render(createElement(Harness));
     const textarea = document.createElement("textarea");
     document.body.appendChild(textarea);
 
+    // Act.
     fireEvent.keyDown(textarea, { key: "z", ctrlKey: true });
 
+    // Assert.
     expect(executeAction).not.toHaveBeenCalled();
   });
 
   it("ignores the shortcut inside a contenteditable surface", () => {
+    // Arrange.
     render(createElement(Harness));
     const editable = document.createElement("div");
     editable.setAttribute("contenteditable", "true");
@@ -98,17 +114,22 @@ describe("useProjectShortcuts", () => {
     Object.defineProperty(editable, "isContentEditable", { value: true, configurable: true });
     document.body.appendChild(editable);
 
+    // Act.
     fireEvent.keyDown(editable, { key: "z", ctrlKey: true });
 
+    // Assert.
     expect(executeAction).not.toHaveBeenCalled();
   });
 
   it("ignores the shortcut while a modal prompt is open", () => {
+    // Arrange.
     state.prompt = { interactionId: undefined, prompt: { case: "inputDialog", value: {} } } as unknown as ContextPrompt;
     render(createElement(Harness));
 
+    // Act.
     fireEvent.keyDown(document.body, { key: "z", ctrlKey: true });
 
+    // Assert.
     expect(executeAction).not.toHaveBeenCalled();
   });
 });

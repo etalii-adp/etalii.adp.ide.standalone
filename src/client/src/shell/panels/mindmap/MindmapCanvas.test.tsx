@@ -70,39 +70,50 @@ describe("MindmapCanvas", () => {
   });
 
   it("renders a node per streamed element", () => {
+    // Act.
     const { container } = render(<MindmapCanvas {...props} />);
 
+    // Assert.
     expect(container.querySelectorAll(".mindmap-node")).toHaveLength(2);
     expect(container.textContent).toContain("Root");
     expect(container.textContent).toContain("Alpha");
   });
 
   it("gives the surface the keyboard when a node is clicked", () => {
+    // Arrange.
     // Found by the diagram-workspace-tabs manual pass: clicking an SVG child shape does not
     // reliably move DOM focus into the SVG, so every shortcut kept landing in the explorer.
     const { container } = render(<MindmapCanvas {...props} />);
 
+    // Act.
     fireEvent.click(container.querySelectorAll(".mindmap-node")[1]);
 
+    // Assert.
     expect(document.activeElement).toBe(container.querySelector(".mindmap-canvas-surface"));
   });
 
   it("says the diagram is no longer available, naming its path, when the stream failed for good", () => {
+    // Arrange.
     // diagram-workspace-tabs Requirement 5.1: the tab remains and explains itself - never a
     // crash, a spinner, or a silently frozen canvas.
     currentFailed = true;
 
+    // Act.
     const { container } = render(<MindmapCanvas {...props} />);
 
+    // Assert.
     expect(container.textContent).toContain("This diagram is no longer available at docs/map.adp.");
     expect(container.querySelectorAll(".mindmap-node")).toHaveLength(0);
   });
 
   it("reports a nested file->node selection when a node is clicked", () => {
+    // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
 
+    // Act.
     fireEvent.click(container.querySelectorAll(".mindmap-node")[1]);
 
+    // Assert.
     expect(select).toHaveBeenCalledTimes(1);
     const selection = select.mock.calls[0][0];
     expect(selection.id.source.value.value).toEqual(props.entryId); // the file
@@ -114,11 +125,14 @@ describe("MindmapCanvas", () => {
   });
 
   it("forwards a structural key against the focused node as a shortcut", () => {
+    // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
     fireEvent.click(container.querySelectorAll(".mindmap-node")[0]); // focus Root
 
+    // Act.
     fireEvent.keyDown(container.querySelector(".mindmap-canvas-surface")!, { key: "Insert" });
 
+    // Assert.
     expect(executeShortcut).toHaveBeenCalledTimes(1);
     const [shortcut, source] = executeShortcut.mock.calls[0];
     expect(shortcut.key).toBe("Insert");
@@ -126,32 +140,42 @@ describe("MindmapCanvas", () => {
   });
 
   it("maps Tab to the child action's Insert key, not to an action", () => {
+    // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
     fireEvent.click(container.querySelectorAll(".mindmap-node")[0]);
 
+    // Act.
     fireEvent.keyDown(container.querySelector(".mindmap-canvas-surface")!, { key: "Tab" });
 
+    // Assert.
     expect(executeShortcut.mock.calls[0][0].key).toBe("Insert");
   });
 
   it("ignores a key that carries no structural meaning", () => {
+    // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
     fireEvent.click(container.querySelectorAll(".mindmap-node")[0]);
 
+    // Act.
     fireEvent.keyDown(container.querySelector(".mindmap-canvas-surface")!, { key: "x" });
 
+    // Assert.
     expect(executeShortcut).not.toHaveBeenCalled();
   });
 
   it("does nothing on a key when no node is focused", () => {
+    // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
 
+    // Act.
     fireEvent.keyDown(container.querySelector(".mindmap-canvas-surface")!, { key: "Delete" });
 
+    // Assert.
     expect(executeShortcut).not.toHaveBeenCalled();
   });
 
   it("follows a pushed selection to focus the matching node", () => {
+    // Arrange.
     currentSelection = {
       id: { source: { case: "entryId", value: { value: props.entryId } } },
       detail: { case: "child", value: { id: { source: { case: "elementId", value: { value: "a" } } }, detail: { case: "none" } } },
@@ -159,11 +183,13 @@ describe("MindmapCanvas", () => {
 
     const { container } = render(<MindmapCanvas {...props} />);
 
+    // Act and assert, step by step.
     const alpha = container.querySelectorAll(".mindmap-node")[1];
     expect(alpha.classList.contains("mindmap-node-focused")).toBe(true);
   });
 
   it("draws a bezier from the parent's near edge, vertically centred, to the child's near edge", () => {
+    // Arrange.
     // Sizes come from the payload, so the anchors sit on the measured edges - never a
     // centre-to-centre line cutting through the boxes.
     currentModel = seed(
@@ -174,6 +200,7 @@ describe("MindmapCanvas", () => {
 
     const { container } = render(<MindmapCanvas {...props} />);
 
+    // Act and assert, step by step.
     const edges = [...container.querySelectorAll(".mindmap-edge")];
     expect(edges).toHaveLength(2); // the root has no parent to draw to
     expect(edges.every((edge) => edge.tagName === "path")).toBe(true);
@@ -185,10 +212,12 @@ describe("MindmapCanvas", () => {
   });
 
   it("draws each node box at the size the backend measured", () => {
+    // Arrange.
     currentModel = seed(node("root", "Root", 0, 0, "", 100, 40), node("a", "Alpha", 200, -20, "root", 160, 48));
 
     const { container } = render(<MindmapCanvas {...props} />);
 
+    // Act and assert, step by step.
     const rect = container.querySelectorAll(".mindmap-node")[1].querySelector("rect")!;
     expect(rect.getAttribute("x")).toBe("-80");
     expect(rect.getAttribute("y")).toBe("-24");
@@ -197,56 +226,70 @@ describe("MindmapCanvas", () => {
   });
 
   it("clicking the empty canvas deselects", () => {
+    // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
     fireEvent.click(container.querySelectorAll(".mindmap-node")[1]); // select Alpha first
     select.mockClear();
     moveElement.mockClear();
 
+    // Act.
     fireEvent.click(container.querySelector(".mindmap-canvas-surface")!);
 
+    // Assert.
     expect(select).toHaveBeenCalledWith(null);
     expect(container.querySelectorAll(".mindmap-node-focused")).toHaveLength(0);
   });
 
   it("dragging one node onto another moves it there, and does not also select", () => {
+    // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
     const [root, alpha] = [...container.querySelectorAll(".mindmap-node")];
 
+    // Act.
     fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
     fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 40, clientY: 0 });
     fireEvent.mouseUp(root);
     fireEvent.click(alpha); // the click that trails the gesture
 
+    // Assert.
     expect(moveElement).toHaveBeenCalledWith("a", "root");
     expect(select).not.toHaveBeenCalled();
   });
 
   it("a wobbly click stays a click: no move below the drag threshold", () => {
+    // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
     const [root, alpha] = [...container.querySelectorAll(".mindmap-node")];
 
+    // Act.
     fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
     fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 121, clientY: -19 });
     fireEvent.mouseUp(root);
 
+    // Assert.
     expect(moveElement).not.toHaveBeenCalled();
   });
 
   it("releasing a drag over empty canvas moves nothing", () => {
+    // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
     const alpha = container.querySelectorAll(".mindmap-node")[1];
 
+    // Act.
     fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
     fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 10, clientY: 10 });
     fireEvent.mouseUp(container.querySelector(".mindmap-canvas-surface")!);
 
+    // Assert.
     expect(moveElement).not.toHaveBeenCalled();
   });
 
   it("highlights the node a drag is held over, until the drop lands", () => {
+    // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
     const [root, alpha] = [...container.querySelectorAll(".mindmap-node")];
 
+    // Act and assert, step by step.
     fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
     fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 40, clientY: 0 });
     fireEvent.mouseOver(root);
@@ -258,9 +301,11 @@ describe("MindmapCanvas", () => {
   });
 
   it("never marks the dragged node itself, and an idle hover marks nothing", () => {
+    // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
     const [root, alpha] = [...container.querySelectorAll(".mindmap-node")];
 
+    // Act and assert, step by step.
     fireEvent.mouseOver(root); // no drag in flight
     expect(root.classList.contains("mindmap-node-drop-target")).toBe(false);
 
@@ -271,9 +316,11 @@ describe("MindmapCanvas", () => {
   });
 
   it("shows the drag's outcome mid-drag: a ghost at the pointer, a preview connector to the candidate parent", () => {
+    // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
     const [root, alpha] = [...container.querySelectorAll(".mindmap-node")];
 
+    // Act and assert, step by step.
     fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
     expect(container.querySelector("[data-testid=mindmap-drag-preview]")).toBeNull(); // nothing until it moves
 
@@ -294,10 +341,12 @@ describe("MindmapCanvas", () => {
   });
 
   it("does not offer a node inside the dragged branch as a drop target", () => {
+    // Arrange.
     currentModel = seed(node("root", "Root", 0, 0), node("a", "Alpha", 120, -20, "root"), node("b", "Beta", 240, -20, "a"));
     const { container } = render(<MindmapCanvas {...props} />);
     const beta = [...container.querySelectorAll(".mindmap-node")][2];
 
+    // Act and assert, step by step.
     fireEvent.mouseDown(container.querySelectorAll(".mindmap-node")[1], { clientX: 120, clientY: -20 });
     fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 40, clientY: 0 });
     fireEvent.mouseOver(beta); // Beta sits inside Alpha's branch: the move would be refused
@@ -306,6 +355,7 @@ describe("MindmapCanvas", () => {
   });
 
   it("executes a toolbox entry's action against the node it is dropped on", () => {
+    // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
     const root = container.querySelectorAll(".mindmap-node")[0];
     const dataTransfer = {
@@ -314,6 +364,7 @@ describe("MindmapCanvas", () => {
       getData: (type: string) => (type === "application/x-adp-toolbox-item" ? "mindmap.add-child" : ""),
     };
 
+    // Act and assert, step by step.
     fireEvent.dragOver(root, { dataTransfer });
     expect(root.classList.contains("mindmap-node-drop-target")).toBe(true);
 
@@ -327,10 +378,12 @@ describe("MindmapCanvas", () => {
   });
 
   it("ignores a drag that is not a toolbox entry", () => {
+    // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
     const root = container.querySelectorAll(".mindmap-node")[0];
     const dataTransfer = { types: ["text/plain"], dropEffect: "", getData: () => "" };
 
+    // Act and assert, step by step.
     fireEvent.dragOver(root, { dataTransfer });
     expect(root.classList.contains("mindmap-node-drop-target")).toBe(false);
 
@@ -339,11 +392,13 @@ describe("MindmapCanvas", () => {
   });
 
   it("right-clicking a node selects it with the menu gesture, and the menu opens on the backend's answer", () => {
+    // Arrange.
     const { container, rerender } = render(<MindmapCanvas {...props} />);
     const alpha = container.querySelectorAll(".mindmap-node")[1];
 
     fireEvent.contextMenu(alpha);
 
+    // Act and assert, step by step.
     // The selection went out carrying the context-menu gesture...
     expect(select).toHaveBeenCalledTimes(1);
     const inner = select.mock.calls[0][0].detail.value;
@@ -376,10 +431,12 @@ describe("MindmapCanvas", () => {
     (container.querySelector(".mindmap-canvas-surface")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
 
   it("zooms in about the pointer on a wheel up, and back out on a wheel down", () => {
+    // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
     const surface = container.querySelector(".mindmap-canvas-surface")!;
     const [, , wBefore] = viewBoxOf(container);
 
+    // Act and assert, step by step.
     fireEvent.wheel(surface, { deltaY: -100 });
     const [, , wIn] = viewBoxOf(container);
     expect(wIn).toBeLessThan(wBefore);
@@ -390,6 +447,7 @@ describe("MindmapCanvas", () => {
   });
 
   it("pans with a background drag, and the trailing click does not deselect", () => {
+    // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
     const surface = container.querySelector(".mindmap-canvas-surface")!;
     const [xBefore, yBefore] = viewBoxOf(container);
@@ -399,6 +457,7 @@ describe("MindmapCanvas", () => {
     fireEvent.mouseUp(surface);
     fireEvent.click(surface); // the click that trails the pan
 
+    // Act and assert, step by step.
     const [xAfter, yAfter] = viewBoxOf(container);
     // jsdom has no layout, so one pixel maps to one canvas unit: the view moved opposite
     // the pointer, and the selection was left alone.
@@ -408,19 +467,23 @@ describe("MindmapCanvas", () => {
   });
 
   it("a drag that starts on a node never pans the view", () => {
+    // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
     const surface = container.querySelector(".mindmap-canvas-surface")!;
     const alpha = container.querySelectorAll(".mindmap-node")[1];
     const before = viewBoxOf(container);
 
+    // Act.
     fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
     fireEvent.mouseMove(surface, { clientX: 60, clientY: 40 });
     fireEvent.mouseUp(surface);
 
+    // Assert.
     expect(viewBoxOf(container)).toEqual(before);
   });
 
   it("registers zoom and fit for the ribbon, and Fit to View hands the window back to the content", async () => {
+    // Act and assert, step by step.
     let controls: DiagramViewControls | null = null;
     function Probe() {
       controls = useDiagramViewControls();
@@ -443,11 +506,13 @@ describe("MindmapCanvas", () => {
   });
 
   it("reports the settled viewport to the backend", async () => {
+    // Arrange and act.
     const reportView = vi.fn();
     currentReportView = reportView;
     try {
       render(<MindmapCanvas {...props} />);
 
+    // Assert.
       await waitFor(() => expect(reportView).toHaveBeenCalled(), { timeout: 2000 });
       const viewport = reportView.mock.calls.at(-1)![0];
       expect(viewport.maxX).toBeGreaterThan(viewport.minX);
@@ -458,6 +523,7 @@ describe("MindmapCanvas", () => {
   });
 
   it("reports the area the svg actually shows, not the bare viewBox", async () => {
+    // Arrange.
     // The svg letterboxes: with the default preserveAspectRatio the viewBox is fitted inside
     // the element and centred, so the axis with room to spare displays more of the map than
     // the box asks for. Reporting the box alone had the backend cull nodes that were on screen
@@ -473,6 +539,7 @@ describe("MindmapCanvas", () => {
       const { container } = render(<MindmapCanvas {...props} />);
       const [boxX, boxY, boxW, boxH] = viewBoxOf(container);
 
+    // Act and assert, step by step.
       await waitFor(() => expect(reportView).toHaveBeenCalled(), { timeout: 2000 });
 
       const viewport = reportView.mock.calls.at(-1)![0];

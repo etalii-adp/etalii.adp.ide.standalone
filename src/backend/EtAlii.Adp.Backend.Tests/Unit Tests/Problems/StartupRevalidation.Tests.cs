@@ -37,20 +37,24 @@ public class StartupRevalidationTests : IDisposable
     [Fact]
     public async Task EveryKnownProjectIsRevalidated_Sequentially()
     {
+        // Arrange.
         var first = CreateProject("first");
         var second = CreateProject("second");
         _store.Roots = [first, second];
         var revalidation = new StartupRevalidation(_store, _projectValidator);
 
+        // Act.
         await revalidation.StartAsync(TestContext.Current.CancellationToken);
         await revalidation.Completion.WaitAsync(TestContext.Current.CancellationToken);
 
+        // Assert.
         Assert.Equal([first, second], _store.Replaced);
     }
 
     [Fact]
     public async Task AnOpenedProjectJumpsTheQueue()
     {
+        // Arrange.
         var first = CreateProject("first");
         var second = CreateProject("second");
         var third = CreateProject("third");
@@ -58,6 +62,7 @@ public class StartupRevalidationTests : IDisposable
         _validator.HoldFirstCall = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var revalidation = new StartupRevalidation(_store, _projectValidator);
 
+        // Act.
         await revalidation.StartAsync(TestContext.Current.CancellationToken);
         while (_validator.Calls == 0)
         {
@@ -67,6 +72,7 @@ public class StartupRevalidationTests : IDisposable
         _validator.HoldFirstCall.SetResult();
         await revalidation.Completion.WaitAsync(TestContext.Current.CancellationToken);
 
+        // Assert.
         // The opened project's freshness is the one the user can see.
         Assert.Equal([first, third, second], _store.Replaced);
     }
@@ -74,14 +80,17 @@ public class StartupRevalidationTests : IDisposable
     [Fact]
     public async Task AMissingRootIsSkippedOnce_NeverRetried()
     {
+        // Arrange.
         var present = CreateProject("present");
         var missing = IoPath.Combine(_scratch, "not-there");
         _store.Roots = [missing, present];
         var revalidation = new StartupRevalidation(_store, _projectValidator);
 
+        // Act.
         await revalidation.StartAsync(TestContext.Current.CancellationToken);
         await revalidation.Completion.WaitAsync(TestContext.Current.CancellationToken);
 
+        // Assert.
         // The queue drained - a retry loop would never have let Completion finish.
         Assert.Equal([present], _store.Replaced);
     }
@@ -89,12 +98,14 @@ public class StartupRevalidationTests : IDisposable
     [Fact]
     public async Task StoppingAbandonsTheQueue()
     {
+        // Arrange.
         var first = CreateProject("first");
         var second = CreateProject("second");
         _store.Roots = [first, second];
         _validator.HoldFirstCall = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var revalidation = new StartupRevalidation(_store, _projectValidator);
 
+        // Act.
         await revalidation.StartAsync(TestContext.Current.CancellationToken);
         while (_validator.Calls == 0)
         {
@@ -104,6 +115,7 @@ public class StartupRevalidationTests : IDisposable
         _validator.HoldFirstCall.SetResult();
         await stopping;
 
+        // Assert.
         Assert.DoesNotContain(second, _store.Replaced);
     }
 

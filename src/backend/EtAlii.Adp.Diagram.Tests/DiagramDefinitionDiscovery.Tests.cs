@@ -26,6 +26,7 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
     [Fact]
     public void Discover_WithNullAssemblies_Throws()
     {
+        // Arrange, act and assert.
         Assert.Throws<ArgumentNullException>(() => _discovery.Discover(null!));
     }
 
@@ -34,8 +35,10 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
     [Fact]
     public void Discover_FindsAStaticDiagramClassWithAPublicStaticDefinition()
     {
+        // Arrange.
         var result = _discovery.Discover([AssemblyWith("Fixture.A", typeof(Valid.Diagram))]);
 
+        // Act and assert, step by step.
         var definition = Assert.Single(result);
         Assert.Equal(new DiagramOrigin("fixture", "valid"), definition.Origin);
         Assert.Equal("Valid Fixture", definition.Title);
@@ -44,29 +47,35 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
     [Fact]
     public void Discover_LogsEachDiscoveredTypeWithOriginTitleAndAssembly()
     {
+        // Act.
         _discovery.Discover([AssemblyWith("Fixture.A", typeof(Valid.Diagram))]);
 
+        // Assert.
         Assert.Contains("Discovered diagram type fixture/valid: Valid Fixture (Fixture.A)", _logger.Informations);
     }
 
     [Fact]
     public void Discover_LogsASummaryWithCountAndAssembliesScanned()
     {
+        // Arrange and act.
         _discovery.Discover([
             AssemblyWith("Fixture.A", typeof(Valid.Diagram)),
             AssemblyWith("Fixture.B", typeof(Zulu.Diagram)),
             AssemblyWith("Fixture.C"),
         ]);
 
+        // Assert.
         Assert.Contains("2 diagram types discovered across 3 assemblies", _logger.Informations);
     }
 
     [Fact]
     public void Discover_IgnoresTypesThatAreNotNamedDiagram()
     {
+        // Act.
         // Anything else in an assembly - this test class, for instance - is simply not a candidate.
         var result = _discovery.Discover([AssemblyWith("Fixture.A", typeof(DiagramDefinitionDiscoveryTests), typeof(Valid.Diagram))]);
 
+        // Assert.
         Assert.Single(result);
         Assert.Empty(_logger.Warnings);
     }
@@ -74,11 +83,13 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
     [Fact]
     public void Discover_AgainstTheRealTestAssembly_FindsTheValidFixtureAmongTheOthers()
     {
+        // Act.
         // The fixtures all live in this assembly, so a real scan sees them together: the valid
         // one and its duplicate collapse to one, the malformed ones are reported, the
         // non-static one is passed over. This is the closest thing to a real module scan.
         var result = _discovery.Discover([typeof(DiagramDefinitionDiscoveryTests).Assembly]);
 
+        // Assert.
         Assert.Contains(result, d => d.Origin == new DiagramOrigin("fixture", "valid"));
         Assert.Contains(result, d => d.Origin == new DiagramOrigin("alpha", "z"));
         Assert.Contains(result, d => d.Origin == new DiagramOrigin("zulu", "a"));
@@ -91,9 +102,11 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
     [Fact]
     public void Discover_OrdersByVendorThenType_RegardlessOfInputOrder()
     {
+        // Arrange.
         var forward = _discovery.Discover([AssemblyWith("A", typeof(Zulu.Diagram), typeof(Alpha.Diagram), typeof(Valid.Diagram))]);
         var backward = _discovery.Discover([AssemblyWith("A", typeof(Valid.Diagram), typeof(Alpha.Diagram), typeof(Zulu.Diagram))]);
 
+        // Act and assert, step by step.
         var expected = new[] { "alpha/z", "fixture/valid", "zulu/a" };
         Assert.Equal(expected, forward.Select(d => d.Origin.Key));
         Assert.Equal(expected, backward.Select(d => d.Origin.Key));
@@ -104,8 +117,10 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
     [Fact]
     public void Discover_SkipsADefinitionOfTheWrongType_AndSaysWhich()
     {
+        // Act.
         var result = _discovery.Discover([AssemblyWith("Fixture.A", typeof(WrongType.Diagram))]);
 
+        // Assert.
         Assert.Empty(result);
         var warning = Assert.Single(_logger.Warnings, w => w.Contains("malformed", StringComparison.Ordinal));
         Assert.Contains(typeof(WrongType.Diagram).FullName!, warning, StringComparison.Ordinal);
@@ -116,8 +131,10 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
     [Fact]
     public void Discover_SkipsADefinitionWhoseGetterThrows_AndReportsTheCause()
     {
+        // Act.
         var result = _discovery.Discover([AssemblyWith("Fixture.A", typeof(Throws.Diagram))]);
 
+        // Assert.
         Assert.Empty(result);
         var warning = Assert.Single(_logger.Warnings, w => w.Contains("malformed", StringComparison.Ordinal));
         // The getter's own message, not the TargetInvocationException wrapper's.
@@ -127,9 +144,11 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
     [Fact]
     public void Discover_PassesOverANonStaticClassNamedDiagram_Silently()
     {
+        // Act.
         // Not malformed - not a candidate at all, so it earns no warning.
         var result = _discovery.Discover([AssemblyWith("Fixture.A", typeof(NotStatic.Diagram))]);
 
+        // Assert.
         Assert.Empty(result);
         Assert.DoesNotContain(_logger.Warnings, w => w.Contains("malformed", StringComparison.Ordinal));
     }
@@ -137,8 +156,10 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
     [Fact]
     public void Discover_AMalformedCandidate_DoesNotStopTheValidOnesBeingFound()
     {
+        // Act.
         var result = _discovery.Discover([AssemblyWith("Fixture.A", typeof(Throws.Diagram), typeof(Valid.Diagram), typeof(WrongType.Diagram))]);
 
+        // Assert.
         Assert.Single(result);
     }
 
@@ -147,6 +168,7 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
     [Fact]
     public void Discover_OnAnOriginCollision_KeepsTheOrdinalFirstAssemblyAndWarnsNamingBoth()
     {
+        // Arrange.
         // Zeta carries the Valid fixture, Alpha the duplicate with the same origin. Alpha sorts
         // first, so its definition wins - even though Zeta was handed in first.
         var result = _discovery.Discover([
@@ -154,6 +176,7 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
             AssemblyWith("Alpha", typeof(Duplicate.Diagram)),
         ]);
 
+        // Act and assert, step by step.
         var definition = Assert.Single(result);
         Assert.Equal("Duplicate Of Valid", definition.Title);
 
@@ -167,6 +190,7 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
     [Fact]
     public void Discover_OnAnOriginCollision_TheOutcomeDoesNotDependOnInputOrder()
     {
+        // Arrange and act.
         var alphaFirst = _discovery.Discover([
             AssemblyWith("Alpha", typeof(Duplicate.Diagram)),
             AssemblyWith("Zeta", typeof(Valid.Diagram)),
@@ -176,6 +200,7 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
             AssemblyWith("Alpha", typeof(Duplicate.Diagram)),
         ]);
 
+        // Assert.
         Assert.Equal("Duplicate Of Valid", Assert.Single(alphaFirst).Title);
         Assert.Equal("Duplicate Of Valid", Assert.Single(zetaFirst).Title);
     }
@@ -185,10 +210,13 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
     [Fact]
     public void Discover_WhenAnAssemblyLoadsOnlyPartially_ScansTheTypesThatDidLoad()
     {
+        // Arrange.
         var partial = FakeAssembly.PartiallyLoadable("Fixture.Partial", [typeof(Valid.Diagram)], new FileNotFoundException("dep.dll"));
 
+        // Act.
         var result = _discovery.Discover([partial]);
 
+        // Assert.
         Assert.Single(result);
         Assert.Contains(_logger.Warnings, w => w.Contains("loaded only partially", StringComparison.Ordinal) && w.Contains("Fixture.Partial", StringComparison.Ordinal));
     }
@@ -196,10 +224,13 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
     [Fact]
     public void Discover_WhenAnAssemblyCannotBeEnumerated_SkipsItAndContinues()
     {
+        // Arrange.
         var broken = FakeAssembly.Broken("Fixture.Broken", new BadImageFormatException("corrupt"));
 
+        // Act.
         var result = _discovery.Discover([broken, AssemblyWith("Fixture.A", typeof(Valid.Diagram))]);
 
+        // Assert.
         Assert.Single(result);
         var warning = Assert.Single(_logger.Warnings);
         Assert.Contains("Fixture.Broken", warning, StringComparison.Ordinal);
@@ -213,8 +244,10 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
     [Fact]
     public void Discover_WithNoAssemblies_ReturnsEmptyAndWarns()
     {
+        // Act.
         var result = _discovery.Discover([]);
 
+        // Assert.
         Assert.Empty(result);
         Assert.Contains("0 diagram types discovered across 0 assemblies", _logger.Informations);
         Assert.Contains(_logger.Warnings, w => w.StartsWith("No diagram types were discovered", StringComparison.Ordinal));
@@ -223,8 +256,10 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
     [Fact]
     public void Discover_WithAssembliesButNoDiagramClasses_ReturnsEmptyAndWarns()
     {
+        // Act.
         var result = _discovery.Discover([AssemblyWith("Fixture.Empty", typeof(DiagramDefinitionDiscoveryTests))]);
 
+        // Assert.
         Assert.Empty(result);
         Assert.Contains(_logger.Warnings, w => w.StartsWith("No diagram types were discovered", StringComparison.Ordinal));
     }
@@ -232,8 +267,10 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
     [Fact]
     public void Discover_WhenSomethingIsFound_DoesNotRaiseTheNothingFoundWarning()
     {
+        // Act.
         _discovery.Discover([AssemblyWith("Fixture.A", typeof(Valid.Diagram))]);
 
+        // Assert.
         Assert.DoesNotContain(_logger.Warnings, w => w.StartsWith("No diagram types were discovered", StringComparison.Ordinal));
     }
 }

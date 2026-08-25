@@ -39,8 +39,10 @@ public class C4DocumentFactoryTests
     [MemberData(nameof(EveryViewKind))]
     public void EveryKind_ProducesBalancedBraces(C4ViewKind kind)
     {
+        // Act.
         var document = Create(kind);
 
+        // Assert.
         Assert.Equal(document.Count(c => c == '{'), document.Count(c => c == '}'));
     }
 
@@ -53,12 +55,14 @@ public class C4DocumentFactoryTests
     [InlineData(C4ViewKind.Deployment, "deployment payments \"Production\" \"deployment\"")]
     public void EachKind_DeclaresItsOwnViewScopedToWhatThatKindRequires(C4ViewKind kind, string expected)
     {
+        // Arrange, act and assert.
         Assert.Contains(expected, Create(kind), StringComparison.Ordinal);
     }
 
     [Fact]
     public void ALandscape_HasNoFocalSystem_WhichIsWhatDistinguishesItFromAContextDiagram()
     {
+        // Arrange, act and assert.
         // Requirement 9.6: a landscape is a context diagram without a focus. Scoping it to a
         // system would quietly turn it into one.
         Assert.DoesNotContain("systemLandscape payments", Create(C4ViewKind.SystemLandscape), StringComparison.Ordinal);
@@ -67,8 +71,10 @@ public class C4DocumentFactoryTests
     [Fact]
     public void AComponentView_ReachesOneLevelDeeper_BecauseItIsScopedToAContainer()
     {
+        // Act.
         var document = Create(C4ViewKind.Component);
 
+        // Assert.
         Assert.Contains("container \"Application\"", document, StringComparison.Ordinal);
         // Requirement 10.3: a container without a technology is a violation, so the placeholder
         // does not create one the user would immediately be warned about... it names the slot.
@@ -78,16 +84,19 @@ public class C4DocumentFactoryTests
     [Fact]
     public void ADeploymentView_GetsAnEnvironmentToBindTo()
     {
+        // Arrange, act and assert.
         Assert.Contains("deploymentEnvironment \"Production\"", Create(C4ViewKind.Deployment), StringComparison.Ordinal);
     }
 
     [Fact]
     public void ADynamicView_StartsWithNoInteractions_RatherThanIncludingEverything()
     {
+        // Act.
         // "include *" means something different on a dynamic view: its body is its ordered
         // interactions, and a new one has none yet (Requirement 7.5).
         var document = Create(C4ViewKind.Dynamic);
 
+        // Assert.
         Assert.Contains("dynamic payments \"scenario\"", document, StringComparison.Ordinal);
         Assert.DoesNotContain("include *", document, StringComparison.Ordinal);
     }
@@ -101,24 +110,30 @@ public class C4DocumentFactoryTests
     [InlineData("***", "system")]
     public void AFileName_BecomesAValidDslIdentifier(string baseName, string expectedIdentifier)
     {
+        // Act.
         var document = Create(C4ViewKind.SystemContext, baseName);
 
+        // Assert.
         Assert.Contains($"        {expectedIdentifier} = softwareSystem ", document, StringComparison.Ordinal);
     }
 
     [Fact]
     public void ANameWithAQuote_IsEscapedRatherThanBreakingTheDocument()
     {
+        // Act.
         var document = Create(C4ViewKind.SystemContext, "the \"good\" one");
 
+        // Assert.
         Assert.Contains("\\\"good\\\"", document, StringComparison.Ordinal);
     }
 
     [Fact]
     public void TheCodeFactory_RefusesAndSaysWhy()
     {
+        // Arrange.
         var factory = new C4CodeDocumentFactory();
 
+        // Act and assert, step by step.
         var exception = Assert.Throws<NotSupportedException>(() => factory.CreateEmptyDocument("anything"));
         Assert.Equal(C4CodeDocumentFactory.Unavailable, exception.Message);
         Assert.Equal("c4/code", factory.Origin.Key);

@@ -55,8 +55,10 @@ public class C4ElementMapperTests
     [Fact]
     public void AContextView_DeliversItsPeopleAndSystems_AndNoContainers()
     {
+        // Arrange.
         var elements = Visible("context");
 
+        // Act and assert, step by step.
         var nodes = elements.Where(e => e.Type == C4ElementMapper.NodeType).ToArray();
         Assert.Equal(["mainframe", "s", "u"], nodes.Select(n => n.Id).Order());
     }
@@ -64,8 +66,10 @@ public class C4ElementMapperTests
     [Fact]
     public void EveryNode_CarriesItsMeasuredBox_SoTheCanvasNeverGuesses()
     {
+        // Act.
         var nodes = Visible("context").Where(e => e.Type == C4ElementMapper.NodeType);
 
+        // Assert.
         Assert.All(nodes, node =>
         {
             var payload = PayloadOf(node);
@@ -77,8 +81,10 @@ public class C4ElementMapperTests
     [Fact]
     public void ANode_CarriesTheThreeLinesC4Asks_ForNameTypeAndDescription()
     {
+        // Arrange.
         var web = Visible("containers").Single(e => e.Id == "web");
 
+        // Act and assert, step by step.
         var payload = PayloadOf(web);
         Assert.Equal("Web App", payload.Name);
         Assert.Equal("[Container: React]", payload.TypeLine);
@@ -88,8 +94,10 @@ public class C4ElementMapperTests
     [Fact]
     public void AnExternalSystem_IsFlaggedAndMuted()
     {
+        // Act.
         var mainframe = PayloadOf(Visible("context").Single(e => e.Id == "mainframe"));
 
+        // Assert.
         Assert.True(mainframe.External);
         Assert.Equal(C4Theme.ExternalBackground, mainframe.Style.Background);
     }
@@ -99,8 +107,10 @@ public class C4ElementMapperTests
     [InlineData("s", C4Theme.SoftwareSystemBackground, "RoundedBox")]
     public void TheDefaultTheme_IsTheOneTheReferenceDiagramsShow(string id, string background, string shape)
     {
+        // Act.
         var payload = PayloadOf(Visible("context").Single(e => e.Id == id));
 
+        // Assert.
         Assert.Equal(background, payload.Style.Background);
         Assert.Equal(shape, payload.Style.Shape);
     }
@@ -108,6 +118,7 @@ public class C4ElementMapperTests
     [Fact]
     public void AComponentsText_IsBlack_BecauseItsFillIsTooLightForWhite()
     {
+        // Arrange.
         var dsl = """
             workspace {
                 model {
@@ -125,8 +136,10 @@ public class C4ElementMapperTests
             }
             """;
 
+        // Act.
         var payload = PayloadOf(Visible("components", dsl).Single(e => e.Id == "comp"));
 
+        // Assert.
         Assert.Equal(C4Theme.ComponentBackground, payload.Style.Background);
         Assert.Equal(C4Theme.DarkText, payload.Style.Color);
     }
@@ -134,14 +147,17 @@ public class C4ElementMapperTests
     [Fact]
     public void ADataStore_IsACylinder()
     {
+        // Act.
         var db = PayloadOf(Visible("containers").Single(e => e.Id == "db"));
 
+        // Assert.
         Assert.Equal("Cylinder", db.Style.Shape);
     }
 
     [Fact]
     public void ADocumentsOwnStyles_OverrideTheDefaultTheme()
     {
+        // Arrange.
         // Requirement 4.8: the palette is ADP's default, not something a document can be wrong
         // about - C4 is explicitly notation independent.
         var dsl = Sample.Replace("""
@@ -159,6 +175,7 @@ public class C4ElementMapperTests
                 }
         """, StringComparison.Ordinal);
 
+        // Act and assert, step by step.
         var workspace = C4Parser.Parse(C4Document.Parse(dsl));
         Assert.Contains(workspace.Styles, style => style.Tag == "Person");
     }
@@ -166,8 +183,10 @@ public class C4ElementMapperTests
     [Fact]
     public void RelationshipsTravel_AsTheirOwnElements_WithLabelAndTechnology()
     {
+        // Act.
         var relationships = Visible("containers").Where(e => e.Type == C4ElementMapper.RelationshipType).ToArray();
 
+        // Assert.
         Assert.NotEmpty(relationships);
         var payload = C4RelationshipPayload.Parser.ParseFrom(
             relationships.Single(r => C4RelationshipPayload.Parser.ParseFrom(r.Payload.Span).SourceId == "web").Payload.Span);
@@ -181,6 +200,7 @@ public class C4ElementMapperTests
     [Fact]
     public void AContextView_ElevatesAContainersRelationship_ToTheSystemThatContainsIt()
     {
+        // Arrange and act.
         // Found by the manual pass. The API talks to the Mainframe; at the system level that
         // is Internet Banking talking to the Mainframe. Without elevating it, a context diagram
         // shows the systems it depends on and no lines to them - which says there is no
@@ -190,6 +210,7 @@ public class C4ElementMapperTests
             .Select(e => C4RelationshipPayload.Parser.ParseFrom(e.Payload.Span))
             .ToArray();
 
+        // Assert.
         Assert.Contains(relationships, r => r.SourceId == "s" && r.DestinationId == "mainframe");
         Assert.Contains(relationships, r => r.SourceId == "u" && r.DestinationId == "s");
     }
@@ -197,6 +218,7 @@ public class C4ElementMapperTests
     [Fact]
     public void AnElevatedRelationship_IsDrawnOnce_HoweverManyCollapseOntoIt()
     {
+        // Arrange.
         // Two containers of one system both talking to the same external system is one line at
         // the system level, not two on top of each other.
         var dsl = """
@@ -218,14 +240,17 @@ public class C4ElementMapperTests
             }
             """;
 
+        // Act.
         var relationships = Visible("context", dsl).Where(e => e.Type == C4ElementMapper.RelationshipType).ToArray();
 
+        // Assert.
         Assert.Single(relationships);
     }
 
     [Fact]
     public void ARelationshipBetweenTwoContainersOfOneSystem_IsNotDrawnOnTheContextView()
     {
+        // Arrange and act.
         // Both ends elevate to the same system, which is that system talking to itself - a
         // detail the context view has deliberately zoomed out past.
         var relationships = Visible("context")
@@ -233,16 +258,19 @@ public class C4ElementMapperTests
             .Select(e => C4RelationshipPayload.Parser.ParseFrom(e.Payload.Span))
             .ToArray();
 
+        // Assert.
         Assert.DoesNotContain(relationships, r => r.SourceId == "s" && r.DestinationId == "s");
     }
 
     [Fact]
     public void AContainerView_DrawsTheSystemAsItsBoundary_AndNotAlsoAsABox()
     {
+        // Act.
         // Found by the manual pass: the system in scope was drawn as a box inside its own
         // boundary. On a container diagram the system *is* the boundary.
         var nodes = Visible("containers").Where(e => e.Type == C4ElementMapper.NodeType).Select(e => e.Id).ToArray();
 
+        // Assert.
         Assert.DoesNotContain("s", nodes);
         Assert.Contains("web", nodes);
         Assert.Contains(Visible("containers"), e => e.Type == C4ElementMapper.BoundaryType);
@@ -251,16 +279,20 @@ public class C4ElementMapperTests
     [Fact]
     public void AContextView_StillDrawsItsOwnSystem_BecauseThereItIsThePrimaryElement()
     {
+        // Act.
         var nodes = Visible("context").Where(e => e.Type == C4ElementMapper.NodeType).Select(e => e.Id).ToArray();
 
+        // Assert.
         Assert.Contains("s", nodes);
     }
 
     [Fact]
     public void AContainerView_DrawsABoundary()
     {
+        // Arrange.
         var boundaries = Visible("containers").Where(e => e.Type == C4ElementMapper.BoundaryType).ToArray();
 
+        // Act and assert, step by step.
         var boundary = Assert.Single(boundaries);
         var payload = C4BoundaryPayload.Parser.ParseFrom(boundary.Payload.Span);
         Assert.Equal("Internet Banking", payload.Name);
@@ -272,9 +304,11 @@ public class C4ElementMapperTests
     [Fact]
     public void EveryView_CarriesATitleInC4sOwnWording()
     {
+        // Arrange and act.
         var view = C4ViewPayload.Parser.ParseFrom(
             Visible("context").Single(e => e.Type == C4ElementMapper.ViewType).Payload.Span);
 
+        // Assert.
         Assert.Equal("System Context diagram for Internet Banking", view.Title);
     }
 
@@ -284,27 +318,33 @@ public class C4ElementMapperTests
     [InlineData(C4ViewKind.Component, "Component diagram for S")]
     public void TheTitleNamesTheDiagramTypeAndItsScope(C4ViewKind kind, string expected)
     {
+        // Arrange and act.
         var workspace = new C4Workspace("W", [new C4Element("s", C4ElementKind.SoftwareSystem, "S", "d", "", [], null, 1)], [], [], [], []);
         var view = new C4View(kind, "k", "s", null, null, true, [], [], null, [], 1);
 
+        // Assert.
         Assert.Equal(expected, C4ElementMapper.TitleOf(workspace, view));
     }
 
     [Fact]
     public void ATitleTheDocumentDeclares_Wins()
     {
+        // Arrange and act.
         var workspace = new C4Workspace("W", [], [], [], [], []);
         var view = new C4View(C4ViewKind.SystemContext, "k", null, null, "Our own title", true, [], [], null, [], 1);
 
+        // Assert.
         Assert.Equal("Our own title", C4ElementMapper.TitleOf(workspace, view));
     }
 
     [Fact]
     public void EveryView_CarriesAKeyDescribingTheNotationActuallyInUse()
     {
+        // Arrange and act.
         var view = C4ViewPayload.Parser.ParseFrom(
             Visible("context").Single(e => e.Type == C4ElementMapper.ViewType).Payload.Span);
 
+        // Assert.
         Assert.NotEmpty(view.Legend);
         Assert.Contains(view.Legend, entry => entry.Label == "Person");
         Assert.Contains(view.Legend, entry => entry.Label == "Software System");
@@ -315,15 +355,18 @@ public class C4ElementMapperTests
     [Fact]
     public void TheViewCarriesNoProblemsOfItsOwn_BecauseCoreAlreadyPushesThem()
     {
+        // Arrange.
         // C4's rules report through IDiagramValidator, and core pushes the project's problems
         // to every connection with an element-id location of their own. Carrying a second copy
         // on the view payload would be a second thing to keep in step - and the canvas would
         // eventually show one set while the errors panel showed another.
         var dsl = Sample.Replace("person \"Customer\" \"A retail banking customer.\"", "person \"Customer\"", StringComparison.Ordinal);
 
+        // Act.
         var view = C4ViewPayload.Parser.ParseFrom(
             Visible("context", dsl).Single(e => e.Type == C4ElementMapper.ViewType).Payload.Span);
 
+        // Assert.
         Assert.Equal("System Context diagram for Internet Banking", view.Title);
         Assert.NotEmpty(view.Legend);
         Assert.DoesNotContain(
@@ -334,11 +377,13 @@ public class C4ElementMapperTests
     [Fact]
     public void TheRulesStillReachTheUser_ThroughCoresValidatorSeam()
     {
+        // Arrange.
         // The same missing description, reported the one way it should be.
         var dsl = Sample.Replace("person \"Customer\" \"A retail banking customer.\"", "person \"Customer\"", StringComparison.Ordinal);
 
         var problems = C4RuleSet.Validate(C4Parser.Parse(C4Document.Parse(dsl)));
 
+        // Act and assert, step by step.
         var problem = Assert.Single(problems, p => p.RuleId == C4Rules.MissingDescription);
         Assert.Equal(new EtAlii.Adp.Diagram.DiagramProblemElementLocation("u"), problem.Location);
     }
@@ -348,6 +393,7 @@ public class C4ElementMapperTests
     [Fact]
     public void ATightViewport_StillDeliversTheFarEndOfALineThatLeavesIt()
     {
+        // Arrange.
         // The rule the mindmap's missing connectors taught: an on-screen element brings whatever
         // its lines reach, or the line has nothing to anchor to.
         var (workspace, view) = Load("containers");
@@ -355,8 +401,10 @@ public class C4ElementMapperTests
         var web = layout.Boxes["web"];
         var tight = new DiagramViewport(web.X, web.Y, web.Right, web.Bottom);
 
+        // Act.
         var ids = Mapper.Visible(workspace, view, tight).Select(e => e.Id).ToHashSet();
 
+        // Assert.
         Assert.Contains("web", ids);
         Assert.Contains("db", ids);
     }
@@ -364,10 +412,13 @@ public class C4ElementMapperTests
     [Fact]
     public void AViewportFarOffTheDiagram_DeliversNoNodes()
     {
+        // Arrange.
         var (workspace, view) = Load("context");
 
+        // Act.
         var elements = Mapper.Visible(workspace, view, new DiagramViewport(100000, 100000, 200000, 200000));
 
+        // Assert.
         Assert.Empty(elements.Where(e => e.Type == C4ElementMapper.NodeType));
         // ...but the view's own furniture still arrives, so the tab is not blank.
         Assert.Contains(elements, e => e.Type == C4ElementMapper.ViewType);

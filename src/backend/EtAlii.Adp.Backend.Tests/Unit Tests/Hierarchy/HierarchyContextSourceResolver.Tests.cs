@@ -67,12 +67,14 @@ public class HierarchyContextSourceResolverTests : IDisposable
     [Fact]
     public async Task ResolveAsync_NestedFile_YieldsProjectRelativeSegmentsAndDetail()
     {
+        // Arrange.
         CreateFolder("docs");
         CreateFile("docs", "design.mm");
         var id = IdOf("docs", "design.mm");
 
         var result = await ResolveAsync(id);
 
+        // Act and assert, step by step.
         var level = Assert.IsType<ResolvedContextLevel>(result).Level;
         Assert.Equal(new[] { "docs", "design.mm" }, level.RelativePath);
         Assert.Equal(EntryKind.File, level.Detail.Entry.Kind);
@@ -85,51 +87,64 @@ public class HierarchyContextSourceResolverTests : IDisposable
     [Fact]
     public async Task ResolveAsync_MatchingClientPath_IsAccepted()
     {
+        // Arrange.
         CreateFile("a.txt");
 
+        // Act.
         var result = await ResolveAsync(IdOf("a.txt"), ["a.txt"]);
 
+        // Assert.
         Assert.IsType<ResolvedContextLevel>(result);
     }
 
     [Fact]
     public async Task ResolveAsync_MismatchingClientPath_IsRejected()
     {
+        // Arrange.
         CreateFile("a.txt");
 
+        // Act.
         var result = await ResolveAsync(IdOf("a.txt"), ["b.txt"]);
 
+        // Assert.
         Assert.IsType<RejectedContextLevel>(result);
     }
 
     [Fact]
     public async Task ResolveAsync_UnknownId_IsRejected()
     {
+        // Act.
         var result = await ResolveAsync(ShortGuid.NewShortGuid());
 
+        // Assert.
         Assert.IsType<RejectedContextLevel>(result);
     }
 
     [Fact]
     public async Task ResolveAsync_IdFromAnotherConnection_IsRejected()
     {
+        // Arrange.
         CreateFile("a.txt");
         var otherConnection = _store.GetOrCreate(ShortGuid.NewShortGuid(), _root);
         var foreignId = otherConnection.ListChildren(null).Single().Id;
 
+        // Act.
         var result = await ResolveAsync(foreignId);
 
+        // Assert.
         Assert.IsType<RejectedContextLevel>(result);
     }
 
     [Fact]
     public async Task NestingOf_FolderContains_FileDoesNot()
     {
+        // Arrange and act.
         CreateFolder("docs");
         CreateFile("a.txt");
         var folder = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("docs"))).Level;
         var file = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("a.txt"))).Level;
 
+        // Assert.
         Assert.Equal(ContextNesting.Contained, _resolver.NestingOf(folder));
         Assert.Equal(ContextNesting.NotNestable, _resolver.NestingOf(file));
     }
@@ -137,12 +152,14 @@ public class HierarchyContextSourceResolverTests : IDisposable
     [Fact]
     public async Task ResolveAsync_ChildInsideParent_YieldsParentRelativePath()
     {
+        // Arrange.
         CreateFolder("docs");
         CreateFile("docs", "design.mm");
         var parent = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("docs"))).Level;
 
         var result = await ResolveAsync(IdOf("docs", "design.mm"), parent: parent);
 
+        // Act and assert, step by step.
         var level = Assert.IsType<ResolvedContextLevel>(result).Level;
         Assert.Equal(new[] { "design.mm" }, level.RelativePath);
     }
@@ -150,79 +167,95 @@ public class HierarchyContextSourceResolverTests : IDisposable
     [Fact]
     public async Task ResolveAsync_ChildNotInsideParent_IsRejected()
     {
+        // Arrange.
         CreateFolder("docs");
         CreateFolder("src");
         CreateFile("src", "a.cs");
         var parent = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("docs"))).Level;
 
+        // Act.
         var result = await ResolveAsync(IdOf("src", "a.cs"), parent: parent);
 
+        // Assert.
         Assert.IsType<RejectedContextLevel>(result);
     }
 
     [Fact]
     public async Task Track_RenameOfTheEntry_ReportsTheNewPath()
     {
+        // Arrange.
         var file = CreateFile("a.txt");
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("a.txt"))).Level;
         var reported = new List<IReadOnlyList<string>?>();
         using var track = _resolver.Track(_watchId, _root, level, reported.Add);
 
+        // Act.
         var renamed = IoPath.Combine(_root, "b.txt");
         File.Move(file, renamed);
         Model().OnWatcherEvent(WatcherChangeTypes.Renamed, file, renamed);
 
+        // Assert.
         Assert.Equal(new[] { "b.txt" }, Assert.Single(reported));
     }
 
     [Fact]
     public async Task Track_RenameOfAnAncestorFolder_ReportsTheNewPath()
     {
+        // Arrange.
         var folder = CreateFolder("docs");
         CreateFile("docs", "design.mm");
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("docs", "design.mm"))).Level;
         var reported = new List<IReadOnlyList<string>?>();
         using var track = _resolver.Track(_watchId, _root, level, reported.Add);
 
+        // Act.
         var renamed = IoPath.Combine(_root, "documents");
         Directory.Move(folder, renamed);
         Model().OnWatcherEvent(WatcherChangeTypes.Renamed, folder, renamed);
 
+        // Assert.
         Assert.Equal(new[] { "documents", "design.mm" }, Assert.Single(reported));
     }
 
     [Fact]
     public async Task Track_DeleteOfTheEntry_ReportsNull()
     {
+        // Arrange.
         var file = CreateFile("a.txt");
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("a.txt"))).Level;
         var reported = new List<IReadOnlyList<string>?>();
         using var track = _resolver.Track(_watchId, _root, level, reported.Add);
 
+        // Act.
         File.Delete(file);
         Model().OnWatcherEvent(WatcherChangeTypes.Deleted, file, null);
 
+        // Assert.
         Assert.Null(Assert.Single(reported));
     }
 
     [Fact]
     public async Task Track_AfterDispose_ReportsNothing()
     {
+        // Arrange.
         var file = CreateFile("a.txt");
         var level = Assert.IsType<ResolvedContextLevel>(await ResolveAsync(IdOf("a.txt"))).Level;
         var reported = new List<IReadOnlyList<string>?>();
         var track = _resolver.Track(_watchId, _root, level, reported.Add);
         track.Dispose();
 
+        // Act.
         File.Delete(file);
         Model().OnWatcherEvent(WatcherChangeTypes.Deleted, file, null);
 
+        // Assert.
         Assert.Empty(reported);
     }
 
     [Fact]
     public async Task Track_ARemovalEvent_WhileTheTrackedFileAlreadyVanishedFromDisk_ReportsNullInsteadOfThrowing()
     {
+        // Arrange.
         // The crash the diagram-workspace-tabs manual pass found: a multi-file delete (a git
         // checkout, say) raises one watcher event per file. The first event re-resolves every
         // tracked selection - including one whose file is already gone from disk while its
@@ -234,12 +267,14 @@ public class HierarchyContextSourceResolverTests : IDisposable
         var reported = new List<IReadOnlyList<string>?>();
         using var track = _resolver.Track(_watchId, _root, level, reported.Add);
 
+        // Act.
         // Both files go from disk at once; only the sibling's event has been processed so far,
         // so the tracked entry still exists in the model while its file does not.
         File.Delete(tracked);
         File.Delete(sibling);
         Model().OnWatcherEvent(WatcherChangeTypes.Deleted, sibling, null);
 
+        // Assert.
         // The tracked entry could not be re-resolved (its file is gone), which reports the
         // selection as vanished - never an exception out of the event.
         Assert.Null(Assert.Single(reported));
@@ -270,46 +305,56 @@ public class HierarchyContextSourceResolverTests : IDisposable
     [Fact]
     public async Task ResolveAsync_ARegisteredDiagram_CarriesItsMimeType()
     {
+        // Act.
         File.WriteAllText(IoPath.Combine(_root, "domain.adp"), "freeplane/mindmap\n");
 
+        // Assert.
         Assert.Equal("freeplane/mindmap", await DiagramMimeOfAsync(ResolverKnowing(Mindmap), "domain.adp"));
     }
 
     [Fact]
     public async Task ResolveAsync_ABareBodyWithADeclaredExtension_CarriesItsMimeType()
     {
+        // Act.
         // A map created in Freeplane and dropped into the folder (mindmap-diagram Requirement 2.7).
         CreateFile("dropped.mm");
 
+        // Assert.
         Assert.Equal("freeplane/mindmap", await DiagramMimeOfAsync(ResolverKnowing(Mindmap), "dropped.mm"));
     }
 
     [Fact]
     public async Task ResolveAsync_ARegistrationNamingAnUnknownType_CarriesTheNamedType()
     {
+        // Act.
         // The client can then open a tab that says the type is unavailable, rather than
         // treating the file as plain (Requirements 1.4, 4.4).
         File.WriteAllText(IoPath.Combine(_root, "future.adp"), "vendor/unheard-of\n");
 
+        // Assert.
         Assert.Equal("vendor/unheard-of", await DiagramMimeOfAsync(ResolverKnowing(Mindmap), "future.adp"));
     }
 
     [Fact]
     public async Task ResolveAsync_ABareBodyWithAnAmbiguousExtension_CarriesNoType()
     {
+        // Act.
         // Two types claim .mm: the router refuses to guess, so the file is not openable.
         CreateFile("contested.mm");
 
+        // Assert.
         Assert.Equal("", await DiagramMimeOfAsync(ResolverKnowing(Mindmap, RivalMindmap), "contested.mm"));
     }
 
     [Fact]
     public async Task ResolveAsync_APlainFileAndAFolder_CarryNoType()
     {
+        // Arrange and act.
         CreateFile("readme.txt");
         CreateFolder("docs");
         var resolver = ResolverKnowing(Mindmap);
 
+        // Assert.
         Assert.Equal("", await DiagramMimeOfAsync(resolver, "readme.txt"));
         Assert.Equal("", await DiagramMimeOfAsync(resolver, "docs"));
     }
