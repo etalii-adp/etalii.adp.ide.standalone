@@ -91,3 +91,37 @@ reachable all along - the entry was wrong, not the environment.
   through "Add view". The element names, descriptions and technologies ADP edited appear as
   edited. ADP's `.layout.json` sidecar is ignored by Lite and causes no complaint, because it is
   ADP's own file and not part of the workspace.
+
+## The property grid's keyboard cadence, in a real browser (property-grid, task 6)
+
+The commit cadence is pinned by unit tests, but no manual pass has ever seen it in a real
+browser: the in-app browser pane could not composite frames during the task 6 pass, so key
+events never reached the page (typing worked; `Enter`, `Ctrl+Enter` and `Escape` did not).
+The blur path was verified live instead. Run this on a machine where the browser pane
+displays, or in an ordinary browser against the dev servers.
+
+- **Preconditions**: a project holding a mindmap with at least one node; the Properties panel
+  visible; a node selected so its Text, Notes and Link rows show.
+- **Actions and expected results**:
+  1. Click into **Text**, type, and press **Enter**. → The value commits once: the canvas
+     updates, and exactly one write reaches the backend (`Set mindmap.text` in the log).
+  2. Click into **Notes**, type, press plain **Enter**. → A newline is added and *nothing*
+     commits. Then press **Ctrl+Enter**. → It commits once.
+  3. Click into **Text**, type, press **Escape**. → The field returns to the value the backend
+     last described and nothing is written.
+  4. Click into **Text**, change nothing, click elsewhere. → Nothing is written, and Undo does
+     not become available for it.
+
+## A property edit reaches a second connection (property-grid, task 6)
+
+Requirement 5.2 says a committed change reaches every connection viewing the document, and the
+grid follows the push rather than its own copy. Nothing automated covers two connections, and
+the task 6 pass could not drive a second browser tab's canvas selection through the
+non-compositing pane.
+
+- **Preconditions**: the same project open in two browser tabs, the same diagram open in both,
+  and the same node selected in both, with the Properties panel visible in each.
+- **Actions**: in tab A, edit the node's **Text** and commit (Enter or by clicking away).
+- **Expected**: tab B's canvas shows the new text without any interaction, and tab B's
+  Properties panel shows the new value in its Text row - it re-describes from the push. Then
+  press **Undo** in tab A: both tabs return to the old value, canvas and grid alike.
