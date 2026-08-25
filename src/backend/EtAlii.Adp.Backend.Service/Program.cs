@@ -67,12 +67,9 @@ builder.Services.AddC4();
 
 builder.Services.AddClientAppHosting(builder.Configuration);
 
-builder.Services.AddGrpc(options =>
-{
-    // Applied to every gRPC call; SessionInterceptor itself exempts
-    // AuthenticationService.Login (Requirement 1.6).
-    options.Interceptors.Add<SessionInterceptor>();
-});
+// Applied to every gRPC call; SessionInterceptor itself exempts
+// AuthenticationService.Login (Requirement 1.6).
+builder.Services.AddGrpc(options => options.Interceptors.Add<SessionInterceptor>());
 
 var app = builder.Build();
 

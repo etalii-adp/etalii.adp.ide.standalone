@@ -443,29 +443,27 @@ public static class C4Parser
     /// </summary>
     private static (string Technology, IReadOnlyList<string> Tags) ReadTechnologyAndTags(C4ElementKind kind, string[] arguments)
     {
-        switch (kind)
+        return kind switch
         {
-            case C4ElementKind.ContainerInstance:
-            case C4ElementKind.SoftwareSystemInstance:
-                // `containerInstance <ref> [tags]` - no name, description or technology.
-                return ("", arguments.Length > 1 ? SplitTags(arguments[1]) : []);
+            // `containerInstance <ref> [tags]` - no name, description or technology.
+            C4ElementKind.ContainerInstance or C4ElementKind.SoftwareSystemInstance =>
+                ("", arguments.Length > 1 ? SplitTags(arguments[1]) : []),
 
-            case C4ElementKind.Person:
-            case C4ElementKind.SoftwareSystem:
-                return ("", arguments.Length > 2 ? SplitTags(arguments[2]) : []);
+            C4ElementKind.Person or C4ElementKind.SoftwareSystem =>
+                ("", arguments.Length > 2 ? SplitTags(arguments[2]) : []),
 
-            case C4ElementKind.DeploymentNode:
-                // `deploymentNode <name> [description] [technology] [tags] [instances]`. The
-                // instance count comes *after* the tags, and reading the two the wrong way round
-                // turns the count into a tag - which is what it did until the C4 worked example,
-                // whose `deploymentNode "bigbank-web***" "" "Ubuntu 16.04 LTS" "" 4` exposed it.
-                return (
-                    arguments.Length > 2 ? arguments[2] : "",
-                    arguments.Length > 3 ? SplitTags(arguments[3]) : []);
+            // `deploymentNode <name> [description] [technology] [tags] [instances]`. The
+            // instance count comes *after* the tags, and reading the two the wrong way round
+            // turns the count into a tag - which is what it did until the C4 worked example,
+            // whose `deploymentNode "bigbank-web***" "" "Ubuntu 16.04 LTS" "" 4` exposed it.
+            // Same shape as the default arm, and kept apart from it so the reasoning has
+            // somewhere to live.
+            C4ElementKind.DeploymentNode => (
+                arguments.Length > 2 ? arguments[2] : "",
+                arguments.Length > 3 ? SplitTags(arguments[3]) : []),
 
-            default:
-                return (arguments.Length > 2 ? arguments[2] : "", arguments.Length > 3 ? SplitTags(arguments[3]) : []);
-        }
+            _ => (arguments.Length > 2 ? arguments[2] : "", arguments.Length > 3 ? SplitTags(arguments[3]) : []),
+        };
     }
 
     private static IReadOnlyList<string> SplitTags(string tags) =>
