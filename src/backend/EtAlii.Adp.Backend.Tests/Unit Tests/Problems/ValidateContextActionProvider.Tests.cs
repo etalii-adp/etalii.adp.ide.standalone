@@ -16,7 +16,6 @@ public class ValidateContextActionProviderTests : IDisposable
 
     private readonly string _root;
     private readonly ProblemStore _store;
-    private readonly ProjectValidator _projectValidator;
     private readonly ValidateContextActionProvider _provider;
     private readonly ValidateAllContextActionProvider _validateAll;
 
@@ -28,9 +27,9 @@ public class ValidateContextActionProviderTests : IDisposable
         var router = new DiagramFileRouter(new TestDiagramDefinitionCatalog([MindmapDefinition]));
         var validators = new DiagramValidators([]);
         _store = new ProblemStore(IoPath.Combine(scratch, "appdata"), router, validators, writeDelay: TimeSpan.FromMinutes(5));
-        _projectValidator = new ProjectValidator(router, validators);
-        _provider = new ValidateContextActionProvider(_store, _projectValidator, router);
-        _validateAll = new ValidateAllContextActionProvider(_store, _projectValidator);
+        var projectValidator = new ProjectValidator(router, validators);
+        _provider = new ValidateContextActionProvider(_store, projectValidator, router);
+        _validateAll = new ValidateAllContextActionProvider(_store, projectValidator);
     }
 
     public void Dispose()

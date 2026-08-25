@@ -234,6 +234,8 @@ public sealed class ProjectValidator
     }
 
     /// <param name="routed">A route whose <c>BodyPath</c> resolved; the caller refuses the rest.</param>
+    /// <param name="collector">The problem collector.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
     private async ValueTask ValidateRoutedAsync(DiagramRouted routed, ProblemCollector collector, CancellationToken cancellationToken)
     {
         var bodyPath = routed.BodyPath!;
