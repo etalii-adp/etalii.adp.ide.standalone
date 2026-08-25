@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Problems;
 using EtAlii.Adp.Backend.Hierarchy;
 
 using Xunit;
@@ -239,5 +240,40 @@ public class ExamplesTests
     private sealed class StubCatalog : IDiagramDefinitionCatalog
     {
         public IReadOnlyList<DiagramDefinition> All => Diagram.Definitions;
+    }
+
+    [Theory]
+    [MemberData(nameof(EveryProject))]
+    public async Task ValidatingAProject_Succeeds_AndReportsNothing(string project)
+    {
+        // Arrange.
+        // The whole project through the real ProjectValidator, which is what the Validate action
+        // on the explorer root runs. This is the check that would have caught the crash these
+        // examples first hit: every registration but the owning one reaches its model through a
+        // `body:` header, and the validator used to route without a project root to resolve one
+        // against - so it walked into `Path.GetFullPath("")` and took the whole run down.
+        var validator = new ProjectValidator(
+            new DiagramFileRouter(new StubCatalog()),
+            new DiagramValidators(Diagram.Definitions.Select(definition => new C4Validator(definition.Origin))));
+
+        // Act.
+        var outcome = await validator.ValidateAsync(
+            new ProjectValidationScope(IoPath.Combine(ExamplesRoot, project)),
+            TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Empty(outcome.Problems.Select(problem => $"{problem.RelativePath}: {problem.Problem.Message}"));
+        Assert.Equal(0, outcome.Skipped);
+
+        // One judgement per document, however many registrations point at it - that is the whole
+        // economy of the arrangement. Plus one for every registration of a type that keeps no
+        // document: c4/code declares no extension, so its .adp is the whole diagram and is judged
+        // in its own right. The reference project has one of those; the industrial one has none.
+        var bodyless = Directory
+            .GetFiles(IoPath.Combine(ExamplesRoot, project), "*.adp", SearchOption.AllDirectories)
+            .Count(path => Diagram.Definitions
+                .Any(definition => definition.Origin.Key == File.ReadLines(path).First() && !definition.HasDocumentSibling));
+
+        Assert.Equal(1 + bodyless, outcome.FilesConsidered);
     }
 }

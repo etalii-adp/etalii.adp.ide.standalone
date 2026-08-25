@@ -65,7 +65,7 @@ public sealed class DiagramFileRouter
         var mimeType = DiagramFilePair.ReadMimeType(adpPath);
         if (mimeType is null)
         {
-            return new DiagramUnreadable(adpPath);
+            return new DiagramUnreadable(adpPath, "The registration file could not be read.");
         }
 
         var definition = _catalog.All.FirstOrDefault(candidate => string.Equals(candidate.Origin.MimeType, mimeType, StringComparison.Ordinal));
@@ -87,10 +87,15 @@ public sealed class DiagramFileRouter
             // read fine and its type is known. Refused rather than followed: the header is
             // user-editable text (Requirement 2.4).
             _logger.Warning("Not routing {Path}: its body: header names a document outside the project", adpPath);
-            return new DiagramUnreadable(adpPath);
+            return new DiagramUnreadable(
+                adpPath,
+                "Its body: header names a document outside the project, which is refused rather than followed.");
         }
 
-        return new DiagramRouted(definition, adpPath, body.Value.Path);
+        // An unresolved header travels as null, not as the empty string BodyOf uses to mean
+        // "you did not give me a root to resolve against". The type is still known, so callers
+        // that only want that keep working; callers that want the document have to pass a root.
+        return new DiagramRouted(definition, adpPath, body.Value.Path.Length == 0 ? null : body.Value.Path);
     }
 
     private DiagramRouting RouteBody(string bodyPath, string? projectRoot)
