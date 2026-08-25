@@ -12,7 +12,7 @@
 
 ## Phase A — the C4 rules agree with Structurizr
 
-- [ ] 1. Add the rule ids and the mirror table
+- [-] 1. Add the rule ids and the mirror table
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4Rules.cs` (modify), `C4StructurizrMirror.cs` (new)
   - Add the six new ids: `c4.missing-deployment-description`, `c4.missing-deployment-technology`, `c4.missing-infrastructure-description`, `c4.missing-infrastructure-technology`, `c4.disconnected-element`, `c4.element-not-on-any-view`. Create the mirror table mapping ADP ids to Structurizr rule ids, with two explicit lists beside it: ADP-only rules (the editing-surface ones, kept) and Structurizr-only rules that are deliberately not implemented, each with its reason
   - Purpose: Requirement 1.7's traceability, and the data task 7's test consumes
