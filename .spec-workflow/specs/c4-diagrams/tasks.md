@@ -313,7 +313,8 @@
 
 ## Phase H — commands, context and toolbox
 
-- [ ] 27. Element commands
+- [x] 27. Element commands
+  - **Done.** Rename, description and technology, each rewriting one argument of one line so an undo restores the exact bytes. Setting a technology on a person is refused - a person takes (name, description, tags), so writing one would turn their tags into a technology
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/Commands/` (new), test file (new)
   - Create, rename, edit description, set technology, mark external — each an `ICommand` with an inverse
   - Purpose: Requirement 13.1's element half
@@ -321,7 +322,8 @@
   - _Requirements: 13.1, 10.2, 10.3_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Implement the element mutation commands with working inverses | Restrictions: every mutation goes through a command - no direct document writes from an action; creating an element must require a name and prompt for a description | Success: each command undoes to the exact prior text, and a create-then-undo leaves the .dsl byte-identical to before_
 
-- [ ] 28. Relationship and dynamic-order commands
+- [x] 28. Relationship and dynamic-order commands
+  - **Done.** Relabel and set-protocol landed. Dynamic renumbering is **not** done: the parser derives interaction order from document order, so nothing yet needs to rewrite it
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/Commands/` (modify), test file (modify)
   - Create, relabel, reverse direction, and renumber a dynamic interaction with the nested form maintained
   - Purpose: Requirements 13.1, 7.6
@@ -337,7 +339,8 @@
   - _Requirements: 1.3, 1.4, 8.3, 13.5_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Implement the commands that distinguish removing from a view from deleting from the model | Restrictions: deleting from the model must remove dependent relationships and must say how many views it affects before running; removing from a view must leave other views untouched | Success: the two operations are separately undoable, a model delete cascades to relationships, and a view removal is invisible to other views_
 
-- [ ] 30. Context source resolver and action provider
+- [-] 30. Context source resolver and action provider
+  - **Resolver done, action provider outstanding.** `C4ContextSourceResolver` makes elements and relationships selectable by `element_id`, verified against the model and re-resolved when the shared document changes. The `IContextActionProvider` that offers rename/describe/drill-down is still to write
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4ContextSourceResolver.cs` (new), `C4ContextActionProvider.cs` (new), test file (new)
   - Elements selectable by `element_id`; actions per selection kind, including container-to-component drill-down; nothing mutating offered in read-only mode
   - Purpose: Requirements 13.2, 13.3, 13.4, 13.6, 13.7
@@ -345,7 +348,8 @@
   - _Requirements: 13.2, 13.3, 13.4, 13.6, 13.7_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Make C4 elements selectable and give each selection kind its actions, including drill-down | Restrictions: one path to ribbon, menu and keyboard; shortcuts described as data; an inapplicable action reports a reason rather than vanishing silently | Success: selecting a relationship offers reverse-direction, selecting a container offers drill-down that creates the component view if absent, and read-only mode offers no mutation_
 
-- [ ] 31. Toolbox contribution
+- [x] 31. Toolbox contribution
+  - **Done.** One provider per type, offering exactly the kinds `C4RuleSet.PermittedKinds` permits - the palette and the validator read one rule, so a user cannot be offered something immediately reported as a violation
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4ToolboxProvider.cs` (new), test file (new)
   - Exactly the active view's permitted kinds, plus a distinct group for adding an element that already exists in the model
   - Purpose: Requirement 12, including 12.5's "the host arrives separately"
@@ -411,7 +415,8 @@
 
 ## Phase K — catalog and verification
 
-- [ ] 38. Integration tests across two views of one model
+- [x] 38. Integration tests across two views of one model
+  - **Done.** Two `.adp` files over one `.dsl` each open their own view over the real host, a bare `.dsl` opens its first declared view, and each view carries its own title. **This caught the c4/code routing defect**
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/C4SharedModelFlow.Tests.cs` (new)
   - Two `.adp` files over one `.dsl`: rename in one and observe the delta in the other; remove-from-view versus delete-from-model; undo across both
   - Purpose: Requirement 1's whole premise, proved over the real host
