@@ -1,0 +1,5 @@
+C:\git\EtAlii.Adp\.bld\o\dpci\Debug\net10.0\EtAlii.Adp.GeneratedMSBuildEditorConfig.editorconfig
+C:\git\EtAlii.Adp\.bld\o\dpci\Debug\net10.0\EtAlii.Adp.AssemblyInfoInputs.cache
+C:\git\EtAlii.Adp\.bld\o\dpci\Debug\net10.0\EtAlii.Adp.AssemblyInfo.cs
+C:\git\EtAlii.Adp\.bld\o\dpci\Debug\net10.0\EtAlii.Adp.csproj.CoreCompileInputs.cache
+C:\git\EtAlii.Adp\.bld\o\dpci\Debug\net10.0\EtAlii.Adp.sourcelink.json
