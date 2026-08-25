@@ -53,7 +53,7 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
             return Rejected("The selected file is not a C4 diagram.");
         }
 
-        var bodyPath = routed.BodyPath;
+        var bodyPath = routed.BodyPath!;
         var workspace = _documents.WorkspaceOf(bodyPath);
         var elementId = id.ElementId.Value;
         var element = workspace.Find(elementId);

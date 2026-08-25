@@ -2,9 +2,8 @@ namespace EtAlii.Adp.Diagram.C4;
 
 /// <summary>
 /// A Structurizr DSL document, held as the exact lines it was read as. Nothing here parses the
-/// model - that is <see cref="C4ModelParser"/>'s job - because the guarantee this type exists
-/// for is textual: a document ADP did not change comes back byte-identical, and one it did
-/// change differs only in the lines the edit touched (c4-diagrams Requirements 3.1, 3.2).
+/// model - because the guarantee this type exists for is textual: a document ADP did not change comes back byte-identical,
+/// and one it did change differs only in the lines the edit touched (c4-diagrams Requirements 3.1, 3.2).
 /// </summary>
 /// <remarks>
 /// The same discipline <c>MindmapDocument</c> arrived at for <c>.mm</c>: keep the original,
