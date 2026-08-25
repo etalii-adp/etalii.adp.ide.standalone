@@ -53,3 +53,21 @@ the same reason: the containers looked right, and only the boundary's geometry g
 - **Expected**: the system in scope is drawn as the dashed boundary and **not** also as a box;
   every container sits inside it; the person and the external system sit outside it; and nothing
   overlaps anything else.
+
+## A C4 document ADP wrote opens in Structurizr Lite (c4-diagrams, task 39)
+
+The reason for choosing the Structurizr DSL over a format of ADP's own was interoperability, and
+that claim is only worth something if it is checked against the real tool. It cannot be checked
+in the sandbox this repository is developed in: neither Docker nor a JRE is available there, and
+Structurizr Lite needs one of them.
+
+- **Preconditions**: Docker (or a JRE and the Structurizr Lite jar) on the machine running the
+  check. A project containing a C4 model ADP created and then edited - rename an element, set a
+  technology, add a second view - so the file under test is one ADP wrote, not one it only read.
+- **Actions**: run Structurizr Lite against the folder holding the `.dsl`
+  (`docker run -it --rm -p 8080:8080 -v /path/to/folder:/usr/local/structurizr structurizr/lite`)
+  and open `http://localhost:8080`.
+- **Expected**: Lite parses the workspace without error and renders every view ADP declared -
+  the ones it created and the one added through "Add view". The element names, descriptions and
+  technologies ADP edited appear as edited. ADP's `.layout.json` sidecar is ignored by Lite and
+  causes no complaint, because it is ADP's own file and not part of the workspace.
