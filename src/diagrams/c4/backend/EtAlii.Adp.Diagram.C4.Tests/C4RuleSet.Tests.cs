@@ -135,6 +135,58 @@ public class C4RuleSetTests
         Assert.Contains(C4Rules.MissingProtocol, RuleIds(dsl));
     }
 
+    /// <summary>One software system, nothing else, and no view - a file someone has just started.</summary>
+    private const string Lonely = """
+        workspace "Lonely" {
+            model {
+                s = softwareSystem "System" "Does the thing."
+            }
+        }
+        """;
+
+    [Fact]
+    public void ALonelySystem_InAModelWithNoViews_IsNotReported()
+    {
+        // Act and assert.
+        // Every element is disconnected for the minute between being declared and being wired
+        // up. A tool that greets a new file with warnings teaches people to ignore warnings, so
+        // the rule waits until the model declares a view to be inconsistent with.
+        Assert.DoesNotContain(C4Rules.DisconnectedElement, RuleIds(Lonely));
+    }
+
+    [Fact]
+    public void ALonelySystem_InAModelWithAView_IsReported()
+    {
+        // Arrange.
+        // The same lonely model, once it has a view. This is the other half of the
+        // suppression: what it defers, it does not abandon.
+        var dsl = """
+            workspace "Lonely" {
+                model {
+                    s = softwareSystem "System" "Does the thing."
+                }
+                views {
+                    systemLandscape "landscape" {
+                        include *
+                    }
+                }
+            }
+            """;
+
+        // Act and assert.
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4Rules.DisconnectedElement);
+        Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity);
+        Assert.Contains("System", problem.Message, StringComparison.Ordinal);
+    }
+    [Fact]
+    public void ASystemWhoseContainersAreConnected_IsNotReportedAsDisconnected()
+    {
+        // Act and assert.
+        // The clean fixture declares no relationship naming `s` at all - they are between the
+        // person and a container, and between two containers. C4 draws the same conversation at
+        // several levels, so a system whose containers talk to the world is not left over.
+        Assert.DoesNotContain(C4Rules.DisconnectedElement, RuleIds(Clean));
+    }
     [Fact]
     public void ARelationshipNamingSomethingUndeclared_IsReported()
     {

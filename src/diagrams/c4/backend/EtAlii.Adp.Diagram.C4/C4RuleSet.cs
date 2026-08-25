@@ -86,6 +86,30 @@ public static class C4RuleSet
 
     private static IEnumerable<DiagramProblem> ValidateElements(C4Workspace workspace)
     {
+        // Both ends, because being pointed at is being connected: a database nothing calls out
+        // to is still part of the model. And every ancestor of both ends, because a software
+        // system whose containers talk to the world is not disconnected - C4's whole point is
+        // that the same conversation is drawn at several levels, and a relationship declared
+        // between two containers is the systems around them relating too.
+        var connected = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var endpoint in workspace.Relationships.SelectMany(relationship => new[] { relationship.SourceId, relationship.DestinationId }))
+        {
+            for (var element = workspace.Find(endpoint); element is not null; element = element.ParentId is { } parentId ? workspace.Find(parentId) : null)
+            {
+                if (!connected.Add(element.Id))
+                {
+                    // Already walked from a previous endpoint, so the rest of the chain is in.
+                    break;
+                }
+            }
+        }
+
+        // Suppressed entirely while the model declares no views. A model is built up a line at
+        // a time, and every element is disconnected for the minute between being declared and
+        // being wired up. A tool that greets a new file with warnings teaches people to ignore
+        // warnings, so this one waits until there is a view to be inconsistent with.
+        var modelIsUnderway = workspace.Views.Count > 0;
+
         foreach (var element in workspace.Elements)
         {
             // An instance has no name or description of its own: it is its container, deployed.
@@ -150,6 +174,23 @@ public static class C4RuleSet
                     nodeTechnologyRule,
                     // By element id rather than by line, so selecting the problem in the errors
                     // panel selects the node on the canvas.
+                    new DiagramProblemElementLocation(element.Id));
+            }
+
+            // The static abstractions only. A deployment node is joined to the model by being
+            // nested inside another, not by a relationship, so asking one to participate in a
+            // relationship asks the wrong question of it - the AWS example would report every
+            // node it has. This is not a narrowing to keep a fixture quiet: the reconciliation
+            // against Structurizr's own verdicts will say whether it agrees.
+            var canBeDisconnected = element.Kind is
+                C4ElementKind.Person or C4ElementKind.SoftwareSystem or C4ElementKind.Container or C4ElementKind.Component;
+
+            if (modelIsUnderway && canBeDisconnected && !connected.Contains(element.Id))
+            {
+                yield return new DiagramProblem(
+                    DiagramProblemSeverity.Warning,
+                    $"'{Label(element)}' is in no relationship at all. An element nothing reaches and that reaches nothing is either unfinished or left over.",
+                    C4Rules.DisconnectedElement,
                     new DiagramProblemElementLocation(element.Id));
             }
 
