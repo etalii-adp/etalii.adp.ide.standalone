@@ -32,7 +32,7 @@
   - _Requirements: 12.4, 12.5_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: technical writer maintaining a requirements document | Task: Correct Requirement 12.4 and the Code style non-functional clause to match what is true, then request approval | Restrictions: change only those two statements; do not renumber anything, since c4-diagrams, plantuml-uml and azure-pipeline-diagram cite this document by number; do not proceed past this task on a verbal approval | Success: both statements are accurate, an approval request exists against the edited file, and every other requirement is byte-identical_
 
-- [ ] 2. Assemble the `.owm` round-trip corpus
+- [x] 2. Assemble the `.owm` round-trip corpus
   - File: `src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap.Tests/Fixtures/*.owm` (new), `Fixtures/readme.md` (new)
   - Commit real maps: examples published by onlinewardleymaps.com, maps from the ecosystem's own samples, and at least one substantial map using the strategy vocabulary end to end. Add hand-made edge cases: comments in every position, blank-line runs, both CRLF and LF, no trailing newline, the **legacy** two-coordinate pipeline form beside the nested form, an `annotation` pinned at several coordinates, `label` offsets, a `style` line, and at least two statements this spec does not model at all
   - The readme records each file's provenance and what it exists to prove. A file written by hand is never called canonical
