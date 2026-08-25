@@ -1,5 +1,3 @@
-using EtAlii.Adp.Diagram;
-
 namespace EtAlii.Adp.Diagram.C4;
 
 /// <summary>
