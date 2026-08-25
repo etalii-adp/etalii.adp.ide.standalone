@@ -5,6 +5,6 @@ internal sealed class DiagramValidatorsStubValidator(DiagramOrigin origin) : IDi
     public DiagramOrigin Origin { get; } = origin;
 
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
-        string document, string baseName, CancellationToken cancellationToken) =>
+        DiagramValidationRequest request, CancellationToken cancellationToken) =>
         ValueTask.FromResult<IReadOnlyList<DiagramProblem>>([]);
 }

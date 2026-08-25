@@ -1,4 +1,5 @@
 using Xunit;
+using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.C4.Tests;
 
@@ -398,7 +399,17 @@ public class C4RuleSetTests
         var validator = new C4Validator(new DiagramOrigin("c4", "context"));
 
         // Act.
-        var problems = await validator.ValidateAsync(Clean, "clean", TestContext.Current.CancellationToken);
+        // C4's rules read the workspace the text parses to, so the request's paths are
+        // plausible rather than real - no rule resolves one.
+        var root = IoPath.Combine(IoPath.GetTempPath(), "c4-ruleset-tests");
+        var problems = await validator.ValidateAsync(
+            new DiagramValidationRequest(
+                Clean,
+                "clean",
+                RootPath: root,
+                BodyPath: IoPath.Combine(root, "clean.dsl"),
+                RegistrationPath: IoPath.Combine(root, "clean.adp")),
+            TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Empty(problems);

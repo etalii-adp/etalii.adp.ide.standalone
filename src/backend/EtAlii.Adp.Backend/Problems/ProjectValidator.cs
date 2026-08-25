@@ -260,11 +260,21 @@ public sealed class ProjectValidator
         }
 
         var baseName = DiagramFileName.StripExtension(IoPath.GetFileName(attribution));
+
+        // A folder-subject type's rules are about the tree around its registration, not about
+        // the one MIME line the registration holds. The folder is the registration's own, so it
+        // inherits the containment check the route already passed
+        // (ansible-structure-diagram Requirement 2.2).
+        var request = new DiagramValidationRequest(document, baseName, collector.Root, bodyPath, routed.RegistrationPath)
+        {
+            SubjectFolder = routed.Definition.HasFolderSubject ? IoPath.GetDirectoryName(attribution) : null,
+        };
+
         IReadOnlyList<DiagramProblem> problems;
         using var abandon = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         try
         {
-            var verdict = validator.ValidateAsync(document, baseName, abandon.Token).AsTask();
+            var verdict = validator.ValidateAsync(request, abandon.Token).AsTask();
             var expired = Task.Delay(_validatorTimeout, abandon.Token);
             if (await Task.WhenAny(verdict, expired) != verdict)
             {
