@@ -178,7 +178,8 @@
   - _Requirements: 8.5, 8.6, 4.7_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Guarantee boundary sizing and the no-overlap and no-line-through-box properties, with geometry tests over the corpus | Restrictions: round coordinates before comparing so float jitter does not make a passing layout look broken; do not solve overlap by shrinking boxes below their measured size | Success: pairwise separation holds for every fixture view, sampled relationship curves enter no element box, and every boundary contains its members with a margin_
 
-- [ ] 18. Authored positions in the sidecar
+- [x] 18. Authored positions in the sidecar
+  - **Done.** `<name>.layout.json` beside the `.dsl`, keyed by view. Authored positions win over the computed arrangement unless the document declares `autoLayout`, in which case the document wins and the layout reports it so the canvas can say so rather than the arrangement vanishing
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/LayoutSidecar.cs` (new), test file (new)
   - `{ viewKey: { elementId: {x, y} } }`; authored positions win, except where the DSL declares `autoLayout`, in which case the DSL wins and the user is told
   - Purpose: Requirements 8.3, 8.4
@@ -339,8 +340,8 @@
   - _Requirements: 1.3, 1.4, 8.3, 13.5_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Implement the commands that distinguish removing from a view from deleting from the model | Restrictions: deleting from the model must remove dependent relationships and must say how many views it affects before running; removing from a view must leave other views untouched | Success: the two operations are separately undoable, a model delete cascades to relationships, and a view removal is invisible to other views_
 
-- [-] 30. Context source resolver and action provider
-  - **Resolver done, action provider outstanding.** `C4ContextSourceResolver` makes elements and relationships selectable by `element_id`, verified against the model and re-resolved when the shared document changes. The `IContextActionProvider` that offers rename/describe/drill-down is still to write
+- [x] 30. Context source resolver and action provider
+  - **Done.** The resolver makes elements and relationships selectable and re-resolves them when the shared document changes; the action provider offers rename, describe and set-technology on an element and relabel/set-protocol on a relationship. Only containers, components and infrastructure are offered a technology, because only they have one - not offered rather than offered-and-refused. Drill-down (container to component view) is **not** done
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4ContextSourceResolver.cs` (new), `C4ContextActionProvider.cs` (new), test file (new)
   - Elements selectable by `element_id`; actions per selection kind, including container-to-component drill-down; nothing mutating offered in read-only mode
   - Purpose: Requirements 13.2, 13.3, 13.4, 13.6, 13.7
@@ -367,7 +368,8 @@
   - _Requirements: 2.1, 2.3, 5.4_
   - _Prompt: Implement the task for spec c4-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET developer | Task: Produce a valid minimal document per type and confirm the Add flow needs no changes | Restrictions: an empty model must be a valid model, not an error; both files must be cleaned up if either write fails | Success: adding each of the six working types produces an openable diagram, the .adp carries the right MIME line, and a failed write leaves nothing behind_
 
-- [ ] 33. "Add view" on a `.dsl` file
+- [x] 33. "Add view" on a `.dsl` file
+  - **Done.** One undoable command that appends the view block and writes the headered `.adp`. If the registration cannot be written the block is taken back out, rather than leaving a view nothing opens. Owned by the C4 module rather than extending core's Add provider, which would have taught core about `.dsl` and the c4 vendor
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/AddDiagramContextActionProvider.cs` (modify), `Commands/AddViewDeclaration` in the shared library (new), test file (new)
   - The action on a `.dsl` entry opens the Add dialog filtered to the `c4` group, creates a headered `.adp` naming that body and a new view key, and appends the view declaration to the document
   - Purpose: Requirement 2.7 — the reviewer's addition at approval
