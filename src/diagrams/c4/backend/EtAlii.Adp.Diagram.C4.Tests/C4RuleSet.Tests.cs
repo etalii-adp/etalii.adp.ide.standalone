@@ -151,6 +151,7 @@ public class C4RuleSetTests
     public void ALonelySystem_InAModelWithNoViews_IsNotReported()
     {
         // Act and assert.
+        // Mirrors Structurizr's `model.element.disconnected`.
         // Every element is disconnected for the minute between being declared and being wired
         // up. A tool that greets a new file with warnings teaches people to ignore warnings, so
         // the rule waits until the model declares a view to be inconsistent with.
@@ -185,15 +186,127 @@ public class C4RuleSetTests
     public void ASystemWhoseContainersAreConnected_IsNotReportedAsDisconnected()
     {
         // Act and assert.
+        // Mirrors Structurizr's `model.element.disconnected`.
         // The clean fixture declares no relationship naming `s` at all - they are between the
         // person and a container, and between two containers. C4 draws the same conversation at
         // several levels, so a system whose containers talk to the world is not left over.
         Assert.DoesNotContain(C4Rules.DisconnectedElement, RuleIds(Clean));
     }
+    /// <summary>
+    /// A deployed model with nothing missing: every node described and given a technology,
+    /// every element drawn at some level. A rule firing here is a false positive.
+    /// </summary>
+    private const string Deployed = """
+        workspace "Deployed" {
+            model {
+                u = person "User" "Someone who uses the system."
+                s = softwareSystem "System" "Does the thing." {
+                    web = container "Web App" "Serves pages." "React"
+                }
+                u -> web "Visits" "HTTPS"
+
+                live = deploymentEnvironment "Live" {
+                    server = deploymentNode "Application Server" "Runs the web app." "Ubuntu 24.04" {
+                        containerInstance web
+                    }
+                    lb = infrastructureNode "Load Balancer" "Spreads traffic across servers." "nginx"
+                    lb -> server "Forwards to" "HTTPS"
+                }
+            }
+            views {
+                systemContext s "context" {
+                    include *
+                }
+                container s "containers" {
+                    include *
+                }
+                deployment s "Live" "live" {
+                    include *
+                }
+            }
+        }
+        """;
+
+    [Fact]
+    public void AFullyDeployedModel_HasNoProblems()
+    {
+        // Arrange, act and assert.
+        // The baseline the four node rules below are measured against - each strips one thing
+        // from this model, so a failure here would make all four meaningless.
+        Assert.Empty(Validate(Deployed));
+    }
+
+    [Fact]
+    public void ADeploymentNodeWithNoDescription_IsReported()
+    {
+        // Arrange.
+        // Mirrors Structurizr's `model.deploymentnode.description`.
+        var dsl = Deployed.Replace("\"Runs the web app.\"", "\"\"", StringComparison.Ordinal);
+
+        // Act and assert, step by step.
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4Rules.MissingDeploymentDescription);
+        Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity);
+        Assert.Contains("Application Server", problem.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ADeploymentNodeWithNoTechnology_IsReported()
+    {
+        // Arrange.
+        // Mirrors Structurizr's `model.deploymentnode.technology`.
+        var dsl = Deployed.Replace("\"Ubuntu 24.04\"", "\"\"", StringComparison.Ordinal);
+
+        // Act and assert, step by step.
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4Rules.MissingDeploymentTechnology);
+        Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity);
+        Assert.Contains("Application Server", problem.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AnInfrastructureNodeWithNoDescription_IsReported()
+    {
+        // Arrange.
+        // Mirrors Structurizr's `model.infrastructurenode.description`.
+        var dsl = Deployed.Replace("\"Spreads traffic across servers.\"", "\"\"", StringComparison.Ordinal);
+
+        // Act and assert, step by step.
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4Rules.MissingInfrastructureDescription);
+        Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity);
+        Assert.Contains("Load Balancer", problem.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AnInfrastructureNodeWithNoTechnology_IsReported()
+    {
+        // Arrange.
+        // Mirrors Structurizr's `model.infrastructurenode.technology`.
+        var dsl = Deployed.Replace("\"nginx\"", "\"\"", StringComparison.Ordinal);
+
+        // Act and assert, step by step.
+        var problem = Assert.Single(Validate(dsl), p => p.RuleId == C4Rules.MissingInfrastructureTechnology);
+        Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity);
+        Assert.Contains("Load Balancer", problem.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ADeploymentNode_IsNotAskedToParticipateInARelationship()
+    {
+        // Arrange.
+        // `c4.disconnected-element` covers the static abstractions only. A node is joined to
+        // the model by being nested inside another, so the server here is in no relationship
+        // once the load balancer stops pointing at it, and that is not a defect.
+        var dsl = Deployed.Replace("lb -> server \"Forwards to\" \"HTTPS\"", "", StringComparison.Ordinal);
+
+        // Act and assert, step by step.
+        // The replace has to have bitten, or this asserts nothing at all.
+        Assert.DoesNotContain("lb -> server", dsl, StringComparison.Ordinal);
+        Assert.DoesNotContain(C4Rules.DisconnectedElement, RuleIds(dsl));
+    }
     [Fact]
     public void AnElementNoViewDraws_IsReported()
     {
         // Arrange.
+        // Mirrors Structurizr's `model.element.noview`.
         // The clean fixture with its container view taken away: `web` and `db` are still
         // declared, still related, and now drawn nowhere. Someone reading the diagrams never
         // meets them.
@@ -230,6 +343,7 @@ public class C4RuleSetTests
     public void AnElementEveryLevelDraws_IsNotReported()
     {
         // Arrange, act and assert.
+        // Mirrors Structurizr's `model.element.noview`.
         // The clean fixture draws its system on a context view and its containers on a
         // container view, so nothing it declares goes unseen.
         Assert.DoesNotContain(C4Rules.ElementNotOnAnyView, RuleIds(Clean));
