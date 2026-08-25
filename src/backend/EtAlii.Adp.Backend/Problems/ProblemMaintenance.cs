@@ -151,8 +151,30 @@ public sealed class ProblemMaintenance : IDisposable
                     }
                     break;
 
-                case NotADiagram when !HasProblemsFor(root.Path, relative):
-                    continue; // Not a diagram and never was one: nothing to say, nothing to clear.
+                case NotADiagram:
+                    // A file that is not a diagram may still be *part* of one: a folder-subject
+                    // diagram's subject is the tree around its .adp, so an edit anywhere beneath
+                    // it changes what that diagram means. Without this the file would be
+                    // validated as itself, find nothing, and ReplaceFor would clear the
+                    // diagram's problems without re-finding them - losing a problem rather than
+                    // refreshing it, which is worse than not watching at all.
+                    if (EnclosingFolderDiagram(root.Path, path) is { } registration)
+                    {
+                        relative = IoPath.GetRelativePath(root.Path, registration);
+                        covered.Add(relative);
+                        // Everything currently blamed on a file inside that folder, so a
+                        // problem this edit fixed is cleared even when it was attributed to a
+                        // different file of the same diagram.
+                        covered.AddRange(ProblemPathsUnder(root.Path, IoPath.GetDirectoryName(registration)!));
+                        break;
+                    }
+
+                    if (!HasProblemsFor(root.Path, relative))
+                    {
+                        continue; // Not a diagram and never was one: nothing to say, nothing to clear.
+                    }
+
+                    break;
             }
 
             // One file changed, one file's worth of work (Requirement 5.1): a File scope
@@ -161,6 +183,70 @@ public sealed class ProblemMaintenance : IDisposable
             covered.AddRange(outcome.Problems.Select(problem => problem.RelativePath));
             _store.ReplaceFor(root.Path, covered.Distinct(StringComparer.OrdinalIgnoreCase).ToArray(), outcome.Problems);
         }
+    }
+
+    /// <summary>
+    /// The nearest <c>.adp</c> at or above <paramref name="changedPath"/> whose type's diagram
+    /// is the folder it sits in, or null when the change belongs to no such diagram.
+    /// </summary>
+    /// <remarks>
+    /// The walk stops at the project root and reads only <c>.adp</c> files. It does not start
+    /// at all unless some discovered type actually has a folder subject, so a deployment
+    /// without one - every deployment before <c>ansible/structure</c> ships - pays a single
+    /// list scan per changed file and no filesystem access whatsoever.
+    /// </remarks>
+    private string? EnclosingFolderDiagram(string rootPath, string changedPath)
+    {
+        if (!_router.HasFolderSubjectTypes)
+        {
+            return null;
+        }
+
+        var root = IoPath.GetFullPath(rootPath).TrimEnd(IoPath.DirectorySeparatorChar, IoPath.AltDirectorySeparatorChar);
+        var folder = IoPath.GetDirectoryName(IoPath.GetFullPath(changedPath));
+
+        while (folder is not null && folder.Length >= root.Length)
+        {
+            string[] candidates;
+            try
+            {
+                // Ordered so two folder-subject registrations in one folder - degenerate, but
+                // possible - always resolve to the same one.
+                candidates = [.. Directory.EnumerateFiles(folder, "*" + DiagramFileName.Extension).Order(StringComparer.Ordinal)];
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                return null; // The folder went away mid-walk, or is not ours to read.
+            }
+
+            foreach (var candidate in candidates)
+            {
+                if (_router.Route(candidate, rootPath) is DiagramRouted { Definition.HasFolderSubject: true })
+                {
+                    return candidate;
+                }
+            }
+
+            if (string.Equals(folder, root, StringComparison.OrdinalIgnoreCase))
+            {
+                return null; // Reached the root without finding one.
+            }
+
+            folder = IoPath.GetDirectoryName(folder);
+        }
+
+        return null;
+    }
+
+    /// <summary>Every path currently carrying a problem that lives inside <paramref name="folder"/>.</summary>
+    private string[] ProblemPathsUnder(string rootPath, string folder)
+    {
+        var prefix = IoPath.GetFullPath(folder).TrimEnd(IoPath.DirectorySeparatorChar, IoPath.AltDirectorySeparatorChar)
+                     + IoPath.DirectorySeparatorChar;
+        return [.. _store.Get(rootPath).Problems
+            .Select(problem => problem.RelativePath)
+            .Where(path => IoPath.GetFullPath(IoPath.Combine(rootPath, path)).StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)];
     }
 
     private bool HasProblemsFor(string rootPath, string relativePath) =>
