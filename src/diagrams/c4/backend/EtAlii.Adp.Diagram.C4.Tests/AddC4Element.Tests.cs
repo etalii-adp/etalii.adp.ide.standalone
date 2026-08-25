@@ -230,4 +230,28 @@ public class AddC4ElementTests : IDisposable
         Assert.Null(workspace.Find("api"));
         Assert.DoesNotContain(C4RuleSet.Validate(workspace), problem => problem.Severity == DiagramProblemSeverity.Error);
     }
+
+    [Fact]
+    public async Task UndoingAnAdd_DoesNotTakeACommentTheUserWroteInsideTheBlock()
+    {
+        // Arrange.
+        // The add gave `web` its first braces. If the user then writes a comment in that block,
+        // undoing the add must remove the element and leave the comment - collapsing the block
+        // would delete something ADP never wrote, which is precisely what Requirement 3.3
+        // forbids and what the whole line-surgery approach exists to avoid.
+        await AddAsync(C4ElementKind.Component, "Controller", parentId: "web");
+
+        var document = _documents.GetOrLoad(_bodyPath);
+        var opened = document.CodeLines.Single(line => line.Code.Contains("container \"Web\"", StringComparison.Ordinal));
+        document.InsertLine(opened.Number + 1, "                // Components arrive here as the design settles.");
+        _documents.Save(_bodyPath);
+
+        // Act.
+        await _history.UndoAsync(TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Contains("// Components arrive here as the design settles.", OnDisk(), StringComparison.Ordinal);
+        Assert.DoesNotContain("Controller", OnDisk(), StringComparison.Ordinal);
+    }
+
 }

@@ -69,7 +69,7 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
   // started, and whether it has moved far enough to be a drag rather than a wobbly click. A
   // ref for the parts nothing renders from; the live offset is state, because it is exactly
   // what renders differently while the button is down.
-  const dragRef = useRef<{ id: string; clientX: number; clientY: number; x: number; y: number; moved: boolean } | null>(null);
+  const dragRef = useRef<{ id: string; clientX: number; clientY: number; x: number; y: number; moved: boolean; dx: number; dy: number } | null>(null);
   const [dragOffset, setDragOffset] = useState<{ id: string; dx: number; dy: number } | null>(null);
   const dragJustEndedRef = useRef(false);
 
@@ -166,11 +166,9 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
 
       drag.moved = true;
       const scale = unitsPerPixel(viewRef.current);
-      setDragOffset({
-        id: drag.id,
-        dx: (event.clientX - drag.clientX) * scale,
-        dy: (event.clientY - drag.clientY) * scale,
-      });
+      drag.dx = (event.clientX - drag.clientX) * scale;
+      drag.dy = (event.clientY - drag.clientY) * scale;
+      setDragOffset({ id: drag.id, dx: drag.dx, dy: drag.dy });
       return;
     }
 
@@ -194,16 +192,16 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
     const drag = dragRef.current;
     dragRef.current = null;
     if (drag?.moved) {
-      const offset = dragOffset;
       setDragOffset(null);
       // The click that trails a completed drag is the same gesture, not a new selection.
       dragJustEndedRef.current = true;
-      if (offset && offset.id === drag.id) {
-        // Nothing optimistic: the element stays where it was until the backend's delta says
-        // otherwise, so what is drawn is always what was recorded.
-        void moveElementTo(drag.id, drag.x + offset.dx, drag.y + offset.dy);
-      }
-
+      // Read from the ref rather than from state: the last mousemove and this mouseup can
+      // land in one batch, and then the state this handler closed over is a frame behind -
+      // which would write a stale position, or none at all.
+      //
+      // Nothing optimistic either way: the element stays where it was until the backend's
+      // delta says otherwise, so what is drawn is always what was recorded.
+      void moveElementTo(drag.id, drag.x + drag.dx, drag.y + drag.dy);
       return;
     }
 
@@ -245,7 +243,7 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
       return; // a right-click is the menu's gesture, not a drag
     }
 
-    dragRef.current = { id: node.id, clientX: event.clientX, clientY: event.clientY, x: node.x, y: node.y, moved: false };
+    dragRef.current = { id: node.id, clientX: event.clientX, clientY: event.clientY, x: node.x, y: node.y, moved: false, dx: 0, dy: 0 };
   };
 
   /** Right-click an element: select it with the menu gesture, open the menu on the push. */

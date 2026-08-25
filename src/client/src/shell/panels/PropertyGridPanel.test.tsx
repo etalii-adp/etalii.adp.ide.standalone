@@ -401,4 +401,27 @@ describe("PropertyGridPanel", () => {
     expect(grouped[1].properties.map((entry) => entry.id)).toEqual(["b", "c"]);
   });
 
+
+  it("writes once even if the field is blurred twice before the write lands", async () => {
+    // Arrange.
+    // Until the write comes back, the pushed value is still the old one - so a second blur
+    // would compare the draft against it, find them different, and write again. One edit, two
+    // entries on the project history.
+    selectElement();
+    backend.properties = [property({ id: "c4.name", label: "Name", value: "Web" })];
+    render(<PropertyGridPanel />);
+    const field = (await screen.findByLabelText("Name")) as HTMLInputElement;
+
+    // Act.
+    field.focus();
+    fireEvent.change(field, { target: { value: "Web App" } });
+    await act(async () => {
+      fireEvent.blur(field);
+      fireEvent.blur(field);
+    });
+
+    // Assert.
+    expect(backend.writes).toEqual([{ propertyId: "c4.name", value: "Web App" }]);
+  });
+
 });
