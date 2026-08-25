@@ -104,10 +104,19 @@ indent_size = 2
 max_line_length = 150
 
 # Organize usings
-# Commented out: dotnet_separate_import_directive_groups (blank line between
-# using-directive groups by root namespace) currently fires on ~14 of ~20 .cs
-# files, since usings here aren't grouped that way today.
-dotnet_separate_import_directive_groups = true
+#
+# dotnet_separate_import_directive_groups wants a blank line between using-directive
+# groups by root namespace - `System.*`, then `Microsoft.*`, then the rest, each block
+# separated. The note here used to say it was commented out for firing on most files,
+# and then set it to `true` on the very next line. The note was right and the setting
+# was not: nothing in this repository is written that way, and it accounted for 115 of
+# the style gate's failures on its own. It is the opinionated half of organizing usings,
+# and the codebase has a settled convention that disagrees with it, so the codebase wins
+# - the same treatment the C# sections give every other rule that fights existing code.
+dotnet_separate_import_directive_groups = false
+#
+# Sorting stays on. Which order `System` comes in is mechanical, uncontroversial, and
+# applied by every IDE here without anyone thinking about it.
 dotnet_sort_system_directives_first = true
 file_header_template = unset
 
