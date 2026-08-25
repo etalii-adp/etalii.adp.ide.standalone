@@ -3,8 +3,10 @@
   "title": "ansible-structure-diagram - Design",
   "filePath": ".spec-workflow/specs/ansible-structure-diagram/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-25T16:33:58.852Z",
   "category": "spec",
-  "categoryName": "ansible-structure-diagram"
+  "categoryName": "ansible-structure-diagram",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-25T16:52:05.224Z"
 }
