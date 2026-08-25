@@ -289,6 +289,25 @@ describe("PropertyGridPanel", () => {
     expect(screen.queryByLabelText("Kind")).toBeNull();
   });
 
+  it("shows a property whose editor it does not know, and offers no field for it", async () => {
+    // Arrange.
+    // The editor enum is widened by whichever diagram type first needs a new editor, so a
+    // client older than the backend meets one eventually. Showing the value is right;
+    // editing it through a control this client guessed at is how a value gets mangled.
+    selectElement();
+    backend.properties = [
+      property({ id: "pipeline.dependsOn", label: "Depends on", value: "build, test", editor: 99 as ContextPropertyEditor }),
+    ];
+
+    // Act.
+    render(<PropertyGridPanel />);
+
+    // Assert.
+    expect(await screen.findByText("build, test")).toBeTruthy();
+    expect(screen.queryByLabelText("Depends on")).toBeNull();
+    expect(document.querySelector(".property-grid input, .property-grid textarea")).toBeNull();
+  });
+
   it("puts the old value back and says why when a write is refused", async () => {
     // Arrange.
     selectElement();

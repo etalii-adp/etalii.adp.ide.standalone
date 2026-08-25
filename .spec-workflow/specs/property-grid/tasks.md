@@ -20,7 +20,7 @@
   - _Requirements: NFR Isolation, 4.3, 4.4_
   - _Prompt: Implement the task for spec property-grid, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# test engineer | Task: Extend StubPropertyProvider with a throwing mode and add the isolation tests listed | Restrictions: assert what the user sees (the healthy provider's rows still arrive), not that a catch block ran; pass TestContext.Current.CancellationToken to async calls as the file already does; no mocking framework - the stub is the house pattern | Success: `dotnet test --project src/backend/EtAlii.Adp.Backend.Tests` green; removing the try in ContextPropertyResolver fails a named test. Mark the task in progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3. Degrade an unknown editor to read-only text
+- [x] 3. Degrade an unknown editor to read-only text
   - File: `src/client/src/shell/panels/PropertyRow.tsx` (modify)
   - The editor ternary currently falls through to the editable `Line` input for any editor value it does not know. Render it as read-only text instead - the same shape the read-only branch already renders, without a reason line. A client older than the contract must **show** a value it cannot edit properly, never offer the wrong editor for it
   - Purpose: design gap 2 / Requirement 8.2 - which is what makes widening `ContextPropertyEditor` safe for the `Choice` editor `azure-pipeline-diagram` owes
@@ -28,7 +28,7 @@
   - _Requirements: 8.1, 8.2_
   - _Prompt: Implement the task for spec property-grid, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/TypeScript developer | Task: Make PropertyRow render an unrecognised ContextPropertyEditor as read-only text per design.md's gap 2 | Restrictions: do not change the behaviour of Line, Text or Toggle - the Ctrl+Enter/blur/Escape cadence stays exactly as it is; no reason line, because there is no reason to show, only an editor this client does not know; follow src/.editorconfig | Success: `npm run typecheck` clean in src/client; task 4's test passes. Mark the task in progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. Test the fallback
+- [x] 4. Test the fallback
   - File: `src/client/src/shell/panels/PropertyGridPanel.test.tsx` (modify)
   - A property whose editor is a value outside the enum renders its value, renders no input, textarea or checkbox, and writes nothing when interacted with. Verify by mutation that restoring the old fall-through fails it
   - Purpose: the guard for gap 2
