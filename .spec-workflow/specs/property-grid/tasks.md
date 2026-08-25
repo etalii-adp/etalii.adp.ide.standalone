@@ -4,7 +4,7 @@
 >
 > **Order.** Tasks 1–2 are the backend gap and its tests; 3–4 the client gap and its tests; 5 the regression guards for rules that are honoured today but pinned by nothing; 6 the manual pass. Tasks 1–2 and 3–4 are independent of each other and may land in either order.
 
-- [-] 1. Isolate a throwing provider while describing
+- [x] 1. Isolate a throwing provider while describing
   - File: `src/backend/EtAlii.Adp.Backend/Context/ContextPropertyResolver.cs` (modify)
   - Wrap each provider's `DescribeAsync` in a `try` so one broken provider costs its own properties and nothing more: the healthy providers' rows still answer, and the failure is logged at `Warning` naming the provider type. Do the same for the describe-to-find-the-owner step inside `SetAsync` - a provider that cannot say what it owns is skipped, not fatal. Leave the **owning** provider's own `SetAsync` throw propagating: a write that failed must never be reported as accepted. Add the class's Serilog logger, which it does not have yet
   - Purpose: design gap 1 / Requirements NFR *Isolation* - today one throwing provider turns `DescribeProperties` into an RPC error and empties the whole panel
@@ -12,7 +12,7 @@
   - _Requirements: NFR Isolation, 3.2_
   - _Prompt: Implement the task for spec property-grid, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# backend developer | Task: Make ContextPropertyResolver tolerant of a provider that throws while describing, per design.md's gap 1 | Restrictions: a describe failure must not fail the call - answer with what the others described; never swallow the owning provider's SetAsync throw; do not catch OperationCanceledException when the caller's token is the one cancelling; keep registration order for everything that did answer | Success: `dotnet build src/backend/EtAlii.Adp.Backend/EtAlii.Adp.Backend.csproj` clean; task 2's tests pass. Mark the task in progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. Test the isolation, and pin the enforcement that already works
+- [x] 2. Test the isolation, and pin the enforcement that already works
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Context/ContextPropertyResolver.Tests.cs` (modify), `.../Context/StubPropertyProvider.cs` (modify)
   - Give the stub a "throw on describe" mode. New tests: a throwing provider's rows are missing while a healthy provider's rows are still there; a throwing provider does not stop a write to a property another provider owns; the owning provider's `SetAsync` throw still propagates. Verify by mutation that removing the `try` fails the first test
   - Purpose: the guard for gap 1, so the panel cannot silently go blank again

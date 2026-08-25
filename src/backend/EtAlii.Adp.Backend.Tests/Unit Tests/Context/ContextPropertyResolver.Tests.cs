@@ -122,4 +122,52 @@ public class ContextPropertyResolverTests
         Assert.False(result.IsSuccess);
         Assert.Equal("A name cannot be empty.", result.Error);
     }
+
+    // ---- one broken module costs its own rows, and nothing more ------------------------
+
+    [Fact]
+    public async Task DescribeAsync_LosesOnlyTheRowsOfAProviderThatThrows()
+    {
+        // Arrange.
+        var broken = new StubPropertyProvider(ContextScope.DiagramElement, [new ContextPropertyDefinition("a.one", "One", "1")]) { ThrowOnDescribe = true };
+        var healthy = new StubPropertyProvider(ContextScope.DiagramElement, [new ContextPropertyDefinition("b.two", "Two", "2")]);
+        var resolver = new ContextPropertyResolver([broken, healthy]);
+
+        // Act.
+        var properties = await resolver.DescribeAsync(Target(), TestContext.Current.CancellationToken);
+
+        // Assert.
+        // The panel shows what it can rather than going blank over somebody else's fault.
+        Assert.Equal(["b.two"], properties.Select(property => property.Id));
+    }
+
+    [Fact]
+    public async Task SetAsync_ReachesItsOwnerPastAProviderThatCannotDescribe()
+    {
+        // Arrange.
+        var broken = new StubPropertyProvider(ContextScope.DiagramElement, []) { ThrowOnDescribe = true };
+        var owner = new StubPropertyProvider(ContextScope.DiagramElement, [new ContextPropertyDefinition("b.two", "Two", "2")]);
+        var resolver = new ContextPropertyResolver([broken, owner]);
+
+        // Act.
+        var result = await resolver.SetAsync(Target(), "b.two", "changed", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(result.IsSuccess);
+        Assert.Equal(("b.two", "changed"), Assert.Single(owner.Writes));
+    }
+
+    [Fact]
+    public async Task SetAsync_LetsTheOwnersOwnFailureTravel_RatherThanReportingSuccess()
+    {
+        // Arrange.
+        var owner = new StubPropertyProvider(ContextScope.DiagramElement, [new ContextPropertyDefinition("a.one", "One", "1")]) { ThrowOnSet = true };
+        var resolver = new ContextPropertyResolver([owner]);
+
+        // Act and assert.
+        // A write that failed must never come back accepted; swallowing this would tell the
+        // grid its value landed while the document says otherwise.
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await resolver.SetAsync(Target(), "a.one", "changed", TestContext.Current.CancellationToken));
+    }
 }
