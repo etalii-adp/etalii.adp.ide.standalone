@@ -6,11 +6,11 @@ This spec covers the **Azure DevOps Pipeline diagram module** — a diagram of a
 
 **Why this type is different from the two before it.** The pluggable diagram-type model has been proven twice, and both times the document belonged to ADP:
 
-| | [`mindmap-diagram`](../mindmap-diagram/requirements.md) | [`wardley-map`](../wardley-map/requirements.md) | This spec |
-|---|---|---|---|
-| Positions | computed by the module | authored in the document | **computed** (the file has none) |
-| Document | created by ADP's Add flow | created by ADP's Add flow | **already in the repository** |
-| If ADP damages it | a diagram is wrong | a diagram is wrong | **the build breaks** |
+|                   | [`mindmap-diagram`](../mindmap-diagram/requirements.md) | [`wardley-map`](../wardley-map/requirements.md) | This spec                        |
+| ----------------- | ------------------------------------------------------- | ----------------------------------------------- | -------------------------------- |
+| Positions         | computed by the module                                  | authored in the document                        | **computed** (the file has none) |
+| Document          | created by ADP's Add flow                               | created by ADP's Add flow                       | **already in the repository**    |
+| If ADP damages it | a diagram is wrong                                      | a diagram is wrong                              | **the build breaks**             |
 
 That third row is what makes this type worth specifying. An `azure-pipelines.yml` is executable configuration owned by the build system, hand-authored, often split across template files, and frequently containing expressions whose value is not knowable until the pipeline runs. A diagram module that rewrites it carelessly does not produce a wrong picture; it stops the team shipping. Requirements 3 and 9 are shaped by that, and the scope decision in Requirement 9.1 follows from it.
 
@@ -47,7 +47,7 @@ That third row is what makes this type worth specifying. An `azure-pipelines.yml
 2. WHEN a registered pipeline is opened THEN the system SHALL NOT write to the repository at all. Opening a diagram is a read.
 3. WHEN Add is used on a **folder** THEN this diagram type SHALL appear among the choices, since it is a discovered `Diagram.Definition` like any other; confirming it SHALL create a minimal but **valid and runnable** pipeline — a `trigger`, a `pool` and one job with one script step — rather than an empty file, because an Azure Pipelines file that does not run is not a pipeline.
 4. IF the chosen name is already taken in the target folder THEN Add SHALL report the collision through the existing name validation rather than overwriting anything, exactly as `create-diagram-file` Requirement 2.8 already requires.
-5. WHERE a repository holds several pipeline files (`azure-pipelines.yml`, `ci/build.yml`, `.azure/release.yml`) THEN each SHALL be registerable and openable as its own diagram; the module SHALL NOT assume one pipeline per repository.
+5. WHERE a repository holds several pipeline files (`azure-pipelines.yml`, `.azure/release.yml`) THEN each SHALL be registerable and openable as its own diagram; the module SHALL NOT assume one pipeline per repository.
 6. WHERE a repository holds pipeline files the user has not registered THEN those SHALL remain ordinary files in the explorer. **Not every pipeline in a repository has to become a diagram**, and one the user never asked about is not ADP's to claim.
 
 ### Requirement 2 — Making an existing file a diagram, by saying so
@@ -65,7 +65,7 @@ That third row is what makes this type worth specifying. An `azure-pipelines.yml
 7. IF a file already has an `.adp` registration THEN Add SHALL NOT be offered on it — it is already a diagram — and the existing open action SHALL be offered instead.
 8. IF no diagram type declares a file's extension THEN Add SHALL NOT be offered on that file, rather than opening a dialog with nothing selectable in it.
 9. WHEN the created `.adp` is written THEN it SHALL reach every connected client through the existing watcher and `EntryCreated` path, and be selected on the connection that added it, exactly as `create-diagram-file` Requirement 4 already defines.
-10. **This amends [`add-diagram-action`](../add-diagram-action/requirements.md) Requirement 4.3**, which says Add SHALL NOT be offered on a file because "a file cannot contain a new entry". That reasoning holds for creating a diagram *inside* something, and this is a different act: the new entry is the `.adp` created *beside* the file, in its parent folder. That requirement needs revising alongside this one; it is named here so the contradiction is tracked rather than discovered.
+10. **This amends** [`add-diagram-action`](../add-diagram-action/requirements.md) **Requirement 4.3**, which says Add SHALL NOT be offered on a file because "a file cannot contain a new entry". That reasoning holds for creating a diagram *inside* something, and this is a different act: the new entry is the `.adp` created *beside* the file, in its parent folder. That requirement needs revising alongside this one; it is named here so the contradiction is tracked rather than discovered.
 
 ### Requirement 3 — Reading and writing the file without damaging it
 
@@ -210,7 +210,32 @@ That third row is what makes this type worth specifying. An `azure-pipelines.yml
 5. WHEN the selection changes from elsewhere THEN the canvas SHALL bring the element into view, expanding its collapsed stage if needed, and SHALL NOT re-react to a selection it produced itself.
 6. Multi-selection is out of scope, per `context-service` Requirement 2.8.
 
-### Requirement 13 — Pluggable registration
+### Requirement 13 — What a pipeline element shows in the Property Grid
+
+**User Story:** As an architect who has selected a stage, I want the panel to tell me the things that decide whether and how it runs, without my having to read the YAML to find them.
+
+> **The Property Grid is not specified yet.** `PropertyGridPanel` on `develop` is a read-only subscriber to the context stream, carrying a TODO that says property *editing* belongs to a later spec, and no such spec, branch or worktree exists. This requirement therefore does **not** decide the mechanism — how a diagram type contributes properties, how one is described, how an edit is dispatched. That belongs to the Property Grid spec whenever it is written, and everything below that names a mechanism is a **requirement placed on that spec**, not a design of it.
+>
+> What this requirement does fix is the half that is this module's to decide: **which properties a pipeline element exposes, and which of them may be edited.** That half is knowable now, is unusually consequential for this type, and would otherwise be settled by whoever writes the panel — who has no reason to know that a pipeline's condition must be visible but unwritable.
+>
+> The house style already contains everything the mechanism needs, and this requirement assumes no more than it: a per-type provider resolved by `DiagramOrigin`, as `IDiagramDocumentFactory`, `IDiagramToolboxProvider` and `IDiagramValidator` all are; properties described as data the client renders without understanding, as `ToolboxItemDefinition` is; a read-only flag carrying a reason, exactly as `ContextActionDefinition` pairs `Available` with `UnavailableReason` and the client renders it disabled with the reason as its tooltip; and edits dispatched as `ICommand` through `IHistoryStack`, as the mindmap module's `SetNodeTextCommand` already does.
+
+#### Acceptance Criteria
+
+1. WHEN a pipeline element is selected THEN the module SHALL contribute that element's properties for display, through whatever seam the Property Grid spec defines for a diagram type — resolved by `DiagramOrigin`, as `IDiagramToolboxProvider` and `IDiagramValidator` already are, so core learns nothing about pipelines.
+2. WHEN a **stage** is selected THEN the panel SHALL show at least: its `stage` name, its `displayName`, its `dependsOn` (with the implicit sequential default shown as what it resolves to, not as absent), its `condition`, its `pool`, whether it is `trigger: manual`, whether it is `isSkippable: false`, and its job count.
+3. WHEN a **job** is selected THEN the panel SHALL show at least: its name and `displayName`, whether it is a plain job or a `deployment` job, its `dependsOn`, its `condition`, its `pool`, its `timeoutInMinutes`, its `continueOnError`, and — where it has one — its `strategy` with the multiplicity a `matrix` or `parallel` produces. For a deployment job it SHALL also show its `environment` and its strategy kind (`runOnce`, `rolling`, `canary`).
+4. WHEN a **step** is selected THEN the panel SHALL show at least: its kind (`task`, `script`, `bash`, `pwsh`, `powershell`, `checkout`, `download`, `publish`, `template`), its `displayName`, its `condition`, its `continueOnError`, its `enabled`, and the value that identifies it — a task's name and version, or a script's first line.
+5. WHEN a **dependency edge** is selected THEN the panel SHALL show which element declares it and which it points at, and the condition governing it, so the answer to "why does this wait" is in one place.
+6. WHEN a property is shown THEN it SHALL be marked **editable or read-only**, and the editable set SHALL be exactly the one Requirement 9.1 permits — `displayName`, `dependsOn` and `enabled`. Everything else in Requirements 13.2–13.5 is **shown but not editable**: a task's inputs, a pool, a strategy, an environment and a condition are all things a text editor edits better and a bad write breaks the build.
+7. WHEN the selected element came from a **template** (Requirement 5) THEN every one of its properties SHALL be read-only, whatever Requirement 13.6 would otherwise permit, and the panel SHALL name the template file the value lives in. This is the case that makes a read-only property necessary rather than merely tidy: the value is real, worth showing, and cannot be written here.
+8. IF the Property Grid provides **no way to mark a property read-only** THEN this module SHALL contribute only its editable properties and SHALL NOT contribute the rest, rather than presenting a value the user can change and the module will refuse. A panel that offers an edit that always fails is worse than a panel that shows less. Stated as a fallback rather than a preference: read-only-with-a-reason is the house style already (`ContextActionDefinition.Available` plus `UnavailableReason`), and losing Requirements 13.2–13.5 to its absence would be a poor trade for a diagram whose whole value is showing what the YAML hides.
+9. WHEN a property carries an **expression** (`$[ ]`, `${{ }}`) THEN the panel SHALL show the expression itself rather than a resolved value, and mark it as unresolved — its value is not knowable until the pipeline runs (Requirement 3.4), and showing a guess would be a lie the user acts on.
+10. WHEN an editable property is changed THEN the change SHALL go through the same `ICommand` the canvas and the context menu use (Requirement 9.2), so a rename from the panel and a rename from the diagram are one implementation, land on the project's history, and are one undo away.
+11. WHEN a property change is applied THEN the resulting document change SHALL reach every connection viewing that pipeline as ordinary deltas, and the panel SHALL follow the pushed selection rather than holding its own copy of the element.
+12. WHEN this requirement is read against `ElementDetail` as it stands THEN note that today's message carries `text`, `has_children`, `folded` and `linked` — a mindmap-shaped fixed set in a core contract. A property grid serving three diagram types cannot be built on it, and **generalising it is the Property Grid spec's problem to solve, not this module's to work around**; it is recorded here because this spec is the second caller that would have to.
+
+### Requirement 14 — Pluggable registration
 
 **User Story:** As a developer of EtAlii.Adp, I want this to plug in where the two before it did, so a third type demonstrates a path rather than a third special case.
 
