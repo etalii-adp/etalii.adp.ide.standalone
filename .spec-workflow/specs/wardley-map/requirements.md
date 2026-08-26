@@ -106,7 +106,52 @@ The first revision of this document was written when the mindmap was the only sh
 #### Acceptance Criteria
 
 1. WHEN a `component`, `anchor` or `submap` statement is read THEN the system SHALL produce a positioned element carrying its name, its kind and its coordinates. These are the DSL's **three** statement kinds.
-   * *(An earlier revision listed `market` and `ecosystem` here as two further statement kinds. Certifying the task 2 corpus against the real OnlineWardleyMaps parser showed that they are not: `market Foo [0.6, 0.8]` is a parse error, and the real syntax is `component Foo [0.6, 0.8] (market)`. They are **decorators**, and Requirement 6.3 now carries them.)*
+   * *(An earlier revision listed `market` and `ecosystem` here as two further statement kinds. Certifying the task 2 corpus against the real OnlineWardleyMaps parser showed that they are not. They are **decorators**, and Requirement 6.3 now carries them. The evidence is below, because this correction is a judgement call and is easier to weigh with the parser's own output than with a summary of it.)*
+
+   <details><summary><b>Certification evidence</b> — the real parser, vendored by <code>cli-owm</code> 0.0.2 (MIT, © 2019 Damon Skelhorn)</summary>
+
+   Feeding it the keyword form, alongside a component and an anchor that both parse:
+
+   ```
+   title Probe
+   anchor Cust [0.95, 0.63]
+   component Alpha [0.80, 0.40]
+   market BetaMarket [0.66, 0.88]
+   ecosystem GammaEco [0.40, 0.47]
+   ```
+
+   ```
+   parsed: {"errors":2,"components":1,"anchors":1,"evolution":4}
+   errors: 2
+     ! {"name":"ParseError","line":3}
+     ! {"name":"ParseError","line":4}
+   ```
+
+   One component, not three. The parser's `line` is **0-based**, so lines 3 and 4 are the `market` and `ecosystem` statements. Rewritten as decorators, the same elements parse clean:
+
+   ```
+   component BetaMarket [0.66, 0.88] (market)
+   component GammaEco [0.40, 0.47] (ecosystem)
+   ```
+
+   ```
+   parsed: {"components":7,"anchors":1,"submaps":1,"evolved":1,"pipelines":1,
+            "links":3,"annotations":2,"notes":1,"urls":1,"attitudes":1}
+   errors: 0
+   ```
+
+   And the parsed component shows where they live — one `decorators` set holding all five, which is why Requirement 6.3 models them as a set rather than splitting them along a line the format does not draw:
+
+   ```json
+   {"maturity":0.88,"visibility":0.66,"name":"BetaMarket","type":"component","line":4,
+    "decorators":{"ecosystem":false,"market":true,"buy":false,"build":false,"outsource":false}}
+   ```
+
+   The same output confirms Requirement 5.2's axis reading rather than contradicting it: `[0.66, 0.88]` parsed to `visibility: 0.66, maturity: 0.88`.
+
+   Reproducible from `src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap.Tests/Fixtures/`: `npm install --no-save cli-owm@0.0.2` then `node certify.mjs *.owm`, with `CERTIFY_DUMP=1` for the component dump. **Caveat:** `cli-owm` 0.0.2 vendors a parser snapshot; a construct recorded here as invalid should be re-certified against a newer parser before anyone treats that as permanent.
+
+   </details>
 2. WHEN a coordinate pair `[a, b]` is read THEN the system SHALL interpret **`a` as visibility (the value-chain axis) and `b` as maturity (the evolution axis)**, both in `0..1`. This is the reverse of `Point2D(x, y)`, and the conversion SHALL live in exactly one place so no other code has to remember it.
 3. WHEN a link `A->B`, a flow link `A+>B`, or a link with context `A->B; text` is read THEN the system SHALL produce an element naming both endpoints by identity, carrying the link's kind and its context text.
 4. WHEN a `pipeline` is read THEN the system SHALL produce a container holding its child components, where a child carries only an evolution position and takes its visibility from the parent — the current nested form `pipeline Parent{ … }`. The **legacy** two-coordinate form SHALL be readable, and SHALL be written back in whichever form it was read (Requirement 3.2).
@@ -273,10 +318,11 @@ The first revision of this document was written when the mindmap was the only sh
 * **Modular Design**: `EtAlii.Adp.Diagram.WardleyMap`, `diagrams/wardley-map/api` and `diagrams/wardley-map/client` depend only on core abstractions; nothing in core depends on the module, and core stays compilable with zero diagram modules present.
 * **Dependency Management**: the parser/writer SHALL be usable without gRPC, without the filesystem and without a browser — given text, it returns a model, and given a model and the original text, it returns new text. The validator SHALL be a pure function over that model (Requirement 14.9).
 * **Clear Interfaces**: the integration surface is the eight registrations Requirement 12.3 lists, and nothing else.
-* **Code style**: backend code SHALL introduce **no new style-diagnostic categories** beyond those the repository already reports, as `dotnet format style --verify-no-changes --severity info` measures them; client code SHALL follow `src/.editorconfig`'s TypeScript sections. The gate itself belongs to [`quality-gates`](../quality-gates/requirements.md) Requirement 5 and is **not** this module's to fix.
-    * Stating it as "SHALL satisfy the gate" — as the previous revision did — sets a bar nothing currently clears: measured on an untouched checkout the gate reports **115 `IMPORTS` errors, 131 `IDE0130`, 19 `IDE0046`** and a handful of singletons. `quality-gates` exists precisely because of that.
-    * Two of those are worth naming, because a new module meets them by construction rather than by carelessness. The `IMPORTS` failures come from a self-contradicting `src/.editorconfig`, whose comment says `dotnet_separate_import_directive_groups` is commented out while the next line sets it to `true`. And **`IDE0130` fires on exactly the folder convention this spec follows** — `_Model/` and `Commands/` subfolders under a flat namespace, which `tech.md` and `structure.md` mandate and which the rule wants to track the folder. A module obeying the steering documents cannot avoid it without disobeying them.
-    * `quality-gates` is only at approved requirements, so which rules get fixed and which get downgraded with a note is still open. This spec deliberately does not assume which way that goes.
+* **Code style**: backend code SHALL leave `dotnet format style --verify-no-changes --severity info` (from `src/backend/`, against `EtAlii.Adp.slnx`) **exiting zero**, which CLAUDE.md now requires of any worktree before it merges back into `develop`; client code SHALL follow `src/.editorconfig`'s TypeScript sections.
+    * This is the third wording of this clause, and the churn is worth recording rather than hiding. The **first** said the module "SHALL satisfy" the gate, which was a bar nothing then cleared — measured on an untouched checkout the gate reported **115 `IMPORTS` errors, 131 `IDE0130`, 19 `IDE0046`** and a handful of singletons. The **second** therefore asked only for no *new* diagnostic categories, and handed the gate itself to [`quality-gates`](../quality-gates/requirements.md) Requirement 5.
+    * That spec has since landed, and the gate now exits zero. So the weaker bar is no longer the honest one: "no new categories" would let this module add findings to a clean gate, which is exactly what CLAUDE.md's new rule forbids. The strongest true statement is again the simplest one.
+    * Two findings this module would otherwise have produced were resolved there rather than here, and neither was carelessness. The `IMPORTS` failures came from a self-contradicting `src/.editorconfig`, whose comment said `dotnet_separate_import_directive_groups` was commented out while the next line set it to `true`. And **`IDE0130` fired on exactly the folder convention this spec follows** — `_Model/` and `Commands/` subfolders under a flat namespace, which `tech.md` and `structure.md` mandate; `quality-gates` downgraded it to `none` with a note recording that all 131 findings were that convention rather than drift.
+    * Where a future finding is a rule that should not apply rather than code that should change, the fix is to downgrade it **with a note** saying what the rule wanted, what the codebase does instead, and why the codebase won — per CLAUDE.md. Leaving it reported is the one option not on the table.
 
 ### Performance
 
