@@ -188,20 +188,20 @@
   - _Leverage: src/diagrams/mindmap/backend/.../MindmapToolboxProvider.cs_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Contribute the four toolbox entries, each naming the add action it drops into | Restrictions: the entry carries only data; the drop must reuse the existing add command rather than a second implementation | Success: DescribeToolbox returns four entries and an integration test proves a drop adds an element_
 
-- [ ] 24. Property provider
+- [x] 24. Property provider
   - File: `.../PipelineContextPropertyProvider.cs` (new), tests
   - The rows of Requirements 13.2–13.5, grouped Identity / Ordering / Execution. `ReadOnlyReason` empty only for `displayName`, `dependsOn` and `enabled`; a template-sourced element read-only throughout with the template's path as the reason. An absent property is not contributed at all. `SetAsync` dispatches the task-21 commands
   - _Requirements: 13.1–13.13_
   - _Leverage: src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4ContextPropertyProvider.cs_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Contribute pipeline element properties with read-only reasons, groups and command-backed edits | Restrictions: contribute nothing for an absent property; every non-editable row carries a sentence saying why; never write outside a command | Success: tests cover each element kind's rows, the three editable ones, a template-sourced element being read-only throughout, and absent versus empty_
 
-- [ ] 25. Wire the module into the host
+- [x] 25. Wire the module into the host
   - File: `.../ServiceCollection.AddAzurePipeline.cs` (new), `src/backend/EtAlii.Adp.Backend.Service/Program.cs` (edited)
   - One extension method registering every seam; one line in `Program.cs`
   - _Requirements: 14.3, 14.4_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Gather every module registration into one AddAzurePipeline extension method and call it once from the host | Restrictions: no per-seam lines in Program.cs; core must name nothing from this module | Success: the host starts, the type is discoverable and openable, and Program.cs gained exactly one line_
 
-- [ ] 26. The `Choice` editor — **this module adds it**
+- [x] 26. The `Choice` editor — **this module adds it**
   - File: `src/api/context.proto` (edited), `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextPropertyDefinition.cs` (edited), `src/client/src/shell/panels/PropertyGridPanel.tsx` (edited), tests; run `npm run generate`
   - Add `CONTEXT_PROPERTY_EDITOR_CHOICE`, candidate values on `ContextProperty`, and a select in the panel. Then `dependsOn` offers the other stage names instead of a text box
   - Purpose: design.md's Deviation 1. The property-grid work correctly declined to add an editor with no consumer; this module is that consumer
@@ -210,7 +210,7 @@
 
 ## Phase H — validation
 
-- [ ] 27. `PipelineRuleSet`
+- [x] 27. `PipelineRuleSet`
   - File: `.../PipelineRuleSet.cs`, `PipelineRules.cs`, `PipelineValidator.cs` (new), tests
   - Dangling `dependsOn`, cycles, unreachable elements, no dependency-free stage, unnamed elements, and an unfollowable template as information. Every problem carries a line location. A pure function from model to problems
   - _Requirements: 10.1–10.9_
@@ -219,19 +219,19 @@
 
 ## Phase I — closing
 
-- [ ] 28. Integration tests across the whole arc
+- [x] 28. Integration tests across the whole arc
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/AzurePipelineFlow.Tests.cs` (new)
   - Register a `.yml` through Add-on-a-file, open it, receive the baseline, execute a dependency edit, see the deltas and the rewritten file; a bare `.yml` routes nowhere while a bare `.mm` still routes; Add is offered on a `.yml` and not on a `.txt` or an already-registered file
   - _Requirements: 2.2, 2.3, 2.5, 9.8, 11.1_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer writing integration tests over the real host | Task: Prove the registration, opening and editing arc end to end | Restrictions: use the real host through WebApplicationFactory; assert on the file's bytes, not just the model | Success: the arc passes and the on-disk pipeline differs only in the lines the edit touched_
 
-- [ ] 29. Catalog, manual pass and interoperability
+- [x] 29. Catalog, manual pass and interoperability
   - File: `docs/diagrams.md` (edited), `tests.md` (edited)
   - Move the `azure-devops/pipeline` row to its implemented state. Record the manual checks: open a real pipeline, collapse and expand, drag an edge, undo, and confirm `git diff` shows only the `dependsOn` lines. Confirm the file still runs — validate it against Azure DevOps' schema after a round trip
   - _Requirements: 14.6, and the Usability rules_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer completing a diagram type | Task: Update the catalog row and record the manual verification steps in tests.md | Restrictions: do not claim implemented for anything not implemented; each tests.md entry names this spec and its task | Success: the row reflects reality and the manual checks are executable by a later agent_
 
-- [ ] 30. The pluggability check
+- [x] 30. The pluggability check
   - File: none — a review
   - Confirm core contains no Azure-Pipelines-specific type check, import or branch, and that the two seams added in Phase B are type-agnostic. Record the result; a further core change needed is a finding to report, not a step to take quietly
   - _Requirements: 14.4, 14.5_
