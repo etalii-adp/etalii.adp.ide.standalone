@@ -1,5 +1,3 @@
-using EtAlii.Adp.Diagram;
-
 namespace EtAlii.Adp.Diagram.AzurePipeline;
 
 /// <summary>
