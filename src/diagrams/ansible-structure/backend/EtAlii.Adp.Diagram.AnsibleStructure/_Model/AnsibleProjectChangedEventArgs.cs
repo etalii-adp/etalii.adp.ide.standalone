@@ -9,8 +9,8 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// able to drift than "here is what moved" - and the session turns it into deltas by comparing,
 /// which it would have to do either way.
 /// </remarks>
-/// <param name="FolderPath">The folder that was re-read.</param>
-/// <param name="Project">What it now holds.</param>
+/// <param name="folderPath">The folder that was re-read.</param>
+/// <param name="project">What it now holds.</param>
 public sealed class AnsibleProjectChangedEventArgs(string folderPath, AnsibleProject project) : EventArgs
 {
     public string FolderPath { get; } = folderPath;
