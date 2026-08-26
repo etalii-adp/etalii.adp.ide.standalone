@@ -249,6 +249,250 @@ public sealed class SetWardleyDecoratorCommandHandler : ICommandHandler<SetWardl
     }
 }
 
+public sealed class SetWardleyLinkCommandHandler : ICommandHandler<SetWardleyLinkCommand>
+{
+    private readonly IWardleyDocumentStore _documents;
+
+    public SetWardleyLinkCommandHandler(IWardleyDocumentStore documents)
+    {
+        ArgumentNullException.ThrowIfNull(documents);
+        _documents = documents;
+    }
+
+    public Task<CommandResult> ExecuteAsync(SetWardleyLinkCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var document = _documents.GetOrLoad(command.BodyPath);
+        var map = WardleyParser.Parse(document);
+        var identities = _documents.Identities(command.BodyPath);
+        var source = WardleyEdit.ComponentOf(map, identities, command.SourceElementId);
+        var target = WardleyEdit.ComponentOf(map, identities, command.TargetElementId);
+        if (source is null || target is null)
+        {
+            return Task.FromResult(CommandResult.Failure("That element is no longer on this map."));
+        }
+
+        if (source.Name == target.Name)
+        {
+            return Task.FromResult(CommandResult.Failure("A link needs two different elements."));
+        }
+
+        // Matched on both endpoints AND the kind, because the DSL lets one pair carry a
+        // dependency and a flow at once, and they are two different claims about the pair.
+        var existing = map.Links.FirstOrDefault(link =>
+            link.Source == source.Name && link.Target == target.Name && link.Kind == command.Kind);
+
+        if (!command.Present && existing is null)
+        {
+            return Task.FromResult(CommandResult.Failure("There is no such link between these two elements."));
+        }
+
+        var before = document.ToText();
+        if (!command.Present)
+        {
+            WardleyWriter.RemoveLine(document, existing!.Line);
+        }
+        else
+        {
+            var arrow = command.Kind == WardleyLinkKind.Flow ? "+>" : "->";
+            var context = command.Context.Trim();
+            var statement = context.Length > 0
+                ? $"{source.Name}{arrow}{target.Name}; {context}"
+                : $"{source.Name}{arrow}{target.Name}";
+
+            // An existing link is rewritten in place rather than a second one being appended:
+            // two statements saying the same thing is what Requirement 14.4 reports.
+            if (existing is null)
+            {
+                WardleyWriter.Append(document, statement);
+            }
+            else
+            {
+                document.ReplaceLine(existing.Line, statement);
+            }
+        }
+
+        _documents.Save(command.BodyPath);
+        return Task.FromResult(CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before)));
+    }
+}
+
+public sealed class SetWardleyEvolveCommandHandler : ICommandHandler<SetWardleyEvolveCommand>
+{
+    private readonly IWardleyDocumentStore _documents;
+
+    public SetWardleyEvolveCommandHandler(IWardleyDocumentStore documents)
+    {
+        ArgumentNullException.ThrowIfNull(documents);
+        _documents = documents;
+    }
+
+    public Task<CommandResult> ExecuteAsync(SetWardleyEvolveCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var document = _documents.GetOrLoad(command.BodyPath);
+        var map = WardleyParser.Parse(document);
+        var component = WardleyEdit.ComponentOf(map, _documents.Identities(command.BodyPath), command.ElementId);
+        if (component is null)
+        {
+            return Task.FromResult(CommandResult.Failure("That element is no longer on this map."));
+        }
+
+        var existing = map.Evolves.FirstOrDefault(evolve => evolve.Name == component.Name);
+        if (!command.Present && existing is null)
+        {
+            return Task.FromResult(CommandResult.Failure($"'{component.Name}' is not evolving."));
+        }
+
+        var before = document.ToText();
+        if (!command.Present)
+        {
+            WardleyWriter.RemoveLine(document, existing!.Line);
+        }
+        else
+        {
+            // Clamped rather than refused, for the same reason a drag is: the axis has ends,
+            // and a value past one of them is a slip rather than a different intention
+            // (Requirement 7.3).
+            var maturity = Math.Clamp(command.Maturity, 0d, 1d);
+            var name = command.OverrideName.Trim().Length > 0
+                ? $"{component.Name}->{command.OverrideName.Trim()}"
+                : component.Name;
+            var statement = $"evolve {name} {WardleyEdit.Number(maturity)}";
+
+            if (existing is null)
+            {
+                WardleyWriter.Append(document, statement);
+            }
+            else
+            {
+                document.ReplaceLine(existing.Line, statement);
+            }
+        }
+
+        _documents.Save(command.BodyPath);
+        return Task.FromResult(CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before)));
+    }
+}
+
+/// <summary>
+/// Pipeline membership, which is the one edit in this module that writes a block rather than a
+/// line.
+/// </summary>
+public sealed class SetWardleyPipelineMembershipCommandHandler : ICommandHandler<SetWardleyPipelineMembershipCommand>
+{
+    private readonly IWardleyDocumentStore _documents;
+
+    public SetWardleyPipelineMembershipCommandHandler(IWardleyDocumentStore documents)
+    {
+        ArgumentNullException.ThrowIfNull(documents);
+        _documents = documents;
+    }
+
+    public Task<CommandResult> ExecuteAsync(
+        SetWardleyPipelineMembershipCommand command,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (string.IsNullOrWhiteSpace(command.ChildName))
+        {
+            return Task.FromResult(CommandResult.Failure("A pipeline component needs a name."));
+        }
+
+        var document = _documents.GetOrLoad(command.BodyPath);
+        var map = WardleyParser.Parse(document);
+        var parent = WardleyEdit.ComponentOf(map, _documents.Identities(command.BodyPath), command.ParentElementId);
+        if (parent is null)
+        {
+            return Task.FromResult(CommandResult.Failure("That element is no longer on this map."));
+        }
+
+        var pipeline = map.Pipelines.FirstOrDefault(candidate => candidate.Parent == parent.Name);
+        var child = pipeline?.Children.FirstOrDefault(candidate => candidate.Name == command.ChildName);
+
+        if (!command.Member)
+        {
+            if (child is null)
+            {
+                return Task.FromResult(CommandResult.Failure($"'{command.ChildName}' is not in this pipeline."));
+            }
+
+            var removing = document.ToText();
+            WardleyWriter.RemoveLine(document, child.Line);
+            _documents.Save(command.BodyPath);
+            return Task.FromResult(CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, removing)));
+        }
+
+        if (child is not null)
+        {
+            return Task.FromResult(CommandResult.Failure($"'{command.ChildName}' is already in this pipeline."));
+        }
+
+        // The legacy two-coordinate form has no block to put a child in, and Requirement 3.2
+        // says a map written that way is written back that way - so this refuses rather than
+        // silently converting the statement to the nested form.
+        if (pipeline is { Form: WardleyPipelineForm.Legacy })
+        {
+            return Task.FromResult(CommandResult.Failure(
+                $"'{parent.Name}' has a pipeline written in the older two-coordinate form, which holds no components. Rewrite it as a nested pipeline first."));
+        }
+
+        var before = document.ToText();
+        var statement = $"  component {command.ChildName} [{WardleyEdit.Number(Math.Clamp(command.Maturity, 0d, 1d))}]";
+
+        if (pipeline is null)
+        {
+            // No pipeline yet: the parent gains one, written in the nested form because that is
+            // the form that can hold what is being added.
+            WardleyWriter.Append(document, $"pipeline {parent.Name}");
+            WardleyWriter.Append(document, "{");
+            WardleyWriter.Append(document, statement);
+            WardleyWriter.Append(document, "}");
+        }
+        else if (ClosingBraceOf(document, pipeline) is { } closing)
+        {
+            document.InsertLine(closing, statement);
+        }
+        else
+        {
+            // A nested pipeline whose block never closes is a document ADP did not write and
+            // cannot safely add to: guessing where the block ends would put the child in
+            // whatever follows.
+            return Task.FromResult(CommandResult.Failure($"'{parent.Name}' has a pipeline that is missing its closing brace."));
+        }
+
+        _documents.Save(command.BodyPath);
+        return Task.FromResult(CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before)));
+    }
+
+    /// <summary>
+    /// The 1-based line holding the pipeline's closing brace, or null when it has none.
+    /// </summary>
+    /// <remarks>
+    /// Found by scanning rather than computed from the children, because a block may hold blank
+    /// lines, comments and statements this module does not model - all of which Requirement 3.3
+    /// says survive untouched, and any of which may sit after the last child.
+    /// </remarks>
+    private static uint? ClosingBraceOf(WardleyDocument document, WardleyPipeline pipeline)
+    {
+        for (var number = pipeline.Line; number <= document.Lines.Count; number++)
+        {
+            if (document.Lines[(int)number - 1].Trim() == "}")
+            {
+                return number;
+            }
+        }
+
+        return null;
+    }
+}
+
 /// <summary>Puts the whole document back, byte for byte.</summary>
 public sealed class RestoreWardleyDocumentCommandHandler : ICommandHandler<RestoreWardleyDocumentCommand>
 {

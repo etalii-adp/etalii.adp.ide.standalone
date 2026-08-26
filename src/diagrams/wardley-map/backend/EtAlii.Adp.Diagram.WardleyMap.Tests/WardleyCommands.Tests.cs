@@ -304,6 +304,243 @@ public sealed class WardleyCommandsTests : IDisposable
         Assert.Equal("component Payment [0.70, 0.72] (buy)\n", Read());
     }
 
+    // ---- links --------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task SetLink_AppendsTheArrowItWasAskedFor()
+    {
+        // Arrange.
+        Write("component Alpha [0.5, 0.5]\ncomponent Beta [0.2, 0.2]\n");
+
+        // Act.
+        var result = await Execute(new SetWardleyLinkCommand(
+            _path, IdOf("Alpha"), IdOf("Beta"), WardleyLinkKind.Flow, Present: true, "cash"));
+
+        // Assert. A flow link is written with its own arrow, and its context after a semicolon.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal("component Alpha [0.5, 0.5]\ncomponent Beta [0.2, 0.2]\nAlpha+>Beta; cash\n", Read());
+    }
+
+    [Fact]
+    public async Task SetLink_RewritesAnExistingLink_RatherThanAddingASecond()
+    {
+        // Arrange. Two statements saying the same thing is what Requirement 14.4 reports, so
+        // setting a link that already exists changes the one that is there.
+        Write("component Alpha [0.5, 0.5]\ncomponent Beta [0.2, 0.2]\nAlpha->Beta\n");
+
+        // Act.
+        var result = await Execute(new SetWardleyLinkCommand(
+            _path, IdOf("Alpha"), IdOf("Beta"), WardleyLinkKind.Dependency, Present: true, "needs"));
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal("component Alpha [0.5, 0.5]\ncomponent Beta [0.2, 0.2]\nAlpha->Beta; needs\n", Read());
+    }
+
+    [Fact]
+    public async Task SetLink_ClearingOneKind_LeavesTheOtherArrowBetweenThePairAlone()
+    {
+        // Arrange. The DSL lets one pair carry a dependency and a flow at once; they are two
+        // different claims, so the kind is part of what identifies the link.
+        Write("component Alpha [0.5, 0.5]\ncomponent Beta [0.2, 0.2]\nAlpha->Beta\nAlpha+>Beta\n");
+
+        // Act.
+        var result = await Execute(new SetWardleyLinkCommand(
+            _path, IdOf("Alpha"), IdOf("Beta"), WardleyLinkKind.Dependency, Present: false));
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal("component Alpha [0.5, 0.5]\ncomponent Beta [0.2, 0.2]\nAlpha+>Beta\n", Read());
+    }
+
+    [Fact]
+    public async Task SetLink_RefusesToLinkAnElementToItself()
+    {
+        // Arrange.
+        Write("component Alpha [0.5, 0.5]\n");
+
+        // Act.
+        var result = await Execute(new SetWardleyLinkCommand(
+            _path, IdOf("Alpha"), IdOf("Alpha"), WardleyLinkKind.Dependency, Present: true));
+
+        // Assert.
+        Assert.False(result.IsSuccess);
+        Assert.Contains("two different elements", result.Error, StringComparison.Ordinal);
+        Assert.Equal("component Alpha [0.5, 0.5]\n", Read());
+    }
+
+    [Fact]
+    public async Task SetLink_RefusesToClearALinkThatIsNotThere()
+    {
+        // Arrange. Requirement 11.6 - the menu should not offer this, and if it does the
+        // command says why rather than reporting a success that changed nothing.
+        Write("component Alpha [0.5, 0.5]\ncomponent Beta [0.2, 0.2]\n");
+
+        // Act.
+        var result = await Execute(new SetWardleyLinkCommand(
+            _path, IdOf("Alpha"), IdOf("Beta"), WardleyLinkKind.Dependency, Present: false));
+
+        // Assert.
+        Assert.False(result.IsSuccess);
+        Assert.Contains("no such link", result.Error, StringComparison.Ordinal);
+    }
+
+    // ---- evolve -------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task SetEvolve_AppendsTheStatement_AndThenRewritesItInPlace()
+    {
+        // Arrange.
+        Write("component Alpha [0.5, 0.5]\n");
+
+        // Act.
+        Assert.True((await Execute(new SetWardleyEvolveCommand(_path, IdOf("Alpha"), Present: true, 0.7d))).IsSuccess);
+        Assert.Equal("component Alpha [0.5, 0.5]\nevolve Alpha 0.7\n", Read());
+
+        var again = await Execute(new SetWardleyEvolveCommand(_path, IdOf("Alpha"), Present: true, 0.85d));
+
+        // Assert. A component evolves to one place, so a second target replaces the first.
+        Assert.True(again.IsSuccess, again.Error);
+        Assert.Equal("component Alpha [0.5, 0.5]\nevolve Alpha 0.85\n", Read());
+    }
+
+    [Fact]
+    public async Task SetEvolve_WritesTheNameTheComponentTakesWhenItArrives()
+    {
+        // Arrange. The `evolve Name->NewName x` form, which is a rename that happens on arrival
+        // rather than now.
+        Write("component Kettle [0.4, 0.3]\n");
+
+        // Act.
+        var result = await Execute(new SetWardleyEvolveCommand(
+            _path, IdOf("Kettle"), Present: true, 0.75d, "Electric Kettle"));
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal("component Kettle [0.4, 0.3]\nevolve Kettle->Electric Kettle 0.75\n", Read());
+    }
+
+    [Fact]
+    public async Task SetEvolve_ClampsPastTheEndOfTheAxis()
+    {
+        // Arrange. The same judgement a drag makes: the axis has ends, and a value past one is
+        // a slip rather than a different intention (Requirement 7.3).
+        Write("component Alpha [0.5, 0.5]\n");
+
+        // Act.
+        await Execute(new SetWardleyEvolveCommand(_path, IdOf("Alpha"), Present: true, 1.4d));
+
+        // Assert.
+        Assert.Equal("component Alpha [0.5, 0.5]\nevolve Alpha 1\n", Read());
+    }
+
+    [Fact]
+    public async Task SetEvolve_ClearsTheStatement_AndRefusesWhenThereIsNone()
+    {
+        // Arrange.
+        Write("component Alpha [0.5, 0.5]\nevolve Alpha 0.7\n");
+
+        // Act.
+        var cleared = await Execute(new SetWardleyEvolveCommand(_path, IdOf("Alpha"), Present: false, 0d));
+        var again = await Execute(new SetWardleyEvolveCommand(_path, IdOf("Alpha"), Present: false, 0d));
+
+        // Assert.
+        Assert.True(cleared.IsSuccess, cleared.Error);
+        Assert.Equal("component Alpha [0.5, 0.5]\n", Read());
+        Assert.False(again.IsSuccess);
+        Assert.Contains("is not evolving", again.Error, StringComparison.Ordinal);
+    }
+
+    // ---- pipeline membership ------------------------------------------------------------------
+
+    [Fact]
+    public async Task PipelineMembership_GivesTheParentABlockWhenItHasNone()
+    {
+        // Arrange.
+        Write("component Kettle [0.4, 0.3]\n");
+
+        // Act.
+        var result = await Execute(new SetWardleyPipelineMembershipCommand(
+            _path, IdOf("Kettle"), "Electric Kettle", Member: true, 0.63d));
+
+        // Assert. Written in the nested form, because that is the form that can hold a child.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal(
+            "component Kettle [0.4, 0.3]\npipeline Kettle\n{\n  component Electric Kettle [0.63]\n}\n",
+            Read());
+    }
+
+    [Fact]
+    public async Task PipelineMembership_InsertsBeforeTheClosingBrace_LeavingWhatIsInTheBlockAlone()
+    {
+        // Arrange. A block may hold comments and blank lines, which Requirement 3.3 says
+        // survive untouched - so the brace is found by looking rather than by counting children.
+        Write("component Kettle [0.4, 0.3]\npipeline Kettle\n{\n  component Campfire Kettle [0.15]\n  // the other one\n}\n");
+
+        // Act.
+        var result = await Execute(new SetWardleyPipelineMembershipCommand(
+            _path, IdOf("Kettle"), "Electric Kettle", Member: true, 0.63d));
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal(
+            "component Kettle [0.4, 0.3]\npipeline Kettle\n{\n  component Campfire Kettle [0.15]\n  // the other one\n  component Electric Kettle [0.63]\n}\n",
+            Read());
+    }
+
+    [Fact]
+    public async Task PipelineMembership_RemovesTheChildItNames()
+    {
+        // Arrange.
+        Write("component Kettle [0.4, 0.3]\npipeline Kettle\n{\n  component Campfire Kettle [0.15]\n  component Electric Kettle [0.63]\n}\n");
+
+        // Act.
+        var result = await Execute(new SetWardleyPipelineMembershipCommand(
+            _path, IdOf("Kettle"), "Campfire Kettle", Member: false));
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal(
+            "component Kettle [0.4, 0.3]\npipeline Kettle\n{\n  component Electric Kettle [0.63]\n}\n",
+            Read());
+    }
+
+    [Fact]
+    public async Task PipelineMembership_RefusesTheLegacyTwoCoordinateForm()
+    {
+        // Arrange. Requirement 3.2 - a map written in the legacy form is written back that way,
+        // so the command refuses rather than silently converting the statement.
+        Write("component Power [0.1, 0.7]\npipeline Power [0.30, 0.85]\n");
+
+        // Act.
+        var result = await Execute(new SetWardleyPipelineMembershipCommand(
+            _path, IdOf("Power"), "Solar", Member: true, 0.4d));
+
+        // Assert.
+        Assert.False(result.IsSuccess);
+        Assert.Contains("older two-coordinate form", result.Error, StringComparison.Ordinal);
+        Assert.Equal("component Power [0.1, 0.7]\npipeline Power [0.30, 0.85]\n", Read());
+    }
+
+    [Fact]
+    public async Task PipelineMembership_RefusesADuplicateChild_AndAChildThatIsNotThere()
+    {
+        // Arrange.
+        Write("component Kettle [0.4, 0.3]\npipeline Kettle\n{\n  component Electric Kettle [0.63]\n}\n");
+
+        // Act.
+        var duplicate = await Execute(new SetWardleyPipelineMembershipCommand(
+            _path, IdOf("Kettle"), "Electric Kettle", Member: true, 0.4d));
+        var absent = await Execute(new SetWardleyPipelineMembershipCommand(
+            _path, IdOf("Kettle"), "Campfire Kettle", Member: false));
+
+        // Assert.
+        Assert.False(duplicate.IsSuccess);
+        Assert.Contains("already in this pipeline", duplicate.Error, StringComparison.Ordinal);
+        Assert.False(absent.IsSuccess);
+        Assert.Contains("is not in this pipeline", absent.Error, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task EveryEditRefusesAnElementThatIsNotThere()
     {
@@ -318,6 +555,9 @@ public sealed class WardleyCommandsTests : IDisposable
             new RenameWardleyElementCommand(_path, "gone", "Beta"),
             new SetWardleyInertiaCommand(_path, "gone", true),
             new SetWardleyDecoratorCommand(_path, "gone", WardleyDecorator.Buy, true),
+            new SetWardleyLinkCommand(_path, "gone", IdOf("Alpha"), WardleyLinkKind.Dependency, true),
+            new SetWardleyEvolveCommand(_path, "gone", true, 0.5d),
+            new SetWardleyPipelineMembershipCommand(_path, "gone", "Child", true),
         })
         {
             var result = await Execute(command);
@@ -343,6 +583,10 @@ public sealed class WardleyCommandsTests : IDisposable
             id => new SetWardleyInertiaCommand(_path, id, true),
             id => new SetWardleyDecoratorCommand(_path, id, WardleyDecorator.Market, true),
             id => new SetWardleyDecoratorCommand(_path, id, WardleyDecorator.Buy, false),
+            id => new SetWardleyLinkCommand(_path, id, IdOf("Beta"), WardleyLinkKind.Flow, true, "cash"),
+            id => new SetWardleyLinkCommand(_path, id, IdOf("Beta"), WardleyLinkKind.Dependency, false),
+            id => new SetWardleyEvolveCommand(_path, id, true, 0.9d),
+            id => new SetWardleyPipelineMembershipCommand(_path, id, "Child", true, 0.4d),
         })
         {
             Write(before);

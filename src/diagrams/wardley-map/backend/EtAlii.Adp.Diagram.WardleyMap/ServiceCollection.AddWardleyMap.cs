@@ -46,6 +46,10 @@ public static class ServiceCollectionAddWardleyMapExtension
         // Makes an element selectable, and self-describing once it is (Requirement 11.2).
         services.AddSingleton<IContextSourceResolver, WardleyContextSourceResolver>();
 
+        // The verbs, offered as data so the ribbon, the menu and the keyboard share one path
+        // (Requirement 11.4).
+        services.AddSingleton<IContextActionProvider, WardleyContextActionProvider>();
+
         // The per-connection view: baseline, viewport, deltas and a positional drag
         // (Requirement 10.8).
         services.AddSingleton<IDiagramSessionFactory, WardleySessionFactory>();
@@ -57,6 +61,10 @@ public static class ServiceCollectionAddWardleyMapExtension
         services.AddSingleton<ICommandHandler<RenameWardleyElementCommand>, RenameWardleyElementCommandHandler>();
         services.AddSingleton<ICommandHandler<SetWardleyInertiaCommand>, SetWardleyInertiaCommandHandler>();
         services.AddSingleton<ICommandHandler<SetWardleyDecoratorCommand>, SetWardleyDecoratorCommandHandler>();
+
+        services.AddSingleton<ICommandHandler<SetWardleyLinkCommand>, SetWardleyLinkCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetWardleyEvolveCommand>, SetWardleyEvolveCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetWardleyPipelineMembershipCommand>, SetWardleyPipelineMembershipCommandHandler>();
 
         // The two inverses. An edit that touches one line reports the first; one that touches
         // several - an add, a remove, a rename - reports the second, because putting the
