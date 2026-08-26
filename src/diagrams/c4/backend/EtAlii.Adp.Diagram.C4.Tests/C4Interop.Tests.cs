@@ -302,13 +302,13 @@ public class C4InteropTests : IDisposable
         // Act.
         Export(IoPath.Combine("Fixtures", name), directory);
         var today = Directory.GetFiles(directory, "*.mmd")
-            .ToDictionary(IoPath.GetFileName, File.ReadAllText, StringComparer.Ordinal);
+            .ToDictionary(v => IoPath.GetFileName(v), File.ReadAllText, StringComparer.Ordinal);
 
         // Assert, step by step.
         // The names first, so a view that stopped being exported reads as the missing view it
         // is rather than as a puzzling content mismatch.
         Assert.Equal(committed.Keys.Order(StringComparer.Ordinal), today.Keys.Order(StringComparer.Ordinal));
-        foreach (var (diagram, content) in today)
+        foreach ((string diagram, string content) in today)
         {
             Assert.Equal(Normalise(committed[diagram]), Normalise(content));
         }

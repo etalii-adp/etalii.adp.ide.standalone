@@ -37,8 +37,9 @@ public static class C4Export
                 $"No committed exports for '{fixture}'. Every fixture in the corpus needs them. {RegenerationHint}");
         }
 
-        var diagrams = Directory.GetFiles(directory, "*.mmd")
-            .ToDictionary(IoPath.GetFileName, File.ReadAllText, StringComparer.Ordinal);
+        var diagrams = Directory
+            .GetFiles(directory, "*.mmd")
+            .ToDictionary(v => IoPath.GetFileName(v), File.ReadAllText, StringComparer.Ordinal);
 
         if (diagrams.Count == 0)
         {
