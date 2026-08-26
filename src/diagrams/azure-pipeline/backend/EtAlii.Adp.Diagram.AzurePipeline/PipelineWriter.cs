@@ -90,6 +90,104 @@ public sealed class PipelineWriter
     }
 
     /// <summary>
+    /// Adds a whole element after <paramref name="after"/>, or as the first entry of the list
+    /// <paramref name="listKeyLine"/> declares when there is nothing to come after.
+    /// </summary>
+    /// <remarks>
+    /// A list's first entry and its fifth go in different places: the fifth follows its
+    /// predecessor, and the first follows the key that opens the list. Both are inserts rather
+    /// than reflows - nothing already in the file is rewritten to accommodate the new lines.
+    /// </remarks>
+    /// <param name="after">The element the new one follows, or null for the first in its list.</param>
+    /// <param name="listKeyLine">The line the list's key sits on, used when <paramref name="after"/> is null.</param>
+    /// <param name="lines">The element's own lines, already indented.</param>
+    public void InsertElement(PipelineEditTarget? after, int listKeyLine, IReadOnlyList<string> lines)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
+        if (lines.Count == 0)
+        {
+            return;
+        }
+
+        if (after is not null)
+        {
+            Guard(after);
+            _document.Insert(after.Lines.End + 1, lines);
+            return;
+        }
+
+        ArgumentOutOfRangeException.ThrowIfNegative(listKeyLine);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(listKeyLine, _document.Lines.Count);
+        _document.Insert(listKeyLine + 1, lines);
+    }
+
+    /// <summary>
+    /// Removes a whole element, and the blank lines that separated it from the next one.
+    /// </summary>
+    /// <remarks>
+    /// The trailing blanks go with it deliberately. A pipeline that separates its stages with a
+    /// blank line each would otherwise accumulate a run of them wherever a stage was removed, and
+    /// that is a diff the user did not ask for even though every line of it is whitespace.
+    /// </remarks>
+    /// <returns>Whether the document changed.</returns>
+    public bool RemoveElement(PipelineEditTarget element)
+    {
+        Guard(element);
+
+        var end = element.Lines.End;
+        while (end + 1 < _document.Lines.Count && _document.Lines[end + 1].IsBlank)
+        {
+            end++;
+        }
+
+        _document.Remove(new PipelineLineRange(element.Lines.Start, end));
+        return true;
+    }
+
+    /// <summary>
+    /// Moves one element to sit after another within the same list, or to the front of it.
+    /// </summary>
+    /// <remarks>
+    /// Reordering is a lift and a drop, in that order, and the drop point has to be worked out
+    /// before the lift: once the lines are gone every range below them has moved, and using a
+    /// range measured beforehand would insert in the wrong place. That is the whole of the bug
+    /// this method exists to not have.
+    /// </remarks>
+    /// <param name="element">What to move.</param>
+    /// <param name="after">What it should follow, or null to move it to the front of the list.</param>
+    /// <param name="listKeyLine">The line the list's key sits on, used when <paramref name="after"/> is null.</param>
+    /// <returns>Whether the document changed.</returns>
+    public bool MoveElement(PipelineEditTarget element, PipelineEditTarget? after, int listKeyLine)
+    {
+        Guard(element);
+        if (after is not null)
+        {
+            Guard(after);
+            if (after.Lines.Start == element.Lines.Start)
+            {
+                // Moving something to after itself is a no-op, and treating it as one keeps the
+                // arithmetic below from having to mean anything in that case.
+                return false;
+            }
+        }
+
+        var moved = Enumerable.Range(element.Lines.Start, element.Lines.Length)
+            .Select(index => _document.Lines[index].Text)
+            .ToList();
+
+        var target = after is null ? listKeyLine + 1 : after.Lines.End + 1;
+        if (target > element.Lines.End)
+        {
+            // The destination is below what is about to be removed, so it moves up by that many.
+            target -= element.Lines.Length;
+        }
+
+        _document.Remove(element.Lines);
+        _document.Insert(target, moved);
+        return true;
+    }
+
+    /// <summary>
     /// Writes a one-line property, keeping any comment that was trailing on the line it replaces -
     /// the comment is about that property, and losing it while renaming something would be an edit
     /// nobody asked for.

@@ -141,13 +141,26 @@ public sealed class PipelineDocument
         ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _lines.Count);
 
         // Inserting at the very end of a file whose last line has no terminator would otherwise
-        // run the new line onto it, so that line gains one first.
-        if (index == _lines.Count && _lines.Count > 0 && _lines[^1].Ending.Length == 0)
+        // run the new line onto it, so that line gains one - and the *new* last line inherits the
+        // missing terminator in its place.
+        //
+        // Moving it rather than simply adding one is what keeps an append reversible. A file with
+        // no trailing newline that gained one on every append would come back one byte different
+        // from an undo, and "the file is exactly as it was" is the promise this whole module is
+        // built around.
+        var appendingToUnterminated = index == _lines.Count && _lines.Count > 0 && _lines[^1].Ending.Length == 0;
+        if (appendingToUnterminated)
         {
             _lines[^1] = _lines[^1] with { Ending = DominantEnding };
         }
 
-        _lines.InsertRange(index, lines.Select(text => new PipelineLine(text, DominantEnding)));
+        var inserted = lines.Select(text => new PipelineLine(text, DominantEnding)).ToList();
+        if (appendingToUnterminated && inserted.Count > 0)
+        {
+            inserted[^1] = inserted[^1] with { Ending = "" };
+        }
+
+        _lines.InsertRange(index, inserted);
     }
 
     /// <summary>Removes the lines in <paramref name="range"/>, touching no other line.</summary>
@@ -155,10 +168,20 @@ public sealed class PipelineDocument
     {
         Guard(range);
 
-        // Removing the final line of a file that ended with one takes its terminator with it, so
-        // the new final line keeps whatever it already had - which may be no terminator at all,
-        // and that is exactly what the original file looked like before this line was added.
+        // How the file ends is a property of the file, not of the line that happens to be last -
+        // so when the last line goes, whatever it said about the ending passes to the line that
+        // takes its place. Without this, removing an unterminated final line would silently leave
+        // the file terminated, and an append followed by its own undo would not come back byte
+        // for byte.
+        var removingTheEnd = range.End == _lines.Count - 1;
+        var ending = _lines[range.End].Ending;
+
         _lines.RemoveRange(range.Start, range.Length);
+
+        if (removingTheEnd && _lines.Count > 0)
+        {
+            _lines[^1] = _lines[^1] with { Ending = ending };
+        }
     }
 
     private void Guard(PipelineLineRange range)

@@ -1,3 +1,5 @@
+using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Diagrams;
 using EtAlii.Adp.Diagram;
 
@@ -34,6 +36,20 @@ public static class ServiceCollectionAddAzurePipelineExtension
         services.AddSingleton<PipelineElementMapper>();
 
         services.AddSingleton<IDiagramSessionFactory, PipelineSessionFactory>();
+
+        // Making an element selectable is registering this and nothing else; the context service
+        // is untouched (Requirement 12.2).
+        services.AddSingleton<IContextSourceResolver, PipelineContextSourceResolver>();
+
+        // The editable set, one handler per command. Every one of them is undoable, because every
+        // one reports the command that reverses it (Requirement 9.2).
+        services.AddSingleton<ICommandHandler<RenamePipelineElementCommand>, RenamePipelineElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetPipelineDependenciesCommand>, SetPipelineDependenciesCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetPipelineElementEnabledCommand>, SetPipelineElementEnabledCommandHandler>();
+        services.AddSingleton<ICommandHandler<AddPipelineElementCommand>, AddPipelineElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<RemovePipelineElementCommand>, RemovePipelineElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestorePipelineLinesCommand>, RestorePipelineLinesCommandHandler>();
+        services.AddSingleton<ICommandHandler<MovePipelineStepCommand>, MovePipelineStepCommandHandler>();
 
         return services;
     }

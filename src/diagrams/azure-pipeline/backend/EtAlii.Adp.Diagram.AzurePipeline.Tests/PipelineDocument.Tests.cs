@@ -147,6 +147,38 @@ public class PipelineDocumentTests
         document.Insert(2, ["c: 3"]);
 
         // Assert.
+        // The old last line gains a terminator and the new one inherits the missing one, so the
+        // file still ends the way it did - which is what makes the append reversible.
+        Assert.Equal("a: 1\nb: 2\nc: 3", document.Text);
+    }
+
+    [Fact]
+    public void AppendingThenRemoving_LeavesAnUnterminatedFileExactlyAsItWas()
+    {
+        // Arrange: an undo has to return the file byte for byte, and a trailing newline quietly
+        // acquired on the way is exactly the kind of one-byte difference a reviewer notices and
+        // nobody can explain.
+        const string original = "a: 1\nb: 2";
+        var document = PipelineDocument.Parse(original);
+
+        // Act.
+        document.Insert(2, ["c: 3", "d: 4"]);
+        document.Remove(new PipelineLineRange(2, 3));
+
+        // Assert.
+        Assert.Equal(original, document.Text);
+    }
+
+    [Fact]
+    public void AppendingToATerminatedFile_KeepsItTerminated()
+    {
+        // Arrange: the other half of the same rule - a file that ends in a newline goes on doing so.
+        var document = PipelineDocument.Parse("a: 1\nb: 2\n");
+
+        // Act.
+        document.Insert(2, ["c: 3"]);
+
+        // Assert.
         Assert.Equal("a: 1\nb: 2\nc: 3\n", document.Text);
     }
 
