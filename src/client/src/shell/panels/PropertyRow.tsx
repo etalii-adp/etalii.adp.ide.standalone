@@ -12,6 +12,7 @@ const KNOWN_EDITORS = new Set<ContextPropertyEditor>([
   ContextPropertyEditor.LINE,
   ContextPropertyEditor.TEXT,
   ContextPropertyEditor.TOGGLE,
+  ContextPropertyEditor.CHOICE,
 ]);
 
 /**
@@ -132,6 +133,36 @@ export function PropertyRow({ property, onCommit }: PropertyRowProps) {
               }
             }}
           />
+        ) : property.editor === ContextPropertyEditor.CHOICE ? (
+          <select
+            className="property-grid-input property-grid-input-choice"
+            value={draft}
+            aria-label={property.label}
+            onChange={(event) => {
+              // Picking from a list has no "finished typing" either: the selection is the commit.
+              const next = event.target.value;
+              setDraft(next);
+              setEditing(false);
+              void onCommit(next).then((failure) => {
+                setError(failure);
+                if (failure.length > 0) {
+                  setDraft(property.value);
+                }
+              });
+            }}
+          >
+            {/* The current value first, and included even when the provider did not list it -
+                a value the file already holds must remain selectable, or opening the list would
+                silently offer to change it. */}
+            {(property.candidates.includes(property.value)
+              ? property.candidates
+              : [property.value, ...property.candidates]
+            ).map((candidate) => (
+              <option key={candidate} value={candidate}>
+                {candidate.length > 0 ? candidate : "(none)"}
+              </option>
+            ))}
+          </select>
         ) : property.editor === ContextPropertyEditor.TOGGLE ? (
           <input
             type="checkbox"

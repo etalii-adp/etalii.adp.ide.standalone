@@ -209,7 +209,7 @@ public sealed class AnsibleGraph
     /// not create an edge - an exclusion names what a play will <em>not</em> run on, and drawing
     /// a line for it would say the opposite of what the file says.
     /// </remarks>
-    public static bool Matches(string pattern, AnsibleInventory inventory)
+    public static bool Matches(string? pattern, AnsibleInventory inventory)
     {
         ArgumentNullException.ThrowIfNull(inventory);
 

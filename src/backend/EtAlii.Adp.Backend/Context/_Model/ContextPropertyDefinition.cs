@@ -39,14 +39,30 @@ namespace EtAlii.Adp.Backend.Context;
 /// An optional heading the grid sorts under, for a selection with more properties than reads
 /// comfortably as one list. Empty means ungrouped, and ungrouped rows come first.
 /// </param>
+/// <param name="Candidates">
+/// What a <see cref="ContextPropertyEditor.Choice"/> property may be set to, in the order the
+/// list should offer them. Empty for every other editor.
+/// <para>
+/// Supplied by the provider because only the provider knows: the valid values of a pipeline
+/// stage's <c>dependsOn</c> are the other stages in that file, which the grid has no way to find
+/// out and no business knowing. It renders the list without understanding it, exactly as the
+/// toolbox renders entries and the context menu renders actions.
+/// </para>
+/// </param>
 public sealed record ContextPropertyDefinition(
     string Id,
     string Label,
     string Value,
     ContextPropertyEditor Editor = ContextPropertyEditor.Line,
     string ReadOnlyReason = "",
-    string Group = "")
+    string Group = "",
+    IReadOnlyList<string>? Candidates = null)
 {
     /// <summary>Whether the grid should let the value be edited.</summary>
     public bool IsEditable => ReadOnlyReason.Length == 0;
+
+    /// <summary>
+    /// The candidates, never null - so a consumer may enumerate without asking first.
+    /// </summary>
+    public IReadOnlyList<string> Choices => Candidates ?? [];
 }

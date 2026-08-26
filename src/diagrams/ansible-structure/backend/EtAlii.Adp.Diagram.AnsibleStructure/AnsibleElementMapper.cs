@@ -2,8 +2,6 @@ using EtAlii.Adp.Backend.Diagrams;
 
 using Google.Protobuf;
 
-using Wire = EtAlii.Adp.Diagram.AnsibleStructure.Wire;
-
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
 
 /// <summary>

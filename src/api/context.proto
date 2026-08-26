@@ -377,6 +377,10 @@ enum ContextPropertyEditor {
   CONTEXT_PROPERTY_EDITOR_LINE = 0;   // a single line: a name, a technology
   CONTEXT_PROPERTY_EDITOR_TEXT = 1;   // several lines: a description, a note
   CONTEXT_PROPERTY_EDITOR_TOGGLE = 2; // yes or no; value carries "true" or "false"
+  // One of a known set, offered as a list: a pipeline stage's dependsOn, whose valid values
+  // are the other stages. `candidates` carries them and `value` is whichever is current, so
+  // this stays a single-valued editor like the three above.
+  CONTEXT_PROPERTY_EDITOR_CHOICE = 3;
 }
 
 message ContextProperty {
@@ -390,6 +394,13 @@ message ContextProperty {
   // mirrors how an unavailable action carries a reason rather than being omitted.
   string read_only_reason = 5;
   string group = 6;                 // optional heading; empty means ungrouped
+  // What a CHOICE property may be set to, in the order the list should show them. Supplied by
+  // the provider and rendered by the panel without understanding any of it, exactly as the
+  // toolbox renders entries and the context menu renders actions.
+  //
+  // Empty for every other editor. A CHOICE whose candidates are empty has nothing to pick, and
+  // the provider should have marked it read-only with a reason instead.
+  repeated string candidates = 7;
 }
 message DescribePropertiesRequest {
   ShortGuid project_id = 1;

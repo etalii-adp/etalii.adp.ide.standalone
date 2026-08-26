@@ -80,13 +80,21 @@ public sealed partial class ContextServiceImpl
         return new SetPropertyResponse { Accepted = true };
     }
 
-    private static ContextProperty ToProto(ContextPropertyDefinition definition) => new()
+    private static ContextProperty ToProto(ContextPropertyDefinition definition)
     {
-        Id = definition.Id,
-        Label = definition.Label,
-        Value = definition.Value,
-        Editor = definition.Editor,
-        ReadOnlyReason = definition.ReadOnlyReason,
-        Group = definition.Group,
-    };
+        var property = new ContextProperty
+        {
+            Id = definition.Id,
+            Label = definition.Label,
+            Value = definition.Value,
+            Editor = definition.Editor,
+            ReadOnlyReason = definition.ReadOnlyReason,
+            Group = definition.Group,
+        };
+
+        // Only a Choice has any, and an empty repeated field costs nothing on the wire - so this
+        // adds nothing to every property that is not one.
+        property.Candidates.AddRange(definition.Choices);
+        return property;
+    }
 }

@@ -253,6 +253,41 @@ That third row is what makes this type worth specifying. An `azure-pipelines.yml
 3. WHEN the module registers its document factory, source resolver, action providers, toolbox provider, validator and command handlers THEN each SHALL be one registration through an existing extension point, gathered into one `AddAzurePipeline` extension method per tech.md's registration rule.
 4. IF core canvas, storage, sync, context or command code is inspected THEN it SHALL contain no Azure-Pipelines-specific type check, import or branch. Both core changes (Requirements 2.2 and 2.3) SHALL be type-agnostic, and the next type with a shared extension — `.json`, `.xml` — SHALL need neither of them changed again.
 5. WHEN this module is complete THEN the three shipped diagram types SHALL differ in layout ownership, in who owns the document, and in how a file becomes a diagram — and core SHALL be unchanged by those differences apart from the two seams Requirement 2 names. **That is the acceptance test for the pluggable model at this stage**, and any further core change needed is a finding to report rather than a step to take quietly.
+
+> **Outcome of the Requirement 14.5 review (task 30).** The acceptance test passes, and two further
+> core changes are reported here rather than taken quietly.
+>
+> **The three types do differ in all three ways.** *Layout ownership*: a mindmap's tree is its
+> layout, C4 computes an arrangement a user may override through a sidecar, and a pipeline computes
+> a layered one that nobody may override — it has no coordinates to store and refuses a drag.
+> *Document ownership*: the mindmap owns one `.mm` per diagram, C4 shares one workspace across many
+> views, and a pipeline owns one file per diagram but reads others it may not write (its templates).
+> *How a file becomes a diagram*: a `.mm` routes on sight, a `.dsl` routes through an `.adp` naming
+> a view, and a `.yml` routes only where somebody registered it.
+>
+> **Core carries no Azure-Pipelines-specific branch, import or type check.** Every mention of the
+> words in `EtAlii.Adp.Backend`, `EtAlii.Adp.Diagram` and the client shell is an explanatory comment
+> citing the motivating case, or an unrelated use of "pipeline". Both Requirement 2 seams are
+> type-agnostic: `SharedExtension` is a flag any definition may set, and the router's guard reads it
+> off whichever definitions claim the extension. A `.json` or `.xml` type would need neither changed.
+>
+> **Two core changes beyond those seams, both reported:**
+>
+> 1. *The `Choice` property editor* (`context.proto`, `ContextPropertyDefinition`,
+>    `ContextServiceImpl.Properties`, `PropertyRow.tsx`). Predicted and assigned by Requirement
+>    13.14 — "this module's implementation is what adds it" — so it is a planned widening rather
+>    than a surprise, and it is type-agnostic: a new enum value plus provider-supplied candidates
+>    that the panel renders without understanding.
+> 2. *`ContextSelectionResolver` taking the first resolver that claims an id shape rather than the
+>    first that accepts the id.* This is not a widening for this type at all. Every diagram
+>    module's resolver claims every element id, because `CanResolve` asks about the shape of an id
+>    and ownership depends on the enclosing file. Taking the first claimant gave whichever module
+>    registered earliest silent ownership of every element selection in the application — a C4
+>    element could not be selected at all. The fix makes core *more* type-agnostic, and was found
+>    only because a third type finally collided with the second.
+>
+> The second finding is the one worth carrying forward: the pluggable model held, but a defect in
+> it stayed invisible for two diagram types and surfaced on the third.
 6. WHEN the module reaches each state THEN `docs/diagrams.md`'s `azure-devops/pipeline` row SHALL be updated per CLAUDE.md.
 
 ## Non-Functional Requirements

@@ -16,10 +16,13 @@
     <PackageVersion Include="Serilog" Version="4.4.0" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <!--
-      The tree's only YAML dependency, referenced by the ansible-structure module alone. That
-      module never writes, so the round-trip fidelity that would justify a hand-rolled
-      line-preserving parser buys it nothing - and YamlDotNet's node marks are what let a
-      problem point at the line that declared it.
+      YamlDotNet is used for reading only, by both the ansible-structure and azure-pipeline
+      modules. Its event stream and representation model give correct handling of anchors,
+      aliases, block scalars, flow collections and quoting, plus a line number on every node -
+      which is what lets a problem point at the line that declared it, and what lets a pipeline
+      element record the lines that declare it. Neither module ever serialises back through it:
+      ansible-structure never writes at all, and azure-pipeline writes line by line through
+      PipelineDocument, so its round-trip guarantee does not depend on this package.
     -->
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.0" />

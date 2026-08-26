@@ -29,6 +29,6 @@ public sealed record AnsibleMetrics(
     public static AnsibleMetrics Default { get; } = new();
 
     /// <summary>The width a node labelled <paramref name="text"/> needs.</summary>
-    public double Measure(string text) =>
+    public double Measure(string? text) =>
         Math.Max(MinimumWidth, (text ?? "").Length * FontSize * AverageAdvance + (2 * HorizontalPadding));
 }
