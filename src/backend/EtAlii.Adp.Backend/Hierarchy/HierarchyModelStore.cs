@@ -52,8 +52,11 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
 
     private HierarchyModelEntry CreateEntry(ShortGuid watchId, string rootPath)
     {
-        var entry = new HierarchyModelEntry { Model = new HierarchyModel(rootPath) };
-        entry.IdleTimer = new Timer(_ => EvictIfIdle(watchId), null, _idleTimeout, Timeout.InfiniteTimeSpan);
+        var entry = new HierarchyModelEntry
+        {
+            Model = new HierarchyModel(rootPath),
+            IdleTimer = new Timer(_ => EvictIfIdle(watchId), null, _idleTimeout, Timeout.InfiniteTimeSpan),
+        };
         return entry;
     }
 

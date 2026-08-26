@@ -79,19 +79,41 @@ An earlier version of this entry said the check could not run here because there
 Docker nor a JRE. A JDK has since been installed, and the CLI comes from Maven Central, which was
 reachable all along - the entry was wrong, not the environment.
 
-**What is still manual** is the rendering half: that Lite *draws* what it parses.
+**The rendering half is now automated too**, and this entry no longer asks anyone to open a
+browser to answer it. `C4InteropTests.EveryExport_IsStillWhatStructurizrDraws` exports every
+fixture through the real CLI to Mermaid and compares the result to the diagrams committed in
+`Fixtures/exports`; `C4ExportTests` then reads those committed diagrams with no JDK at all and
+asserts that every element ADP believes is on a view was actually drawn on it. That is the
+question a person used to answer by looking at Lite, asked without the browser, the container
+or the person.
+
+It is a real check rather than an exit code: a view that renders empty exports perfectly
+happily, and ADP shipped exactly that once - the `c4/deployment` template with an empty
+`deploymentEnvironment`, which bound to nothing and drew nothing while every command
+succeeded. Replacing a committed diagram with an empty frame fails both checks, which was
+verified rather than assumed.
+
+**What is still manual** is what no text format can answer: whether the picture is any good to
+look at. Three things, and only these:
+
+- **Styling and themes.** That `styles` blocks and `theme` directives ADP round-trips actually
+  resolve to the colours and shapes intended, rather than merely surviving as text. ADP carries
+  these through untouched and has no model of what they mean.
+- **Layout quality.** Structurizr's own auto-layout on a document ADP wrote: whether the result
+  is readable, not merely non-overlapping. `C4LayoutCrowdingTests` pins that boxes do not sit
+  on top of each other; nothing can pin that a diagram is pleasant to read.
+- **The sidecar staying out of the way.** That ADP's `.layout.json` beside the `.dsl` draws no
+  complaint from Lite, since it is ADP's own file and not part of the workspace.
 
 - **Preconditions**: Docker (or a JRE and the Structurizr Lite jar). A project containing a C4
-  model ADP created and then edited - rename an element, set a technology, add a second view - so
-  the file under test is one ADP wrote, not one it only read.
+  model ADP created and then edited - rename an element, set a technology, add a second view -
+  so the file under test is one ADP wrote, not one it only read. Give it a `styles` block.
 - **Actions**: run Structurizr Lite against the folder holding the `.dsl`
   (`docker run -it --rm -p 8080:8080 -v /path/to/folder:/usr/local/structurizr structurizr/lite`)
   and open `http://localhost:8080`.
-- **Expected**: Lite renders every view ADP declared - the ones it created and the one added
-  through "Add view". The element names, descriptions and technologies ADP edited appear as
-  edited. ADP's `.layout.json` sidecar is ignored by Lite and causes no complaint, because it is
-  ADP's own file and not part of the workspace.
-
+- **Expected**: the styles resolve, the auto-layout is readable, and the `.layout.json` sidecar
+  causes no complaint. That every view is present and every element is on it is no longer part
+  of this pass - the export checks own that, and they run on every `dotnet test`.
 ## The property grid's keyboard cadence, in a real browser (property-grid, task 6)
 
 The commit cadence is pinned by unit tests, but no manual pass has ever seen it in a real
@@ -174,3 +196,29 @@ to a path that did not exist. Automated now, but the panel's reveal is the part 
   `The role 'absent-role' has no folder under roles/.` row.
 - **Expected**: the explorer reveals `<subfolder>/playbooks/deploy.yml` - the playbook that
   named the role - and not the `.adp`, and not a path that fails to resolve.
+## `dotnet test` discovers tests in a long worktree path (build tooling)
+
+Windows' 260-character `MAX_PATH` silently breaks the backend build in deep checkouts. MSBuild's
+`Exists()` returns false - without any error - for a path over 260 characters, so the SDK's
+`_CreateAppHost` condition `Exists('@(IntermediateAssembly)')` evaluates false and `apphost.exe`
+is never produced. Because every xUnit v3 test project is an executable whose apphost *is* the
+test host, the run surfaces as `dotnet test` reporting `Zero tests ran` for project after
+project, which reads like an empty suite rather than a broken build.
+
+`src/Directory.Build.targets` guards this with error `ADP0001`, but the guard only proves it
+fails loudly; this check proves it does not fail at all. The repository is inside the limit from
+the main checkout - a worktree under `.claude/worktrees/<name>/` adds ~36 characters plus the
+worktree name, and the longest project path needs the machine's long-path support.
+
+- **Preconditions**: Windows; `HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled`
+  is `1` (set it as admin; existing processes must be restarted to pick it up). A git worktree
+  whose directory name is at least 35 characters, e.g.
+  `git worktree add .claude/worktrees/a-deliberately-long-worktree-name develop`.
+- **Actions**: from that worktree's `src/backend/`, run `dotnet test --solution EtAlii.Adp.slnx`.
+- **Expected**: the run completes with a non-zero test total (1338 at the time of writing), exit
+  code 0, and no `ADP0001`, `ADP0002` or `MSB3030` error. A summary of `Zero tests ran` with
+  `total: 0`, or `error: 54`, means long-path support is not in effect for the process that ran
+  the build - it is not a test failure.
+- **Note**: a genuinely empty run does exit non-zero (5 for zero tests, 8 for a filter matching
+  nothing), so any CI step must check the exit code rather than grepping the output for
+  `failed`. Grepping alone reads a zero-test run as a pass.

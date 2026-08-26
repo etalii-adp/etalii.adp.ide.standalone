@@ -30,7 +30,7 @@ public sealed class ProblemMaintenance : IDisposable
     private readonly IProblemStore _store;
     private readonly ProjectValidator _validator;
     private readonly DiagramFileRouter _router;
-    internal readonly TimeSpan _settleDelay;
+    internal TimeSpan SettleDelay { get; }
     private readonly ConcurrentDictionary<string, TrackedProblemRoot> _tracked = new(StringComparer.OrdinalIgnoreCase);
 
     public ProblemMaintenance(IProblemStore store, ProjectValidator validator, DiagramFileRouter router, TimeSpan? settleDelay = null)
@@ -41,7 +41,7 @@ public sealed class ProblemMaintenance : IDisposable
         _store = store;
         _validator = validator;
         _router = router;
-        _settleDelay = settleDelay ?? DefaultSettleDelay;
+        SettleDelay = settleDelay ?? DefaultSettleDelay;
     }
 
     /// <summary>Start keeping <paramref name="rootPath"/>'s set current. Idempotent; a missing root is quietly not tracked.</summary>

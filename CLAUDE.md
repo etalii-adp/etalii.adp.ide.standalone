@@ -14,11 +14,14 @@ Actual development work — writing code, editing specs, running builds/tests �
 
 **Retire a worktree once its branch is merged into `develop` and its working tree is clean:** `git worktree remove .claude/worktrees/<name>`. A worktree is created per piece of work, so without this they only accumulate — twenty-four of them had built up before anyone counted.
 
-Three rules make this safe, and none of them is optional:
+Four rules make this safe, and none of them is optional:
 
+- **Never remove a worktree another session is still working in.** Merged and clean is not enough: those two tests describe the *branch*, and say nothing about whether somebody is sitting in the directory. List the live sessions first (their names match the worktree directory names) and leave those alone. This rule exists because it was learned the hard way — four live sessions were deregistered underneath in one sweep.
 - **Never remove a worktree with uncommitted changes or unmerged commits.** Raise it for a decision instead. Housekeeping that destroys work is not housekeeping.
 - **Removing the worktree does not remove the branch,** so a merged branch's commits stay reachable either way. Do not delete branches as part of this.
 - **Removal often fails on Windows** with `Filename too long` (deep `node_modules` paths) or `Permission denied` (a dev server or IDE holding a file). Git still deregisters the worktree; only the directory deletion fails, leaving a folder of build output behind. **Report those rather than forcing them** — and check before deleting one by hand, because a leftover folder can still hold source.
+
+**A half-removed worktree is worse than either outcome.** When the deletion fails, the directory survives without its `.git` file, so every git command run inside it walks up and resolves against the main checkout — `git status` there reports the *main checkout's* dirty files, and a `git add -A` would commit another session's work. The files themselves are safe: copy anything uncommitted out, then start again with `git worktree add .claude/worktrees/<new-name> <branch>`. (The `Filename too long` failure is git's own limit, not the OS one — it wants `core.longpaths=true`, which is the user's call to set.)
 
 ## spec-workflow
 
@@ -51,6 +54,14 @@ The test projects run on xUnit v3, which uses Microsoft.Testing.Platform rather 
 - `src/global.json` carries the `"test": { "runner": "Microsoft.Testing.Platform" }` opt-in the .NET 10 SDK requires. Without it `dotnet test` refuses to run any test project at all.
 
 Each test project is therefore an executable (`<OutputType>Exe</OutputType>`): a v3 project hosts its own tests. New test projects need that too.
+
+That also makes the suite sensitive to Windows' 260-character `MAX_PATH`. MSBuild's `Exists()` silently returns false above 260 characters, so in a deep checkout the SDK's `_CreateAppHost` skips, `apphost.exe` is never produced, and — since a v3 test project's apphost *is* its test host — `dotnet test` reports `Zero tests ran` for project after project instead of failing the build. Read `Zero tests ran` as a broken build, never as an empty suite. Requirements:
+
+- `HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled` must be `1` (set it as admin; already-running processes need restarting before they see it).
+- Keep `.claude/worktrees/<name>` directory names short. The repository is comfortably inside the limit from the main checkout, but a worktree adds ~36 characters plus the name, and the longest project paths then need long-path support to build at all.
+- `src/Directory.Build.targets` turns this into an explicit `ADP0001` error rather than a cryptic `MSB3030: … apphost.exe … not found`.
+
+A zero-test run does exit non-zero (5 for zero tests, 8 for a filter matching nothing), so check the exit code — a CI step that only greps the output for `failed` reads a zero-test run as a passing suite.
 
 ## Logging
 
