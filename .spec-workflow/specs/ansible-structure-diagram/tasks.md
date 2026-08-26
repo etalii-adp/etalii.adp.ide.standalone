@@ -151,7 +151,7 @@
   - _Requirements: 7.1, 8.1_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer defining a gRPC contract | Task: Define the module's element payload messages and regenerate the client stubs | Restrictions: no core proto is edited; paths are project-relative, never absolute; carry a play index rather than a colour; the proto is the API documentation, so comment every non-obvious field | Success: the proto compiles on both sides, the client stubs regenerate, and no core message changed_
 
-- [-] 15. `AnsibleElementMapper`
+- [x] 15. `AnsibleElementMapper`
   - File: `.../AnsibleElementMapper.cs` (new), `.../AnsibleElementMapper.Tests.cs` (new)
   - Element types `ansible/structure+playbook|play|role|taskfile|inventory|vars|edge`. Ids are folder-relative paths with a discriminator (`role:nginx`, `play:webservers.yml#0`, `edge:<sourceId>|<directive>|<targetAsWritten>`), so an id survives an unrelated edit elsewhere in the tree
   - Viewport: what intersects, plus one hop of graph partners so an edge leaving the screen keeps both ends — the mindmap's rule and its reason
@@ -163,7 +163,7 @@
 
 ## Phase F — the session and the registration
 
-- [ ] 16. `AnsibleSession` and `AnsibleSessionFactory`
+- [-] 16. `AnsibleSession` and `AnsibleSessionFactory`
   - File: `.../AnsibleSession.cs`, `AnsibleSessionFactory.cs` (new), `.../AnsibleSession.Tests.cs` (new)
   - `Open` resolves the subject as **the folder the `.adp` sits in** — for a bodyless type `bodyPath` and `registrationPath` are the same file, which is what `DiagramFileRouter` already returns. Baseline and `UpdateView` from the mapper; the store's `Changed` becomes deltas
   - `MoveElementAsync` **refuses**: *"An Ansible structure diagram is drawn from the folder's own files; move a role by moving its folder."* The seam returns a reason rather than throwing, so a read-only type answers honestly
