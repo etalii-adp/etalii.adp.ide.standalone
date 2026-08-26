@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
@@ -26,6 +27,11 @@ public static class ServiceCollectionAddWardleyMapExtension
         // Writes the empty `.owm` body the shared create-file command puts beside a new `.adp`
         // (Requirement 1.6). Resolved by origin; core never learns what a Wardley map is.
         services.AddSingleton<IDiagramDocumentFactory, WardleyDocumentFactory>();
+
+        // One document per path, shared by every connection viewing it. TryAdd rather than Add
+        // so a test that registers its own store keeps it, and so a second call to this method
+        // cannot quietly produce two stores that drift apart (Requirement 10.6).
+        services.TryAddSingleton<IWardleyDocumentStore, WardleyDocumentStore>();
 
         return services;
     }
