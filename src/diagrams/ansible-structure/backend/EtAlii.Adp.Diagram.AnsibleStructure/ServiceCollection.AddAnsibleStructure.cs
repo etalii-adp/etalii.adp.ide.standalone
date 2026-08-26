@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Diagrams;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -57,6 +58,11 @@ public static class ServiceCollectionAddAnsibleStructureExtension
         // directly rather than through the store - validation is a one-shot question, and
         // routing it through the store would leave a watcher behind on every "Validate all".
         services.AddSingleton<IDiagramValidator, AnsibleValidator>();
+
+        // One resolver makes every node and edge selectable, so the property grid, the ribbon
+        // and the menu answer for one like any other element (Requirement 8.2). The context
+        // service itself is untouched.
+        services.AddSingleton<IContextSourceResolver, AnsibleContextSourceResolver>();
 
         return services;
     }
