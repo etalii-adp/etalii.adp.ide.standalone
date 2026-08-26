@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { fireEvent, render, waitFor } from "@testing-library/react";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { DeltaSchema } from "@client/generated/deltas_pb";
 import { ElementSchema } from "@client/generated/elements_pb";
@@ -18,13 +18,18 @@ import { applyDelta, emptyModel, type WardleyModel } from "./wardleyModel";
 let currentModel: WardleyModel = emptyModel;
 let currentLoading = false;
 let currentFailed = false;
+let moves: { elementId: string; x: number; y: number }[] = [];
+let moveAnswer = "";
 
 vi.mock("./useWardleyStream", () => ({
   useWardleyStream: () => ({
     model: currentModel,
     loading: currentLoading,
     failed: currentFailed,
-    moveElementTo: () => Promise.resolve(""),
+    moveElementTo: (elementId: string, x: number, y: number) => {
+      moves.push({ elementId, x, y });
+      return Promise.resolve(moveAnswer);
+    },
   }),
 }));
 
@@ -73,6 +78,8 @@ function renderCanvas(model: WardleyModel, options?: { loading?: boolean; failed
   currentModel = model;
   currentLoading = options?.loading ?? false;
   currentFailed = options?.failed ?? false;
+  moves = [];
+  moveAnswer = "";
   return render(
     <WardleyCanvas projectId={new Uint8Array([1])} entryId={new Uint8Array([2])} path={["map.adp"]} />,
   );
@@ -381,5 +388,124 @@ describe("WardleyCanvas elements", () => {
     expect(region?.getAttribute("width")).toBe("350");
     const shape = container.querySelector(".wardley-element-group");
     expect(region!.compareDocumentPosition(shape!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+describe("WardleyCanvas dragging", () => {
+  /** A surface whose size makes one screen pixel one canvas unit, so pixels convert cleanly. */
+  function sizeSurface(surface: SVGSVGElement) {
+    vi.spyOn(surface, "getBoundingClientRect").mockReturnValue({
+      width: 1180,
+      height: 1180,
+      top: 0,
+      left: 0,
+      right: 1180,
+      bottom: 1180,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+  }
+
+  function renderDraggable() {
+    const model = withElement(withAxis(), "a", "wardley/map+element", element({ name: "Alpha" }), 0.5, 0.5);
+    const rendered = renderCanvas(model);
+    sizeSurface(rendered.container.querySelector("svg")!);
+    return rendered;
+  }
+
+  it("sends a drag as a document edit, in canvas coordinates", async () => {
+    // Arrange.
+    const { container } = renderDraggable();
+    const surface = container.querySelector("svg")!;
+
+    // Act. 100px right and down; the space is 1000 units, so 0.1 of the map each way.
+    fireEvent.mouseDown(container.querySelector("[data-element-id='a']")!, { clientX: 500, clientY: 500 });
+    fireEvent.mouseMove(surface, { clientX: 600, clientY: 600 });
+    fireEvent.mouseUp(surface);
+
+    // Assert. Requirement 7.2 - position is meaning here, so this is an edit rather than a view
+    // change, and the backend converts the point back into the document's own axes.
+    await waitFor(() => expect(moves).toHaveLength(1));
+    expect(moves[0].elementId).toBe("a");
+    expect(moves[0].x).toBeCloseTo(0.6, 5);
+    expect(moves[0].y).toBeCloseTo(0.6, 5);
+  });
+
+  it("writes nothing for a press that never moved", () => {
+    // Arrange. The other side of the same requirement: a click is not a drag, and a click must
+    // not put a component somewhere.
+    const { container } = renderDraggable();
+
+    // Act.
+    fireEvent.mouseDown(container.querySelector("[data-element-id='a']")!, { clientX: 500, clientY: 500 });
+    fireEvent.mouseUp(container.querySelector("svg")!);
+
+    // Assert.
+    expect(moves).toHaveLength(0);
+  });
+
+  it("clamps the shape inside the map while the pointer is still down", () => {
+    // Arrange. Requirement 7.3 - a component cannot be more evolved than commodity, and the
+    // user must not be shown a position that cannot exist.
+    const { container } = renderDraggable();
+
+    // Act. Far past the right-hand edge.
+    fireEvent.mouseDown(container.querySelector("[data-element-id='a']")!, { clientX: 500, clientY: 500 });
+    fireEvent.mouseMove(container.querySelector("svg")!, { clientX: 2000, clientY: 500 });
+
+    // Assert.
+    expect(container.querySelector("[data-element-id='a'] circle")?.getAttribute("cx")).toBe("1000");
+  });
+
+  it("moves the links that reach an element with it", () => {
+    // Arrange. If the dragged position is not substituted everywhere, the line detaches from
+    // the shape while the gesture is in flight.
+    let model = withElement(withAxis(), "a", "wardley/map+element", element({ name: "A" }), 0.5, 0.5);
+    model = withElement(model, "b", "wardley/map+element", element({ name: "B" }), 0.9, 0.9);
+    const link = toBinary(
+      WardleyLinkPayloadSchema,
+      create(WardleyLinkPayloadSchema, { sourceId: "a", targetId: "b" }),
+    );
+    const { container } = renderCanvas(applyDelta(model, addDelta("l", "wardley/map+link", link)));
+    const surface = container.querySelector("svg")!;
+    sizeSurface(surface);
+    const before = container.querySelector(".wardley-link")?.getAttribute("d");
+
+    // Act.
+    fireEvent.mouseDown(container.querySelector("[data-element-id='a']")!, { clientX: 500, clientY: 500 });
+    fireEvent.mouseMove(surface, { clientX: 400, clientY: 500 });
+
+    // Assert.
+    expect(container.querySelector(".wardley-link")?.getAttribute("d")).not.toBe(before);
+  });
+
+  it("shows a refusal rather than swallowing it", async () => {
+    // Arrange. Requirement 7.5 - a read-only map refuses, and the user is told why.
+    const { container } = renderDraggable();
+    moveAnswer = "This map is read-only.";
+    const surface = container.querySelector("svg")!;
+
+    // Act.
+    fireEvent.mouseDown(container.querySelector("[data-element-id='a']")!, { clientX: 500, clientY: 500 });
+    fireEvent.mouseMove(surface, { clientX: 600, clientY: 500 });
+    fireEvent.mouseUp(surface);
+
+    // Assert. The shape snaps back because the model never changed, and the reason is visible.
+    await waitFor(() => expect(container.textContent).toContain("This map is read-only."));
+  });
+
+  it("does not pan the surface while an element is being dragged", () => {
+    // Arrange. Both gestures begin with a mouse down; the element has to take it.
+    const { container } = renderDraggable();
+    const surface = container.querySelector("svg")!;
+    const before = surface.getAttribute("viewBox");
+
+    // Act.
+    fireEvent.mouseDown(container.querySelector("[data-element-id='a']")!, { clientX: 500, clientY: 500 });
+    fireEvent.mouseMove(surface, { clientX: 600, clientY: 600 });
+
+    // Assert.
+    expect(surface.getAttribute("viewBox")).toBe(before);
   });
 });

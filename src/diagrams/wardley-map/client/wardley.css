@@ -118,10 +118,36 @@
   stroke-linecap: round;
 }
 
+.wardley-element-group {
+  cursor: grab;
+}
+
+/*
+ * A drag on this type is a document edit rather than a view change, so the shape says so while
+ * it is in flight: the position under the pointer is a claim about to be written, not a preview.
+ */
+.wardley-dragging {
+  cursor: grabbing;
+}
+
+.wardley-dragging .wardley-element {
+  stroke-width: 3;
+}
+
 .wardley-element-label {
   fill: var(--color-text);
   font-family: var(--font-sans);
   font-size: 15px;
+}
+
+/* A refusal - read-only, or an element that has gone - shown rather than swallowed. */
+.wardley-rejection {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-surface-raised);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
 }
 
 /*

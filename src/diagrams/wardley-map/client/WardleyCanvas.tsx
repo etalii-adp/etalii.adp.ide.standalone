@@ -66,10 +66,17 @@ function scale(value: number): number {
 // entry a selection reports as its outer level, which task 19's context resolver needs and
 // nothing here does.
 export function WardleyCanvas({ projectId, path }: WardleyCanvasProps) {
-  const { model, loading, failed } = useWardleyStream(projectId, path);
+  const { model, loading, failed, moveElementTo } = useWardleyStream(projectId, path);
   const [view, setView] = useState<ViewBox>(fullView);
   const surfaceRef = useRef<SVGSVGElement | null>(null);
   const panRef = useRef<{ clientX: number; clientY: number; view: ViewBox } | null>(null);
+
+  // A drag in flight: which element, where the pointer started, where the element started, and
+  // whether it has moved far enough to be a drag rather than a wobbly click. A ref for what
+  // nothing renders from; the live offset is state, because the shape follows the pointer.
+  const dragRef = useRef<{ id: string; clientX: number; clientY: number; x: number; y: number } | null>(null);
+  const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [rejection, setRejection] = useState("");
 
   const zoomBy = useCallback((factor: number) => {
     setView((current) => {
@@ -110,11 +117,44 @@ export function WardleyCanvas({ projectId, path }: WardleyCanvasProps) {
     return () => surface.removeEventListener("wheel", onWheel);
   }, [zoomBy]);
 
+  /** Canvas units per screen pixel, for turning a pointer delta into a map delta. */
+  const unitsPerPixel = useCallback(() => {
+    const surface = surfaceRef.current;
+    return surface ? view.w / surface.getBoundingClientRect().width : 1;
+  }, [view.w]);
+
   const onPointerDown = (event: React.MouseEvent) => {
     panRef.current = { clientX: event.clientX, clientY: event.clientY, view };
   };
 
+  const onElementPointerDown = (event: React.MouseEvent, element: WardleyElement) => {
+    // The element takes the gesture; the surface must not also pan under it.
+    event.stopPropagation();
+    setRejection("");
+    dragRef.current = {
+      id: element.id,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      x: element.x,
+      y: element.y,
+    };
+  };
+
   const onPointerMove = (event: React.MouseEvent) => {
+    const dragging = dragRef.current;
+    if (dragging) {
+      const perPixel = unitsPerPixel() / SPACE;
+      setDrag({
+        id: dragging.id,
+        // Clamped here as well as in the backend: the shape must not be draggable outside the
+        // map while the pointer is still down, or the user is shown a position that cannot
+        // exist (Requirement 7.3).
+        x: clamp01(dragging.x + (event.clientX - dragging.clientX) * perPixel),
+        y: clamp01(dragging.y + (event.clientY - dragging.clientY) * perPixel),
+      });
+      return;
+    }
+
     const pan = panRef.current;
     const surface = surfaceRef.current;
     if (!pan || !surface) {
@@ -131,7 +171,30 @@ export function WardleyCanvas({ projectId, path }: WardleyCanvasProps) {
   };
 
   const onPointerUp = () => {
+    const dragging = dragRef.current;
+    const landed = drag;
+    dragRef.current = null;
     panRef.current = null;
+
+    if (!dragging || !landed) {
+      // A press with no movement is a click, not a drag, and must not write to the document.
+      setDrag(null);
+      return;
+    }
+
+    setDrag(null);
+    void (async () => {
+      // A drag is a DOCUMENT EDIT here, not a view change: moving a component right asserts
+      // that it is more evolved. The backend converts the point back into the document's axes,
+      // dispatches it as a command, and the new position returns as an ordinary delta
+      // (Requirement 7.2).
+      const error = await moveElementTo(landed.id, landed.x, landed.y);
+      if (error) {
+        // A refusal is shown rather than swallowed - read-only, or an element that has since
+        // gone. The shape snaps back because the model never changed.
+        setRejection(error);
+      }
+    })();
   };
 
   if (failed) {
@@ -157,10 +220,17 @@ export function WardleyCanvas({ projectId, path }: WardleyCanvasProps) {
       >
         {/* Drawn first, so everything else sits on top of it (Requirement 8.4). */}
         <WardleyChrome axis={model.axis} scaleFactor={view.w / (SPACE + MARGIN * 2)} />
-        {loading ? null : <WardleyContents model={model} />}
+        {loading ? null : (
+          <WardleyContents model={model} drag={drag} onElementPointerDown={onElementPointerDown} />
+        )}
       </svg>
+      {rejection ? <p className="wardley-rejection">{rejection}</p> : null}
     </div>
   );
+}
+
+function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, value));
 }
 
 /**
@@ -267,9 +337,23 @@ function boxOf(element: { x: number; y: number }): ConnectorBox {
  * anything is plotted against it, and it is what an empty map shows on its own
  * (Requirement 1.4).
  */
-function WardleyContents({ model }: { model: WardleyModel }) {
-  const elements = [...model.elements.values()];
-  const byId = model.elements;
+function WardleyContents({
+  model,
+  drag,
+  onElementPointerDown,
+}: {
+  model: WardleyModel;
+  drag: { id: string; x: number; y: number } | null;
+  onElementPointerDown: (event: React.MouseEvent, element: WardleyElement) => void;
+}) {
+  // The element being dragged is shown where the pointer is, so the gesture is visible before
+  // the round trip answers. Everything else - the links that reach it, its evolve indicator -
+  // follows from the same substituted position rather than lagging behind it.
+  const at = (element: WardleyElement): WardleyElement =>
+    drag && drag.id === element.id ? { ...element, x: drag.x, y: drag.y } : element;
+
+  const elements = [...model.elements.values()].map(at);
+  const byId = new Map(elements.map((element) => [element.id, element]));
 
   return (
     <g className="wardley-contents">
@@ -351,7 +435,12 @@ function WardleyContents({ model }: { model: WardleyModel }) {
         })}
 
       {elements.map((element) => (
-        <WardleyElementShape key={element.id} element={element} />
+        <WardleyElementShape
+          key={element.id}
+          element={element}
+          dragging={drag?.id === element.id}
+          onPointerDown={onElementPointerDown}
+        />
       ))}
 
       {[...model.accelerators.values()].map((accelerator) => (
@@ -398,7 +487,15 @@ function WardleyContents({ model }: { model: WardleyModel }) {
  * One component, anchor or submap: its shape says which kind it is, and its decorations say
  * what the author claimed about it - both without entering an edit mode (Requirement 6.9).
  */
-function WardleyElementShape({ element }: { element: WardleyElement }) {
+function WardleyElementShape({
+  element,
+  dragging,
+  onPointerDown,
+}: {
+  element: WardleyElement;
+  dragging: boolean;
+  onPointerDown: (event: React.MouseEvent, element: WardleyElement) => void;
+}) {
   const x = scale(element.x);
   const y = scale(element.y);
 
@@ -411,7 +508,11 @@ function WardleyElementShape({ element }: { element: WardleyElement }) {
   const badges = [...decorations, ...(element.inertia ? ["inertia"] : [])];
 
   return (
-    <g className={`wardley-element-group wardley-kind-${kindName(element.kind)}`}>
+    <g
+      className={`wardley-element-group wardley-kind-${kindName(element.kind)}${dragging ? " wardley-dragging" : ""}`}
+      onMouseDown={(event) => onPointerDown(event, element)}
+      data-element-id={element.id}
+    >
       {element.kind === WardleyElementKind.ANCHOR ? (
         // An anchor is the user need the chain hangs from, so it is drawn as a distinct mark
         // rather than as one more component.
