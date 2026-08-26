@@ -59,7 +59,7 @@
   - _Requirements: 3.1, 3.2, 3.3_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer building a concrete syntax tree | Task: Implement a line-preserving .owm document with splice operations, and prove byte-identical round trips over the whole corpus | Restrictions: never re-serialise; never normalise indentation, comments, blank lines or line endings; a splice touches only its own range; do not invent a statement model here, that is task 5 | Success: every fixture round-trips byte-identically including CRLF files and files with no trailing newline, and a splice test proves the neighbouring lines are unchanged_
 
-- [-] 5. Parse the map: components, links and pipelines
+- [x] 5. Parse the map: components, links and pipelines
   - File: `.../WardleyParser.cs`, `_Model/WardleyMap.cs`, `WardleyComponent.cs`, `WardleyLink.cs`, `WardleyPipeline.cs`, `WardleyElementKind.cs`, `WardleyCoordinate.cs` (new), tests
   - Read `component`, `anchor`, `submap` — the DSL's **three** statement kinds, per the approved Requirement 5.1 — plus links (`->`, `+>`, and the `; context` form), and `pipeline` in **both** the nested and legacy forms, recording for every element the line it was declared on. A pipeline child carries only an evolution position and takes its visibility from the parent. Also read the map-level `title`, `size` and `style`. *(This line previously listed `market` and `ecosystem` as statement kinds. They are decorators — `component X [..] (market)` — and belong to task 6; `market X [..]` is a parse error the task 2 corpus demonstrated.)*
   - Coordinates are stored as the document writes them — `[visibility, maturity]` — and are **not** converted here
@@ -67,14 +67,14 @@
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.6, 5.7_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer writing a recursive-descent parser for a line-oriented DSL | Task: Parse the map's elements into a model, recording each element's declaring line, and remember which pipeline form each was written in | Restrictions: keep coordinates in the document's own visibility/maturity order and do not convert to Point2D here; do not drop statements you do not model; parse from a plain string with no filesystem or gRPC dependency | Success: the corpus parses, both pipeline forms round-trip in the form they were read, a pipeline child's visibility resolves to its parent's, and every element's line points at its own declaration_
 
-- [ ] 6. Parse the strategy vocabulary
+- [x] 6. Parse the strategy vocabulary
   - File: `.../WardleyParser.cs` (edited), `_Model/WardleyEvolveTarget.cs`, `WardleyDecorator.cs`, `WardleyNote.cs`, `WardleyAnnotation.cs`, `WardleyArea.cs` (new), tests
   - `evolve` including the `evolve Name->NewName x` renaming form, `inertia`, the `(build)` / `(buy)` / `(outsource)` decorators, `pioneers` / `settlers` / `townplanners` areas, `accelerator` and `deaccelerator`, `note`, `url`, `submap` targets, `label [dx, dy]` offsets, and `annotation` — which carries `IReadOnlyList<WardleyCoordinate> Positions`, because the DSL permits one numbered annotation pinned in several places and none of them may be lost
   - Purpose: what makes a Wardley map a strategy tool rather than a scatter plot
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Parse the strategy vocabulary into the model, giving an annotation a list of positions rather than one | Restrictions: preserve the label offset in pixels rather than converting it to map coordinates; do not silently normalise a decorator's spelling; an unrecognised statement is preserved, never an error | Success: every construct in Requirement 6 parses, a multi-position annotation keeps all its coordinates, and an evolve with a rename carries the arrival name_
 
-- [ ] 7. The writer: surgical edits only
+- [x] 7. The writer: surgical edits only
   - File: `.../WardleyWriter.cs` (new), tests
   - Given a model change and the original document, rewrite **only** the lines the change occupies. A coordinate edit rewrites one statement's coordinate pair and nothing else. A rename rewrites the declaration and every statement referring to the old name — links, `evolve`, pipeline membership — in one pass. A pipeline written in the legacy form is written back in the legacy form
   - Purpose: Requirement 3.2, and the reason a map ADP touched still reviews as a one-line diff
@@ -88,7 +88,7 @@
   - _Requirements: 8.2_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Pin the evolution stage boundaries and labels with a test and a comment citing their derivation | Restrictions: do not round the constants; do not duplicate them anywhere else in the module or the client; state the EvoOffsets derivation in the comment | Success: StageOf is exact at each boundary, the test asserts the derivation arithmetic rather than the literals alone, and the constants appear once in the codebase_
 
-- [-] 9. `WardleyIdentities`: the sidecar
+- [x] 9. `WardleyIdentities`: the sidecar
   - File: `.../WardleyIdentities.cs`, `_Model/WardleyIdentityEntry.cs` (new), tests
   - `<name>.identities.json` beside the `.owm`, holding `{ id, kind, key }` entries. Keys: a component-shaped element by its name; a link by source name, target name and kind; a pipeline by its parent's name; a note by its text; an annotation by its number. `Reconcile` matches by key, assigns a fresh `ShortGuid` to an unmatched file element, and discards an unmatched entry. Reads never throw — a missing, unreadable or nonsense sidecar yields no entries
   - A map opened and not edited writes nothing: assigned ids live in memory until the first real save
@@ -107,7 +107,7 @@
 
 ## Phase C — the wire
 
-- [ ] 11. `wardley-map.proto` and the element mapper
+- [x] 11. `wardley-map.proto` and the element mapper
   - File: `src/diagrams/wardley-map/api/wardley-map.proto` (new), `.../WardleyElementMapper.cs` (new), tests, `npm run generate` in `src/client/`
   - The payloads: `WardleyElement` (name, kind, visibility, maturity, evolve target, inertia, decorator, label offset, url, submap target, resolved evolution stage), `WardleyLinkElement`, and `WardleyEvolutionAxis` carrying the four stages with their boundaries and labels. The mapper emits the baseline, diffs two models into `Add`/`Remove`, expresses a pipeline with `Group`/`Ungroup`, and owns `ToPoint` / `ToCoordinates` — **the only** place `[visibility, maturity]` becomes `Point2D(x: maturity, y: 1 - visibility)`
   - The evolution axis goes out as one map-level element so the client holds no copy of the constants
