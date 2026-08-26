@@ -183,7 +183,7 @@
 
 ## Phase G — telling the user what is broken
 
-- [-] 18. `AnsibleRuleSet` and `AnsibleValidator`
+- [x] 18. `AnsibleRuleSet` and `AnsibleValidator`
   - File: `.../AnsibleRuleSet.cs`, `AnsibleValidator.cs` (new), `.../AnsibleRuleSet.Tests.cs` (new)
   - A pure function from `AnsibleProject` to `DiagramProblem`s — it reads no file, because the reader already did. The five rules: `ansible.role-missing` (error), `ansible.dangling-import` (error), `ansible.unmatched-hosts` (warning), `ansible.unreadable-yaml` (error, carrying the parser's own message), `ansible.empty-role` (warning). Each location is a `DiagramProblemFileLocation` naming the **declaring** file and its line
   - `AnsibleValidator` resolves its folder from the request's `SubjectFolder` (task 3) and delegates
@@ -195,7 +195,7 @@
 
 ## Phase H — selection and properties
 
-- [ ] 19. `AnsibleContextSourceResolver`
+- [-] 19. `AnsibleContextSourceResolver`
   - File: `.../AnsibleContextSourceResolver.cs` (new), `_Model/AnsibleNodeSubscription.cs` (new), `.../AnsibleContextSourceResolver.Tests.cs` (new)
   - Resolve an `element_id` against the project named by the enclosing hierarchy level, verify the node is really in that project, fill the detail a consumer shows, and carry the node's **project-relative path segments** for the reveal. `NestingOf` → `NotNestable`. `Track` re-resolves on every store change: a deleted role clears the selection, a renamed file changes the path
   - Purpose: Requirement 8.2 — a node answers like any other element
