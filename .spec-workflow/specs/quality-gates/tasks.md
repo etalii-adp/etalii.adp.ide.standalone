@@ -70,7 +70,7 @@
 
 ## Phase B — the interoperability guarantee holds without a JDK
 
-- [ ] 8. Record Structurizr's verdicts as committed baselines
+- [-] 8. Record Structurizr's verdicts as committed baselines
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/verdicts/*.inspect.txt` (new)
   - One verdict per fixture in `C4DocumentTests.Corpus()`, holding the CLI's `inspect` output verbatim under a two-line header naming the CLI version and the date
   - Purpose: Requirements 3.2, 3.3 - the data the everyday run reads instead of invoking Java
