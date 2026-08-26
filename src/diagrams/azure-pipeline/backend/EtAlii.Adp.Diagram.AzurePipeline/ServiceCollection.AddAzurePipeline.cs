@@ -41,6 +41,10 @@ public static class ServiceCollectionAddAzurePipelineExtension
         // is untouched (Requirement 12.2).
         services.AddSingleton<IContextSourceResolver, PipelineContextSourceResolver>();
 
+        // What can be done to an element, offered once and reaching the ribbon, the context menu
+        // and the keyboard through the same path (Requirement 9.7).
+        services.AddSingleton<IContextActionProvider, PipelineContextActionProvider>();
+
         // The editable set, one handler per command. Every one of them is undoable, because every
         // one reports the command that reverses it (Requirement 9.2).
         services.AddSingleton<ICommandHandler<RenamePipelineElementCommand>, RenamePipelineElementCommandHandler>();
