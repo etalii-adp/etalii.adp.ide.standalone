@@ -3,8 +3,10 @@
   "title": "Design: wardley-map (decorators as a set, and the style note brought current)",
   "filePath": ".spec-workflow/specs/wardley-map/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-26T08:33:49.629Z",
   "category": "spec",
-  "categoryName": "wardley-map"
+  "categoryName": "wardley-map",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-26T09:51:06.899Z"
 }
