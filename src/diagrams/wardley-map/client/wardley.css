@@ -1,0 +1,95 @@
+/*
+ * Wardley map canvas styling.
+ *
+ * Lives with the module rather than in the shell's index.css: a diagram type you cannot delete
+ * without also editing the shell's stylesheet is not a module. Imported by this module's
+ * register.ts, so it loads exactly when the module does.
+ */
+
+/* ---- The surface ------------------------------------------------------------------- */
+
+.wardley-canvas {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-surface);
+}
+
+.wardley-canvas-message {
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+}
+
+.wardley-surface {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  cursor: grab;
+  user-select: none;
+}
+
+.wardley-surface:active {
+  cursor: grabbing;
+}
+
+/* ---- The chrome: bands, axes and their labels --------------------------------------- */
+
+/*
+ * The four evolution bands, genesis to commodity. They shade progressively rather than
+ * carrying four unrelated colours: the axis is a continuum, and four distinct fills would
+ * suggest four categories a component belongs to rather than a position it occupies.
+ */
+.wardley-band {
+  fill: var(--color-surface-raised);
+  opacity: 0.35;
+}
+
+.wardley-band-1 {
+  opacity: 0.5;
+}
+
+.wardley-band-2 {
+  opacity: 0.65;
+}
+
+.wardley-band-3 {
+  opacity: 0.8;
+}
+
+.wardley-band-edge {
+  stroke: var(--color-border);
+  stroke-width: 1;
+  stroke-dasharray: 6 6;
+}
+
+.wardley-axis {
+  stroke: var(--color-text-muted);
+  stroke-width: 2;
+}
+
+.wardley-band-label,
+.wardley-axis-label {
+  fill: var(--color-text-muted);
+  font-family: var(--font-sans);
+}
+
+.wardley-axis-label {
+  font-weight: 600;
+}
+
+.wardley-axis-end {
+  fill: var(--color-text-muted);
+  font-family: var(--font-sans);
+  opacity: 0.8;
+}
+
+/* ---- Elements ---------------------------------------------------------------------- */
+
+.wardley-element {
+  fill: var(--color-surface);
+  stroke: var(--color-text);
+  stroke-width: 2;
+}
