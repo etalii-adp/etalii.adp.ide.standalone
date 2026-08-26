@@ -53,14 +53,38 @@ defects were found:
 | Found by | Defect |
 |---|---|
 | `big-bank-plc.dsl` | `deploymentNode`'s instance count was read as a tag, because the count sits *after* the tags. |
-| `big-bank-plc.dsl` | `c4.missing-description` fired on deployment nodes; C4 names those by what they are and leaves them undescribed. |
-| `big-bank-plc.dsl` | `c4.missing-protocol` fired on component-to-component calls, which are in-process and have no protocol. |
-| `big-bank-plc.dsl` | `c4.mixed-abstraction-levels` was removed outright: C4's own sign-in view mixes containers and components, so Requirement 7.7 was wrong, not the example. |
+| `big-bank-plc.dsl` | `c4.missing-description` fired on deployment nodes, and the rule was narrowed. **The narrowing was the defect, not the rule** - see below. |
+| `big-bank-plc.dsl` | `c4.missing-protocol` fired on component-to-component calls, and the rule was narrowed. **The narrowing was the defect, not the rule** - see below. |
+| `big-bank-plc.dsl` | `c4.mixed-abstraction-levels` was removed outright. The removal stands - Structurizr's inspector has no such rule at all - though the argument given for it at the time was the one corrected below. |
 | `big-bank-plc.dsl` | The layout drew two elements on top of each other  outsiders leaving a boundary each took their own shortest route and collided. |
 | `comments-everywhere.dsl` | The fixture itself was invalid: a comment trailing a declaration is rejected by the real parser ("Too many tokens"). It had asserted something the format does not support. |
 | `aws-deployment.dsl` | A `tags` line inside an element's block was ignored - tags were only read from the declaration's arguments. Every element in that document tags itself that way, so all of them came out untagged, and tags are what styles key off. |
 | `C4InteropTests` | ADP's own component template scoped its view as `system.container`; identifiers are flat unless a document says `!identifiers hierarchical`, so the dotted form named nothing. |
 | `C4InteropTests` | ADP's own deployment template wrote an empty `deploymentEnvironment`; an environment is a property of the nodes deployed into it, so with no nodes it does not exist and the view bound to nothing. |
+
+#### On two of those "defects"
+
+Two rows above have been restated, because what they recorded as a defect in ADP was a
+defect in the reasoning about ADP. `c4.missing-description` firing on `big-bank-plc.dsl`'s
+deployment nodes, and `c4.missing-protocol` firing on its component-to-component calls, were
+read as proof that the rules over-reached: C4 publishes this document as a worked example, so
+anything it trips must be ADP's fault. Both rules were narrowed on that basis.
+
+**That was wrong.** Structurizr's own `inspect` reports **26 findings** on the same file,
+among them `model.deploymentnode.description` on exactly those nodes and
+`model.relationship.technology` on exactly those calls. The reference implementation and the
+narrowed rules disagree, and the reference implementation is the authority here.
+
+What the certification above actually establishes is narrower than it was taken to be. These
+files are certified by `validate`, which parses. Nothing certified them by `inspect`, which
+judges. **A published example demonstrates what is *permitted*, never what is *sufficient*** -
+and that holds for every diagram type ADP adds, not only for C4. A fixture failing a rule is
+evidence about one of those two things, and which one has to be established rather than
+assumed. Where a rule mirrors another tool's, that tool's verdict on the same file settles it.
+
+Both rules were widened back by the `quality-gates` spec, `C4StructurizrMirror` now records
+which ADP rule mirrors which Structurizr rule, and the reconciliation compares the two on
+every fixture, so this cannot be settled by argument again.
 
 The two files also close a claim that was previously left open: an ADP-authored document is
 fed back through the same CLI in `C4Interop.Tests`, so "another tool can still read what ADP

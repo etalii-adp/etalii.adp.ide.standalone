@@ -20,11 +20,9 @@ public readonly record struct ShortGuid :
 
     public static readonly ShortGuid Empty = default;
 
-    private readonly Guid _value;
+    public ShortGuid(Guid value) => Guid = value;
 
-    public ShortGuid(Guid value) => _value = value;
-
-    public Guid Guid => _value;
+    public Guid Guid { get; }
 
     public static ShortGuid NewShortGuid() => new(Guid.NewGuid());
 
@@ -39,10 +37,10 @@ public readonly record struct ShortGuid :
     }
 
     public static implicit operator ShortGuid(Guid value) => new(value);
-    public static implicit operator Guid(ShortGuid value) => value._value;
+    public static implicit operator Guid(ShortGuid value) => value.Guid;
 
-    public bool Equals(ShortGuid other) => _value.Equals(other._value);
-    public override int GetHashCode() => _value.GetHashCode();
+    public bool Equals(ShortGuid other) => Guid.Equals(other.Guid);
+    public override int GetHashCode() => Guid.GetHashCode();
 
     public int CompareTo(ShortGuid other) => ToUInt128().CompareTo(other.ToUInt128());
 
@@ -54,7 +52,7 @@ public readonly record struct ShortGuid :
     private UInt128 ToUInt128()
     {
         Span<byte> bytes = stackalloc byte[16];
-        _value.TryWriteBytes(bytes, bigEndian: true, out _);
+        Guid.TryWriteBytes(bytes, bigEndian: true, out _);
         return BinaryPrimitives.ReadUInt128BigEndian(bytes);
     }
 
