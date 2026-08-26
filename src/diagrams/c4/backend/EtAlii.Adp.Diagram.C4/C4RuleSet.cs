@@ -442,8 +442,7 @@ public static class C4RuleSet
         && string.Equals(element.Id, scopeId, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Whether a kind is something that runs and therefore talks over a protocol.</summary>
-    private static bool IsDeployable(C4ElementKind kind) =>
-        kind is C4ElementKind.Container or C4ElementKind.Component;
+    // private static bool IsDeployable(C4ElementKind kind) => kind is C4ElementKind.Container or C4ElementKind.Component;
 
     private static string Label(C4Element element) => element.Name.Length > 0 ? element.Name : element.Id;
 
