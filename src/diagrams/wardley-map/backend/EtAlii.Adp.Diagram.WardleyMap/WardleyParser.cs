@@ -32,9 +32,16 @@ public static partial class WardleyParser
         var title = "";
         var style = "";
         WardleyMapSize? size = null;
+        WardleyCoordinate? annotationsPosition = null;
         var components = new List<WardleyComponent>();
         var links = new List<WardleyLink>();
         var pipelines = new List<WardleyPipeline>();
+        var evolves = new List<WardleyEvolve>();
+        var attitudes = new List<WardleyAttitude>();
+        var accelerators = new List<WardleyAccelerator>();
+        var notes = new List<WardleyNote>();
+        var annotations = new List<WardleyAnnotation>();
+        var urls = new List<WardleyUrlDefinition>();
 
         // The pipeline currently being filled, and the children gathered for it. Null means the
         // reader is at the top level, which is where it spends almost all of its time.
@@ -93,6 +100,84 @@ public static partial class WardleyParser
                 continue;
             }
 
+            // Before `annotation`, because TryKeyword requires whitespace after the keyword and
+            // `annotations [0.6, 0.02]` would otherwise be tried as a numbered annotation.
+            if (TryKeyword(text, "annotations", out var annotationsRest))
+            {
+                annotationsPosition = ParseCoordinateIn(annotationsRest) ?? annotationsPosition;
+                continue;
+            }
+
+            if (TryKeyword(text, "annotation", out var annotationRest))
+            {
+                if (ParseAnnotation(annotationRest, line.Number) is { } annotation)
+                {
+                    annotations.Add(annotation);
+                }
+
+                continue;
+            }
+
+            if (TryKeyword(text, "evolve", out var evolveRest))
+            {
+                if (ParseEvolve(evolveRest, line.Number) is { } evolve)
+                {
+                    evolves.Add(evolve);
+                }
+
+                continue;
+            }
+
+            if (TryKeyword(text, "note", out var noteRest))
+            {
+                if (ParseNote(noteRest, line.Number) is { } note)
+                {
+                    notes.Add(note);
+                }
+
+                continue;
+            }
+
+            if (TryKeyword(text, "url", out var urlRest))
+            {
+                if (ParseUrlDefinition(urlRest, line.Number) is { } url)
+                {
+                    urls.Add(url);
+                }
+
+                continue;
+            }
+
+            if (AttitudeOf(text, out var attitudeRest) is { } attitudeKind)
+            {
+                if (ParseAttitude(attitudeKind, attitudeRest, line.Number) is { } attitude)
+                {
+                    attitudes.Add(attitude);
+                }
+
+                continue;
+            }
+
+            if (TryKeyword(text, "accelerator", out var acceleratorRest))
+            {
+                if (ParseAccelerator(acceleratorRest, line.Number, isDeaccelerator: false) is { } accelerator)
+                {
+                    accelerators.Add(accelerator);
+                }
+
+                continue;
+            }
+
+            if (TryKeyword(text, "deaccelerator", out var deacceleratorRest))
+            {
+                if (ParseAccelerator(deacceleratorRest, line.Number, isDeaccelerator: true) is { } deaccelerator)
+                {
+                    accelerators.Add(deaccelerator);
+                }
+
+                continue;
+            }
+
             if (TryKeyword(text, "pipeline", out var pipelineRest))
             {
                 openPipeline = ParsePipelineHeader(pipelineRest, line.Number);
@@ -127,16 +212,179 @@ public static partial class WardleyParser
             pipelines.Add(openPipeline with { Children = openChildren.ToArray() });
         }
 
-        return new WardleyMap(title, components.ToArray(), links.ToArray(), pipelines.ToArray(), size, style);
+        return new WardleyMap(
+            title,
+            components.ToArray(),
+            links.ToArray(),
+            pipelines.ToArray(),
+            evolves.ToArray(),
+            attitudes.ToArray(),
+            accelerators.ToArray(),
+            notes.ToArray(),
+            annotations.ToArray(),
+            urls.ToArray(),
+            size,
+            style,
+            annotationsPosition);
     }
 
     /// <summary>
-    /// The line without its `//` comment. Naive on purpose: the DSL has no string literal a
-    /// `//` could hide inside, so there is nothing to escape.
+    /// `evolve Name x` or `evolve Name-&gt;NewName x`, where the trailing number is the target
+    /// maturity and everything before it is the name (Requirement 6.1).
     /// </summary>
+    private static WardleyEvolve? ParseEvolve(string rest, uint number)
+    {
+        var match = EvolveExpression().Match(rest);
+        if (!match.Success)
+        {
+            return null;
+        }
+
+        var name = match.Groups["name"].Value.Trim();
+        return name.Length == 0 || !TryNumber(match.Groups["maturity"].Value, out var maturity)
+            ? null
+            : new WardleyEvolve(name, maturity, number, match.Groups["override"].Value.Trim());
+    }
+
+    private static WardleyAttitudeKind? AttitudeOf(string text, out string rest)
+    {
+        if (TryKeyword(text, "pioneers", out rest))
+        {
+            return WardleyAttitudeKind.Pioneers;
+        }
+
+        if (TryKeyword(text, "settlers", out rest))
+        {
+            return WardleyAttitudeKind.Settlers;
+        }
+
+        return TryKeyword(text, "townplanners", out rest) ? WardleyAttitudeKind.TownPlanners : null;
+    }
+
+    /// <summary>
+    /// `[visibility1, maturity1, visibility2, maturity2]` - visibility first, confirmed against
+    /// the reference parser rather than inferred (Requirement 6.4).
+    /// </summary>
+    private static WardleyAttitude? ParseAttitude(WardleyAttitudeKind kind, string rest, uint number)
+    {
+        var match = AttitudeExpression().Match(rest);
+        if (!match.Success)
+        {
+            return null;
+        }
+
+        var values = match.Groups["values"].Value.Split(',');
+        if (values.Length != 4)
+        {
+            return null;
+        }
+
+        if (!TryNumber(values[0], out var visibility) || !TryNumber(values[1], out var maturity)
+            || !TryNumber(values[2], out var visibility2) || !TryNumber(values[3], out var maturity2))
+        {
+            return null;
+        }
+
+        return new WardleyAttitude(
+            kind,
+            new WardleyCoordinate(visibility, maturity),
+            new WardleyCoordinate(visibility2, maturity2),
+            number);
+    }
+
+    private static WardleyAccelerator? ParseAccelerator(string rest, uint number, bool isDeaccelerator)
+    {
+        var named = ParseNameAndPosition(rest);
+        return named is null
+            ? null
+            : new WardleyAccelerator(named.Value.Name, named.Value.Position, number, isDeaccelerator);
+    }
+
+    private static WardleyNote? ParseNote(string rest, uint number)
+    {
+        var named = ParseNameAndPosition(rest);
+        return named is null ? null : new WardleyNote(named.Value.Name, named.Value.Position, number);
+    }
+
+    /// <summary>`url name [address]` - the address is a URL, not a coordinate pair.</summary>
+    private static WardleyUrlDefinition? ParseUrlDefinition(string rest, uint number)
+    {
+        var match = UrlDefinitionExpression().Match(rest);
+        if (!match.Success)
+        {
+            return null;
+        }
+
+        var name = match.Groups["name"].Value.Trim();
+        var address = match.Groups["address"].Value.Trim();
+        return name.Length == 0 || address.Length == 0 ? null : new WardleyUrlDefinition(name, address, number);
+    }
+
+    /// <summary>
+    /// `annotation N [x, y] text` or `annotation N [[x, y], [x, y]] text` - one number, one or
+    /// more occurrences, then free text (Requirement 6.8).
+    /// </summary>
+    private static WardleyAnnotation? ParseAnnotation(string rest, uint number)
+    {
+        var match = AnnotationExpression().Match(rest);
+        if (!match.Success || !int.TryParse(match.Groups["number"].Value, out var annotationNumber))
+        {
+            return null;
+        }
+
+        var occurrences = new List<WardleyCoordinate>();
+        foreach (Match pair in CoordinateExpression().Matches(match.Groups["positions"].Value))
+        {
+            if (ParseCoordinate(pair.Groups["values"].Value) is { } coordinate)
+            {
+                occurrences.Add(coordinate);
+            }
+        }
+
+        // No position at all is not an annotation this module can place. Losing one of several
+        // would be worse, and is what the list exists to prevent.
+        return occurrences.Count == 0
+            ? null
+            : new WardleyAnnotation(annotationNumber, occurrences.ToArray(), match.Groups["text"].Value.Trim(), number);
+    }
+
+    /// <summary>The shape `accelerator`, `deaccelerator` and `note` share: a name, then a position.</summary>
+    private static (string Name, WardleyCoordinate Position)? ParseNameAndPosition(string rest)
+    {
+        var match = CoordinateExpression().Match(rest);
+        if (!match.Success)
+        {
+            return null;
+        }
+
+        var name = rest[..match.Index].Trim();
+        var position = ParseCoordinate(match.Groups["values"].Value);
+        return name.Length == 0 || position is null ? null : (name, position);
+    }
+
+    private static WardleyCoordinate? ParseCoordinateIn(string text)
+    {
+        var match = CoordinateExpression().Match(text);
+        return match.Success ? ParseCoordinate(match.Groups["values"].Value) : null;
+    }
+
+    /// <summary>
+    /// The line without its `//` comment.
+    /// </summary>
+    /// <remarks>
+    /// A `//` preceded by a colon is a URL scheme, not a comment. The DSL has no quoted string,
+    /// so this is the only place two slashes can appear without starting a comment - and
+    /// missing it silently truncated every `url name [https://...]` definition to
+    /// `url name [https:`, which parsed as nothing at all.
+    /// </remarks>
     private static string WithoutComment(string text)
     {
         var index = text.IndexOf("//", StringComparison.Ordinal);
+        while (index > 0 && text[index - 1] == ':')
+        {
+            index = text.IndexOf("//", index + 2, StringComparison.Ordinal);
+        }
+
         return index < 0 ? text : text[..index];
     }
 
@@ -414,4 +662,20 @@ public static partial class WardleyParser
 
     [GeneratedRegex(@"url\s*\(\s*(?<name>[^)]+)\s*\)", RegexOptions.IgnoreCase)]
     private static partial Regex UrlExpression();
+
+    /// <summary>`Name x` or `Name-&gt;Override x`, the number being the target maturity.</summary>
+    [GeneratedRegex(@"^(?<name>.+?)\s*(?:->\s*(?<override>[^\d]+?)\s*)?(?<maturity>-?[\d.]+)\s*$")]
+    private static partial Regex EvolveExpression();
+
+    /// <summary>Four bracketed numbers: an attitude region's two corners.</summary>
+    [GeneratedRegex(@"\[\s*(?<values>-?[\d.]+\s*,\s*-?[\d.]+\s*,\s*-?[\d.]+\s*,\s*-?[\d.]+)\s*\]")]
+    private static partial Regex AttitudeExpression();
+
+    /// <summary>`name [address]`, where the address is a URL rather than coordinates.</summary>
+    [GeneratedRegex(@"^(?<name>\S+)\s*\[\s*(?<address>[^\]]+?)\s*\]\s*$")]
+    private static partial Regex UrlDefinitionExpression();
+
+    /// <summary>`N [positions] text`, the positions being one pair or a bracketed list of pairs.</summary>
+    [GeneratedRegex(@"^(?<number>\d+)\s*(?<positions>\[.*\])\s*(?<text>.*)$")]
+    private static partial Regex AnnotationExpression();
 }

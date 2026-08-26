@@ -8,8 +8,18 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// <param name="Components">Every positioned element, in written order.</param>
 /// <param name="Links">Every link, endpoints held by name.</param>
 /// <param name="Pipelines">Every pipeline, each remembering which form it was written in.</param>
+/// <param name="Evolves">Every `evolve` statement, naming its component by name.</param>
+/// <param name="Attitudes">Pioneers, settlers and town-planner regions.</param>
+/// <param name="Accelerators">Accelerators and deaccelerators, distinguished by a flag.</param>
+/// <param name="Notes">Free text pinned at positions.</param>
+/// <param name="Annotations">Numbered annotations, each with one or more occurrences.</param>
+/// <param name="Urls">`url name [address]` definitions elements refer to by name.</param>
 /// <param name="Size">The `size [w, h]` the document asks to be drawn at, or null.</param>
 /// <param name="Style">The `style` name, or empty.</param>
+/// <param name="AnnotationsPosition">
+/// Where the `annotations [x, y]` legend block sits. A property of the presentation rather than
+/// an annotation itself, which is how the reference parser groups it too.
+/// </param>
 /// <remarks>
 /// <para>
 /// This is a <b>reading</b>, not a resolved model. Links name their endpoints as strings, a
@@ -29,9 +39,16 @@ public sealed record WardleyMap(
     IReadOnlyList<WardleyComponent> Components,
     IReadOnlyList<WardleyLink> Links,
     IReadOnlyList<WardleyPipeline> Pipelines,
+    IReadOnlyList<WardleyEvolve> Evolves,
+    IReadOnlyList<WardleyAttitude> Attitudes,
+    IReadOnlyList<WardleyAccelerator> Accelerators,
+    IReadOnlyList<WardleyNote> Notes,
+    IReadOnlyList<WardleyAnnotation> Annotations,
+    IReadOnlyList<WardleyUrlDefinition> Urls,
     WardleyMapSize? Size = null,
-    string Style = "")
+    string Style = "",
+    WardleyCoordinate? AnnotationsPosition = null)
 {
     /// <summary>An empty map - what a missing or blank `.owm` reads as (Requirement 2.4).</summary>
-    public static WardleyMap Empty { get; } = new("", [], [], []);
+    public static WardleyMap Empty { get; } = new("", [], [], [], [], [], [], [], [], []);
 }
