@@ -45,6 +45,10 @@ public static class ServiceCollectionAddAzurePipelineExtension
         // and the keyboard through the same path (Requirement 9.7).
         services.AddSingleton<IContextActionProvider, PipelineContextActionProvider>();
 
+        // What can be dragged onto the canvas. Each entry names an action above rather than
+        // carrying an implementation, so a drop and a menu click are the same edit.
+        services.AddSingleton<IDiagramToolboxProvider, PipelineToolboxProvider>();
+
         // The editable set, one handler per command. Every one of them is undoable, because every
         // one reports the command that reverses it (Requirement 9.2).
         services.AddSingleton<ICommandHandler<RenamePipelineElementCommand>, RenamePipelineElementCommandHandler>();

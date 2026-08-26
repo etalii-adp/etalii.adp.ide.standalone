@@ -209,10 +209,15 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
             ToggleEnabledActionId => new SetPipelineElementEnabledCommand(root, body, id, Execution(location).IsDisabled),
             ClearDependenciesActionId => new SetPipelineDependenciesCommand(root, body, id, [], Declared: false),
             RemoveActionId => new RemovePipelineElementCommand(root, body, id),
+            // The element itself is the parent, not the stage or job enclosing it. The menu only
+            // offers each of these where it belongs, and a toolbox drop goes through this same
+            // path - so passing the actual target lets the add command judge it and say the useful
+            // thing ("a step goes in a job") rather than this quietly retargeting the drop at
+            // whatever ancestor would have accepted it.
             AddStageActionId => new AddPipelineElementCommand(root, body, PipelineAddKind.Stage, ""),
-            AddJobActionId => new AddPipelineElementCommand(root, body, PipelineAddKind.Job, location.Stage.Id),
-            AddDeploymentJobActionId => new AddPipelineElementCommand(root, body, PipelineAddKind.DeploymentJob, location.Stage.Id),
-            AddStepActionId => new AddPipelineElementCommand(root, body, PipelineAddKind.Step, location.Job?.Id ?? ""),
+            AddJobActionId => new AddPipelineElementCommand(root, body, PipelineAddKind.Job, id),
+            AddDeploymentJobActionId => new AddPipelineElementCommand(root, body, PipelineAddKind.DeploymentJob, id),
+            AddStepActionId => new AddPipelineElementCommand(root, body, PipelineAddKind.Step, id),
             MoveStepUpActionId => new MovePipelineStepCommand(root, body, id, IndexOf(location) - 1),
             MoveStepDownActionId => new MovePipelineStepCommand(root, body, id, IndexOf(location) + 1),
             _ => null,
