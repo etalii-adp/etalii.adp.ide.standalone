@@ -2,7 +2,7 @@ title Annotations and labels
 anchor Customer [0.95, 0.63]
 
 component Cup of Tea [0.79, 0.61] label [-30, 12]
-component Kettle [0.43, 0.35] label [-57, 4]
+component Kettle [0.4291, 0.2928] label [-57, 4]
 component Power [0.10, 0.70] label [-27, 20]
 
 Customer->Cup of Tea
