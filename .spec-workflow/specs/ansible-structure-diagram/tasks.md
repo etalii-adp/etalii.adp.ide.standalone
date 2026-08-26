@@ -120,7 +120,7 @@
 
 ## Phase D — following the tree
 
-- [-] 12. `AnsibleProjectStore`: one project per folder, watched
+- [x] 12. `AnsibleProjectStore`: one project per folder, watched
   - File: `.../AnsibleProjectStore.cs`, `IAnsibleProjectStore.cs` (new), `_Model/AnsibleProjectChangedEventArgs.cs` (new), `.../AnsibleProjectStore.Tests.cs` (new)
   - `GetOrLoad`, `Get`, `Release`, and a `Changed` event. One `FileSystemWatcher` per registered folder with `IncludeSubdirectories` and content filters, a settle timer coalescing a burst, and **guarded handlers** — an unhandled exception on the watcher thread is the death of the process, which this repository has already paid for once
   - A settled burst re-reads the files that changed; a created, deleted or renamed **directory** re-walks the tree, since that is when the walk itself changes. `Release` disposes the watcher when the last viewer leaves
@@ -132,7 +132,7 @@
 
 ## Phase E — layout and the wire
 
-- [ ] 13. `AnsibleLayout`: ranked, banded, deterministic
+- [-] 13. `AnsibleLayout`: ranked, banded, deterministic
   - File: `.../AnsibleLayout.cs` (new), `_Model/AnsibleMetrics.cs` (new), `.../AnsibleLayout.Tests.cs` (new)
   - Ranks left to right by longest path — entry playbooks (nothing imports them), then playbooks and plays, then roles, then task files. Within a rank, declaration order then name, both ordinal. Inventories and variable folders occupy their own band rather than being ranked, so a `Targets` edge drops out of the execution story instead of lengthening it
   - Each play gets an index in declaration order; a role carries the index of its play. A role used by two plays is drawn **once**, carrying the lower index — seeing that `common` is shared is the point of drawing it
