@@ -163,7 +163,7 @@
 
 ## Phase F — the session and the registration
 
-- [-] 16. `AnsibleSession` and `AnsibleSessionFactory`
+- [x] 16. `AnsibleSession` and `AnsibleSessionFactory`
   - File: `.../AnsibleSession.cs`, `AnsibleSessionFactory.cs` (new), `.../AnsibleSession.Tests.cs` (new)
   - `Open` resolves the subject as **the folder the `.adp` sits in** — for a bodyless type `bodyPath` and `registrationPath` are the same file, which is what `DiagramFileRouter` already returns. Baseline and `UpdateView` from the mapper; the store's `Changed` becomes deltas
   - `MoveElementAsync` **refuses**: *"An Ansible structure diagram is drawn from the folder's own files; move a role by moving its folder."* The seam returns a reason rather than throwing, so a read-only type answers honestly
@@ -173,7 +173,7 @@
   - _Requirements: 2.2, 2.4, 7.1_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer implementing a diagram session | Task: Open a read-only session over the folder the .adp sits in, stream baseline and viewport deltas, and push the store's changes | Restrictions: do not take a history stack dependency; MoveElementAsync refuses with a sentence rather than throwing or silently succeeding; no write path anywhere | Success: tests prove the folder is resolved from the .adp, the baseline matches the mapper, a store change reaches the session as deltas, and a move is refused with a reason_
 
-- [ ] 17. `AddAnsibleStructure`, and the four registrations that are missing
+- [-] 17. `AddAnsibleStructure`, and the four registrations that are missing
   - File: `.../ServiceCollection.AddAnsibleStructure.cs` (new), `src/backend/EtAlii.Adp.Backend.Service/Program.cs` (edited), `.../AddAnsibleStructure.Tests.cs` (new)
   - Registers the store, the session factory, the source resolver, the validator and the property provider. Registers **no document factory, no toolbox provider, no action provider and no commands** — their absence is this type's statement, and the test asserts the absence rather than leaving it to inspection
   - Purpose: Requirement 11.2, including the half of it that is about what is *not* there
