@@ -56,16 +56,6 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
 
     private const string Gone = "That element is no longer on this map.";
 
-    /// <summary>The five decorators, in the order the DSL documents them.</summary>
-    private static readonly WardleyDecorator[] Decorators =
-    [
-        WardleyDecorator.Market,
-        WardleyDecorator.Ecosystem,
-        WardleyDecorator.Build,
-        WardleyDecorator.Buy,
-        WardleyDecorator.Outsource,
-    ];
-
     private readonly IHistoryStackStore _historyStacks;
     private readonly IWardleyDocumentStore _documents;
 
@@ -404,12 +394,12 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
             component.Inertia ? "Clear inertia" : "Mark as having inertia",
             "mdi-weight"));
 
-        var decorators = new ContextActionGroupDefinition(Decorators
+        var decorators = new ContextActionGroupDefinition(WardleyDecorators.All
             .Select(decorator => new ContextActionDefinition(
                 DecoratorActionIdFor(decorator),
                 component.Decorators.Contains(decorator)
-                    ? $"Clear {Spell(decorator)}"
-                    : $"Mark as {Spell(decorator)}",
+                    ? $"Clear {WardleyDecorators.Spell(decorator)}"
+                    : $"Mark as {WardleyDecorators.Spell(decorator)}",
                 "mdi-tag-outline"))
             .ToArray());
 
@@ -531,8 +521,6 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
             .ToArray();
     }
 
-    private static string Spell(WardleyDecorator decorator) => decorator.ToString().ToLowerInvariant();
-
     private static string SpellAdd(string actionId) => actionId switch
     {
         AddAnchorActionId => "anchor",
@@ -570,7 +558,7 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
 
     private static WardleyDecorator? DecoratorOf(string actionId)
     {
-        foreach (var decorator in Decorators)
+        foreach (var decorator in WardleyDecorators.All)
         {
             if (actionId == DecoratorActionIdFor(decorator))
             {

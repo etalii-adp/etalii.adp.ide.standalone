@@ -100,6 +100,20 @@ public sealed record SetWardleyPipelineMembershipCommand(
     bool Member,
     double Maturity = 0.5d) : ICommand;
 
+/// <summary>
+/// Sets a component's decorators to exactly this set (Requirement 6.3).
+/// </summary>
+/// <remarks>
+/// The whole set in one command, because the property grid shows the decorators as one row -
+/// "what is set", per Requirement 15.2 - and editing one row must be one undo. Doing it as
+/// several <see cref="SetWardleyDecoratorCommand"/>s would make a single typed change take
+/// several presses of Ctrl+Z to put back.
+/// </remarks>
+public sealed record SetWardleyDecoratorsCommand(
+    string BodyPath,
+    string ElementId,
+    IReadOnlyList<WardleyDecorator> Decorators) : ICommand;
+
 /// <summary>Sets or clears one of the five decorators on a component (Requirement 6.3).</summary>
 public sealed record SetWardleyDecoratorCommand(
     string BodyPath,

@@ -214,6 +214,59 @@ public sealed class SetWardleyInertiaCommandHandler : ICommandHandler<SetWardley
     }
 }
 
+public sealed class SetWardleyDecoratorsCommandHandler : ICommandHandler<SetWardleyDecoratorsCommand>
+{
+    private readonly IWardleyDocumentStore _documents;
+
+    public SetWardleyDecoratorsCommandHandler(IWardleyDocumentStore documents)
+    {
+        ArgumentNullException.ThrowIfNull(documents);
+        _documents = documents;
+    }
+
+    public Task<CommandResult> ExecuteAsync(SetWardleyDecoratorsCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var document = _documents.GetOrLoad(command.BodyPath);
+        var map = WardleyParser.Parse(document);
+        var component = WardleyEdit.ComponentOf(map, _documents.Identities(command.BodyPath), command.ElementId);
+        if (component is null)
+        {
+            return Task.FromResult(CommandResult.Failure("That element is no longer on this map."));
+        }
+
+        // One line, captured once: several writer calls follow, and the inverse has to put the
+        // line back as it was rather than as the sum of their opposites.
+        var before = document.Lines[(int)component.Line - 1];
+        var wanted = command.Decorators.Distinct().ToArray();
+
+        foreach (var decorator in WardleyDecorators.All)
+        {
+            var present = wanted.Contains(decorator);
+            if (present == component.Decorators.Contains(decorator))
+            {
+                continue;
+            }
+
+            // Re-read after each change: the statement has been rewritten, so the component's
+            // spans are from before it moved.
+            var current = WardleyEdit.ComponentOf(
+                WardleyParser.Parse(document), _documents.Identities(command.BodyPath), command.ElementId);
+
+            if (current is null || !WardleyWriter.SetDecorator(document, current, decorator.ToString().ToLowerInvariant(), present))
+            {
+                return Task.FromResult(CommandResult.Failure("That element's decorators could not be changed."));
+            }
+        }
+
+        _documents.Save(command.BodyPath);
+        return Task.FromResult(CommandResult.Success(
+            new RestoreWardleyLineCommand(command.BodyPath, component.Line, before)));
+    }
+}
+
 public sealed class SetWardleyDecoratorCommandHandler : ICommandHandler<SetWardleyDecoratorCommand>
 {
     private readonly IWardleyDocumentStore _documents;

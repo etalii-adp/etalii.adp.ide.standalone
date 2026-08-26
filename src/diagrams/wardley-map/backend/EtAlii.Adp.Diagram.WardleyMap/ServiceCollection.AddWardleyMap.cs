@@ -54,6 +54,9 @@ public static class ServiceCollectionAddWardleyMapExtension
         // (Requirement 13.7).
         services.AddSingleton<IDiagramToolboxProvider, WardleyToolboxProvider>();
 
+        // The values, and correcting one (Requirement 15.1).
+        services.AddSingleton<IContextPropertyProvider, WardleyContextPropertyProvider>();
+
         // The per-connection view: baseline, viewport, deltas and a positional drag
         // (Requirement 10.8).
         services.AddSingleton<IDiagramSessionFactory, WardleySessionFactory>();
@@ -67,6 +70,7 @@ public static class ServiceCollectionAddWardleyMapExtension
         services.AddSingleton<ICommandHandler<RenameWardleyElementCommand>, RenameWardleyElementCommandHandler>();
         services.AddSingleton<ICommandHandler<SetWardleyInertiaCommand>, SetWardleyInertiaCommandHandler>();
         services.AddSingleton<ICommandHandler<SetWardleyDecoratorCommand>, SetWardleyDecoratorCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetWardleyDecoratorsCommand>, SetWardleyDecoratorsCommandHandler>();
 
         services.AddSingleton<ICommandHandler<SetWardleyLinkCommand>, SetWardleyLinkCommandHandler>();
         services.AddSingleton<ICommandHandler<SetWardleyEvolveCommand>, SetWardleyEvolveCommandHandler>();
