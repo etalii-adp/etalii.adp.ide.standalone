@@ -33,6 +33,30 @@ namespace EtAlii.Adp.Diagram.C4.Tests;
 /// should not be blocked, and a skipped test reports itself, so the check cannot quietly
 /// disappear the way a commented-out one would.
 /// </para>
+/// <para>
+/// <b>Where the CLI comes from.</b> Two routes, both reachable - an earlier session concluded
+/// the <c>structurizr</c> GitHub organisation was filtered by its sandbox, and it was not; the
+/// repositories it guessed at simply do not exist under those names, and a 404 was read as a
+/// filter. Recording this so nobody retraces it:
+/// </para>
+/// <list type="bullet">
+///   <item><description>
+///     GitHub releases: <c>github.com/structurizr/cli/releases</c>, asset
+///     <c>structurizr-cli.zip</c>. The verdicts committed here were produced by <c>2025.11.09</c>.
+///   </description></item>
+///   <item><description>
+///     Maven Central: <c>com.structurizr:structurizr-cli</c>, at
+///     <c>repo1.maven.org/maven2/com/structurizr/structurizr-cli/</c>.
+///   </description></item>
+/// </list>
+/// <para>
+/// <b>The ceiling on gated skips.</b> Everything in this class needs a CLI, and that is the
+/// whole of what may. The interoperability guarantee itself is checked by
+/// <c>C4ReconciliationTests</c> against committed verdicts, with no JDK anywhere, and adding a
+/// gated test that is the only cover for some behaviour would move that behaviour back out of
+/// the everyday run. What lives here is the CLI-only half: that Structurizr accepts what ADP
+/// writes, and that the committed verdicts are still what Structurizr says.
+/// </para>
 /// </remarks>
 public class C4InteropTests : IDisposable
 {
@@ -78,9 +102,16 @@ public class C4InteropTests : IDisposable
         return process.ExitCode == 0 ? "" : output.Trim();
     }
 
+    /// <summary>How to make these run, said in the skip message rather than in a comment nobody reads.</summary>
+    private const string HowToRun =
+        "Set ADP_STRUCTURIZR_CLI to the Structurizr CLI's lib folder and put java on the PATH, then run " +
+        "`dotnet test --solution EtAlii.Adp.slnx` from src/backend. The CLI is at " +
+        "github.com/structurizr/cli/releases, or com.structurizr:structurizr-cli on Maven Central.";
+
     private static void SkipWithoutTheCli() => Assert.SkipUnless(
         CliLibrary is not null && Directory.Exists(CliLibrary),
-        "Set ADP_STRUCTURIZR_CLI to the Structurizr CLI's lib folder to check ADP's output against Structurizr's own parser.");
+        "Skipped: no Structurizr CLI. This check hands ADP's output to Structurizr's own parser; " +
+        "the everyday run checks the same guarantee against committed verdicts instead. " + HowToRun);
 
     private ServiceProvider Services() => new ServiceCollection().AddCommands().AddC4().BuildServiceProvider();
 
@@ -164,5 +195,76 @@ public class C4InteropTests : IDisposable
         SkipWithoutTheCli();
 
         Assert.Equal("", Verdict(IoPath.Combine("Fixtures", name)));
+    }
+
+    /// <summary>
+    /// Every committed verdict against what Structurizr says today.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is what makes the baselines worth having. Moving the authority into a committed
+    /// file buys a reconciliation that needs no JDK, and costs the possibility that the file
+    /// has drifted from what the tool actually says. Running this makes a stale baseline
+    /// detectable rather than merely possible, which is the whole difference between a
+    /// baseline and a fiction.
+    /// </para>
+    /// <para>
+    /// A stale baseline fails <em>here</em> and not in the everyday run. They are different
+    /// faults with different owners: the reconciliation failing means ADP and Structurizr
+    /// disagree about a model, and this failing means the recorded answer is out of date.
+    /// Making the everyday run carry both would tell a developer with no JDK to go and fix
+    /// something they cannot reproduce.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    [MemberData(nameof(C4DocumentTests.Corpus), MemberType = typeof(C4DocumentTests))]
+    public void EveryVerdict_IsStillWhatStructurizrSays(string name)
+    {
+        SkipWithoutTheCli();
+
+        // Arrange.
+        var committed = C4Verdict.Read(name);
+
+        // Act.
+        // Rule ids rather than whole lines: Structurizr is free to reword a message between
+        // versions, and a baseline that fails because a sentence improved is a baseline people
+        // learn to regenerate without reading.
+        var today = Inspect(IoPath.Combine("Fixtures", name));
+
+        // Assert.
+        Assert.Equal(
+            committed.Findings.Select(finding => finding.RuleId).Order(StringComparer.Ordinal),
+            today.Select(finding => finding.RuleId).Order(StringComparer.Ordinal));
+    }
+
+    /// <summary>What <c>inspect</c> reports for <paramref name="path"/> right now.</summary>
+    /// <remarks>
+    /// <c>inspect</c> exits with the number of findings rather than with zero, so its exit code
+    /// says how much it found and never whether it worked. Only the output is read.
+    /// </remarks>
+    private static IReadOnlyList<C4VerdictFinding> Inspect(string path)
+    {
+        var process = Process.Start(new ProcessStartInfo("java")
+        {
+            ArgumentList =
+            {
+                "-cp", IoPath.Combine(CliLibrary!, "*"),
+                "com.structurizr.cli.StructurizrCliApplication",
+                "inspect", "-workspace", path,
+            },
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        })!;
+
+        var output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
+        process.WaitForExit();
+
+        return output
+            .Split('\n')
+            .Select(line => line.Trim())
+            .Where(line => line.Contains('|', StringComparison.Ordinal))
+            .Select(line => line.Split('|', 3))
+            .Select(parts => new C4VerdictFinding(parts[0].Trim(), parts[1].Trim(), parts[2].Trim()))
+            .ToArray();
     }
 }
