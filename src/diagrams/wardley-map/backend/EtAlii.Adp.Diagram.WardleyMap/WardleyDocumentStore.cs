@@ -12,12 +12,26 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
 
     private readonly ConcurrentDictionary<string, WardleyDocument> _documents = new(StringComparer.OrdinalIgnoreCase);
 
+    private readonly ConcurrentDictionary<string, IReadOnlyList<WardleyIdentityEntry>> _identities =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    private readonly WardleyIdentities _sidecar = new();
+
     public event EventHandler<WardleyDocumentChangedEventArgs>? Changed;
 
     public WardleyDocument GetOrLoad(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         return _documents.GetOrAdd(path, Load);
+    }
+
+    public IReadOnlyList<WardleyIdentityEntry> Identities(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        return _identities.GetOrAdd(
+            path,
+            key => WardleyIdentities.Reconcile(WardleyParser.Parse(GetOrLoad(key)), _sidecar.Read(key)));
     }
 
     public void Save(string path)
@@ -29,6 +43,13 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
         {
             return;
         }
+
+        // The edit may have added or removed elements, so identities are re-reconciled against
+        // what was already assigned - anything that survived keeps its id - and only now
+        // written. A map opened and never edited reaches none of this (Requirement 4.3).
+        var reconciled = WardleyIdentities.Reconcile(WardleyParser.Parse(document), Identities(path));
+        _identities[path] = reconciled;
+        _sidecar.Write(path, reconciled);
 
         Changed?.Invoke(this, new WardleyDocumentChangedEventArgs(path));
     }
@@ -43,14 +64,22 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         _documents.TryRemove(path, out _);
+        _identities.TryRemove(path, out _);
     }
 
     public void Reload(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
+        var previous = _identities.TryGetValue(path, out var known) ? known : [];
         _documents.TryRemove(path, out _);
-        _ = GetOrLoad(path);
+        _identities.TryRemove(path, out _);
+
+        // Reconciled against what this process already assigned rather than against the sidecar
+        // alone: an element that survived an external edit keeps the id its connections are
+        // already holding, so a `git pull` does not silently reset every selection.
+        _identities[path] = WardleyIdentities.Reconcile(WardleyParser.Parse(GetOrLoad(path)), previous);
+
         Changed?.Invoke(this, new WardleyDocumentChangedEventArgs(path));
     }
 

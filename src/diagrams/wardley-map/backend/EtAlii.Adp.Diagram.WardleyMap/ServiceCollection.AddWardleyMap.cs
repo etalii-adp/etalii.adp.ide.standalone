@@ -1,3 +1,5 @@
+using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Diagrams;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -36,6 +38,17 @@ public static class ServiceCollectionAddWardleyMapExtension
         // Where the identities the `.owm` format does not provide are kept. Stateless, so one
         // instance serves every map (Requirement 4.2).
         services.TryAddSingleton<WardleyIdentities>();
+
+        // Model to core elements and deltas, including the axis flip.
+        services.TryAddSingleton<WardleyElementMapper>();
+
+        // The per-connection view: baseline, viewport, deltas and a positional drag
+        // (Requirement 10.8).
+        services.AddSingleton<IDiagramSessionFactory, WardleySessionFactory>();
+
+        // The type's commands, so every edit is one undo away (tech.md's Commands rule).
+        services.AddSingleton<ICommandHandler<MoveWardleyElementCommand>, MoveWardleyElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreWardleyLineCommand>, RestoreWardleyLineCommandHandler>();
 
         return services;
     }
