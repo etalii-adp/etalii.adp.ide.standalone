@@ -1,4 +1,3 @@
-using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Diagrams;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,12 +13,18 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// (Requirement 12.3).
 /// </summary>
 /// <remarks>
-/// This currently registers one seam of the eight Requirement 12.3 lists. The document factory
-/// is here first because it is the one seam that is **mandatory the moment the type declares
-/// an extension**: <c>Program.cs</c> fails startup for a type that declares one without a
-/// factory, so task 3 could not land without it. The session factory, resolver, action
-/// provider, toolbox provider, validator, property provider and command handlers join it as
-/// their own tasks land.
+/// <para>
+/// <b>This method is the module's whole integration surface.</b> Requirement 12.3 lists eight
+/// seams and every one of them is a line here: the document factory, the session factory, the
+/// context source resolver, the action provider, the toolbox provider, the property provider,
+/// the validator, and the command handlers - the last through
+/// <c>AddWardleyMapCommands</c>, which Requirement 9.7 names.
+/// </para>
+/// <para>
+/// Anything a reviewer wants to know about how this type plugs in is visible in one screen, and
+/// anything NOT here is not part of the seam. That is what makes Requirement 12.5's audit
+/// possible: if core had learned what a Wardley map is, it would not be from this file.
+/// </para>
 /// </remarks>
 public static class ServiceCollectionAddWardleyMapExtension
 {
@@ -31,17 +36,12 @@ public static class ServiceCollectionAddWardleyMapExtension
         // (Requirement 1.6). Resolved by origin; core never learns what a Wardley map is.
         services.AddSingleton<IDiagramDocumentFactory, WardleyDocumentFactory>();
 
-        // One document per path, shared by every connection viewing it. TryAdd rather than Add
-        // so a test that registers its own store keeps it, and so a second call to this method
-        // cannot quietly produce two stores that drift apart (Requirement 10.6).
-        services.TryAddSingleton<IWardleyDocumentStore, WardleyDocumentStore>();
-
-        // Where the identities the `.owm` format does not provide are kept. Stateless, so one
-        // instance serves every map (Requirement 4.2).
-        services.TryAddSingleton<WardleyIdentities>();
-
         // Model to core elements and deltas, including the axis flip.
         services.TryAddSingleton<WardleyElementMapper>();
+
+        // The per-connection view: baseline, viewport, deltas and a positional drag
+        // (Requirement 10.8).
+        services.AddSingleton<IDiagramSessionFactory, WardleySessionFactory>();
 
         // Makes an element selectable, and self-describing once it is (Requirement 11.2).
         services.AddSingleton<IContextSourceResolver, WardleyContextSourceResolver>();
@@ -57,30 +57,11 @@ public static class ServiceCollectionAddWardleyMapExtension
         // The values, and correcting one (Requirement 15.1).
         services.AddSingleton<IContextPropertyProvider, WardleyContextPropertyProvider>();
 
-        // The per-connection view: baseline, viewport, deltas and a positional drag
-        // (Requirement 10.8).
-        services.AddSingleton<IDiagramSessionFactory, WardleySessionFactory>();
+        // What is wrong with the map, reported where it is (Requirement 14.1).
+        services.AddSingleton<IDiagramValidator, WardleyValidator>();
 
-        // The type's commands, so every edit is one undo away (tech.md's Commands rule).
-        services.AddSingleton<ICommandHandler<MoveWardleyElementCommand>, MoveWardleyElementCommandHandler>();
-        services.AddSingleton<ICommandHandler<AddWardleyElementCommand>, AddWardleyElementCommandHandler>();
-        services.AddSingleton<ICommandHandler<AddWardleyNoteCommand>, AddWardleyNoteCommandHandler>();
-        services.AddSingleton<ICommandHandler<AddWardleyAnnotationCommand>, AddWardleyAnnotationCommandHandler>();
-        services.AddSingleton<ICommandHandler<RemoveWardleyElementCommand>, RemoveWardleyElementCommandHandler>();
-        services.AddSingleton<ICommandHandler<RenameWardleyElementCommand>, RenameWardleyElementCommandHandler>();
-        services.AddSingleton<ICommandHandler<SetWardleyInertiaCommand>, SetWardleyInertiaCommandHandler>();
-        services.AddSingleton<ICommandHandler<SetWardleyDecoratorCommand>, SetWardleyDecoratorCommandHandler>();
-        services.AddSingleton<ICommandHandler<SetWardleyDecoratorsCommand>, SetWardleyDecoratorsCommandHandler>();
-
-        services.AddSingleton<ICommandHandler<SetWardleyLinkCommand>, SetWardleyLinkCommandHandler>();
-        services.AddSingleton<ICommandHandler<SetWardleyEvolveCommand>, SetWardleyEvolveCommandHandler>();
-        services.AddSingleton<ICommandHandler<SetWardleyPipelineMembershipCommand>, SetWardleyPipelineMembershipCommandHandler>();
-
-        // The two inverses. An edit that touches one line reports the first; one that touches
-        // several - an add, a remove, a rename - reports the second, because putting the
-        // document back is the only description of those that is both exact and simple.
-        services.AddSingleton<ICommandHandler<RestoreWardleyLineCommand>, RestoreWardleyLineCommandHandler>();
-        services.AddSingleton<ICommandHandler<RestoreWardleyDocumentCommand>, RestoreWardleyDocumentCommandHandler>();
+        // Every edit, and its inverse (Requirement 9.7).
+        services.AddWardleyMapCommands();
 
         return services;
     }
