@@ -33,6 +33,7 @@ public sealed class PipelineValidator : IDiagramValidator
         PipelineModel model;
         try
         {
+            // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
             model = PipelineParser.Parse(PipelineDocument.Parse(request.Document ?? ""));
         }
         catch (YamlException exception)

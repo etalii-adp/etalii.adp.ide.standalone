@@ -120,7 +120,8 @@ public static partial class PipelineGraphBuilder
     /// </remarks>
     public static PipelineEdgeCondition Classify(string condition)
     {
-        var trimmed = (condition ?? "").Trim();
+        // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+        var trimmed = (condition ?? string.Empty).Trim();
         if (trimmed.Length == 0)
         {
             return PipelineEdgeCondition.OnSuccess;
