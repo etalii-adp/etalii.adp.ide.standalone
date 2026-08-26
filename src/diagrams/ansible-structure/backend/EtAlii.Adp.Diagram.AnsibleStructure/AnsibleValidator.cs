@@ -1,5 +1,7 @@
 using Serilog;
 
+using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
+
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
 
 /// <summary>
@@ -57,6 +59,45 @@ public sealed class AnsibleValidator : IDiagramValidator
             return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>([]);
         }
 
-        return ValueTask.FromResult(AnsibleRuleSet.Judge(_reader.Read(folder)));
+        var problems = AnsibleRuleSet.Judge(_reader.Read(folder));
+        return ValueTask.FromResult(Rebased(problems, request.RootPath, folder));
+    }
+
+    /// <summary>
+    /// Rewrites each problem's location from folder-relative to project-relative.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="AnsibleRuleSet"/> works in the model's own terms, where a path is relative to
+    /// the diagram's folder - <c>roles/nginx/meta/main.yml</c>. Core works in the project's,
+    /// because that is what a client can be shown and what the problem store keys on. This is
+    /// the one place both are known, so this is where the two meet.
+    /// </para>
+    /// <para>
+    /// It matters only when the diagram's folder is not the project root, which is the ordinary
+    /// case and was invisible to every unit test in this module - there the folder <em>is</em>
+    /// the root. <c>AnsibleValidationFlowTests</c> caught it.
+    /// </para>
+    /// </remarks>
+    private static IReadOnlyList<DiagramProblem> Rebased(
+        IReadOnlyList<DiagramProblem> problems, string rootPath, string folder)
+    {
+        if (rootPath.Length == 0)
+        {
+            return problems;
+        }
+
+        var prefix = IoPath.GetRelativePath(rootPath, folder).Replace('\\', '/');
+        if (prefix is "." or "")
+        {
+            return problems;
+        }
+
+        return
+        [
+            .. problems.Select(problem => problem.Location is DiagramProblemFileLocation located
+                ? problem with { Location = located with { RelativePath = $"{prefix}/{located.RelativePath}" } }
+                : problem),
+        ];
     }
 }
