@@ -64,6 +64,11 @@ public static class ServiceCollectionAddAnsibleStructureExtension
         // service itself is untouched.
         services.AddSingleton<IContextSourceResolver, AnsibleContextSourceResolver>();
 
+        // Property-grid Requirement 4 at 100%: every row this contributes is read-only, and
+        // every reason names the file the value lives in. ContextPropertyResolver refuses a
+        // write to any of them server-side, so the markings are enforced, not styled.
+        services.AddSingleton<IContextPropertyProvider, AnsibleContextPropertyProvider>();
+
         return services;
     }
 }
