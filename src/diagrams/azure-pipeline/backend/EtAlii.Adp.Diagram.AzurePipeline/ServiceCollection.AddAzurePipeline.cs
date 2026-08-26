@@ -49,6 +49,10 @@ public static class ServiceCollectionAddAzurePipelineExtension
         // carrying an implementation, so a drop and a menu click are the same edit.
         services.AddSingleton<IDiagramToolboxProvider, PipelineToolboxProvider>();
 
+        // What a selected element shows, and which of it may be written from the panel
+        // (Requirement 13.1). Almost everything is shown and not editable, on purpose.
+        services.AddSingleton<IContextPropertyProvider, PipelineContextPropertyProvider>();
+
         // The editable set, one handler per command. Every one of them is undoable, because every
         // one reports the command that reverses it (Requirement 9.2).
         services.AddSingleton<ICommandHandler<RenamePipelineElementCommand>, RenamePipelineElementCommandHandler>();

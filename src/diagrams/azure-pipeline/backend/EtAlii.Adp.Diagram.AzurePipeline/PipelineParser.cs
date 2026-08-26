@@ -500,14 +500,33 @@ public sealed class PipelineParser
     /// </summary>
     private static PipelineExecution ReadExecution(YamlMappingNode element)
     {
-        var condition = Scalar(element, "condition");
-        var continueOnError = Scalar(element, "continueOnError");
-        var enabled = Scalar(element, "enabled");
-        var timeout = Scalar(element, "timeoutInMinutes");
-        return condition.Length == 0 && continueOnError.Length == 0 && enabled.Length == 0 && timeout.Length == 0
+        // Which keys are there is recorded alongside their values, because `condition: ''` and no
+        // condition at all are different things the file is saying and both leave the string
+        // empty. A sentinel value would eventually be mistaken for a real one; a set cannot be.
+        var declared = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var key in _executionKeys.Where(key => Entry(element, key) is not null))
+        {
+            declared.Add(key);
+        }
+
+        return declared.Count == 0
             ? PipelineExecution.Default
-            : new PipelineExecution(condition, continueOnError, enabled, timeout);
+            : new PipelineExecution(
+                Scalar(element, PipelineExecution.ConditionKey),
+                Scalar(element, PipelineExecution.ContinueOnErrorKey),
+                Scalar(element, PipelineExecution.EnabledKey),
+                Scalar(element, PipelineExecution.TimeoutKey),
+                declared);
     }
+
+    /// <summary>The keys <see cref="PipelineExecution"/> carries, in one place so it cannot drift.</summary>
+    private static readonly string[] _executionKeys =
+    [
+        PipelineExecution.ConditionKey,
+        PipelineExecution.ContinueOnErrorKey,
+        PipelineExecution.EnabledKey,
+        PipelineExecution.TimeoutKey,
+    ];
 
     /// <summary>
     /// A <c>pool</c> as declared at one level, in either of the two shapes the schema allows: a
