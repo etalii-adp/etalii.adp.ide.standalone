@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Diagrams;
 using EtAlii.Adp.Diagram;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +23,17 @@ public static class ServiceCollectionAddAzurePipelineExtension
         // A type that declares a document extension must be able to write an empty one; the
         // host checks that at startup rather than at the first Add.
         services.AddSingleton<IDiagramDocumentFactory, PipelineDocumentFactory>();
+
+        // One store for the process: two diagrams on one pipeline have to share its document, or
+        // an edit through either would be invisible to the other until a reload.
+        services.AddSingleton<IPipelineDocumentStore, PipelineDocumentStore>();
+
+        // The pitch the layout arranges at, as a singleton so the canvas and the backend cannot
+        // end up disagreeing about how big a stage is.
+        services.AddSingleton(PipelineMetrics.Default);
+        services.AddSingleton<PipelineElementMapper>();
+
+        services.AddSingleton<IDiagramSessionFactory, PipelineSessionFactory>();
 
         return services;
     }
