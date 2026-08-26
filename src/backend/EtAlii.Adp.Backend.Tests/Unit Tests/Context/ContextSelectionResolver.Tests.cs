@@ -193,4 +193,90 @@ public class ContextSelectionResolverTests
         Assert.IsType<RejectedContextLevel>(result);
     }
 
+    [Fact]
+    public async Task ResolveLevelAsync_WhenSeveralResolversClaimTheIdShape_TakesTheOneThatOwnsIt()
+    {
+        // Arrange.
+        // Every diagram type's resolver claims every element id, because CanResolve answers a
+        // question about the shape of an id and not about ownership - which element belongs to
+        // which type depends on the file the enclosing level names, and only ResolveAsync looks
+        // at that.
+        //
+        // Taking the first claimant therefore gave whichever module registered earliest silent
+        // ownership of every element selection in the application. A C4 element could not be
+        // selected at all: the mindmap resolver claimed it and then correctly observed that the
+        // file was not a mindmap. Nothing caught it, because every test that selected an element
+        // selected a mindmap one.
+        var first = new ContextSelectionResolverRefusingStubResolver("mindmap-node", "not a mindmap");
+        var second = new ContextSelectionResolverRefusingStubResolver("pipeline-stage", "not a pipeline");
+        var resolver = new ContextSelectionResolver([first, second]);
+
+        // Act.
+        var result = await resolver.ResolveLevelAsync(
+            WatchId,
+            Root,
+            ContextSelectionSource.DiagramCanvas,
+            new ContextSource { ElementId = new ElementId { Value = "pipeline-stage" } },
+            [],
+            null,
+            TestContext.Current.CancellationToken);
+
+        // Assert.
+        var resolved = Assert.IsType<ResolvedContextLevel>(result);
+        Assert.Equal("pipeline-stage", resolved.Level.Target.ElementId);
+        Assert.Equal(1, first.Asked);
+        Assert.Equal(1, second.Asked);
+    }
+
+    [Fact]
+    public async Task ResolveLevelAsync_StopsAtTheFirstResolverThatAccepts()
+    {
+        // Arrange: asking the rest would be wasted work, and a second acceptance would be a
+        // disagreement nobody could adjudicate.
+        var first = new ContextSelectionResolverRefusingStubResolver("shared-id", "not mine");
+        var second = new ContextSelectionResolverRefusingStubResolver("shared-id", "not mine either");
+        var resolver = new ContextSelectionResolver([first, second]);
+
+        // Act.
+        await resolver.ResolveLevelAsync(
+            WatchId,
+            Root,
+            ContextSelectionSource.DiagramCanvas,
+            new ContextSource { ElementId = new ElementId { Value = "shared-id" } },
+            [],
+            null,
+            TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal(1, first.Asked);
+        Assert.Equal(0, second.Asked);
+    }
+
+    [Fact]
+    public async Task ResolveLevelAsync_WhenEveryClaimantRefuses_SaysNoWithoutSayingWhichOne()
+    {
+        // Arrange: asking several resolvers must not become a way to find out which module
+        // recognised the file. Every rejection carries the same generic reason, and offering the
+        // level around does not weaken that.
+        var first = new ContextSelectionResolverRefusingStubResolver("mindmap-node", "not a mindmap");
+        var second = new ContextSelectionResolverRefusingStubResolver("pipeline-stage", "not a pipeline");
+        var resolver = new ContextSelectionResolver([first, second]);
+
+        // Act.
+        var result = await resolver.ResolveLevelAsync(
+            WatchId,
+            Root,
+            ContextSelectionSource.DiagramCanvas,
+            new ContextSource { ElementId = new ElementId { Value = "belongs-to-nobody" } },
+            [],
+            null,
+            TestContext.Current.CancellationToken);
+
+        // Assert.
+        var rejected = Assert.IsType<RejectedContextLevel>(result);
+        Assert.Equal("This item is no longer available.", rejected.Reason);
+        Assert.DoesNotContain("mindmap", rejected.Reason, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(1, first.Asked);
+        Assert.Equal(1, second.Asked);
+    }
 }

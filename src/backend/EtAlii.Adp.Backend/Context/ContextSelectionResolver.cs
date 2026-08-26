@@ -111,15 +111,68 @@ public sealed class ContextSelectionResolver
             return ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(GenericRejection));
         }
 
-        var resolver = _resolvers.FirstOrDefault(r => r.CanResolve(id));
-        if (resolver is null)
+        var claimants = _resolvers.Where(candidate => candidate.CanResolve(id)).ToList();
+        if (claimants.Count == 0)
         {
             // No resolver means no way to verify anything about this level; recording
             // it on trust is exactly what the seam exists to prevent.
             return ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(GenericRejection));
         }
 
-        return ResolveThroughAsync(resolver, watchId, rootPath, source, id, clientPath, parent, cancellationToken);
+        return ResolveThroughAnyAsync(claimants, watchId, rootPath, source, id, clientPath, parent, cancellationToken);
+    }
+
+    /// <summary>
+    /// Offers the level to each resolver that claims its id shape, and takes the first that
+    /// actually accepts it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="IContextSourceResolver.CanResolve"/> answers a question about the <em>shape</em>
+    /// of an id - "is this an element id?" - and every diagram type answers yes to that one. Which
+    /// type an element belongs to cannot be known from the id at all: it depends on the file the
+    /// enclosing level names, which only <see cref="IContextSourceResolver.ResolveAsync"/> looks
+    /// at. So the first claimant is not the owner, it is merely the first to be asked.
+    /// </para>
+    /// <para>
+    /// Taking the first claimant meant whichever module registered earliest silently owned every
+    /// element selection in the application and rejected the rest - a C4 element could not be
+    /// selected at all, because the mindmap resolver claimed it first and then correctly observed
+    /// that the file was not a mindmap. Nothing caught it: every test that selected an element
+    /// selected a mindmap one.
+    /// </para>
+    /// <para>
+    /// When every claimant refuses, the refusal is the generic one every rejection carries -
+    /// <see cref="ResolveThroughAsync"/> replaces each resolver's own wording on the way out, so
+    /// a caller learns nothing about ids it may not see. That rule is deliberate and this does not
+    /// weaken it: asking several resolvers must not become a way to find out which module
+    /// recognised the file.
+    /// </para>
+    /// </remarks>
+    private static async ValueTask<ContextLevelResolution> ResolveThroughAnyAsync(
+        IReadOnlyList<IContextSourceResolver> claimants,
+        ShortGuid watchId,
+        string rootPath,
+        ContextSelectionSource source,
+        ContextSource id,
+        IReadOnlyList<string> clientPath,
+        ContextResolvedLevel? parent,
+        CancellationToken cancellationToken)
+    {
+        ContextLevelResolution? firstRefusal = null;
+        foreach (var claimant in claimants)
+        {
+            var resolution = await ResolveThroughAsync(
+                claimant, watchId, rootPath, source, id, clientPath, parent, cancellationToken);
+            if (resolution is ResolvedContextLevel)
+            {
+                return resolution;
+            }
+
+            firstRefusal ??= resolution;
+        }
+
+        return firstRefusal ?? new RejectedContextLevel(GenericRejection);
     }
 
     private static async ValueTask<ContextLevelResolution> ResolveThroughAsync(
