@@ -1,11 +1,6 @@
 using EtAlii.Adp.Backend.Diagrams;
-
-using Google.Protobuf;
-
 using Xunit;
-
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
-using Wire = EtAlii.Adp.Diagram.AnsibleStructure.Wire;
 
 namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests;
 
