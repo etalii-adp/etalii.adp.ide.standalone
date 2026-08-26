@@ -222,3 +222,63 @@ worktree name, and the longest project path needs the machine's long-path suppor
 - **Note**: a genuinely empty run does exit non-zero (5 for zero tests, 8 for a filter matching
   nothing), so any CI step must check the exit code rather than grepping the output for
   `failed`. Grepping alone reads a zero-test run as a pass.
+
+## A map authored in onlinewardleymaps.com opens looking like the same map (wardley-map, task 26)
+
+The corpus test proves ADP's parser and the reference parser agree about what the text *means*;
+nothing automated can say the picture agrees. The failure this guards against is a map that
+parses perfectly and is drawn wrong - an axis inverted, a band in the wrong place - which every
+unit test in the module would still pass.
+
+- **Preconditions**: backend + client running; a project folder on disk; a browser open at
+  [onlinewardleymaps.com](https://onlinewardleymaps.com/).
+- **Actions**: in that editor, load the built-in tea shop example (or paste
+  `src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap.Tests/Fixtures/tea-shop.owm`).
+  Save the same text as `tea.owm` in the project folder, beside a `tea.adp` whose only line is
+  `wardley/map`. Open `tea.adp` in ADP and put the two windows side by side.
+- **Expected**: the same components in the same relative places. The anchor sits at the top,
+  Cup of Tea below it, Kettle and Power towards the bottom left; every link joins the same pair.
+  A component that is high in one and low in the other means the visibility axis is inverted;
+  one that is left in one and right in the other means maturity is.
+
+## The four evolution stage labels are legible at the default zoom (wardley-map, task 26)
+
+`WardleyEvolutionTests` pins where the three boundaries are and the canvas test asserts the
+labels exist in the DOM. Neither can say whether a reader can read them - and the labels carry
+their parentheticals ("Product (+rental)", "Commodity (+utility)") precisely because the short
+forms are a different claim, which only helps if the long forms fit.
+
+- **Preconditions**: an `.owm` open in a diagram tab, at the zoom the tab opens with.
+- **Actions**: look along the bottom of the map without zooming or panning.
+- **Expected**: four labels - Genesis, Custom Built, Product (+rental), Commodity (+utility) -
+  each fully readable, none clipped at the edge of the canvas, none overlapping its neighbour,
+  and each sitting under the band it names.
+
+## Dragging a component and reopening the file elsewhere shows it moved (wardley-map, task 26)
+
+The round-trip and command tests assert ADP writes what it means. This asserts the other
+ecosystem agrees, which is the whole point of Requirement 3: a map ADP has touched must still
+be a map onlinewardleymaps.com can open, with the drag visible in it.
+
+- **Preconditions**: `tea.adp` / `tea.owm` open in ADP, as above.
+- **Actions**: drag `Kettle` clearly to the right (more evolved) and drop it. Open `tea.owm` in a
+  text editor, copy its whole text, and paste it into onlinewardleymaps.com.
+- **Expected**: the file's `component Kettle [...]` line carries a larger second number than
+  before and the same first number; the rest of the file - comments, blank lines, the order of
+  the statements, the line endings - is untouched; and the map in the browser draws Kettle in
+  its new place with everything else where it was.
+
+## An element selected on the canvas fills the property grid (wardley-map, task 26)
+
+`WardleyContextPropertyProviderTests` proves the rows are contributed and `WardleyMapFlowTests`
+proves they reach a caller. Neither can say the panel renders them usefully: a read-only reason
+is a `display: block` span with no truncation, so one that is too long grows its row rather than
+clipping, and that is only visible on screen.
+
+- **Preconditions**: `tea.adp` open in a diagram tab, with the Property Grid panel visible.
+- **Actions**: click `Kettle` on the canvas and read the panel. Then click the Evolution stage
+  row and try to type into it.
+- **Expected**: the panel's heading is `Kettle`; the rows are grouped under Identity, Position
+  and Strategy; Visibility and Maturity show the file's own numbers; Evolution stage shows
+  `Custom Built` and cannot be typed into, with a sentence beside it saying to change Maturity
+  instead - one or two lines, not a paragraph that pushes the rest of the panel down.

@@ -153,7 +153,7 @@ Not tied to one methodology — each cloud vendor's official icon set functions 
 
 | State | Origin | Diagram | Theory | Example |
 |---|---|---|---|---|
-| 🛠️ Work-in-progress | `wardley/map` | Wardley Map | [learnwardleymapping.com](https://learnwardleymapping.com/) · [`wardley-map`](../.spec-workflow/specs/wardley-map/requirements.md) specifies the OnlineWardleyMaps `.owm` DSL | [Online Wardley Maps editor](https://onlinewardleymaps.com/) |
+| ✅ Implemented | `wardley/map` | Wardley Map | [learnwardleymapping.com](https://learnwardleymapping.com/) · reads and writes the [OnlineWardleyMaps `.owm` DSL](https://onlinewardleymaps.com/), keeping a map another tool wrote byte-for-byte · [`wardley-map`](../.spec-workflow/specs/wardley-map/requirements.md) | [Online Wardley Maps editor](https://onlinewardleymaps.com/) |
 
 ---
 
