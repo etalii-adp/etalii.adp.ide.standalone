@@ -16,7 +16,7 @@
 
 ## Phase A — the corpus
 
-- [ ] 1. Assemble the pipeline round-trip corpus
+- [x] 1. Assemble the pipeline round-trip corpus
   - File: `src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline.Tests/Fixtures/*.yml` (new), `Fixtures/readme.md` (new)
   - Commit real Azure Pipelines documents: a multi-stage build/test/deploy with `dependsOn` fan-out and fan-in, a `deployment` job with an `environment` and a `strategy`, a pipeline using `extends` with parameters, one using `stages`/`jobs`/`steps` templates, a `jobs`-only file and a `steps`-only file (Requirement 4.2), and hand-made edge cases: comments in every position, anchors and aliases, both CRLF and LF, unusual indentation, `${{ }}` and `$[ ]` expressions in `condition`, `dependsOn` and `displayName`
   - The readme records each file's provenance and what it exists to prove. A file written by hand is never called canonical; where possible, validate it against Azure DevOps' own schema so the YAML is not ADP's opinion of the YAML
@@ -27,14 +27,14 @@
 
 ## Phase B — the two core seams
 
-- [ ] 2. Declare a shared extension on `DiagramDefinition`
+- [x] 2. Declare a shared extension on `DiagramDefinition`
   - File: `src/backend/EtAlii.Adp.Diagram/_Model/DiagramDefinition.cs` (edited), `src/backend/EtAlii.Adp.Diagram.Tests/DiagramDefinition.Tests.cs` (edited)
   - Add `bool SharedExtension = false` after `Extension`. Defaulted, so all 57 existing definitions compile and behave unchanged. Document it as "too common for one type to claim on sight"
   - Purpose: lets a type declare `.yml` without claiming every YAML file
   - _Requirements: 2.1_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add a defaulted SharedExtension flag to DiagramDefinition with documentation explaining what it means | Restrictions: it must default to false so no existing definition changes behaviour; do not reorder existing parameters | Success: the solution builds, every existing definition is untouched, and a test asserts the default_
 
-- [ ] 3. Withhold bare-body routing for a shared extension
+- [x] 3. Withhold bare-body routing for a shared extension
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/DiagramFileRouter.cs` (edited), `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/DiagramFileRouter.Tests.cs` (edited)
   - In `RouteBody`, after the claimant search: if every claimant declares the extension shared, return `NotADiagram`. An `.adp` beside the file still wins, because that path runs first
   - Purpose: a stray `.yml` routes nowhere, while `.mm`, `.owm` and `.dsl` keep today's behaviour exactly
@@ -42,14 +42,14 @@
   - _Requirements: 2.2_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add a guard to DiagramFileRouter.RouteBody so a body whose extension every claimant declares shared routes to NotADiagram | Restrictions: distinctive extensions must be entirely unaffected; the .adp registration path must still win | Success: tests prove a bare .yml routes nowhere, the same file with an .adp opens, and a bare .mm still routes_
 
-- [ ] 4. Filter the Add option tree to a set of definitions
+- [x] 4. Filter the Add option tree to a set of definitions
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/DiagramOptionTree.cs` (edited), `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/DiagramOptionTree.Tests.cs` (edited)
   - `Build` already takes the definitions to show. Confirm it needs no change beyond being called with a filtered list, and add a test that a single-vendor filtered list still groups correctly
   - Purpose: the file case shows only the types that claim that extension
   - _Requirements: 2.3_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Verify DiagramOptionTree.Build handles a filtered definition list and cover it with a test | Restrictions: do not change the grouping rules; do not special-case any diagram type | Success: a filtered list of one vendor's types builds a correct tree and the existing tests still pass_
 
-- [ ] 5. Revise `add-diagram-action` Requirement 4.3 — **the gate**
+- [x] 5. Revise `add-diagram-action` Requirement 4.3 — **the gate**
   - File: `.spec-workflow/specs/add-diagram-action/requirements.md` (edited)
   - Requirement 4.3 forbids Add on a file. Revise it to distinguish the two acts: Add on a folder creates a diagram *inside* it; Add on a file registers that file by creating an `.adp` *beside* it, in the file's parent folder. Keep the original reasoning visible rather than deleting it, as that spec's own "Correction from the first version" note does elsewhere
   - Commit the change on `develop` per CLAUDE.md, and raise it for approval — this is a change to an approved document, so it does not go in quietly
@@ -57,7 +57,7 @@
   - _Requirements: 2.3, 2.10_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: technical writer maintaining approved specifications | Task: Revise add-diagram-action Requirement 4.3 so Add on a file is permitted as registration, keeping the original reasoning visible and explaining why it does not cover this case | Restrictions: do not silently delete the old requirement; do not change any other requirement in that spec; commit on develop and raise for approval | Success: the two specs no longer contradict each other and the change is committed and submitted for approval_
 
-- [ ] 6. Offer Add on a file, as registration
+- [x] 6. Offer Add on a file, as registration
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/AddDiagramContextActionProvider.cs` (edited), `.../AddDiagramContextActionProvider.Tests.cs` (edited)
   - Offer the action when the target is a file, at least one definition declares its extension, and no `.adp` sits beside it. Label it as registering rather than adding. `DiscoverAsync` builds the option tree from the matching definitions only; `CommitAsync` writes the `.adp` and nothing else — no body, no name prompt, since the name is the file's own
   - Purpose: the user names the type once, and ADP never guesses
@@ -67,7 +67,7 @@
 
 ## Phase C — the document
 
-- [ ] 7. Scaffold the module
+- [x] 7. Scaffold the module
   - File: `src/diagrams/azure-pipeline/**` (new)
   - `backend/EtAlii.Adp.Diagram.AzurePipeline` and `.Tests`, `api/`, `client/`, following the C4 module's layout. `Diagram.cs` declares one `Definitions` entry: origin `azure-devops/pipeline`, title, description, `Extension = ".yml"`, `SharedExtension = true`
   - Purpose: the module exists and is discovered
@@ -75,42 +75,42 @@
   - _Requirements: 2.1, 14.1, 14.2_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Scaffold the module projects and declare its Diagram.Definitions entry | Restrictions: follow the per-diagram module layout structure.md defines, with backend, api and client folders; the test project must be an executable for xUnit v3 | Success: the solution builds, the type appears in DiagramDefinition.All, and the description test still passes_
 
-- [ ] 8. `PipelineDocument`: lines in, lines out
+- [x] 8. `PipelineDocument`: lines in, lines out
   - File: `.../PipelineDocument.cs`, `_Model/PipelineLine.cs` (new), `.../PipelineDocument.Tests.cs` (new)
   - Parse into a line list preserving content, indentation and line endings exactly. `Text` returns the input byte-for-byte for an unedited document. `Replace`, `Insert` and `Remove` splice one range and leave every other line untouched
   - Purpose: the round-trip guarantee, by construction rather than by effort
   - _Requirements: 3.1, 3.2, 3.5, 3.6_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer building a concrete syntax tree | Task: Implement a line-preserving YAML document with splice operations, and prove byte-identical round trips over the whole corpus | Restrictions: never re-serialise; never normalise indentation, quoting, comments or line endings; a splice touches only its own range | Success: every fixture round-trips byte-identically, including CRLF files, and a splice test proves neighbouring lines are unchanged_
 
-- [ ] 9. Parse the structure: stages, jobs, steps
+- [x] 9. Parse the structure: stages, jobs, steps
   - File: `.../PipelineParser.cs`, `_Model/PipelineStage.cs`, `PipelineJob.cs`, `PipelineStep.cs` (new), tests
   - Read `stages`/`jobs`/`steps`, the implicit single stage when `stages` is absent, deployment jobs with `environment` and `strategy`, step kinds and their identifying values, and record for every element the **line range** that declares it
   - Purpose: the model, and the index the splices need
   - _Requirements: 4.1, 4.2, 4.3, 4.4_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Parse the stage/job/step structure into a model, recording each element's declaring line range | Restrictions: use Azure's own vocabulary for every type and property name; do not resolve expressions; do not drop constructs you do not model | Success: the corpus parses, a jobs-only and a steps-only file both yield one implicit stage, and every element's line range points at its own declaration_
 
-- [ ] 10. Parse what decides whether an element runs
+- [x] 10. Parse what decides whether an element runs
   - File: `.../PipelineParser.cs` (edited), `_Model/PipelinePool.cs`, `PipelineStrategy.cs` (new), tests
   - `condition`, `continueOnError`, `enabled`, `timeoutInMinutes`, `trigger: manual`, `isSkippable`, `pool` with its stage/job inheritance, and the multiplicity a `matrix` or `parallel` strategy produces
   - Purpose: the properties Requirement 13 shows and the indicators Requirement 8.4 draws
   - _Requirements: 4.5, 4.6, 4.7_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Parse the run-affecting properties, applying the pool inheritance the schema defines | Restrictions: a job's own pool wins over its stage's, which wins over the pipeline's; an expression is carried verbatim and never evaluated | Success: tests cover pool inheritance at all three levels, matrix multiplicity, and an expression-valued condition surviving verbatim_
 
-- [ ] 11. Templates: follow, or say why not
+- [x] 11. Templates: follow, or say why not
   - File: `.../PipelineTemplates.cs`, `_Model/PipelineTemplateReference.cs`, `PipelineTemplateUnresolved.cs` (new), tests
   - Resolve `template:` and `extends:` to files inside the workspace and mark what they contribute as template-sourced with the path. A path that escapes the workspace, lives in another repository resource, or depends on a parameter is not followed and is recorded with its reason. Cache a resolved template per store
   - Purpose: Requirement 5, and the read-only rule that depends on it
   - _Requirements: 5.1, 5.2, 5.3, 5.5, 5.6_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Resolve template references within the workspace and record unresolvable ones with a reason | Restrictions: never read a path outside the workspace, whether by .. or absolute; never silently omit a template; cache each resolved template once | Success: tests cover a followed template, an unfollowable one, and one escaping the workspace being refused and reported_
 
-- [ ] 12. The writer: surgical edits only
+- [x] 12. The writer: surgical edits only
   - File: `.../PipelineWriter.cs` (new), tests
   - Rewrite the line range of one element's `displayName`, `dependsOn` or `enabled`, preserving surrounding indentation and comments. Making the implicit explicit — a stage gaining a `dependsOn` it did not have — inserts lines rather than reflowing the block
   - Purpose: the only component that changes a file
   - _Requirements: 3.2, 3.3, 3.4, 9.3_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement surgical line rewrites for the three editable properties, including inserting a dependsOn that was previously implicit | Restrictions: never touch a line outside the target range; never rewrite an expression while editing something else; match the surrounding indentation | Success: tests prove a rename changes one line, a dependsOn insert adds lines without disturbing comments, and the rest of the file is byte-identical_
 
-- [ ] 13. `PipelineDocumentStore` and the session
+- [x] 13. `PipelineDocumentStore` and the session
   - File: `.../IPipelineDocumentStore.cs`, `PipelineDocumentStore.cs`, `PipelineSession.cs`, `PipelineSessionFactory.cs`, `PipelineDocumentEntry.cs` (new), tests
   - One document per open pipeline keyed by path, with the idle eviction `C4DocumentStore` uses. The session implements baseline, viewport and change notification, and reloads on an external file change
   - Purpose: the lifecycle the diagram stream needs
@@ -118,7 +118,7 @@
   - _Requirements: 11.1, 11.7, 11.8_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement the document store and diagram session, following the C4 module's shape | Restrictions: a reload from disk must not be undoable; the module may answer a viewport with the whole pipeline | Success: opening streams a baseline, an external edit pushes deltas, and an abandoned diagram is evicted_
 
-- [ ] 14. The empty document factory
+- [x] 14. The empty document factory
   - File: `.../PipelineDocumentFactory.cs` (new), tests
   - `CreateEmptyDocument` returns a **valid and runnable** minimal pipeline — a `trigger`, a `pool` and one job with one script step — not an empty file
   - _Requirements: 1.3_
@@ -126,14 +126,14 @@
 
 ## Phase D — the graph and the layout
 
-- [ ] 15. `PipelineGraph`: the dependency rules
+- [x] 15. `PipelineGraph`: the dependency rules
   - File: `.../PipelineGraph.cs`, `_Model/PipelineEdge.cs` (new), tests
   - Derive edges from `dependsOn`, applying **both defaults**: a stage with none depends on the stage declared before it; a job with none depends on nothing. `dependsOn: []` depends on nothing. Detect dangling names and cycles without throwing. Classify each edge's condition — always, on success, on failure, custom
   - Purpose: the ordering the diagram exists to show
   - _Requirements: 6.1, 6.2, 6.3, 6.5, 6.6, 6.7_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Derive the dependency graph, applying the opposite defaults for stages and jobs, and detect dangling references and cycles | Restrictions: a cycle or a dangling name is reported, never thrown; the resolved dependency must be inspectable so the property grid can show the implicit | Success: tests cover sequential default, dependsOn empty, fan-out, fan-in, a dangling name, a cycle, and each edge-condition classification_
 
-- [ ] 16. `PipelineLayout`
+- [x] 16. `PipelineLayout`
   - File: `.../PipelineLayout.cs`, `_Model/PipelineMetrics.cs` (new), tests
   - Longest-path layering left to right, ordered within a layer by declaration order, at a fixed pitch. Jobs laid out within an expanded stage by the same rule. Pure: a graph in, positions out
   - _Requirements: 7.1, 7.2, 7.3, 7.5, 7.6, 7.7_
@@ -141,7 +141,7 @@
 
 ## Phase E — the wire
 
-- [ ] 17. `azure-pipeline.proto` and the element mapper
+- [x] 17. `azure-pipeline.proto` and the element mapper
   - File: `src/diagrams/azure-pipeline/api/azure-pipeline.proto` (new), `.../PipelineElementMapper.cs` (new), tests; run `npm run generate` in `src/client/`
   - The payload of design.md's *Data Models*. Element ids are document paths so they survive an edit elsewhere. Collapsed stages ride `Group`/`Ungroup`; an edit rides `Add`
   - _Requirements: 11.2, 11.3, 11.4, 11.5, 11.6_
@@ -149,13 +149,13 @@
 
 ## Phase F — the client
 
-- [ ] 18. The canvas: stages, jobs and edges
+- [x] 18. The canvas: stages, jobs and edges
   - File: `src/diagrams/azure-pipeline/client/**` (new), `src/client/src/shell/panels/...` wiring, tests
   - Render the graph, distinguish element kinds, and expand or collapse a stage to its jobs and a job to its steps
   - _Requirements: 8.1, 8.2, 8.3, 8.6_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/TypeScript developer | Task: Render the pipeline on the shared canvas with expandable stages and jobs | Restrictions: the canvas holds no document state of its own; folding rides Group/Ungroup; follow the client editorconfig | Success: a pipeline renders, a stage expands and collapses, and vitest covers each level_
 
-- [ ] 19. Indicators and problem marks
+- [x] 19. Indicators and problem marks
   - File: client (edited), tests
   - Show conditions, `continueOnError`, `enabled: false`, matrix multiplicity, manual triggers, template-sourced elements and unresolved expressions without entering an edit mode. Mark elements a problem was reported on
   - _Requirements: 8.4, 8.5, 8.7_
@@ -163,25 +163,25 @@
 
 ## Phase G — selection, actions and editing
 
-- [ ] 20. Context source resolver
+- [x] 20. Context source resolver
   - File: `.../PipelineContextSourceResolver.cs` (new), tests
   - Make an element selectable by its document-path id, verified against the open document
   - _Requirements: 12.1, 12.2, 12.3_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Register an IContextSourceResolver so a pipeline element is selectable, carrying its backend-resolved detail | Restrictions: no change inside the context service; reject an id that does not belong to the named diagram | Success: a nested file-then-element selection resolves and its detail reaches the stream_
 
-- [ ] 21. The commands
+- [x] 21. The commands
   - File: `.../Commands/*.cs` (new), `ServiceCollection.AddAzurePipelineCommands.cs`, tests
   - `SetDisplayName`, `SetDependsOn`, `SetEnabled`, `AddStage`, `RemoveStage`, `AddJob`, `RemoveJob`, `AddStep`, `RemoveStep`, `ReorderStep`. Each reports an inverse that restores the document byte-for-byte. Each validates its own preconditions, refusing a cycle or the removal of the last dependency-free stage
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.8_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer following tech.md's Commands rule | Task: Implement the ten commands and their handlers, each with an inverse and its own precondition checks | Restrictions: a rejection is a CommandResult, never an exception; refuse any edit to a template-sourced element; never write outside PipelineDocument | Success: each handler's inverse restores the file byte-for-byte, and a cycle-creating edit is refused with a message_
 
-- [ ] 22. Context action provider
+- [x] 22. Context action provider
   - File: `.../PipelineContextActionProvider.cs` (new), tests
-  - Offer the edits of Requirement 9.1 with shortcuts as data, withheld in read-only mode, on template-sourced elements, and where the schema forbids the result. Offer "open the file at this line" for everything excluded
-  - _Requirements: 9.7, 9.9, 12.4_
-  - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Contribute the element actions, including the open-the-file action for edits this spec excludes | Restrictions: an action that would fail must not be offered; the client holds no key-to-action table | Success: tests prove each action's availability rule, and activating an element navigates to its declaring line_
+  - Offer the edits of Requirement 9.1 with shortcuts as data, withheld in read-only mode, on template-sourced elements, and where the schema forbids the result
+  - _Requirements: 9.7, 12.4_ (9.9 descoped: there is no text editor to open the file in)
+  - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Contribute the element actions | Restrictions: an action that would fail must not be offered; the client holds no key-to-action table | Success: tests prove each action's availability rule_
 
-- [ ] 23. Toolbox
+- [x] 23. Toolbox
   - File: `.../PipelineToolboxProvider.cs` (new), tests
   - Stage, Job, Deployment job and Script step, each dropping onto a valid parent and executing the same add command the menu and keyboard use
   - _Requirements: 9.6_

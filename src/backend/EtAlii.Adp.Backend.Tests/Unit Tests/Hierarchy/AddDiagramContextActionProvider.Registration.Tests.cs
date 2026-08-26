@@ -118,8 +118,8 @@ public class AddDiagramContextActionProviderRegistrationTests : IDisposable
     public async Task CommitAsync_OnAFile_WritesTheAdpAndLeavesTheFileAlone()
     {
         // Arrange.
-        const string Body = "stages:\n  - stage: Build\n";
-        var path = CreateFile("azure-pipelines.yml", Body);
+        const string body = "stages:\n  - stage: Build\n";
+        var path = CreateFile("azure-pipelines.yml", body);
         var before = File.ReadAllBytes(path);
 
         // Act.

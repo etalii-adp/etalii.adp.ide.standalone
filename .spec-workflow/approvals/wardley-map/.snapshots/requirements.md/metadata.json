@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/wardley-map/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 4,
   "snapshots": [
     {
       "version": 1,
@@ -9,6 +9,30 @@
       "trigger": "initial",
       "approvalId": "approval_1787496644944_p59t7g49y",
       "approvalTitle": "Requirements: wardley-map"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-25T16:51:55.057Z",
+      "trigger": "approved",
+      "approvalId": "approval_1787496644944_p59t7g49y",
+      "approvalTitle": "Requirements: wardley-map"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-08-25T21:59:09.437Z",
+      "trigger": "approved",
+      "approvalId": "approval_1787695065607_gflzhttqs",
+      "approvalTitle": "Requirements: wardley-map (task 1 corrections)"
+    },
+    {
+      "version": 4,
+      "filename": "snapshot-004.json",
+      "timestamp": "2026-08-26T09:48:33.539Z",
+      "trigger": "approved",
+      "approvalId": "approval_1787697247177_6oq3q2p1f",
+      "approvalTitle": "Requirements + design: wardley-map (market/ecosystem are decorators)"
     }
   ]
 }

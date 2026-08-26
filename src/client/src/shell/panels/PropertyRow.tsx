@@ -7,6 +7,13 @@ export interface PropertyRowProps {
   onCommit: (value: string) => Promise<string>;
 }
 
+/** The editors this client can draw. Anything else is shown, never edited - see below. */
+const KNOWN_EDITORS = new Set<ContextPropertyEditor>([
+  ContextPropertyEditor.LINE,
+  ContextPropertyEditor.TEXT,
+  ContextPropertyEditor.TOGGLE,
+]);
+
 /**
  * One row of the property grid: a label, and a value that can be edited unless its owner said
  * otherwise.
@@ -38,6 +45,13 @@ export function PropertyRow({ property, onCommit }: PropertyRowProps) {
   const editable = property.readOnlyReason.length === 0;
 
   async function commit() {
+    if (committing.current) {
+      // A write is already in flight for this row. Until it lands, `property.value` still holds
+      // the old value, so a second blur would compare the draft against it, find them different
+      // and write again - one edit, two entries on the project history.
+      return;
+    }
+
     setEditing(false);
     if (draft === property.value) {
       // Focus left a field nobody changed. Writing anyway would put an entry on the history
@@ -70,6 +84,21 @@ export function PropertyRow({ property, onCommit }: PropertyRowProps) {
           {/* Why, not merely that: a reader who cannot change a value here deserves to know
               what would have to change instead. */}
           <span className="property-grid-readonly-reason">{property.readOnlyReason}</span>
+        </dd>
+      </div>
+    );
+  }
+
+  // An editor this client does not know: show the value, offer no field. The enum is widened
+  // by whichever type first needs a new editor, so a client older than the backend meets one
+  // eventually - and showing a value it cannot edit properly is right, while editing it
+  // through the wrong control is how a value gets mangled by a client that guessed.
+  if (!KNOWN_EDITORS.has(property.editor)) {
+    return (
+      <div className="property-grid-row property-grid-row-readonly">
+        <dt>{property.label}</dt>
+        <dd>
+          <span className="property-grid-value">{property.value}</span>
         </dd>
       </div>
     );

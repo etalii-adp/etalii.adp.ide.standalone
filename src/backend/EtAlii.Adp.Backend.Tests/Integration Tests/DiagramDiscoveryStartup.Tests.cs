@@ -2,8 +2,8 @@ using System.Reflection;
 using EtAlii.Adp.Diagram;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using IoPath = System.IO.Path;
 using Xunit;
+using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Backend.Tests;
 

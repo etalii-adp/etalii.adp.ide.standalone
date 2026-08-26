@@ -1,3 +1,5 @@
+using Serilog;
+
 namespace EtAlii.Adp.Backend.Context;
 
 /// <summary>
@@ -6,6 +8,8 @@ namespace EtAlii.Adp.Backend.Context;
 /// </summary>
 public sealed class ContextPropertyResolver : IContextPropertyResolver
 {
+    private static readonly ILogger _logger = Log.ForContext<ContextPropertyResolver>();
+
     private readonly IReadOnlyList<IContextPropertyProvider> _providers;
 
     public ContextPropertyResolver(IEnumerable<IContextPropertyProvider> providers)
@@ -22,7 +26,10 @@ public sealed class ContextPropertyResolver : IContextPropertyResolver
         var properties = new List<ContextPropertyDefinition>();
         foreach (var provider in ProvidersFor(target.Scope))
         {
-            properties.AddRange(await provider.DescribeAsync(target, cancellationToken));
+            // One broken provider costs its own rows and nothing more: the panel shows what
+            // the healthy providers said rather than going blank, the same rule
+            // ContextServiceImpl.WithActionsAsync already applies to actions.
+            properties.AddRange(await SafelyDescribeAsync(provider, target, cancellationToken));
         }
 
         return properties;
@@ -41,7 +48,9 @@ public sealed class ContextPropertyResolver : IContextPropertyResolver
         {
             // Asked before told: the provider that describes a property is the one that owns
             // it, so a set never reaches a provider that would have to guess what the id means.
-            var properties = await provider.DescribeAsync(target, cancellationToken);
+            // A provider that cannot say what it owns is skipped rather than fatal - the
+            // property being written may well belong to one that still answers.
+            var properties = await SafelyDescribeAsync(provider, target, cancellationToken);
             var match = properties.FirstOrDefault(property => property.Id == propertyId);
             if (match is null)
             {
@@ -56,10 +65,37 @@ public sealed class ContextPropertyResolver : IContextPropertyResolver
                 return ContextPropertyResult.Failure(match.ReadOnlyReason);
             }
 
+            // Deliberately unguarded: a write that failed must never be reported as accepted,
+            // so the owning provider's own failure travels up rather than being swallowed here.
             return await provider.SetAsync(target, propertyId, value, cancellationToken);
         }
 
         return ContextPropertyResult.Failure($"'{propertyId}' is not a property of what is selected.");
+    }
+
+    /// <summary>
+    /// What <paramref name="provider"/> describes, or nothing at all when it fails - a
+    /// module's fault costs its own rows, never the whole answer. Cancellation is not a
+    /// provider's fault and travels up.
+    /// </summary>
+    private static async ValueTask<IReadOnlyList<ContextPropertyDefinition>> SafelyDescribeAsync(
+        IContextPropertyProvider provider,
+        ContextTarget target,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await provider.DescribeAsync(target, cancellationToken);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.Warning(
+                exception,
+                "{Provider} could not describe the properties of {TargetPath}; its rows are missing from this answer",
+                provider.GetType().Name,
+                target.ResolvedFullPath);
+            return [];
+        }
     }
 
     private IEnumerable<IContextPropertyProvider> ProvidersFor(ContextScope scope) =>

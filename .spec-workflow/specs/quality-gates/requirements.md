@@ -7,13 +7,13 @@ the same kind of thing. Each item below is a **guard that does not guard**: a ch
 is documented, and is believed to protect something — but which currently protects nothing,
 because it fails, skips, under-reports, or was never run.
 
-| Guard | Why it does not guard today |
-|---|---|
-| `dotnet format style --verify-no-changes --severity info` | Exits non-zero on 109 `IMPORTS` errors before it reaches anything else. A check that always fails is a check nobody runs. |
-| `C4InteropTests` (18 tests) | Skips unless `ADP_STRUCTURIZR_CLI` is set. In a normal `dotnet test` run it guarantees nothing. |
-| `C4RuleSet`'s C4 conformance rules | Two of them were narrowed on a mistaken inference, so they now under-report exactly the problems Structurizr's own inspector flags. |
-| The Structurizr Lite rendering check in `tests.md` | Has never been run. It was recorded as impossible, on a reason that was false. |
-| "Create a worktree per piece of work and merge it back" (CLAUDE.md) | Nothing retires them. Twelve exist; most are merged, three are on detached HEADs. |
+| Guard                                                               | Why it does not guard today                                                                                                         |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `dotnet format style --verify-no-changes --severity info`           | Exits non-zero on 109 `IMPORTS` errors before it reaches anything else. A check that always fails is a check nobody runs.           |
+| `C4InteropTests` (18 tests)                                         | Skips unless `ADP_STRUCTURIZR_CLI` is set. In a normal `dotnet test` run it guarantees nothing.                                     |
+| `C4RuleSet`'s C4 conformance rules                                  | Two of them were narrowed on a mistaken inference, so they now under-report exactly the problems Structurizr's own inspector flags. |
+| The Structurizr Lite rendering check in `tests.md`                  | Has never been run. It was recorded as impossible, on a reason that was false.                                                      |
+| "Create a worktree per piece of work and merge it back" (CLAUDE.md) | Nothing retires them. Twelve exist; most are merged, three are on detached HEADs.                                                   |
 
 The unifying requirement is therefore not "fix these five things" but: **a check that is not
 currently protecting something must either be made to protect it, or be honestly retired.** A
@@ -93,22 +93,22 @@ Structurizr's `inspect` command exposes at least 14 model-quality rules (observe
 repository's fixture corpus plus a targeted probe). ADP's `C4RuleSet` has 10. They overlap
 partially, and the mismatch runs in both directions:
 
-| Structurizr rule | ADP's equivalent | State |
-|---|---|---|
-| `model.person.description` | `c4.missing-description` (Person) | Covered |
-| `model.softwaresystem.description` | `c4.missing-description` (SoftwareSystem) | Covered |
-| `model.container.description` | `c4.missing-description` (Container) | Covered |
-| `model.container.technology` | `c4.missing-technology` | Covered |
-| `model.deploymentnode.description` | — | **Regression** — was covered, narrowed away |
-| `model.relationship.technology` | `c4.missing-protocol` (container→container only) | **Regression** — narrowed from a much broader rule |
-| `model.deploymentnode.technology` | — | Gap |
-| `model.infrastructurenode.description` | — | Gap |
-| `model.infrastructurenode.technology` | — | Gap |
-| `model.element.disconnected` | — | Gap |
-| `model.element.noview` | — | Gap (ADP has the inverse, `c4.empty-view`) |
-| `workspace.scope` | — | Gap |
-| `model.softwaresystem.documentation` | — | Gap; ADP has no documentation concept |
-| `model.softwaresystem.decisions` | — | Gap; ADP has no decision-record concept |
+| Structurizr rule                       | ADP's equivalent                                 | State                                              |
+| -------------------------------------- | ------------------------------------------------ | -------------------------------------------------- |
+| `model.person.description`             | `c4.missing-description` (Person)                | Covered                                            |
+| `model.softwaresystem.description`     | `c4.missing-description` (SoftwareSystem)        | Covered                                            |
+| `model.container.description`          | `c4.missing-description` (Container)             | Covered                                            |
+| `model.container.technology`           | `c4.missing-technology`                          | Covered                                            |
+| `model.deploymentnode.description`     | —                                                | **Regression** — was covered, narrowed away        |
+| `model.relationship.technology`        | `c4.missing-protocol` (container→container only) | **Regression** — narrowed from a much broader rule |
+| `model.deploymentnode.technology`      | —                                                | Gap                                                |
+| `model.infrastructurenode.description` | —                                                | Gap                                                |
+| `model.infrastructurenode.technology`  | —                                                | Gap                                                |
+| `model.element.disconnected`           | —                                                | Gap                                                |
+| `model.element.noview`                 | —                                                | Gap (ADP has the inverse, `c4.empty-view`)         |
+| `workspace.scope`                      | —                                                | Gap                                                |
+| `model.softwaresystem.documentation`   | —                                                | Gap; ADP has no documentation concept              |
+| `model.softwaresystem.decisions`       | —                                                | Gap; ADP has no decision-record concept            |
 
 ADP also has rules Structurizr's inspector has no equivalent for, and these are **not** to be
 removed — they guard ADP's editing surface rather than the model's quality:
@@ -249,12 +249,12 @@ on an unmodified checkout, so that any output I see is about my own change.
 `dotnet format style --verify-no-changes --severity info` (from `src/backend/`, against
 `EtAlii.Adp.slnx`) currently reports, across 192 files:
 
-| Diagnostic | Count | Nature |
-|---|---|---|
-| `IMPORTS` | 109 | Using directives not sorted/grouped. Mechanically fixable. |
-| `IDE0130` | 84 | Namespace does not match folder. Conflicts with a deliberate repo convention. |
-| `IDE0046` | 17 | `if` convertible to a conditional expression. Judgement per site. |
-| `IDE0330`, `IDE0059`, `IDE0270`, `IDE0066`, `IDE0053`, `IDE0032`, `IDE0017` | 9 total | Singletons. |
+| Diagnostic                                                                  | Count   | Nature                                                                                                                                                                            |
+| --------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `IMPORTS`                                                                   | 109     | Using directives not sorted/grouped. Mechanically fixable.                                                                                                                        |
+| `IDE0130`                                                                   | 84      | Namespace does not match folder. Conflicts with a deliberate repo convention. \=> Check with rider style check (InspectCode) as rider has metadata on folder namespace providers. |
+| `IDE0046`                                                                   | 17      | `if` convertible to a conditional expression. Judgement per site.                                                                                                                 |
+| `IDE0330`, `IDE0059`, `IDE0270`, `IDE0066`, `IDE0053`, `IDE0032`, `IDE0017` | 9 total | Singletons.                                                                                                                                                                       |
 
 Two of these are not ordinary debt but structural disagreements:
 
@@ -277,7 +277,7 @@ meant to prevent, and it shows the convention needs a check of its own.
 **`IDE0130` is a rule fighting a convention.** `dotnet_style_namespace_match_folder = true`
 requires `_Model/MindmapNode.cs` to live in `...Mindmap._Model`, but the repository deliberately
 keeps `_Model/` and `Commands/` subfolders in the parent namespace. Structure.md prescribes the
-project layout and says nothing requiring namespaces to follow subfolders.
+project layout and says nothing requiring namespaces to follow subfolders. Folder 2 namespace mappings need to be validated using Jetbrains Rider 'InspectCode', as the Rider metadata files have namespace providers assigned to some folders but not all.&#x20;
 
 #### Acceptance Criteria
 
@@ -360,9 +360,9 @@ unmerged commit and is genuinely live.
 ### Performance
 
 * The everyday suite must not regress noticeably. Reading committed baselines is file I/O
-  comparable to the existing fixture reads; the current C4 project runs 324 tests in ~0.23s
+  comparable to the existing fixture reads; the current C4 project runs 324 tests in \~0.23s
   without the CLI, and that order of magnitude should hold.
-* The CLI-backed tests may be slow — they are ~11s today, dominated by JVM startup — and this is
+* The CLI-backed tests may be slow — they are \~11s today, dominated by JVM startup — and this is
   acceptable precisely because they are opt-in.
 
 ### Reliability

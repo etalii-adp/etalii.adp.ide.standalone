@@ -289,6 +289,84 @@ describe("PropertyGridPanel", () => {
     expect(screen.queryByLabelText("Kind")).toBeNull();
   });
 
+  it("shows what the backend describes after a write, never what was typed", async () => {
+    // Arrange.
+    // The committed value reaches the grid one way only: the document changes, the change is
+    // pushed, and the properties are read again. An optimistic row would show a value the
+    // backend may have normalised, refused later, or never stored at all.
+    selectElement();
+    backend.properties = [property({ id: "c4.name", label: "Name", value: "Web" })];
+    const { rerender } = render(<PropertyGridPanel />);
+    const field = (await screen.findByLabelText("Name")) as HTMLInputElement;
+
+    // Act.
+    // The backend will normalise what it was given, but has not pushed anything yet.
+    field.focus();
+    fireEvent.change(field, { target: { value: "  Web App  " } });
+    backend.properties = [property({ id: "c4.name", label: "Name", value: "Web App" })];
+    await act(async () => {
+      fireEvent.keyDown(field, { key: "Enter" });
+    });
+
+    // Assert.
+    // The write went as typed...
+    expect(backend.writes).toEqual([{ propertyId: "c4.name", value: "  Web App  " }]);
+    // ...and until the push arrives the row still shows the last value the backend described.
+    // A grid that showed the typed value here would be guessing at what the backend stored.
+    expect(((await screen.findByLabelText("Name")) as HTMLInputElement).value).toBe("Web");
+
+    // Act, continued: the pushed detail changes, which is what makes the panel read again.
+    contextState.levels = [elementDetail("Web App")];
+    await act(async () => {
+      rerender(<PropertyGridPanel />);
+    });
+
+    // Assert: now it shows what the backend actually stored - normalised, not as typed.
+    expect(((await screen.findByLabelText("Name")) as HTMLInputElement).value).toBe("Web App");
+  });
+
+  it("carries a toggle as the text true and false, both ways", async () => {
+    // Arrange.
+    // The value is always text on the wire, whatever the editor: a toggle carries "true" or
+    // "false", and nothing in between is a value this contract knows.
+    selectElement();
+    backend.properties = [
+      property({ id: "x.flag", label: "Enabled", value: "false", editor: ContextPropertyEditor.TOGGLE }),
+    ];
+    render(<PropertyGridPanel />);
+    const box = (await screen.findByLabelText("Enabled")) as HTMLInputElement;
+
+    // Assert (described "false" renders unchecked)...
+    expect(box.checked).toBe(false);
+
+    // Act.
+    await act(async () => {
+      fireEvent.click(box);
+    });
+
+    // Assert (...and checking it writes the text "true").
+    expect(backend.writes).toEqual([{ propertyId: "x.flag", value: "true" }]);
+  });
+
+  it("shows a property whose editor it does not know, and offers no field for it", async () => {
+    // Arrange.
+    // The editor enum is widened by whichever diagram type first needs a new editor, so a
+    // client older than the backend meets one eventually. Showing the value is right;
+    // editing it through a control this client guessed at is how a value gets mangled.
+    selectElement();
+    backend.properties = [
+      property({ id: "pipeline.dependsOn", label: "Depends on", value: "build, test", editor: 99 as ContextPropertyEditor }),
+    ];
+
+    // Act.
+    render(<PropertyGridPanel />);
+
+    // Assert.
+    expect(await screen.findByText("build, test")).toBeTruthy();
+    expect(screen.queryByLabelText("Depends on")).toBeNull();
+    expect(document.querySelector(".property-grid input, .property-grid textarea")).toBeNull();
+  });
+
   it("puts the old value back and says why when a write is refused", async () => {
     // Arrange.
     selectElement();
@@ -321,6 +399,29 @@ describe("PropertyGridPanel", () => {
 
     expect(grouped.map((group) => group.name)).toEqual(["", "Model"]);
     expect(grouped[1].properties.map((entry) => entry.id)).toEqual(["b", "c"]);
+  });
+
+
+  it("writes once even if the field is blurred twice before the write lands", async () => {
+    // Arrange.
+    // Until the write comes back, the pushed value is still the old one - so a second blur
+    // would compare the draft against it, find them different, and write again. One edit, two
+    // entries on the project history.
+    selectElement();
+    backend.properties = [property({ id: "c4.name", label: "Name", value: "Web" })];
+    render(<PropertyGridPanel />);
+    const field = (await screen.findByLabelText("Name")) as HTMLInputElement;
+
+    // Act.
+    field.focus();
+    fireEvent.change(field, { target: { value: "Web App" } });
+    await act(async () => {
+      fireEvent.blur(field);
+      fireEvent.blur(field);
+    });
+
+    // Assert.
+    expect(backend.writes).toEqual([{ propertyId: "c4.name", value: "Web App" }]);
   });
 
 });

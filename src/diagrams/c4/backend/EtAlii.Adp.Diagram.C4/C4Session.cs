@@ -89,25 +89,33 @@ public sealed class C4Session : IDiagramSession
     /// <paramref name="newParentId"/> as "x,y" - the one place the generic call shape and this
     /// type's meaning have to be reconciled.
     /// </remarks>
-    public async Task<string> MoveElementAsync(string elementId, string newParentId, int index, CancellationToken cancellationToken)
+    /// <summary>
+    /// Refused, always. A C4 element's parent is what the document declares - a container
+    /// belongs to the software system it is written inside - so a drag on the canvas has no
+    /// business changing it. Arranging is <see cref="MoveElementToAsync"/>.
+    /// </summary>
+    public Task<string> MoveElementAsync(string elementId, string newParentId, int index, CancellationToken cancellationToken)
     {
+        _ = elementId;
+        _ = newParentId;
         _ = index;
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return Task.FromResult("Dragging changes where an element is drawn, not what contains it.");
+    }
+
+    /// <summary>
+    /// Records where the user put an element, in the layout sidecar beside the document - a
+    /// position is view state and the `.dsl` is another ecosystem's file (Requirement 3.5).
+    /// </summary>
+    public async Task<string> MoveElementToAsync(string elementId, double x, double y, CancellationToken cancellationToken)
+    {
         cancellationToken.ThrowIfCancellationRequested();
 
         var view = View();
         if (view is null)
         {
             return "This diagram has no view to arrange.";
-        }
-
-        var parts = newParentId.Split(',');
-        if (parts.Length != 2
-            || !double.TryParse(parts[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var x)
-            || !double.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var y))
-        {
-            // Re-parenting is a change to the model, and the canvas has no business making one
-            // by dragging: a container belongs to the system that declares it.
-            return "Dragging changes where an element is drawn, not what contains it.";
         }
 
         if (_history is null)

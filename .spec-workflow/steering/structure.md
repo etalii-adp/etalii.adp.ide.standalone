@@ -29,6 +29,7 @@
 
 * The organization is 'EtAlii' (uppercase E and A). The product is 'ADP' - 'A Different Perspective'.
 * .NET namespaces/assemblies: `EtAlii.Adp.<Area>` (e.g. `EtAlii.Adp.Backend`, `EtAlii.Adp.Diagrams`). Test projects append `.Tests`.
+* A project's `_Model/`, `Commands/`, `History/` and `Support/` folders stay in the project's own namespace rather than taking one of their own. A caller writes `using EtAlii.Adp.Diagram.C4;` and has the model, the commands and the history. Every other folder namespaces normally. (`IDE0130` is set to `none` in `src/.editorconfig` for this, with the counts that show it is a convention.)
 * Non-.NET code (e.g. TypeScript on the frontend) mirrors the same naming intent using the language's own convention, e.g. `com.etalii.adp.<area>`.
 * Files/types: `PascalCase` for .NET types and files; the frontend follows whatever convention its framework/tooling defaults to, kept consistent within that project.
 

@@ -166,28 +166,43 @@ public class BigBankPlcTests
     }
 
     [Fact]
-    public void TheModelIsClean_ByC4sOwnRules_SaveForOneKnownWarning()
+    public void TheWorkedExample_ReportsWhatStructurizrAlsoReports()
     {
         // Arrange.
-        // The worked example is what C4 holds up as done properly, so anything reported here is
-        // either a real gap in the fixture or a rule of ADP's that C4 does not actually have.
-        // Three of ADP's rules were found over-reaching this way and were narrowed or removed.
+        // This test used to assert the worked example was clean but for one warning, and that
+        // assertion is what made three of ADP's rules get narrowed: they fired here, and
+        // "C4's own example trips it" was read as "the rule is wrong".
         //
-        // What survives is one warning, and it is the right call rather than a fourth
-        // over-reach: every container-to-container relationship in the example names its
-        // protocol - "JSON/HTTPS", "SQL/TCP" - except the web application delivering the
-        // single-page application to the browser, which the example leaves bare. It travels
-        // over HTTPS like everything else, so a warning suggesting the document say so is
-        // useful. Pinning it exactly means a *new* complaint fails this test.
-        var problems = C4RuleSet.Validate(Workspace)
+        // Structurizr's own inspector reports 26 findings on this same document. So the
+        // example is authoritative about *syntax* - `validate` accepts it, which is what makes
+        // it a good round-trip fixture - and not about quality. What is asserted now is the
+        // set of rules reported, so a *new* kind of complaint fails this test while the known
+        // ones do not.
+        var reported = C4RuleSet.Validate(Workspace)
             .Where(problem => problem.RuleId != C4Rules.EmptyView)
+            .Select(problem => problem.RuleId)
+            .Distinct()
+            .Order(StringComparer.Ordinal)
             .ToArray();
 
-        // Act and assert, step by step.
-        var problem = Assert.Single(problems);
-        Assert.Equal(C4Rules.MissingProtocol, problem.RuleId);
-        Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity);
-        Assert.Contains("Web Application", problem.Message, StringComparison.Ordinal);
-        Assert.Contains("Single-Page Application", problem.Message, StringComparison.Ordinal);
+        // Act and assert.
+        // Deployment nodes named by what they are and left undescribed - which Structurizr
+        // reports as model.deploymentnode.description - and the one container relationship the
+        // example leaves without a technology.
+        Assert.Equal(
+            [C4Rules.MissingDeploymentDescription, C4Rules.MissingProtocol],
+            reported);
+    }
+
+    [Fact]
+    public void EveryProblemOnTheWorkedExample_IsAWarningRatherThanAnError()
+    {
+        // Act and assert.
+        // Structurizr prints all of these as ERROR. ADP reports them as warnings because they
+        // are recommendations rather than syntax faults, and that divergence is a decision on
+        // the record rather than an accident (quality-gates Requirement 1.9).
+        Assert.All(
+            C4RuleSet.Validate(Workspace),
+            problem => Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity));
     }
 }

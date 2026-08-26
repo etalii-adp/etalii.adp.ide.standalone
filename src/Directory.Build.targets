@@ -1,0 +1,47 @@
+<Project>
+
+  <!--
+    Windows MAX_PATH guard.
+
+    On Windows without effective long-path support, MSBuild's Exists() silently returns false
+    for any path longer than 260 characters. When that happens to a project's intermediate
+    assembly (obj\<Config>\<TFM>\<Project>.dll), the SDK's _CreateAppHost condition
+
+        Exists('@(IntermediateAssembly)')
+
+    evaluates false, so apphost.exe is never produced. The build then fails later with a cryptic
+    "MSB3030: Could not copy the file ...\obj\...\apphost.exe because it was not found" - and
+    because every xUnit v3 test project is an executable whose apphost *is* the test host, the
+    whole run surfaces as `dotnet test` reporting "Zero tests ran" for project after project.
+    That reads like an empty suite rather than a broken build, which is the dangerous part.
+
+    This repository is comfortably inside the limit from the main checkout, but a git worktree
+    under .claude/worktrees/<name>/ adds ~36 characters plus the worktree name, which pushes the
+    longest project paths over 260. The fix is to enable long paths on the machine:
+
+        HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled = 1   (admin, then reboot)
+
+    The check below is deliberately capability-based rather than registry-based: it asks whether
+    the apphost actually got produced, so it fires exactly when the build is really broken and
+    stays quiet once long paths work. A registry probe would report success from the moment the
+    key is set, which is before the reboot that makes it take effect.
+  -->
+  <Target Name="_CheckAppHostWasCreated"
+          BeforeTargets="_CopyOutOfDateSourceItemsToOutputDirectory"
+          Condition="'$(OS)' == 'Windows_NT' and '$(AppHostIntermediatePath)' != '' and !Exists('$(AppHostIntermediatePath)')">
+
+    <PropertyGroup>
+      <_MaxPathIntermediateAssembly>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)$(TargetName)$(TargetExt)</_MaxPathIntermediateAssembly>
+    </PropertyGroup>
+
+    <Error Code="ADP0001"
+           Condition="$(_MaxPathIntermediateAssembly.Length) &gt; 260"
+           Text="Windows MAX_PATH exceeded: this project's intermediate assembly path is $(_MaxPathIntermediateAssembly.Length) characters (limit 260) - '$(_MaxPathIntermediateAssembly)'. MSBuild's Exists() silently fails above 260, so apphost.exe was never created and this project would produce no runnable executable. For a test project that means `dotnet test` reports 'Zero tests ran' rather than a build failure. Enable long paths (HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled = 1, then REBOOT - setting the key is not enough), or use a shorter path: every character of a .claude/worktrees/&lt;name&gt; directory name costs one character of headroom." />
+
+    <Error Code="ADP0002"
+           Condition="$(_MaxPathIntermediateAssembly.Length) &lt;= 260"
+           Text="apphost.exe was not created at '$(AppHostIntermediatePath)', so this project cannot produce a runnable executable. The path is within MAX_PATH, so this is not the usual long-path cause - inspect the _CreateAppHost target's conditions with `dotnet build -v diag`." />
+
+  </Target>
+
+</Project>

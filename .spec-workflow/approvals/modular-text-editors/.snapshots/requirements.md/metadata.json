@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/modular-text-editors/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-26T07:58:13.207Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787731093041_047qbt4zy",
+      "approvalTitle": "modular-text-editors - Requirements"
+    }
+  ]
+}

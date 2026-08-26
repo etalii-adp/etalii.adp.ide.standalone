@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/quality-gates/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-25T21:53:17.707Z",
+      "trigger": "initial",
+      "approvalId": "approval_1787694797508_me1wjmwuk",
+      "approvalTitle": "quality-gates: design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-25T21:57:23.099Z",
+      "trigger": "approved",
+      "approvalId": "approval_1787694797508_me1wjmwuk",
+      "approvalTitle": "quality-gates: design"
+    }
+  ]
+}

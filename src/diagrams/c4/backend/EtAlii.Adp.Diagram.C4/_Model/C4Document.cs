@@ -13,9 +13,20 @@ namespace EtAlii.Adp.Diagram.C4;
 /// </remarks>
 public sealed class C4Document
 {
-    private readonly List<string> _lines;
+    /// <summary>
+    /// One line as it was read: its text, and the terminator that followed it. Empty for the
+    /// last line of a file that ends without one.
+    /// </summary>
+    /// <remarks>
+    /// The terminator is kept per line rather than per document because a document edited on two
+    /// platforms carries both, and rewriting every line to the prevailing one makes the first
+    /// save a whole-file diff - exactly the diff Requirement 3.1 forbids.
+    /// </remarks>
+    private readonly record struct Line(string Text, string Terminator);
 
-    private C4Document(List<string> lines, string newline, bool endsWithNewline)
+    private readonly List<Line> _lines;
+
+    private C4Document(List<Line> lines, string newline, bool endsWithNewline)
     {
         _lines = lines;
         Newline = newline;
@@ -29,36 +40,29 @@ public sealed class C4Document
     public bool EndsWithNewline { get; }
 
     /// <summary>The lines, in order, without terminators.</summary>
-    public IReadOnlyList<string> Lines => _lines;
+    public IReadOnlyList<string> Lines => _lines.Select(line => line.Text).ToArray();
 
     /// <summary>The lines paired with their 1-based numbers, which is what the parsers read.</summary>
-    public IEnumerable<C4Line> CodeLines => _lines.Select((text, index) => new C4Line(text, (uint)(index + 1)));
+    public IEnumerable<C4Line> CodeLines => _lines.Select((line, index) => new C4Line(line.Text, (uint)(index + 1)));
 
     /// <summary>
-    /// <paramref name="text"/> split into lines, remembering how it was terminated. Mixed
-    /// terminators are tolerated - the dominant one is reused for new lines - because a
-    /// document edited on two platforms is a normal thing to find in a repository.
+    /// <paramref name="text"/> split into lines, each keeping the terminator that followed it.
+    /// Mixed terminators are carried through unchanged - a document edited on two platforms is a
+    /// normal thing to find in a repository - and only a line this type *writes* takes the
+    /// document's prevailing style.
     /// </summary>
     public static C4Document Parse(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        var newline = DetectNewline(text);
-        var endsWithNewline = text.EndsWith('\n');
-        var body = endsWithNewline ? text[..^(text.EndsWith("\r\n", StringComparison.Ordinal) ? 2 : 1)] : text;
-        var lines = body.Length == 0 && endsWithNewline
-            ? [string.Empty]
-            : SplitLines(body);
-
-        return new C4Document(lines, newline, endsWithNewline);
+        return new C4Document(SplitLines(text), DetectNewline(text), text.EndsWith('\n'));
     }
 
     /// <summary>The document as text, byte-identical to what <see cref="Parse"/> was given when nothing was edited.</summary>
-    public string ToText()
-    {
-        var text = string.Join(Newline, _lines);
-        return EndsWithNewline ? text + Newline : text;
-    }
+    public string ToText() =>
+        // Each line writes back the terminator it arrived with, so a document nobody edited comes
+        // back byte-identical however many styles it mixes.
+        string.Concat(_lines.Select(line => line.Text + line.Terminator));
 
     /// <summary>
     /// Replaces line <paramref name="number"/> (1-based) with <paramref name="text"/>. Every
@@ -68,7 +72,7 @@ public sealed class C4Document
     {
         ArgumentNullException.ThrowIfNull(text);
         EnsureInRange(number);
-        _lines[(int)number - 1] = text;
+        _lines[(int)number - 1] = _lines[(int)number - 1] with { Text = text };
     }
 
     /// <summary>Inserts <paramref name="text"/> so that it becomes line <paramref name="number"/>.</summary>
@@ -80,7 +84,17 @@ public sealed class C4Document
             throw new ArgumentOutOfRangeException(nameof(number), number, $"The document has {_lines.Count} lines.");
         }
 
-        _lines.Insert((int)number - 1, text);
+        // A new line has no terminator of its own to keep, so it takes the document's prevailing
+        // style - which is what Newline was always for. Appended past the end of a file that did
+        // not end with one, it inherits that: the new last line is unterminated and the line it
+        // displaced gains a terminator, so the document still ends the way it did.
+        var appendingToUnterminated = number == _lines.Count + 1 && !EndsWithNewline && _lines.Count > 0;
+        if (appendingToUnterminated)
+        {
+            _lines[^1] = _lines[^1] with { Terminator = Newline };
+        }
+
+        _lines.Insert((int)number - 1, new Line(text, appendingToUnterminated ? "" : Newline));
     }
 
     /// <summary>Removes lines <paramref name="from"/> to <paramref name="to"/> inclusive, 1-based.</summary>
@@ -137,23 +151,30 @@ public sealed class C4Document
         return crlf >= lf ? "\r\n" : "\n";
     }
 
-    private static List<string> SplitLines(string body)
+    /// <summary>Every line with the terminator that followed it, so both can be written back.</summary>
+    private static List<Line> SplitLines(string text)
     {
-        var lines = new List<string>();
+        var lines = new List<Line>();
         var start = 0;
-        for (var index = 0; index < body.Length; index++)
+        for (var index = 0; index < text.Length; index++)
         {
-            if (body[index] != '\n')
+            if (text[index] != '\n')
             {
                 continue;
             }
 
-            var end = index > start && body[index - 1] == '\r' ? index - 1 : index;
-            lines.Add(body[start..end]);
+            var end = index > start && text[index - 1] == '\r' ? index - 1 : index;
+            lines.Add(new Line(text[start..end], text[end..(index + 1)]));
             start = index + 1;
         }
 
-        lines.Add(body[start..]);
+        // Whatever follows the last terminator. A file ending in one leaves nothing here, and
+        // that absence is what `EndsWithNewline` reports - there is no phantom final line.
+        if (start < text.Length)
+        {
+            lines.Add(new Line(text[start..], ""));
+        }
+
         return lines;
     }
 }

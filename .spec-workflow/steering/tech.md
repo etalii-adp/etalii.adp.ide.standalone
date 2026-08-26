@@ -88,6 +88,18 @@ An aspect that genuinely does not apply is stated as not applying, with the reas
 * Test classes in C# should follow the filename '\<Classname>.Tests' and the class name \<Classname>Tests. Mind the dot.
 * Tests should follow the tripple a pattern: arrange, act, assert.
 
+# Checking that the conventions are actually followed
+
+Conventions that are only written down drift. Two tools check them, and they see different things - run both, because passing one says nothing about the other.
+
+* **`dotnet format style --verify-no-changes --severity info`**, from `src/backend/` against `EtAlii.Adp.slnx`, is the fast check. It runs the Roslyn analyzers and the rules in `src/.editorconfig` - formatting, naming, C# style preferences - and nothing else.
+* **JetBrains [InspectCode](https://www.jetbrains.com/help/resharper/InspectCode.html) is the thorough one, and the authoritative one for this team.** Development is mostly done in Rider (see *Development tools*), so the inspections a developer actually sees are ReSharper's - a far larger set than the Roslyn analyzers, covering the design and structure rules that `dotnet format` has no opinion about. InspectCode runs that same engine headlessly, honouring the repository's own `.DotSettings` files and `src/.editorconfig`, so its verdict is the verdict Rider gives rather than a second, different standard.
+  * Install once as a .NET tool: `dotnet tool install -g JetBrains.ReSharper.GlobalTools`. It is then invoked as `jb inspectcode`.
+  * Run it over the whole backend before a piece of work is considered finished - after the tests pass and the format check is clean, not instead of them.
+  * The solution is `src/backend/EtAlii.Adp.slnx`. InspectCode's support for the newer `.slnx` format is not confirmed; if it refuses the file, point it at the projects instead rather than adding a second solution file to the repository to keep a tool happy.
+* **Treat an InspectCode finding the way an `.editorconfig` finding is treated**: fix it, or decide deliberately that the rule does not fit this codebase and record that decision where the rule lives - in the `.DotSettings` file, with a note saying why - rather than leaving it to be re-discovered and re-argued. Silently ignoring findings turns the tool into noise, which is how a codebase ends up with a check nobody runs.
+* **Expect a backlog on the first full run, and do not treat it as a gate on unrelated work.** The rule about nested types under *Backend* already notes roughly a hundred pre-existing offenders; other rules will have their own. What matters is that code *being written now* is clean and that the backlog shrinks, not that an unrelated change is blocked by something it did not cause.
+
 # Frontend
 
 * All styling for the application should be done in a centralized manner, avoiding inline styles and promoting consistency and maintainability as much as possible.

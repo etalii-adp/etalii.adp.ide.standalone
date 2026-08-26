@@ -101,7 +101,7 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
 
     public ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
     {
-        var node = Resolve(target, out var view);
+        var node = Resolve(target, out _);
         if (node is null)
         {
             return Result(new ContextExecutionFailed(NodeGone));
