@@ -174,7 +174,7 @@ public static class C4LayoutEngine
 
         var boxes = new Dictionary<string, C4Box>(StringComparer.OrdinalIgnoreCase);
         var rankOffset = 0.0;
-        var rankExtents = new List<double>();
+        //var rankExtents = new List<double>();
 
         foreach (var rank in byRank)
         {
@@ -183,7 +183,7 @@ public static class C4LayoutEngine
             var thickness = elements.Max(element => horizontal ? sizes[element.Id].Width : sizes[element.Id].Height);
             var along = elements.Sum(element => horizontal ? sizes[element.Id].Height : sizes[element.Id].Width)
                 + nodeSeparation * (elements.Length - 1);
-            rankExtents.Add(along);
+            //rankExtents.Add(along);
 
             var alongOffset = -along / 2;
             foreach (var element in elements)
