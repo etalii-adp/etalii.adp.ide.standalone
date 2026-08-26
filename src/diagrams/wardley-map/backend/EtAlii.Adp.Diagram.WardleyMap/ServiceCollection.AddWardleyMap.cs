@@ -33,6 +33,10 @@ public static class ServiceCollectionAddWardleyMapExtension
         // cannot quietly produce two stores that drift apart (Requirement 10.6).
         services.TryAddSingleton<IWardleyDocumentStore, WardleyDocumentStore>();
 
+        // Where the identities the `.owm` format does not provide are kept. Stateless, so one
+        // instance serves every map (Requirement 4.2).
+        services.TryAddSingleton<WardleyIdentities>();
+
         return services;
     }
 }
