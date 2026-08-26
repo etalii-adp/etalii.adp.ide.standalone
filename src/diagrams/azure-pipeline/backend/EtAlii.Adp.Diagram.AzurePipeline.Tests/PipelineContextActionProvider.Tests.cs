@@ -21,6 +21,7 @@ public class PipelineContextActionProviderTests : IDisposable
         "adp-pipeline-actions-" + Guid.NewGuid().ToString("N"));
 
     private readonly PipelineDocumentStore _store = new();
+    private readonly PipelineViewState _views = new();
     private readonly HistoryStackStore _historyStacks;
     private readonly PipelineContextActionProvider _provider;
 
@@ -28,7 +29,7 @@ public class PipelineContextActionProviderTests : IDisposable
     {
         Directory.CreateDirectory(_workspace);
         _historyStacks = new HistoryStackStore(new PipelineTestDispatcher(_store));
-        _provider = new PipelineContextActionProvider(_historyStacks, _store);
+        _provider = new PipelineContextActionProvider(_historyStacks, _store, _views);
     }
 
     public void Dispose()
@@ -456,11 +457,17 @@ public class PipelineContextActionProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task EveryOfferedAction_CanActuallyBeCommitted()
+    public async Task EveryOfferedAction_ActuallyDoesSomething()
     {
         // Arrange: the promise this provider makes is that nothing offered will fail. Rather than
         // trusting the rules above one at a time, this walks every element of a pipeline, offers
-        // what it offers, and commits each one against a fresh copy of the file.
+        // what it offers, and puts each one through the path the service really takes - execute
+        // first, and commit only where the execution asked for something.
+        //
+        // Taking a shortcut straight to commit is what this test used to do, and it reported a
+        // failure that was its own: an action doing view-state work finishes in ExecuteAsync and
+        // is never committed at all, so demanding a successful commit of it was asking the wrong
+        // question of the right code.
         foreach (var elementId in AllElementIds())
         {
             foreach (var actionId in await ActionsOn(Write(), elementId))
@@ -469,11 +476,54 @@ public class PipelineContextActionProviderTests : IDisposable
                 var path = Write();
 
                 // Act.
-                var result = await CommitAsync(path, elementId, actionId, "A new name");
+                var executed = await _provider.ExecuteAsync(Target(path, elementId), actionId, CancellationToken.None);
 
                 // Assert.
-                Assert.True(result.Completed, $"{actionId} was offered on {elementId} but failed: {result.Error}");
+                Assert.False(
+                    executed is ContextExecutionFailed,
+                    $"{actionId} was offered on {elementId} but its execution failed.");
+
+                if (executed is not ContextExecutionRequiresInput)
+                {
+                    // It did its work, so there is nothing left to commit.
+                    continue;
+                }
+
+                // Act, continued: only an action that asked for a value goes on to commit one.
+                var committed = await CommitAsync(path, elementId, actionId, "A new name");
+
+                // Assert.
+                Assert.True(committed.Completed, $"{actionId} was offered on {elementId} but failed: {committed.Error}");
             }
+        }
+    }
+
+    [Fact]
+    public async Task EveryActionThatWritesSomething_CommitsSuccessfully()
+    {
+        // Arrange: the half the test above no longer covers - every action that reaches a command
+        // really does reach one, rather than falling through CommandFor and being refused.
+        var writing = new[]
+        {
+            (PipelineContextActionProvider.ToggleEnabledActionId, "Build"),
+            (PipelineContextActionProvider.ClearDependenciesActionId, "Test"),
+            (PipelineContextActionProvider.RemoveActionId, "Test"),
+            (PipelineContextActionProvider.AddStageActionId, "Build"),
+            (PipelineContextActionProvider.AddJobActionId, "Build"),
+            (PipelineContextActionProvider.AddDeploymentJobActionId, "Build"),
+            (PipelineContextActionProvider.AddStepActionId, "Build/Compile"),
+            (PipelineContextActionProvider.MoveStepDownActionId, "Build/Compile/step-0"),
+            (PipelineContextActionProvider.RenameActionId, "Build"),
+        };
+
+        foreach (var (actionId, elementId) in writing)
+        {
+            // Act.
+            var path = Write();
+            var result = await CommitAsync(path, elementId, actionId, "A new name");
+
+            // Assert.
+            Assert.True(result.Completed, $"{actionId} on {elementId} failed: {result.Error}");
         }
     }
 

@@ -18,15 +18,21 @@ public sealed class PipelineSessionFactory : IDiagramSessionFactory
 {
     private readonly IPipelineDocumentStore _documents;
     private readonly PipelineElementMapper _mapper;
+    private readonly PipelineViewState _views;
 
     /// <summary>Creates the factory for the origin this module declares.</summary>
-    public PipelineSessionFactory(IPipelineDocumentStore documents, PipelineElementMapper mapper)
+    public PipelineSessionFactory(
+        IPipelineDocumentStore documents,
+        PipelineElementMapper mapper,
+        PipelineViewState views)
     {
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(mapper);
+        ArgumentNullException.ThrowIfNull(views);
 
         _documents = documents;
         _mapper = mapper;
+        _views = views;
     }
 
     /// <inheritdoc />
@@ -36,6 +42,6 @@ public sealed class PipelineSessionFactory : IDiagramSessionFactory
     public IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath, string? registrationPath)
     {
         _ = registrationPath;
-        return new PipelineSession(watchId, rootPath, bodyPath, _documents, _mapper);
+        return new PipelineSession(watchId, rootPath, bodyPath, _documents, _mapper, _views);
     }
 }

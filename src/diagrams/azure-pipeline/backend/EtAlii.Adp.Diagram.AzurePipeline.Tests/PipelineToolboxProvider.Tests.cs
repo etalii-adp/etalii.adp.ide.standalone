@@ -18,13 +18,14 @@ public class PipelineToolboxProviderTests : IDisposable
         "adp-pipeline-toolbox-" + Guid.NewGuid().ToString("N"));
 
     private readonly PipelineDocumentStore _store = new();
+    private readonly PipelineViewState _views = new();
     private readonly PipelineToolboxProvider _toolbox = new();
     private readonly PipelineContextActionProvider _actions;
 
     public PipelineToolboxProviderTests()
     {
         Directory.CreateDirectory(_workspace);
-        _actions = new PipelineContextActionProvider(new HistoryStackStore(new PipelineTestDispatcher(_store)), _store);
+        _actions = new PipelineContextActionProvider(new HistoryStackStore(new PipelineTestDispatcher(_store)), _store, _views);
     }
 
     public void Dispose()
@@ -222,7 +223,7 @@ public class PipelineToolboxProviderTests : IDisposable
         var path = Write();
         var before = File.ReadAllText(path);
         var historyStacks = new HistoryStackStore(new PipelineTestDispatcher(_store));
-        var actions = new PipelineContextActionProvider(historyStacks, _store);
+        var actions = new PipelineContextActionProvider(historyStacks, _store, _views);
         var item = _toolbox.Items.Single(candidate => candidate.Id == "azure-pipeline.toolbox.job");
 
         // Act.

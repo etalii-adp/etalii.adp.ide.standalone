@@ -32,7 +32,7 @@ public sealed class PipelineSession : IDiagramSession
     private readonly string _bodyPath;
     private readonly IPipelineDocumentStore _documents;
     private readonly PipelineElementMapper _mapper;
-    private readonly HashSet<string> _expanded = new(StringComparer.Ordinal);
+    private readonly PipelineViewState _views;
 
     /// <summary>
     /// What this connection has been told about. Kept so a change can say what disappeared: a
@@ -48,8 +48,10 @@ public sealed class PipelineSession : IDiagramSession
         string rootPath,
         string bodyPath,
         IPipelineDocumentStore documents,
-        PipelineElementMapper mapper)
+        PipelineElementMapper mapper,
+        PipelineViewState views)
     {
+        ArgumentNullException.ThrowIfNull(views);
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(documents);
@@ -60,7 +62,9 @@ public sealed class PipelineSession : IDiagramSession
         _bodyPath = bodyPath;
         _documents = documents;
         _mapper = mapper;
+        _views = views;
         _documents.Changed += OnDocumentChanged;
+        _views.StageExpanded += OnStageExpanded;
     }
 
     public event EventHandler<DiagramDeltasEventArgs>? Changed;
@@ -89,28 +93,38 @@ public sealed class PipelineSession : IDiagramSession
         return Difference();
     }
 
+    /// <summary>Whether this connection has <paramref name="stageId"/> open.</summary>
+    public bool IsExpanded(string stageId) => _views.For(_watchId, _bodyPath).IsExpanded(stageId);
+
     /// <summary>
-    /// Expands a stage to show its jobs, or collapses it again (Requirement 8.6).
+    /// Pushes the jobs a stage has just revealed, or takes back the ones it hid
+    /// (Requirements 8.2 and 8.6).
     /// </summary>
     /// <remarks>
-    /// Returns deltas for this connection only. Nothing is written and no other connection is
-    /// told, because nothing about the pipeline has changed - only what this one is looking at.
+    /// Only this connection's own toggles: which stages somebody has opened is a property of
+    /// looking rather than of the pipeline, so nothing is written and no other viewer is told.
     /// </remarks>
-    public IReadOnlyList<DiagramDelta> SetExpanded(string stageId, bool expanded)
+    private void OnStageExpanded(object? sender, PipelineStageExpandedEventArgs args)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(stageId);
-
-        if (expanded ? !_expanded.Add(stageId) : !_expanded.Remove(stageId))
+        if (args.WatchId != _watchId ||
+            !string.Equals(args.BodyPath, _bodyPath, StringComparison.OrdinalIgnoreCase))
         {
-            // It was already like that, so there is nothing to say.
-            return [];
+            return;
         }
 
-        return Difference();
-    }
+        var deltas = Difference();
+        if (deltas.Count > 0)
+        {
+            Changed?.Invoke(this, new DiagramDeltasEventArgs(deltas));
+        }
 
-    /// <summary>Whether this connection has <paramref name="stageId"/> open.</summary>
-    public bool IsExpanded(string stageId) => _expanded.Contains(stageId);
+        _logger.Debug(
+            "Watch {WatchId} {Action} {StageId}, pushing {Count} deltas",
+            _watchId,
+            args.Expanded ? "opened" : "closed",
+            args.StageId,
+            deltas.Count);
+    }
 
     /// <summary>
     /// Refused: an Azure pipeline has no coordinates, so a drag would have nowhere to go.
@@ -136,6 +150,8 @@ public sealed class PipelineSession : IDiagramSession
     public ValueTask DisposeAsync()
     {
         _documents.Changed -= OnDocumentChanged;
+        _views.StageExpanded -= OnStageExpanded;
+        _views.Forget(_watchId, _bodyPath);
         return ValueTask.CompletedTask;
     }
 
@@ -182,7 +198,7 @@ public sealed class PipelineSession : IDiagramSession
         // A file that does not parse has an empty model, so this delivers nothing and the diagram
         // shows as unavailable - the honest answer, and it keeps a half-read pipeline from being
         // drawn as though it were the whole one.
-        var elements = entry.IsUsable ? _mapper.Visible(entry.Model, _viewport, _expanded) : [];
+        var elements = entry.IsUsable ? _mapper.Visible(entry.Model, _viewport, _views.For(_watchId, _bodyPath).ExpandedStageIds) : [];
         _delivered = elements.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
         return elements;
     }

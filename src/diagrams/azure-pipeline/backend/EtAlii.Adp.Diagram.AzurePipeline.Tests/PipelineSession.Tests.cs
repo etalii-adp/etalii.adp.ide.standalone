@@ -20,6 +20,7 @@ public class PipelineSessionTests : IDisposable
 
     private readonly PipelineDocumentStore _store = new();
     private readonly PipelineElementMapper _mapper = new(PipelineMetrics.Default);
+    private readonly PipelineViewState _views = new();
 
     public PipelineSessionTests() => Directory.CreateDirectory(_workspace);
 
@@ -58,7 +59,11 @@ public class PipelineSessionTests : IDisposable
     }
 
     private PipelineSession Open(string path) =>
-        new(ShortGuid.NewShortGuid(), _workspace, path, _store, _mapper);
+        OpenWith(path, ShortGuid.NewShortGuid());
+
+    /// <summary>A session on a known watch id, so a test can toggle that connection's own view.</summary>
+    private PipelineSession OpenWith(string path, ShortGuid watchId) =>
+        new(watchId, _workspace, path, _store, _mapper, _views);
 
     private static IEnumerable<string> AddedIds(IEnumerable<DiagramDelta> deltas) =>
         deltas.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).Select(element => element.Id);
@@ -95,16 +100,24 @@ public class PipelineSessionTests : IDisposable
     }
 
     [Fact]
-    public async Task ExpandingAStage_AddsItsJobsWithoutRemovingAnything()
+    public async Task ExpandingAStage_PushesItsJobsWithoutRemovingAnything()
     {
-        // Arrange.
-        await using var session = Open(Write(TwoStages));
+        // Arrange: the toggle goes through the shared view state, which is the only thing a
+        // context action can reach - and the session hears about it and pushes. Holding the
+        // expansion inside the session instead left nothing able to change it, so no stage was
+        // ever opened and a pipeline's jobs were unreachable.
+        var path = Write(TwoStages);
+        var watchId = ShortGuid.NewShortGuid();
+        await using var session = OpenWith(path, watchId);
         session.Baseline();
+        var pushed = new List<DiagramDeltasEventArgs>();
+        session.Changed += (_, args) => pushed.Add(args);
 
         // Act.
-        var deltas = session.SetExpanded("Build", expanded: true);
+        _views.Toggle(watchId, path, "Build");
 
         // Assert.
+        var deltas = Assert.Single(pushed).Deltas;
         Assert.Contains("Build/Compile", AddedIds(deltas));
         Assert.Contains("Build/Lint", AddedIds(deltas));
         Assert.Empty(RemovedIds(deltas));
@@ -114,51 +127,62 @@ public class PipelineSessionTests : IDisposable
     public async Task CollapsingAStage_TakesItsJobsBackOff()
     {
         // Arrange.
-        await using var session = Open(Write(TwoStages));
+        var path = Write(TwoStages);
+        var watchId = ShortGuid.NewShortGuid();
+        await using var session = OpenWith(path, watchId);
         session.Baseline();
-        session.SetExpanded("Build", expanded: true);
+        _views.Toggle(watchId, path, "Build");
+        var pushed = new List<DiagramDeltasEventArgs>();
+        session.Changed += (_, args) => pushed.Add(args);
 
         // Act.
-        var deltas = session.SetExpanded("Build", expanded: false);
+        _views.Toggle(watchId, path, "Build");
 
         // Assert.
-        Assert.Contains("Build/Compile", RemovedIds(deltas));
+        Assert.Contains("Build/Compile", RemovedIds(Assert.Single(pushed).Deltas));
         Assert.False(session.IsExpanded("Build"));
     }
 
     [Fact]
-    public async Task ExpandingAStageThatIsAlreadyOpen_SaysNothing()
+    public async Task AToggleOnAnotherConnection_IsNotThisOnesBusiness()
     {
-        // Arrange: a no-op must not put a delta on the wire.
-        await using var session = Open(Write(TwoStages));
-        session.Baseline();
-        session.SetExpanded("Build", expanded: true);
-
-        // Act.
-        var deltas = session.SetExpanded("Build", expanded: true);
-
-        // Assert.
-        Assert.Empty(deltas);
-    }
-
-    [Fact]
-    public async Task TwoConnectionsOnOnePipeline_ExpandIndependently()
-    {
-        // Arrange: which stages somebody has opened is a property of looking, not of the file, so
-        // it never touches the document and never reaches the other connection.
+        // Arrange: which stages somebody has opened is a property of looking, not of the file.
         var path = Write(TwoStages);
-        await using var mine = Open(path);
-        await using var yours = Open(path);
+        var mineId = ShortGuid.NewShortGuid();
+        var yoursId = ShortGuid.NewShortGuid();
+        await using var mine = OpenWith(path, mineId);
+        await using var yours = OpenWith(path, yoursId);
         mine.Baseline();
         yours.Baseline();
+        var pushedToYou = 0;
+        yours.Changed += (_, _) => pushedToYou++;
 
         // Act.
-        mine.SetExpanded("Build", expanded: true);
+        _views.Toggle(mineId, path, "Build");
 
         // Assert.
         Assert.True(mine.IsExpanded("Build"));
         Assert.False(yours.IsExpanded("Build"));
+        Assert.Equal(0, pushedToYou);
         Assert.Equal(TwoStages, File.ReadAllText(path));
+    }
+
+    [Fact]
+    public async Task ADisposedSession_ForgetsWhatItHadOpen()
+    {
+        // Arrange: a connection that closed its diagram must not leave its expansion behind for
+        // whoever is handed the same watch id next.
+        var path = Write(TwoStages);
+        var watchId = ShortGuid.NewShortGuid();
+        var session = OpenWith(path, watchId);
+        session.Baseline();
+        _views.Toggle(watchId, path, "Build");
+
+        // Act.
+        await session.DisposeAsync();
+
+        // Assert.
+        Assert.False(_views.For(watchId, path).IsExpanded("Build"));
     }
 
     [Fact]

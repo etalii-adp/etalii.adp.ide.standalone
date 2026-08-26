@@ -174,3 +174,64 @@ worktree name, and the longest project path needs the machine's long-path suppor
 - **Note**: a genuinely empty run does exit non-zero (5 for zero tests, 8 for a filter matching
   nothing), so any CI step must check the exit code rather than grepping the output for
   `failed`. Grepping alone reads a zero-test run as a pass.
+
+## A real pipeline opens, reads and still runs (azure-pipeline-diagram, task 29)
+
+The round trip is this module's headline promise and the one thing no unit test can fully settle:
+that a pipeline ADP has opened and edited is still a pipeline Azure DevOps will run. The fixtures
+prove byte-identical round trips over a corpus; this proves it over a pipeline somebody's releases
+actually depend on.
+
+- **Preconditions**: backend + client running; a project whose folder contains a real
+  `azure-pipelines.yml` from a repository you have, ideally one with several stages, a `dependsOn`
+  or two and at least one template reference. The folder is a git checkout, so `git diff` works.
+- **Actions**:
+  1. In the explorer, select the `.yml` and choose **Add as diagram…**, then pick **Azure DevOps
+     pipeline**. An `.adp` appears beside it.
+  2. Open the `.adp`.
+  3. Read the canvas against the file: every stage present, arrows matching each `dependsOn`, and
+     an arrow between consecutive stages that declare none.
+  4. Right-click a stage with jobs and choose **Show jobs**; then **Hide jobs** again.
+  5. Select a stage. In the Property Grid, change **Display name**, then press Enter.
+  6. Run `git diff` in the project folder.
+  7. Press Ctrl+Z, and run `git diff` again.
+- **Expected**:
+  - Step 3: the drawing says what the file says. An arrow nobody wrote is drawn differently from
+    one that is written down.
+  - Step 4: the stage's jobs appear inside it and disappear again. Nothing is written to the file
+    at any point — `git diff` after this step alone is empty.
+  - Step 6: exactly one changed line, the `displayName` you set. No re-indentation, no reordered
+    keys, no quoting changes, no lost comments, no changed line endings.
+  - Step 7: `git diff` is empty. Byte for byte, not merely equivalent.
+
+## An edited pipeline still validates against Azure DevOps (azure-pipeline-diagram, task 29)
+
+A file that round-trips byte-identically is safe by construction; a file this module *edited* is
+only safe if the lines it wrote are lines Azure accepts. Nothing in ADP knows Azure's schema, so
+this check is the only thing that closes that gap.
+
+- **Preconditions**: as above, plus either the Azure Pipelines VS Code extension (which validates
+  YAML against the published schema) or an Azure DevOps project you can queue a run in.
+- **Actions**:
+  1. On the open pipeline, add a stage from the Toolbox, add a job to it, and add a step to that
+     job.
+  2. Select the new stage and set **Depends on** to an earlier stage from the list.
+  3. Save nothing by hand — the edits write themselves.
+  4. Open the resulting `.yml` in the editor with the schema extension, or queue it in Azure
+     DevOps.
+- **Expected**: no schema errors, and the pipeline queues. Specifically the added stage has a job
+  and the job has a step — an empty stage or job is a schema error, and this module writes the
+  smallest runnable block for exactly that reason.
+
+## A pipeline shows what it cannot do rather than doing it wrongly (azure-pipeline-diagram, task 29)
+
+The editable set is deliberately narrow, and the value of that only shows up when the diagram
+refuses something. Worth a look because a refusal that is silent reads as a bug.
+
+- **Preconditions**: a pipeline open, containing a `template:` reference that resolves inside the
+  project (so its jobs appear on the canvas).
+- **Actions**: right-click a job that came from the template; then select it and look at the
+  Property Grid.
+- **Expected**: the context menu offers nothing at all for that job. The Property Grid shows its
+  properties with a reason beside each naming the template file the value lives in — not a greyed
+  box with no explanation.

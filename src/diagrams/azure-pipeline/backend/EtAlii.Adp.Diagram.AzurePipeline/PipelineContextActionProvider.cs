@@ -54,18 +54,27 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
     /// <summary>Puts the element's <c>dependsOn</c> back on the schema's default.</summary>
     public const string ClearDependenciesActionId = "azure-pipeline.clear-dependencies";
 
+    /// <summary>Shows a stage's jobs, or hides them again.</summary>
+    public const string ToggleStageActionId = "azure-pipeline.toggle-stage";
+
     private const string Gone = "That element is no longer in this pipeline.";
 
     private readonly IHistoryStackStore _historyStacks;
     private readonly IPipelineDocumentStore _documents;
+    private readonly PipelineViewState _views;
 
     /// <summary>Creates the provider.</summary>
-    public PipelineContextActionProvider(IHistoryStackStore historyStacks, IPipelineDocumentStore documents)
+    public PipelineContextActionProvider(
+        IHistoryStackStore historyStacks,
+        IPipelineDocumentStore documents,
+        PipelineViewState views)
     {
         ArgumentNullException.ThrowIfNull(historyStacks);
         ArgumentNullException.ThrowIfNull(documents);
+        ArgumentNullException.ThrowIfNull(views);
         _historyStacks = historyStacks;
         _documents = documents;
+        _views = views;
     }
 
     /// <inheritdoc />
@@ -97,6 +106,18 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
                 Execution(location).IsDisabled ? "Enable" : "Disable",
                 Execution(location).IsDisabled ? "mdi-play-circle-outline" : "mdi-pause-circle-outline"),
         };
+
+        // Opening a stage is how its jobs are ever seen, so it goes first among what can be done
+        // to one - and only where there is something inside to show (Requirement 8.2).
+        if (location.Kind == PipelineElementLocationKind.Stage && location.Stage.Jobs.Count > 0)
+        {
+            var open = _views.For(target.WatchId, target.ResolvedFullPath).IsExpanded(location.Stage.Id);
+            edits.Insert(0, new ContextActionDefinition(
+                ToggleStageActionId,
+                open ? "Hide jobs" : "Show jobs",
+                open ? "mdi-unfold-less-horizontal" : "mdi-unfold-more-horizontal",
+                new ContextShortcutDefinition(" ")));
+        }
 
         if (location.Kind != PipelineElementLocationKind.Step && DependsOnDeclared(location))
         {
@@ -140,6 +161,16 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
         }
 
         var (_, location) = found;
+
+        if (actionId == ToggleStageActionId)
+        {
+            // View state, not a command: nothing is written and nothing lands on the history,
+            // because which stages this connection has open is not a fact about the pipeline.
+            // Toggled through the view state's announcing method, which is what makes the session
+            // push the deltas - toggling a view directly would change state no client hears of.
+            _views.Toggle(target.WatchId, target.ResolvedFullPath, location.Stage.Id);
+            return Result(new ContextExecutionCompleted());
+        }
 
         // A rename asks for the new text first; everything else has all it needs already, so it
         // is committed straight away rather than putting a dialog in the way of one keystroke.

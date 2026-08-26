@@ -35,6 +35,10 @@ public static class ServiceCollectionAddAzurePipelineExtension
         services.AddSingleton(PipelineMetrics.Default);
         services.AddSingleton<PipelineElementMapper>();
 
+        // What each connection has open, shared by the session that owns a stream and the action
+        // provider a user reaches - the two never meet otherwise (Requirement 8.2).
+        services.AddSingleton<PipelineViewState>();
+
         services.AddSingleton<IDiagramSessionFactory, PipelineSessionFactory>();
 
         // Making an element selectable is registering this and nothing else; the context service
