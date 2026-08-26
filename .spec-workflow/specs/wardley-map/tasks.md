@@ -88,7 +88,7 @@
   - _Requirements: 8.2_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Pin the evolution stage boundaries and labels with a test and a comment citing their derivation | Restrictions: do not round the constants; do not duplicate them anywhere else in the module or the client; state the EvoOffsets derivation in the comment | Success: StageOf is exact at each boundary, the test asserts the derivation arithmetic rather than the literals alone, and the constants appear once in the codebase_
 
-- [ ] 9. `WardleyIdentities`: the sidecar
+- [-] 9. `WardleyIdentities`: the sidecar
   - File: `.../WardleyIdentities.cs`, `_Model/WardleyIdentityEntry.cs` (new), tests
   - `<name>.identities.json` beside the `.owm`, holding `{ id, kind, key }` entries. Keys: a component-shaped element by its name; a link by source name, target name and kind; a pipeline by its parent's name; a note by its text; an annotation by its number. `Reconcile` matches by key, assigns a fresh `ShortGuid` to an unmatched file element, and discards an unmatched entry. Reads never throw — a missing, unreadable or nonsense sidecar yields no entries
   - A map opened and not edited writes nothing: assigned ids live in memory until the first real save
