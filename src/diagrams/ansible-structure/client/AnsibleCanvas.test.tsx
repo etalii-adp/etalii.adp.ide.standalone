@@ -1,0 +1,326 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render } from "@testing-library/react";
+import { create, toBinary } from "@bufbuild/protobuf";
+import { ElementSchema } from "@client/generated/elements_pb";
+import {
+  AnsibleEdgeKind,
+  AnsibleElementKind,
+  AnsibleElementPayloadSchema,
+} from "@client/generated/ansible-structure_pb";
+import { applyDelta, emptyModel, type AnsibleModel } from "./ansibleModel";
+
+const select = vi.fn();
+const revealPath = vi.fn();
+let currentModel: AnsibleModel = emptyModel;
+let currentLoading = false;
+let currentFailed = false;
+let currentSelection: unknown = null;
+
+vi.mock("./useAnsibleStream", () => ({
+  useAnsibleStream: () => ({
+    model: currentModel,
+    loading: currentLoading,
+    failed: currentFailed,
+    reportView: () => {},
+  }),
+}));
+
+vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
+  return {
+    ...actual,
+    useContextConnection: () => ({ watchId: new Uint8Array(16), select, revealPath }),
+    useContextSelection: () => ({ selection: currentSelection }),
+  };
+});
+
+// Imported after the mocks so the component picks them up.
+const { AnsibleCanvas } = await import("./AnsibleCanvas");
+
+function element(
+  id: string,
+  type: string,
+  kind: AnsibleElementKind,
+  overrides: Record<string, unknown> = {},
+  x = 0,
+  y = 0,
+) {
+  const payload = create(AnsibleElementPayloadSchema, {
+    name: id.split(":")[1] ?? id,
+    kind,
+    width: 120,
+    height: 32,
+    playIndex: -1,
+    ...overrides,
+  });
+  return create(ElementSchema, {
+    id: { value: id },
+    position: { x, y },
+    type,
+    payload: {
+      typeUrl: "type.googleapis.com/etalii.adp.ansible.AnsibleElementPayload",
+      value: toBinary(AnsibleElementPayloadSchema, payload),
+    },
+  });
+}
+
+function modelOf(...elements: ReturnType<typeof element>[]): AnsibleModel {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return applyDelta(emptyModel, { action: { case: "add", value: { elements } } } as any);
+}
+
+function renderCanvas() {
+  return render(<AnsibleCanvas projectId={new Uint8Array(16)} entryId={new Uint8Array(16)} path={["infrastructure.adp"]} />);
+}
+
+beforeEach(() => {
+  select.mockClear();
+  revealPath.mockClear();
+  currentLoading = false;
+  currentFailed = false;
+  currentSelection = null;
+  currentModel = modelOf(
+    element("playbook:site.yml", "ansible/structure+playbook", AnsibleElementKind.PLAYBOOK, {
+      projectRelativePath: ["site.yml"],
+    }),
+    element("role:nginx", "ansible/structure+role", AnsibleElementKind.ROLE, {
+      projectRelativePath: ["roles", "nginx"],
+      playIndex: 0,
+    }, 300, 0),
+  );
+});
+
+describe("AnsibleCanvas", () => {
+  it("draws every node kind with a class of its own", () => {
+    // Arrange.
+    currentModel = modelOf(
+      element("playbook:a.yml", "ansible/structure+playbook", AnsibleElementKind.PLAYBOOK),
+      element("play:a.yml#0", "ansible/structure+play", AnsibleElementKind.PLAY),
+      element("role:r", "ansible/structure+role", AnsibleElementKind.ROLE),
+      element("taskfile:roles/r/tasks/t.yml", "ansible/structure+taskfile", AnsibleElementKind.TASK_FILE),
+      element("inventory:inventories/p", "ansible/structure+inventory", AnsibleElementKind.INVENTORY),
+      element("vars:inventories/p/group_vars", "ansible/structure+vars", AnsibleElementKind.VARIABLE_FOLDER),
+    );
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    // Colour is never the only thing carrying the distinction; each kind has its own class,
+    // and the stylesheet gives each its own outline weight or dash.
+    for (const kind of ["playbook", "play", "role", "taskfile", "inventory", "vars"]) {
+      expect(container.querySelector(`.ansible-node-${kind}`), kind).not.toBeNull();
+    }
+  });
+
+  it("gives a node its play's palette slot as a class, never a colour", () => {
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    const role = container.querySelector('[data-element-id="role:nginx"]');
+    expect(role?.getAttribute("class")).toContain("ansible-play-0");
+    // Nothing inline: the palette lives in the stylesheet so a theme change is a CSS change.
+    expect(container.querySelector("[style]")).toBeNull();
+  });
+
+  it("marks a hollow role so it looks unfinished", () => {
+    // Arrange.
+    currentModel = modelOf(
+      element("role:hollow", "ansible/structure+role", AnsibleElementKind.ROLE, { hollow: true }),
+    );
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    expect(container.querySelector(".ansible-node-hollow")).not.toBeNull();
+  });
+
+  it("draws a static and a dynamic edge differently", () => {
+    // Arrange.
+    currentModel = modelOf(
+      element("playbook:a.yml", "ansible/structure+playbook", AnsibleElementKind.PLAYBOOK),
+      element("role:r", "ansible/structure+role", AnsibleElementKind.ROLE, {}, 300, 0),
+      element("edge:static", "ansible/structure+edge", AnsibleElementKind.EDGE, {
+        edge: { sourceId: "playbook:a.yml", targetId: "role:r", kind: AnsibleEdgeKind.USES_ROLE, directive: "roles:", dynamic: false },
+      }),
+      element("edge:dynamic", "ansible/structure+edge", AnsibleElementKind.EDGE, {
+        edge: { sourceId: "playbook:a.yml", targetId: "role:r", kind: AnsibleEdgeKind.INCLUDES_TASKS, directive: "include_tasks", dynamic: true },
+      }),
+    );
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    // import_* is resolved before the run and include_* during it, and the two must not look
+    // the same or a reader learns they are the same thing.
+    expect(container.querySelector(".ansible-edge-static")).not.toBeNull();
+    expect(container.querySelector(".ansible-edge-dynamic")).not.toBeNull();
+  });
+
+  it("gives a dependsOn edge a style of its own", () => {
+    // Arrange.
+    currentModel = modelOf(
+      element("role:a", "ansible/structure+role", AnsibleElementKind.ROLE),
+      element("role:b", "ansible/structure+role", AnsibleElementKind.ROLE, {}, 300, 0),
+      element("edge:dep", "ansible/structure+edge", AnsibleElementKind.EDGE, {
+        edge: { sourceId: "role:a", targetId: "role:b", kind: AnsibleEdgeKind.DEPENDS_ON, directive: "dependencies" },
+      }),
+    );
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    expect(container.querySelector(".ansible-edge-depends-on")).not.toBeNull();
+  });
+
+  it("labels an edge with its directive, and with its condition when it has one", () => {
+    // Arrange.
+    currentModel = modelOf(
+      element("role:a", "ansible/structure+role", AnsibleElementKind.ROLE),
+      element("taskfile:t", "ansible/structure+taskfile", AnsibleElementKind.TASK_FILE, {}, 300, 0),
+      element("edge:inc", "ansible/structure+edge", AnsibleElementKind.EDGE, {
+        edge: {
+          sourceId: "role:a",
+          targetId: "taskfile:t",
+          kind: AnsibleEdgeKind.INCLUDES_TASKS,
+          directive: "include_tasks",
+          dynamic: true,
+          condition: "nginx_tls_enabled",
+        },
+      }),
+    );
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    // The condition is shown as written and never evaluated.
+    expect(container.textContent).toContain("include_tasks when nginx_tls_enabled");
+  });
+
+  it("draws a missing target as a stub rather than not at all", () => {
+    // Arrange.
+    currentModel = modelOf(
+      element("playbook:a.yml", "ansible/structure+playbook", AnsibleElementKind.PLAYBOOK),
+      element("edge:missing", "ansible/structure+edge", AnsibleElementKind.EDGE, {
+        edge: { sourceId: "playbook:a.yml", targetId: "", kind: AnsibleEdgeKind.USES_ROLE, directive: "roles:", targetAsWritten: "absent-role" },
+      }),
+    );
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    // A reader has to be able to see that a playbook names something that is not there.
+    expect(container.querySelector(".ansible-edge-unresolved")).not.toBeNull();
+    expect(container.textContent).toContain("absent-role (missing)");
+  });
+
+  it("tells a missing target from an unknowable one", () => {
+    // Arrange.
+    currentModel = modelOf(
+      element("playbook:a.yml", "ansible/structure+playbook", AnsibleElementKind.PLAYBOOK),
+      element("edge:expr", "ansible/structure+edge", AnsibleElementKind.EDGE, {
+        unresolvable: true,
+        edge: { sourceId: "playbook:a.yml", targetId: "", kind: AnsibleEdgeKind.USES_ROLE, directive: "roles:", targetAsWritten: "{{ role_name }}" },
+      }),
+    );
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    // Missing is a mistake; unknown is not, and the reader must be able to tell.
+    expect(container.textContent).toContain("{{ role_name }} (expression)");
+    expect(container.textContent).not.toContain("(missing)");
+  });
+
+  // ---- what the user can do ------------------------------------------------------------------
+
+  it("selects a node on click", () => {
+    // Act.
+    const { container } = renderCanvas();
+    fireEvent.click(container.querySelector('[data-element-id="role:nginx"]')!);
+
+    // Assert.
+    expect(select).toHaveBeenCalledTimes(1);
+  });
+
+  it("reveals a node's file on double click", () => {
+    // Act.
+    const { container } = renderCanvas();
+    fireEvent.doubleClick(container.querySelector('[data-element-id="role:nginx"]')!);
+
+    // Assert.
+    // The jump from the picture to the file is most of what this diagram type is for.
+    expect(revealPath).toHaveBeenCalledWith(["roles", "nginx"]);
+  });
+
+  it("reveals a node's file from the keyboard too", () => {
+    // Arrange.
+    const { container } = renderCanvas();
+    fireEvent.click(container.querySelector('[data-element-id="role:nginx"]')!);
+
+    // Act.
+    fireEvent.keyDown(container.querySelector(".ansible-canvas")!, { key: "Enter" });
+
+    // Assert.
+    // A reader who navigates by keyboard should not have to reach for the mouse to use the one
+    // thing the diagram offers.
+    expect(revealPath).toHaveBeenCalledWith(["roles", "nginx"]);
+  });
+
+  it("offers no editing affordance of any kind", () => {
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    // Nothing on this diagram is draggable, droppable or editable, and the absence is the type's
+    // whole statement - so it is asserted rather than left to inspection.
+    expect(container.querySelector("[draggable]")).toBeNull();
+    expect(container.querySelector("input, textarea, [contenteditable]")).toBeNull();
+    expect(container.querySelector("[data-testid*='toolbox']")).toBeNull();
+  });
+
+  // ---- the states before there is anything to draw ----------------------------------------------
+
+  it("says it is reading rather than showing an empty canvas", () => {
+    // Arrange.
+    currentLoading = true;
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    expect(container.textContent).toContain("Reading the folder");
+  });
+
+  it("says so when the diagram cannot be opened", () => {
+    // Arrange.
+    currentFailed = true;
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    expect(container.textContent).toContain("could not be opened");
+  });
+
+  it("explains an unrecognised layout rather than showing a blank canvas", () => {
+    // Arrange.
+    currentModel = emptyModel;
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    // Undrawn is a valid answer, but a bare empty canvas would read as broken - so the canvas
+    // says where this type looks.
+    expect(container.textContent).toContain("playbooks/");
+    expect(container.textContent).toContain("roles/");
+  });
+});
