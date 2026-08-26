@@ -52,7 +52,7 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
         MindmapDocument document;
         try
         {
-            document = _documents.GetOrLoad(bodyPath);
+            document = _documents.GetOrLoad(bodyPath!);
         }
         catch (MindmapFormatException)
         {
@@ -74,7 +74,7 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
             return Rejected("The path does not match the node.");
         }
 
-        var view = _views.For(watchId, bodyPath, document);
+        var view = _views.For(watchId, bodyPath!, document);
         var detail = new ContextLevelDetail
         {
             Element = new ElementDetail
@@ -91,7 +91,7 @@ public sealed class MindmapContextSourceResolver : IContextSourceResolver
             id,
             relativePath,
             ContextScope.DiagramElement,
-            new ContextTarget(ContextScope.DiagramElement, bodyPath, node.HasChildren, SourceId: default, rootPath, watchId, nodeId),
+            new ContextTarget(ContextScope.DiagramElement, bodyPath!, node.HasChildren, SourceId: default, rootPath, watchId, nodeId),
             detail,
             this);
 
