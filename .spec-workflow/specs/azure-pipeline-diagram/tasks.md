@@ -149,13 +149,13 @@
 
 ## Phase F — the client
 
-- [ ] 18. The canvas: stages, jobs and edges
+- [x] 18. The canvas: stages, jobs and edges
   - File: `src/diagrams/azure-pipeline/client/**` (new), `src/client/src/shell/panels/...` wiring, tests
   - Render the graph, distinguish element kinds, and expand or collapse a stage to its jobs and a job to its steps
   - _Requirements: 8.1, 8.2, 8.3, 8.6_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/TypeScript developer | Task: Render the pipeline on the shared canvas with expandable stages and jobs | Restrictions: the canvas holds no document state of its own; folding rides Group/Ungroup; follow the client editorconfig | Success: a pipeline renders, a stage expands and collapses, and vitest covers each level_
 
-- [ ] 19. Indicators and problem marks
+- [x] 19. Indicators and problem marks
   - File: client (edited), tests
   - Show conditions, `continueOnError`, `enabled: false`, matrix multiplicity, manual triggers, template-sourced elements and unresolved expressions without entering an edit mode. Mark elements a problem was reported on
   - _Requirements: 8.4, 8.5, 8.7_
@@ -163,7 +163,7 @@
 
 ## Phase G — selection, actions and editing
 
-- [ ] 20. Context source resolver
+- [x] 20. Context source resolver
   - File: `.../PipelineContextSourceResolver.cs` (new), tests
   - Make an element selectable by its document-path id, verified against the open document
   - _Requirements: 12.1, 12.2, 12.3_
