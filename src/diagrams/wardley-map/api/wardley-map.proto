@@ -1,0 +1,179 @@
+syntax = "proto3";
+
+package etalii.adp.wardleymap;
+
+option csharp_namespace = "EtAlii.Adp.Diagram.WardleyMap";
+
+// The payloads of a Wardley map's elements, packed into the core Element's Any (Requirement
+// 10.2). Defined in the module's own api folder; no core proto is edited to add them. The id,
+// position and mime-style type live on the core Element - this carries only what is the
+// element's own.
+//
+// Positions on the wire are the core Point2D the canvas draws with, NOT the document's
+// [visibility, maturity] pair. The conversion happens once, in WardleyElementMapper. The
+// document's own numbers are carried here as well, because the property grid shows them and a
+// user edits them directly (Requirement 15.2) - reconstructing them from a Point2D would mean
+// a second conversion, which is what Requirement 5.2 forbids.
+
+// A component, anchor or submap.
+message WardleyElementPayload {
+  string name = 1;
+  WardleyElementKind kind = 2;
+
+  // The document's own axis values, 0..1. Shown in the property grid and edited there.
+  double visibility = 3;
+  double maturity = 4;
+
+  // Which evolution band `maturity` falls in, resolved by the backend so the client holds no
+  // copy of the stage boundaries (Requirement 8.2).
+  string evolution_stage = 5;
+
+  // Where the component is heading, and what it is called when it arrives. Absent when the
+  // component is not evolving; the canvas draws both positions joined (Requirement 6.1).
+  WardleyEvolvePayload evolve = 6;
+
+  // A boolean on the component rather than a decorator, which is how the format models it.
+  bool inertia = 7;
+
+  // All five the DSL has, as a set rather than a single choice, because the format carries
+  // them as five independent booleans (Requirement 6.3).
+  repeated WardleyDecorator decorators = 8;
+
+  // The `label [dx, dy]` offset in PIXELS - the format's own convention, reproduced rather
+  // than corrected (Requirement 5.5). Absent when the document gives none.
+  WardleyLabelOffsetPayload label_offset = 9;
+
+  // The `url(name)` this element refers to, and the address that name resolves to. Untrusted
+  // input from a file authored elsewhere: rendered as text, never as markup.
+  string url_name = 10;
+  string url_address = 11;
+
+  // Set when this element is a pipeline child: its visibility is its parent's, and only its
+  // maturity may be dragged (Requirement 7.4).
+  string pipeline_parent_id = 12;
+}
+
+message WardleyEvolvePayload {
+  double maturity = 1;
+  string evolution_stage = 2;
+  // The name the component takes on arrival, from `evolve Name->NewName x`. Empty when it
+  // keeps its own name.
+  string override_name = 3;
+}
+
+message WardleyLabelOffsetPayload {
+  double x = 1;
+  double y = 2;
+}
+
+// A link between two elements, naming them by the ids they were given rather than by the names
+// the document uses (Requirement 10.2).
+message WardleyLinkPayload {
+  string source_id = 1;
+  string target_id = 2;
+  bool is_flow = 3;
+  // The text after `;`, which the notation uses to say why the link exists.
+  string context = 4;
+  // The names as written, for a link whose endpoint does not resolve - the canvas can still
+  // say which name is dangling (Requirement 14.2).
+  string source_name = 5;
+  string target_name = 6;
+}
+
+// Free text pinned at a position.
+message WardleyNotePayload {
+  string text = 1;
+}
+
+// A numbered annotation. `occurrences` is never empty and is often longer than one: the DSL
+// permits one annotation pinned in several places, and none of those positions may be lost
+// (Requirement 6.8). The core Element carries the first; the rest travel here.
+message WardleyAnnotationPayload {
+  int32 number = 1;
+  string text = 2;
+  repeated WardleyPointPayload occurrences = 3;
+}
+
+// An accelerator or deaccelerator - something pushing components along the evolution axis, or
+// holding them back (Requirement 6.5).
+message WardleyAcceleratorPayload {
+  string name = 1;
+  bool is_deaccelerator = 2;
+}
+
+// A pioneers, settlers or town-planners region, drawn behind the elements it covers
+// (Requirement 6.4).
+message WardleyAttitudePayload {
+  WardleyAttitudeKind kind = 1;
+  // The opposite corner from the core Element's position, in canvas coordinates.
+  WardleyPointPayload opposite = 2;
+}
+
+// One per map, in the baseline: the axis the client draws but does not define. Sending it as
+// data is what keeps the stage boundaries in exactly one place (Requirement 8.2).
+message WardleyEvolutionAxisPayload {
+  repeated WardleyEvolutionStagePayload stages = 1;
+  string title = 2;
+  // The `size [w, h]` the document asks to be drawn at, when it says.
+  double width = 3;
+  double height = 4;
+}
+
+message WardleyEvolutionStagePayload {
+  string label = 1;
+  double start = 2;
+  double end = 3;
+}
+
+// A point in canvas coordinates, for the payload fields that need a second position.
+message WardleyPointPayload {
+  double x = 1;
+  double y = 2;
+}
+
+// These three enums are used directly as the module's domain types, the way
+// ContextPropertyEditor and ContextScope already are: one name for the wire and for the
+// domain, so there is nothing to map and nothing that can drift. That is also why their
+// documentation lives here rather than in a parallel C# file - both sides read it.
+
+// The DSL's three positioned statement kinds (Requirement 5.1). Three, not five: `market` and
+// `ecosystem` read like kinds and are decorators - `market Foo [0.6, 0.8]` is a parse error and
+// `component Foo [0.6, 0.8] (market)` is the syntax.
+enum WardleyElementKind {
+  // An ordinary component of the value chain.
+  WARDLEY_ELEMENT_KIND_COMPONENT = 0;
+  // The user need the chain hangs from, at the top of the visibility axis.
+  WARDLEY_ELEMENT_KIND_ANCHOR = 1;
+  // A reference to another map, which activating opens (Requirement 6.6).
+  WARDLEY_ELEMENT_KIND_SUBMAP = 2;
+}
+
+// The DSL's five component decorators, written in parentheses after the coordinates -
+// `component Payment [0.7, 0.72] (buy)` (Requirement 6.3). All five together, because the
+// format carries them as five independent booleans in one set.
+//
+// `inertia` is deliberately absent: it is written the same way but is a separate boolean on
+// the component, not a decorator (Requirement 6.2).
+enum WardleyDecorator {
+  // A market rather than a single supplier.
+  WARDLEY_DECORATOR_MARKET = 0;
+  // An ecosystem of components around this one.
+  WARDLEY_DECORATOR_ECOSYSTEM = 1;
+  // Build it.
+  WARDLEY_DECORATOR_BUILD = 2;
+  // Buy it.
+  WARDLEY_DECORATOR_BUY = 3;
+  // Outsource it.
+  WARDLEY_DECORATOR_OUTSOURCE = 4;
+}
+
+// The three attitudes a region of a map can be given (Requirement 6.4) - Wardley's pioneers,
+// settlers and town planners.
+enum WardleyAttitudeKind {
+  // Exploring the genesis end: high failure rate, high learning.
+  WARDLEY_ATTITUDE_KIND_PIONEERS = 0;
+  // Turning what pioneers found into something dependable.
+  WARDLEY_ATTITUDE_KIND_SETTLERS = 1;
+  // Industrialising the commodity end.
+  WARDLEY_ATTITUDE_KIND_TOWN_PLANNERS = 2;
+}
