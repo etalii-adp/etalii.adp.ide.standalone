@@ -127,6 +127,75 @@ public sealed class WardleyIdentities
         }
     }
 
+    /// <summary>
+    /// Matches recorded identities to the elements of <paramref name="map"/>, assigning a fresh
+    /// <c>ShortGuid</c> to anything unmatched and discarding any entry whose element is gone
+    /// (Requirements 4.3, 4.5).
+    /// </summary>
+    /// <returns>
+    /// The complete current set, in a stable order, ready to persist on the next save. Nothing
+    /// is written here: a map opened and not edited must produce no write at all.
+    /// </returns>
+    public static IReadOnlyList<WardleyIdentityEntry> Reconcile(
+        WardleyMap map,
+        IReadOnlyList<WardleyIdentityEntry> recorded)
+    {
+        ArgumentNullException.ThrowIfNull(map);
+        ArgumentNullException.ThrowIfNull(recorded);
+
+        // Keyed by kind and key together, because two elements of different kinds may share a
+        // key - a component and a note can hold the same text.
+        var known = new Dictionary<(string Kind, string Key), string>();
+        foreach (var entry in recorded)
+        {
+            known.TryAdd((entry.Kind, entry.Key), entry.Id);
+        }
+
+        var reconciled = new List<WardleyIdentityEntry>();
+
+        foreach (var component in map.Components)
+        {
+            Take(WardleyIdentityKind.Component, WardleyIdentityKeys.Of(component));
+        }
+
+        foreach (var link in map.Links)
+        {
+            Take(WardleyIdentityKind.Link, WardleyIdentityKeys.Of(link));
+        }
+
+        foreach (var pipeline in map.Pipelines)
+        {
+            Take(WardleyIdentityKind.Pipeline, WardleyIdentityKeys.Of(pipeline));
+            foreach (var child in pipeline.Children)
+            {
+                Take(WardleyIdentityKind.PipelineChild, WardleyIdentityKeys.Of(pipeline, child));
+            }
+        }
+
+        foreach (var note in map.Notes)
+        {
+            Take(WardleyIdentityKind.Note, WardleyIdentityKeys.Of(note));
+        }
+
+        foreach (var annotation in map.Annotations)
+        {
+            Take(WardleyIdentityKind.Annotation, WardleyIdentityKeys.Of(annotation));
+        }
+
+        return reconciled.ToArray();
+
+        // An element the sidecar knows keeps its id; one it does not gets a fresh one. An entry
+        // no element claimed is simply never taken, which is how a stale one is discarded.
+        void Take(string kind, string key)
+        {
+            var id = known.TryGetValue((kind, key), out var existing)
+                ? existing
+                : ShortGuid.NewShortGuid().ToString();
+
+            reconciled.Add(new WardleyIdentityEntry(id, kind, key));
+        }
+    }
+
     /// <summary>Deletes the sidecar, if there is one. Used when a map has no identities left to keep.</summary>
     public void Remove(string bodyPath)
     {
