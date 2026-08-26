@@ -141,7 +141,7 @@
   - _Requirements: 6.1, 6.2, 6.3_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer with graph layout experience | Task: Compute deterministic positions for the graph, ranked in execution order with inventories and variable folders banded apart, assigning each play an index for colour continuity | Restrictions: pure function, no file or clock access; a shared role is one node, not one per play; ties break ordinally so the answer never depends on enumeration order | Success: tests prove the same graph yields the same positions twice, ranks follow Requirement 6.2, the shared role appears once with the lower play index, and nothing overlaps on the fixture_
 
-- [-] 14. `ansible-structure.proto`
+- [x] 14. `ansible-structure.proto`
   - File: `src/diagrams/ansible-structure/api/ansible-structure.proto` (new), `api/readme.md` (new)
   - `AnsibleElementPayload` with `name`, `kind`, `project_relative_path`, `play_index`, `hosts`, `contents`, `edge`, `unresolvable` and `annotations`; plus `AnsibleRoleContents` and `AnsibleEdge` as the design defines them
   - **`play_index` is an index, never a colour** — styling stays in the module's stylesheet per tech.md's Frontend rule
@@ -151,7 +151,7 @@
   - _Requirements: 7.1, 8.1_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer defining a gRPC contract | Task: Define the module's element payload messages and regenerate the client stubs | Restrictions: no core proto is edited; paths are project-relative, never absolute; carry a play index rather than a colour; the proto is the API documentation, so comment every non-obvious field | Success: the proto compiles on both sides, the client stubs regenerate, and no core message changed_
 
-- [ ] 15. `AnsibleElementMapper`
+- [-] 15. `AnsibleElementMapper`
   - File: `.../AnsibleElementMapper.cs` (new), `.../AnsibleElementMapper.Tests.cs` (new)
   - Element types `ansible/structure+playbook|play|role|taskfile|inventory|vars|edge`. Ids are folder-relative paths with a discriminator (`role:nginx`, `play:webservers.yml#0`, `edge:<sourceId>|<directive>|<targetAsWritten>`), so an id survives an unrelated edit elsewhere in the tree
   - Viewport: what intersects, plus one hop of graph partners so an edge leaving the screen keeps both ends — the mindmap's rule and its reason
