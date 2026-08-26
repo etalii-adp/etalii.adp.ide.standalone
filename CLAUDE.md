@@ -52,6 +52,14 @@ The test projects run on xUnit v3, which uses Microsoft.Testing.Platform rather 
 
 Each test project is therefore an executable (`<OutputType>Exe</OutputType>`): a v3 project hosts its own tests. New test projects need that too.
 
+That also makes the suite sensitive to Windows' 260-character `MAX_PATH`. MSBuild's `Exists()` silently returns false above 260 characters, so in a deep checkout the SDK's `_CreateAppHost` skips, `apphost.exe` is never produced, and — since a v3 test project's apphost *is* its test host — `dotnet test` reports `Zero tests ran` for project after project instead of failing the build. Read `Zero tests ran` as a broken build, never as an empty suite. Requirements:
+
+- `HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled` must be `1` (set it as admin; already-running processes need restarting before they see it).
+- Keep `.claude/worktrees/<name>` directory names short. The repository is comfortably inside the limit from the main checkout, but a worktree adds ~36 characters plus the name, and the longest project paths then need long-path support to build at all.
+- `src/Directory.Build.targets` turns this into an explicit `ADP0001` error rather than a cryptic `MSB3030: … apphost.exe … not found`.
+
+A zero-test run does exit non-zero (5 for zero tests, 8 for a filter matching nothing), so check the exit code — a CI step that only greps the output for `failed` reads a zero-test run as a passing suite.
+
 ## Logging
 
 The backend logs through Serilog. Every class that logs holds its own logger as `private static readonly ILogger _logger = Log.ForContext<TheClass>();` rather than taking an `ILogger` through its constructor — follow that shape in new code. Levels and sinks come from the `Serilog` section of `src/backend/EtAlii.Adp.Backend.Service/appsettings.json`; `Program.cs` builds the pipeline. Two naming rules in `src/.editorconfig` are downgraded to `none` for this convention, with a note saying so.

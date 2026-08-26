@@ -147,3 +147,30 @@ non-compositing pane.
 - **Expected**: tab B's canvas shows the new text without any interaction, and tab B's
   Properties panel shows the new value in its Text row - it re-describes from the push. Then
   press **Undo** in tab A: both tabs return to the old value, canvas and grid alike.
+
+## `dotnet test` discovers tests in a long worktree path (build tooling)
+
+Windows' 260-character `MAX_PATH` silently breaks the backend build in deep checkouts. MSBuild's
+`Exists()` returns false - without any error - for a path over 260 characters, so the SDK's
+`_CreateAppHost` condition `Exists('@(IntermediateAssembly)')` evaluates false and `apphost.exe`
+is never produced. Because every xUnit v3 test project is an executable whose apphost *is* the
+test host, the run surfaces as `dotnet test` reporting `Zero tests ran` for project after
+project, which reads like an empty suite rather than a broken build.
+
+`src/Directory.Build.targets` guards this with error `ADP0001`, but the guard only proves it
+fails loudly; this check proves it does not fail at all. The repository is inside the limit from
+the main checkout - a worktree under `.claude/worktrees/<name>/` adds ~36 characters plus the
+worktree name, and the longest project path needs the machine's long-path support.
+
+- **Preconditions**: Windows; `HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled`
+  is `1` (set it as admin; existing processes must be restarted to pick it up). A git worktree
+  whose directory name is at least 35 characters, e.g.
+  `git worktree add .claude/worktrees/a-deliberately-long-worktree-name develop`.
+- **Actions**: from that worktree's `src/backend/`, run `dotnet test --solution EtAlii.Adp.slnx`.
+- **Expected**: the run completes with a non-zero test total (1338 at the time of writing), exit
+  code 0, and no `ADP0001`, `ADP0002` or `MSB3030` error. A summary of `Zero tests ran` with
+  `total: 0`, or `error: 54`, means long-path support is not in effect for the process that ran
+  the build - it is not a test failure.
+- **Note**: a genuinely empty run does exit non-zero (5 for zero tests, 8 for a filter matching
+  nothing), so any CI step must check the exit code rather than grepping the output for
+  `failed`. Grepping alone reads a zero-test run as a pass.

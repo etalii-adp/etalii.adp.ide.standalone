@@ -59,9 +59,9 @@
   - _Requirements: 3.1, 3.2, 3.3_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer building a concrete syntax tree | Task: Implement a line-preserving .owm document with splice operations, and prove byte-identical round trips over the whole corpus | Restrictions: never re-serialise; never normalise indentation, comments, blank lines or line endings; a splice touches only its own range; do not invent a statement model here, that is task 5 | Success: every fixture round-trips byte-identically including CRLF files and files with no trailing newline, and a splice test proves the neighbouring lines are unchanged_
 
-- [ ] 5. Parse the map: components, links and pipelines
+- [-] 5. Parse the map: components, links and pipelines
   - File: `.../WardleyParser.cs`, `_Model/WardleyMap.cs`, `WardleyComponent.cs`, `WardleyLink.cs`, `WardleyPipeline.cs`, `WardleyElementKind.cs`, `WardleyCoordinate.cs` (new), tests
-  - Read `component`, `anchor`, `market`, `ecosystem`, `submap`, links (`->`, `+>`, and the `; context` form), and `pipeline` in **both** the nested and legacy forms, recording for every element the line it was declared on. A pipeline child carries only an evolution position and takes its visibility from the parent. Also read the map-level `title`, `size` and `style`
+  - Read `component`, `anchor`, `submap` — the DSL's **three** statement kinds, per the approved Requirement 5.1 — plus links (`->`, `+>`, and the `; context` form), and `pipeline` in **both** the nested and legacy forms, recording for every element the line it was declared on. A pipeline child carries only an evolution position and takes its visibility from the parent. Also read the map-level `title`, `size` and `style`. *(This line previously listed `market` and `ecosystem` as statement kinds. They are decorators — `component X [..] (market)` — and belong to task 6; `market X [..]` is a parse error the task 2 corpus demonstrated.)*
   - Coordinates are stored as the document writes them — `[visibility, maturity]` — and are **not** converted here
   - Purpose: the model, and the line index the splices need
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.6, 5.7_
@@ -144,7 +144,7 @@
 
 - [ ] 15. The canvas: elements, links and what is claimed about them
   - File: `.../WardleyCanvas.tsx` (edited), tests
-  - Element kinds visually distinguishable — anchor, component, market, ecosystem, submap. Links and `evolve` movement indicators drawn with `anchorsBetween` and `straightPath` from `@client/canvas/connectors`; an `evolve` indicator is the same call, styled dashed, from current maturity to target at the same visibility. Inertia, the build/buy/outsource decorators, notes, annotations at every one of their positions, areas behind their elements, and accelerators. Problem marks on elements a rule reported
+  - Element kinds visually distinguishable — anchor, component, submap — and a component's decorators (`market`, `ecosystem`, `build`, `buy`, `outsource`) distinguishable on it, per Requirement 6.3. Links and `evolve` movement indicators drawn with `anchorsBetween` and `straightPath` from `@client/canvas/connectors`; an `evolve` indicator is the same call, styled dashed, from current maturity to target at the same visibility. Inertia, the build/buy/outsource decorators, notes, annotations at every one of their positions, areas behind their elements, and accelerators. Problem marks on elements a rule reported
   - `branchAnchorsBetween` and `horizontalBezierPath` are **not** used — they are tree-shaped and this notation has no tree. A pipeline is a bracket the module draws, not a connector
   - Purpose: Requirement 6.9 — the annotations are visible without entering an edit mode
   - _Leverage: src/client/src/canvas/connectors.ts (anchorsBetween, straightPath)_

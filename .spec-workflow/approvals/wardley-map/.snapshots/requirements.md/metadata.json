@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/wardley-map/requirements.md",
-  "currentVersion": 3,
+  "currentVersion": 4,
   "snapshots": [
     {
       "version": 1,
@@ -25,6 +25,14 @@
       "trigger": "approved",
       "approvalId": "approval_1787695065607_gflzhttqs",
       "approvalTitle": "Requirements: wardley-map (task 1 corrections)"
+    },
+    {
+      "version": 4,
+      "filename": "snapshot-004.json",
+      "timestamp": "2026-08-26T09:48:33.539Z",
+      "trigger": "approved",
+      "approvalId": "approval_1787697247177_6oq3q2p1f",
+      "approvalTitle": "Requirements + design: wardley-map (market/ecosystem are decorators)"
     }
   ]
 }
