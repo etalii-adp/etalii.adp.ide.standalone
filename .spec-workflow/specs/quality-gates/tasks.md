@@ -78,7 +78,7 @@
   - _Requirements: 3.2, 3.3_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer with a JDK and the Structurizr CLI | Task: Generate a verdict file per fixture using `inspect`, committing the output verbatim with the header design.md specifies | Restrictions: verbatim - a transformed baseline is a second implementation to keep correct; record the actual CLI version, do not guess it; these files are test data and nothing in the product may read them | Success: one verdict per corpus fixture, each readable as a diff. Mark in progress, log when done, then mark complete._
 
-- [-] 9. Read a verdict, and compare it to what ADP says
+- [x] 9. Read a verdict, and compare it to what ADP says
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/C4Verdict.cs` (new), `C4Reconciliation.Tests.cs` (new)
   - `C4Verdict.Read` parses `LEVEL | rule | message` into a comparable set. The reconciliation test asserts, per fixture, that ADP's reported rule ids restricted to the mirrored set equal Structurizr's restricted to the same set
   - Purpose: Requirement 1.10 and 3.1 - the guarantee, checked with no JDK anywhere
@@ -86,7 +86,7 @@
   - _Requirements: 1.10, 3.1, 3.5_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement C4Verdict and the reconciliation test per design.md | Restrictions: compare only the mirrored rules in both directions - ADP-only and Structurizr-only rules are decisions, not disagreements; a missing or unreadable verdict fails the test naming the file and the regeneration command, it must never skip; do not compare messages, only rule ids | Success: passes with no JDK; corrupting a verdict fails it with a legible message. Mark in progress, log when done, then mark complete._
 
-- [ ] 10. Keep the baselines honest, and make the skips visible
+- [-] 10. Keep the baselines honest, and make the skips visible
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/C4Interop.Tests.cs` (modify)
   - A CLI-gated test that regenerates every verdict and asserts it matches what is committed. Widen the skip messages to name the environment variable and the command; state the ceiling on environment-gated skips the design asks for
   - Purpose: Requirements 3.4, 3.6, 3.7, 3.8
