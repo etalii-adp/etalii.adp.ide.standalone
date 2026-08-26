@@ -104,7 +104,7 @@
 
 ## Phase C — Structurizr renders what ADP writes
 
-- [-] 12. Export every fixture, and baseline what comes out
+- [x] 12. Export every fixture, and baseline what comes out
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/C4Interop.Tests.cs` (modify), `Fixtures/exports/*` (new)
   - With a CLI, export every fixture and every ADP-authored document to one diagram format and assert the export succeeds and each view's elements appear in it. Commit the exports as baselines so the everyday run checks them without Java. Retire the manual Structurizr Lite entry from `tests.md`, keeping only what is genuinely visual
   - Purpose: Requirement 4 in full
