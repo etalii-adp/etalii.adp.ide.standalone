@@ -52,6 +52,13 @@ message AnsibleElementPayload {
 
   // VARIABLE_FOLDER only: how many files it holds.
   int32 file_count = 12;
+
+  // The box the layout measured for this node, so the canvas draws it at its true size and
+  // anchors connectors on its actual edges. The core Element carries a position but no size,
+  // and a client-side guess at the size is exactly what made wide nodes overlap their
+  // neighbours in the mindmap module - the client draws what the backend computed.
+  double width = 13;
+  double height = 14;
 }
 
 enum AnsibleElementKind {
