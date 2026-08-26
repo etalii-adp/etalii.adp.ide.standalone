@@ -267,4 +267,74 @@ public class C4InteropTests : IDisposable
             .Select(parts => new C4VerdictFinding(parts[0].Trim(), parts[1].Trim(), parts[2].Trim()))
             .ToArray();
     }
+
+    /// <summary>
+    /// Every fixture exported to a diagram format, against the exports committed beside it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Validating parses and inspecting judges; neither draws anything. This is the third
+    /// question, and the one a reader of the diagram actually cares about: does another tool
+    /// turn what ADP wrote into a picture, and is the picture the model? Mermaid is the format
+    /// because its output is text with the element names in it, so a diff is legible and an
+    /// empty diagram is visibly empty.
+    /// </para>
+    /// <para>
+    /// Exporting is not the assertion. A view that renders empty exports perfectly happily, and
+    /// ADP shipped exactly that once - a `c4/deployment` template whose `deploymentEnvironment`
+    /// had no nodes in it, so the view bound to nothing and drew nothing while every command
+    /// exited zero. <c>C4ExportTests</c> is what checks the elements are there, and it does it
+    /// without a JDK.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    [MemberData(nameof(C4DocumentTests.Corpus), MemberType = typeof(C4DocumentTests))]
+    public void EveryExport_IsStillWhatStructurizrDraws(string name)
+    {
+        SkipWithoutTheCli();
+
+        // Arrange.
+        var fixture = IoPath.GetFileNameWithoutExtension(name);
+        var committed = C4Export.Read(fixture);
+        var directory = IoPath.Combine(_root, "export", fixture);
+        Directory.CreateDirectory(directory);
+
+        // Act.
+        Export(IoPath.Combine("Fixtures", name), directory);
+        var today = Directory.GetFiles(directory, "*.mmd")
+            .ToDictionary(IoPath.GetFileName, File.ReadAllText, StringComparer.Ordinal);
+
+        // Assert, step by step.
+        // The names first, so a view that stopped being exported reads as the missing view it
+        // is rather than as a puzzling content mismatch.
+        Assert.Equal(committed.Keys.Order(StringComparer.Ordinal), today.Keys.Order(StringComparer.Ordinal));
+        foreach (var (diagram, content) in today)
+        {
+            Assert.Equal(Normalise(committed[diagram]), Normalise(content));
+        }
+    }
+
+    /// <summary>Runs the CLI's <c>export</c> into <paramref name="directory"/>.</summary>
+    private static void Export(string workspace, string directory)
+    {
+        var process = Process.Start(new ProcessStartInfo("java")
+        {
+            ArgumentList =
+            {
+                "-cp", IoPath.Combine(CliLibrary!, "*"),
+                "com.structurizr.cli.StructurizrCliApplication",
+                "export", "-workspace", workspace, "-format", "mermaid", "-output", directory,
+            },
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        })!;
+
+        var output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
+        process.WaitForExit();
+
+        Assert.True(process.ExitCode == 0, $"Exporting '{workspace}' failed: {output.Trim()}");
+    }
+
+    /// <summary>Line endings only, since those are the platform's rather than Structurizr's.</summary>
+    private static string Normalise(string text) => text.Replace("\r\n", "\n", StringComparison.Ordinal).TrimEnd();
 }
