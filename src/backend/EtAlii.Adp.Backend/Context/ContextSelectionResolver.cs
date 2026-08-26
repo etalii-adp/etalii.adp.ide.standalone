@@ -111,19 +111,27 @@ public sealed class ContextSelectionResolver
             return ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(GenericRejection));
         }
 
-        var resolver = _resolvers.FirstOrDefault(r => r.CanResolve(id));
-        if (resolver is null)
+        var candidates = _resolvers.Where(candidate => candidate.CanResolve(id)).ToArray();
+        if (candidates.Length == 0)
         {
             // No resolver means no way to verify anything about this level; recording
             // it on trust is exactly what the seam exists to prevent.
             return ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel(GenericRejection));
         }
 
-        return ResolveThroughAsync(resolver, watchId, rootPath, source, id, clientPath, parent, cancellationToken);
+        return ResolveThroughAsync(candidates, watchId, rootPath, source, id, clientPath, parent, cancellationToken);
     }
 
+    /// <summary>Asks each resolver that answers for this member, in turn, until one accepts.</summary>
+    /// <remarks>
+    /// Several may answer for one member while only one of them owns the thing: every diagram
+    /// type resolves an <c>element_id</c>, and none of them can tell from the id alone whether
+    /// the element is one of its own - only the level above it says that. Asking just the first
+    /// would make element selection work for whichever module happened to be registered first,
+    /// and silently stop working for the rest.
+    /// </remarks>
     private static async ValueTask<ContextLevelResolution> ResolveThroughAsync(
-        IContextSourceResolver resolver,
+        IReadOnlyList<IContextSourceResolver> resolvers,
         ShortGuid watchId,
         string rootPath,
         ContextSelectionSource source,
@@ -132,11 +140,16 @@ public sealed class ContextSelectionResolver
         ContextResolvedLevel? parent,
         CancellationToken cancellationToken)
     {
-        var resolution = await resolver.ResolveAsync(watchId, rootPath, source, id, clientPath, parent, cancellationToken);
+        foreach (var resolver in resolvers)
+        {
+            var resolution = await resolver.ResolveAsync(watchId, rootPath, source, id, clientPath, parent, cancellationToken);
+            if (resolution is not RejectedContextLevel)
+            {
+                return resolution;
+            }
+        }
 
         // A resolver may word its own reason for logging; the caller only ever sees the generic one.
-        return resolution is RejectedContextLevel
-            ? new RejectedContextLevel(GenericRejection)
-            : resolution;
+        return new RejectedContextLevel(GenericRejection);
     }
 }

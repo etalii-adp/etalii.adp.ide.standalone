@@ -14,6 +14,22 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// </remarks>
 public static class WardleyIdentityKeys
 {
+    /// <summary>
+    /// What separates the parts of a composite key - ASCII unit separator.
+    /// </summary>
+    /// <remarks>
+    /// A key made of several parts needs a separator no part can contain, or two different
+    /// elements can produce one key: a link from `A` to `BC` and one from `AB` to `C` would
+    /// otherwise both key as `ABC` and share an identity. A control character cannot appear in a
+    /// component name, so it is the one separator that is always safe.
+    /// </remarks>
+    /// <example>
+    /// It is named rather than written into the interpolations directly, because a raw U+001F in
+    /// a string literal is invisible in every editor and every review - a reader comparing a key
+    /// against what the format says would find them equal and be wrong.
+    /// </example>
+    public const char Separator = '\u001F';
+
     /// <summary>A component, anchor or submap: its name.</summary>
     public static string Of(WardleyComponent component)
     {
@@ -25,7 +41,7 @@ public static class WardleyIdentityKeys
     public static string Of(WardleyLink link)
     {
         ArgumentNullException.ThrowIfNull(link);
-        return $"{link.Source}{link.Target}{link.Kind}";
+        return $"{link.Source}{Separator}{link.Target}{Separator}{link.Kind}";
     }
 
     /// <summary>A pipeline: its parent's name, since a component has at most one.</summary>
@@ -40,7 +56,7 @@ public static class WardleyIdentityKeys
     {
         ArgumentNullException.ThrowIfNull(pipeline);
         ArgumentNullException.ThrowIfNull(child);
-        return $"{pipeline.Parent}{child.Name}";
+        return $"{pipeline.Parent}{Separator}{child.Name}";
     }
 
     /// <summary>A note: its text, which is the only handle it has.</summary>
@@ -64,7 +80,7 @@ public static class WardleyIdentityKeys
     public static string Of(WardleyAccelerator accelerator)
     {
         ArgumentNullException.ThrowIfNull(accelerator);
-        return $"{accelerator.Name}{(accelerator.IsDeaccelerator ? "de" : "ac")}";
+        return $"{accelerator.Name}{Separator}{(accelerator.IsDeaccelerator ? "de" : "ac")}";
     }
 
     /// <summary>
@@ -78,6 +94,6 @@ public static class WardleyIdentityKeys
         ArgumentNullException.ThrowIfNull(attitude);
         return string.Create(
             System.Globalization.CultureInfo.InvariantCulture,
-            $"{attitude.Kind}{attitude.From.Visibility}{attitude.From.Maturity}");
+            $"{attitude.Kind}{Separator}{attitude.From.Visibility}{Separator}{attitude.From.Maturity}");
     }
 }

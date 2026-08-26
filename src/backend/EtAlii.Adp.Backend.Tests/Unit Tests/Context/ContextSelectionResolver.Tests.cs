@@ -193,4 +193,44 @@ public class ContextSelectionResolverTests
         Assert.IsType<RejectedContextLevel>(result);
     }
 
+    [Fact]
+    public async Task ResolveLevelAsync_AsksEveryResolverThatAnswers_RatherThanStoppingAtTheFirst()
+    {
+        // Arrange. Several kinds of thing can share one ContextSource member - every diagram
+        // type resolves an element_id - and none of them can tell from the id alone whether the
+        // element is one of theirs; only the level above it says that. So the first resolver
+        // asked routinely refuses something that belongs to another, and stopping there would
+        // make selection work for whichever implementation happened to be registered first.
+        var refuses = new ContextSelectionResolverStubResolver(alwaysReject: true);
+        var accepts = new ContextSelectionResolverStubResolver();
+        var resolver = new ContextSelectionResolver([refuses, accepts]);
+
+        // Act.
+        var result = await resolver.ResolveLevelAsync(
+            WatchId, Root, ContextSelectionSource.Ribbon, EntryId(), [], null, TestContext.Current.CancellationToken);
+
+        // Assert. The level carries the resolver that accepted it, which is what re-resolves and
+        // tracks it later - so the wrong one answering is not a detail that stays hidden.
+        var resolved = Assert.IsType<ResolvedContextLevel>(result);
+        Assert.Same(accepts, resolved.Level.Resolver);
+    }
+
+    [Fact]
+    public async Task ResolveLevelAsync_WhenEveryResolverRefuses_IsRejected()
+    {
+        // Arrange.
+        var resolver = new ContextSelectionResolver(
+        [
+            new ContextSelectionResolverStubResolver(alwaysReject: true),
+            new ContextSelectionResolverStubResolver(alwaysReject: true),
+        ]);
+
+        // Act.
+        var result = await resolver.ResolveLevelAsync(
+            WatchId, Root, ContextSelectionSource.Ribbon, EntryId(), [], null, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.IsType<RejectedContextLevel>(result);
+    }
+
 }

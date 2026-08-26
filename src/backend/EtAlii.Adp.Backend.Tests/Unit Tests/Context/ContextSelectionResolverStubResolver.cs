@@ -11,17 +11,20 @@ internal sealed class ContextSelectionResolverStubResolver : IContextSourceResol
     private readonly bool _canResolve;
     private readonly ContextNesting _nesting;
     private readonly bool _rejectWhenParentPresent;
+    private readonly bool _alwaysReject;
     private readonly IReadOnlyList<string>? _fillPath;
 
     public ContextSelectionResolverStubResolver(
         bool canResolve = true,
         ContextNesting nesting = ContextNesting.Contained,
         bool rejectWhenParentPresent = false,
+        bool alwaysReject = false,
         IReadOnlyList<string>? fillPath = null)
     {
         _canResolve = canResolve;
         _nesting = nesting;
         _rejectWhenParentPresent = rejectWhenParentPresent;
+        _alwaysReject = alwaysReject;
         _fillPath = fillPath;
     }
 
@@ -34,6 +37,11 @@ internal sealed class ContextSelectionResolverStubResolver : IContextSourceResol
         IReadOnlyList<string> clientPath, ContextResolvedLevel? parent, CancellationToken cancellationToken)
     {
         ParentsSeen.Add(parent);
+        if (_alwaysReject)
+        {
+            return ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel("not one of mine"));
+        }
+
         if (_rejectWhenParentPresent && parent is not null)
         {
             return ValueTask.FromResult<ContextLevelResolution>(new RejectedContextLevel("not inside its parent"));

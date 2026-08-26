@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Diagrams;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -41,6 +42,9 @@ public static class ServiceCollectionAddWardleyMapExtension
 
         // Model to core elements and deltas, including the axis flip.
         services.TryAddSingleton<WardleyElementMapper>();
+
+        // Makes an element selectable, and self-describing once it is (Requirement 11.2).
+        services.AddSingleton<IContextSourceResolver, WardleyContextSourceResolver>();
 
         // The per-connection view: baseline, viewport, deltas and a positional drag
         // (Requirement 10.8).
