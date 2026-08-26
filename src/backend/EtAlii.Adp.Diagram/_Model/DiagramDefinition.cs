@@ -30,15 +30,34 @@ namespace EtAlii.Adp.Diagram;
 /// routes it from then on (azure-pipeline-diagram Requirements 2.1-2.3).
 /// </para>
 /// </param>
+/// <param name="Subject">
+/// What the diagram <em>is</em>: the document, or the folder its <c>.adp</c> sits in. Defaulted
+/// to <see cref="DiagramSubject.Document"/> - what every type before <c>ansible/structure</c>
+/// is - so a definition that declares nothing keeps today's behaviour exactly.
+/// <para>
+/// Declaring <see cref="DiagramSubject.Folder"/> alongside an <paramref name="Extension"/> is a
+/// contradiction: a folder has no sibling body to name. <see cref="DiagramDefinitionDiscovery"/>
+/// drops such a definition rather than picking one of the two to believe, the same way it drops
+/// any other malformed one.
+/// </para>
+/// </param>
 public sealed record DiagramDefinition(
     DiagramOrigin Origin,
     string Title,
     string Description = "",
     string Extension = "",
-    bool SharedExtension = false)
+    bool SharedExtension = false,
+    DiagramSubject Subject = DiagramSubject.Document)
 {
     /// <summary>Whether this type keeps its body in a sibling file rather than in the <c>.adp</c> file itself.</summary>
     public bool HasDocumentSibling => Extension.Length > 0;
+
+    /// <summary>
+    /// Whether this type's diagram is a folder rather than a document - the question core asks
+    /// when it has to decide what to hand a validator, and what a change on disk affects
+    /// (ansible-structure-diagram Requirement 2.1).
+    /// </summary>
+    public bool HasFolderSubject => Subject == DiagramSubject.Folder;
 
     /// <summary>
     /// Whether a file carrying this type's extension may be routed to it without an <c>.adp</c>

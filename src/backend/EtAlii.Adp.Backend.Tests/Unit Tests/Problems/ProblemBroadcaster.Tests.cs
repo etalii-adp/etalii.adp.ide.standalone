@@ -96,6 +96,33 @@ public class ProblemBroadcasterTests
         Assert.Null(proto.Problems[1].Location);
     }
 
+    [Fact]
+    public void ToProto_AFileLocation_CrossesAsSegments_NeverAsAPathString()
+    {
+        // Arrange.
+        // A folder-subject diagram's problem names a file inside the folder. It travels as
+        // segments like every other path on this wire - the client never sees a separator,
+        // let alone a filesystem path.
+        var located = new StoredProblem(
+            new DiagramProblem(
+                DiagramProblemSeverity.Error,
+                "The role 'absent-role' has no folder.",
+                "ansible.role-missing",
+                new DiagramProblemFileLocation(IoPath.Combine("infrastructure", "playbooks", "deploy.yml"), 6)),
+            "infrastructure.adp", DateTime.UtcNow, 1, "");
+
+        // Act.
+        var proto = ProblemBroadcaster.ToProto(new ProjectProblemSet(ProjectProblemSetState.Validated, [located], 1, 0, 0));
+
+        // Assert.
+        var location = Assert.Single(proto.Problems).Location;
+        Assert.Equal(["infrastructure", "playbooks", "deploy.yml"], location.File.Path.Segments);
+        Assert.Equal(6u, location.File.Line);
+        // The diagram's own path is still the .adp: what the problem is attributed to and what
+        // it points at are two different questions.
+        Assert.Equal(["infrastructure.adp"], proto.Problems[0].Path.Segments);
+    }
+
     // ---- plumbing ----------------------------------------------------------------------
 
 }

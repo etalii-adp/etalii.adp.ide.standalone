@@ -311,7 +311,27 @@ public sealed class DiagramDefinitionDiscovery
                 LogMalformed(type, assemblyName, $"its {DefinitionsPropertyName} property declares nothing");
             }
 
-            return declared;
+            // A folder-subject type has no sibling body, so an extension it names points at
+            // nothing. Dropped rather than half-believed: routing would read the extension and
+            // validation would read the folder, and the type would behave as two different
+            // things depending on which question was asked. One bad entry costs the module only
+            // that entry, exactly as a null one does (ansible-structure-diagram Requirement 2.1).
+            var coherent = new List<DiagramDefinition>(declared.Length);
+            foreach (var definition in declared)
+            {
+                if (definition.HasFolderSubject && definition.HasDocumentSibling)
+                {
+                    LogMalformed(
+                        type,
+                        assemblyName,
+                        $"{definition.Origin} declares a folder subject and the extension '{definition.Extension}', which cannot both be true");
+                    continue;
+                }
+
+                coherent.Add(definition);
+            }
+
+            return coherent;
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
         {

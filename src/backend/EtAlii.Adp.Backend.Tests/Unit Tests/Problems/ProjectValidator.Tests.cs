@@ -51,6 +51,56 @@ public class ProjectValidatorTests : IDisposable
     }
 
     [Fact]
+    public async Task ValidateAsync_AFileLocatedProblem_IsAttributedAndPinnedToThatFile()
+    {
+        // Arrange.
+        // A folder-subject type's rule names the file inside the folder that declared the
+        // mistake. Attribution follows it so the panel reveals the right place, and - the part
+        // that matters - the staleness pin follows it too: a folder diagram's .adp never
+        // changes, so pinning to it would leave every verdict looking fresh for ever.
+        CreatePair("flow", "the document");
+        var declaring = IoPath.Combine(_root, "declaring.yml");
+        File.WriteAllText(declaring, "a file with something wrong in it\n");
+        var problem = new DiagramProblem(
+            DiagramProblemSeverity.Error,
+            "The role 'absent-role' has no folder.",
+            "fixture.role-missing",
+            new DiagramProblemFileLocation("declaring.yml", 6));
+
+        // Act.
+        var outcome = await Validate(Validator(problems: [problem]), new ProjectValidationScope(_root));
+
+        // Assert.
+        var stored = Assert.Single(outcome.Problems);
+        Assert.Equal("declaring.yml", stored.RelativePath);
+        // Pinned to the declaring file's own stats, not the .adp's.
+        Assert.Equal(new FileInfo(declaring).Length, stored.Length);
+        Assert.Equal(new FileInfo(declaring).LastWriteTimeUtc, stored.LastWriteTimeUtc);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_AProblemLocationLeavingTheRoot_FallsBackToTheDiagramsOwnFile()
+    {
+        // Arrange.
+        // The location comes from a module, and a module is trusted to stay inside the project
+        // no more than a user-editable body: header is. Refused rather than followed - and the
+        // problem is still reported, merely attributed less precisely.
+        CreatePair("flow", "the document");
+        var problem = new DiagramProblem(
+            DiagramProblemSeverity.Error,
+            "Something is wrong somewhere else entirely.",
+            "fixture.escaping",
+            new DiagramProblemFileLocation(IoPath.Combine("..", "..", "elsewhere.yml")));
+
+        // Act.
+        var outcome = await Validate(Validator(problems: [problem]), new ProjectValidationScope(_root));
+
+        // Assert.
+        var stored = Assert.Single(outcome.Problems);
+        Assert.Equal("flow.adp", stored.RelativePath);
+    }
+
+    [Fact]
     public async Task ValidateAsync_IsSilentForATypeWithoutRules()
     {
         // Arrange.

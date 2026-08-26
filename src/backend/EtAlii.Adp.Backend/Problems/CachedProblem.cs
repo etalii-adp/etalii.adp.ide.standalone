@@ -15,20 +15,37 @@ internal sealed record CachedProblem(
     long Length,
     string RulesVersion)
 {
+    /// <summary>
+    /// The file a <see cref="DiagramProblemFileLocation"/> named, when the problem carried one.
+    /// Kept apart from <see cref="Line"/>'s case rather than reusing it: a line location means
+    /// "line N of the diagram's own document", and this means "line N of that other file", and
+    /// a cache that collapsed the two would reopen the wrong file after a restart.
+    /// </summary>
+    /// <remarks>
+    /// Nullable with a default so a cache file written before this existed still deserializes.
+    /// </remarks>
+    public string? FilePath { get; init; }
+
     public static CachedProblem From(StoredProblem stored) => new(
         stored.Problem.Severity,
         stored.Problem.Message,
         stored.Problem.RuleId,
         (stored.Problem.Location as DiagramProblemElementLocation)?.Id,
-        (stored.Problem.Location as DiagramProblemLineLocation)?.Number,
+        (stored.Problem.Location as DiagramProblemLineLocation)?.Number
+            ?? (stored.Problem.Location as DiagramProblemFileLocation)?.Line,
         stored.RelativePath,
         stored.LastWriteTimeUtc,
         stored.Length,
-        stored.RulesVersion);
+        stored.RulesVersion)
+    {
+        FilePath = (stored.Problem.Location as DiagramProblemFileLocation)?.RelativePath,
+    };
 
     public static StoredProblem ToStored(CachedProblem cached)
     {
-        DiagramProblemLocation? location = cached.ElementId is not null
+        DiagramProblemLocation? location = cached.FilePath is not null
+            ? new DiagramProblemFileLocation(cached.FilePath, cached.Line ?? 0)
+            : cached.ElementId is not null
             ? new DiagramProblemElementLocation(cached.ElementId)
             : cached.Line is { } line ? new DiagramProblemLineLocation(line) : null;
         return new StoredProblem(

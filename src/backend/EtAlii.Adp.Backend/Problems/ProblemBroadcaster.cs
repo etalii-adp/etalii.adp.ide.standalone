@@ -108,6 +108,24 @@ public sealed class ProblemBroadcaster : IDisposable
             case DiagramProblemLineLocation line:
                 problem.Location = new ProblemLocation { Line = line.Number };
                 break;
+            case DiagramProblemFileLocation file:
+                problem.Location = new ProblemLocation
+                {
+                    File = new ProblemFileLocation
+                    {
+                        Path = new Path
+                        {
+                            Segments =
+                            {
+                                file.RelativePath.Split(
+                                    [IoPath.DirectorySeparatorChar, IoPath.AltDirectorySeparatorChar],
+                                    StringSplitOptions.RemoveEmptyEntries),
+                            },
+                        },
+                        Line = file.Line,
+                    },
+                };
+                break;
         }
         return problem;
     }

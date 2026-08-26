@@ -345,4 +345,58 @@ describe("ErrorsWarningsPanel", () => {
     // Assert.
     expect(revealPath).toHaveBeenCalledWith(["strange.adp"]);
   });
+
+  it("a problem located in another file shows and reveals that file, not the diagram's", () => {
+    // Arrange.
+    // A folder-subject diagram: the .adp marks the folder, but the mistake is in the playbook
+    // that named a role with no folder. Revealing the one-line registration instead would send
+    // the reader somewhere with nothing to fix.
+    contextState.problems = problemsOf(ProblemSetState.VALIDATED, [
+      {
+        message: "The role 'absent-role' has no folder.",
+        ruleId: "ansible.role-missing",
+        path: { segments: ["infrastructure.adp"] },
+        location: {
+          location: {
+            case: "file",
+            value: { path: { segments: ["infrastructure", "playbooks", "deploy.yml"] }, line: 6 },
+          },
+        },
+      } as Partial<Problem>,
+    ]);
+
+    // Act.
+    render(<ErrorsWarningsPanel />);
+    const row = screen.getByRole("option");
+
+    // Assert.
+    expect(row.textContent).toContain("infrastructure/playbooks/deploy.yml:6");
+    expect(row.textContent).not.toContain("infrastructure.adp");
+
+    fireEvent.doubleClick(row);
+    expect(revealPath).toHaveBeenCalledWith(["infrastructure", "playbooks", "deploy.yml"]);
+  });
+
+  it("a file location with no line names the file alone", () => {
+    // Arrange.
+    // Line 0 means the rule could only name the file - an empty role folder has no line.
+    contextState.problems = problemsOf(ProblemSetState.VALIDATED, [
+      {
+        ruleId: "ansible.empty-role",
+        location: {
+          location: {
+            case: "file",
+            value: { path: { segments: ["infrastructure", "roles", "hollow"] }, line: 0 },
+          },
+        },
+      } as Partial<Problem>,
+    ]);
+
+    // Act.
+    render(<ErrorsWarningsPanel />);
+
+    // Assert.
+    expect(screen.getByRole("option").textContent).toContain("infrastructure/roles/hollow");
+    expect(screen.getByRole("option").textContent).not.toContain(":0");
+  });
 });

@@ -10,7 +10,7 @@ internal sealed class ProblemMaintenanceCountingValidator(DiagramOrigin origin) 
     public int Calls => _calls;
 
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
-        string document, string baseName, CancellationToken cancellationToken)
+        DiagramValidationRequest request, CancellationToken cancellationToken)
     {
         Interlocked.Increment(ref _calls);
         return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>([]);

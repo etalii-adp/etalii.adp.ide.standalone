@@ -40,4 +40,32 @@ public class DiagramDefinitionTests
         Assert.Equal(".mm", definition.Extension);
         Assert.True(definition.HasDocumentSibling);
     }
+
+    [Fact]
+    public void Constructor_WithoutASubject_TheDiagramIsItsDocument()
+    {
+        // Act.
+        // The default every existing module relies on: nothing about them changes.
+        var definition = new DiagramDefinition(new DiagramOrigin("uml", "class"), "Class diagram");
+
+        // Assert.
+        Assert.Equal(DiagramSubject.Document, definition.Subject);
+        Assert.False(definition.HasFolderSubject);
+    }
+
+    [Fact]
+    public void Constructor_WithAFolderSubject_TheDiagramIsTheFolderItsRegistrationSitsIn()
+    {
+        // Act.
+        var definition = new DiagramDefinition(
+            new DiagramOrigin("ansible", "structure"),
+            "Ansible project structure",
+            Subject: DiagramSubject.Folder);
+
+        // Assert.
+        Assert.True(definition.HasFolderSubject);
+        // A folder subject and a sibling body are mutually exclusive by construction: the
+        // registration is the whole document, which is what makes the folder the subject.
+        Assert.False(definition.HasDocumentSibling);
+    }
 }

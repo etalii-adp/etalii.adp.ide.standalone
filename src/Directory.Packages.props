@@ -15,6 +15,13 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
     <PackageVersion Include="Serilog" Version="4.4.0" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
+    <!--
+      The tree's only YAML dependency, referenced by the ansible-structure module alone. That
+      module never writes, so the round-trip fidelity that would justify a hand-rolled
+      line-preserving parser buys it nothing - and YamlDotNet's node marks are what let a
+      problem point at the line that declared it.
+    -->
+    <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.0" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
   </ItemGroup>

@@ -1,0 +1,184 @@
+/*
+ * The Ansible structure diagram's whole appearance.
+ *
+ * Everything visual lives here rather than in AnsibleCanvas.tsx - tech.md's centralised-styling
+ * rule - and that includes the per-play palette. The backend sends a play INDEX and this file
+ * turns it into a colour, which is what keeps a theme change a stylesheet change rather than a
+ * protocol change.
+ */
+
+.ansible-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: var(--color-surface);
+  touch-action: none;
+  cursor: grab;
+}
+
+.ansible-canvas:active {
+  cursor: grabbing;
+}
+
+.ansible-canvas-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2rem;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.ansible-canvas-message code {
+  font-family: var(--font-mono, monospace);
+  background: var(--color-surface-raised, rgb(0 0 0 / 6%));
+  padding: 0 0.25rem;
+  border-radius: 3px;
+}
+
+/* ---- nodes ------------------------------------------------------------------------------- */
+
+.ansible-node {
+  cursor: pointer;
+}
+
+.ansible-node-box {
+  fill: var(--ansible-node-fill, var(--color-surface-raised));
+  stroke: var(--ansible-node-stroke, var(--color-border));
+  stroke-width: 1.5;
+}
+
+.ansible-node-label {
+  fill: var(--color-text);
+  font-size: 13px;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  pointer-events: none;
+  user-select: none;
+}
+
+.ansible-node:hover .ansible-node-box {
+  stroke-width: 2;
+}
+
+.ansible-node-selected .ansible-node-box {
+  stroke: var(--color-accent);
+  stroke-width: 2.5;
+}
+
+.ansible-node:focus-visible .ansible-node-box {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/*
+ * Each node kind gets its own outline weight and dash, so the kinds stay apart for a reader who
+ * cannot tell the fills apart - colour is never the only thing carrying the distinction.
+ */
+.ansible-node-playbook .ansible-node-box {
+  --ansible-node-stroke: var(--color-accent);
+  stroke-width: 2;
+}
+
+.ansible-node-play .ansible-node-box {
+  --ansible-node-stroke: var(--color-accent);
+  stroke-dasharray: 6 3;
+}
+
+.ansible-node-role .ansible-node-box {
+  rx: 10px;
+}
+
+.ansible-node-taskfile .ansible-node-box {
+  --ansible-node-fill: var(--color-surface);
+  stroke-dasharray: 2 2;
+}
+
+.ansible-node-inventory .ansible-node-box,
+.ansible-node-vars .ansible-node-box {
+  --ansible-node-fill: var(--color-surface);
+  --ansible-node-stroke: var(--color-text-muted);
+}
+
+/*
+ * A role folder with nothing Ansible would run in it. Hatched rather than merely greyed: the
+ * point is that it looks unfinished, because it is.
+ */
+.ansible-node-hollow .ansible-node-box {
+  stroke-dasharray: 4 4;
+  opacity: 0.6;
+}
+
+/* ---- the per-play palette ------------------------------------------------------------------ */
+
+/*
+ * Six slots, wrapped by the client. The backend never names a colour; it sends an index, and
+ * these are what the index means. Add a slot here and change PALETTE_SLOTS in the canvas.
+ */
+.ansible-play-0 .ansible-node-box { --ansible-node-fill: color-mix(in srgb, #4f8cc9 18%, var(--color-surface-raised)); --ansible-node-stroke: #4f8cc9; }
+.ansible-play-1 .ansible-node-box { --ansible-node-fill: color-mix(in srgb, #57a773 18%, var(--color-surface-raised)); --ansible-node-stroke: #57a773; }
+.ansible-play-2 .ansible-node-box { --ansible-node-fill: color-mix(in srgb, #c96f4f 18%, var(--color-surface-raised)); --ansible-node-stroke: #c96f4f; }
+.ansible-play-3 .ansible-node-box { --ansible-node-fill: color-mix(in srgb, #8a6fc9 18%, var(--color-surface-raised)); --ansible-node-stroke: #8a6fc9; }
+.ansible-play-4 .ansible-node-box { --ansible-node-fill: color-mix(in srgb, #c9a84f 18%, var(--color-surface-raised)); --ansible-node-stroke: #c9a84f; }
+.ansible-play-5 .ansible-node-box { --ansible-node-fill: color-mix(in srgb, #4fb5c9 18%, var(--color-surface-raised)); --ansible-node-stroke: #4fb5c9; }
+
+/* ---- edges --------------------------------------------------------------------------------- */
+
+.ansible-edge-line {
+  fill: none;
+  stroke: var(--ansible-edge-stroke, var(--color-text-muted));
+  stroke-width: 1.5;
+}
+
+.ansible-edge-label {
+  fill: var(--color-text-muted);
+  font-size: 10px;
+  font-family: var(--font-mono, monospace);
+  pointer-events: none;
+  user-select: none;
+  text-anchor: middle;
+}
+
+/*
+ * Static versus dynamic, and the distinction the whole edge model exists for: import_* is
+ * resolved before the run and include_* during it, so one is solid and the other dashed. This
+ * is the convention ansible-playbook-grapher's users already read.
+ */
+.ansible-edge-static .ansible-edge-line {
+  stroke-dasharray: none;
+}
+
+.ansible-edge-dynamic .ansible-edge-line {
+  stroke-dasharray: 5 4;
+}
+
+/* A role depending on a role is not the same as a playbook listing one, so it is not drawn alike. */
+.ansible-edge-depends-on .ansible-edge-line {
+  --ansible-edge-stroke: var(--color-accent);
+  stroke-dasharray: 1 4;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+/* A play reaching an inventory leaves the execution story, and reads as an aside. */
+.ansible-edge-targets .ansible-edge-line {
+  stroke-width: 1;
+  opacity: 0.55;
+}
+
+/*
+ * A target that is missing or unknowable. Drawn as a stub rather than not drawn, because a
+ * reader has to be able to see that a playbook names something that is not there - and drawn
+ * in the warning colour, because one of those two cases is a mistake.
+ */
+.ansible-edge-unresolved .ansible-edge-line {
+  --ansible-edge-stroke: var(--color-warning, #c9a84f);
+  stroke-dasharray: 3 3;
+}
+
+.ansible-edge-unresolved .ansible-edge-label {
+  fill: var(--color-warning, #c9a84f);
+  text-anchor: start;
+}
