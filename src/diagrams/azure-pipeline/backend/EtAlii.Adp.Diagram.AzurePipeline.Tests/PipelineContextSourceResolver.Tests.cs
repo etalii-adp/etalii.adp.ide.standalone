@@ -85,7 +85,7 @@ public class PipelineContextSourceResolverTests : IDisposable
             new ContextSource(),
             [IoPath.GetFileName(path)],
             ContextScope.Hierarchy,
-            new ContextTarget(ContextScope.Hierarchy, path, IsContainer: false, SourceId: default, IoPath.GetDirectoryName(path)!, ShortGuid.NewShortGuid(), ""),
+            new ContextTarget(ContextScope.Hierarchy, path, IsContainer: false, SourceId: default, IoPath.GetDirectoryName(path)!, ShortGuid.NewShortGuid()),
             new ContextLevelDetail(),
             null!);
 

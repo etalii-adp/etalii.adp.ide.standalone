@@ -392,6 +392,8 @@ public class PipelineRuleSetTests
         Assert.NotEmpty(problems);
         Assert.All(problems, problem =>
         {
+            ArgumentNullException.ThrowIfNull(problem);
+
             Assert.StartsWith("azure-pipeline.", problem.RuleId, StringComparison.Ordinal);
             Assert.NotEmpty(problem.Message);
         });

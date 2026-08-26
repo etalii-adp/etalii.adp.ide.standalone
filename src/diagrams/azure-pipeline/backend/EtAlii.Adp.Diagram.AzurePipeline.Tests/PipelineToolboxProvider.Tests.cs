@@ -91,6 +91,8 @@ public class PipelineToolboxProviderTests : IDisposable
         // description is one the user cannot tell apart from the others.
         Assert.All(_toolbox.Items, item =>
         {
+            ArgumentNullException.ThrowIfNull(item);
+
             Assert.NotEmpty(item.Id);
             Assert.NotEmpty(item.Label);
             Assert.NotEmpty(item.Icon);

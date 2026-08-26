@@ -499,6 +499,8 @@ public class PipelineElementMapperTests
             // Assert.
             Assert.All(elements, element =>
             {
+                ArgumentNullException.ThrowIfNull(element);
+
                 Assert.NotEmpty(element.Id);
                 Assert.NotEmpty(element.Type);
                 Assert.False(element.Payload.IsEmpty, $"{element.Id} carries no payload");

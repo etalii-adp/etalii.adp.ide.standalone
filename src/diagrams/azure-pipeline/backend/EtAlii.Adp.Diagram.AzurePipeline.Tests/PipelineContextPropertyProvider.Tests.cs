@@ -351,6 +351,8 @@ public class PipelineContextPropertyProviderTests : IDisposable
         Assert.NotEmpty(properties);
         Assert.All(properties, property =>
         {
+            ArgumentNullException.ThrowIfNull(property);
+
             Assert.False(property.IsEditable);
             Assert.Contains("templates/jobs.yml", property.ReadOnlyReason);
         });

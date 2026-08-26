@@ -285,6 +285,8 @@ public class PipelineGraphBuilderTests
         Assert.Equal(2, edges.Count);
         Assert.All(edges, edge =>
         {
+            ArgumentNullException.ThrowIfNull(edge);
+
             Assert.True(edge.IsConditional);
             Assert.Equal("always()", edge.ConditionText);
             Assert.Equal(PipelineEdgeCondition.Always, edge.Condition);
