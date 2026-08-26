@@ -14,11 +14,14 @@ Actual development work — writing code, editing specs, running builds/tests �
 
 **Retire a worktree once its branch is merged into `develop` and its working tree is clean:** `git worktree remove .claude/worktrees/<name>`. A worktree is created per piece of work, so without this they only accumulate — twenty-four of them had built up before anyone counted.
 
-Three rules make this safe, and none of them is optional:
+Four rules make this safe, and none of them is optional:
 
+- **Never remove a worktree another session is still working in.** Merged and clean is not enough: those two tests describe the *branch*, and say nothing about whether somebody is sitting in the directory. List the live sessions first (their names match the worktree directory names) and leave those alone. This rule exists because it was learned the hard way — four live sessions were deregistered underneath in one sweep.
 - **Never remove a worktree with uncommitted changes or unmerged commits.** Raise it for a decision instead. Housekeeping that destroys work is not housekeeping.
 - **Removing the worktree does not remove the branch,** so a merged branch's commits stay reachable either way. Do not delete branches as part of this.
 - **Removal often fails on Windows** with `Filename too long` (deep `node_modules` paths) or `Permission denied` (a dev server or IDE holding a file). Git still deregisters the worktree; only the directory deletion fails, leaving a folder of build output behind. **Report those rather than forcing them** — and check before deleting one by hand, because a leftover folder can still hold source.
+
+**A half-removed worktree is worse than either outcome.** When the deletion fails, the directory survives without its `.git` file, so every git command run inside it walks up and resolves against the main checkout — `git status` there reports the *main checkout's* dirty files, and a `git add -A` would commit another session's work. The files themselves are safe: copy anything uncommitted out, then start again with `git worktree add .claude/worktrees/<new-name> <branch>`. (The `Filename too long` failure is git's own limit, not the OS one — it wants `core.longpaths=true`, which is the user's call to set.)
 
 ## spec-workflow
 
