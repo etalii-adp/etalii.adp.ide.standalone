@@ -132,7 +132,7 @@
 
 ## Phase E — layout and the wire
 
-- [-] 13. `AnsibleLayout`: ranked, banded, deterministic
+- [x] 13. `AnsibleLayout`: ranked, banded, deterministic
   - File: `.../AnsibleLayout.cs` (new), `_Model/AnsibleMetrics.cs` (new), `.../AnsibleLayout.Tests.cs` (new)
   - Ranks left to right by longest path — entry playbooks (nothing imports them), then playbooks and plays, then roles, then task files. Within a rank, declaration order then name, both ordinal. Inventories and variable folders occupy their own band rather than being ranked, so a `Targets` edge drops out of the execution story instead of lengthening it
   - Each play gets an index in declaration order; a role carries the index of its play. A role used by two plays is drawn **once**, carrying the lower index — seeing that `common` is shared is the point of drawing it
@@ -141,7 +141,7 @@
   - _Requirements: 6.1, 6.2, 6.3_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer with graph layout experience | Task: Compute deterministic positions for the graph, ranked in execution order with inventories and variable folders banded apart, assigning each play an index for colour continuity | Restrictions: pure function, no file or clock access; a shared role is one node, not one per play; ties break ordinally so the answer never depends on enumeration order | Success: tests prove the same graph yields the same positions twice, ranks follow Requirement 6.2, the shared role appears once with the lower play index, and nothing overlaps on the fixture_
 
-- [ ] 14. `ansible-structure.proto`
+- [-] 14. `ansible-structure.proto`
   - File: `src/diagrams/ansible-structure/api/ansible-structure.proto` (new), `api/readme.md` (new)
   - `AnsibleElementPayload` with `name`, `kind`, `project_relative_path`, `play_index`, `hosts`, `contents`, `edge`, `unresolvable` and `annotations`; plus `AnsibleRoleContents` and `AnsibleEdge` as the design defines them
   - **`play_index` is an index, never a colour** — styling stays in the module's stylesheet per tech.md's Frontend rule
