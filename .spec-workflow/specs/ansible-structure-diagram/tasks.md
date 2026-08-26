@@ -195,7 +195,7 @@
 
 ## Phase H — selection and properties
 
-- [-] 19. `AnsibleContextSourceResolver`
+- [x] 19. `AnsibleContextSourceResolver`
   - File: `.../AnsibleContextSourceResolver.cs` (new), `_Model/AnsibleNodeSubscription.cs` (new), `.../AnsibleContextSourceResolver.Tests.cs` (new)
   - Resolve an `element_id` against the project named by the enclosing hierarchy level, verify the node is really in that project, fill the detail a consumer shows, and carry the node's **project-relative path segments** for the reveal. `NestingOf` → `NotNestable`. `Track` re-resolves on every store change: a deleted role clears the selection, a renamed file changes the path
   - Purpose: Requirement 8.2 — a node answers like any other element
@@ -203,7 +203,7 @@
   - _Requirements: 8.1, 8.2, 8.3_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer working in the context seam | Task: Make an Ansible node selectable, verified against its project, carrying its project-relative path, and re-resolved when the folder changes | Restrictions: never resolve a location yourself - the target arrives resolved; reject an unverifiable selection rather than recording it; an edge selection must name its declaring side | Success: tests prove a node resolves, a stranger's id is rejected, a deleted role clears the selection, and a rename updates the path_
 
-- [ ] 20. `AnsibleContextPropertyProvider` — every row, none editable, every reason true
+- [-] 20. `AnsibleContextPropertyProvider` — every row, none editable, every reason true
   - File: `.../AnsibleContextPropertyProvider.cs` (new), `.../AnsibleContextPropertyProvider.Tests.cs` (new)
   - The rows of Requirements 10.3–10.6, grouped: **Identity/Runs/Targets** for a playbook or play, **Identity/Contents/Relationships** for a role, **Identity/Groups/Variables** for an inventory, **Declaration** for an edge. A property absent from the files is **not contributed** — a play with no `when:` has no condition row
   - **Every row carries a non-empty `ReadOnlyReason` naming the file the value lives in** and how it is edited. `SetAsync` refuses unconditionally with the property's own reason — unreachable in practice, because `ContextPropertyResolver` refuses the write server-side first, and written anyway, because a provider that would silently accept a write if the resolver ever changed is a trap
