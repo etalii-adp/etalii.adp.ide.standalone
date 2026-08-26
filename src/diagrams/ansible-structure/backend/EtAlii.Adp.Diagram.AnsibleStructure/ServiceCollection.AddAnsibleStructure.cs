@@ -52,6 +52,12 @@ public static class ServiceCollectionAddAnsibleStructureExtension
         services.AddSingleton<AnsibleElementMapper>(_ => new AnsibleElementMapper());
         services.AddSingleton<IDiagramSessionFactory, AnsibleSessionFactory>();
 
+        // Read-only does not mean silent: the structural mistakes this type can see are exactly
+        // the ones that bite at deploy time (Requirement 9). The validator reads the folder
+        // directly rather than through the store - validation is a one-shot question, and
+        // routing it through the store would leave a watcher behind on every "Validate all".
+        services.AddSingleton<IDiagramValidator, AnsibleValidator>();
+
         return services;
     }
 }
