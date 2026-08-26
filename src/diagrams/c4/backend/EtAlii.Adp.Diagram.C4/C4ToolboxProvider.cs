@@ -13,13 +13,13 @@ namespace EtAlii.Adp.Diagram.C4;
 /// </remarks>
 public sealed class C4ToolboxProvider : IDiagramToolboxProvider
 {
-    private readonly C4ViewKind _viewKind;
+    //private readonly C4ViewKind _viewKind;
 
     public C4ToolboxProvider(DiagramOrigin origin, C4ViewKind viewKind)
     {
         ArgumentNullException.ThrowIfNull(origin);
         Origin = origin;
-        _viewKind = viewKind;
+        //_viewKind = viewKind;
         Items = ItemsFor(viewKind);
     }
 
