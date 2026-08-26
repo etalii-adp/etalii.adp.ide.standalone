@@ -106,58 +106,56 @@ The first revision of this document was written when the mindmap was the only sh
 #### Acceptance Criteria
 
 1. WHEN a `component`, `anchor` or `submap` statement is read THEN the system SHALL produce a positioned element carrying its name, its kind and its coordinates. These are the DSL's **three** statement kinds.
-   * *(An earlier revision listed `market` and `ecosystem` here as two further statement kinds. Certifying the task 2 corpus against the real OnlineWardleyMaps parser showed that they are not. They are **decorators**, and Requirement 6.3 now carries them. The evidence is below, because this correction is a judgement call and is easier to weigh with the parser's own output than with a summary of it.)*
-
-   <details><summary><b>Certification evidence</b> — the real parser, vendored by <code>cli-owm</code> 0.0.2 (MIT, © 2019 Damon Skelhorn)</summary>
-
-   Feeding it the keyword form, alongside a component and an anchor that both parse:
-
-   ```
-   title Probe
-   anchor Cust [0.95, 0.63]
-   component Alpha [0.80, 0.40]
-   market BetaMarket [0.66, 0.88]
-   ecosystem GammaEco [0.40, 0.47]
-   ```
-
-   ```
-   parsed: {"errors":2,"components":1,"anchors":1,"evolution":4}
-   errors: 2
-     ! {"name":"ParseError","line":3}
-     ! {"name":"ParseError","line":4}
-   ```
-
-   One component, not three. The parser's `line` is **0-based**, so lines 3 and 4 are the `market` and `ecosystem` statements. Rewritten as decorators, the same elements parse clean:
-
-   ```
-   component BetaMarket [0.66, 0.88] (market)
-   component GammaEco [0.40, 0.47] (ecosystem)
-   ```
-
-   ```
-   parsed: {"components":7,"anchors":1,"submaps":1,"evolved":1,"pipelines":1,
-            "links":3,"annotations":2,"notes":1,"urls":1,"attitudes":1}
-   errors: 0
-   ```
-
-   And the parsed component shows where they live — one `decorators` set holding all five, which is why Requirement 6.3 models them as a set rather than splitting them along a line the format does not draw:
-
-   ```json
-   {"maturity":0.88,"visibility":0.66,"name":"BetaMarket","type":"component","line":4,
-    "decorators":{"ecosystem":false,"market":true,"buy":false,"build":false,"outsource":false}}
-   ```
-
-   The same output confirms Requirement 5.2's axis reading rather than contradicting it: `[0.66, 0.88]` parsed to `visibility: 0.66, maturity: 0.88`.
-
-   Reproducible from `src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap.Tests/Fixtures/`: `npm install --no-save cli-owm@0.0.2` then `node certify.mjs *.owm`, with `CERTIFY_DUMP=1` for the component dump. **Caveat:** `cli-owm` 0.0.2 vendors a parser snapshot; a construct recorded here as invalid should be re-certified against a newer parser before anyone treats that as permanent.
-
-   </details>
+   * *(An earlier revision listed `market` and `ecosystem` here as two further statement kinds. Certifying the task 2 corpus against the real OnlineWardleyMaps parser showed that they are not. They are **decorators**, and Requirement 6.3 now carries them. The parser output that established this is recorded after these criteria.)*
 2. WHEN a coordinate pair `[a, b]` is read THEN the system SHALL interpret **`a` as visibility (the value-chain axis) and `b` as maturity (the evolution axis)**, both in `0..1`. This is the reverse of `Point2D(x, y)`, and the conversion SHALL live in exactly one place so no other code has to remember it.
 3. WHEN a link `A->B`, a flow link `A+>B`, or a link with context `A->B; text` is read THEN the system SHALL produce an element naming both endpoints by identity, carrying the link's kind and its context text.
 4. WHEN a `pipeline` is read THEN the system SHALL produce a container holding its child components, where a child carries only an evolution position and takes its visibility from the parent — the current nested form `pipeline Parent{ … }`. The **legacy** two-coordinate form SHALL be readable, and SHALL be written back in whichever form it was read (Requirement 3.2).
 5. WHEN an element carries a `label [dx, dy]` offset THEN the system SHALL preserve it through a round trip and SHALL honour it when rendering. The offset is in pixels rather than map coordinates — a property of the format, which ADP reproduces rather than corrects.
 6. WHEN map-level statements are read — `title`, `size [w, h]`, `style` — THEN they SHALL be preserved and applied where they affect rendering. They are properties of the map, not elements on it.
 7. WHEN the model is tested THEN parsing and writing SHALL be exercisable from a plain string with no file, no canvas and no connection, per the *Dependency Management* rule below.
+
+**Certification evidence for 5.1** — from the real parser, vendored by `cli-owm` 0.0.2 (MIT, © 2019 Damon Skelhorn). Recorded here because rewording an approved requirement is a judgement call, and it is easier to weigh with the parser's own output than with a summary of it.
+
+Fed the keyword form, alongside a component and an anchor that both parse:
+
+```
+title Probe
+anchor Cust [0.95, 0.63]
+component Alpha [0.80, 0.40]
+market BetaMarket [0.66, 0.88]
+ecosystem GammaEco [0.40, 0.47]
+```
+
+```
+parsed: {"errors":2,"components":1,"anchors":1,"evolution":4}
+errors: 2
+  ! {"name":"ParseError","line":3}
+  ! {"name":"ParseError","line":4}
+```
+
+One component, not three. The parser's `line` is **0-based**, so lines 3 and 4 are the `market` and `ecosystem` statements. Rewritten as decorators, the same elements parse clean:
+
+```
+component BetaMarket [0.66, 0.88] (market)
+component GammaEco [0.40, 0.47] (ecosystem)
+```
+
+```
+parsed: {"components":7,"anchors":1,"submaps":1,"evolved":1,"pipelines":1,
+         "links":3,"annotations":2,"notes":1,"urls":1,"attitudes":1}
+errors: 0
+```
+
+The parsed component shows where they live — one `decorators` set holding all five, which is why Requirement 6.3 models them as a set rather than splitting them along a line the format does not draw:
+
+```json
+{"maturity":0.88,"visibility":0.66,"name":"BetaMarket","type":"component","line":4,
+ "decorators":{"ecosystem":false,"market":true,"buy":false,"build":false,"outsource":false}}
+```
+
+The same output confirms Requirement 5.2's axis reading rather than contradicting it: `[0.66, 0.88]` parsed to `visibility: 0.66, maturity: 0.88`.
+
+Reproducible from `src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap.Tests/Fixtures/`: `npm install --no-save cli-owm@0.0.2`, then `node certify.mjs *.owm`, with `CERTIFY_DUMP=1` for the component dump. **Caveat:** `cli-owm` 0.0.2 vendors a parser snapshot; a construct recorded here as invalid should be re-certified against a newer parser before anyone treats that as permanent.
 
 ### Requirement 6 — The strategy vocabulary
 
