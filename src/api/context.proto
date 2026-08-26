@@ -6,6 +6,7 @@ import "shared.proto";     // ShortGuid
 import "connection.proto"; // Path
 import "hierarchy.proto";  // EntryKind (hierarchy.proto does not import this file back)
 import "elements.proto";   // ElementId
+import "google/protobuf/any.proto";
 import "google/protobuf/empty.proto";
 
 option csharp_namespace = "EtAlii.Adp";
@@ -156,6 +157,15 @@ message ElementDetail {
   bool has_children = 2;
   bool folded = 3;
   bool linked = 4;
+  // The element as its own module describes it - the same mime-style type and type-specific
+  // payload `Element` carries on the diagram stream, so a consumer that already holds the
+  // module has everything it shows without a second call of its own (wardley-map
+  // Requirement 11.3). Both are empty for a resolver that offers nothing beyond the four
+  // fields above, which is every resolver written before this one. Nothing here names a
+  // diagram type: what a payload means is the module's business, exactly as it already is
+  // for `Element.payload`.
+  string element_type = 5;         // mime-style, e.g. "wardley/map+element"
+  google.protobuf.Any payload = 6; // type-specific message, defined per diagram module
 }
 
 message EntryDetail {

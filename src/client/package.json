@@ -10,7 +10,7 @@
     "build": "tsc --noEmit && vite build",
     "pretypecheck": "npm run generate",
     "typecheck": "tsc --noEmit",
-    "generate": "buf generate ../api && buf generate ../diagrams/mindmap/api && buf generate ../diagrams/c4/api && buf generate ../diagrams/ansible-structure/api && buf generate ../diagrams/azure-pipeline/api",
+    "generate": "buf generate ../api && buf generate ../diagrams/mindmap/api && buf generate ../diagrams/c4/api && buf generate ../diagrams/ansible-structure/api && buf generate ../diagrams/azure-pipeline/api && buf generate ../diagrams/wardley-map/api",
     "preview": "vite preview",
     "pretest": "npm run generate",
     "test": "vitest run"

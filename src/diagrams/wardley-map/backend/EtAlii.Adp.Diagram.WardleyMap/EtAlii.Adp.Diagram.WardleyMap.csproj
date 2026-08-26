@@ -2,6 +2,33 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+    <!--
+      Core abstractions only: the DI seam this module registers through, and later ICommand and
+      its handler, the context resolver and provider seams, and the diagram session seam. The
+      dependency runs this way and never back - core must compile and test with this module
+      absent (Requirement 12.4).
+    -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Google.Protobuf is the runtime; Grpc.Tools compiles the .proto below at build. -->
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The module's own wire payloads, packed into the core Element's Any. Lives under the
+      module's api folder; core protos are never edited from here.
+    -->
+    <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="None" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="EtAlii.Adp.Diagram.WardleyMap.Tests" />
   </ItemGroup>
 
 </Project>

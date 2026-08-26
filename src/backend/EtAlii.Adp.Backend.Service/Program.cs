@@ -12,6 +12,7 @@ using EtAlii.Adp.Diagram.AnsibleStructure;
 using EtAlii.Adp.Diagram.AzurePipeline;
 using EtAlii.Adp.Diagram.C4;
 using EtAlii.Adp.Diagram.Mindmap;
+using EtAlii.Adp.Diagram.WardleyMap;
 using JetBrains.Annotations;
 using Serilog;
 
@@ -71,6 +72,8 @@ builder.Services.AddC4();
 builder.Services.AddAzurePipeline();
 // Read-only, and the only type whose subject is a folder rather than a document.
 builder.Services.AddAnsibleStructure();
+// The map whose coordinates are the author's own claim rather than a computed layout.
+builder.Services.AddWardleyMap();
 
 builder.Services.AddClientAppHosting(builder.Configuration);
 

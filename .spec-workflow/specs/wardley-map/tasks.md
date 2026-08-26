@@ -116,7 +116,7 @@
   - _Requirements: 5.2, 8.2, 10.2, 10.3, 10.4_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer working with protobuf and a delta protocol | Task: Define the module's element payloads and map the model onto core Elements and Deltas, with the axis conversion in exactly one function pair | Restrictions: do not modify any core contract file; add no new Delta action; keep the conversion out of the parser, the commands and the canvas; regenerate the client stubs | Success: a round-trip property test proves ToPoint and ToCoordinates invert each other, an explicit test asserts that [0.9, 0.1] renders top-left, a pipeline emits Group, and the baseline carries one evolution-axis element_
 
-- [ ] 12. `WardleySession` and its factory
+- [x] 12. `WardleySession` and its factory
   - File: `.../WardleySession.cs`, `.../WardleySessionFactory.cs` (new), tests
   - `Baseline()` returns the whole map. `UpdateView(viewport)` returns the whole map unfiltered — the shortest correct implementation of that method in the repository, and deliberately so. `MoveElementToAsync` converts through the mapper, clamps to `0..1`, narrows a pipeline child to maturity alone, and dispatches `MoveWardleyElementCommand`; `MoveElementAsync` refuses, except for a pipeline child where re-parenting is meaningful. `Changed` carries an external reload as deltas, never onto the history
   - Purpose: the fourth registration seam, and the leg a drag arrives on
@@ -126,7 +126,7 @@
 
 ## Phase D — the client
 
-- [ ] 13. The stream hook and the client model
+- [x] 13. The stream hook and the client model
   - File: `src/diagrams/wardley-map/client/useWardleyStream.ts`, `wardleyModel.ts` (new), tests
   - `useWardleyStream` opens the diagram and reports viewports; `applyDelta` folds `Add`/`Remove`/`Group`/`Ungroup` into a client model of elements, links, pipelines and the evolution axis
   - Purpose: the canvas renders a model rather than a delta stream
@@ -134,7 +134,7 @@
   - _Requirements: 10.1, 10.3, 10.4_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Implement the stream hook and the delta-folding client model | Restrictions: treat Add as an upsert keyed on element id; hold no evolution constants, read them from the axis element; follow the client editorconfig sections for indentation and quotes | Success: applyDelta tests cover add, replace, remove and group, and the model exposes the axis the canvas needs_
 
-- [ ] 14. The canvas: the space, the axes and the bands
+- [x] 14. The canvas: the space, the axes and the bands
   - File: `.../WardleyCanvas.tsx`, `wardley.css` (new), tests
   - One `<svg>` owning its `viewBox`, pan and zoom. Draw order: bands and axis labels first, then everything else. Visibility is vertical with the user need at the top, maturity horizontal with genesis at the left. The four stages come from the axis element, never from a constant in this file. Chrome scales with the map; stage **labels** may hold a readable size
   - Purpose: a component's position is meaningless without the axes it is claimed against
@@ -142,7 +142,7 @@
   - _Requirements: 8.1, 8.2, 8.4, 8.5_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer working in SVG | Task: Render the bounded coordinate space with its two semantic axes and four evolution bands, beneath everything else | Restrictions: no inline styles, per tech.md; do not hardcode the stage boundaries in the client; do not ask core for a background layer, the module owns its whole surface | Success: an empty map shows its axes and nothing else, the bands sit at the boundaries the backend sent, and the chrome scales with the map under pan and zoom_
 
-- [ ] 15. The canvas: elements, links and what is claimed about them
+- [x] 15. The canvas: elements, links and what is claimed about them
   - File: `.../WardleyCanvas.tsx` (edited), tests
   - Element kinds visually distinguishable — anchor, component, submap — and a component's decorators (`market`, `ecosystem`, `build`, `buy`, `outsource`) distinguishable on it, per Requirement 6.3. Links and `evolve` movement indicators drawn with `anchorsBetween` and `straightPath` from `@client/canvas/connectors`; an `evolve` indicator is the same call, styled dashed, from current maturity to target at the same visibility. Inertia, the build/buy/outsource decorators, notes, annotations at every one of their positions, areas behind their elements, and accelerators. Problem marks on elements a rule reported
   - `branchAnchorsBetween` and `horizontalBezierPath` are **not** used — they are tree-shaped and this notation has no tree. A pipeline is a bracket the module draws, not a connector
@@ -151,7 +151,7 @@
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.7, 6.8, 8.3, 8.6_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer working in SVG | Task: Render the element kinds, their decorations, the links and the evolve indicators, and mark elements a validator reported | Restrictions: use the shared connector geometry for links rather than writing edge intersection maths; draw every position of a multi-position annotation; no inline styles | Success: each kind is distinguishable, an evolving component shows both positions joined, a multi-position annotation appears at each place, and a dangling link's endpoints are marked_
 
-- [ ] 16. Dragging, which is an edit
+- [x] 16. Dragging, which is an edit
   - File: `.../WardleyCanvas.tsx` (edited), tests
   - A drag clamps to `0..1` on both axes and sends `MoveElement` with the new `position`. Read-only maps do not offer it. The moved component returns as an ordinary `Add` delta rather than being moved optimistically and reconciled
   - Purpose: the type's central interaction, on the leg that now exists to carry it
@@ -159,7 +159,7 @@
   - _Requirements: 7.2, 7.3, 7.5_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Implement dragging a component as a document edit sent over MoveElement with a position | Restrictions: do not encode coordinates into new_parent_id, that workaround has been removed; clamp client-side and rely on the backend clamping again; do not offer dragging in read-only mode | Success: a drag rewrites one line of the .owm, is one undo away, reaches a second connection as deltas, and is refused with a reason on a read-only map_
 
-- [ ] 17. Register the client module
+- [x] 17. Register the client module
   - File: `.../register.ts` (new), tests
   - One `DiagramCanvasRegistration` matching `wardley/map`, exporting `registrations`, discovered by the shell's `import.meta.glob` scan with no edit to the shell
   - Purpose: the client half of pluggable registration
@@ -169,7 +169,7 @@
 
 ## Phase E — commands, selection and actions
 
-- [ ] 18. The commands and their inverses
+- [x] 18. The commands and their inverses
   - File: `.../Commands/*.cs` (new, one file per command-and-handler pair), tests
   - `AddWardleyElementCommand`, `RemoveWardleyElementCommand`, `MoveWardleyElementCommand`, `RenameWardleyElementCommand`, `SetWardleyLinkCommand`, `SetWardleyEvolveCommand`, `SetWardleyInertiaCommand`, `SetWardleyDecoratorCommand`, `SetWardleyPipelineMembershipCommand`. Each reports its inverse as `CommandResult.Inverse`, validates its own preconditions against current state, and returns a message rather than throwing when it cannot proceed
   - The rename's inverse restores every statement the rename rewrote, so an undo never leaves a half-renamed file
@@ -178,7 +178,7 @@
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer implementing the command pattern | Task: Implement the module's commands and handlers, each with an inverse and its own precondition checks | Restrictions: nothing writes the .owm outside a handler; a handler returns a CommandResult with a message rather than throwing; validate against current state because undo and redo dispatch again later | Success: every command's inverse restores the prior file byte-for-byte, a rejected command leaves the document unchanged, and an undone rename restores every reference_
 
-- [ ] 19. Make an element selectable
+- [x] 19. Make an element selectable
   - File: `.../WardleyContextSourceResolver.cs` (new), tests
   - One `IContextSourceResolver`, resolving an element from the `.adp` path and `element_id`, pushing backend-resolved detail: name, kind, coordinates and evolution stage
   - Purpose: the selection chain, with no change inside the context service
@@ -186,7 +186,7 @@
   - _Requirements: 11.1, 11.2, 11.3_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Register a context source resolver that makes a Wardley element selectable and self-describing | Restrictions: reuse ContextSource.element_id and the DIAGRAM_ELEMENT scope, do not add a variant; do not change anything inside the context service | Success: selecting an element on the canvas pushes a nested selection whose innermost level carries the element's name, kind, coordinates and stage_
 
-- [ ] 20. Context actions
+- [x] 20. Context actions
   - File: `.../WardleyContextActionProvider.cs` (new), tests
   - The edits of Requirement 9.3 offered as data with their shortcuts, withheld where they do not apply — an unlink on an element with no link, any edit in read-only mode
   - Purpose: one path to the ribbon, the right-click menu and the keyboard
@@ -194,7 +194,7 @@
   - _Requirements: 11.4, 11.5, 11.6, 9.8_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Contribute the module's context actions as data, dispatching the same commands the canvas uses | Restrictions: the client holds no key-to-action table, so every shortcut is described by the backend; an action that would fail is not offered | Success: the offered set matches what would succeed, each action dispatches its command through the history, and read-only mode offers no edits_
 
-- [ ] 21. The toolbox
+- [x] 21. The toolbox
   - File: `.../WardleyToolboxProvider.cs` (new), tests
   - Entries for Component, Anchor, Market, Ecosystem, Submap, Pipeline, Note and Annotation, each naming a `DropActionId` the action provider already contributes. A dropped component-shaped entry is created at the centre of the visible viewport and selected, so the user's next drag places it — the drop position is not discarded in favour of a computed one, because there is no computed one. **Link is deliberately not an entry**: it needs two endpoints and is created through a context action
   - Purpose: `tech.md`'s toolbox aspect, implementable and testable before the panel that shows it exists
@@ -202,7 +202,7 @@
   - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Contribute the module's toolbox entries as data, each reusing an existing action id for its drop | Restrictions: do not add a link entry, and say why in the code comment; a drop in read-only mode is refused with a reason rather than the palette hiding entries; entries are static per type | Success: the entries assert without a UI, each DropActionId resolves to a real action, and a drop creates one element through the same command the menu uses_
 
-- [ ] 22. The property grid
+- [x] 22. The property grid
   - File: `.../WardleyContextPropertyProvider.cs` (new), tests
   - One `IContextPropertyProvider` for `ContextScope.DiagramElement`. The rows of Requirements 15.2–15.4, grouped into identity, position, strategy and links. Editable: name, both coordinates, evolve target, inertia, decorator, link context. Read-only with a reason: the derived evolution stage, a pipeline child's visibility, and everything in read-only mode. An absent property is not contributed at all; an empty one is contributed empty
   - Reasons follow the house form — cause, then remedy — as `MindmapContextPropertyProvider` established. They are **user-facing error text**: `ContextPropertyResolver` returns the reason verbatim when it refuses a write
@@ -211,7 +211,7 @@
   - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 15.7, 15.8, 15.9, 15.10, 15.11_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Contribute a Wardley element's properties, with derived values shown and refused, dispatching the same commands the canvas uses | Restrictions: every ReadOnlyReason must be non-blank, because both IsEditable and the client's PropertyRow decide editability on length and a whitespace-only reason would silently permit a write; keep reasons to two sentences since the row does not truncate; do not omit a property to express that it is unwritable, omission means absent; commit on Enter or blur, never per keystroke | Success: a test asserts no contributed reason is null or whitespace, editing maturity from the grid and dragging to the same place produce one identical command, a rejected coordinate leaves the document unchanged, and the derived stage refuses a write with a reason naming maturity_
 
-- [ ] 23. Wire the module into the host
+- [x] 23. Wire the module into the host
   - File: `.../ServiceCollection.AddWardleyMap.cs`, `.../ServiceCollection.AddWardleyMapCommands.cs` (new), `src/backend/EtAlii.Adp.Backend.Service/Program.cs` (edited)
   - One `AddWardleyMap` gathering all eight registrations: document factory, session factory, source resolver, action provider, toolbox provider, validator, property provider and the command handlers
   - Purpose: the whole integration surface in one reviewable method
@@ -221,7 +221,7 @@
 
 ## Phase F — validation
 
-- [ ] 24. `WardleyRuleSet` and the validator
+- [x] 24. `WardleyRuleSet` and the validator
   - File: `.../WardleyRuleSet.cs`, `.../WardleyValidator.cs` (new), tests
   - Errors: a link, `evolve` or pipeline membership naming a component that does not exist; a coordinate outside `0..1`; two components sharing a name. Warnings: a map with no `anchor`; a `submap` naming a map not in the project, or an unresolvable `url`. Each problem carries a line location where the rule judged text and an element location where it judged the model, and a `RuleId` prefixed `wardley.`
   - The rule set is a pure function from model to problems, testable from a plain string, and bounded in time
@@ -232,21 +232,21 @@
 
 ## Phase G — closing
 
-- [ ] 25. Integration tests across the whole arc
+- [x] 25. Integration tests across the whole arc
   - File: `.../EtAlii.Adp.Diagram.WardleyMap.Tests/*.Integration.Tests.cs` (new)
   - Add a map through the real create-file path and assert both files; open an `.owm` with no `.adp` sibling through the router; open over `DiagramService.Open`, drag, assert the deltas and the rewritten file, undo, assert the file is byte-identical to before the drag; select an element and assert the pushed selection, its actions and its properties; two connections on one map; an external edit arriving as deltas that undo does not step through
   - Purpose: the seams meet, which no unit test shows
   - _Requirements: 1, 2.5, 7.2, 10, 11, 15_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer writing integration tests against a real host | Task: Cover create, open, drag, undo, select, describe properties, multi-connection and external reload | Restrictions: run against the real host rather than mocks; assert file bytes for the undo case; do not add test-only seams to production code | Success: the whole arc passes from a clean checkout with dotnet test --solution EtAlii.Adp.slnx_
 
-- [ ] 26. The catalog, the manual pass and interoperability
+- [x] 26. The catalog, the manual pass and interoperability
   - File: `docs/diagrams.md` (edited), `tests.md` (edited)
   - Move the `wardley/map` row to 🛠️ when implementation starts and ✅ when it lands, and add the `.owm` DSL reference to its Notes. Record in `tests.md` the checks a unit test cannot express: a map authored in onlinewardleymaps.com opens looking like the same map; the four stage labels are legible at default zoom; dragging a component and reopening the file in that tool shows it moved
   - Purpose: the catalog is how "which diagram types does ADP have" is answered, and it must not answer wrongly
   - _Requirements: 12.6_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer maintaining project documentation | Task: Update the diagram catalog row and record the manual interoperability checks | Restrictions: follow CLAUDE.md's state icons and origin tag convention; each tests.md entry names the spec and task it came from and states preconditions, actions and expected result | Success: the row reflects reality at each state, and a later reader can execute each manual check without this conversation_
 
-- [ ] 27. The pluggability check
+- [x] 27. The pluggability check
   - File: none (a review, with findings recorded)
   - Grep core — canvas, storage, sync, context, command code — for any Wardley-specific type check, import or branch, and confirm there is none. Confirm the three shipped notations now differ in who owns position (computed and never written; computed with authored overrides in a sidecar; authored in the document and written back) and that core is unchanged by that difference apart from the positional-move seam, which is type-agnostic and serves two of them
   - Purpose: Requirement 12.5 calls this the acceptance test for the pluggable diagram-type model, and an untested acceptance test is an assertion
