@@ -16,6 +16,24 @@ public static class Diagram
     public const string DocumentExtension = ".owm";
 
     /// <summary>
+    /// Every extension this DSL is written with - the declared one, and the `.wm` the
+    /// ecosystem's own tooling also accepts.
+    /// </summary>
+    /// <remarks>
+    /// Used to answer "is this file one of mine" where the answer is needed and no routing is at
+    /// hand: a context provider is consulted for EVERY diagram element in its scope, including
+    /// elements of other types, and one that reads the document before checking is one that
+    /// parses another notation's file. <see cref="DiagramDefinition.Extension"/> can only carry
+    /// the first of these, which is why the second is named here as well.
+    /// </remarks>
+    public static IReadOnlyList<string> DocumentExtensions { get; } = [DocumentExtension, ".wm"];
+
+    /// <summary>Whether <paramref name="path"/> is a body this module owns.</summary>
+    public static bool IsBody(string path) =>
+        path is { Length: > 0 } &&
+        DocumentExtensions.Any(extension => path.EndsWith(extension, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
     /// This module's one type, named so the module's own registrations can say which type they
     /// serve without indexing into the array. Discovery reads <see cref="Definitions"/>; the
     /// module reads this.

@@ -105,7 +105,10 @@ public sealed class WardleyContextPropertyProvider : IContextPropertyProvider
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (target.Scope != ContextScope.DiagramElement || target.ElementId.Length == 0)
+        // Every provider in this scope is consulted for every element in it, including elements
+        // of other diagram types - so the first question is whether this file is one of ours.
+        if (target.Scope != ContextScope.DiagramElement || target.ElementId.Length == 0 ||
+            !Diagram.IsBody(target.ResolvedFullPath))
         {
             return None();
         }
@@ -144,6 +147,11 @@ public sealed class WardleyContextPropertyProvider : IContextPropertyProvider
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
+
+        if (!Diagram.IsBody(target.ResolvedFullPath))
+        {
+            return ContextPropertyResult.Failure("That element is not on a Wardley map.");
+        }
 
         if (!WardleyEditability.Editable(target.ResolvedFullPath))
         {

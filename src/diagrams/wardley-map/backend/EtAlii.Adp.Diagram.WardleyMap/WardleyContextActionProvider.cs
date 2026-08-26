@@ -76,7 +76,15 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (target.Scope != ContextScope.DiagramElement || !WardleyEditability.Editable(target.ResolvedFullPath))
+        // Every provider in this scope is consulted for every element in it, including elements
+        // of other diagram types - so the first question is whether this file is one of ours.
+        // Reading it before asking would have this module parsing another notation's document.
+        if (target.Scope != ContextScope.DiagramElement || !Diagram.IsBody(target.ResolvedFullPath))
+        {
+            return Empty();
+        }
+
+        if (!WardleyEditability.Editable(target.ResolvedFullPath))
         {
             // Nothing here can be done to a map that cannot be written, and Requirement 11.6
             // says an action that would fail is withheld rather than offered and refused.
