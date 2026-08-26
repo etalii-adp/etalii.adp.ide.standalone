@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/quality-gates/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-25T21:59:48.561Z",
       "trigger": "initial",
+      "approvalId": "approval_1787695188442_j3475l9gl",
+      "approvalTitle": "quality-gates: tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-25T22:06:19.340Z",
+      "trigger": "approved",
       "approvalId": "approval_1787695188442_j3475l9gl",
       "approvalTitle": "quality-gates: tasks"
     }

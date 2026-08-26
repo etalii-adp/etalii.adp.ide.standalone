@@ -32,7 +32,7 @@
   - _Requirements: 12.4, 12.5_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: technical writer maintaining a requirements document | Task: Correct Requirement 12.4 and the Code style non-functional clause to match what is true, then request approval | Restrictions: change only those two statements; do not renumber anything, since c4-diagrams, plantuml-uml and azure-pipeline-diagram cite this document by number; do not proceed past this task on a verbal approval | Success: both statements are accurate, an approval request exists against the edited file, and every other requirement is byte-identical_
 
-- [ ] 2. Assemble the `.owm` round-trip corpus
+- [x] 2. Assemble the `.owm` round-trip corpus
   - File: `src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap.Tests/Fixtures/*.owm` (new), `Fixtures/readme.md` (new)
   - Commit real maps: examples published by onlinewardleymaps.com, maps from the ecosystem's own samples, and at least one substantial map using the strategy vocabulary end to end. Add hand-made edge cases: comments in every position, blank-line runs, both CRLF and LF, no trailing newline, the **legacy** two-coordinate pipeline form beside the nested form, an `annotation` pinned at several coordinates, `label` offsets, a `style` line, and at least two statements this spec does not model at all
   - The readme records each file's provenance and what it exists to prove. A file written by hand is never called canonical
@@ -43,7 +43,7 @@
 
 ## Phase B — the document
 
-- [ ] 3. Declare the document extension
+- [x] 3. Declare the document extension
   - File: `src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap/Diagram.cs` (edited)
   - Add `public const string DocumentExtension = ".owm";`, name the single definition (`public static DiagramDefinition WardleyMap { get; }`) so the module's own registrations can refer to it without indexing the array, and pass `Extension: DocumentExtension`. The origin, title and description already exist and do not change
   - Purpose: `DiagramFileRouter` and `DiagramFilePair` need nothing else to route both an `.adp` registration and a bare `.owm`
@@ -51,7 +51,7 @@
   - _Requirements: 2.2, 2.5, 12.1_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Declare the .owm extension on the existing Diagram.Definitions entry, following the mindmap module's shape | Restrictions: do not change the origin, title or description; do not add a second definition; note that declaring an extension makes an IDiagramDocumentFactory mandatory at startup, so task 10 must land before the host runs | Success: the type still appears in DiagramDefinition.All, HasDocumentSibling is true, and DiagramFileRouter.AmbiguousExtensions() does not report .owm_
 
-- [ ] 4. `WardleyDocument`: lines in, lines out
+- [x] 4. `WardleyDocument`: lines in, lines out
   - File: `.../WardleyDocument.cs`, `_Model/WardleyStatement.cs` (new), `.../WardleyDocument.Tests.cs` (new)
   - Parse into a line list preserving content, indentation and line endings exactly. `ToText()` returns the input byte-for-byte for an unedited document, including `Newline` and `EndsWithNewline`. `ReplaceLine`, `InsertLine` and `RemoveLines` splice one range and leave every other line untouched. Line numbers are 1-based `uint`, matching `DiagramProblemLineLocation`
   - Purpose: the round-trip guarantee, by construction rather than by effort
@@ -81,7 +81,7 @@
   - _Requirements: 3.2, 4.4, 5.4_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement surgical rewrites over WardleyDocument, including the multi-statement rename | Restrictions: never regenerate the document from the model; never reformat, reorder or re-indent a line the edit does not touch; preserve the pipeline form the file used | Success: editing one coordinate in a map full of comments changes exactly one line, and a rename updates the declaration and every reference while leaving everything else byte-identical_
 
-- [ ] 8. `WardleyEvolution`: the constants, pinned
+- [x] 8. `WardleyEvolution`: the constants, pinned
   - File: `.../WardleyEvolution.cs` (new), tests
   - The three boundaries — 0.175, 0.400, 0.700 — the four stage labels (`Genesis`, `Custom Built`, `Product (+rental)`, `Commodity (+utility)`), and `StageOf(double maturity)`. A comment records the derivation from the reference renderer's own `EvoOffsets` (`custom: 3.5`, `product: 8`, `commodity: 14`, each divided by 20), because these numbers are not published in the DSL documentation and nobody should re-derive them from a search result
   - Purpose: one home for numbers that would otherwise be guessed
@@ -97,7 +97,7 @@
   - _Requirements: 4.1, 4.2, 4.3, 4.5, 3.7_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement the identity sidecar with key-based reconciliation and best-effort reads | Restrictions: never write an ADP id into the .owm itself, not even as a comment; never let a sidecar problem prevent a map from opening; do not write on open, only on the first real save | Success: identities survive a reload, a deleted sidecar re-derives silently, a corrupt sidecar still opens the map, and opening without editing produces no write_
 
-- [ ] 10. The document store and the empty-document factory
+- [x] 10. The document store and the empty-document factory
   - File: `.../IWardleyDocumentStore.cs`, `.../WardleyDocumentStore.cs`, `.../WardleyDocumentFactory.cs` (new), tests
   - One loaded document per path, shared by every connection viewing it, with a `Changed` event for the watcher reload. The factory produces the empty body of Requirement 1.4 — a `title` line carrying the file's base name — and is registered by origin. Saves go through the backend's file-access layer, atomically (temp file in the same folder, then move)
   - Purpose: several sessions on one map must share the instance that holds it, and Add must be able to create one

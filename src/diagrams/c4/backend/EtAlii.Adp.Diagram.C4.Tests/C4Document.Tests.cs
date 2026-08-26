@@ -110,6 +110,54 @@ public class C4DocumentTests
         // Assert.
         Assert.Equal("\r\n", document.Newline);
         Assert.Equal(4, document.Lines.Count);
+        // The half this test was named for and never checked. It asserted the dominant
+        // terminator was *detected* and stopped there, so the writer rewriting every line to it
+        // - which is what it did - passed unnoticed.
+        Assert.Equal(text, document.ToText());
+    }
+
+    [Theory]
+    [InlineData("a\r\nb\r\nc\nd\r\n")]
+    [InlineData("a\nb\nc\r\nd\n")]
+    [InlineData("a\r\nb\n")]
+    [InlineData("a\nb\r\n")]
+    public void ADocumentWithMixedLineEndings_RoundTripsByteForByte(string text)
+    {
+        // Act and assert.
+        // A document edited on two platforms is an ordinary thing to find in a repository, and
+        // ADP's whole claim on the Structurizr DSL is that it edits somebody else's format by
+        // the line and changes nothing it did not touch. Rewriting every terminator makes the
+        // first save a whole-file diff (Requirement 3.1).
+        Assert.Equal(text, C4Document.Parse(text).ToText());
+    }
+
+    [Fact]
+    public void EditingOneLineOfAMixedDocument_LeavesEveryOtherTerminatorAlone()
+    {
+        // Arrange.
+        var document = C4Document.Parse("a\r\nb\nc\r\n");
+
+        // Act.
+        document.ReplaceLine(1, "changed");
+
+        // Assert.
+        // The edited line keeps its own terminator too - it was replaced, not re-terminated.
+        Assert.Equal("changed\r\nb\nc\r\n", document.ToText());
+    }
+
+    [Fact]
+    public void ALineInsertedIntoAMixedDocument_TakesTheDominantTerminator()
+    {
+        // Arrange.
+        // A new line has no terminator of its own to keep, so it gets the document's prevailing
+        // style - which is what `Newline` was always for.
+        var document = C4Document.Parse("a\r\nb\nc\r\n");
+
+        // Act.
+        document.InsertLine(2, "inserted");
+
+        // Assert.
+        Assert.Equal("a\r\ninserted\r\nb\nc\r\n", document.ToText());
     }
 
     // ---- what the parsers read ---------------------------------------------------------
