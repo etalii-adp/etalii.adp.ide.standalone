@@ -214,7 +214,7 @@
 
 ## Phase I — the canvas
 
-- [-] 21. `ansibleModel.ts` and `useAnsibleStream.ts`
+- [x] 21. `ansibleModel.ts` and `useAnsibleStream.ts`
   - File: `src/diagrams/ansible-structure/client/ansibleModel.ts`, `useAnsibleStream.ts`, and their `.test.ts` (new)
   - Decode the payload into the client's own model; subscribe to the diagram stream and apply deltas. No knowledge of Ansible in the shell
   - Purpose: the client half of Requirement 7
@@ -222,7 +222,7 @@
   - _Requirements: 7.1, 7.2_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Decode the element payload into a client model and apply the delta stream | Restrictions: 2-space indent, double quotes, semicolons per src/.editorconfig; no Ansible knowledge leaks into the shell; do not re-measure what the backend computed | Success: unit tests cover decoding each element kind and applying add and remove deltas_
 
-- [ ] 22. `AnsibleCanvas.tsx` and `ansible-structure.css`
+- [-] 22. `AnsibleCanvas.tsx` and `ansible-structure.css`
   - File: `src/diagrams/ansible-structure/client/AnsibleCanvas.tsx`, `ansible-structure.css`, `AnsibleCanvas.test.tsx` (new)
   - Draw the node kinds distinguishably, the five edge kinds in their own styles (solid for static, dashed for dynamic, a third for `DependsOn`), edge labels for the mechanism and any `when:`, and an unresolvable target shown as such. **The play-index-to-colour mapping lives here**, in the stylesheet, per tech.md's centralised-styling rule
   - Activation (double-click, Enter) calls `revealPath(segments)` with the node's project-relative path; selection sets the diagram-element context
