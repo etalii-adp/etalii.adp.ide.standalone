@@ -17,7 +17,7 @@ public sealed class HierarchyModel
     // public entry point that reads or writes them takes this lock.
     private static readonly ILogger _logger = Log.ForContext<HierarchyModel>();
 
-    private readonly object _gate = new();
+    private readonly Lock _gate = new();
     private readonly string _rootPath;
     private readonly Dictionary<ShortGuid, EntryNode> _entriesById = new();
     private readonly Dictionary<ShortGuid, string> _pathById = new();

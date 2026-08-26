@@ -48,7 +48,7 @@ internal sealed class TrackedProblemRoot : IDisposable
             _pending.Add(path);
             // Rapid changes coalesce: the timer starts over until the burst settles.
             _settleTimer?.Dispose();
-            _settleTimer = new Timer(_ => Settle(), null, _owner._settleDelay, Timeout.InfiniteTimeSpan);
+            _settleTimer = new Timer(_ => Settle(), null, _owner.SettleDelay, Timeout.InfiniteTimeSpan);
         }
     }
 

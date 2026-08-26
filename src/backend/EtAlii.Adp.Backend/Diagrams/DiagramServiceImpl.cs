@@ -47,11 +47,8 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
             throw new RpcException(new Status(StatusCode.FailedPrecondition, "The diagram cannot be opened."));
         }
 
-        var factory = _sessionFactories.Find(origin);
-        if (factory is null)
-        {
-            throw new RpcException(new Status(StatusCode.Unimplemented, $"'{origin}' diagrams cannot be opened yet."));
-        }
+        var factory = _sessionFactories.Find(origin)
+            ?? throw new RpcException(new Status(StatusCode.Unimplemented, $"'{origin}' diagrams cannot be opened yet."));
 
         await using var session = factory.Open(watchId, rootPath, bodyPath, registrationPath);
         var channel = Channel.CreateUnbounded<Delta>();
@@ -178,7 +175,6 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
         out Diagram.DiagramOrigin origin,
         out string? registrationPath)
     {
-        rootPath = "";
         bodyPath = "";
         origin = null!;
         registrationPath = null;

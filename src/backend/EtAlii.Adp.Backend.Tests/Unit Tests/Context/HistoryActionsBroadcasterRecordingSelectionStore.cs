@@ -6,7 +6,7 @@ namespace EtAlii.Adp.Backend.Tests;
 /// <summary>Records the project-actions pushes; every other member is unreached by the broadcaster.</summary>
 internal sealed class HistoryActionsBroadcasterRecordingSelectionStore : IContextSelectionStore
 {
-    private readonly object _gate = new();
+    private readonly Lock _gate = new();
     private readonly List<(string RootPath, IReadOnlyList<ContextActionGroupDefinition> Actions)> _pushes = [];
 
     public IReadOnlyList<(string RootPath, IReadOnlyList<ContextActionGroupDefinition> Actions)> Pushes

@@ -114,15 +114,44 @@ public class AwsDeploymentTests
     }
 
     [Fact]
-    public void TheModelIsClean_ByC4sOwnRules()
+    public void TheAwsExample_ReportsItsBareNodes()
     {
-        // Arrange and act.
-        var problems = C4RuleSet.Validate(Workspace)
+        // Arrange.
+        // Structurizr publishes this example, and its own inspector reports the same thing:
+        // every deployment node here is named for the AWS service it is - `Amazon RDS`,
+        // `Amazon EC2` - and left without a description, and several without a technology
+        // either. The names carry the meaning for a reader who already knows AWS, which is why
+        // the example gets away with it, and it is still worth a warning in a document meant
+        // to be read by someone who does not. The load balancer is the same story one level
+        // down: it is described but never says what provides it.
+        //
+        // The example also draws nothing but its deployment, so the software system and the
+        // containers it deploys are declared and never shown - `model.element.noview` again.
+        // It is a deployment example rather than an incomplete model, which is exactly why the
+        // rule reports it: someone reading only these diagrams never meets them.
+        //
+        // And the software system itself is in no relationship. Its two containers talk to
+        // each other, which says nothing about where the system sits in a landscape, so
+        // nothing places it - `model.element.disconnected`, which Structurizr reports here too.
+        var reported = C4RuleSet.Validate(Workspace)
             .Where(problem => problem.RuleId != C4Rules.EmptyView)
+            .Select(problem => problem.RuleId)
+            .Distinct()
+            .Order(StringComparer.Ordinal)
             .ToArray();
 
-        // Assert.
-        Assert.Empty(problems.Select(problem => $"{problem.RuleId}: {problem.Message}"));
+        // Act and assert.
+        // Asserting the set rather than the count, so a *new* kind of complaint fails here
+        // while the known one does not.
+        Assert.Equal(
+            [
+                C4Rules.DisconnectedElement,
+                C4Rules.ElementNotOnAnyView,
+                C4Rules.MissingDeploymentDescription,
+                C4Rules.MissingDeploymentTechnology,
+                C4Rules.MissingInfrastructureTechnology,
+            ],
+            reported);
     }
 
     [Fact]

@@ -86,7 +86,7 @@
   - _Requirements: 1.10, 3.1, 3.5_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement C4Verdict and the reconciliation test per design.md | Restrictions: compare only the mirrored rules in both directions - ADP-only and Structurizr-only rules are decisions, not disagreements; a missing or unreadable verdict fails the test naming the file and the regeneration command, it must never skip; do not compare messages, only rule ids | Success: passes with no JDK; corrupting a verdict fails it with a legible message. Mark in progress, log when done, then mark complete._
 
-- [-] 10. Keep the baselines honest, and make the skips visible
+- [x] 10. Keep the baselines honest, and make the skips visible
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/C4Interop.Tests.cs` (modify)
   - A CLI-gated test that regenerates every verdict and asserts it matches what is committed. Widen the skip messages to name the environment variable and the command; state the ceiling on environment-gated skips the design asks for
   - Purpose: Requirements 3.4, 3.6, 3.7, 3.8
@@ -104,7 +104,7 @@
 
 ## Phase C — Structurizr renders what ADP writes
 
-- [ ] 12. Export every fixture, and baseline what comes out
+- [x] 12. Export every fixture, and baseline what comes out
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/C4Interop.Tests.cs` (modify), `Fixtures/exports/*` (new)
   - With a CLI, export every fixture and every ADP-authored document to one diagram format and assert the export succeeds and each view's elements appear in it. Commit the exports as baselines so the everyday run checks them without Java. Retire the manual Structurizr Lite entry from `tests.md`, keeping only what is genuinely visual
   - Purpose: Requirement 4 in full

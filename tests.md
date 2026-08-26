@@ -79,19 +79,41 @@ An earlier version of this entry said the check could not run here because there
 Docker nor a JRE. A JDK has since been installed, and the CLI comes from Maven Central, which was
 reachable all along - the entry was wrong, not the environment.
 
-**What is still manual** is the rendering half: that Lite *draws* what it parses.
+**The rendering half is now automated too**, and this entry no longer asks anyone to open a
+browser to answer it. `C4InteropTests.EveryExport_IsStillWhatStructurizrDraws` exports every
+fixture through the real CLI to Mermaid and compares the result to the diagrams committed in
+`Fixtures/exports`; `C4ExportTests` then reads those committed diagrams with no JDK at all and
+asserts that every element ADP believes is on a view was actually drawn on it. That is the
+question a person used to answer by looking at Lite, asked without the browser, the container
+or the person.
+
+It is a real check rather than an exit code: a view that renders empty exports perfectly
+happily, and ADP shipped exactly that once - the `c4/deployment` template with an empty
+`deploymentEnvironment`, which bound to nothing and drew nothing while every command
+succeeded. Replacing a committed diagram with an empty frame fails both checks, which was
+verified rather than assumed.
+
+**What is still manual** is what no text format can answer: whether the picture is any good to
+look at. Three things, and only these:
+
+- **Styling and themes.** That `styles` blocks and `theme` directives ADP round-trips actually
+  resolve to the colours and shapes intended, rather than merely surviving as text. ADP carries
+  these through untouched and has no model of what they mean.
+- **Layout quality.** Structurizr's own auto-layout on a document ADP wrote: whether the result
+  is readable, not merely non-overlapping. `C4LayoutCrowdingTests` pins that boxes do not sit
+  on top of each other; nothing can pin that a diagram is pleasant to read.
+- **The sidecar staying out of the way.** That ADP's `.layout.json` beside the `.dsl` draws no
+  complaint from Lite, since it is ADP's own file and not part of the workspace.
 
 - **Preconditions**: Docker (or a JRE and the Structurizr Lite jar). A project containing a C4
-  model ADP created and then edited - rename an element, set a technology, add a second view - so
-  the file under test is one ADP wrote, not one it only read.
+  model ADP created and then edited - rename an element, set a technology, add a second view -
+  so the file under test is one ADP wrote, not one it only read. Give it a `styles` block.
 - **Actions**: run Structurizr Lite against the folder holding the `.dsl`
   (`docker run -it --rm -p 8080:8080 -v /path/to/folder:/usr/local/structurizr structurizr/lite`)
   and open `http://localhost:8080`.
-- **Expected**: Lite renders every view ADP declared - the ones it created and the one added
-  through "Add view". The element names, descriptions and technologies ADP edited appear as
-  edited. ADP's `.layout.json` sidecar is ignored by Lite and causes no complaint, because it is
-  ADP's own file and not part of the workspace.
-
+- **Expected**: the styles resolve, the auto-layout is readable, and the `.layout.json` sidecar
+  causes no complaint. That every view is present and every element is on it is no longer part
+  of this pass - the export checks own that, and they run on every `dotnet test`.
 ## The property grid's keyboard cadence, in a real browser (property-grid, task 6)
 
 The commit cadence is pinned by unit tests, but no manual pass has ever seen it in a real

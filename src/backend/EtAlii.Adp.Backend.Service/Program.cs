@@ -1,13 +1,13 @@
+using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Authentication;
 using EtAlii.Adp.Backend.Client;
 using EtAlii.Adp.Backend.Context;
+using EtAlii.Adp.Backend.Diagrams;
 using EtAlii.Adp.Backend.Hierarchy;
-using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Problems;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Backend.Diagrams;
-using EtAlii.Adp.Backend.Problems;
 using EtAlii.Adp.Diagram.C4;
 using EtAlii.Adp.Diagram.Mindmap;
 using EtAlii.Adp.Diagram.WardleyMap;
@@ -70,12 +70,9 @@ builder.Services.AddWardleyMap();
 
 builder.Services.AddClientAppHosting(builder.Configuration);
 
-builder.Services.AddGrpc(options =>
-{
-    // Applied to every gRPC call; SessionInterceptor itself exempts
-    // AuthenticationService.Login (Requirement 1.6).
-    options.Interceptors.Add<SessionInterceptor>();
-});
+// Applied to every gRPC call; SessionInterceptor itself exempts
+// AuthenticationService.Login (Requirement 1.6).
+builder.Services.AddGrpc(options => options.Interceptors.Add<SessionInterceptor>());
 
 var app = builder.Build();
 

@@ -104,10 +104,19 @@ indent_size = 2
 max_line_length = 150
 
 # Organize usings
-# Commented out: dotnet_separate_import_directive_groups (blank line between
-# using-directive groups by root namespace) currently fires on ~14 of ~20 .cs
-# files, since usings here aren't grouped that way today.
-dotnet_separate_import_directive_groups = true
+#
+# dotnet_separate_import_directive_groups wants a blank line between using-directive
+# groups by root namespace - `System.*`, then `Microsoft.*`, then the rest, each block
+# separated. The note here used to say it was commented out for firing on most files,
+# and then set it to `true` on the very next line. The note was right and the setting
+# was not: nothing in this repository is written that way, and it accounted for 115 of
+# the style gate's failures on its own. It is the opinionated half of organizing usings,
+# and the codebase has a settled convention that disagrees with it, so the codebase wins
+# - the same treatment the C# sections give every other rule that fights existing code.
+dotnet_separate_import_directive_groups = false
+#
+# Sorting stays on. Which order `System` comes in is mechanical, uncontroversial, and
+# applied by every IDE here without anyone thinking about it.
 dotnet_sort_system_directives_first = true
 file_header_template = unset
 
@@ -143,7 +152,14 @@ dotnet_style_require_accessibility_modifiers = for_non_interface_members:silent
 dotnet_style_coalesce_expression = true:suggestion
 dotnet_style_collection_initializer = true:suggestion
 dotnet_style_explicit_tuple_names = true:suggestion
-dotnet_style_namespace_match_folder = true:suggestion
+# Severity 'none' rather than 'suggestion' (IDE0130, "namespace does not match folder
+# structure"): this codebase deliberately keeps a few folders inside their parent's
+# namespace, so a caller writes `EtAlii.Adp.Diagram.C4` and gets the model, the commands
+# and the history without three more usings. All 131 findings are that convention:
+# 95 in `_Model`, 16 in `Commands`, 14 in `History`, 6 in `Support` - and none anywhere
+# else, which is what makes it a convention rather than drift. It is stated as a rule in
+# `.spec-workflow/steering/structure.md`; enforcing this would rename every one of them.
+dotnet_style_namespace_match_folder = true:none
 dotnet_style_null_propagation = true:suggestion
 dotnet_style_object_initializer = true:suggestion
 dotnet_style_operator_placement_when_wrapping = beginning_of_line
@@ -154,8 +170,13 @@ dotnet_style_prefer_auto_properties = true:suggestion
 # using collection expression syntax).
 dotnet_style_prefer_collection_expression = when_types_loosely_match:silent
 dotnet_style_prefer_compound_assignment = true:suggestion
-dotnet_style_prefer_conditional_expression_over_assignment = true:suggestion
-dotnet_style_prefer_conditional_expression_over_return = true:suggestion
+# Severity 'silent' rather than 'suggestion' (IDE0045/IDE0046, "'if' statement can be
+# simplified"): a readability preference, and in the guard-clause-heavy code here it is
+# usually the wrong one - collapsing a guard and its result into one conditional buries
+# the guard. Microsoft's own template ships these as suggestions rather than warnings;
+# 'silent' keeps the refactoring available in the IDE without the style gate reporting it.
+dotnet_style_prefer_conditional_expression_over_assignment = true:silent
+dotnet_style_prefer_conditional_expression_over_return = true:silent
 dotnet_style_prefer_foreach_explicit_cast_in_source = when_strongly_typed:suggestion
 dotnet_style_prefer_inferred_anonymous_type_member_names = true:suggestion
 dotnet_style_prefer_inferred_tuple_names = true:suggestion
