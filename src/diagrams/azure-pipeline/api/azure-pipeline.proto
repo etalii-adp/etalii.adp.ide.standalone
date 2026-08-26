@@ -96,4 +96,10 @@ message PipelineElementPayload {
   // it to show its name and its job count - so the count has to travel on the stage, or a
   // collapsed one would have nothing to count.
   int32 job_count = 27;
+  // A failure here does not fail the run. True only when the file says so outright, on the same
+  // reasoning as `enabled`: an expression is not knowable here and guessing draws something untrue.
+  bool continues_on_error = 28;
+  // STAGE only: `trigger: manual`, so it waits to be started by a person. Distinct from a
+  // repository trigger, which is a different key that happens to share a name.
+  bool trigger_is_manual = 29;
 }

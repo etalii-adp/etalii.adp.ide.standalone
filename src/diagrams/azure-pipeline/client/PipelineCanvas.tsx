@@ -3,9 +3,10 @@ import { create } from "@bufbuild/protobuf";
 import { EmptySchema } from "@bufbuild/protobuf/wkt";
 import { ContextSelectionSchema } from "@client/generated/context_pb";
 import type { ContextSelection } from "@client/generated/context_pb";
-import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
+import { useContextConnection, useContextProblems } from "@client/shell/context/ContextConnectionProvider";
 import { useRegisterDiagramView, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
 import { PipelineElementKindProto } from "@client/generated/azure-pipeline_pb";
+import { indicatorsOf, problemMarkOf, problemsOn, type PipelineIndicator } from "./pipelineIndicators";
 import {
   boxesOf,
   endpointsOf,
@@ -54,6 +55,9 @@ export interface PipelineCanvasProps {
 export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps) {
   const { model, loading, failed, reportView } = usePipelineStream(projectId, path);
   const { select } = useContextConnection();
+  // Problems arrive for the whole project, so an element only wears the ones that name it and
+  // this file - two pipelines may each have a stage called Build (Requirement 8.7).
+  const problems = useContextProblems()?.problems ?? [];
 
   const [focusedId, setFocusedId] = useState<string | undefined>(undefined);
   const [view, setView] = useState<ViewBox | null>(null);
@@ -237,6 +241,7 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
               stage={stage}
               expanded={!model.collapsed.has(stage.id)}
               focused={stage.id === focusedId}
+              problem={problemMarkOf(problemsOn(problems, path, stage.id))}
               onSelect={() => onNodeClick(stage)}
             />
           ))}
@@ -248,6 +253,7 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
               key={node.id}
               node={node}
               focused={node.id === focusedId}
+              problem={problemMarkOf(problemsOn(problems, path, node.id))}
               onSelect={() => onNodeClick(node)}
             />
           ))}
@@ -266,11 +272,13 @@ function PipelineStageShape({
   stage,
   expanded,
   focused,
+  problem,
   onSelect,
 }: {
   stage: PipelineNode;
   expanded: boolean;
   focused: boolean;
+  problem: { severity: string; title: string } | null;
   onSelect: () => void;
 }) {
   const { displayName, width, height, jobCount, indeterminate, fromTemplate } = stage.payload;
@@ -280,6 +288,7 @@ function PipelineStageShape({
     focused ? "pipeline-focused" : "",
     indeterminate ? "pipeline-indeterminate" : "",
     fromTemplate ? "pipeline-from-template" : "",
+    problem ? `pipeline-problem pipeline-problem-${problem.severity}` : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -303,7 +312,67 @@ function PipelineStageShape({
           {jobCountLabel(jobCount)}
         </text>
       )}
+      <PipelineIndicators indicators={indicatorsOf(stage.payload)} x={width - 12} y={20} />
+      {problem && <ProblemMark elementId={stage.id} problem={problem} x={width - 12} y={height - 12} />}
     </g>
+  );
+}
+
+/**
+ * The badges along the top-right of an element: what it is telling you without being opened
+ * (Requirement 8.4).
+ *
+ * Laid out right to left so the first one is nearest the corner and adding another does not move
+ * the ones already there.
+ */
+function PipelineIndicators({ indicators, x, y }: { indicators: PipelineIndicator[]; x: number; y: number }) {
+  return (
+    <>
+      {indicators.map((indicator, index) => (
+        <text
+          key={indicator.key}
+          className="pipeline-indicator"
+          data-testid={`indicator-${indicator.key}`}
+          x={x - index * 16}
+          y={y}
+          textAnchor="end"
+        >
+          {indicator.glyph}
+          <title>{indicator.title}</title>
+        </text>
+      ))}
+    </>
+  );
+}
+
+/**
+ * The mark on an element something is wrong with, so a dangling dependsOn is visible where it is
+ * rather than only in a list (Requirement 8.7).
+ */
+function ProblemMark({
+  elementId,
+  problem,
+  x,
+  y,
+}: {
+  elementId: string;
+  problem: { severity: string; title: string };
+  x: number;
+  y: number;
+}) {
+  return (
+    <text
+      className={`pipeline-problem-mark pipeline-problem-mark-${problem.severity}`}
+      data-testid={`problem-${elementId}`}
+      x={x}
+      y={y}
+      textAnchor="end"
+      role="img"
+      aria-label={problem.title}
+    >
+      {problem.severity === "error" ? "✖" : "⚠"}
+      <title>{problem.title}</title>
+    </text>
   );
 }
 
@@ -311,10 +380,12 @@ function PipelineStageShape({
 function PipelineBoxShape({
   node,
   focused,
+  problem,
   onSelect,
 }: {
   node: PipelineNode;
   focused: boolean;
+  problem: { severity: string; title: string } | null;
   onSelect: () => void;
 }) {
   const { displayName, width, height, kind, indeterminate, fromTemplate, unresolvedReason } = node.payload;
@@ -325,6 +396,7 @@ function PipelineBoxShape({
     focused ? "pipeline-focused" : "",
     indeterminate ? "pipeline-indeterminate" : "",
     fromTemplate ? "pipeline-from-template" : "",
+    problem ? `pipeline-problem pipeline-problem-${problem.severity}` : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -342,6 +414,8 @@ function PipelineBoxShape({
       <text className="pipeline-box-name" x={10} y={height / 2 + 4}>
         {displayName}
       </text>
+      <PipelineIndicators indicators={indicatorsOf(node.payload)} x={width - 8} y={16} />
+      {problem && <ProblemMark elementId={node.id} problem={problem} x={width - 8} y={height - 6} />}
       {unresolvedReason.length > 0 && <title>{unresolvedReason}</title>}
     </g>
   );

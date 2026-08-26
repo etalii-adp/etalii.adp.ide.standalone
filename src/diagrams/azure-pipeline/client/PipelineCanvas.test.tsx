@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, fireEvent } from "@testing-library/react";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { ElementSchema } from "@client/generated/elements_pb";
+import { ProblemSchema, ProblemSeverity } from "@client/generated/context_pb";
 import {
   PipelineElementKindProto,
   PipelineElementPayloadSchema,
@@ -30,12 +31,15 @@ vi.mock("./usePipelineStream", () => ({
   }),
 }));
 
+let currentProblems: { problems: unknown[] } | null = null;
+
 vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
   return {
     ...actual,
     useContextConnection: () => ({ watchId: new Uint8Array(16), select }),
     useContextSelection: () => ({ selection: null, actions: [] }),
+    useContextProblems: () => currentProblems,
   };
 });
 
@@ -118,6 +122,7 @@ describe("PipelineCanvas", () => {
     currentModel = emptyModel;
     currentLoading = false;
     currentFailed = false;
+    currentProblems = null;
     select.mockClear();
   });
 
@@ -314,6 +319,104 @@ describe("PipelineCanvas", () => {
 
     // Assert.
     expect(select).toHaveBeenCalledWith(null);
+  });
+
+  it("shows what an element is without it being opened", () => {
+    // Arrange: Requirement 8.4 - a manual trigger and a condition are things a reader has to be
+    // able to see, and opening an edit mode to find them out is not seeing them.
+    currentModel = applyDelta(
+      emptyModel,
+      add(stage("Deploy", "Deploy", { triggerIsManual: true, condition: "succeeded()" })),
+    );
+
+    // Act.
+    const view = draw();
+
+    // Assert.
+    expect(view.getByTestId("indicator-manual")).toBeTruthy();
+    expect(view.getByTestId("indicator-condition")).toBeTruthy();
+  });
+
+  it("shows how many of a matrix job will run", () => {
+    // Arrange.
+    currentModel = applyDelta(
+      emptyModel,
+      add(stage("Test", "Test"), job("Test/Verify", "Test", "Verify", { multiplicity: 3 })),
+    );
+
+    // Act.
+    const view = draw();
+
+    // Assert.
+    expect(view.getByTestId("indicator-multiplicity").textContent).toContain("×3");
+  });
+
+  it("puts no badges on an ordinary element", () => {
+    // Arrange: a badge on everything is a badge that says nothing.
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build")));
+
+    // Act.
+    const view = draw();
+
+    // Assert.
+    expect(view.container.querySelectorAll(".pipeline-indicator")).toHaveLength(0);
+  });
+
+  it("marks an element a problem was reported on", () => {
+    // Arrange: Requirement 8.7 - a dangling dependsOn should be visible where it is, not only in
+    // a list somewhere else.
+    currentModel = applyDelta(emptyModel, add(stage("Ghost", "Ghost")));
+    currentProblems = {
+      problems: [
+        create(ProblemSchema, {
+          severity: ProblemSeverity.ERROR,
+          message: "Ghost depends on DoesNotExist, which is not a stage in this pipeline.",
+          path: { segments: ["azure-pipelines.yml"] },
+          location: { location: { case: "elementId", value: { value: "Ghost" } } },
+        }),
+      ],
+    };
+
+    // Act.
+    const view = draw();
+
+    // Assert.
+    const mark = view.getByTestId("problem-Ghost");
+    expect(mark.getAttribute("aria-label")).toContain("DoesNotExist");
+    expect(view.getByTestId("stage-Ghost").getAttribute("class")).toContain("pipeline-problem-error");
+  });
+
+  it("does not mark an element a problem in another file happens to name", () => {
+    // Arrange: two pipelines in one project may each have a stage called Build.
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build")));
+    currentProblems = {
+      problems: [
+        create(ProblemSchema, {
+          severity: ProblemSeverity.ERROR,
+          message: "Something wrong over there.",
+          path: { segments: ["other", "azure-pipelines.yml"] },
+          location: { location: { case: "elementId", value: { value: "Build" } } },
+        }),
+      ],
+    };
+
+    // Act.
+    const view = draw();
+
+    // Assert.
+    expect(view.queryByTestId("problem-Build")).toBeNull();
+  });
+
+  it("marks nothing when nothing is wrong", () => {
+    // Arrange.
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build")));
+    currentProblems = { problems: [] };
+
+    // Act.
+    const view = draw();
+
+    // Assert.
+    expect(view.container.querySelectorAll(".pipeline-problem-mark")).toHaveLength(0);
   });
 
   it("says it is loading rather than showing an empty pipeline", () => {

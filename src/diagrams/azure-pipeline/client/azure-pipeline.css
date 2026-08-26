@@ -118,3 +118,34 @@
   stroke: var(--adp-danger, #dc2626);
   stroke-dasharray: 2 4;
 }
+
+/* What an element says about itself without being opened (Requirement 8.4). */
+.pipeline-indicator {
+  font-size: 11px;
+  fill: var(--adp-text-muted, #6b7280);
+  pointer-events: none;
+}
+
+/* Something is wrong with this element, marked where it is rather than only in a list. */
+.pipeline-problem-mark {
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.pipeline-problem-mark-error {
+  fill: var(--adp-danger, #dc2626);
+}
+
+.pipeline-problem-mark-warning {
+  fill: var(--adp-warning, #d97706);
+}
+
+.pipeline-problem-error .pipeline-box,
+.pipeline-problem-error .pipeline-stage-box {
+  stroke: var(--adp-danger, #dc2626);
+}
+
+.pipeline-problem-warning .pipeline-box,
+.pipeline-problem-warning .pipeline-stage-box {
+  stroke: var(--adp-warning, #d97706);
+}
