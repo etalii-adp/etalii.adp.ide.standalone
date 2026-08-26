@@ -577,7 +577,7 @@ public sealed class WardleyCommandsTests : IDisposable
 
         foreach (var make in new Func<string, ICommand>[]
         {
-            id => new AddWardleyElementCommand(_path, "component", "Gamma", 0.3d, 0.3d),
+            _ => new AddWardleyElementCommand(_path, "component", "Gamma", 0.3d, 0.3d),
             id => new RemoveWardleyElementCommand(_path, id),
             id => new RenameWardleyElementCommand(_path, id, "Renamed"),
             id => new SetWardleyInertiaCommand(_path, id, true),

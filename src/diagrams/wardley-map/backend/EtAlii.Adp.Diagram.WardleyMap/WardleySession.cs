@@ -77,7 +77,7 @@ public sealed class WardleySession : IDiagramSession
     /// </summary>
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
-        ArgumentNullException.ThrowIfNull(viewport);
+        //ArgumentNullException.ThrowIfNull(viewport);
 
         // Nothing changes with the viewport, so there is nothing to send. A connection that has
         // already been given the map does not need it again for panning.

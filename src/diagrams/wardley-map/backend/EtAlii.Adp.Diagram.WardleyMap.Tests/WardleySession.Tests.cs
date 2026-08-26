@@ -17,7 +17,7 @@ public sealed class WardleySessionTests : IDisposable
     private readonly ServiceProvider _services;
     private readonly IWardleyDocumentStore _documents;
     private readonly IHistoryStack _history;
-    private readonly WardleyIdentities _identities;
+    // private readonly WardleyIdentities _identities;
     private readonly WardleyElementMapper _mapper;
 
     public WardleySessionTests()
@@ -25,7 +25,7 @@ public sealed class WardleySessionTests : IDisposable
         Directory.CreateDirectory(_root);
         _services = new ServiceCollection().AddCommands().AddWardleyMap().BuildServiceProvider();
         _documents = _services.GetRequiredService<IWardleyDocumentStore>();
-        _identities = _services.GetRequiredService<WardleyIdentities>();
+        // _identities = _services.GetRequiredService<WardleyIdentities>();
         _mapper = _services.GetRequiredService<WardleyElementMapper>();
         _history = _services.GetRequiredService<IHistoryStackStore>().Get(_root);
     }

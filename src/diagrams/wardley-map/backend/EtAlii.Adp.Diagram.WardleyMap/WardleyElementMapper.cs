@@ -44,14 +44,14 @@ public sealed class WardleyElementMapper
 
         // Pipeline children first, so a component that is also a pipeline parent is emitted
         // with its children already known - and so a child's own element carries its parent.
-        var childOf = new Dictionary<string, WardleyPipeline>(StringComparer.Ordinal);
-        foreach (var pipeline in map.Pipelines)
-        {
-            foreach (var child in pipeline.Children)
-            {
-                childOf[WardleyIdentityKeys.Of(pipeline, child)] = pipeline;
-            }
-        }
+        // var childOf = new Dictionary<string, WardleyPipeline>(StringComparer.Ordinal);
+        // foreach (var pipeline in map.Pipelines)
+        // {
+        //     foreach (var child in pipeline.Children)
+        //     {
+        //         childOf[WardleyIdentityKeys.Of(pipeline, child)] = pipeline;
+        //     }
+        // }
 
         foreach (var component in map.Components)
         {
