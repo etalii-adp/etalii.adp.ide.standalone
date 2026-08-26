@@ -296,6 +296,7 @@ public sealed class DiagramDefinitionDiscovery
 
             // A null *inside* the array is its own mistake, and one bad entry should not cost
             // the module its good ones.
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             var declared = definitions.Where(definition => definition is not null).ToArray();
             var nulls = definitions.Count - declared.Length;
             if (nulls > 0)

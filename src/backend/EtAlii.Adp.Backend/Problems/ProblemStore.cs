@@ -269,6 +269,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
         try
         {
             var cache = JsonSerializer.Deserialize<ProblemCacheFile>(File.ReadAllText(cachePath));
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             if (cache is null || cache.Version != CacheFormatVersion || cache.Problems is null)
             {
                 _logger.Warning("Ignoring the problem cache at {CachePath}: not this format", cachePath);
