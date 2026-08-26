@@ -222,7 +222,7 @@
   - _Requirements: 7.1, 7.2_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Decode the element payload into a client model and apply the delta stream | Restrictions: 2-space indent, double quotes, semicolons per src/.editorconfig; no Ansible knowledge leaks into the shell; do not re-measure what the backend computed | Success: unit tests cover decoding each element kind and applying add and remove deltas_
 
-- [-] 22. `AnsibleCanvas.tsx` and `ansible-structure.css`
+- [x] 22. `AnsibleCanvas.tsx` and `ansible-structure.css`
   - File: `src/diagrams/ansible-structure/client/AnsibleCanvas.tsx`, `ansible-structure.css`, `AnsibleCanvas.test.tsx` (new)
   - Draw the node kinds distinguishably, the five edge kinds in their own styles (solid for static, dashed for dynamic, a third for `DependsOn`), edge labels for the mechanism and any `when:`, and an unresolvable target shown as such. **The play-index-to-colour mapping lives here**, in the stylesheet, per tech.md's centralised-styling rule
   - Activation (double-click, Enter) calls `revealPath(segments)` with the node's project-relative path; selection sets the diagram-element context
@@ -231,7 +231,7 @@
   - _Requirements: 5.4, 6.3, 7.1, 8.1, 8.2_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Render the diagram's node and edge kinds distinguishably, map play index to colour in the stylesheet, and reveal a node's file on activation | Restrictions: no inline styles - all styling in the module stylesheet; no colour crosses the wire; the canvas offers no edit affordance of any kind | Success: component tests prove each node and edge kind renders distinguishably, static and dynamic differ, activation calls revealPath with the node's path, and no editing control exists_
 
-- [ ] 23. `register.ts`
+- [x] 23. `register.ts`
   - File: `src/diagrams/ansible-structure/client/register.ts`, `register.test.ts`, `package.json`, `readme.md` (new)
   - One registration matching `ansible/structure`. The shell's glob discovers it; nothing in the shell is edited
   - Purpose: Requirement 7.2 — the shell learns nothing about Ansible
@@ -241,7 +241,7 @@
 
 ## Phase J — proof
 
-- [ ] 24. Prove the module writes nothing
+- [-] 24. Prove the module writes nothing
   - File: `.../ZeroWrites.Tests.cs` (new)
   - Snapshot the fixture tree byte-for-byte (contents **and** mtimes), then: open the diagram, take the baseline, change the viewport twice, select every node and edge kind, describe every property, attempt a `SetAsync`, attempt a `MoveElementAsync`, run the validator, close the session — and assert the tree is identical, `.adp` included
   - Purpose: the Non-Functional Requirement this whole spec turns on, as a guard rather than a claim
