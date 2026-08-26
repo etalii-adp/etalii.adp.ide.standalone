@@ -96,31 +96,50 @@ So the module uses two of the four functions, and it is worth saying which two r
 
 ```mermaid
 graph TD
-    subgraph client ["Client"]
+    subgraph client["Client"]
         CANVAS["WardleyCanvas<br/>axes, bands, elements, links"]
         GRID["Property Grid"]
         TOOLBOX["Toolbox"]
     end
-    CANVAS -->|"Open / UpdateView / MoveElement"| SVC["DiagramServiceImpl"]
-    CANVAS -->|"Select / ExecuteAction"| CTX["ContextServiceImpl"]
+
+    subgraph core["Core — knows no diagram type"]
+        SVC["DiagramServiceImpl"]
+        CTX["ContextServiceImpl"]
+        PROBLEMS["Errors and Warnings"]
+    end
+
+    subgraph module["EtAlii.Adp.Diagram.WardleyMap"]
+        SESSION["WardleySession"]
+        STORE["WardleyDocumentStore"]
+        DOC["WardleyDocument<br/>.owm CST, line-preserving"]
+        IDS["WardleyIdentities<br/>sidecar, best-effort"]
+        MODEL["WardleyMap<br/>components / links / pipelines"]
+        EVO["WardleyEvolution<br/>0.175 / 0.400 / 0.700"]
+        MAPPER["WardleyElementMapper<br/>visibility, maturity → Point2D"]
+        RULES["WardleyRuleSet"]
+        PROV["Context providers:<br/>source, action, property"]
+        CMD["Commands"]
+    end
+
+    CANVAS -->|"Open / UpdateView / MoveElement"| SVC
+    CANVAS -->|"Select / ExecuteAction"| CTX
     GRID -->|"DescribeProperties / SetProperty"| CTX
     TOOLBOX -->|"DescribeToolbox"| SVC
-    subgraph module ["EtAlii.Adp.Diagram.WardleyMap"]
-        SVC --> SESSION["WardleySession"]
-        SESSION --> STORE["WardleyDocumentStore"]
-        STORE --> DOC["WardleyDocument<br/>.owm CST, line-preserving"]
-        STORE --> IDS["WardleyIdentities<br/>sidecar, best-effort"]
-        DOC --> MODEL["WardleyMap<br/>components / links / pipelines"]
-        IDS --> MODEL
-        MODEL --> MAPPER["WardleyElementMapper<br/>visibility,maturity -> Point2D"]
-        EVO["WardleyEvolution<br/>0.175 / 0.400 / 0.700"] --> MAPPER
-        MAPPER --> SESSION
-        MODEL --> RULES["WardleyRuleSet"]
-        CTX --> PROV["Context providers:<br/>source, action, property"]
-        PROV --> CMD["Commands"]
-        CMD -->|"IHistoryStack"| DOC
-    end
-    RULES -->|"IDiagramValidator"| PROBLEMS["Errors & Warnings"]
+
+    SVC --> SESSION
+    CTX --> PROV
+    SESSION --> STORE
+    STORE --> DOC
+    STORE --> IDS
+    DOC --> MODEL
+    IDS --> MODEL
+    MODEL --> MAPPER
+    EVO --> MAPPER
+    MAPPER --> SESSION
+    MODEL --> RULES
+    PROV --> CMD
+    CMD -->|"IHistoryStack"| DOC
+    RULES -->|"IDiagramValidator"| PROBLEMS
 ```
 
 Note what is missing between `MODEL` and `MAPPER`: every other diagram module has a layout box there.
@@ -142,14 +161,14 @@ sequenceDiagram
     C->>C: clamp to 0..1 on both axes (Requirement 7.3)
     C->>S: MoveElement(element_id, position)
     S->>W: MoveElementToAsync(elementId, x, y)
-    W->>W: ToCoordinates(x, y) -> visibility, maturity
+    W->>W: ToCoordinates(x, y) gives visibility, maturity
     W->>W: read-only? inside a pipeline? (then maturity only)
     W->>H: MoveWardleyElementCommand(path, id, visibility, maturity)
     H->>D: rewrite that one component statement's coordinate pair
     D-->>H: inverse = MoveWardleyElementCommand(..., previous pair)
-    Note over D: every other line untouched; comments and blanks intact
+    Note over D: every other line untouched, comments and blanks intact
     H-->>W: CommandResult
-    W-->>S: "" or the reason
+    W-->>S: empty string, or the reason
     Note over C: the new position returns as an ordinary Add delta
 ```
 
@@ -202,7 +221,7 @@ The `.owm` format has no identifier of any kind (Requirement 4.1). The only stab
 
 | Element | Key | Survives |
 |---|---|---|
-| Component, anchor, market, ecosystem, submap | its name | a move, an `evolve`, a decorator change |
+| Component, anchor, submap | its name | a move, an `evolve`, a decorator change |
 | Link | source name + target name + kind | a move of either endpoint |
 | Pipeline | its parent component's name | a child being added or removed |
 | Note | its text | a move |
@@ -248,7 +267,7 @@ The recommendation is to send it. The cost is about ten lines of proto and mappe
 
 ### `WardleyParser` (module, new)
 
-* **Purpose:** statements from lines — `component`, `anchor`, `market`, `ecosystem`, `submap`, `pipeline`, links, `evolve`, `inertia`, decorators, areas, `accelerator`, `note`, `annotation`, `title`, `size`, `style`.
+* **Purpose:** statements from lines — `component`, `anchor`, `submap`, `pipeline`, links, `evolve`, `inertia`, the five decorators, areas, `accelerator`, `note`, `annotation`, `title`, `size`, `style`. Three statement kinds, not five: `market` and `ecosystem` are decorators on a component (Requirement 6.3), which the task 2 corpus established against the real parser.
 * **Interfaces:** `Parse(WardleyDocument) -> WardleyMap`.
 * **Dependencies:** `WardleyDocument`.
 * **Reuses:** `C4Parser`'s token/scope approach; the grammar is simpler — `.owm` is line-oriented with one nested form (`pipeline { }`), so no scope stack beyond depth one.
@@ -299,6 +318,23 @@ The recommendation is to send it. The cost is about ten lines of proto and mappe
 * **Purpose:** selectability, verbs, values and palette.
 * **Reuses:** the C4 quartet, one for one. The property provider follows `C4ContextPropertyProvider`'s layout exactly — `public const string` ids prefixed `wardley.`, a `Describe` per element kind, `SetAsync` dispatching the same command the canvas uses (Requirement 15.7).
 
+#### Read-only reasons: the house form, and why it is not a tooltip
+
+The repository already has a form for these, in `MindmapContextPropertyProvider`'s two read-only rows: **cause, then remedy** — descriptive for the cause ("X is Y, so it is not Z"), imperative for the remedy, full sentences, no leading "This property is". The second row earns a second sentence by having somewhere to send the reader; the first stops because it has nowhere. This module follows it. Where the mindmap's cause slot names another tool and `ansible-structure-diagram`'s names a file, this type's values are **derived**, so the cause slot names the value they are derived from and the remedy points at it:
+
+* Evolution stage — *"The evolution stage is derived from the component's maturity, so it is not set directly. Change Maturity instead."*
+* Pipeline child visibility — *"A pipeline child takes its visibility from its parent, so it is not its own. Change it on `<parent name>`."*
+
+Three properties of the mechanism decide how these are written, each verified against the code rather than assumed:
+
+* **The reason is user-facing error text, not a hint.** `ContextPropertyResolver` refuses a write to a non-editable property with `ContextPropertyResult.Failure(match.ReadOnlyReason)` — the reason travels back verbatim as the failure the user reads. It is shown *and* thrown, so it must read as both.
+* **A blank reason silently means editable.** Both `ContextPropertyDefinition.IsEditable` and the client's `PropertyRow` test `readOnlyReason.length === 0` — a length test, not a whitespace test. A reason of `" "` would render the row editable *and* let the write through. This is a test, not a comment (see Testing Strategy).
+* **A long reason grows the row.** `.property-grid-readonly-reason` is a `display: block` span with no truncation and no ellipsis, so a reason wraps rather than clipping. Two sentences is the budget; a paragraph would look like one.
+
+On **read-only mode** (Requirement 15.11): every property still carries a reason, because that is what makes the server-side refusal meaningful — a mode communicated only in the panel would leave a non-grid caller able to write. But every row then carries near-identical text, so the reason is kept short and uniform, and **de-duplicating identical reasons for display is the panel's judgement, not this provider's**. The provider's job is that each refusal can explain itself.
+
+`SafelyDescribeAsync` in `ContextPropertyResolver` means a provider that throws in `DescribeAsync` costs only its own rows rather than blanking the panel, so this provider is written for its own correctness and not defensively on other providers' behalf.
+
 ### `Commands/` (module, new)
 
 One file per command-and-handler pair, per tech.md's exception to one-entity-per-file. Covering Requirement 9.3:
@@ -335,8 +371,11 @@ message WardleyElement {
   double visibility = 3;          // the document's own axis, not the canvas's
   double maturity = 4;
   WardleyEvolveTarget evolve = 5; // unset when the component is not evolving
-  bool inertia = 6;
-  WardleyDecorator decorator = 7; // NONE / BUILD / BUY / OUTSOURCE
+  bool inertia = 6;               // a boolean on the component, not a decorator
+  // The five the DSL has - MARKET, ECOSYSTEM, BUILD, BUY, OUTSOURCE - as a set rather than a
+  // single choice, because the real parser carries them as five independent booleans in one
+  // `decorators` object and this module must not narrow what the file can say (Requirement 6.3).
+  repeated WardleyDecorator decorators = 7;
   Point2D label_offset = 8;       // in pixels, the format's own convention
   string url = 9;
   string submap_target = 10;
@@ -389,6 +428,7 @@ message WardleyEvolutionStage {
 * **`WardleyEvolution`** — the three boundaries against the `EvoOffsets` derivation; `StageOf` at each boundary exactly (Requirement 8.2).
 * **`WardleyIdentities`** — assign, match, rename-preserves-id, stale-entry-discarded, unreadable-sidecar-degrades (Requirement 4).
 * **`WardleyRuleSet`** — one test per rule in Requirement 14, each from a plain string.
+* **`WardleyContextPropertyProvider`** — every contributed `ReadOnlyReason` is **non-blank**, asserted with `IsNullOrWhiteSpace` rather than a null check. Both `IsEditable` and the client's `PropertyRow` decide editability on `length === 0`, so a whitespace-only reason would make a derived value writable — a failure that looks like nothing on screen and silently accepts a write. Also: a derived property is contributed and refused rather than omitted, and `SetAsync` on it returns the reason rather than throwing.
 * **Commands** — each handler's inverse restores prior state, including the multi-statement rename (Requirement 9.6).
 * **Client** — `wardleyModel.applyDelta`, and `WardleyCanvas` rendering the bands from a supplied axis element rather than from constants.
 

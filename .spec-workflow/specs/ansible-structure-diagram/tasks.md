@@ -31,7 +31,7 @@
 
 ## Phase B — the three core seams
 
-- [-] 2. Declare a diagram's subject on `DiagramDefinition`
+- [x] 2. Declare a diagram's subject on `DiagramDefinition`
   - File: `src/backend/EtAlii.Adp.Diagram/_Model/DiagramSubject.cs` (new), `_Model/DiagramDefinition.cs` (edited), `src/backend/EtAlii.Adp.Diagram/DiagramDefinitionDiscovery.cs` (edited), `src/backend/EtAlii.Adp.Diagram.Tests/DiagramDefinition.Tests.cs` (edited)
   - Add `DiagramSubject { Document, Folder }` and `DiagramSubject Subject = DiagramSubject.Document` after `Extension`. Defaulted, so every existing definition compiles and behaves unchanged. Document `Folder` as "the diagram is the folder the `.adp` sits in, and the files beneath it"
   - In discovery, refuse `Folder` with a non-empty `Extension` — a contradiction — beside the duplicate-origin check already there
@@ -40,7 +40,7 @@
   - _Requirements: 2.1, 11.2_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add a defaulted DiagramSubject to DiagramDefinition and refuse the Folder-plus-extension contradiction at discovery | Restrictions: it must default to Document so no existing definition changes behaviour; do not reorder existing parameters; the enum is its own file per the no-nested-types rule | Success: the solution builds, every existing definition is untouched, and tests assert the default and the refusal_
 
-- [ ] 3. Widen the validator seam to carry a location
+- [x] 3. Widen the validator seam to carry a location
   - File: `src/backend/EtAlii.Adp.Diagram/_Model/DiagramValidationRequest.cs` (new), `IDiagramValidator.cs` (edited), `src/backend/EtAlii.Adp.Backend/Problems/ProjectValidator.cs` (edited), and every implementer: `MindmapValidator`, `C4Validator`, and the seven test stubs (`ProblemMaintenanceCountingValidator`, `ProblemStoreReportingValidator`, `ProblemStoreStubValidator`, `ProjectValidatorTestValidator`, `StartupRevalidationGatedValidator`, `DiagramValidatorsStubValidator`, `DiagramValidatorsOtherStubValidator`)
   - `ValidateAsync(DiagramValidationRequest request, CancellationToken)` where the request carries `Document`, `BaseName`, `RootPath`, `BodyPath`, `RegistrationPath` and `SubjectFolder` (null for a `Document`-subject type). `ProjectValidator` fills it, setting `SubjectFolder` from the routed definition's `Subject`
   - A parameter object rather than more loose strings, so the next fact a validator needs is an added property rather than another signature change
@@ -50,7 +50,7 @@
   - _Requirements: 9.1, 9.3_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer performing a seam migration across modules | Task: Replace IDiagramValidator's two loose string parameters with a DiagramValidationRequest record carrying the diagram's location, and migrate both real implementers and all seven test stubs | Restrictions: no behaviour change for any existing validator; do not add a compatibility overload or a default interface method - one door only; keep the migration to one commit | Success: the solution builds, every existing validator test passes unchanged in meaning, and ProjectValidator fills SubjectFolder for a Folder-subject definition_
 
-- [ ] 4. Let a problem name a file other than the diagram's own
+- [x] 4. Let a problem name a file other than the diagram's own
   - File: `src/backend/EtAlii.Adp.Diagram/_Model/DiagramProblemFileLocation.cs` (new), `_Model/DiagramProblemLocation.cs` (edited: the remarks naming the closed set), `src/backend/EtAlii.Adp.Backend/Problems/CachedProblem.cs` (edited), `ProblemBroadcaster.cs` (edited), `src/api/context.proto` (edited), `src/client/src/shell/panels/ErrorsWarningsPanel.tsx` (edited)
   - `DiagramProblemFileLocation(string RelativePath, uint Line = 0)` as a third case. Add a new field number to `ProblemLocation`'s oneof — backward compatible. `CachedProblem` round-trips it; the panel reveals the named file rather than the diagram
   - Run `npm run generate` in `src/client/`
@@ -59,7 +59,7 @@
   - _Requirements: 9.3_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# and TypeScript developer working across the problem wire | Task: Add a third DiagramProblemLocation case naming a project-relative file and an optional line, carry it through the cache, the broadcaster, the proto and the panel | Restrictions: use a new proto field number, never reuse one; the path crossing the wire must be project-relative, never absolute; do not change how the two existing cases behave | Success: a problem carrying a file location round-trips through the cache, reaches the panel, and reveals the named file_
 
-- [ ] 5. Attribute and pin a file-located problem to that file
+- [x] 5. Attribute and pin a file-located problem to that file
   - File: `src/backend/EtAlii.Adp.Backend/Problems/ProjectValidator.cs` (edited), `ProblemCollector.cs` (edited), `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Problems/ProjectValidator.Tests.cs` (edited)
   - When a returned `DiagramProblem` carries a `DiagramProblemFileLocation`, use that file for **both** the attribution path and the `statsPath` staleness pin. Pinning a folder diagram's problems to an `.adp` that never changes would leave every verdict looking fresh forever
   - Purpose: the panel reveals the right file, and the verdict goes stale when that file is edited
@@ -67,7 +67,7 @@
   - _Requirements: 9.3_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Make ProjectValidator attribute and staleness-pin a file-located problem to the file it names | Restrictions: a problem with no location or an element/line location must behave exactly as today; the named file must be containment-checked against the root before it is used | Success: a test proves a file-located problem is stored against that file and marked stale when that file changes, and every existing attribution test still passes_
 
-- [ ] 6. Revalidate a folder diagram when a file beneath it changes
+- [x] 6. Revalidate a folder diagram when a file beneath it changes
   - File: `src/backend/EtAlii.Adp.Backend/Problems/ProblemMaintenance.cs` (edited), `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Problems/ProblemMaintenance.Tests.cs` (edited)
   - In `RevalidateAsync`, when a changed path routes to `NotADiagram`, walk up to the nearest ancestor folder holding an `.adp` whose definition is `DiagramSubject.Folder`, and validate that diagram's scope. Stop at the project root; read only `.adp` files
   - Without this, editing a role file **clears** the folder diagram's problems without re-finding them — the panel loses a problem rather than refreshing it, which is worse than not watching at all
@@ -78,7 +78,7 @@
 
 ## Phase C — reading the tree
 
-- [ ] 7. Scaffold the module
+- [x] 7. Scaffold the module
   - File: `src/diagrams/ansible-structure/**` (new), `src/backend/EtAlii.Adp.slnx` (edited)
   - `backend/EtAlii.Adp.Diagram.AnsibleStructure` and `.Tests` (the test project an executable, for xUnit v3), `api/`, `client/`, following the mindmap module's layout. `Diagram.cs` declares one `Definitions` entry: origin `ansible/structure`, title, description, **no `Extension`**, `Subject = DiagramSubject.Folder`
   - Purpose: the module exists and is discovered
@@ -86,21 +86,21 @@
   - _Requirements: 2.1, 11.1_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Scaffold the module projects and declare its Diagram.Definitions entry as a folder-subject type with no extension | Restrictions: follow the per-diagram module layout structure.md defines; the test project must be an executable; do not declare an extension - the .adp is the whole registration | Success: the solution builds, the type appears in DiagramDefinition.All, and the definition-description test still passes_
 
-- [ ] 8. Add YamlDotNet centrally
+- [x] 8. Add YamlDotNet centrally
   - File: `src/Directory.Packages.props` (edited), `src/diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure/EtAlii.Adp.Diagram.AnsibleStructure.csproj` (edited)
   - Pin the current release as a `PackageVersion`, and reference it from the module only. This is the tree's first YAML dependency; a read-only module has no reason to hand-roll a parser, and YamlDotNet's node marks are what let a problem point at a line
   - Purpose: `AnsibleYaml` has something to parse with
   - _Requirements: 1.2, 9.2_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer maintaining central package management | Task: Add YamlDotNet to Directory.Packages.props at its current release and reference it from the Ansible module only | Restrictions: version goes in Directory.Packages.props, never in the csproj; do not add the reference to any other project | Success: the module builds against YamlDotNet and no other project gains a YAML dependency_
 
-- [ ] 9. `AnsibleYaml`: one tolerant read
+- [x] 9. `AnsibleYaml`: one tolerant read
   - File: `.../AnsibleYaml.cs` (new), `_Model/AnsibleYamlFailure.cs` (new), `.../AnsibleYaml.Tests.cs` (new)
   - `Read(string path)` returns either a parsed root node **with line marks kept**, or an `AnsibleYamlFailure(Message, Line)` carrying the parser's own message. Never throws for a malformed document. Opened read-only and shared, so validation never contends with an editor
   - Purpose: Requirement 1.2's "degrades that file's detail, never the whole diagram", at its narrowest point
   - _Requirements: 1.2, 9.2_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement a tolerant single-file YAML read that keeps node line marks and returns a failure record rather than throwing | Restrictions: must not throw for any malformed input; must open the file read-only and shared; do not normalise or reformat anything | Success: tests prove a valid file parses with usable line marks, a malformed file returns a failure carrying the parser's message and line, and neither case throws_
 
-- [ ] 10. `AnsibleProjectReader`: the folder becomes a model
+- [x] 10. `AnsibleProjectReader`: the folder becomes a model
   - File: `.../AnsibleProjectReader.cs` (new), `_Model/AnsibleProject.cs`, `AnsiblePlaybook.cs`, `AnsiblePlay.cs`, `AnsibleRole.cs`, `AnsibleRoleContents.cs`, `AnsibleTaskFile.cs`, `AnsibleInventory.cs`, `AnsibleInventoryGroup.cs`, `AnsibleVariableFolder.cs` (new), `.../AnsibleProjectReader.Tests.cs` (new)
   - Recognise by Ansible's own conventions: **playbooks** (root-level and `playbooks/` YAML whose top level is a *list of mappings* — which is how a data file excludes itself without a name list), **roles** (`roles/<name>/` with any canonical subfolder, and a hollow one still a role), **inventories** (`inventories/<env>/`, or a root `inventory`/`hosts`/`hosts.yml`, with `group_vars`/`host_vars`), and **annotations** (`ansible.cfg`, `collections/requirements.yml`, `requirements.yml`) recorded on the project rather than drawn as boxes
   - Sort every enumeration with `StringComparer.Ordinal` before use. Canonicalise reparse points and refuse a folder already visited, so a symlink loop ends the walk rather than the process
@@ -109,7 +109,7 @@
   - _Requirements: 1.3, 3.1, 4.1, 4.2_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer familiar with Ansible layout conventions | Task: Walk a registered folder into an AnsibleProject, recognising playbooks, roles, inventories and annotations by convention and ignoring everything else | Restrictions: never open a file for writing; sort every directory enumeration ordinally before use; terminate on a symlink loop; unrecognised content is ignored silently, never reported | Success: the fixture tree reads into the expected model, a Makefile and a docs folder are ignored, a hollow role is present and visibly hollow, an unparsable file degrades only itself, and a test builds the same model twice from two enumeration orderings and asserts one answer_
 
-- [ ] 11. `AnsibleGraph`: five edge kinds, three resolution states
+- [x] 11. `AnsibleGraph`: five edge kinds, three resolution states
   - File: `.../AnsibleGraph.cs` (new), `_Model/AnsibleEdge.cs`, `AnsibleEdgeKind.cs`, `AnsibleTargetResolution.cs` (new), `.../AnsibleGraph.Tests.cs` (new)
   - Derive `UsesRole` (`roles:`, `import_role`, `include_role`), `ImportsPlaybook`, `IncludesTasks`, `DependsOn` (`meta/main.yml`) and `Targets` (a play's `hosts:` against a group an inventory defines). Each edge carries the declaring file and line, the target **as written**, the `when:` **as written and never evaluated**, and whether the mechanism is static or dynamic
   - Resolution is three states, not two: `Resolved`, `Missing` (a problem), `Unresolvable` (a `{{ expression }}` — **not** a problem, or every parameterised role becomes a false error)
@@ -120,7 +120,7 @@
 
 ## Phase D — following the tree
 
-- [ ] 12. `AnsibleProjectStore`: one project per folder, watched
+- [x] 12. `AnsibleProjectStore`: one project per folder, watched
   - File: `.../AnsibleProjectStore.cs`, `IAnsibleProjectStore.cs` (new), `_Model/AnsibleProjectChangedEventArgs.cs` (new), `.../AnsibleProjectStore.Tests.cs` (new)
   - `GetOrLoad`, `Get`, `Release`, and a `Changed` event. One `FileSystemWatcher` per registered folder with `IncludeSubdirectories` and content filters, a settle timer coalescing a burst, and **guarded handlers** — an unhandled exception on the watcher thread is the death of the process, which this repository has already paid for once
   - A settled burst re-reads the files that changed; a created, deleted or renamed **directory** re-walks the tree, since that is when the walk itself changes. `Release` disposes the watcher when the last viewer leaves
@@ -132,7 +132,7 @@
 
 ## Phase E — layout and the wire
 
-- [ ] 13. `AnsibleLayout`: ranked, banded, deterministic
+- [x] 13. `AnsibleLayout`: ranked, banded, deterministic
   - File: `.../AnsibleLayout.cs` (new), `_Model/AnsibleMetrics.cs` (new), `.../AnsibleLayout.Tests.cs` (new)
   - Ranks left to right by longest path — entry playbooks (nothing imports them), then playbooks and plays, then roles, then task files. Within a rank, declaration order then name, both ordinal. Inventories and variable folders occupy their own band rather than being ranked, so a `Targets` edge drops out of the execution story instead of lengthening it
   - Each play gets an index in declaration order; a role carries the index of its play. A role used by two plays is drawn **once**, carrying the lower index — seeing that `common` is shared is the point of drawing it
@@ -141,7 +141,7 @@
   - _Requirements: 6.1, 6.2, 6.3_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer with graph layout experience | Task: Compute deterministic positions for the graph, ranked in execution order with inventories and variable folders banded apart, assigning each play an index for colour continuity | Restrictions: pure function, no file or clock access; a shared role is one node, not one per play; ties break ordinally so the answer never depends on enumeration order | Success: tests prove the same graph yields the same positions twice, ranks follow Requirement 6.2, the shared role appears once with the lower play index, and nothing overlaps on the fixture_
 
-- [ ] 14. `ansible-structure.proto`
+- [-] 14. `ansible-structure.proto`
   - File: `src/diagrams/ansible-structure/api/ansible-structure.proto` (new), `api/readme.md` (new)
   - `AnsibleElementPayload` with `name`, `kind`, `project_relative_path`, `play_index`, `hosts`, `contents`, `edge`, `unresolvable` and `annotations`; plus `AnsibleRoleContents` and `AnsibleEdge` as the design defines them
   - **`play_index` is an index, never a colour** — styling stays in the module's stylesheet per tech.md's Frontend rule

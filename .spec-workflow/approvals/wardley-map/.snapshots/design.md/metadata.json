@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/wardley-map/design.md",
-  "currentVersion": 1,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
@@ -9,6 +9,22 @@
       "trigger": "initial",
       "approvalId": "approval_1787677398390_r2n9iaai9",
       "approvalTitle": "Design: wardley-map"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-25T21:24:39.928Z",
+      "trigger": "approved",
+      "approvalId": "approval_1787677398390_r2n9iaai9",
+      "approvalTitle": "Design: wardley-map"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-08-25T21:49:34.906Z",
+      "trigger": "approved",
+      "approvalId": "approval_1787694056191_y7k3y16wj",
+      "approvalTitle": "Design: wardley-map (revised after approval)"
     }
   ]
 }

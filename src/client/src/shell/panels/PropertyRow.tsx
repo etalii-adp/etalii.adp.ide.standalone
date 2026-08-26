@@ -45,6 +45,13 @@ export function PropertyRow({ property, onCommit }: PropertyRowProps) {
   const editable = property.readOnlyReason.length === 0;
 
   async function commit() {
+    if (committing.current) {
+      // A write is already in flight for this row. Until it lands, `property.value` still holds
+      // the old value, so a second blur would compare the draft against it, find them different
+      // and write again - one edit, two entries on the project history.
+      return;
+    }
+
     setEditing(false);
     if (draft === property.value) {
       // Focus left a field nobody changed. Writing anyway would put an entry on the history
