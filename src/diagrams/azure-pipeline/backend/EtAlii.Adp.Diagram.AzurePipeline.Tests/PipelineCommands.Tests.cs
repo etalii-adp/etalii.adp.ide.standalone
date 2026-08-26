@@ -88,6 +88,7 @@ public class PipelineCommandsTests : IDisposable
             new MovePipelineStepCommand(_workspace, path, stepId, toIndex));
 
     /// <summary>Runs whatever a command reported as its inverse, whichever kind it is.</summary>
+    // ReSharper disable once UnusedMethodReturnValue.Local
     private async Task<CommandResult> UndoAsync(ICommand inverse) => inverse switch
     {
         RenamePipelineElementCommand rename => await new RenamePipelineElementCommandHandler(_store).ExecuteAsync(rename),
