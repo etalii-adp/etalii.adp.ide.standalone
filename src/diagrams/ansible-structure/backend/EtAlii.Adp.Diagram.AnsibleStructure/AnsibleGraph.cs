@@ -42,7 +42,7 @@ public sealed class AnsibleGraph
         // A play gets a colour index in declaration order across the whole project, so two
         // playbooks' plays never share one (Requirement 6.3).
         var playIndex = 0;
-        var playIndexOf = new Dictionary<string, int>(StringComparer.Ordinal);
+        //var playIndexOf = new Dictionary<string, int>(StringComparer.Ordinal);
 
         foreach (var playbook in project.Playbooks)
         {
@@ -55,7 +55,7 @@ public sealed class AnsibleGraph
             {
                 var index = playIndex++;
                 var owner = playsAreDrawn ? PlayId(playbook, play) : PlaybookId(playbook);
-                playIndexOf[owner] = index;
+                //playIndexOf[owner] = index;
 
                 if (playsAreDrawn)
                 {
