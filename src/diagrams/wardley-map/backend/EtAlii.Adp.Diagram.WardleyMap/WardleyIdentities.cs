@@ -182,6 +182,16 @@ public sealed class WardleyIdentities
             Take(WardleyIdentityKind.Annotation, WardleyIdentityKeys.Of(annotation));
         }
 
+        foreach (var accelerator in map.Accelerators)
+        {
+            Take(WardleyIdentityKind.Accelerator, WardleyIdentityKeys.Of(accelerator));
+        }
+
+        foreach (var attitude in map.Attitudes)
+        {
+            Take(WardleyIdentityKind.Attitude, WardleyIdentityKeys.Of(attitude));
+        }
+
         return reconciled.ToArray();
 
         // An element the sidecar knows keeps its id; one it does not gets a fresh one. An entry

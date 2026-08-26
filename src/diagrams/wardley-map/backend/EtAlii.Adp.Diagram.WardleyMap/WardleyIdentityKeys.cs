@@ -56,4 +56,28 @@ public static class WardleyIdentityKeys
         ArgumentNullException.ThrowIfNull(annotation);
         return annotation.Number.ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
+
+    /// <summary>
+    /// An accelerator: its name and its direction, since an accelerator and a deaccelerator may
+    /// legitimately carry the same name for opposing forces on the same thing.
+    /// </summary>
+    public static string Of(WardleyAccelerator accelerator)
+    {
+        ArgumentNullException.ThrowIfNull(accelerator);
+        return $"{accelerator.Name}{(accelerator.IsDeaccelerator ? "de" : "ac")}";
+    }
+
+    /// <summary>
+    /// An attitude region: its kind and one corner. A map may carry several regions of one
+    /// kind, and a region has no name to be known by - the corner is the only other handle it
+    /// offers, so moving a region loses its identity. That is acceptable for a backdrop nothing
+    /// links to.
+    /// </summary>
+    public static string Of(WardleyAttitude attitude)
+    {
+        ArgumentNullException.ThrowIfNull(attitude);
+        return string.Create(
+            System.Globalization.CultureInfo.InvariantCulture,
+            $"{attitude.Kind}{attitude.From.Visibility}{attitude.From.Maturity}");
+    }
 }

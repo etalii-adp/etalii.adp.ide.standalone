@@ -12,4 +12,6 @@ public static class WardleyIdentityKind
     public const string PipelineChild = "pipeline-child";
     public const string Note = "note";
     public const string Annotation = "annotation";
+    public const string Accelerator = "accelerator";
+    public const string Attitude = "attitude";
 }
