@@ -92,4 +92,8 @@ message PipelineElementPayload {
   // when this element has no text of its own.
   int32 first_line = 25;
   int32 last_line = 26;
+  // STAGE only: how many jobs it holds. A collapsed stage sends no jobs, and Requirement 8.2 asks
+  // it to show its name and its job count - so the count has to travel on the stage, or a
+  // collapsed one would have nothing to count.
+  int32 job_count = 27;
 }

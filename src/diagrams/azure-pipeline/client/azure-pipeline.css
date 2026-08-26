@@ -1,0 +1,120 @@
+/*
+ * Namespaced under .pipeline-* throughout, so nothing here can collide with a shell rule whatever
+ * order the bundler emits - the same discipline c4.css keeps.
+ */
+
+.pipeline-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.pipeline-canvas-surface {
+  width: 100%;
+  height: 100%;
+  display: block;
+  outline: none;
+  cursor: grab;
+}
+
+.pipeline-canvas-surface:active {
+  cursor: grabbing;
+}
+
+.pipeline-canvas-loading,
+.pipeline-canvas-unavailable {
+  padding: 1rem;
+  color: var(--adp-text-muted, #6b7280);
+}
+
+/* A stage: the container everything else sits inside. */
+.pipeline-stage-box {
+  fill: var(--adp-surface-sunken, #f3f4f6);
+  stroke: var(--adp-border, #d1d5db);
+  stroke-width: 1;
+}
+
+.pipeline-stage-name {
+  font-size: 14px;
+  font-weight: 600;
+  fill: var(--adp-text, #111827);
+}
+
+.pipeline-stage-count {
+  font-size: 12px;
+  fill: var(--adp-text-muted, #6b7280);
+}
+
+/* A job, a step, or a template reference. */
+.pipeline-box {
+  fill: var(--adp-surface, #ffffff);
+  stroke: var(--adp-border, #d1d5db);
+  stroke-width: 1;
+}
+
+.pipeline-box-name {
+  font-size: 12px;
+  fill: var(--adp-text, #111827);
+}
+
+/*
+ * A deployment job is not a plain job: it targets an environment and runs lifecycle hooks, which
+ * is a different thing to reason about, so it is a different thing to look at (Requirement 8.3).
+ */
+.pipeline-deployment .pipeline-box {
+  fill: var(--adp-accent-subtle, #eef2ff);
+  stroke: var(--adp-accent, #4f46e5);
+  stroke-width: 2;
+}
+
+/* A template reference this module could not follow: an admitted gap, drawn as one. */
+.pipeline-template .pipeline-box {
+  fill: none;
+  stroke: var(--adp-border, #d1d5db);
+  stroke-dasharray: 6 4;
+}
+
+/* Anything whose text lives in another file, and so cannot be edited here (Requirement 8.5). */
+.pipeline-from-template .pipeline-box,
+.pipeline-from-template .pipeline-stage-box {
+  stroke-dasharray: 2 3;
+  opacity: 0.85;
+}
+
+/* Whether it exists, or how many of it there will be, is decided by an expression. */
+.pipeline-indeterminate .pipeline-box,
+.pipeline-indeterminate .pipeline-stage-box {
+  stroke-dasharray: 4 3;
+}
+
+.pipeline-focused .pipeline-box,
+.pipeline-focused .pipeline-stage-box {
+  stroke: var(--adp-focus, #2563eb);
+  stroke-width: 2;
+}
+
+/* An arrow: what waits for what. */
+.pipeline-edge {
+  stroke: var(--adp-border-strong, #9ca3af);
+  stroke-width: 1.5;
+}
+
+.pipeline-arrowhead {
+  fill: var(--adp-border-strong, #9ca3af);
+}
+
+/*
+ * An implicit edge is real but nobody wrote it down - a stage with no dependsOn waits for the one
+ * before it. Drawn lighter so a reader can tell what the file says from what the schema decided.
+ */
+.pipeline-edge-implicit {
+  stroke-dasharray: 3 3;
+  opacity: 0.7;
+}
+
+/* A dependsOn naming something that does not exist: the mistake this diagram is for. */
+.pipeline-edge-broken {
+  stroke: var(--adp-danger, #dc2626);
+  stroke-dasharray: 2 4;
+}

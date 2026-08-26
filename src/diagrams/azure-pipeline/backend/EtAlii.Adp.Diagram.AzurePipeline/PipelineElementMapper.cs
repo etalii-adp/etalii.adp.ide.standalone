@@ -169,6 +169,9 @@ public sealed class PipelineElementMapper
                 PoolInherited = stage.Pool.Origin == PipelinePoolOrigin.Pipeline,
                 Width = placement.Size.Width,
                 Height = placement.Size.Height,
+                // Sent whether or not the stage is expanded, because a collapsed one is exactly
+                // when it is needed and exactly when the jobs are not on the wire to be counted.
+                JobCount = stage.Jobs.Count,
                 // An implicit stage is not in the file, so there is no line to open.
                 FirstLine = stage.IsImplicit ? 0 : stage.Lines.Start + 1,
                 LastLine = stage.IsImplicit ? 0 : stage.Lines.End + 1,
