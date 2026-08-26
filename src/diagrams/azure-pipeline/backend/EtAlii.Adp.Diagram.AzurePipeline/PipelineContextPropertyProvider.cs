@@ -138,27 +138,82 @@ public sealed class PipelineContextPropertyProvider : IContextPropertyProvider
     }
 
     /// <summary>
-    /// A <c>dependsOn</c> typed as text.
+    /// The candidate meaning "wait for nothing" - <c>dependsOn: []</c>, which is a real
+    /// instruction and not the same as having no <c>dependsOn</c> at all.
+    /// </summary>
+    public const string NothingCandidate = "(nothing)";
+
+    /// <summary>
+    /// The candidate meaning "put it back on the schema's default" - no <c>dependsOn</c> key.
     /// </summary>
     /// <remarks>
-    /// Comma-separated, because a single <c>Value</c> string cannot carry a list without some
-    /// convention and this is the one a user would guess. It is a stopgap: Requirement 13.14 owes
-    /// this property a Choice editor with the candidate names, and until that exists a text box
-    /// gives the user no idea what the valid names are. Nothing is unsafe about it - an unknown
-    /// name is refused with a reason and the document is left alone - it is merely worse.
-    /// <para>
-    /// Empty text means "wait for nothing", written as <c>dependsOn: []</c>. Clearing the property
-    /// back to the schema's default is a separate action, because those are different instructions
-    /// and a text box cannot express both.
-    /// </para>
+    /// Offered as a candidate rather than left to the context menu because the difference between
+    /// it and <see cref="NothingCandidate"/> is the whole subtlety of stage ordering, and a list
+    /// showing both side by side is the clearest place a user will ever meet it.
+    /// </remarks>
+    public const string DefaultCandidate = "(the default order)";
+
+    /// <summary>
+    /// A <c>dependsOn</c> picked from the list.
+    /// </summary>
+    /// <remarks>
+    /// One name, or one of the two special candidates. A single <c>Value</c> cannot carry a list
+    /// without a delimiter convention, and Requirement 13.14 declines to invent one - so where an
+    /// element already waits for several things, the property is shown read-only rather than
+    /// offered as a picker that would silently drop all but one of them.
     /// </remarks>
     private static ICommand DependenciesCommand(string root, string body, string id, string value)
     {
-        var names = value
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .ToList();
+        var chosen = value.Trim();
+        return chosen switch
+        {
+            DefaultCandidate => new SetPipelineDependenciesCommand(root, body, id, [], Declared: false),
+            NothingCandidate or "" => new SetPipelineDependenciesCommand(root, body, id, [], Declared: true),
+            _ => new SetPipelineDependenciesCommand(root, body, id, [chosen], Declared: true),
+        };
+    }
 
-        return new SetPipelineDependenciesCommand(root, body, id, names, Declared: true);
+    /// <summary>
+    /// The <c>dependsOn</c> row: a picker of the names this element could wait for.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Read-only in two cases. Where the element already waits for <b>several</b> things, because
+    /// a single-valued editor cannot express that and quietly reducing a fan-in to one dependency
+    /// would be a destructive edit disguised as a selection. And where there is <b>nothing to pick
+    /// from</b> - the first stage of a pipeline has no earlier stage to wait for - because a list
+    /// with no options is a control that does nothing.
+    /// </para>
+    /// <para>
+    /// Both are still shown, with the reason, because what an element waits for is the single most
+    /// useful thing this panel says about it.
+    /// </para>
+    /// </remarks>
+    private static ContextPropertyDefinition DependsOnProperty(
+        string label,
+        IReadOnlyList<string> current,
+        IReadOnlyList<string> candidates)
+    {
+        if (current.Count > 1)
+        {
+            return new ContextPropertyDefinition(
+                DependsOnPropertyId,
+                label,
+                string.Join(", ", current),
+                ContextPropertyEditor.Line,
+                "This waits for several things, which is edited in the pipeline file.",
+                OrderingGroup);
+        }
+
+        var choices = new List<string>(candidates) { NothingCandidate, DefaultCandidate };
+        return new ContextPropertyDefinition(
+            DependsOnPropertyId,
+            label,
+            current.Count == 1 ? current[0] : NothingCandidate,
+            ContextPropertyEditor.Choice,
+            candidates.Count == 0 ? "There is nothing before this for it to wait for." : "",
+            OrderingGroup,
+            choices);
     }
 
     private static List<ContextPropertyDefinition> StageProperties(PipelineModel model, PipelineElementLocation location)
@@ -180,13 +235,19 @@ public sealed class PipelineContextPropertyProvider : IContextPropertyProvider
             .Select(edge => edge.FromName)
             .ToList();
 
-        properties.Add(new ContextPropertyDefinition(
-            DependsOnPropertyId,
+        // Every other stage declared before this one. Later stages are excluded because choosing
+        // one would close a loop, and the command would refuse it - a list should not offer what
+        // it knows will be rejected.
+        var earlier = model.Stages
+            .TakeWhile(candidate => !string.Equals(candidate.Id, stage.Id, StringComparison.Ordinal))
+            .Where(candidate => candidate.Name.Length > 0)
+            .Select(candidate => candidate.Name)
+            .ToList();
+
+        properties.Add(DependsOnProperty(
             stage.DependsOnDeclared ? "Depends on" : "Depends on (by default)",
-            string.Join(", ", waitsFor),
-            ContextPropertyEditor.Line,
-            "",
-            OrderingGroup));
+            waitsFor,
+            earlier));
 
         AddDeclared(properties, stage.Execution, PipelineExecution.ConditionKey, "azure-pipeline.condition", "Condition", stage.Execution.Condition, OrderingGroup);
         if (stage.TriggerIsManual)
@@ -211,21 +272,17 @@ public sealed class PipelineContextPropertyProvider : IContextPropertyProvider
         };
 
         // A job's default is to wait for nothing, so unlike a stage there is nothing implicit to
-        // resolve - what the file says is the whole of it.
-        if (job.DependsOnDeclared || job.DependsOn.Count > 0)
-        {
-            properties.Add(Editable(DependsOnPropertyId, "Depends on", string.Join(", ", job.DependsOn), OrderingGroup));
-        }
-        else
-        {
-            properties.Add(new ContextPropertyDefinition(
-                DependsOnPropertyId,
-                "Depends on (by default)",
-                "nothing - it runs as soon as its stage does",
-                ContextPropertyEditor.Line,
-                "",
-                OrderingGroup));
-        }
+        // resolve - what the file says is the whole of it. The candidates are its siblings, minus
+        // itself, since a job may depend on any other job in the same stage regardless of order.
+        var siblings = location.Stage.Jobs
+            .Where(candidate => !string.Equals(candidate.Id, job.Id, StringComparison.Ordinal) && candidate.Name.Length > 0)
+            .Select(candidate => candidate.Name)
+            .ToList();
+
+        properties.Add(DependsOnProperty(
+            job.DependsOnDeclared ? "Depends on" : "Depends on (by default)",
+            job.DependsOn,
+            siblings));
 
         AddDeclared(properties, job.Execution, PipelineExecution.ConditionKey, "azure-pipeline.condition", "Condition", job.Execution.Condition, OrderingGroup);
         AddPool(properties, job.Pool);

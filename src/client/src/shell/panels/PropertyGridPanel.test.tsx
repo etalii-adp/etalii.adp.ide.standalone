@@ -52,7 +52,20 @@ vi.mock("../context/ContextConnectionProvider", async (importOriginal) => {
   };
 });
 
-function property(overrides: Partial<ContextProperty> & { id: string; label: string; value: string }): ContextProperty {
+/**
+ * A property message with the fields a test cares about.
+ *
+ * The metadata keys are excluded from the overrides: `Partial<ContextProperty>` makes `$typeName`
+ * optional, and `create` will not accept a possibly-absent one. Naming the exclusion keeps this
+ * helper working as fields are added to the message.
+ */
+type PropertyOverrides = Omit<Partial<ContextProperty>, "$typeName" | "$unknown"> & {
+  id: string;
+  label: string;
+  value: string;
+};
+
+function property(overrides: PropertyOverrides): ContextProperty {
   return create(ContextPropertySchema, { editor: ContextPropertyEditor.LINE, readOnlyReason: "", group: "", ...overrides });
 }
 
@@ -346,6 +359,108 @@ describe("PropertyGridPanel", () => {
 
     // Assert (...and checking it writes the text "true").
     expect(backend.writes).toEqual([{ propertyId: "x.flag", value: "true" }]);
+  });
+
+  it("offers a choice as a list of the candidates its provider supplied", async () => {
+    // Arrange.
+    // The panel renders the candidates without understanding any of them - that the valid values
+    // of a pipeline stage's dependsOn are the other stages is the provider's knowledge, not the
+    // shell's, exactly as it is for a toolbox entry or a context action.
+    selectElement();
+    backend.properties = [
+      property({
+        id: "azure-pipeline.depends-on",
+        label: "Depends on",
+        value: "Build",
+        editor: ContextPropertyEditor.CHOICE,
+        candidates: ["Build", "Test", "(nothing)"],
+      }),
+    ];
+    render(<PropertyGridPanel />);
+
+    // Act.
+    const list = (await screen.findByLabelText("Depends on")) as HTMLSelectElement;
+
+    // Assert.
+    expect(list.tagName).toBe("SELECT");
+    expect([...list.options].map((option) => option.value)).toEqual(["Build", "Test", "(nothing)"]);
+    expect(list.value).toBe("Build");
+  });
+
+  it("writes a choice the moment one is picked", async () => {
+    // Arrange.
+    // Picking from a list has no "finished typing", so the selection is the commit - the same
+    // reasoning that makes a toggle write on click rather than on blur.
+    selectElement();
+    backend.properties = [
+      property({
+        id: "azure-pipeline.depends-on",
+        label: "Depends on",
+        value: "Build",
+        editor: ContextPropertyEditor.CHOICE,
+        candidates: ["Build", "Test"],
+      }),
+    ];
+    render(<PropertyGridPanel />);
+    const list = (await screen.findByLabelText("Depends on")) as HTMLSelectElement;
+
+    // Act.
+    await act(async () => {
+      fireEvent.change(list, { target: { value: "Test" } });
+    });
+
+    // Assert.
+    expect(backend.writes).toEqual([{ propertyId: "azure-pipeline.depends-on", value: "Test" }]);
+  });
+
+  it("keeps a current value selectable even when the provider did not list it", async () => {
+    // Arrange.
+    // A value the file already holds must stay in the list, or merely opening it would offer to
+    // change the document to something else.
+    selectElement();
+    backend.properties = [
+      property({
+        id: "azure-pipeline.depends-on",
+        label: "Depends on",
+        value: "Legacy",
+        editor: ContextPropertyEditor.CHOICE,
+        candidates: ["Build", "Test"],
+      }),
+    ];
+    render(<PropertyGridPanel />);
+
+    // Act.
+    const list = (await screen.findByLabelText("Depends on")) as HTMLSelectElement;
+
+    // Assert.
+    expect([...list.options].map((option) => option.value)).toEqual(["Legacy", "Build", "Test"]);
+    expect(list.value).toBe("Legacy");
+  });
+
+  it("shows a read-only choice as a value and a reason, with no list to open", async () => {
+    // Arrange.
+    // A read-only property gets no control of any kind, whatever its editor says and whatever
+    // candidates came with it - the same rule every other editor already follows, and the reason
+    // a provider can mark one row of a Choice-shaped property unwritable without a second type.
+    selectElement();
+    backend.properties = [
+      property({
+        id: "azure-pipeline.depends-on",
+        label: "Depends on",
+        value: "A, B",
+        editor: ContextPropertyEditor.CHOICE,
+        candidates: ["A", "B"],
+        readOnlyReason: "This waits for several things, which is edited in the pipeline file.",
+      }),
+    ];
+
+    // Act.
+    render(<PropertyGridPanel />);
+
+    // Assert.
+    expect(await screen.findByText("A, B")).toBeTruthy();
+    expect(await screen.findByText(/several things/)).toBeTruthy();
+    expect(screen.queryByLabelText("Depends on")).toBeNull();
   });
 
   it("shows a property whose editor it does not know, and offers no field for it", async () => {

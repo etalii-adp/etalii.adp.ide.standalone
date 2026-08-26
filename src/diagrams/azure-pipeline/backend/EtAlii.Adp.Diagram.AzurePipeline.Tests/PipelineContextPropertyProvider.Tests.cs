@@ -421,11 +421,146 @@ public class PipelineContextPropertyProviderTests : IDisposable
         Assert.False(_store.GetOrLoad(_workspace, path).Model.Steps.Last().Execution.IsDisabled);
     }
 
+    /// <summary>Three stages, so there is something for the last one to choose between.</summary>
+    private const string ThreeStages = """
+        stages:
+          - stage: A
+            jobs:
+              - job: J
+                steps:
+                  - script: x
+          - stage: B
+            dependsOn: []
+            jobs:
+              - job: J
+                steps:
+                  - script: x
+          - stage: C
+            jobs:
+              - job: J
+                steps:
+                  - script: x
+        """;
+
     [Fact]
-    public async Task SettingDependsOn_AcceptsACommaSeparatedList()
+    public async Task DependsOn_IsOfferedAsAListOfTheNamesItCouldWaitFor()
     {
-        // Arrange: a stopgap until the Choice editor exists - a single Value string cannot carry
-        // a list without some convention, and this is the one a user would guess.
+        // Arrange: Requirement 13.14 - the point of a Choice here is that a free-text box gives
+        // the user no idea what the valid names are.
+        var path = Write(ThreeStages);
+
+        // Act.
+        var dependsOn = await PropertyAsync(path, "C", PipelineContextPropertyProvider.DependsOnPropertyId);
+
+        // Assert.
+        Assert.Equal(ContextPropertyEditor.Choice, dependsOn!.Editor);
+        Assert.Contains("A", dependsOn.Choices);
+        Assert.Contains("B", dependsOn.Choices);
+    }
+
+    [Fact]
+    public async Task TheCandidates_LeaveOutStagesThatWouldCloseALoop()
+    {
+        // Arrange: a list should not offer what the command is going to refuse. A stage can only
+        // wait for one declared before it.
+        var path = Write(ThreeStages);
+
+        // Act.
+        var dependsOn = await PropertyAsync(path, "A", PipelineContextPropertyProvider.DependsOnPropertyId);
+
+        // Assert.
+        Assert.DoesNotContain("B", dependsOn!.Choices);
+        Assert.DoesNotContain("C", dependsOn.Choices);
+    }
+
+    [Fact]
+    public async Task TheFirstStage_HasNothingToChooseAndSaysSo()
+    {
+        // Arrange: a list with no options is a control that does nothing, so it is shown with a
+        // reason instead - what it waits for is still the most useful thing on the panel.
+        var path = Write(ThreeStages);
+
+        // Act.
+        var dependsOn = await PropertyAsync(path, "A", PipelineContextPropertyProvider.DependsOnPropertyId);
+
+        // Assert.
+        Assert.False(dependsOn!.IsEditable);
+        Assert.Contains("nothing before this", dependsOn.ReadOnlyReason);
+    }
+
+    [Fact]
+    public async Task TheListSeparatesWaitingForNothingFromTheDefaultOrder()
+    {
+        // Arrange: those two are the whole subtlety of stage ordering - `dependsOn: []` runs it
+        // immediately, no dependsOn at all runs it after the stage before. A list showing both
+        // side by side is the clearest place a user will ever meet the difference.
+        var path = Write(ThreeStages);
+
+        // Act.
+        var dependsOn = await PropertyAsync(path, "C", PipelineContextPropertyProvider.DependsOnPropertyId);
+
+        // Assert.
+        Assert.Contains(PipelineContextPropertyProvider.NothingCandidate, dependsOn!.Choices);
+        Assert.Contains(PipelineContextPropertyProvider.DefaultCandidate, dependsOn.Choices);
+    }
+
+    [Fact]
+    public async Task PickingAName_MakesTheElementWaitForIt()
+    {
+        // Arrange & act.
+        var path = Write(ThreeStages);
+        var result = await SetAsync(path, "C", PipelineContextPropertyProvider.DependsOnPropertyId, "A");
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Equal(["A"], _store.GetOrLoad(_workspace, path).Model.Stages.Single(stage => stage.Name == "C").DependsOn);
+    }
+
+    [Fact]
+    public async Task PickingNothing_WritesAnEmptyDependsOn()
+    {
+        // Arrange: a real instruction meaning "start immediately", not an absence.
+        var path = Write(ThreeStages);
+
+        // Act.
+        var result = await SetAsync(
+            path,
+            "C",
+            PipelineContextPropertyProvider.DependsOnPropertyId,
+            PipelineContextPropertyProvider.NothingCandidate);
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        var stage = _store.GetOrLoad(_workspace, path).Model.Stages.Single(candidate => candidate.Name == "C");
+        Assert.True(stage.DependsOnDeclared);
+        Assert.Empty(stage.DependsOn);
+    }
+
+    [Fact]
+    public async Task PickingTheDefaultOrder_RemovesTheKeyEntirely()
+    {
+        // Arrange: the other of the two, and the one that cannot be expressed by any name.
+        var path = Write(ThreeStages);
+        await SetAsync(path, "C", PipelineContextPropertyProvider.DependsOnPropertyId, "A");
+
+        // Act.
+        var result = await SetAsync(
+            path,
+            "C",
+            PipelineContextPropertyProvider.DependsOnPropertyId,
+            PipelineContextPropertyProvider.DefaultCandidate);
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.False(_store.GetOrLoad(_workspace, path).Model.Stages.Single(stage => stage.Name == "C").DependsOnDeclared);
+    }
+
+    [Fact]
+    public async Task AnElementWaitingForSeveralThings_IsShownButNotOfferedAsAPicker()
+    {
+        // Arrange: a single-valued editor cannot express a fan-in, and quietly reducing one to a
+        // single dependency would be a destructive edit disguised as a selection. Requirement
+        // 13.14 declines to invent a multi-value encoding, so this is shown with a reason.
         var path = Write("""
             stages:
               - stage: A
@@ -440,6 +575,9 @@ public class PipelineContextPropertyProviderTests : IDisposable
                     steps:
                       - script: x
               - stage: C
+                dependsOn:
+                  - A
+                  - B
                 jobs:
                   - job: J
                     steps:
@@ -447,11 +585,53 @@ public class PipelineContextPropertyProviderTests : IDisposable
             """);
 
         // Act.
-        var result = await SetAsync(path, "C", PipelineContextPropertyProvider.DependsOnPropertyId, "A, B");
+        var dependsOn = await PropertyAsync(path, "C", PipelineContextPropertyProvider.DependsOnPropertyId);
 
         // Assert.
-        Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal(["A", "B"], _store.GetOrLoad(_workspace, path).Model.Stages.Single(stage => stage.Name == "C").DependsOn);
+        Assert.Equal("A, B", dependsOn!.Value);
+        Assert.False(dependsOn.IsEditable);
+        Assert.Contains("several things", dependsOn.ReadOnlyReason);
+    }
+
+    [Fact]
+    public async Task AJobsCandidates_AreItsSiblingsAndNotItself()
+    {
+        // Arrange: jobs may depend on any other job in the stage regardless of declared order,
+        // which is not true of stages - so the two levels build their lists differently.
+        var path = Write("""
+            stages:
+              - stage: Build
+                jobs:
+                  - job: First
+                    steps:
+                      - script: x
+                  - job: Second
+                    steps:
+                      - script: x
+            """);
+
+        // Act.
+        var dependsOn = await PropertyAsync(path, "Build/First", PipelineContextPropertyProvider.DependsOnPropertyId);
+
+        // Assert.
+        Assert.Contains("Second", dependsOn!.Choices);
+        Assert.DoesNotContain("First", dependsOn.Choices);
+    }
+
+    [Fact]
+    public async Task OnlyAChoiceCarriesCandidates()
+    {
+        // Arrange: an empty repeated field costs nothing, but a Line row carrying options would
+        // be a contract nobody meant.
+        var path = Write(ThreeStages);
+
+        // Act.
+        var properties = await DescribeAsync(path, "C");
+
+        // Assert.
+        Assert.All(
+            properties.Where(property => property.Editor != ContextPropertyEditor.Choice),
+            property => Assert.Empty(property.Choices));
     }
 
     [Fact]
