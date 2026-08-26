@@ -93,12 +93,17 @@ public sealed class WardleyDocument
         var index = (int)number - 1;
         if (index == _lines.Count)
         {
-            if (_lines.Count > 0 && _lines[^1].Terminator.Length == 0)
+            // Appending takes over the last line's ending: a file that ended with a newline must
+            // still end with one, and a file that did not must still not. Getting this backwards
+            // strips the trailing newline off every document an append touches - which is a diff
+            // on a line nobody edited, in a file another ecosystem reads.
+            var ending = _lines.Count > 0 ? _lines[^1].Terminator : Newline;
+            if (_lines.Count > 0)
             {
                 _lines[^1] = _lines[^1] with { Terminator = Newline };
             }
 
-            _lines.Add(new WardleyDocumentLine(text, ""));
+            _lines.Add(new WardleyDocumentLine(text, ending));
             return;
         }
 
@@ -153,7 +158,11 @@ public sealed class WardleyDocument
 
         if (crlf == 0 && lf == 0)
         {
-            return Environment.NewLine;
+            // LF rather than Environment.NewLine. A document with nothing to learn from is a new
+            // or empty one, and every other tool in this ecosystem writes LF - so the platform
+            // ADP happens to run on should not decide what someone else's file looks like, nor
+            // make the same edit produce different bytes on two machines.
+            return "\n";
         }
 
         return crlf >= lf ? "\r\n" : "\n";

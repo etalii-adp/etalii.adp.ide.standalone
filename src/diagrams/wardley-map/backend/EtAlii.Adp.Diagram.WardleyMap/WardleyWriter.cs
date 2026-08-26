@@ -127,6 +127,122 @@ public static partial class WardleyWriter
         return changed;
     }
 
+    /// <summary>
+    /// Appends a statement at the end of the document. New statements go at the end rather than
+    /// beside related ones: the DSL is order-independent, and inserting into the middle of
+    /// someone's file rearranges a layout they chose.
+    /// </summary>
+    /// <returns>The 1-based line the statement landed on.</returns>
+    public static uint Append(WardleyDocument document, string statement)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentException.ThrowIfNullOrWhiteSpace(statement);
+
+        var number = (uint)document.Lines.Count + 1;
+        document.InsertLine(number, statement);
+        return number;
+    }
+
+    /// <summary>Removes one statement by line.</summary>
+    public static bool RemoveLine(WardleyDocument document, uint number)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+
+        if (number < 1 || number > document.Lines.Count)
+        {
+            return false;
+        }
+
+        document.RemoveLines(number, number);
+        return true;
+    }
+
+    /// <summary>
+    /// Adds or removes a parenthesised decorator on a component's line, leaving the rest of the
+    /// line - coordinates, other decorators, label offset, comment - exactly as it was.
+    /// </summary>
+    public static bool SetDecorator(WardleyDocument document, WardleyComponent component, string decorator, bool present)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(component);
+        ArgumentException.ThrowIfNullOrWhiteSpace(decorator);
+
+        var line = LineAt(document, component.Line);
+        if (line is null)
+        {
+            return false;
+        }
+
+        var existing = NamedDecoratorExpression(decorator).Match(line);
+        if (existing.Success == present)
+        {
+            // Already in the state asked for. Reporting success without writing keeps an
+            // idempotent command from producing an empty undo entry.
+            return true;
+        }
+
+        if (present)
+        {
+            var coordinates = PairExpression().Match(line);
+            if (!coordinates.Success)
+            {
+                return false;
+            }
+
+            // After the last decorator already there, or after the coordinates when there are
+            // none. Appending keeps the existing ones in the order the author wrote them;
+            // inserting before them would reshuffle a line the user only asked to add to.
+            var decorators = AnyDecoratorExpression().Matches(line);
+            var at = decorators.Count > 0
+                ? decorators[^1].Index + decorators[^1].Length
+                : coordinates.Index + coordinates.Length;
+
+            document.ReplaceLine(component.Line, Splice(line, at, 0, $" ({decorator})"));
+            return true;
+        }
+
+        // Take the leading space with it, so removing the last decorator does not leave one.
+        var start = existing.Index > 0 && line[existing.Index - 1] == ' ' ? existing.Index - 1 : existing.Index;
+        document.ReplaceLine(component.Line, Splice(line, start, existing.Index + existing.Length - start, ""));
+        return true;
+    }
+
+    /// <summary>Adds or removes the bare `inertia` word on a component's line (Requirement 6.2).</summary>
+    public static bool SetInertia(WardleyDocument document, WardleyComponent component, bool present)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(component);
+
+        var line = LineAt(document, component.Line);
+        if (line is null)
+        {
+            return false;
+        }
+
+        var existing = InertiaWordExpression().Match(line);
+        if (existing.Success == present)
+        {
+            return true;
+        }
+
+        if (present)
+        {
+            var coordinates = PairExpression().Match(line);
+            if (!coordinates.Success)
+            {
+                return false;
+            }
+
+            var at = coordinates.Index + coordinates.Length;
+            document.ReplaceLine(component.Line, Splice(line, at, 0, " inertia"));
+            return true;
+        }
+
+        var start = existing.Index > 0 && line[existing.Index - 1] == ' ' ? existing.Index - 1 : existing.Index;
+        document.ReplaceLine(component.Line, Splice(line, start, existing.Index + existing.Length - start, ""));
+        return true;
+    }
+
     private static bool SetCoordinatePair(WardleyDocument document, uint number, WardleyCoordinate position)
     {
         var line = LineAt(document, number);
@@ -244,4 +360,16 @@ public static partial class WardleyWriter
     /// <summary>A link's two endpoints, captured separately for span-precise renaming.</summary>
     [GeneratedRegex(@"^(?<source>[^-+;]+?)\s*(?:->|\+>)\s*(?<target>[^;/]+?)\s*(?=;|//|$)")]
     private static partial Regex LinkPartsExpression();
+
+    /// <summary>The bare `inertia` word, which is not a parenthesised decorator.</summary>
+    [GeneratedRegex(@"(?<![A-Za-z])inertia(?![A-Za-z])", RegexOptions.IgnoreCase)]
+    private static partial Regex InertiaWordExpression();
+
+    /// <summary>Any parenthesised decorator, for finding where the last one ends.</summary>
+    [GeneratedRegex(@"\(\s*[A-Za-z]+\s*\)")]
+    private static partial Regex AnyDecoratorExpression();
+
+    /// <summary>One named decorator in parentheses, for adding or removing exactly that one.</summary>
+    private static Regex NamedDecoratorExpression(string decorator) =>
+        new($@"\(\s*{Regex.Escape(decorator)}\s*\)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 }

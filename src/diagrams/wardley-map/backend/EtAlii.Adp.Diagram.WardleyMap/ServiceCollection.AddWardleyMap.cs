@@ -48,7 +48,17 @@ public static class ServiceCollectionAddWardleyMapExtension
 
         // The type's commands, so every edit is one undo away (tech.md's Commands rule).
         services.AddSingleton<ICommandHandler<MoveWardleyElementCommand>, MoveWardleyElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<AddWardleyElementCommand>, AddWardleyElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<RemoveWardleyElementCommand>, RemoveWardleyElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<RenameWardleyElementCommand>, RenameWardleyElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetWardleyInertiaCommand>, SetWardleyInertiaCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetWardleyDecoratorCommand>, SetWardleyDecoratorCommandHandler>();
+
+        // The two inverses. An edit that touches one line reports the first; one that touches
+        // several - an add, a remove, a rename - reports the second, because putting the
+        // document back is the only description of those that is both exact and simple.
         services.AddSingleton<ICommandHandler<RestoreWardleyLineCommand>, RestoreWardleyLineCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreWardleyDocumentCommand>, RestoreWardleyDocumentCommandHandler>();
 
         return services;
     }

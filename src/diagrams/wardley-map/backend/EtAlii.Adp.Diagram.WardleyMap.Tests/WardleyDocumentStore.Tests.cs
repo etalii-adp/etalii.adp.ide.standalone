@@ -115,7 +115,9 @@ public sealed class WardleyDocumentStoreTests : IDisposable
 
         // Assert.
         Assert.True(File.Exists(path));
-        Assert.Equal("title Created", File.ReadAllText(path));
+        // LF, and terminated: a document with no line breaks to learn from writes LF rather
+        // than the platform's ending, so the same edit produces the same bytes on any machine.
+        Assert.Equal("title Created\n", File.ReadAllText(path));
     }
 
     [Fact]

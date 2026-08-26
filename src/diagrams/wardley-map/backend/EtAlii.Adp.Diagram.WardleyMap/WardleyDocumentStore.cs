@@ -34,6 +34,23 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
             key => WardleyIdentities.Reconcile(WardleyParser.Parse(GetOrLoad(key)), _sidecar.Read(key)));
     }
 
+    public void Rekey(string path, string kind, string oldKey, string newKey)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+        ArgumentNullException.ThrowIfNull(oldKey);
+        ArgumentNullException.ThrowIfNull(newKey);
+
+        // Every entry whose key mentions the old one moves with it, not just the element's own:
+        // a link's key carries both endpoint names, so renaming a component rekeys the links
+        // that reach it too, and those keep their identities as well.
+        _identities[path] = Identities(path)
+            .Select(entry => entry.Kind == kind && entry.Key == oldKey
+                ? entry with { Key = newKey }
+                : entry)
+            .ToArray();
+    }
+
     public void Save(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
