@@ -27,6 +27,10 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
     public const string AddComponentActionId = "wardley.add-component";
     public const string AddAnchorActionId = "wardley.add-anchor";
     public const string AddSubmapActionId = "wardley.add-submap";
+    public const string AddMarketActionId = "wardley.add-market";
+    public const string AddEcosystemActionId = "wardley.add-ecosystem";
+    public const string AddNoteActionId = "wardley.add-note";
+    public const string AddAnnotationActionId = "wardley.add-annotation";
     public const string RenameActionId = "wardley.rename";
     public const string RemoveActionId = "wardley.remove";
     public const string SetEvolveActionId = "wardley.set-evolve";
@@ -132,7 +136,7 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
             // Asked before anything is written, so the element arrives named rather than as
             // "New component" for the user to find and rename.
             return Result(new ContextExecutionRequiresInput(new ContextInputRequest(
-                $"Add {SpellAdd(actionId)}", "mdi-plus", "Name", "", "Add")));
+                $"Add {SpellAdd(actionId)}", "mdi-plus", AddFieldLabel(actionId), "", "Add")));
         }
 
         var map = WardleyParser.Parse(_documents.GetOrLoad(target.ResolvedFullPath));
@@ -268,7 +272,12 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
         if ((IsAdd(actionId) || actionId == RenameActionId || actionId == AddToPipelineActionId) &&
             string.IsNullOrWhiteSpace(value))
         {
-            return ValueTask.FromResult(ContextValidationResult.Rejected("Every element needs a name."));
+            // A note and an annotation carry text rather than a name, and telling someone their
+            // note needs a name is telling them the wrong thing.
+            return ValueTask.FromResult(ContextValidationResult.Rejected(
+                actionId is AddNoteActionId or AddAnnotationActionId
+                    ? "A note needs something to say."
+                    : "Every element needs a name."));
         }
 
         return ValueTask.FromResult(ContextValidationResult.Accepted);
@@ -287,10 +296,17 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
         var bodyPath = target.ResolvedFullPath;
         if (IsAdd(actionId))
         {
-            // Placed in the middle of the map, which is where a menu-driven add has to go: the
-            // menu carries no position, and the user's next drag is what puts it somewhere.
-            var kind = actionId == AddAnchorActionId ? "anchor" : actionId == AddSubmapActionId ? "submap" : "component";
-            return await Execute(target, new AddWardleyElementCommand(bodyPath, kind, value.Trim(), 0.5d, 0.5d), cancellationToken);
+            // Placed in the middle of the map. Requirement 13.4 asks for a dropped element to
+            // land where it was dropped - the one notation where a position is a claim rather
+            // than a convenience - but nothing carries a drop position to a provider:
+            // `ExecuteActionRequest` has no such field and `ContextTarget` no such member. The
+            // gap is reported rather than papered over (Requirement 12.5); until it closes, an
+            // added element lands in the middle and the user's next drag places it, which is at
+            // least a position they chose rather than one that looks authoritative.
+            return await Execute(
+                target,
+                AddCommandFor(actionId, bodyPath, value.Trim(), 0.5d, 0.5d),
+                cancellationToken);
         }
 
         var map = WardleyParser.Parse(_documents.GetOrLoad(bodyPath));
@@ -352,6 +368,10 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
         new(AddComponentActionId, "Add component…", "mdi-plus"),
         new(AddAnchorActionId, "Add anchor…", "mdi-anchor"),
         new(AddSubmapActionId, "Add submap…", "mdi-map-outline"),
+        new(AddMarketActionId, "Add market…", "mdi-store-outline"),
+        new(AddEcosystemActionId, "Add ecosystem…", "mdi-graph-outline"),
+        new(AddNoteActionId, "Add note…", "mdi-note-outline"),
+        new(AddAnnotationActionId, "Add annotation…", "mdi-comment-text-outline"),
     ];
 
     private ValueTask<IReadOnlyList<ContextActionGroupDefinition>> ForComponent(WardleyMap map, WardleyIdentityEntry entry)
@@ -517,11 +537,36 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
     {
         AddAnchorActionId => "anchor",
         AddSubmapActionId => "submap",
+        AddMarketActionId => "market",
+        AddEcosystemActionId => "ecosystem",
+        AddNoteActionId => "note",
+        AddAnnotationActionId => "annotation",
         _ => "component",
     };
 
+    /// <summary>What a new element of this kind is asked for: a name, or the text it carries.</summary>
+    private static string AddFieldLabel(string actionId) =>
+        actionId is AddNoteActionId or AddAnnotationActionId ? "Text" : "Name";
+
     private static bool IsAdd(string actionId) =>
-        actionId is AddComponentActionId or AddAnchorActionId or AddSubmapActionId;
+        actionId is AddComponentActionId or AddAnchorActionId or AddSubmapActionId
+            or AddMarketActionId or AddEcosystemActionId or AddNoteActionId or AddAnnotationActionId;
+
+    /// <summary>The command one add action dispatches, at the position it was given.</summary>
+    private static ICommand AddCommandFor(string actionId, string bodyPath, string value, double visibility, double maturity) =>
+        actionId switch
+        {
+            AddNoteActionId => new AddWardleyNoteCommand(bodyPath, value, visibility, maturity),
+            AddAnnotationActionId => new AddWardleyAnnotationCommand(bodyPath, value, visibility, maturity),
+
+            // Market and ecosystem are components carrying a decorator, not kinds of their own
+            // (Requirement 13.2) - written in one command, so one drop is one undo.
+            AddMarketActionId => new AddWardleyElementCommand(bodyPath, "component", value, visibility, maturity, WardleyDecorator.Market),
+            AddEcosystemActionId => new AddWardleyElementCommand(bodyPath, "component", value, visibility, maturity, WardleyDecorator.Ecosystem),
+            AddAnchorActionId => new AddWardleyElementCommand(bodyPath, "anchor", value, visibility, maturity),
+            AddSubmapActionId => new AddWardleyElementCommand(bodyPath, "submap", value, visibility, maturity),
+            _ => new AddWardleyElementCommand(bodyPath, "component", value, visibility, maturity),
+        };
 
     private static WardleyDecorator? DecoratorOf(string actionId)
     {

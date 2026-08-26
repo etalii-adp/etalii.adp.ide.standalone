@@ -50,6 +50,10 @@ public static class ServiceCollectionAddWardleyMapExtension
         // (Requirement 11.4).
         services.AddSingleton<IContextActionProvider, WardleyContextActionProvider>();
 
+        // The palette, static per type and assertable without the panel that shows it
+        // (Requirement 13.7).
+        services.AddSingleton<IDiagramToolboxProvider, WardleyToolboxProvider>();
+
         // The per-connection view: baseline, viewport, deltas and a positional drag
         // (Requirement 10.8).
         services.AddSingleton<IDiagramSessionFactory, WardleySessionFactory>();
@@ -57,6 +61,8 @@ public static class ServiceCollectionAddWardleyMapExtension
         // The type's commands, so every edit is one undo away (tech.md's Commands rule).
         services.AddSingleton<ICommandHandler<MoveWardleyElementCommand>, MoveWardleyElementCommandHandler>();
         services.AddSingleton<ICommandHandler<AddWardleyElementCommand>, AddWardleyElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<AddWardleyNoteCommand>, AddWardleyNoteCommandHandler>();
+        services.AddSingleton<ICommandHandler<AddWardleyAnnotationCommand>, AddWardleyAnnotationCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveWardleyElementCommand>, RemoveWardleyElementCommandHandler>();
         services.AddSingleton<ICommandHandler<RenameWardleyElementCommand>, RenameWardleyElementCommandHandler>();
         services.AddSingleton<ICommandHandler<SetWardleyInertiaCommand>, SetWardleyInertiaCommandHandler>();

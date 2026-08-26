@@ -4,10 +4,38 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 
 /// <summary>Adds a `component`, `anchor` or `submap` statement (Requirement 9.3).</summary>
 /// <param name="Kind">The keyword to write: `component`, `anchor` or `submap`.</param>
+/// <param name="Decorator">
+/// A decorator the new element carries from the moment it is written. This is what makes the
+/// toolbox's <b>Market</b> and <b>Ecosystem</b> entries possible: Requirement 13.2 says they
+/// drop a component <em>carrying that decorator</em> rather than an element kind of their own,
+/// and doing it in this one command is what keeps one drop to one undo.
+/// </param>
 public sealed record AddWardleyElementCommand(
     string BodyPath,
     string Kind,
     string Name,
+    double Visibility,
+    double Maturity,
+    WardleyDecorator? Decorator = null) : ICommand;
+
+/// <summary>Adds a `note` - free text pinned at a position (Requirement 6.7).</summary>
+public sealed record AddWardleyNoteCommand(
+    string BodyPath,
+    string Text,
+    double Visibility,
+    double Maturity) : ICommand;
+
+/// <summary>
+/// Adds a numbered `annotation` (Requirement 6.8).
+/// </summary>
+/// <remarks>
+/// The number is chosen by the command rather than passed in: the map's annotations are a
+/// numbered sequence the map itself shows, so a caller picking the number could produce two
+/// annotation 3s - which the format allows to be written and no reader can make sense of.
+/// </remarks>
+public sealed record AddWardleyAnnotationCommand(
+    string BodyPath,
+    string Text,
     double Visibility,
     double Maturity) : ICommand;
 

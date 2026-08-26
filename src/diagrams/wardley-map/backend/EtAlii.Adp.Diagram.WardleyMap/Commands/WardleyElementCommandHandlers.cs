@@ -73,9 +73,10 @@ public sealed class AddWardleyElementCommandHandler : ICommandHandler<AddWardley
 
         var before = document.ToText();
         var position = WardleyAxis.Clamp(new WardleyCoordinate(command.Visibility, command.Maturity));
+        var decorator = command.Decorator is { } word ? $" ({word.ToString().ToLowerInvariant()})" : "";
         WardleyWriter.Append(
             document,
-            $"{command.Kind.ToLowerInvariant()} {command.Name} [{WardleyEdit.Number(position.Visibility)}, {WardleyEdit.Number(position.Maturity)}]");
+            $"{command.Kind.ToLowerInvariant()} {command.Name} [{WardleyEdit.Number(position.Visibility)}, {WardleyEdit.Number(position.Maturity)}]{decorator}");
 
         _documents.Save(command.BodyPath);
         return Task.FromResult(CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before)));
@@ -246,6 +247,79 @@ public sealed class SetWardleyDecoratorCommandHandler : ICommandHandler<SetWardl
         _documents.Save(command.BodyPath);
         return Task.FromResult(CommandResult.Success(
             new RestoreWardleyLineCommand(command.BodyPath, component.Line, before)));
+    }
+}
+
+public sealed class AddWardleyNoteCommandHandler : ICommandHandler<AddWardleyNoteCommand>
+{
+    private readonly IWardleyDocumentStore _documents;
+
+    public AddWardleyNoteCommandHandler(IWardleyDocumentStore documents)
+    {
+        ArgumentNullException.ThrowIfNull(documents);
+        _documents = documents;
+    }
+
+    public Task<CommandResult> ExecuteAsync(AddWardleyNoteCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (string.IsNullOrWhiteSpace(command.Text))
+        {
+            // A note's text is also the only handle its identity has, so an empty one could not
+            // be found again even by ADP itself.
+            return Task.FromResult(CommandResult.Failure("A note needs something to say."));
+        }
+
+        var document = _documents.GetOrLoad(command.BodyPath);
+        var before = document.ToText();
+        var position = WardleyAxis.Clamp(new WardleyCoordinate(command.Visibility, command.Maturity));
+
+        WardleyWriter.Append(
+            document,
+            $"note {command.Text.Trim()} [{WardleyEdit.Number(position.Visibility)}, {WardleyEdit.Number(position.Maturity)}]");
+
+        _documents.Save(command.BodyPath);
+        return Task.FromResult(CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before)));
+    }
+}
+
+public sealed class AddWardleyAnnotationCommandHandler : ICommandHandler<AddWardleyAnnotationCommand>
+{
+    private readonly IWardleyDocumentStore _documents;
+
+    public AddWardleyAnnotationCommandHandler(IWardleyDocumentStore documents)
+    {
+        ArgumentNullException.ThrowIfNull(documents);
+        _documents = documents;
+    }
+
+    public Task<CommandResult> ExecuteAsync(AddWardleyAnnotationCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (string.IsNullOrWhiteSpace(command.Text))
+        {
+            return Task.FromResult(CommandResult.Failure("An annotation needs something to say."));
+        }
+
+        var document = _documents.GetOrLoad(command.BodyPath);
+        var map = WardleyParser.Parse(document);
+        var before = document.ToText();
+        var position = WardleyAxis.Clamp(new WardleyCoordinate(command.Visibility, command.Maturity));
+
+        // One past the highest, rather than one past the count: a map whose annotation 2 was
+        // deleted still has a 3, and reusing that number would put two of them on the map.
+        var number = map.Annotations.Count == 0 ? 1 : map.Annotations.Max(annotation => annotation.Number) + 1;
+
+        WardleyWriter.Append(
+            document,
+            $"annotation {number} [{WardleyEdit.Number(position.Visibility)}, {WardleyEdit.Number(position.Maturity)}] {command.Text.Trim()}");
+
+        _documents.Save(command.BodyPath);
+        return Task.FromResult(CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before)));
     }
 }
 

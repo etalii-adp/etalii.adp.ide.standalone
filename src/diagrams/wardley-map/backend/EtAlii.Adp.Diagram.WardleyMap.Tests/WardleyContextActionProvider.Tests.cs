@@ -157,12 +157,17 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         // Act. No element id: the diagram rather than something on it.
         var ids = await ActionIdsFor("");
 
-        // Assert.
+        // Assert. Everything a map can be given that needs no other element to exist first -
+        // which is also, one for one, what the toolbox offers as a drop.
         Assert.Equal(
             [
                 WardleyContextActionProvider.AddComponentActionId,
                 WardleyContextActionProvider.AddAnchorActionId,
                 WardleyContextActionProvider.AddSubmapActionId,
+                WardleyContextActionProvider.AddMarketActionId,
+                WardleyContextActionProvider.AddEcosystemActionId,
+                WardleyContextActionProvider.AddNoteActionId,
+                WardleyContextActionProvider.AddAnnotationActionId,
             ],
             ids);
     }
