@@ -53,6 +53,10 @@ public static class ServiceCollectionAddAzurePipelineExtension
         // (Requirement 13.1). Almost everything is shown and not editable, on purpose.
         services.AddSingleton<IContextPropertyProvider, PipelineContextPropertyProvider>();
 
+        // The rules. Registered like any other seam, so its problems reach the Errors and
+        // Warnings panel exactly as every other type's do (Requirement 10.1).
+        services.AddSingleton<IDiagramValidator, PipelineValidator>();
+
         // The editable set, one handler per command. Every one of them is undoable, because every
         // one reports the command that reverses it (Requirement 9.2).
         services.AddSingleton<ICommandHandler<RenamePipelineElementCommand>, RenamePipelineElementCommandHandler>();
