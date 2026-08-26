@@ -20,12 +20,12 @@ public sealed class C4Validator : IDiagramValidator
 
     public DiagramOrigin Origin { get; }
 
-    public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(string document, string baseName, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(DiagramValidationRequest request, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(request);
 
         cancellationToken.ThrowIfCancellationRequested();
-        var workspace = C4Parser.Parse(C4Document.Parse(document));
+        var workspace = C4Parser.Parse(C4Document.Parse(request.Document));
         return ValueTask.FromResult(C4RuleSet.Validate(workspace));
     }
 }

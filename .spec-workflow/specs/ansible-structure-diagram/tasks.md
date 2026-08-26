@@ -249,7 +249,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA-minded C# developer | Task: Exercise every read path of the module against the fixture and assert the tree is byte-identical afterwards, mtimes included | Restrictions: exercise the real components, not mocks of them; include the refused write attempts, since a refusal that still touched the disk is the bug this guards | Success: the test fails if any component is later given a write path, and passes today_
 
-- [-] 25. Integration flows
+- [x] 25. Integration flows
   - File: `.../AnsibleStructureFlow.Tests.cs`, `AnsibleValidationFlow.Tests.cs` (new)
   - **Flow**: Add on a folder writes one `.adp` and nothing else; open it; receive the baseline; select a role; describe its properties; touch `roles/nginx/meta/main.yml` and see the deltas arrive
   - **Validation**: the broken fixture produces each problem attributed to the declaring file; fixing a file on disk clears it **through the watcher**, not through a manual revalidate — which is what tasks 5 and 6 exist for
@@ -258,7 +258,7 @@
   - _Requirements: 2.2, 2.3, 3.5, 8.1, 9.1, 9.3_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer writing integration tests against the real host | Task: Cover the Add-open-select-follow flow and the validate-fix-clear flow end to end | Restrictions: use the real host and the real module registrations; assert that Add wrote exactly one file; the clear must come from the watcher, not from an explicit revalidate call | Success: both flows pass, and the validation flow fails if task 6's walk-up is removed_
 
-- [ ] 26. Catalog, manual pass and implementation log
+- [x] 26. Catalog, manual pass and implementation log
   - File: `docs/diagrams.md` (edited), `tests.md` (edited), `.spec-workflow/specs/ansible-structure-diagram/Implementation Logs/` (new)
   - Move the `ansible/structure` row from 📝 Specified to ✅ Implemented per CLAUDE.md's catalog rule
   - Run the app from the worktree on a free port pair and verify by hand: right-click a folder → **Add… → Ansible project structure** creates one file; the diagram opens; double-clicking the `nginx` role reveals `roles/nginx/tasks/main.yml` in the explorer; selecting an edge shows which file and directive declared it; deleting `roles/common/` in a text editor moves both the diagram and the problems panel; the toolbox says the type has no entries and the ribbon offers no edit; `git status` is clean apart from the deletion made by hand. Revert both port files before merging

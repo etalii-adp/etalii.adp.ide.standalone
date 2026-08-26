@@ -193,7 +193,18 @@ message ProblemLocation {
     ElementId element_id = 1;
     // The 1-based line of the document text, for a rule that judged the text.
     uint32 line = 2;
+    // Another file entirely, for a diagram whose subject is a folder of them: the mistake is
+    // in the file that declared it, not in the .adp that marks the folder. Activating such a
+    // problem reveals that file rather than the diagram.
+    ProblemFileLocation file = 3;
   }
+}
+
+// A file inside a folder-subject diagram, and optionally a line in it.
+message ProblemFileLocation {
+  // Project-relative, never absolute - the same rule Problem.path obeys.
+  Path path = 1;
+  uint32 line = 2;  // 1-based; 0 when the rule can only name the file
 }
 
 enum ProblemSeverity {

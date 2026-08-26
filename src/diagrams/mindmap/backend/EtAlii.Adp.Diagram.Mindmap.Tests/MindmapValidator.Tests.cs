@@ -1,4 +1,5 @@
 using Xunit;
+using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.Mindmap.Tests;
 
@@ -106,6 +107,18 @@ public class MindmapValidatorTests
         Assert.Contains(problems, problem => problem.RuleId == "mindmap.duplicate-id");
     }
 
+    // The mindmap rules read the text and nothing else today, so the request's paths are
+    // plausible rather than real - no rule resolves one. They stop being decorative the day a
+    // broken-link rule is written, which the seam now allows.
     private async Task<IReadOnlyList<DiagramProblem>> Validate(string document) =>
-        await _validator.ValidateAsync(document, "architecture", TestContext.Current.CancellationToken);
+        await _validator.ValidateAsync(
+            new DiagramValidationRequest(
+                document,
+                "architecture",
+                RootPath: Root,
+                BodyPath: IoPath.Combine(Root, "architecture.mm"),
+                RegistrationPath: IoPath.Combine(Root, "architecture.adp")),
+            TestContext.Current.CancellationToken);
+
+    private static readonly string Root = IoPath.Combine(IoPath.GetTempPath(), "mindmap-validator-tests");
 }

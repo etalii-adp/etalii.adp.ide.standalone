@@ -25,21 +25,20 @@ public sealed class PipelineValidator : IDiagramValidator
 
     /// <inheritdoc />
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
-        string document,
-        string baseName,
-        CancellationToken cancellationToken)
+        DiagramValidationRequest request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
         PipelineModel model;
         try
         {
-            model = PipelineParser.Parse(PipelineDocument.Parse(document ?? ""));
+            model = PipelineParser.Parse(PipelineDocument.Parse(request.Document ?? ""));
         }
         catch (YamlException exception)
         {
             var line = (uint)Math.Max(exception.Start.Line, 1);
-            _logger.Debug(exception, "{BaseName} does not parse at line {Line}", baseName, line);
+            _logger.Debug(exception, "{BaseName} does not parse at line {Line}", request.BaseName, line);
             return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>(
             [
                 new DiagramProblem(

@@ -148,6 +148,54 @@ non-compositing pane.
   Properties panel shows the new value in its Text row - it re-describes from the push. Then
   press **Undo** in tab A: both tabs return to the old value, canvas and grid alike.
 
+## The Ansible diagram opens from Add and draws its folder (ansible-structure-diagram, task 26)
+
+The task 26 pass verified the backend half live - the type was discovered, both fixture folders
+registered, and the problems panel showed all five rules with each problem's own file and line -
+but could not drive the explorer's context menu or the canvas, because the Browser pane was not
+displayed and so did not composite frames. Synthetic `contextmenu` and `dblclick` events do not
+take. These are the checks that needs a real pair of eyes.
+
+- **Preconditions**: the app running; a project open whose folder contains an Ansible project
+  laid out the recommended way (the module's `Fixtures/infrastructure` tree is one - copy it
+  somewhere outside the repository first, since nothing may write into the committed fixtures).
+- **Actions and expected results**:
+  1. Right-click the `infrastructure` folder in the explorer. → An **Add…** submenu offers
+     **Ansible project structure (read-only)** among the diagram types.
+  2. Choose it. → Exactly one file appears in the folder, `infrastructure.adp`, whose first line
+     is `ansible/structure`. Nothing else in the tree changes - check `git status` if the folder
+     is under version control.
+  3. Double-click that `.adp`. → The diagram opens: `site.yml` leftmost, `webservers.yml` and
+     `dbservers.yml` to its right, the three roles right of those, `tls.yml` right of `nginx`,
+     and the two inventories with their variable folders in a band **below** the flow.
+  4. Look at the edge styles. → `roles:` and `import_playbook` draw solid; the `include_tasks`
+     from `nginx` to `tls.yml` draws dashed; the two `dependencies` edges into `common` draw in
+     a third style. Each carries its directive as a label, and the `postgres` edge also shows
+     its `when:` as written.
+  5. Double-click the `nginx` role. → The explorer reveals `roles/nginx`, expanding to it.
+  6. Press **Enter** with a node focused. → The same reveal happens from the keyboard.
+  7. Select the `nginx` role and look at **Properties**. → Every row is greyed with a reason
+     beside it, and no row has an editable field. The **Depends on** row's reason names
+     `roles/nginx/meta/main.yml`, not the role folder.
+  8. Look at the **Toolbox**. → It says the type offers no elements, and nothing can be dragged
+     onto the canvas.
+  9. Delete `roles/common/` in a text editor or file manager, leaving the app open. → The
+     diagram loses the `common` node without being reopened, and the problems panel gains
+     `ansible.role-missing` entries pointing at `webservers.yml` and `dbservers.yml`.
+ 10. Put `roles/common/` back. → Both the diagram and the panel return to their earlier state.
+
+## An Ansible diagram in a subfolder reveals the right file (ansible-structure-diagram, task 26)
+
+Guards the bug the integration flow found: the rule set works in the diagram folder's terms and
+core in the project's, so a diagram that is not at the project root once attributed every problem
+to a path that did not exist. Automated now, but the panel's reveal is the part a person sees.
+
+- **Preconditions**: a project whose root contains the module's `Fixtures/broken` tree in a
+  **subfolder**, registered with a `.adp` inside that subfolder.
+- **Actions**: open the Errors and Warnings panel and double-click the
+  `The role 'absent-role' has no folder under roles/.` row.
+- **Expected**: the explorer reveals `<subfolder>/playbooks/deploy.yml` - the playbook that
+  named the role - and not the `.adp`, and not a path that fails to resolve.
 ## `dotnet test` discovers tests in a long worktree path (build tooling)
 
 Windows' 260-character `MAX_PATH` silently breaks the backend build in deep checkouts. MSBuild's

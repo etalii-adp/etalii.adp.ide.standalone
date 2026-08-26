@@ -8,8 +8,9 @@ using EtAlii.Adp.Backend.Problems;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Diagram.C4;
+using EtAlii.Adp.Diagram.AnsibleStructure;
 using EtAlii.Adp.Diagram.AzurePipeline;
+using EtAlii.Adp.Diagram.C4;
 using EtAlii.Adp.Diagram.Mindmap;
 using JetBrains.Annotations;
 using Serilog;
@@ -68,6 +69,8 @@ builder.Services.AddC4();
 // Azure DevOps pipelines: a document the repository already owns, registered by the user
 // rather than routed on sight, because .yml belongs to no one type.
 builder.Services.AddAzurePipeline();
+// Read-only, and the only type whose subject is a folder rather than a document.
+builder.Services.AddAnsibleStructure();
 
 builder.Services.AddClientAppHosting(builder.Configuration);
 

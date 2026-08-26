@@ -12,7 +12,7 @@ internal sealed class ProjectValidatorTestValidator(
     public TaskCompletionSource? Hold { get; set; }
 
     public async ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
-        string document, string baseName, CancellationToken cancellationToken)
+        DiagramValidationRequest request, CancellationToken cancellationToken)
     {
         Interlocked.Increment(ref _calls);
         if (Hold is not null)
