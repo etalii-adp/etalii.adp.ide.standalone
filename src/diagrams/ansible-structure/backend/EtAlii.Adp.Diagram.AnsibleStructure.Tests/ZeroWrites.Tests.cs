@@ -114,11 +114,11 @@ public class ZeroWritesTests : IDisposable
 
         foreach (var (path, expected) in before.OrderBy(pair => pair.Key, StringComparer.Ordinal))
         {
-            var actual = after[path];
-            Assert.True(expected.Bytes.SequenceEqual(actual.Bytes), $"The module rewrote the contents of {path}.");
+            var (actualBytes, actualWritten) = after[path];
+            Assert.True(expected.Bytes.SequenceEqual(actualBytes), $"The module rewrote the contents of {path}.");
             Assert.True(
-                expected.Written == actual.Written,
-                $"The module touched {path}: written {expected.Written:O} before, {actual.Written:O} after.");
+                expected.Written == actualWritten,
+                $"The module touched {path}: written {expected.Written:O} before, {actualWritten:O} after.");
         }
     }
 

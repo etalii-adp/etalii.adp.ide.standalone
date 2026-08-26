@@ -194,17 +194,18 @@ public sealed class ProblemStore : IProblemStore, IDisposable
 
     private bool IsStale(string rootPath, StoredProblem problem)
     {
-        FileInfo info;
-        try
-        {
-            info = new FileInfo(IoPath.Combine(rootPath, problem.RelativePath));
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+        // The subject may be a folder as well as a file - a rule that blames a role folder has
+        // no file to blame - and FileInfo.Exists is false for one, which made every
+        // folder-located problem permanently stale (found by the ansible-structure-diagram
+        // manual pass).
+        var fullPath = ProblemStamp.FullPathOrNull(rootPath, problem.RelativePath);
+        if (fullPath is null || !ProblemStamp.Exists(fullPath))
         {
             return true;
         }
 
-        if (!info.Exists || info.LastWriteTimeUtc != problem.LastWriteTimeUtc || info.Length != problem.Length)
+        var (lastWriteTimeUtc, length) = ProblemStamp.Of(fullPath);
+        if (lastWriteTimeUtc != problem.LastWriteTimeUtc || length != problem.Length)
         {
             return true;
         }
@@ -216,7 +217,7 @@ public sealed class ProblemStore : IProblemStore, IDisposable
 
         // A module release invalidates its own verdicts (Requirement 4.7): compare against
         // the rules that would judge the file today.
-        return _router.Route(info.FullName) is DiagramRouted routed
+        return _router.Route(fullPath) is DiagramRouted routed
                && !string.Equals(_validators.RulesVersion(routed.Definition.Origin), problem.RulesVersion, StringComparison.Ordinal);
     }
 

@@ -131,7 +131,7 @@ public class AnsibleProjectStoreTests : IDisposable
     public async Task ABurstOfChanges_CostsFarFewerRereadsThanChanges()
     {
         // Arrange.
-        const int Changes = 6;
+        const int changeCount = 6;
         _store.GetOrLoad(_root);
         var changes = Watch();
 
@@ -141,7 +141,7 @@ public class AnsibleProjectStoreTests : IDisposable
         // intermittently, because any stall longer than the settle delay lets the timer fire
         // mid-burst and produce a second - so it was measuring the machine's load, not the
         // store's coalescing.
-        for (var i = 0; i < Changes; i++)
+        for (var i = 0; i < changeCount; i++)
         {
             File.AppendAllText(IoPath.Combine(_root, "webservers.yml"), $"# touch {i}\n");
         }
@@ -153,7 +153,7 @@ public class AnsibleProjectStoreTests : IDisposable
         {
             // The claim that is actually true and worth guarding: a burst costs materially
             // fewer re-reads than it has changes. Demanding exactly one would be a clock test.
-            Assert.InRange(changes.Count, 1, Changes - 1);
+            Assert.InRange(changes.Count, 1, changeCount - 1);
         }
     }
 

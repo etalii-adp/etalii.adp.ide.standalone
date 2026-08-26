@@ -88,16 +88,10 @@ public sealed class AnsibleValidator : IDiagramValidator
         }
 
         var prefix = IoPath.GetRelativePath(rootPath, folder).Replace('\\', '/');
-        if (prefix is "." or "")
-        {
-            return problems;
-        }
-
-        return
-        [
-            .. problems.Select(problem => problem.Location is DiagramProblemFileLocation located
+        return prefix is "." or ""
+            ? problems
+            : [.. problems.Select(problem => problem.Location is DiagramProblemFileLocation located
                 ? problem with { Location = located with { RelativePath = $"{prefix}/{located.RelativePath}" } }
-                : problem),
-        ];
+                : problem)];
     }
 }
