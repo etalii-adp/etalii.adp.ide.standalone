@@ -4,8 +4,14 @@ import { create, toBinary } from "@bufbuild/protobuf";
 import { DeltaSchema } from "@client/generated/deltas_pb";
 import { ElementSchema } from "@client/generated/elements_pb";
 import {
+  WardleyAnnotationPayloadSchema,
+  WardleyAttitudeKind,
+  WardleyAttitudePayloadSchema,
+  WardleyDecorator,
+  WardleyElementKind,
   WardleyElementPayloadSchema,
   WardleyEvolutionAxisPayloadSchema,
+  WardleyLinkPayloadSchema,
 } from "@client/generated/wardley-map_pb";
 import { applyDelta, emptyModel, type WardleyModel } from "./wardleyModel";
 
@@ -187,19 +193,193 @@ describe("WardleyCanvas chrome", () => {
   });
 });
 
+/** Adds one element of `type` to a model that already carries the axis. */
+function withElement(
+  model: WardleyModel,
+  id: string,
+  type: string,
+  payload: Uint8Array,
+  x = 0.5,
+  y = 0.5,
+): WardleyModel {
+  return applyDelta(model, addDelta(id, type, payload, x, y));
+}
+
+function element(fields: Parameters<typeof create<typeof WardleyElementPayloadSchema>>[1]) {
+  return toBinary(WardleyElementPayloadSchema, create(WardleyElementPayloadSchema, fields));
+}
+
 describe("WardleyCanvas elements", () => {
   it("places a component where the document put it", () => {
     // Arrange. The backend already converted [visibility, maturity] into a canvas point, so a
     // highly visible genesis component arrives at (0.1, 0.1) and belongs top-left.
-    const payload = toBinary(WardleyElementPayloadSchema, create(WardleyElementPayloadSchema, { name: "Alpha" }));
-    const model = applyDelta(withAxis(), addDelta("a", "wardley/map+element", payload, 0.1, 0.1));
+    const model = withElement(withAxis(), "a", "wardley/map+element", element({ name: "Alpha" }), 0.1, 0.1);
 
     // Act.
     const { container } = renderCanvas(model);
 
     // Assert.
-    const element = container.querySelector(".wardley-element");
-    expect(element?.getAttribute("cx")).toBe("100");
-    expect(element?.getAttribute("cy")).toBe("100");
+    const shape = container.querySelector(".wardley-element");
+    expect(shape?.getAttribute("cx")).toBe("100");
+    expect(shape?.getAttribute("cy")).toBe("100");
+  });
+
+  it("tells the three kinds apart by shape rather than by colour", () => {
+    // Arrange. Requirement 8.3 - a map printed in grey still has to say which is which.
+    let model = withElement(withAxis(), "c", "wardley/map+element", element({ name: "C", kind: WardleyElementKind.COMPONENT }));
+    model = withElement(model, "a", "wardley/map+element", element({ name: "A", kind: WardleyElementKind.ANCHOR }), 0.2, 0.2);
+    model = withElement(model, "s", "wardley/map+element", element({ name: "S", kind: WardleyElementKind.SUBMAP }), 0.3, 0.3);
+
+    // Act.
+    const { container } = renderCanvas(model);
+
+    // Assert. A circle, a square, and a ringed circle.
+    expect(container.querySelector(".wardley-kind-component circle.wardley-element")).not.toBeNull();
+    expect(container.querySelector(".wardley-kind-anchor rect.wardley-element")).not.toBeNull();
+    expect(container.querySelector(".wardley-kind-submap .wardley-element-outer")).not.toBeNull();
+  });
+
+  it("spells out the decorators and inertia rather than using a glyph", () => {
+    // Arrange. Requirement 6.9 - legible without entering an edit mode, and a symbol the reader
+    // has to learn is not legible.
+    const model = withElement(
+      withAxis(),
+      "p",
+      "wardley/map+element",
+      element({ name: "Payment", decorators: [WardleyDecorator.BUY], inertia: true }),
+    );
+
+    // Act.
+    const { container } = renderCanvas(model);
+
+    // Assert.
+    expect(container.querySelector(".wardley-element-badges")?.textContent).toBe("buy · inertia");
+    expect(container.querySelector(".wardley-inertia")).not.toBeNull();
+  });
+
+  it("draws an evolving component at both positions, joined", () => {
+    // Arrange. Requirement 6.1 - the pair is the point of the statement.
+    const model = withElement(
+      withAxis(),
+      "d",
+      "wardley/map+element",
+      element({
+        name: "Datacentre",
+        evolve: { maturity: 0.83, evolutionStage: "Commodity (+utility)", overrideName: "Cloud Hosting" },
+      }),
+      0.2,
+      0.5,
+    );
+
+    // Act.
+    const { container } = renderCanvas(model);
+
+    // Assert. The current position, the target, the line between them, and the arrival name.
+    expect(container.querySelector(".wardley-evolve")).not.toBeNull();
+    expect(container.querySelector(".wardley-evolve-target")?.getAttribute("cx")).toBe("830");
+    expect(container.textContent).toContain("Cloud Hosting");
+  });
+
+  it("draws a link between two elements and marks a flow link differently", () => {
+    // Arrange.
+    let model = withElement(withAxis(), "a", "wardley/map+element", element({ name: "A" }), 0.2, 0.2);
+    model = withElement(model, "b", "wardley/map+element", element({ name: "B" }), 0.8, 0.8);
+    const link = toBinary(
+      WardleyLinkPayloadSchema,
+      create(WardleyLinkPayloadSchema, { sourceId: "a", targetId: "b", isFlow: true }),
+    );
+    model = applyDelta(model, addDelta("l", "wardley/map+link", link));
+
+    // Act.
+    const { container } = renderCanvas(model);
+
+    // Assert.
+    expect(container.querySelectorAll(".wardley-link")).toHaveLength(1);
+    expect(container.querySelector(".wardley-link-flow")).not.toBeNull();
+  });
+
+  it("does not draw a link whose endpoint does not resolve", () => {
+    // Arrange. Requirement 3.5 - the map still opens; there is simply nowhere to draw the line
+    // to, and the validator reports the dangling name.
+    let model = withElement(withAxis(), "a", "wardley/map+element", element({ name: "A" }), 0.2, 0.2);
+    const link = toBinary(
+      WardleyLinkPayloadSchema,
+      create(WardleyLinkPayloadSchema, { sourceId: "a", targetId: "", targetName: "Nowhere" }),
+    );
+    model = applyDelta(model, addDelta("l", "wardley/map+link", link));
+
+    // Act.
+    const { container } = renderCanvas(model);
+
+    // Assert. No line, and the rest of the map is still drawn.
+    expect(container.querySelectorAll(".wardley-link")).toHaveLength(0);
+    expect(container.querySelectorAll(".wardley-element")).toHaveLength(1);
+  });
+
+  it("honours a label offset in pixels rather than map coordinates", () => {
+    // Arrange. Requirement 5.5 - the offset is a property of the format, reproduced rather than
+    // corrected. At a 1000-unit space, a -57px offset must not be read as -57 units of map.
+    const model = withElement(
+      withAxis(),
+      "k",
+      "wardley/map+element",
+      element({ name: "Kettle", labelOffset: { x: -57, y: 4 } }),
+      0.5,
+      0.5,
+    );
+
+    // Act.
+    const { container } = renderCanvas(model);
+
+    // Assert.
+    const label = container.querySelector(".wardley-element-label");
+    expect(label?.getAttribute("x")).toBe("443");
+    expect(label?.getAttribute("y")).toBe("504");
+  });
+
+  it("draws every occurrence of a multi-position annotation", () => {
+    // Arrange. Requirement 6.8 - one annotation, several pins, none of them lost.
+    const payload = toBinary(
+      WardleyAnnotationPayloadSchema,
+      create(WardleyAnnotationPayloadSchema, {
+        number: 1,
+        text: "Standardising power",
+        occurrences: [
+          { x: 0.49, y: 0.57 },
+          { x: 0.79, y: 0.92 },
+        ],
+      }),
+    );
+    const model = applyDelta(withAxis(), addDelta("n", "wardley/map+annotation", payload, 0.49, 0.57));
+
+    // Act.
+    const { container } = renderCanvas(model);
+
+    // Assert. Two marks, both numbered 1.
+    const marks = container.querySelectorAll(".wardley-annotation");
+    expect(marks).toHaveLength(2);
+    expect([...marks].every((mark) => mark.textContent?.includes("1"))).toBe(true);
+  });
+
+  it("draws an attitude region behind the elements it covers", () => {
+    // Arrange. Requirement 6.4.
+    const payload = toBinary(
+      WardleyAttitudePayloadSchema,
+      create(WardleyAttitudePayloadSchema, {
+        kind: WardleyAttitudeKind.PIONEERS,
+        opposite: { x: 0.55, y: 0.8 },
+      }),
+    );
+    let model = applyDelta(withAxis(), addDelta("att", "wardley/map+attitude", payload, 0.2, 0.3));
+    model = withElement(model, "a", "wardley/map+element", element({ name: "A" }), 0.3, 0.4);
+
+    // Act.
+    const { container } = renderCanvas(model);
+
+    // Assert. Present, sized from the two corners, and painted before the element.
+    const region = container.querySelector(".wardley-attitude");
+    expect(region?.getAttribute("width")).toBe("350");
+    const shape = container.querySelector(".wardley-element-group");
+    expect(region!.compareDocumentPosition(shape!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

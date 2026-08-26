@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { anchorsBetween, straightPath, type ConnectorBox } from "@client/canvas/connectors";
 import { useRegisterDiagramView } from "@client/shell/panels/DiagramViewContext";
-import type { WardleyAxis, WardleyModel } from "./wardleyModel";
+import {
+  WardleyAttitudeKind,
+  WardleyDecorator,
+  WardleyElementKind,
+} from "@client/generated/wardley-map_pb";
+import type { WardleyAxis, WardleyElement, WardleyModel } from "./wardleyModel";
 import { useWardleyStream } from "./useWardleyStream";
 
 /**
@@ -33,9 +39,15 @@ export interface WardleyCanvasProps {
   path: readonly string[];
 }
 
-/** A 0..1 map coordinate as canvas units. */
+/**
+ * A 0..1 map coordinate as canvas units.
+ *
+ * Rounded to two decimals, which at a 1000-unit space is far finer than a pixel. Without it,
+ * ordinary arithmetic on the author's numbers puts values like `350.00000000000006` into the
+ * DOM - noise in every attribute, and a diff nobody can read when a snapshot is compared.
+ */
 function scale(value: number): number {
-  return value * SPACE;
+  return Math.round(value * SPACE * 100) / 100;
 }
 
 /**
@@ -239,23 +251,234 @@ function WardleyChrome({ axis, scaleFactor }: { axis?: WardleyAxis; scaleFactor:
   );
 }
 
+/** The radius a component is drawn at, and the box a connector anchors on. */
+const DOT = 9;
+
+/** A component as a box for the shared connector geometry, which works in centres and sizes. */
+function boxOf(element: { x: number; y: number }): ConnectorBox {
+  return { x: scale(element.x), y: scale(element.y), width: DOT * 2, height: DOT * 2 };
+}
+
 /**
- * Placeholder for the elements themselves, which task 15 draws. The chrome is deliberately a
- * separate component: it is the half that must be correct before anything is plotted against
- * it, and it is what an empty map shows on its own (Requirement 1.4).
+ * Everything the author put on the map: the attitude regions behind, then the links, then the
+ * elements and their annotations on top.
+ *
+ * The chrome is a separate component because it is the half that must be correct before
+ * anything is plotted against it, and it is what an empty map shows on its own
+ * (Requirement 1.4).
  */
 function WardleyContents({ model }: { model: WardleyModel }) {
+  const elements = [...model.elements.values()];
+  const byId = model.elements;
+
   return (
     <g className="wardley-contents">
-      {[...model.elements.values()].map((element) => (
-        <circle
-          key={element.id}
-          className="wardley-element"
-          cx={scale(element.x)}
-          cy={scale(element.y)}
-          r={8}
-        />
+      {/* Behind the elements they cover (Requirement 6.4). */}
+      {[...model.attitudes.values()].map((attitude) => (
+        <g key={attitude.id}>
+          <rect
+            className={`wardley-attitude wardley-attitude-${attitudeName(attitude.kind)}`}
+            x={scale(Math.min(attitude.x, attitude.opposite.x))}
+            y={scale(Math.min(attitude.y, attitude.opposite.y))}
+            width={scale(Math.abs(attitude.opposite.x - attitude.x))}
+            height={scale(Math.abs(attitude.opposite.y - attitude.y))}
+          />
+          <text
+            className="wardley-attitude-label"
+            x={scale(Math.min(attitude.x, attitude.opposite.x)) + 8}
+            y={scale(Math.min(attitude.y, attitude.opposite.y)) + 22}
+          >
+            {attitudeName(attitude.kind)}
+          </text>
+        </g>
       ))}
+
+      {[...model.links.values()].map((link) => {
+        const source = byId.get(link.sourceId);
+        const target = byId.get(link.targetId);
+        if (!source || !target) {
+          // An endpoint that does not resolve is a dangling link. It is not drawn - there is
+          // nowhere to draw it to - and the elements involved are marked instead
+          // (Requirements 3.5, 14.2).
+          return null;
+        }
+
+        // The shared connector geometry: a Wardley link joins two boxes, and that the centres
+        // came from the document rather than from a layout changes nothing about the maths.
+        const [from, to] = anchorsBetween(boxOf(source), boxOf(target));
+        return (
+          <path
+            key={link.id}
+            className={`wardley-link${link.isFlow ? " wardley-link-flow" : ""}`}
+            d={straightPath(from, to)}
+          >
+            {link.context ? <title>{link.context}</title> : null}
+          </path>
+        );
+      })}
+
+      {/*
+        An evolving component is shown at BOTH positions joined by a movement indicator, because
+        the pair is the point of the statement (Requirement 6.1). The same connector call as a
+        link, styled dashed - the target sits at the same visibility, so this is a horizontal
+        move along the evolution axis.
+      */}
+      {elements
+        .filter((element) => element.evolve)
+        .map((element) => {
+          const target = { x: element.evolve!.maturity, y: element.y };
+          const [from, to] = anchorsBetween(boxOf(element), boxOf(target));
+          return (
+            <g key={`${element.id}-evolve`}>
+              <path className="wardley-evolve" d={straightPath(from, to)} />
+              <circle
+                className="wardley-evolve-target"
+                cx={scale(target.x)}
+                cy={scale(target.y)}
+                r={DOT}
+              />
+              {element.evolve!.overrideName ? (
+                <text
+                  className="wardley-element-label"
+                  x={scale(target.x) + DOT + 6}
+                  y={scale(target.y) + 4}
+                >
+                  {element.evolve!.overrideName}
+                </text>
+              ) : null}
+            </g>
+          );
+        })}
+
+      {elements.map((element) => (
+        <WardleyElementShape key={element.id} element={element} />
+      ))}
+
+      {[...model.accelerators.values()].map((accelerator) => (
+        <g key={accelerator.id} className="wardley-accelerator">
+          <path
+            className={accelerator.isDeaccelerator ? "wardley-accelerator-back" : "wardley-accelerator-forward"}
+            d={straightPath(
+              { x: scale(accelerator.x) - 16, y: scale(accelerator.y) },
+              { x: scale(accelerator.x) + 16, y: scale(accelerator.y) },
+            )}
+          />
+          <text className="wardley-element-label" x={scale(accelerator.x) + 22} y={scale(accelerator.y) + 4}>
+            {accelerator.name}
+          </text>
+        </g>
+      ))}
+
+      {[...model.notes.values()].map((note) => (
+        <text key={note.id} className="wardley-note" x={scale(note.x)} y={scale(note.y)}>
+          {note.text}
+        </text>
+      ))}
+
+      {/*
+        Every occurrence, not just the first. The DSL permits one numbered annotation pinned in
+        several places, and none of them may be lost (Requirement 6.8).
+      */}
+      {[...model.annotations.values()].flatMap((annotation) =>
+        annotation.occurrences.map((occurrence, index) => (
+          <g key={`${annotation.id}-${index}`} className="wardley-annotation">
+            <circle cx={scale(occurrence.x)} cy={scale(occurrence.y)} r={11} />
+            <text x={scale(occurrence.x)} y={scale(occurrence.y) + 4} textAnchor="middle">
+              {annotation.number}
+            </text>
+            <title>{annotation.text}</title>
+          </g>
+        )),
+      )}
     </g>
   );
+}
+
+/**
+ * One component, anchor or submap: its shape says which kind it is, and its decorations say
+ * what the author claimed about it - both without entering an edit mode (Requirement 6.9).
+ */
+function WardleyElementShape({ element }: { element: WardleyElement }) {
+  const x = scale(element.x);
+  const y = scale(element.y);
+
+  // The label offset is in PIXELS rather than map coordinates - a property of the format, which
+  // ADP reproduces rather than corrects (Requirement 5.5).
+  const labelX = x + (element.labelOffset?.x ?? DOT + 6);
+  const labelY = y + (element.labelOffset?.y ?? 4);
+
+  const decorations = element.decorators.map(decoratorName).filter((name) => name.length > 0);
+  const badges = [...decorations, ...(element.inertia ? ["inertia"] : [])];
+
+  return (
+    <g className={`wardley-element-group wardley-kind-${kindName(element.kind)}`}>
+      {element.kind === WardleyElementKind.ANCHOR ? (
+        // An anchor is the user need the chain hangs from, so it is drawn as a distinct mark
+        // rather than as one more component.
+        <rect className="wardley-element" x={x - DOT} y={y - DOT} width={DOT * 2} height={DOT * 2} />
+      ) : element.kind === WardleyElementKind.SUBMAP ? (
+        // A submap is a door to another map; the double ring says there is something behind it.
+        <g>
+          <circle className="wardley-element" cx={x} cy={y} r={DOT} />
+          <circle className="wardley-element-outer" cx={x} cy={y} r={DOT + 4} />
+        </g>
+      ) : (
+        <circle className="wardley-element" cx={x} cy={y} r={DOT} />
+      )}
+
+      {element.inertia ? (
+        // The wall a component is pushed against: drawn where movement would be resisted.
+        <line className="wardley-inertia" x1={x + DOT + 4} y1={y - DOT - 2} x2={x + DOT + 4} y2={y + DOT + 2} />
+      ) : null}
+
+      <text className="wardley-element-label" x={labelX} y={labelY}>
+        {element.name}
+      </text>
+
+      {badges.length > 0 ? (
+        <text className="wardley-element-badges" x={labelX} y={labelY + 16}>
+          {badges.join(" · ")}
+        </text>
+      ) : null}
+    </g>
+  );
+}
+
+function kindName(kind: WardleyElementKind): string {
+  switch (kind) {
+    case WardleyElementKind.ANCHOR:
+      return "anchor";
+    case WardleyElementKind.SUBMAP:
+      return "submap";
+    default:
+      return "component";
+  }
+}
+
+function decoratorName(decorator: WardleyDecorator): string {
+  switch (decorator) {
+    case WardleyDecorator.MARKET:
+      return "market";
+    case WardleyDecorator.ECOSYSTEM:
+      return "ecosystem";
+    case WardleyDecorator.BUILD:
+      return "build";
+    case WardleyDecorator.BUY:
+      return "buy";
+    case WardleyDecorator.OUTSOURCE:
+      return "outsource";
+    default:
+      return "";
+  }
+}
+
+function attitudeName(kind: WardleyAttitudeKind): string {
+  switch (kind) {
+    case WardleyAttitudeKind.SETTLERS:
+      return "settlers";
+    case WardleyAttitudeKind.TOWN_PLANNERS:
+      return "townplanners";
+    default:
+      return "pioneers";
+  }
 }

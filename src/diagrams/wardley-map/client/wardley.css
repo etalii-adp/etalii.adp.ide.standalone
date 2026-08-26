@@ -86,10 +86,128 @@
   opacity: 0.8;
 }
 
-/* ---- Elements ---------------------------------------------------------------------- */
+/* ---- Element kinds ----------------------------------------------------------------- */
 
+/*
+ * Kind is carried by SHAPE rather than by colour: a circle for a component, a square for the
+ * anchor the chain hangs from, a double ring for a submap you can open. That leaves colour free
+ * for state - selection, a reported problem - and a map printed in grey still says which is
+ * which (Requirement 8.3).
+ */
 .wardley-element {
   fill: var(--color-surface);
   stroke: var(--color-text);
   stroke-width: 2;
+}
+
+.wardley-kind-anchor .wardley-element {
+  fill: var(--color-text);
+}
+
+.wardley-element-outer {
+  fill: none;
+  stroke: var(--color-text);
+  stroke-width: 1;
+  opacity: 0.6;
+}
+
+/* The wall a component with inertia is pushed against. */
+.wardley-inertia {
+  stroke: var(--color-text);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.wardley-element-label {
+  fill: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+}
+
+/*
+ * The decorators and inertia, spelled out under the name. Requirement 6.9 asks for them to be
+ * legible without entering an edit mode, and a glyph the reader has to learn is not legible -
+ * `buy · inertia` needs no key.
+ */
+.wardley-element-badges {
+  fill: var(--color-text-muted);
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+
+/* ---- Links and movement ------------------------------------------------------------ */
+
+.wardley-link {
+  fill: none;
+  stroke: var(--color-text-muted);
+  stroke-width: 1.5;
+}
+
+/* A flow link says movement rather than need, so it is drawn heavier. */
+.wardley-link-flow {
+  stroke: var(--color-text);
+  stroke-width: 3;
+}
+
+/*
+ * Where a component is heading. Dashed because it has not happened: a solid line would read as
+ * a dependency that exists rather than a movement someone expects.
+ */
+.wardley-evolve {
+  fill: none;
+  stroke: var(--color-accent, var(--color-text));
+  stroke-width: 2;
+  stroke-dasharray: 8 6;
+}
+
+.wardley-evolve-target {
+  fill: none;
+  stroke: var(--color-accent, var(--color-text));
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+
+/* ---- Attitudes, accelerators, notes and annotations --------------------------------- */
+
+.wardley-attitude {
+  fill: var(--color-text);
+  opacity: 0.05;
+  stroke: var(--color-border);
+  stroke-dasharray: 4 4;
+}
+
+.wardley-attitude-label {
+  fill: var(--color-text-muted);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.wardley-accelerator-forward,
+.wardley-accelerator-back {
+  fill: none;
+  stroke: var(--color-text);
+  stroke-width: 3;
+}
+
+.wardley-accelerator-back {
+  stroke-dasharray: 5 4;
+}
+
+.wardley-note {
+  fill: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+
+.wardley-annotation circle {
+  fill: var(--color-surface);
+  stroke: var(--color-text);
+  stroke-width: 1.5;
+}
+
+.wardley-annotation text {
+  fill: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 12px;
 }
