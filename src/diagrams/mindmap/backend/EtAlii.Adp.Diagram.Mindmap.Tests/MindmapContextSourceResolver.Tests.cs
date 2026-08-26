@@ -86,7 +86,7 @@ public class MindmapContextSourceResolverTests : IDisposable
     {
         // Arrange and act.
         var other = IoPath.Combine(_project.Root, "docs", "notes.txt");
-        File.WriteAllText(other, "hello");
+        await File.WriteAllTextAsync(other, "hello", TestContext.Current.CancellationToken);
         var parent = _project.FileLevel() with { Target = _project.FileLevel().Target with { ResolvedFullPath = other } };
 
         // Assert.

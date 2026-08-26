@@ -57,7 +57,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
         Assert.True(result.IsSuccess);
         Assert.False(File.Exists(path));
         Assert.True(File.Exists(IoPath.Combine(_root, "new.txt")));
-        Assert.Equal("content", File.ReadAllText(IoPath.Combine(_root, "new.txt")));
+        Assert.Equal("content", await File.ReadAllTextAsync(IoPath.Combine(_root, "new.txt"), TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -81,14 +81,14 @@ public class RenameEntryCommandHandlerTests : IDisposable
         // Arrange.
         var folder = CreateFolder("old-folder");
         Directory.CreateDirectory(IoPath.Combine(folder, "nested"));
-        File.WriteAllText(IoPath.Combine(folder, "nested", "child.txt"), "child");
+        await File.WriteAllTextAsync(IoPath.Combine(folder, "nested", "child.txt"), "child", TestContext.Current.CancellationToken);
 
         await Rename(folder, "new-folder");
 
         // Act and assert, step by step.
         var moved = IoPath.Combine(_root, "new-folder", "nested", "child.txt");
         Assert.True(File.Exists(moved));
-        Assert.Equal("child", File.ReadAllText(moved));
+        Assert.Equal("child", await File.ReadAllTextAsync(moved, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -258,7 +258,7 @@ public class RenameEntryCommandHandlerTests : IDisposable
         // Matched exactly, not by substring: the OS raises its own "...already exists" IOException
         // if the guard is removed, so a loose match would pass either way and prove nothing.
         Assert.Equal("'taken.txt' already exists in this folder.", result.Error);
-        Assert.Equal("do not clobber", File.ReadAllText(IoPath.Combine(_root, "taken.txt")));
+        Assert.Equal("do not clobber", await File.ReadAllTextAsync(IoPath.Combine(_root, "taken.txt"), TestContext.Current.CancellationToken));
         Assert.True(File.Exists(path));
     }
 

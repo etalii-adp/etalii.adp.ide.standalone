@@ -237,8 +237,8 @@ public class HierarchyContextActionProviderTests : IDisposable
     {
         // Arrange.
         CreateFolder("sub", "inner");
-        File.WriteAllText(IoPath.Combine(_root, "sub", "inner", "leaf.txt"), "kept");
-        File.WriteAllText(IoPath.Combine(_root, "sub", "top.txt"), "also kept");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "sub", "inner", "leaf.txt"), "kept", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "sub", "top.txt"), "also kept", TestContext.Current.CancellationToken);
         var target = FolderTarget(IoPath.Combine(_root, "sub"));
 
         // Act.
@@ -247,8 +247,8 @@ public class HierarchyContextActionProviderTests : IDisposable
         // Assert.
         Assert.True(commit.Completed);
         Assert.False(Directory.Exists(IoPath.Combine(_root, "sub")));
-        Assert.Equal("kept", File.ReadAllText(IoPath.Combine(_root, "renamed", "inner", "leaf.txt")));
-        Assert.Equal("also kept", File.ReadAllText(IoPath.Combine(_root, "renamed", "top.txt")));
+        Assert.Equal("kept", await File.ReadAllTextAsync(IoPath.Combine(_root, "renamed", "inner", "leaf.txt"), TestContext.Current.CancellationToken));
+        Assert.Equal("also kept", await File.ReadAllTextAsync(IoPath.Combine(_root, "renamed", "top.txt"), TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -265,7 +265,7 @@ public class HierarchyContextActionProviderTests : IDisposable
         // Assert.
         Assert.False(commit.Completed);
         Assert.True(File.Exists(path));
-        Assert.Equal("original", File.ReadAllText(IoPath.Combine(_root, "taken.txt")));
+        Assert.Equal("original", await File.ReadAllTextAsync(IoPath.Combine(_root, "taken.txt"), TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -273,7 +273,7 @@ public class HierarchyContextActionProviderTests : IDisposable
     {
         // Arrange.
         CreateFolder("sub", "inner");
-        File.WriteAllText(IoPath.Combine(_root, "sub", "inner", "leaf.txt"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "sub", "inner", "leaf.txt"), "", TestContext.Current.CancellationToken);
         var target = FolderTarget(IoPath.Combine(_root, "sub"));
 
         // Act.
@@ -290,7 +290,7 @@ public class HierarchyContextActionProviderTests : IDisposable
         // Arrange.
         CreateFolder("sub");
         var lockedPath = IoPath.Combine(_root, "sub", "locked.txt");
-        File.WriteAllText(lockedPath, "");
+        await File.WriteAllTextAsync(lockedPath, "", TestContext.Current.CancellationToken);
         var target = FolderTarget(IoPath.Combine(_root, "sub"));
 
         // Act.
@@ -343,7 +343,7 @@ public class HierarchyContextActionProviderTests : IDisposable
     {
         // Arrange.
         // The most important one: a deleted root is a destroyed project.
-        File.WriteAllText(IoPath.Combine(_root, "keep.txt"), "x");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "keep.txt"), "x", TestContext.Current.CancellationToken);
 
         // Act.
         var result = await _provider.CommitAsync(RootTarget(_root), HierarchyContextActionProvider.DeleteActionId, "", "", TestContext.Current.CancellationToken);
@@ -390,7 +390,7 @@ public class HierarchyContextActionProviderTests : IDisposable
         Assert.True(undone.IsSuccess, undone.Error);
         Assert.True(File.Exists(path));
         Assert.False(File.Exists(IoPath.Combine(_root, "after.txt")));
-        Assert.Equal("content", File.ReadAllText(path));
+        Assert.Equal("content", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]

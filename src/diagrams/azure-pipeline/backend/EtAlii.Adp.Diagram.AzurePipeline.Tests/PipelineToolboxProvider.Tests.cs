@@ -202,11 +202,9 @@ public class PipelineToolboxProviderTests : IDisposable
         // Arrange: nothing here may be edited, and the drop goes through the same provider that
         // offers nothing on it.
         Directory.CreateDirectory(IoPath.Combine(_workspace, "templates"));
-        File.WriteAllText(
-            IoPath.Combine(_workspace, "templates", "jobs.yml"),
-            "jobs:\n  - job: FromTemplate\n    steps:\n      - script: x\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_workspace, "templates", "jobs.yml"), "jobs:\n  - job: FromTemplate\n    steps:\n      - script: x\n", TestContext.Current.CancellationToken);
         var path = IoPath.Combine(_workspace, "azure-pipelines.yml");
-        File.WriteAllText(path, "stages:\n  - stage: Build\n    jobs:\n      - template: templates/jobs.yml\n");
+        await File.WriteAllTextAsync(path, "stages:\n  - stage: Build\n    jobs:\n      - template: templates/jobs.yml\n", TestContext.Current.CancellationToken);
         _store.Forget(path);
 
         // Act.
@@ -223,7 +221,7 @@ public class PipelineToolboxProviderTests : IDisposable
         // Arrange: the drop inherits the action's command, so it inherits its undo too - there is
         // no separate drop path that could have been forgotten.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         var historyStacks = new HistoryStackStore(new PipelineTestDispatcher(_store));
         var actions = new PipelineContextActionProvider(historyStacks, _store, _views);
         var item = _toolbox.Items.Single(candidate => candidate.Id == "azure-pipeline.toolbox.job");
@@ -233,6 +231,6 @@ public class PipelineToolboxProviderTests : IDisposable
         await historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
 
         // Assert.
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 }

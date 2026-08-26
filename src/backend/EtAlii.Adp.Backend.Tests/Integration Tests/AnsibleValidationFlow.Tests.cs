@@ -178,7 +178,7 @@ public class AnsibleValidationFlowTests : IDisposable
         // Assert.
         foreach (var (path, bytes) in before)
         {
-            Assert.True(bytes.SequenceEqual(File.ReadAllBytes(path)), $"{path} changed during validation.");
+            Assert.True(bytes.SequenceEqual(await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken)), $"{path} changed during validation.");
         }
     }
 

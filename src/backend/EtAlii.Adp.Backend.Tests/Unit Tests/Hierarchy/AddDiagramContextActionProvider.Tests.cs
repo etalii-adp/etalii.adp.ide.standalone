@@ -251,7 +251,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
         Assert.True(result.Completed);
         var created = IoPath.Combine(_root, "domain.adp");
         Assert.Equal(created, result.CreatedFullPath);
-        Assert.Equal("c4/context\n", File.ReadAllText(created));
+        Assert.Equal("c4/context\n", await File.ReadAllTextAsync(created, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -270,7 +270,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     {
         // Arrange.
         var existing = IoPath.Combine(_root, "domain.adp");
-        File.WriteAllText(existing, "mine");
+        await File.WriteAllTextAsync(existing, "mine", TestContext.Current.CancellationToken);
 
         // Act.
         var result = await _provider.CommitAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "c4/context", "domain", TestContext.Current.CancellationToken);
@@ -278,7 +278,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
         // Assert.
         Assert.False(result.Completed);
         Assert.Contains("already exists", result.Error, StringComparison.Ordinal);
-        Assert.Equal("mine", File.ReadAllText(existing));
+        Assert.Equal("mine", await File.ReadAllTextAsync(existing, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -400,14 +400,14 @@ public class AddDiagramContextActionProviderTests : IDisposable
         var created = IoPath.Combine(_root, "domain.adp");
         Assert.True(File.Exists(created));
         // The redo re-runs the same command, so the file comes back as it was - MIME type and all.
-        Assert.Equal("c4/context", File.ReadAllText(created).Trim());
+        Assert.Equal("c4/context", (await File.ReadAllTextAsync(created, TestContext.Current.CancellationToken)).Trim());
     }
 
     [Fact]
     public async Task CommitAsync_WhenTheNameIsAlreadyTaken_RecordsNothingForUndo()
     {
         // Arrange.
-        File.WriteAllText(IoPath.Combine(_root, "domain.adp"), "someone else's diagram");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "domain.adp"), "someone else's diagram", TestContext.Current.CancellationToken);
 
         // Act.
         var commit = await _provider.CommitAsync(
@@ -416,6 +416,6 @@ public class AddDiagramContextActionProviderTests : IDisposable
         // Assert.
         Assert.False(commit.Completed);
         Assert.False(_history.CanUndo);
-        Assert.Equal("someone else's diagram", File.ReadAllText(IoPath.Combine(_root, "domain.adp")));
+        Assert.Equal("someone else's diagram", await File.ReadAllTextAsync(IoPath.Combine(_root, "domain.adp"), TestContext.Current.CancellationToken));
     }
 }

@@ -131,7 +131,7 @@ public class MindmapContextActionProviderTests : IDisposable
     {
         // Arrange.
         // Requirements 9.4, 9.6: no command, no history entry, no write.
-        var before = File.ReadAllText(_project.BodyPath);
+        var before = await File.ReadAllTextAsync(_project.BodyPath, TestContext.Current.CancellationToken);
 
         // Act.
         await Execute("ID_411002937", MindmapContextActionProvider.ToggleFoldActionId);
@@ -139,7 +139,7 @@ public class MindmapContextActionProviderTests : IDisposable
         // Assert.
         Assert.True(_project.Views.Find(_project.WatchId, _project.BodyPath)!.IsFolded("ID_411002937"));
         Assert.False(_project.History.CanUndo);
-        Assert.Equal(before, File.ReadAllText(_project.BodyPath));
+        Assert.Equal(before, await File.ReadAllTextAsync(_project.BodyPath, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -173,7 +173,7 @@ public class MindmapContextActionProviderTests : IDisposable
     public async Task Execute_Link_OffersTheProjectsFilesToPickFrom()
     {
         // Arrange.
-        File.WriteAllText(IoPath.Combine(_project.Root, "README.md"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_project.Root, "README.md"), "", TestContext.Current.CancellationToken);
 
         // Act.
         var result = Assert.IsType<ContextExecutionRequiresChoice>(await Execute("ID_88117422", MindmapContextActionProvider.LinkActionId));

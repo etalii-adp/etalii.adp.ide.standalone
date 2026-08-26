@@ -64,7 +64,7 @@ public class HierarchyModelStoreTests : IDisposable
 
         // Act.
         store.Remove(watchId);
-        File.WriteAllText(IoPath.Combine(_root, "after-remove.txt"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "after-remove.txt"), "", TestContext.Current.CancellationToken);
         await Task.Delay(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
 
         // Assert.

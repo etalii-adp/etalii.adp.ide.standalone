@@ -42,7 +42,7 @@ public class HistoryContextActionProviderTests : IDisposable
     private async Task RecordARenameAsync()
     {
         var path = IoPath.Combine(_root, "before.txt");
-        File.WriteAllText(path, "content");
+        await File.WriteAllTextAsync(path, "content");
         var result = await _history.ExecuteAsync(new RenameEntryCommand(path, "after.txt"), TestContext.Current.CancellationToken);
         Assert.True(result.IsSuccess, result.Error);
     }

@@ -197,7 +197,7 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
         var watchId = ShortGuid.NewShortGuid();
         var entries = await EntriesAsync(channel, headers, projectId, watchId);
         var bodyPath = IoPath.Combine(_projectFolder, "azure-pipelines.yml");
-        var before = File.ReadAllLines(bodyPath);
+        var before = await File.ReadAllLinesAsync(bodyPath, TestContext.Current.CancellationToken);
 
         // Arrange, continued: the selection has to be recorded first. An element id on its own
         // has no file above it, and this module's resolver refuses one - a pipeline element is
@@ -228,7 +228,7 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
 
         // Assert.
         Assert.True(result.Accepted, result.Error);
-        var after = File.ReadAllLines(bodyPath);
+        var after = await File.ReadAllLinesAsync(bodyPath, TestContext.Current.CancellationToken);
         Assert.Equal(before.Length + 1, after.Length);
         var added = after.Except(before).ToList();
         Assert.Equal(["    displayName: Run the tests"], added);

@@ -568,9 +568,7 @@ public class PipelineCommandsTests : IDisposable
         // Arrange: Requirement 5.4 - its text lives in another file, so the edit would land in
         // the wrong one. The message says where it can be made instead.
         Directory.CreateDirectory(IoPath.Combine(_workspace, "templates"));
-        File.WriteAllText(
-            IoPath.Combine(_workspace, "templates", "jobs.yml"),
-            "jobs:\n  - job: FromTemplate\n    steps:\n      - script: x\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_workspace, "templates", "jobs.yml"), "jobs:\n  - job: FromTemplate\n    steps:\n      - script: x\n", TestContext.Current.CancellationToken);
         var path = Write("stages:\n  - stage: Build\n    jobs:\n      - template: templates/jobs.yml\n");
 
         // Act.

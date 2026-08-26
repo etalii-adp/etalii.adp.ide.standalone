@@ -306,7 +306,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
     public async Task ResolveAsync_ARegisteredDiagram_CarriesItsMimeType()
     {
         // Act.
-        File.WriteAllText(IoPath.Combine(_root, "domain.adp"), "freeplane/mindmap\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "domain.adp"), "freeplane/mindmap\n", TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("freeplane/mindmap", await DiagramMimeOfAsync(ResolverKnowing(Mindmap), "domain.adp"));
@@ -329,7 +329,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
         // Act.
         // The client can then open a tab that says the type is unavailable, rather than
         // treating the file as plain (Requirements 1.4, 4.4).
-        File.WriteAllText(IoPath.Combine(_root, "future.adp"), "vendor/unheard-of\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "future.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("vendor/unheard-of", await DiagramMimeOfAsync(ResolverKnowing(Mindmap), "future.adp"));

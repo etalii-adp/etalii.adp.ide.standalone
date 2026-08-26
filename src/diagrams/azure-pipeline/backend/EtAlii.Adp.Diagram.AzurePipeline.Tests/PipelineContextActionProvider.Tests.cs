@@ -257,9 +257,7 @@ public class PipelineContextActionProviderTests : IDisposable
         // Arrange: Requirement 5.4 - its text is in another file, so every edit here would land
         // in the wrong one. Greying the actions out would still invite the click.
         Directory.CreateDirectory(IoPath.Combine(_workspace, "templates"));
-        File.WriteAllText(
-            IoPath.Combine(_workspace, "templates", "jobs.yml"),
-            "jobs:\n  - job: FromTemplate\n    steps:\n      - script: x\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_workspace, "templates", "jobs.yml"), "jobs:\n  - job: FromTemplate\n    steps:\n      - script: x\n", TestContext.Current.CancellationToken);
         var path = Write("stages:\n  - stage: Build\n    jobs:\n      - template: templates/jobs.yml\n");
 
         // Act.
@@ -337,7 +335,7 @@ public class PipelineContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Contains("displayName: Build it", File.ReadAllText(path));
+        Assert.Contains("displayName: Build it", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
         Assert.True(_historyStacks.Get(_workspace).CanUndo);
     }
 
@@ -346,14 +344,14 @@ public class PipelineContextActionProviderTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         await CommitAsync(path, "Build", PipelineContextActionProvider.RenameActionId, "Build it");
 
         // Act.
         await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
 
         // Assert.
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]

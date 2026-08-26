@@ -140,8 +140,8 @@ public class AnsibleContextSourceResolverTests : IDisposable
         // Several resolvers share the element_id member; saying "not ours" plainly is how they
         // coexist without fighting over a selection.
         var other = IoPath.Combine(_root, "map.adp");
-        File.WriteAllText(other, "freeplane/mindmap\n");
-        File.WriteAllText(IoPath.Combine(_root, "map.mm"), "<map><node TEXT=\"a\"/></map>");
+        await File.WriteAllTextAsync(other, "freeplane/mindmap\n", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "map.mm"), "<map><node TEXT=\"a\"/></map>", TestContext.Current.CancellationToken);
 
         // Act.
         var resolution = await Resolve("role:nginx", registration: other);

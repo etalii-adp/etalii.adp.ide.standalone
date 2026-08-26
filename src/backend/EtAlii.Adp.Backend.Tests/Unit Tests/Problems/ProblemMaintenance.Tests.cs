@@ -53,7 +53,7 @@ public class ProblemMaintenanceTests : IDisposable
         CreatePair("b");
         _maintenance.Track(_root);
 
-        File.AppendAllText(IoPath.Combine(_root, "a.mm"), " and more");
+        await File.AppendAllTextAsync(IoPath.Combine(_root, "a.mm"), " and more", TestContext.Current.CancellationToken);
 
         // Act and assert, step by step.
         var (_, payload) = await WaitForMutation("ReplaceFor");
@@ -103,7 +103,7 @@ public class ProblemMaintenanceTests : IDisposable
 
         for (var edit = 0; edit < 5; edit++)
         {
-            File.AppendAllText(IoPath.Combine(_root, "busy.mm"), " more");
+            await File.AppendAllTextAsync(IoPath.Combine(_root, "busy.mm"), " more", TestContext.Current.CancellationToken);
         }
 
         // Act and assert, step by step.
@@ -119,11 +119,11 @@ public class ProblemMaintenanceTests : IDisposable
         CreatePair("real");
         _maintenance.Track(_root);
 
-        File.WriteAllText(IoPath.Combine(_root, "notes.txt"), "just notes");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "notes.txt"), "just notes", TestContext.Current.CancellationToken);
 
         // Act and assert, step by step.
         // The real pair's change proves events flow; the .txt must not have caused anything.
-        File.AppendAllText(IoPath.Combine(_root, "real.mm"), " and more");
+        await File.AppendAllTextAsync(IoPath.Combine(_root, "real.mm"), " and more", TestContext.Current.CancellationToken);
         var (_, payload) = await WaitForMutation("ReplaceFor");
         var covered = Assert.IsType<IReadOnlyList<string>>(payload, exactMatch: false);
         Assert.DoesNotContain("notes.txt", covered);
@@ -141,12 +141,12 @@ public class ProblemMaintenanceTests : IDisposable
         var folder = IoPath.Combine(_root, "infrastructure");
         var meta = IoPath.Combine(folder, "roles", "web", "meta");
         Directory.CreateDirectory(meta);
-        File.WriteAllText(IoPath.Combine(folder, "infrastructure.adp"), "fixture/folder\n");
-        File.WriteAllText(IoPath.Combine(meta, "main.yml"), "dependencies: [base]\n");
+        await File.WriteAllTextAsync(IoPath.Combine(folder, "infrastructure.adp"), "fixture/folder\n", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.Combine(meta, "main.yml"), "dependencies: [base]\n", TestContext.Current.CancellationToken);
         _maintenance.Track(_root);
 
         // Act.
-        File.AppendAllText(IoPath.Combine(meta, "main.yml"), "# edited\n");
+        await File.AppendAllTextAsync(IoPath.Combine(meta, "main.yml"), "# edited\n", TestContext.Current.CancellationToken);
 
         // Assert.
         var (_, payload) = await WaitForMutation("ReplaceFor");
@@ -167,11 +167,11 @@ public class ProblemMaintenanceTests : IDisposable
         CreatePair("real");
         _maintenance.Track(_root);
 
-        File.WriteAllText(IoPath.Combine(_root, "notes.txt"), "just notes");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "notes.txt"), "just notes", TestContext.Current.CancellationToken);
         await Task.Delay(SettleDelay + SettleDelay, TestContext.Current.CancellationToken);
 
         // Act.
-        File.AppendAllText(IoPath.Combine(_root, "real.mm"), " and more");
+        await File.AppendAllTextAsync(IoPath.Combine(_root, "real.mm"), " and more", TestContext.Current.CancellationToken);
 
         // Assert.
         await WaitForMutation("ReplaceFor");

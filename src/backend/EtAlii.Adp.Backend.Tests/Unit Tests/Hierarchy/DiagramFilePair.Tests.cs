@@ -97,8 +97,8 @@ public class DiagramFilePairTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal("freeplane/mindmap\n", File.ReadAllText(IoPath.Combine(_root, "domain.adp")));
-        Assert.Equal("<map/>", File.ReadAllText(IoPath.Combine(_root, "domain.mm")));
+        Assert.Equal("freeplane/mindmap\n", await File.ReadAllTextAsync(IoPath.Combine(_root, "domain.adp"), TestContext.Current.CancellationToken));
+        Assert.Equal("<map/>", await File.ReadAllTextAsync(IoPath.Combine(_root, "domain.mm"), TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public class DiagramFilePairTests : IDisposable
         // Arrange.
         // The registration file would have been created fine; the sibling's name is what
         // collides. A half-created pair must never be observable (Requirement 1.6).
-        File.WriteAllText(IoPath.Combine(_root, "domain.mm"), "someone else's map");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "domain.mm"), "someone else's map", TestContext.Current.CancellationToken);
         var command = new CreateDiagramFileCommand(_root, "domain.adp", "freeplane/mindmap", "domain.mm", "<map/>");
 
         // Act.
@@ -116,7 +116,7 @@ public class DiagramFilePairTests : IDisposable
         // Assert.
         Assert.False(result.IsSuccess);
         Assert.False(File.Exists(IoPath.Combine(_root, "domain.adp")), "the registration file was left behind");
-        Assert.Equal("someone else's map", File.ReadAllText(IoPath.Combine(_root, "domain.mm")));
+        Assert.Equal("someone else's map", await File.ReadAllTextAsync(IoPath.Combine(_root, "domain.mm"), TestContext.Current.CancellationToken));
         Assert.Empty(Directory.GetFiles(_root, "~adp-*"));
     }
 
@@ -157,7 +157,7 @@ public class DiagramFilePairTests : IDisposable
     {
         // Arrange.
         var adp = WriteRegistration("domain", Mindmap);
-        File.WriteAllText(IoPath.Combine(_root, "domain.mm"), "<map/>");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "domain.mm"), "<map/>", TestContext.Current.CancellationToken);
 
         // Act.
         var result = await _history.ExecuteAsync(new RenameEntryCommand(adp, "renamed.adp"), TestContext.Current.CancellationToken);
@@ -174,7 +174,7 @@ public class DiagramFilePairTests : IDisposable
     {
         // Arrange.
         var adp = WriteRegistration("domain", Mindmap);
-        File.WriteAllText(IoPath.Combine(_root, "domain.mm"), "<map/>");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "domain.mm"), "<map/>", TestContext.Current.CancellationToken);
         await _history.ExecuteAsync(new RenameEntryCommand(adp, "renamed.adp"), TestContext.Current.CancellationToken);
 
         // Act.
@@ -192,8 +192,8 @@ public class DiagramFilePairTests : IDisposable
     {
         // Arrange.
         var adp = WriteRegistration("domain", Mindmap);
-        File.WriteAllText(IoPath.Combine(_root, "domain.mm"), "<map/>");
-        File.WriteAllText(IoPath.Combine(_root, "renamed.mm"), "in the way");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "domain.mm"), "<map/>", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "renamed.mm"), "in the way", TestContext.Current.CancellationToken);
 
         // Act.
         var result = await _history.ExecuteAsync(new RenameEntryCommand(adp, "renamed.adp"), TestContext.Current.CancellationToken);
@@ -202,7 +202,7 @@ public class DiagramFilePairTests : IDisposable
         Assert.False(result.IsSuccess);
         Assert.Contains("renamed.mm", result.Error, StringComparison.Ordinal);
         Assert.True(File.Exists(adp), "the registration file was moved although its sibling could not follow");
-        Assert.Equal("in the way", File.ReadAllText(IoPath.Combine(_root, "renamed.mm")));
+        Assert.Equal("in the way", await File.ReadAllTextAsync(IoPath.Combine(_root, "renamed.mm"), TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -227,7 +227,7 @@ public class DiagramFilePairTests : IDisposable
     {
         // Arrange.
         var adp = WriteRegistration("domain", Mindmap);
-        File.WriteAllText(IoPath.Combine(_root, "domain.mm"), "<map/>");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "domain.mm"), "<map/>", TestContext.Current.CancellationToken);
 
         // Act.
         var result = await _history.ExecuteAsync(new DeleteEntryCommand(adp), TestContext.Current.CancellationToken);
@@ -363,7 +363,7 @@ public class DiagramFilePairTests : IDisposable
         // deleting one must not destroy the model the other still opens.
         Directory.CreateDirectory(IoPath.Combine(_root, "shared"));
         var shared = IoPath.Combine(_root, "shared", "model.mm");
-        File.WriteAllText(shared, "<map/>");
+        await File.WriteAllTextAsync(shared, "<map/>", TestContext.Current.CancellationToken);
         var adp = WriteRegistrationNamingBody("containers", Mindmap, "shared/model.mm");
 
         // Act.

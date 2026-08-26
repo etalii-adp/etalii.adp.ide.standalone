@@ -163,7 +163,7 @@ public class PipelineSessionTests : IDisposable
         Assert.True(mine.IsExpanded("Build"));
         Assert.False(yours.IsExpanded("Build"));
         Assert.Equal(0, pushedToYou);
-        Assert.Equal(TwoStages, File.ReadAllText(path));
+        Assert.Equal(TwoStages, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -244,7 +244,7 @@ public class PipelineSessionTests : IDisposable
         session.Changed += (_, args) => pushed = args;
 
         // Act.
-        File.WriteAllText(path, "stages:\n  - stage: Build\n    jobs:\n      - job: Compile\n        steps:\n          - script: x\n");
+        await File.WriteAllTextAsync(path, "stages:\n  - stage: Build\n    jobs:\n      - job: Compile\n        steps:\n          - script: x\n", TestContext.Current.CancellationToken);
         _store.Reload(_workspace, path);
 
         // Assert.
@@ -264,7 +264,7 @@ public class PipelineSessionTests : IDisposable
         session.Changed += (_, args) => pushed = args;
 
         // Act.
-        File.WriteAllText(path, TwoStages + "\n  - stage: Ship\n    jobs:\n      - job: Deploy\n        steps:\n          - script: q\n");
+        await File.WriteAllTextAsync(path, TwoStages + "\n  - stage: Ship\n    jobs:\n      - job: Deploy\n        steps:\n          - script: q\n", TestContext.Current.CancellationToken);
         _store.Reload(_workspace, path);
 
         // Assert.
@@ -278,7 +278,7 @@ public class PipelineSessionTests : IDisposable
         // Arrange: the store serves every open pipeline, so a session has to filter by its own.
         var mine = Write(TwoStages);
         var theirs = IoPath.Combine(_workspace, "other.yml");
-        File.WriteAllText(theirs, TwoStages);
+        await File.WriteAllTextAsync(theirs, TwoStages, TestContext.Current.CancellationToken);
         await using var session = Open(mine);
         session.Baseline();
         var pushed = 0;
@@ -364,6 +364,6 @@ public class PipelineSessionTests : IDisposable
 
         // Assert.
         Assert.Contains("dependencies", refusal);
-        Assert.Equal(TwoStages, File.ReadAllText(IoPath.Combine(_workspace, "azure-pipelines.yml")));
+        Assert.Equal(TwoStages, await File.ReadAllTextAsync(IoPath.Combine(_workspace, "azure-pipelines.yml"), TestContext.Current.CancellationToken));
     }
 }

@@ -84,9 +84,7 @@ public class AnsibleProjectStoreTests : IDisposable
         // Act.
         // nginx gains a second dependency. (common is deliberately the role with no meta at
         // all, so it is the wrong one to edit here.)
-        File.WriteAllText(
-            IoPath.Combine(_root, "roles", "nginx", "meta", "main.yml"),
-            "---\ndependencies:\n  - role: common\n  - role: postgres\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "roles", "nginx", "meta", "main.yml"), "---\ndependencies:\n  - role: common\n  - role: postgres\n", TestContext.Current.CancellationToken);
 
         // Assert.
         var project = await WaitForChange(changes);
@@ -105,7 +103,7 @@ public class AnsibleProjectStoreTests : IDisposable
         // Act.
         var added = IoPath.Combine(_root, "roles", "redis", "tasks");
         Directory.CreateDirectory(added);
-        File.WriteAllText(IoPath.Combine(added, "main.yml"), "---\n- name: Install redis\n  ansible.builtin.package:\n    name: redis\n");
+        await File.WriteAllTextAsync(IoPath.Combine(added, "main.yml"), "---\n- name: Install redis\n  ansible.builtin.package:\n    name: redis\n", TestContext.Current.CancellationToken);
 
         // Assert.
         var project = await WaitForChange(changes);
@@ -143,7 +141,7 @@ public class AnsibleProjectStoreTests : IDisposable
         // store's coalescing.
         for (var i = 0; i < changeCount; i++)
         {
-            File.AppendAllText(IoPath.Combine(_root, "webservers.yml"), $"# touch {i}\n");
+            await File.AppendAllTextAsync(IoPath.Combine(_root, "webservers.yml"), $"# touch {i}\n", TestContext.Current.CancellationToken);
         }
 
         // Assert.

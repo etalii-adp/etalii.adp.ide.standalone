@@ -185,7 +185,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     {
         // Arrange.
         Directory.CreateDirectory(IoPath.Combine(_projectFolder, "docs"));
-        File.WriteAllText(IoPath.Combine(_projectFolder, "docs", "design.mm"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "docs", "design.mm"), "", TestContext.Current.CancellationToken);
         using var session = await OpenSessionAsync();
         using var cts = CreateMessageTimeout();
         var docsId = await EntryIdOfAsync(session, "docs");
@@ -225,9 +225,9 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         // The whole tab system hangs off this one field arriving on the pushed detail
         // (diagram-workspace-tabs Requirement 1), so it is proven over the real resolver,
         // router and stream rather than against mocks.
-        File.WriteAllText(IoPath.Combine(_projectFolder, "domain.adp"), "freeplane/mindmap\n");
-        File.WriteAllText(IoPath.Combine(_projectFolder, "domain.mm"), "<map version=\"freeplane 1.11.5\">\n<node TEXT=\"domain\" ID=\"ID_1\"/>\n</map>\n");
-        File.WriteAllText(IoPath.Combine(_projectFolder, "readme.txt"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "domain.adp"), "freeplane/mindmap\n", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "domain.mm"), "<map version=\"freeplane 1.11.5\">\n<node TEXT=\"domain\" ID=\"ID_1\"/>\n</map>\n", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "readme.txt"), "", TestContext.Current.CancellationToken);
         using var session = await OpenSessionAsync();
         using var cts = CreateMessageTimeout();
         var adpId = await EntryIdOfAsync(session, "domain.adp");
@@ -252,7 +252,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     public async Task Select_WithAMismatchingPath_IsRejectedAndPushesNothing()
     {
         // Arrange.
-        File.WriteAllText(IoPath.Combine(_projectFolder, "a.txt"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "a.txt"), "", TestContext.Current.CancellationToken);
         using var session = await OpenSessionAsync();
         using var cts = CreateMessageTimeout();
         var entryId = await EntryIdOfAsync(session, "a.txt");
@@ -274,8 +274,8 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     public async Task Select_Preview_PushesTransientAndLeavesTheCurrentSelectionAlone()
     {
         // Arrange.
-        File.WriteAllText(IoPath.Combine(_projectFolder, "current.txt"), "");
-        File.WriteAllText(IoPath.Combine(_projectFolder, "preview.txt"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "current.txt"), "", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "preview.txt"), "", TestContext.Current.CancellationToken);
         using var session = await OpenSessionAsync();
         using var cts = CreateMessageTimeout();
         var currentId = await EntryIdOfAsync(session, "current.txt");
@@ -326,7 +326,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     {
         // Arrange.
         var original = IoPath.Combine(_projectFolder, "original.txt");
-        File.WriteAllText(original, "");
+        await File.WriteAllTextAsync(original, "", TestContext.Current.CancellationToken);
         using var session = await OpenSessionAsync();
         using var cts = CreateMessageTimeout();
         var entryId = await EntryIdOfAsync(session, "original.txt");
@@ -353,7 +353,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     {
         // Arrange.
         var file = IoPath.Combine(_projectFolder, "doomed.txt");
-        File.WriteAllText(file, "");
+        await File.WriteAllTextAsync(file, "", TestContext.Current.CancellationToken);
         using var session = await OpenSessionAsync();
         using var cts = CreateMessageTimeout();
         var entryId = await EntryIdOfAsync(session, "doomed.txt");
@@ -378,7 +378,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     public async Task Select_WithAnIdFromAnotherConnection_IsRejected()
     {
         // Arrange.
-        File.WriteAllText(IoPath.Combine(_projectFolder, "shared.txt"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "shared.txt"), "", TestContext.Current.CancellationToken);
         using var session = await OpenSessionAsync();
         var foreignWatchId = ShortGuid.NewShortGuid();
         var foreignEntries = await session.Hierarchy.ListEntriesAsync(
@@ -397,7 +397,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     public async Task ASelectionOnOneConnection_IsNeverObservedOnAnothersStream()
     {
         // Arrange.
-        File.WriteAllText(IoPath.Combine(_projectFolder, "shared.txt"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "shared.txt"), "", TestContext.Current.CancellationToken);
         using var session = await OpenSessionAsync();
         using var ctsA = CreateMessageTimeout();
         using var ctsB = CreateMessageTimeout();

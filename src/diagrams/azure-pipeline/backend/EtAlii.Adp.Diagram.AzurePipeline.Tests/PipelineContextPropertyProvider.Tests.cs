@@ -339,9 +339,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
         // value is real and worth showing, and unwritable here; the reader's next question is
         // where it is written.
         Directory.CreateDirectory(IoPath.Combine(_workspace, "templates"));
-        File.WriteAllText(
-            IoPath.Combine(_workspace, "templates", "jobs.yml"),
-            "jobs:\n  - job: FromTemplate\n    displayName: From a template\n    steps:\n      - script: x\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_workspace, "templates", "jobs.yml"), "jobs:\n  - job: FromTemplate\n    displayName: From a template\n    steps:\n      - script: x\n", TestContext.Current.CancellationToken);
         var path = Write("stages:\n  - stage: Build\n    jobs:\n      - template: templates/jobs.yml\n");
 
         // Act.
@@ -395,20 +393,20 @@ public class PipelineContextPropertyProviderTests : IDisposable
         // Arrange: Requirement 13.11 - a rename from the panel and a rename from the diagram are
         // one implementation, and one undo.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await SetAsync(path, "Build", PipelineContextPropertyProvider.DisplayNamePropertyId, "Built");
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Contains("displayName: Built", File.ReadAllText(path));
+        Assert.Contains("displayName: Built", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
 
         // Act.
         await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
 
         // Assert.
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -643,7 +641,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
         // document is not written. This is why the missing Choice editor is an ergonomics gap
         // rather than a safety one.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await SetAsync(path, "Test", PipelineContextPropertyProvider.DependsOnPropertyId, "Imaginary");
@@ -651,7 +649,7 @@ public class PipelineContextPropertyProviderTests : IDisposable
         // Assert.
         Assert.False(result.IsSuccess);
         Assert.Contains("Imaginary", result.Error);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]

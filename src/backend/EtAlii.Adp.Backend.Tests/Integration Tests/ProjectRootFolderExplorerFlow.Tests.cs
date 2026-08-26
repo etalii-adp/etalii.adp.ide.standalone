@@ -123,8 +123,8 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
     {
         // Arrange.
         Directory.CreateDirectory(IoPath.Combine(_projectFolder, "sub"));
-        File.WriteAllText(IoPath.Combine(_projectFolder, "sub", "nested.txt"), "");
-        File.WriteAllText(IoPath.Combine(_projectFolder, "top.txt"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "sub", "nested.txt"), "", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "top.txt"), "", TestContext.Current.CancellationToken);
 
         // Arrange, continued.
         using var channel = CreateChannel();
@@ -151,7 +151,7 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
     public async Task TwoConnectionsToTheSameProject_AssignDifferentIdsAndNeverObserveEachOthersChanges()
     {
         // Arrange.
-        File.WriteAllText(IoPath.Combine(_projectFolder, "shared.txt"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "shared.txt"), "", TestContext.Current.CancellationToken);
 
         // Arrange, continued.
         using var channel = CreateChannel();
@@ -204,7 +204,7 @@ public class ProjectRootFolderExplorerFlowTests : IClassFixture<WebApplicationFa
     {
         // Arrange.
         var originalPath = IoPath.Combine(_projectFolder, "original.txt");
-        File.WriteAllText(originalPath, "");
+        await File.WriteAllTextAsync(originalPath, "", TestContext.Current.CancellationToken);
 
         // Arrange, continued.
         using var channel = CreateChannel();

@@ -270,9 +270,7 @@ public class PipelineContextSourceResolverTests : IDisposable
         // Arrange: its text lives in another file, so it is a pointer somewhere else as much as a
         // thing in its own right (Requirement 5.4).
         Directory.CreateDirectory(IoPath.Combine(_workspace, "templates"));
-        File.WriteAllText(
-            IoPath.Combine(_workspace, "templates", "build.yml"),
-            "jobs:\n  - job: Compile\n    steps:\n      - script: x\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_workspace, "templates", "build.yml"), "jobs:\n  - job: Compile\n    steps:\n      - script: x\n", TestContext.Current.CancellationToken);
         var path = Write("azure-pipelines", "stages:\n  - stage: Build\n    jobs:\n      - template: templates/build.yml\n");
 
         // Act.
@@ -314,7 +312,7 @@ public class PipelineContextSourceResolverTests : IDisposable
         using var tracking = Resolver().Track(ShortGuid.NewShortGuid(), _workspace, level, updated => reported.Add(updated));
 
         // Act.
-        File.WriteAllText(BodyOf(path), "stages:\n  - stage: Build\n    jobs:\n      - job: Compile\n        steps:\n          - script: x\n");
+        await File.WriteAllTextAsync(BodyOf(path), "stages:\n  - stage: Build\n    jobs:\n      - job: Compile\n        steps:\n          - script: x\n", TestContext.Current.CancellationToken);
         _store.Reload(_workspace, BodyOf(path));
 
         // Assert.

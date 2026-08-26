@@ -291,7 +291,7 @@ public class CommandsTests : IDisposable
     {
         // Arrange.
         var broken = IoPath.Combine(_root, "broken.mm");
-        File.WriteAllText(broken, "<html/>");
+        await File.WriteAllTextAsync(broken, "<html/>", TestContext.Current.CancellationToken);
 
         // Act.
         var result = await Run(new SetNodeTextCommand(broken, "x", "y"));
@@ -316,7 +316,7 @@ public class CommandsTests : IDisposable
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
         Assert.True(File.Exists(fresh));
-        Assert.Equal("fresh", MindmapDocument.Parse(File.ReadAllText(fresh)).Root.Text);
+        Assert.Equal("fresh", MindmapDocument.Parse(await File.ReadAllTextAsync(fresh, TestContext.Current.CancellationToken)).Root.Text);
     }
 
     [Fact]

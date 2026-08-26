@@ -80,7 +80,7 @@ public class ValidateContextActionProviderTests : IDisposable
     {
         // Arrange.
         var path = IoPath.Combine(_root, "notes.txt");
-        File.WriteAllText(path, "just notes");
+        await File.WriteAllTextAsync(path, "just notes", TestContext.Current.CancellationToken);
 
         // Act.
         var groups = await Discover(FileTarget(path));
@@ -105,7 +105,7 @@ public class ValidateContextActionProviderTests : IDisposable
     public async Task Validate_OnADiagram_PutsItsProblemsInTheStore()
     {
         // Arrange.
-        File.WriteAllText(IoPath.Combine(_root, "strange.adp"), "vendor/unheard-of\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "strange.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
 
         // Act.
         var result = await _provider.ExecuteAsync(FileTarget(IoPath.Combine(_root, "strange.adp")), ValidateContextActionProvider.ValidateActionId, TestContext.Current.CancellationToken);
@@ -122,8 +122,8 @@ public class ValidateContextActionProviderTests : IDisposable
     {
         // Arrange.
         Directory.CreateDirectory(IoPath.Combine(_root, "inside"));
-        File.WriteAllText(IoPath.Combine(_root, "inside", "bad.adp"), "vendor/unheard-of\n");
-        File.WriteAllText(IoPath.Combine(_root, "outside.adp"), "vendor/unheard-of\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "inside", "bad.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "outside.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
         // The outside file's stale verdict must survive a folder-scoped validation untouched.
         _store.Replace(_root, [new StoredProblem(
             new DiagramProblem(DiagramProblemSeverity.Warning, "Old verdict.", "test.old"), "outside.adp", DateTime.UtcNow, 1, "")]);
@@ -141,7 +141,7 @@ public class ValidateContextActionProviderTests : IDisposable
     public async Task Validate_OnTheRoot_IsValidateAll()
     {
         // Arrange.
-        File.WriteAllText(IoPath.Combine(_root, "bad.adp"), "vendor/unheard-of\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "bad.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
         // A verdict for a file that no longer exists: a whole-project run must sweep it out.
         _store.Replace(_root, [new StoredProblem(
             new DiagramProblem(DiagramProblemSeverity.Warning, "Old verdict.", "test.old"), "vanished.adp", DateTime.UtcNow, 1, "")]);
@@ -185,7 +185,7 @@ public class ValidateContextActionProviderTests : IDisposable
     public async Task ValidateAll_ValidatesTheWholeProject()
     {
         // Arrange.
-        File.WriteAllText(IoPath.Combine(_root, "bad.adp"), "vendor/unheard-of\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "bad.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
 
         // Act.
         var result = await _validateAll.ExecuteAsync(PanelTarget(), ValidateAllContextActionProvider.ValidateAllActionId, TestContext.Current.CancellationToken);

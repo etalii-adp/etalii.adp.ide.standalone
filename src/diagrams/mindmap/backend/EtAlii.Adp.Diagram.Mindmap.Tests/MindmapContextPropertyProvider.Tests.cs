@@ -71,7 +71,7 @@ public class MindmapContextPropertyProviderTests
     {
         // Arrange.
         using var project = new MindmapTestProject();
-        var before = File.ReadAllText(project.BodyPath);
+        var before = await File.ReadAllTextAsync(project.BodyPath, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await project.Properties.SetAsync(
@@ -85,7 +85,7 @@ public class MindmapContextPropertyProviderTests
         Assert.Equal("Backend services", project.Document.Find(BackendNodeId)!.Text);
 
         await project.History.UndoAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(before, File.ReadAllText(project.BodyPath));
+        Assert.Equal(before, await File.ReadAllTextAsync(project.BodyPath, TestContext.Current.CancellationToken));
     }
 
     [Fact]

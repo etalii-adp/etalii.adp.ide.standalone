@@ -60,7 +60,7 @@ public class ProjectValidatorTests : IDisposable
         // changes, so pinning to it would leave every verdict looking fresh for ever.
         CreatePair("flow", "the document");
         var declaring = IoPath.Combine(_root, "declaring.yml");
-        File.WriteAllText(declaring, "a file with something wrong in it\n");
+        await File.WriteAllTextAsync(declaring, "a file with something wrong in it\n", TestContext.Current.CancellationToken);
         var problem = new DiagramProblem(
             DiagramProblemSeverity.Error,
             "The role 'absent-role' has no folder.",
@@ -134,7 +134,7 @@ public class ProjectValidatorTests : IDisposable
     public async Task ValidateAsync_ReportsAnUnknownType()
     {
         // Arrange.
-        File.WriteAllText(IoPath.Combine(_root, "strange.adp"), "vendor/unheard-of\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "strange.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
 
         var outcome = await Validate(validator: null, new ProjectValidationScope(_root));
 
@@ -152,7 +152,7 @@ public class ProjectValidatorTests : IDisposable
     {
         // Arrange.
         // An empty .adp has no first line to read - the router calls it unreadable.
-        File.WriteAllText(IoPath.Combine(_root, "empty.adp"), "");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "empty.adp"), "", TestContext.Current.CancellationToken);
 
         var outcome = await Validate(validator: null, new ProjectValidationScope(_root));
 
@@ -166,7 +166,7 @@ public class ProjectValidatorTests : IDisposable
     public async Task ValidateAsync_ReportsAnAmbiguousExtension()
     {
         // Arrange.
-        File.WriteAllText(IoPath.Combine(_root, "either.mm"), "a body without a registration");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "either.mm"), "a body without a registration", TestContext.Current.CancellationToken);
         var rival = new DiagramDefinition(new DiagramOrigin("rival", "mindmap"), "Rival map", Extension: ".mm");
 
         var outcome = await Validate(validator: null, new ProjectValidationScope(_root), extraDefinitions: [rival]);
@@ -182,7 +182,7 @@ public class ProjectValidatorTests : IDisposable
     public async Task ValidateAsync_IgnoresAFileNoTypeClaims()
     {
         // Arrange.
-        File.WriteAllText(IoPath.Combine(_root, "notes.txt"), "just notes");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "notes.txt"), "just notes", TestContext.Current.CancellationToken);
 
         // Act.
         var outcome = await Validate(validator: null, new ProjectValidationScope(_root));
@@ -290,7 +290,7 @@ public class ProjectValidatorTests : IDisposable
         Directory.CreateDirectory(elsewhere);
         try
         {
-            File.WriteAllText(IoPath.Combine(elsewhere, "outside.adp"), "freeplane/mindmap\n");
+            await File.WriteAllTextAsync(IoPath.Combine(elsewhere, "outside.adp"), "freeplane/mindmap\n", TestContext.Current.CancellationToken);
             var validator = Validator(problems: []);
 
         // Act.
@@ -315,8 +315,8 @@ public class ProjectValidatorTests : IDisposable
     {
         // Arrange.
         CreatePair("flow", "the document");
-        File.WriteAllText(IoPath.Combine(_root, "strange.adp"), "vendor/unheard-of\n");
-        File.WriteAllText(IoPath.Combine(_root, "notes.txt"), "just notes");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "strange.adp"), "vendor/unheard-of\n", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "notes.txt"), "just notes", TestContext.Current.CancellationToken);
         var before = Snapshot();
 
         await Validate(Validator(throwing: true), new ProjectValidationScope(_root));
@@ -372,7 +372,7 @@ public class ProjectValidatorTests : IDisposable
         // was asked to resolve the header without being told which project root to resolve it
         // against - and handed back an empty path rather than refusing.
         CreatePair("shared", "the document");
-        File.WriteAllText(IoPath.Combine(_root, "second-view.adp"), "freeplane/mindmap\nbody: shared.mm\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "second-view.adp"), "freeplane/mindmap\nbody: shared.mm\n", TestContext.Current.CancellationToken);
         var problem = new DiagramProblem(DiagramProblemSeverity.Warning, "The root is lonely.", "mindmap.lonely-root");
 
         // Act.
@@ -392,7 +392,7 @@ public class ProjectValidatorTests : IDisposable
         // The header is user-editable text, so it may name anything at all. Refusing to follow it
         // is the documented behaviour (Requirement 2.4); throwing is not - and saying nothing
         // would leave a diagram that never opens with no explanation anywhere.
-        File.WriteAllText(IoPath.Combine(_root, "escapee.adp"), "freeplane/mindmap\nbody: ../elsewhere.mm\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "escapee.adp"), "freeplane/mindmap\nbody: ../elsewhere.mm\n", TestContext.Current.CancellationToken);
 
         // Act.
         var outcome = await Validate(Validator(), new ProjectValidationScope(_root));
@@ -414,7 +414,7 @@ public class ProjectValidatorTests : IDisposable
         // A type with no extension - c4/code is the real one - is its own whole diagram, so its
         // registration is what gets judged.
         var bodyless = new DiagramDefinition(new DiagramOrigin("fixture", "bodyless"), "Bodyless");
-        File.WriteAllText(IoPath.Combine(_root, "standalone.adp"), "fixture/bodyless\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "standalone.adp"), "fixture/bodyless\n", TestContext.Current.CancellationToken);
         // Act.
         var outcome = await Validate(Validator(), new ProjectValidationScope(_root), extraDefinitions: [bodyless]);
 

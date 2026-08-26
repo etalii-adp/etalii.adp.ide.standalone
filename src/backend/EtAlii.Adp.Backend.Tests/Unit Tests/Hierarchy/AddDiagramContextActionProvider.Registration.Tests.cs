@@ -87,7 +87,7 @@ public class AddDiagramContextActionProviderRegistrationTests : IDisposable
     {
         // Arrange: it is already a diagram, so it is opened rather than registered again.
         var path = CreateFile("azure-pipelines.yml");
-        File.WriteAllText(IoPath.ChangeExtension(path, ".adp"), "azure-devops/pipeline\n");
+        await File.WriteAllTextAsync(IoPath.ChangeExtension(path, ".adp"), "azure-devops/pipeline\n", TestContext.Current.CancellationToken);
 
         // Act.
         var groups = await _provider.DiscoverAsync(FileTarget(path), TestContext.Current.CancellationToken);
@@ -120,7 +120,7 @@ public class AddDiagramContextActionProviderRegistrationTests : IDisposable
         // Arrange.
         const string body = "stages:\n  - stage: Build\n";
         var path = CreateFile("azure-pipelines.yml", body);
-        var before = File.ReadAllBytes(path);
+        var before = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await _provider.CommitAsync(
@@ -130,8 +130,8 @@ public class AddDiagramContextActionProviderRegistrationTests : IDisposable
         Assert.Equal("", result.Error);
         var adp = IoPath.ChangeExtension(path, ".adp");
         Assert.True(File.Exists(adp));
-        Assert.Equal(Pipeline.Origin.MimeType, File.ReadAllText(adp).Trim());
-        Assert.Equal(before, File.ReadAllBytes(path));
+        Assert.Equal(Pipeline.Origin.MimeType, (await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken)).Trim());
+        Assert.Equal(before, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
