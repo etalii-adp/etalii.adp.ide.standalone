@@ -70,7 +70,7 @@
 
 ## Phase B — the interoperability guarantee holds without a JDK
 
-- [-] 8. Record Structurizr's verdicts as committed baselines
+- [x] 8. Record Structurizr's verdicts as committed baselines
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Fixtures/verdicts/*.inspect.txt` (new)
   - One verdict per fixture in `C4DocumentTests.Corpus()`, holding the CLI's `inspect` output verbatim under a two-line header naming the CLI version and the date
   - Purpose: Requirements 3.2, 3.3 - the data the everyday run reads instead of invoking Java
@@ -78,7 +78,7 @@
   - _Requirements: 3.2, 3.3_
   - _Prompt: Implement the task for spec quality-gates, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer with a JDK and the Structurizr CLI | Task: Generate a verdict file per fixture using `inspect`, committing the output verbatim with the header design.md specifies | Restrictions: verbatim - a transformed baseline is a second implementation to keep correct; record the actual CLI version, do not guess it; these files are test data and nothing in the product may read them | Success: one verdict per corpus fixture, each readable as a diff. Mark in progress, log when done, then mark complete._
 
-- [ ] 9. Read a verdict, and compare it to what ADP says
+- [-] 9. Read a verdict, and compare it to what ADP says
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/C4Verdict.cs` (new), `C4Reconciliation.Tests.cs` (new)
   - `C4Verdict.Read` parses `LEVEL | rule | message` into a comparable set. The reconciliation test asserts, per fixture, that ADP's reported rule ids restricted to the mirrored set equal Structurizr's restricted to the same set
   - Purpose: Requirement 1.10 and 3.1 - the guarantee, checked with no JDK anywhere
