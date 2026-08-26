@@ -129,6 +129,10 @@ public class AwsDeploymentTests
         // containers it deploys are declared and never shown - `model.element.noview` again.
         // It is a deployment example rather than an incomplete model, which is exactly why the
         // rule reports it: someone reading only these diagrams never meets them.
+        //
+        // And the software system itself is in no relationship. Its two containers talk to
+        // each other, which says nothing about where the system sits in a landscape, so
+        // nothing places it - `model.element.disconnected`, which Structurizr reports here too.
         var reported = C4RuleSet.Validate(Workspace)
             .Where(problem => problem.RuleId != C4Rules.EmptyView)
             .Select(problem => problem.RuleId)
@@ -141,6 +145,7 @@ public class AwsDeploymentTests
         // while the known one does not.
         Assert.Equal(
             [
+                C4Rules.DisconnectedElement,
                 C4Rules.ElementNotOnAnyView,
                 C4Rules.MissingDeploymentDescription,
                 C4Rules.MissingDeploymentTechnology,

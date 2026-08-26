@@ -140,25 +140,62 @@ public static class C4RuleSet
             }
         }
     }
+    /// <summary>
+    /// Every element some relationship reaches, counting the ones C4 implies.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Both ends of a relationship, because being pointed at is being connected: a database
+    /// nothing calls out to is still part of the model. And the ancestors of both ends, because
+    /// C4 draws the same conversation at several levels - a call from a container to a
+    /// component of another container is those two containers relating, and their systems too.
+    /// </para>
+    /// <para>
+    /// The subtlety, and the reason this is a symmetric difference rather than a union: an
+    /// element is only reached by a relationship that *crosses* it. A call between two
+    /// containers of one software system says nothing about that system's place in the
+    /// landscape, so it must not mark the system connected - and an ancestor shared by both
+    /// ends is exactly an ancestor the relationship stays inside.
+    /// </para>
+    /// <para>
+    /// This is Structurizr's behaviour rather than a guess at it. An earlier version marked
+    /// every ancestor connected, and the reconciliation against Structurizr's recorded verdicts
+    /// caught it: Structurizr reports the Spring PetClinic software system as disconnected in
+    /// its own AWS example, where the containers inside it talk to each other and nothing
+    /// outside talks to it. It does not report the API Application container in C4's worked
+    /// example, whose components are called from a sibling container. Nothing but comparing the
+    /// two tools on real files would have told these apart.
+    /// </para>
+    /// </remarks>
+    private static HashSet<string> ConnectedElements(C4Workspace workspace)
+    {
+        var connected = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var relationship in workspace.Relationships)
+        {
+            var source = AncestorsAndSelf(workspace, relationship.SourceId);
+            var destination = AncestorsAndSelf(workspace, relationship.DestinationId);
+
+            connected.UnionWith(source.Where(id => !destination.Contains(id)));
+            connected.UnionWith(destination.Where(id => !source.Contains(id)));
+        }
+
+        return connected;
+    }
+
+    /// <summary>An element's id and every id above it, or nothing when the id names no element.</summary>
+    private static HashSet<string> AncestorsAndSelf(C4Workspace workspace, string id)
+    {
+        var chain = new HashSet<string>(StringComparer.Ordinal);
+        for (var element = workspace.Find(id); element is not null && chain.Add(element.Id);)
+        {
+            element = element.ParentId is { } parentId ? workspace.Find(parentId) : null;
+        }
+
+        return chain;
+    }
     private static IEnumerable<DiagramProblem> ValidateElements(C4Workspace workspace)
     {
-        // Both ends, because being pointed at is being connected: a database nothing calls out
-        // to is still part of the model. And every ancestor of both ends, because a software
-        // system whose containers talk to the world is not disconnected - C4's whole point is
-        // that the same conversation is drawn at several levels, and a relationship declared
-        // between two containers is the systems around them relating too.
-        var connected = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var endpoint in workspace.Relationships.SelectMany(relationship => new[] { relationship.SourceId, relationship.DestinationId }))
-        {
-            for (var element = workspace.Find(endpoint); element is not null; element = element.ParentId is { } parentId ? workspace.Find(parentId) : null)
-            {
-                if (!connected.Add(element.Id))
-                {
-                    // Already walked from a previous endpoint, so the rest of the chain is in.
-                    break;
-                }
-            }
-        }
+        var connected = ConnectedElements(workspace);
 
         // Suppressed entirely while the model declares no views. A model is built up a line at
         // a time, and every element is disconnected for the minute between being declared and
