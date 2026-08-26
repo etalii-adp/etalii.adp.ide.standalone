@@ -120,7 +120,7 @@
 
 ## Phase D — following the tree
 
-- [ ] 12. `AnsibleProjectStore`: one project per folder, watched
+- [-] 12. `AnsibleProjectStore`: one project per folder, watched
   - File: `.../AnsibleProjectStore.cs`, `IAnsibleProjectStore.cs` (new), `_Model/AnsibleProjectChangedEventArgs.cs` (new), `.../AnsibleProjectStore.Tests.cs` (new)
   - `GetOrLoad`, `Get`, `Release`, and a `Changed` event. One `FileSystemWatcher` per registered folder with `IncludeSubdirectories` and content filters, a settle timer coalescing a burst, and **guarded handlers** — an unhandled exception on the watcher thread is the death of the process, which this repository has already paid for once
   - A settled burst re-reads the files that changed; a created, deleted or renamed **directory** re-walks the tree, since that is when the walk itself changes. `Release` disposes the watcher when the last viewer leaves
