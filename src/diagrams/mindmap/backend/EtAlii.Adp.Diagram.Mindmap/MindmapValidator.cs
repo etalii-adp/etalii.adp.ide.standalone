@@ -9,18 +9,25 @@ namespace EtAlii.Adp.Diagram.Mindmap;
 /// problems.
 /// </summary>
 /// <remarks>
-/// A link whose target file is missing is deliberately not judged here: the
-/// <see cref="IDiagramValidator"/> seam hands over the document text alone, with no location
-/// on disk, so a map-relative link cannot be resolved to a file - a rule for it needs a
-/// wider seam first.
+/// A link whose target file is missing is still not judged here, but the reason has changed
+/// and is worth recording. The <see cref="IDiagramValidator"/> seam used to hand over the
+/// document text alone, so a map-relative link could not be resolved to a file at all; it now
+/// carries <see cref="DiagramValidationRequest.BodyPath"/> and
+/// <see cref="DiagramValidationRequest.RootPath"/>, so the rule has become possible
+/// (ansible-structure-diagram widened the seam for its own folder-subject rules). What stops
+/// it now is only that it belongs to the mindmap specification rather than to the one that
+/// happened to widen the seam - it is a missing rule, no longer a missing capability.
 /// </remarks>
 public sealed class MindmapValidator : IDiagramValidator
 {
     public DiagramOrigin Origin => Diagram.Mindmap.Origin;
 
     public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
-        string document, string baseName, CancellationToken cancellationToken)
+        DiagramValidationRequest request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var baseName = request.BaseName;
         var problems = new List<DiagramProblem>();
 
         MindmapDocument map;
@@ -28,7 +35,7 @@ public sealed class MindmapValidator : IDiagramValidator
         {
             // Read-only judgement: no id assignment, so the document is taken exactly as
             // the file has it.
-            map = MindmapDocument.Parse(document, assignMissingIds: false);
+            map = MindmapDocument.Parse(request.Document, assignMissingIds: false);
         }
         catch (MindmapFormatException exception)
         {

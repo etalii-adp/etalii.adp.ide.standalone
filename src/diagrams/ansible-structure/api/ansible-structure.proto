@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package etalii.adp.ansible;
+
+// A sub-namespace rather than the module's own, which is what the mindmap and C4 protos use.
+// This module's wire shapes and its domain model share four names - AnsibleEdge,
+// AnsibleEdgeKind, AnsibleRoleContents, AnsibleInventoryGroup - because they are genuinely the
+// same concepts, flattened. Generating into the module namespace collides with the _Model
+// records outright (CS0101). Renaming the wire types to dodge it would leave every reader
+// guessing which "AnsibleEdgeMessage" belonged to what; a namespace says it once, and every use
+// site reads `Wire.AnsibleEdge` versus `AnsibleEdge` with no ambiguity left.
+option csharp_namespace = "EtAlii.Adp.Diagram.AnsibleStructure.Wire";
+
+// The payload of one node or edge of an Ansible structure diagram, packed into the core
+// Element's Any (Requirement 7.1). Defined in the module's own api folder; no core proto is
+// edited to add it. Position, size, id and type live on the core Element; this carries only
+// what is an Ansible node's own.
+message AnsibleElementPayload {
+  string name = 1;                    // "nginx", "webservers.yml", "production"
+  AnsibleElementKind kind = 2;
+
+  // Project-relative, never absolute: what the canvas hands to revealPath when the node is
+  // activated (Requirement 8.1), following MindmapLink.project_relative_path's precedent. The
+  // client never sees a filesystem path, and two viewers of one project read the same locator.
+  repeated string project_relative_path = 3;
+
+  // Which play this belongs to, for the per-play colour continuity of Requirement 6.3; -1 when
+  // it belongs to none. An INDEX, never a colour: the palette lives in the module's stylesheet,
+  // per tech.md's centralised-styling rule. A colour on the wire would put half the design in
+  // the backend and make a theme change a protocol change.
+  int32 play_index = 4;
+
+  string hosts = 5;                   // PLAY and PLAYBOOK only; the pattern as written, empty when none
+  AnsibleRoleContents contents = 6;   // ROLE only
+  AnsibleEdge edge = 7;               // EDGE only
+
+  // Its target is a Jinja expression, so what it names is not knowable without running
+  // Ansible. Shown as written and marked; never guessed at, and never drawn as missing.
+  bool unresolvable = 8;
+
+  // ansible.cfg and requirements.yml, on the project rather than as boxes of their own
+  // (Requirement 4.1). Project-relative paths.
+  repeated string annotations = 9;
+
+  // ROLE only: the folder holds no canonical content at all, so Ansible would find nothing to
+  // run in it. Carried so a hollow role is visibly hollow rather than looking like any other
+  // box (Requirement 4.2).
+  bool hollow = 10;
+
+  // INVENTORY only: the groups it defines and how many hosts each names.
+  repeated AnsibleInventoryGroup groups = 11;
+
+  // VARIABLE_FOLDER only: how many files it holds.
+  int32 file_count = 12;
+
+  // The box the layout measured for this node, so the canvas draws it at its true size and
+  // anchors connectors on its actual edges. The core Element carries a position but no size,
+  // and a client-side guess at the size is exactly what made wide nodes overlap their
+  // neighbours in the mindmap module - the client draws what the backend computed.
+  double width = 13;
+  double height = 14;
+}
+
+enum AnsibleElementKind {
+  ANSIBLE_ELEMENT_KIND_UNSPECIFIED = 0;
+  PLAYBOOK = 1;
+  PLAY = 2;
+  ROLE = 3;
+  TASK_FILE = 4;
+  INVENTORY = 5;
+  VARIABLE_FOLDER = 6;
+  EDGE = 7;
+}
+
+// Which of a role's canonical subfolders exist and how full they are, so the reader can tell a
+// role that does the work from one that is a name and nothing else (Requirement 4.2).
+message AnsibleRoleContents {
+  int32 task_files = 1;
+  int32 handlers = 2;
+  int32 templates = 3;
+  int32 files = 4;
+  int32 defaults = 5;
+  int32 vars = 6;
+  bool has_meta = 7;
+  bool has_library = 8;
+}
+
+// One group an inventory defines. What a play's hosts: pattern is matched against.
+message AnsibleInventoryGroup {
+  string name = 1;
+  int32 host_count = 2;
+}
+
+message AnsibleEdge {
+  string source_id = 1;
+  string target_id = 2;              // empty when the target is missing or unresolvable
+  AnsibleEdgeKind kind = 3;
+
+  // include_* rather than import_*: Ansible resolves it during the run rather than before it,
+  // so it is drawn dashed where the static kinds are solid - the convention
+  // ansible-playbook-grapher's users already read (Requirement 5.4).
+  bool dynamic = 4;
+
+  string directive = 5;              // "roles:", "import_playbook", "include_tasks", "dependencies"
+  string target_as_written = 6;      // including a {{ expression }}, verbatim
+  string condition = 7;              // a when:, as written, NEVER evaluated (Requirement 5.7)
+
+  // Where the edge was declared, for "why is this here" (Requirement 10.6). Project-relative.
+  repeated string declared_in = 8;
+  uint32 declared_at_line = 9;
+
+  // The target names something that is not in the folder. Distinct from the payload's
+  // `unresolvable`: missing is a mistake, unknown is not.
+  bool missing = 10;
+}
+
+enum AnsibleEdgeKind {
+  ANSIBLE_EDGE_KIND_UNSPECIFIED = 0;
+  USES_ROLE = 1;
+  IMPORTS_PLAYBOOK = 2;
+  INCLUDES_TASKS = 3;
+  DEPENDS_ON = 4;
+  TARGETS = 5;
+}

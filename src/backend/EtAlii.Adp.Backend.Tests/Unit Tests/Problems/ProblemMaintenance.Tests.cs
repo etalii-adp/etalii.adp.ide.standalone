@@ -16,17 +16,23 @@ public class ProblemMaintenanceTests : IDisposable
     private static readonly DiagramOrigin Mindmap = new("freeplane", "mindmap");
     private static readonly DiagramDefinition MindmapDefinition = new(Mindmap, "Mind map", Extension: ".mm");
 
+    private static readonly DiagramOrigin FolderType = new("fixture", "folder");
+    private static readonly DiagramDefinition FolderDefinition =
+        new(FolderType, "A folder-subject type", Subject: DiagramSubject.Folder);
+
     private readonly string _root;
     private readonly ProblemMaintenanceRecordingStore _store = new();
     private readonly ProblemMaintenanceCountingValidator _validator = new(Mindmap);
+    private readonly ProblemMaintenanceFolderValidator _folderValidator =
+        new(FolderType, IoPath.Combine("infrastructure", "roles", "web", "meta", "main.yml"));
     private readonly ProblemMaintenance _maintenance;
 
     public ProblemMaintenanceTests()
     {
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
-        var router = new DiagramFileRouter(new TestDiagramDefinitionCatalog([MindmapDefinition]));
-        var projectValidator = new ProjectValidator(router, new DiagramValidators([_validator]));
+        var router = new DiagramFileRouter(new TestDiagramDefinitionCatalog([MindmapDefinition, FolderDefinition]));
+        var projectValidator = new ProjectValidator(router, new DiagramValidators([_validator, _folderValidator]));
         _maintenance = new ProblemMaintenance(_store, projectValidator, router, SettleDelay);
     }
 
@@ -122,6 +128,54 @@ public class ProblemMaintenanceTests : IDisposable
         var covered = Assert.IsType<IReadOnlyList<string>>(payload, exactMatch: false);
         Assert.DoesNotContain("notes.txt", covered);
         Assert.All(_store.Mutations, mutation => Assert.Equal("ReplaceFor", mutation.Kind));
+    }
+
+    [Fact]
+    public async Task AChangeInsideAFolderDiagram_RevalidatesThatDiagram()
+    {
+        // Arrange.
+        // The file edited is not a diagram and never will be. It is part of one: the .adp two
+        // levels above it marks the folder as the diagram's subject. Without the walk-up the
+        // change would be validated as itself, find nothing, and clear the diagram's problems
+        // without re-finding them - losing a problem rather than refreshing it.
+        var folder = IoPath.Combine(_root, "infrastructure");
+        var meta = IoPath.Combine(folder, "roles", "web", "meta");
+        Directory.CreateDirectory(meta);
+        File.WriteAllText(IoPath.Combine(folder, "infrastructure.adp"), "fixture/folder\n");
+        File.WriteAllText(IoPath.Combine(meta, "main.yml"), "dependencies: [base]\n");
+        _maintenance.Track(_root);
+
+        // Act.
+        File.AppendAllText(IoPath.Combine(meta, "main.yml"), "# edited\n");
+
+        // Assert.
+        var (_, payload) = await WaitForMutation("ReplaceFor");
+        Assert.Equal(1, _folderValidator.Calls);
+        // The validator was handed the folder, not just one MIME line of registration text.
+        Assert.Equal(folder, _folderValidator.LastSubjectFolder);
+        var covered = Assert.IsType<IReadOnlyList<string>>(payload, exactMatch: false);
+        Assert.Contains(IoPath.Combine("infrastructure", "infrastructure.adp"), covered);
+        Assert.Contains(IoPath.Combine("infrastructure", "roles", "web", "meta", "main.yml"), covered);
+    }
+
+    [Fact]
+    public async Task AChangeOutsideAnyFolderDiagram_IsStillIgnored()
+    {
+        // Arrange.
+        // The walk-up must not turn every stray file into a validation: this one has no
+        // folder-subject registration above it, so it stays as ignorable as it always was.
+        CreatePair("real");
+        _maintenance.Track(_root);
+
+        File.WriteAllText(IoPath.Combine(_root, "notes.txt"), "just notes");
+        await Task.Delay(SettleDelay + SettleDelay, TestContext.Current.CancellationToken);
+
+        // Act.
+        File.AppendAllText(IoPath.Combine(_root, "real.mm"), " and more");
+
+        // Assert.
+        await WaitForMutation("ReplaceFor");
+        Assert.Equal(0, _folderValidator.Calls);
     }
 
     // ---- plumbing ----------------------------------------------------------------------

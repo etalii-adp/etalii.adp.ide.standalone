@@ -29,19 +29,11 @@ internal sealed class ProblemCollector(string root)
 
     public void Add(DiagramProblem problem, string attributionPath, string statsPath, string rulesVersion)
     {
-        DateTime lastWriteTimeUtc;
-        long length;
-        try
-        {
-            var info = new FileInfo(statsPath);
-            lastWriteTimeUtc = info.Exists ? info.LastWriteTimeUtc : default;
-            length = info.Exists ? info.Length : 0;
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            lastWriteTimeUtc = default;
-            length = 0;
-        }
+        // Through ProblemStamp rather than FileInfo directly: a rule may locate a problem at a
+        // folder - ansible.empty-role blames a role folder because it has no file worth
+        // blaming - and FileInfo.Exists is false for one, which stamped such a problem as
+        // default and made it read stale from the moment it was found.
+        var (lastWriteTimeUtc, length) = ProblemStamp.Of(statsPath);
         _problems.Add(new StoredProblem(problem, IoPath.GetRelativePath(Root, attributionPath), lastWriteTimeUtc, length, rulesVersion));
     }
 

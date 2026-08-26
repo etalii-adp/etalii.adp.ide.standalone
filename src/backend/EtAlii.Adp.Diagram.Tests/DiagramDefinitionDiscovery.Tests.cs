@@ -3,6 +3,7 @@ using Alpha = EtAlii.Adp.Diagram.Tests.Fixtures.Ordering.Alpha;
 using Duplicate = EtAlii.Adp.Diagram.Tests.Fixtures.Duplicate;
 using EmptyArray = EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.EmptyArray;
 using NotStatic = EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.NotStatic;
+using FolderWithExtension = EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.FolderWithExtension;
 using NullEntry = EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.NullEntry;
 using Several = EtAlii.Adp.Diagram.Tests.Fixtures.Several;
 using Throws = EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.Throws;
@@ -237,6 +238,22 @@ public class DiagramDefinitionDiscoveryTests : IDisposable
         Assert.Equal("fixture/survivor", definition.Origin.Key);
         var warning = Assert.Single(_logger.Warnings, w => w.Contains("malformed", StringComparison.Ordinal));
         Assert.Contains("1 null entry", warning, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Discover_AFolderSubjectDeclaringAnExtension_CostsThatEntryAndNotTheGoodOnesBesideIt()
+    {
+        // Act.
+        var result = _discovery.Discover([AssemblyWith("Fixture.A", typeof(FolderWithExtension.Diagram))]);
+
+        // Assert.
+        // A folder has no sibling body, so the two claims cannot both be true. Dropped rather
+        // than half-believed, and the good definition beside it is unaffected.
+        var definition = Assert.Single(result);
+        Assert.Equal("fixture/survivor", definition.Origin.Key);
+        var warning = Assert.Single(_logger.Warnings, w => w.Contains("malformed", StringComparison.Ordinal));
+        Assert.Contains("fixture/contradiction", warning, StringComparison.Ordinal);
+        Assert.Contains("cannot both be true", warning, StringComparison.Ordinal);
     }
 
     // ---- origin collisions --------------------------------------------------------------

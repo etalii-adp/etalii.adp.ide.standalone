@@ -169,19 +169,19 @@
   - _Requirements: 12.1, 12.2, 12.3_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Register an IContextSourceResolver so a pipeline element is selectable, carrying its backend-resolved detail | Restrictions: no change inside the context service; reject an id that does not belong to the named diagram | Success: a nested file-then-element selection resolves and its detail reaches the stream_
 
-- [ ] 21. The commands
+- [x] 21. The commands
   - File: `.../Commands/*.cs` (new), `ServiceCollection.AddAzurePipelineCommands.cs`, tests
   - `SetDisplayName`, `SetDependsOn`, `SetEnabled`, `AddStage`, `RemoveStage`, `AddJob`, `RemoveJob`, `AddStep`, `RemoveStep`, `ReorderStep`. Each reports an inverse that restores the document byte-for-byte. Each validates its own preconditions, refusing a cycle or the removal of the last dependency-free stage
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.8_
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer following tech.md's Commands rule | Task: Implement the ten commands and their handlers, each with an inverse and its own precondition checks | Restrictions: a rejection is a CommandResult, never an exception; refuse any edit to a template-sourced element; never write outside PipelineDocument | Success: each handler's inverse restores the file byte-for-byte, and a cycle-creating edit is refused with a message_
 
-- [ ] 22. Context action provider
+- [x] 22. Context action provider
   - File: `.../PipelineContextActionProvider.cs` (new), tests
-  - Offer the edits of Requirement 9.1 with shortcuts as data, withheld in read-only mode, on template-sourced elements, and where the schema forbids the result. Offer "open the file at this line" for everything excluded
-  - _Requirements: 9.7, 9.9, 12.4_
-  - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Contribute the element actions, including the open-the-file action for edits this spec excludes | Restrictions: an action that would fail must not be offered; the client holds no key-to-action table | Success: tests prove each action's availability rule, and activating an element navigates to its declaring line_
+  - Offer the edits of Requirement 9.1 with shortcuts as data, withheld in read-only mode, on template-sourced elements, and where the schema forbids the result
+  - _Requirements: 9.7, 12.4_ (9.9 descoped: there is no text editor to open the file in)
+  - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Contribute the element actions | Restrictions: an action that would fail must not be offered; the client holds no key-to-action table | Success: tests prove each action's availability rule_
 
-- [ ] 23. Toolbox
+- [x] 23. Toolbox
   - File: `.../PipelineToolboxProvider.cs` (new), tests
   - Stage, Job, Deployment job and Script step, each dropping onto a valid parent and executing the same add command the menu and keyboard use
   - _Requirements: 9.6_

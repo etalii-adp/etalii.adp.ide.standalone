@@ -8,6 +8,7 @@ using EtAlii.Adp.Backend.Problems;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Diagram.AnsibleStructure;
 using EtAlii.Adp.Diagram.C4;
 using EtAlii.Adp.Diagram.Mindmap;
 using EtAlii.Adp.Diagram.WardleyMap;
@@ -65,6 +66,8 @@ builder.Services.AddProblems(appDataRoot);
 builder.Services.AddMindmap(builder.Configuration);
 // Seven C4 types over one shared engine, differing only in the view each binds.
 builder.Services.AddC4();
+// Read-only, and the only type whose subject is a folder rather than a document.
+builder.Services.AddAnsibleStructure();
 // The map whose coordinates are the author's own claim rather than a computed layout.
 builder.Services.AddWardleyMap();
 

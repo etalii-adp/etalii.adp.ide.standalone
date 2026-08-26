@@ -15,6 +15,8 @@
   <Project Path="EtAlii.Adp.Backend.Tests/EtAlii.Adp.Backend.Tests.csproj" />
   <Project Path="EtAlii.Adp.Backend/EtAlii.Adp.Backend.csproj" />
   <Folder Name="/Diagrams/">
+    <Project Path="../diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure/EtAlii.Adp.Diagram.AnsibleStructure.csproj" />
+    <Project Path="../diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure.Tests/EtAlii.Adp.Diagram.AnsibleStructure.Tests.csproj" />
     <Project Path="../diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/EtAlii.Adp.Diagram.Mindmap.csproj" />
     <Project Path="../diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap.Tests/EtAlii.Adp.Diagram.Mindmap.Tests.csproj" />
     <!-- All seven C4 notations: one engine, one assembly, one Definitions array. -->

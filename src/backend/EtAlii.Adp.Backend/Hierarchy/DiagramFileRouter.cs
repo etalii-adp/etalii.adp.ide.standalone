@@ -52,6 +52,16 @@ public sealed class DiagramFileRouter
     /// "model once, view many" means. Those are disambiguated by the document itself rather
     /// than by the file name, so they are not reported here (c4-diagrams Requirement 2.6).
     /// </remarks>
+    /// <summary>
+    /// Whether any discovered type's diagram is a <see cref="DiagramSubject.Folder"/> - the one
+    /// question worth asking before walking a tree looking for an enclosing registration.
+    /// </summary>
+    /// <remarks>
+    /// Deployments without such a type - which is every one before <c>ansible/structure</c>
+    /// ships - answer false and pay no directory probes at all for it.
+    /// </remarks>
+    public bool HasFolderSubjectTypes => _catalog.All.Any(definition => definition.HasFolderSubject);
+
     public IReadOnlyList<string> AmbiguousExtensions() =>
         _catalog.All
             .Where(definition => definition.HasDocumentSibling)

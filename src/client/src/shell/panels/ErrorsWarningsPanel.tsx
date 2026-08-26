@@ -29,14 +29,40 @@ export function visibleProblems(problems: Problem[], showErrors: boolean, showWa
   );
 }
 
+/**
+ * Which file a problem is actually about: normally the diagram's own, but a folder-subject
+ * diagram's rules name the file inside the folder that declared the mistake - the playbook that
+ * named a missing role, not the `.adp` that marks the folder. That file is what the panel
+ * prints and what activating the row reveals; sending the reader to a one-line registration
+ * with nothing to fix in it would be worse than saying nothing.
+ */
+function locatedSegments(problem: Problem): string[] {
+  const location = problem.location?.location;
+  if (location?.case === "file") {
+    const segments = location.value.path?.segments ?? [];
+    if (segments.length > 0) {
+      return segments;
+    }
+  }
+  return problem.path?.segments ?? [];
+}
+
 /** "folder/flow.adp" - the project-relative path as the panel prints it. */
 function pathText(problem: Problem): string {
-  return problem.path?.segments.join("/") ?? "";
+  return locatedSegments(problem).join("/");
 }
 
 /** ":12" for a line, "" for an element or the file itself - an element shows through the reveal, not the text. */
 function locationText(problem: Problem): string {
-  return problem.location?.location.case === "line" ? `:${problem.location.location.value}` : "";
+  const location = problem.location?.location;
+  if (location?.case === "line") {
+    return `:${location.value}`;
+  }
+  // A file location's line is optional: 0 means the rule could only name the file.
+  if (location?.case === "file" && location.value.line > 0) {
+    return `:${location.value.line}`;
+  }
+  return "";
 }
 
 /** A row's identity within one pushed list - stable enough for React keys and focus. */
@@ -147,7 +173,7 @@ export function ErrorsWarningsPanel() {
   /** Activating a problem reveals its file in the hierarchy (Requirement 7.7). */
   const activate = useCallback(
     (problem: Problem) => {
-      const segments = problem.path?.segments ?? [];
+      const segments = locatedSegments(problem);
       if (segments.length > 0) {
         revealPath([...segments]);
       }

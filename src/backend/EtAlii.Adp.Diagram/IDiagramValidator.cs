@@ -17,9 +17,14 @@ public interface IDiagramValidator
     DiagramOrigin Origin { get; }
 
     /// <summary>
-    /// The problems in <paramref name="document"/>, or none. <paramref name="baseName"/> is
-    /// the diagram's file base name, for messages that want to name it.
+    /// The problems in the diagram <paramref name="request"/> describes, or none.
     /// </summary>
+    /// <remarks>
+    /// A validator judging a document reads <see cref="DiagramValidationRequest.Document"/>; one
+    /// judging a folder reads <see cref="DiagramValidationRequest.SubjectFolder"/>. Either way
+    /// the paths arrive already resolved and containment-checked, so a rule never resolves a
+    /// location itself.
+    /// </remarks>
     ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
-        string document, string baseName, CancellationToken cancellationToken);
+        DiagramValidationRequest request, CancellationToken cancellationToken);
 }

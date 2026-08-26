@@ -203,7 +203,7 @@
   - _Requirements: 8.1, 8.2, 8.3_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer working in the context seam | Task: Make an Ansible node selectable, verified against its project, carrying its project-relative path, and re-resolved when the folder changes | Restrictions: never resolve a location yourself - the target arrives resolved; reject an unverifiable selection rather than recording it; an edge selection must name its declaring side | Success: tests prove a node resolves, a stranger's id is rejected, a deleted role clears the selection, and a rename updates the path_
 
-- [-] 20. `AnsibleContextPropertyProvider` — every row, none editable, every reason true
+- [x] 20. `AnsibleContextPropertyProvider` — every row, none editable, every reason true
   - File: `.../AnsibleContextPropertyProvider.cs` (new), `.../AnsibleContextPropertyProvider.Tests.cs` (new)
   - The rows of Requirements 10.3–10.6, grouped: **Identity/Runs/Targets** for a playbook or play, **Identity/Contents/Relationships** for a role, **Identity/Groups/Variables** for an inventory, **Declaration** for an edge. A property absent from the files is **not contributed** — a play with no `when:` has no condition row
   - **Every row carries a non-empty `ReadOnlyReason` naming the file the value lives in** and how it is edited. `SetAsync` refuses unconditionally with the property's own reason — unreachable in practice, because `ContextPropertyResolver` refuses the write server-side first, and written anyway, because a provider that would silently accept a write if the resolver ever changed is a trap
@@ -214,7 +214,7 @@
 
 ## Phase I — the canvas
 
-- [ ] 21. `ansibleModel.ts` and `useAnsibleStream.ts`
+- [x] 21. `ansibleModel.ts` and `useAnsibleStream.ts`
   - File: `src/diagrams/ansible-structure/client/ansibleModel.ts`, `useAnsibleStream.ts`, and their `.test.ts` (new)
   - Decode the payload into the client's own model; subscribe to the diagram stream and apply deltas. No knowledge of Ansible in the shell
   - Purpose: the client half of Requirement 7
@@ -222,7 +222,7 @@
   - _Requirements: 7.1, 7.2_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Decode the element payload into a client model and apply the delta stream | Restrictions: 2-space indent, double quotes, semicolons per src/.editorconfig; no Ansible knowledge leaks into the shell; do not re-measure what the backend computed | Success: unit tests cover decoding each element kind and applying add and remove deltas_
 
-- [ ] 22. `AnsibleCanvas.tsx` and `ansible-structure.css`
+- [x] 22. `AnsibleCanvas.tsx` and `ansible-structure.css`
   - File: `src/diagrams/ansible-structure/client/AnsibleCanvas.tsx`, `ansible-structure.css`, `AnsibleCanvas.test.tsx` (new)
   - Draw the node kinds distinguishably, the five edge kinds in their own styles (solid for static, dashed for dynamic, a third for `DependsOn`), edge labels for the mechanism and any `when:`, and an unresolvable target shown as such. **The play-index-to-colour mapping lives here**, in the stylesheet, per tech.md's centralised-styling rule
   - Activation (double-click, Enter) calls `revealPath(segments)` with the node's project-relative path; selection sets the diagram-element context
@@ -231,7 +231,7 @@
   - _Requirements: 5.4, 6.3, 7.1, 8.1, 8.2_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Render the diagram's node and edge kinds distinguishably, map play index to colour in the stylesheet, and reveal a node's file on activation | Restrictions: no inline styles - all styling in the module stylesheet; no colour crosses the wire; the canvas offers no edit affordance of any kind | Success: component tests prove each node and edge kind renders distinguishably, static and dynamic differ, activation calls revealPath with the node's path, and no editing control exists_
 
-- [ ] 23. `register.ts`
+- [x] 23. `register.ts`
   - File: `src/diagrams/ansible-structure/client/register.ts`, `register.test.ts`, `package.json`, `readme.md` (new)
   - One registration matching `ansible/structure`. The shell's glob discovers it; nothing in the shell is edited
   - Purpose: Requirement 7.2 — the shell learns nothing about Ansible
@@ -241,7 +241,7 @@
 
 ## Phase J — proof
 
-- [ ] 24. Prove the module writes nothing
+- [x] 24. Prove the module writes nothing
   - File: `.../ZeroWrites.Tests.cs` (new)
   - Snapshot the fixture tree byte-for-byte (contents **and** mtimes), then: open the diagram, take the baseline, change the viewport twice, select every node and edge kind, describe every property, attempt a `SetAsync`, attempt a `MoveElementAsync`, run the validator, close the session — and assert the tree is identical, `.adp` included
   - Purpose: the Non-Functional Requirement this whole spec turns on, as a guard rather than a claim
@@ -249,7 +249,7 @@
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA-minded C# developer | Task: Exercise every read path of the module against the fixture and assert the tree is byte-identical afterwards, mtimes included | Restrictions: exercise the real components, not mocks of them; include the refused write attempts, since a refusal that still touched the disk is the bug this guards | Success: the test fails if any component is later given a write path, and passes today_
 
-- [ ] 25. Integration flows
+- [x] 25. Integration flows
   - File: `.../AnsibleStructureFlow.Tests.cs`, `AnsibleValidationFlow.Tests.cs` (new)
   - **Flow**: Add on a folder writes one `.adp` and nothing else; open it; receive the baseline; select a role; describe its properties; touch `roles/nginx/meta/main.yml` and see the deltas arrive
   - **Validation**: the broken fixture produces each problem attributed to the declaring file; fixing a file on disk clears it **through the watcher**, not through a manual revalidate — which is what tasks 5 and 6 exist for
@@ -258,7 +258,7 @@
   - _Requirements: 2.2, 2.3, 3.5, 8.1, 9.1, 9.3_
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer writing integration tests against the real host | Task: Cover the Add-open-select-follow flow and the validate-fix-clear flow end to end | Restrictions: use the real host and the real module registrations; assert that Add wrote exactly one file; the clear must come from the watcher, not from an explicit revalidate call | Success: both flows pass, and the validation flow fails if task 6's walk-up is removed_
 
-- [ ] 26. Catalog, manual pass and implementation log
+- [x] 26. Catalog, manual pass and implementation log
   - File: `docs/diagrams.md` (edited), `tests.md` (edited), `.spec-workflow/specs/ansible-structure-diagram/Implementation Logs/` (new)
   - Move the `ansible/structure` row from 📝 Specified to ✅ Implemented per CLAUDE.md's catalog rule
   - Run the app from the worktree on a free port pair and verify by hand: right-click a folder → **Add… → Ansible project structure** creates one file; the diagram opens; double-clicking the `nginx` role reveals `roles/nginx/tasks/main.yml` in the explorer; selecting an edge shows which file and directive declared it; deleting `roles/common/` in a text editor moves both the diagram and the problems panel; the toolbox says the type has no entries and the ribbon offers no edit; `git status` is clean apart from the deletion made by hand. Revert both port files before merging
