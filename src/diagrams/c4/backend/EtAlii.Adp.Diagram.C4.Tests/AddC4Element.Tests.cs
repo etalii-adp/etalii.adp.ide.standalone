@@ -46,7 +46,10 @@ public class AddC4ElementTests : IDisposable
         _bodyPath = IoPath.Combine(_root, "model.dsl");
         File.WriteAllText(_bodyPath, Model);
 
-        _services = new ServiceCollection().AddCommands().AddC4().BuildServiceProvider();
+        _services = new ServiceCollection()
+            .AddCommands()
+            .AddC4()
+            .BuildServiceProvider();
         _history = _services.GetRequiredService<IHistoryStackStore>().Get(_root);
         _documents = _services.GetRequiredService<IC4DocumentStore>();
     }
