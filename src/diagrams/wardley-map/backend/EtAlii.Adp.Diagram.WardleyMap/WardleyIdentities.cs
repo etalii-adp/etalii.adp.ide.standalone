@@ -8,8 +8,7 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// <summary>
 /// Where ADP keeps the identities the `.owm` format does not provide. A sidecar rather than the
 /// `.owm` itself, because that file belongs to another ecosystem and ADP's own data has no
-/// place in it - tech.md's rule, Requirement 3.7, and the precedent
-/// <see cref="C4LayoutSidecar"/> set for `.dsl`.
+/// place in it - tech.md's rule, Requirement 3.7, and the precedent C4LayoutSidecar set for `.dsl`.
 /// </summary>
 /// <remarks>
 /// <para>
