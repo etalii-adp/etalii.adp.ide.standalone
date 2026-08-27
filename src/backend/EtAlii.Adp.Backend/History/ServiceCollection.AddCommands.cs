@@ -23,7 +23,11 @@ public static class ServiceCollectionAddCommandsExtension
         // The rename and delete handlers ask the catalog whether a file is a diagram's
         // registration file with a body sibling to carry along. TryAdd, so a test that
         // registered its own list first keeps it.
-        services.TryAddSingleton<IDiagramDefinitionCatalog, DiagramDefinitionCatalog>();
+        services.TryAddSingleton<IDiagramDefinitionCatalog>(svc =>
+        {
+            var definitions = svc.GetRequiredService<IReadOnlyList<DiagramDefinition>>();
+            return new DiagramDefinitionCatalog { All = definitions };
+        });
 
         services.AddSingleton<ICommandDispatcher, CommandDispatcher>();
 

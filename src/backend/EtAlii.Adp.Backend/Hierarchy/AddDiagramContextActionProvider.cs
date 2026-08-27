@@ -15,7 +15,7 @@ namespace EtAlii.Adp.Backend.Hierarchy;
 /// answer are deliberately ordered and pinned by tests, because the spec that fills in
 /// creation (create-diagram-file) replaces only the final answer and inherits them.
 /// <para>
-/// The definitions come in through the constructor with <see cref="DiagramDefinition.All"/>
+/// The definitions come in through the constructor with all diagram definitions
 /// as the default, so a test can hand the provider its own list instead of filling the
 /// process-wide cache.
 /// </para>
@@ -28,31 +28,26 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
     private static readonly ContextShortcutDefinition AddShortcut = new("Insert");
     private static readonly ILogger _logger = Log.ForContext<AddDiagramContextActionProvider>();
 
-    private readonly Func<IReadOnlyList<DiagramDefinition>> _definitions;
+    private readonly IReadOnlyList<DiagramDefinition> _definitions;
     private readonly IHistoryStackStore _historyStacks;
     private readonly DiagramDocumentFactories _documentFactories;
 
     /// <param name="historyStacks">The history stacks where the create is sent; this provider writes nothing itself.</param>
     /// <param name="documentFactories">Where a type that keeps a body sibling gets that body's initial content.</param>
-    public AddDiagramContextActionProvider(IHistoryStackStore historyStacks, DiagramDocumentFactories documentFactories)
-        : this(historyStacks, documentFactories, null)
-    {
-    }
-
-    /// <param name="historyStacks">The history stacks where the create is sent; this provider writes nothing itself.</param>
-    /// <param name="documentFactories">Where a type that keeps a body sibling gets that body's initial content.</param>
-    /// <param name="definitions">
-    /// The diagram types to offer, read at call time; <c>null</c> means
-    /// <see cref="DiagramDefinition.All"/>. Read lazily rather than captured, because the
+    /// <param name="catalog">
+    /// The diagram types to offer, read at call time; Read lazily rather than captured, because the
     /// host fills the cache after the container is built.
     /// </param>
-    public AddDiagramContextActionProvider(IHistoryStackStore historyStacks, DiagramDocumentFactories documentFactories, IReadOnlyList<DiagramDefinition>? definitions)
+    public AddDiagramContextActionProvider(
+        IHistoryStackStore historyStacks,
+        DiagramDocumentFactories documentFactories,
+        IDiagramDefinitionCatalog catalog)
     {
         ArgumentNullException.ThrowIfNull(historyStacks);
         ArgumentNullException.ThrowIfNull(documentFactories);
         _historyStacks = historyStacks;
         _documentFactories = documentFactories;
-        _definitions = definitions is null ? () => DiagramDefinition.All : () => definitions;
+        _definitions = catalog.All;
     }
 
     public ContextScope Scope => ContextScope.Hierarchy;
@@ -68,7 +63,7 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         // is impossible, but "this file is a diagram of a type I am about to name", which writes
         // the .adp beside it (add-diagram-action Requirement 4.3, revised).
         var (available, label, reason) = target.IsContainer
-            ? (_definitions().Count > 0, "Add…", NoDiagramTypes)
+            ? (_definitions.Count > 0, "Add…", NoDiagramTypes)
             : (RegistrableTypesFor(target).Count > 0, "Add as diagram…", NotRegistrable);
 
         if (!target.IsContainer && !available)
@@ -110,7 +105,7 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
             return [];
         }
 
-        return [.. _definitions().Where(definition => string.Equals(definition.Extension, extension, StringComparison.OrdinalIgnoreCase))];
+        return [.. _definitions.Where(definition => string.Equals(definition.Extension, extension, StringComparison.OrdinalIgnoreCase))];
     }
 
     public ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
@@ -151,7 +146,7 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
                 Title: "Add diagram",
                 Icon: "mdi-plus",
                 ConfirmLabel: "Add",
-                Options: DiagramOptionTree.Build(_definitions(), origin => DiagramFileName.Suggest(origin, target.ResolvedFullPath)),
+                Options: DiagramOptionTree.Build(_definitions, origin => DiagramFileName.Suggest(origin, target.ResolvedFullPath)),
                 EmptyMessage: NoDiagramTypes,
                 NameField: new ContextTextFieldRequest(Label: "Name"))));
     }
@@ -201,12 +196,12 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
         }
 
 
-        var definition = _definitions().FirstOrDefault(candidate => candidate.Origin.Key == value);
+        var definition = _definitions.FirstOrDefault(candidate => candidate.Origin.Key == value);
         if (definition is null)
         {
             // The client offered an option that is not on the list it was given - a stale
             // dialog, or a client built against a different set of modules.
-            _logger.Warning("Rejecting the Add: {OptionId} is not one of the {Count} diagram types on offer", value, _definitions().Count);
+            _logger.Warning("Rejecting the Add: {OptionId} is not one of the {Count} diagram types on offer", value, _definitions.Count);
             return ContextCommitResult.Failed("That diagram type is not available.");
         }
 

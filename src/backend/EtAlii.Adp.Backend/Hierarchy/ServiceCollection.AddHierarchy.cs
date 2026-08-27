@@ -36,7 +36,9 @@ public static class ServiceCollectionAddHierarchyExtension
         services.AddSingleton<IContextActionProvider>(provider =>
             new AddDiagramContextActionProvider(
                 provider.GetRequiredService<IHistoryStackStore>(),
-                provider.GetRequiredService<DiagramDocumentFactories>()));
+                provider.GetRequiredService<DiagramDocumentFactories>(),
+                provider.GetRequiredService<IDiagramDefinitionCatalog>())
+        );
 
         return services;
     }

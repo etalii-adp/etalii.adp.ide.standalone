@@ -8,11 +8,6 @@ using EtAlii.Adp.Backend.Problems;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Diagram.AnsibleStructure;
-using EtAlii.Adp.Diagram.AzurePipeline;
-using EtAlii.Adp.Diagram.C4;
-using EtAlii.Adp.Diagram.Mindmap;
-using EtAlii.Adp.Diagram.WardleyMap;
 using JetBrains.Annotations;
 using Serilog;
 
@@ -30,7 +25,8 @@ var builder = WebApplication.CreateBuilder(args);
 // what the `Log.ForContext<T>()` in each class's static field resolves to. Levels and sinks
 // come from the Serilog section of appsettings.json rather than from code; ReadFrom.Services
 // picks up any enricher or sink registered in DI.
-builder.Host.UseSerilog((context, services, configuration) => configuration
+builder.Host
+    .UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Configuration(context.Configuration)
     .ReadFrom.Services(services)
     .Enrich.FromLogContext());
@@ -62,46 +58,27 @@ builder.Services.AddHistoryActions();
 // startup pass that reconciles the cache after a restart (errors-and-warnings-panel).
 builder.Services.AddProblems(appDataRoot);
 
-// The diagram modules. Each contributes its own seams and core names none of them back:
-// everything resolves by DiagramOrigin (mindmap-diagram Requirement 13).
-builder.Services.AddMindmap(builder.Configuration);
-// Seven C4 types over one shared engine, differing only in the view each binds.
-builder.Services.AddC4();
-// Azure DevOps pipelines: a document the repository already owns, registered by the user
-// rather than routed on sight, because .yml belongs to no one type.
-builder.Services.AddAzurePipeline();
-// Read-only, and the only type whose subject is a folder rather than a document.
-builder.Services.AddAnsibleStructure();
-// The map whose coordinates are the author's own claim rather than a computed layout.
-builder.Services.AddWardleyMap();
-
 builder.Services.AddClientAppHosting(builder.Configuration);
 
 // Applied to every gRPC call; SessionInterceptor itself exempts
 // AuthenticationService.Login (Requirement 1.6).
 builder.Services.AddGrpc(options => options.Interceptors.Add<SessionInterceptor>());
 
-var app = builder.Build();
-
 // Once per process: after Build so the Serilog pipeline is fully configured, before anything
 // can serve a request that reads DiagramDefinition.All. Not a DI service - it runs once and its result
 // is the static cache, so there is nothing for a container to hand out. A second host in
 // the same process (a test process builds one per test) finds the cache filled and the
 // scan is not repeated; Initialize owns that guarantee, under a lock.
-var discoveredNow = DiagramDefinition.Initialize(() =>
-    new DiagramDefinitionDiscovery()
-        .Discover(DiagramDefinitionDiscovery.FindApplicationAssemblies()));
-if (!discoveredNow)
-{
-    Log.ForContext<DiagramDefinitionDiscovery>().Information(
-        "Diagram types were already discovered in this process; reusing the {Count} cached definitions",
-        DiagramDefinition.All.Count);
-}
+
+var diagramDefinitions = DiagramDefinitionDiscovery.Discover();
+builder.AddDiagramDefinitions(diagramDefinitions);
+
+var app = builder.Build();
 
 // A type that keeps its body in a sibling file needs a factory to write that body. Checked
 // here, once, so a module deployed without its factory is a startup error naming the type
 // rather than a failed Add the first time a user picks it (mindmap-diagram Requirement 2.2).
-var missingFactories = app.Services.GetRequiredService<DiagramDocumentFactories>().Verify(DiagramDefinition.All);
+var missingFactories = app.Services.GetRequiredService<DiagramDocumentFactories>().Verify(diagramDefinitions);
 if (missingFactories.Count > 0)
 {
     throw new InvalidOperationException(
@@ -150,7 +127,7 @@ app.MapClientApp();
 Log.ForContext<Program>().Information(
     "ADP is starting in the {Environment} environment with {DiagramTypeCount} diagram types",
     app.Environment.EnvironmentName,
-    DiagramDefinition.All.Count);
+    diagramDefinitions.Count);
 
 try
 {
