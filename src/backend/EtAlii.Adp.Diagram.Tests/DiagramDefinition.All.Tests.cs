@@ -126,7 +126,7 @@ public class DiagramDefinitionAllTests : IDisposable
     public void Initialize_WithNull_Throws()
     {
         // Arrange, act and assert.
-        Assert.Throws<ArgumentNullException>(() => DiagramDefinition.Initialize(null!));
+        Assert.Throws<ArgumentNullException>(() => DiagramDefinition.Initialize());
     }
 
     [Fact]

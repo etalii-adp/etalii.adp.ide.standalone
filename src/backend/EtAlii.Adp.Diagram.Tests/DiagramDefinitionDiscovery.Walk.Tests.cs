@@ -160,10 +160,9 @@ public class DiagramDefinitionDiscoveryWalkTests
         // Arrange.
         // The end-to-end shape the host uses: walk, then discover. The fixtures live here, so
         // a walk that really reaches this assembly yields them.
-        var discovery = new DiagramDefinitionDiscovery();
 
         // Act.
-        var result = discovery.Discover(DiagramDefinitionDiscovery.FindApplicationAssemblies());
+        var result = DiagramDefinitionDiscovery.Discover();
 
         // Assert.
         Assert.Contains(result, d => d.Origin.Key == "fixture/valid");
