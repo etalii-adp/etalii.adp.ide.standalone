@@ -25,7 +25,10 @@ public static class Diagram
         new DiagramOrigin("c4", "context"),
         "System Context",
         "The system in its world: who uses it, and what it depends on. The map to start with.",
-        Extension: DocumentExtension);
+        Extension: DocumentExtension,
+        // Seven C4 types over one shared engine, differing only in the view each binds.
+        // We register these services only once.
+        Build: builder => builder.Services.AddC4());
 
     /// <summary>Inside the system: its applications and data stores.</summary>
     public static DiagramDefinition Container { get; } = new(

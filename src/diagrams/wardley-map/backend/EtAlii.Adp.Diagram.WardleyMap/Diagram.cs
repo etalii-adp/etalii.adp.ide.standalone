@@ -42,7 +42,9 @@ public static class Diagram
         new DiagramOrigin("wardley", "map"),
         "Wardley Map",
         "A value chain positioned against evolution, so a strategy can be argued about rather than asserted.",
-        Extension: DocumentExtension);
+        Extension: DocumentExtension,
+        // The map whose coordinates are the author's own claim rather than a computed layout.
+        Build: builder => builder.Services.AddWardleyMap());
 
     /// <summary>What discovery reads. One entry: this module carries one notation.</summary>
     public static DiagramDefinition[] Definitions { get; } = [WardleyMap];

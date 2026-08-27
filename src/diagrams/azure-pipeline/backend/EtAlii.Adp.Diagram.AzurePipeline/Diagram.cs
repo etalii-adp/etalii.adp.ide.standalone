@@ -18,6 +18,9 @@ public static class Diagram
             "Azure DevOps pipeline",
             "A CI/CD pipeline's stages, jobs and steps, and which of them wait for which.",
             Extension: DocumentExtension,
-            SharedExtension: true),
+            SharedExtension: true,
+            // Azure DevOps pipelines: a document the repository already owns, registered by the user
+            // rather than routed on sight, because .yml belongs to no one type.
+            Build: builder => builder.Services.AddAzurePipeline()),
     ];
 }
