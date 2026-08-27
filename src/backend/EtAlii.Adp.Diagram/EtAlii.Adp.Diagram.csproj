@@ -10,6 +10,7 @@
       pipeline everywhere; DependencyModel to read the deployment manifest the assembly walk
       is seeded from.
     -->
+    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.DependencyModel" />
     <PackageReference Include="Serilog" />
   </ItemGroup>
