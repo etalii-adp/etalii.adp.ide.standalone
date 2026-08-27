@@ -11,9 +11,9 @@ namespace EtAlii.Adp.Diagram;
 /// diagram-type module already exposes.
 /// </summary>
 /// <remarks>
-/// This is a plain class rather than a static initializer so it can be handed a
+/// This is a static class without state  so it can be handed a
 /// test-controlled set of assemblies. The host runs it once at startup and stores the
-/// result in <see cref="DiagramDefinition.All"/>; nothing else should call it.
+/// result in all DiagramDefinitions, nothing else should call it.
 /// <para>
 /// It never throws for a bad assembly or a bad candidate. A module that cannot be loaded or
 /// that declares its definition wrongly costs exactly one entry in the result and one
@@ -34,7 +34,17 @@ public sealed class DiagramDefinitionDiscovery
     /// Scans exactly the given assemblies and returns the definitions found, ordered by
     /// origin so the result is the same on every run.
     /// </summary>
-    public IReadOnlyList<DiagramDefinition> Discover(IEnumerable<Assembly> assemblies)
+    public static IReadOnlyList<DiagramDefinition> Discover()
+    {
+        var assemblies = FindApplicationAssemblies();
+        return Discover(assemblies);
+    }
+
+    /// <summary>
+    /// Scans exactly the given assemblies and returns the definitions found, ordered by
+    /// origin so the result is the same on every run.
+    /// </summary>
+    public static IReadOnlyList<DiagramDefinition> Discover(IEnumerable<Assembly> assemblies)
     {
         ArgumentNullException.ThrowIfNull(assemblies);
 
@@ -226,7 +236,7 @@ public sealed class DiagramDefinitionDiscovery
         }
     }
 
-    private IEnumerable<Type> EnumerateTypes(Assembly assembly, string assemblyName)
+    private static IEnumerable<Type> EnumerateTypes(Assembly assembly, string assemblyName)
     {
         try
         {
@@ -265,7 +275,7 @@ public sealed class DiagramDefinitionDiscovery
     /// Empty for any malformed class, never null - a module that declares its definitions
     /// wrongly costs its own entries and a warning, never anyone else's.
     /// </returns>
-    private IReadOnlyList<DiagramDefinition> TryReadDefinitions(Type type, string assemblyName)
+    private static IReadOnlyList<DiagramDefinition> TryReadDefinitions(Type type, string assemblyName)
     {
         var property = type.GetProperty(DefinitionsPropertyName, BindingFlags.Public | BindingFlags.Static);
         if (property is null)

@@ -34,7 +34,8 @@ public class AddDiagramContextActionProviderRegistrationTests : IDisposable
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
         _ = TestHistory.Create(_root, out _historyStacks);
-        _provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, [Pipeline, Mindmap, ClassDiagram]);
+        var catalog = new DiagramDefinitionCatalog { All = [Pipeline, Mindmap, ClassDiagram] };
+        _provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog);
     }
 
     public void Dispose()

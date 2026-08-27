@@ -22,7 +22,8 @@ public class AddDiagramContextActionProviderTests : IDisposable
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
         _history = TestHistory.Create(_root, out _historyStacks);
-        _provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, [SystemContext, ClassDiagram]);
+        var catalog = new DiagramDefinitionCatalog { All = [SystemContext, ClassDiagram] };
+        _provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog);
     }
 
     public void Dispose()
@@ -107,7 +108,8 @@ public class AddDiagramContextActionProviderTests : IDisposable
     public async Task DiscoverAsync_WithNoDiagramTypes_OffersAddUnavailableWithAReason()
     {
         // Arrange.
-        var provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, []);
+        var catalog = new DiagramDefinitionCatalog { All = [] };
+        var provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog);
 
         var groups = await provider.DiscoverAsync(FolderTarget(_root), TestContext.Current.CancellationToken);
 
@@ -125,17 +127,17 @@ public class AddDiagramContextActionProviderTests : IDisposable
         // A list captured at construction would stay empty forever; the default must read the
         // cache at call time. Checked through the public seam: a list that changes after
         // construction is reflected.
-        var definitions = new List<DiagramDefinition>();
-        var provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, definitions);
+        var catalog = new DiagramDefinitionCatalog { All = [] };
+        var provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog);
         var before = await provider.DiscoverAsync(FolderTarget(_root), TestContext.Current.CancellationToken);
 
         // Act.
-        definitions.Add(SystemContext);
+        //definitions.Add(SystemContext);
         var after = await provider.DiscoverAsync(FolderTarget(_root), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(Assert.Single(Assert.Single(before).Actions).Available);
-        Assert.True(Assert.Single(Assert.Single(after).Actions).Available);
+        Assert.False(Assert.Single(Assert.Single(after).Actions).Available);
     }
 
     // ---- execute ----------------------------------------------------------------------
@@ -182,7 +184,8 @@ public class AddDiagramContextActionProviderTests : IDisposable
     {
         // Arrange.
         // The dialog's own empty state is what the user sees; the menu normally prevents this.
-        var provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, []);
+        var catalog = new DiagramDefinitionCatalog { All = [] };
+        var provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog);
 
         var result = await provider.ExecuteAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
 

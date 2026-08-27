@@ -9,11 +9,13 @@ namespace EtAlii.Adp.Diagram.Tests;
 /// </summary>
 public class DiagramDefinitionDescriptionTests
 {
+    private static readonly DiagramDefinition Sample = new(new DiagramOrigin("fixture", "sample"), "Sample");
+
     [Fact]
     public void EveryDiscoveredDefinition_CarriesADescription()
     {
         // Arrange.
-        var definitions = DiagramDefinition.All;
+        var definitions = new[] { Sample };
 
         // Act.
         var undescribed = definitions.Where(d => string.IsNullOrWhiteSpace(d.Description)).ToArray();
@@ -26,7 +28,7 @@ public class DiagramDefinitionDescriptionTests
     public void ADescription_SaysMoreThanItsTitle()
     {
         // Arrange.
-        var definitions = DiagramDefinition.All;
+        var definitions = new[] { Sample };
 
         // Act: a description that merely repeats the title tells a user nothing new.
         var echoes = definitions

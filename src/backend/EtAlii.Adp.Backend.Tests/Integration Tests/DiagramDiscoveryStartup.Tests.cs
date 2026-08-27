@@ -2,6 +2,7 @@ using System.Reflection;
 using EtAlii.Adp.Diagram;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -10,7 +11,7 @@ namespace EtAlii.Adp.Backend.Tests;
 /// <summary>
 /// Proves discovery against the real host and the real deployment: the host's startup runs
 /// the seeded assembly walk, and the diagram modules it carries - which its compiled metadata
-/// never references - end up in <see cref="DiagramDefinition.All"/>. This is the test that
+/// never references - end up in <see cref="DiagramDefinitionCatalog"/>. This is the test that
 /// would have failed with an unseeded walk, which returns nothing here.
 /// </summary>
 public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<Program>>
@@ -32,10 +33,12 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
         using var _ = _factory.CreateClient();
 
         // Assert.
-        Assert.NotEmpty(DiagramDefinition.All);
+        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        Assert.NotEmpty(catalog.All);
+
         // A scaffolded module known to declare a Definition, found by origin not by type -
         // this test must not reference any module.
-        Assert.Contains(DiagramDefinition.All, definition => definition.Origin.Key == "c4/context");
+        Assert.Contains(catalog.All, definition => definition.Origin.Key == "c4/context");
     }
 
     [Fact]
@@ -45,7 +48,8 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
         using var _ = _factory.CreateClient();
 
         // Act.
-        var origins = DiagramDefinition.All.Select(definition => definition.Origin).ToList();
+        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        var origins = catalog.All.Select(definition => definition.Origin).ToList();
 
         // Assert.
         // Ordered the way discovery orders: vendor, then type, then subtype - which keeps a
@@ -91,6 +95,7 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
             .SelectMany(type => (DiagramDefinition[])type!.GetProperty("Definitions")!.GetValue(null)!)
             .Select(definition => definition.Origin.Key)
             .ToList();
+        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
 
         // Assert.
         // What this test is for is that nothing deployed goes missing, so it compares the two
@@ -100,7 +105,7 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
         Assert.NotEmpty(declared);
         Assert.Equal(
             declared.OrderBy(key => key, StringComparer.Ordinal),
-            DiagramDefinition.All.Select(definition => definition.Origin.Key).OrderBy(key => key, StringComparer.Ordinal));
+            catalog.All.Select(definition => definition.Origin.Key).OrderBy(key => key, StringComparer.Ordinal));
     }
 
     [Fact]
@@ -112,7 +117,8 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
         using var _ = _factory.CreateClient();
 
         // Act.
-        var c4 = DiagramDefinition.All
+        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        var c4 = catalog.All
             .Where(definition => definition.Origin.Vendor == "c4")
             .Select(definition => definition.Origin.Key)
             .ToList();

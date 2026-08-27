@@ -229,7 +229,8 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
 
         // The bytes, not the string: a byte-order mark would be invisible in a comparison.
         var created = IoPath.Combine(_projectFolder, "domain.adp");
-        var expectedMimeType = DiagramDefinition.All.Single(definition => definition.Origin.Key == leaf.Id).Origin.MimeType;
+        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        var expectedMimeType = catalog.All.Single(definition => definition.Origin.Key == leaf.Id).Origin.MimeType;
         var actualBytes = await File.ReadAllBytesAsync(created, cts.Token);
         Assert.Equal(Encoding.UTF8.GetBytes(expectedMimeType + "\n"), actualBytes);
     }
