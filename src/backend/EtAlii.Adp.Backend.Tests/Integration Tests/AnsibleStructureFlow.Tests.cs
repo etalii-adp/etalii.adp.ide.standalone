@@ -37,7 +37,7 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
     private readonly string _projectFolder;
     private readonly string _infrastructure;
 
-    public AnsibleStructureFlowTests(WebApplicationFactory<Program> baseFactory)
+    public AnsibleStructureFlowTests(WebApplicationFactory<Program> factory)
     {
         _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
         _projectFolder = IoPath.Combine(_appDataRoot, "sample-project");
@@ -48,7 +48,7 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
         AnsibleFixture.CopyTo(_infrastructure);
         File.WriteAllText(IoPath.Combine(_infrastructure, "infrastructure.adp"), "ansible/structure\n");
 
-        _factory = baseFactory.WithWebHostBuilder(builder =>
+        _factory = factory.WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("developer");
             builder.ConfigureServices(services =>
