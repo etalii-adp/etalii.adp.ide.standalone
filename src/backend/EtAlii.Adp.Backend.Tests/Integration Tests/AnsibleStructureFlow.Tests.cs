@@ -173,7 +173,8 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
         Assert.Equal(before.Keys.Order(StringComparer.Ordinal), Snapshot().Keys.Order(StringComparer.Ordinal));
         foreach (var (path, bytes) in before)
         {
-            Assert.True(bytes.SequenceEqual(await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken)), $"{path} changed.");
+            var bytesToCheck = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
+            Assert.True(bytes.SequenceEqual(bytesToCheck), $"{path} changed.");
         }
     }
 
