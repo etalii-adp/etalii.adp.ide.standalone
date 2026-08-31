@@ -41,11 +41,11 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 1.1, 1.3, 9.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer, model Fable 5 (mandatory - verify before starting) | Task: Verify the nested-type count is zero across src/backend and src/diagrams (the same grep-shaped scan R8's design describes, narrowed to nested-type declarations), then run `dotnet test --solution EtAlii.Adp.slnx` from src/backend and `dotnet format style --verify-no-changes --severity info`, checking exit codes rather than grepping output. If both are clean, merge the debt-nested worktree into develop and retire it per CLAUDE.md's worktree rules | Restrictions: do not merge if either gate fails - fix forward in the same worktree instead | Success: nested-type count is 0, `dotnet test` reports failed:0 with exit code 0, `dotnet format style` exits 0, the worktree is merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. Consolidate the callback-disposable duplicates (R2)
+- [-] 2. Consolidate the callback-disposable duplicates (R2)
   - Worktree: `.claude/worktrees/debt-callback`
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 2.1 Create the shared `CallbackDisposable` type and its unit test
+- [-] 2.1 Create the shared `CallbackDisposable` type and its unit test
   - File: `src/backend/EtAlii.Adp/CallbackDisposable.cs` (new), `src/backend/EtAlii.Adp.Tests/CallbackDisposable.Tests.cs` (new)
   - Exactly the shape in design.md's Data Models section: `public sealed class CallbackDisposable(Action dispose) : IDisposable { public void Dispose() => dispose(); }` - deliberately non-idempotent, matching `WardleyElementUnsubscriber`/`C4ElementUnsubscriber`'s current behaviour exactly
   - Test: construct with an action incrementing a counter, dispose once (counter is 1), dispose again (counter is 2) - proving non-idempotence is specified, not an oversight
