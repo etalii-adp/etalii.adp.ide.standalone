@@ -13,20 +13,9 @@ namespace EtAlii.Adp.Diagram.C4;
 /// </remarks>
 public sealed class C4Document
 {
-    /// <summary>
-    /// One line as it was read: its text, and the terminator that followed it. Empty for the
-    /// last line of a file that ends without one.
-    /// </summary>
-    /// <remarks>
-    /// The terminator is kept per line rather than per document because a document edited on two
-    /// platforms carries both, and rewriting every line to the prevailing one makes the first
-    /// save a whole-file diff - exactly the diff Requirement 3.1 forbids.
-    /// </remarks>
-    private readonly record struct Line(string Text, string Terminator);
+    private readonly List<C4DocumentLine> _lines;
 
-    private readonly List<Line> _lines;
-
-    private C4Document(List<Line> lines, string newline, bool endsWithNewline)
+    private C4Document(List<C4DocumentLine> lines, string newline, bool endsWithNewline)
     {
         _lines = lines;
         Newline = newline;
@@ -94,7 +83,7 @@ public sealed class C4Document
             _lines[^1] = _lines[^1] with { Terminator = Newline };
         }
 
-        _lines.Insert((int)number - 1, new Line(text, appendingToUnterminated ? "" : Newline));
+        _lines.Insert((int)number - 1, new C4DocumentLine(text, appendingToUnterminated ? "" : Newline));
     }
 
     /// <summary>Removes lines <paramref name="from"/> to <paramref name="to"/> inclusive, 1-based.</summary>
@@ -152,9 +141,9 @@ public sealed class C4Document
     }
 
     /// <summary>Every line with the terminator that followed it, so both can be written back.</summary>
-    private static List<Line> SplitLines(string text)
+    private static List<C4DocumentLine> SplitLines(string text)
     {
-        var lines = new List<Line>();
+        var lines = new List<C4DocumentLine>();
         var start = 0;
         for (var index = 0; index < text.Length; index++)
         {
@@ -164,7 +153,7 @@ public sealed class C4Document
             }
 
             var end = index > start && text[index - 1] == '\r' ? index - 1 : index;
-            lines.Add(new Line(text[start..end], text[end..(index + 1)]));
+            lines.Add(new C4DocumentLine(text[start..end], text[end..(index + 1)]));
             start = index + 1;
         }
 
@@ -172,7 +161,7 @@ public sealed class C4Document
         // that absence is what `EndsWithNewline` reports - there is no phantom final line.
         if (start < text.Length)
         {
-            lines.Add(new Line(text[start..], ""));
+            lines.Add(new C4DocumentLine(text[start..], ""));
         }
 
         return lines;
