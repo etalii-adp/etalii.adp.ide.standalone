@@ -80,11 +80,11 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 1.1, 1.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer, model Fable 5 (mandatory - verify before starting) | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, checking exit codes. If clean, merge debt-callback into develop and retire the worktree per CLAUDE.md | Restrictions: do not merge on a failing gate | Success: both gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. Converge the diagram-definition declaration shape (R6)
+- [-] 3. Converge the diagram-definition declaration shape (R6)
   - Worktree: `.claude/worktrees/debt-defshape`
   - _Requirements: 6.1, 6.2, 6.3_
 
-- [ ] 3.1 Give `azure-pipeline` a named `DiagramDefinition` property
+- [-] 3.1 Give `azure-pipeline` a named `DiagramDefinition` property
   - File: `src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline/Diagram.cs`, `src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline.Tests/ServiceCollectionAddAzurePipeline.Tests.cs`
   - Add `public static DiagramDefinition Pipeline { get; }`, change `Definitions` to `[Pipeline]`, update the one indexing call site (`Diagram.Definitions[0].Origin` in `TheSessionFactory_AnswersForThisModulesOrigin`) to `Diagram.Pipeline.Origin`
   - Purpose: satisfy R6.2/R6.3 - this is the one outlier among the five implemented modules
