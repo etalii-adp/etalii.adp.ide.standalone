@@ -45,7 +45,7 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - Worktree: `.claude/worktrees/debt-callback`
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [-] 2.1 Create the shared `CallbackDisposable` type and its unit test
+- [x] 2.1 Create the shared `CallbackDisposable` type and its unit test
   - File: `src/backend/EtAlii.Adp/CallbackDisposable.cs` (new), `src/backend/EtAlii.Adp.Tests/CallbackDisposable.Tests.cs` (new)
   - Exactly the shape in design.md's Data Models section: `public sealed class CallbackDisposable(Action dispose) : IDisposable { public void Dispose() => dispose(); }` - deliberately non-idempotent, matching `WardleyElementUnsubscriber`/`C4ElementUnsubscriber`'s current behaviour exactly
   - Test: construct with an action incrementing a counter, dispose once (counter is 1), dispose again (counter is 2) - proving non-idempotence is specified, not an oversight
@@ -53,7 +53,7 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 2.1, 2.4_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer, model Fable 5 (mandatory - verify before starting) | Task: Create EtAlii.Adp.CallbackDisposable in src/backend/EtAlii.Adp/CallbackDisposable.cs exactly as specified in design.md's Data Models section (non-idempotent, single Action, no argument-null check - this must match WardleyElementUnsubscriber/C4ElementUnsubscriber's current behaviour byte-for-byte in effect), and its unit test in src/backend/EtAlii.Adp.Tests/CallbackDisposable.Tests.cs following the arrange/act/assert convention in tech.md, proving Dispose invokes the callback every time it is called (non-idempotent) | Restrictions: do not add a null-check or idempotency guard - that would diverge from the two types this is replacing and is Pipeline/Ansible's job, not this type's | Leverage: existing xUnit v3 test conventions in EtAlii.Adp.Tests | Success: CallbackDisposable compiles, its test passes and explicitly asserts double-dispose invokes the callback twice. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.2 Migrate `wardley-map` to `CallbackDisposable` and delete its duplicate
+- [-] 2.2 Migrate `wardley-map` to `CallbackDisposable` and delete its duplicate
   - File: `src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap/WardleyContextSourceResolver.cs` (modified), `src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap/WardleyElementUnsubscriber.cs` (deleted)
   - Replace the one `new WardleyElementUnsubscriber(...)` call site with `new CallbackDisposable(...)`; no `.csproj` change needed (confirmed transitively visible via the existing `EtAlii.Adp.Diagram` reference)
   - Purpose: satisfy R2.2 for wardley-map
@@ -61,7 +61,7 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 2.2_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer, model Fable 5 (mandatory - verify before starting) | Task: In WardleyContextSourceResolver.cs, replace `new WardleyElementUnsubscriber(...)` with `new EtAlii.Adp.CallbackDisposable(...)` (or a using-directive equivalent), then delete WardleyElementUnsubscriber.cs entirely, per design.md's R2 section | Restrictions: do not add a project reference - EtAlii.Adp is already transitively visible through EtAlii.Adp.Diagram, confirmed in design.md; adding one would be an unneeded, undiscussed change | Leverage: EtAlii.Adp.CallbackDisposable from task 2.1 | Success: WardleyElementUnsubscriber.cs no longer exists, the one call site compiles against CallbackDisposable, WardleyContextSourceResolver.Tests.cs passes unchanged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.3 Migrate `c4` to `CallbackDisposable` and delete its duplicate
+- [-] 2.3 Migrate `c4` to `CallbackDisposable` and delete its duplicate
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4ContextSourceResolver.cs` (modified), `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4ElementUnsubscriber.cs` (deleted)
   - Same change as 2.2, for C4's one call site
   - _Leverage: EtAlii.Adp.CallbackDisposable (task 2.1)_
