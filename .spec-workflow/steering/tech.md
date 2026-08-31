@@ -24,7 +24,13 @@
   * **The name is the agent's session name**, so the commit says *which* agent — `etalii-adp-27`, not `Claude`. Several agents work this repository at the same time, and "an agent did it" is not the useful answer.
   * `.invalid` is reserved by RFC 2606 and never resolves, so the address cannot reach anyone and cannot be mistaken for a real person's. **Never put the owner's address in the author or committer field.**
   * The `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>` trailer stays. The author field says which agent; the trailer says which model. They answer different questions, and dropping either loses one of the answers.
-  * This changes attribution only. It does not change the pathspec discipline CLAUDE.md requires when committing in a checkout shared with other sessions.
+  * This changes attribution only. It does not change the pathspec discipline CLAUDE.md requires when committing in a checkout shared with other sessions — and that discipline has a trap worth stating, because it has already cost this repository one mis-attributed commit:
+    * **`git add <narrow paths>`, then `git commit -- <the same narrow paths>`.** Both halves are needed, and each closes a hole the other leaves open.
+    * A bare `git commit` commits whatever is *staged*, anywhere in the tree, so it sweeps up another session's staged work.
+    * `git commit -- <pathspec>` commits the **working-tree** state of everything matching the pathspec, *bypassing the index for those paths*. So it sweeps another session's **unstaged** edits under that path — and checking `git diff --cached` first does not warn you, because the index is not what it commits.
+    * **`.spec-workflow` is not a narrow pathspec.** It contains `approvals/`, which every session writes to constantly. `.spec-workflow/specs/<your-spec>` and `.spec-workflow/approvals/<your-spec>` are narrow; the parent is not. Commit `3e3ed952` carried six approval files belonging to two other sessions for exactly this reason.
+    * The failure is silent: nothing errors, and the commit simply contains files you never touched. Verify with `git show --stat` after committing rather than assuming.
+    * `git commit -- <path>` also fails outright on an *untracked* new file with "did not match any file(s) known to git", which is why the `git add` comes first.
 
 # Runtime
 
