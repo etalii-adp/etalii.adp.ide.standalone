@@ -2,7 +2,7 @@
 
 ## Overview
 
-`ShortGuid` is a `readonly struct` that wraps a single `Guid` field and represents it as a fixed-length, 25-character base36 string. It lives in a new `EtAlii.Adp` class library project — the reusable-helpers project [structure.md](../../steering/structure.md) already describes but that doesn't exist on disk yet — alongside a new `EtAlii.Adp.Tests` project. No existing project is required to reference `EtAlii.Adp` as part of this spec.
+`ShortGuid` is a `readonly struct` that wraps a single `Guid` field and represents it as a fixed-length, 25-character base36 string. It lives in a new `EtAlii.Adp` class library project — the reusable-helpers project [structure.md](../../../steering/structure.md) already describes but that doesn't exist on disk yet — alongside a new `EtAlii.Adp.Tests` project. No existing project is required to reference `EtAlii.Adp` as part of this spec.
 
 25 characters is the minimum fixed width that can represent every possible 128-bit `Guid` value in base36: `36^24 < 2^128 ≤ 36^25`. Because the width is fixed and zero-padded, comparing two `ShortGuid` string representations lexicographically is equivalent to comparing their numeric values — a property the design relies on for Requirement 2.6 instead of special-casing it.
 

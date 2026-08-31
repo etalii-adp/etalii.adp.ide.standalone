@@ -2,13 +2,13 @@
 
 ## Introduction
 
-This spec adds `ShortGuid`, a reusable value type that represents a `System.Guid` as a compact, fixed-length base36 string instead of the standard 32-hex-digit representation. It is intended for contexts where GUID-based identifiers need to appear in a shorter, still-unambiguous form (e.g. in the UI, file names, or logs). This is the first reusable helper placed in the `EtAlii.Adp` library project described in [structure.md](../../steering/structure.md); that project (and its `EtAlii.Adp.Tests` counterpart) does not exist on disk yet and is created as part of this spec.
+This spec adds `ShortGuid`, a reusable value type that represents a `System.Guid` as a compact, fixed-length base36 string instead of the standard 32-hex-digit representation. It is intended for contexts where GUID-based identifiers need to appear in a shorter, still-unambiguous form (e.g. in the UI, file names, or logs). This is the first reusable helper placed in the `EtAlii.Adp` library project described in [structure.md](../../../steering/structure.md); that project (and its `EtAlii.Adp.Tests` counterpart) does not exist on disk yet and is created as part of this spec.
 
 ## Alignment with Product Vision
 
-- [structure.md](../../steering/structure.md)'s **`EtAlii.Adp` (Library)** definition: "Contains all reusable helper classes, mechanisms and extension methods" — `ShortGuid` is exactly this kind of helper, and gives the project its first content.
-- [product.md](../../steering/product.md)'s **"Don't reinvent, integrate"**: `ShortGuid` wraps `System.Guid` rather than introducing a competing identifier concept — it is purely an alternate, round-trippable string representation of the same value.
-- [tech.md](../../steering/tech.md)'s **testing guidance**: tests are plain unit tests runnable locally with no external dependencies, consistent with the "F5 experience" requirement.
+- [structure.md](../../../steering/structure.md)'s **`EtAlii.Adp` (Library)** definition: "Contains all reusable helper classes, mechanisms and extension methods" — `ShortGuid` is exactly this kind of helper, and gives the project its first content.
+- [product.md](../../../steering/product.md)'s **"Don't reinvent, integrate"**: `ShortGuid` wraps `System.Guid` rather than introducing a competing identifier concept — it is purely an alternate, round-trippable string representation of the same value.
+- [tech.md](../../../steering/tech.md)'s **testing guidance**: tests are plain unit tests runnable locally with no external dependencies, consistent with the "F5 experience" requirement.
 
 ## Requirements
 
@@ -63,7 +63,7 @@ This spec adds `ShortGuid`, a reusable value type that represents a `System.Guid
 ### Code Architecture and Modularity
 
 - **Single Responsibility**: `ShortGuid` and its base36 encode/decode logic are the only content this spec adds; no unrelated helpers are introduced under the same change.
-- **Project placement**: the type SHALL live in the `EtAlii.Adp` class library project (created by this spec if absent, per [structure.md](../../steering/structure.md)), not in `EtAlii.Adp.Backend` or any other project.
+- **Project placement**: the type SHALL live in the `EtAlii.Adp` class library project (created by this spec if absent, per [structure.md](../../../steering/structure.md)), not in `EtAlii.Adp.Backend` or any other project.
 - **No forced wiring**: this spec SHALL NOT require any existing project to start depending on `EtAlii.Adp` or to adopt `ShortGuid` — it only establishes the type and its home project for future use.
 
 ### Performance
