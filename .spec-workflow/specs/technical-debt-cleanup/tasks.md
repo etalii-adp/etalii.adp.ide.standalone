@@ -10,7 +10,7 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - Worktree: `.claude/worktrees/debt-nested`
   - _Requirements: 9.1, 9.2, 9.3, 10.1, 10.2, 10.3_
 
-- [-] 1.1 Lift `C4Document`'s nested `Line` record to `_Model/C4DocumentLine.cs`
+- [x] 1.1 Lift `C4Document`'s nested `Line` record to `_Model/C4DocumentLine.cs`
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/_Model/C4DocumentLine.cs` (new), `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/_Model/C4Document.cs` (modified)
   - Move `private readonly record struct Line(string Text, string Terminator)` out of `C4Document`, rename `C4DocumentLine`, land it in `_Model` per the POCO rule
   - `C4Document`'s internal `List<Line>` becomes `List<C4DocumentLine>`; every other member of `C4Document` (its public surface, `Parse`, `ToText`, `ReplaceLine`, `InsertLine`, `RemoveLines`) is untouched
@@ -19,7 +19,7 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 9.1, 9.2_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer, model Fable 5 (mandatory - verify before starting) | Task: Lift the private nested `Line` record struct out of `C4Document` (src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/_Model/C4Document.cs) into its own file `_Model/C4DocumentLine.cs`, renamed `C4DocumentLine`, per design.md's R9 section and tech.md's no-nested-types rule and its `_Model` POCO rule. Update `C4Document`'s internal usage accordingly | Restrictions: do not change `C4Document`'s public API, do not touch any other file, do not fix unrelated warnings you notice along the way - record them instead per CLAUDE.md's bug rule | Leverage: the existing `C4Document.Tests.cs` suite as the behaviour-preservation check - it must pass unchanged | Success: `C4DocumentLine` exists at namespace level in `_Model`, `C4Document` compiles and behaves identically, `dotnet test --solution EtAlii.Adp.slnx` for the C4 test project reports the same pass count as before. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 1.2 Lift `Examples.Tests.cs`'s nested `StubCatalog` to its own file
+- [-] 1.2 Lift `Examples.Tests.cs`'s nested `StubCatalog` to its own file
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/C4ExamplesStubCatalog.cs` (new), `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Examples.Tests.cs` (modified)
   - Move `private sealed class StubCatalog : IDiagramDefinitionCatalog` out of `ExamplesTests`, rename `C4ExamplesStubCatalog`, same folder and namespace (has behaviour, so it sits beside its parent rather than in `_Model`)
   - Confirmed in design.md: no existing reusable stub catalog already exists in this test project to use instead
