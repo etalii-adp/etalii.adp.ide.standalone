@@ -89,6 +89,8 @@
     <Project Path="../diagrams/plantuml-uml/backend/EtAlii.Adp.Diagram.PlantumlUml.Tests/EtAlii.Adp.Diagram.PlantumlUml.Tests.csproj" />
     <Project Path="../diagrams/structurizr-c4/backend/EtAlii.Adp.Diagram.StructurizrC4/EtAlii.Adp.Diagram.StructurizrC4.csproj" />
     <Project Path="../diagrams/structurizr-c4/backend/EtAlii.Adp.Diagram.StructurizrC4.Tests/EtAlii.Adp.Diagram.StructurizrC4.Tests.csproj" />
+    <Project Path="../diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline/EtAlii.Adp.Diagram.Timeline.csproj" />
+    <Project Path="../diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/EtAlii.Adp.Diagram.Timeline.Tests.csproj" />
     <Project Path="../diagrams/togaf-adm/backend/EtAlii.Adp.Diagram.TogafAdm/EtAlii.Adp.Diagram.TogafAdm.csproj" />
     <Project Path="../diagrams/togaf-adm/backend/EtAlii.Adp.Diagram.TogafAdm.Tests/EtAlii.Adp.Diagram.TogafAdm.Tests.csproj" />
     <Project Path="../diagrams/uml-activity/backend/EtAlii.Adp.Diagram.UmlActivity/EtAlii.Adp.Diagram.UmlActivity.csproj" />
