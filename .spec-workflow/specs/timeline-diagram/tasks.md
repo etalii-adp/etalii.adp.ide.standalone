@@ -29,7 +29,7 @@
 
 ## Phase B — the document, read and written
 
-- [ ] 2. `TimelineDocument`: the file as read
+- [x] 2. `TimelineDocument`: the file as read
   - File: `src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline/_Model/TimelineDocument.cs` (new), tests
   - Lines, the dominant line ending, and splices by range: `Parse`, `Insert`, `Remove`, `Replace`, `ToString`. **Two cases the design calls out because a sibling module got them wrong first:** appending to a file whose last line has no terminator must not gain one, and removing the last line must move its ending to the new last line
   - Purpose: makes Requirement 2.1 structural rather than a thing to be careful about
