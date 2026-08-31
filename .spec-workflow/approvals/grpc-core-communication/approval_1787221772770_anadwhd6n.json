@@ -3,8 +3,10 @@
   "title": "Requirements: gRPC Core Communication",
   "filePath": ".spec-workflow/specs/grpc-core-communication/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "rejected",
   "createdAt": "2026-08-20T10:29:32.770Z",
   "category": "spec",
-  "categoryName": "grpc-core-communication"
+  "categoryName": "grpc-core-communication",
+  "response": "Obsolete as it is implemented by other specifications.",
+  "respondedAt": "2026-08-31T09:36:22.111Z"
 }
