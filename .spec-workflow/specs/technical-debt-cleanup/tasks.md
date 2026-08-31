@@ -80,7 +80,7 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 1.1, 1.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer, model Fable 5 (mandatory - verify before starting) | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, checking exit codes. If clean, merge debt-callback into develop and retire the worktree per CLAUDE.md | Restrictions: do not merge on a failing gate | Success: both gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3. Converge the diagram-definition declaration shape (R6)
+- [x] 3. Converge the diagram-definition declaration shape (R6)
   - Worktree: `.claude/worktrees/debt-defshape`
   - _Requirements: 6.1, 6.2, 6.3_
 
@@ -97,16 +97,16 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 6.1_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical writer familiar with this repository's steering docs, model Fable 5 (mandatory - verify before starting) | Task: Add a new tech.md entry (placed near the existing diagram-type specification guidance) documenting the two legitimate DiagramDefinition declaration shapes - stub and implemented - the trigger for moving between them, and that a folder-subject module's lack of a DocumentExtension constant is a legitimate consequence of Subject: DiagramSubject.Folder, not a shape violation, per design.md's R6 section verbatim reasoning | Restrictions: do not restate or contradict R5's registration-shape entry (task 4.1) - these are two different rules about two different files | Success: tech.md states the two shapes and the DocumentExtension exception clearly enough that a new module's author would know which shape to copy. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3.3 Gate and merge
+- [x] 3.3 Gate and merge
   - Run both backend gates from `src/backend/`; merge `.claude/worktrees/debt-defshape` into `develop` and retire it
   - _Requirements: 1.1, 1.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer, model Fable 5 (mandatory - verify before starting) | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, checking exit codes. If clean, merge debt-defshape into develop and retire the worktree | Restrictions: do not merge on a failing gate | Success: both gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. Record the module-registration shape rule (R5)
+- [-] 4. Record the module-registration shape rule (R5)
   - Worktree: `.claude/worktrees/debt-regshape`
   - _Requirements: 5.1, 5.2, 5.3_
 
-- [ ] 4.1 Add the registration-shape rule to tech.md
+- [-] 4.1 Add the registration-shape rule to tech.md
   - File: `.spec-workflow/steering/tech.md`
   - Record: single-file is the default; split into `AddX`/`AddXCommands` only once a concrete consumer needs the module's command handlers registered without its other seams - not a line-count threshold, per design.md's corrected R5.1/R5.3
   - Note that R5.2 requires no code changes: all five implemented modules already match this rule once it is written down correctly
