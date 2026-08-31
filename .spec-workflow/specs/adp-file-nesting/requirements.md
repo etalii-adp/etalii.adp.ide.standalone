@@ -72,7 +72,7 @@ The measurements and code references below were taken from the tree at `21e806a3
 
 4.1. A file named exactly `.adp` inside a folder SHALL register a diagram whose subject is that folder.
 4.2. The folder SHALL be the primary entry for activation purposes, per Requirement 7.
-4.3. **A `.NET` path pitfall SHALL be verified and guarded.** `Path.GetExtension(".adp")` returns an empty string, because the period is the first character of the file name and .NET treats such a name as having no extension; `Path.GetFileNameWithoutExtension(".adp")` likewise returns `.adp`. `DiagramFilePair.IsRegistrationFile` uses `EndsWith` and so is unaffected, but any code path reasoning about the extension is. The design SHALL confirm this behaviour by test rather than by assertion, and audit the call sites.
+4.3. **A `.NET` path pitfall SHALL be verified and guarded.** Measured, after this criterion's own demand for a test caught the original text asserting the exact opposite: `Path.GetExtension(".adp")` returns `".adp"`, and `Path.GetFileNameWithoutExtension(".adp")` returns the **empty string**. .NET does not apply the Unix "leading dot means no extension" convention; that assumption was wrong in both directions. The consequence inverts with it: reasoning about the *extension* of a bare `.adp` is safe, and reasoning about its *name* is the hazard, because the base name is empty. That is the same hazard 4.4 records for `StripExtension(".adp")`, so it is one problem rather than two. The design SHALL audit the name-based call sites, and SHALL ship a test asserting these two values so the corrected fact cannot decay back into folklore.
 4.4. `DiagramFileName.StripExtension(".adp")` currently yields an empty base name, and `SiblingPathFor` would then produce a path that is just the extension. Folder-scoped registrations SHALL be excluded from sibling derivation rather than allowed to produce such a path.
 4.5. WHETHER a folder may carry more than one registration — and if so, how they are named, given that Requirement 1.3 leaves no room for a qualifier — SHALL be decided in the design. If the answer is "one per folder", that SHALL be enforced with a clear error rather than left as an accident of naming.
 
@@ -133,7 +133,9 @@ The measurements and code references below were taken from the tree at `21e806a3
 
 **User Story:** As a client developer, I want every place that assumes "only folders expand" found and changed together, so that the tree does not half-support nesting.
 
-**Finding:** `ExplorerTreePanel.tsx` gates on `EntryKind.FOLDER` in at least six places — the expandable computation at line 887 (`isExpandable = isFolder && node.hasChildren`), the `aria-expanded` attribute at 893, the children render at 954, child loading at 219, and keyboard navigation at 716 and 735.
+**Finding:** `ExplorerTreePanel.tsx` gates on `EntryKind.FOLDER` in **nine** places — the expandable computation at line 887 (`isExpandable = isFolder && node.hasChildren`), the `aria-expanded` attribute at 893, the children render at 954, child loading at 219, keyboard navigation at 716 and 735, the sort comparator at 63-64, the icon selection at 325, and the activation-toggle at 593.
+
+This count was originally six. The three that were missed — sort, icon, activation-toggle — all fail as "looks slightly wrong" rather than "does not work", which is precisely why 9.1 demands an exhaustive audit: a manual pass finds that class of site last, or never.
 
 #### Acceptance Criteria
 
