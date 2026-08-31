@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package etalii.adp.timeline;
+
+option csharp_namespace = "EtAlii.Adp.Diagram.Timeline";
+
+// The payloads of a timeline's elements, packed into the core Element's Any. Defined in the
+// module's own api folder; no core proto is edited to add them. The id and canvas position live
+// on the core Element - this carries only what is the element's own.
+//
+// The times travel AS WRITTEN, not as parsed values: the property grid shows what the author
+// typed, and a client that reformatted 2026-01-05 into a locale's idea of a date would show a
+// value that is not in the file. The date_only flag lets the client format edits back in the
+// same shape, so a grid edit never silently promotes a date to a date-time (Requirement 3.2).
+
+// A period (begin and end) or a moment (begin only).
+message TimelineElementPayload {
+  // ISO 8601, exactly as the document says. Empty never happens: begin is required.
+  string begin = 1;
+
+  // Empty for a moment - the canvas draws a marker and offers no right adorner (Requirements
+  // 4.6, 7.5).
+  string end = 2;
+
+  // The authored row. The core Element's y already carries row * height for the canvas; the raw
+  // index is here for the property grid, which shows and edits the row rather than a pixel.
+  int32 row = 3;
+
+  // Whether begin/end were written as whole days. One flag for both because an element never
+  // mixes precisions (Requirement 3.2).
+  bool date_only = 4;
+}
+
+// A line from one element to another, meaning whatever the author says it means.
+message TimelineConnectionPayload {
+  string from_element_id = 1;
+  string to_element_id = 2;
+  string label = 3;
+}
