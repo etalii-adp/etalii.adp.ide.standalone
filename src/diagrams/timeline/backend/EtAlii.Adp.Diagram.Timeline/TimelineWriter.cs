@@ -296,6 +296,12 @@ public static class TimelineWriter
     /// Where a new entry goes: after the last existing one, or immediately after the section key
     /// when there are none. Returns -1 when the section key is absent entirely.
     /// </summary>
+    /// <remarks>
+    /// A section written flow-empty - <c>elements: []</c>, which is what a fresh document from
+    /// the factory says, and what a hand author may equally write - is first opened into a bare
+    /// <c>elements:</c> key, because appending a block entry after a line that already carries a
+    /// value would leave the key with two values and the document unparseable.
+    /// </remarks>
     private static int InsertionPointFor(TimelineDocument document, IEnumerable<LineRange> ranges, string sectionKey)
     {
         var last = ranges.Cast<LineRange?>().LastOrDefault();
@@ -306,10 +312,20 @@ public static class TimelineWriter
 
         for (var i = 0; i < document.Lines.Count; i++)
         {
-            if (document.Lines[i].Text.TrimStart().StartsWith(sectionKey, StringComparison.Ordinal))
+            var text = document.Lines[i].Text;
+            if (!text.TrimStart().StartsWith(sectionKey, StringComparison.Ordinal))
             {
-                return i + 1;
+                continue;
             }
+
+            var value = text.TrimStart()[sectionKey.Length..].Trim();
+            if (value is "[]" or "[ ]")
+            {
+                var indent = text[..(text.Length - text.TrimStart().Length)];
+                document.Replace(new LineRange(i, i), [$"{indent}{sectionKey}"]);
+            }
+
+            return i + 1;
         }
 
         return -1;

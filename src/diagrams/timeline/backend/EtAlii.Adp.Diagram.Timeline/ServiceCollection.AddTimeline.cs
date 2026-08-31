@@ -18,6 +18,9 @@ public static class ServiceCollectionAddTimelineExtension
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        services.AddSingleton<IDiagramDocumentFactory, TimelineDocumentFactory>();
+        services.AddSingleton<TimelineElementMapper>();
+
         return services;
     }
 }
