@@ -34,6 +34,10 @@ Three things drive the design:
 * **`ResolveWithin`'s path-escape guard** — preserved unchanged (Requirement 2.5). A `body:` header is user-editable text; following it outside the project root would turn an `.adp` into an arbitrary-file read.
 * **`EntryCreated` / `EntryRemoved` / `EntryRenamed` / `EntryUpdated`** — the existing watch messages carry most of Requirement 10.
 
+### Example sets
+
+`ExampleRegistrationTests` walks every tracked `.adp` under `src/diagrams/*/examples/**` and is written **before** the rename, so it is a regression test rather than a description of what the rename produced. It then gains the nesting assertions. 26 of the 39 registrations have no test opening them today, so this closes a gap wider than the rename itself.
+
 ### Verification of the findings this design builds on
 
 Requirement 4.3 asks for a .NET behaviour to be **confirmed by test rather than by assertion**. It was, and the assertion in the requirements is wrong — in both halves, inverted:
@@ -151,6 +155,87 @@ Cascade per open question 5, with the count reported before the action runs.
 
 All nine sites in the table above, changed together. `isExpandable` becomes `node.hasChildren` without the folder test; the sort places folders first, then files, with a file's registrations nested beneath it rather than sorted among its siblings; icons distinguish a registration by its parent being a file.
 
+## The example sets
+
+The repository ships 39 tracked `.adp` files across five example sets, and every one of them is written in the pre-nesting shape this spec replaces. They are the project's own demonstration material, so leaving them in the old shape would mean the feature's best illustration is also its counter-example.
+
+| Example set | `.adp` files | What it demonstrates |
+|---|---|---|
+| `c4/examples/reference/architecture` | 7 | **The multi-registration case, in the wild** |
+| `c4/examples/industrial-plant/architecture` | 6 | The same shape, second instance |
+| `azure-pipeline/examples/example 1` | 8 + 3 nested | A registration whose base name equals a sibling **directory** |
+| `wardley-map/examples/example 2` | 13 | The single-registration form at volume |
+| `wardley-map/examples/example 1` | 1 | The simplest pair |
+| `ansible-structure/examples/example 1/infrastructure` | 1 | **The folder-scoped case, in the wild** |
+
+### Why Requirement 11.2 does not forbid this
+
+Requirement 11.2 says no file on disk is renamed, moved or rewritten as a consequence of adopting this spec, and a reader could take that to forbid touching the examples. It does not, and the distinction is worth stating rather than leaving to be noticed:
+
+**11.2 protects users' projects from an automatic migration.** Its subject is a project ADP opens — adopting this spec must not rewrite a user's files behind their back, and Requirement 11.3 reinforces that even a rename the design chooses must be an explicit consequence of an explicit user action.
+
+**The example sets are this repository's own authored content.** Renaming them is a deliberate editorial act by this spec, performed once, in a commit, by a person or an agent — the same category as editing a fixture or a readme. It is not a migration, nothing runs on open, and no user project is touched. Nothing in this design gives ADP a code path that renames a user's registrations except through the rename command a user invokes.
+
+### `c4/examples/reference/architecture` is the feature's own best demonstration
+
+Seven registrations sit as flat siblings, six of them relating to one body:
+
+| File | Body today | Nests under |
+|---|---|---|
+| `courier.adp` | owns `courier.dsl` | `courier.dsl` |
+| `landscape.adp` | `body:` → `architecture/courier.dsl` | `courier.dsl` |
+| `containers.adp` | `body:` → `architecture/courier.dsl` | `courier.dsl` |
+| `api-components.adp` | `body:` → `architecture/courier.dsl` | `courier.dsl` |
+| `parcel-scanned.adp` | `body:` → `architecture/courier.dsl` | `courier.dsl` |
+| `production.adp` | `body:` → `architecture/courier.dsl` | `courier.dsl` |
+| `code-level.adp` | type `c4/code`, no definition | stays where it sits |
+
+This is exactly the shape Requirement 1 exists for, already on disk, and it shows the problem plainly: nothing in that listing says the six belong to `courier.dsl` rather than to each other.
+
+**The rename**: `courier.adp` keeps its name — it is the unqualified form and therefore the default (open question 3, and Requirement 7.2's stable order). The five header-pointed ones become `courier.landscape.adp`, `courier.containers.adp`, `courier.api-components.adp`, `courier.parcel-scanned.adp` and `courier.production.adp`. Their `body:` headers **stay**, because they remain correct and because Requirement 2.3 makes the header authoritative over derivation — this is precisely the case where the header is doing real work, and removing it in favour of a derivation would be replacing a fact with an inference.
+
+**`code-level.adp` is left exactly as it is**, and that is a finding rather than an omission. Its type is `c4/code`, which is specified but not implemented, so it resolves to no definition and therefore no body. Requirement 8.4 says that behaviour must not change and that an unknown type must not become an error. The reference set therefore already contains the 8.4 case in the wild, and the rename must demonstrably not disturb it. `industrial-plant` is the same shape and takes the same treatment.
+
+### `azure-pipeline/examples/example 1` — a name collision worth testing
+
+The set contains `templates.adp`, `templates.yml` **and** a directory named `templates/` holding three further registrations. So a registration's derived body (`templates.yml`) and a sibling directory share a base name.
+
+Nothing in the design breaks here — `templates.adp` nests under `templates.yml` because that is the file its name derives, and the directory is a separate entry that happens to be similarly named. But it is the case where a nesting implementation that reasons about names rather than about resolved entries would put the registration under the *directory*, so it earns a test rather than a note. The three registrations inside `templates/` nest under their own siblings there, unaffected.
+
+### `ansible-structure` — the folder case, and why the example does not adopt it
+
+`examples/example 1/infrastructure/structure.adp` declares `ansible/structure`, a type that reads a project tree rather than a document and therefore has no body. It is the natural candidate for Requirement 4's bare `.adp`.
+
+**The example keeps `structure.adp` and does not become `.adp`.** Two reasons, and the second is the load-bearing one:
+
+1. Requirement 4.1 makes a bare `.adp` register *the folder it sits in*. `structure.adp` sits in `infrastructure/`, so renaming it to `.adp` would say the diagram is about `infrastructure/` — which is true, and would be a real improvement to the example.
+2. But it would also make this repository's only demonstration of a folder-scoped diagram a **hidden file** on every Unix-like system and in most file dialogs. An example that a reader cannot see when they list the directory is a poor example, whatever its correctness.
+
+So the folder form is specified, tested against a fixture, and *not* adopted by the example set — with a line in the example's readme saying the bare form exists and why this example does not use it. Requirement 4.5's one-per-folder limit is tested against a fixture for the same reason. If the reviewer would rather the example demonstrate the folder form, that is a one-file change and the reasoning above is what it argues against.
+
+### Updated **and tested** — what exists today
+
+"Updated + tested" is two requirements, and the second is the one that goes missing. The coverage today is uneven, and the gap is larger than the rename:
+
+| Example set | Covered by |
+|---|---|
+| `c4` (both sets, 13 files) | `Examples.Tests.cs` — enumerates `*.adp`, resolves each registration, asserts the model is clean and the project validates |
+| `azure-pipeline` (11 files) | **nothing** |
+| `wardley-map` (14 files) | **nothing** |
+| `ansible-structure` (1 file) | **nothing** |
+
+**26 of the 39 registrations are opened by no test at all.** So the rename has a safety net for exactly the third of the material that c4 covers, and none for the rest — which means renaming them on the strength of a careful eye is precisely the move this repository has already learned not to make.
+
+The design's answer, in order:
+
+1. **Add the safety net first, against the current names.** A shared `ExampleRegistrationTests` fixture — one theory over every tracked `.adp` in `src/diagrams/*/examples/**` — asserting that each resolves to a definition, that a registration with a body resolves to a file that exists, and that one naming an unimplemented type resolves to no body without erroring (Requirement 8.4). Run it before any rename, so it is a regression test rather than a description of whatever the rename produced.
+2. **Then rename**, and watch the same test.
+3. **Then extend it** with the nesting assertions: each registration nests under the subject it names, the unqualified form is the default, `code-level.adp` remains an unnested entry with no body, and the `templates.adp` / `templates/` pair assigns to the file rather than to the directory.
+
+That ordering is the whole point. A test written after the rename asserts that the rename did what it did; a test written before it asserts that the rename did not change what these files mean.
+
+Because the fixture walks `src/diagrams/*/examples/**` rather than a hard-coded list, an example set added by a later spec is covered on arrival — which is the same seam-shaped answer Requirement 12.4 asks for elsewhere in this spec.
+
 ## Data Models
 
 Two proto changes, both **additive** — no field is removed, no enum value added, no existing number reused, so an older client keeps working (Requirement 11.4):
@@ -201,6 +286,8 @@ message EntryUpdated {
 `dotnet test --solution EtAlii.Adp.slnx` checked **by exit code**, since a zero-test run exits 5 while printing no failures (Requirement 12.1), and `dotnet format style --verify-no-changes --severity info` exiting zero (12.2).
 
 ## Deviations and notes
+
+* **Revised after review.** The reviewer asked that all examples and samples be updated *and tested*. The examples section above is the answer; the finding that prompted the most change is that 26 of the 39 tracked registrations are currently opened by no test, so the rename had no safety net until one is added first.
 
 * **Requirement 4.3's stated .NET behaviour is wrong**, in both halves and inverted. Recorded above with the measurement rather than corrected silently, because the requirement asked for a test and the test disagrees with the requirement. The consequence is smaller than feared and points elsewhere, so the audit it asks for should follow the corrected fact.
 * **Requirement 9 undercounts the client sites**: nine, not six. The three additions — sort, icon, activation-toggle — are the ones that fail quietly.
