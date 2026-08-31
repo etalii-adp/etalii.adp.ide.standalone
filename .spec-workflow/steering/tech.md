@@ -93,6 +93,15 @@ A diagram type is a plugin, and what makes one complete is the same every time. 
 
 An aspect that genuinely does not apply is stated as not applying, with the reason, rather than left out - the same rule the implementation order uses for a step with nothing in it. These four are a floor, not the whole spec: pluggable registration, the selection chain, multi-client behaviour and the rest still belong in it where they are not already settled by an earlier type.
 
+# Declaring a diagram definition
+
+A module's `Diagram.cs` takes exactly one of two shapes, and which one is not a matter of taste - it tracks whether the module is implemented.
+
+* **Stub**: `Definitions` is an inline `DiagramDefinition[]` array literal - no `Build` delegate, no named property. This is the shape a cataloged-but-unimplemented type keeps, and the one to copy when adding the next entry to the catalog.
+* **Implemented**: each definition is a `public static DiagramDefinition` property named for what it identifies (`Mindmap`, `Pipeline`), each carrying a `Build` delegate, with `Definitions` referencing the properties (`[Pipeline]`) rather than repeating them. The named property exists because a module's own registrations and tests need to say which definition they serve without indexing into an array - `Diagram.Pipeline.Origin`, never `Diagram.Definitions[0].Origin`.
+* **The trigger is gaining a `Build` delegate.** A module moves from stub to implemented exactly when its implementation spec starts wiring services - which is when `Build` appears - so the transition needs no separate tracking. Divergence beyond these two shapes is a finding, not a third shape.
+* **A folder-subject module declares no `DocumentExtension` constant, and that is not a gap.** `ansible-structure` has none because its subject is `DiagramSubject.Folder` - a folder has no sibling body to name an extension for. Do not "fix" that omission.
+
 # Testing & quality
 
 * Tests should be runnable as part of the same local "F5 experience" - no separate environment or manual setup required to run the test suite.
