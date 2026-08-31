@@ -2,19 +2,19 @@
 
 ## Introduction
 
-This spec covers the **Mindmap diagram module** — the first concrete diagram type built on top of EtAlii.Adp's pluggable diagram-type model (per [`adp-diagram-ide`](../../archive/specs/adp-diagram-ide/requirements.md) Requirement 4.4). It defines how a mindmap is **created** from the Add dialog, how it **declares itself** through an `.adp` file while its body lives in a `.mm` sibling, how it is **laid out**, **rendered** and **edited** on the shared canvas, how every edit travels as a **command** and reaches other clients as a **delta**, and how a node becomes **selectable and focusable** through the context service — all without the core needing any mindmap-specific knowledge, per `structure.md`'s `diagrams/<diagram>` module convention (`backend/`, `api/`, `client/`).
+This spec covers the **Mindmap diagram module** — the first concrete diagram type built on top of EtAlii.Adp's pluggable diagram-type model (per [`adp-diagram-ide`](../adp-diagram-ide/requirements.md) Requirement 4.4). It defines how a mindmap is **created** from the Add dialog, how it **declares itself** through an `.adp` file while its body lives in a `.mm` sibling, how it is **laid out**, **rendered** and **edited** on the shared canvas, how every edit travels as a **command** and reaches other clients as a **delta**, and how a node becomes **selectable and focusable** through the context service — all without the core needing any mindmap-specific knowledge, per `structure.md`'s `diagrams/<diagram>` module convention (`backend/`, `api/`, `client/`).
 
-Per [`tech.md`](../../steering/tech.md)'s "Testing & quality" section, Mindmap (`.mm`) is explicitly named as the diagram type used to validate the modular diagram architecture — this spec is that validation, not just a standalone feature.
+Per [`tech.md`](../../../steering/tech.md)'s "Testing & quality" section, Mindmap (`.mm`) is explicitly named as the diagram type used to validate the modular diagram architecture — this spec is that validation, not just a standalone feature.
 
 **Dependencies.** This spec does not redefine what it builds on:
 
 * [`grpc-core-communication-specification`](../grpc-core-communication-specification/requirements.md) — the `Path`, `ViewUpdate`, `Element` and `Delta` (`add`/`remove`/`group`/`ungroup`) contract this module speaks, and its `Any` payload extension point.
-* [`grpc-core-communication`](../../archive/specs/grpc-core-communication/requirements.md) — the runtime behaviour of that contract (streaming, reconciliation, reconnect).
-* [`adp-diagram-ide`](../../archive/specs/adp-diagram-ide/requirements.md) — the workspace shell, the pannable/zoomable canvas, virtualization, read-only mode.
+* [`grpc-core-communication`](../grpc-core-communication/requirements.md) — the runtime behaviour of that contract (streaming, reconciliation, reconnect).
+* [`adp-diagram-ide`](../adp-diagram-ide/requirements.md) — the workspace shell, the pannable/zoomable canvas, virtualization, read-only mode.
 * [`add-diagram-action`](../add-diagram-action/requirements.md) — the **Add** action, reflection-based discovery of `Diagram.Definition`, and the grouped choice dialog. `EtAlii.Adp.Diagram.Mindmap` already publishes `new DiagramOrigin("freeplane", "mindmap")` and is already discovered.
 * [`create-diagram-file`](../create-diagram-file/requirements.md) — the `.adp` file, its MIME-type first line, the name field, and the watcher-driven appearance of the new file. Its Requirement 3.5 deliberately left "a reference to a sibling file in the type's native format" to a later spec; **this is that spec, for mindmaps**.
 * [`context-service`](../context-service/requirements.md) — the single per-connection selection, its recursive `none | action | child` chain, and the pushing of a selection's available actions.
-* [`diagram-undo-redo`](../../archive/specs/diagram-undo-redo/requirements.md) and `tech.md`'s **Commands** section — every state change is an `ICommand` with an `ICommandHandler<TCommand>` that names its own inverse.
+* [`diagram-undo-redo`](../diagram-undo-redo/requirements.md) and `tech.md`'s **Commands** section — every state change is an `ICommand` with an `ICommandHandler<TCommand>` that names its own inverse.
 
 **What this spec changes in core.** Four things, each type-agnostic and usable unchanged by the next diagram type: `DiagramDefinition` gains a document extension (Requirement 2.2), `ContextSource` gains an `element_id` member with its own resolver (Requirement 10.2), `ContextScope` gains a value routing to a diagram type's own providers (Requirement 10.3), and the core contract's `add` delta is defined as an **upsert** rather than an insert (Requirement 11.3). Nothing in core learns what a mindmap is.
 
@@ -22,13 +22,13 @@ The fourth is a change to a *meaning* rather than to a message, so it is called 
 
 ## Alignment with Product Vision
 
-* [product.md](../../steering/product.md)'s **"Diagramming on files"** — implemented with Mindmap as the concrete, first diagram type.
+* [product.md](../../../steering/product.md)'s **"Diagramming on files"** — implemented with Mindmap as the concrete, first diagram type.
 * product.md's **"Don't reinvent, integrate"** — the body is the established FreeMind/Freeplane `.mm` XML format, not a new one; the keyboard and context vocabulary is the one mindmap users already have in their fingers (Requirement 8); the type is declared with the MIME vocabulary `docs/diagrams.md` and `DiagramOrigin` already use.
 * product.md's **"Files are the source of truth"** — a mindmap is two plain text files in the project folder, created through the same watcher path as a file created outside ADP; nothing about it lives only in memory or only in a database.
 * product.md's **"Linkage over illustration"** — Requirement 12 keeps nodes tied to the code they describe as that code evolves.
 * `tech.md`'s **Commands** — every mindmap edit is a command with an inverse, so undo/redo is inherited rather than reimplemented (Requirement 6).
 * `tech.md`'s **Context** — a node becomes selectable by registering a resolver, not by growing a mindmap-specific selection mechanism (Requirement 10).
-* [structure.md](../../steering/structure.md)'s **dependency direction** — the module depends on core abstractions; core never depends on the module (Requirement 13).
+* [structure.md](../../../steering/structure.md)'s **dependency direction** — the module depends on core abstractions; core never depends on the module (Requirement 13).
 
 ## Requirements
 

@@ -2,13 +2,13 @@
 
 ## Introduction
 
-This spec covers the entry flow into EtAlii.Adp, ahead of everything covered by [`adp-diagram-ide`](../../archive/specs/adp-diagram-ide/requirements.md): a mandatory login gate, followed by a grid-based home page from which the user selects which **project** folder to open. Only after a project is selected does the workspace shell (activity bar, explorer, tabbed editor area, per `adp-diagram-ide` Requirement 1) become reachable.
+This spec covers the entry flow into EtAlii.Adp, ahead of everything covered by [`adp-diagram-ide`](../adp-diagram-ide/requirements.md): a mandatory login gate, followed by a grid-based home page from which the user selects which **project** folder to open. Only after a project is selected does the workspace shell (activity bar, explorer, tabbed editor area, per `adp-diagram-ide` Requirement 1) become reachable.
 
 This generalizes `adp-diagram-ide` Requirement 2's single "workspace folder chosen by the user" into a model where a logged-in user has one or more available project folders and explicitly picks one per session; `adp-diagram-ide` continues to own everything that happens once a project is open.
 
 ## Alignment with Product Vision
 
-This implements the "Minimal footprint, incremental value" and "Value from day one" principles from [product.md](../../steering/product.md): even in the local, standalone scenario, gating access behind login and letting a user pick from multiple project folders keeps the door open for the hosted, multi-team scenario described in product.md's Future Vision, without requiring it up front. It also follows [tech.md](../../steering/tech.md)'s local-only auth mode (no external identity provider required for the F5 scenario) and reuses the authentication mechanism defined by the [`grpc-core-communication`](../../archive/specs/grpc-core-communication/requirements.md) spec (Requirement 5).
+This implements the "Minimal footprint, incremental value" and "Value from day one" principles from [product.md](../../../steering/product.md): even in the local, standalone scenario, gating access behind login and letting a user pick from multiple project folders keeps the door open for the hosted, multi-team scenario described in product.md's Future Vision, without requiring it up front. It also follows [tech.md](../../../steering/tech.md)'s local-only auth mode (no external identity provider required for the F5 scenario) and reuses the authentication mechanism defined by the [`grpc-core-communication`](../grpc-core-communication/requirements.md) spec (Requirement 5).
 
 ## Requirements
 

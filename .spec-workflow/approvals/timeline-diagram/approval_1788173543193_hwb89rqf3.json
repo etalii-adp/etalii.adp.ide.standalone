@@ -3,8 +3,10 @@
   "title": "Design: timeline-diagram",
   "filePath": ".spec-workflow/specs/timeline-diagram/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-31T10:52:23.193Z",
   "category": "spec",
-  "categoryName": "timeline-diagram"
+  "categoryName": "timeline-diagram",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-31T10:56:27.930Z"
 }

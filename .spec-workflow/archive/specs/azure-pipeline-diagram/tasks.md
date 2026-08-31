@@ -1,6 +1,6 @@
 # Tasks Document
 
-> **One gate, and it is a document rather than code.** Requirement 2.3 offers **Add on a file**, which contradicts [`add-diagram-action`](../../../specs/add-diagram-action/requirements.md) Requirement 4.3 — "a file cannot contain a new entry". That reasoning holds for creating a diagram *inside* something and does not cover creating an `.adp` *beside* it, which is why Requirement 2.10 names the contradiction. **Task 5 revises that requirement before task 6 implements against it.** Everything else can start today.
+> **One gate, and it is a document rather than code.** Requirement 2.3 offers **Add on a file**, which contradicts [`add-diagram-action`](../add-diagram-action/requirements.md) Requirement 4.3 — "a file cannot contain a new entry". That reasoning holds for creating a diagram *inside* something and does not cover creating an `.adp` *beside* it, which is why Requirement 2.10 names the contradiction. **Task 5 revises that requirement before task 6 implements against it.** Everything else can start today.
 >
 > **Task 1 first, or Requirement 3 is untested.** The byte-identical round trip is the headline correctness property of this module, and it is only as good as the corpus it round-trips. Real pipelines, not hand-written approximations — the C4 spec learned this the expensive way, and its corpus found six defects on the day it landed.
 >

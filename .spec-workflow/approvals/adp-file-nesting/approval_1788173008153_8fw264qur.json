@@ -3,8 +3,10 @@
   "title": "adp-file-nesting — Requirements",
   "filePath": ".spec-workflow/specs/adp-file-nesting/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-31T10:43:28.153Z",
   "category": "spec",
-  "categoryName": "adp-file-nesting"
+  "categoryName": "adp-file-nesting",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-31T10:45:25.287Z"
 }

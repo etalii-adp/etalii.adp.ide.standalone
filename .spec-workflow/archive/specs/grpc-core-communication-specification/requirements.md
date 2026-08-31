@@ -2,11 +2,11 @@
 
 ## Introduction
 
-This spec covers **creation of the core gRPC `.proto` contract file(s)** for EtAlii.Adp: the concrete message and service definitions that make up the wire contract between viewing applications (browser or desktop) and the backend. It is scoped purely to authoring the contract itself — the `.proto` file(s), their messages, and the service definition. It does not cover implementing the behavior that produces or consumes these messages (connection handling logic, view-state tracking, auth enforcement, reconnection/reconciliation) — that is covered by the sibling [`grpc-core-communication`](../../archive/specs/grpc-core-communication/requirements.md) spec, which depends on this contract.
+This spec covers **creation of the core gRPC `.proto` contract file(s)** for EtAlii.Adp: the concrete message and service definitions that make up the wire contract between viewing applications (browser or desktop) and the backend. It is scoped purely to authoring the contract itself — the `.proto` file(s), their messages, and the service definition. It does not cover implementing the behavior that produces or consumes these messages (connection handling logic, view-state tracking, auth enforcement, reconnection/reconciliation) — that is covered by the sibling [`grpc-core-communication`](../grpc-core-communication/requirements.md) spec, which depends on this contract.
 
 ## Alignment with Product Vision
 
-This implements the "Bi-directional gRPC for frontend-backend communication" decision in [tech.md](../../steering/tech.md), and produces the shared `api/` folder contract described in [structure.md](../../steering/structure.md) that diagram modules build their own `diagrams/<diagram>/api/` extensions against.
+This implements the "Bi-directional gRPC for frontend-backend communication" decision in [tech.md](../../../steering/tech.md), and produces the shared `api/` folder contract described in [structure.md](../../../steering/structure.md) that diagram modules build their own `diagrams/<diagram>/api/` extensions against.
 
 ## Requirements
 

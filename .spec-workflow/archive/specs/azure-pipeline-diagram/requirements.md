@@ -6,7 +6,7 @@ This spec covers the **Azure DevOps Pipeline diagram module** — a diagram of a
 
 **Why this type is different from the two before it.** The pluggable diagram-type model has been proven twice, and both times the document belonged to ADP:
 
-|                   | [`mindmap-diagram`](../../../specs/mindmap-diagram/requirements.md) | [`wardley-map`](../../../specs/wardley-map/requirements.md) | This spec                        |
+|                   | [`mindmap-diagram`](../mindmap-diagram/requirements.md) | [`wardley-map`](../wardley-map/requirements.md) | This spec                        |
 | ----------------- | ------------------------------------------------------- | ----------------------------------------------- | -------------------------------- |
 | Positions         | computed by the module                                  | authored in the document                        | **computed** (the file has none) |
 | Document          | created by ADP's Add flow                               | created by ADP's Add flow                       | **already in the repository**    |
@@ -17,14 +17,14 @@ That third row is what makes this type worth specifying. An `azure-pipelines.yml
 **Dependencies.** This spec redefines none of them:
 
 * [`adp-diagram-ide`](../adp-diagram-ide/requirements.md) — the workspace shell, the pannable/zoomable canvas, read-only mode.
-* [`grpc-core-communication-specification`](../../../specs/grpc-core-communication-specification/requirements.md) — `Element`, `Delta`, `Point2D`, and the `Any` payload extension point.
-* [`mindmap-diagram`](../../../specs/mindmap-diagram/requirements.md) — which introduced, and this spec reuses unchanged: `DiagramDefinition.Extension`, `IDiagramDocumentFactory`, `ContextSource.element_id`, `ContextScope.DIAGRAM_ELEMENT`, and `DiagramService`'s `Open` + `UpdateView` legs.
-* [`wardley-map`](../../../specs/wardley-map/requirements.md) — which established that a module may read a document it did not invent, and that round-tripping a hand-authored text format needs a concrete syntax tree rather than a regenerator.
+* [`grpc-core-communication-specification`](../grpc-core-communication-specification/requirements.md) — `Element`, `Delta`, `Point2D`, and the `Any` payload extension point.
+* [`mindmap-diagram`](../mindmap-diagram/requirements.md) — which introduced, and this spec reuses unchanged: `DiagramDefinition.Extension`, `IDiagramDocumentFactory`, `ContextSource.element_id`, `ContextScope.DIAGRAM_ELEMENT`, and `DiagramService`'s `Open` + `UpdateView` legs.
+* [`wardley-map`](../wardley-map/requirements.md) — which established that a module may read a document it did not invent, and that round-tripping a hand-authored text format needs a concrete syntax tree rather than a regenerator.
 * `IDiagramToolboxProvider` and `DescribeToolbox` — the toolbox seam the mindmap module already uses.
-* [`context-service`](../../../specs/context-service/requirements.md), [`diagram-undo-redo`](../diagram-undo-redo/requirements.md), and `tech.md`'s **Commands** rule.
+* [`context-service`](../context-service/requirements.md), [`diagram-undo-redo`](../diagram-undo-redo/requirements.md), and `tech.md`'s **Commands** rule.
 * [`errors-and-warnings-panel`](../../../specs/errors-and-warnings-panel/requirements.md) — `IDiagramValidator`, which this type has unusually much to say through (Requirement 10).
 
-**What this spec changes in core.** Two things, both type-agnostic and both earned rather than convenient. First, a diagram type must be able to declare an extension **shared** — too common to claim on sight — so a bare `.yml` is not routed to whichever type happens to declare it (Requirement 2.2). Second, **Add must be offered on a file**, listing the types that declare that file's extension, so a user registers an existing file as a diagram by naming its type (Requirement 2.3). The second amends [`add-diagram-action`](../../../specs/add-diagram-action/requirements.md) Requirement 4.3, which forbids Add on a file; Requirement 2.10 says why that reasoning does not cover this case. Everything else is a module registration.
+**What this spec changes in core.** Two things, both type-agnostic and both earned rather than convenient. First, a diagram type must be able to declare an extension **shared** — too common to claim on sight — so a bare `.yml` is not routed to whichever type happens to declare it (Requirement 2.2). Second, **Add must be offered on a file**, listing the types that declare that file's extension, so a user registers an existing file as a diagram by naming its type (Requirement 2.3). The second amends [`add-diagram-action`](../add-diagram-action/requirements.md) Requirement 4.3, which forbids Add on a file; Requirement 2.10 says why that reasoning does not cover this case. Everything else is a module registration.
 
 ## Alignment with Product Vision
 
@@ -65,7 +65,7 @@ That third row is what makes this type worth specifying. An `azure-pipelines.yml
 7. IF a file already has an `.adp` registration THEN Add SHALL NOT be offered on it — it is already a diagram — and the existing open action SHALL be offered instead.
 8. IF no diagram type declares a file's extension THEN Add SHALL NOT be offered on that file, rather than opening a dialog with nothing selectable in it.
 9. WHEN the created `.adp` is written THEN it SHALL reach every connected client through the existing watcher and `EntryCreated` path, and be selected on the connection that added it, exactly as `create-diagram-file` Requirement 4 already defines.
-10. **This amends** [`add-diagram-action`](../../../specs/add-diagram-action/requirements.md) **Requirement 4.3**, which says Add SHALL NOT be offered on a file because "a file cannot contain a new entry". That reasoning holds for creating a diagram *inside* something, and this is a different act: the new entry is the `.adp` created *beside* the file, in its parent folder. That requirement needs revising alongside this one; it is named here so the contradiction is tracked rather than discovered.
+10. **This amends** [`add-diagram-action`](../add-diagram-action/requirements.md) **Requirement 4.3**, which says Add SHALL NOT be offered on a file because "a file cannot contain a new entry". That reasoning holds for creating a diagram *inside* something, and this is a different act: the new entry is the `.adp` created *beside* the file, in its parent folder. That requirement needs revising alongside this one; it is named here so the contradiction is tracked rather than discovered.
 
 ### Requirement 3 — Reading and writing the file without damaging it
 

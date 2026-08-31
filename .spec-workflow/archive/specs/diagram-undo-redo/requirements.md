@@ -10,7 +10,7 @@ When it was first written, none of the machinery existed. It does now, and this 
 * **Context.** tech.md's *Context* rule means an action a user can perform is offered by an `IContextActionProvider` and reaches every surface through the context stream. Undo and redo are actions like any other, so this spec no longer defines a dedicated gRPC method for them.
 * **The ribbon.** `RibbonBar.tsx` currently carries hard-coded `Undo`/`Redo` buttons whose click handler only toggles a pressed style, under a `TODO(diagram-ide-mockup): wire real command handler`. They are mockup, not behaviour, and this spec replaces them.
 
-It still does not redefine what counts as an editable change — that remains diagram-module-specific ([`grpc-core-communication-specification`](../../../specs/grpc-core-communication-specification/requirements.md) Requirement 3's `add`/`remove`/`group`/`ungroup` deltas). That vocabulary is not implemented yet; when it is, each delta becomes a command like any other and inherits everything below without this spec changing again.
+It still does not redefine what counts as an editable change — that remains diagram-module-specific ([`grpc-core-communication-specification`](../grpc-core-communication-specification/requirements.md) Requirement 3's `add`/`remove`/`group`/`ungroup` deltas). That vocabulary is not implemented yet; when it is, each delta becomes a command like any other and inherits everything below without this spec changing again.
 
 It replaces the local-history framing of [`adp-diagram-ide`](../adp-diagram-ide/requirements.md) Requirement 6.
 
@@ -92,7 +92,7 @@ It replaces the local-history framing of [`adp-diagram-ide`](../adp-diagram-ide/
 
 1. WHEN the ribbon renders Undo and Redo THEN it SHALL render them from the actions the context stream pushed, and SHALL NOT keep them in the hard-coded `RIBBON_GROUPS` list but in a dedicated 'History' group.
 2. WHEN the ribbon renders these actions THEN it SHALL call nothing but `ExecuteAction`, holding no undo state of its own, exactly as `RibbonContextualGroups` already does for the selection's actions.
-3. WHEN there is nothing to undo or redo THEN the ribbon SHALL show the button disabled with its reason as the tooltip, which is the behaviour already defined by [`context-service`](../../../specs/context-service/requirements.md) Requirement 10.7. The disabled/enabled state will change accordingly after each action.
+3. WHEN there is nothing to undo or redo THEN the ribbon SHALL show the button disabled with its reason as the tooltip, which is the behaviour already defined by [`context-service`](../context-service/requirements.md) Requirement 10.7. The disabled/enabled state will change accordingly after each action.
 4. WHEN this spec is implemented THEN the `TODO(diagram-ide-mockup): wire real command handler` in `RibbonBar.tsx` and the pressed-state toggle it belongs to SHALL be gone for these two buttons.
 
 ## Non-Functional Requirements

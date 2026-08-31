@@ -6,7 +6,7 @@ This spec covers the **Ansible structure diagram module** — a **read-only** vi
 
 **Why this type is read-only, by design and not by omission.** The types drawn so far, shipped and specified alike, form a progression of ownership: the mindmap ADP ships and the Wardley map it has specified are ADP's own documents; the pipeline file belongs to the build system and gets a deliberately narrow set of edits; an Ansible project belongs to an *operations workflow* — hand-authored, reviewed, often deployed by machinery that ADP cannot see. Its natural editor is a text editor with `ansible-lint` beside it. What that workflow lacks is not editing but **sight**: the structure is spread across dozens of files whose relationships are implicit in strings (`roles:`, `import_playbook:`, `dependencies:`, `hosts:`). This module draws those relationships and changes **nothing** — it never writes a file, registers no editing command, and its property grid shows every value with a reason saying where it is edited instead (Requirement 10).
 
-|                   | [`azure-pipeline-diagram`](../../archive/specs/azure-pipeline-diagram/requirements.md) | This spec                          |
+|                   | [`azure-pipeline-diagram`](../azure-pipeline-diagram/requirements.md) | This spec                          |
 | ----------------- | --------------------------------------------------------------------- | ---------------------------------- |
 | Document          | one file (plus templates)                                             | **a folder tree** of many files    |
 | Editing           | a narrow, deliberate set                                              | **none**                           |
@@ -95,23 +95,23 @@ If `webservers.yml` names a role that has no folder, the errors-and-warnings pan
 
 **Dependencies.** This spec redefines none of them:
 
-* [`adp-diagram-ide`](../../archive/specs/adp-diagram-ide/requirements.md) — the shell, the pannable/zoomable canvas, read-only rendering.
+* [`adp-diagram-ide`](../adp-diagram-ide/requirements.md) — the shell, the pannable/zoomable canvas, read-only rendering.
 * [`grpc-core-communication-specification`](../grpc-core-communication-specification/requirements.md) — `Element`, `Delta`, `Point2D`, the `Any` payload.
-* [`mindmap-diagram`](../mindmap-diagram/requirements.md) / [`wardley-map`](../wardley-map/requirements.md) / [`azure-pipeline-diagram`](../../archive/specs/azure-pipeline-diagram/requirements.md) — the pluggable type model, reading documents ADP did not invent, and `Add` on existing content.
+* [`mindmap-diagram`](../mindmap-diagram/requirements.md) / [`wardley-map`](../wardley-map/requirements.md) / [`azure-pipeline-diagram`](../azure-pipeline-diagram/requirements.md) — the pluggable type model, reading documents ADP did not invent, and `Add` on existing content.
 * [`add-diagram-action`](../add-diagram-action/requirements.md) and [`create-diagram-file`](../create-diagram-file/requirements.md) — the Add flow that creates the `.adp` registration.
 * [`context-service`](../context-service/requirements.md) — targets, scopes, selection.
-* [`errors-and-warnings-panel`](../errors-and-warnings-panel/requirements.md) — `IDiagramValidator` (Requirement 9).
+* [`errors-and-warnings-panel`](../../../specs/errors-and-warnings-panel/requirements.md) — `IDiagramValidator` (Requirement 9).
 * [`property-grid`](../property-grid/requirements.md) — `IContextPropertyProvider`, and specifically its Requirement 4: **read-only is a reason, and the reason is a contract** (Requirement 10 builds on exactly that).
 
 **What this spec changes in core: nothing new.** The one novelty — a diagram whose subject is the `.adp`'s *folder* rather than a body file — fits the existing contract: the type declares **no document extension**, so the `.adp` itself is the registration *and* the document (`DiagramRouting.Routed` with `BodyPath == RegistrationPath` already models this), and the Add flow already offers type creation on a folder. The module resolves "the subject" as *the folder the `.adp` sits in*.
 
 ## Alignment with Product Vision
 
-* [product.md](../../steering/product.md)'s **"Don't reinvent, integrate"** — the model is Ansible's own layout and directives, exactly as [documented](https://docs.ansible.com/projects/ansible/latest/galaxy/user_guide.html); ADP invents no format and writes no file.
+* [product.md](../../../steering/product.md)'s **"Don't reinvent, integrate"** — the model is Ansible's own layout and directives, exactly as [documented](https://docs.ansible.com/projects/ansible/latest/galaxy/user_guide.html); ADP invents no format and writes no file.
 * product.md's **"Files are the source of truth"** — taken further than any type before: there is no diagram document at all beyond the registration marker. The *tree is the document*.
 * product.md's **"Linkage over illustration"** — the diagram exists because it stays true; every node is a door to its file.
-* [tech.md](../../steering/tech.md)'s **Commands rule** — honoured by emptiness: a module with no functional state changes registers no commands, and its property grid offers no edit that would bypass them.
-* [structure.md](../../steering/structure.md)'s **Core vs diagram-type plugins** — everything Ansible-shaped lives in `diagrams/ansible-structure/`; core learns nothing.
+* [tech.md](../../../steering/tech.md)'s **Commands rule** — honoured by emptiness: a module with no functional state changes registers no commands, and its property grid offers no edit that would bypass them.
+* [structure.md](../../../steering/structure.md)'s **Core vs diagram-type plugins** — everything Ansible-shaped lives in `diagrams/ansible-structure/`; core learns nothing.
 
 ## Requirements
 
@@ -239,7 +239,7 @@ If `webservers.yml` names a role that has no folder, the errors-and-warnings pan
 
 1. WHEN the module is organised THEN it SHALL be `diagrams/ansible-structure/` with `backend/` (`EtAlii.Adp.Diagram.AnsibleStructure` + `.Tests`) and `client/`, per structure.md.
 2. WHEN the module registers THEN one `AddAnsibleStructure` extension SHALL register its session factory, source resolver, validator and property provider — and, tellingly, **no command handlers, no document factory, no toolbox provider**: their absence is this type's statement.
-3. WHEN [docs/diagrams.md](../../../docs/diagrams.md) is updated THEN the catalog SHALL carry `ansible/structure` at 📝 Specified, per CLAUDE.md's catalog rule.
+3. WHEN [docs/diagrams.md](../../../../docs/diagrams.md) is updated THEN the catalog SHALL carry `ansible/structure` at 📝 Specified, per CLAUDE.md's catalog rule.
 
 ## Non-Functional Requirements
 

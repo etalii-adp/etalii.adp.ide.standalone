@@ -20,28 +20,28 @@ The first revision of this document was written when the mindmap was the only sh
 
 **Dependencies.** This spec redefines none of them:
 
-* [`adp-diagram-ide`](../../archive/specs/adp-diagram-ide/requirements.md) — the workspace shell, the pannable/zoomable canvas, read-only mode, the file-access layer.
+* [`adp-diagram-ide`](../adp-diagram-ide/requirements.md) — the workspace shell, the pannable/zoomable canvas, read-only mode, the file-access layer.
 * [`grpc-core-communication-specification`](../grpc-core-communication-specification/requirements.md) — `Element`, `Delta` (`add`/`remove`/`group`/`ungroup`), `Point2D`, and the `Any` payload extension point.
 * [`add-diagram-action`](../add-diagram-action/requirements.md) and [`create-diagram-file`](../create-diagram-file/requirements.md) — the Add action, the `.adp` file and its MIME first line, the name field.
 * [`mindmap-diagram`](../mindmap-diagram/requirements.md) — which introduced, and this spec reuses unchanged: `DiagramDefinition.Extension`, `IDiagramDocumentFactory`, `ContextSource.element_id`, `ContextScope.DIAGRAM_ELEMENT`, the `IDiagramSession` seam of its Requirement 13, and `DiagramService`'s `Open` + `UpdateView` legs.
 * [`c4-diagrams`](../c4-diagrams/requirements.md) — the sidecar rule for data a foreign format has no place for (Requirements 3.5–3.6), the `body:` registration header, and the pure-function validator shape.
 * [`context-service`](../context-service/requirements.md) — the selection chain and the pushing of a selection's actions.
-* [`errors-and-warnings-panel`](../errors-and-warnings-panel/requirements.md) — where a validator's problems go (its Requirement 3).
+* [`errors-and-warnings-panel`](../../../specs/errors-and-warnings-panel/requirements.md) — where a validator's problems go (its Requirement 3).
 * [`property-grid`](../property-grid/requirements.md) — the per-scope property provider, the read-only reason, the commit cadence.
-* [`diagram-undo-redo`](../../archive/specs/diagram-undo-redo/requirements.md) and `tech.md`'s **Commands** rule.
+* [`diagram-undo-redo`](../diagram-undo-redo/requirements.md) and `tech.md`'s **Commands** rule.
 
 **Deliberately out of scope.** Editing the `.owm` as text with a live preview — the way onlinewardleymaps.com, the VS Code extension and the Obsidian plugin all work. It is a reasonable thing for ADP to want, it is a substantial feature in its own right, and nothing here precludes it: Requirement 3's round-trip is what a text editor would need anyway. Stated so its absence is a decision rather than an oversight.
 
 ## Alignment with Product Vision
 
-* [product.md](../../steering/product.md)'s **"Don't reinvent, integrate"** — `.owm` is the de-facto maps-as-code format, shared by onlinewardleymaps.com, the VS Code extension, the Obsidian plugin and `cli-owm`. ADP reads and writes what that ecosystem already reads and writes, rather than a format of its own.
+* [product.md](../../../steering/product.md)'s **"Don't reinvent, integrate"** — `.owm` is the de-facto maps-as-code format, shared by onlinewardleymaps.com, the VS Code extension, the Obsidian plugin and `cli-owm`. ADP reads and writes what that ecosystem already reads and writes, rather than a format of its own.
 * product.md's **"Files are the source of truth"** — a map is two plain text files in the project folder, and a map ADP did not change is byte-identical after a save.
 * product.md's **"Linkage over illustration"** — `submap` and `url` tie a map to other maps and to external material; Requirement 6.6 keeps those live rather than decorative.
-* [tech.md](../../steering/tech.md)'s **Specifying a diagram type** — its four aspects are Requirements 2 and 3 (file format), Requirements 7 and 8 (visualization), Requirement 13 (toolbox) and Requirements 9 and 11 (context actions and commands).
+* [tech.md](../../../steering/tech.md)'s **Specifying a diagram type** — its four aspects are Requirements 2 and 3 (file format), Requirements 7 and 8 (visualization), Requirement 13 (toolbox) and Requirements 9 and 11 (context actions and commands).
 * tech.md's **Commands** — every edit, including a drag, is a command with an inverse.
 * tech.md's **Context** — a component becomes selectable by registering a resolver, exactly as a mindmap node and a C4 element did.
 * tech.md's **Implementation order** — the requirement order below follows model, persistence, wire, UI, logic, so the tasks can too.
-* [structure.md](../../steering/structure.md)'s **dependency direction** — the module depends on core; core never depends on the module.
+* [structure.md](../../../steering/structure.md)'s **dependency direction** — the module depends on core; core never depends on the module.
 
 ## Requirements
 

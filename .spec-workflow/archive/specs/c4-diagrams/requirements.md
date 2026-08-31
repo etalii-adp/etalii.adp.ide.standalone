@@ -12,12 +12,12 @@ This spec covers the **C4 diagram modules** — the seven diagram types the C4 m
 
 **Dependencies.** This spec redefines none of them:
 
-* [`adp-diagram-ide`](../../archive/specs/adp-diagram-ide/requirements.md) — the workspace shell, the pannable/zoomable canvas, read-only mode.
+* [`adp-diagram-ide`](../adp-diagram-ide/requirements.md) — the workspace shell, the pannable/zoomable canvas, read-only mode.
 * [`grpc-core-communication-specification`](../grpc-core-communication-specification/requirements.md) — `Element`, `Delta`, `Point2D`, and the `Any` payload extension point.
 * [`add-diagram-action`](../add-diagram-action/requirements.md) and [`create-diagram-file`](../create-diagram-file/requirements.md) — the Add action, the `.adp` file and its MIME first line.
 * [`mindmap-diagram`](../mindmap-diagram/requirements.md) — `DiagramDefinition.Extension`, `IDiagramDocumentFactory`, `ContextSource.element_id`, `ContextScope.DIAGRAM_ELEMENT`, and `DiagramService`'s `Open` + `UpdateView` legs, all reused unchanged.
 * [`context-service`](../context-service/requirements.md) — the selection chain and the pushing of a selection's actions.
-* [`diagram-undo-redo`](../../archive/specs/diagram-undo-redo/requirements.md) and `tech.md`'s **Commands** rule.
+* [`diagram-undo-redo`](../diagram-undo-redo/requirements.md) and `tech.md`'s **Commands** rule.
 
 **What this spec changes in core.** One thing, and it is named rather than smuggled: today an `.adp` file's body is the sibling *derived from its own base name* (`DiagramFileRouter`, `DiagramFilePair.SiblingPathFor`). C4 needs several `.adp` files to share one model document, so Requirement 2.4 asks core for an `.adp` that **names** its body instead of deriving it. That is a bounded change to routing, it benefits every future type that has views over a shared model, and it is the only core change this spec asks for. If anything else in core turns out to need changing, that is a finding worth reporting rather than a licence to change it.
 
@@ -29,13 +29,13 @@ This spec covers the **C4 diagram modules** — the seven diagram types the C4 m
 
 ## Alignment with Product Vision
 
-* [product.md](../../steering/product.md)'s **"Don't reinvent, integrate"** — the Structurizr DSL is the de-facto C4-as-code format, it is Apache-2.0 licensed, and it is the only text format that expresses all of C4's view types natively. ADP reads and writes what that ecosystem already reads and writes.
+* [product.md](../../../steering/product.md)'s **"Don't reinvent, integrate"** — the Structurizr DSL is the de-facto C4-as-code format, it is Apache-2.0 licensed, and it is the only text format that expresses all of C4's view types natively. ADP reads and writes what that ecosystem already reads and writes.
 * product.md's **"Files are the source of truth"** — a C4 model is plain text in the project folder, and a model ADP did not change is byte-identical after a save.
 * product.md's **"Value from day one"** — Requirement 5 makes a System Context diagram, the one C4 "recommends for all software development teams", the thing a user gets first.
-* [tech.md](../../steering/tech.md)'s **Diagram storage** — an established text format, with ADP's own data in a sidecar rather than smuggled into a file another tool owns.
+* [tech.md](../../../steering/tech.md)'s **Diagram storage** — an established text format, with ADP's own data in a sidecar rather than smuggled into a file another tool owns.
 * tech.md's **Specifying a diagram type** — its four mandatory aspects are Requirements 2–3 (file format), 6–9 (visualization), 12 (toolbox) and 13 (context actions and commands).
 * tech.md's **Commands** — every edit, including a drag, is a command with an inverse.
-* [structure.md](../../steering/structure.md)'s **dependency direction** — the modules depend on core; core never depends on them.
+* [structure.md](../../../steering/structure.md)'s **dependency direction** — the modules depend on core; core never depends on them.
 
 ## Requirements
 
