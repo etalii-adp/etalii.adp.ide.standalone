@@ -124,26 +124,26 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 1.1, 1.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer, model Fable 5 (mandatory - verify before starting) | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, checking exit codes. If clean, merge debt-regshape into develop and retire the worktree | Restrictions: do not merge on a failing gate | Success: both gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 5. Record the orphaned-code negative result (R8)
+- [x] 5. Record the orphaned-code negative result (R8)
   - Worktree: `.claude/worktrees/debt-orphan`
   - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
-- [-] 5.1 Add the scan method and negative result to tech.md's decision log
+- [x] 5.1 Add the scan method and negative result to tech.md's decision log
   - File: `.spec-workflow/steering/tech.md`
   - Record: 710 types scanned, 155 single-file, 137 xUnit test classes and 14 `ServiceCollection*Extension` classes explained as expected, final 4 hand-checked and used - no orphaned type exists as of the measurement commit; the two stale claims (`.bld` artifacts, unused `WardleyTestDiagramDefinitionCatalog`) are withdrawn; the scan is type-level only (R8.4) and re-runnable as written (R8.2)
   - _Requirements: 8.1, 8.2, 8.3, 8.4_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical writer familiar with this repository's steering docs, model Fable 5 (mandatory - verify before starting) | Task: Add a decision-log entry to tech.md recording the orphaned-code scan's negative result and its method exactly as design.md's R8 section and the requirements document's own Evidence table state it (710 scanned, 155 single-file, 137+14 explained, 4 hand-checked and used, 0 orphaned), withdraw the two stale claims explicitly, and state the scan was type-level only per R8.4 | Restrictions: do not attempt a finer-grained scan (members, generated messages, client exports) - R8.4 explicitly scopes that out; do not invent new numbers, use the ones already measured | Success: a future reader who asks "is there dead code here" finds the answer and the method to re-check it, in tech.md's decision log, independent of this spec's own lifetime. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.2 Gate and merge
+- [x] 5.2 Gate and merge
   - Run both backend gates; merge `.claude/worktrees/debt-orphan` into `develop` and retire it
   - _Requirements: 1.1, 1.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer, model Fable 5 (mandatory - verify before starting) | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, checking exit codes. If clean, merge debt-orphan into develop and retire the worktree | Restrictions: do not merge on a failing gate | Success: both gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 6. Characterise the three untested client stream hooks (R12) - must land before group 7
+- [-] 6. Characterise the three untested client stream hooks (R12) - must land before group 7
   - Worktree: `.claude/worktrees/debt-hooktests`
   - _Requirements: 12.1, 12.2, 12.3_
 
-- [ ] 6.1 Write `useC4Stream.test.ts`
+- [-] 6.1 Write `useC4Stream.test.ts`
   - File: `src/diagrams/c4/client/useC4Stream.test.ts` (new)
   - Follow `useMindmapStream.test.ts`'s harness (mocked `createClient`, mocked `useAuth`/`useContextConnection`, `renderHook`/`waitFor`, a controllable fake async-iterable stream, `vi.useFakeTimers()`), not `useAnsibleStream.test.ts`'s shallow `toString()` pattern
   - Characterise current behaviour on both axes R3.3 found: `loading` is NOT reset to `true` before a reconnect retry after a transient error; a clean stream end loops back with NO backoff (differs from `usePipelineStream`)
