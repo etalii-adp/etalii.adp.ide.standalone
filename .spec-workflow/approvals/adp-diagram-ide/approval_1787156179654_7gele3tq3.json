@@ -3,8 +3,10 @@
   "title": "Requirements: ADP Diagram IDE",
   "filePath": ".spec-workflow/specs/adp-diagram-ide/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "rejected",
   "createdAt": "2026-08-19T16:16:19.654Z",
   "category": "spec",
-  "categoryName": "adp-diagram-ide"
+  "categoryName": "adp-diagram-ide",
+  "response": "Obsolete as it is implemented by other specifications.",
+  "respondedAt": "2026-08-31T09:36:17.521Z"
 }
