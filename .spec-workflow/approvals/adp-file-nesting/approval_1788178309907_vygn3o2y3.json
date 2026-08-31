@@ -3,8 +3,10 @@
   "title": "adp-file-nesting — design document (revised: examples, and a corrected 8.4 citation)",
   "filePath": ".spec-workflow/specs/adp-file-nesting/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-31T12:11:49.907Z",
   "category": "spec",
-  "categoryName": "adp-file-nesting"
+  "categoryName": "adp-file-nesting",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-31T12:27:53.508Z"
 }
