@@ -6,11 +6,11 @@
 
 Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` (from `src/backend/`, exit code checked) reporting `failed: 0`, and `dotnet format style --verify-no-changes --severity info` exiting zero. Groups 6 and 7 touch the client and additionally gate on `npm test` and `npm run typecheck` (from `src/client/`) exiting zero. Before any group's worktree is created, check the dashboard's active specs against the module(s) that group touches, per R11.3 - this is a manual step in each group's first task, not automated.
 
-- [ ] 1. Lift the last two nested types and correct tech.md's stale count (R9, R10)
+- [-] 1. Lift the last two nested types and correct tech.md's stale count (R9, R10)
   - Worktree: `.claude/worktrees/debt-nested`
   - _Requirements: 9.1, 9.2, 9.3, 10.1, 10.2, 10.3_
 
-- [ ] 1.1 Lift `C4Document`'s nested `Line` record to `_Model/C4DocumentLine.cs`
+- [-] 1.1 Lift `C4Document`'s nested `Line` record to `_Model/C4DocumentLine.cs`
   - File: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/_Model/C4DocumentLine.cs` (new), `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/_Model/C4Document.cs` (modified)
   - Move `private readonly record struct Line(string Text, string Terminator)` out of `C4Document`, rename `C4DocumentLine`, land it in `_Model` per the POCO rule
   - `C4Document`'s internal `List<Line>` becomes `List<C4DocumentLine>`; every other member of `C4Document` (its public surface, `Parse`, `ToText`, `ReplaceLine`, `InsertLine`, `RemoveLines`) is untouched
