@@ -117,7 +117,7 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
         }
 
         _documents.Changed += OnChanged;
-        return new C4ElementUnsubscriber(() => _documents.Changed -= OnChanged);
+        return new CallbackDisposable(() => _documents.Changed -= OnChanged);
     }
 
     /// <summary>The element's chain of names from the top of the model - what identifies it to a human.</summary>
