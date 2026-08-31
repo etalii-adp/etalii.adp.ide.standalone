@@ -122,7 +122,7 @@ public class ExamplesTests
         // the files its own way can agree with itself while disagreeing with the backend, and
         // then the example still does not open.
         var root = IoPath.Combine(ExamplesRoot, project);
-        var catalog = new StubCatalog();
+        var catalog = new C4ExamplesStubCatalog();
 
         // Act and assert, registration by registration.
         foreach (var registration in Directory.GetFiles(root, "*.adp", SearchOption.AllDirectories))
@@ -151,7 +151,7 @@ public class ExamplesTests
         // Ownership decides what a delete or a rename carries off with it. More than one owner
         // is impossible by construction; none would mean the model is nobody's to remove.
         var root = IoPath.Combine(ExamplesRoot, project);
-        var catalog = new StubCatalog();
+        var catalog = new C4ExamplesStubCatalog();
 
         // Act.
         var owners = Directory.GetFiles(root, "*.adp", SearchOption.AllDirectories)
@@ -235,12 +235,6 @@ public class ExamplesTests
             declared);
     }
 
-    /// <summary>The C4 module's own definitions, without a host to run discovery.</summary>
-    private sealed class StubCatalog : IDiagramDefinitionCatalog
-    {
-        public IReadOnlyList<DiagramDefinition> All => Diagram.Definitions;
-    }
-
     [Theory]
     [MemberData(nameof(EveryProject))]
     public async Task ValidatingAProject_Succeeds_AndReportsNothing(string project)
@@ -252,7 +246,7 @@ public class ExamplesTests
         // `body:` header, and the validator used to route without a project root to resolve one
         // against - so it walked into `Path.GetFullPath("")` and took the whole run down.
         var validator = new ProjectValidator(
-            new DiagramFileRouter(new StubCatalog()),
+            new DiagramFileRouter(new C4ExamplesStubCatalog()),
             new DiagramValidators(Diagram.Definitions.Select(definition => new C4Validator(definition.Origin))));
 
         // Act.
