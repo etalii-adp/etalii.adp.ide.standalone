@@ -171,7 +171,7 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 1.2, 1.3, 12.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer, model Fable 5 (mandatory - verify before starting) | Task: Run npm test and npm run typecheck from src/client, checking exit codes. If clean, merge debt-hooktests into develop and retire the worktree, and note in the merge commit message that three test files were added (R12.3), not consolidated, per R1.2 | Restrictions: do not merge on a failing gate | Success: both client gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 7. Extract the shared diagram stream hook (R3) - depends on group 6
+- [x] 7. Extract the shared diagram stream hook (R3) - depends on group 6
   - Worktree: `.claude/worktrees/debt-stream`
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
@@ -184,30 +184,30 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 3.1, 3.4_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior React/TypeScript developer, model Fable 5 (mandatory - verify before starting) | Task: Create src/client/src/diagrams/useDiagramStream.ts, generic over TModel, per design.md's R3 section and Data Models section exactly: owns createClient, AbortController/active lifecycle, the open/read loop, permanent-vs-transient error handling, loading/failed/model state, and a named RECONNECT_DELAY_MS=500 constant. Adopt usePipelineStream.ts's reconnect shape as canonical: loading resets to true before a retry, and a clean stream end applies the same backoff as a thrown error (both are the R3.3-authorised behaviour changes design.md names). Return the client so per-module wrappers can add reportView/moveElement | Restrictions: do not include reportView or any move mutation in this shared hook - R3.2 reserves those to each module; do not create a new folder pattern, src/client/src/diagrams/ mirrors the existing src/client/src/canvas/ precedent already used by four diagram modules | Leverage: usePipelineStream.ts's current implementation as the source of the canonical reconnect shape | Success: useDiagramStream compiles standalone, its shape matches design.md's Data Models section, RECONNECT_DELAY_MS is the one place 500 is written. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 7.2 Rewrite the five hooks as thin wrappers over `useDiagramStream`
+- [x] 7.2 Rewrite the five hooks as thin wrappers over `useDiagramStream`
   - File: `src/diagrams/c4/client/useC4Stream.ts`, `src/diagrams/wardley-map/client/useWardleyStream.ts`, `src/diagrams/azure-pipeline/client/usePipelineStream.ts`, `src/diagrams/mindmap/client/useMindmapStream.ts`, `src/diagrams/ansible-structure/client/useAnsibleStream.ts` (all modified, none deleted - each keeps its own exported interface and function name)
   - Each keeps only what R3.2 reserves to it: its model type, its empty-model value, its `applyDelta`, and (where present) `reportView`/`moveElementTo`/`moveElement` built on the `client` `useDiagramStream` returns
   - _Leverage: useDiagramStream.ts (task 7.1)_
   - _Requirements: 3.1, 3.2, 3.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior React/TypeScript developer, model Fable 5 (mandatory - verify before starting) | Task: Rewrite all five stream hooks (useC4Stream, useWardleyStream, usePipelineStream, useMindmapStream, useAnsibleStream) to call useDiagramStream internally, keeping only each module's own model type, empty value, applyDelta mapping, and any reportView/moveElementTo/moveElement built on the returned client, per design.md's R3.2 table of what stays per-module (reportView present in c4/pipeline/mindmap/ansible, absent in wardley by design; moveElementTo in wardley/c4, moveElement in mindmap, none in pipeline/ansible) | Restrictions: do not delete any of the five files or rename their exported function/interface - callers depend on both; do not add reportView or move to a hook that does not have it today | Leverage: useDiagramStream.ts from task 7.1 | Success: all five hooks compile and export the same public shape as before, with their reconnect logic now delegated to useDiagramStream. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 7.3 Update the R12 characterisation tests to the new canonical behaviour
+- [x] 7.3 Update the R12 characterisation tests to the new canonical behaviour
   - File: `src/diagrams/c4/client/useC4Stream.test.ts`, `src/diagrams/wardley-map/client/useWardleyStream.test.ts` (both from group 6)
   - The two assertions these tests made about *old* behaviour (no loading-reset before retry; no backoff on clean end) now flip to match `usePipelineStream`'s shape, since both hooks now delegate to `useDiagramStream`
   - `usePipelineStream.test.ts` (group 6) needs no change - it already asserted the now-canonical shape
   - _Requirements: 3.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend test engineer with React/vitest expertise, model Fable 5 (mandatory - verify before starting) | Task: Update useC4Stream.test.ts and useWardleyStream.test.ts (written in group 6 to characterise pre-extraction behaviour) so their two reconnect-timing assertions now match usePipelineStream's canonical shape (loading resets before retry; clean end applies the same backoff), since both hooks now delegate to useDiagramStream from task 7.2. Do not touch usePipelineStream.test.ts, which already asserted this shape | Restrictions: do not weaken these tests to pass trivially - they must still fail against the pre-extraction behaviour if it regressed | Leverage: usePipelineStream.test.ts's assertions as the template for the corrected expectations | Success: all three hook test files pass against the post-extraction hooks, and the diff of each changed test file is exactly the flipped assertion, nothing else. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7.4 Gate and merge
+- [x] 7.4 Gate and merge
   - Run `npm test` and `npm run typecheck` from `src/client/`; merge `.claude/worktrees/debt-stream` into `develop` and retire it
   - _Requirements: 1.2, 1.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer, model Fable 5 (mandatory - verify before starting) | Task: Run npm test and npm run typecheck from src/client, checking exit codes. If clean, merge debt-stream into develop and retire the worktree | Restrictions: do not merge on a failing gate | Success: both client gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 8. Collapse the 48 duplicated stub tests (R4) - last, largest blast radius
+- [-] 8. Collapse the 48 duplicated stub tests (R4) - last, largest blast radius
   - Worktree: `.claude/worktrees/debt-stubtests`
   - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-- [ ] 8.1 Verification spike: does a zero-test project poison the solution-wide gate?
+- [-] 8.1 Verification spike: does a zero-test project poison the solution-wide gate?
   - Temporarily empty one stub module's `DiagramTests.cs` to zero facts (do not delete the project), run `dotnet test --solution EtAlii.Adp.slnx`, and record what the aggregate exit code and reported totals do
   - Per design.md: the decision to delete the 48 projects (task 8.6) does not change either way - only how much weight the "poisons the Zero-tests-ran diagnostic" reason carries. Revert the temporary emptying before continuing to 8.2
   - _Requirements: 4.4_
