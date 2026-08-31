@@ -18,6 +18,13 @@
 * The product name is an abbreviation 'ADP', which stands for 'A Different Perspective'.
 * When using namespaces, include the company name and product name. In .NET world this would be 'EtAlii.Adp', for other languages where appropriate it would be 'com.etalii.adp'.
 * Use the Base36 based ShortId everywhere where an ID or identity is needed.
+* **An agent commits under its own name, never the repository owner's.** Every commit in this repository so far is authored `vrenken <github@vrenken.eu>`, whether a person or an agent wrote it. That makes `git log --author` and `git blame` unable to answer "who wrote this" — the one question they exist to answer — and it credits the owner with work they did not do. An agent therefore sets its own identity on each commit:
+  * `git -c user.name="<agent-session-name>" -c user.email="<agent-session-name>@agents.invalid" commit -m "..." -- <pathspec>`
+  * **Per invocation, never `git config`.** Writing the identity into the repository's config would relabel the owner's own commits too, trading one wrong attribution for another.
+  * **The name is the agent's session name**, so the commit says *which* agent — `etalii-adp-27`, not `Claude`. Several agents work this repository at the same time, and "an agent did it" is not the useful answer.
+  * `.invalid` is reserved by RFC 2606 and never resolves, so the address cannot reach anyone and cannot be mistaken for a real person's. **Never put the owner's address in the author or committer field.**
+  * The `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>` trailer stays. The author field says which agent; the trailer says which model. They answer different questions, and dropping either loses one of the answers.
+  * This changes attribution only. It does not change the pathspec discipline CLAUDE.md requires when committing in a checkout shared with other sessions.
 
 # Runtime
 
