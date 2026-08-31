@@ -149,20 +149,20 @@
 
 ## Phase G — the context seams
 
-- [ ] 17. `TimelineContextSourceResolver`
+- [x] 17. `TimelineContextSourceResolver`
   - File: `.../TimelineContextSourceResolver.cs` (new), tests
   - Resolves an element or connection id within a `.tml`. Note that every module's resolver claims every element id shape, so this must **accept or decline based on the enclosing document**, not on the shape alone
   - _Leverage: src/backend/EtAlii.Adp.Backend/Context/ContextSelectionResolver.cs_
   - _Requirements: 11.2, 12.4_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Resolve selection for timeline elements and connections | Restrictions: decline an id belonging to another diagram type's document rather than claiming it | Success: selection works alongside the other registered types, proven by a test with more than one type registered_
 
-- [ ] 18. `TimelineContextActionProvider`
+- [x] 18. `TimelineContextActionProvider`
   - File: `.../TimelineContextActionProvider.cs` (new), tests
   - Element: *Remove*, *Connect*, and *Give it an end* for a moment / *Remove its end* for a period. Connection: *Disconnect*, *Relabel*. Background: *Add element here*, taking its begin and row from the click. Read-only offers nothing mutating — absent or explained, never greyed out and inert
   - _Requirements: 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 7.5_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Offer the timeline context actions per selection, each dispatching a command | Restrictions: never offer a mutating action in read-only mode; an inapplicable action reports unavailable with a reason | Success: each selection kind offers exactly the specified actions, and a test walks the real discover-then-commit path rather than asserting against a cached model_
 
-- [ ] 19. `TimelineContextPropertyProvider`
+- [x] 19. `TimelineContextPropertyProvider`
   - File: `.../TimelineContextPropertyProvider.cs` (new), tests
   - Element: Label, Begin, End, Row. Connection: Label editable; source and target read-only **with a reason** saying reconnecting is done on the canvas. Begin and End use the `Line` editor with commit-time validation, since no date editor exists yet — **and this module does not add a private one**
   - Purpose: Requirement 10, including 10.3's refusal, which is the second path Requirement 3.4 closes
@@ -170,7 +170,7 @@
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Contribute the timeline element and connection properties, rejecting invalid values with reasons | Restrictions: do not add a date editor to the shared seam; every read-only row carries a sentence saying why; every edit travels as a command | Success: a value that would invert an element is rejected with a reason, and a test proves the grid closes that path independently of the canvas_
 
-- [ ] 20. `TimelineToolboxProvider`, and a drop that keeps its position
+- [x] 20. `TimelineToolboxProvider`, and a drop that keeps its position
   - File: `.../TimelineToolboxProvider.cs` (new), tests
   - *Period* and *Moment*, each naming the add action it drops into. The drop encodes its placement in the action's `value`, so the element is created where it was dropped rather than at the viewport centre. **Verify the client's drop handler populates `value`**; if it sends an empty string, fix it in this module's canvas and report it — `wardley-map`'s viewport-centre compromise may be liftable
   - _Leverage: src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline/PipelineToolboxProvider.cs_
