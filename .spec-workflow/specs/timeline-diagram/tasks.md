@@ -45,7 +45,7 @@
   - _Requirements: 3.1, 3.2, 3.3, 3.5, 3.7, 3.8_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Parse a .tml document into a model, recording each element's and connection's line range and each instant's precision | Restrictions: YamlDotNet is for reading only; never serialise through it; take times at face value with no timezone conversion or calendar arithmetic | Success: every corpus document parses, ranges are correct against the source lines, and a date-only value is not silently promoted to a date-time_
 
-- [ ] 4. `TimelineWriter`: an edit is a splice
+- [x] 4. `TimelineWriter`: an edit is a splice
   - File: `.../TimelineWriter.cs` (new), tests
   - `SetLabel`, `SetBegin`, `SetEnd`, `SetRow`, `InsertElement`, `RemoveElement`, `InsertConnection`, `RemoveConnection`, `SetConnectionLabel`. Match on the element's recorded range and its exact indentation; removing an element removes its connections in the same splice, so the count Requirement 2.5 wants to report is known before the write
   - Purpose: Requirements 2.2 and 2.3, by construction
