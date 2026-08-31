@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/adp-file-nesting/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-31T12:31:05.963Z",
       "trigger": "initial",
+      "approvalId": "approval_1788179465922_c4pbj1683",
+      "approvalTitle": "adp-file-nesting — tasks document"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-31T12:35:13.761Z",
+      "trigger": "approved",
       "approvalId": "approval_1788179465922_c4pbj1683",
       "approvalTitle": "adp-file-nesting — tasks document"
     }
