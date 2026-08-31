@@ -80,7 +80,7 @@
   - _Requirements: 1.1, 1.2_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Declare the timeline diagram type with its own distinctive extension | Restrictions: do not set SharedExtension; do not add an Add-on-a-file path; core must not learn the extension | Success: a bare .tml routes to this type, discovery finds the definition, and a test pins the extension and the origin_
 
-- [ ] 8. `timeline.proto` and the generated stubs
+- [x] 8. `timeline.proto` and the generated stubs
   - File: `src/diagrams/timeline/api/timeline.proto` (new), `src/diagrams/timeline/api/readme.md` (new), `src/client/package.json` (edited); run `npm run generate`
   - `TimelineElementPayload` (begin, end, row, date_only) and `TimelineConnectionPayload` (from, to, label). Add the new api folder to the `generate` script
   - Purpose: what travels in `Element.payload`
