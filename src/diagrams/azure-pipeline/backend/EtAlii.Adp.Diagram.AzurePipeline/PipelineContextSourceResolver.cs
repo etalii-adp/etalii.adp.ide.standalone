@@ -50,7 +50,7 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
         }
 
         if (_router.Route(parent.Target.ResolvedFullPath, rootPath) is not DiagramRouted routed ||
-            routed.Definition.Origin.Vendor != Diagram.Definitions[0].Origin.Vendor)
+            routed.Definition.Origin.Vendor != Diagram.Pipeline.Origin.Vendor)
         {
             return Rejected("The selected file is not an Azure pipeline.");
         }
