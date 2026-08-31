@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/adp-file-nesting/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-31T10:43:28.194Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788173008153_8fw264qur",
+      "approvalTitle": "adp-file-nesting — Requirements"
+    }
+  ]
+}
