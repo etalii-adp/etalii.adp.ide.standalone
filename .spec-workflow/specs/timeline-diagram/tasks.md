@@ -37,7 +37,7 @@
   - _Requirements: 2.1, 2.2_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement a line-based concrete syntax tree with splice operations that preserves line endings exactly | Restrictions: never normalise a line ending; never add or remove a trailing newline as a side effect of an edit | Success: every corpus file round-trips byte-identically, and the append-at-EOF and remove-the-last-line cases each have a test that fails without their guard_
 
-- [ ] 3. `TimelineParser`: YAML in, model out, with line ranges
+- [x] 3. `TimelineParser`: YAML in, model out, with line ranges
   - File: `.../TimelineParser.cs` (new), `_Model/TimelineModel.cs`, `TimelineElement.cs`, `TimelineConnection.cs`, `TimelineInstant.cs`, `TimelinePrecision.cs`, `LineRange.cs` (new), tests
   - Read with YamlDotNet — **reading only**. Record a line range for every element and connection, taken from node marks, so a diagnostic and a writer both know which lines belong to what. Parse `begin`/`end` into a `TimelineInstant` carrying its precision, so a date-only value is distinguishable from a midnight date-time (Requirement 3.2)
   - Purpose: the model everything downstream is a pure function over
