@@ -10,11 +10,11 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// <remarks>
 /// <para>
 /// Every mutating action dispatches a command through the project's history, so each is one undo
-/// away like every other edit in the IDE. The one action that is not a command is
-/// <see cref="ConnectActionId"/>: connecting is a canvas gesture - the next element clicked
-/// completes it (Requirement 11.6) - so choosing it from the menu completes here with nothing
-/// dispatched, and the canvas, seeing which action was executed, enters its connect state. The
-/// backend cannot click the second element for you.
+/// away like every other edit in the IDE. <see cref="ConnectActionId"/> is the two-call one:
+/// the context channel carries one element per call, and a connection needs two, so the first
+/// call arms <see cref="TimelineConnectState"/> and the second - the next element clicked
+/// (Requirement 11.6) - completes the pair and dispatches the command. Escape on the canvas
+/// simply never sends the second call.
 /// </para>
 /// <para>
 /// Read-only mode has no seam a provider can ask yet - none of the shipped modules checks it
@@ -55,15 +55,21 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
 
     private readonly IHistoryStackStore _historyStacks;
     private readonly ITimelineDocumentStore _documents;
+    private readonly TimelineConnectState _connects;
 
-    /// <summary>Creates the provider over the history and the one document store.</summary>
-    public TimelineContextActionProvider(IHistoryStackStore historyStacks, ITimelineDocumentStore documents)
+    /// <summary>Creates the provider over the history, the one document store, and the connect gesture's state.</summary>
+    public TimelineContextActionProvider(
+        IHistoryStackStore historyStacks,
+        ITimelineDocumentStore documents,
+        TimelineConnectState connects)
     {
         ArgumentNullException.ThrowIfNull(historyStacks);
         ArgumentNullException.ThrowIfNull(documents);
+        ArgumentNullException.ThrowIfNull(connects);
 
         _historyStacks = historyStacks;
         _documents = documents;
+        _connects = connects;
     }
 
     /// <inheritdoc />
@@ -100,7 +106,7 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
     }
 
     /// <inheritdoc />
-    public ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
+    public async ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
@@ -110,22 +116,54 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
 
         switch (actionId)
         {
+            case ConnectActionId when element is not null:
+            {
+                // The channel carries one element per call and a connection needs two, so the
+                // gesture is two calls: the first arms, the second completes (Requirement 11.6).
+                // The canvas draws the pending curve from its own mirror of this state; Escape
+                // simply never sends the second call.
+                var pair = _connects.ArmOrComplete(target.WatchId, target.ResolvedFullPath, element.Id);
+                if (pair is not { } completed)
+                {
+                    return new ContextExecutionCompleted();
+                }
+
+                var connect = await _historyStacks.Get(target.RootPath).ExecuteAsync(
+                    new ConnectTimelineElementsCommand(
+                        target.ResolvedFullPath, ShortGuid.NewShortGuid().ToString(), completed.From, completed.To, ""),
+                    cancellationToken);
+                return connect.IsSuccess
+                    ? new ContextExecutionCompleted()
+                    : new ContextExecutionFailed(connect.Error);
+            }
+
+            case AddPeriodActionId:
+            case AddMomentActionId:
+                // Asked before anything is written - the begin is the one fact an add cannot
+                // guess. The row comes from the element the drop landed on, or 0 on nothing.
+                return new ContextExecutionRequiresInput(new ContextInputRequest(
+                    actionId == AddPeriodActionId ? "Add period" : "Add moment",
+                    "mdi-plus",
+                    "Begin",
+                    TimelineScale.ToText(DateTimeOffset.UtcNow, TimelinePrecision.Date),
+                    "Add"));
+
             case RenameActionId when element is not null:
-                return Execution(new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Rename", "mdi-pencil-outline", "Label", element.Label, "Rename")));
+                return new ContextExecutionRequiresInput(new ContextInputRequest(
+                    "Rename", "mdi-pencil-outline", "Label", element.Label, "Rename"));
 
             case RelabelActionId:
             {
                 var connection = TimelineEdits.ConnectionOf(model, target.ElementId);
                 return connection is null
-                    ? Execution(new ContextExecutionFailed(Gone))
-                    : Execution(new ContextExecutionRequiresInput(new ContextInputRequest(
-                        "Relabel", "mdi-pencil-outline", "Label", connection.Label, "Relabel")));
+                    ? new ContextExecutionFailed(Gone)
+                    : new ContextExecutionRequiresInput(new ContextInputRequest(
+                        "Relabel", "mdi-pencil-outline", "Label", connection.Label, "Relabel"));
             }
 
             case GiveEndActionId when element is not null:
-                return Execution(new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Give it an end", "mdi-ray-start-end", "End", element.Begin.Text, "Set")));
+                return new ContextExecutionRequiresInput(new ContextInputRequest(
+                    "Give it an end", "mdi-ray-start-end", "End", element.Begin.Text, "Set"));
 
             case RemoveActionId when element is not null:
             {
@@ -133,21 +171,21 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
                 // runs. An unconnected element needs no ceremony.
                 var going = TimelineWriter.ConnectionsTouching(model, element.Id).Count;
                 return going == 0
-                    ? Execution(new ContextExecutionCompleted())
-                    : Execution(new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
+                    ? new ContextExecutionCompleted()
+                    : new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
                         "Remove",
                         "mdi-delete-outline",
                         going == 1
                             ? "Removing this element also removes the 1 connection attached to it."
                             : $"Removing this element also removes the {going} connections attached to it.",
                         "Remove",
-                        Danger: true)));
+                        Danger: true));
             }
 
             default:
                 // Connect completes with nothing dispatched (see the class remarks); everything
                 // else has all it needs and commits straight away.
-                return Execution(new ContextExecutionCompleted());
+                return new ContextExecutionCompleted();
         }
     }
 
@@ -221,32 +259,53 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
             RelabelActionId when isConnection => new RelabelTimelineConnectionCommand(body, id, value),
             // An add lands where the user pointed: the drop or click position travels in the
             // commit's value as "seconds,row" - the placement Requirement 9.3 refuses to discard.
-            AddPeriodActionId => AddAt(body, value, period: true),
-            AddMomentActionId => AddAt(body, value, period: false),
+            AddPeriodActionId => AddAt(body, id, value, period: true),
+            AddMomentActionId => AddAt(body, id, value, period: false),
             _ => null,
         };
     }
 
     /// <summary>
-    /// The add a drop or a background click commits, at the position its value carries.
+    /// The add a dialog or a drop commits, at the placement its value carries.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// Two value forms. The dialog's is a plain time - the begin the user typed - and the row
+    /// comes from the element the gesture anchored on, or 0 on nothing. The
+    /// <c>seconds,row</c> form carries a full placement, and exists because the module is ready
+    /// for a channel that can carry one; today's context-action flow only passes a value through
+    /// a user dialog, which is the finding the closing check records.
+    /// </para>
+    /// <para>
     /// The id is generated here, once, where the gesture happens - so the command instance the
     /// history holds carries it, and a redo re-creates the element under the id it had. A period
     /// is born one week long: a zero-length period would render as an unreachable sliver, and a
     /// week gives the adorners something to grab.
+    /// </para>
     /// </remarks>
-    private static ICommand? AddAt(string body, string value, bool period)
+    private ICommand? AddAt(string body, string anchorElementId, string value, bool period)
     {
+        DateTimeOffset begin;
+        int row;
+
         var parts = value.Split(',');
-        if (parts.Length != 2 ||
-            !double.TryParse(parts[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var seconds) ||
-            !int.TryParse(parts[1], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var row))
+        if (parts.Length == 2 &&
+            double.TryParse(parts[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var seconds) &&
+            int.TryParse(parts[1], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out row))
+        {
+            begin = TimelineScale.ToTime(seconds, TimelinePrecision.Date);
+        }
+        else if (TimelineInstants.Parse(value) is { } typed)
+        {
+            begin = typed;
+            var anchor = TimelineEdits.ElementOf(_documents.GetOrLoad(body).Model, anchorElementId);
+            row = anchor?.Row ?? 0;
+        }
+        else
         {
             return null;
         }
 
-        var begin = TimelineScale.ToTime(seconds, TimelinePrecision.Date);
         var end = period
             ? TimelineScale.ToText(begin.AddDays(7), TimelinePrecision.Date)
             : null;

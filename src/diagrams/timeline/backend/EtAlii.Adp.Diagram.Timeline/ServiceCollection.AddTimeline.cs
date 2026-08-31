@@ -43,6 +43,9 @@ public static class ServiceCollectionAddTimelineExtension
         services.AddSingleton<ICommandHandler<RelabelTimelineConnectionCommand>, RelabelTimelineConnectionCommandHandler>();
         services.AddSingleton<ICommandHandler<SetTimelineEndCommand>, SetTimelineEndCommandHandler>();
 
+        // The connect gesture's two-call state, per connection and document.
+        services.AddSingleton<TimelineConnectState>();
+
         // The context seams: selection, actions, properties and the palette.
         services.AddSingleton<IContextSourceResolver, TimelineContextSourceResolver>();
         services.AddSingleton<IContextActionProvider, TimelineContextActionProvider>();

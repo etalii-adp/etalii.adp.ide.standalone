@@ -23,7 +23,7 @@ public class TimelineContextActionProviderTests : IDisposable
     {
         Directory.CreateDirectory(_workspace);
         _historyStacks = new HistoryStackStore(new TimelineTestDispatcher(_store));
-        _actions = new TimelineContextActionProvider(_historyStacks, _store);
+        _actions = new TimelineContextActionProvider(_historyStacks, _store, new TimelineConnectState());
     }
 
     public void Dispose()
@@ -294,5 +294,119 @@ public class TimelineContextActionProviderTests : IDisposable
         // Assert.
         Assert.False(commit.Completed);
         Assert.Contains("does not apply", commit.Error, StringComparison.Ordinal);
+    }
+}
+
+/// <summary>
+/// The connect gesture as two calls through the one-element-per-call channel, and the add
+/// dialog's value form.
+/// </summary>
+public class TimelineConnectGestureTests : IDisposable
+{
+    private readonly string _workspace = IoPath.Combine(
+        IoPath.GetTempPath(),
+        "adp-timeline-connect-" + Guid.NewGuid().ToString("N"));
+
+    private readonly TimelineDocumentStore _store = new();
+    private readonly TimelineConnectState _connects = new();
+    private readonly TimelineContextActionProvider _actions;
+    private readonly ShortGuid _watchId = ShortGuid.NewShortGuid();
+
+    public TimelineConnectGestureTests()
+    {
+        Directory.CreateDirectory(_workspace);
+        _actions = new TimelineContextActionProvider(
+            new HistoryStackStore(new TimelineTestDispatcher(_store)), _store, _connects);
+    }
+
+    public void Dispose()
+    {
+        if (Directory.Exists(_workspace))
+        {
+            Directory.Delete(_workspace, recursive: true);
+        }
+
+        GC.SuppressFinalize(this);
+    }
+
+    private string Write()
+    {
+        var path = IoPath.Combine(_workspace, "plan.tml");
+        File.WriteAllText(path, "timeline: 1\r\nelements:\r\n  - id: aaa\r\n    begin: 2026-01-01\r\n    row: 0\r\n  - id: bbb\r\n    begin: 2026-02-01\r\n    row: 1\r\n");
+        _store.Forget(path);
+        return path;
+    }
+
+    private ContextTarget Target(string path, string elementId) =>
+        new(ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace, _watchId, elementId);
+
+    [Fact]
+    public async Task ConnectOnTwoElements_MakesOneConnection()
+    {
+        // Arrange.
+        var path = Write();
+
+        // Act: the first call arms, the second completes.
+        await _actions.ExecuteAsync(Target(path, "aaa"), TimelineContextActionProvider.ConnectActionId, CancellationToken.None);
+        var second = await _actions.ExecuteAsync(Target(path, "bbb"), TimelineContextActionProvider.ConnectActionId, CancellationToken.None);
+
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(second);
+        var connection = Assert.Single(_store.GetOrLoad(path).Model.Connections);
+        Assert.Equal("aaa", connection.From);
+        Assert.Equal("bbb", connection.To);
+    }
+
+    [Fact]
+    public async Task ConnectTwiceOnTheSameElement_Cancels()
+    {
+        // Arrange.
+        // A second tap on the same element reads as "never mind" - and a self-connection is
+        // refused anyway (Requirement 8.7), so nothing is lost by cancelling instead.
+        var path = Write();
+
+        // Act.
+        await _actions.ExecuteAsync(Target(path, "aaa"), TimelineContextActionProvider.ConnectActionId, CancellationToken.None);
+        await _actions.ExecuteAsync(Target(path, "aaa"), TimelineContextActionProvider.ConnectActionId, CancellationToken.None);
+
+        // Assert.
+        Assert.Empty(_store.GetOrLoad(path).Model.Connections);
+        Assert.Null(_connects.PendingFor(_watchId, path));
+    }
+
+    [Fact]
+    public async Task TwoConnectionsArmIndependently()
+    {
+        // Arrange.
+        // The state is per connection: one viewer's half-drawn gesture is invisible to another.
+        var path = Write();
+        var otherWatch = ShortGuid.NewShortGuid();
+
+        // Act.
+        await _actions.ExecuteAsync(Target(path, "aaa"), TimelineContextActionProvider.ConnectActionId, CancellationToken.None);
+
+        // Assert.
+        Assert.Equal("aaa", _connects.PendingFor(_watchId, path));
+        Assert.Null(_connects.PendingFor(otherWatch, path));
+    }
+
+    [Fact]
+    public async Task AnAddCommittedWithADialogValue_LandsOnTheAnchorsRow()
+    {
+        // Arrange.
+        // The dialog form: the value is the begin the user typed, and the row comes from the
+        // element the gesture anchored on - the nearest the placement can travel while the
+        // channel has no slot for a full one.
+        var path = Write();
+
+        // Act.
+        var commit = await _actions.CommitAsync(
+            Target(path, "bbb"), TimelineContextActionProvider.AddMomentActionId, "2026-06-01", "", CancellationToken.None);
+
+        // Assert.
+        Assert.True(commit.Completed, commit.Error);
+        var added = _store.GetOrLoad(path).Model.Elements.Single(element => element.Label == "New moment");
+        Assert.Equal("2026-06-01", added.Begin.Text);
+        Assert.Equal(1, added.Row);
     }
 }
