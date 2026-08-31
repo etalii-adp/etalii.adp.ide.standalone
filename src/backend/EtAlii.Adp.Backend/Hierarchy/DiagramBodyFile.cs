@@ -15,4 +15,10 @@ namespace EtAlii.Adp.Backend.Hierarchy;
 /// <param name="Path">The body document's full path, whether or not it exists on disk.</param>
 /// <param name="ViewKey">The view within it this registration opens, or null when it names none.</param>
 /// <param name="IsOwned">Whether the registration owns the body and may take it along on delete and rename.</param>
-public readonly record struct DiagramBodyFile(string Path, string? ViewKey, bool IsOwned);
+/// <param name="AmbiguousWith">
+/// The other body this registration's name could equally have derived, when both exist on disk
+/// and the name alone cannot say which was meant — null when the derivation was unambiguous
+/// (adp-file-nesting Requirement 2.2). Carried so the ambiguity can be reported rather than
+/// silently resolved.
+/// </param>
+public readonly record struct DiagramBodyFile(string Path, string? ViewKey, bool IsOwned, string? AmbiguousWith = null);

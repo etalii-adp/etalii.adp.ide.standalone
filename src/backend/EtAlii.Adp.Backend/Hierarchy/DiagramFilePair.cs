@@ -67,7 +67,13 @@ public static class DiagramFilePair
             // No header: the body is the sibling of this file's own name, exactly as every
             // type has always behaved. A view key without a body still applies - one
             // registration beside its own document may still name a view within it.
-            return new DiagramBodyFile(SiblingPathFor(adpPath, definition.Extension), view, IsOwned: true);
+            var (path, ambiguousWith) = ResolveSibling(adpPath, definition.Extension);
+
+            // A folder-scoped registration has no derived body at all, rather than one whose path
+            // is the bare extension (Requirement 4.4).
+            return path.Length == 0
+                ? null
+                : new DiagramBodyFile(path, view, IsOwned: true, AmbiguousWith: ambiguousWith);
         }
 
         if (projectRoot is null)
@@ -171,8 +177,59 @@ public static class DiagramFilePair
     }
 
     /// <summary>The sibling path a registration file at <paramref name="adpPath"/> would have for <paramref name="extension"/>.</summary>
-    public static string SiblingPathFor(string adpPath, string extension) =>
-        IoPath.Combine(IoPath.GetDirectoryName(adpPath) ?? "", DiagramFileName.StripExtension(IoPath.GetFileName(adpPath)) + extension);
+    public static string SiblingPathFor(string adpPath, string extension) => ResolveSibling(adpPath, extension).Path;
+
+    /// <summary>
+    /// The body a registration's own name derives, and the other candidate when the name is
+    /// ambiguous about which it meant.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The order is Requirement 2's: an unqualified name derives its base; a qualified name
+    /// derives the subject the qualifier hangs off; and where a qualified-shaped name could mean
+    /// either - a subject genuinely called <c>my.config</c>, or the subject <c>my</c> with the
+    /// qualifier <c>config</c> - the longer candidate wins if it exists on disk, and the other
+    /// is reported so the ambiguity can be said out loud rather than guessed at silently.
+    /// </para>
+    /// <para>
+    /// Existence deciding a resolution is a real cost, entered deliberately (Requirement 2.2): a
+    /// file created later can change what an existing registration derives. It is confined to
+    /// hand-authored names, because a qualified registration ADP writes carries an explicit
+    /// <c>body:</c> header, and Requirement 2.3 makes the header win before this runs at all.
+    /// </para>
+    /// <para>
+    /// A folder-scoped registration derives nothing. Its name has no base, so a derivation would
+    /// produce a path that is just the extension - which Requirement 4.4 asks to be excluded
+    /// rather than produced.
+    /// </para>
+    /// </remarks>
+    internal static (string Path, string? AmbiguousWith) ResolveSibling(string adpPath, string extension)
+    {
+        ArgumentNullException.ThrowIfNull(adpPath);
+        ArgumentNullException.ThrowIfNull(extension);
+
+        var name = DiagramRegistrationName.TryParse(IoPath.GetFileName(adpPath));
+        if (name is null || name.IsFolderScoped)
+        {
+            return (string.Empty, null);
+        }
+
+        var directory = IoPath.GetDirectoryName(adpPath) ?? "";
+        var subject = IoPath.Combine(directory, name.SubjectBase + extension);
+        if (!name.IsQualified)
+        {
+            return (subject, null);
+        }
+
+        var whole = IoPath.Combine(directory, name.FullBase + extension);
+        if (!File.Exists(whole))
+        {
+            return (subject, null);
+        }
+
+        // Both readings name a real file, so the name alone cannot say which was meant.
+        return (whole, File.Exists(subject) ? subject : null);
+    }
 
     /// <summary>
     /// The type a registration file declares, from its first line, or null when the file
