@@ -30,7 +30,16 @@ public static class ServiceCollectionAddTimelineExtension
 
         services.AddSingleton<IDiagramSessionFactory, TimelineSessionFactory>();
 
+        // The commands, one handler each: the whole editable surface of a timeline
+        // (Requirement 11.1), and nothing writes the file except through them.
         services.AddSingleton<ICommandHandler<SetTimelinePlacementCommand>, SetTimelinePlacementCommandHandler>();
+        services.AddSingleton<ICommandHandler<AddTimelineElementCommand>, AddTimelineElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<RemoveTimelineElementCommand>, RemoveTimelineElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreTimelineLinesCommand>, RestoreTimelineLinesCommandHandler>();
+        services.AddSingleton<ICommandHandler<RenameTimelineElementCommand>, RenameTimelineElementCommandHandler>();
+        services.AddSingleton<ICommandHandler<ConnectTimelineElementsCommand>, ConnectTimelineElementsCommandHandler>();
+        services.AddSingleton<ICommandHandler<DisconnectTimelineConnectionCommand>, DisconnectTimelineConnectionCommandHandler>();
+        services.AddSingleton<ICommandHandler<RelabelTimelineConnectionCommand>, RelabelTimelineConnectionCommandHandler>();
 
         return services;
     }

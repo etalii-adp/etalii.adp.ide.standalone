@@ -94,20 +94,11 @@ public sealed class SetTimelinePlacementCommandHandler : ICommandHandler<SetTime
             return false;
         }
 
-        var begin = ParseInstant(command.Begin);
-        var end = ParseInstant(command.End);
+        var begin = TimelineInstants.Parse(command.Begin);
+        var end = TimelineInstants.Parse(command.End);
 
         // A value that will not parse cannot be judged; the rules report it, and refusing an
         // edit for a reason that is not true would block the user from fixing their file.
         return begin is not null && end is not null && end < begin;
     }
-
-    private static DateTimeOffset? ParseInstant(string text) =>
-        DateTimeOffset.TryParse(
-            text,
-            System.Globalization.CultureInfo.InvariantCulture,
-            System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
-            out var value)
-            ? value
-            : null;
 }
