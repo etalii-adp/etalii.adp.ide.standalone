@@ -109,10 +109,9 @@ Conventions that are only written down drift. Two tools check them, and they see
 * For a specific subsystem or component, place simple POCO objects and objects that represent data rather than functionalities in a dedicated subfolder called '\_Model'.
 * Follow the one entity per file principle. One exception to this is a CommandHandler and the Command it handles.
 * **Never nest a class, record, enum or interface inside another type.** A nested type is a type that could not be found, cannot be tested on its own, and takes its meaning from where it happens to sit rather than from its own name. Every type stands on its own, in its own file, at namespace level.
-  * **Lift it out and give it a name that stands alone.** A nested `Entry` becomes `ContextSelectionEntry`; a nested `Options` becomes `MindmapLayoutOptions`. If a name only makes sense while reading the parent, it is not specific enough yet - the reader who meets it in a stack trace or a DI registration has no parent in view.
+  * **Lift it out and give it a name that stands alone.** A nested `Entry` for example becomes `ContextSelectionEntry`; a nested `Options` becomes `MindmapLayoutOptions`. If a name only makes sense while reading the parent, it is not specific enough yet - the reader who meets it in a stack trace or a DI registration has no parent in view.
   * **Where it goes**: a POCO or a record that carries data lands in the area's `_Model` folder, per the rule above. Anything with behaviour sits beside its parent class, in the same folder and namespace.
   * The one-entity-per-file exception above (a Command and its handler) is about two *sibling* types in one file, not about nesting - neither is inside the other.
-  * The codebase is not yet in line with this: roughly a hundred nested types remain from before the rule. They are being lifted out, so follow the rule in new code rather than copying what is still there.
 
 # Context
 
