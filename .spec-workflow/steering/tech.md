@@ -102,6 +102,14 @@ A module's `Diagram.cs` takes exactly one of two shapes, and which one is not a 
 * **The trigger is gaining a `Build` delegate.** A module moves from stub to implemented exactly when its implementation spec starts wiring services - which is when `Build` appears - so the transition needs no separate tracking. Divergence beyond these two shapes is a finding, not a third shape.
 * **A folder-subject module declares no `DocumentExtension` constant, and that is not a gap.** `ansible-structure` has none because its subject is `DiagramSubject.Folder` - a folder has no sibling body to name an extension for. Do not "fix" that omission.
 
+# Registering a diagram module's services
+
+A module's service registration lives in **one file** - `ServiceCollection.AddX.cs` - by default.
+
+* **Split into `ServiceCollection.AddX.cs` + `ServiceCollection.AddXCommands.cs` only once a concrete consumer - a test or another feature - needs the module's command handlers registered without its other seams** (session factory, toolbox provider, validator). The trigger is that need, not a line count or file size: no size threshold governs this, and none should be recorded.
+* The evidence behind the rule, measured rather than assumed: `wardley-map` and `mindmap` are split because real call sites register the commands alone (`AddWardleyMap.Tests`' commands-only fact; mindmap's `Commands.Tests`, `MindmapSession.Tests` and `MindmapTestProject`). `c4`, `azure-pipeline` and `ansible-structure` have no such consumer anywhere in their test suites, so they keep one file.
+* The rule is additive: a module that later gains such a consumer splits at that point - nothing prevents it, and nothing but that consumer justifies it.
+
 # Testing & quality
 
 * Tests should be runnable as part of the same local "F5 experience" - no separate environment or manual setup required to run the test suite.
