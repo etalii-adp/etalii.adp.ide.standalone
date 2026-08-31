@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Diagrams;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -40,6 +41,13 @@ public static class ServiceCollectionAddTimelineExtension
         services.AddSingleton<ICommandHandler<ConnectTimelineElementsCommand>, ConnectTimelineElementsCommandHandler>();
         services.AddSingleton<ICommandHandler<DisconnectTimelineConnectionCommand>, DisconnectTimelineConnectionCommandHandler>();
         services.AddSingleton<ICommandHandler<RelabelTimelineConnectionCommand>, RelabelTimelineConnectionCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetTimelineEndCommand>, SetTimelineEndCommandHandler>();
+
+        // The context seams: selection, actions, properties and the palette.
+        services.AddSingleton<IContextSourceResolver, TimelineContextSourceResolver>();
+        services.AddSingleton<IContextActionProvider, TimelineContextActionProvider>();
+        services.AddSingleton<IContextPropertyProvider, TimelineContextPropertyProvider>();
+        services.AddSingleton<IDiagramToolboxProvider, TimelineToolboxProvider>();
 
         return services;
     }
