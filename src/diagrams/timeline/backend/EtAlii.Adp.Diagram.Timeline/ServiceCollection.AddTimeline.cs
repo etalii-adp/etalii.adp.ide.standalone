@@ -49,6 +49,9 @@ public static class ServiceCollectionAddTimelineExtension
         services.AddSingleton<IContextPropertyProvider, TimelineContextPropertyProvider>();
         services.AddSingleton<IDiagramToolboxProvider, TimelineToolboxProvider>();
 
+        // The rules' join to the Errors and Warnings panel.
+        services.AddSingleton<IDiagramValidator, TimelineValidator>();
+
         return services;
     }
 }
