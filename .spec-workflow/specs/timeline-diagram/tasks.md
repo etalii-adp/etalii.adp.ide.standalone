@@ -88,7 +88,7 @@
   - _Requirements: 3.1, 3.3, 3.8_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer familiar with protobuf | Task: Define the payload messages and wire the new api folder into the client generate script | Restrictions: do not change any core proto; carry the times as written rather than as parsed values | Success: npm run generate produces the stubs, npm run typecheck passes, and the client compiles against them_
 
-- [ ] 9. `TimelineElementMapper`
+- [x] 9. `TimelineElementMapper`
   - File: `.../TimelineElementMapper.cs` (new), tests
   - Model to `Element`s and `Delta`s; a received `Point2D` back to a begin, an end and a row. **Does no arithmetic of its own** — it calls `TimelineScale` and `TimelineRows`
   - Purpose: the boundary between the module's vocabulary and core's
@@ -96,7 +96,7 @@
   - _Requirements: 4.1, 4.2, 4.3, 4.6, 6.7_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Map the timeline model to core elements and deltas, and map a received position back to a placement | Restrictions: perform no conversion arithmetic here - delegate to TimelineScale and TimelineRows | Success: a model maps to elements whose ids are stable across reloads, and a position round-trips back to the placement it came from_
 
-- [ ] 10. `TimelineDocumentFactory`: a new document that is valid
+- [x] 10. `TimelineDocumentFactory`: a new document that is valid
   - File: `.../TimelineDocumentFactory.cs` (new), tests
   - The schema marker and an empty element list, and nothing else
   - Purpose: Requirement 1.3
