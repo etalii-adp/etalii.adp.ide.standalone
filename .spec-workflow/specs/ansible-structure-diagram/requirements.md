@@ -6,7 +6,7 @@ This spec covers the **Ansible structure diagram module** — a **read-only** vi
 
 **Why this type is read-only, by design and not by omission.** The types drawn so far, shipped and specified alike, form a progression of ownership: the mindmap ADP ships and the Wardley map it has specified are ADP's own documents; the pipeline file belongs to the build system and gets a deliberately narrow set of edits; an Ansible project belongs to an *operations workflow* — hand-authored, reviewed, often deployed by machinery that ADP cannot see. Its natural editor is a text editor with `ansible-lint` beside it. What that workflow lacks is not editing but **sight**: the structure is spread across dozens of files whose relationships are implicit in strings (`roles:`, `import_playbook:`, `dependencies:`, `hosts:`). This module draws those relationships and changes **nothing** — it never writes a file, registers no editing command, and its property grid shows every value with a reason saying where it is edited instead (Requirement 10).
 
-|                   | [`azure-pipeline-diagram`](../azure-pipeline-diagram/requirements.md) | This spec                          |
+|                   | [`azure-pipeline-diagram`](../../archive/specs/azure-pipeline-diagram/requirements.md) | This spec                          |
 | ----------------- | --------------------------------------------------------------------- | ---------------------------------- |
 | Document          | one file (plus templates)                                             | **a folder tree** of many files    |
 | Editing           | a narrow, deliberate set                                              | **none**                           |
@@ -95,9 +95,9 @@ If `webservers.yml` names a role that has no folder, the errors-and-warnings pan
 
 **Dependencies.** This spec redefines none of them:
 
-* [`adp-diagram-ide`](../adp-diagram-ide/requirements.md) — the shell, the pannable/zoomable canvas, read-only rendering.
+* [`adp-diagram-ide`](../../archive/specs/adp-diagram-ide/requirements.md) — the shell, the pannable/zoomable canvas, read-only rendering.
 * [`grpc-core-communication-specification`](../grpc-core-communication-specification/requirements.md) — `Element`, `Delta`, `Point2D`, the `Any` payload.
-* [`mindmap-diagram`](../mindmap-diagram/requirements.md) / [`wardley-map`](../wardley-map/requirements.md) / [`azure-pipeline-diagram`](../azure-pipeline-diagram/requirements.md) — the pluggable type model, reading documents ADP did not invent, and `Add` on existing content.
+* [`mindmap-diagram`](../mindmap-diagram/requirements.md) / [`wardley-map`](../wardley-map/requirements.md) / [`azure-pipeline-diagram`](../../archive/specs/azure-pipeline-diagram/requirements.md) — the pluggable type model, reading documents ADP did not invent, and `Add` on existing content.
 * [`add-diagram-action`](../add-diagram-action/requirements.md) and [`create-diagram-file`](../create-diagram-file/requirements.md) — the Add flow that creates the `.adp` registration.
 * [`context-service`](../context-service/requirements.md) — targets, scopes, selection.
 * [`errors-and-warnings-panel`](../errors-and-warnings-panel/requirements.md) — `IDiagramValidator` (Requirement 9).

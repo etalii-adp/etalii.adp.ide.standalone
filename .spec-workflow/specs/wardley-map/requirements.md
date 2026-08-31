@@ -20,7 +20,7 @@ The first revision of this document was written when the mindmap was the only sh
 
 **Dependencies.** This spec redefines none of them:
 
-* [`adp-diagram-ide`](../adp-diagram-ide/requirements.md) — the workspace shell, the pannable/zoomable canvas, read-only mode, the file-access layer.
+* [`adp-diagram-ide`](../../archive/specs/adp-diagram-ide/requirements.md) — the workspace shell, the pannable/zoomable canvas, read-only mode, the file-access layer.
 * [`grpc-core-communication-specification`](../grpc-core-communication-specification/requirements.md) — `Element`, `Delta` (`add`/`remove`/`group`/`ungroup`), `Point2D`, and the `Any` payload extension point.
 * [`add-diagram-action`](../add-diagram-action/requirements.md) and [`create-diagram-file`](../create-diagram-file/requirements.md) — the Add action, the `.adp` file and its MIME first line, the name field.
 * [`mindmap-diagram`](../mindmap-diagram/requirements.md) — which introduced, and this spec reuses unchanged: `DiagramDefinition.Extension`, `IDiagramDocumentFactory`, `ContextSource.element_id`, `ContextScope.DIAGRAM_ELEMENT`, the `IDiagramSession` seam of its Requirement 13, and `DiagramService`'s `Open` + `UpdateView` legs.
@@ -28,7 +28,7 @@ The first revision of this document was written when the mindmap was the only sh
 * [`context-service`](../context-service/requirements.md) — the selection chain and the pushing of a selection's actions.
 * [`errors-and-warnings-panel`](../errors-and-warnings-panel/requirements.md) — where a validator's problems go (its Requirement 3).
 * [`property-grid`](../property-grid/requirements.md) — the per-scope property provider, the read-only reason, the commit cadence.
-* [`diagram-undo-redo`](../diagram-undo-redo/requirements.md) and `tech.md`'s **Commands** rule.
+* [`diagram-undo-redo`](../../archive/specs/diagram-undo-redo/requirements.md) and `tech.md`'s **Commands** rule.
 
 **Deliberately out of scope.** Editing the `.owm` as text with a live preview — the way onlinewardleymaps.com, the VS Code extension and the Obsidian plugin all work. It is a reasonable thing for ADP to want, it is a substantial feature in its own right, and nothing here precludes it: Requirement 3's round-trip is what a text editor would need anyway. Stated so its absence is a decision rather than an oversight.
 

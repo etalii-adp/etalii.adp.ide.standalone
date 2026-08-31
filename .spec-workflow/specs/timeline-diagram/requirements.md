@@ -10,13 +10,13 @@ This spec covers a **timeline diagram**: elements laid out left to right along a
 
 **Dependencies.** This spec redefines none of them:
 
-* [`adp-diagram-ide`](../adp-diagram-ide/requirements.md) — the workspace shell, the pannable/zoomable canvas, read-only mode.
+* [`adp-diagram-ide`](../../archive/specs/adp-diagram-ide/requirements.md) — the workspace shell, the pannable/zoomable canvas, read-only mode.
 * [`grpc-core-communication-specification`](../grpc-core-communication-specification/requirements.md) — `Element`, `Delta`, `Point2D`, and the `Any` payload extension point.
 * [`diagram-workspace-tabs`](../diagram-workspace-tabs/requirements.md) — the tab host and its unavailable state.
 * [`add-diagram-action`](../add-diagram-action/requirements.md) and [`create-diagram-file`](../create-diagram-file/requirements.md) — the Add action, the `.adp` file and its MIME first line.
 * [`context-service`](../context-service/requirements.md) — the selection chain, `IContextActionProvider`, and the pushing of a selection's actions.
 * [`property-grid`](../property-grid/requirements.md) — `IContextPropertyProvider`, `ContextProperty`, `DescribeProperties`/`SetProperty`.
-* [`diagram-undo-redo`](../diagram-undo-redo/requirements.md) and `tech.md`'s **Commands** rule.
+* [`diagram-undo-redo`](../../archive/specs/diagram-undo-redo/requirements.md) and `tech.md`'s **Commands** rule.
 
 **Reused code is generic code, and generic code lives in the shared projects.** The mechanisms this type consumes are already there, and this module depends on the **projects** that hold them rather than on the diagram modules that happened to introduce them:
 

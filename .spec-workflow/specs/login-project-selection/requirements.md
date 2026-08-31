@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This spec covers the entry flow into EtAlii.Adp, ahead of everything covered by [`adp-diagram-ide`](../adp-diagram-ide/requirements.md): a mandatory login gate, followed by a grid-based home page from which the user selects which **project** folder to open. Only after a project is selected does the workspace shell (activity bar, explorer, tabbed editor area, per `adp-diagram-ide` Requirement 1) become reachable.
+This spec covers the entry flow into EtAlii.Adp, ahead of everything covered by [`adp-diagram-ide`](../../archive/specs/adp-diagram-ide/requirements.md): a mandatory login gate, followed by a grid-based home page from which the user selects which **project** folder to open. Only after a project is selected does the workspace shell (activity bar, explorer, tabbed editor area, per `adp-diagram-ide` Requirement 1) become reachable.
 
 This generalizes `adp-diagram-ide` Requirement 2's single "workspace folder chosen by the user" into a model where a logged-in user has one or more available project folders and explicitly picks one per session; `adp-diagram-ide` continues to own everything that happens once a project is open.
 

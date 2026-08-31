@@ -12,7 +12,7 @@ This spec covers the **PlantUML diagram module** — the type `docs/diagrams.md`
 
 **Dependencies.** This spec redefines none of them:
 
-* [`adp-diagram-ide`](../adp-diagram-ide/requirements.md) — the workspace shell, the pannable/zoomable canvas, read-only mode.
+* [`adp-diagram-ide`](../../archive/specs/adp-diagram-ide/requirements.md) — the workspace shell, the pannable/zoomable canvas, read-only mode.
 * [`grpc-core-communication-specification`](../grpc-core-communication-specification/requirements.md) — `Element`, `Delta`, `Point2D`, and the `Any` payload extension point.
 * [`add-diagram-action`](../add-diagram-action/requirements.md) and [`create-diagram-file`](../create-diagram-file/requirements.md) — the Add action, the `.adp` file and its MIME first line.
 * [`mindmap-diagram`](../mindmap-diagram/requirements.md) — `DiagramDefinition.Extension`, `IDiagramDocumentFactory`, `ContextScope.DIAGRAM_ELEMENT`, and `DiagramService`'s `Open` + `UpdateView` legs, reused unchanged.
@@ -20,7 +20,7 @@ This spec covers the **PlantUML diagram module** — the type `docs/diagrams.md`
 * [`context-service`](../context-service/requirements.md) — the selection chain, `IContextActionProvider`, and the pushing of a selection's actions.
 * [`property-grid`](../property-grid/requirements.md) — `IContextPropertyProvider`, `ContextProperty`, `DescribeProperties`/`SetProperty`.
 * [`errors-and-warnings-panel`](../errors-and-warnings-panel/requirements.md) — where Requirement 11's diagnostics surface.
-* [`diagram-undo-redo`](../diagram-undo-redo/requirements.md) and `tech.md`'s **Commands** rule.
+* [`diagram-undo-redo`](../../archive/specs/diagram-undo-redo/requirements.md) and `tech.md`'s **Commands** rule.
 
 **What this spec changes in core.** One thing, named rather than smuggled: ADP has no **drawing-tool** concept. The Toolbox can drop an element onto the canvas (`DescribeToolbox`, `drop_action_id`), but there is no gesture for *drag from one element to another to connect them*, which is how every diagram editor creates a relationship and which Requirement 8 needs. That gesture is core — the canvas owns pointer input — while *which* relationship kinds exist is the module's, described as data exactly as toolbox items and context actions already are. This is the only core change this spec asks for. If anything else in core turns out to need changing, that is a finding worth reporting rather than a licence to change it.
 
@@ -241,7 +241,7 @@ This spec covers the **PlantUML diagram module** — the type `docs/diagrams.md`
 5. WHEN a **sequence participant** is selected THEN the contributed properties SHALL include: Display name (`Line`), Alias (`Line`) and Kind.
 6. WHEN a **sequence message** is selected THEN the contributed properties SHALL include: Label (`Line`), Arrow style, and whether it activates the target (`Toggle`).
 7. WHEN a **note** is selected THEN its body SHALL be contributed as a `Text` property, because a note is prose and a one-line editor is the wrong shape for it.
-8. WHEN a property is genuinely an **enumeration** — a relationship's Kind (4.3), a participant's Kind (5.1), a member's Visibility, an arrow style — THEN it SHALL use the `Choice` editor once that editor exists. **Until then** it SHALL be contributed as a `Line` whose value is validated on commit, rejecting an unknown value with a reason rather than writing it. This is a known gap, owned by [`property-grid`](../property-grid/requirements.md) Requirement 9 and owed by [`azure-pipeline-diagram`](../azure-pipeline-diagram/requirements.md); this spec records that it is the second type to want it.
+8. WHEN a property is genuinely an **enumeration** — a relationship's Kind (4.3), a participant's Kind (5.1), a member's Visibility, an arrow style — THEN it SHALL use the `Choice` editor once that editor exists. **Until then** it SHALL be contributed as a `Line` whose value is validated on commit, rejecting an unknown value with a reason rather than writing it. This is a known gap, owned by [`property-grid`](../property-grid/requirements.md) Requirement 9 and owed by [`azure-pipeline-diagram`](../../archive/specs/azure-pipeline-diagram/requirements.md); this spec records that it is the second type to want it.
 9. WHEN a property is edited THEN the change SHALL travel as a command (Requirement 10.1), land on the project's history, and reach every other open view through the existing delta stream — never written directly to the file by the panel.
 10. WHEN a property cannot be edited — because its element came from an unevaluated `!include` (Requirement 3.5), or the diagram is read-only — THEN it SHALL be contributed with a `read_only_reason` saying so, rather than omitted, per `property-grid` Requirement 2.1.
 

@@ -31,11 +31,11 @@ Saving in any of them goes through the same command pipeline every other edit us
 
 **Dependencies.** This spec redefines none of them:
 
-* [`adp-diagram-ide`](../adp-diagram-ide/requirements.md) — the workspace shell that hosts panels.
+* [`adp-diagram-ide`](../../archive/specs/adp-diagram-ide/requirements.md) — the workspace shell that hosts panels.
 * [`diagram-workspace-tabs`](../diagram-workspace-tabs/requirements.md) — the tab strip an editor opens into, and the open/close/activate rules it inherits rather than reinvents.
 * [`project-root-folder-explorer`](../project-root-folder-explorer/requirements.md) — where a file is double-clicked, and the watcher that reports an external change.
 * [`context-service`](../context-service/requirements.md) — selection, scopes, and the `IContextActionProvider` that offers **Open as text**.
-* [`diagram-undo-redo`](../diagram-undo-redo/requirements.md) and tech.md's **Commands** rule — a save is a command.
+* [`diagram-undo-redo`](../../archive/specs/diagram-undo-redo/requirements.md) and tech.md's **Commands** rule — a save is a command.
 * [`errors-and-warnings-panel`](../errors-and-warnings-panel/requirements.md) — where a problem's line number leads (Requirement 8).
 * [`property-grid`](../property-grid/requirements.md) — an open file's own properties (Requirement 9).
 
