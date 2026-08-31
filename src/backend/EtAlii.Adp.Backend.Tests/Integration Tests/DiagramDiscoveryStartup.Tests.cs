@@ -162,4 +162,102 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
         // Assert.
         Assert.Empty(echoes);
     }
+
+    [Fact]
+    public void AfterStartup_EveryStubDefinitionsOriginMatchesItsCatalogedTag()
+    {
+        // Arrange.
+        // The stub modules' origin tags used to be asserted in 48 per-module test files, all
+        // structurally identical; this is their one home now, against the live deployed
+        // catalog, beside the description checks that made the same move earlier. Stubs are
+        // selected structurally - no Build delegate - so the population needs no hand-kept
+        // list, and implemented modules (whose docs row may legitimately annotate further)
+        // stay out of it.
+        using var _ = _factory.CreateClient();
+
+        // Act.
+        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        var cataloged = CatalogedTitles();
+        var missing = catalog.All
+            .Where(definition => definition.Build is null)
+            .Where(definition => !cataloged.ContainsKey(definition.Origin.Key))
+            .Select(definition => $"{definition.Origin.Key}: not cataloged in docs/diagrams.md")
+            .ToList();
+
+        // Assert.
+        Assert.Empty(missing);
+    }
+
+    [Fact]
+    public void AfterStartup_EveryStubDefinitionsTitleMatchesItsCatalogedName()
+    {
+        // Arrange.
+        using var _ = _factory.CreateClient();
+
+        // Act.
+        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        var cataloged = CatalogedTitles();
+        var mismatched = catalog.All
+            .Where(definition => definition.Build is null)
+            .Where(definition => cataloged.TryGetValue(definition.Origin.Key, out var expected)
+                && !string.Equals(definition.Title, expected, StringComparison.Ordinal))
+            .Select(definition =>
+                $"{definition.Origin.Key}: definition title '{definition.Title}' does not match docs/diagrams.md's '{cataloged[definition.Origin.Key]}'")
+            .ToList();
+
+        // Assert.
+        // A failure names the offending origin and both strings, so this collapsed check is no
+        // harder to diagnose than the 48 files it replaces (technical-debt-cleanup R4.2).
+        Assert.Empty(mismatched);
+    }
+
+    /// <summary>
+    /// The diagram catalog table, origin tag to Diagram-column title, read from the repository's
+    /// own docs/diagrams.md - the source of truth the module doc-comments already point at.
+    /// </summary>
+    private static IReadOnlyDictionary<string, string> CatalogedTitles()
+    {
+        var titles = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var line in File.ReadLines(LocateCatalog()))
+        {
+            if (!line.StartsWith('|'))
+            {
+                continue;
+            }
+
+            var cells = line.Split('|');
+            if (cells.Length < 5)
+            {
+                continue;
+            }
+
+            var origin = cells[2].Trim();
+            if (origin.Length < 3 || origin[0] != '`' || origin[^1] != '`')
+            {
+                continue;
+            }
+
+            titles[origin[1..^1]] = cells[3].Trim();
+        }
+
+        return titles;
+    }
+
+    /// <summary>
+    /// The catalog document, found by walking up from the test binary rather than by counting
+    /// `..` segments - the count changes with the build layout, the path does not.
+    /// </summary>
+    private static string LocateCatalog()
+    {
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+        {
+            var candidate = IoPath.Combine(directory.FullName, "docs", "diagrams.md");
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        throw new FileNotFoundException("docs/diagrams.md could not be found from " + AppContext.BaseDirectory);
+    }
 }
