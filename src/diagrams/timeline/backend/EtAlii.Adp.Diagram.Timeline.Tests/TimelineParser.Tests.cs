@@ -275,5 +275,11 @@ public class TimelineParserTests
         Assert.Equal(6, value.Month);
         Assert.Equal(15, value.Day);
         Assert.Equal(12, value.Hour);
+
+        // The offset itself, not just the components. DateTimeStyles.None assumes the *local*
+        // offset for a value that carries none, and the components above are identical either
+        // way - which is how that bug got past this test the first time. On any machine whose
+        // offset is not zero, this line is the one that fails without the AssumeUniversal fix.
+        Assert.Equal(TimeSpan.Zero, value.Offset);
     }
 }

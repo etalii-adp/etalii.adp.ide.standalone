@@ -114,9 +114,12 @@ public static class TimelineParser
     /// </summary>
     /// <remarks>
     /// The precision is decided by what was written rather than by what the value turns out to
-    /// be, so midnight written as a date stays a date. <see cref="DateTimeStyles.None"/> keeps
-    /// <see cref="DateTimeOffset"/> from applying the machine's offset to a value that carries
-    /// none - the same document must produce the same diagram on every machine.
+    /// be, so midnight written as a date stays a date. <see cref="DateTimeStyles.AssumeUniversal"/>
+    /// with <see cref="DateTimeStyles.AdjustToUniversal"/> pins a value that carries no offset to
+    /// offset zero - the alternative, <see cref="DateTimeStyles.None"/>, silently applies the
+    /// <b>local machine's</b> offset, so the same document would parse to a different instant in
+    /// every timezone. That bug shipped here first and was caught by the scale's round-trip test,
+    /// not the parser's own: a test that only inspects date components cannot see an offset.
     /// </remarks>
     private static TimelineInstant Instant(string text)
     {
@@ -128,7 +131,7 @@ public static class TimelineParser
         var readable = DateTimeOffset.TryParse(
             trimmed,
             CultureInfo.InvariantCulture,
-            DateTimeStyles.None,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
             out var value);
 
         return new TimelineInstant(text, readable ? value : null, precision);
