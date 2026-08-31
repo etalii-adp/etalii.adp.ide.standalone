@@ -41,7 +41,7 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 1.1, 1.3, 9.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer, model Fable 5 (mandatory - verify before starting) | Task: Verify the nested-type count is zero across src/backend and src/diagrams (the same grep-shaped scan R8's design describes, narrowed to nested-type declarations), then run `dotnet test --solution EtAlii.Adp.slnx` from src/backend and `dotnet format style --verify-no-changes --severity info`, checking exit codes rather than grepping output. If both are clean, merge the debt-nested worktree into develop and retire it per CLAUDE.md's worktree rules | Restrictions: do not merge if either gate fails - fix forward in the same worktree instead | Success: nested-type count is 0, `dotnet test` reports failed:0 with exit code 0, `dotnet format style` exits 0, the worktree is merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2. Consolidate the callback-disposable duplicates (R2)
+- [x] 2. Consolidate the callback-disposable duplicates (R2)
   - Worktree: `.claude/worktrees/debt-callback`
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
@@ -68,14 +68,14 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 2.2_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer, model Fable 5 (mandatory - verify before starting) | Task: In C4ContextSourceResolver.cs, replace `new C4ElementUnsubscriber(...)` with `new EtAlii.Adp.CallbackDisposable(...)`, then delete C4ElementUnsubscriber.cs entirely, per design.md's R2 section | Restrictions: no project reference changes needed or wanted | Leverage: EtAlii.Adp.CallbackDisposable from task 2.1 | Success: C4ElementUnsubscriber.cs no longer exists, C4ContextSourceResolver.Tests.cs (or equivalent) passes unchanged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2.4 Document why `PipelineChangeUnsubscriber` and `AnsibleNodeSubscription` stay separate
+- [x] 2.4 Document why `PipelineChangeUnsubscriber` and `AnsibleNodeSubscription` stay separate
   - File: `src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline/PipelineChangeUnsubscriber.cs`, `src/diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure/AnsibleNodeSubscription.cs`
   - Extend each type's existing doc comment by one sentence naming what it does that `CallbackDisposable` does not (idempotent dispose for both; a null-argument check for Pipeline only) - no code change, per R2.3's examine-and-keep outcome recorded in design.md
   - Purpose: satisfy R2.3 for both idempotent variants (the design's correction: there are two, not one)
   - _Requirements: 2.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer, model Fable 5 (mandatory - verify before starting) | Task: Add one sentence to the existing XML doc comments on PipelineChangeUnsubscriber and AnsibleNodeSubscription naming that each is idempotent (safe against multiple Dispose calls) unlike the shared EtAlii.Adp.CallbackDisposable, and that Pipeline's constructor additionally null-checks its argument - per design.md's R2.3 decision to keep both separate rather than consolidate | Restrictions: do not change either type's code or behaviour - this is a documentation-only task, R2.3's decision was already made in design | Success: both doc comments explicitly name the difference from CallbackDisposable; no .cs behaviour changes; existing tests for both types pass unchanged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.5 Gate and merge
+- [x] 2.5 Gate and merge
   - Run `dotnet test --solution EtAlii.Adp.slnx` (exit code checked) and `dotnet format style --verify-no-changes --severity info` from `src/backend/`; merge `.claude/worktrees/debt-callback` into `develop` and retire it
   - _Requirements: 1.1, 1.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer, model Fable 5 (mandatory - verify before starting) | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, checking exit codes. If clean, merge debt-callback into develop and retire the worktree per CLAUDE.md | Restrictions: do not merge on a failing gate | Success: both gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
