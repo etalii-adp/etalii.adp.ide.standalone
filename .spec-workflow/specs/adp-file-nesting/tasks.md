@@ -26,7 +26,7 @@
 
 ## Phase A — naming and derivation
 
-- [ ] 1. `DiagramRegistrationName`
+- [x] 1. `DiagramRegistrationName`
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/_Model/DiagramRegistrationName.cs` (new)
   - Parse and compose the three forms: unqualified, qualified, and the folder-scoped bare extension
   - Purpose: Requirement 1's convention, held by one type instead of spread across callers
@@ -34,7 +34,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Model the registration naming convention | Restrictions: a folder-scoped name is excluded from sibling derivation by construction rather than by a check every caller remembers (Requirement 4.4); a qualifier goes through the existing sanitiser, not a second one | Success: every form parses and composes back to itself, and a qualifier containing a separator is refused. Mark in progress, log when done, then mark complete._
 
-- [ ] 2. Body derivation, and the ambiguity
+- [-] 2. Body derivation, and the ambiguity
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/DiagramFilePair.cs` (modify)
   - `SiblingPathFor` gains the qualified case; the ordered rule from the design; the ambiguity reported alongside the resolved path
   - Purpose: Requirement 2 - the sharpest technical problem in the spec
