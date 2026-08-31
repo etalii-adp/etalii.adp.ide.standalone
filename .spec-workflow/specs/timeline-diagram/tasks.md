@@ -179,7 +179,7 @@
 
 ## Phase H — validation
 
-- [ ] 21. `TimelineRuleSet`
+- [x] 21. `TimelineRuleSet`
   - File: `.../TimelineRuleSet.cs`, `TimelineRules.cs` (new), tests
   - End before begin; a begin or end that will not parse; a connection naming an absent element; a mixed date/date-time pair on one element; a duplicate id. Each a warning naming the element, with the rest of the diagram still drawing
   - Purpose: Requirement 12.2, as a pure function over a model
@@ -187,7 +187,7 @@
   - _Requirements: 3.2, 3.4, 12.1, 12.2_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement the timeline rules as a pure function over the model | Restrictions: a rule must run from a plain string with no file, canvas or connection; a rule that fires on a healthy document is worse than no rule | Success: one test per rule plus one proving a correct document reports nothing_
 
-- [ ] 22. `TimelineValidator`
+- [x] 22. `TimelineValidator`
   - File: `.../TimelineValidator.cs` (new), tests
   - The join: parse, then judge. An unparseable document is **one** problem naming its line, not a pile of consequences from an empty model — and the message is the same one the unavailable state shows, so the panel and the canvas never disagree
   - _Requirements: 2.4, 12.1, 12.3_
