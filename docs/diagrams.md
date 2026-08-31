@@ -111,7 +111,7 @@ Layers can be diagrammed individually or combined into a cross-layer viewpoint; 
 | 💡 Identified | `bpmn/process` | BPMN process diagram | [bpmn.org](https://www.bpmn.org/) · [OMG BPMN spec](https://www.omg.org/bpmn/) | [Camunda BPMN examples](https://camunda.com/bpmn/examples/) |
 | 💡 Identified | `iso/flowchart` | Flowchart | [ISO 5807 overview](https://en.wikipedia.org/wiki/Flowchart) | [Lucidchart examples](https://www.lucidchart.com/pages/examples/flowchart-symbols-and-meaning) |
 | 💡 Identified | `generic/swimlane` | Swimlane diagram | [Lucidchart guide](https://www.lucidchart.com/pages/tutorial/swim-lane-diagram) | [Lucidchart examples](https://www.lucidchart.com/pages/examples/flowchart-symbols-and-meaning) |
-| 📝 Specified | `generic/timeline` | Timeline diagram (left-to-right, elements spanning begin→end, free vertical placement, bezier connections); [`timeline-diagram`](../.spec-workflow/specs/timeline-diagram/requirements.md) | Distinct from `mermaid/gantt`: layout is authored, not computed, and connections are arbitrary rather than scheduling dependencies | — |
+| 📝 Specified | `generic/timeline` | Timeline diagram (left-to-right, elements spanning begin→end on snap-to rows, bezier connections; `.tml` — Timeline Markup Language); [`timeline-diagram`](../.spec-workflow/specs/timeline-diagram/requirements.md) | Distinct from `mermaid/gantt`: placement is authored on both axes, not computed, and connections are arbitrary rather than scheduling dependencies | — |
 
 ---
 
