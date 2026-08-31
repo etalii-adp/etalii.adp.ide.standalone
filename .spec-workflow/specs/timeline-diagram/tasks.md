@@ -55,7 +55,7 @@
 
 ## Phase C — the one dangerous conversion
 
-- [ ] 5. `TimelineScale`: time to x, and back
+- [x] 5. `TimelineScale`: time to x, and back
   - File: `.../TimelineScale.cs` (new, static), tests
   - `ToSeconds(DateTimeOffset)` and `ToTime(double, TimelinePrecision)`, seconds since the Unix epoch as a double. A date-only value converts to midnight and converts back **date-only** — the precision travels with the value, not with the caller
   - Purpose: the design's central decision, isolated so it can be tested without a canvas
@@ -63,7 +63,7 @@
   - _Requirements: 3.2, 4.1, 4.2, 6.7_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement the sole conversion between a time and a horizontal coordinate, carrying precision through the round trip | Restrictions: no other type may perform this conversion; no timezone conversion; no calendar arithmetic | Success: a round-trip property test over a wide range of instants holds, and a date-only value never comes back as a date-time_
 
-- [ ] 6. `TimelineRows`: row to y, and the nearest row back
+- [x] 6. `TimelineRows`: row to y, and the nearest row back
   - File: `.../TimelineRows.cs` (new, static), tests
   - `ToY(int)`, `ToNearestRow(double)`, `Height`. **Test at the midpoint between two rows**, in both directions, because an off-by-one there is the mistake this function exists to make impossible
   - Purpose: Requirement 6.2's snapping, as a pure function
