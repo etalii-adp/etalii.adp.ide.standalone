@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/timeline-diagram/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-31T11:02:14.785Z",
       "trigger": "initial",
+      "approvalId": "approval_1788174134661_bpwyahr3c",
+      "approvalTitle": "Tasks: timeline-diagram"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-31T11:17:32.153Z",
+      "trigger": "approved",
       "approvalId": "approval_1788174134661_bpwyahr3c",
       "approvalTitle": "Tasks: timeline-diagram"
     }
