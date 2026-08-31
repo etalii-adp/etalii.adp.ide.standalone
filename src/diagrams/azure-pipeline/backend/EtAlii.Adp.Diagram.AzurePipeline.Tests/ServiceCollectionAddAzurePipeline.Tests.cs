@@ -140,18 +140,33 @@ public class ServiceCollectionAddAzurePipelineTests
     }
 
     [Fact]
-    public void TheHostCallsItExactlyOnce()
+    public void TheModuleRegistersItselfExactlyOnce()
     {
-        // Arrange: Requirement 14.3 - the host names the module once rather than listing its
-        // seams. A second call would double every singleton registration, and a seam registered
-        // twice is a provider consulted twice.
-        var program = File.ReadAllText(HostProgramPath());
+        // Arrange: Requirement 14.3 - the module is named once rather than listing its seams. A
+        // second call would double every singleton registration, and a seam registered twice is
+        // a provider consulted twice. Since the AddDiagramDefinitions refactor, the host no
+        // longer calls any diagram module by name (see TheHostCallsNoIndividualModule below);
+        // each module's own Diagram.cs supplies a Build delegate instead, invoked once per
+        // discovered definition - so "named once" is now a claim about that file.
+        var diagram = File.ReadAllText(ModuleDiagramPath());
 
         // Act.
-        var calls = program.Split("AddAzurePipeline(").Length - 1;
+        var calls = diagram.Split("AddAzurePipeline(").Length - 1;
 
         // Assert.
         Assert.Equal(1, calls);
+    }
+
+    [Fact]
+    public void TheHostCallsNoIndividualModule()
+    {
+        // Arrange: the other half of Requirement 14.3 under the current architecture - the host
+        // discovers and builds every module generically through AddDiagramDefinitions, so
+        // Program.cs must not call this module by name either.
+        var program = File.ReadAllText(HostProgramPath());
+
+        // Act & assert.
+        Assert.DoesNotContain("AddAzurePipeline(", program, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -195,5 +210,24 @@ public class ServiceCollectionAddAzurePipelineTests
         var program = System.IO.Path.Combine(directory.FullName, "backend", "EtAlii.Adp.Backend.Service", "Program.cs");
         Assert.True(File.Exists(program), $"The host's Program.cs was not found at {program}.");
         return program;
+    }
+
+    /// <summary>
+    /// This module's own <c>Diagram.cs</c>, found from the test binary rather than hard-coded -
+    /// see the remarks on <see cref="HostProgramPath"/>.
+    /// </summary>
+    private static string ModuleDiagramPath()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !string.Equals(directory.Name, "src", StringComparison.OrdinalIgnoreCase))
+        {
+            directory = directory.Parent;
+        }
+
+        Assert.NotNull(directory);
+        var diagram = System.IO.Path.Combine(
+            directory.FullName, "diagrams", "azure-pipeline", "backend", "EtAlii.Adp.Diagram.AzurePipeline", "Diagram.cs");
+        Assert.True(File.Exists(diagram), $"The module's Diagram.cs was not found at {diagram}.");
+        return diagram;
     }
 }
