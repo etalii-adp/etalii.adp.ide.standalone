@@ -102,33 +102,33 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 1.1, 1.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer, model Fable 5 (mandatory - verify before starting) | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, checking exit codes. If clean, merge debt-defshape into develop and retire the worktree | Restrictions: do not merge on a failing gate | Success: both gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4. Record the module-registration shape rule (R5)
+- [x] 4. Record the module-registration shape rule (R5)
   - Worktree: `.claude/worktrees/debt-regshape`
   - _Requirements: 5.1, 5.2, 5.3_
 
-- [-] 4.1 Add the registration-shape rule to tech.md
+- [x] 4.1 Add the registration-shape rule to tech.md
   - File: `.spec-workflow/steering/tech.md`
   - Record: single-file is the default; split into `AddX`/`AddXCommands` only once a concrete consumer needs the module's command handlers registered without its other seams - not a line-count threshold, per design.md's corrected R5.1/R5.3
   - Note that R5.2 requires no code changes: all five implemented modules already match this rule once it is written down correctly
   - _Requirements: 5.1, 5.2, 5.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical writer familiar with this repository's steering docs, model Fable 5 (mandatory - verify before starting) | Task: Add a tech.md entry recording the module-registration split rule exactly as design.md's R5 section states it - single file by default, split only once a real consumer (a test or another feature) needs the module's commands registered independent of its other seams, verified by design.md against wardley-map/mindmap's real call sites and c4/azure-pipeline/ansible-structure's absence of any | Restrictions: do not record a line-count or file-size threshold - design.md explicitly found that is not the real trigger; do not change any module's actual registration code, R5.2 needs none | Success: tech.md states the consumer-driven trigger, not a size-based one. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.2 Correct `AddWardleyMapCommands`'s doc comment about C4
+- [x] 4.2 Correct `AddWardleyMapCommands`'s doc comment about C4
   - File: `src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap/ServiceCollection.AddWardleyMapCommands.cs`
   - Replace "That is how the mindmap and C4 modules are split" with an accurate statement: mindmap splits for the same reason; c4/azure-pipeline/ansible-structure have never needed the narrower surface and stay single-file
   - _Requirements: 5.1_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer, model Fable 5 (mandatory - verify before starting) | Task: In ServiceCollection.AddWardleyMapCommands.cs's XML doc remarks, correct the false claim "That is how the mindmap and C4 modules are split" (C4 does not split - confirmed in design.md by reading ServiceCollection.AddC4.cs) to accurately describe mindmap's split and the other three modules' reason for staying single-file, consistent with the rule recorded in task 4.1 | Restrictions: comment-only change, no code behaviour affected | Success: the doc comment no longer makes a false claim about C4, and matches the tech.md rule from task 4.1. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.3 Gate and merge
+- [x] 4.3 Gate and merge
   - Run both backend gates; merge `.claude/worktrees/debt-regshape` into `develop` and retire it
   - _Requirements: 1.1, 1.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer, model Fable 5 (mandatory - verify before starting) | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, checking exit codes. If clean, merge debt-regshape into develop and retire the worktree | Restrictions: do not merge on a failing gate | Success: both gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5. Record the orphaned-code negative result (R8)
+- [-] 5. Record the orphaned-code negative result (R8)
   - Worktree: `.claude/worktrees/debt-orphan`
   - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
-- [ ] 5.1 Add the scan method and negative result to tech.md's decision log
+- [-] 5.1 Add the scan method and negative result to tech.md's decision log
   - File: `.spec-workflow/steering/tech.md`
   - Record: 710 types scanned, 155 single-file, 137 xUnit test classes and 14 `ServiceCollection*Extension` classes explained as expected, final 4 hand-checked and used - no orphaned type exists as of the measurement commit; the two stale claims (`.bld` artifacts, unused `WardleyTestDiagramDefinitionCatalog`) are withdrawn; the scan is type-level only (R8.4) and re-runnable as written (R8.2)
   - _Requirements: 8.1, 8.2, 8.3, 8.4_
