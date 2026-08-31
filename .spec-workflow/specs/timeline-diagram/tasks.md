@@ -18,7 +18,7 @@
 
 ## Phase A — the corpus
 
-- [ ] 1. Assemble the timeline round-trip corpus
+- [x] 1. Assemble the timeline round-trip corpus
   - File: `src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline.Tests/Fixtures/*.tml` (new), `Fixtures/readme.md` (new)
   - Commit documents covering: periods and moments together; several elements sharing a row; rows out of order and non-contiguous; date-only and date-time values in the same document but never in the same element; connections including two between the same pair; comments in every position; blank lines; both CRLF and LF; a file with no trailing newline; unusual but valid indentation; quoted and unquoted scalars; and **keys this module does not model, at every level**
   - The readme records what each file exists to prove. A file written to match the parser is worthless as a fixture — write the document first, make the parser meet it
