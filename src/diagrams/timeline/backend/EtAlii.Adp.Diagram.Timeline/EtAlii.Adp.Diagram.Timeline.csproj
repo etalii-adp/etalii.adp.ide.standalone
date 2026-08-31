@@ -11,6 +11,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Reading only. See the note beside its PackageVersion in src/Directory.Packages.props. -->
+    <PackageReference Include="YamlDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="EtAlii.Adp.Diagram.Timeline.Tests" />
   </ItemGroup>
 
