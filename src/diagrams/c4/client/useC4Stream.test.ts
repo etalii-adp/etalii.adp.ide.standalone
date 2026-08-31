@@ -62,10 +62,9 @@ async function flush(): Promise<void> {
 const projectId = new Uint8Array(16).fill(1);
 
 /**
- * Characterises the hook's reconnect timing as it is TODAY, before R3's extraction - including
- * the two places it differs from `usePipelineStream`'s more defensive shape. When the shared
- * `useDiagramStream` lands, these two assertions flip to the pipeline shape; that flip being
- * visible here is the point (technical-debt-cleanup R12.2).
+ * Verifies the hook's reconnect timing now that it delegates to `useDiagramStream`: the two
+ * assertions R12 pinned against the pre-extraction drift, flipped under R3.3 to the canonical
+ * shape `usePipelineStream` supplied (technical-debt-cleanup R3.3, R12.2).
  */
 describe("useC4Stream reconnect timing", () => {
   beforeEach(() => {
@@ -77,7 +76,7 @@ describe("useC4Stream reconnect timing", () => {
     vi.useRealTimers();
   });
 
-  it("does not return to loading before retrying a transient error", async () => {
+  it("returns to loading before retrying a transient error, after the shared backoff", async () => {
     // Arrange: a delta arrives (loading ends), then the connection drops with a retryable code.
     open
       .mockImplementationOnce(() => streamOf([noopDelta], new ConnectError("backend restarting", Code.Unavailable)))
@@ -87,10 +86,9 @@ describe("useC4Stream reconnect timing", () => {
     const { result } = renderHook(() => useC4Stream(projectId, ["docs", "model.adp"]));
     await flush();
 
-    // Assert: mid-backoff the hook still claims not-loading over an emptied model - the drift
-    // usePipelineStream does not have (it flips loading back on before the delay).
+    // Assert: mid-backoff the canvas is told it is loading again - reconnecting, not empty.
     expect(open).toHaveBeenCalledTimes(1);
-    expect(result.current.loading).toBe(false);
+    expect(result.current.loading).toBe(true);
     expect(result.current.failed).toBe(false);
 
     // And the retry itself happens only once the delay elapses.
@@ -100,18 +98,24 @@ describe("useC4Stream reconnect timing", () => {
     expect(open).toHaveBeenCalledTimes(2);
   });
 
-  it("reopens a cleanly-ended stream immediately, with no backoff", async () => {
+  it("applies the same backoff to a cleanly-ended stream as to an error", async () => {
     // Arrange: the server closes the stream without an error.
     open
       .mockImplementationOnce(() => streamOf([noopDelta]))
       .mockImplementation(() => pendingStream());
 
-    // Act: drain microtasks only - no timer is advanced at all.
+    // Act: drain microtasks only - no timer is advanced yet.
     renderHook(() => useC4Stream(projectId, ["docs", "model.adp"]));
     await flush();
 
-    // Assert: the second open happened with zero elapsed time - the hot-loop path
-    // usePipelineStream closes by applying its 500ms backoff to a clean end too.
+    // Assert: no immediate reopen - a server that keeps closing the stream cannot hot-loop
+    // this client.
+    expect(open).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+
     expect(open).toHaveBeenCalledTimes(2);
   });
 });
