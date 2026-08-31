@@ -10,7 +10,7 @@ Three decisions carry the design, and the rest follows from them:
 2. **The document is a concrete syntax tree**, spliced line by line, even though ADP owns the format — because a hand-authored file that reformats itself on save is a file nobody can review.
 3. **Identity lives in the document**, because the schema is ours to define. This is the first authored-coordinate type that needs no identity sidecar, and it is worth noticing why.
 
-Requirement 14's claim — that this type needs **no core change** — is tested by the design and holds. One finding is reported rather than acted on: four modules now carry near-identical line-splice machinery, and the reviewer's rule that generic code belongs in the shared projects points squarely at it.
+The Introduction's claim under *What this spec changes in core: nothing* — that this type needs **no core change** — is tested by the design and holds. One finding is reported rather than acted on: four modules now carry near-identical line-splice machinery, and the reviewer's rule that generic code belongs in the shared projects points squarely at it.
 
 ## Steering Document Alignment
 
@@ -162,7 +162,7 @@ The one thing to verify during implementation is that the client's drop handler 
 
 ### Finding: four modules now hold the same CST machinery
 
-Reported rather than acted on, because Requirement 14 says this spec changes nothing in core and that a needed change is a finding.
+Reported rather than acted on, because the Introduction says this spec changes nothing in core and that a change found to be genuinely required is a finding to report rather than a licence to make one quietly.
 
 `C4Document`, `WardleyDocument`, `PipelineDocument` and now `TimelineDocument` each hold "the file as read, as a list of lines, with a dominant line ending, spliceable by range". `PipelineDocument` learned two corrections the hard way — appending to a file with no trailing newline, and removing the last line — that the others have not necessarily learned.
 
@@ -329,7 +329,7 @@ Anything only reproducible through a running app goes to `tests.md` as a step-by
 
 ## Deviations and notes
 
-* **No core change is proposed.** Requirement 14's claim was tested against every seam and holds; the coordinate-space decision is what makes it hold, by keeping the zoom out of the backend.
+* **No core change is proposed.** The Introduction's *What this spec changes in core: nothing* was tested against every seam and holds; the coordinate-space decision is what makes it hold, by keeping the zoom out of the backend.
 * **One finding is reported**: four modules now carry the same CST machinery, and lifting it into `EtAlii.Adp.Diagram` is the shared-project move the reviewer's rule points at. It is a four-module refactor and belongs in its own spec.
 * **One observation for `wardley-map`**: its toolbox-drop compromise was chosen on the belief that the action seam carries no parameters. The commit leg carries a `value`, so that compromise may be liftable.
 * **One judgement flagged for a reviewer**: the single placement command. If the history must distinguish a move from a resize by type rather than by description, splitting it is mechanical.
