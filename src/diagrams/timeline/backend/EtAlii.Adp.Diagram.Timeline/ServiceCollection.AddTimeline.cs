@@ -1,4 +1,7 @@
+using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Diagrams;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace EtAlii.Adp.Diagram.Timeline;
 
@@ -20,6 +23,14 @@ public static class ServiceCollectionAddTimelineExtension
 
         services.AddSingleton<IDiagramDocumentFactory, TimelineDocumentFactory>();
         services.AddSingleton<TimelineElementMapper>();
+
+        // One document per path, shared by every connection viewing it. TryAdd rather than Add
+        // so a test that registers its own store keeps it.
+        services.TryAddSingleton<ITimelineDocumentStore, TimelineDocumentStore>();
+
+        services.AddSingleton<IDiagramSessionFactory, TimelineSessionFactory>();
+
+        services.AddSingleton<ICommandHandler<SetTimelinePlacementCommand>, SetTimelinePlacementCommandHandler>();
 
         return services;
     }

@@ -140,6 +140,7 @@ public sealed class TimelineElementMapper
             End = element.End?.Text ?? "",
             Row = element.Row,
             DateOnly = element.Begin.Precision == TimelinePrecision.Date,
+            Label = element.Label,
         };
 
         // x is the begin when it is readable; an unreadable one lands at the epoch rather than

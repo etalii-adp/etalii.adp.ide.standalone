@@ -29,6 +29,11 @@ message TimelineElementPayload {
   // Whether begin/end were written as whole days. One flag for both because an element never
   // mixes precisions (Requirement 3.2).
   bool date_only = 4;
+
+  // What the element is called. On the payload rather than the core Element because the core
+  // record carries no label of its own - its absence here surfaced as a rename that produced no
+  // wire change at all, which is the bug that put this field in.
+  string label = 5;
 }
 
 // A line from one element to another, meaning whatever the author says it means.

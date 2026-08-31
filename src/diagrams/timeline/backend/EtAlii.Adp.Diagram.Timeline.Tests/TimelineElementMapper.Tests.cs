@@ -77,6 +77,11 @@ public class TimelineElementMapperTests
         Assert.Equal("2026-02-13", payload.End);
         Assert.Equal(0, payload.Row);
         Assert.True(payload.DateOnly);
+
+        // The label travels in the payload because the core Element has none of its own. Its
+        // absence surfaced as a rename that produced no wire change - the session's diff test
+        // found it - so it is pinned here where the payload is inspected.
+        Assert.Equal("Period", payload.Label);
     }
 
     [Fact]
