@@ -195,38 +195,38 @@
 
 ## Phase I — the client
 
-- [ ] 23. Model decode, registration and the stream
+- [x] 23. Model decode, registration and the stream
   - File: `src/diagrams/timeline/client/timelineModel.ts`, `register.ts`, `useTimelineStream.ts`, `timeline.css` (new), tests
   - **Check the element type before decoding the payload.** A foreign element on the shared stream must be skipped, not throw and take the whole delta with it — a sibling module shipped that bug once
   - _Leverage: src/diagrams/wardley-map/client/wardleyModel.ts_
   - _Requirements: 4.7_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Decode timeline payloads and register the client-side diagram type | Restrictions: check the element type before decoding; use the generated TypeScript enum spelling, not the C# one | Success: npm run typecheck and npm test both pass, and a foreign element on the stream is skipped rather than throwing_
 
-- [ ] 24. `TimelineCanvas`: laying the diagram out
+- [x] 24. `TimelineCanvas`: laying the diagram out
   - File: `src/diagrams/timeline/client/TimelineCanvas.tsx` (new), tests
   - Periods as boxes from begin to end, moments as markers, each on its row. Overlaps are drawn as authored. Zoom and pan are a view transform held here and **never sent to the backend**
   - _Requirements: 4.1, 4.3, 4.5, 4.6, 4.7_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Render timeline elements along a time axis on their authored rows | Restrictions: never move an element to avoid an overlap; never send viewport state to the backend | Success: the same document renders identically twice, and an overlapping pair is drawn overlapping_
 
-- [ ] 25. `TimelineRuler`: chrome fixed to the view
+- [x] 25. `TimelineRuler`: chrome fixed to the view
   - File: `src/diagrams/timeline/client/TimelineRuler.tsx` (new), tests
   - Fixed to the bottom of the view, labels scrolling with the content, on round boundaries of an interval chosen for the visible span. **The ladder is a pure function** — span and width in, unit and step out — so the requirement the spec itself flags as most likely to be got wrong is testable without a browser
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Draw a view-fixed time ruler whose label interval suits the visible range | Restrictions: the ruler lives in this module, never in the shell; labels sit on round boundaries, not viewport offsets; it must be visually subordinate to the diagram | Success: the interval function is tested across the whole zoom range rather than at one sample, and labels enter and leave as the view moves_
 
-- [ ] 26. Dragging: preview, snap, live connections, one command
+- [x] 26. Dragging: preview, snap, live connections, one command
   - File: `TimelineCanvas.tsx` (continued), tests
   - A preview placement follows the pointer; the row snaps to the nearest as the pointer crosses a midpoint; **the element's connections are redrawn as it moves**; the times and row it would land on are visible before release; `Escape` or a release outside abandons it with nothing dispatched; release sends one `MoveElement` carrying the placement
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 8.6_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Implement dragging with a live preview, row snapping and connections that follow during the gesture | Restrictions: one command on release, never one per pointer move; a cancelled drag dispatches nothing; do no conversion arithmetic outside the shared functions | Success: a horizontal drag preserves duration, a vertical drag lands on a row, connections move during the drag, and Escape leaves the document untouched_
 
-- [ ] 27. Adorners: resizing an edge
+- [x] 27. Adorners: resizing an edge
   - File: `src/diagrams/timeline/client/TimelineAdorners.tsx` (new), tests
   - Left and right adorners on a selected element; left edits begin, right edits end; the edge **stops at the other rather than crossing it**; a moment offers no right adorner; the landing time is visible before release; read-only offers none
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.7, 7.8_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Implement resize adorners that edit begin and end and refuse to invert the element | Restrictions: a moment has no right adorner; no adorners in read-only mode; the clamp here is in addition to the handler's, never instead of it | Success: each adorner edits one value, the boundary refusal is tested, and a moment offers only a left adorner_
 
-- [ ] 28. Connections: drawing them, and drawing them well
+- [x] 28. Connections: drawing them, and drawing them well
   - File: `TimelineCanvas.tsx` (continued), tests
   - Anchors at the mid-points of left and right sides, curves as horizontal cubic beziers — **by importing `sideAnchorOf` and `horizontalBezierPath`, not by reimplementing either**. Dragging from one side anchor to another creates a connection; a gesture ending anywhere invalid cancels with a reason
   - _Leverage: src/client/src/canvas/connectors.ts_
