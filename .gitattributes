@@ -1,22 +1,70 @@
-# Diagram test fixtures are compared byte for byte.
+# Line endings.
 #
-# `mindmap-diagram` Requirement 3.3 requires that saving a map ADP did not change produces no
-# diff, which its tests check by comparing the serialized bytes against the fixture on disk.
-# With core.autocrlf on - the default on Windows, and set in this repository - git would store
-# these files with LF and check them out with CRLF, so the same fixture would have different
-# bytes on a Windows machine and a Linux one, and the test would be measuring git's line-ending
-# conversion rather than the serializer.
+# The policy lives here rather than in anyone's `core.autocrlf`, because a setting in a
+# developer's own git config is not something this repository can rely on. Git for Windows'
+# installer sets `core.autocrlf=true` by default, and that default is the only thing that has
+# been holding the line so far - on a machine where it is `false` or `input`, a CRLF file
+# committed from Windows lands in the index *as CRLF*, and from then on every diff of that file
+# is a whole-file diff for everybody else. Measured here rather than assumed:
 #
-# `-text` tells git to leave the bytes exactly as committed on every platform. Replace a
-# fixture only by committing what the authoring tool actually wrote.
-*.mm -text
+#     core.autocrlf=true   + no attribute   ->  CRLF working file lands in the index as LF
+#     core.autocrlf=false  + no attribute   ->  CRLF working file lands in the index as CRLF   <- the hazard
+#     core.autocrlf=false  + text=auto      ->  CRLF working file lands in the index as LF
+#
+# An attribute overrides `core.autocrlf` entirely, so the line below fixes the outcome for every
+# machine, clone and worktree, whatever anyone's git happens to be configured to do.
+#
+# `text=auto` - git decides text from content and leaves anything binary alone, so an image or an
+# archive added later needs no rule of its own.
+#
+# `eol=crlf` - checked out with CRLF, which is what `src/.editorconfig` already asks for with
+# `end_of_line = crlf` under `[*]`. These two files must agree: an editor honouring one and git
+# honouring the other is how a repository ends up rewriting whole files on alternate saves.
+# Changing the house style later means changing both, together, in one commit.
+#
+# What this does NOT do is silence `warning: LF will be replaced by CRLF`. That warning fires when
+# a file on disk has LF and would be checked out as CRLF, and it is worth keeping: the content is
+# never at risk - it is LF in the index either way - but the warning is how you find out that some
+# tool wrote against the house style. Writing CRLF, or letting an editor that reads `.editorconfig`
+# do it, is what makes it stop.
+*   text=auto eol=crlf
 
-# C4 model documents are compared byte for byte for the same reason (c4-diagrams Requirement 3.1).
-*.dsl -text
+# Shell scripts are the one exception, and not a stylistic one: `#!/bin/bash\r` is not a valid
+# interpreter path, so a CRLF shell script fails to run at all on Linux and in WSL, with a
+# "bad interpreter" error that names a line ending nobody can see.
+*.sh    text eol=lf
 
-# Azure Pipelines documents are compared byte for byte too (azure-pipeline-diagram
-# Requirement 3.1), but `.yml` is far too common an extension to mark repository-wide - it
-# would catch every workflow, compose file and configuration document in the tree. The rule
-# is therefore scoped to the fixtures folder, which is the only place the bytes are the
-# subject of a test rather than the content.
+# ---------------------------------------------------------------------------------------------
+# Documents whose *bytes* are the test subject rather than its input.
+#
+# Each diagram module's round-trip requirement says a document ADP did not change comes back
+# byte-identical, and its tests check that by comparing what the writer produced against the file
+# on disk. With line-ending conversion in play those tests measure git rather than the writer -
+# and a `crlf-line-endings.*` / `lf-line-endings.*` pair becomes the same file, which is the one
+# thing that pair exists to disprove. A `no-trailing-newline.*` fixture is equally at the mercy of
+# any tool that helpfully adds one.
+#
+# These are listed by extension, not by directory. That is deliberate, and a directory rule was
+# tried first and withdrawn: `.../Tests/Fixtures/** -text` also catches the readmes, the recorded
+# Structurizr verdicts and the exported diagrams that live beside the fixtures, none of which are
+# byte-compared, and marking those `-text` would freeze CRLF into the index for files where the
+# house style should simply apply. The guarantee belongs to the format - a `.dsl` is byte-sensitive
+# because of what it is, not because of where it sits.
+#
+# **Adding a diagram module?** If its documents are byte-compared, add its extension here. That is
+# the whole of the ceremony, and this comment is here so the reasoning does not have to be worked
+# out a sixth time - mindmap, c4, azure-pipeline, wardley-map and ansible-structure each
+# rediscovered it independently.
+*.mm    -text
+*.dsl   -text
+
+# `.yml` is deliberately NOT marked repo-wide, however byte-sensitive the Azure Pipelines module's
+# fixtures are: it is far too common an extension, and a blanket rule would catch every workflow,
+# compose file and configuration document in the tree. Scoped to the one folder where the bytes are
+# the subject rather than the content.
 src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline.Tests/Fixtures/** -text
+
+# `.owm` and the ansible-structure fixture tree are covered by `.gitattributes` files inside those
+# modules rather than from here. Both are scoped more narrowly than an extension rule would be -
+# `.owm` is byte-exact under the wardley-map tests and under `examples/example 2`, but not under
+# `examples/example 1` - and both specs are still in flight. Left where their authors put them.
