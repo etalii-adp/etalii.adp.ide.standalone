@@ -105,14 +105,14 @@
 
 ## Phase E — the open diagram
 
-- [ ] 11. `TimelineDocumentStore`
+- [x] 11. `TimelineDocumentStore`
   - File: `.../TimelineDocumentStore.cs`, `ITimelineDocumentStore.cs` (new), tests
   - One parsed document per path; `Forget` on file change so a stale parse is never served
   - _Leverage: src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline/PipelineDocumentStore.cs_
   - _Requirements: 1.5, 2.4_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Cache one parsed document per path and invalidate it when the file changes | Restrictions: never serve a parse older than the file; never write from the store | Success: a change on disk is reflected on the next read, and a test proves the cache is dropped rather than merely refreshed_
 
-- [ ] 12. `TimelineSession` and `TimelineSessionFactory`
+- [x] 12. `TimelineSession` and `TimelineSessionFactory`
   - File: `.../TimelineSession.cs`, `TimelineSessionFactory.cs` (new), tests
   - Baseline on open, deltas on change. **`MoveElementToAsync` is implemented; `MoveElementAsync` refuses** — a timeline element has no parent to be moved under, and saying so is better than appearing to support a gesture that means nothing here
   - Purpose: Requirements 6.7 and 1.5
