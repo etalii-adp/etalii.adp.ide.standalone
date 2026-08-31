@@ -84,14 +84,14 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - Worktree: `.claude/worktrees/debt-defshape`
   - _Requirements: 6.1, 6.2, 6.3_
 
-- [-] 3.1 Give `azure-pipeline` a named `DiagramDefinition` property
+- [x] 3.1 Give `azure-pipeline` a named `DiagramDefinition` property
   - File: `src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline/Diagram.cs`, `src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline.Tests/ServiceCollectionAddAzurePipeline.Tests.cs`
   - Add `public static DiagramDefinition Pipeline { get; }`, change `Definitions` to `[Pipeline]`, update the one indexing call site (`Diagram.Definitions[0].Origin` in `TheSessionFactory_AnswersForThisModulesOrigin`) to `Diagram.Pipeline.Origin`
   - Purpose: satisfy R6.2/R6.3 - this is the one outlier among the five implemented modules
   - _Requirements: 6.2, 6.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer, model Fable 5 (mandatory - verify before starting) | Task: In azure-pipeline's Diagram.cs, add a named `Pipeline` property for its one DiagramDefinition (matching mindmap's type-only naming precedent, not wardley/ansible's vendor+type naming, to avoid stuttering against the AzurePipeline namespace), point `Definitions` at `[Pipeline]`, and update the one array-indexing test call site in ServiceCollectionAddAzurePipelineTests.cs to reference `Diagram.Pipeline.Origin` instead of `Diagram.Definitions[0].Origin`, per design.md's R6 section | Restrictions: do not change the DiagramDefinition's Origin, Title, Description, Extension, SharedExtension or Build values - only how it is exposed | Success: Diagram.Pipeline exists and is used by both Diagram.cs's own Definitions array and the test; all azure-pipeline tests pass unchanged in behaviour. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.2 Record the two legitimate declaration shapes in tech.md
+- [-] 3.2 Record the two legitimate declaration shapes in tech.md
   - File: `.spec-workflow/steering/tech.md`
   - Document "stub" (inline array literal, no Build delegate, no named property) and "implemented" (named property/properties, each with a Build delegate) shapes, the trigger for moving between them (gaining a Build delegate), and that `DocumentExtension`'s absence for folder-subject types (ansible-structure) is not a third shape or a gap
   - _Requirements: 6.1_
