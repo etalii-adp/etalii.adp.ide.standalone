@@ -122,26 +122,26 @@
 
 ## Phase F — commands
 
-- [ ] 13. Add and remove an element
+- [x] 13. Add and remove an element
   - File: `.../Commands/AddTimelineElementCommand.cs`, `RemoveTimelineElementCommand.cs` (+ handlers) (new), tests
   - Add takes a begin, an optional end and a row. Remove takes the element and its connections together, in one command with one inverse, and reports how many connections it will take before it runs
   - _Requirements: 2.5, 11.1_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement add and remove as commands with inverses, where remove carries the element's connections | Restrictions: handlers must be re-runnable because undo and redo re-dispatch them; never write outside the document | Success: add-then-undo and remove-then-undo each leave the file byte-identical, and the connection count is reported before the removal_
 
-- [ ] 14. Rename an element
+- [x] 14. Rename an element
   - File: `.../Commands/RenameTimelineElementCommand.cs` (+ handler) (new), tests
   - Rewrites the label line and nothing else. **The id does not change**, so the selection, the history and every pushed element id survive a rename — the benefit the design attributes to owning the schema
   - _Requirements: 11.1_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement rename as a single-line edit that leaves identity untouched | Restrictions: never rewrite the id; never touch a connection because a label changed | Success: a rename changes one line, the selection survives it, and one undo restores the file exactly_
 
-- [ ] 15. `SetTimelinePlacementCommand`: the one command behind drag, resize and grid
+- [x] 15. `SetTimelinePlacementCommand`: the one command behind drag, resize and grid
   - File: `.../Commands/SetTimelinePlacementCommand.cs` (+ handler) (new), tests
   - Carries begin, end and row; its inverse carries the previous three. **Clamps so end cannot precede begin** — the second of the two guards behind Requirement 3.4, and the one that holds regardless of which client sent the request. Carries a short description so the history can say what the gesture was
   - Purpose: Requirements 6.4, 7.6 and 10.3 with one handler rather than five
   - _Requirements: 3.4, 6.1, 6.2, 6.4, 7.2, 7.3, 7.4, 7.6, 10.3, 11.1_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement one placement command serving drag, resize and grid edits, clamping so end never precedes begin | Restrictions: the clamp must live in the handler and not only in the client; one command per gesture, never one per pointer move | Success: a drag preserves duration, a resize moves one edge only, an inverting value is refused with a reason, and each produces exactly one history entry_
 
-- [ ] 16. Connect, disconnect and relabel a connection
+- [x] 16. Connect, disconnect and relabel a connection
   - File: `.../Commands/ConnectTimelineElementsCommand.cs`, `DisconnectTimelineElementsCommand.cs`, `RelabelTimelineConnectionCommand.cs` (+ handlers) (new), tests
   - A self-connection is refused with a reason; a second connection between an already-connected pair is **permitted**, because the notation carries a label per connection
   - _Requirements: 8.4, 8.7, 8.8, 11.1, 11.4_
