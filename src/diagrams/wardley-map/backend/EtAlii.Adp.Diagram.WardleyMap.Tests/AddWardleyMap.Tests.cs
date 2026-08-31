@@ -16,9 +16,12 @@ public sealed class AddWardleyMapTests : IDisposable
     /// <summary>
     /// The core services a host provides, and then the module. AddHierarchy is here because the
     /// source resolver takes core's DiagramFileRouter - a module depending on a core service is
-    /// the direction that is allowed; the reverse is what Requirement 12.4 forbids.
+    /// the direction that is allowed; the reverse is what Requirement 12.4 forbids. The catalog
+    /// is registered before AddCommands so its TryAddSingleton keeps this one rather than
+    /// falling back to a factory that needs a definitions list nothing here supplies.
     /// </summary>
     private readonly ServiceProvider _services = new ServiceCollection()
+        .AddSingleton<IDiagramDefinitionCatalog>(new WardleyTestDiagramDefinitionCatalog(Diagram.WardleyMap))
         .AddHierarchy()
         .AddDiagrams()
         .AddCommands()
@@ -94,6 +97,7 @@ public sealed class AddWardleyMapTests : IDisposable
     {
         // Act. TryAdd rather than Add on the store, so a second call is harmless.
         using var twice = new ServiceCollection()
+            .AddSingleton<IDiagramDefinitionCatalog>(new WardleyTestDiagramDefinitionCatalog(Diagram.WardleyMap))
             .AddHierarchy()
             .AddDiagrams()
             .AddCommands()

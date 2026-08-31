@@ -128,4 +128,38 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
             ["c4/code", "c4/component", "c4/container", "c4/context", "c4/deployment", "c4/dynamic", "c4/system-landscape"],
             c4);
     }
+
+    [Fact]
+    public void AfterStartup_EveryDeployedDefinitionCarriesADescription()
+    {
+        // Arrange.
+        // Every discovered type describes itself, because the Add dialog shows that description
+        // when a user selects the type. A module shipping without one leaves a blank panel,
+        // which is worse than no panel at all. Checked here, against the real deployed set,
+        // because this is the one place that sees every module without core naming any of them.
+        using var _ = _factory.CreateClient();
+
+        // Act.
+        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        var undescribed = catalog.All.Where(definition => string.IsNullOrWhiteSpace(definition.Description)).ToList();
+
+        // Assert.
+        Assert.Empty(undescribed);
+    }
+
+    [Fact]
+    public void AfterStartup_NoDeployedDescriptionMerelyEchoesItsTitle()
+    {
+        // Arrange: a description that merely repeats the title tells a user nothing new.
+        using var _ = _factory.CreateClient();
+
+        // Act.
+        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+        var echoes = catalog.All
+            .Where(definition => string.Equals(definition.Description.Trim(), definition.Title.Trim(), StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        // Assert.
+        Assert.Empty(echoes);
+    }
 }
