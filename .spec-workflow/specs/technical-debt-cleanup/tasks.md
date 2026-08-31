@@ -6,7 +6,7 @@
 
 Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` (from `src/backend/`, exit code checked) reporting `failed: 0`, and `dotnet format style --verify-no-changes --severity info` exiting zero. Groups 6 and 7 touch the client and additionally gate on `npm test` and `npm run typecheck` (from `src/client/`) exiting zero. Before any group's worktree is created, check the dashboard's active specs against the module(s) that group touches, per R11.3 - this is a manual step in each group's first task, not automated.
 
-- [-] 1. Lift the last two nested types and correct tech.md's stale count (R9, R10)
+- [x] 1. Lift the last two nested types and correct tech.md's stale count (R9, R10)
   - Worktree: `.claude/worktrees/debt-nested`
   - _Requirements: 9.1, 9.2, 9.3, 10.1, 10.2, 10.3_
 
@@ -34,7 +34,7 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 10.1, 10.2_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical writer familiar with this repository's steering docs, model Fable 5 (mandatory - verify before starting) | Task: In .spec-workflow/steering/tech.md's *Testing & quality* section, replace the sentence "The rule about nested types under *Backend* already notes roughly a hundred pre-existing offenders; other rules will have their own." with a corrected statement reflecting zero remaining nested types (confirm 1.1 and 1.2 have landed first) and rewritten from "a backlog is being worked off" to "this rule holds; keep it holding", per design.md's R10 section | Restrictions: do not edit any other paragraph of tech.md, do not touch the nested-type rule itself under *Backend* | Leverage: design.md's R10 section for the exact reframing intent | Success: the sentence names zero, not "roughly a hundred", and reads as a holding statement rather than a backlog one. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 1.4 Verify zero nested types remain and run the gate
+- [x] 1.4 Verify zero nested types remain and run the gate
   - Re-run the nested-type scan method R9.3/R8.2 specify (grep every type declaration whose enclosing braces sit inside another type declaration) across `src/backend` and `src/diagrams`, confirm the count is zero
   - Run `dotnet test --solution EtAlii.Adp.slnx` from `src/backend/` (exit code checked - `failed: 0` and no `Zero tests ran`) and `dotnet format style --verify-no-changes --severity info` (exits zero)
   - Merge `.claude/worktrees/debt-nested` into `develop`, then retire the worktree per CLAUDE.md
