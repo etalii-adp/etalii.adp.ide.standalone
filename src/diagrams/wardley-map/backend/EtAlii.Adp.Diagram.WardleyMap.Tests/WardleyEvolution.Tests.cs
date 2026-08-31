@@ -101,7 +101,7 @@ public class WardleyEvolutionTests
 
             // Assert.
             Assert.True(
-                maturity >= stage.Start && (maturity < stage.End || stage.End == 1d),
+                maturity >= stage.Start && (maturity < stage.End || Math.Abs(stage.End - 1d) < 0.00001f),
                 $"{maturity} was read as {stage.Label}, whose range is {stage.Start}..{stage.End}.");
         }
     }
