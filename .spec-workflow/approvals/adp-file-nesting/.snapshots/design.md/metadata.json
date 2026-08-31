@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/adp-file-nesting/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-31T10:59:26.652Z",
       "trigger": "initial",
+      "approvalId": "approval_1788173966622_oqmtf53i5",
+      "approvalTitle": "adp-file-nesting — design document"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-31T12:00:42.438Z",
+      "trigger": "revision_requested",
       "approvalId": "approval_1788173966622_oqmtf53i5",
       "approvalTitle": "adp-file-nesting — design document"
     }
