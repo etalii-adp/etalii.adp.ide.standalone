@@ -8,7 +8,7 @@ This generalizes `adp-diagram-ide` Requirement 2's single "workspace folder chos
 
 ## Alignment with Product Vision
 
-This implements the "Minimal footprint, incremental value" and "Value from day one" principles from [product.md](../../steering/product.md): even in the local, standalone scenario, gating access behind login and letting a user pick from multiple project folders keeps the door open for the hosted, multi-team scenario described in product.md's Future Vision, without requiring it up front. It also follows [tech.md](../../steering/tech.md)'s local-only auth mode (no external identity provider required for the F5 scenario) and reuses the authentication mechanism defined by the [`grpc-core-communication`](../grpc-core-communication/requirements.md) spec (Requirement 5).
+This implements the "Minimal footprint, incremental value" and "Value from day one" principles from [product.md](../../steering/product.md): even in the local, standalone scenario, gating access behind login and letting a user pick from multiple project folders keeps the door open for the hosted, multi-team scenario described in product.md's Future Vision, without requiring it up front. It also follows [tech.md](../../steering/tech.md)'s local-only auth mode (no external identity provider required for the F5 scenario) and reuses the authentication mechanism defined by the [`grpc-core-communication`](../../archive/specs/grpc-core-communication/requirements.md) spec (Requirement 5).
 
 ## Requirements
 

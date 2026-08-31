@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/technical-debt-cleanup/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-31T10:07:54.712Z",
       "trigger": "initial",
+      "approvalId": "approval_1788170874489_wcsydauag",
+      "approvalTitle": "technical-debt-cleanup — Requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-08-31T10:35:33.973Z",
+      "trigger": "approved",
       "approvalId": "approval_1788170874489_wcsydauag",
       "approvalTitle": "technical-debt-cleanup — Requirements"
     }

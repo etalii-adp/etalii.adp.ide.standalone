@@ -9,7 +9,7 @@ Per [`tech.md`](../../steering/tech.md)'s "Testing & quality" section, Mindmap (
 **Dependencies.** This spec does not redefine what it builds on:
 
 * [`grpc-core-communication-specification`](../grpc-core-communication-specification/requirements.md) — the `Path`, `ViewUpdate`, `Element` and `Delta` (`add`/`remove`/`group`/`ungroup`) contract this module speaks, and its `Any` payload extension point.
-* [`grpc-core-communication`](../grpc-core-communication/requirements.md) — the runtime behaviour of that contract (streaming, reconciliation, reconnect).
+* [`grpc-core-communication`](../../archive/specs/grpc-core-communication/requirements.md) — the runtime behaviour of that contract (streaming, reconciliation, reconnect).
 * [`adp-diagram-ide`](../../archive/specs/adp-diagram-ide/requirements.md) — the workspace shell, the pannable/zoomable canvas, virtualization, read-only mode.
 * [`add-diagram-action`](../add-diagram-action/requirements.md) — the **Add** action, reflection-based discovery of `Diagram.Definition`, and the grouped choice dialog. `EtAlii.Adp.Diagram.Mindmap` already publishes `new DiagramOrigin("freeplane", "mindmap")` and is already discovered.
 * [`create-diagram-file`](../create-diagram-file/requirements.md) — the `.adp` file, its MIME-type first line, the name field, and the watcher-driven appearance of the new file. Its Requirement 3.5 deliberately left "a reference to a sibling file in the type's native format" to a later spec; **this is that spec, for mindmaps**.

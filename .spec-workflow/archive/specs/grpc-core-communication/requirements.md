@@ -2,13 +2,13 @@
 
 ## Introduction
 
-This spec covers the **behavior** of the core gRPC communication layer of EtAlii.Adp: what the backend and viewing applications (a browser-based web client, or a locally hosted/desktop client) actually do with the core gRPC contract — connection handling, view-state tracking, delta streaming logic, authentication enforcement, and reconnection/reconciliation. The wire contract itself (the `.proto` message and service definitions this behavior is built on) is covered separately by the [`grpc-core-communication-specification`](../grpc-core-communication-specification/requirements.md) spec, which this spec depends on.
+This spec covers the **behavior** of the core gRPC communication layer of EtAlii.Adp: what the backend and viewing applications (a browser-based web client, or a locally hosted/desktop client) actually do with the core gRPC contract — connection handling, view-state tracking, delta streaming logic, authentication enforcement, and reconnection/reconciliation. The wire contract itself (the `.proto` message and service definitions this behavior is built on) is covered separately by the [`grpc-core-communication-specification`](../../../specs/grpc-core-communication-specification/requirements.md) spec, which this spec depends on.
 
 It deliberately excludes diagram-type-specific business logic and the canvas/editing UI itself. Diagram-type-specific behavior is owned by their diagram modules but must conform to the core contract and behavior defined here.
 
 ## Alignment with Product Vision
 
-This capability directly implements the "Live, pushed updates" and "Files are the source of truth" principles from [product.md](../../steering/product.md): the backend remains the sole owner of file state, and this layer is what lets any viewing application stay live without ever touching the filesystem itself. It also implements the "Frontend-backend synchronization" section in [tech.md](../../steering/tech.md).
+This capability directly implements the "Live, pushed updates" and "Files are the source of truth" principles from [product.md](../../../steering/product.md): the backend remains the sole owner of file state, and this layer is what lets any viewing application stay live without ever touching the filesystem itself. It also implements the "Frontend-backend synchronization" section in [tech.md](../../../steering/tech.md).
 
 ## Requirements
 
