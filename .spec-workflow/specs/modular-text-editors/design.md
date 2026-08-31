@@ -165,6 +165,10 @@ Direct analogue of `IDiagramDefinitionCatalog` - `All` exposed as a service so a
 - `DiagramService.Open` against a real host: a `.dsl` with registrations opens the diagram (Requirement 5.1, regression-critical per the `courier.dsl` re-measurement above); a `.md` opens Markdown; an unclaimed extension opens `plain`; "Open as text" on the `.dsl` opens a second, independent tab whose save is visible to the diagram as an external change and vice versa (Requirement 5.3).
 - `OpenAsTextContextActionProvider`: offered only when `DiagramFileRouter` resolves the target, never otherwise (Requirement 5.4 - a file no diagram type claims opens its editor directly, no action needed to reach it).
 
+### Shared test material with `adp-file-nesting`
+
+The integration tests above exercise `src/diagrams/c4/examples/reference/architecture/courier.dsl` and the six registrations that point at it. `adp-file-nesting`'s own design (read before writing this one, per the brief) renames five of those six - `landscape.adp`, `containers.adp`, `api-components.adp`, `parcel-scanned.adp` and `production.adp` become `courier.<qualifier>.adp` - and adds its own `ExampleRegistrationTests` over the same folder. This design's resolution logic does not care what a registration is named, since it routes by the body extension `DiagramFileRouter` already resolves; only this design's **test fixtures** reference these files, and they must be written against whichever names are current in `develop` when this spec is implemented, not against the names listed in this document. No landing order is assumed between the two specs - whichever implements second inherits the other's current filenames rather than the ones its own design happened to be written against.
+
 ### End-to-End / Client Testing
 
 - The workspace tab strip hosting a text editor tab exactly as it hosts a diagram tab (reuses `diagram-workspace-tabs`'s existing test harness).
