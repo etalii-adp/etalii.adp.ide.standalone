@@ -139,11 +139,11 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 1.1, 1.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer, model Fable 5 (mandatory - verify before starting) | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, checking exit codes. If clean, merge debt-orphan into develop and retire the worktree | Restrictions: do not merge on a failing gate | Success: both gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 6. Characterise the three untested client stream hooks (R12) - must land before group 7
+- [x] 6. Characterise the three untested client stream hooks (R12) - must land before group 7
   - Worktree: `.claude/worktrees/debt-hooktests`
   - _Requirements: 12.1, 12.2, 12.3_
 
-- [-] 6.1 Write `useC4Stream.test.ts`
+- [x] 6.1 Write `useC4Stream.test.ts`
   - File: `src/diagrams/c4/client/useC4Stream.test.ts` (new)
   - Follow `useMindmapStream.test.ts`'s harness (mocked `createClient`, mocked `useAuth`/`useContextConnection`, `renderHook`/`waitFor`, a controllable fake async-iterable stream, `vi.useFakeTimers()`), not `useAnsibleStream.test.ts`'s shallow `toString()` pattern
   - Characterise current behaviour on both axes R3.3 found: `loading` is NOT reset to `true` before a reconnect retry after a transient error; a clean stream end loops back with NO backoff (differs from `usePipelineStream`)
@@ -152,30 +152,30 @@ Every group ends in its own gate task: `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 12.1, 12.2_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend test engineer with React/vitest expertise, model Fable 5 (mandatory - verify before starting) | Task: Write src/diagrams/c4/client/useC4Stream.test.ts characterising useC4Stream's current reconnect behaviour, using useMindmapStream.test.ts's mock harness as the template (mocked createClient/useAuth/useContextConnection, renderHook/waitFor, a controllable fake stream, fake timers for the 500ms delay). Specifically assert: after a transient error, `loading` does NOT return to true before the retry (current behaviour, to be changed by R3 later); after a clean stream end with no thrown error, the hook reopens with no backoff delay (current behaviour, also to change under R3) | Restrictions: do not copy useAnsibleStream.test.ts's toString()-based pattern - it cannot observe timing; do not modify useC4Stream.ts itself, this task only characterises it | Leverage: useMindmapStream.test.ts's exact mocking approach | Success: the test passes against today's useC4Stream.ts and would fail against usePipelineStream's reconnect shape, proving it actually distinguishes the two behaviours. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 6.2 Write `useWardleyStream.test.ts`
+- [x] 6.2 Write `useWardleyStream.test.ts`
   - File: `src/diagrams/wardley-map/client/useWardleyStream.test.ts` (new)
   - Same harness and same two behavioural assertions as 6.1, plus: no `reportView` is exposed (mirroring `useAnsibleStream.test.ts`'s "exposes no way to move" surface check, applied to this hook's own deliberate omission)
   - _Leverage: useMindmapStream.test.ts, useAnsibleStream.test.ts (for the surface-omission assertion style only)_
   - _Requirements: 12.1, 12.2_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend test engineer with React/vitest expertise, model Fable 5 (mandatory - verify before starting) | Task: Write src/diagrams/wardley-map/client/useWardleyStream.test.ts characterising current reconnect behaviour (same two assertions as useC4Stream's test: no loading-reset before retry, no backoff on clean stream end), using useMindmapStream.test.ts's harness, plus one surface assertion (in useAnsibleStream.test.ts's toString()-based style) confirming useWardleyStream exposes no reportView, since its own doc comment says this is deliberate | Restrictions: do not modify useWardleyStream.ts | Leverage: useMindmapStream.test.ts's harness; useAnsibleStream.test.ts's surface-check style for the reportView assertion only | Success: the test passes against today's useWardleyStream.ts. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 6.3 Write `usePipelineStream.test.ts`
+- [x] 6.3 Write `usePipelineStream.test.ts`
   - File: `src/diagrams/azure-pipeline/client/usePipelineStream.test.ts` (new)
   - Same harness; characterise the OPPOSITE of 6.1/6.2's two assertions, since this hook already has the shape R3 will make canonical: `loading` DOES reset to `true` before a retry, and a clean stream end DOES apply the same backoff as a thrown error
   - _Leverage: useMindmapStream.test.ts_
   - _Requirements: 12.1, 12.2_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend test engineer with React/vitest expertise, model Fable 5 (mandatory - verify before starting) | Task: Write src/diagrams/azure-pipeline/client/usePipelineStream.test.ts characterising current reconnect behaviour, using useMindmapStream.test.ts's harness. Unlike useC4Stream/useWardleyStream's tests, assert the OPPOSITE here: loading DOES reset to true before a retry after either a transient error or a clean stream end, and both paths apply the same backoff delay - this hook already has the shape design.md's R3 section chooses as canonical | Restrictions: do not modify usePipelineStream.ts | Leverage: useMindmapStream.test.ts's harness | Success: the test passes against today's usePipelineStream.ts and documents, in test form, the behaviour the other four hooks will be made to match under R3. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 6.4 Gate and merge
+- [x] 6.4 Gate and merge
   - Run `npm test` and `npm run typecheck` from `src/client/`; merge `.claude/worktrees/debt-hooktests` into `develop` and retire it. Report the three added test files under R1.2 as an addition, not a consolidation
   - _Requirements: 1.2, 1.3, 12.3_
   - _Prompt: Implement the task for spec technical-debt-cleanup, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer, model Fable 5 (mandatory - verify before starting) | Task: Run npm test and npm run typecheck from src/client, checking exit codes. If clean, merge debt-hooktests into develop and retire the worktree, and note in the merge commit message that three test files were added (R12.3), not consolidated, per R1.2 | Restrictions: do not merge on a failing gate | Success: both client gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7. Extract the shared diagram stream hook (R3) - depends on group 6
+- [-] 7. Extract the shared diagram stream hook (R3) - depends on group 6
   - Worktree: `.claude/worktrees/debt-stream`
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 7.1 Create `useDiagramStream.ts`
+- [-] 7.1 Create `useDiagramStream.ts`
   - File: `src/client/src/diagrams/useDiagramStream.ts` (new)
   - Generic in the model type, per design.md's Data Models section: owns `createClient`, the `AbortController`/`active` lifecycle, the open/read loop, the permanent-vs-transient error split, the `loading`/`failed`/`model` states, and a named `RECONNECT_DELAY_MS = 500` constant
   - Adopts `usePipelineStream`'s reconnect shape as canonical (loading resets before a retry; a clean stream end applies the same backoff as a thrown error) - the two behaviour changes R3.3 authorises and R12's tests (group 6) now characterise
