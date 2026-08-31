@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/timeline-diagram/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-31T09:35:42.407Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788168942199_6rhir0hra",
+      "approvalTitle": "Requirements: timeline-diagram"
+    }
+  ]
+}
