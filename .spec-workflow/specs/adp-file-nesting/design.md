@@ -188,13 +188,19 @@ Seven registrations sit as flat siblings, six of them relating to one body:
 | `api-components.adp` | `body:` → `architecture/courier.dsl` | `courier.dsl` |
 | `parcel-scanned.adp` | `body:` → `architecture/courier.dsl` | `courier.dsl` |
 | `production.adp` | `body:` → `architecture/courier.dsl` | `courier.dsl` |
-| `code-level.adp` | type `c4/code`, no definition | stays where it sits |
+| `code-level.adp` | type `c4/code` — a **known** type with no `Extension` | stays where it sits |
 
 This is exactly the shape Requirement 1 exists for, already on disk, and it shows the problem plainly: nothing in that listing says the six belong to `courier.dsl` rather than to each other.
 
 **The rename**: `courier.adp` keeps its name — it is the unqualified form and therefore the default (open question 3, and Requirement 7.2's stable order). The five header-pointed ones become `courier.landscape.adp`, `courier.containers.adp`, `courier.api-components.adp`, `courier.parcel-scanned.adp` and `courier.production.adp`. Their `body:` headers **stay**, because they remain correct and because Requirement 2.3 makes the header authoritative over derivation — this is precisely the case where the header is doing real work, and removing it in favour of a derivation would be replacing a fact with an inference.
 
-**`code-level.adp` is left exactly as it is**, and that is a finding rather than an omission. Its type is `c4/code`, which is specified but not implemented, so it resolves to no definition and therefore no body. Requirement 8.4 says that behaviour must not change and that an unknown type must not become an error. The reference set therefore already contains the 8.4 case in the wild, and the rename must demonstrably not disturb it. `industrial-plant` is the same shape and takes the same treatment.
+**`code-level.adp` is left exactly as it is**, and understanding *why* it has no body matters more than the fact that it has none.
+
+An earlier draft of this design called it an unknown type and cited Requirement 8.4. That was wrong. `c4/code` **is** in the catalog — declared in the implemented c4 module's own `Definitions` array, as a three-argument definition with no `Extension` and no `Build`. So `DefinitionOf` finds it; `HasDocumentSibling` is `Extension.Length > 0` and therefore false; and `BodyOf` returns null at *that* guard rather than at the unknown-type one. Same end state, different branch.
+
+The distinction decides which test proves what. A test written from `code-level.adp` exercises the `HasDocumentSibling` branch while appearing to cover the unknown-MIME branch — so Requirement 8.4 would end up with no coverage at all while looking covered, which is worse than having none. **And no example provides a genuine 8.4 case:** all 39 tracked registrations name a MIME that is in the catalog, checked across every file rather than sampled. Requirement 8.4 therefore needs a *fixture* with a deliberately unknown first line, not an example.
+
+**A case the requirements do not name.** A known type that keeps no body is real, shipped and sitting in the reference example, and Requirement 8 covers only orphans and unknown types. It deserves its own criterion — `c4/code` is a C4 level that exists as a catalog entry without an editor, and a registration naming one is neither broken nor unknown. Raised here rather than assumed, since adding a requirement is the reviewer's call. `industrial-plant` is the same shape and takes the same treatment.
 
 ### `azure-pipeline/examples/example 1` — a name collision worth testing
 
@@ -228,7 +234,7 @@ So the folder form is specified, tested against a fixture, and *not* adopted by 
 
 The design's answer, in order:
 
-1. **Add the safety net first, against the current names.** A shared `ExampleRegistrationTests` fixture — one theory over every tracked `.adp` in `src/diagrams/*/examples/**` — asserting that each resolves to a definition, that a registration with a body resolves to a file that exists, and that one naming an unimplemented type resolves to no body without erroring (Requirement 8.4). Run it before any rename, so it is a regression test rather than a description of whatever the rename produced.
+1. **Add the safety net first, against the current names.** A shared `ExampleRegistrationTests` fixture — one theory over every tracked `.adp` in `src/diagrams/*/examples/**` — asserting that each resolves to a definition in the catalog, that a registration with a body resolves to a file that exists, and that a known type with no `Extension` resolves to no body without erroring. Requirement 8.4's unknown-type case is covered by a **fixture** rather than by an example, because no example provides one. Run it before any rename, so it is a regression test rather than a description of whatever the rename produced.
 2. **Then rename**, and watch the same test.
 3. **Then extend it** with the nesting assertions: each registration nests under the subject it names, the unqualified form is the default, `code-level.adp` remains an unnested entry with no body, and the `templates.adp` / `templates/` pair assigns to the file rather than to the directory.
 
@@ -260,7 +266,7 @@ message EntryUpdated {
 3. **Rename collision** (5.4) — refused, naming the conflict; nothing is moved, because every target is checked first.
 4. **Rename changing the subject portion** (5.2) — refused with an explanation, never a silent re-point.
 5. **Second folder registration** (4.5) — refused, naming the one-per-folder rule and the alternative.
-6. **Unknown diagram type** (8.4) — unchanged: no definition, therefore no body, and not an error.
+6. **Unknown diagram type** (8.4) — unchanged: no definition, therefore no body, and not an error. Distinct from a **known type with no `Extension`**, which resolves a definition and fails the `HasDocumentSibling` guard instead — the same end state down a different branch, and the two need separate tests.
 
 ## Testing Strategy
 
@@ -287,6 +293,7 @@ message EntryUpdated {
 
 ## Deviations and notes
 
+* **Corrected after peer review.** An earlier draft cited `code-level.adp` as Requirement 8.4's unknown-type case in the wild. It is not: `c4/code` is a known catalog entry with no `Extension`. The conclusion — leave the file alone — was right, the reasoning was wrong, and the reasoning is what decides which branch a test exercises.
 * **Revised after review.** The reviewer asked that all examples and samples be updated *and tested*. The examples section above is the answer; the finding that prompted the most change is that 26 of the 39 tracked registrations are currently opened by no test, so the rename had no safety net until one is added first.
 
 * **Requirement 4.3's stated .NET behaviour is wrong**, in both halves and inverted. Recorded above with the measurement rather than corrected silently, because the requirement asked for a test and the test disagrees with the requirement. The consequence is smaller than feared and points elsewhere, so the audit it asks for should follow the corrected fact.
