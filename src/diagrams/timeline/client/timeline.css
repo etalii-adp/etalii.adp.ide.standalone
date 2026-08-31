@@ -1,0 +1,176 @@
+/*
+ * Timeline canvas styling.
+ *
+ * Lives with the module rather than in the shell's index.css: a diagram type you cannot delete
+ * without also editing the shell's stylesheet is not a module. Imported by this module's
+ * register.ts, so it loads exactly when the module does.
+ */
+
+/* ---- The surface ------------------------------------------------------------------- */
+
+.timeline-canvas {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-surface);
+}
+
+.timeline-canvas-message {
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+}
+
+.timeline-surface {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  cursor: grab;
+}
+
+.timeline-content {
+  width: 100%;
+  height: 100%;
+}
+
+/* ---- Elements ---------------------------------------------------------------------- */
+
+.timeline-element {
+  cursor: pointer;
+}
+
+.timeline-period {
+  fill: var(--color-surface-raised, #f2f4f8);
+  stroke: var(--color-border, #8892a6);
+  stroke-width: 1.5;
+}
+
+.timeline-moment {
+  fill: var(--color-accent, #4a6fb5);
+  stroke: none;
+}
+
+.timeline-label {
+  fill: var(--color-text, #1c2333);
+  font-size: 12px;
+  text-anchor: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+.timeline-selected .timeline-period,
+.timeline-connect-target .timeline-period {
+  stroke: var(--color-accent, #4a6fb5);
+  stroke-width: 2.5;
+}
+
+.timeline-selected .timeline-moment,
+.timeline-connect-target .timeline-moment {
+  stroke: var(--color-accent, #4a6fb5);
+  stroke-width: 2.5;
+  fill: var(--color-surface-raised, #f2f4f8);
+}
+
+/* What the gesture would land on, visible before the user commits. */
+.timeline-hint {
+  fill: var(--color-text-muted, #5a6376);
+  font-size: 11px;
+  text-anchor: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ---- Adorners and anchors ---------------------------------------------------------- */
+
+.timeline-adorner {
+  fill: var(--color-accent, #4a6fb5);
+  opacity: 0.35;
+  cursor: ew-resize;
+}
+
+.timeline-adorner:hover {
+  opacity: 0.8;
+}
+
+.timeline-anchor {
+  fill: var(--color-surface, #ffffff);
+  stroke: var(--color-accent, #4a6fb5);
+  stroke-width: 1.5;
+  cursor: crosshair;
+}
+
+/* ---- Connections ------------------------------------------------------------------- */
+
+.timeline-connection path {
+  fill: none;
+  stroke: var(--color-text-muted, #5a6376);
+  stroke-width: 1.5;
+}
+
+.timeline-connection text {
+  fill: var(--color-text-muted, #5a6376);
+  font-size: 11px;
+  text-anchor: middle;
+  user-select: none;
+}
+
+.timeline-pending-connection {
+  fill: none;
+  stroke: var(--color-accent, #4a6fb5);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+
+/* ---- The ruler --------------------------------------------------------------------- */
+
+/*
+ * Fixed to the view, not to the diagram: absolutely positioned over the surface, so it stays at
+ * the bottom of what the user is looking at whatever the diagram's own extent - while its
+ * labels slide with the content because their positions come from the same view transform the
+ * elements use. Visually subordinate: a watermark to consult, not chrome that competes.
+ */
+.timeline-ruler {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 24px;
+  overflow: hidden;
+  border-top: 1px solid var(--color-border, #d6dae2);
+  background: color-mix(in srgb, var(--color-surface, #ffffff) 85%, transparent);
+  pointer-events: none;
+}
+
+.timeline-ruler-tick {
+  position: absolute;
+  top: 4px;
+  transform: translateX(-50%);
+  color: var(--color-text-muted, #5a6376);
+  font-size: 10px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* ---- Messages ---------------------------------------------------------------------- */
+
+.timeline-status,
+.timeline-rejection {
+  position: absolute;
+  bottom: 32px;
+  left: 12px;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--color-surface-raised, #f2f4f8);
+  color: var(--color-text-muted, #5a6376);
+  font-size: 12px;
+}
+
+.timeline-rejection {
+  color: var(--color-danger, #b54a4a);
+}

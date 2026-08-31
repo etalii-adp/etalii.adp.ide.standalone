@@ -112,15 +112,15 @@ function added(model: TimelineModel, elements: readonly Element[]): TimelineMode
   return next;
 }
 
-function removed(model: TimelineModel, ids: readonly string[]): TimelineModel {
+function removed(model: TimelineModel, ids: readonly { value: string }[]): TimelineModel {
   const next: TimelineModel = {
     elements: new Map(model.elements),
     connections: new Map(model.connections),
   };
 
   for (const id of ids) {
-    next.elements.delete(id);
-    next.connections.delete(id);
+    next.elements.delete(id.value);
+    next.connections.delete(id.value);
   }
 
   return next;
