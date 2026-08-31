@@ -91,7 +91,7 @@ public class ServiceCollectionAddAzurePipelineTests
         var factory = provider.GetRequiredService<IDiagramSessionFactory>();
 
         // Assert.
-        Assert.Equal(Diagram.Definitions[0].Origin, factory.Origin);
+        Assert.Equal(Diagram.Pipeline.Origin, factory.Origin);
     }
 
     [Fact]

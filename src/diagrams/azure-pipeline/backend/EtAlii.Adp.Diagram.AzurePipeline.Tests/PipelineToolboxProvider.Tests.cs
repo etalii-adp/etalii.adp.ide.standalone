@@ -80,7 +80,7 @@ public class PipelineToolboxProviderTests : IDisposable
         // Assert.
         // The toolbox is resolved by origin, so a mismatch here is an empty palette rather than
         // an error anybody would see.
-        Assert.Equal(Diagram.Definitions[0].Origin, _toolbox.Origin);
+        Assert.Equal(Diagram.Pipeline.Origin, _toolbox.Origin);
     }
 
     [Fact]

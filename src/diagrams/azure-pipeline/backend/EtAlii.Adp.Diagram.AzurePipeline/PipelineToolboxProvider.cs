@@ -21,7 +21,7 @@ namespace EtAlii.Adp.Diagram.AzurePipeline;
 public sealed class PipelineToolboxProvider : IDiagramToolboxProvider
 {
     /// <inheritdoc />
-    public DiagramOrigin Origin { get; } = Diagram.Definitions[0].Origin;
+    public DiagramOrigin Origin { get; } = Diagram.Pipeline.Origin;
 
     /// <inheritdoc />
     public IReadOnlyList<ToolboxItemDefinition> Items { get; } =
