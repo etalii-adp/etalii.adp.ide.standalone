@@ -72,7 +72,7 @@
 
 ## Phase D — the type, its payloads and its mapping
 
-- [ ] 7. Declare the diagram type
+- [x] 7. Declare the diagram type
   - File: `.../Diagram.cs` (new), `EtAlii.Adp.Diagram.Timeline.csproj` (new), tests
   - One `DiagramDefinition` with origin `generic/timeline`, extension `.tml`, **not** shared — so `DiagramFileRouter` routes a bare `.tml` on sight, with no registration step
   - Purpose: Requirement 1.2, using the routing that already exists
