@@ -47,11 +47,11 @@ Every group's gate: backend groups run `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, checking exit codes. If clean, merge editors-core into develop and retire the worktree per CLAUDE.md | Restrictions: do not merge on a failing gate; before creating the next group's worktree, rebase its assumptions on develop's new tip, since technical-debt-cleanup and adp-file-nesting are landing concurrently | Success: both gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2. `TextFileBuffer` and the `plain` module (persistence layer)
+- [x] 2. `TextFileBuffer` and the `plain` module (persistence layer)
   - Worktree: `.claude/worktrees/editors-plain`
   - _Requirements: 3.1, 3.2, 3.3, 6.1, 6.3, 6.6, 7.1, 7.2, 7.3_
 
-- [-] 2.1 `TextFileBuffer`: encoding, line endings, size limit, binary detection
+- [x] 2.1 `TextFileBuffer`: encoding, line endings, size limit, binary detection
   - File: `src/backend/EtAlii.Adp.Editor/TextFileBuffer.cs` (new)
   - Detects UTF-8 BOM presence/absence and a pure-ASCII fast path; refuses (does not guess) any other encoding, per design.md's Error Handling scope decision
   - Detects the dominant line-ending style and preserves each existing line's own terminator on save, independently implemented - **explicitly not shared with or extracted from `C4Document`**, per design.md's deferred-consolidation decision. This task does not open, read, or modify any file under `src/diagrams/c4/`
@@ -62,7 +62,7 @@ Every group's gate: backend groups run `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 6.1, 6.3, 6.6, 7.1, 7.2_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer with file-encoding experience | Task: Create TextFileBuffer in EtAlii.Adp.Editor implementing design.md's scoped encoding detection (UTF-8 with/without BOM, plus pure-ASCII), per-line terminator preservation (majority-style detection, each existing line keeps its own terminator on save), a 5 MB size-limit refusal before reading, and a binary-content refusal heuristic (null byte or majority non-printable bytes in the first few KB) | Restrictions: do NOT reuse, extract from, or modify C4Document.cs, C4DocumentLine.cs, or anything under src/diagrams/c4/ - design.md explicitly defers that consolidation to a future spec; do not attempt encoding detection beyond UTF-8/ASCII - anything else is refused, not guessed | Leverage: none - this is an independent implementation, by design | Success: a temp-file round trip (open, save unchanged, bytes identical - encoding, BOM, line endings) passes for a UTF-8-with-BOM file, a UTF-8-no-BOM file, a CRLF file, an LF file, and a mixed-line-ending file; a >5MB file is refused before being read; a binary file is refused with a clear message. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.2 The `plain` module
+- [x] 2.2 The `plain` module
   - File: `src/editors/plain/backend/EtAlii.Adp.Editor.Plain/Diagram.cs` → actually `Editor.cs` (new, static class `Editor` with `Definitions`), `src/editors/plain/backend/EtAlii.Adp.Editor.Plain/PlainEditorSessionFactory.cs`, `PlainEditorSession.cs` (new), plus the `.csproj`/`.Tests.csproj` scaffold per R1.1's layout
   - `Editor.Definitions = [new("plain", "Plain Text", "...", Extensions: [], FileNames: [], IsFallback: true)]` - claims nothing by construction (R3.2)
   - `PlainEditorSession` implements `IEditorSession` (from task 3.1 - if that task has not landed yet in this ordering, stub the interface shape here and let 3.1 supersede it; see note) using `TextFileBuffer` for its read/save/change-detection
@@ -71,7 +71,7 @@ Every group's gate: backend groups run `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 1.1, 1.2, 3.1, 10.1_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Scaffold src/editors/plain/ with backend/api/client/examples folders per structure.md's diagram-module layout, mirrored for editors (R1.1). Create EtAlii.Adp.Editor.Plain with a static Editor class exposing Definitions = [a single EditorDefinition: id "plain", IsFallback true, no extensions, no file names], and PlainEditorSessionFactory/PlainEditorSession built on TextFileBuffer from task 2.1 | Restrictions: this module claims no extension and no file name - that is what makes it the fallback, not a registration-order accident (R3.2); if task 3.1's IEditorSession/IEditorSessionFactory interfaces are not yet merged when this task starts, coordinate with group 3's schedule rather than inventing a divergent interface shape | Leverage: TextFileBuffer from task 2.1 | Success: the plain module compiles, its Editor.Definitions is discoverable by EditorDefinitionDiscovery once wired up in group 3. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.3 Gate and merge
+- [x] 2.3 Gate and merge
   - Run both backend gates; merge `.claude/worktrees/editors-plain` into `develop` and retire it
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, checking exit codes. If clean, merge editors-plain into develop and retire the worktree | Restrictions: do not merge on a failing gate | Success: both gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
