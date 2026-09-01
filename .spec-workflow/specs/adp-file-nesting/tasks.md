@@ -150,7 +150,7 @@
   - _Requirements: 12.3, 12.4_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA-minded C# developer | Task: Add the nesting assertions to the suite written in task 5 | Restrictions: each registration nests under the subject it names; the unqualified form is the default; `code-level.adp` remains an unnested entry with no body; the five `body:` headers are still present and still authoritative after the rename | Success: the suite that was green before the rename is green after it, now asserting more. Mark in progress, log when done, then mark complete._
 
-- [-] 19. Run the gates
+- [x] 19. Run the gates
   - File: (verification only)
   - _Requirements: 12.1, 12.2_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer | Task: Run every gate and make each pass | Restrictions: `dotnet test --solution EtAlii.Adp.slnx` and `dotnet format style --verify-no-changes --severity info` are both checked BY EXIT CODE, since a zero-test run exits 5 while printing no failures; `npm test` and `npm run typecheck` from `src/client` because this spec touches the client | Success: all four gates pass, checked by exit code rather than by reading output. Mark in progress, log when done, then mark complete._
