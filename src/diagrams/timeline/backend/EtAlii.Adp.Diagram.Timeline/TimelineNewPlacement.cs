@@ -29,7 +29,7 @@ public static class TimelineNewPlacement
         string.Create(CultureInfo.InvariantCulture, $"{Prefix}{seconds},{row}");
 
     /// <summary>Whether <paramref name="elementId"/> is a placement id, and what it carries.</summary>
-    public static bool TryParse(string elementId, out double seconds, out int row)
+    public static bool TryParse(string? elementId, out double seconds, out int row)
     {
         seconds = 0;
         row = 0;
