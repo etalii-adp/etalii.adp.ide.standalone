@@ -115,7 +115,7 @@ app.UseSerilogRequestLogging();
 app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });
 
 app.MapGrpcService<AuthenticationServiceImpl>();
-app.MapGrpcService<ProjectServiceImpl>();
+app.MapGrpcService<ProjectService>();
 app.MapGrpcService<HierarchyService>();
 app.MapGrpcService<ContextService>();
 app.MapGrpcService<DiagramService>();

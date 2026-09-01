@@ -4,13 +4,13 @@ using Serilog;
 
 namespace EtAlii.Adp.Backend.Projects;
 
-public sealed class ProjectServiceImpl : ProjectService.ProjectServiceBase
+public sealed class ProjectService : EtAlii.Adp.ProjectService.ProjectServiceBase
 {
-    private static readonly ILogger _logger = Log.ForContext<ProjectServiceImpl>();
+    private static readonly ILogger _logger = Log.ForContext<ProjectService>();
 
     private readonly IProjectStore _projectStore;
 
-    public ProjectServiceImpl(IProjectStore projectStore)
+    public ProjectService(IProjectStore projectStore)
     {
         _projectStore = projectStore;
     }
