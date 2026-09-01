@@ -205,6 +205,41 @@ public class TimelineContextSourceResolverTests : IDisposable
         Assert.Equal(["Renamed"], afterRename);
         Assert.Null(latest);
     }
+
+    [Fact]
+    public async Task APlacementId_Resolves_SoAGestureCanNameWhereItLanded()
+    {
+        // Arrange.
+        // The synthetic id a drop or a relation-to-empty-space carries: it names the element
+        // about to exist at a position, resolves like any element within the diagram, and lives
+        // for exactly one ExecuteAction.
+        var path = Write();
+        var placement = TimelineNewPlacement.IdFor(1_780_000_000, 4);
+
+        // Act.
+        var resolution = await ResolveAsync(FileLevel(path), placement);
+
+        // Assert.
+        var level = Assert.IsType<ResolvedContextLevel>(resolution).Level;
+        Assert.Equal(placement, level.Target.ElementId);
+        Assert.Equal(ContextScope.DiagramElement, level.Scope);
+    }
+
+    [Fact]
+    public async Task APlacementId_IsStillRefusedOnAForeignFile()
+    {
+        // Arrange.
+        // The file check comes before the placement check: a placement in somebody else's
+        // diagram is not this module's to resolve.
+        var foreign = IoPath.Combine(_workspace, "map.owm");
+        File.WriteAllText(foreign, "title something\n");
+
+        // Act.
+        var resolution = await ResolveAsync(FileLevel(foreign), TimelineNewPlacement.IdFor(0, 0));
+
+        // Assert.
+        Assert.IsType<RejectedContextLevel>(resolution);
+    }
 }
 
 /// <summary>

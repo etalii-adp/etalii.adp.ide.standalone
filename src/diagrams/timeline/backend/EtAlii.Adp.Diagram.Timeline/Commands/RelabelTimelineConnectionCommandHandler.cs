@@ -30,7 +30,7 @@ public sealed class RelabelTimelineConnectionCommandHandler : ICommandHandler<Re
         var connection = TimelineEdits.ConnectionOf(entry.Model, command.ConnectionId);
         if (connection is null)
         {
-            return Task.FromResult(CommandResult.Failure("That connection is no longer in this timeline."));
+            return Task.FromResult(CommandResult.Failure("That relation is no longer in this timeline."));
         }
 
         var inverse = new RelabelTimelineConnectionCommand(command.BodyPath, command.ConnectionId, connection.Label);

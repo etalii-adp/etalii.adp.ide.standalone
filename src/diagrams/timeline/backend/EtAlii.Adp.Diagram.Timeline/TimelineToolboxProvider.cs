@@ -14,11 +14,11 @@ public sealed class TimelineToolboxProvider : IDiagramToolboxProvider
     public IReadOnlyList<ToolboxItemDefinition> Items { get; } =
     [
         new(
-            "timeline.toolbox.period",
-            "Period",
+            "timeline.toolbox.element",
+            "Element",
             "mdi-arrow-expand-horizontal",
             "Something with a begin and an end. Drop on the canvas at the time and row it starts.",
-            TimelineContextActionProvider.AddPeriodActionId),
+            TimelineContextActionProvider.AddElementActionId),
         new(
             "timeline.toolbox.moment",
             "Moment",

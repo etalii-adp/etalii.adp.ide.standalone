@@ -39,7 +39,7 @@ public sealed class ConnectTimelineElementsCommandHandler : ICommandHandler<Conn
             // A connection gesture that ends on nothing cancels with a reason (Requirement 8.5),
             // and writing a connection to an element that is not there would manufacture exactly
             // the dangling reference the validator exists to report.
-            return Task.FromResult(CommandResult.Failure("Both ends of a connection must be elements of this timeline."));
+            return Task.FromResult(CommandResult.Failure("Both ends of a relation must be elements of this timeline."));
         }
 
         TimelineWriter.InsertConnection(

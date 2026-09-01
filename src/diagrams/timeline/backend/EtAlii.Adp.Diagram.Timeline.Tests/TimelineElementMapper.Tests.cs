@@ -144,10 +144,20 @@ public class TimelineElementMapperTests
     public void AChangedElement_IsOneAdd_AndARemovedOneIsOneRemove()
     {
         // Arrange.
+        // Edited line by line rather than by substring: a raw string literal carries the source
+        // file's own line endings, so a "\n"-pattern replace works on an LF checkout and finds
+        // nothing on a CRLF one - which is exactly how this test broke once.
         var before = _mapper.Elements(Parse(TwoElementsAndAConnection));
-        var edited = TwoElementsAndAConnection
-            .Replace("label: Period", "label: Renamed", StringComparison.Ordinal)
-            .Replace("  - id: bbb\n    label: Moment\n    begin: 2026-02-16T14:00:00\n    row: 2\n", "", StringComparison.Ordinal);
+        var edited = string.Join(
+            "\n",
+            TwoElementsAndAConnection
+                .ReplaceLineEndings("\n")
+                .Split('\n')
+                .Where(line => !line.Contains("bbb", StringComparison.Ordinal)
+                    && !line.Contains("label: Moment", StringComparison.Ordinal)
+                    && !line.Contains("2026-02-16", StringComparison.Ordinal)
+                    && !line.Contains("row: 2", StringComparison.Ordinal))
+                .Select(line => line.Replace("label: Period", "label: Renamed", StringComparison.Ordinal)));
         var after = _mapper.Elements(Parse(edited));
 
         // Act.

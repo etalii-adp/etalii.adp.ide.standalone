@@ -38,7 +38,7 @@ public sealed class TimelineContextPropertyProvider : IContextPropertyProvider
     private const string IdentityGroup = "Identity";
     private const string TimingGroup = "Timing";
     private const string PlacementGroup = "Placement";
-    private const string ReconnectOnCanvas = "Reconnecting is done on the canvas, by dragging the connection's end to another element.";
+    private const string ReconnectOnCanvas = "Reconnecting is done on the canvas, by dragging the relation's end to another element.";
 
     private readonly IHistoryStackStore _historyStacks;
     private readonly ITimelineDocumentStore _documents;

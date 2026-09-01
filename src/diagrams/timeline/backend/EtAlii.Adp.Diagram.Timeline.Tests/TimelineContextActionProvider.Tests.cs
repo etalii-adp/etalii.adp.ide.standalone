@@ -63,8 +63,12 @@ public class TimelineContextActionProviderTests : IDisposable
         return path;
     }
 
+    // One watch id for the whole class: the relation gesture's two calls pair by watch, so a
+    // helper that minted a fresh id per call would arm on one connection and complete on another.
+    private readonly ShortGuid _watchId = ShortGuid.NewShortGuid();
+
     private ContextTarget Target(string path, string elementId) =>
-        new(ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace, ShortGuid.NewShortGuid(), elementId);
+        new(ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace, _watchId, elementId);
 
     private async Task<IReadOnlyList<string>> ActionIdsFor(string path, string elementId)
     {
@@ -73,19 +77,23 @@ public class TimelineContextActionProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task APeriod_OffersRenameConnectRemoveEndAndRemove()
+    public async Task AnElementWithAnEnd_OffersItsEditsAndItsAdditions()
     {
         // Arrange & act.
         var path = Write();
         var ids = await ActionIdsFor(path, "aaa");
 
         // Assert.
+        // Two groups: what changes this element, then what adds the next one - the mindmap's
+        // Insert/Enter pattern on this type's two axes.
         Assert.Equal(
             [
                 TimelineContextActionProvider.RenameActionId,
                 TimelineContextActionProvider.ConnectActionId,
                 TimelineContextActionProvider.RemoveEndActionId,
                 TimelineContextActionProvider.RemoveActionId,
+                TimelineContextActionProvider.AddAfterActionId,
+                TimelineContextActionProvider.AddBelowActionId,
             ],
             ids);
     }
@@ -141,7 +149,7 @@ public class TimelineContextActionProviderTests : IDisposable
 
         // Assert.
         var confirmation = Assert.IsType<ContextExecutionRequiresConfirmation>(result);
-        Assert.Contains("1 connection", confirmation.Request.Message, StringComparison.Ordinal);
+        Assert.Contains("1 relation", confirmation.Request.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -230,24 +238,22 @@ public class TimelineContextActionProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task AnAddCommit_LandsAtTheCarriedPosition()
+    public async Task ADropOnAPlacement_LandsThereAtOnce()
     {
         // Arrange.
-        // The drop's position travels in the commit value as "seconds,row" - the placement
-        // Requirement 9.3 refuses to discard in favour of a computed one.
+        // The drop names a placement - the synthetic id carrying where it landed - so nothing is
+        // asked and the element appears at the dropped time and row (Requirement 9.3).
         var path = Write();
         var seconds = TimelineScale.ToSeconds(new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero));
 
         // Act.
-        var commit = await _actions.CommitAsync(
-            Target(path, ""),
+        var result = await _actions.ExecuteAsync(
+            Target(path, TimelineNewPlacement.IdFor(seconds, 5)),
             TimelineContextActionProvider.AddMomentActionId,
-            $"{seconds},5",
-            "",
             CancellationToken.None);
 
         // Assert.
-        Assert.True(commit.Completed, commit.Error);
+        Assert.IsType<ContextExecutionCompleted>(result);
         var added = _store.GetOrLoad(path).Model.Elements.Single(element => element.Label == "New moment");
         Assert.Equal("2026-07-01", added.Begin.Text);
         Assert.Equal(5, added.Row);
@@ -255,15 +261,101 @@ public class TimelineContextActionProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task AnAddWithNoPosition_IsRefusedRatherThanLandingSomewhereInvented()
+    public async Task AnAddFromAMenu_AsksForTheBegin_AndAGarbageValueIsRefused()
+    {
+        // Arrange & act.
+        // No placement to land on: the begin is the one fact the add cannot guess.
+        var path = Write();
+        var ask = await _actions.ExecuteAsync(
+            Target(path, "aaa"), TimelineContextActionProvider.AddElementActionId, CancellationToken.None);
+        var commit = await _actions.CommitAsync(
+            Target(path, "aaa"), TimelineContextActionProvider.AddElementActionId, "sideways", "", CancellationToken.None);
+
+        // Assert.
+        Assert.IsType<ContextExecutionRequiresInput>(ask);
+        Assert.False(commit.Completed);
+    }
+
+    [Fact]
+    public async Task Tab_AddsAnElementAfterTheSelectedOne()
+    {
+        // Arrange.
+        // "After": a little later on the same row, a week long, and no dialog - everything is
+        // derived from the selected element.
+        var path = Write();
+
+        // Act.
+        var result = await _actions.ExecuteAsync(
+            Target(path, "aaa"), TimelineContextActionProvider.AddAfterActionId, CancellationToken.None);
+
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(result);
+        var added = _store.GetOrLoad(path).Model.Elements.Single(element => element.Label == "New element");
+        Assert.Equal("2026-02-15", added.Begin.Text); // aaa ends 2026-02-13, plus the two-day gap
+        Assert.Equal("2026-02-22", added.End!.Text);
+        Assert.Equal(0, added.Row);
+    }
+
+    [Fact]
+    public async Task Enter_AddsAnElementBelowTheSelectedOne()
+    {
+        // Arrange & act.
+        // "Below": the same stretch of time, one row down - a parallel track.
+        var path = Write();
+        var result = await _actions.ExecuteAsync(
+            Target(path, "aaa"), TimelineContextActionProvider.AddBelowActionId, CancellationToken.None);
+
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(result);
+        var added = _store.GetOrLoad(path).Model.Elements.Single(element => element.Label == "New element");
+        Assert.Equal("2026-01-05", added.Begin.Text);
+        Assert.Equal("2026-02-13", added.End!.Text);
+        Assert.Equal(1, added.Row);
+    }
+
+    [Fact]
+    public async Task ARelationDraggedOntoEmptySpace_CreatesAndRelates_AsOneUndo()
+    {
+        // Arrange.
+        // The gesture's second call names a placement rather than an element: what the relation
+        // reaches does not exist yet, so it is created there and related in one command.
+        var path = Write();
+        var before = File.ReadAllText(path);
+        var seconds = TimelineScale.ToSeconds(new DateTimeOffset(2026, 8, 1, 0, 0, 0, TimeSpan.Zero));
+
+        // Act.
+        await _actions.ExecuteAsync(Target(path, "aaa"), TimelineContextActionProvider.ConnectActionId, CancellationToken.None);
+        var second = await _actions.ExecuteAsync(
+            Target(path, TimelineNewPlacement.IdFor(seconds, 3)),
+            TimelineContextActionProvider.ConnectActionId,
+            CancellationToken.None);
+        var model = _store.GetOrLoad(path).Model;
+        var added = model.Elements.Single(element => element.Label == "New element");
+        var relation = model.Connections.Single(candidate => candidate.To == added.Id);
+        await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
+
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(second);
+        Assert.Equal("2026-08-01", added.Begin.Text);
+        Assert.Equal(3, added.Row);
+        Assert.Equal("aaa", relation.From);
+        // One undo takes the new element and its relation together, byte for byte.
+        Assert.Equal(before, File.ReadAllText(path));
+    }
+
+    [Fact]
+    public async Task ARelationOntoEmptySpaceWithNothingArmed_IsRefused()
     {
         // Arrange & act.
         var path = Write();
-        var commit = await _actions.CommitAsync(
-            Target(path, ""), TimelineContextActionProvider.AddPeriodActionId, "", "", CancellationToken.None);
+        var result = await _actions.ExecuteAsync(
+            Target(path, TimelineNewPlacement.IdFor(0, 0)),
+            TimelineContextActionProvider.ConnectActionId,
+            CancellationToken.None);
 
         // Assert.
-        Assert.False(commit.Completed);
+        var failed = Assert.IsType<ContextExecutionFailed>(result);
+        Assert.Contains("starts from an element", failed.Message, StringComparison.Ordinal);
     }
 
     [Fact]

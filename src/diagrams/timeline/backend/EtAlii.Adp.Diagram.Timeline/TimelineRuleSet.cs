@@ -102,7 +102,7 @@ public static class TimelineRuleSet
                 {
                     problems.Add(new DiagramProblem(
                         DiagramProblemSeverity.Warning,
-                        $"A connection names '{end}', and no element with that id is on this timeline.",
+                        $"A relation names '{end}', and no element with that id is on this timeline.",
                         TimelineRules.DanglingConnection,
                         new DiagramProblemElementLocation(connection.Id)));
                 }
@@ -119,7 +119,7 @@ public static class TimelineRuleSet
 
         foreach (var connection in model.Connections)
         {
-            yield return (connection.Id, "A connection", connection.Range);
+            yield return (connection.Id, "A relation", connection.Range);
         }
     }
 

@@ -69,6 +69,30 @@ public sealed class TimelineContextSourceResolver : IContextSourceResolver
         var model = _documents.GetOrLoad(bodyPath).Model;
         var elementId = id.ElementId.Value;
 
+        // A placement id names the element about to exist at a position - the way a drop or a
+        // relation-to-empty-space carries where it landed through a channel that has one element
+        // id per call and no other field. It resolves like any element, to a target the action
+        // provider reads the position back out of; it lives for one ExecuteAction and is never
+        // selected, tracked or written anywhere.
+        if (TimelineNewPlacement.TryParse(elementId, out _, out _))
+        {
+            return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(new ContextResolvedLevel(
+                source,
+                id,
+                ["New element"],
+                ContextScope.DiagramElement,
+                new ContextTarget(
+                    ContextScope.DiagramElement,
+                    bodyPath,
+                    IsContainer: false,
+                    SourceId: default,
+                    rootPath,
+                    watchId,
+                    elementId),
+                new ContextLevelDetail { Element = new ElementDetail { Text = "New element" } },
+                this)));
+        }
+
         var described = Describe(model, elementId);
         if (described is null)
         {

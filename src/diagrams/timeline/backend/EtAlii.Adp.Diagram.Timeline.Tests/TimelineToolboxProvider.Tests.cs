@@ -36,10 +36,10 @@ public class TimelineToolboxProviderTests : IDisposable
     }
 
     [Fact]
-    public void ItDescribesThePeriodAndTheMoment()
+    public void ItDescribesTheElementAndTheMoment()
     {
         // Assert.
-        Assert.Equal(["Period", "Moment"], _toolbox.Items.Select(item => item.Label));
+        Assert.Equal(["Element", "Moment"], _toolbox.Items.Select(item => item.Label));
     }
 
     [Fact]
@@ -89,15 +89,17 @@ public class TimelineToolboxProviderTests : IDisposable
         var path = IoPath.Combine(_workspace, "plan.tml");
         File.WriteAllText(path, "timeline: 1\r\nelements: []\r\n");
         _store.Forget(path);
-        var item = _toolbox.Items.Single(candidate => candidate.Id == "timeline.toolbox.period");
+        var item = _toolbox.Items.Single(candidate => candidate.Id == "timeline.toolbox.element");
         var seconds = TimelineScale.ToSeconds(new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));
-        var target = new ContextTarget(ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace, ShortGuid.NewShortGuid(), "");
+        var target = new ContextTarget(
+            ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace,
+            ShortGuid.NewShortGuid(), TimelineNewPlacement.IdFor(seconds, 3));
 
-        // Act.
-        var result = await _actions.CommitAsync(target, item.DropActionId, $"{seconds},3", "", CancellationToken.None);
+        // Act: the drop names a placement, and the element appears there with nothing asked.
+        var result = await _actions.ExecuteAsync(target, item.DropActionId, CancellationToken.None);
 
         // Assert.
-        Assert.True(result.Completed, result.Error);
+        Assert.IsType<ContextExecutionCompleted>(result);
         var added = _store.GetOrLoad(path).Model.Elements.Single();
         Assert.Equal("2026-09-01", added.Begin.Text);
         Assert.Equal(3, added.Row);
