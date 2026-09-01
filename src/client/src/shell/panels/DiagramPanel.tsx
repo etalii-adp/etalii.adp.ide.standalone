@@ -1,5 +1,6 @@
 import { PanelPlaceholder } from "./PanelPlaceholder";
 import { canvasFor } from "./diagramCanvases";
+import { ResolvedTextEditorPanel } from "@client/editors/ResolvedTextEditorPanel";
 
 /** Which diagram a panel shows: its project, the `.adp` entry's id, its project-relative path, and its type. */
 export interface OpenDiagram {
@@ -8,6 +9,10 @@ export interface OpenDiagram {
   path: string[];
   /** The MIME type from the `.adp` file's first line; decides which canvas renders it. */
   mimeType: string;
+  /** Forces the editor family on the tab's stream - set only for "Open as text" tabs (R5.2). */
+  editorId?: string;
+  /** 1-based line to scroll to once loaded - go-to-line from a problem (R8.1). */
+  initialLine?: number;
 }
 
 export interface DiagramPanelProps {
@@ -37,11 +42,34 @@ export function DiagramPanel({ diagram }: DiagramPanelProps) {
     );
   }
 
+  // An "Open as text" tab whose editor the backend has yet to name: the stream itself will,
+  // and this panel mounts the right module's canvas when it does. Handled here, before the
+  // registry, because it is the shell's own gesture rather than any module's claim.
+  if (diagram.mimeType === "editor/*") {
+    return (
+      <ResolvedTextEditorPanel
+        projectId={diagram.projectId}
+        entryId={diagram.entryId}
+        path={diagram.path}
+        editorId={diagram.editorId}
+        initialLine={diagram.initialLine}
+      />
+    );
+  }
+
   const registration = canvasFor(diagram.mimeType);
 
   if (registration?.Canvas !== undefined) {
     const Canvas = registration.Canvas;
-    return <Canvas projectId={diagram.projectId} entryId={diagram.entryId} path={diagram.path} />;
+    return (
+      <Canvas
+        projectId={diagram.projectId}
+        entryId={diagram.entryId}
+        path={diagram.path}
+        editorId={diagram.editorId}
+        initialLine={diagram.initialLine}
+      />
+    );
   }
 
   return (

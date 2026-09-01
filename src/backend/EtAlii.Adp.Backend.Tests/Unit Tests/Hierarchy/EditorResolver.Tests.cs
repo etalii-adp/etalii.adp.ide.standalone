@@ -155,4 +155,28 @@ public class EditorResolverTests
         Assert.IsType<EditorAmbiguous>(routing);
         Assert.Contains(Errors, error => error.Contains("IsFallback"));
     }
+
+    [Fact]
+    public void ClaimantsOf_ASharedExtension_ListsEveryClaimantInIdOrder()
+    {
+        // Arrange: the defaulted case - Resolve answers the default alone, while "Open with…"
+        // needs the whole field (Requirement 4.4).
+        var one = new EditorDefinition("one", "One", Extensions: [".md"]);
+        var two = new EditorDefinition("two", "Two", Extensions: [".md"], IsDefaultForSharedExtension: true);
+        var resolver = Resolver(Plain, one, two);
+
+        // Act and assert.
+        Assert.Equal(["one", "two"], resolver.ClaimantsOf(@"C:\project\readme.md").Select(claimant => claimant.Id));
+    }
+
+    [Fact]
+    public void ClaimantsOf_AFallbackOnlyFile_IsEmpty()
+    {
+        // Arrange and act: nothing claims .txt; the fallback answers Resolve but claims
+        // nothing by construction, so there is nothing to choose between.
+        var resolver = Resolver(Plain, Markdown);
+
+        // Assert.
+        Assert.Empty(resolver.ClaimantsOf(@"C:\project\notes.txt"));
+    }
 }

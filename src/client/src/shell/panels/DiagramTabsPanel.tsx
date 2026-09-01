@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { isTabDirty } from "./dirtyTabs";
+import { onTextTabRequested } from "./textTabRequests";
 import { base64Encode } from "@bufbuild/protobuf/wire";
 import { ContextSelectionAction } from "../../generated/context_pb";
 import type { ContextLevelDetail, ContextSelection } from "../../generated/context_pb";
@@ -83,10 +84,49 @@ export function DiagramTabsPanel({ projectId }: DiagramTabsPanelProps) {
     setActiveKey(key);
   }, [selection, levels, projectId]);
 
+  // A text tab asked for from elsewhere - "Open as text", "Open with…", or a problem's
+  // go-to-line. Requested rather than pushed, because tabs are client state and the context
+  // channel carries no gesture data. Re-requesting an open tab focuses it and updates its
+  // line, so a second problem in the same file still navigates (R8.1).
+  useEffect(
+    () =>
+      onTextTabRequested((request) => {
+        const key = `text|${request.path.join("/")}`;
+        const mimeType = request.editorId === "*" ? "editor/*" : `editor/${request.editorId}`;
+        setTabs((current) =>
+          current.some((tab) => tab.key === key)
+            ? current.map((tab) =>
+                tab.key === key ? { key, diagram: { ...tab.diagram, initialLine: request.line } } : tab,
+              )
+            : [
+                ...current,
+                {
+                  key,
+                  diagram: {
+                    projectId,
+                    // No entry id: the request names the file by path, and text canvases
+                    // never read the id. An empty id keeps the tab model honest about that.
+                    entryId: new Uint8Array(0),
+                    path: [...request.path],
+                    mimeType,
+                    editorId: request.editorId,
+                    initialLine: request.line,
+                  },
+                },
+              ],
+        );
+        setActiveKey(key);
+      }),
+    [projectId],
+  );
+
   const close = (key: string) => {
     // An editor tab with unsaved edits asks first (modular-text-editors R6.5); diagram tabs
-    // never register as dirty, so nothing changes for them.
-    if (isTabDirty(key) && !window.confirm("This tab has unsaved changes. Close it anyway?")) {
+    // never register as dirty, so nothing changes for them. The dirty registry is keyed by
+    // the file's path - the one identity the editor panel and this strip share.
+    const closing = tabs.find((tab) => tab.key === key);
+    const dirtyKey = closing?.diagram.path.join("/") ?? key;
+    if (isTabDirty(dirtyKey) && !window.confirm("This tab has unsaved changes. Close it anyway?")) {
       return;
     }
 
@@ -103,7 +143,7 @@ export function DiagramTabsPanel({ projectId }: DiagramTabsPanelProps) {
   const tabDefs: TabDef[] = tabs.map((tab) => ({
     id: tab.key,
     label: labelFor(tab.diagram.path),
-    icon: "mdi-graph-outline",
+    icon: tab.diagram.mimeType.startsWith("editor/") ? "mdi-file-document-outline" : "mdi-graph-outline",
     tooltip: tab.diagram.path.join("/"),
     content: <DiagramPanel diagram={tab.diagram} />,
   }));

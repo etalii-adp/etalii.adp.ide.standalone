@@ -27,6 +27,7 @@ import type {
 } from "../../generated/context_pb";
 import type { ContextPromptSubmission, ContextPromptVerdict } from "./ContextPromptHost";
 import { useCoalescedSelect } from "./useCoalescedSelect";
+import { requestTextTab } from "../panels/textTabRequests";
 
 /** The `none` alternative: a plain selection, nothing more. */
 export const NONE_DETAIL: ContextSelection["detail"] = { case: "none", value: create(EmptySchema) };
@@ -167,6 +168,19 @@ export function innermostAction(selection: ContextSelection | null | undefined):
   return cursor?.detail.case === "action" ? cursor.detail.value : undefined;
 }
 
+/** The innermost level's entry path, or undefined when the selection is not a file entry. */
+function innermostEntryPath(selection: ContextSelection | null): string[] | undefined {
+  let cursor = selection ?? undefined;
+  while (cursor?.detail.case === "child") {
+    cursor = cursor.detail.value;
+  }
+  if (cursor?.id?.source.case !== "entryId") {
+    return undefined;
+  }
+  const segments = cursor.path?.segments;
+  return segments !== undefined && segments.length > 0 ? [...segments] : undefined;
+}
+
 export interface ContextConnectionProviderProps {
   projectId: Uint8Array;
   children: ReactNode;
@@ -185,6 +199,13 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
 
   const [selectionValue, setSelectionValue] = useState<ContextSelectionValue>(EMPTY_SELECTION);
   const [prompt, setPrompt] = useState<ContextPrompt | null>(null);
+  // The current selection, readable from inside stable callbacks: what the editor gestures
+  // below resolve their file path from, since the wire's responses carry none.
+  const selectionRef = useRef<ContextSelection | null>(null);
+  selectionRef.current = selectionValue.selection;
+  // Set while an "Open with…" dialog is in flight: the file it was asked for, so the chosen
+  // editor and the file meet again at submit time (modular-text-editors R4.4).
+  const pendingOpenWithRef = useRef<string[] | null>(null);
   const [projectActions, setProjectActions] = useState<ContextActionGroup[]>([]);
   const [problems, setProblems] = useState<ProjectProblems | null>(null);
 
@@ -328,6 +349,20 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
         interactionId: { value: crypto.getRandomValues(new Uint8Array(16)) },
         trigger,
       });
+
+      // The editor family's open gestures end client-side: workspace tabs are per-connection
+      // client state, so the backend's Completed answer means "your request stands" and the
+      // tab - whose stream then forces the editor resolution - is opened here (R5.2, R4.4).
+      if (trigger.case === "actionId" && response.accepted) {
+        const entryPath = innermostEntryPath(selectionRef.current);
+        if (trigger.value === "editor.open-as-text" && entryPath !== undefined) {
+          requestTextTab({ path: entryPath, editorId: "*" });
+        }
+        if (trigger.value === "editor.open-with") {
+          pendingOpenWithRef.current = entryPath ?? null;
+        }
+      }
+
       return { accepted: response.accepted, error: response.error };
     },
     [client, projectId],
@@ -370,6 +405,14 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
       });
       if (response.completed) {
         setPrompt(null);
+
+        // An "Open with…" choice was just confirmed: the submitted value is the chosen
+        // editor's id, and the file was remembered when the dialog was asked for (R4.4).
+        const openWithPath = pendingOpenWithRef.current;
+        if (openWithPath !== null) {
+          pendingOpenWithRef.current = null;
+          requestTextTab({ path: openWithPath, editorId: value });
+        }
       }
       // Something was created: hand its path to whoever shows the hierarchy, so the entry
       // can be revealed once the watcher announces it. The backend never selects it for us -
@@ -385,6 +428,7 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
   );
 
   const onCancel = useCallback(() => {
+    pendingOpenWithRef.current = null;
     setPrompt(null);
     void client.cancelInteraction({ interactionId: promptInteractionId ? { value: promptInteractionId } : undefined }).catch(() => {
       // The dialog is already gone client-side; the interaction also dies with the

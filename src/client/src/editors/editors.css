@@ -36,7 +36,8 @@
 }
 
 .text-editor-conflict,
-.text-editor-save-error {
+.text-editor-save-error,
+.text-editor-line-notice {
   display: flex;
   gap: 0.6rem;
   align-items: center;

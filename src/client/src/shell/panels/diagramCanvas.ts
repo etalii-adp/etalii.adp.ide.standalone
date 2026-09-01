@@ -8,6 +8,14 @@ export interface DiagramCanvasProps {
   projectId: Uint8Array;
   entryId: Uint8Array;
   path: string[];
+  /**
+   * Forces the editor family on the tab's stream: "*" for whichever editor the backend's
+   * resolver answers, a definition id for one the user chose through "Open with…". Unset for
+   * every ordinary tab - diagram canvases ignore it (modular-text-editors R5.2, R4.4).
+   */
+  editorId?: string;
+  /** 1-based line to scroll to once the text is loaded - go-to-line from a problem (R8.1). */
+  initialLine?: number;
 }
 
 /**
