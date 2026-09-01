@@ -34,14 +34,14 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Model the registration naming convention | Restrictions: a folder-scoped name is excluded from sibling derivation by construction rather than by a check every caller remembers (Requirement 4.4); a qualifier goes through the existing sanitiser, not a second one | Success: every form parses and composes back to itself, and a qualifier containing a separator is refused. Mark in progress, log when done, then mark complete._
 
-- [-] 2. Body derivation, and the ambiguity
+- [x] 2. Body derivation, and the ambiguity
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/DiagramFilePair.cs` (modify)
   - `SiblingPathFor` gains the qualified case; the ordered rule from the design; the ambiguity reported alongside the resolved path
   - Purpose: Requirement 2 - the sharpest technical problem in the spec
   - _Requirements: 2.1, 2.2, 2.3, 2.5_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Make derivation survive the qualified name | Restrictions: the order is header, then unqualified, then qualified, then longest-match with a diagnostic - the header stays authoritative per Requirement 2.3; `ResolveWithin`'s path-escape guard is preserved unchanged, because a body header is user-editable text and following it outside the project root would turn a registration into an arbitrary-file read | Success: `test.first.adp` resolves to `test.dsl`, `test.adp` resolves exactly as it does today, and the `my.config.dsl` ambiguity is covered in BOTH directions - with the longer file present and absent. Mark in progress, log when done, then mark complete._
 
-- [ ] 3. Pin the corrected .NET path behaviour
+- [-] 3. Pin the corrected .NET path behaviour
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/DiagramFilePair.Tests.cs` (modify)
   - Assert both measured values, and audit the call sites that reason about a name rather than an extension
   - Purpose: Requirement 4.3, which asks for confirmation by test rather than by assertion - and whose original assertion was wrong
