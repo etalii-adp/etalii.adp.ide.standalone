@@ -4,7 +4,7 @@ Ordered by tech.md's *Implementation order* (data model → persistence → wire
 
 Every group's gate: backend groups run `dotnet test --solution EtAlii.Adp.slnx` (from `src/backend/`, exit code checked, `failed: 0`) and `dotnet format style --verify-no-changes --severity info` (exit zero); client-touching groups (5 and after) additionally run `npm test` and `npm run typecheck` (from `src/client/`), exit codes checked.
 
-- [-] 1. Core abstractions and generalised discovery (data model layer)
+- [x] 1. Core abstractions and generalised discovery (data model layer)
   - Worktree: `.claude/worktrees/editors-core`
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4, 2.5_
 
@@ -42,7 +42,7 @@ Every group's gate: backend groups run `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 2.2, 2.3, 4.2, 4.3, 4.5_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA-minded C# developer | Task: Write EditorResolver.Tests.cs covering one-claimant, no-claimant-falls-back, ambiguous-with-default, ambiguous-without-default (asserting both the EditorAmbiguous result AND that the Error-level log line was written - use a log-capture fixture the way other backend tests already do), extension case-insensitivity, and file-name-only matching, all against a stub IEditorDefinitionCatalog with no host or gRPC involved. Also write EditorDefinitionDiscovery.Tests.cs covering a valid and a malformed synthetic Editor class, following DiagramDefinitionDiscovery.Tests's existing fixture pattern | Restrictions: no WebApplicationFactory or real gRPC in these tests - the Non-Functional Testing requirement specifically asks for resolver tests that do not need either | Success: every case above is a separate fact with a clear name, all pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 1.5 Gate and merge
+- [x] 1.5 Gate and merge
   - Run both backend gates from `src/backend/`; merge `.claude/worktrees/editors-core` into `develop` and retire it
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, checking exit codes. If clean, merge editors-core into develop and retire the worktree per CLAUDE.md | Restrictions: do not merge on a failing gate; before creating the next group's worktree, rebase its assumptions on develop's new tip, since technical-debt-cleanup and adp-file-nesting are landing concurrently | Success: both gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
