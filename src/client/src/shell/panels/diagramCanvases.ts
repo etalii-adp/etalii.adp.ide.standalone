@@ -8,7 +8,9 @@ import type { DiagramCanvasRegistration, DiagramClientModule } from "./diagramCa
  * edit to the shell, and one that is deleted takes its registrations with it.
  */
 const modules = import.meta.glob<DiagramClientModule>(
-  "../../../../diagrams/*/client/register.ts",
+  // Two families, one registry: an editor module's canvas registers exactly as a diagram
+  // module's does, keyed by the "editor/<id>" mime the backend resolves for it.
+  ["../../../../diagrams/*/client/register.ts", "../../../../editors/*/client/register.ts"],
   { eager: true },
 );
 

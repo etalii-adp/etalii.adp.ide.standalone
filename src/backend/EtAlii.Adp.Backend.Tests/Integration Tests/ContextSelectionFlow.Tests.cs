@@ -216,7 +216,7 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
     }
 
     [Fact]
-    public async Task Select_PushesTheDiagramTypeForARegistration_AndNoTypeForAPlainFile()
+    public async Task Select_PushesTheDiagramTypeForARegistration_AndTheEditorTypeForAPlainFile()
     {
         // Arrange.
         // The whole tab system hangs off this one field arriving on the pushed detail
@@ -242,7 +242,9 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
         await session.Context.SelectAsync(
             new SelectRequest { ProjectId = session.ProjectId, WatchId = session.WatchId, Selection = Selection(plainId) }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
         var plain = await ReadSelectionAsync(call.ResponseStream, cts.Token);
-        Assert.Equal("", Assert.Single(plain.Levels).Entry.DiagramMimeType);
+        // The plain-text editor module is deployed in this host, so a file no diagram claims
+        // carries its editor's mime rather than none (modular-text-editors task 5.4).
+        Assert.Equal("editor/plain", Assert.Single(plain.Levels).Entry.DiagramMimeType);
     }
 
     [Fact]

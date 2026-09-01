@@ -13,14 +13,22 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
 {
     private readonly IHierarchyModelStore _hierarchyModelStore;
     private readonly DiagramFileRouter _router;
+    private readonly EditorResolver _editorResolver;
 
     /// <param name="hierarchyModelStore">The hierarchy model store.</param>
     /// <param name="router">Says whether a file is a diagram, which is what decides that it may contain a selected element.</param>
-    public HierarchyContextSourceResolver(IHierarchyModelStore hierarchyModelStore, DiagramFileRouter router)
+    /// <param name="editorResolver">
+    /// Answers for the files the router does not claim, so an activation can open the resolved
+    /// text editor's tab through the same mime-keyed mechanism a diagram uses
+    /// (modular-text-editors Requirement 5.2).
+    /// </param>
+    public HierarchyContextSourceResolver(IHierarchyModelStore hierarchyModelStore, DiagramFileRouter router, EditorResolver editorResolver)
     {
         ArgumentNullException.ThrowIfNull(router);
+        ArgumentNullException.ThrowIfNull(editorResolver);
         _hierarchyModelStore = hierarchyModelStore;
         _router = router;
+        _editorResolver = editorResolver;
     }
 
     public bool CanResolve(ContextSource source) => source.SourceCase == ContextSource.SourceOneofCase.EntryId;
@@ -176,7 +184,11 @@ public sealed class HierarchyContextSourceResolver : IContextSourceResolver
         {
             DiagramRouted routed => routed.Definition.Origin.MimeType,
             DiagramUnknownType unknown => unknown.MimeType,
-            _ => "",
+            // Diagrams first, unconditionally - only what the router leaves falls through to
+            // the editor family, whose tab keys on the same field ("editor/<id>"). An
+            // ambiguous editor claim answers empty: the conflict was reported at startup, and
+            // an activation that opens nothing beats one that picks an arbitrary rival.
+            _ => _editorResolver.Resolve(fullPath) is EditorRouted editor ? $"editor/{editor.Definition.Id}" : "",
         };
 
 }

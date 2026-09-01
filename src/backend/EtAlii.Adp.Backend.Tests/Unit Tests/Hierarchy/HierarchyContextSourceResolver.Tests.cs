@@ -16,7 +16,7 @@ public class HierarchyContextSourceResolverTests : IDisposable
     {
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
-        _resolver = new HierarchyContextSourceResolver(_store, new DiagramFileRouter(new EmptyCatalog()));
+        _resolver = new HierarchyContextSourceResolver(_store, new DiagramFileRouter(new EmptyCatalog()), EmptyEditorResolver);
     }
 
     public void Dispose()
@@ -291,9 +291,12 @@ public class HierarchyContextSourceResolverTests : IDisposable
     private static readonly Diagram.DiagramDefinition RivalMindmap =
         new(new Diagram.DiagramOrigin("xmind", "mindmap"), "Rival map", Extension: ".mm");
 
+    /// <summary>An editor resolver that knows no editors, so nothing falls through to the editor arm.</summary>
+    private static readonly EditorResolver EmptyEditorResolver = new(new Editor.EditorDefinitionCatalog { All = [] });
+
     /// <summary>The resolver over a catalog that knows the given definitions, unlike the class's empty default.</summary>
     private HierarchyContextSourceResolver ResolverKnowing(params Diagram.DiagramDefinition[] definitions) =>
-        new(_store, new DiagramFileRouter(new TestDiagramDefinitionCatalog(definitions)));
+        new(_store, new DiagramFileRouter(new TestDiagramDefinitionCatalog(definitions)), EmptyEditorResolver);
 
     private async Task<string> DiagramMimeOfAsync(HierarchyContextSourceResolver resolver, params string[] segments)
     {
@@ -357,6 +360,23 @@ public class HierarchyContextSourceResolverTests : IDisposable
         // Assert.
         Assert.Equal("", await DiagramMimeOfAsync(resolver, "readme.txt"));
         Assert.Equal("", await DiagramMimeOfAsync(resolver, "docs"));
+    }
+
+    [Fact]
+    public async Task ResolveAsync_AFileNoDiagramClaims_CarriesItsEditorMime()
+    {
+        // Arrange: a deployment with a fallback editor (modular-text-editors task 5.4's activation
+        // path - the client keys its canvas registry on this mime).
+        CreateFile("notes.txt");
+        var editors = new EditorResolver(new Editor.EditorDefinitionCatalog
+        {
+            All = [new Editor.EditorDefinition("plain", "Plain Text", IsFallback: true)],
+        });
+        var resolver = new HierarchyContextSourceResolver(
+            _store, new DiagramFileRouter(new TestDiagramDefinitionCatalog([Mindmap])), editors);
+
+        // Act and assert: the diagram family answered NotADiagram, so the editor family names it.
+        Assert.Equal("editor/plain", await DiagramMimeOfAsync(resolver, "notes.txt"));
     }
 
 }
