@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/technical-debt-cleanup/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-08-31T11:04:18.696Z",
       "trigger": "initial",
+      "approvalId": "approval_1788174258505_lylkkzm7a",
+      "approvalTitle": "Design: technical-debt-cleanup"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-01T09:10:13.067Z",
+      "trigger": "approved",
       "approvalId": "approval_1788174258505_lylkkzm7a",
       "approvalTitle": "Design: technical-debt-cleanup"
     }

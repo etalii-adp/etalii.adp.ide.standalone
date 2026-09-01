@@ -3,8 +3,10 @@
   "title": "Design: technical-debt-cleanup",
   "filePath": ".spec-workflow/specs/technical-debt-cleanup/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-31T11:04:18.505Z",
   "category": "spec",
-  "categoryName": "technical-debt-cleanup"
+  "categoryName": "technical-debt-cleanup",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-01T09:10:13.070Z"
 }
