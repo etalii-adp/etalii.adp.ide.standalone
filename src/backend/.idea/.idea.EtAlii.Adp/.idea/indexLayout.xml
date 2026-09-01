@@ -7,6 +7,7 @@
       <Path>../api</Path>
       <Path>../client</Path>
       <Path>../diagrams</Path>
+      <Path>../examples</Path>
     </attachedFolders>
     <explicitIncludes />
     <explicitExcludes />
