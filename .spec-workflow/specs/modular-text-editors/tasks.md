@@ -142,11 +142,11 @@ Every group's gate: backend groups run `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, checking exit codes. If clean, merge editors-markdown into develop and retire the worktree | Restrictions: do not merge on a failing gate | Success: both gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5. Client: workspace tab integration and the two editors' UI (client UI layer)
+- [-] 5. Client: workspace tab integration and the two editors' UI (client UI layer)
   - Worktree: `.claude/worktrees/editors-client`
   - _Requirements: 1.1, 6.5, 10.2_
 
-- [ ] 5.1 Add the CodeMirror 6 dependency and a shared base editor component
+- [-] 5.1 Add the CodeMirror 6 dependency and a shared base editor component
   - File: `src/client/package.json` (modified - add `@codemirror/*` packages), `src/client/src/diagrams/` or a new `src/client/src/editors/` shared folder (new) hosting a base text-editor React component
   - CodeMirror 6 chosen over Monaco per design.md's product.md-alignment reasoning (modular per-language packages match the plugin-per-module shape; Monaco's worker-based build needs bespoke Vite configuration that would touch shared build files every module would then depend on)
   - _Requirements: 1.1_
