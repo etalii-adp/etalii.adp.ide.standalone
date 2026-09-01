@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram;
 using EtAlii.Adp.Backend.Context;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -14,16 +15,24 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
     private const string RootUntouchable = "The project folder itself cannot be renamed or deleted here.";
 
     private readonly IHistoryStackStore _historyStacks;
+    private readonly IDiagramDefinitionCatalog _catalog;
 
     /// <param name="historyStacks">
     /// Where both actions send their work, scoped to the target's project. Neither touches the
     /// filesystem itself: a rename and a delete are state changes, so they go out as commands
     /// and the project's history is what records them.
     /// </param>
-    public HierarchyContextActionProvider(IHistoryStackStore historyStacks)
+    /// <param name="catalog">
+    /// How the delete confirmation knows a file is a subject: the registrations over it are
+    /// counted so the dialog can say how many go with it, before anything runs
+    /// (adp-file-nesting Requirement 6.1).
+    /// </param>
+    public HierarchyContextActionProvider(IHistoryStackStore historyStacks, IDiagramDefinitionCatalog catalog)
     {
         ArgumentNullException.ThrowIfNull(historyStacks);
+        ArgumentNullException.ThrowIfNull(catalog);
         _historyStacks = historyStacks;
+        _catalog = catalog;
     }
 
     public ContextScope Scope => ContextScope.Hierarchy;
@@ -89,7 +98,7 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
                 new ContextConfirmationRequest(
                     Title: target.IsContainer ? "Delete folder?" : "Delete file?",
                     Icon: "mdi-trash-can-outline",
-                    Message: DeleteConfirmationMessage(name, target.IsContainer),
+                    Message: DeleteConfirmationMessage(name, target.IsContainer, CascadeCountOf(target)),
                     ConfirmLabel: "Delete",
                     Danger: true)),
 

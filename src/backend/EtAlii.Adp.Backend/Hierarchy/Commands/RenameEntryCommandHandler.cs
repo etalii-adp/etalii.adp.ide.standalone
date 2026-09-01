@@ -160,7 +160,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         // The classic pair rename stays exactly as it was (Requirement 11.1) - but only while
         // it IS the classic pair. With qualified peers over the same subject, carrying the
         // subject off would orphan them (Requirement 6.2's guarantee, in rename form).
-        if (sibling is not null && File.Exists(sibling) && RegistrationsOver(parentPath, sibling).Any(peer => !string.Equals(peer, sourcePath, StringComparison.OrdinalIgnoreCase)))
+        if (sibling is not null && File.Exists(sibling) && DiagramRegistrationSet.Over(parentPath, sibling, _catalog).Any(peer => !string.Equals(peer, sourcePath, StringComparison.OrdinalIgnoreCase)))
         {
             var result = CommandResult.Failure(
                 $"Other diagrams also describe '{IoPath.GetFileName(sibling)}'. Rename '{IoPath.GetFileName(sibling)}' itself to move them all together.");
@@ -266,7 +266,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             return null;
         }
 
-        var registrations = RegistrationsOver(parentPath, sourcePath).ToList();
+        var registrations = DiagramRegistrationSet.Over(parentPath, sourcePath, _catalog).ToList();
         if (registrations.Count == 0)
         {
             return null;
@@ -288,10 +288,10 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
                 moves.Add((registration, IoPath.Combine(parentPath, renamed)));
             }
 
-            var content = SafeRead(registration);
+            var content = DiagramRegistrationSet.SafeRead(registration);
             if (content is not null)
             {
-                var rewritten = RewriteBodyHeaderSegment(content, originalName, newName);
+                var rewritten = DiagramRegistrationSet.RewriteBodyHeaderSegment(content, originalName, newName);
                 if (!string.Equals(rewritten, content, StringComparison.Ordinal))
                 {
                     rewrites.Add((registration, content, rewritten));
@@ -344,95 +344,5 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
 
         _logger.Information("Renamed {SourcePath} to {NewName}, carrying {Count} diagram registration(s)", sourcePath, newName, moves.Count - 1);
         return CommandResult.Success(new RenameEntryCommand(targetPath, originalName));
-    }
-
-    /// <summary>Every registration in <paramref name="parentPath"/> whose body resolves to <paramref name="subjectPath"/>.</summary>
-    private IEnumerable<string> RegistrationsOver(string parentPath, string subjectPath)
-    {
-        IEnumerable<string> candidates;
-        try
-        {
-            candidates = Directory.EnumerateFiles(parentPath, "*" + DiagramFileName.Extension);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            yield break;
-        }
-
-        var subjectName = IoPath.GetFileName(subjectPath);
-        foreach (var candidate in candidates)
-        {
-            // Name derivation, resolved against the folder itself; a body: header naming the
-            // subject's file name counts too, which is how the command - which has no project
-            // root to resolve a header path against - still carries header-pointed sets.
-            var body = DiagramFilePair.BodyOf(candidate, _catalog, parentPath);
-            var derives = body is { } resolved && resolved.Path.Length > 0 &&
-                          string.Equals(resolved.Path, subjectPath, StringComparison.OrdinalIgnoreCase);
-            var headerNamesIt = SafeRead(candidate) is { } content &&
-                                !string.Equals(RewriteBodyHeaderSegment(content, subjectName, subjectName + "\0"), content, StringComparison.Ordinal);
-            if (derives || headerNamesIt)
-            {
-                yield return candidate;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Rewrites a <c>body:</c> header whose final path segment is <paramref name="oldFileName"/>
-    /// to name <paramref name="newFileName"/>, leaving everything else - including the rest of
-    /// the header's relative path - untouched. Returns the content unchanged when no header
-    /// matches.
-    /// </summary>
-    private static string RewriteBodyHeaderSegment(string content, string oldFileName, string newFileName)
-    {
-        var lines = content.Split('\n');
-        for (var index = 1; index < lines.Length && index <= 9; index++)
-        {
-            var line = lines[index];
-            var trimmed = line.TrimStart();
-            if (trimmed.Length == 0)
-            {
-                continue;
-            }
-
-            if (!trimmed.StartsWith("body:", StringComparison.OrdinalIgnoreCase))
-            {
-                if (!trimmed.StartsWith("view:", StringComparison.OrdinalIgnoreCase))
-                {
-                    break; // past the header block
-                }
-
-                continue;
-            }
-
-            var value = trimmed["body:".Length..].Trim();
-            var segment = value.Replace('\\', '/');
-            var lastSlash = segment.LastIndexOf('/');
-            var fileSegment = lastSlash < 0 ? value : value[(lastSlash + 1)..];
-            if (!string.Equals(fileSegment.TrimEnd('\r'), oldFileName, StringComparison.OrdinalIgnoreCase))
-            {
-                break;
-            }
-
-            var prefixLength = line.Length - line.TrimStart().Length;
-            var directoryPart = lastSlash < 0 ? "" : value[..(lastSlash + 1)];
-            var carriage = line.EndsWith('\r') ? "\r" : "";
-            lines[index] = line[..prefixLength] + "body: " + directoryPart + newFileName + carriage;
-            break;
-        }
-
-        return string.Join('\n', lines);
-    }
-
-    private static string? SafeRead(string path)
-    {
-        try
-        {
-            return File.ReadAllText(path);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            return null;
-        }
     }
 }
