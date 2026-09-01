@@ -119,11 +119,11 @@ public class EditorResolverTests : IDisposable
         var ambiguous = Assert.IsType<EditorAmbiguous>(routing);
         Assert.Equal(".md", ambiguous.Extension);
         Assert.Equal(new[] { "one", "two" }, ambiguous.Claimants.Select(claimant => claimant.Id));
-        var error = Assert.Single(_logger.Errors.Where(line => line.Contains("one, two")));
+        var error = Assert.Single(_logger.Errors, line => line.Contains("one, two"));
         Assert.Contains(".md", error);
 
         resolver.Resolve(@"C:\project\other.md");
-        Assert.Single(_logger.Errors.Where(line => line.Contains("one, two")));
+        Assert.Single(_logger.Errors, line => line.Contains("one, two"));
     }
 
     [Fact]
