@@ -4,11 +4,11 @@ Ordered by tech.md's *Implementation order* (data model → persistence → wire
 
 Every group's gate: backend groups run `dotnet test --solution EtAlii.Adp.slnx` (from `src/backend/`, exit code checked, `failed: 0`) and `dotnet format style --verify-no-changes --severity info` (exit zero); client-touching groups (5 and after) additionally run `npm test` and `npm run typecheck` (from `src/client/`), exit codes checked.
 
-- [ ] 1. Core abstractions and generalised discovery (data model layer)
+- [-] 1. Core abstractions and generalised discovery (data model layer)
   - Worktree: `.claude/worktrees/editors-core`
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 1.1 Create the `EtAlii.Adp.Editor` project and `EditorDefinition`
+- [-] 1.1 Create the `EtAlii.Adp.Editor` project and `EditorDefinition`
   - File: `src/backend/EtAlii.Adp.Editor/EtAlii.Adp.Editor.csproj` (new), `src/backend/EtAlii.Adp.Editor/_Model/EditorDefinition.cs` (new), `src/backend/EtAlii.Adp.Editor/IEditorDefinitionCatalog.cs` (new)
   - `EditorDefinition` exactly as design.md's Data Models section: `Id`, `Title`, `Description`, `Extensions: IReadOnlyList<string>` (lower-cased, dot included), `FileNames: IReadOnlyList<string>`, `IsFallback: bool`, `IsDefaultForSharedExtension: bool`, `Build: Action<IHostApplicationBuilder>?`
   - `IEditorDefinitionCatalog` mirrors `IDiagramDefinitionCatalog` exactly (an `All` property), per design.md's Components section
