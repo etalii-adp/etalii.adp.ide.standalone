@@ -291,8 +291,9 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
         var parts = value.Split(',');
         if (parts.Length == 2 &&
             double.TryParse(parts[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var seconds) &&
-            int.TryParse(parts[1], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out row))
+            int.TryParse(parts[1], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var parsedRow))
         {
+            row = parsedRow;
             begin = TimelineScale.ToTime(seconds, TimelinePrecision.Date);
         }
         else if (TimelineInstants.Parse(value) is { } typed)
@@ -321,11 +322,11 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
 
     private static IReadOnlyList<ContextActionGroupDefinition> ForElement(TimelineElement element)
     {
-        var edits = new List<ContextActionDefinition>
-        {
+        List<ContextActionDefinition> edits =
+        [
             new(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
             new(ConnectActionId, "Connect…", "mdi-ray-start-arrow"),
-        };
+        ];
 
         // For a period, the end can be removed; for a moment, granted - the gesture that is not
         // there (no right adorner) is replaced by the action that is (Requirement 7.5).

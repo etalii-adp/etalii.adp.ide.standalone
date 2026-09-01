@@ -104,15 +104,15 @@ public class TimelineDocumentTests
         // Arrange.
         // The reason the guard exists at all: an edit and its inverse must cancel exactly, or
         // undo returns a file one byte different from the one the user had.
-        const string Original = "first\r\nlast-without-newline";
-        var document = TimelineDocument.Parse(Original);
+        const string original = "first\r\nlast-without-newline";
+        var document = TimelineDocument.Parse(original);
 
         // Act.
         document.Insert(document.Lines.Count, ["appended"]);
         document.Remove(new LineRange(document.Lines.Count - 1, document.Lines.Count - 1));
 
         // Assert.
-        Assert.Equal(Original, document.Text);
+        Assert.Equal(original, document.Text);
     }
 
     [Fact]
