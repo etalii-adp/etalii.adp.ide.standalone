@@ -248,7 +248,7 @@
   - _Requirements: 1.2, 2.2, 2.5, 3.4, 6.4, 7.4, 9.1, 10.3_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Prove the whole arc end to end through the real gRPC surface | Restrictions: use the real service APIs rather than guessed names; one watch id per connection | Success: every listed flow has a test, and each fails if its guard is reverted_
 
-- [ ] 31. Catalog, manual pass, and the closing check
+- [x] 31. Catalog, manual pass, and the closing check
   - File: `docs/diagrams.md` (edited), `tests.md` (edited), this document
   - Move the `generic/timeline` row to ✅ Implemented. Run the app and verify by hand what a unit test cannot express — the ruler staying put while the diagram scrolls, labels changing with zoom, connections following a drag — recording each as a step-by-step entry in `tests.md`. Then check the claim the Introduction makes: **no Azure-Pipelines-style core change crept in**; grep core for anything naming time, rows or this type, and report what you find rather than fixing it quietly. Record the `TextDocument` finding's status: still open, or superseded
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 6.5, 8.6_
