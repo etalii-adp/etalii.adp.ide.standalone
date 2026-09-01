@@ -77,6 +77,8 @@ public sealed class LogCapture : IDisposable
         }
     }
 
+    public IEnumerable<string> Errors => Rendered(LogEventLevel.Error);
+
     public IEnumerable<string> Warnings => Rendered(LogEventLevel.Warning);
 
     public IEnumerable<string> Informations => Rendered(LogEventLevel.Information);
