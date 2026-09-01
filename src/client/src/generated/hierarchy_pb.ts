@@ -255,7 +255,7 @@ export type EntryUpdated = Message<"etalii.adp.EntryUpdated"> & {
   hasChildren: boolean;
 
   /**
-   * set only for a re-parent (an orphan whose subject appeared); unset means the parent is unchanged. A re-parent is an update rather than remove-then-create so the entry keeps its id and any selection a client holds on it (adp-file-nesting Requirement 10.3)
+   * set only for a re-parent (an orphan whose subject appeared, or a subject vanishing under its registrations); unset means the parent is unchanged, and a set-but-empty id means the root. A re-parent is an update rather than remove-then-create so the entry keeps its id and any selection a client holds on it (adp-file-nesting Requirement 10.3)
    *
    * @generated from field: etalii.adp.ShortGuid parent_id = 3;
    */
