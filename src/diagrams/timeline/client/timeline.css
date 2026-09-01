@@ -111,6 +111,18 @@
   stroke-width: 1.5;
 }
 
+/* An invisible fat twin of the line carries the pointer - a 1.5px stroke is no target. */
+.timeline-connection path.timeline-connection-hit {
+  stroke: transparent;
+  stroke-width: 14;
+  cursor: pointer;
+}
+
+.timeline-connection.timeline-selected path.timeline-connection-line {
+  stroke: var(--color-primary, limegreen);
+  stroke-width: 2.5;
+}
+
 .timeline-connection text {
   fill: var(--color-text-muted, #5a6376);
   font-size: 11px;

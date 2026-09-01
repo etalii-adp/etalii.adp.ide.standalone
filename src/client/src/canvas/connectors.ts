@@ -98,6 +98,21 @@ export function horizontalBezierPath(from: Point, to: Point): string {
   return `M ${from.x} ${from.y} C ${midX} ${from.y}, ${midX} ${to.y}, ${to.x} ${to.y}`;
 }
 
+/**
+ * A cubic bezier that always departs `from` rightward and arrives at `to` from its left.
+ *
+ * With `to` well to the right of `from` this is exactly the horizontal bezier: both control
+ * points meet at the horizontal midpoint. As `to` moves back over or behind `from`, the control
+ * points push outward instead - one past `from` to the right, one past `to` to the left, further
+ * the further back `to` sits - so the curve still leaves forward, loops around, and arrives
+ * backward, rather than reversing straight out of a box's side.
+ */
+export function forwardBezierPath(from: Point, to: Point): string {
+  const span = to.x - from.x;
+  const reach = Math.max(span / 2, 40, -span * 0.6);
+  return `M ${from.x} ${from.y} C ${from.x + reach} ${from.y}, ${to.x - reach} ${to.y}, ${to.x} ${to.y}`;
+}
+
 /** A straight line from one point to another, as an SVG path. */
 export function straightPath(from: Point, to: Point): string {
   return `M ${from.x} ${from.y} L ${to.x} ${to.y}`;

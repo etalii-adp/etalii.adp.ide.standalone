@@ -6,6 +6,7 @@ let currentModel: TimelineModel = emptyModel;
 let currentLoading = false;
 let currentFailed = false;
 let currentSelectionKey: string | null = null;
+let currentActions: unknown[] = [];
 let moves: { elementId: string; x: number; y: number }[] = [];
 let selections: unknown[] = [];
 let executed: { actionId: string; source: unknown }[] = [];
@@ -26,7 +27,7 @@ vi.mock("./useTimelineStream", () => ({
 
 vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   innermostKey: () => currentSelectionKey,
-  useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: [] }),
+  useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: currentActions }),
   useContextConnection: () => ({
     select: (selection: unknown) => selections.push(selection),
     executeAction: (actionId: string, source?: unknown) => {
@@ -101,6 +102,7 @@ beforeEach(() => {
   currentLoading = false;
   currentFailed = false;
   currentSelectionKey = null;
+  currentActions = [];
   moves = [];
   selections = [];
   executed = [];
@@ -344,6 +346,108 @@ describe("the timeline canvas", () => {
 
     // Assert.
     expect(container.querySelector(".timeline-period")!.getAttribute("x")).not.toBe(before);
+  });
+
+  it("selects a relation on a left click, through its fat hit path", () => {
+    // Arrange.
+    const { container } = renderCanvas();
+    const hit = container.querySelector(".timeline-connection-hit")!;
+
+    // Act.
+    fireEvent.click(hit);
+
+    // Assert.
+    // The click selects the connection by its id - the same channel an element selection uses,
+    // and the resolver answers for both. Before this, a relation could not be selected at all.
+    expect(selections).toHaveLength(1);
+    const child = (selections[0] as { detail: { value: { id: { source: { value: { value: string } } } } } }).detail.value;
+    expect(child.id.source.value.value).toBe("ccc");
+  });
+
+  it("marks the selected relation, so the selection is visible", () => {
+    // Arrange.
+    currentSelectionKey = "element:ccc";
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    expect(container.querySelector(".timeline-connection")!.classList.contains("timeline-selected")).toBe(true);
+  });
+
+  it("opens the context menu for a relation once its selection arrives", () => {
+    // Arrange.
+    const { container, rerender } = renderCanvas();
+    const hit = container.querySelector(".timeline-connection-hit")!;
+
+    // Act: the right-click asks for the selection; the menu waits for it to arrive.
+    fireEvent.contextMenu(hit);
+    expect(selections).toHaveLength(1);
+
+    // The pushed selection lands: same key, actions and all.
+    currentSelectionKey = "element:ccc";
+    currentActions = [{ actions: [{ id: "timeline.disconnect", label: "Remove", icon: "", available: true, unavailableReason: "", items: [] }] }];
+    rerender(
+      <TimelineCanvas projectId={new Uint8Array([1])} entryId={new Uint8Array([2])} path={["plan.tml"]} />,
+    );
+
+    // Assert.
+    expect(container.ownerDocument.querySelector(".context-menu")).not.toBeNull();
+  });
+
+  it("opens the context menu even when the element is already the selection", () => {
+    // Arrange.
+    // Right-clicking the selected element re-pushes the same key, the effect waiting for a key
+    // change never fires, and the menu never opened - the "menu does not always show" bug.
+    currentSelectionKey = "element:aaa";
+    currentActions = [{ actions: [{ id: "timeline.rename", label: "Rename", icon: "", available: true, unavailableReason: "", items: [] }] }];
+    const { container } = renderCanvas();
+
+    // Act.
+    fireEvent.contextMenu(container.querySelector('[data-element-id="aaa"]')!);
+
+    // Assert.
+    // The menu opens from the actions already at hand, and nothing is re-pushed.
+    expect(container.ownerDocument.querySelector(".context-menu")).not.toBeNull();
+    expect(selections).toHaveLength(0);
+  });
+
+  it("loops a relation forward out of the source and back into an overlapping target", () => {
+    // Arrange: bbb begins while aaa is still running, well before aaa's end.
+    const at = Date.UTC(2026, 0, 5) / 1000;
+    currentModel = {
+      elements: new Map([
+        ["aaa", period("aaa", "First", at, 39, 0)],
+        ["bbb", period("bbb", "Second", at + 5 * 86400, 5, 2)],
+      ]),
+      connections: new Map([["ccc", { id: "ccc", fromElementId: "aaa", toElementId: "bbb", label: "" }]]),
+    };
+
+    // Act.
+    const { container } = renderCanvas();
+    const d = container.querySelector(".timeline-connection-line")!.getAttribute("d")!;
+    const numbers = d.match(/-?[\d.]+/g)!.map(Number);
+    const [startX, , control1X, , control2X, , endX] = numbers;
+
+    // Assert.
+    // The control points push past both endpoints: the curve departs the source rightward,
+    // loops around, and arrives at the target from its left - it never reverses out of a side.
+    expect(endX).toBeLessThan(startX);
+    expect(control1X).toBeGreaterThan(startX);
+    expect(control2X).toBeLessThan(endX);
+  });
+
+  it("keeps the plain facing bezier when the target starts after the source ends", () => {
+    // Arrange: the default model - bbb begins three days after aaa's end.
+    const { container } = renderCanvas();
+
+    // Act.
+    const d = container.querySelector(".timeline-connection-line")!.getAttribute("d")!;
+    const numbers = d.match(/-?[\d.]+/g)!.map(Number);
+    const [, , control1X, , control2X] = numbers;
+
+    // Assert: both control points still meet at the horizontal midpoint.
+    expect(control1X).toBe(control2X);
   });
 
   it("moves a label beside its box when the box is too narrow to hold it", () => {

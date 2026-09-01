@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { create } from "@bufbuild/protobuf";
 import { EmptySchema } from "@bufbuild/protobuf/wkt";
-import { horizontalBezierPath, sideAnchorOf, type ConnectorBox } from "@client/canvas/connectors";
+import { forwardBezierPath, horizontalBezierPath, sideAnchorOf, type ConnectorBox } from "@client/canvas/connectors";
 import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { ContextMenu } from "@client/shell/context/ContextMenu";
 import { toMenuGroups } from "@client/shell/context/toMenuGroups";
@@ -435,7 +435,8 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
     }
   };
 
-  const onElementContextMenu = (event: React.MouseEvent, element: TimelineElement) => {
+  /** One menu opening for elements and relations alike - both select through the same channel. */
+  const openMenuAt = (event: React.MouseEvent, id: string) => {
     event.preventDefault();
     event.stopPropagation();
     if (panRef.current?.moved) {
@@ -443,10 +444,30 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
       return;
     }
 
-    // The menu opens once the pushed selection for this element arrives with its actions, so
+    const position = { x: event.clientX, y: event.clientY };
+    if (selectionKey === `element:${id}`) {
+      // Already the selection: re-selecting would push the same key, the effect waiting for a
+      // key change would never fire, and the menu never opened - which is exactly how a second
+      // right-click on the same element used to do nothing. The actions are already here.
+      setMenuPosition(position);
+      return;
+    }
+
+    // The menu opens once the pushed selection for this target arrives with its actions, so
     // what it shows is the backend's answer rather than a guess.
-    pendingMenuRef.current = { id: element.id, position: { x: event.clientX, y: event.clientY } };
-    select(elementSelection(entryId, path, element.id, ContextSelectionAction.CONTEXT_MENU));
+    pendingMenuRef.current = { id, position };
+    select(elementSelection(entryId, path, id, ContextSelectionAction.CONTEXT_MENU));
+  };
+
+  const onElementContextMenu = (event: React.MouseEvent, element: TimelineElement) => {
+    openMenuAt(event, element.id);
+  };
+
+  const onConnectionClick = (event: React.MouseEvent, connectionId: string) => {
+    // A left-click on a relation selects it, exactly as it does an element (the resolver
+    // answers for both). stopPropagation keeps the surface from reading it as background.
+    event.stopPropagation();
+    select(elementSelection(entryId, path, connectionId));
   };
 
   /**
@@ -542,17 +563,34 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
           {[...model.connections.values()].map((connection) => {
             const from = boxes.get(connection.fromElementId);
             const to = boxes.get(connection.toElementId);
-            if (!from || !to) {
+            const fromElement = model.elements.get(connection.fromElementId);
+            const toElement = model.elements.get(connection.toElementId);
+            if (!from || !to || !fromElement || !toElement) {
               // A dangling connection is the validator's to report; there is nothing to draw.
               return null;
             }
 
-            // Side anchors and a horizontal bezier, from the shared geometry and nothing else
-            // (Requirements 8.1-8.3). Which sides face each other follows from the boxes.
-            const [a, b] = facingAnchors(from, to);
+            // Side anchors and a bezier, from the shared geometry and nothing else
+            // (Requirements 8.1-8.3). When the target begins before the source ends - in time,
+            // not pixels - the line leaves the source forward and loops back into the target,
+            // so the direction still reads left to right; otherwise the sides face each other.
+            const overlapping = toElement.x < endSecondsOf(fromElement);
+            const [a, b] = overlapping
+              ? [sideAnchorOf(from, "right"), sideAnchorOf(to, "left")]
+              : facingAnchors(from, to);
+            const d = overlapping ? forwardBezierPath(a, b) : horizontalBezierPath(a, b);
             return (
-              <g key={connection.id} className="timeline-connection">
-                <path d={horizontalBezierPath(a, b)} />
+              <g
+                key={connection.id}
+                className={connection.id === selectedId ? "timeline-connection timeline-selected" : "timeline-connection"}
+                data-connection-id={connection.id}
+                onClick={(event) => onConnectionClick(event, connection.id)}
+                onMouseDown={(event) => event.stopPropagation()}
+                onContextMenu={(event) => openMenuAt(event, connection.id)}
+              >
+                {/* An invisible fat twin carries the pointer: a 1.5px stroke is no target. */}
+                <path className="timeline-connection-hit" d={d} />
+                <path className="timeline-connection-line" d={d} />
                 {connection.label ? (
                   <text x={(a.x + b.x) / 2} y={(a.y + b.y) / 2 - 6}>
                     {connection.label}
