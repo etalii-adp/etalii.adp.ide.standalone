@@ -72,9 +72,8 @@ public class TimelineCommandsTests : IDisposable
         var before = File.ReadAllText(path);
 
         // Act.
-        var result = await History.ExecuteAsync(
-            new AddTimelineElementCommand(path, "new00001", "Added", "2026-03-01", "2026-03-15", 4));
-        await History.UndoAsync();
+        var result = await History.ExecuteAsync(new AddTimelineElementCommand(path, "new00001", "Added", "2026-03-01", "2026-03-15", 4), TestContext.Current.CancellationToken);
+        await History.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
@@ -88,7 +87,7 @@ public class TimelineCommandsTests : IDisposable
         var path = Write();
 
         // Act.
-        await History.ExecuteAsync(new AddTimelineElementCommand(path, "mmm00001", "Milestone", "2026-06-01", null, 1));
+        await History.ExecuteAsync(new AddTimelineElementCommand(path, "mmm00001", "Milestone", "2026-06-01", null, 1), TestContext.Current.CancellationToken);
 
         // Assert.
         var model = _store.GetOrLoad(path).Model;
@@ -102,8 +101,7 @@ public class TimelineCommandsTests : IDisposable
         var path = Write();
 
         // Act.
-        var result = await History.ExecuteAsync(
-            new AddTimelineElementCommand(path, "inv00001", "Backwards", "2026-06-01", "2026-05-01", 0));
+        var result = await History.ExecuteAsync(new AddTimelineElementCommand(path, "inv00001", "Backwards", "2026-06-01", "2026-05-01", 0), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(result.IsSuccess);
@@ -117,8 +115,7 @@ public class TimelineCommandsTests : IDisposable
         var path = Write();
 
         // Act.
-        var result = await History.ExecuteAsync(
-            new AddTimelineElementCommand(path, "aaa", "Duplicate", "2026-06-01", null, 0));
+        var result = await History.ExecuteAsync(new AddTimelineElementCommand(path, "aaa", "Duplicate", "2026-06-01", null, 0), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(result.IsSuccess);
@@ -132,9 +129,9 @@ public class TimelineCommandsTests : IDisposable
         var before = File.ReadAllText(path);
 
         // Act.
-        var result = await History.ExecuteAsync(new RemoveTimelineElementCommand(path, "aaa"));
+        var result = await History.ExecuteAsync(new RemoveTimelineElementCommand(path, "aaa"), TestContext.Current.CancellationToken);
         var afterRemove = _store.GetOrLoad(path).Model;
-        await History.UndoAsync();
+        await History.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
@@ -150,9 +147,9 @@ public class TimelineCommandsTests : IDisposable
         var path = Write();
 
         // Act.
-        await History.ExecuteAsync(new RemoveTimelineElementCommand(path, "aaa"));
-        await History.UndoAsync();
-        var redo = await History.RedoAsync();
+        await History.ExecuteAsync(new RemoveTimelineElementCommand(path, "aaa"), TestContext.Current.CancellationToken);
+        await History.UndoAsync(TestContext.Current.CancellationToken);
+        var redo = await History.RedoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(redo.IsSuccess, redo.Error);
@@ -168,8 +165,8 @@ public class TimelineCommandsTests : IDisposable
         var path = Write(unterminated);
 
         // Act.
-        await History.ExecuteAsync(new RemoveTimelineElementCommand(path, "last"));
-        await History.UndoAsync();
+        await History.ExecuteAsync(new RemoveTimelineElementCommand(path, "last"), TestContext.Current.CancellationToken);
+        await History.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(unterminated, File.ReadAllText(path));
@@ -183,9 +180,9 @@ public class TimelineCommandsTests : IDisposable
         var before = File.ReadAllText(path);
 
         // Act.
-        await History.ExecuteAsync(new RenameTimelineElementCommand(path, "aaa", "Renamed"));
+        await History.ExecuteAsync(new RenameTimelineElementCommand(path, "aaa", "Renamed"), TestContext.Current.CancellationToken);
         var renamed = _store.GetOrLoad(path).Model.Elements.Single(element => element.Id == "aaa");
-        await History.UndoAsync();
+        await History.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal("Renamed", renamed.Label);
@@ -201,8 +198,7 @@ public class TimelineCommandsTests : IDisposable
         var path = Write();
 
         // Act.
-        var result = await History.ExecuteAsync(
-            new SetTimelinePlacementCommand(path, "aaa", "2026-03-01", "2026-02-01", 0, "Edited"));
+        var result = await History.ExecuteAsync(new SetTimelinePlacementCommand(path, "aaa", "2026-03-01", "2026-02-01", 0, "Edited"), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(result.IsSuccess);
@@ -217,8 +213,7 @@ public class TimelineCommandsTests : IDisposable
         var path = Write();
 
         // Act.
-        var result = await History.ExecuteAsync(
-            new SetTimelinePlacementCommand(path, "bbb", "2026-05-01T09:00:00", "2026-05-02T09:00:00", 2, "Moved"));
+        var result = await History.ExecuteAsync(new SetTimelinePlacementCommand(path, "bbb", "2026-05-01T09:00:00", "2026-05-02T09:00:00", 2, "Moved"), TestContext.Current.CancellationToken);
 
         // Assert.
         // The end is ignored rather than written: giving a moment an end is the context menu's
@@ -235,8 +230,8 @@ public class TimelineCommandsTests : IDisposable
         var before = File.ReadAllText(path);
 
         // Act.
-        var result = await History.ExecuteAsync(new ConnectTimelineElementsCommand(path, "ddd", "bbb", "aaa", "back"));
-        await History.UndoAsync();
+        var result = await History.ExecuteAsync(new ConnectTimelineElementsCommand(path, "ddd", "bbb", "aaa", "back"), TestContext.Current.CancellationToken);
+        await History.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
@@ -250,7 +245,7 @@ public class TimelineCommandsTests : IDisposable
         var path = Write();
 
         // Act.
-        var result = await History.ExecuteAsync(new ConnectTimelineElementsCommand(path, "ddd", "aaa", "aaa", ""));
+        var result = await History.ExecuteAsync(new ConnectTimelineElementsCommand(path, "ddd", "aaa", "aaa", ""), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(result.IsSuccess);
@@ -264,7 +259,7 @@ public class TimelineCommandsTests : IDisposable
         var path = Write();
 
         // Act.
-        var result = await History.ExecuteAsync(new ConnectTimelineElementsCommand(path, "ddd", "aaa", "bbb", "again"));
+        var result = await History.ExecuteAsync(new ConnectTimelineElementsCommand(path, "ddd", "aaa", "bbb", "again"), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
@@ -278,7 +273,7 @@ public class TimelineCommandsTests : IDisposable
         var path = Write();
 
         // Act.
-        var result = await History.ExecuteAsync(new ConnectTimelineElementsCommand(path, "ddd", "aaa", "ghost", ""));
+        var result = await History.ExecuteAsync(new ConnectTimelineElementsCommand(path, "ddd", "aaa", "ghost", ""), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(result.IsSuccess);
@@ -291,9 +286,9 @@ public class TimelineCommandsTests : IDisposable
         var path = Write();
 
         // Act.
-        await History.ExecuteAsync(new DisconnectTimelineConnectionCommand(path, "ccc"));
+        await History.ExecuteAsync(new DisconnectTimelineConnectionCommand(path, "ccc"), TestContext.Current.CancellationToken);
         var afterDisconnect = _store.GetOrLoad(path).Model.Connections.Count;
-        await History.UndoAsync();
+        await History.UndoAsync(TestContext.Current.CancellationToken);
         var restored = TimelineEdits.ConnectionOf(_store.GetOrLoad(path).Model, "ccc");
 
         // Assert.
@@ -310,8 +305,8 @@ public class TimelineCommandsTests : IDisposable
         var before = File.ReadAllText(path);
 
         // Act.
-        await History.ExecuteAsync(new RelabelTimelineConnectionCommand(path, "ccc", "renamed"));
-        await History.UndoAsync();
+        await History.ExecuteAsync(new RelabelTimelineConnectionCommand(path, "ccc", "renamed"), TestContext.Current.CancellationToken);
+        await History.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Equal(before, File.ReadAllText(path));
@@ -324,10 +319,10 @@ public class TimelineCommandsTests : IDisposable
         var path = Write();
 
         // Act.
-        await History.ExecuteAsync(new AddTimelineElementCommand(path, "new00001", "Added", "2026-03-01", null, 4));
-        await History.ExecuteAsync(new RenameTimelineElementCommand(path, "aaa", "Renamed"));
-        await History.ExecuteAsync(new ConnectTimelineElementsCommand(path, "ddd", "new00001", "aaa", ""));
-        await History.ExecuteAsync(new RemoveTimelineElementCommand(path, "new00001"));
+        await History.ExecuteAsync(new AddTimelineElementCommand(path, "new00001", "Added", "2026-03-01", null, 4), TestContext.Current.CancellationToken);
+        await History.ExecuteAsync(new RenameTimelineElementCommand(path, "aaa", "Renamed"), TestContext.Current.CancellationToken);
+        await History.ExecuteAsync(new ConnectTimelineElementsCommand(path, "ddd", "new00001", "aaa", ""), TestContext.Current.CancellationToken);
+        await History.ExecuteAsync(new RemoveTimelineElementCommand(path, "new00001"), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.Contains("# A comment the commands must never disturb.", File.ReadAllText(path), StringComparison.Ordinal);
@@ -342,7 +337,7 @@ public class TimelineCommandsTests : IDisposable
         var path = Write(broken);
 
         // Act.
-        var result = await History.ExecuteAsync(new RenameTimelineElementCommand(path, "a", "Renamed"));
+        var result = await History.ExecuteAsync(new RenameTimelineElementCommand(path, "a", "Renamed"), TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(result.IsSuccess);
