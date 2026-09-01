@@ -126,8 +126,7 @@ public sealed class DiagramDocumentReloadBridge : IDisposable
         // A registration change re-reads its body: the body's content is what the sessions
         // show, and the store re-delivering is what carries a rerouted or re-viewed .adp to
         // the next open anyway.
-        if (!_documents.TryGetValue(path, out var document)
-            && !(_registrations.TryGetValue(path, out var bodyPath) && _documents.TryGetValue(bodyPath, out document)))
+        if (!_documents.TryGetValue(path, out var document) && !(_registrations.TryGetValue(path, out var bodyPath) && _documents.TryGetValue(bodyPath, out document)))
         {
             return;
         }
