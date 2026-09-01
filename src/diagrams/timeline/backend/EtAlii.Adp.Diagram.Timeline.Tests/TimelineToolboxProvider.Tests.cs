@@ -56,6 +56,7 @@ public class TimelineToolboxProviderTests : IDisposable
         // Assert.
         Assert.All(_toolbox.Items, item =>
         {
+            ArgumentNullException.ThrowIfNull(item);
             Assert.NotEmpty(item.Id);
             Assert.NotEmpty(item.Label);
             Assert.NotEmpty(item.Icon);

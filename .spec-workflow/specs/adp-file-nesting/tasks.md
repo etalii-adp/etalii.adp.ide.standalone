@@ -95,19 +95,19 @@
 
 ## Phase D — the hierarchy
 
-- [-] 10. `HierarchyNesting`
+- [x] 10. `HierarchyNesting`
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/HierarchyNesting.cs` (new)
   - Pure function: which entries are registrations, which subject each names, which are orphans
   - _Requirements: 3.2, 3.4, 3.5, 8.1, 8.2_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Assign parents without touching the filesystem | Restrictions: a registration appears under its subject and NOWHERE else (Requirement 3.5) - nesting relocates it rather than duplicating it; an orphan appears where it sits on disk rather than being hidden; the ordering is stable and stated, with the unqualified form first | Success: the `templates.adp` / `templates.yml` / `templates/` case assigns to the FILE rather than the directory, which is the case a name-based implementation gets wrong. Mark in progress, log when done, then mark complete._
 
-- [ ] 11. The two additive proto changes, and the client stubs
+- [x] 11. The two additive proto changes, and the client stubs
   - File: `src/api/hierarchy.proto` (modify), `src/client/src/generated/` (regenerated)
   - Correct `has_children`'s comment; add `EntryUpdated.parent_id`; run `npm run generate`
   - _Requirements: 3.1, 10.3_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer | Task: Make the contract changes and regenerate | Restrictions: both changes are additive - no field removed, no number reused, no enum value added - so an older client keeps working (Requirement 11.4); `EntryUpdated.parent_id` carries a re-parent, because remove-then-create would discard entry identity and any selection a client held on it; regenerating the stubs is part of THIS task, since a stale generated file fails silently | Success: `npm run typecheck` passes against the regenerated stubs. Mark in progress, log when done, then mark complete._
 
-- [ ] 12. `HierarchyModel`: nesting, and the watch messages
+- [-] 12. `HierarchyModel`: nesting, and the watch messages
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/HierarchyModel.cs` (modify)
   - _Requirements: 3.1, 10.1, 10.2, 10.3, 10.4_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Apply nesting when listing and when a watch event arrives | Restrictions: a subject's `has_children` is pushed as `EntryUpdated` when it gains its first or loses its last registration; ordering is preserved, so a client applying pushed changes in order arrives at the same tree as one listing fresh (Requirement 10.4) | Success: creating a registration nests it immediately without a reload, and creating a missing subject re-parents its orphan. Mark in progress, log when done, then mark complete._
