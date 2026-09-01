@@ -127,6 +127,32 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
         Assert.True(File.Exists(body.Value.Path), $"{relativePath} resolves a body that does not exist: {body.Value.Path}");
     }
 
+    /// <summary>
+    /// Every qualified example registration carries an explicit <c>body:</c> header
+    /// (adp-file-nesting Requirement 2.3 and the rename task's own success criterion): the
+    /// header is authoritative, and a qualified registration ADP authors states its body as a
+    /// fact rather than leaving it to derivation. Replacing a fact with an inference is a
+    /// downgrade even where the inference is currently right.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(EveryExampleRegistration))]
+    public void EveryQualifiedExampleRegistration_CarriesAnExplicitBodyHeader(string relativePath)
+    {
+        // Arrange.
+        var adpPath = IoPath.Combine(DiagramsRoot, relativePath);
+        var name = DiagramRegistrationName.TryParse(IoPath.GetFileName(adpPath));
+        if (name is not { IsQualified: true })
+        {
+            return; // Unqualified and folder-scoped forms derive; only the qualified form must state.
+        }
+
+        // Act.
+        var lines = File.ReadLines(adpPath).Skip(1).Take(8);
+
+        // Assert.
+        Assert.Contains(lines, line => line.TrimStart().StartsWith("body:", StringComparison.OrdinalIgnoreCase));
+    }
+
     /// <summary>The example set's root: the child of the module's <c>examples/</c> folder the file sits under.</summary>
     private static string ExampleRootOf(string adpPath)
     {
