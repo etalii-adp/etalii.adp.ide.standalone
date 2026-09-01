@@ -42,6 +42,12 @@ public sealed class DisconnectTimelineConnectionCommandHandler : ICommandHandler
 
         TimelineWriter.RemoveConnection(entry.Document, connection);
 
+        if (command.RemoveEmptiedConnectionsSection)
+        {
+            // The undo of a connect that created the connections: key on demand.
+            TimelineWriter.RemoveConnectionsSectionIfEmpty(entry.Document, TimelineParser.Parse(entry.Document));
+        }
+
         var error = _documents.Save(command.BodyPath);
         return Task.FromResult(error.Length == 0
             ? CommandResult.Success(inverse)

@@ -22,7 +22,7 @@ public class TimelineToolboxProviderTests : IDisposable
     public TimelineToolboxProviderTests()
     {
         Directory.CreateDirectory(_workspace);
-        _actions = new TimelineContextActionProvider(new HistoryStackStore(new TimelineTestDispatcher(_store)), _store, new TimelineConnectState());
+        _actions = new TimelineContextActionProvider(new HistoryStackStore(new TimelineTestDispatcher(_store)), _store);
     }
 
     public void Dispose()

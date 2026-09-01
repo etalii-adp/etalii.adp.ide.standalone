@@ -243,7 +243,13 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
   const yToPx = (y: number): number => y - view.panY;
 
   const onSurfacePointerDown = (event: React.MouseEvent) => {
-    if (event.target !== event.currentTarget) {
+    // "Empty space" is the surface div OR the bare svg that fills it. A real click never lands
+    // on the div itself - the svg covers it - so a target===currentTarget check silently
+    // disabled panning for every real mouse, while the synthetic events that verified it
+    // dispatched straight at the div and passed. Element shapes stopPropagation, so anything
+    // arriving here from inside the svg is background.
+    const target = event.target as Element;
+    if (target !== event.currentTarget && !target.classList?.contains("timeline-content")) {
       return;
     }
 
@@ -343,7 +349,7 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
     event.preventDefault();
   };
 
-  const onPointerUp = () => {
+  const onPointerUp = (event: React.MouseEvent) => {
     panRef.current = null;
 
     const dragging = dragRef.current;
@@ -387,22 +393,23 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
     connectRef.current = null;
     setConnect(null);
     if (connecting) {
-      if (connecting.overId === connecting.fromId) {
+      // The element under the release, read from the event itself as well as from the tracked
+      // hover: a fast drag can land its mouseup before any mouseenter fired, and the gesture
+      // must not depend on the hover having kept up.
+      const under = (event.target as Element | null)?.closest?.("[data-element-id]");
+      const targetId = connecting.overId ?? under?.getAttribute("data-element-id") ?? null;
+      if (targetId === connecting.fromId) {
         // Back onto its own source: a relation to itself is refused anyway, so this is a
         // "never mind" and nothing is sent.
         return;
       }
 
-      // One canvas gesture drives the channel's two calls: arm from the source, complete on the
-      // target. A release on empty space completes on a placement instead - the element the
-      // relation reaches does not exist yet, so the backend creates it there and relates to it
-      // in one command.
-      const completion = connecting.overId
-        ? elementSource(connecting.overId)
-        : elementSource(newPlacementId(connecting.x, nearestRow(connecting.y)));
+      // The whole gesture in one call - source and landing together in a rel: id. Deliberately
+      // stateless: the two-call protocol this replaces kept an armed source in the backend
+      // between calls, and a stale arm related the wrong pair.
+      const landing = targetId ?? newPlacementId(connecting.x, nearestRow(connecting.y));
       void (async () => {
-        await executeAction("timeline.connect", elementSource(connecting.fromId));
-        const outcome = await executeAction("timeline.connect", completion);
+        const outcome = await executeAction("timeline.connect", elementSource(`rel:${connecting.fromId}->${landing}`));
         if (!outcome.accepted) {
           setRejection(outcome.error);
         }
@@ -768,6 +775,7 @@ function TimelineElementShape({
   return (
     <g
       className={classes.join(" ")}
+      data-element-id={element.id}
       onMouseDown={(event) => onElementDown(event, element)}
       onMouseEnter={() => onElementEnter(element)}
       onMouseLeave={onElementLeave}
@@ -782,7 +790,16 @@ function TimelineElementShape({
           d={diamond(box.x, box.y)}
         />
       )}
-      <text className="timeline-label" x={element.isPeriod ? box.x : box.x + MOMENT_RADIUS + 6} y={box.y + 4}>
+      <text
+        className="timeline-label"
+        // A label wider than its box sits beside it instead of overflowing invisibly under the
+        // neighbours - the same placement a moment's label always has. Approximated at 7px per
+        // character, which errs on the side of moving outside a little early.
+        {...(element.isPeriod && box.width >= (element.label || element.id).length * 7 + 8
+          ? { x: box.x, textAnchor: undefined }
+          : { x: element.isPeriod ? box.x + box.width / 2 + 6 : box.x + MOMENT_RADIUS + 6, textAnchor: "start" as const })}
+        y={box.y + 4}
+      >
         {element.label || element.id}
       </text>
       {hint ? (
@@ -792,22 +809,12 @@ function TimelineElementShape({
       ) : null}
       {selected ? (
         <>
-          <circle
-            className="timeline-anchor"
-            cx={left}
-            cy={box.y}
-            r={5}
-            onMouseDown={(event) => onAnchorDown(event, element)}
-          />
-          <circle
-            className="timeline-anchor"
-            cx={left + box.width}
-            cy={box.y}
-            r={5}
-            onMouseDown={(event) => onAnchorDown(event, element)}
-          />
-          {/* Adorners: the left edge edits begin; the right edits end; a moment has no right
-              edge to offer, and the menu's "Give it an end" is the path instead
+          {/* Adorners first, anchors after: SVG paints in order, and the full-height adorner
+              strip used to cover the anchor down to a one-pixel sliver - which is why starting
+              a relation felt unreliable, and why a grab meant as a relate became a resize. Now
+              the dot and its generous hit circle sit on top; the strip stays grabbable above
+              and below the dot. The left edge edits begin; the right edits end; a moment has no
+              right edge to offer, and the menu's "Give it an end" is the path instead
               (Requirement 7.5). */}
           <rect
             className="timeline-adorner"
@@ -827,6 +834,22 @@ function TimelineElementShape({
               onMouseDown={(event) => onResizeDown(event, element, "right")}
             />
           ) : null}
+          <circle className="timeline-anchor" cx={left} cy={box.y} r={5} />
+          <circle
+            className="timeline-anchor-hit"
+            cx={left}
+            cy={box.y}
+            r={14}
+            onMouseDown={(event) => onAnchorDown(event, element)}
+          />
+          <circle className="timeline-anchor" cx={left + box.width} cy={box.y} r={5} />
+          <circle
+            className="timeline-anchor-hit"
+            cx={left + box.width}
+            cy={box.y}
+            r={14}
+            onMouseDown={(event) => onAnchorDown(event, element)}
+          />
         </>
       ) : null}
     </g>

@@ -5,6 +5,7 @@ import { emptyModel, type TimelineModel } from "./timelineModel";
 let currentModel: TimelineModel = emptyModel;
 let currentLoading = false;
 let currentFailed = false;
+let currentSelectionKey: string | null = null;
 let moves: { elementId: string; x: number; y: number }[] = [];
 let selections: unknown[] = [];
 let executed: { actionId: string; source: unknown }[] = [];
@@ -24,8 +25,8 @@ vi.mock("./useTimelineStream", () => ({
 }));
 
 vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
-  innermostKey: () => null,
-  useContextSelection: () => ({ selection: null, levels: [], actions: [] }),
+  innermostKey: () => currentSelectionKey,
+  useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: [] }),
   useContextConnection: () => ({
     select: (selection: unknown) => selections.push(selection),
     executeAction: (actionId: string, source?: unknown) => {
@@ -99,6 +100,7 @@ beforeEach(() => {
   currentModel = modelWith();
   currentLoading = false;
   currentFailed = false;
+  currentSelectionKey = null;
   moves = [];
   selections = [];
   executed = [];
@@ -198,21 +200,38 @@ describe("the timeline canvas", () => {
     expect(hint!.textContent).toContain("row 1");
   });
 
-  it("drives the two-call connect gesture from one anchor drag", async () => {
-    // Arrange: selection shows the anchors; here they are drawn for the selected element only,
-    // so re-render with a selection mock is heavier than the gesture deserves - the anchors are
-    // exercised through the class the canvas puts on them.
+  it("relates the source to the target in one stateless call, in the gesture's own direction", () => {
+    // Arrange: the anchors render on the selected element only.
+    currentSelectionKey = "element:aaa";
+    const { container } = renderCanvas();
+    const anchor = container.querySelector(".timeline-anchor-hit")!;
+    const target = container.querySelector('[data-element-id="bbb"]')!;
+
+    // Act: drag from an anchor of aaa and release on bbb. The landing is read from the event's
+    // own target - a fast release must not depend on a mouseenter having kept up.
+    fireEvent.mouseDown(anchor, { clientX: 100, clientY: 30 });
+    fireEvent.mouseUp(target);
+
+    // Assert.
+    // One call carries the whole gesture. The two-call protocol this replaces kept an armed
+    // source in the backend, and a stale arm related the wrong pair.
+    const calls = executed.filter((call) => call.actionId === "timeline.connect");
+    expect(calls).toHaveLength(1);
+    const source = calls[0].source as { source: { value: { value: string } } };
+    expect(source.source.value.value).toBe("rel:aaa->bbb");
+  });
+
+  it("never connects from a plain click on the element body", () => {
+    // Arrange.
     const { container } = renderCanvas();
     const surface = container.querySelector(".timeline-surface")!;
     const elements = container.querySelectorAll(".timeline-element");
 
-    // Act: press an element, but complete over the other via pointerEnter - the connect path
-    // needs an armed anchor, so this drives the handler directly through the moment element.
+    // Act: press an element body and release - a selection, not a gesture.
     fireEvent.mouseDown(elements[0], { clientX: 100, clientY: 100 });
     fireEvent.mouseUp(surface);
 
     // Assert.
-    // A plain click never connects: the gesture starts at an anchor, not at the element body.
     expect(executed.filter((call) => call.actionId === "timeline.connect")).toHaveLength(0);
   });
 
@@ -278,20 +297,71 @@ describe("the timeline canvas", () => {
     expect(shortcuts).toHaveLength(0);
   });
 
-  it("completes a relation onto empty space as a placement", () => {
+  it("completes a relation onto empty space as a create-and-relate placement", () => {
     // Arrange.
-    // Directly exercises the connect completion: with a connect drag in flight and no element
-    // under the pointer, the second call names a placement rather than being abandoned.
+    currentSelectionKey = "element:aaa";
     const { container } = renderCanvas();
+    const anchor = container.querySelector(".timeline-anchor-hit")!;
     const surface = container.querySelector(".timeline-surface")!;
 
-    // The anchors only render on the selected element, so the gesture is driven through the
-    // canvas's own connect state by starting at an anchor - covered in jsdom by mousedown on a
-    // circle when present; absent a selection there is none, and the surface release must not
-    // fabricate calls.
+    // Act: drag from an anchor of aaa and release over nothing.
+    fireEvent.mouseDown(anchor, { clientX: 100, clientY: 30 });
     fireEvent.mouseUp(surface);
 
     // Assert.
-    expect(executed.filter((call) => call.actionId === "timeline.connect")).toHaveLength(0);
+    // The landing is a placement inside the same rel: gesture - one call, one undo.
+    const calls = executed.filter((call) => call.actionId === "timeline.connect");
+    expect(calls).toHaveLength(1);
+    const source = calls[0].source as { source: { value: { value: string } } };
+    expect(source.source.value.value).toMatch(/^rel:aaa->new:/);
+  });
+
+  it("a surface release with no gesture in flight fabricates no calls", () => {
+    // Arrange.
+    const { container } = renderCanvas();
+    const surface = container.querySelector(".timeline-surface")!;
+
+    // Act.
+    fireEvent.mouseUp(surface);
+
+    // Assert.
+    expect(executed).toHaveLength(0);
+  });
+
+  it("pans when the right button lands on the drawn canvas itself, not only the surface div", () => {
+    // Arrange.
+    // Real clicks land on the inner svg, not the surface div - a target===currentTarget guard
+    // silently disabled panning everywhere, and synthetic events aimed at the surface hid it.
+    const { container } = renderCanvas();
+    const surface = container.querySelector(".timeline-surface")!;
+    const content = container.querySelector(".timeline-content")!;
+    const before = container.querySelector(".timeline-period")!.getAttribute("x");
+
+    // Act.
+    fireEvent.mouseDown(content, { button: 2, clientX: 400, clientY: 300 });
+    fireEvent.mouseMove(surface, { clientX: 320, clientY: 300 });
+    fireEvent.mouseUp(surface);
+
+    // Assert.
+    expect(container.querySelector(".timeline-period")!.getAttribute("x")).not.toBe(before);
+  });
+
+  it("moves a label beside its box when the box is too narrow to hold it", () => {
+    // Arrange: a two-day period cannot hold this label at the fitted zoom, while the six-week
+    // Discovery period holds its own comfortably.
+    const at = Date.UTC(2026, 0, 10) / 1000;
+    currentModel.elements.set("nnn", { ...period("nnn", "A label wider than two days", at, 2, 3) });
+    const { container } = renderCanvas();
+
+    // Act.
+    const labels = [...container.querySelectorAll(".timeline-label")];
+    const narrow = labels.find((label) => label.textContent === "A label wider than two days")!;
+    const wide = labels.find((label) => label.textContent === "Discovery")!;
+
+    // Assert.
+    // The narrow box's label sits beside it, start-anchored, instead of overflowing invisibly
+    // under the neighbours; the wide one stays centered.
+    expect(narrow.getAttribute("text-anchor")).toBe("start");
+    expect(wide.getAttribute("text-anchor")).toBeNull();
   });
 });

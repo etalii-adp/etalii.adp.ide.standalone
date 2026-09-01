@@ -42,12 +42,17 @@ public sealed class ConnectTimelineElementsCommandHandler : ICommandHandler<Conn
             return Task.FromResult(CommandResult.Failure("Both ends of a relation must be elements of this timeline."));
         }
 
+        // Whether the insert is about to create the connections: key, so the inverse can take
+        // the key back out and the undo return the file byte for byte.
+        var hadSection = TimelineWriter.HasConnectionsSection(entry.Document);
+
         TimelineWriter.InsertConnection(
             entry.Document, entry.Model, command.Id, command.From, command.To, command.Label);
 
         var error = _documents.Save(command.BodyPath);
         return Task.FromResult(error.Length == 0
-            ? CommandResult.Success(new DisconnectTimelineConnectionCommand(command.BodyPath, command.Id))
+            ? CommandResult.Success(new DisconnectTimelineConnectionCommand(
+                command.BodyPath, command.Id, RemoveEmptiedConnectionsSection: !hadSection))
             : CommandResult.Failure(error));
     }
 }

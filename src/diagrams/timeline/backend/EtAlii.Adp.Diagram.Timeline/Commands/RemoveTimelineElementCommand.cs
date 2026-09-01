@@ -8,6 +8,8 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// </summary>
 /// <param name="BodyPath">The document to remove from.</param>
 /// <param name="ElementId">Which element.</param>
+/// <param name="RemoveEmptiedConnectionsSection">Whether an emptied <c>connections:</c> key goes too - set by an inverse undoing the insert that created it.</param>
 public sealed record RemoveTimelineElementCommand(
     string BodyPath,
-    string ElementId) : ICommand;
+    string ElementId,
+    bool RemoveEmptiedConnectionsSection = false) : ICommand;

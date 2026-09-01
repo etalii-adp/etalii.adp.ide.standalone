@@ -74,7 +74,8 @@ public sealed class TimelineContextSourceResolver : IContextSourceResolver
         // id per call and no other field. It resolves like any element, to a target the action
         // provider reads the position back out of; it lives for one ExecuteAction and is never
         // selected, tracked or written anywhere.
-        if (TimelineNewPlacement.TryParse(elementId, out _, out _))
+        if (TimelineNewPlacement.TryParse(elementId, out _, out _) ||
+            TimelineRelationGesture.TryParse(elementId, out _, out _))
         {
             return ValueTask.FromResult<ContextLevelResolution>(new ResolvedContextLevel(new ContextResolvedLevel(
                 source,

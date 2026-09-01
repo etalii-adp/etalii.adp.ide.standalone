@@ -23,7 +23,7 @@ public class TimelineContextActionProviderTests : IDisposable
     {
         Directory.CreateDirectory(_workspace);
         _historyStacks = new HistoryStackStore(new TimelineTestDispatcher(_store));
-        _actions = new TimelineContextActionProvider(_historyStacks, _store, new TimelineConnectState());
+        _actions = new TimelineContextActionProvider(_historyStacks, _store);
     }
 
     public void Dispose()
@@ -89,7 +89,6 @@ public class TimelineContextActionProviderTests : IDisposable
         Assert.Equal(
             [
                 TimelineContextActionProvider.RenameActionId,
-                TimelineContextActionProvider.ConnectActionId,
                 TimelineContextActionProvider.RemoveEndActionId,
                 TimelineContextActionProvider.RemoveActionId,
                 TimelineContextActionProvider.AddAfterActionId,
@@ -277,88 +276,6 @@ public class TimelineContextActionProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task Tab_AddsAnElementAfterTheSelectedOne()
-    {
-        // Arrange.
-        // "After": a little later on the same row, a week long, and no dialog - everything is
-        // derived from the selected element.
-        var path = Write();
-
-        // Act.
-        var result = await _actions.ExecuteAsync(
-            Target(path, "aaa"), TimelineContextActionProvider.AddAfterActionId, CancellationToken.None);
-
-        // Assert.
-        Assert.IsType<ContextExecutionCompleted>(result);
-        var added = _store.GetOrLoad(path).Model.Elements.Single(element => element.Label == "New element");
-        Assert.Equal("2026-02-15", added.Begin.Text); // aaa ends 2026-02-13, plus the two-day gap
-        Assert.Equal("2026-02-22", added.End!.Text);
-        Assert.Equal(0, added.Row);
-    }
-
-    [Fact]
-    public async Task Enter_AddsAnElementBelowTheSelectedOne()
-    {
-        // Arrange & act.
-        // "Below": the same stretch of time, one row down - a parallel track.
-        var path = Write();
-        var result = await _actions.ExecuteAsync(
-            Target(path, "aaa"), TimelineContextActionProvider.AddBelowActionId, CancellationToken.None);
-
-        // Assert.
-        Assert.IsType<ContextExecutionCompleted>(result);
-        var added = _store.GetOrLoad(path).Model.Elements.Single(element => element.Label == "New element");
-        Assert.Equal("2026-01-05", added.Begin.Text);
-        Assert.Equal("2026-02-13", added.End!.Text);
-        Assert.Equal(1, added.Row);
-    }
-
-    [Fact]
-    public async Task ARelationDraggedOntoEmptySpace_CreatesAndRelates_AsOneUndo()
-    {
-        // Arrange.
-        // The gesture's second call names a placement rather than an element: what the relation
-        // reaches does not exist yet, so it is created there and related in one command.
-        var path = Write();
-        var before = File.ReadAllText(path);
-        var seconds = TimelineScale.ToSeconds(new DateTimeOffset(2026, 8, 1, 0, 0, 0, TimeSpan.Zero));
-
-        // Act.
-        await _actions.ExecuteAsync(Target(path, "aaa"), TimelineContextActionProvider.ConnectActionId, CancellationToken.None);
-        var second = await _actions.ExecuteAsync(
-            Target(path, TimelineNewPlacement.IdFor(seconds, 3)),
-            TimelineContextActionProvider.ConnectActionId,
-            CancellationToken.None);
-        var model = _store.GetOrLoad(path).Model;
-        var added = model.Elements.Single(element => element.Label == "New element");
-        var relation = model.Connections.Single(candidate => candidate.To == added.Id);
-        await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
-
-        // Assert.
-        Assert.IsType<ContextExecutionCompleted>(second);
-        Assert.Equal("2026-08-01", added.Begin.Text);
-        Assert.Equal(3, added.Row);
-        Assert.Equal("aaa", relation.From);
-        // One undo takes the new element and its relation together, byte for byte.
-        Assert.Equal(before, File.ReadAllText(path));
-    }
-
-    [Fact]
-    public async Task ARelationOntoEmptySpaceWithNothingArmed_IsRefused()
-    {
-        // Arrange & act.
-        var path = Write();
-        var result = await _actions.ExecuteAsync(
-            Target(path, TimelineNewPlacement.IdFor(0, 0)),
-            TimelineContextActionProvider.ConnectActionId,
-            CancellationToken.None);
-
-        // Assert.
-        var failed = Assert.IsType<ContextExecutionFailed>(result);
-        Assert.Contains("starts from an element", failed.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public async Task DisconnectCommitted_IsOneUndoAway()
     {
         // Arrange.
@@ -389,119 +306,6 @@ public class TimelineContextActionProviderTests : IDisposable
     }
 }
 
-/// <summary>
-/// The connect gesture as two calls through the one-element-per-call channel, and the add
-/// dialog's value form.
-/// </summary>
-public class TimelineConnectGestureTests : IDisposable
-{
-    private readonly string _workspace = IoPath.Combine(
-        IoPath.GetTempPath(),
-        "adp-timeline-connect-" + Guid.NewGuid().ToString("N"));
-
-    private readonly TimelineDocumentStore _store = new();
-    private readonly TimelineConnectState _connects = new();
-    private readonly TimelineContextActionProvider _actions;
-    private readonly ShortGuid _watchId = ShortGuid.NewShortGuid();
-
-    public TimelineConnectGestureTests()
-    {
-        Directory.CreateDirectory(_workspace);
-        _actions = new TimelineContextActionProvider(
-            new HistoryStackStore(new TimelineTestDispatcher(_store)), _store, _connects);
-    }
-
-    public void Dispose()
-    {
-        if (Directory.Exists(_workspace))
-        {
-            Directory.Delete(_workspace, recursive: true);
-        }
-
-        GC.SuppressFinalize(this);
-    }
-
-    private string Write()
-    {
-        var path = IoPath.Combine(_workspace, "plan.tml");
-        File.WriteAllText(path, "timeline: 1\r\nelements:\r\n  - id: aaa\r\n    begin: 2026-01-01\r\n    row: 0\r\n  - id: bbb\r\n    begin: 2026-02-01\r\n    row: 1\r\n");
-        _store.Forget(path);
-        return path;
-    }
-
-    private ContextTarget Target(string path, string elementId) =>
-        new(ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace, _watchId, elementId);
-
-    [Fact]
-    public async Task ConnectOnTwoElements_MakesOneConnection()
-    {
-        // Arrange.
-        var path = Write();
-
-        // Act: the first call arms, the second completes.
-        await _actions.ExecuteAsync(Target(path, "aaa"), TimelineContextActionProvider.ConnectActionId, CancellationToken.None);
-        var second = await _actions.ExecuteAsync(Target(path, "bbb"), TimelineContextActionProvider.ConnectActionId, CancellationToken.None);
-
-        // Assert.
-        Assert.IsType<ContextExecutionCompleted>(second);
-        var connection = Assert.Single(_store.GetOrLoad(path).Model.Connections);
-        Assert.Equal("aaa", connection.From);
-        Assert.Equal("bbb", connection.To);
-    }
-
-    [Fact]
-    public async Task ConnectTwiceOnTheSameElement_Cancels()
-    {
-        // Arrange.
-        // A second tap on the same element reads as "never mind" - and a self-connection is
-        // refused anyway (Requirement 8.7), so nothing is lost by cancelling instead.
-        var path = Write();
-
-        // Act.
-        await _actions.ExecuteAsync(Target(path, "aaa"), TimelineContextActionProvider.ConnectActionId, CancellationToken.None);
-        await _actions.ExecuteAsync(Target(path, "aaa"), TimelineContextActionProvider.ConnectActionId, CancellationToken.None);
-
-        // Assert.
-        Assert.Empty(_store.GetOrLoad(path).Model.Connections);
-        Assert.Null(_connects.PendingFor(_watchId, path));
-    }
-
-    [Fact]
-    public async Task TwoConnectionsArmIndependently()
-    {
-        // Arrange.
-        // The state is per connection: one viewer's half-drawn gesture is invisible to another.
-        var path = Write();
-        var otherWatch = ShortGuid.NewShortGuid();
-
-        // Act.
-        await _actions.ExecuteAsync(Target(path, "aaa"), TimelineContextActionProvider.ConnectActionId, CancellationToken.None);
-
-        // Assert.
-        Assert.Equal("aaa", _connects.PendingFor(_watchId, path));
-        Assert.Null(_connects.PendingFor(otherWatch, path));
-    }
-
-    [Fact]
-    public async Task AnAddCommittedWithADialogValue_LandsOnTheAnchorsRow()
-    {
-        // Arrange.
-        // The dialog form: the value is the begin the user typed, and the row comes from the
-        // element the gesture anchored on - the nearest the placement can travel while the
-        // channel has no slot for a full one.
-        var path = Write();
-
-        // Act.
-        var commit = await _actions.CommitAsync(
-            Target(path, "bbb"), TimelineContextActionProvider.AddMomentActionId, "2026-06-01", "", CancellationToken.None);
-
-        // Assert.
-        Assert.True(commit.Completed, commit.Error);
-        var added = _store.GetOrLoad(path).Model.Elements.Single(element => element.Label == "New moment");
-        Assert.Equal("2026-06-01", added.Begin.Text);
-        Assert.Equal(1, added.Row);
-    }
-}
 
 /// <summary>
 /// The guards for the two ways an action can exist and still do nothing: a target that
@@ -523,7 +327,7 @@ public class TimelineActionRealityTests : IDisposable
     {
         Directory.CreateDirectory(_workspace);
         _actions = new TimelineContextActionProvider(
-            new HistoryStackStore(new TimelineTestDispatcher(_store)), _store, new TimelineConnectState());
+            new HistoryStackStore(new TimelineTestDispatcher(_store)), _store);
     }
 
     public void Dispose()
@@ -560,7 +364,6 @@ public class TimelineActionRealityTests : IDisposable
         // Assert.
         Assert.Contains(TimelineContextActionProvider.AddElementActionId, ids);
         Assert.Contains(TimelineContextActionProvider.AddMomentActionId, ids);
-        Assert.Contains(TimelineContextActionProvider.ConnectActionId, ids);
     }
 
     [Fact]
@@ -589,5 +392,182 @@ public class TimelineActionRealityTests : IDisposable
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
         Assert.False(_store.GetOrLoad(path).Model.Elements.Single().IsPeriod);
+    }
+}
+
+/// <summary>
+/// The relation gesture as one call carrying the whole thing - source and landing in a
+/// <c>rel:</c> id. Stateless by design: the two-call protocol this replaces kept an armed
+/// source in the backend, and a stale arm related the wrong pair in the running app.
+/// </summary>
+public class TimelineRelationGestureTests : IDisposable
+{
+    private readonly string _workspace = IoPath.Combine(
+        IoPath.GetTempPath(),
+        "adp-timeline-relate-" + Guid.NewGuid().ToString("N"));
+
+    private readonly TimelineDocumentStore _store = new();
+    private readonly TimelineContextActionProvider _actions;
+    private readonly HistoryStackStore _historyStacks;
+    private readonly ShortGuid _watchId = ShortGuid.NewShortGuid();
+
+    public TimelineRelationGestureTests()
+    {
+        Directory.CreateDirectory(_workspace);
+        _historyStacks = new HistoryStackStore(new TimelineTestDispatcher(_store));
+        _actions = new TimelineContextActionProvider(_historyStacks, _store);
+    }
+
+    public void Dispose()
+    {
+        if (Directory.Exists(_workspace))
+        {
+            Directory.Delete(_workspace, recursive: true);
+        }
+
+        GC.SuppressFinalize(this);
+    }
+
+    private string Write()
+    {
+        var path = IoPath.Combine(_workspace, "plan.tml");
+        File.WriteAllText(path, "timeline: 1\r\nelements:\r\n  - id: aaa\r\n    label: First\r\n    begin: 2026-01-01\r\n    end: 2026-01-20\r\n    row: 0\r\n  - id: bbb\r\n    label: Second\r\n    begin: 2026-02-01\r\n    row: 1\r\n");
+        _store.Forget(path);
+        return path;
+    }
+
+    private ContextTarget Target(string path, string elementId) =>
+        new(ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace, _watchId, elementId);
+
+    [Fact]
+    public async Task OneCall_RelatesTwoElements_InTheStatedDirection()
+    {
+        // Arrange & act.
+        // The direction is the gesture's own: from before the arrow, to after it. The two-call
+        // protocol could invert this when a stale arm completed against the wrong source.
+        var path = Write();
+        var result = await _actions.ExecuteAsync(
+            Target(path, TimelineRelationGesture.IdFor("aaa", "bbb")),
+            TimelineContextActionProvider.ConnectActionId,
+            CancellationToken.None);
+
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(result);
+        var relation = _store.GetOrLoad(path).Model.Connections.Single();
+        Assert.Equal("aaa", relation.From);
+        Assert.Equal("bbb", relation.To);
+    }
+
+    [Fact]
+    public async Task OneCall_OntoAPlacement_CreatesAndRelates_AsOneUndo()
+    {
+        // Arrange.
+        var path = Write();
+        var before = File.ReadAllText(path);
+        var seconds = TimelineScale.ToSeconds(new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero));
+
+        // Act.
+        var result = await _actions.ExecuteAsync(
+            Target(path, TimelineRelationGesture.IdFor("aaa", TimelineNewPlacement.IdFor(seconds, 3))),
+            TimelineContextActionProvider.ConnectActionId,
+            CancellationToken.None);
+        var model = _store.GetOrLoad(path).Model;
+        var added = model.Elements.Single(element => element.Label == "New element");
+        await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
+
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(result);
+        Assert.Equal("2026-03-01", added.Begin.Text);
+        Assert.Equal(3, added.Row);
+        Assert.Equal("aaa", model.Connections.Single(candidate => candidate.To == added.Id).From);
+        Assert.Equal(before, File.ReadAllText(path));
+    }
+
+    [Fact]
+    public async Task ARelationUndone_TakesItsOnDemandConnectionsKeyBackOut()
+    {
+        // Arrange.
+        // The fixture has no connections: key; the connect creates it on demand, so the undo
+        // must remove it again - or every undone first relation leaves a stray line behind.
+        var path = Write();
+        var before = File.ReadAllText(path);
+
+        // Act.
+        var result = await _actions.ExecuteAsync(
+            Target(path, TimelineRelationGesture.IdFor("aaa", "bbb")),
+            TimelineContextActionProvider.ConnectActionId,
+            CancellationToken.None);
+        await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
+
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(result);
+        Assert.Equal(before, File.ReadAllText(path));
+    }
+
+    [Fact]
+    public async Task AGestureFromAnAbsentElement_IsRefusedWithTheReason()
+    {
+        // Arrange & act.
+        var path = Write();
+        var result = await _actions.ExecuteAsync(
+            Target(path, TimelineRelationGesture.IdFor("ghost", "bbb")),
+            TimelineContextActionProvider.ConnectActionId,
+            CancellationToken.None);
+
+        // Assert.
+        var failed = Assert.IsType<ContextExecutionFailed>(result);
+        Assert.Contains("no longer in this timeline", failed.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ARelationGestureTarget_DiscoversItsAction_OrNoCallCouldEverResolve()
+    {
+        // Arrange & act.
+        var path = Write();
+        var groups = await _actions.DiscoverAsync(
+            Target(path, TimelineRelationGesture.IdFor("aaa", "bbb")), CancellationToken.None);
+
+        // Assert.
+        Assert.Contains(
+            TimelineContextActionProvider.ConnectActionId,
+            groups.SelectMany(group => group.Actions).Select(action => action.Id));
+    }
+
+    [Fact]
+    public async Task TabGrowsARelatedElement_SixDaysAfter_TwoWeeksLong()
+    {
+        // Arrange & act.
+        // "Added from an existing one" now means related to it - and the gap is three times
+        // what it was, at six days, with a fortnight of duration so the placeholder label fits.
+        var path = Write();
+        var result = await _actions.ExecuteAsync(
+            Target(path, "aaa"), TimelineContextActionProvider.AddAfterActionId, CancellationToken.None);
+
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(result);
+        var model = _store.GetOrLoad(path).Model;
+        var added = model.Elements.Single(element => element.Label == "New element");
+        Assert.Equal("2026-01-26", added.Begin.Text); // aaa ends 2026-01-20, plus six days
+        Assert.Equal("2026-02-09", added.End!.Text);  // a fortnight long
+        Assert.Equal(0, added.Row);
+        Assert.Equal("aaa", model.Connections.Single().From);
+        Assert.Equal(added.Id, model.Connections.Single().To);
+    }
+
+    [Fact]
+    public async Task EnterGrowsARelatedElement_OnTheNextRow()
+    {
+        // Arrange & act.
+        var path = Write();
+        var result = await _actions.ExecuteAsync(
+            Target(path, "aaa"), TimelineContextActionProvider.AddBelowActionId, CancellationToken.None);
+
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(result);
+        var model = _store.GetOrLoad(path).Model;
+        var added = model.Elements.Single(element => element.Label == "New element");
+        Assert.Equal("2026-01-01", added.Begin.Text);
+        Assert.Equal(1, added.Row);
+        Assert.Equal("aaa", model.Connections.Single().From);
     }
 }

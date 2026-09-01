@@ -31,6 +31,25 @@ public class MindmapContextPropertyProviderTests
     }
 
     [Fact]
+    public async Task AnotherModulesDocument_OffersNoProperties_InsteadOfParsingIt()
+    {
+        // Arrange.
+        // Same guard as the action provider's: a foreign .tml used to be parsed as XML here,
+        // throwing MindmapFormatException on every property lookup over a timeline element.
+        using var project = new MindmapTestProject();
+        var foreignPath = System.IO.Path.Combine(project.Root, "docs", "roadmap.tml");
+        File.WriteAllText(foreignPath, "timeline: 1\r\nelements:\r\n  - id: aaa\r\n    label: First\r\n    begin: 2026-01-01\r\n    row: 0\r\n");
+        var target = new ContextTarget(
+            ContextScope.DiagramElement, foreignPath, IsContainer: false, SourceId: default, project.Root, project.WatchId, "aaa");
+
+        // Act.
+        var properties = await project.Properties.DescribeAsync(target, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Empty(properties);
+    }
+
+    [Fact]
     public async Task Collapsing_IsShownButNotEditable_BecauseItIsViewStateAndNotUndoable()
     {
         // Arrange.

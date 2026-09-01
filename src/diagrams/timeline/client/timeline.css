@@ -214,3 +214,14 @@
 .timeline-scrollbar-thumb:active {
   opacity: 0.85;
 }
+
+/* The generous, invisible grab target each anchor dot sits inside. */
+.timeline-anchor-hit {
+  fill: transparent;
+  stroke: none;
+  cursor: crosshair;
+}
+
+.timeline-anchor {
+  pointer-events: none;
+}

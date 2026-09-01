@@ -164,6 +164,52 @@ public static class TimelineWriter
     public static void RemoveConnection(TimelineDocument document, TimelineConnection connection) =>
         document.Remove(connection.Range);
 
+    /// <summary>Whether the document currently carries a <c>connections:</c> section key.</summary>
+    /// <remarks>
+    /// An insert creates the section on demand, so a command whose inverse must restore the file
+    /// byte for byte asks this first and has its undo remove what the insert created - a stray
+    /// <c>connections:</c> header after an undo was the one line that broke identity.
+    /// </remarks>
+    public static bool HasConnectionsSection(TimelineDocument document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        return FindSection(document, "connections:") >= 0;
+    }
+
+    /// <summary>
+    /// Removes a <c>connections:</c> section key left with no entries - the undo of the insert
+    /// that created it. A no-op while any relation remains.
+    /// </summary>
+    public static void RemoveConnectionsSectionIfEmpty(TimelineDocument document, TimelineModel model)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(model);
+
+        if (model.Connections.Count > 0)
+        {
+            return;
+        }
+
+        var index = FindSection(document, "connections:");
+        if (index >= 0)
+        {
+            document.Remove(new LineRange(index, index));
+        }
+    }
+
+    private static int FindSection(TimelineDocument document, string sectionKey)
+    {
+        for (var i = 0; i < document.Lines.Count; i++)
+        {
+            if (document.Lines[i].Text.TrimStart().StartsWith(sectionKey, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
     /// <summary>
     /// The connections that would go with an element, so an action can say how many before it runs
     /// (Requirement 2.5).

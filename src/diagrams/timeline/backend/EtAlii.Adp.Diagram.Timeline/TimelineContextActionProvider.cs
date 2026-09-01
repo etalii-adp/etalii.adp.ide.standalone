@@ -10,11 +10,10 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// <remarks>
 /// <para>
 /// Every mutating action dispatches a command through the project's history, so each is one undo
-/// away like every other edit in the IDE. <see cref="ConnectActionId"/> is the two-call one:
-/// the context channel carries one element per call, and a relation needs two, so the first
-/// call arms <see cref="TimelineConnectState"/> and the second - the next element clicked
-/// (Requirement 11.6) - completes the pair and dispatches the command. Escape on the canvas
-/// simply never sends the second call.
+/// away like every other edit in the IDE. <see cref="ConnectActionId"/> arrives as one call
+/// carrying the whole gesture in a <see cref="TimelineRelationGesture"/> id - deliberately
+/// stateless, because the two-call protocol it replaces kept an armed source between calls and
+/// a stale arm made the next drag relate the wrong pair.
 /// </para>
 /// <para>
 /// A gesture that lands on empty canvas has no element to name, so it names a
@@ -37,7 +36,7 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
     /// <summary>Remove the element and its relations, confirming when there are any.</summary>
     public const string RemoveActionId = "timeline.remove";
 
-    /// <summary>The relation gesture: arm on the first element, complete on the second - or on a placement.</summary>
+    /// <summary>The relation gesture, whole in one call: <c>rel:{from}-&gt;{to}</c>, the target an element or a placement.</summary>
     public const string ConnectActionId = "timeline.connect";
 
     /// <summary>Give a moment an end, asking for it first (Requirement 7.5).</summary>
@@ -65,28 +64,24 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
     public const string AddBelowActionId = "timeline.add-below";
 
     /// <summary>How much later "after" is, and how long a freshly added element runs.</summary>
-    private const int GapDays = 2;
-    private const int NewElementDays = 7;
+    private const int GapDays = 6;
+    private const int NewElementDays = 14;
 
     private const string Gone = "That is no longer in this timeline.";
 
     private readonly IHistoryStackStore _historyStacks;
     private readonly ITimelineDocumentStore _documents;
-    private readonly TimelineConnectState _connects;
 
-    /// <summary>Creates the provider over the history, the one document store, and the relation gesture's state.</summary>
+    /// <summary>Creates the provider over the history and the one document store.</summary>
     public TimelineContextActionProvider(
         IHistoryStackStore historyStacks,
-        ITimelineDocumentStore documents,
-        TimelineConnectState connects)
+        ITimelineDocumentStore documents)
     {
         ArgumentNullException.ThrowIfNull(historyStacks);
         ArgumentNullException.ThrowIfNull(documents);
-        ArgumentNullException.ThrowIfNull(connects);
 
         _historyStacks = historyStacks;
         _documents = documents;
-        _connects = connects;
     }
 
     /// <inheritdoc />
@@ -122,9 +117,19 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
         if (TimelineNewPlacement.TryParse(target.ElementId, out _, out _))
         {
             // A placement discovers what can happen at empty canvas, because executing an action
-            // by id only finds actions its target discovers - a drop or a relation completing
-            // here resolves through this list.
+            // by id only finds actions its target discovers - a drop resolves through this list.
             return Result(ForPlacement());
+        }
+
+        if (TimelineRelationGesture.TryParse(target.ElementId, out _, out _))
+        {
+            // A finished relation gesture discovers its one action, for the same reason: the
+            // canvas executes it by id against this target.
+            return Result(
+            [
+                new ContextActionGroupDefinition(
+                    [new ContextActionDefinition(ConnectActionId, "Relate", "mdi-ray-start-arrow")]),
+            ]);
         }
 
         return Result([]);
@@ -154,63 +159,52 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
 
             case AddAfterActionId when element is not null:
             {
-                // Tab: the next thing, a little later on the same row. Derived entirely from the
-                // selected element, so nothing is asked here either.
+                // Tab: the next thing, a little later on the same row - and RELATED to the one
+                // it grew from, because an element added from another continues it. Derived
+                // entirely from the selected element, so nothing is asked.
                 var anchor = element.End is { IsReadable: true } end ? end.Value!.Value
                     : element.Begin.IsReadable ? element.Begin.Value!.Value
                     : DateTimeOffset.UtcNow;
-                return await DispatchAsync(target, NewElementAt(
-                    target.ResolvedFullPath, anchor.AddDays(GapDays), element.Row, period: true), cancellationToken);
+                return await DispatchAsync(target, NewRelatedElementAt(
+                    target.ResolvedFullPath, element.Id, anchor.AddDays(GapDays), element.Row), cancellationToken);
             }
 
             case AddBelowActionId when element is not null:
             {
-                // Enter: the same stretch of time, one row down - a parallel track.
+                // Enter: the same begin, one row down, related - a parallel track that starts
+                // together with the one it grew from.
                 var begin = element.Begin.IsReadable ? element.Begin.Value!.Value : DateTimeOffset.UtcNow;
-                return await DispatchAsync(target, new AddTimelineElementCommand(
-                    target.ResolvedFullPath,
-                    ShortGuid.NewShortGuid().ToString(),
-                    "New element",
-                    TimelineScale.ToText(begin, TimelinePrecision.Date),
-                    element.End?.Text,
-                    element.Row + 1), cancellationToken);
+                return await DispatchAsync(target, NewRelatedElementAt(
+                    target.ResolvedFullPath, element.Id, begin, element.Row + 1), cancellationToken);
             }
 
-            case ConnectActionId when element is not null:
+            case ConnectActionId when TimelineRelationGesture.TryParse(target.ElementId, out var from, out var to):
             {
-                // The channel carries one element per call and a relation needs two, so the
-                // gesture is two calls: the first arms, the second completes (Requirement 11.6).
-                var pair = _connects.ArmOrComplete(target.WatchId, target.ResolvedFullPath, element.Id);
-                if (pair is not { } completed)
+                // The whole gesture in one call - from, and where it ended. Deliberately
+                // stateless: the two-call protocol this replaces kept an armed source between
+                // calls, and a stale arm made the next drag relate the wrong pair.
+                if (TimelineEdits.ElementOf(model, from) is null)
                 {
-                    return new ContextExecutionCompleted();
+                    return new ContextExecutionFailed("The element this relation starts from is no longer in this timeline.");
+                }
+
+                if (TimelineNewPlacement.TryParse(to, out var toSeconds, out var toRow))
+                {
+                    // Released on empty canvas: what the relation reaches does not exist yet, so
+                    // it is created there and related in one command - one undo taking both.
+                    var begin = TimelineScale.ToTime(toSeconds, TimelinePrecision.Date);
+                    return await DispatchAsync(target, new AddConnectedTimelineElementCommand(
+                        target.ResolvedFullPath,
+                        from,
+                        ShortGuid.NewShortGuid().ToString(),
+                        ShortGuid.NewShortGuid().ToString(),
+                        TimelineScale.ToText(begin, TimelinePrecision.Date),
+                        TimelineScale.ToText(begin.AddDays(NewElementDays), TimelinePrecision.Date),
+                        toRow), cancellationToken);
                 }
 
                 return await DispatchAsync(target, new ConnectTimelineElementsCommand(
-                    target.ResolvedFullPath, ShortGuid.NewShortGuid().ToString(), completed.From, completed.To, ""), cancellationToken);
-            }
-
-            case ConnectActionId when placed:
-            {
-                // The relation was dragged onto empty space: what it reaches does not exist yet,
-                // so it is created where the gesture landed and related in the same command -
-                // one history entry, one undo.
-                var from = _connects.PendingFor(target.WatchId, target.ResolvedFullPath);
-                if (from is null)
-                {
-                    return new ContextExecutionFailed("A relation starts from an element.");
-                }
-
-                _connects.Clear(target.WatchId, target.ResolvedFullPath);
-                var begin = TimelineScale.ToTime(placedSeconds, TimelinePrecision.Date);
-                return await DispatchAsync(target, new AddConnectedTimelineElementCommand(
-                    target.ResolvedFullPath,
-                    from,
-                    ShortGuid.NewShortGuid().ToString(),
-                    ShortGuid.NewShortGuid().ToString(),
-                    TimelineScale.ToText(begin, TimelinePrecision.Date),
-                    TimelineScale.ToText(begin.AddDays(NewElementDays), TimelinePrecision.Date),
-                    placedRow), cancellationToken);
+                    target.ResolvedFullPath, ShortGuid.NewShortGuid().ToString(), from, to, ""), cancellationToken);
             }
 
             case AddElementActionId:
@@ -342,6 +336,17 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
     /// than zero length, because a zero-length element renders as an unreachable sliver and a
     /// week gives the adorners something to grab.
     /// </remarks>
+    /// <summary>A freshly added element grown from another: created and related in one command.</summary>
+    private static AddConnectedTimelineElementCommand NewRelatedElementAt(string body, string fromElementId, DateTimeOffset begin, int row) =>
+        new(
+            body,
+            fromElementId,
+            ShortGuid.NewShortGuid().ToString(),
+            ShortGuid.NewShortGuid().ToString(),
+            TimelineScale.ToText(begin, TimelinePrecision.Date),
+            TimelineScale.ToText(begin.AddDays(NewElementDays), TimelinePrecision.Date),
+            row);
+
     private static AddTimelineElementCommand NewElementAt(string body, DateTimeOffset begin, int row, bool period) =>
         new(
             body,
@@ -396,7 +401,6 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
         List<ContextActionDefinition> edits =
         [
             new(RenameActionId, "Rename…", "mdi-pencil-outline", new ContextShortcutDefinition("F2")),
-            new(ConnectActionId, "Relate…", "mdi-ray-start-arrow"),
         ];
 
         // For an element with an end, the end can be removed; for a moment, granted - the
@@ -428,7 +432,6 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
         [
             new ContextActionDefinition(AddElementActionId, "Add element here", "mdi-plus"),
             new ContextActionDefinition(AddMomentActionId, "Add moment here", "mdi-rhombus-medium"),
-            new ContextActionDefinition(ConnectActionId, "Relate to a new element", "mdi-ray-start-arrow"),
         ]),
     ];
 

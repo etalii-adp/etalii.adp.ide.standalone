@@ -219,6 +219,15 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
             return null;
         }
 
+        // A provider is consulted for every diagram element in its scope, including other
+        // types'. Answering for a file this module does not own would mean parsing another
+        // notation's document - which is exactly what happened: every action lookup on a .tml
+        // logged a warning about it not being well-formed XML.
+        if (!target.ResolvedFullPath.EndsWith(Diagram.DocumentExtension, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
         MindmapDocument document;
         try
         {

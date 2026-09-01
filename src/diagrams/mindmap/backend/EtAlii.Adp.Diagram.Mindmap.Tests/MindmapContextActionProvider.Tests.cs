@@ -90,6 +90,25 @@ public class MindmapContextActionProviderTests : IDisposable
         Assert.Empty(await Discover("ID_nope"));
     }
 
+    [Fact]
+    public async Task Discover_AnotherModulesDocument_OffersNothing_InsteadOfParsingIt()
+    {
+        // Arrange.
+        // Providers are consulted for every diagram element, including other modules'. This
+        // one used to parse the foreign file as XML and throw MindmapFormatException on every
+        // action lookup over a .tml timeline.
+        var foreignPath = IoPath.Combine(_project.Root, "docs", "roadmap.tml");
+        File.WriteAllText(foreignPath, "timeline: 1\r\nelements:\r\n  - id: aaa\r\n    label: First\r\n    begin: 2026-01-01\r\n    row: 0\r\n");
+        var target = new ContextTarget(
+            ContextScope.DiagramElement, foreignPath, IsContainer: false, SourceId: default, _project.Root, _project.WatchId, "aaa");
+
+        // Act.
+        var groups = await _project.Provider.DiscoverAsync(target, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Empty(groups);
+    }
+
     // ---- what executing does -----------------------------------------------------------
 
     [Fact]

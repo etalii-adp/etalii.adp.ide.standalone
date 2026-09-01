@@ -49,6 +49,13 @@ public sealed class RemoveTimelineElementCommandHandler : ICommandHandler<Remove
 
         TimelineWriter.RemoveElement(entry.Document, entry.Model, element);
 
+        if (command.RemoveEmptiedConnectionsSection)
+        {
+            // This removal is the undo of an insert that created the connections: key on demand,
+            // so the key it created goes too - or the undo comes back one line different.
+            TimelineWriter.RemoveConnectionsSectionIfEmpty(entry.Document, TimelineParser.Parse(entry.Document));
+        }
+
         var error = _documents.Save(command.BodyPath);
         return Task.FromResult(error.Length == 0
             ? CommandResult.Success(new RestoreTimelineLinesCommand(command.BodyPath, command.ElementId, segments))

@@ -121,6 +121,13 @@ public sealed class MindmapContextPropertyProvider : IContextPropertyProvider
             return null;
         }
 
+        // A provider is consulted for every diagram element in its scope, including other
+        // types'; a file this module does not own is not its to parse.
+        if (!target.ResolvedFullPath.EndsWith(Diagram.DocumentExtension, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
         try
         {
             return _documents.GetOrLoad(target.ResolvedFullPath).Find(target.ElementId);

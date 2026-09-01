@@ -47,12 +47,17 @@ public sealed class AddConnectedTimelineElementCommandHandler : ICommandHandler<
         // The insert moved lines, so the relation is spliced against a fresh parse rather than
         // the ranges the first model recorded.
         var reparsed = TimelineParser.Parse(entry.Document);
+        // Whether the insert is about to create the connections: key, so the inverse can take
+        // the key back out and the undo return the file byte for byte.
+        var hadSection = TimelineWriter.HasConnectionsSection(entry.Document);
+
         TimelineWriter.InsertConnection(
             entry.Document, reparsed, command.RelationId, command.FromElementId, command.NewElementId, "");
 
         var error = _documents.Save(command.BodyPath);
         return Task.FromResult(error.Length == 0
-            ? CommandResult.Success(new RemoveTimelineElementCommand(command.BodyPath, command.NewElementId))
+            ? CommandResult.Success(new RemoveTimelineElementCommand(
+                command.BodyPath, command.NewElementId, RemoveEmptiedConnectionsSection: !hadSection))
             : CommandResult.Failure(error));
     }
 }

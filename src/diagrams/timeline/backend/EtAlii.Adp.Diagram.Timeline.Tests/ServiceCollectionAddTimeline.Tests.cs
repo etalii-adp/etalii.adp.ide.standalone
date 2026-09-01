@@ -30,7 +30,6 @@ public class ServiceCollectionAddTimelineTests
         typeof(IDiagramToolboxProvider),
         typeof(IDiagramValidator),
         typeof(ITimelineDocumentStore),
-        typeof(TimelineConnectState),
     ];
 
     private static ServiceProvider Build()
