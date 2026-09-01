@@ -425,3 +425,19 @@ clipping, and that is only visible on screen.
   the thumbs pan the view within the content's extent.
 - **Verified 2026-09-01** against the running app (Tab and right-drag live; Enter and the
   thumbs through the same handlers in the test suite).
+
+## The text editor is drawn in the application's colors, caret included (modular-text-editors, manual pass)
+
+Guarded here because it is pure styling: without a theme extension CodeMirror runs its
+built-in light theme regardless of the app's, and the failure mode is subtle - the text
+stays perfectly editable while the black caret is invisible on the dark surface and the
+gutter keeps its light-grey background. jsdom loads neither the app's CSS variables nor
+CodeMirror's injected styles, so no unit test can see any of this.
+
+- **Preconditions**: backend + client running with the OS (or browser) in dark mode; a
+  project holding a plain text file and a markdown file.
+- **Actions**: open each file in its editor tab and click into the text.
+- **Expected**: in both editors the line-number gutter has the same dark background as the
+  text surface with lighter, muted numbers (not a light-grey strip with dark numbers); a
+  blinking caret is clearly visible at the click position; and switching the OS to light
+  mode flips the whole editor - gutter, text, caret - along with the rest of the app.
