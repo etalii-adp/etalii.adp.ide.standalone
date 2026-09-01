@@ -114,7 +114,7 @@ app.UseSerilogRequestLogging();
 // implements it) accepts grpc-web without needing an explicit .EnableGrpcWeb() call.
 app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });
 
-app.MapGrpcService<AuthenticationServiceImpl>();
+app.MapGrpcService<AuthenticationService>();
 app.MapGrpcService<ProjectService>();
 app.MapGrpcService<HierarchyService>();
 app.MapGrpcService<ContextService>();

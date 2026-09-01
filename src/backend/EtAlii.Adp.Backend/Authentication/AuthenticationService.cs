@@ -4,14 +4,14 @@ using Serilog;
 
 namespace EtAlii.Adp.Backend.Authentication;
 
-public sealed class AuthenticationServiceImpl : AuthenticationService.AuthenticationServiceBase
+public sealed class AuthenticationService : EtAlii.Adp.AuthenticationService.AuthenticationServiceBase
 {
-    private static readonly ILogger _logger = Log.ForContext<AuthenticationServiceImpl>();
+    private static readonly ILogger _logger = Log.ForContext<AuthenticationService>();
 
     private readonly IAuthenticator _authenticator;
     private readonly ISessionStore _sessionStore;
 
-    public AuthenticationServiceImpl(IAuthenticator authenticator, ISessionStore sessionStore)
+    public AuthenticationService(IAuthenticator authenticator, ISessionStore sessionStore)
     {
         _authenticator = authenticator;
         _sessionStore = sessionStore;
