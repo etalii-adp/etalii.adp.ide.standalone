@@ -101,6 +101,48 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             return Task.FromResult(result);
         }
 
+        // ---- adp-file-nesting Requirement 5.2: a qualified registration renames only its
+        // qualifier. Changing the subject portion would silently re-point the diagram at a
+        // different file, so that is refused with the way out named.
+        if (!isDirectory && DiagramRegistrationName.TryParse(originalName) is { IsQualified: true } qualifiedSource)
+        {
+            var parsedNew = DiagramRegistrationName.TryParse(command.NewName);
+            if (parsedNew is null || parsedNew.IsFolderScoped || !parsedNew.IsQualified ||
+                !string.Equals(parsedNew.SubjectBase, qualifiedSource.SubjectBase, StringComparison.Ordinal))
+            {
+                var result = CommandResult.Failure(
+                    $"Only this diagram's qualifier can change: '{qualifiedSource.SubjectBase}.<qualifier>.adp'. " +
+                    $"To move every diagram with it, rename '{qualifiedSource.SubjectBase}' itself.");
+                return Task.FromResult(result);
+            }
+
+            try
+            {
+                File.Move(sourcePath, targetPath);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                _logger.Warning(exception, "Could not rename {SourcePath} to {TargetPath}", sourcePath, targetPath);
+                var result = CommandResult.Failure($"'{originalName}' could not be renamed: {exception.Message}");
+                return Task.FromResult(result);
+            }
+
+            _logger.Information("Renamed {SourcePath} to {NewName}", sourcePath, command.NewName);
+            return Task.FromResult(CommandResult.Success(new RenameEntryCommand(targetPath, originalName)));
+        }
+
+        // ---- adp-file-nesting Requirement 5.1: renaming a SUBJECT renames every registration
+        // under it, preserving each qualifier - checked completely before anything moves, so a
+        // collision is a refusal rather than a half-renamed set (Requirement 5.3).
+        if (!isDirectory && !DiagramFilePair.IsRegistrationFile(sourcePath))
+        {
+            var setResult = RenameSubjectWithItsRegistrations(sourcePath, targetPath, originalName, command.NewName, isCaseOnlyRename);
+            if (setResult is not null)
+            {
+                return Task.FromResult(setResult);
+            }
+        }
+
         // A diagram's registration file takes its document sibling with it, under the new
         // base name, so the pair stays a pair (mindmap-diagram Requirement 2.10). Resolved
         // before the move: the first line that names the sibling goes with the file.
@@ -112,6 +154,16 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             (File.Exists(siblingTarget) || Directory.Exists(siblingTarget)))
         {
             var result = CommandResult.Failure($"'{IoPath.GetFileName(siblingTarget)}' already exists in this folder.");
+            return Task.FromResult(result);
+        }
+
+        // The classic pair rename stays exactly as it was (Requirement 11.1) - but only while
+        // it IS the classic pair. With qualified peers over the same subject, carrying the
+        // subject off would orphan them (Requirement 6.2's guarantee, in rename form).
+        if (sibling is not null && File.Exists(sibling) && RegistrationsOver(parentPath, sibling).Any(peer => !string.Equals(peer, sourcePath, StringComparison.OrdinalIgnoreCase)))
+        {
+            var result = CommandResult.Failure(
+                $"Other diagrams also describe '{IoPath.GetFileName(sibling)}'. Rename '{IoPath.GetFileName(sibling)}' itself to move them all together.");
             return Task.FromResult(result);
         }
 
@@ -194,5 +246,193 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Renames a subject file together with every registration deriving or naming it, or
+    /// returns null when the file has no registrations and the ordinary path should run.
+    /// Atomic in effect: every target is checked before anything moves, and a mid-set failure
+    /// rolls the completed moves back (Requirement 5.3).
+    /// </summary>
+    private CommandResult? RenameSubjectWithItsRegistrations(string sourcePath, string targetPath, string originalName, string newName, bool isCaseOnlyRename)
+    {
+        var parentPath = IoPath.GetDirectoryName(sourcePath)!;
+        var oldBase = DiagramRegistrationName.TryParse(originalName)?.FullBase ?? IoPath.GetFileNameWithoutExtension(originalName);
+        var newBase = IoPath.GetFileNameWithoutExtension(newName);
+        var oldExtension = IoPath.GetExtension(originalName);
+        if (!string.Equals(IoPath.GetExtension(newName), oldExtension, StringComparison.OrdinalIgnoreCase))
+        {
+            // Changing the extension changes what derives it; the set logic does not apply.
+            return null;
+        }
+
+        var registrations = RegistrationsOver(parentPath, sourcePath).ToList();
+        if (registrations.Count == 0)
+        {
+            return null;
+        }
+
+        // Plan first, move nothing: file moves for name-tied registrations, header rewrites for
+        // any registration whose body: header names the subject.
+        var moves = new List<(string From, string To)> { (sourcePath, targetPath) };
+        var rewrites = new List<(string Path, string OldContent, string NewContent)>();
+        foreach (var registration in registrations)
+        {
+            var registrationName = IoPath.GetFileName(registration);
+            var parsed = DiagramRegistrationName.TryParse(registrationName);
+            if (parsed is not null && string.Equals(parsed.SubjectBase, oldBase, StringComparison.OrdinalIgnoreCase))
+            {
+                var renamed = parsed.IsQualified
+                    ? $"{newBase}.{parsed.Qualifier}{DiagramFileName.Extension}"
+                    : newBase + DiagramFileName.Extension;
+                moves.Add((registration, IoPath.Combine(parentPath, renamed)));
+            }
+
+            var content = SafeRead(registration);
+            if (content is not null)
+            {
+                var rewritten = RewriteBodyHeaderSegment(content, originalName, newName);
+                if (!string.Equals(rewritten, content, StringComparison.Ordinal))
+                {
+                    rewrites.Add((registration, content, rewritten));
+                }
+            }
+        }
+
+        foreach (var (_, to) in moves.Skip(1))
+        {
+            if (!isCaseOnlyRename && (File.Exists(to) || Directory.Exists(to)))
+            {
+                return CommandResult.Failure($"'{IoPath.GetFileName(to)}' already exists in this folder; nothing was renamed.");
+            }
+        }
+
+        // Header rewrites move with their file when both apply, so path them by final name.
+        var finalPathOf = moves.ToDictionary(move => move.From, move => move.To, StringComparer.OrdinalIgnoreCase);
+
+        var completed = new List<(string From, string To)>();
+        try
+        {
+            foreach (var (from, to) in moves)
+            {
+                File.Move(from, to);
+                completed.Add((from, to));
+            }
+
+            foreach (var (path, _, newContent) in rewrites)
+            {
+                File.WriteAllText(finalPathOf.GetValueOrDefault(path, path), newContent);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            foreach (var (from, to) in completed.AsEnumerable().Reverse())
+            {
+                try
+                {
+                    File.Move(to, from);
+                }
+                catch (Exception rollback) when (rollback is IOException or UnauthorizedAccessException)
+                {
+                    _logger.Error(rollback, "Rolling back {To} to {From} failed; the set is inconsistent", to, from);
+                }
+            }
+
+            _logger.Warning(exception, "Could not rename {SourcePath} and its registrations to {TargetPath}", sourcePath, targetPath);
+            return CommandResult.Failure($"'{originalName}' could not be renamed: {exception.Message}");
+        }
+
+        _logger.Information("Renamed {SourcePath} to {NewName}, carrying {Count} diagram registration(s)", sourcePath, newName, moves.Count - 1);
+        return CommandResult.Success(new RenameEntryCommand(targetPath, originalName));
+    }
+
+    /// <summary>Every registration in <paramref name="parentPath"/> whose body resolves to <paramref name="subjectPath"/>.</summary>
+    private IEnumerable<string> RegistrationsOver(string parentPath, string subjectPath)
+    {
+        IEnumerable<string> candidates;
+        try
+        {
+            candidates = Directory.EnumerateFiles(parentPath, "*" + DiagramFileName.Extension);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            yield break;
+        }
+
+        var subjectName = IoPath.GetFileName(subjectPath);
+        foreach (var candidate in candidates)
+        {
+            // Name derivation, resolved against the folder itself; a body: header naming the
+            // subject's file name counts too, which is how the command - which has no project
+            // root to resolve a header path against - still carries header-pointed sets.
+            var body = DiagramFilePair.BodyOf(candidate, _catalog, parentPath);
+            var derives = body is { } resolved && resolved.Path.Length > 0 &&
+                          string.Equals(resolved.Path, subjectPath, StringComparison.OrdinalIgnoreCase);
+            var headerNamesIt = SafeRead(candidate) is { } content &&
+                                !string.Equals(RewriteBodyHeaderSegment(content, subjectName, subjectName + "\0"), content, StringComparison.Ordinal);
+            if (derives || headerNamesIt)
+            {
+                yield return candidate;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Rewrites a <c>body:</c> header whose final path segment is <paramref name="oldFileName"/>
+    /// to name <paramref name="newFileName"/>, leaving everything else - including the rest of
+    /// the header's relative path - untouched. Returns the content unchanged when no header
+    /// matches.
+    /// </summary>
+    private static string RewriteBodyHeaderSegment(string content, string oldFileName, string newFileName)
+    {
+        var lines = content.Split('\n');
+        for (var index = 1; index < lines.Length && index <= 9; index++)
+        {
+            var line = lines[index];
+            var trimmed = line.TrimStart();
+            if (trimmed.Length == 0)
+            {
+                continue;
+            }
+
+            if (!trimmed.StartsWith("body:", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!trimmed.StartsWith("view:", StringComparison.OrdinalIgnoreCase))
+                {
+                    break; // past the header block
+                }
+
+                continue;
+            }
+
+            var value = trimmed["body:".Length..].Trim();
+            var segment = value.Replace('\\', '/');
+            var lastSlash = segment.LastIndexOf('/');
+            var fileSegment = lastSlash < 0 ? value : value[(lastSlash + 1)..];
+            if (!string.Equals(fileSegment.TrimEnd('\r'), oldFileName, StringComparison.OrdinalIgnoreCase))
+            {
+                break;
+            }
+
+            var prefixLength = line.Length - line.TrimStart().Length;
+            var directoryPart = lastSlash < 0 ? "" : value[..(lastSlash + 1)];
+            var carriage = line.EndsWith('\r') ? "\r" : "";
+            lines[index] = line[..prefixLength] + "body: " + directoryPart + newFileName + carriage;
+            break;
+        }
+
+        return string.Join('\n', lines);
+    }
+
+    private static string? SafeRead(string path)
+    {
+        try
+        {
+            return File.ReadAllText(path);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 }
