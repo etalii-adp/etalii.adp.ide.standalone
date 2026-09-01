@@ -114,12 +114,12 @@
 
 ## Phase E — rename and delete
 
-- [ ] 13. Rename, in both directions
+- [x] 13. Rename, in both directions
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/Commands/RenameEntryCommandHandler.cs` (modify)
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Invert the rename direction and make the set atomic | Restrictions: renaming a subject renames every registration under it, preserving each qualifier; renaming a registration changes only its qualifier and refuses a change to the subject portion with an explanation rather than silently re-pointing it; atomicity is achieved by checking EVERY target before moving anything, so the failure mode is a refusal rather than a half-renamed set - a half-renamed set is worse than a refused rename because it orphans some registrations while appearing to have succeeded | Success: a collision refuses and NOTHING has moved, asserted by checking the filesystem after the refusal. Mark in progress, log when done, then mark complete._
 
-- [ ] 14. Delete, and the cascade
+- [-] 14. Delete, and the cascade
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/Commands/DeleteEntryCommandHandler.cs` (modify)
   - _Requirements: 6.1, 6.2, 6.3_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Cascade a subject delete and report the count first | Restrictions: deleting one registration deletes neither the subject nor a body another registration references; check move and copy against the nesting model and record any gap - this spec adds no move, it requires that move not be left silently broken | Success: deleting a subject with three registrations says three before it runs. Mark in progress, log when done, then mark complete._
