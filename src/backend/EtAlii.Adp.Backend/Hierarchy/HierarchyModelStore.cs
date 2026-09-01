@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using EtAlii.Adp.Diagram;
 using Serilog;
 
 namespace EtAlii.Adp.Backend.Hierarchy;
@@ -12,8 +13,11 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
     private readonly TimeSpan _idleTimeout;
     private readonly ConcurrentDictionary<ShortGuid, HierarchyModelEntry> _entries = new();
 
-    public HierarchyModelStore(TimeSpan? idleTimeout = null)
+    private readonly IDiagramDefinitionCatalog? _catalog;
+
+    public HierarchyModelStore(IDiagramDefinitionCatalog? catalog = null, TimeSpan? idleTimeout = null)
     {
+        _catalog = catalog;
         _idleTimeout = idleTimeout ?? DefaultIdleTimeout;
     }
 
@@ -54,7 +58,7 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
     {
         var entry = new HierarchyModelEntry
         {
-            Model = new HierarchyModel(rootPath),
+            Model = new HierarchyModel(rootPath, _catalog),
             IdleTimer = new Timer(_ => EvictIfIdle(watchId), null, _idleTimeout, Timeout.InfiniteTimeSpan),
         };
         return entry;

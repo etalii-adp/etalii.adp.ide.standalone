@@ -161,7 +161,14 @@ public sealed class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
         HierarchyEntryCreated c => new HierarchyChange { Created = new EntryCreated { Entry = ToProto(c.Entry) } },
         HierarchyEntryRemoved r => new HierarchyChange { Removed = new EntryRemoved { EntryId = r.EntryId } },
         HierarchyEntryRenamed rn => new HierarchyChange { Renamed = new EntryRenamed { EntryId = rn.EntryId, NewName = rn.NewName } },
-        HierarchyEntryUpdated up => new HierarchyChange { Updated = new EntryUpdated { EntryId = up.EntryId, HasChildren = up.HasChildren } },
+        // A re-parent sets parent_id; an empty id is "now at the root" (unset would read as
+        // "parent unchanged", which a root re-parent is not).
+        HierarchyEntryUpdated up => new HierarchyChange
+        {
+            Updated = up.ParentChanged
+                ? new EntryUpdated { EntryId = up.EntryId, HasChildren = up.HasChildren, ParentId = up.ParentId ?? default }
+                : new EntryUpdated { EntryId = up.EntryId, HasChildren = up.HasChildren },
+        },
         HierarchyRootUnavailable u => new HierarchyChange { RootUnavailable = new RootUnavailable { Message = u.Message } },
         _ => throw new ArgumentOutOfRangeException(nameof(change)),
     };

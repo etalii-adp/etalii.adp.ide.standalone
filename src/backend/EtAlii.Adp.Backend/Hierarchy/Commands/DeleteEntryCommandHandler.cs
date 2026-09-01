@@ -61,6 +61,18 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
         // sibling, and once it is deleted there is nothing left to ask.
         var sibling = isDirectory ? null : DiagramFilePair.SiblingOf(path, _catalog);
 
+        // A SUBJECT's delete cascades to its registrations (adp-file-nesting Requirement 6.1):
+        // a registration pointing at nothing serves nobody, and the confirmation dialog said
+        // the count before this ran. Deleting one REGISTRATION cascades to nothing beyond its
+        // owned sibling - a body other registrations still reference is never owned (6.2).
+        var cascade = !isDirectory && !DiagramFilePair.IsRegistrationFile(path)
+            ? DiagramRegistrationSet.Over(IoPath.GetDirectoryName(path)!, path, _catalog).ToList()
+            : [];
+        if (cascade.Count > 0)
+        {
+            _logger.Information("Deleting {Path} and the {Count} diagram registration(s) over it", path, cascade.Count);
+        }
+
         try
         {
             if (isDirectory)
@@ -73,6 +85,11 @@ public sealed class DeleteEntryCommandHandler : ICommandHandler<DeleteEntryComma
                 if (sibling is not null && File.Exists(sibling))
                 {
                     File.Delete(sibling);
+                }
+
+                foreach (var registration in cascade)
+                {
+                    File.Delete(registration);
                 }
             }
         }

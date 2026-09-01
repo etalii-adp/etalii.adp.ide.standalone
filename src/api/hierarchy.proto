@@ -23,7 +23,7 @@ message Entry {
   string name = 3;
   EntryKind kind = 4;
   bool available = 5; // false when a listed folder becomes inaccessible (permissions, deletion)
-  bool has_children = 6; // for a folder: whether it currently has any entry inside it; always false for a file
+  bool has_children = 6; // whether the entry currently has children: a folder's entries, or a file's nested diagram registrations (adp-file-nesting Requirement 3.1)
 }
 
 message ListEntriesRequest {
@@ -67,7 +67,8 @@ message EntryRenamed {
 
 message EntryUpdated {
   ShortGuid entry_id = 1;
-  bool has_children = 2; // pushed when an existing, already-known folder's has_children changes
+  bool has_children = 2; // pushed when an existing, already-known entry's has_children changes
+  ShortGuid parent_id = 3; // set only for a re-parent (an orphan whose subject appeared, or a subject vanishing under its registrations); unset means the parent is unchanged, and a set-but-empty id means the root. A re-parent is an update rather than remove-then-create so the entry keeps its id and any selection a client holds on it (adp-file-nesting Requirement 10.3)
 }
 
 message RootUnavailable {

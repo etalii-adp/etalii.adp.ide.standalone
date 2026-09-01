@@ -51,14 +51,35 @@ function keyOf(id: Uint8Array | undefined): string | undefined {
   return id ? base64Encode(id) : undefined;
 }
 
+/** Whether a registration file name carries a qualifier (`subject.qualifier.adp`). */
+function isQualifiedRegistrationName(name: string): boolean {
+  if (!name.toLowerCase().endsWith(".adp")) {
+    return false;
+  }
+  const base = name.slice(0, -".adp".length);
+  return base.lastIndexOf(".") > 0;
+}
+
 /** Folders before files, then alphabetical (Requirement 3.5) - applied client-side too, so a
- *  live-pushed create (Requirement 4.5) lands in the same position a fresh listing would give it. */
-function sortKeys(nodesByKey: Record<string, TreeNode>, keys: string[]): string[] {
+ *  live-pushed create (Requirement 4.5) lands in the same position a fresh listing would give it.
+ *  Under a FILE parent the children are diagram registrations, whose stated order is the
+ *  unqualified form first and then the qualifiers (adp-file-nesting Requirement 3.4) - plain
+ *  alphabetical would put `subject.aa.adp` before `subject.adp`, which is why the parent's kind
+ *  matters here (Requirement 9.5's review, with the intended result stated). */
+function sortKeys(nodesByKey: Record<string, TreeNode>, keys: string[], parentIsFile = false): string[] {
   return [...keys].sort((a, b) => {
     const nodeA = nodesByKey[a];
     const nodeB = nodesByKey[b];
     if (!nodeA || !nodeB) {
       return 0;
+    }
+    if (parentIsFile) {
+      const aQualified = isQualifiedRegistrationName(nodeA.name);
+      const bQualified = isQualifiedRegistrationName(nodeB.name);
+      if (aQualified !== bQualified) {
+        return aQualified ? 1 : -1;
+      }
+      return nodeA.name.localeCompare(nodeB.name);
     }
     const aIsFolder = nodeA.kind === EntryKind.FOLDER;
     const bIsFolder = nodeB.kind === EntryKind.FOLDER;
@@ -67,6 +88,12 @@ function sortKeys(nodesByKey: Record<string, TreeNode>, keys: string[]): string[
     }
     return nodeA.name.localeCompare(nodeB.name);
   });
+}
+
+/** A node the tree can expand: a folder with entries, or a subject file with registrations
+ *  nested under it (adp-file-nesting Requirement 3.1). */
+function isExpandableNode(node: TreeNode): boolean {
+  return node.hasChildren && (node.kind === EntryKind.FOLDER || node.kind === EntryKind.FILE);
 }
 
 function entryToNode(entry: Entry, previous?: TreeNode): TreeNode {
@@ -143,7 +170,7 @@ export function applyHierarchyChange(state: TreeState, change: HierarchyChange):
       }
 
       const nodesByKey = { ...state.nodesByKey, [key]: entryToNode(entry) };
-      nodesByKey[parentKey] = { ...parent, childKeys: sortKeys(nodesByKey, [...parent.childKeys, key]) };
+      nodesByKey[parentKey] = { ...parent, childKeys: sortKeys(nodesByKey, [...parent.childKeys, key], parent.kind === EntryKind.FILE) };
       return { ...state, nodesByKey };
     }
 
@@ -194,7 +221,38 @@ export function applyHierarchyChange(state: TreeState, change: HierarchyChange):
         return state;
       }
 
-      return { ...state, nodesByKey: { ...state.nodesByKey, [key]: { ...node, hasChildren: change.change.value.hasChildren } } };
+      // A present parent_id is a re-parent - an orphan whose subject appeared, or a subject
+      // vanishing under its registrations. Present-but-empty means the root (the proto's
+      // convention, since unset means "unchanged"). The entry keeps its id, so selection and
+      // focus survive the move (adp-file-nesting Requirement 10.3).
+      const parentId = change.change.value.parentId;
+      if (parentId === undefined) {
+        return { ...state, nodesByKey: { ...state.nodesByKey, [key]: { ...node, hasChildren: change.change.value.hasChildren } } };
+      }
+
+      const newParentKey = keyOf(parentId.value) || undefined;
+      const nodesByKey = { ...state.nodesByKey, [key]: { ...node, hasChildren: change.change.value.hasChildren, parentKey: newParentKey } };
+      let rootKeys = state.rootKeys;
+
+      if (node.parentKey === undefined) {
+        rootKeys = rootKeys.filter((k) => k !== key);
+      } else {
+        const oldParent = nodesByKey[node.parentKey];
+        if (oldParent?.childKeys) {
+          nodesByKey[node.parentKey] = { ...oldParent, childKeys: oldParent.childKeys.filter((k) => k !== key) };
+        }
+      }
+
+      if (newParentKey === undefined) {
+        rootKeys = sortKeys(nodesByKey, [...rootKeys, key]);
+      } else {
+        const newParent = nodesByKey[newParentKey];
+        if (newParent && newParent.childKeys !== undefined) {
+          nodesByKey[newParentKey] = { ...newParent, childKeys: sortKeys(nodesByKey, [...newParent.childKeys, key], newParent.kind === EntryKind.FILE) };
+        }
+      }
+
+      return { ...state, rootKeys, nodesByKey };
     }
 
     default:
@@ -216,7 +274,7 @@ export function visibleKeys(state: TreeState): string[] {
       return;
     }
     keys.push(nodeKey);
-    if (node.kind === EntryKind.FOLDER && node.expanded) {
+    if (node.expanded) {
       (node.childKeys ?? []).forEach(walk);
     }
   };
@@ -322,6 +380,9 @@ function folderIcon(node: TreeNode): string {
 }
 
 function iconFor(node: TreeNode): string {
+  // Reviewed for adp-file-nesting Requirement 9.4: a nested registration reads as a diagram
+  // (`mdi-graph-outline`, by extension) beside its subject's own file icon - the two are
+  // already told apart, so kind-plus-extension stays the whole rule.
   return node.kind === EntryKind.FOLDER ? folderIcon(node) : fileIcon(node.name);
 }
 
@@ -423,6 +484,7 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
 
       const entries = result.value?.entries ?? [];
       setState((previous) => applyEntries(previous, parentKey, entries));
+      return entries;
     },
     [hierarchyClient, projectId, watchId],
   );
@@ -593,9 +655,51 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
       if (node.kind === EntryKind.FOLDER && node.hasChildren) {
         toggleExpand(key, node);
       }
+
+      // A subject file's activation opens its DEFAULT registration - the first in the stable
+      // order, which the unqualified form leads - without the user expanding anything
+      // (adp-file-nesting Requirements 7.1 and 7.2). The children may not be loaded yet, so
+      // they are fetched first when needed; a file with no registrations behaves exactly as
+      // it always has (Requirement 7.4).
+      if (node.kind === EntryKind.FILE && node.hasChildren) {
+        if (node.childKeys !== undefined) {
+          const first = node.childKeys[0];
+          if (first) {
+            selectNode(first, { case: "action", value: ContextSelectionAction.ACTIVATE });
+          }
+          return;
+        }
+
+        // Children not loaded yet: fetch, then select from the returned entry itself rather
+        // than from React state, which has not re-rendered by the time this continuation runs.
+        const parentPath = pathOf(state, key);
+        fetchChildren(key, node.id)
+          .then((entries) => {
+            const first = entries?.[0];
+            const firstId = first?.id?.value;
+            if (!first || !firstId) {
+              return;
+            }
+            const childKey = keyOf(firstId);
+            if (childKey) {
+              gestureKeyRef.current = childKey;
+            }
+            select(selectionFor(
+              ContextSelectionSource.EXPLORER,
+              firstId,
+              [...parentPath, first.name],
+              { case: "action", value: ContextSelectionAction.ACTIVATE },
+            ));
+          })
+          .catch((err: unknown) => {
+            setError(err instanceof Error ? err.message : "Failed to open this file's diagram.");
+          });
+        return;
+      }
+
       selectNode(key, { case: "action", value: ContextSelectionAction.ACTIVATE });
     },
-    [selectNode, toggleExpand],
+    [fetchChildren, select, selectNode, state, toggleExpand],
   );
 
   const runAction = useCallback(
@@ -713,7 +817,7 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
         }
 
         case "ArrowRight": {
-          if (!node || node.kind !== EntryKind.FOLDER) {
+          if (!node || !isExpandableNode(node)) {
             return;
           }
           event.preventDefault();
@@ -732,7 +836,7 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
             return;
           }
           event.preventDefault();
-          if (node.kind === EntryKind.FOLDER && node.expanded) {
+          if (node.expanded) {
             toggleExpand(key!, node);
             return;
           }
@@ -884,13 +988,13 @@ function ExplorerTreeNodeView({
   }
 
   const isFolder = node.kind === EntryKind.FOLDER;
-  const isExpandable = isFolder && node.hasChildren;
+  const isExpandable = isExpandableNode(node);
   const isFocused = nodeKey === focusedKey;
 
   const childProps = { state, depth: depth + 1, focusedKey, tabbableKey, nodeRefs, onToggle, onActivate, onFocusNode, onContextMenu };
 
   return (
-    <li role="treeitem" aria-expanded={isFolder ? node.expanded : undefined} aria-selected={isFocused || undefined}>
+    <li role="treeitem" aria-expanded={isFolder || isExpandable ? node.expanded : undefined} aria-selected={isFocused || undefined}>
       {/* The chevron is its own control, so it sits beside the row button rather than inside
           it - a button cannot legally nest in another. The double click that activates is
           bound here, on their shared parent, so it covers the chevron and the label alike. */}
@@ -951,7 +1055,7 @@ function ExplorerTreeNodeView({
           <span className="explorer-tree-node-name">{node.name}</span>
         </button>
       </div>
-      {isFolder && node.expanded && (
+      {(isFolder || isExpandable) && node.expanded && (
         node.loading ? (
           <p className="explorer-tree-loading-children" style={{ paddingLeft: `${(depth + 1) * 16 + 8}px` }}>
             Loading…

@@ -67,7 +67,12 @@ public static class DiagramFileName
     /// this spec does not control - can suggest a name that reaches out of its folder or that
     /// the filesystem would refuse. Runs of hyphens collapse so the result stays readable.
     /// </summary>
-    private static string Sanitise(string value)
+    /// <remarks>
+    /// Public so that <see cref="DiagramRegistrationName"/> validates a qualifier through this
+    /// same sanitiser rather than a second one of its own (adp-file-nesting Requirement 1.4). Two
+    /// implementations of "what a file name may contain" is how the two come to disagree.
+    /// </remarks>
+    public static string Sanitise(string value)
     {
         var invalid = IoPath.GetInvalidFileNameChars();
         var characters = value.Select(character => invalid.Contains(character) || character is '.' or ' ' ? '-' : character);

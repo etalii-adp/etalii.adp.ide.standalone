@@ -375,4 +375,144 @@ public class DiagramFilePairTests : IDisposable
         Assert.True(File.Exists(shared), "deleting one view destroyed the shared model");
     }
 
+    /// <summary>
+    /// Requirement 4.3, corrected: .NET does NOT apply the Unix "leading dot means no extension"
+    /// convention. The requirement originally asserted the opposite of both values below, and the
+    /// error survived until its own "verify by test" clause forced a measurement. These two facts
+    /// pin the measured behaviour so the correction cannot decay back into folklore - name-based
+    /// reasoning about a bare `.adp` is the hazard (the base name is empty), extension-based
+    /// reasoning is safe.
+    /// </summary>
+    [Fact]
+    public void GetExtension_OfABareFolderRegistrationName_IsTheWholeName()
+    {
+        // Arrange, act and assert.
+        Assert.Equal(DiagramFileName.Extension, IoPath.GetExtension(DiagramFileName.Extension));
+    }
+
+    [Fact]
+    public void GetFileNameWithoutExtension_OfABareFolderRegistrationName_IsEmpty()
+    {
+        // Arrange, act and assert.
+        Assert.Equal("", IoPath.GetFileNameWithoutExtension(DiagramFileName.Extension));
+    }
+
+    [Fact]
+    public void StripExtension_OfABareFolderRegistrationName_IsEmpty()
+    {
+        // Arrange, act and assert: the empty base name is exactly why Requirement 4.4 excludes
+        // the folder-scoped form from sibling derivation - a derived path would be bare extension.
+        Assert.Equal("", DiagramFileName.StripExtension(DiagramFileName.Extension));
+    }
+
+    /// <summary>
+    /// Requirement 2.4 and 6.2: ownership is per set, not per pair. A qualified registration
+    /// derives the shared subject to OPEN it, but never owns it - only the unqualified reading,
+    /// where the name is the subject, keeps the classic take-the-sibling-along behaviour.
+    /// </summary>
+    [Fact]
+    public void SiblingOf_AQualifiedRegistration_DoesNotOwnTheSharedSubject()
+    {
+        // Arrange: two qualified registrations over one subject.
+        File.WriteAllText(IoPath.Combine(_root, "test.mm"), "<map/>");
+        var first = WriteRegistration("test.first", Mindmap);
+        WriteRegistration("test.second", Mindmap);
+
+        // Act and assert: it opens the subject but may not carry it.
+        Assert.Null(DiagramFilePair.SiblingOf(first, _catalog));
+        var body = DiagramFilePair.BodyOf(first, _catalog, _root);
+        Assert.NotNull(body);
+        Assert.Equal(IoPath.Combine(_root, "test.mm"), body.Value.Path);
+        Assert.False(body.Value.IsOwned);
+    }
+
+    [Fact]
+    public async Task Delete_OneOfSeveralQualifiedRegistrations_LeavesTheSubjectAndItsPeers()
+    {
+        // Arrange.
+        var subject = IoPath.Combine(_root, "test.mm");
+        await File.WriteAllTextAsync(subject, "<map/>", TestContext.Current.CancellationToken);
+        var first = WriteRegistration("test.first", Mindmap);
+        var second = WriteRegistration("test.second", Mindmap);
+
+        // Act.
+        var result = await _history.ExecuteAsync(new DeleteEntryCommand(first), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.False(File.Exists(first));
+        Assert.True(File.Exists(subject), "deleting one registration carried off the shared subject");
+        Assert.True(File.Exists(second), "deleting one registration destroyed a peer registration");
+    }
+
+    /// <summary>
+    /// Requirement 8.4: a registration naming a MIME type the catalog does not carry resolves to
+    /// no definition and no body, and that is NOT an error. No example can exercise this branch -
+    /// all 39 tracked registrations name known types, measured across every one - so the fixture
+    /// is created, not found.
+    /// </summary>
+    [Fact]
+    public void ARegistrationNamingAnUnknownType_ResolvesToNoDefinitionAndNoBody()
+    {
+        // Arrange.
+        var fixture = IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "unknown-type.adp");
+        Assert.True(File.Exists(fixture), "the unknown-type fixture did not ship with the tests");
+
+        // Act.
+        var definition = DiagramFilePair.DefinitionOf(fixture, _catalog);
+        var body = DiagramFilePair.BodyOf(fixture, _catalog, IoPath.GetDirectoryName(fixture));
+
+        // Assert: unknown, bodyless, and quietly so.
+        Assert.True(DiagramFilePair.IsRegistrationFile(fixture));
+        Assert.Null(definition);
+        Assert.Null(body);
+    }
+
+    /// <summary>
+    /// The branch `code-level.adp` actually exercises, distinct from the unknown-type one above:
+    /// the definition IS found, and it is `HasDocumentSibling` - no declared extension - that
+    /// yields no body. A test asserting only "no body" would pass for both branches and prove
+    /// nothing about which ran; these assertions tell them apart. (Whether this case deserves a
+    /// requirement of its own is the reviewer's open question, deliberately not answered here.)
+    /// </summary>
+    [Fact]
+    public void ARegistrationOfAKnownTypeKeepingNoBody_ResolvesItsDefinitionButNoBody()
+    {
+        // Arrange: ClassDiagram declares no Extension, exactly like the shipped c4/code.
+        var adp = WriteRegistration("code-level", ClassDiagram);
+
+        // Act.
+        var definition = DiagramFilePair.DefinitionOf(adp, _catalog);
+        var body = DiagramFilePair.BodyOf(adp, _catalog, _root);
+
+        // Assert: found, and bodyless for a stated reason rather than an unknown one.
+        Assert.NotNull(definition);
+        Assert.False(definition.HasDocumentSibling);
+        Assert.Null(body);
+    }
+
+    [Fact]
+    public void SiblingOf_AnUnqualifiedRegistration_StillOwnsItsSibling()
+    {
+        // Arrange: the classic pair, exactly as it has always behaved (Requirement 11.1).
+        File.WriteAllText(IoPath.Combine(_root, "solo.mm"), "<map/>");
+        var adp = WriteRegistration("solo", Mindmap);
+
+        // Act and assert.
+        Assert.Equal(IoPath.Combine(_root, "solo.mm"), DiagramFilePair.SiblingOf(adp, _catalog));
+    }
+
+    [Fact]
+    public void SiblingDerivation_OfAFolderScopedRegistration_ProducesNoPath()
+    {
+        // Arrange.
+        var folderScoped = IoPath.Combine(_root, DiagramFileName.Extension);
+
+        // Act.
+        var derived = DiagramFilePair.SiblingPathFor(folderScoped, Mindmap.Extension);
+
+        // Assert: empty rather than a path that is just the extension (Requirement 4.4).
+        Assert.Equal("", derived);
+    }
+
 }

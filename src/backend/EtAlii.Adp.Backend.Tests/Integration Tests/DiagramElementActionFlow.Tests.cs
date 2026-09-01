@@ -82,7 +82,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
 
         // Arrange, continued.
         var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        var entryId = entries.Entries.Entries_.Single(e => e.Name == "roadmap.adp").Id;
+        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "roadmap.adp");
 
         // Arrange, continued.
         using var cts = CreateMessageTimeout();
@@ -140,7 +140,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
 
         // Arrange, continued.
         var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        var entryId = entries.Entries.Entries_.Single(e => e.Name == "wide.adp").Id;
+        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "wide.adp");
 
         // Arrange, continued.
         using var cts = CreateMessageTimeout();
@@ -242,7 +242,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         var watchId = ShortGuid.NewShortGuid();
 
         var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        var entryId = entries.Entries.Entries_.Single(e => e.Name == "deep.adp").Id;
+        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "deep.adp");
 
         // Act and assert, step by step.
         // The canvas's shape: the file with its project-relative path, the node with an empty
@@ -284,7 +284,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
 
         // Arrange, continued.
         var entries = await hierarchyClient.ListEntriesAsync(new ListEntriesRequest { ProjectId = projectId, WatchId = watchId }, headers, cancellationToken: TestContext.Current.CancellationToken);
-        var entryId = entries.Entries.Entries_.Single(e => e.Name == "fold.adp").Id;
+        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "fold.adp");
 
         // Arrange, continued.
         using var cts = CreateMessageTimeout();

@@ -20,7 +20,7 @@ public class HierarchyContextActionProviderTests : IDisposable
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
         _history = TestHistory.Create(_root, out var historyStacks);
-        _provider = new HierarchyContextActionProvider(historyStacks);
+        _provider = new HierarchyContextActionProvider(historyStacks, new TestDiagramDefinitionCatalog());
     }
 
     public void Dispose()

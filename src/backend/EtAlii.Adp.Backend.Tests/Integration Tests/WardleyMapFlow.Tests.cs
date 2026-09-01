@@ -331,7 +331,7 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         var entries = await hierarchyClient.ListEntriesAsync(
             new ListEntriesRequest { ProjectId = projectId, WatchId = watchId },
             headers, cancellationToken: TestContext.Current.CancellationToken);
-        var entryId = entries.Entries.Entries_.Single(entry => entry.Name == "tea.adp").Id;
+        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "tea.adp");
 
         var elements = await BaselineAsync(diagramClient, headers, projectId, "tea.adp");
         var kettle = elements.Single(element =>
