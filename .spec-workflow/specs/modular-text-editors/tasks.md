@@ -118,11 +118,11 @@ Every group's gate: backend groups run `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, checking exit codes. If clean, merge editors-session into develop and retire the worktree | Restrictions: do not merge on a failing gate | Success: both gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4. The `markdown` module - proving the seam needs nothing new for a second module
+- [x] 4. The `markdown` module - proving the seam needs nothing new for a second module
   - Worktree: `.claude/worktrees/editors-markdown`
   - _Requirements: 10.1, 10.2, 10.3_
 
-- [-] 4.1 The `markdown` backend module
+- [x] 4.1 The `markdown` backend module
   - File: `src/editors/markdown/backend/EtAlii.Adp.Editor.Markdown/Editor.cs`, `MarkdownEditorSessionFactory.cs`, `MarkdownEditorSession.cs` (new)
   - `Editor.Definitions = [new("markdown", "Markdown", "...", Extensions: [".md", ".markdown"], ...)]`; its session reuses `TextFileBuffer` for everything `plain` already does (R10.2's "at least what a plain editor does")
   - **This task adds no new core mechanism.** If implementing this module requires touching anything in `EtAlii.Adp.Editor`, `EtAlii.Adp.Backend`, or `EditorResolver`/`EditorSessionAdapter`, that is itself the signal that group 1-3's design has a gap - stop and report it rather than patching core silently, since R10.3 explicitly requires this module to prove the second-module-needs-nothing claim
@@ -131,13 +131,13 @@ Every group's gate: backend groups run `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 10.1, 10.2, 10.3_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Create EtAlii.Adp.Editor.Markdown claiming .md and .markdown, reusing TextFileBuffer and the IEditorSession/IEditorSessionFactory pair exactly as the plain module does, per design.md's Components section on the markdown module | Restrictions: if anything about EditorResolver, EditorSessionAdapter, or EtAlii.Adp.Editor's core types needs to change to make this module work, stop and report that rather than changing core - R10.3 requires this module to need nothing beyond what plain already established, and a silent core change would falsify that claim rather than prove it | Success: the markdown module's backend compiles and opens/saves .md files correctly using only what groups 1-3 already built, with zero changes to any file outside src/editors/markdown/. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.2 Tests proving no core change was needed
+- [x] 4.2 Tests proving no core change was needed
   - File: `src/editors/markdown/backend/EtAlii.Adp.Editor.Markdown.Tests/` (new project's tests)
   - Include one test that is explicitly about R10.3: assert (via `git diff --stat` against everything outside `src/editors/markdown/`, recorded in the implementation log, the same style as task 3.2's proto-untouched check) that this module's addition touched nothing else
   - _Requirements: 10.3_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA-minded C# developer | Task: Write EtAlii.Adp.Editor.Markdown.Tests covering the module's own definition, session open/save/round-trip (reusing TextFileBuffer's guarantees), and record in the implementation log a git diff --stat confirming nothing outside src/editors/markdown/ changed to build this module, which is R10.3's demonstration | Restrictions: none beyond the recording requirement | Success: tests pass, the diff confirmation is in the implementation log. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.3 Gate and merge
+- [x] 4.3 Gate and merge
   - Run both backend gates; merge `.claude/worktrees/editors-markdown` into `develop` and retire it
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, checking exit codes. If clean, merge editors-markdown into develop and retire the worktree | Restrictions: do not merge on a failing gate | Success: both gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
