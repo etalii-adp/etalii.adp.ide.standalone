@@ -343,3 +343,42 @@ clipping, and that is only visible on screen.
   and Strategy; Visibility and Maturity show the file's own numbers; Evolution stage shows
   `Custom Built` and cannot be typed into, with a sentence beside it saying to change Maturity
   instead - one or two lines, not a paragraph that pushes the rest of the panel down.
+
+## The ruler stays fixed to the view while its labels slide with the content (timeline-diagram, task 31)
+
+- **Preconditions**: a project holding a `.tml` with several elements spanning a few months
+  (for example three elements over January-June); the timeline open on the canvas.
+- **Actions**: note the ruler strip's vertical position at the bottom of the view and the
+  horizontal position of one month label. Drag the canvas background right by roughly 80 pixels
+  (a pan), including some vertical movement.
+- **Expected**: the ruler strip itself does not move at all - it stays at the bottom of the view
+  whatever the pan's vertical component - while the month label slides horizontally by exactly
+  the pan distance, staying over the time it names. A label panned out of the view disappears
+  rather than piling up at the edge.
+- **Verified 2026-09-01** against the running app: ruler top identical before and after a pan
+  with a 100px vertical component; "Mar 2026" slid exactly +80px for an 80px pan; "2026"
+  disappeared once panned off-view.
+
+## The ruler's labels change their unit with the zoom (timeline-diagram, task 31)
+
+- **Preconditions**: as above.
+- **Actions**: zoom in (ribbon Zoom In or mouse wheel) until the visible span is a few weeks;
+  then zoom out far past the starting view.
+- **Expected**: the labels change unit rather than crowding or vanishing - months at the
+  starting span, day labels ("Mar 12", "Mar 19") once weeks are visible, then years and
+  multi-year steps ("2020", "2022", "2024") when zoomed far out. At no zoom level do labels
+  overlap or disappear entirely.
+- **Verified 2026-09-01** against the running app across that whole range.
+
+## Connections follow a drag while it is in progress, and Escape abandons it (timeline-diagram, task 31)
+
+- **Preconditions**: as above, with at least one connection between two elements.
+- **Actions**: press on a connected element and move the pointer without releasing; watch the
+  connection's curve and the hint above the element; press Escape; then check the `.tml` file.
+- **Expected**: the curve is redrawn continuously as the element moves - not only on release -
+  and the hint shows the times and row the element would land on (for example
+  "2026-01-31 · row 1"). Escape returns the element and its curves to where they started, and
+  the file on disk is byte-for-byte untouched.
+- **Verified 2026-09-01** against the running app: the connection path changed mid-drag, the
+  hint read "2026-01-31 · row 1", Escape restored the original path, and the file still read
+  `begin: 2026-01-05`.
