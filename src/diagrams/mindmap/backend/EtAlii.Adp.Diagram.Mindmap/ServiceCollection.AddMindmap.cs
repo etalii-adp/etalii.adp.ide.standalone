@@ -41,6 +41,10 @@ public static class ServiceCollectionAddMindmapExtension
 
         services.AddSingleton<IDiagramSessionFactory, MindmapSessionFactory>();
 
+        // The reload seam: an external write to a map reaches the store, and through it every
+        // open session (modular-text-editors Requirement 5.3).
+        services.AddSingleton<IDiagramDocumentReloader, MindmapDocumentReloader>();
+
         return services;
     }
 }

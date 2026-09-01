@@ -20,6 +20,13 @@ public interface IMindmapDocumentStore
     /// <summary>Writes the loaded document back to <paramref name="bodyPath"/>, atomically, and reports the change.</summary>
     void Save(string bodyPath, MindmapChange change);
 
+    /// <summary>
+    /// Re-reads a map an external tool changed on disk and announces it (Requirement 11.8).
+    /// A no-op for a map nothing loaded, and while the store's own save of that path is in
+    /// flight - its own write is not an external change, and must not bounce back as one.
+    /// </summary>
+    void Reload(string bodyPath);
+
     /// <summary>Raised after every save, with what changed, so the open connections can be told.</summary>
     event EventHandler<MindmapChangedEventArgs>? Changed;
 }

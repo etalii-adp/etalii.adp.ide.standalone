@@ -43,6 +43,10 @@ public static class ServiceCollectionAddWardleyMapExtension
         // (Requirement 10.8).
         services.AddSingleton<IDiagramSessionFactory, WardleySessionFactory>();
 
+        // The reload seam: an external write to a map reaches the store, and through it every
+        // open session (modular-text-editors Requirement 5.3).
+        services.AddSingleton<IDiagramDocumentReloader, WardleyDocumentReloader>();
+
         // Makes an element selectable, and self-describing once it is (Requirement 11.2).
         services.AddSingleton<IContextSourceResolver, WardleyContextSourceResolver>();
 

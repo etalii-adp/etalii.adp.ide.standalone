@@ -26,6 +26,12 @@ public static class ServiceCollectionAddDiagramsExtension
         services.AddSingleton<DiagramSessionFactories>();
         services.AddSingleton<IDiagramViewportRegistry, DiagramViewportRegistry>();
 
+        // The watcher-to-store bridge: an external write to an open diagram's body or .adp
+        // reaches the owning store's Reload, which is what carries it to every open session
+        // as pushed deltas (modular-text-editors Requirements 5.3, 5.5). Modules opt in by
+        // registering an IDiagramDocumentReloader per origin.
+        services.AddSingleton<DiagramDocumentReloadBridge>();
+
         // The editor family rides the same stream: what nothing diagram-shaped claims falls
         // through to the resolved editor (modular-text-editors Requirement 5.1's order). The
         // catalog tolerates a host that never ran AddEditorDefinitions - an older test host -

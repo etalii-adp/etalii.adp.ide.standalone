@@ -39,6 +39,10 @@ public static class ServiceCollectionAddAzurePipelineExtension
 
         services.AddSingleton<IDiagramSessionFactory, PipelineSessionFactory>();
 
+        // The reload seam: an external write to a pipeline reaches the store, and through it
+        // every open session (modular-text-editors Requirement 5.3).
+        services.AddSingleton<IDiagramDocumentReloader, PipelineDocumentReloader>();
+
         // Making an element selectable is registering this and nothing else; the context service
         // is untouched (Requirement 12.2).
         services.AddSingleton<IContextSourceResolver, PipelineContextSourceResolver>();

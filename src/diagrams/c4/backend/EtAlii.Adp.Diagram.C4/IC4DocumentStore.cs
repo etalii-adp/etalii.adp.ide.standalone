@@ -36,6 +36,13 @@ public interface IC4DocumentStore
     /// <summary>Forgets a document, so the next open reads it afresh.</summary>
     void Forget(string path);
 
+    /// <summary>
+    /// Re-reads a document an external tool changed, and tells the sessions on it. A no-op
+    /// while the store's own save of that path is in flight: its own write on disk is not an
+    /// external change, and must not bounce back as one.
+    /// </summary>
+    void Reload(string path);
+
     /// <summary>Raised after a save, and after an external edit is picked up.</summary>
     event EventHandler<C4DocumentChangedEventArgs>? Changed;
 }

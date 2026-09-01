@@ -316,20 +316,32 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
     /// <summary>
     /// The example set's root - the folder a user would open as a project. Two layouts exist:
     /// a module's <c>examples/&lt;set&gt;/...</c>, where the set is the child of examples, and
-    /// the user-facing <c>src/examples/&lt;type&gt;/&lt;set&gt;/...</c>, where it is the
-    /// grandchild. Getting this wrong resolves every body: header against the wrong root,
+    /// the user-facing <c>src/examples/diagrams/&lt;type&gt;/&lt;set&gt;/...</c>, where it sits
+    /// below the type. Getting this wrong resolves every body: header against the wrong root,
     /// which is how this helper mis-flagged ten healthy registrations when src/examples first
-    /// joined the walk.
+    /// joined the walk - and mis-flagged ten c4 ones again when the diagrams/ level was added.
     /// </summary>
     private static string ExampleRootOf(string adpPath)
     {
         string? previous = null;
         for (var directory = new DirectoryInfo(adpPath).Parent; directory is not null; directory = directory.Parent)
         {
-            if (string.Equals(directory.Parent?.Name, "examples", StringComparison.OrdinalIgnoreCase))
+            // The user-facing layout: this directory is the <type> under src/examples/diagrams,
+            // and the set is its child on the walked path - or the type folder itself, for a
+            // registration sitting directly in it.
+            if (string.Equals(directory.Parent?.Name, "diagrams", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(directory.Parent!.Parent?.Name, "examples", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(directory.Parent!.Parent?.Parent?.Name, "src", StringComparison.OrdinalIgnoreCase))
             {
-                var isUserFacingLayout = string.Equals(directory.Parent!.Parent?.Name, "src", StringComparison.OrdinalIgnoreCase);
-                return isUserFacingLayout && previous is not null ? previous : directory.FullName;
+                return previous ?? directory.FullName;
+            }
+
+            // The module layout: examples/<set>, with examples sitting inside the module rather
+            // than under src.
+            if (string.Equals(directory.Parent?.Name, "examples", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(directory.Parent!.Parent?.Name, "src", StringComparison.OrdinalIgnoreCase))
+            {
+                return directory.FullName;
             }
 
             previous = directory.FullName;
