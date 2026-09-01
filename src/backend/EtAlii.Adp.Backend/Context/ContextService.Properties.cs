@@ -3,7 +3,7 @@ using Grpc.Core;
 namespace EtAlii.Adp.Backend.Context;
 
 /// <summary>
-/// The property half of <see cref="ContextServiceImpl"/>: what the selection has, and changing
+/// The property half of <see cref="ContextService"/>: what the selection has, and changing
 /// one of them. An explicit source names the target; without one, the properties are those of
 /// whatever the connection currently has selected - the same rule the action half follows.
 /// </summary>
@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Backend.Context;
 /// read-only reason and the effect of writing to it come from
 /// <see cref="IContextPropertyResolver"/> and whichever provider it routes to.
 /// </remarks>
-public sealed partial class ContextServiceImpl
+public sealed partial class ContextService
 {
     public override async Task<DescribePropertiesResponse> DescribeProperties(DescribePropertiesRequest request, ServerCallContext context)
     {

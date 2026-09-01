@@ -17,9 +17,9 @@ namespace EtAlii.Adp.Backend.Context;
 /// Nothing here knows about files, folders or any diagram type: resolution goes through
 /// <see cref="ContextSelectionResolver"/> and actions through <see cref="IContextActionResolver"/>.
 /// </remarks>
-public sealed partial class ContextServiceImpl : ContextService.ContextServiceBase
+public sealed partial class ContextService : EtAlii.Adp.ContextService.ContextServiceBase
 {
-    private static readonly ILogger _logger = Log.ForContext<ContextServiceImpl>();
+    private static readonly ILogger _logger = Log.ForContext<ContextService>();
 
     private readonly IProjectStore _projectStore;
     private readonly IContextSelectionStore _selectionStore;
@@ -32,7 +32,7 @@ public sealed partial class ContextServiceImpl : ContextService.ContextServiceBa
     private readonly Problems.ProblemMaintenance _problemMaintenance;
     private readonly Problems.StartupRevalidation _startupRevalidation;
 
-    public ContextServiceImpl(
+    public ContextService(
         IProjectStore projectStore,
         IContextSelectionStore selectionStore,
         ContextSelectionResolver selectionResolver,

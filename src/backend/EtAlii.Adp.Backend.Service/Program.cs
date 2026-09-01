@@ -117,7 +117,7 @@ app.UseGrpcWeb(new GrpcWebOptions { DefaultEnabled = true });
 app.MapGrpcService<AuthenticationServiceImpl>();
 app.MapGrpcService<ProjectServiceImpl>();
 app.MapGrpcService<HierarchyServiceImpl>();
-app.MapGrpcService<ContextServiceImpl>();
+app.MapGrpcService<ContextService>();
 app.MapGrpcService<DiagramServiceImpl>();
 
 app.MapClientApp();

@@ -4,7 +4,7 @@ using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would othe
 namespace EtAlii.Adp.Backend.Context;
 
 /// <summary>
-/// The context-action half of <see cref="ContextServiceImpl"/>: discovering what a target
+/// The context-action half of <see cref="ContextService"/>: discovering what a target
 /// offers, starting an action, judging proposed input, and finishing or abandoning it.
 /// An explicit source names the target; without one, the action applies to whatever the
 /// connection currently has selected - which is how a ribbon button or a global
@@ -14,7 +14,7 @@ namespace EtAlii.Adp.Backend.Context;
 /// Nothing here branches on rename or delete: every decision comes from
 /// <see cref="IContextActionResolver"/> and whichever provider it routes to.
 /// </remarks>
-public sealed partial class ContextServiceImpl
+public sealed partial class ContextService
 {
     public override async Task<DiscoverActionsResponse> DiscoverActions(DiscoverActionsRequest request, ServerCallContext context)
     {
