@@ -34,12 +34,43 @@ service DiagramService {
   // (tech.md's "Specifying a diagram type"). Static per type, so one ask per opened diagram;
   // a type that contributes nothing answers with an empty list, and the panel says so.
   rpc DescribeToolbox(DescribeToolboxRequest) returns (DescribeToolboxResponse);
+
+  // Saves a text-editor tab's content. The write goes through a command on the project's
+  // history, so a save is one undo away like every other change (modular-text-editors
+  // Requirement 6.2), and the shared buffer preserves the file's encoding and each line's own
+  // terminator (Requirement 6.1). A unary call, within the Non-Functional "no new stream"
+  // rule's own wording: editor content rides "the existing per-connection Watch push and
+  // unary calls". Every open view of the file - diagram and text alike - learns of the write
+  // through the watcher as an ordinary pushed change, which is Requirement 5.3's whole
+  // both-views-stay-true guarantee.
+  rpc SaveText(SaveTextRequest) returns (SaveTextResponse);
 }
 
 message OpenDiagramRequest {
   ShortGuid project_id = 1;
   ShortGuid watch_id = 2;  // the connection this stream belongs to - the same id the hierarchy and context calls carry
   Path path = 3;           // project-relative path of the diagram's .adp file, never a filesystem path
+  // Empty opens the file as it resolves today: the diagram family first, the editor family
+  // for what it declines. Non-empty forces the editor family for a path the diagram family
+  // would otherwise claim - the "Open as text" gesture (modular-text-editors Requirement
+  // 5.2), and the one thing that lets a diagram stream and a text stream of the same file
+  // coexist on one connection (Requirement 5.3). "*" means "whichever editor the resolver
+  // answers" (its declared default on a legitimately shared extension); anything else names
+  // the editor definition id the user chose through "Open with..." (Requirement 4.4).
+  string editor_id = 4;
+}
+
+message SaveTextRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;
+  Path path = 3;           // project-relative path of the open text file
+  string content = 4;      // the full text; the buffer re-applies the file's own terminators
+}
+
+message SaveTextResponse {
+  // Empty on success; otherwise the module's own sentence - a refusal, a vanished file, a
+  // failed write - shown beside the editor's dirty indicator rather than swallowed.
+  string error = 1;
 }
 
 message UpdateViewRequest {

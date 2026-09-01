@@ -43,6 +43,36 @@ public sealed class TextFileBuffer
     public string Content { get; private set; }
 
     /// <summary>
+    /// The detected encoding, as the property grid words it (modular-text-editors Requirement
+    /// 9.1). Detection is scoped to UTF-8 with/without BOM, ASCII included by construction, so
+    /// this names one of exactly two answers.
+    /// </summary>
+    public string EncodingName => _hasBom ? "UTF-8 with BOM" : "UTF-8";
+
+    /// <summary>
+    /// The detected line-ending style: the one style when the file is consistent, or the
+    /// dominant one named honestly as mixed - a fact the save preserves per line either way.
+    /// </summary>
+    public string LineEndingStyle
+    {
+        get
+        {
+            var used = _terminators.Where(terminator => terminator.Length > 0).Distinct().ToArray();
+            return used.Length switch
+            {
+                0 => NameOf(_dominantTerminator),
+                1 => NameOf(used[0]),
+                _ => $"Mixed (mostly {NameOf(_dominantTerminator)})",
+            };
+
+            static string NameOf(string terminator) => terminator == "\r\n" ? "CRLF" : "LF";
+        }
+    }
+
+    /// <summary>How many lines the file has, the way an editor's gutter counts them.</summary>
+    public int LineCount => _terminators.Length;
+
+    /// <summary>
     /// Opens <paramref name="path"/>, or refuses with a reason a user can act on. The size
     /// check runs before any byte is read (Requirement 6.6).
     /// </summary>

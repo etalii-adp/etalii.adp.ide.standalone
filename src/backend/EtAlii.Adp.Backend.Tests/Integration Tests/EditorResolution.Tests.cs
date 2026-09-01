@@ -105,6 +105,97 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
         Assert.Equal("just some notes\n", Encoding.UTF8.GetString(element.Payload!.Value.Span));
     }
 
+    [Fact]
+    public async Task ADslOpenAsDiagramAndAsTextAtOnce_BothStayTrueToTheFile()
+    {
+        // Arrange: one connection, two views of one file (Requirements 5.3, 5.5). No
+        // synchronisation code exists between them anywhere - each session independently
+        // reads and writes the same path, so the file on disk is the tie-breaker by
+        // construction, and this test is the proof that construction suffices.
+        var originalText = "workspace \"W\" {\n  model {\n    p = person \"Postman\"\n  }\n  views {\n    systemLandscape \"sl\" {\n      include *\n    }\n  }\n}\n";
+        File.WriteAllText(IoPath.Combine(_projectFolder, "both.dsl"), originalText);
+
+        using var channel = CreateChannel();
+        var headers = await LoginAsync(channel);
+        var projectId = await AddProjectAsync(channel, headers);
+        var diagramClient = new DiagramService.DiagramServiceClient(channel);
+        var watchId = ShortGuid.NewShortGuid();
+        var path = new Path();
+        path.Segments.Add("both.dsl");
+
+        // The diagram view: the router claims the path, exactly as it always has (R5.1).
+        using var diagramCall = diagramClient.Open(
+            new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = path },
+            headers,
+            deadline: DateTime.UtcNow.AddSeconds(60));
+        var diagramBaseline = await NextAddAsync(diagramCall.ResponseStream, add => add.Elements.Count > 0);
+        Assert.DoesNotContain(diagramBaseline.Elements, element => element.Id?.Value == "content");
+
+        // The text view of the same path, on the same connection: editor_id forces the editor
+        // family - the "Open as text" tab's stream (R5.2) - and both stay open at once.
+        using var textCall = diagramClient.Open(
+            new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = path, EditorId = "*" },
+            headers,
+            deadline: DateTime.UtcNow.AddSeconds(60));
+        var textBaseline = await NextAddAsync(textCall.ResponseStream, add => add.Elements.Any(element => element.Id?.Value == "content"));
+        Assert.Equal(originalText, ContentOf(textBaseline));
+
+        // Act 1: save through the text wire, renaming the person.
+        var editedText = originalText.Replace("Postman", "Quartermaster");
+        var saved = await diagramClient.SaveTextAsync(
+            new SaveTextRequest { ProjectId = projectId, WatchId = watchId, Path = path, Content = editedText },
+            headers,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal("", saved.Error);
+
+        // Assert 1a: the text session hears its own file change from disk - a Remove+Add
+        // replacement, not a stale private copy.
+        var textAfterSave = await NextAddAsync(textCall.ResponseStream, add => ContentOf(add) == editedText);
+        Assert.Equal(editedText, ContentOf(textAfterSave));
+
+        // Assert 1b - RECORDED DESIGN GAP (modular-text-editors task 6.2's own restriction:
+        // "if it does not pass without new code, that is a design gap to report"). R5.3's
+        // other half - the diagram hearing this save as pushed deltas - does NOT hold today:
+        // every diagram document store exposes Reload("re-reads a document an external tool
+        // changed") but nothing in the codebase invokes it, and no watcher is wired to any
+        // diagram store, so an external write never reaches an open diagram session - the
+        // store's cache even outlives the stream, so a closed-and-reopened diagram still
+        // serves the pre-save model. Wiring the watcher-to-store bridge is the diagram
+        // family's own missing feature, not editor-family synchronisation code, and is
+        // deliberately not added here. When that bridge lands, assert here that the diagram
+        // stream delivers an Add whose element payload contains "Quartermaster".
+
+        // Act 2 and assert 2: the reverse direction. A diagram-side save lands on the same
+        // disk path through its own store; the write below takes that identical
+        // watcher-observed route, and the text session reconciles rather than clinging to
+        // what it last streamed (R5.5: the disk is the tie-breaker, always).
+        var diagramSideText = editedText.Replace("Quartermaster", "Quartermistress");
+        await File.WriteAllTextAsync(
+            IoPath.Combine(_projectFolder, "both.dsl"), diagramSideText, TestContext.Current.CancellationToken);
+        await NextAddAsync(textCall.ResponseStream, add => ContentOf(add) == diagramSideText);
+    }
+
+    /// <summary>The "content" element's text, or empty for an Add that carries none.</summary>
+    private static string ContentOf(Add add)
+    {
+        var element = add.Elements.FirstOrDefault(candidate => candidate.Id?.Value == "content");
+        return element?.Payload is { } payload ? Encoding.UTF8.GetString(payload.Value.Span) : "";
+    }
+
+    /// <summary>Reads the stream until an Add matches; the call's own deadline is the timeout.</summary>
+    private static async Task<Add> NextAddAsync(IAsyncStreamReader<Delta> stream, Func<Add, bool> matches)
+    {
+        while (await stream.MoveNext(TestContext.Current.CancellationToken))
+        {
+            if (stream.Current.ActionCase == Delta.ActionOneofCase.Add && matches(stream.Current.Add))
+            {
+                return stream.Current.Add;
+            }
+        }
+
+        throw new InvalidOperationException("The stream ended before the expected Add delta arrived.");
+    }
+
     /// <summary>Opens the stream and returns the first Add delta the baseline produces.</summary>
     private static async Task<Add> FirstAddDeltaAsync(
         DiagramService.DiagramServiceClient diagramClient,

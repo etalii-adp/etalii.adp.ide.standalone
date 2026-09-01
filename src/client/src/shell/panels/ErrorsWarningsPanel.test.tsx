@@ -14,10 +14,15 @@ import {
   type ProjectProblems,
 } from "../../generated/context_pb";
 import { ErrorsWarningsPanel, visibleProblems } from "./ErrorsWarningsPanel";
+import { requestTextTab } from "./textTabRequests";
 
 const select = vi.fn<(selection: ContextSelection | null) => void>();
 const executeAction = vi.fn(async () => ({ accepted: true, error: "" }));
 const revealPath = vi.fn();
+
+// The gesture, not the tab strip, is under test: the request call is the panel's whole
+// contribution to go-to-line, so it is observed rather than wired through real tabs.
+vi.mock("./textTabRequests", () => ({ requestTextTab: vi.fn() }));
 
 /** What the (mocked) context connection currently holds; tests set it to simulate pushes. */
 const contextState: { selection: ContextSelection | null; actions: ContextActionGroup[]; problems: ProjectProblems | null } = {
@@ -90,6 +95,7 @@ beforeEach(() => {
   select.mockClear();
   executeAction.mockClear();
   revealPath.mockClear();
+  vi.mocked(requestTextTab).mockClear();
   contextState.selection = null;
   contextState.actions = [];
   contextState.problems = null;
@@ -342,8 +348,50 @@ describe("ErrorsWarningsPanel", () => {
     render(<ErrorsWarningsPanel />);
     fireEvent.doubleClick(screen.getByRole("option"));
 
-    // Assert.
+    // Assert: no line on this problem, so no text tab either - activation adds a
+    // destination for line problems, it removes none (modular-text-editors R8.2).
     expect(revealPath).toHaveBeenCalledWith(["strange.adp"]);
+    expect(requestTextTab).not.toHaveBeenCalled();
+  });
+
+  it("a line-carrying problem also opens the file's text editor at that line (R8.1)", () => {
+    // Arrange.
+    contextState.problems = problemsOf(ProblemSetState.VALIDATED, [
+      {
+        message: "The workspace block never closes.",
+        ruleId: "c4.unclosed-block",
+        path: { segments: ["docs", "flow.dsl"] },
+        location: { location: { case: "line", value: 12 } },
+      } as Partial<Problem>,
+    ]);
+
+    // Act.
+    render(<ErrorsWarningsPanel />);
+    fireEvent.doubleClick(screen.getByRole("option"));
+
+    // Assert: the reveal still happens (R8.2), and the text tab is asked for on top of it,
+    // resolver-routed - the panel names no editor.
+    expect(revealPath).toHaveBeenCalledWith(["docs", "flow.dsl"]);
+    expect(requestTextTab).toHaveBeenCalledWith({ path: ["docs", "flow.dsl"], editorId: "*", line: 12 });
+  });
+
+  it("an element-carrying problem keeps its existing activation, with no text tab (R8.2)", () => {
+    // Arrange.
+    contextState.problems = problemsOf(ProblemSetState.VALIDATED, [
+      {
+        ruleId: "mindmap.empty-node",
+        path: { segments: ["map.adp"] },
+        location: { location: { case: "elementId", value: { value: "node-7" } } },
+      } as Partial<Problem>,
+    ]);
+
+    // Act.
+    render(<ErrorsWarningsPanel />);
+    fireEvent.doubleClick(screen.getByRole("option"));
+
+    // Assert.
+    expect(revealPath).toHaveBeenCalledWith(["map.adp"]);
+    expect(requestTextTab).not.toHaveBeenCalled();
   });
 
   it("a problem located in another file shows and reveals that file, not the diagram's", () => {

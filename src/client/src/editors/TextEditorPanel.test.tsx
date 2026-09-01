@@ -9,6 +9,8 @@ import { TextEditorPanel } from "./TextEditorPanel";
 // The panel's logic - dirty state, conflict presentation, save flow - is what is under test;
 // CodeMirror's own rendering is not, so the base editor becomes a plain textarea with the
 // same contract, plus a button standing in for the Ctrl+S gesture.
+const scrollToLine = vi.fn();
+
 vi.mock("./BaseTextEditor", () => ({
   BaseTextEditor: ({ content, onChange, onSave }: { content: string; onChange: (text: string) => void; onSave?: () => void }) => (
     <div>
@@ -16,13 +18,21 @@ vi.mock("./BaseTextEditor", () => ({
       <button data-testid="save-gesture" type="button" onClick={() => onSave?.()} />
     </div>
   ),
-  scrollToLine: () => {},
+  scrollToLine: (host: HTMLElement, line: number) => scrollToLine(host, line),
 }));
 
-const streamState: { model: EditorTextModel; loading: boolean; failed: boolean } = {
-  model: { text: "hello\n", revision: 1, loaded: true },
+const model = (text: string, revision: number): EditorTextModel => ({ text, revision, loaded: true, contentMime: "editor/plain" });
+
+const streamState: {
+  model: EditorTextModel;
+  loading: boolean;
+  failed: boolean;
+  save: (content: string) => Promise<string>;
+} = {
+  model: model("hello\n", 1),
   loading: false,
   failed: false,
+  save: () => Promise.resolve(""),
 };
 
 vi.mock("./useEditorText", async (importOriginal) => {
@@ -32,9 +42,11 @@ vi.mock("./useEditorText", async (importOriginal) => {
 
 describe("TextEditorPanel", () => {
   afterEach(() => {
-    streamState.model = { text: "hello\n", revision: 1, loaded: true };
+    streamState.model = model("hello\n", 1);
     streamState.loading = false;
     streamState.failed = false;
+    streamState.save = () => Promise.resolve("");
+    scrollToLine.mockClear();
   });
 
   const props = { projectId: new Uint8Array(16), entryId: new Uint8Array(16), path: ["notes.txt"] };
@@ -68,7 +80,7 @@ describe("TextEditorPanel", () => {
     fireEvent.change(screen.getByTestId("base-text-editor"), { target: { value: "mine\n" } });
 
     // Act: ...and the disk changes underneath it.
-    streamState.model = { text: "theirs\n", revision: 2, loaded: true };
+    streamState.model = model("theirs\n", 2);
     rendered.rerender(<TextEditorPanel {...props} />);
 
     // Assert: both sides stay real until the user chooses.
@@ -84,7 +96,7 @@ describe("TextEditorPanel", () => {
     // Arrange.
     const rendered = render(<TextEditorPanel {...props} />);
     fireEvent.change(screen.getByTestId("base-text-editor"), { target: { value: "mine\n" } });
-    streamState.model = { text: "theirs\n", revision: 2, loaded: true };
+    streamState.model = model("theirs\n", 2);
     rendered.rerender(<TextEditorPanel {...props} />);
 
     // Act.
@@ -127,6 +139,43 @@ describe("TextEditorPanel", () => {
     await screen.findByText("disk is full");
     expect(screen.getByTestId("dirty-indicator").textContent).toContain("Unsaved");
   });
+
+  it("saves through the stream's own pipeline when the module passes no override (R6.2)", async () => {
+    // Arrange: the hook's save is the default - the SaveText wire, in production.
+    const saved: string[] = [];
+    streamState.save = (content) => {
+      saved.push(content);
+      return Promise.resolve("");
+    };
+    render(<TextEditorPanel {...props} />);
+    fireEvent.change(screen.getByTestId("base-text-editor"), { target: { value: "wired\n" } });
+
+    // Act.
+    fireEvent.click(screen.getByTestId("save-gesture"));
+    await screen.findByText("Saved");
+
+    // Assert.
+    expect(saved).toEqual(["wired\n"]);
+  });
+
+  it("scrolls to a problem's line once the text is loaded (R8.1)", () => {
+    // Arrange and act: "hello\n" is two editor lines, so line 2 exists.
+    render(<TextEditorPanel {...props} initialLine={2} />);
+
+    // Assert.
+    expect(scrollToLine).toHaveBeenCalledWith(expect.anything(), 2);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("says a stale line is gone rather than guessing a nearby one (R8.3)", () => {
+    // Arrange and act: the problem named line 9 of a file that now has 2 lines.
+    render(<TextEditorPanel {...props} initialLine={9} />);
+
+    // Assert: the file opened, the line did not, and nothing scrolled anywhere.
+    expect(screen.getByRole("status").textContent).toContain("Line 9 is not in this file any more");
+    expect(scrollToLine).not.toHaveBeenCalled();
+    expect(editorValue()).toBe("hello\n");
+  });
 });
 
 describe("applyEditorDelta", () => {
@@ -135,23 +184,25 @@ describe("applyEditorDelta", () => {
     const delta = create(DeltaSchema, {
       action: {
         case: "add",
-        value: { elements: [{ id: { value: "content" }, payload: { value: new TextEncoder().encode("abc") } }] },
+        value: { elements: [{ id: { value: "content" }, type: "editor/markdown", payload: { value: new TextEncoder().encode("abc") } }] },
       },
     });
 
     // Act.
-    const model = applyEditorDelta(emptyEditorText, delta);
+    const folded = applyEditorDelta(emptyEditorText, delta);
 
-    // Assert.
-    expect(model.text).toBe("abc");
-    expect(model.revision).toBe(1);
-    expect(model.loaded).toBe(true);
+    // Assert: the element's own type names the resolved module - what an "Open as text"
+    // tab mounts its canvas from (R5.2).
+    expect(folded.text).toBe("abc");
+    expect(folded.revision).toBe(1);
+    expect(folded.loaded).toBe(true);
+    expect(folded.contentMime).toBe("editor/markdown");
   });
 
   it("ignores the remove half of a replacement pair", () => {
     // Arrange.
     const remove = create(DeltaSchema, { action: { case: "remove", value: { elementIds: [{ value: "content" }] } } });
-    const current: EditorTextModel = { text: "abc", revision: 1, loaded: true };
+    const current: EditorTextModel = { text: "abc", revision: 1, loaded: true, contentMime: "editor/plain" };
 
     // Act and assert.
     expect(applyEditorDelta(current, remove)).toBe(current);

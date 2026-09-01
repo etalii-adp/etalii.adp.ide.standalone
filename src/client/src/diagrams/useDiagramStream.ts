@@ -51,6 +51,9 @@ export function useDiagramStream<TModel>(
   path: readonly string[],
   emptyModel: TModel,
   applyDelta: (current: TModel, delta: Delta) => TModel,
+  // Forces the editor family on the backend's resolution - the "Open as text" tab's stream
+  // (modular-text-editors R5.2). Empty, the default, opens the file as it resolves today.
+  editorId = "",
 ): DiagramStreamResult<TModel> {
   const { transport } = useAuth();
   const { watchId } = useContextConnection();
@@ -73,7 +76,7 @@ export function useDiagramStream<TModel>(
       while (active) {
         try {
           const stream = client.open(
-            { projectId: { value: projectId }, watchId: { value: watchId }, path: { segments: [...path] } },
+            { projectId: { value: projectId }, watchId: { value: watchId }, path: { segments: [...path] }, editorId },
             { signal: controller.signal },
           );
           for await (const delta of stream) {
@@ -123,7 +126,7 @@ export function useDiagramStream<TModel>(
     // path is compared by value through pathKey, not by array identity; emptyModel and
     // applyDelta are a module's own constants, stable by construction.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, watchId, pathKey]);
+  }, [projectId, watchId, pathKey, editorId]);
 
   return { model, loading, failed, client: clientRef.current };
 }

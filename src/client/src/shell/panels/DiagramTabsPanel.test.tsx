@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
+import { markTabDirty } from "./dirtyTabs";
+import { requestTextTab } from "./textTabRequests";
 import { create } from "@bufbuild/protobuf";
 import {
   ContextLevelDetailSchema,
@@ -25,6 +27,16 @@ vi.mock("./diagramCanvases", () => ({
           Canvas: ({ path }: { path: string[] }) => <div data-testid="mindmap-canvas">{path.join("/")}</div>,
         }
       : undefined,
+}));
+
+// An "Open as text" tab's canvas opens a stream of its own; the tab model is what is under
+// test here, so the resolved-editor panel becomes a marker div showing what it was handed.
+vi.mock("@client/editors/ResolvedTextEditorPanel", () => ({
+  ResolvedTextEditorPanel: ({ path, editorId, initialLine }: { path: string[]; editorId?: string; initialLine?: number }) => (
+    <div data-testid="text-canvas">
+      {path.join("/")}|{editorId ?? ""}|{initialLine ?? ""}
+    </div>
+  ),
 }));
 
 const contextState: { selection: ContextSelection | null; levels: ContextLevelDetail[] } = { selection: null, levels: [] };
@@ -188,5 +200,56 @@ describe("DiagramTabsPanel", () => {
     // Assert.
     expect(screen.getByRole("tab", { name: /future/ })).toBeTruthy();
     expect(await screen.findByText("No canvas can render vendor/unheard-of diagrams yet.")).toBeTruthy();
+  });
+
+  it("opens a focused text tab on a request - the Open as text gesture (R5.2)", async () => {
+    // Arrange.
+    renderPanel();
+
+    // Act.
+    act(() => requestTextTab({ path: ["docs", "flow.dsl"], editorId: "*" }));
+
+    // Assert: the tab is open, focused, and its canvas was told to force the resolver.
+    expect(screen.getByRole("tab", { name: /flow\.dsl/ }).getAttribute("aria-selected")).toBe("true");
+    expect((await screen.findByTestId("text-canvas")).textContent).toBe("docs/flow.dsl|*|");
+  });
+
+  it("focuses the open text tab on a re-request and carries the new line (R8.1)", async () => {
+    // Arrange: the same file asked for twice - an Open as text, then, after a diagram tab
+    // took the focus away, a problem's line in it.
+    const { rerender } = renderPanel();
+    act(() => requestTextTab({ path: ["notes.md"], editorId: "*" }));
+    push(entryA, ["a.adp"], "freeplane/mindmap");
+    rerender(<DiagramTabsPanel projectId={projectId} />);
+
+    // Act.
+    act(() => requestTextTab({ path: ["notes.md"], editorId: "*", line: 12 }));
+
+    // Assert: still one text tab (beside the diagram's), focused again, now navigating.
+    expect(screen.getAllByRole("tab", { name: /notes\.md/ }).length).toBe(1);
+    expect(screen.getByRole("tab", { name: /notes\.md/ }).getAttribute("aria-selected")).toBe("true");
+    expect((await screen.findByTestId("text-canvas")).textContent).toBe("notes.md|*|12");
+  });
+
+  it("asks before closing a text tab whose file has unsaved edits (R6.5)", () => {
+    // Arrange: the dirty registry is keyed by the file's path - the identity the editor
+    // panel registers under. This pins the key the two sides share; a mismatch here is the
+    // silent-discard bug this test exists to keep out.
+    renderPanel();
+    act(() => requestTextTab({ path: ["notes.txt"], editorId: "plain" }));
+    markTabDirty("notes.txt", true);
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+
+    try {
+      // Act: decline the confirmation.
+      fireEvent.click(screen.getByRole("button", { name: /Close notes/ }));
+
+      // Assert: asked, and the tab survived the refusal.
+      expect(confirm).toHaveBeenCalled();
+      expect(screen.getByRole("tab", { name: /notes\.txt/ })).toBeTruthy();
+    } finally {
+      confirm.mockRestore();
+      markTabDirty("notes.txt", false);
+    }
   });
 });

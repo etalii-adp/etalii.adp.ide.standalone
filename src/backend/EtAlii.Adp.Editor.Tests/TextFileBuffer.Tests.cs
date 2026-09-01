@@ -140,4 +140,35 @@ public class TextFileBufferTests : IDisposable
         Assert.Null(opened.Buffer);
         Assert.Contains("UTF-8", opened.Refusal);
     }
+
+    [Fact]
+    public void TheBuffersFacts_NameWhatWasDetected()
+    {
+        // Arrange: BOM, CRLF, three lines - the property grid's four facts come from here
+        // (modular-text-editors Requirement 9.1).
+        var path = Write("facts.txt", [0xEF, 0xBB, 0xBF, .. "one\r\ntwo\r\nthree"u8]);
+
+        // Act.
+        var buffer = TextFileBuffer.Open(path).Buffer!;
+
+        // Assert.
+        Assert.Equal("UTF-8 with BOM", buffer.EncodingName);
+        Assert.Equal("CRLF", buffer.LineEndingStyle);
+        Assert.Equal(3, buffer.LineCount);
+    }
+
+    [Fact]
+    public void MixedLineEndings_AreNamedHonestly()
+    {
+        // Arrange: two CRLF, one LF - a fact worth stating as it is, since the save keeps
+        // each line's own terminator rather than normalising.
+        var path = Write("mixed.txt", "one\r\ntwo\ntree\r\n"u8.ToArray());
+
+        // Act.
+        var buffer = TextFileBuffer.Open(path).Buffer!;
+
+        // Assert.
+        Assert.Equal("Mixed (mostly CRLF)", buffer.LineEndingStyle);
+        Assert.Equal("UTF-8", buffer.EncodingName);
+    }
 }

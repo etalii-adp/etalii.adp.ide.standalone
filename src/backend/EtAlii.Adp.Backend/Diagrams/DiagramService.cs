@@ -25,6 +25,7 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
     private readonly EditorResolver _editorResolver;
     private readonly EditorSessionFactories _editorSessionFactories;
     private readonly IDiagramViewportRegistry _viewports;
+    private readonly IHistoryStackStore _historyStacks;
     private readonly IReadOnlyList<Diagram.IDiagramToolboxProvider> _toolboxProviders;
 
     public DiagramService(
@@ -34,8 +35,10 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
         EditorResolver editorResolver,
         EditorSessionFactories editorSessionFactories,
         IDiagramViewportRegistry viewports,
+        IHistoryStackStore historyStacks,
         IEnumerable<Diagram.IDiagramToolboxProvider> toolboxProviders)
     {
+        _historyStacks = historyStacks;
         _projectStore = projectStore;
         _router = router;
         _sessionFactories = sessionFactories;
@@ -56,7 +59,24 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
         // ordinary miss (Requirement 3.2).
         IDiagramSession openedSession;
         string bodyPath;
-        if (TryResolveBody(request.ProjectId, request.Path, context, out var rootPath, out var diagramBody, out var origin, out var registrationPath))
+        if (request.EditorId.Length > 0)
+        {
+            // The caller forced the editor family - the "Open as text" gesture. The diagram
+            // family is deliberately not consulted: this is the one way a diagram-routed file
+            // opens as text at all, and the one way its diagram stream and its text stream can
+            // coexist on one connection (modular-text-editors Requirements 5.2, 5.3).
+            if (!TryResolveTextFile(request.ProjectId, request.Path, context, out var forcedRoot, out var forcedPath))
+            {
+                throw new RpcException(new Status(StatusCode.FailedPrecondition, "The file cannot be opened as text."));
+            }
+
+            var forcedId = request.EditorId == "*" ? ResolvedEditorIdOf(forcedPath) : request.EditorId;
+            var forcedFactory = _editorSessionFactories.Find(forcedId)
+                ?? throw new RpcException(new Status(StatusCode.FailedPrecondition, $"No '{forcedId}' editor is deployed."));
+            bodyPath = forcedPath;
+            openedSession = new EditorSessionAdapter(forcedFactory.Open(watchId, forcedRoot, forcedPath), forcedId);
+        }
+        else if (TryResolveBody(request.ProjectId, request.Path, context, out var rootPath, out var diagramBody, out var origin, out var registrationPath))
         {
             var factory = _sessionFactories.Find(origin)
                 ?? throw new RpcException(new Status(StatusCode.Unimplemented, $"'{origin}' diagrams cannot be opened yet."));
@@ -87,7 +107,20 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
         }
 
         session.Changed += OnChanged;
-        _viewports.Register(watchId, bodyPath, session, viewport => Apply(session, viewport, channel));
+
+        // Editor sessions stay out of the viewport registry: a text file has no viewport or
+        // element moves to correlate, and the registry is keyed by (watch, path) - a text
+        // stream of a file whose diagram stream is open on the same connection (Requirement
+        // 5.3's both-at-once) would otherwise overwrite the diagram's registration and
+        // deregister it again on close.
+        var registersViewport = openedSession is not EditorSessionAdapter;
+        if (registersViewport)
+        {
+            // ReSharper disable once AccessToDisposedClosure
+            // Reason: probably a false negative. The _viewport.Remove is called in the finally below.
+            _viewports.Register(watchId, bodyPath, session, viewport => Apply(session, viewport, channel));
+        }
+
         _logger.Information("Opened {BodyPath} on watch {WatchId}", bodyPath, watchId);
 
         try
@@ -109,7 +142,11 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
         finally
         {
             session.Changed -= OnChanged;
-            _viewports.Remove(watchId, bodyPath);
+            if (registersViewport)
+            {
+                _viewports.Remove(watchId, bodyPath);
+            }
+
             _logger.Information("Closed {BodyPath} on watch {WatchId}", bodyPath, watchId);
         }
     }
@@ -251,8 +288,34 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
         out string fullPath,
         out string editorId)
     {
-        fullPath = "";
         editorId = "";
+        if (!TryResolveTextFile(projectId, path, context, out rootPath, out fullPath))
+        {
+            return false;
+        }
+
+        if (_editorResolver.Resolve(fullPath) is not EditorRouted routed)
+        {
+            fullPath = "";
+            return false;
+        }
+
+        editorId = routed.Definition.Id;
+        return true;
+    }
+
+    /// <summary>
+    /// The shared first half of every editor-family resolution: the project root, the
+    /// containment check, and the file's existence - nothing about which editor.
+    /// </summary>
+    private bool TryResolveTextFile(
+        Contracts.ShortGuid projectId,
+        Path path,
+        ServerCallContext context,
+        out string rootPath,
+        out string fullPath)
+    {
+        fullPath = "";
 
         var userId = SessionContext.GetUserId(context);
         if (!ProjectRootResolver.TryResolve(_projectStore, userId, projectId, out rootPath, out _))
@@ -267,14 +330,38 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
             return false;
         }
 
-        if (_editorResolver.Resolve(full) is not EditorRouted routed)
+        fullPath = full;
+        return true;
+    }
+
+    /// <summary>
+    /// The definition id behind a forced <c>"*"</c>: whatever the resolver answers - the one
+    /// claimant, the declared default of a legitimately shared extension, or the fallback.
+    /// </summary>
+    private string ResolvedEditorIdOf(string fullPath) =>
+        _editorResolver.Resolve(fullPath) is EditorRouted routed
+            ? routed.Definition.Id
+            : throw new RpcException(new Status(
+                StatusCode.FailedPrecondition,
+                $"No editor can open '{System.IO.Path.GetFileName(fullPath)}': rival editors claim it and none is the default."));
+
+    public override async Task<SaveTextResponse> SaveText(SaveTextRequest request, ServerCallContext context)
+    {
+        if (!TryResolveTextFile(request.ProjectId, request.Path, context, out var rootPath, out var fullPath))
         {
-            return false;
+            return new SaveTextResponse { Error = "The file no longer exists." };
         }
 
-        fullPath = full;
-        editorId = routed.Definition.Id;
-        return true;
+        // Through the project's history, not straight to disk: a save is one undo away like
+        // every other change (Requirement 6.2). Every open session of the file - text and
+        // diagram alike - holds its own watcher, so the write comes back to all of them as an
+        // ordinary pushed change; the file on disk is the tie-breaker by construction
+        // (Requirements 5.3, 5.5).
+        var result = await _historyStacks.Get(rootPath).ExecuteAsync(
+            new SaveTextFileCommand(fullPath, request.Content), context.CancellationToken);
+
+        _logger.Information("Saved {FullPath} through the history: {Outcome}", fullPath, result.IsSuccess ? "ok" : result.Error);
+        return new SaveTextResponse { Error = result.IsSuccess ? "" : result.Error };
     }
 
     private static bool IsInside(string rootPath, string fullPath)

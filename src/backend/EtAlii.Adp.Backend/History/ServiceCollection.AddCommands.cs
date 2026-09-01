@@ -39,6 +39,7 @@ public static class ServiceCollectionAddCommandsExtension
         services.AddSingleton<ICommandHandler<RenameEntryCommand>, RenameEntryCommandHandler>();
         services.AddSingleton<ICommandHandler<DeleteEntryCommand>, DeleteEntryCommandHandler>();
         services.AddSingleton<ICommandHandler<CreateDiagramFileCommand>, CreateDiagramFileCommandHandler>();
+        services.AddSingleton<ICommandHandler<SaveTextFileCommand>, SaveTextFileCommandHandler>();
 
         return services;
     }
