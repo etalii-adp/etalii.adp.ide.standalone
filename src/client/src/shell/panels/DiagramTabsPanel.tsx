@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { isTabDirty } from "./dirtyTabs";
 import { base64Encode } from "@bufbuild/protobuf/wire";
 import { ContextSelectionAction } from "../../generated/context_pb";
 import type { ContextLevelDetail, ContextSelection } from "../../generated/context_pb";
@@ -83,6 +84,12 @@ export function DiagramTabsPanel({ projectId }: DiagramTabsPanelProps) {
   }, [selection, levels, projectId]);
 
   const close = (key: string) => {
+    // An editor tab with unsaved edits asks first (modular-text-editors R6.5); diagram tabs
+    // never register as dirty, so nothing changes for them.
+    if (isTabDirty(key) && !window.confirm("This tab has unsaved changes. Close it anyway?")) {
+      return;
+    }
+
     const index = tabs.findIndex((tab) => tab.key === key);
     const remaining = tabs.filter((tab) => tab.key !== key);
     setTabs(remaining);
