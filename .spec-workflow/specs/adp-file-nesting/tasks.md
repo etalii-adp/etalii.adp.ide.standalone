@@ -64,14 +64,14 @@
   - _Requirements: 11.1, 12.3_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA-minded C# developer | Task: Build the safety net against the current example names | Restrictions: walk the tree rather than hard-coding a list, so an example set added by a later spec is covered on arrival; this task renames NOTHING and must pass on develop as it stands before any rename exists | Success: all 39 registrations are exercised and the suite is green before Phase C starts. Mark in progress, log when done, then mark complete._
 
-- [-] 6. A fixture for the unknown-MIME branch
+- [x] 6. A fixture for the unknown-MIME branch
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Fixtures/` (new)
   - A registration whose first line names no definition in the catalog
   - Purpose: Requirement 8.4, which has no coverage anywhere and cannot get it from an example
   - _Requirements: 8.4_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Create the unknown-type fixture and test the branch | Restrictions: this must be a CREATED fixture - all 39 example registrations name a MIME that is in the catalog, measured across every one, so no example exercises this branch; an unknown type resolves to no definition and therefore no body, and is NOT an error | Success: the unknown-MIME branch has coverage that does not depend on any example. Mark in progress, log when done, then mark complete._
 
-- [ ] 7. The bodyless-known-type regression
+- [x] 7. The bodyless-known-type regression
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/DiagramFilePair.Tests.cs` (modify)
   - `code-level.adp` and `c4/code`: a definition IS found, and `HasDocumentSibling` is false
   - Purpose: pin the branch this case actually exercises, distinct from task 6's
@@ -82,7 +82,7 @@
 
 > Begins only once Phase B is green and committed.
 
-- [ ] 8. Rename the c4 example registrations
+- [-] 8. Rename the c4 example registrations
   - File: `src/diagrams/c4/examples/reference/architecture/`, `src/diagrams/c4/examples/industrial-plant/architecture/` (renamed)
   - The five header-pointed registrations gain qualifiers; `courier.adp` keeps its name as the unqualified default; `code-level.adp` is untouched
   - _Requirements: 1.1, 1.2, 11.2, 11.3_
