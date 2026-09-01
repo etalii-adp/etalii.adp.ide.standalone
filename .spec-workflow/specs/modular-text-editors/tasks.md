@@ -142,17 +142,17 @@ Every group's gate: backend groups run `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, checking exit codes. If clean, merge editors-markdown into develop and retire the worktree | Restrictions: do not merge on a failing gate | Success: both gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 5. Client: workspace tab integration and the two editors' UI (client UI layer)
+- [x] 5. Client: workspace tab integration and the two editors' UI (client UI layer)
   - Worktree: `.claude/worktrees/editors-client`
   - _Requirements: 1.1, 6.5, 10.2_
 
-- [-] 5.1 Add the CodeMirror 6 dependency and a shared base editor component
+- [x] 5.1 Add the CodeMirror 6 dependency and a shared base editor component
   - File: `src/client/package.json` (modified - add `@codemirror/*` packages), `src/client/src/diagrams/` or a new `src/client/src/editors/` shared folder (new) hosting a base text-editor React component
   - CodeMirror 6 chosen over Monaco per design.md's product.md-alignment reasoning (modular per-language packages match the plugin-per-module shape; Monaco's worker-based build needs bespoke Vite configuration that would touch shared build files every module would then depend on)
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior React/TypeScript developer | Task: Add CodeMirror 6's core packages to src/client/package.json and create a shared base text-editor component (new src/client/src/editors/ folder, mirroring the src/client/src/canvas/ precedent for shared diagram-module client code) that any editor module's client code can wrap - basic view, no language-specific extension yet | Restrictions: do not add Monaco - design.md's reasoning against it (worker/Vite-config complexity that would touch shared build files) stands; keep the shared component minimal, language extensions belong to each module's own client code | Success: the base component renders text and can be instantiated with different content, no module-specific behaviour yet. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.2 `plain` and `markdown` client modules, wired into the workspace tab strip
+- [x] 5.2 `plain` and `markdown` client modules, wired into the workspace tab strip
   - File: `src/editors/plain/client/` and `src/editors/markdown/client/` (new)
   - Each opens into the existing tab strip exactly as a diagram does (reusing `diagram-workspace-tabs`'s existing open/close/activate mechanism); unsaved-changes indicator and close-confirmation per R6.5; external-change conflict presentation per R6.4 (reconciled, not silently discarded, per tech.md's *Frontend-backend synchronization* rule)
   - Markdown adds a preview pane and heading-aware navigation on top of the shared base component (R10.2's "what makes it worth being its own module")
@@ -160,13 +160,13 @@ Every group's gate: backend groups run `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: 6.4, 6.5, 10.2_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior React/TypeScript developer | Task: Build the plain and markdown editors' client code, each opening into the existing workspace tab strip the way a diagram tab does, with an unsaved-changes indicator and ask-before-close (R6.5), and a conflict presentation (not a silent discard) when the file changes on disk while open (R6.4, per tech.md's Frontend-backend synchronization rule). Markdown additionally renders a preview pane and heading navigation | Restrictions: reuse diagram-workspace-tabs's existing tab open/close/activate mechanism rather than building a parallel one | Leverage: the base editor component from task 5.1 | Success: both editors open, edit, save (dispatching the save command through the existing pipeline), show unsaved state, and present an external-change conflict rather than silently overwriting either side. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.3 Client tests
+- [x] 5.3 Client tests
   - File: test files beside each new client component, following this repo's existing client test conventions
   - Tab open/close/save/unsaved-indicator/conflict-prompt for `plain`; preview and heading navigation for `markdown`
   - _Requirements: (client testing, per NFR)_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend test engineer | Task: Write client tests for the plain and markdown editor components covering open/save/unsaved-indicator/close-confirmation/conflict-prompt (plain) and preview/heading-navigation (markdown), following this repository's existing client test conventions (mocked transport, renderHook/render as appropriate) | Restrictions: none beyond matching existing conventions | Success: tests pass and cover the behaviours listed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.4 Gate and merge
+- [x] 5.4 Gate and merge
   - Run `npm test` and `npm run typecheck` from `src/client/`; merge `.claude/worktrees/editors-client` into `develop` and retire it
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run npm test and npm run typecheck from src/client, checking exit codes. If clean, merge editors-client into develop and retire the worktree | Restrictions: do not merge on a failing gate | Success: both client gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
