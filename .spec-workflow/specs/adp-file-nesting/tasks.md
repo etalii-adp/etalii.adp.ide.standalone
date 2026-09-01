@@ -95,13 +95,13 @@
 
 ## Phase D — the hierarchy
 
-- [-] 10. `HierarchyNesting`
+- [x] 10. `HierarchyNesting`
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/HierarchyNesting.cs` (new)
   - Pure function: which entries are registrations, which subject each names, which are orphans
   - _Requirements: 3.2, 3.4, 3.5, 8.1, 8.2_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Assign parents without touching the filesystem | Restrictions: a registration appears under its subject and NOWHERE else (Requirement 3.5) - nesting relocates it rather than duplicating it; an orphan appears where it sits on disk rather than being hidden; the ordering is stable and stated, with the unqualified form first | Success: the `templates.adp` / `templates.yml` / `templates/` case assigns to the FILE rather than the directory, which is the case a name-based implementation gets wrong. Mark in progress, log when done, then mark complete._
 
-- [ ] 11. The two additive proto changes, and the client stubs
+- [-] 11. The two additive proto changes, and the client stubs
   - File: `src/api/hierarchy.proto` (modify), `src/client/src/generated/` (regenerated)
   - Correct `has_children`'s comment; add `EntryUpdated.parent_id`; run `npm run generate`
   - _Requirements: 3.1, 10.3_
