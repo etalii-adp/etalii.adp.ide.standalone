@@ -12,6 +12,7 @@ import { ContextSelectionAction, ContextSelectionSchema, ContextSelectionSource,
 import type { ContextSelection, Problem } from "../../generated/context_pb";
 import { ContextMenu } from "../context/ContextMenu";
 import { toMenuGroups } from "../context/toMenuGroups";
+import { requestTextTab } from "./textTabRequests";
 import { matchShortcut } from "./ExplorerTreePanel";
 import {
   NONE_DETAIL,
@@ -54,15 +55,21 @@ function pathText(problem: Problem): string {
 
 /** ":12" for a line, "" for an element or the file itself - an element shows through the reveal, not the text. */
 function locationText(problem: Problem): string {
+  const line = locatedLine(problem);
+  return line !== undefined ? `:${line}` : "";
+}
+
+/** The 1-based line a problem names, or undefined when it only names an element or a file. */
+function locatedLine(problem: Problem): number | undefined {
   const location = problem.location?.location;
   if (location?.case === "line") {
-    return `:${location.value}`;
+    return location.value;
   }
   // A file location's line is optional: 0 means the rule could only name the file.
   if (location?.case === "file" && location.value.line > 0) {
-    return `:${location.value.line}`;
+    return location.value.line;
   }
-  return "";
+  return undefined;
 }
 
 /** A row's identity within one pushed list - stable enough for React keys and focus. */
@@ -170,12 +177,23 @@ export function ErrorsWarningsPanel() {
     [openMenu],
   );
 
-  /** Activating a problem reveals its file in the hierarchy (Requirement 7.7). */
+  /**
+   * Activating a problem reveals its file in the hierarchy (Requirement 7.7) - and, when the
+   * problem names a line, also opens the file's text editor at that line
+   * (modular-text-editors R8.1). One more destination, on top of the existing behaviour
+   * rather than instead of it (R8.2); a line the file no longer has is reported by the editor
+   * itself, honestly, rather than guessed at (R8.3).
+   */
   const activate = useCallback(
     (problem: Problem) => {
       const segments = locatedSegments(problem);
       if (segments.length > 0) {
         revealPath([...segments]);
+
+        const line = locatedLine(problem);
+        if (line !== undefined) {
+          requestTextTab({ path: [...segments], editorId: "*", line });
+        }
       }
     },
     [revealPath],

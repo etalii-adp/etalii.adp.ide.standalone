@@ -24,6 +24,7 @@ public sealed class EditorResolver
 {
     private readonly Dictionary<string, EditorRouting> _byFileName;
     private readonly Dictionary<string, EditorRouting> _byExtension;
+    private readonly Dictionary<string, IReadOnlyList<EditorDefinition>> _claimantsByExtension;
     private readonly EditorRouting? _fallback;
 
     public EditorResolver(IEditorDefinitionCatalog catalog)
@@ -44,7 +45,29 @@ public sealed class EditorResolver
         var definitions = catalog.All;
         _byFileName = ResolveGroups(definitions, definition => definition.FileNames, "file name", logger);
         _byExtension = ResolveGroups(definitions, definition => definition.Extensions, "extension", logger);
+        _claimantsByExtension = definitions
+            .SelectMany(definition => definition.Extensions.Select(extension => (Extension: extension, Definition: definition)))
+            .GroupBy(claim => claim.Extension, StringComparer.Ordinal)
+            .ToDictionary(
+                group => group.Key,
+                IReadOnlyList<EditorDefinition> (group) =>
+                    [.. group.Select(claim => claim.Definition).OrderBy(definition => definition.Id, StringComparer.Ordinal)],
+                StringComparer.Ordinal);
         _fallback = ResolveFallback(definitions, logger);
+    }
+
+    /// <summary>
+    /// Every editor claiming <paramref name="path"/>'s extension, ordered by id - what
+    /// "Open with…" lists (Requirement 4.4). One entry for a solely-claimed extension, empty
+    /// for a file only the fallback would answer; <see cref="Resolve"/> stays the authority
+    /// on which of them actually opens on activation.
+    /// </summary>
+    public IReadOnlyList<EditorDefinition> ClaimantsOf(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+
+        var extension = IoPath.GetExtension(path).ToLowerInvariant();
+        return extension.Length > 0 && _claimantsByExtension.TryGetValue(extension, out var claimants) ? claimants : [];
     }
 
     /// <summary>

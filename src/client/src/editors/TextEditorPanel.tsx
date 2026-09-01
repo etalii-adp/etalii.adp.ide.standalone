@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Extension } from "@codemirror/state";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { markTabDirty } from "@client/shell/panels/dirtyTabs";
-import { BaseTextEditor } from "./BaseTextEditor";
+import { BaseTextEditor, scrollToLine } from "./BaseTextEditor";
 import { useEditorText } from "./useEditorText";
 import "./editors.css";
 
@@ -17,9 +17,8 @@ export interface TextEditorPanelProps extends DiagramCanvasProps {
   /** Module-supplied CodeMirror extensions. */
   extensions?: Extension[];
   /**
-   * Saves the text. Wired to the save pipeline where the deployment has one; until group 6
-   * lands the editor.save action, a module may pass undefined and the indicator simply stays
-   * dirty - deferral over pretence.
+   * Overrides the save pipeline. Unset - the ordinary case - the panel saves through the
+   * stream's own `SaveText` call, which lands the write on the project's history (R6.2).
    */
   onSave?: (content: string) => Promise<string>;
   /** Extra chrome rendered beside the editor - markdown's preview pane. */
@@ -28,12 +27,14 @@ export interface TextEditorPanelProps extends DiagramCanvasProps {
   header?: (text: string, goToLine: (line: number) => void) => React.ReactNode;
 }
 
-export function TextEditorPanel({ projectId, path, extensions, onSave, aside, header }: TextEditorPanelProps) {
-  const { model, loading, failed } = useEditorText(projectId, path);
+export function TextEditorPanel({ projectId, path, editorId, initialLine, extensions, onSave, aside, header }: TextEditorPanelProps) {
+  const { model, loading, failed, save: streamSave } = useEditorText(projectId, path, editorId);
   const [localText, setLocalText] = useState<string | null>(null);
   const [conflict, setConflict] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [lineNotice, setLineNotice] = useState("");
   const baselineRevision = useRef(0);
+  const appliedInitialLine = useRef<number | undefined>(undefined);
   const hostRef = useRef<HTMLDivElement | null>(null);
 
   const dirty = localText !== null && localText !== model.text;
@@ -60,17 +61,38 @@ export function TextEditorPanel({ projectId, path, extensions, onSave, aside, he
     baselineRevision.current = model.revision;
   }, [model.revision, model.loaded, model.text, localText]);
 
+  // A problem's go-to-line, honoured once per requested line and only against loaded text.
+  // A line the file no longer has opens the file and says so, rather than guessing a nearby
+  // one (R8.3) - the file may have changed since the problem was found.
+  useEffect(() => {
+    if (initialLine === undefined || !model.loaded || appliedInitialLine.current === initialLine) {
+      return;
+    }
+    appliedInitialLine.current = initialLine;
+
+    const lineCount = model.text.split("\n").length;
+    if (initialLine > lineCount) {
+      setLineNotice(`Line ${initialLine} is not in this file any more - it has ${lineCount} lines now.`);
+    } else {
+      setLineNotice("");
+      if (hostRef.current) {
+        scrollToLine(hostRef.current, initialLine);
+      }
+    }
+  }, [initialLine, model.loaded, model.text]);
+
   const save = useCallback(async () => {
-    if (onSave === undefined || localText === null) {
+    const performSave = onSave ?? streamSave;
+    if (localText === null) {
       return;
     }
 
-    const error = await onSave(localText);
+    const error = await performSave(localText);
     setSaveError(error);
     if (error === "") {
       setLocalText(null);
     }
-  }, [onSave, localText]);
+  }, [onSave, streamSave, localText]);
 
   if (failed) {
     return <p className="text-editor-unavailable">This file cannot be opened as text any more.</p>;
@@ -107,7 +129,12 @@ export function TextEditorPanel({ projectId, path, extensions, onSave, aside, he
           {saveError}
         </div>
       )}
-      {header?.(shown, (line) => hostRef.current && scrollHostToLine(hostRef.current, line))}
+      {lineNotice !== "" && (
+        <div className="text-editor-line-notice" role="status">
+          {lineNotice}
+        </div>
+      )}
+      {header?.(shown, (line) => hostRef.current && scrollToLine(hostRef.current, line))}
       <div className="text-editor-body">
         <div className="text-editor-surface">
           <BaseTextEditor
@@ -126,9 +153,4 @@ export function TextEditorPanel({ projectId, path, extensions, onSave, aside, he
       </div>
     </div>
   );
-}
-
-function scrollHostToLine(host: HTMLElement, line: number) {
-  // Late import shape avoided deliberately: BaseTextEditor exports the mechanism.
-  void import("./BaseTextEditor").then(({ scrollToLine }) => scrollToLine(host, line));
 }
