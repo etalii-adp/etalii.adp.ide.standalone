@@ -8,6 +8,7 @@
     <!-- The host owns the Serilog pipeline every EtAlii.Adp.* assembly logs into. -->
     <PackageReference Include="Serilog.AspNetCore" />
     <ProjectReference Include="..\..\diagrams\*\backend\*\*.csproj" Exclude="..\..\diagrams\*\backend\*\*.Tests.csproj" />
+    <ProjectReference Include="..\..\editors\*\backend\*\*.csproj" Exclude="..\..\editors\*\backend\*\*.Tests.csproj" />
   </ItemGroup>
 
   <!--

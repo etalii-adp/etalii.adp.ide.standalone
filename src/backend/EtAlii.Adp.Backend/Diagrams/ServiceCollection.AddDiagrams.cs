@@ -1,6 +1,8 @@
+using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Diagram;
-
+using EtAlii.Adp.Editor;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace EtAlii.Adp.Backend.Diagrams;
 
@@ -23,6 +25,15 @@ public static class ServiceCollectionAddDiagramsExtension
         services.AddSingleton<DiagramDocumentFactories>();
         services.AddSingleton<DiagramSessionFactories>();
         services.AddSingleton<IDiagramViewportRegistry, DiagramViewportRegistry>();
+
+        // The editor family rides the same stream: what nothing diagram-shaped claims falls
+        // through to the resolved editor (modular-text-editors Requirement 5.1's order). The
+        // catalog tolerates a host that never ran AddEditorDefinitions - an older test host -
+        // by answering empty rather than failing its container.
+        services.AddSingleton<EditorSessionFactories>();
+        services.TryAddSingleton<IEditorDefinitionCatalog>(svc =>
+            new EditorDefinitionCatalog { All = svc.GetService<IReadOnlyList<EditorDefinition>>() ?? [] });
+        services.AddSingleton<EditorResolver>(svc => new EditorResolver(svc.GetRequiredService<IEditorDefinitionCatalog>()));
 
         return services;
     }

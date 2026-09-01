@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+
 namespace EtAlii.Adp.Editor.Plain;
 
 /// <summary>This editor's identity: the fallback, claiming nothing by construction.</summary>
@@ -13,7 +15,8 @@ public static class Editor
         "Any text file, as it is - the editor every file can fall back to.",
         Extensions: [],
         FileNames: [],
-        IsFallback: true);
+        IsFallback: true,
+        Build: builder => builder.Services.AddSingleton<IEditorSessionFactory, PlainEditorSessionFactory>());
 
     /// <summary>What discovery reads. One entry: this module carries one editor.</summary>
     public static EditorDefinition[] Definitions { get; } = [Plain];

@@ -22,6 +22,8 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
     private readonly IProjectStore _projectStore;
     private readonly DiagramFileRouter _router;
     private readonly DiagramSessionFactories _sessionFactories;
+    private readonly EditorResolver _editorResolver;
+    private readonly EditorSessionFactories _editorSessionFactories;
     private readonly IDiagramViewportRegistry _viewports;
     private readonly IReadOnlyList<Diagram.IDiagramToolboxProvider> _toolboxProviders;
 
@@ -29,12 +31,16 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
         IProjectStore projectStore,
         DiagramFileRouter router,
         DiagramSessionFactories sessionFactories,
+        EditorResolver editorResolver,
+        EditorSessionFactories editorSessionFactories,
         IDiagramViewportRegistry viewports,
         IEnumerable<Diagram.IDiagramToolboxProvider> toolboxProviders)
     {
         _projectStore = projectStore;
         _router = router;
         _sessionFactories = sessionFactories;
+        _editorResolver = editorResolver;
+        _editorSessionFactories = editorSessionFactories;
         _viewports = viewports;
         _toolboxProviders = [.. toolboxProviders];
     }
@@ -42,15 +48,34 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
     public override async Task Open(OpenDiagramRequest request, IServerStreamWriter<Delta> responseStream, ServerCallContext context)
     {
         var watchId = (ShortGuid)request.WatchId;
-        if (!TryResolveBody(request.ProjectId, request.Path, context, out var rootPath, out var bodyPath, out var origin, out var registrationPath))
+
+        // Diagrams first, unconditionally: a file the router claims opens exactly as it
+        // always has, and only its NotADiagram answer consults the editor family
+        // (modular-text-editors Requirement 5.1). The fallback editor answers for whatever
+        // remains, so a file that resolves to nothing at all is a broken deployment, not an
+        // ordinary miss (Requirement 3.2).
+        IDiagramSession openedSession;
+        string bodyPath;
+        if (TryResolveBody(request.ProjectId, request.Path, context, out var rootPath, out var diagramBody, out var origin, out var registrationPath))
+        {
+            var factory = _sessionFactories.Find(origin)
+                ?? throw new RpcException(new Status(StatusCode.Unimplemented, $"'{origin}' diagrams cannot be opened yet."));
+            bodyPath = diagramBody;
+            openedSession = factory.Open(watchId, rootPath, bodyPath, registrationPath);
+        }
+        else if (TryResolveEditor(request.ProjectId, request.Path, context, out var editorRoot, out var fullPath, out var editorDefinitionId))
+        {
+            var editorFactory = _editorSessionFactories.Find(editorDefinitionId)
+                ?? throw new RpcException(new Status(StatusCode.Unimplemented, $"The '{editorDefinitionId}' editor registered no session factory."));
+            bodyPath = fullPath;
+            openedSession = new EditorSessionAdapter(editorFactory.Open(watchId, editorRoot, fullPath), editorDefinitionId);
+        }
+        else
         {
             throw new RpcException(new Status(StatusCode.FailedPrecondition, "The diagram cannot be opened."));
         }
 
-        var factory = _sessionFactories.Find(origin)
-            ?? throw new RpcException(new Status(StatusCode.Unimplemented, $"'{origin}' diagrams cannot be opened yet."));
-
-        await using var session = factory.Open(watchId, rootPath, bodyPath, registrationPath);
+        await using var session = openedSession;
         var channel = Channel.CreateUnbounded<Delta>();
 
         void OnChanged(object? sender, DiagramDeltasEventArgs args)
@@ -209,6 +234,46 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
         bodyPath = resolvedBody;
         origin = routed.Definition.Origin;
         registrationPath = routed.RegistrationPath;
+        return true;
+    }
+
+    /// <summary>
+    /// The editor half of resolution, consulted only after the router said NotADiagram: the
+    /// same root/containment/existence checks, then <see cref="EditorResolver"/>. An
+    /// ambiguous claim refuses here - the conflict was already reported at startup, and this
+    /// file names it again rather than opening in an arbitrary rival.
+    /// </summary>
+    private bool TryResolveEditor(
+        Contracts.ShortGuid projectId,
+        Path path,
+        ServerCallContext context,
+        out string rootPath,
+        out string fullPath,
+        out string editorId)
+    {
+        fullPath = "";
+        editorId = "";
+
+        var userId = SessionContext.GetUserId(context);
+        if (!ProjectRootResolver.TryResolve(_projectStore, userId, projectId, out rootPath, out _))
+        {
+            return false;
+        }
+
+        var combined = System.IO.Path.Combine([rootPath, .. path.Segments]);
+        var full = System.IO.Path.GetFullPath(combined);
+        if (!IsInside(rootPath, full) || !File.Exists(full))
+        {
+            return false;
+        }
+
+        if (_editorResolver.Resolve(full) is not EditorRouted routed)
+        {
+            return false;
+        }
+
+        fullPath = full;
+        editorId = routed.Definition.Id;
         return true;
     }
 

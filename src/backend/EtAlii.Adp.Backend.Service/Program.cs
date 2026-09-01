@@ -8,6 +8,7 @@ using EtAlii.Adp.Backend.Problems;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Editor;
 using JetBrains.Annotations;
 using Serilog;
 
@@ -72,6 +73,10 @@ builder.Services.AddGrpc(options => options.Interceptors.Add<SessionInterceptor>
 
 var diagramDefinitions = DiagramDefinitionDiscovery.Discover();
 builder.AddDiagramDefinitions(diagramDefinitions);
+
+// The editor family, discovered by the same walk and registered the same way.
+var editorDefinitions = EditorDefinitionDiscovery.Discover();
+builder.AddEditorDefinitions(editorDefinitions);
 
 var app = builder.Build();
 
