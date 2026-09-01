@@ -36,8 +36,13 @@ public class DiagramDefinitionDiscoveryWalkTests
         // project is its own executable, under a VSTest host it was that host - so the test
         // compares against the closure rather than against one particular entry assembly, and
         // proves the same property either way.
+        // The probe assembly is the demonstration subject: deployed by this test project with
+        // ReferenceOutputAssembly=false, so no metadata chain can ever lead to it. EtAlii.Adp
+        // used to play this role, until the shared PluginDefinitionScan gave the Diagram
+        // library a real metadata reference to it - the flip the comment above always
+        // anticipated.
         var reachableFromEntry = ReachableByMetadataFromEntry();
-        Assert.DoesNotContain("EtAlii.Adp", reachableFromEntry);
+        Assert.DoesNotContain("EtAlii.Adp.DiscoveryProbe", reachableFromEntry);
 
         // Act.
         var names = DiagramDefinitionDiscovery.FindApplicationAssemblies()
@@ -47,7 +52,7 @@ public class DiagramDefinitionDiscoveryWalkTests
         // Assert.
         Assert.Contains("EtAlii.Adp.Diagram.Tests", names);
         Assert.Contains("EtAlii.Adp.Diagram", names);
-        Assert.Contains("EtAlii.Adp", names);
+        Assert.Contains("EtAlii.Adp.DiscoveryProbe", names);
     }
 
     /// <summary>
@@ -95,23 +100,22 @@ public class DiagramDefinitionDiscoveryWalkTests
     public void FindApplicationAssemblies_FindsAssembliesNoMetadataReferenceLeadsTo()
     {
         // Arrange.
-        // EtAlii.Adp.Diagram has a <ProjectReference> to EtAlii.Adp, yet its compiled metadata
-        // records no reference to it, because no type from EtAlii.Adp is used - the very
-        // pruning Requirement 3.3 measured on the host. The walk still returns EtAlii.Adp,
-        // which it can only have got from the manifest. If this precondition ever flips
-        // (someone uses an EtAlii.Adp type in the Diagram library), the test below still
-        // holds; only this one's documentary value is lost, so it is asserted softly.
+        // The probe is deployed (ReferenceOutputAssembly=false) yet no assembly in the walk
+        // carries a metadata reference to it - the very pruning Requirement 3.3 measured on
+        // the host. The walk still returns it, which it can only have got from the manifest.
+        // (EtAlii.Adp itself held this role until PluginDefinitionScan made the Diagram
+        // library's reference to it real - the flip the original soft assertion anticipated.)
         var assemblies = DiagramDefinitionDiscovery.FindApplicationAssemblies();
-        var diagram = Assert.Single(assemblies, a => a.GetName().Name == "EtAlii.Adp.Diagram");
 
         // Act.
-        var metadataReferencesCore = diagram.GetReferencedAssemblies().Any(r => r.Name == "EtAlii.Adp");
+        var anythingReferencesTheProbe = assemblies.Any(assembly =>
+            assembly.GetReferencedAssemblies().Any(reference => reference.Name == "EtAlii.Adp.DiscoveryProbe"));
 
         // Assert.
-        Assert.Contains(assemblies, a => a.GetName().Name == "EtAlii.Adp");
+        Assert.Contains(assemblies, a => a.GetName().Name == "EtAlii.Adp.DiscoveryProbe");
         Assert.False(
-            metadataReferencesCore,
-            "EtAlii.Adp.Diagram now carries a metadata reference to EtAlii.Adp; this test no longer demonstrates the manifest seed on its own");
+            anythingReferencesTheProbe,
+            "Something now carries a metadata reference to EtAlii.Adp.DiscoveryProbe; deployed-but-unreferenced is its entire role");
     }
 
     [Fact]

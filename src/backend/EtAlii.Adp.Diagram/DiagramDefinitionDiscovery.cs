@@ -48,25 +48,38 @@ public sealed class DiagramDefinitionDiscovery
     {
         ArgumentNullException.ThrowIfNull(assemblies);
 
+        // The mechanical scan - which assemblies, which class name, which property shape - is
+        // shared with the editor family (PluginDefinitionScan, modular-text-editors
+        // Requirement 1.3); everything below it is this family's own: the folder-subject
+        // coherence rule, duplicate detection by origin, and the ordering.
+        var scan = PluginDefinitionScan.Scan<DiagramDefinition>(assemblies, CandidateTypeName, DefinitionsPropertyName, "diagram", _logger);
+        var scanned = scan.AssembliesScanned;
+
         // Keyed by origin so a duplicate is detected as it arrives; the value remembers which
         // assembly won so a later collision can be reported against it.
         var found = new Dictionary<DiagramOrigin, (DiagramDefinition Definition, string AssemblyName)>();
-        var scanned = 0;
 
-        foreach (var assembly in assemblies)
+        foreach (var hit in scan.Found)
         {
-            scanned++;
-            var assemblyName = assembly.GetName().Name ?? assembly.FullName ?? "<unnamed>";
+            var assemblyName = hit.AssemblyName;
+            var definition = hit.Definition;
 
-            foreach (var type in EnumerateTypes(assembly, assemblyName))
             {
-                if (!IsCandidate(type))
                 {
-                    continue;
-                }
-
-                foreach (var definition in TryReadDefinitions(type, assemblyName))
-                {
+                    // A folder-subject type has no sibling body, so an extension it names points
+                    // at nothing. Dropped rather than half-believed: routing would read the
+                    // extension and validation would read the folder, and the type would behave
+                    // as two different things depending on which question was asked. One bad
+                    // entry costs the module only that entry
+                    // (ansible-structure-diagram Requirement 2.1).
+                    if (definition.HasFolderSubject && definition.HasDocumentSibling)
+                    {
+                        LogMalformed(
+                            hit.DeclaringType,
+                            assemblyName,
+                            $"{definition.Origin} declares a folder subject and the extension '{definition.Extension}', which cannot both be true");
+                        continue;
+                    }
                     if (found.TryGetValue(definition.Origin, out var existing))
                     {
                         // Keep the ordinal-smaller assembly name so the winner does not depend on
@@ -100,6 +113,7 @@ public sealed class DiagramDefinitionDiscovery
                 }
             }
         }
+
 
         var result = found.Values
             .Select(entry => entry.Definition)
@@ -236,131 +250,10 @@ public sealed class DiagramDefinitionDiscovery
         }
     }
 
-    private static IEnumerable<Type> EnumerateTypes(Assembly assembly, string assemblyName)
-    {
-        try
-        {
-            return assembly.GetTypes();
-        }
-        catch (ReflectionTypeLoadException exception)
-        {
-            // Some types failed to load but the rest are fine; a Diagram class is almost
-            // never among the failures, so read what loaded rather than drop the assembly.
-            _logger.Warning(
-                "Assembly {Assembly} loaded only partially ({FailedCount} types failed); scanning the types that did load",
-                assemblyName,
-                exception.LoaderExceptions.Length);
-            return exception.Types.Where(type => type is not null)!;
-        }
-        catch (Exception exception) when (exception is not OutOfMemoryException)
-        {
-            _logger.Warning(
-                exception,
-                "Skipping assembly {Assembly}: its types could not be enumerated",
-                assemblyName);
-            return [];
-        }
-    }
-
-    /// <summary>A <c>static class</c> compiles to abstract + sealed; that plus the name is the whole test.</summary>
-    private static bool IsCandidate(Type type) =>
-        type is { IsClass: true, IsAbstract: true, IsSealed: true } && type.Name == CandidateTypeName;
-
-    /// <summary>
-    /// Every definition a <c>Diagram</c> class declares. A module may declare more than one:
-    /// the seven C4 types share one engine and one assembly, and splitting them across seven
-    /// projects only to satisfy a singular property was the tail wagging the dog.
-    /// </summary>
-    /// <returns>
-    /// Empty for any malformed class, never null - a module that declares its definitions
-    /// wrongly costs its own entries and a warning, never anyone else's.
-    /// </returns>
-    private static IReadOnlyList<DiagramDefinition> TryReadDefinitions(Type type, string assemblyName)
-    {
-        var property = type.GetProperty(DefinitionsPropertyName, BindingFlags.Public | BindingFlags.Static);
-        if (property is null)
-        {
-            LogMalformed(type, assemblyName, $"it has no public static {DefinitionsPropertyName} property");
-            return [];
-        }
-
-        // Any read-only sequence will do - an array, an ImmutableArray, a List. The property is
-        // declared `DiagramDefinition[]` by convention, but insisting on that exact type would
-        // reject a module over a choice that makes no difference to anyone reading the result.
-        if (!typeof(IReadOnlyList<DiagramDefinition>).IsAssignableFrom(property.PropertyType))
-        {
-            LogMalformed(
-                type,
-                assemblyName,
-                $"its {DefinitionsPropertyName} property is a {property.PropertyType.Name}, not a sequence of {nameof(DiagramDefinition)}");
-            return [];
-        }
-
-        try
-        {
-            if (property.GetValue(null) is not IReadOnlyList<DiagramDefinition> definitions)
-            {
-                LogMalformed(type, assemblyName, $"its {DefinitionsPropertyName} property returned null");
-                return [];
-            }
-
-            // A null *inside* the array is its own mistake, and one bad entry should not cost
-            // the module its good ones.
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
-            var declared = definitions.Where(definition => definition is not null).ToArray();
-            var nulls = definitions.Count - declared.Length;
-            if (nulls > 0)
-            {
-                LogMalformed(
-                    type,
-                    assemblyName,
-                    $"its {DefinitionsPropertyName} property contains {nulls} null {(nulls == 1 ? "entry" : "entries")}");
-            }
-
-            if (declared.Length == 0)
-            {
-                LogMalformed(type, assemblyName, $"its {DefinitionsPropertyName} property declares nothing");
-            }
-
-            // A folder-subject type has no sibling body, so an extension it names points at
-            // nothing. Dropped rather than half-believed: routing would read the extension and
-            // validation would read the folder, and the type would behave as two different
-            // things depending on which question was asked. One bad entry costs the module only
-            // that entry, exactly as a null one does (ansible-structure-diagram Requirement 2.1).
-            var coherent = new List<DiagramDefinition>(declared.Length);
-            foreach (var definition in declared)
-            {
-                if (definition.HasFolderSubject && definition.HasDocumentSibling)
-                {
-                    LogMalformed(
-                        type,
-                        assemblyName,
-                        $"{definition.Origin} declares a folder subject and the extension '{definition.Extension}', which cannot both be true");
-                    continue;
-                }
-
-                coherent.Add(definition);
-            }
-
-            return coherent;
-        }
-        catch (Exception exception) when (exception is not OutOfMemoryException)
-        {
-            // GetValue wraps whatever the getter threw.
-            var cause = exception is TargetInvocationException { InnerException: { } inner } ? inner : exception;
-            LogMalformed(type, assemblyName, $"reading its {DefinitionsPropertyName} property threw: {cause.Message}");
-            return [];
-        }
-    }
-
     /// <summary>
     /// One shape of warning for every way a <c>Diagram</c> class can be wrong, so the log
     /// reads the same whichever check rejected it and the reason stays a property of its own.
     /// </summary>
     private static void LogMalformed(Type type, string assemblyName, string reason) =>
-        _logger.Warning(
-            "Skipping malformed diagram class {Type} in {Assembly}: {Reason}",
-            type.FullName ?? type.Name,
-            assemblyName,
-            reason);
+        PluginDefinitionScan.LogMalformed(_logger, "diagram", type, assemblyName, reason);
 }

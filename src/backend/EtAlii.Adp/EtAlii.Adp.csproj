@@ -1,3 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <ItemGroup>
+    <!-- Serves PluginDefinitionScan only: the shared module-discovery scan logs through the
+         same static Serilog pipeline everything else uses. -->
+    <PackageReference Include="Serilog" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- PluginDefinitionScan is internal: the two definition families consume it, and nobody
+         else grows a dependency on the scan's shape. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Diagram" />
+    <InternalsVisibleTo Include="EtAlii.Adp.Editor" />
+  </ItemGroup>
+
 </Project>

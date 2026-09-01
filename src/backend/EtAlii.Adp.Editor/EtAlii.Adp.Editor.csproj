@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!-- EtAlii.Adp carries the shared PluginDefinitionScan; EtAlii.Adp.Diagram carries the
+         assembly walk (FindApplicationAssemblies) both discovery families share. The design's
+         arrow list also names EtAlii.Adp.Backend, but the session ADAPTER lives in core
+         (Backend references THIS project for it), and referencing Backend from here as well
+         would be a cycle - the arrow list loses to the adapter section it cites. -->
+    <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" />
+    <PackageReference Include="Serilog" />
+  </ItemGroup>
+
+</Project>
