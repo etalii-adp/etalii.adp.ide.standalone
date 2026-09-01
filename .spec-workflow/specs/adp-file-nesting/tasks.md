@@ -145,7 +145,7 @@
 
 ## Phase G — verification
 
-- [ ] 18. Extend the example suite with the nesting assertions
+- [-] 18. Extend the example suite with the nesting assertions
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/ExampleRegistration.Tests.cs` (modify)
   - _Requirements: 12.3, 12.4_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA-minded C# developer | Task: Add the nesting assertions to the suite written in task 5 | Restrictions: each registration nests under the subject it names; the unqualified form is the default; `code-level.adp` remains an unnested entry with no body; the five `body:` headers are still present and still authoritative after the rename | Success: the suite that was green before the rename is green after it, now asserting more. Mark in progress, log when done, then mark complete._
