@@ -235,14 +235,14 @@
 
 ## Phase J — wiring, proof and the closing check
 
-- [ ] 29. `ServiceCollection.AddTimeline` and one line in `Program.cs`
+- [x] 29. `ServiceCollection.AddTimeline` and one line in `Program.cs`
   - File: `.../ServiceCollection.AddTimeline.cs` (new), `src/backend/EtAlii.Adp.Backend.Service/Program.cs` (edited), tests
   - Every seam registered in one extension method; **exactly one line** added to the host. Keep the `using` block in alphabetical order — `dotnet format style --verify-no-changes --severity info` reports it otherwise
   - _Leverage: src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline/ServiceCollection.AddAzurePipeline.cs_
   - _Requirements: 1.1_
   - _Prompt: Implement the task for spec timeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Gather every module registration into one AddTimeline extension method and call it once from the host | Restrictions: no per-seam lines in Program.cs; core must name nothing from this module | Success: the host starts, the type is discoverable and openable, Program.cs gained exactly one line, and a test asserts every seam is registered_
 
-- [ ] 30. Integration tests across the whole arc
+- [x] 30. Integration tests across the whole arc
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/TimelineFlow.Tests.cs` (new)
   - A bare `.tml` routing on sight; open streaming elements and connections; a drag rewriting only the lines it touched and being one undo away; a resize refused at the boundary; a grid edit refused on the same terms; deleting an element taking its connections in one undo; the toolbox palette answering for this type
   - _Requirements: 1.2, 2.2, 2.5, 3.4, 6.4, 7.4, 9.1, 10.3_
