@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Exists to be deployed WITHOUT being metadata-referenced: the walk tests prove manifest
+       seeding by finding this assembly, which no compile-time reference chain leads to. It
+       took this role over from EtAlii.Adp itself when the shared PluginDefinitionScan gave
+       EtAlii.Adp.Diagram a real metadata reference to EtAlii.Adp (modular-text-editors 1.2). -->
+
+</Project>

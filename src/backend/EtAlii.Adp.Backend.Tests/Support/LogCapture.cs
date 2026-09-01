@@ -4,7 +4,7 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Display;
 
-namespace EtAlii.Adp.Diagram.Tests;
+namespace EtAlii.Adp.Backend.Tests;
 
 /// <summary>
 /// Collects everything written to Serilog while it is active, so a test can assert on what
