@@ -51,8 +51,13 @@ public sealed class AddConnectedTimelineElementCommandHandler : ICommandHandler<
         // the key back out and the undo return the file byte for byte.
         var hadSection = TimelineWriter.HasConnectionsSection(entry.Document);
 
+        // A begin-anchor gesture runs the relation the other way: out of the new element's end
+        // and into the existing one's start.
+        var (source, target) = command.NewElementIsSource
+            ? (command.NewElementId, command.FromElementId)
+            : (command.FromElementId, command.NewElementId);
         TimelineWriter.InsertConnection(
-            entry.Document, reparsed, command.RelationId, command.FromElementId, command.NewElementId, "");
+            entry.Document, reparsed, command.RelationId, source, target, "");
 
         var error = _documents.Save(command.BodyPath);
         return Task.FromResult(error.Length == 0

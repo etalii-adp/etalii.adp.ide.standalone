@@ -475,6 +475,50 @@ public class TimelineRelationGestureTests : IDisposable
     }
 
     [Fact]
+    public async Task OneCall_FromABeginPlacement_CreatesAnElementThatPointsIntoTheExisting()
+    {
+        // Arrange.
+        // A drag from the BEGIN anchor arrives reversed - placement first, element second -
+        // because what precedes an element points into it. The new element is the relation's
+        // source, not its target.
+        var path = Write();
+        var before = File.ReadAllText(path);
+        var seconds = TimelineScale.ToSeconds(new DateTimeOffset(2025, 12, 1, 0, 0, 0, TimeSpan.Zero));
+
+        // Act.
+        var result = await _actions.ExecuteAsync(
+            Target(path, TimelineRelationGesture.IdFor(TimelineNewPlacement.IdFor(seconds, 2), "aaa")),
+            TimelineContextActionProvider.ConnectActionId,
+            CancellationToken.None);
+        var model = _store.GetOrLoad(path).Model;
+        var added = model.Elements.Single(element => element.Label == "New element");
+        await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
+
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(result);
+        Assert.Equal("2025-12-01", added.Begin.Text);
+        Assert.Equal(2, added.Row);
+        Assert.Equal("aaa", model.Connections.Single(candidate => candidate.From == added.Id).To);
+        Assert.Equal(before, File.ReadAllText(path));
+    }
+
+    [Fact]
+    public async Task ABeginGestureReachingAnAbsentElement_IsRefusedWithTheReason()
+    {
+        // Arrange & act.
+        var path = Write();
+        var seconds = TimelineScale.ToSeconds(new DateTimeOffset(2025, 12, 1, 0, 0, 0, TimeSpan.Zero));
+        var result = await _actions.ExecuteAsync(
+            Target(path, TimelineRelationGesture.IdFor(TimelineNewPlacement.IdFor(seconds, 2), "ghost")),
+            TimelineContextActionProvider.ConnectActionId,
+            CancellationToken.None);
+
+        // Assert.
+        var failed = Assert.IsType<ContextExecutionFailed>(result);
+        Assert.Contains("reaches is no longer", failed.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ARelationUndone_TakesItsOnDemandConnectionsKeyBackOut()
     {
         // Arrange.

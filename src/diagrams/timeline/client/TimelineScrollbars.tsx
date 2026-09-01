@@ -12,6 +12,8 @@ interface TimelineViewWindow {
   startSeconds: number;
   secondsPerPixel: number;
   panY: number;
+  /** Pixels per module y unit - the vertical zoom, which shrinks the y window as it grows. */
+  verticalScale: number;
 }
 
 export interface TimelineScrollbarsProps {
@@ -61,7 +63,7 @@ export function TimelineScrollbars({ model, view, widthPx, onPan }: TimelineScro
 
   const viewSpanSeconds = widthPx * view.secondsPerPixel;
   const horizontal = thumbOf(view.startSeconds, viewSpanSeconds, extentStart, extentEnd);
-  const vertical = thumbOf(view.panY, heightPx, yExtentStart, yExtentEnd);
+  const vertical = thumbOf(view.panY, heightPx / view.verticalScale, yExtentStart, yExtentEnd);
 
   useEffect(() => {
     if (!dragging) {

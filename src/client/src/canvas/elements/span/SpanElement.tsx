@@ -27,11 +27,12 @@ export interface SpanElementProps extends React.SVGProps<SVGGElement> {
   selected?: boolean;
   /** The diamond's radius. */
   pointRadius?: number;
-  /** The per-character width the label-fit estimate uses; it errs on moving outside early. */
+  /** The per-character width the label-fit estimate uses; it errs on trimming a little early. */
   labelCharWidth?: number;
   classes: SpanElementClasses;
   onResizeStart?: (event: React.MouseEvent, side: "left" | "right") => void;
-  onAnchorStart?: (event: React.MouseEvent) => void;
+  /** A press on a connection anchor, saying which side it sits on - the begin or the end. */
+  onAnchorStart?: (event: React.MouseEvent, side: "left" | "right") => void;
   children?: React.ReactNode;
 }
 
@@ -45,8 +46,9 @@ export interface SpanElementProps extends React.SVGProps<SVGGElement> {
  * hit circle sit on top; the strip stays grabbable above and below the dot. The left edge
  * edits the beginning; the right edits the end; a moment has no right edge to offer.
  *
- * A label wider than its box sits beside it instead of overflowing invisibly under the
- * neighbours - the same placement a moment's label always has.
+ * A span's label stays centred in its box; one wider than the box is trimmed to what fits
+ * with an ellipsis, using the same per-character estimate that decides the fit, rather than
+ * overflowing invisibly under the neighbours. A moment's label sits beside its diamond.
  *
  * All remaining props (handlers, aria, `data-*`) spread onto the wrapping `<g>`.
  */
@@ -66,7 +68,6 @@ export function SpanElement({
 }: SpanElementProps) {
   const left = box.x - box.width / 2;
   const top = box.y - box.height / 2;
-  const labelFits = !moment && box.width >= label.length * labelCharWidth + 8;
 
   return (
     <g {...groupProps}>
@@ -77,12 +78,12 @@ export function SpanElement({
       )}
       <text
         className={classes.label}
-        {...(labelFits
-          ? { x: box.x, textAnchor: undefined }
-          : { x: moment ? box.x + pointRadius + 6 : box.x + box.width / 2 + 6, textAnchor: "start" as const })}
+        {...(moment
+          ? { x: box.x + pointRadius + 6, textAnchor: "start" as const }
+          : { x: box.x, textAnchor: undefined })}
         y={box.y + 4}
       >
-        {label}
+        {moment ? label : trimmedToWidth(label, box.width, labelCharWidth)}
       </text>
       {hint ? (
         <text className={classes.hint} x={box.x} y={top - 8}>
@@ -110,9 +111,21 @@ export function SpanElement({
             />
           ) : null}
           <circle className={classes.anchor} cx={left} cy={box.y} r={5} />
-          <circle className={classes.anchorHit} cx={left} cy={box.y} r={14} onMouseDown={onAnchorStart} />
+          <circle
+            className={classes.anchorHit}
+            cx={left}
+            cy={box.y}
+            r={14}
+            onMouseDown={(event) => onAnchorStart?.(event, "left")}
+          />
           <circle className={classes.anchor} cx={left + box.width} cy={box.y} r={5} />
-          <circle className={classes.anchorHit} cx={left + box.width} cy={box.y} r={14} onMouseDown={onAnchorStart} />
+          <circle
+            className={classes.anchorHit}
+            cx={left + box.width}
+            cy={box.y}
+            r={14}
+            onMouseDown={(event) => onAnchorStart?.(event, "right")}
+          />
         </>
       ) : null}
       {children}
@@ -122,4 +135,18 @@ export function SpanElement({
 
 function diamond(cx: number, cy: number, r: number): string {
   return `M ${cx - r} ${cy} L ${cx} ${cy - r} L ${cx + r} ${cy} L ${cx} ${cy + r} Z`;
+}
+
+/**
+ * The label, trimmed to what its box can hold with an ellipsis when it cannot hold it all.
+ * The capacity comes from the same per-character estimate the old beside-the-box placement
+ * used, so what fits untrimmed is unchanged.
+ */
+function trimmedToWidth(label: string, width: number, charWidth: number): string {
+  const capacity = Math.floor(Math.max(width - 8, 0) / charWidth);
+  if (label.length <= capacity) {
+    return label;
+  }
+
+  return capacity <= 1 ? "…" : `${label.slice(0, capacity - 1)}…`;
 }

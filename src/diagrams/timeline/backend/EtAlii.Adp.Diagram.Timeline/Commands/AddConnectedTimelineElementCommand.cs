@@ -18,6 +18,11 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// <param name="Begin">Where the gesture landed, as document text.</param>
 /// <param name="End">The new element's end, or null for a moment.</param>
 /// <param name="Row">The row the gesture landed on.</param>
+/// <param name="NewElementIsSource">
+/// Whether the relation runs from the new element into the existing one - a gesture dragged
+/// from an element's begin anchor, where what precedes it points into it - rather than the
+/// other way round.
+/// </param>
 public sealed record AddConnectedTimelineElementCommand(
     string BodyPath,
     string FromElementId,
@@ -25,4 +30,5 @@ public sealed record AddConnectedTimelineElementCommand(
     string RelationId,
     string Begin,
     string? End,
-    int Row) : ICommand;
+    int Row,
+    bool NewElementIsSource = false) : ICommand;

@@ -145,18 +145,26 @@ describe("the shared element implementations", () => {
     expect(container.querySelector(".t-label")!.getAttribute("text-anchor")).toBe("start");
   });
 
-  it("moves a span's label beside the box when the box is too narrow to hold it", () => {
+  it("keeps a span's label centred, trimming it with an ellipsis when the box cannot hold it", () => {
     // Act.
     const { container } = renderSvg(
       <>
         <SpanElement className="wide" box={{ x: 100, y: 30, width: 200, height: 36 }} label="Discovery" classes={spanClasses} />
-        <SpanElement className="narrow" box={{ x: 100, y: 90, width: 40, height: 36 }} label="A much longer label" classes={spanClasses} />
+        <SpanElement className="narrow" box={{ x: 100, y: 90, width: 43, height: 36 }} label="A much longer label" classes={spanClasses} />
+        <SpanElement className="sliver" box={{ x: 100, y: 150, width: 10, height: 36 }} label="Anything" classes={spanClasses} />
       </>,
     );
 
     // Assert.
+    // What fits is untouched; what does not is trimmed to the same per-character estimate
+    // that decides the fit - centred either way, never overflowing under the neighbours.
+    expect(container.querySelector("g.wide .t-label")!.textContent).toBe("Discovery");
     expect(container.querySelector("g.wide .t-label")!.getAttribute("text-anchor")).toBeNull();
-    expect(container.querySelector("g.narrow .t-label")!.getAttribute("text-anchor")).toBe("start");
+    // 43px minus the padding holds five characters: four survive plus the ellipsis.
+    expect(container.querySelector("g.narrow .t-label")!.textContent).toBe("A mu…");
+    expect(container.querySelector("g.narrow .t-label")!.getAttribute("text-anchor")).toBeNull();
+    // A sliver of a box holds nothing but the ellipsis itself.
+    expect(container.querySelector("g.sliver .t-label")!.textContent).toBe("…");
   });
 
   it("routes a span's resize and anchor gestures to their own handlers", () => {
@@ -177,10 +185,14 @@ describe("the shared element implementations", () => {
 
     // Act.
     fireEvent.mouseDown(container.querySelectorAll(".t-adorner")[1]);
-    fireEvent.mouseDown(container.querySelector(".t-anchor-hit")!);
+    fireEvent.mouseDown(container.querySelectorAll(".t-anchor-hit")[0]);
+    fireEvent.mouseDown(container.querySelectorAll(".t-anchor-hit")[1]);
 
     // Assert.
+    // Each anchor names its side, because a relation dragged from the begin runs the other
+    // way round than one dragged from the end.
     expect(onResizeStart).toHaveBeenCalledWith(expect.anything(), "right");
-    expect(onAnchorStart).toHaveBeenCalled();
+    expect(onAnchorStart).toHaveBeenNthCalledWith(1, expect.anything(), "left");
+    expect(onAnchorStart).toHaveBeenNthCalledWith(2, expect.anything(), "right");
   });
 });

@@ -182,7 +182,31 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
             {
                 // The whole gesture in one call - from, and where it ended. Deliberately
                 // stateless: the two-call protocol this replaces kept an armed source between
-                // calls, and a stale arm made the next drag relate the wrong pair.
+                // calls, and a stale arm made the next drag relate the wrong pair. Either end
+                // may be a placement: a drag from the END anchor lands its placement in `to`,
+                // one from the BEGIN anchor arrives reversed with the placement in `from` -
+                // what precedes an element points into it.
+                if (TimelineNewPlacement.TryParse(from, out var fromSeconds, out var fromRow))
+                {
+                    if (TimelineEdits.ElementOf(model, to) is null)
+                    {
+                        return new ContextExecutionFailed("The element this relation reaches is no longer in this timeline.");
+                    }
+
+                    // The new element is the relation's SOURCE: created at the drop, its end
+                    // pointing into the existing element's start.
+                    var newBegin = TimelineScale.ToTime(fromSeconds, TimelinePrecision.Date);
+                    return await DispatchAsync(target, new AddConnectedTimelineElementCommand(
+                        target.ResolvedFullPath,
+                        to,
+                        ShortGuid.NewShortGuid().ToString(),
+                        ShortGuid.NewShortGuid().ToString(),
+                        TimelineScale.ToText(newBegin, TimelinePrecision.Date),
+                        TimelineScale.ToText(newBegin.AddDays(NewElementDays), TimelinePrecision.Date),
+                        fromRow,
+                        NewElementIsSource: true), cancellationToken);
+                }
+
                 if (TimelineEdits.ElementOf(model, from) is null)
                 {
                     return new ContextExecutionFailed("The element this relation starts from is no longer in this timeline.");

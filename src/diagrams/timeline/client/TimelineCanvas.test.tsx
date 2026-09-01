@@ -203,15 +203,16 @@ describe("the timeline canvas", () => {
   });
 
   it("relates the source to the target in one stateless call, in the gesture's own direction", () => {
-    // Arrange: the anchors render on the selected element only.
+    // Arrange: the anchors render on the selected element only; the second hit circle is the
+    // end-side anchor.
     currentSelectionKey = "element:aaa";
     const { container } = renderCanvas();
-    const anchor = container.querySelector(".timeline-anchor-hit")!;
+    const endAnchor = container.querySelectorAll(".timeline-anchor-hit")[1];
     const target = container.querySelector('[data-element-id="bbb"]')!;
 
-    // Act: drag from an anchor of aaa and release on bbb. The landing is read from the event's
+    // Act: drag from aaa's end anchor and release on bbb. The landing is read from the event's
     // own target - a fast release must not depend on a mouseenter having kept up.
-    fireEvent.mouseDown(anchor, { clientX: 100, clientY: 30 });
+    fireEvent.mouseDown(endAnchor, { clientX: 100, clientY: 30 });
     fireEvent.mouseUp(target);
 
     // Assert.
@@ -221,6 +222,26 @@ describe("the timeline canvas", () => {
     expect(calls).toHaveLength(1);
     const source = calls[0].source as { source: { value: { value: string } } };
     expect(source.source.value.value).toBe("rel:aaa->bbb");
+  });
+
+  it("reverses the relation when the drag lifts from the begin anchor", () => {
+    // Arrange: the first hit circle is the begin-side anchor.
+    currentSelectionKey = "element:aaa";
+    const { container } = renderCanvas();
+    const beginAnchor = container.querySelectorAll(".timeline-anchor-hit")[0];
+    const target = container.querySelector('[data-element-id="bbb"]')!;
+
+    // Act.
+    fireEvent.mouseDown(beginAnchor, { clientX: 100, clientY: 30 });
+    fireEvent.mouseUp(target);
+
+    // Assert.
+    // What precedes an element points INTO it: the landing becomes the relation's source and
+    // the dragged element its target - previously both anchors related aaa->bbb.
+    const calls = executed.filter((call) => call.actionId === "timeline.connect");
+    expect(calls).toHaveLength(1);
+    const source = calls[0].source as { source: { value: { value: string } } };
+    expect(source.source.value.value).toBe("rel:bbb->aaa");
   });
 
   it("never connects from a plain click on the element body", () => {
@@ -303,11 +324,11 @@ describe("the timeline canvas", () => {
     // Arrange.
     currentSelectionKey = "element:aaa";
     const { container } = renderCanvas();
-    const anchor = container.querySelector(".timeline-anchor-hit")!;
+    const endAnchor = container.querySelectorAll(".timeline-anchor-hit")[1];
     const surface = container.querySelector(".timeline-surface")!;
 
-    // Act: drag from an anchor of aaa and release over nothing.
-    fireEvent.mouseDown(anchor, { clientX: 100, clientY: 30 });
+    // Act: drag from aaa's end anchor and release over nothing.
+    fireEvent.mouseDown(endAnchor, { clientX: 100, clientY: 30 });
     fireEvent.mouseUp(surface);
 
     // Assert.
@@ -316,6 +337,25 @@ describe("the timeline canvas", () => {
     expect(calls).toHaveLength(1);
     const source = calls[0].source as { source: { value: { value: string } } };
     expect(source.source.value.value).toMatch(/^rel:aaa->new:/);
+  });
+
+  it("a begin-anchor drag onto empty space puts the placement at the relation's source", () => {
+    // Arrange.
+    currentSelectionKey = "element:aaa";
+    const { container } = renderCanvas();
+    const beginAnchor = container.querySelectorAll(".timeline-anchor-hit")[0];
+    const surface = container.querySelector(".timeline-surface")!;
+
+    // Act.
+    fireEvent.mouseDown(beginAnchor, { clientX: 100, clientY: 30 });
+    fireEvent.mouseUp(surface);
+
+    // Assert.
+    // The new element precedes the dragged one, so the relation runs out of it and into aaa.
+    const calls = executed.filter((call) => call.actionId === "timeline.connect");
+    expect(calls).toHaveLength(1);
+    const source = calls[0].source as { source: { value: { value: string } } };
+    expect(source.source.value.value).toMatch(/^rel:new:.+->aaa$/);
   });
 
   it("a surface release with no gesture in flight fabricates no calls", () => {
@@ -450,7 +490,7 @@ describe("the timeline canvas", () => {
     expect(control1X).toBe(control2X);
   });
 
-  it("moves a label beside its box when the box is too narrow to hold it", () => {
+  it("keeps a label centred and trims it with an ellipsis when the box cannot hold it", () => {
     // Arrange: a two-day period cannot hold this label at the fitted zoom, while the six-week
     // Discovery period holds its own comfortably.
     const at = Date.UTC(2026, 0, 10) / 1000;
@@ -459,13 +499,31 @@ describe("the timeline canvas", () => {
 
     // Act.
     const labels = [...container.querySelectorAll(".timeline-label")];
-    const narrow = labels.find((label) => label.textContent === "A label wider than two days")!;
+    const narrow = labels.find((label) => label.textContent?.endsWith("…"))!;
     const wide = labels.find((label) => label.textContent === "Discovery")!;
 
     // Assert.
-    // The narrow box's label sits beside it, start-anchored, instead of overflowing invisibly
-    // under the neighbours; the wide one stays centered.
-    expect(narrow.getAttribute("text-anchor")).toBe("start");
+    // The narrow box's label stays centred inside it, trimmed to what fits with an ellipsis -
+    // it used to step outside the box, start-anchored, and cover the neighbours instead.
+    expect(narrow).toBeDefined();
+    expect(narrow.textContent!.length).toBeLessThan("A label wider than two days".length);
+    expect(narrow.getAttribute("text-anchor")).toBeNull();
     expect(wide.getAttribute("text-anchor")).toBeNull();
+  });
+
+  it("zooms the rows along with the time axis", () => {
+    // Arrange.
+    const { container } = renderCanvas();
+    const surface = container.querySelector(".timeline-surface")!;
+    const before = Number(container.querySelector(".timeline-period")!.getAttribute("height"));
+
+    // Act: one wheel step in.
+    fireEvent.wheel(surface, { deltaY: -100 });
+
+    // Assert.
+    // The element's drawn height scales with the same step the time axis took - zoom used to
+    // stretch time only, leaving the rows pinned at their fixed spacing.
+    const after = Number(container.querySelector(".timeline-period")!.getAttribute("height"));
+    expect(after).toBeCloseTo(before * 1.25, 5);
   });
 });

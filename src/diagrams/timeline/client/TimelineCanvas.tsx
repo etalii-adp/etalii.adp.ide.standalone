@@ -41,6 +41,13 @@ const MIN_SECONDS_PER_PIXEL = 0.05;
 const MAX_SECONDS_PER_PIXEL = 4_000_000;
 const ZOOM_STEP = 1.25;
 
+/**
+ * Vertical zoom limits, in pixels per module y unit. Far tighter than the time axis's: rows
+ * are discrete, so past a few steps either way more vertical zoom only wastes screen.
+ */
+const MIN_VERTICAL_SCALE = 0.25;
+const MAX_VERTICAL_SCALE = 4;
+
 interface TimelineView {
   /** The time at the view's left edge, seconds since the epoch. */
   startSeconds: number;
@@ -48,6 +55,11 @@ interface TimelineView {
   secondsPerPixel: number;
   /** Vertical scroll, in the module's y units. */
   panY: number;
+  /**
+   * How many pixels one module y unit covers - the same zoom applied vertically, so zooming
+   * spreads and squeezes the rows along with the time axis instead of leaving them fixed.
+   */
+  verticalScale: number;
 }
 
 interface DragState {
@@ -80,6 +92,12 @@ interface ResizeState {
 
 interface ConnectDrag {
   fromId: string;
+  /**
+   * Which anchor the drag lifted from. From the end (right), the relation reads source to
+   * landing; from the begin (left) it arrives reversed - landing to source - because what
+   * precedes an element points into it.
+   */
+  fromSide: "left" | "right";
   /** Where the pending curve currently ends, in module coordinates. */
   x: number;
   y: number;
@@ -107,6 +125,7 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
     startSeconds: Date.now() / 1000 - 15 * DAY,
     secondsPerPixel: (60 * DAY) / 1200,
     panY: -ROW_HEIGHT,
+    verticalScale: 1,
   }));
   const fittedRef = useRef(false);
 
@@ -149,6 +168,7 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
       startSeconds: min - span * 0.1,
       secondsPerPixel: clampZoom((span * 1.2) / width),
       panY: Math.min(...elements.map((element) => element.y)) - ROW_HEIGHT,
+      verticalScale: 1,
     }));
   }, [model]);
 
@@ -164,11 +184,21 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
   const zoomBy = useCallback((factor: number) => {
     setView((current) => {
       const surface = surfaceRef.current;
-      const width = surface?.getBoundingClientRect().width ?? 1200;
+      const rect = surface?.getBoundingClientRect();
+      const width = rect?.width || 1200;
+      const height = rect?.height || 600;
       const next = clampZoom(current.secondsPerPixel * factor);
-      // About the centre, so the thing being looked at stays where it is.
+      // The same step vertically: rows spread and squeeze along with the time axis.
+      const nextVertical = clampVerticalScale(current.verticalScale / factor);
+      // About the centre on both axes, so the thing being looked at stays where it is.
       const centre = current.startSeconds + (width / 2) * current.secondsPerPixel;
-      return { ...current, secondsPerPixel: next, startSeconds: centre - (width / 2) * next };
+      const centreY = current.panY + (height / 2) / current.verticalScale;
+      return {
+        startSeconds: centre - (width / 2) * next,
+        secondsPerPixel: next,
+        panY: centreY - (height / 2) / nextVertical,
+        verticalScale: nextVertical,
+      };
     });
   }, []);
 
@@ -226,11 +256,11 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
 
   const toModuleY = (clientY: number): number => {
     const rect = surfaceRef.current?.getBoundingClientRect();
-    return view.panY + (clientY - (rect?.top ?? 0));
+    return view.panY + (clientY - (rect?.top ?? 0)) / view.verticalScale;
   };
 
   const secondsToPx = (seconds: number): number => (seconds - view.startSeconds) / view.secondsPerPixel;
-  const yToPx = (y: number): number => y - view.panY;
+  const yToPx = (y: number): number => (y - view.panY) * view.verticalScale;
 
   const onSurfacePointerDown = (event: React.MouseEvent) => {
     // "Empty space" is the surface div OR the bare svg that fills it. A real click never lands
@@ -267,10 +297,11 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
     };
   };
 
-  const onAnchorPointerDown = (event: React.MouseEvent, element: TimelineElement) => {
+  const onAnchorPointerDown = (event: React.MouseEvent, element: TimelineElement, side: "left" | "right") => {
     // Starting a connection: drag from a side anchor to another element (Requirement 8.4).
+    // Which side is remembered, because it decides the relation's direction on release.
     event.stopPropagation();
-    const start: ConnectDrag = { fromId: element.id, x: toSeconds(event.clientX), y: toModuleY(event.clientY) };
+    const start: ConnectDrag = { fromId: element.id, fromSide: side, x: toSeconds(event.clientX), y: toModuleY(event.clientY) };
     connectRef.current = start;
     setConnect(start);
   };
@@ -292,7 +323,7 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
     const dragging = dragRef.current;
     if (dragging) {
       const deltaSeconds = (event.clientX - dragging.clientX) * view.secondsPerPixel;
-      const y = dragging.y + (event.clientY - dragging.clientY);
+      const y = dragging.y + (event.clientY - dragging.clientY) / view.verticalScale;
       dragging.moved ||= Math.abs(event.clientX - dragging.clientX) + Math.abs(event.clientY - dragging.clientY) > 3;
       // The row snaps as the pointer crosses the midpoint, so the user sees where it will land
       // before releasing (Requirement 6.2). Rounded away from zero to match TimelineRows.
@@ -329,7 +360,7 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
       setView({
         ...pan.view,
         startSeconds: pan.view.startSeconds - (event.clientX - pan.clientX) * pan.view.secondsPerPixel,
-        panY: pan.view.panY - (event.clientY - pan.clientY),
+        panY: pan.view.panY - (event.clientY - pan.clientY) / pan.view.verticalScale,
       });
     }
   };
@@ -396,10 +427,15 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
 
       // The whole gesture in one call - source and landing together in a rel: id. Deliberately
       // stateless: the two-call protocol this replaces kept an armed source in the backend
-      // between calls, and a stale arm related the wrong pair.
+      // between calls, and a stale arm related the wrong pair. A drag from the begin anchor
+      // arrives reversed - what precedes an element points into it - so the landing becomes
+      // the relation's source and the dragged element its target.
       const landing = targetId ?? newPlacementId(connecting.x, nearestRow(connecting.y));
+      const gesture = connecting.fromSide === "left"
+        ? `rel:${landing}->${connecting.fromId}`
+        : `rel:${connecting.fromId}->${landing}`;
       void (async () => {
-        const outcome = await executeAction("timeline.connect", elementSourceOf(`rel:${connecting.fromId}->${landing}`));
+        const outcome = await executeAction("timeline.connect", elementSourceOf(gesture));
         if (!outcome.accepted) {
           setRejection(outcome.error);
         }
@@ -513,7 +549,7 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
   // curves are recomputed from these boxes on every pointer move.
   const boxes = new Map<string, ConnectorBox>();
   for (const element of model.elements.values()) {
-    boxes.set(element.id, boxFor(element, drag, resize, secondsToPx, yToPx, view.secondsPerPixel));
+    boxes.set(element.id, boxFor(element, drag, resize, secondsToPx, yToPx, view.secondsPerPixel, view.verticalScale));
   }
 
   const width = surfaceRef.current?.getBoundingClientRect().width ?? 1200;
@@ -619,6 +655,7 @@ function boxFor(
   secondsToPx: (seconds: number) => number,
   yToPx: (y: number) => number,
   secondsPerPixel: number,
+  verticalScale: number,
 ): ConnectorBox {
   let beginSeconds = element.x;
   let endSeconds = endSecondsOf(element);
@@ -643,12 +680,15 @@ function boxFor(
     ? Math.max((endSeconds - beginSeconds) / secondsPerPixel, 2)
     : MOMENT_RADIUS * 2;
   const left = secondsToPx(beginSeconds);
+  // The box scales with the vertical zoom, exactly as its width already scales with the
+  // horizontal one - a row's height in pixels is a view concern, never a module one.
+  const height = ELEMENT_HEIGHT * verticalScale;
 
   return {
     x: element.isPeriod ? left + width / 2 : left,
-    y: yToPx(y) + ELEMENT_HEIGHT / 2,
+    y: yToPx(y) + height / 2,
     width,
-    height: ELEMENT_HEIGHT,
+    height,
   };
 }
 
@@ -682,7 +722,7 @@ interface TimelineElementShapeProps {
   dragPreview: DragPreview | null;
   resizePreview: { id: string; side: "left" | "right"; edgeSeconds: number } | null;
   onElementDown: (event: React.MouseEvent, element: TimelineElement) => void;
-  onAnchorDown: (event: React.MouseEvent, element: TimelineElement) => void;
+  onAnchorDown: (event: React.MouseEvent, element: TimelineElement, side: "left" | "right") => void;
   onResizeDown: (event: React.MouseEvent, element: TimelineElement, side: "left" | "right") => void;
   onElementEnter: (element: TimelineElement) => void;
   onElementLeave: () => void;
@@ -745,7 +785,7 @@ function TimelineElementShape({
       pointRadius={MOMENT_RADIUS}
       classes={SPAN_CLASSES}
       onResizeStart={(event, side) => onResizeDown(event, element, side)}
-      onAnchorStart={(event) => onAnchorDown(event, element)}
+      onAnchorStart={(event, side) => onAnchorDown(event, element, side)}
       onMouseDown={(event) => onElementDown(event, element)}
       onMouseEnter={() => onElementEnter(element)}
       onMouseLeave={onElementLeave}
@@ -777,6 +817,10 @@ function PendingConnection({
   const start = sideAnchorOf(from, end.x >= from.x ? "right" : "left");
 
   return <path className="timeline-pending-connection" d={horizontalBezierPath(start, end)} />;
+}
+
+function clampVerticalScale(scale: number): number {
+  return Math.min(MAX_VERTICAL_SCALE, Math.max(MIN_VERTICAL_SCALE, scale));
 }
 
 function clampZoom(secondsPerPixel: number): number {
