@@ -124,19 +124,13 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
         path.Segments.Add("both.dsl");
 
         // The diagram view: the router claims the path, exactly as it always has (R5.1).
-        using var diagramCall = diagramClient.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = path },
-            headers,
-            deadline: DateTime.UtcNow.AddSeconds(60));
+        using var diagramCall = diagramClient.Open(new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = path }, headers, deadline: DateTime.UtcNow.AddSeconds(60), cancellationToken: TestContext.Current.CancellationToken);
         var diagramBaseline = await NextAddAsync(diagramCall.ResponseStream, add => add.Elements.Count > 0);
         Assert.DoesNotContain(diagramBaseline.Elements, element => element.Id?.Value == "content");
 
         // The text view of the same path, on the same connection: editor_id forces the editor
         // family - the "Open as text" tab's stream (R5.2) - and both stay open at once.
-        using var textCall = diagramClient.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = path, EditorId = "*" },
-            headers,
-            deadline: DateTime.UtcNow.AddSeconds(60));
+        using var textCall = diagramClient.Open(new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = path, EditorId = "*" }, headers, deadline: DateTime.UtcNow.AddSeconds(60), cancellationToken: TestContext.Current.CancellationToken);
         var textBaseline = await NextAddAsync(textCall.ResponseStream, add => add.Elements.Any(element => element.Id?.Value == "content"));
         Assert.Equal(originalText, ContentOf(textBaseline));
 

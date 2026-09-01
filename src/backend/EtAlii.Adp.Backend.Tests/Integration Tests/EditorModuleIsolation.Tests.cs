@@ -110,10 +110,7 @@ public class EditorModuleIsolationTests : IClassFixture<WebApplicationFactory<Pr
         // Act 1: the broken module's file. Its stream fails - that tab shows an error.
         var boomPath = new Path();
         boomPath.Segments.Add("device.boom");
-        using var boomCall = diagramClient.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = boomPath },
-            headers,
-            deadline: DateTime.UtcNow.AddSeconds(30));
+        using var boomCall = diagramClient.Open(new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = boomPath }, headers, deadline: DateTime.UtcNow.AddSeconds(30), cancellationToken: TestContext.Current.CancellationToken);
         await Assert.ThrowsAsync<RpcException>(async () =>
         {
             while (await boomCall.ResponseStream.MoveNext(TestContext.Current.CancellationToken))
@@ -124,10 +121,7 @@ public class EditorModuleIsolationTests : IClassFixture<WebApplicationFactory<Pr
         // Act 2: the same connection opens a healthy file afterwards.
         var notesPath = new Path();
         notesPath.Segments.Add("notes.txt");
-        using var notesCall = diagramClient.Open(
-            new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = notesPath },
-            headers,
-            deadline: DateTime.UtcNow.AddSeconds(30));
+        using var notesCall = diagramClient.Open(new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = notesPath }, headers, deadline: DateTime.UtcNow.AddSeconds(30), cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(await notesCall.ResponseStream.MoveNext(TestContext.Current.CancellationToken));
 
         // Assert: the workspace is unaffected - plain still answers, content and all.
