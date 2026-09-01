@@ -26,4 +26,10 @@
   <ItemGroup>
     <Folder Include="Hierarchy\Commands\" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- EditorResolver's logger-injecting constructor is internal: only the tests need it,
+         to keep the once-at-Error contract assertable without the shared static pipeline. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Backend.Tests" />
+  </ItemGroup>
+
 </Project>
