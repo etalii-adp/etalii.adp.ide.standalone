@@ -208,30 +208,30 @@ Every group's gate: backend groups run `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, and npm test/npm run typecheck from src/client, checking all exit codes. If clean, merge editors-context into develop and retire the worktree | Restrictions: do not merge on a failing gate | Success: all four gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 7. Examples, steering docs, and final sign-off
+- [x] 7. Examples, steering docs, and final sign-off
   - Worktree: `.claude/worktrees/editors-docs`
   - _Requirements: 1.1, 1.5, 10.4_
 
-- [-] 7.1 Populate each module's `examples/` folder
+- [x] 7.1 Populate each module's `examples/` folder
   - File: `src/editors/plain/examples/` and `src/editors/markdown/examples/` (new sample files)
   - Each module's tests actually open these files (R10.4 - "the examples cannot drift from what the code supports"); `plain`'s examples exercise its encoding/line-ending edge cases (a CRLF file, a UTF-8-BOM file), `markdown`'s exercise headings and preview
   - _Requirements: 10.4_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Add sample files to src/editors/plain/examples/ and src/editors/markdown/examples/ that each module's own tests (from groups 2 and 4) actually open, per R10.4 - a CRLF file and a UTF-8-BOM file for plain, a heading-rich file for markdown | Restrictions: every file added here must be referenced by at least one test - an example nothing opens is exactly what R10.4 forbids | Success: each module's test suite references every file under its examples/ folder. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7.2 Replicate both modules' examples into the root `examples/` project
+- [x] 7.2 Replicate both modules' examples into the root `examples/` project
   - File: `examples/plain/`, `examples/markdown/` (new, under the repository-root combined example project)
   - **This convention was recorded in structure.md after this design was approved** (commit `3cfc4776`, "Updated diagram module structure documentation: added details on `examples/` folder usage and repository-wide example replication") and applies to every module, diagram or editor: the root `examples/` folder is a single combined ADP project showing off every type at once, and a module's own `examples/` copy must never drift from its root replica
   - Adjust nothing that does not need adjusting - unlike a diagram's `body:` header (which is project-relative and therefore differs between the module copy and the root copy, per structure.md's `courier.dsl` example), a text editor's example files have no such header to rewrite, so the root copy can usually be byte-identical to the module copy
   - _Requirements: 10.4_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Replicate src/editors/plain/examples/ and src/editors/markdown/examples/ into the repository-root examples/ combined project (examples/plain/, examples/markdown/), per structure.md's repository-wide example-replication convention (recorded in commit 3cfc4776, after this spec's design was approved - read that commit's structure.md diff before starting). Confirm the two copies do not drift | Restrictions: this convention was not anticipated in design.md since it landed afterward - follow structure.md's current text as authoritative, and if anything about it is ambiguous for a non-diagram module, report it rather than guessing | Success: both editor modules' examples appear in the root examples/ project's explorer tree, byte-identical to their module copies (no body: header adjustment needed, since text editors have none). Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7.3 Extend structure.md to describe `editors/` in the same terms as `diagrams/`
+- [x] 7.3 Extend structure.md to describe `editors/` in the same terms as `diagrams/`
   - File: `.spec-workflow/steering/structure.md`
   - One paragraph parallel to the existing `diagrams/<diagram>` paragraph (including its `examples/`-folder sentence and the root-replication sentence from commit `3cfc4776`, generalised to say "every module, diagram or editor" rather than repeating diagram-only wording twice)
   - _Requirements: 1.5_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical writer familiar with this repository's steering docs | Task: Add a structure.md paragraph describing `src/editors/<editor>/`'s layout in the same terms as the existing `src/diagrams/<diagram>/` paragraph (backend/api/client/examples, the `EtAlii.Adp.Editor.<Editor>` project naming), and generalise the examples/-replication sentence added in commit 3cfc4776 to cover both families rather than restating it - "every module, diagram or editor" - so the rule is written once | Restrictions: do not restate the diagrams/ paragraph's own wording verbatim where a shared sentence (like the replication rule) can cover both instead | Success: a reader of structure.md understands src/editors/ layout without cross-referencing this spec. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7.4 Final full-suite gate and Non-Functional sign-off
+- [x] 7.4 Final full-suite gate and Non-Functional sign-off
   - Run the full backend and client gates one more time; additionally confirm, and record in the implementation log: **no new stream** (the proto diff check from task 3.2, re-confirmed against the final state), **isolation** (a forced failure in one editor module's session costs only its own tab - test this by throwing from a test double session and confirming the rest of the workspace is unaffected), **determinism** (the same file resolves to the same editor regardless of assembly load order - re-run `EditorResolver`'s tests from task 1.4 as the evidence)
   - Merge `.claude/worktrees/editors-docs` into `develop` and retire it
   - _Requirements: (Non-Functional sign-off)_
