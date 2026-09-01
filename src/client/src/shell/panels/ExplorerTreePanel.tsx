@@ -484,7 +484,7 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
 
       const entries = result.value?.entries ?? [];
       setState((previous) => applyEntries(previous, parentKey, entries));
-      return entries.map((entry) => keyOf(entry.id?.value)).filter((key): key is string => key !== undefined);
+      return entries;
     },
     [hierarchyClient, projectId, watchId],
   );
@@ -662,26 +662,44 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
       // they are fetched first when needed; a file with no registrations behaves exactly as
       // it always has (Requirement 7.4).
       if (node.kind === EntryKind.FILE && node.hasChildren) {
-        const activateFirst = (childKey: string | undefined) => {
-          if (childKey) {
-            selectNode(childKey, { case: "action", value: ContextSelectionAction.ACTIVATE });
-          }
-        };
         if (node.childKeys !== undefined) {
-          activateFirst(node.childKeys[0]);
-        } else {
-          fetchChildren(key, node.id)
-            .then(activateFirst_keys => activateFirst(activateFirst_keys?.[0]))
-            .catch((err: unknown) => {
-              setError(err instanceof Error ? err.message : "Failed to open this file's diagram.");
-            });
+          const first = node.childKeys[0];
+          if (first) {
+            selectNode(first, { case: "action", value: ContextSelectionAction.ACTIVATE });
+          }
+          return;
         }
+
+        // Children not loaded yet: fetch, then select from the returned entry itself rather
+        // than from React state, which has not re-rendered by the time this continuation runs.
+        const parentPath = pathOf(state, key);
+        fetchChildren(key, node.id)
+          .then((entries) => {
+            const first = entries?.[0];
+            const firstId = first?.id?.value;
+            if (!first || !firstId) {
+              return;
+            }
+            const childKey = keyOf(firstId);
+            if (childKey) {
+              gestureKeyRef.current = childKey;
+            }
+            select(selectionFor(
+              ContextSelectionSource.EXPLORER,
+              firstId,
+              [...parentPath, first.name],
+              { case: "action", value: ContextSelectionAction.ACTIVATE },
+            ));
+          })
+          .catch((err: unknown) => {
+            setError(err instanceof Error ? err.message : "Failed to open this file's diagram.");
+          });
         return;
       }
 
       selectNode(key, { case: "action", value: ContextSelectionAction.ACTIVATE });
     },
-    [fetchChildren, selectNode, toggleExpand],
+    [fetchChildren, select, selectNode, state, toggleExpand],
   );
 
   const runAction = useCallback(

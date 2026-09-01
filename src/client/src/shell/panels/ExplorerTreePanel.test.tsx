@@ -1052,3 +1052,148 @@ describe("ExplorerTreePanel revealing what was just created", () => {
     }
   });
 });
+
+describe("ExplorerTreePanel nested registrations (adp-file-nesting)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetContext();
+    watchHierarchy.mockReturnValue({
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      async *[Symbol.asyncIterator]() {},
+    });
+  });
+
+  /** Root holds subject file "test.mm" (id 2, expandable); its children are two registrations. */
+  function mockSubjectAndRegistrations() {
+    listEntries.mockImplementation(({ folderId }: { folderId?: { value: Uint8Array } }) =>
+      Promise.resolve(
+        folderId
+          ? {
+              result: {
+                case: "entries",
+                value: {
+                  entries: [
+                    makeEntry(3, "test.adp", EntryKind.FILE, 2),
+                    makeEntry(4, "test.first.adp", EntryKind.FILE, 2),
+                  ],
+                },
+              },
+            }
+          : { result: { case: "entries", value: { entries: [makeEntry(2, "test.mm", EntryKind.FILE, undefined, true)] } } },
+      ),
+    );
+  }
+
+  it("walks visibleKeys through an expanded subject file's registrations", () => {
+    // Arrange.
+    let state = applyEntries(EMPTY_TREE_STATE, undefined, [makeEntry(2, "test.mm", EntryKind.FILE, undefined, true)]);
+    state = applyEntries(state, key(2), [makeEntry(3, "test.adp", EntryKind.FILE, 2)]);
+    state = { ...state, nodesByKey: { ...state.nodesByKey, [key(2)]: { ...state.nodesByKey[key(2)]!, expanded: true } } };
+
+    // Act and assert: the keyboard sees exactly what the eye sees, files included.
+    expect(visibleKeys(state)).toEqual([key(2), key(3)]);
+  });
+
+  it("re-parents an entry on updated.parentId, keeping its key", () => {
+    // Arrange: an orphan at the root, whose subject then appears.
+    let state = applyEntries(EMPTY_TREE_STATE, undefined, [
+      makeEntry(2, "test.mm", EntryKind.FILE, undefined, true),
+      makeEntry(3, "test.adp", EntryKind.FILE),
+    ]);
+    state = applyEntries(state, key(2), []);
+
+    // Act: the push Phase D sends - an update carrying the new parent, not a remove/create pair.
+    state = applyHierarchyChange(state, create(HierarchyChangeSchema, {
+      change: { case: "updated", value: { entryId: { value: id(3) }, hasChildren: false, parentId: { value: id(2) } } },
+    }));
+
+    // Assert: same key, new place.
+    expect(state.rootKeys).toEqual([key(2)]);
+    expect(state.nodesByKey[key(2)]?.childKeys).toEqual([key(3)]);
+    expect(state.nodesByKey[key(3)]?.parentKey).toBe(key(2));
+  });
+
+  it("re-parents to the root when the pushed parent id is empty", () => {
+    // Arrange: a nested registration whose subject vanishes.
+    let state = applyEntries(EMPTY_TREE_STATE, undefined, [makeEntry(2, "test.mm", EntryKind.FILE, undefined, true)]);
+    state = applyEntries(state, key(2), [makeEntry(3, "test.adp", EntryKind.FILE, 2)]);
+
+    // Act: present-but-empty means the root - unset would mean "unchanged".
+    state = applyHierarchyChange(state, create(HierarchyChangeSchema, {
+      change: { case: "updated", value: { entryId: { value: id(3) }, hasChildren: false, parentId: { value: new Uint8Array(0) } } },
+    }));
+
+    // Assert.
+    expect(state.rootKeys).toContain(key(3));
+    expect(state.nodesByKey[key(2)]?.childKeys).toEqual([]);
+    expect(state.nodesByKey[key(3)]?.parentKey).toBeUndefined();
+  });
+
+  it("sorts a pushed registration under its subject with the unqualified form first", () => {
+    // Arrange: the counter-example that breaks plain alphabetical - subject.aa.adp would sort
+    // before subject.adp, and the unqualified default must stay first (Requirement 3.4).
+    let state = applyEntries(EMPTY_TREE_STATE, undefined, [makeEntry(2, "subject.mm", EntryKind.FILE, undefined, true)]);
+    state = applyEntries(state, key(2), [makeEntry(3, "subject.aa.adp", EntryKind.FILE, 2)]);
+
+    // Act.
+    state = applyHierarchyChange(state, create(HierarchyChangeSchema, {
+      change: { case: "created", value: { entry: makeEntry(4, "subject.adp", EntryKind.FILE, 2) } },
+    }));
+
+    // Assert.
+    expect(state.nodesByKey[key(2)]?.childKeys).toEqual([key(4), key(3)]);
+  });
+
+  it("renders an expandable file with aria-expanded, and loads its registrations on expand", async () => {
+    // Arrange.
+    mockSubjectAndRegistrations();
+    render(<ExplorerTreePanel projectId={new Uint8Array(16)} />);
+    await screen.findByText("test.mm");
+    const item = screen.getByText("test.mm").closest("li") as HTMLElement;
+    expect(item.getAttribute("aria-expanded")).toBe("false");
+
+    // Act: the chevron a folder would have, on a file.
+    fireEvent.click(screen.getByLabelText("Expand test.mm"));
+
+    // Assert: children load through the file's own id, exactly as a folder's would.
+    await screen.findByText("test.adp");
+    await screen.findByText("test.first.adp");
+    expect(item.getAttribute("aria-expanded")).toBe("true");
+    expect(listEntries).toHaveBeenCalledWith(expect.objectContaining({ folderId: { value: id(2) } }));
+  });
+
+  it("expands and collapses an expandable file with the keyboard", async () => {
+    // Arrange.
+    mockSubjectAndRegistrations();
+    render(<ExplorerTreePanel projectId={new Uint8Array(16)} />);
+    await screen.findByText("test.mm");
+    act(() => (screen.getByText("test.mm").closest("button") as HTMLButtonElement).focus());
+    const tree = screen.getByRole("tree");
+
+    // Act and assert: ArrowRight expands and loads...
+    fireEvent.keyDown(tree, { key: "ArrowRight" });
+    await screen.findByText("test.adp");
+
+    // ...ArrowLeft collapses again.
+    fireEvent.keyDown(tree, { key: "ArrowLeft" });
+    expect(screen.queryByText("test.adp")).toBeNull();
+  });
+
+  it("activates the default registration when the subject is double-clicked, without expanding", async () => {
+    // Arrange.
+    mockSubjectAndRegistrations();
+    render(<ExplorerTreePanel projectId={new Uint8Array(16)} />);
+    await screen.findByText("test.mm");
+
+    // Act: the activation gesture on the subject row (Requirements 7.1, 7.2).
+    fireEvent.doubleClick(screen.getByText("test.mm"));
+
+    // Assert: the selection goes to the FIRST registration in the stable order - the
+    // unqualified default - fetched on demand rather than requiring an expand.
+    await waitFor(() => {
+      const source = select.mock.calls.at(-1)?.[0]?.id?.source;
+      expect(source?.case).toBe("entryId");
+      expect((source?.value as { value: Uint8Array }).value).toEqual(id(3));
+    });
+  });
+});
