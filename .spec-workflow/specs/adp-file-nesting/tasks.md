@@ -41,14 +41,14 @@
   - _Requirements: 2.1, 2.2, 2.3, 2.5_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Make derivation survive the qualified name | Restrictions: the order is header, then unqualified, then qualified, then longest-match with a diagnostic - the header stays authoritative per Requirement 2.3; `ResolveWithin`'s path-escape guard is preserved unchanged, because a body header is user-editable text and following it outside the project root would turn a registration into an arbitrary-file read | Success: `test.first.adp` resolves to `test.dsl`, `test.adp` resolves exactly as it does today, and the `my.config.dsl` ambiguity is covered in BOTH directions - with the longer file present and absent. Mark in progress, log when done, then mark complete._
 
-- [-] 3. Pin the corrected .NET path behaviour
+- [x] 3. Pin the corrected .NET path behaviour
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/DiagramFilePair.Tests.cs` (modify)
   - Assert both measured values, and audit the call sites that reason about a name rather than an extension
   - Purpose: Requirement 4.3, which asks for confirmation by test rather than by assertion - and whose original assertion was wrong
   - _Requirements: 4.3, 4.4_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Pin the path behaviour and audit what depends on it | Restrictions: assert the MEASURED values - `Path.GetExtension(".adp")` is `.adp` and `Path.GetFileNameWithoutExtension(".adp")` is empty - not the ones the requirement originally stated; the audit follows the corrected fact, so it looks for name-based reasoning rather than extension-based | Success: both values are pinned, and `StripExtension(".adp")` producing an empty base name is guarded per Requirement 4.4. Mark in progress, log when done, then mark complete._
 
-- [ ] 4. Ownership for the many-to-one case
+- [-] 4. Ownership for the many-to-one case
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/DiagramFilePair.cs` (modify)
   - _Requirements: 2.4, 6.2_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Restate ownership for several registrations over one subject | Restrictions: the rule is that a body is only ever carried by an operation on the SUBJECT, never by one on a registration - that is the protection `IsOwned` gives today, expressed for a set rather than a pair | Success: deleting one registration removes neither the subject nor a body another registration references. Mark in progress, log when done, then mark complete._
