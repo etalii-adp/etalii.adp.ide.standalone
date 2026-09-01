@@ -50,17 +50,36 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
         throw new InvalidOperationException("The src/diagrams folder was not found above the test binary.");
     }
 
-    public static TheoryData<string> EveryExampleRegistration()
+    /// <summary>
+    /// The example roots this suite walks: every module's own <c>examples/</c> folder, and
+    /// <c>src/examples</c> - the tree a user actually opens as a project. The latter joined
+    /// after adp-file-nesting shipped a regression that only showed there: the module trees
+    /// were covered, the user-facing one was not, and "the tests are green" meant less than
+    /// it appeared to.
+    /// </summary>
+    private static IEnumerable<string> ExampleRoots()
     {
-        var data = new TheoryData<string>();
         foreach (var module in Directory.EnumerateDirectories(Locate()))
         {
             var examples = IoPath.Combine(module, "examples");
-            if (!Directory.Exists(examples))
+            if (Directory.Exists(examples))
             {
-                continue;
+                yield return examples;
             }
+        }
 
+        var userFacing = IoPath.Combine(IoPath.GetDirectoryName(Locate())!, "examples");
+        if (Directory.Exists(userFacing))
+        {
+            yield return userFacing;
+        }
+    }
+
+    public static TheoryData<string> EveryExampleRegistration()
+    {
+        var data = new TheoryData<string>();
+        foreach (var examples in ExampleRoots())
+        {
             foreach (var adp in Directory.EnumerateFiles(examples, "*.adp", SearchOption.AllDirectories))
             {
                 data.Add(IoPath.GetRelativePath(Locate(), adp));
@@ -157,14 +176,8 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
     {
         var data = new TheoryData<string>();
         var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var module in Directory.EnumerateDirectories(Locate()))
+        foreach (var examples in ExampleRoots())
         {
-            var examples = IoPath.Combine(module, "examples");
-            if (!Directory.Exists(examples))
-            {
-                continue;
-            }
-
             foreach (var adp in Directory.EnumerateFiles(examples, "*.adp", SearchOption.AllDirectories))
             {
                 var directory = IoPath.GetDirectoryName(adp);
@@ -300,15 +313,26 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
         Assert.True(File.Exists(body.Value.Path));
     }
 
-    /// <summary>The example set's root: the child of the module's <c>examples/</c> folder the file sits under.</summary>
+    /// <summary>
+    /// The example set's root - the folder a user would open as a project. Two layouts exist:
+    /// a module's <c>examples/&lt;set&gt;/...</c>, where the set is the child of examples, and
+    /// the user-facing <c>src/examples/&lt;type&gt;/&lt;set&gt;/...</c>, where it is the
+    /// grandchild. Getting this wrong resolves every body: header against the wrong root,
+    /// which is how this helper mis-flagged ten healthy registrations when src/examples first
+    /// joined the walk.
+    /// </summary>
     private static string ExampleRootOf(string adpPath)
     {
+        string? previous = null;
         for (var directory = new DirectoryInfo(adpPath).Parent; directory is not null; directory = directory.Parent)
         {
             if (string.Equals(directory.Parent?.Name, "examples", StringComparison.OrdinalIgnoreCase))
             {
-                return directory.FullName;
+                var isUserFacingLayout = string.Equals(directory.Parent!.Parent?.Name, "src", StringComparison.OrdinalIgnoreCase);
+                return isUserFacingLayout && previous is not null ? previous : directory.FullName;
             }
+
+            previous = directory.FullName;
         }
 
         throw new InvalidOperationException($"{adpPath} does not sit under an examples/ set.");

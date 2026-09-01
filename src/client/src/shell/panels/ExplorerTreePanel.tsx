@@ -429,14 +429,23 @@ export function resolveRevealPath(
 
 /** The entry's project-relative path, read off the tree the ids came from. */
 export function pathOf(state: TreeState, key: string): string[] {
+  // FILESYSTEM segments, not tree parentage. Since adp-file-nesting the two differ: a nested
+  // registration's tree parent is its subject FILE, but on disk both live in the same folder -
+  // so a FILE ancestor contributes nothing to the path. The backend validates these segments
+  // against the entry's real path and rejects a mismatch ("The path does not match the entry"),
+  // which is exactly what silently stopped every nested diagram from opening.
   const segments: string[] = [];
   let cursor: string | undefined = key;
+  let isLeaf = true;
   while (cursor !== undefined) {
     const node: TreeNode | undefined = state.nodesByKey[cursor];
     if (!node) {
       break;
     }
-    segments.unshift(node.name);
+    if (isLeaf || node.kind === EntryKind.FOLDER) {
+      segments.unshift(node.name);
+    }
+    isLeaf = false;
     cursor = node.parentKey;
   }
   return segments;
@@ -687,7 +696,7 @@ export function ExplorerTreePanel({ projectId }: ExplorerTreePanelProps) {
             select(selectionFor(
               ContextSelectionSource.EXPLORER,
               firstId,
-              [...parentPath, first.name],
+              [...parentPath.slice(0, -1), first.name],
               { case: "action", value: ContextSelectionAction.ACTIVATE },
             ));
           })

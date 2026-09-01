@@ -24,6 +24,7 @@ import {
   entryFocusKey,
   matchShortcut,
   neighbourKey,
+  pathOf,
   resolveRevealPath,
   visibleKeys,
   type ShortcutEventLike,
@@ -1177,6 +1178,54 @@ describe("ExplorerTreePanel nested registrations (adp-file-nesting)", () => {
     // ...ArrowLeft collapses again.
     fireEvent.keyDown(tree, { key: "ArrowLeft" });
     expect(screen.queryByText("test.adp")).toBeNull();
+  });
+
+  it("builds a nested registration's path from the FILESYSTEM, not the tree", () => {
+    // Arrange: root > folder > subject > registration in the tree; on disk the registration
+    // sits in the FOLDER, beside its subject. The backend rejects a selection whose path
+    // disagrees with the entry ("The path does not match the entry"), which is how every
+    // nested diagram silently failed to open.
+    let state = applyEntries(EMPTY_TREE_STATE, undefined, [makeEntry(1, "architecture", EntryKind.FOLDER, undefined, true)]);
+    state = applyEntries(state, key(1), [makeEntry(2, "test.mm", EntryKind.FILE, 1, true)]);
+    state = applyEntries(state, key(2), [makeEntry(3, "test.adp", EntryKind.FILE, 2)]);
+
+    // Act and assert.
+    expect(pathOf(state, key(3))).toEqual(["architecture", "test.adp"]);
+    expect(pathOf(state, key(2))).toEqual(["architecture", "test.mm"]);
+  });
+
+  it("selects a nested registration with its disk path when clicked directly", async () => {
+    // Arrange.
+    mockSubjectAndRegistrations();
+    render(<ExplorerTreePanel projectId={new Uint8Array(16)} />);
+    await screen.findByText("test.mm");
+    fireEvent.click(screen.getByLabelText("Expand test.mm"));
+    await screen.findByText("test.adp");
+
+    // Act.
+    fireEvent.doubleClick(screen.getByText("test.adp"));
+
+    // Assert: the subject's name is nowhere in the selection's path.
+    await waitFor(() => {
+      const sent = select.mock.calls.at(-1)?.[0];
+      expect(sent?.path?.segments).toEqual(["test.adp"]);
+    });
+  });
+
+  it("activates the default registration with its disk path, not the tree path", async () => {
+    // Arrange.
+    mockSubjectAndRegistrations();
+    render(<ExplorerTreePanel projectId={new Uint8Array(16)} />);
+    await screen.findByText("test.mm");
+
+    // Act.
+    fireEvent.doubleClick(screen.getByText("test.mm"));
+
+    // Assert.
+    await waitFor(() => {
+      const sent = select.mock.calls.at(-1)?.[0];
+      expect(sent?.path?.segments).toEqual(["test.adp"]);
+    });
   });
 
   it("activates the default registration when the subject is double-clicked, without expanding", async () => {
