@@ -2,7 +2,7 @@ timeline: 1
 elements:
   - id: discovery
     label: Discovery
-    begin: 2025-03-29
+    begin: 2025-02-21
     end: 2025-05-07
     row: 9
   - id: build
@@ -36,12 +36,12 @@ elements:
     row: 10
   - id: 18g3b7b6kp2icm9vzi5ncd91a
     label: New element
-    begin: 2026-06-01
-    end: 2026-08-11
-    row: 12
+    begin: 2026-08-13
+    end: 2026-10-23
+    row: 13
   - id: 9s462vri4qn9ww06akis5rqli
     label: New element
-    begin: 2026-01-06
+    begin: 2025-11-19
     end: 2026-02-16
     row: 8
   - id: elvtk68a6tc7nniqgonud96zx
@@ -55,37 +55,37 @@ elements:
     row: 16
   - id: f04p21twx6o8vgy6vkxq12oru
     label: New element
-    begin: 2026-01-08
-    end: 2026-02-18
+    begin: 2025-10-23
+    end: 2026-01-08
     row: 4
   - id: blxyj64aqw2gv7mo51khc0pup
     label: New element
     begin: 2025-10-10
-    end: 2025-12-03
+    end: 2026-01-10
     row: 7
   - id: 1yoofipmb80poy0knnhwmn3r0
     label: New element
-    begin: 2025-07-11
-    end: 2025-08-29
+    begin: 2025-05-01
+    end: 2025-07-05
     row: 2
   - id: 7qp4wkg8ez95o53xqfbtcvsi9
     label: New element
-    begin: 2025-10-14
-    end: 2025-11-25
+    begin: 2025-08-02
+    end: 2025-09-28
     row: 3
   - id: ao5vz88mqzrxap6rff1vfhup6
     label: New element
-    begin: 2026-04-14
-    end: 2026-05-26
+    begin: 2026-02-22
+    end: 2026-05-16
     row: 4
   - id: 1bvqv3kk00uwn15axvimuy77k
     label: New element
-    begin: 2026-03-14
-    end: 2026-04-27
+    begin: 2026-03-02
+    end: 2026-06-14
     row: 2
   - id: 7nfswch3u37qyph97blf3ubt3
     label: New element
-    begin: 2026-07-19
+    begin: 2026-07-03
     end: 2026-09-12
     row: 4
   - id: e24m8v3gkdpmlkjfts0q8h0nf
@@ -108,6 +108,19 @@ elements:
     begin: 2026-10-25
     end: 2026-12-30
     row: 1
+  - id: 4khjd4qzeirw1y94ufnbop8f9
+    label: New element
+    begin: 2025-07-10
+    end: 2025-09-30
+    row: 8
+  - id: 3vhbnpa7zzitrxc6t93nc584v
+    label: New moment
+    begin: 2024-12-03
+    row: 8
+  - id: 2qghim1my3ekkmliufk5yk2w5
+    label: New moment
+    begin: 2027-08-12
+    row: 6
 connections:
   - id: c1
     from: discovery
@@ -176,3 +189,33 @@ connections:
   - id: 30km1z14751ccj8ax2e8l36op
     from: 7nfswch3u37qyph97blf3ubt3
     to: 639eq50hz31rf9cmoyotnrkeq
+  - id: 0yy7kvgf2ovde1npa0bu4rg3p
+    from: discovery
+    to: 4khjd4qzeirw1y94ufnbop8f9
+  - id: 0grweqcalsr4gjj73h3crbuz9
+    from: 3vhbnpa7zzitrxc6t93nc584v
+    to: discovery
+  - id: 2xdrbq0lbdpueg5f20an070pt
+    from: 3vhbnpa7zzitrxc6t93nc584v
+    to: 1yoofipmb80poy0knnhwmn3r0
+  - id: an6y56yptjuflq1nofm7kviau
+    from: 2ii6hszbmt05zu9gipab7qkds
+    to: 2qghim1my3ekkmliufk5yk2w5
+  - id: 0wgtqyoq1rde5dgwp9nt1e1vq
+    from: e24m8v3gkdpmlkjfts0q8h0nf
+    to: 2qghim1my3ekkmliufk5yk2w5
+  - id: 4vlqwetdmzrusrt3t91c2vo96
+    from: 05fhm8rdmgccnxhkoc7sbimff
+    to: 2qghim1my3ekkmliufk5yk2w5
+  - id: cvrluja2qzls4d9nbgvpatx4p
+    from: 639eq50hz31rf9cmoyotnrkeq
+    to: 2qghim1my3ekkmliufk5yk2w5
+  - id: 3ptm72vr7nxo372rq3xjly00s
+    from: elvtk68a6tc7nniqgonud96zx
+    to: 2qghim1my3ekkmliufk5yk2w5
+  - id: ekiswdcdv0cv48rypu9ry2gm8
+    from: 1x5mmoj5j4ia9i8w95tfm8x40
+    to: 2qghim1my3ekkmliufk5yk2w5
+  - id: 6edbd9efy9cg8yo6zk7uk961b
+    from: 18g3b7b6kp2icm9vzi5ncd91a
+    to: 2qghim1my3ekkmliufk5yk2w5
