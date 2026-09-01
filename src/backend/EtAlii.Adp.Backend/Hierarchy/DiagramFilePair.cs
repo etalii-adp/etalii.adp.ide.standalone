@@ -67,13 +67,19 @@ public static class DiagramFilePair
             // No header: the body is the sibling of this file's own name, exactly as every
             // type has always behaved. A view key without a body still applies - one
             // registration beside its own document may still name a view within it.
-            var (path, ambiguousWith) = ResolveSibling(adpPath, definition.Extension);
+            var (path, ambiguousWith, subjectIsShared) = ResolveSibling(adpPath, definition.Extension);
 
             // A folder-scoped registration has no derived body at all, rather than one whose path
             // is the bare extension (Requirement 4.4).
+            //
+            // Ownership is per SET, not per pair (Requirement 2.4): a qualified registration
+            // derives a subject that other registrations may also derive, so it opens the body
+            // but never carries it - only the unqualified reading, where the name IS the
+            // subject, keeps the classic pair behaviour of taking its sibling along on delete
+            // and rename (Requirements 6.2 and 11.1).
             return path.Length == 0
                 ? null
-                : new DiagramBodyFile(path, view, IsOwned: true, AmbiguousWith: ambiguousWith);
+                : new DiagramBodyFile(path, view, IsOwned: !subjectIsShared, AmbiguousWith: ambiguousWith);
         }
 
         if (projectRoot is null)
@@ -203,7 +209,7 @@ public static class DiagramFilePair
     /// rather than produced.
     /// </para>
     /// </remarks>
-    internal static (string Path, string? AmbiguousWith) ResolveSibling(string adpPath, string extension)
+    internal static (string Path, string? AmbiguousWith, bool SubjectIsShared) ResolveSibling(string adpPath, string extension)
     {
         ArgumentNullException.ThrowIfNull(adpPath);
         ArgumentNullException.ThrowIfNull(extension);
@@ -211,24 +217,27 @@ public static class DiagramFilePair
         var name = DiagramRegistrationName.TryParse(IoPath.GetFileName(adpPath));
         if (name is null || name.IsFolderScoped)
         {
-            return (string.Empty, null);
+            return (string.Empty, null, false);
         }
 
         var directory = IoPath.GetDirectoryName(adpPath) ?? "";
         var subject = IoPath.Combine(directory, name.SubjectBase + extension);
         if (!name.IsQualified)
         {
-            return (subject, null);
+            return (subject, null, false);
         }
 
         var whole = IoPath.Combine(directory, name.FullBase + extension);
         if (!File.Exists(whole))
         {
-            return (subject, null);
+            // The qualified reading won: the derived subject is shared by construction, since
+            // any other qualifier over the same subject derives the same file.
+            return (subject, null, true);
         }
 
-        // Both readings name a real file, so the name alone cannot say which was meant.
-        return (whole, File.Exists(subject) ? subject : null);
+        // Both readings name a real file, so the name alone cannot say which was meant. The
+        // longer wins, and that is the unqualified reading - the name IS that subject.
+        return (whole, File.Exists(subject) ? subject : null, false);
     }
 
     /// <summary>

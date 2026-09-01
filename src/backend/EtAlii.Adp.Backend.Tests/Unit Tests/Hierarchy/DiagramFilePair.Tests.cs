@@ -405,6 +405,57 @@ public class DiagramFilePairTests : IDisposable
         Assert.Equal("", DiagramFileName.StripExtension(DiagramFileName.Extension));
     }
 
+    /// <summary>
+    /// Requirement 2.4 and 6.2: ownership is per set, not per pair. A qualified registration
+    /// derives the shared subject to OPEN it, but never owns it - only the unqualified reading,
+    /// where the name is the subject, keeps the classic take-the-sibling-along behaviour.
+    /// </summary>
+    [Fact]
+    public void SiblingOf_AQualifiedRegistration_DoesNotOwnTheSharedSubject()
+    {
+        // Arrange: two qualified registrations over one subject.
+        File.WriteAllText(IoPath.Combine(_root, "test.mm"), "<map/>");
+        var first = WriteRegistration("test.first", Mindmap);
+        WriteRegistration("test.second", Mindmap);
+
+        // Act and assert: it opens the subject but may not carry it.
+        Assert.Null(DiagramFilePair.SiblingOf(first, _catalog));
+        var body = DiagramFilePair.BodyOf(first, _catalog, _root);
+        Assert.NotNull(body);
+        Assert.Equal(IoPath.Combine(_root, "test.mm"), body.Value.Path);
+        Assert.False(body.Value.IsOwned);
+    }
+
+    [Fact]
+    public async Task Delete_OneOfSeveralQualifiedRegistrations_LeavesTheSubjectAndItsPeers()
+    {
+        // Arrange.
+        var subject = IoPath.Combine(_root, "test.mm");
+        await File.WriteAllTextAsync(subject, "<map/>", TestContext.Current.CancellationToken);
+        var first = WriteRegistration("test.first", Mindmap);
+        var second = WriteRegistration("test.second", Mindmap);
+
+        // Act.
+        var result = await _history.ExecuteAsync(new DeleteEntryCommand(first), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.False(File.Exists(first));
+        Assert.True(File.Exists(subject), "deleting one registration carried off the shared subject");
+        Assert.True(File.Exists(second), "deleting one registration destroyed a peer registration");
+    }
+
+    [Fact]
+    public void SiblingOf_AnUnqualifiedRegistration_StillOwnsItsSibling()
+    {
+        // Arrange: the classic pair, exactly as it has always behaved (Requirement 11.1).
+        File.WriteAllText(IoPath.Combine(_root, "solo.mm"), "<map/>");
+        var adp = WriteRegistration("solo", Mindmap);
+
+        // Act and assert.
+        Assert.Equal(IoPath.Combine(_root, "solo.mm"), DiagramFilePair.SiblingOf(adp, _catalog));
+    }
+
     [Fact]
     public void SiblingDerivation_OfAFolderScopedRegistration_ProducesNoPath()
     {
