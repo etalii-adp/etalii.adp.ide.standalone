@@ -109,7 +109,7 @@ public class TimelineFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
             headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal(["Period", "Moment"], timeline.Items.Select(item => item.Label));
+        Assert.Equal(["Element", "Moment"], timeline.Items.Select(item => item.Label));
         Assert.Empty(plain.Items);
     }
 
@@ -268,7 +268,7 @@ public class TimelineFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
         // Assert, interleaved: the pushed confirmation names the count before anything runs.
         var confirmation = await ReadConfirmationAsync(watch.ResponseStream, cts.Token);
         Assert.NotNull(confirmation);
-        Assert.Contains("1 connection", confirmation.Message, StringComparison.Ordinal);
+        Assert.Contains("1 relation", confirmation.Message, StringComparison.Ordinal);
         Assert.True(confirmation.Danger);
 
         var submitted = await contextClient.SubmitInteractionAsync(

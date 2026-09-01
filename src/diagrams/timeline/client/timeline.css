@@ -44,13 +44,13 @@
 }
 
 .timeline-period {
-  fill: var(--color-surface-raised, #f2f4f8);
+  fill: var(--color-surface, #ffffff);
   stroke: var(--color-border, #8892a6);
   stroke-width: 1.5;
 }
 
 .timeline-moment {
-  fill: var(--color-accent, #4a6fb5);
+  fill: var(--color-primary, limegreen);
   stroke: none;
 }
 
@@ -64,15 +64,15 @@
 
 .timeline-selected .timeline-period,
 .timeline-connect-target .timeline-period {
-  stroke: var(--color-accent, #4a6fb5);
+  stroke: var(--color-primary, limegreen);
   stroke-width: 2.5;
 }
 
 .timeline-selected .timeline-moment,
 .timeline-connect-target .timeline-moment {
-  stroke: var(--color-accent, #4a6fb5);
+  stroke: var(--color-primary, limegreen);
   stroke-width: 2.5;
-  fill: var(--color-surface-raised, #f2f4f8);
+  fill: var(--color-surface, #ffffff);
 }
 
 /* What the gesture would land on, visible before the user commits. */
@@ -87,7 +87,7 @@
 /* ---- Adorners and anchors ---------------------------------------------------------- */
 
 .timeline-adorner {
-  fill: var(--color-accent, #4a6fb5);
+  fill: var(--color-primary, limegreen);
   opacity: 0.35;
   cursor: ew-resize;
 }
@@ -98,7 +98,7 @@
 
 .timeline-anchor {
   fill: var(--color-surface, #ffffff);
-  stroke: var(--color-accent, #4a6fb5);
+  stroke: var(--color-primary, limegreen);
   stroke-width: 1.5;
   cursor: crosshair;
 }
@@ -120,7 +120,7 @@
 
 .timeline-pending-connection {
   fill: none;
-  stroke: var(--color-accent, #4a6fb5);
+  stroke: var(--color-primary, limegreen);
   stroke-width: 1.5;
   stroke-dasharray: 4 3;
   pointer-events: none;
@@ -166,11 +166,51 @@
   margin: 0;
   padding: 4px 10px;
   border-radius: 4px;
-  background: var(--color-surface-raised, #f2f4f8);
+  background: var(--color-surface, #ffffff);
   color: var(--color-text-muted, #5a6376);
   font-size: 12px;
 }
 
 .timeline-rejection {
-  color: var(--color-danger, #b54a4a);
+  color: var(--color-danger, #dc2626);
+}
+
+/* ---- Scrollbars -------------------------------------------------------------------- */
+
+/*
+ * Windows onto the content's extent rather than native scrollbars: the canvas is an unbounded
+ * plane whose size is a transform, which a native bar cannot describe. Dragging a thumb pans.
+ */
+.timeline-scrollbar {
+  position: absolute;
+  background: color-mix(in srgb, var(--color-border, #e2e8f0) 40%, transparent);
+  border-radius: 5px;
+}
+
+.timeline-scrollbar-horizontal {
+  left: 8px;
+  right: 20px;
+  bottom: 26px;
+  height: 10px;
+}
+
+.timeline-scrollbar-vertical {
+  top: 8px;
+  bottom: 40px;
+  right: 6px;
+  width: 10px;
+}
+
+.timeline-scrollbar-thumb {
+  position: absolute;
+  inset: 0;
+  background: var(--color-text-muted, #64748b);
+  opacity: 0.5;
+  border-radius: 5px;
+  cursor: grab;
+}
+
+.timeline-scrollbar-thumb:hover,
+.timeline-scrollbar-thumb:active {
+  opacity: 0.85;
 }

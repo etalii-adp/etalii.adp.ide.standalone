@@ -3,6 +3,8 @@ import { create } from "@bufbuild/protobuf";
 import { EmptySchema } from "@bufbuild/protobuf/wkt";
 import { horizontalBezierPath, sideAnchorOf, type ConnectorBox } from "@client/canvas/connectors";
 import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { ContextMenu } from "@client/shell/context/ContextMenu";
+import { toMenuGroups } from "@client/shell/context/toMenuGroups";
 import { TOOLBOX_DRAG_TYPE } from "@client/shell/panels/DiagramToolboxContext";
 import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { useRegisterDiagramView } from "@client/shell/panels/DiagramViewContext";
@@ -13,8 +15,10 @@ import {
   ContextSelectionSchema,
   ContextSourceSchema,
   type ContextSelection,
+  type ContextShortcut,
 } from "@client/generated/context_pb";
 import { TimelineRuler } from "./TimelineRuler";
+import { TimelineScrollbars } from "./TimelineScrollbars";
 import { useTimelineStream } from "./useTimelineStream";
 import type { TimelineElement } from "./timelineModel";
 
@@ -96,9 +100,14 @@ interface ConnectDrag {
  */
 export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   const { model, loading, failed, moveElementTo } = useTimelineStream(projectId, path);
-  const { select, executeAction, setProperty } = useContextConnection();
-  const { selection } = useContextSelection();
+  const { select, executeAction, executeShortcut, setProperty } = useContextConnection();
+  const { selection, actions } = useContextSelection();
   const surfaceRef = useRef<HTMLDivElement | null>(null);
+
+  // A right-click's menu, opened once the pushed selection for that element arrives with its
+  // actions: the menu shows the backend's answer, never a guess - the C4 canvas's discipline.
+  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
+  const pendingMenuRef = useRef<{ id: string; position: { x: number; y: number } } | null>(null);
 
   useRegisterDiagramToolbox(useToolboxItems(projectId, path));
 
@@ -109,7 +118,7 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
   }));
   const fittedRef = useRef(false);
 
-  const panRef = useRef<{ clientX: number; clientY: number; view: TimelineView } | null>(null);
+  const panRef = useRef<{ clientX: number; clientY: number; view: TimelineView; moved: boolean } | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const [drag, setDrag] = useState<DragPreview | null>(null);
   const resizeRef = useRef<ResizeState | null>(null);
@@ -119,6 +128,16 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
   const [rejection, setRejection] = useState("");
 
   const selectedId = elementIdOf(innermostKey(selection) ?? null);
+  const selectionKey = innermostKey(selection);
+
+  // The right-click's menu opens when the selection it asked for arrives, actions and all.
+  useEffect(() => {
+    const pending = pendingMenuRef.current;
+    if (pending && selectionKey === `element:${pending.id}`) {
+      pendingMenuRef.current = null;
+      setMenuPosition(pending.position);
+    }
+  }, [selectionKey]);
 
   /** Fits the whole timeline into view, with a margin. */
   const fitToView = useCallback(() => {
@@ -228,8 +247,15 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
       return;
     }
 
-    select(null);
-    panRef.current = { clientX: event.clientX, clientY: event.clientY, view };
+    setMenuPosition(null);
+    if (event.button === 0) {
+      select(null);
+    }
+
+    // Both buttons pan on empty space: the left is the convention every canvas here follows,
+    // and the right frees the left hand for selection-heavy work. The `moved` flag is what
+    // keeps a motionless right-click from being eaten as a zero-length pan.
+    panRef.current = { clientX: event.clientX, clientY: event.clientY, view, moved: false };
   };
 
   const onElementPointerDown = (event: React.MouseEvent, element: TimelineElement) => {
@@ -303,12 +329,18 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
 
     const pan = panRef.current;
     if (pan) {
+      pan.moved ||= Math.abs(event.clientX - pan.clientX) + Math.abs(event.clientY - pan.clientY) > 3;
       setView({
         ...pan.view,
         startSeconds: pan.view.startSeconds - (event.clientX - pan.clientX) * pan.view.secondsPerPixel,
         panY: pan.view.panY - (event.clientY - pan.clientY),
       });
     }
+  };
+
+  /** The canvas owns the right button: a drag pans, and the browser's own menu never appears. */
+  const onSurfaceContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault();
   };
 
   const onPointerUp = () => {
@@ -355,18 +387,22 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
     connectRef.current = null;
     setConnect(null);
     if (connecting) {
-      if (!connecting.overId || connecting.overId === connecting.fromId) {
-        // Ended on nothing that can accept it: cancelled, with the reason shown
-        // (Requirement 8.5).
-        setRejection("A connection ends on another element; released elsewhere, it is abandoned.");
+      if (connecting.overId === connecting.fromId) {
+        // Back onto its own source: a relation to itself is refused anyway, so this is a
+        // "never mind" and nothing is sent.
         return;
       }
 
       // One canvas gesture drives the channel's two calls: arm from the source, complete on the
-      // target. The backend pairs them and dispatches one command.
+      // target. A release on empty space completes on a placement instead - the element the
+      // relation reaches does not exist yet, so the backend creates it there and relates to it
+      // in one command.
+      const completion = connecting.overId
+        ? elementSource(connecting.overId)
+        : elementSource(newPlacementId(connecting.x, nearestRow(connecting.y)));
       void (async () => {
         await executeAction("timeline.connect", elementSource(connecting.fromId));
-        const outcome = await executeAction("timeline.connect", elementSource(connecting.overId ?? ""));
+        const outcome = await executeAction("timeline.connect", completion);
         if (!outcome.accepted) {
           setRejection(outcome.error);
         }
@@ -394,19 +430,38 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
 
   const onElementContextMenu = (event: React.MouseEvent, element: TimelineElement) => {
     event.preventDefault();
+    event.stopPropagation();
+    if (panRef.current?.moved) {
+      // The right button was panning; releasing it must not also open a menu.
+      return;
+    }
+
+    // The menu opens once the pushed selection for this element arrives with its actions, so
+    // what it shows is the backend's answer rather than a guess.
+    pendingMenuRef.current = { id: element.id, position: { x: event.clientX, y: event.clientY } };
     select(elementSelection(entryId, path, element.id, ContextSelectionAction.CONTEXT_MENU));
   };
 
-  /** A toolbox entry dropped on an element: the add anchors on it for its row. */
-  const onElementDrop = (event: React.DragEvent, element: TimelineElement) => {
+  /**
+   * A toolbox entry dropped anywhere on the canvas: the drop names a placement - the time and
+   * row under the pointer - and the element appears there with nothing asked. One handler on
+   * the surface; drops over elements bubble here and land at the pointer all the same.
+   */
+  const onSurfaceDrop = (event: React.DragEvent) => {
     const actionId = event.dataTransfer.getData(TOOLBOX_DRAG_TYPE);
     if (!actionId) {
       return;
     }
 
     event.preventDefault();
-    event.stopPropagation();
-    void executeAction(actionId, elementSource(element.id));
+    void (async () => {
+      const outcome = await executeAction(
+        actionId,
+        elementSource(newPlacementId(toSeconds(event.clientX), nearestRow(toModuleY(event.clientY)))));
+      if (!outcome.accepted) {
+        setRejection(outcome.error);
+      }
+    })();
   };
 
   const onDragOver = (event: React.DragEvent) => {
@@ -414,6 +469,31 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
       event.preventDefault();
       event.dataTransfer.dropEffect = "copy";
     }
+  };
+
+  /**
+   * Structural keys travel to the backend as data - the backend holds the key-to-action table,
+   * this canvas only forwards the keystroke against the selected element. Tab and Enter are
+   * prevented from their browser defaults (focus traversal, activation) when an element is
+   * selected, because here they mean "add after" and "add below".
+   */
+  const onKeyDown = (event: React.KeyboardEvent) => {
+    if (!selectedId || isTextTarget(event.target)) {
+      return;
+    }
+
+    const shortcut = shortcutFor(event);
+    if (!shortcut) {
+      return;
+    }
+
+    event.preventDefault();
+    void (async () => {
+      const outcome = await executeShortcut(shortcut, elementSource(selectedId));
+      if (!outcome.accepted && outcome.error) {
+        setRejection(outcome.error);
+      }
+    })();
   };
 
   if (failed) {
@@ -441,11 +521,15 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
         className="timeline-surface"
         role="application"
         aria-label="Timeline"
+        tabIndex={0}
         onMouseDown={onSurfacePointerDown}
         onMouseMove={onPointerMove}
         onMouseUp={onPointerUp}
         onMouseLeave={onPointerUp}
+        onContextMenu={onSurfaceContextMenu}
+        onKeyDown={onKeyDown}
         onDragOver={onDragOver}
+        onDrop={onSurfaceDrop}
       >
         <svg className="timeline-content">
           {[...model.connections.values()].map((connection) => {
@@ -488,16 +572,49 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
               onElementEnter={onElementPointerEnter}
               onElementLeave={onElementPointerLeave}
               onElementContextMenu={onElementContextMenu}
-              onElementDrop={onElementDrop}
             />
           ))}
         </svg>
         <TimelineRuler startSeconds={view.startSeconds} secondsPerPixel={view.secondsPerPixel} widthPx={width} />
+        <TimelineScrollbars model={model} view={view} widthPx={width} onPan={(startSeconds, panY) => setView((current) => ({ ...current, startSeconds, panY }))} />
       </div>
+      <ContextMenu
+        open={menuPosition !== null}
+        groups={toMenuGroups(actions, (action) => {
+          setMenuPosition(null);
+          void executeAction(action.id, selectedId ? elementSource(selectedId) : undefined);
+        })}
+        position={menuPosition ?? { x: 0, y: 0 }}
+        onClose={() => setMenuPosition(null)}
+      />
       {loading ? <p className="timeline-status">Opening…</p> : null}
       {rejection ? <p className="timeline-rejection">{rejection}</p> : null}
     </div>
   );
+}
+
+/** The placement id a gesture carries when it lands on empty canvas: `new:{seconds},{row}`. */
+function newPlacementId(seconds: number, row: number): string {
+  return `new:${seconds},${row}`;
+}
+
+/** A structural key as data. The backend holds the key-to-action table, not this canvas. */
+function shortcutFor(event: React.KeyboardEvent): ContextShortcut | null {
+  const structural = ["F2", "Delete", "Insert", "Tab", "Enter"];
+  if (!structural.includes(event.key)) {
+    return null;
+  }
+
+  return { key: event.key, ctrl: event.ctrlKey, shift: event.shiftKey, alt: event.altKey, meta: event.metaKey } as ContextShortcut;
+}
+
+function isTextTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  const tag = target.tagName.toLowerCase();
+  return tag === "input" || tag === "textarea" || target.isContentEditable;
 }
 
 /** An element's box in pixels, with any in-flight preview applied. Centre-based, as the shared geometry expects. */
@@ -614,7 +731,6 @@ interface TimelineElementShapeProps {
   onElementEnter: (element: TimelineElement) => void;
   onElementLeave: () => void;
   onElementContextMenu: (event: React.MouseEvent, element: TimelineElement) => void;
-  onElementDrop: (event: React.DragEvent, element: TimelineElement) => void;
 }
 
 function TimelineElementShape({
@@ -630,7 +746,6 @@ function TimelineElementShape({
   onElementEnter,
   onElementLeave,
   onElementContextMenu,
-  onElementDrop,
 }: TimelineElementShapeProps) {
   const left = box.x - box.width / 2;
   const top = box.y - box.height / 2;
@@ -658,7 +773,6 @@ function TimelineElementShape({
       onMouseLeave={onElementLeave}
       onContextMenu={(event) => onElementContextMenu(event, element)}
       onDragOver={(event) => event.preventDefault()}
-      onDrop={(event) => onElementDrop(event, element)}
     >
       {element.isPeriod ? (
         <rect className="timeline-period" x={left} y={top} width={box.width} height={box.height} rx={6} />
