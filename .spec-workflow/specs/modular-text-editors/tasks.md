@@ -47,11 +47,11 @@ Every group's gate: backend groups run `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, checking exit codes. If clean, merge editors-core into develop and retire the worktree per CLAUDE.md | Restrictions: do not merge on a failing gate; before creating the next group's worktree, rebase its assumptions on develop's new tip, since technical-debt-cleanup and adp-file-nesting are landing concurrently | Success: both gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. `TextFileBuffer` and the `plain` module (persistence layer)
+- [-] 2. `TextFileBuffer` and the `plain` module (persistence layer)
   - Worktree: `.claude/worktrees/editors-plain`
   - _Requirements: 3.1, 3.2, 3.3, 6.1, 6.3, 6.6, 7.1, 7.2, 7.3_
 
-- [ ] 2.1 `TextFileBuffer`: encoding, line endings, size limit, binary detection
+- [-] 2.1 `TextFileBuffer`: encoding, line endings, size limit, binary detection
   - File: `src/backend/EtAlii.Adp.Editor/TextFileBuffer.cs` (new)
   - Detects UTF-8 BOM presence/absence and a pure-ASCII fast path; refuses (does not guess) any other encoding, per design.md's Error Handling scope decision
   - Detects the dominant line-ending style and preserves each existing line's own terminator on save, independently implemented - **explicitly not shared with or extracted from `C4Document`**, per design.md's deferred-consolidation decision. This task does not open, read, or modify any file under `src/diagrams/c4/`
