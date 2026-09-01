@@ -87,6 +87,8 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
         }
 
         session.Changed += OnChanged;
+        // ReSharper disable once AccessToDisposedClosure
+        // Reason: probably a false negative. The _viewport.Remove is called in the finally below.
         _viewports.Register(watchId, bodyPath, session, viewport => Apply(session, viewport, channel));
         _logger.Information("Opened {BodyPath} on watch {WatchId}", bodyPath, watchId);
 
