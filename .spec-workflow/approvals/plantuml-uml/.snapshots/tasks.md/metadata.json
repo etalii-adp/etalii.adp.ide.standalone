@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/plantuml-uml/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-08-31T12:08:17.662Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788178097530_cwpm9p07k",
+      "approvalTitle": "plantuml-uml — tasks document"
+    }
+  ]
+}

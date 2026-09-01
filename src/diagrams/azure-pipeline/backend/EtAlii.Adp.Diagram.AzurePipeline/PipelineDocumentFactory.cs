@@ -17,7 +17,7 @@ namespace EtAlii.Adp.Diagram.AzurePipeline;
 /// </remarks>
 public sealed class PipelineDocumentFactory : IDiagramDocumentFactory
 {
-    public DiagramOrigin Origin { get; } = Diagram.Definitions[0].Origin;
+    public DiagramOrigin Origin { get; } = Diagram.Pipeline.Origin;
 
     public string CreateEmptyDocument(string baseName) =>
         $"""

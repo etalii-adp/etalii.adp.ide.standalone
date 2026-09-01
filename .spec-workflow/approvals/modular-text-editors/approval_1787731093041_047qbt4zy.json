@@ -3,8 +3,10 @@
   "title": "modular-text-editors - Requirements",
   "filePath": ".spec-workflow/specs/modular-text-editors/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-08-26T07:58:13.041Z",
   "category": "spec",
-  "categoryName": "modular-text-editors"
+  "categoryName": "modular-text-editors",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-08-31T12:28:40.413Z"
 }

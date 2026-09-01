@@ -65,13 +65,13 @@ A lightweight, notation-independent hierarchy of zoom levels (Simon Brown, 2006�
 
 | State | Origin | Diagram | Theory | Example |
 |---|---|---|---|---|
-| ✅ Implemented | `c4/context` | System Context | [c4model.com](https://c4model.com/diagrams/system-context) | Everyone-facing overview |
-| ✅ Implemented | `c4/container` | Container | [c4model.com](https://c4model.com/diagrams/container) | Deployable/runnable units |
-| ✅ Implemented | `c4/component` | Component | [c4model.com](https://c4model.com/diagrams/component) | Building blocks inside one container |
+| ✅ Implemented (prototype) | `c4/context` | System Context | [c4model.com](https://c4model.com/diagrams/system-context) | Everyone-facing overview |
+| ✅ Implemented (prototype) | `c4/container` | Container | [c4model.com](https://c4model.com/diagrams/container) | Deployable/runnable units |
+| ✅ Implemented (prototype) | `c4/component` | Component | [c4model.com](https://c4model.com/diagrams/component) | Building blocks inside one container |
 | 📝 Specified | `c4/code` | Code (optional) | [c4model.com](https://c4model.com/diagrams/code) | Usually IDE-generated |
-| ✅ Implemented | `c4/system-landscape` | System Landscape (supplementary) | [c4model.com](https://c4model.com/diagrams/system-landscape) | Multiple systems across an org |
-| ✅ Implemented | `c4/dynamic` | Dynamic (supplementary) | [c4model.com](https://c4model.com/diagrams/dynamic) | One scenario across containers/components |
-| ✅ Implemented | `c4/deployment` | Deployment (supplementary) | [c4model.com](https://c4model.com/diagrams/deployment) | Containers mapped onto infrastructure |
+| ✅ Implemented (prototype) | `c4/system-landscape` | System Landscape (supplementary) | [c4model.com](https://c4model.com/diagrams/system-landscape) | Multiple systems across an org |
+| ✅ Implemented (prototype) | `c4/dynamic` | Dynamic (supplementary) | [c4model.com](https://c4model.com/diagrams/dynamic) | One scenario across containers/components |
+| ✅ Implemented (prototype) | `c4/deployment` | Deployment (supplementary) | [c4model.com](https://c4model.com/diagrams/deployment) | Containers mapped onto infrastructure |
 
 Tooling: [Structurizr](https://structurizr.com/) · [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) · [IcePanel](https://icepanel.io/).
 
@@ -139,14 +139,14 @@ Workshop techniques from Eric Evans' DDD tradition that produce a diagram as a b
 
 Not tied to one methodology — each cloud vendor's official icon set functions as a de-facto shared notation.
 
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| 💡 Identified | `network/topology` | Network topology diagram | [Cisco iconography](https://www.cisco.com/c/en/us/products/downloads.html) | [Lucidchart examples](https://www.lucidchart.com/pages/examples/network-diagram-software) |
-| 💡 Identified | `aws/architecture` | AWS architecture diagram | [AWS Architecture Icons](https://aws.amazon.com/architecture/icons/) | [AWS Architecture Center](https://aws.amazon.com/architecture/) |
-| 💡 Identified | `azure/architecture` | Azure architecture diagram | [Azure Architecture Icons](https://learn.microsoft.com/en-us/azure/architecture/icons/) | [Azure Architecture Center](https://learn.microsoft.com/en-us/azure/architecture/browse/) |
-| 💡 Identified | `gcp/architecture` | GCP architecture diagram | [Google Cloud Architecture Icons](https://cloud.google.com/icons) | [Google Cloud Architecture Center](https://cloud.google.com/architecture) |
-| ✅ Implemented | `azure-devops/pipeline` | Azure DevOps pipeline diagram | [Azure Pipelines YAML schema](https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/) · [Key pipelines concepts](https://learn.microsoft.com/en-us/azure/devops/pipelines/get-started/key-pipelines-concepts) | [Stages, dependsOn and conditions](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/stages) · the pipeline `.yml` a repository already has |
-| ✅ Implemented | `ansible/structure` | Ansible project structure (read-only: playbooks, roles, inventories and their include/import/dependency relationships) | [Ansible directory layout](https://charlesreid1.com/wiki/Ansible/Directory_Layout/Details) · [Role dependencies](https://oneuptime.com/blog/post/2026-01-24-ansible-roles-dependencies/view) | [ansible-playbook-grapher](https://github.com/haidaraM/ansible-playbook-grapher) · [ansible-viz](https://github.com/aspiers/ansible-viz) · the folder tree a repository already has |
+| State                       | Origin | Diagram | Theory | Example |
+|-----------------------------|---|---|---|---|
+| 💡 Identified               | `network/topology` | Network topology diagram | [Cisco iconography](https://www.cisco.com/c/en/us/products/downloads.html) | [Lucidchart examples](https://www.lucidchart.com/pages/examples/network-diagram-software) |
+| 💡 Identified               | `aws/architecture` | AWS architecture diagram | [AWS Architecture Icons](https://aws.amazon.com/architecture/icons/) | [AWS Architecture Center](https://aws.amazon.com/architecture/) |
+| 💡 Identified               | `azure/architecture` | Azure architecture diagram | [Azure Architecture Icons](https://learn.microsoft.com/en-us/azure/architecture/icons/) | [Azure Architecture Center](https://learn.microsoft.com/en-us/azure/architecture/browse/) |
+| 💡 Identified               | `gcp/architecture` | GCP architecture diagram | [Google Cloud Architecture Icons](https://cloud.google.com/icons) | [Google Cloud Architecture Center](https://cloud.google.com/architecture) |
+| ✅ Implemented (prototype)  | `azure-devops/pipeline` | Azure DevOps pipeline diagram | [Azure Pipelines YAML schema](https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/) · [Key pipelines concepts](https://learn.microsoft.com/en-us/azure/devops/pipelines/get-started/key-pipelines-concepts) | [Stages, dependsOn and conditions](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/stages) · the pipeline `.yml` a repository already has |
+| ✅ Implemented (prototype)  | `ansible/structure` | Ansible project structure (read-only: playbooks, roles, inventories and their include/import/dependency relationships) | [Ansible directory layout](https://charlesreid1.com/wiki/Ansible/Directory_Layout/Details) · [Role dependencies](https://oneuptime.com/blog/post/2026-01-24-ansible-roles-dependencies/view) | [ansible-playbook-grapher](https://github.com/haidaraM/ansible-playbook-grapher) · [ansible-viz](https://github.com/aspiers/ansible-viz) · the folder tree a repository already has |
 
 ---
 
@@ -154,7 +154,7 @@ Not tied to one methodology — each cloud vendor's official icon set functions 
 
 | State | Origin | Diagram | Theory | Example |
 |---|---|---|---|---|
-| ✅ Implemented | `wardley/map` | Wardley Map | [learnwardleymapping.com](https://learnwardleymapping.com/) · reads and writes the [OnlineWardleyMaps `.owm` DSL](https://onlinewardleymaps.com/), keeping a map another tool wrote byte-for-byte · [`wardley-map`](../.spec-workflow/archive/specs/wardley-map/requirements.md) | [Online Wardley Maps editor](https://onlinewardleymaps.com/) |
+| ✅ Implemented (prototype) | `wardley/map` | Wardley Map | [learnwardleymapping.com](https://learnwardleymapping.com/) · reads and writes the [OnlineWardleyMaps `.owm` DSL](https://onlinewardleymaps.com/), keeping a map another tool wrote byte-for-byte · [`wardley-map`](../.spec-workflow/archive/specs/wardley-map/requirements.md) | [Online Wardley Maps editor](https://onlinewardleymaps.com/) |
 
 ---
 
@@ -164,7 +164,7 @@ Diagram types for capturing and structuring knowledge rather than formal system 
 
 | State | Origin | Diagram | Theory | Example |
 |---|---|---|---|---|
-| ✅ Implemented | `freeplane/mindmap` | Mind map (radial/hierarchical, single central topic) | [Freeplane](https://www.freeplane.org/) · `.mm` file format (tech.md's diagram-type test fixture) | [Freeplane example maps](https://www.freeplane.org/wiki/index.php/Gallery) |
+| ✅ Implemented (prototype) | `freeplane/mindmap` | Mind map (radial/hierarchical, single central topic) | [Freeplane](https://www.freeplane.org/) · `.mm` file format (tech.md's diagram-type test fixture) | [Freeplane example maps](https://www.freeplane.org/wiki/index.php/Gallery) |
 | 💡 Identified | `cmap/concept-map` | Concept map (free-form network of concepts with labeled relationships) | [Novak & Cañas, "The Theory Underlying Concept Maps"](https://cmap.ihmc.us/docs/theory-of-concept-maps) | [CmapTools example maps](https://cmap.ihmc.us/) |
 
 Other mind-mapping tools (XMind, MindMeister, Coggle, FreeMind) could each get their own `<vendor>/mindmap` row if ADP ever needs to read/write their specific file formats; `mindmap-diagram`'s spec settled on Freeplane's `.mm` format specifically (see tech.md).
@@ -192,7 +192,7 @@ Text-based tools that render many of the notations above from plain text, well s
 
 | State | Origin | Diagram | Theory | Example |
 |---|---|---|---|---|
-| 📝 Specified | `plantuml/uml` | Full UML set (see section 1); [`plantuml-uml`](../.spec-workflow/specs/plantuml-uml/requirements.md) specifies class and sequence first | [plantuml.com](https://plantuml.com/) | [Real World PlantUML gallery](https://real-world-plantuml.com/) |
+| 📝 Specified | `plantuml/uml` | Full UML set (see section 1) | [plantuml.com](https://plantuml.com/) · [`plantuml-uml`](../.spec-workflow/specs/plantuml-uml/requirements.md) specifies class and sequence first | [Real World PlantUML gallery](https://real-world-plantuml.com/) |
 | 💡 Identified | `plantuml/c4` | C4 diagram, via C4-PlantUML | [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) | [Real World PlantUML gallery](https://real-world-plantuml.com/) |
 
 ### 11c. Structurizr

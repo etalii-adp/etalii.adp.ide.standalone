@@ -179,7 +179,7 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
         }
 
         _documents.Changed += OnChanged;
-        return new WardleyElementUnsubscriber(() => _documents.Changed -= OnChanged);
+        return new CallbackDisposable(() => _documents.Changed -= OnChanged);
     }
 
     private static ValueTask<ContextLevelResolution> Rejected(string reason) =>

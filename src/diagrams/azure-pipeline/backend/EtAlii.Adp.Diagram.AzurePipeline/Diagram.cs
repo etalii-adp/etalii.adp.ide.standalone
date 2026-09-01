@@ -11,16 +11,21 @@ public static class Diagram
     /// </summary>
     public const string DocumentExtension = ".yml";
 
-    public static DiagramDefinition[] Definitions { get; } =
-    [
-        new(
-            new DiagramOrigin("azure-devops", "pipeline"),
-            "Azure DevOps pipeline",
-            "A CI/CD pipeline's stages, jobs and steps, and which of them wait for which.",
-            Extension: DocumentExtension,
-            SharedExtension: true,
-            // Azure DevOps pipelines: a document the repository already owns, registered by the user
-            // rather than routed on sight, because .yml belongs to no one type.
-            Build: builder => builder.Services.AddAzurePipeline()),
-    ];
+    /// <summary>
+    /// This module's one type, named so the module's own registrations can say which type they
+    /// serve without indexing into the array. Discovery reads <see cref="Definitions"/>; the
+    /// module reads this.
+    /// </summary>
+    public static DiagramDefinition Pipeline { get; } = new(
+        new DiagramOrigin("azure-devops", "pipeline"),
+        "Azure DevOps pipeline",
+        "A CI/CD pipeline's stages, jobs and steps, and which of them wait for which.",
+        Extension: DocumentExtension,
+        SharedExtension: true,
+        // Azure DevOps pipelines: a document the repository already owns, registered by the user
+        // rather than routed on sight, because .yml belongs to no one type.
+        Build: builder => builder.Services.AddAzurePipeline());
+
+    /// <summary>What discovery reads. One entry: this module carries one notation.</summary>
+    public static DiagramDefinition[] Definitions { get; } = [Pipeline];
 }

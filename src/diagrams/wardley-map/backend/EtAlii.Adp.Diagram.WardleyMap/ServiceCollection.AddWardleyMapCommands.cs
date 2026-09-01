@@ -13,8 +13,10 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// <remarks>
 /// Separate from <see cref="ServiceCollectionAddWardleyMapExtension.AddWardleyMap"/> - which
 /// calls it - so that a test needing only the edits can have them without a session factory, a
-/// toolbox and a validator it will not use. That is how the mindmap and C4 modules are split,
-/// and Requirement 9.7 names this method.
+/// toolbox and a validator it will not use. The mindmap module is split the same way, for the
+/// same kind of consumer; c4, azure-pipeline and ansible-structure have never needed the
+/// narrower surface, so they keep one file (see tech.md's registration rule). Requirement 9.7
+/// names this method.
 /// </remarks>
 public static class ServiceCollectionAddWardleyMapCommandsExtension
 {

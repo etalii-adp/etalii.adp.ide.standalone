@@ -34,7 +34,7 @@ public sealed class PipelineSessionFactory : IDiagramSessionFactory
     }
 
     /// <inheritdoc />
-    public DiagramOrigin Origin => Diagram.Definitions[0].Origin;
+    public DiagramOrigin Origin => Diagram.Pipeline.Origin;
 
     /// <inheritdoc />
     public IDiagramSession Open(ShortGuid watchId, string rootPath, string bodyPath, string? registrationPath)

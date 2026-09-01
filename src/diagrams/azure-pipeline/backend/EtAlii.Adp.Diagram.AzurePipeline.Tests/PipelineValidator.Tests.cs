@@ -90,6 +90,6 @@ public class PipelineValidatorTests
     public void ItAnswersForThisDiagramType()
     {
         // Assert.
-        Assert.Equal(Diagram.Definitions[0].Origin, new PipelineValidator().Origin);
+        Assert.Equal(Diagram.Pipeline.Origin, new PipelineValidator().Origin);
     }
 }

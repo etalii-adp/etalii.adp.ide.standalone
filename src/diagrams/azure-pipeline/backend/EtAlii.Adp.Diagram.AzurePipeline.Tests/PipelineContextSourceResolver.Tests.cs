@@ -63,7 +63,7 @@ public class PipelineContextSourceResolverTests : IDisposable
         File.WriteAllText(body, content);
 
         var registration = IoPath.Combine(_workspace, name + ".adp");
-        File.WriteAllText(registration, Diagram.Definitions[0].Origin.MimeType + "\n");
+        File.WriteAllText(registration, Diagram.Pipeline.Origin.MimeType + "\n");
         return registration;
     }
 

@@ -3,8 +3,19 @@
   "title": "adp-file-nesting — design document",
   "filePath": ".spec-workflow/specs/adp-file-nesting/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "needs-revision",
   "createdAt": "2026-08-31T10:59:26.622Z",
   "category": "spec",
-  "categoryName": "adp-file-nesting"
+  "categoryName": "adp-file-nesting",
+  "response": "Feedback Summary (1 comments):\n\nGeneral Comments:\n1. Also all examples/samples need to be updated + tested.\n\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"general\",\n      \"comment\": \"Also all examples/samples need to be updated + tested.\",\n      \"timestamp\": \"2026-08-31T12:00:40.118Z\",\n      \"id\": \"comment_1788177640118_fjt0789s8\"\n    }\n  ],\n  \"summary\": \"Feedback Summary (1 comments):\\n\\nGeneral Comments:\\n1. Also all examples/samples need to be updated + tested.\\n\\n\",\n  \"timestamp\": \"2026-08-31T12:00:42.436Z\"\n}",
+  "respondedAt": "2026-08-31T12:00:42.443Z",
+  "comments": [
+    {
+      "type": "general",
+      "comment": "Also all examples/samples need to be updated + tested.",
+      "timestamp": "2026-08-31T12:00:40.118Z",
+      "id": "comment_1788177640118_fjt0789s8"
+    }
+  ]
 }
