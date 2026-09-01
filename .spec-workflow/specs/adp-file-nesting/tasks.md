@@ -48,7 +48,7 @@
   - _Requirements: 4.3, 4.4_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Pin the path behaviour and audit what depends on it | Restrictions: assert the MEASURED values - `Path.GetExtension(".adp")` is `.adp` and `Path.GetFileNameWithoutExtension(".adp")` is empty - not the ones the requirement originally stated; the audit follows the corrected fact, so it looks for name-based reasoning rather than extension-based | Success: both values are pinned, and `StripExtension(".adp")` producing an empty base name is guarded per Requirement 4.4. Mark in progress, log when done, then mark complete._
 
-- [-] 4. Ownership for the many-to-one case
+- [x] 4. Ownership for the many-to-one case
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/DiagramFilePair.cs` (modify)
   - _Requirements: 2.4, 6.2_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Restate ownership for several registrations over one subject | Restrictions: the rule is that a body is only ever carried by an operation on the SUBJECT, never by one on a registration - that is the protection `IsOwned` gives today, expressed for a set rather than a pair | Success: deleting one registration removes neither the subject nor a body another registration references. Mark in progress, log when done, then mark complete._
@@ -57,7 +57,7 @@
 
 > Nothing in this phase renames anything. Every test here runs green against `develop` as it stands before Phase C begins, and that is how it is verified: **run Phase B to green, commit it, and only then start Phase C.**
 
-- [ ] 5. `ExampleRegistrationTests` over every tracked example
+- [-] 5. `ExampleRegistrationTests` over every tracked example
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/ExampleRegistration.Tests.cs` (new)
   - One theory walking every `.adp` under `src/diagrams/*/examples/**`: each resolves to a definition in the catalog, and a registration with a body resolves to a file that exists
   - Purpose: 26 of 39 registrations currently have no test opening them
