@@ -30,7 +30,7 @@ public static class TimelineRelationGesture
         $"{Prefix}{fromElementId}{Separator}{target}";
 
     /// <summary>Whether <paramref name="elementId"/> is a relation gesture, and what it carries.</summary>
-    public static bool TryParse(string elementId, out string from, out string to)
+    public static bool TryParse(string? elementId, out string from, out string to)
     {
         from = "";
         to = "";
