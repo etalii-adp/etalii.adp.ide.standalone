@@ -171,11 +171,11 @@ Every group's gate: backend groups run `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run npm test and npm run typecheck from src/client, checking exit codes. If clean, merge editors-client into develop and retire the worktree | Restrictions: do not merge on a failing gate | Success: both client gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 6. Context actions, property grid, and go-to-line (additional business logic layer)
+- [-] 6. Context actions, property grid, and go-to-line (additional business logic layer)
   - Worktree: `.claude/worktrees/editors-context`
   - _Requirements: 4.4, 5.2, 5.3, 5.5, 8.1, 8.2, 8.3, 9.1, 9.2, 9.3_
 
-- [ ] 6.1 `OpenAsTextContextActionProvider` and the "Open with…" choice
+- [-] 6.1 `OpenAsTextContextActionProvider` and the "Open with…" choice
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/OpenAsTextContextActionProvider.cs` (new)
   - Mirrors `AddDiagramContextActionProvider`'s shape: resolved by `ContextScope`, checks `DiagramFileRouter.Route` for the selected target, and when it resolves to a diagram, offers **"Open as text"**, which calls `EditorResolver.Resolve` on the same path and opens whatever it returns in a new tab (R5.2)
   - When `EditorResolver` reports an `EditorAmbiguous` result with a declared default (R4.4's legitimate case), offer **"Open with…"** as a `ContextExecutionRequiresChoice` (reusing the same mechanism `AddDiagramContextActionProvider.ExecuteAsync` already uses), listing every claimant
