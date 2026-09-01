@@ -126,19 +126,19 @@
 
 ## Phase F — the client
 
-- [-] 15. The nine folder-gated sites, audited together
+- [x] 15. The nine folder-gated sites, audited together
   - File: `src/client/src/shell/panels/ExplorerTreePanel.tsx` (modify)
   - Lines 63-64 sort comparator, 219 child loading, 325 icon selection, 593 activation-toggle, 716 and 735 keyboard navigation, 886-887 the expandable gate, 893 `aria-expanded`, 954 children render
   - Purpose: Requirement 9.1 asks for an exhaustive audit, and the count is nine rather than the six originally listed
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 7.6_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Change all nine sites together | Restrictions: the list above is the audit - work from it rather than from whichever site breaks first in manual testing; three of the nine (sort, icon, activation-toggle) fail as "looks slightly wrong" rather than "does not work", which is exactly why a symptom-driven pass misses them; `aria-expanded` is emitted for an expandable file, not only for folders | Success: expansion, collapse, child loading and keyboard navigation work for an expandable file exactly as for a folder. Mark in progress, log when done, then mark complete._
 
-- [ ] 16. Activation
+- [x] 16. Activation
   - File: `src/client/src/shell/panels/ExplorerTreePanel.tsx` (modify)
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Open the right diagram on activation | Restrictions: activation stays the tree's existing double-click gesture - single-click remains selection, because selection is what the context service, the property grid and the context menu all read, and this spec changes the activation gesture for no node type; a subject with NO registration behaves exactly as it does today | Success: one registration opens directly, several open the default by the stable order, and a nested registration activated directly opens itself. Mark in progress, log when done, then mark complete._
 
-- [ ] 17. Client tests
+- [-] 17. Client tests
   - File: `src/client/src/shell/panels/ExplorerTreePanel.test.tsx` (modify)
   - _Requirements: 12.5_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Cover the expandable-file behaviour | Restrictions: cover expansion, collapse, child loading, keyboard expand/collapse/first-child/parent, and `aria-expanded` for an expandable file | Success: `npm test` and `npm run typecheck` both pass. Mark in progress, log when done, then mark complete._
