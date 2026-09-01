@@ -5,5 +5,8 @@
   "workspaces": [
     "client",
     "diagrams/*/client"
-  ]
+  ],
+  "allowScripts": {
+    "@bufbuild/buf@1.72.0": true
+  }
 }
