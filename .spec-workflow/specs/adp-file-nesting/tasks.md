@@ -82,20 +82,20 @@
 
 > Begins only once Phase B is green and committed.
 
-- [-] 8. Rename the c4 example registrations
+- [x] 8. Rename the c4 example registrations
   - File: `src/diagrams/c4/examples/reference/architecture/`, `src/diagrams/c4/examples/industrial-plant/architecture/` (renamed)
   - The five header-pointed registrations gain qualifiers; `courier.adp` keeps its name as the unqualified default; `code-level.adp` is untouched
   - _Requirements: 1.1, 1.2, 11.2, 11.3_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer | Task: Rename the c4 example registrations into the qualified form | Restrictions: the `body:` headers STAY - Requirement 2.3 makes them authoritative and this is where they do real work, so replacing a fact with an inference is a downgrade even where the inference is currently right; `code-level.adp` is not renamed and not touched; use `git mv` so the rename is visible as a rename | Success: task 5's suite is still green afterwards, and a task asserts the five headers are still present and still authoritative. Mark in progress, log when done, then mark complete._
 
-- [ ] 9. Confirm the remaining example sets
+- [x] 9. Confirm the remaining example sets
   - File: `src/diagrams/azure-pipeline/examples/`, `wardley-map/examples/`, `ansible-structure/examples/` (reviewed)
   - _Requirements: 11.1, 11.2_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer | Task: Check the other three sets against the convention | Restrictions: these are all single-registration subjects, which Requirement 1.2 keeps unchanged - so the expected outcome is that nothing is renamed, and confirming that is the task; the ansible example keeps `structure.adp` rather than adopting the bare form, because a dot-prefixed file is hidden on Unix-like systems and an example a reader cannot see is a poor example | Success: no file is renamed in these three sets, and the reason is recorded. Mark in progress, log when done, then mark complete._
 
 ## Phase D — the hierarchy
 
-- [ ] 10. `HierarchyNesting`
+- [-] 10. `HierarchyNesting`
   - File: `src/backend/EtAlii.Adp.Backend/Hierarchy/HierarchyNesting.cs` (new)
   - Pure function: which entries are registrations, which subject each names, which are orphans
   - _Requirements: 3.2, 3.4, 3.5, 8.1, 8.2_
