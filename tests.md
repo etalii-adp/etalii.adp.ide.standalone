@@ -382,3 +382,46 @@ clipping, and that is only visible on screen.
 - **Verified 2026-09-01** against the running app: the connection path changed mid-drag, the
   hint read "2026-01-31 · row 1", Escape restored the original path, and the file still read
   `begin: 2026-01-05`.
+
+## A toolbox drop lands an Element where it was dropped (timeline-diagram, tview pass)
+
+- **Preconditions**: a `.tml` timeline open on the canvas; the Toolbox showing Element and Moment.
+- **Actions**: drag Element from the Toolbox and drop it on empty canvas at a chosen time and
+  row; repeat over an existing element.
+- **Expected**: a "New element" appears at the dropped time and row immediately - no dialog -
+  and one undo removes it. Dropping never answers "That action is not available for this item"
+  (the placement target must discover the add actions, or executing by id resolves nothing).
+- **Verified 2026-09-01** against the running app after fixing exactly that: a placement target
+  that discovered no actions made every drop a no-op with that message.
+
+## The context menu removes elements and relations (timeline-diagram, tview pass)
+
+- **Preconditions**: as above, with at least one relation.
+- **Actions**: right-click an element with no relations and choose Remove; right-click a
+  relation and choose Remove relation; right-click an element with relations and confirm the
+  dialog that names the relation count.
+- **Expected**: each removal happens and is one undo away. A relation-free Remove must act
+  immediately - an execute that answers Completed without dispatching has done nothing, because
+  the commit leg only runs after a dialog.
+- **Verified 2026-09-01** against the running app after fixing exactly that: menu-Remove on a
+  relation-free element silently did nothing until the execute leg dispatched the command.
+
+## A relation dragged onto empty space creates the element it reaches (timeline-diagram, tview pass)
+
+- **Preconditions**: as above; an element selected so its anchors show.
+- **Actions**: drag from a side anchor and release over empty canvas.
+- **Expected**: a "New element" appears at the release point with a relation from the source to
+  it - one history entry, one undo removing both. Releasing back on the source cancels quietly.
+- **Verified 2026-09-01** against the running app: elements 4→5 and relations 2→3 from one
+  gesture.
+
+## Right-drag pans; Tab and Enter add; scrollbars pan (timeline-diagram, tview pass)
+
+- **Preconditions**: as above.
+- **Actions**: right-press empty canvas and drag (no browser menu may appear); select an
+  element and press Tab, then Enter; drag each scrollbar thumb.
+- **Expected**: the right-drag pans exactly as a left-drag; Tab adds an element two days after
+  the selected one on its row, Enter adds one below on the next row, neither asking anything;
+  the thumbs pan the view within the content's extent.
+- **Verified 2026-09-01** against the running app (Tab and right-drag live; Enter and the
+  thumbs through the same handlers in the test suite).

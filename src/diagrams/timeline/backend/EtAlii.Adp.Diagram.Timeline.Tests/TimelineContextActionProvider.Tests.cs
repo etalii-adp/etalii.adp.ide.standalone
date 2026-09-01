@@ -502,3 +502,92 @@ public class TimelineConnectGestureTests : IDisposable
         Assert.Equal(1, added.Row);
     }
 }
+
+/// <summary>
+/// The guards for the two ways an action can exist and still do nothing: a target that
+/// discovers no actions cannot have one executed by id, and a Completed execution that never
+/// dispatched has not happened. Both were found in the running app, not by the unit tests,
+/// because the unit tests called the provider directly and bypassed the by-id resolution.
+/// </summary>
+public class TimelineActionRealityTests : IDisposable
+{
+    private readonly string _workspace = IoPath.Combine(
+        IoPath.GetTempPath(),
+        "adp-timeline-reality-" + Guid.NewGuid().ToString("N"));
+
+    private readonly TimelineDocumentStore _store = new();
+    private readonly TimelineContextActionProvider _actions;
+    private readonly ShortGuid _watchId = ShortGuid.NewShortGuid();
+
+    public TimelineActionRealityTests()
+    {
+        Directory.CreateDirectory(_workspace);
+        _actions = new TimelineContextActionProvider(
+            new HistoryStackStore(new TimelineTestDispatcher(_store)), _store, new TimelineConnectState());
+    }
+
+    public void Dispose()
+    {
+        if (Directory.Exists(_workspace))
+        {
+            Directory.Delete(_workspace, recursive: true);
+        }
+
+        GC.SuppressFinalize(this);
+    }
+
+    private string Write()
+    {
+        var path = IoPath.Combine(_workspace, "plan.tml");
+        File.WriteAllText(path, "timeline: 1\r\nelements:\r\n  - id: lone\r\n    label: Lone\r\n    begin: 2026-01-05\r\n    end: 2026-02-13\r\n    row: 0\r\n");
+        _store.Forget(path);
+        return path;
+    }
+
+    private ContextTarget Target(string path, string elementId) =>
+        new(ContextScope.DiagramElement, path, IsContainer: false, SourceId: default, _workspace, _watchId, elementId);
+
+    [Fact]
+    public async Task APlacement_DiscoversItsActions_OrNoDropCouldEverResolve()
+    {
+        // Arrange & act.
+        // Executing an action by id only finds actions its target discovers. A placement that
+        // discovered nothing made every drop answer "not available for this item" in the app.
+        var path = Write();
+        var groups = await _actions.DiscoverAsync(Target(path, TimelineNewPlacement.IdFor(0, 0)), CancellationToken.None);
+        var ids = groups.SelectMany(group => group.Actions).Select(action => action.Id).ToList();
+
+        // Assert.
+        Assert.Contains(TimelineContextActionProvider.AddElementActionId, ids);
+        Assert.Contains(TimelineContextActionProvider.AddMomentActionId, ids);
+        Assert.Contains(TimelineContextActionProvider.ConnectActionId, ids);
+    }
+
+    [Fact]
+    public async Task RemovingARelationFreeElement_HappensInTheExecute_NotInACommitNobodyCalls()
+    {
+        // Arrange.
+        // Execute answering Completed without dispatching is an action that did nothing: the
+        // commit leg only runs after a dialog, and a relation-free removal has none.
+        var path = Write();
+
+        // Act.
+        var result = await _actions.ExecuteAsync(Target(path, "lone"), TimelineContextActionProvider.RemoveActionId, CancellationToken.None);
+
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(result);
+        Assert.Empty(_store.GetOrLoad(path).Model.Elements);
+    }
+
+    [Fact]
+    public async Task RemovingAnEnd_HappensInTheExecute()
+    {
+        // Arrange & act.
+        var path = Write();
+        var result = await _actions.ExecuteAsync(Target(path, "lone"), TimelineContextActionProvider.RemoveEndActionId, CancellationToken.None);
+
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(result);
+        Assert.False(_store.GetOrLoad(path).Model.Elements.Single().IsPeriod);
+    }
+}

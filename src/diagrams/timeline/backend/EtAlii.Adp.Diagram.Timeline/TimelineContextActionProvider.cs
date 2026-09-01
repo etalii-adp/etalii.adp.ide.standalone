@@ -119,6 +119,14 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
             return Result(ForRelation());
         }
 
+        if (TimelineNewPlacement.TryParse(target.ElementId, out _, out _))
+        {
+            // A placement discovers what can happen at empty canvas, because executing an action
+            // by id only finds actions its target discovers - a drop or a relation completing
+            // here resolves through this list.
+            return Result(ForPlacement());
+        }
+
         return Result([]);
     }
 
@@ -236,22 +244,37 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
             case RemoveActionId when element is not null:
             {
                 // Requirement 2.5: the action says how many relations go with it, before it
-                // runs. An unrelated element needs no ceremony.
+                // runs. An unrelated element needs no ceremony - and no ceremony means the
+                // removal happens HERE: a Completed execution never reaches the commit leg, so
+                // an action that answers Completed without dispatching has done nothing at all.
+                // That trap has now been walked into three times in this module; every action
+                // that needs no input dispatches in this method.
                 var going = TimelineWriter.ConnectionsTouching(model, element.Id).Count;
-                return going == 0
-                    ? new ContextExecutionCompleted()
-                    : new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
-                        "Remove",
-                        "mdi-delete-outline",
-                        going == 1
-                            ? "Removing this element also removes the 1 relation attached to it."
-                            : $"Removing this element also removes the {going} relations attached to it.",
-                        "Remove",
-                        Danger: true));
+                if (going == 0)
+                {
+                    return await DispatchAsync(target,
+                        new RemoveTimelineElementCommand(target.ResolvedFullPath, element.Id), cancellationToken);
+                }
+
+                return new ContextExecutionRequiresConfirmation(new ContextConfirmationRequest(
+                    "Remove",
+                    "mdi-delete-outline",
+                    going == 1
+                        ? "Removing this element also removes the 1 relation attached to it."
+                        : $"Removing this element also removes the {going} relations attached to it.",
+                    "Remove",
+                    Danger: true));
             }
 
+            case RemoveEndActionId when element is not null:
+                return await DispatchAsync(target,
+                    new SetTimelineEndCommand(target.ResolvedFullPath, element.Id, null), cancellationToken);
+
+            case DisconnectActionId when TimelineEdits.ConnectionOf(model, target.ElementId) is not null:
+                return await DispatchAsync(target,
+                    new DisconnectTimelineConnectionCommand(target.ResolvedFullPath, target.ElementId), cancellationToken);
+
             default:
-                // Everything else has all it needs and commits straight away.
                 return new ContextExecutionCompleted();
         }
     }
@@ -397,6 +420,17 @@ public sealed class TimelineContextActionProvider : IContextActionProvider
 
         return [new ContextActionGroupDefinition(edits), new ContextActionGroupDefinition(additions)];
     }
+
+    /// <summary>What empty canvas offers: the two adds, and the completion of a relation gesture.</summary>
+    private static IReadOnlyList<ContextActionGroupDefinition> ForPlacement() =>
+    [
+        new ContextActionGroupDefinition(
+        [
+            new ContextActionDefinition(AddElementActionId, "Add element here", "mdi-plus"),
+            new ContextActionDefinition(AddMomentActionId, "Add moment here", "mdi-rhombus-medium"),
+            new ContextActionDefinition(ConnectActionId, "Relate to a new element", "mdi-ray-start-arrow"),
+        ]),
+    ];
 
     private static IReadOnlyList<ContextActionGroupDefinition> ForRelation() =>
     [
