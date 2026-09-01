@@ -17,17 +17,29 @@ import { DiagramTabsPanel } from "./DiagramTabsPanel";
 // The canvas would open a stream; the tab model is what is under test. Mocked at the registry
 // rather than at any one canvas, because this panel routes through the registry and knows no
 // diagram type by name - the path shown is what proves the right diagram reached the panel.
-vi.mock("./diagramCanvases", () => ({
-  // One claimed type and everything else unclaimed, so both halves of the panel stay
-  // exercised: the tab that renders, and the tab that says what it cannot render.
-  canvasFor: (mimeType: string) =>
-    mimeType === "freeplane/mindmap"
-      ? {
-          matches: () => true,
-          Canvas: ({ path }: { path: string[] }) => <div data-testid="mindmap-canvas">{path.join("/")}</div>,
-        }
-      : undefined,
-}));
+vi.mock("./diagramCanvases", async () => {
+  const { useState } = await import("react");
+  // ONE stable component, exactly like the real registry's registered canvases: a fresh
+  // function per call would be a new component type to React and force a remount on every
+  // render, hiding the very instance-reuse defect the remount guard exists to pin. The
+  // canvas records which path it MOUNTED with; a stateful canvas reused across a tab switch
+  // keeps its old state - for a real editor, the text being edited.
+  const Canvas = ({ path }: { path: string[] }) => {
+    const [mountedAt] = useState(() => path.join("/"));
+    return (
+      <div data-testid="mindmap-canvas" data-mounted-at={mountedAt}>
+        {path.join("/")}
+      </div>
+    );
+  };
+  const registration = { matches: () => true, Canvas };
+  return {
+    // One claimed family and everything else unclaimed, so both halves of the panel stay
+    // exercised: the tab that renders, and the tab that says what it cannot render.
+    canvasFor: (mimeType: string) =>
+      mimeType === "freeplane/mindmap" || mimeType.startsWith("editor/") ? registration : undefined,
+  };
+});
 
 // An "Open as text" tab's canvas opens a stream of its own; the tab model is what is under
 // test here, so the resolved-editor panel becomes a marker div showing what it was handed.
@@ -138,6 +150,22 @@ describe("DiagramTabsPanel", () => {
     // Assert.
     expect(screen.getAllByRole("tab")).toHaveLength(2);
     expect(screen.getByRole("tab", { name: /^a$/ }).getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("remounts the content when activating a second file of the same editor", () => {
+    // Arrange: two markdown files, one after the other - the double-click flow.
+    const { rerender } = renderPanel();
+    push(entryA, ["notes.md"], "editor/markdown");
+    rerender(<DiagramTabsPanel projectId={projectId} />);
+    push(entryB, ["todo.md"], "editor/markdown");
+    rerender(<DiagramTabsPanel projectId={projectId} />);
+
+    // Assert.
+    // Both tabs render the same component type at the same position; without a per-tab key
+    // React reuses the instance, and the editor's own state - the text being edited - stays
+    // the FIRST file's. The mount marker is what catches that.
+    expect(screen.getByRole("tab", { name: /todo/ }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByTestId("mindmap-canvas").getAttribute("data-mounted-at")).toBe("todo.md");
   });
 
   it("opens a second tab when the same entry arrives under a changed path", () => {

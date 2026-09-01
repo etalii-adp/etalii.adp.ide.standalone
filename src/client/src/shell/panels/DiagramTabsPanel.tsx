@@ -145,7 +145,11 @@ export function DiagramTabsPanel({ projectId }: DiagramTabsPanelProps) {
     label: labelFor(tab.diagram.path),
     icon: tab.diagram.mimeType.startsWith("editor/") ? "mdi-file-document-outline" : "mdi-graph-outline",
     tooltip: tab.diagram.path.join("/"),
-    content: <DiagramPanel diagram={tab.diagram} />,
+    // Keyed per tab, and it is not optional: the pane renders one tab's content at a time,
+    // so two files of the same type land the same component at the same position, and
+    // without the key React reuses the instance across a tab switch - which is how opening
+    // a second markdown file kept showing the first one's editor, state and all.
+    content: <DiagramPanel key={tab.key} diagram={tab.diagram} />,
   }));
 
   return (
