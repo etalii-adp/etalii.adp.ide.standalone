@@ -126,7 +126,7 @@
 
 ## Phase F — the client
 
-- [ ] 15. The nine folder-gated sites, audited together
+- [-] 15. The nine folder-gated sites, audited together
   - File: `src/client/src/shell/panels/ExplorerTreePanel.tsx` (modify)
   - Lines 63-64 sort comparator, 219 child loading, 325 icon selection, 593 activation-toggle, 716 and 735 keyboard navigation, 886-887 the expandable gate, 893 `aria-expanded`, 954 children render
   - Purpose: Requirement 9.1 asks for an exhaustive audit, and the count is nine rather than the six originally listed
