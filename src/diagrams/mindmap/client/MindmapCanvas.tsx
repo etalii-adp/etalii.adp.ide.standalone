@@ -1,10 +1,12 @@
-import { branchAnchorsBetween, horizontalBezierPath, type ConnectorBox } from "@client/canvas/connectors";
+import type { ConnectorBox } from "@client/canvas/connectors";
+import { BezierConnection } from "@client/canvas/connections/bezier/BezierConnection";
+import { CenteredBoxElement } from "@client/canvas/elements/centered-box/CenteredBoxElement";
+import { elementSelectionOf, elementSourceOf, selectedElementIdOf } from "@client/canvas/selection";
+import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
+import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { create } from "@bufbuild/protobuf";
-import { EmptySchema } from "@bufbuild/protobuf/wkt";
 import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
-import { ContextSelectionAction, ContextSelectionSchema, ContextSourceSchema } from "@client/generated/context_pb";
-import type { ContextSelection, ContextShortcut } from "@client/generated/context_pb";
+import { ContextSelectionAction } from "@client/generated/context_pb";
 import { ContextMenu } from "@client/shell/context/ContextMenu";
 import { toMenuGroups } from "@client/shell/context/toMenuGroups";
 import { useRegisterDiagramView, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
@@ -81,20 +83,14 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
   // A right-click's menu: opened once the pushed selection for that node arrives with its
   // actions, exactly the explorer's discipline - the menu shows the backend's answer, never
   // a guess (mindmap-diagram Requirement 8.4).
-  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
-  const pendingMenuRef = useRef<{ nodeId: string; position: { x: number; y: number } } | null>(null);
   const selectionKey = innermostKey(selection);
-  useEffect(() => {
-    const pending = pendingMenuRef.current;
-    if (pending && selectionKey === `element:${pending.nodeId}`) {
-      pendingMenuRef.current = null;
-      setMenuPosition(pending.position);
-    }
-  }, [selectionKey, actions]);
+  const { menuPosition, openMenuAt, closeMenu } = useElementContextMenu(selectionKey, actions.length > 0, (id) =>
+    select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
+  );
 
   // The node the backend says is selected inside this diagram, so focus follows a selection
   // from anywhere - the canvas reacts to the push, not to its own click (Requirement 10.5).
-  const selectedNodeId = useMemo(() => nodeOf(selection, path), [selection, path]);
+  const selectedNodeId = useMemo(() => selectedElementIdOf(selection), [selection]);
   useEffect(() => {
     if (selectedNodeId && model.elements.has(selectedNodeId)) {
       setFocusedId(selectedNodeId);
@@ -116,7 +112,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
     // lands wherever focus last was - the explorer, typically (Requirement 8.4).
     surfaceRef.current?.focus();
     // A nested selection: the .adp file, then the node as a DIAGRAM_CANVAS child.
-    select(nodeSelection(entryId, path, element));
+    select(elementSelectionOf(entryId, path, element.id));
   };
 
   /** Clicking the empty canvas deselects: the node loses focus and the backend hears the clear. */
@@ -142,18 +138,9 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
 
   /** Right-click on a node: select it with the menu gesture and open the menu on the push. */
   const onNodeContextMenu = (element: MindmapElement, event: React.MouseEvent) => {
-    event.preventDefault();
     setFocusedId(element.id);
     surfaceRef.current?.focus();
-    if (selectionKey === `element:${element.id}` && actions.length > 0) {
-      // Already the pushed selection, actions in hand: the menu opens at once.
-      pendingMenuRef.current = null;
-      setMenuPosition({ x: event.clientX, y: event.clientY });
-      return;
-    }
-
-    pendingMenuRef.current = { nodeId: element.id, position: { x: event.clientX, y: event.clientY } };
-    select(nodeSelection(entryId, path, element, ContextSelectionAction.CONTEXT_MENU));
+    openMenuAt(event, element.id);
   };
 
   /**
@@ -280,7 +267,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
 
     event.preventDefault();
     setFocusedId(element.id);
-    void executeAction(actionId, create(ContextSourceSchema, { source: { case: "elementId", value: { value: element.id } } }));
+    void executeAction(actionId, elementSourceOf(element.id));
   };
 
   /** A toolbox drag over empty canvas: no node, no drop - the highlight clears. */
@@ -297,7 +284,9 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
       return;
     }
 
-    const shortcut = shortcutFor(event);
+    // Tab is the XMind convention for "add child"; the backend's child action carries Insert,
+    // so the alias resolves to it here - a key-to-key mapping, never a key-to-action one.
+    const shortcut = structuralShortcutFor(event, ["Insert", "Enter", "F2", "Delete", " ", "Tab"], { Tab: "Insert" });
     if (!shortcut) {
       return;
     }
@@ -305,7 +294,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
     event.preventDefault();
     // The backend holds the key->action table; the canvas only forwards the keystroke as data
     // against the focused node's selection (Requirement 8.4).
-    void executeShortcut(shortcut, create(ContextSourceSchema, { source: { case: "elementId", value: { value: focusedId } } }));
+    void executeShortcut(shortcut, elementSourceOf(focusedId));
   };
 
   const elements = [...model.elements.values()];
@@ -458,11 +447,11 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
       <ContextMenu
         open={menuPosition !== null}
         groups={toMenuGroups(actions, (action) => {
-          setMenuPosition(null);
+          closeMenu();
           void executeAction(action.id);
         })}
         position={menuPosition ?? { x: 0, y: 0 }}
-        onClose={() => setMenuPosition(null)}
+        onClose={closeMenu}
       />
     </div>
   );
@@ -495,12 +484,11 @@ function halfSizeOf(element: MindmapElement): { halfWidth: number; halfHeight: n
  * than running centre to centre and cutting through whatever sits between.
  */
 function MindmapEdge({ parent, child, preview = false }: { parent: MindmapElement; child: MindmapElement; preview?: boolean }) {
-  const [from, to] = branchAnchorsBetween(boxOf(parent), boxOf(child));
-
   return (
-    <path
+    <BezierConnection
+      from={boxOf(parent)}
+      to={boxOf(child)}
       className={`mindmap-edge${preview ? " mindmap-edge-preview" : ""}`}
-      d={horizontalBezierPath(from, to)}
     />
   );
 }
@@ -532,9 +520,15 @@ function MindmapNode({ element, focused, folded, dropTarget, dragging, onSelect,
   ].filter(Boolean).join(" ");
 
   return (
-    <g
+    <CenteredBoxElement
       className={classes}
-      transform={`translate(${element.x} ${element.y})`}
+      x={element.x}
+      y={element.y}
+      halfWidth={halfWidth}
+      halfHeight={halfHeight}
+      text={text}
+      indicators={indicators || undefined}
+      indicatorsClassName="mindmap-node-indicators"
       onClick={onSelect}
       onMouseDown={onPointerDown}
       onMouseUp={onPointerUp}
@@ -544,17 +538,7 @@ function MindmapNode({ element, focused, folded, dropTarget, dragging, onSelect,
       onDrop={onDrop}
       role="treeitem"
       aria-selected={focused}
-    >
-      <rect x={-halfWidth} y={-halfHeight} width={halfWidth * 2} height={halfHeight * 2} rx={6} />
-      <text textAnchor="middle" dominantBaseline="central">
-        {text || " "}
-      </text>
-      {indicators && (
-        <text className="mindmap-node-indicators" x={halfWidth - 4} y={-halfHeight + 4} textAnchor="end">
-          {indicators}
-        </text>
-      )}
-    </g>
+    />
   );
 }
 
@@ -581,12 +565,14 @@ function dragPreviewOf(
   return (
     <g className="mindmap-drag-preview" pointerEvents="none" data-testid="mindmap-drag-preview">
       {parent !== undefined && <MindmapEdge parent={parent} child={ghost} preview />}
-      <g className="mindmap-node mindmap-node-ghost" transform={`translate(${ghost.x} ${ghost.y})`}>
-        <rect x={-halfWidth} y={-halfHeight} width={halfWidth * 2} height={halfHeight * 2} rx={6} />
-        <text textAnchor="middle" dominantBaseline="central">
-          {ghost.payload.text || " "}
-        </text>
-      </g>
+      <CenteredBoxElement
+        className="mindmap-node mindmap-node-ghost"
+        x={ghost.x}
+        y={ghost.y}
+        halfWidth={halfWidth}
+        halfHeight={halfHeight}
+        text={ghost.payload.text}
+      />
     </g>
   );
 }
@@ -621,54 +607,6 @@ function toCanvasPoint(clientX: number, clientY: number, box: ViewBox, surface: 
     x: shown.minX + ((clientX - rect.left) / rect.width) * (shown.maxX - shown.minX),
     y: shown.minY + ((clientY - rect.top) / rect.height) * (shown.maxY - shown.minY),
   };
-}
-
-/** The node id the pushed selection names inside this diagram, or undefined. */
-function nodeOf(selection: ContextSelection | null, path: readonly string[]): string | undefined {
-  let cursor: ContextSelection | undefined = selection ?? undefined;
-  // Walk the chain; the element id, wherever it sits, is the selected node.
-  while (cursor) {
-    if (cursor.id?.source.case === "elementId") {
-      return cursor.id.source.value.value;
-    }
-    cursor = cursor.detail.case === "child" ? cursor.detail.value : undefined;
-  }
-  void path;
-  return undefined;
-}
-
-/** The nested `file -> node` selection a canvas click reports (Requirement 10.1). */
-function nodeSelection(entryId: Uint8Array, path: readonly string[], element: MindmapElement, gesture?: ContextSelectionAction): ContextSelection {
-  const child = create(ContextSelectionSchema, {
-    source: 2, // DIAGRAM_CANVAS
-    id: { source: { case: "elementId", value: { value: element.id } } },
-    // Empty asks the backend to fill it in: the node's path is its whole text chain from the
-    // root, which the resolver derives and echoes back - a canvas that sent only the node's
-    // own text was rejected for exactly that partial path (found by the manual pass; the
-    // root's one-segment chain had masked it in every earlier check).
-    path: { segments: [] },
-    detail: gesture === undefined ? { case: "none", value: create(EmptySchema) } : { case: "action", value: gesture },
-  });
-
-  return create(ContextSelectionSchema, {
-    source: 1, // EXPLORER-origin file, selected on the canvas's behalf
-    id: { source: { case: "entryId", value: { value: entryId } } },
-    path: { segments: [...path] },
-    detail: { case: "child", value: child },
-  });
-}
-
-/** A keyboard event as a backend shortcut, or null for a key that carries no structural meaning. */
-function shortcutFor(event: React.KeyboardEvent): ContextShortcut | null {
-  const structural = ["Insert", "Enter", "F2", "Delete", " ", "Tab"];
-  if (!structural.includes(event.key)) {
-    return null;
-  }
-
-  // Tab is the XMind convention for "add child"; the backend's child action carries Insert, so
-  // the alias is resolved to it here - a key-to-key mapping, never a key-to-action one.
-  const key = event.key === "Tab" ? "Insert" : event.key;
-  return { key, ctrl: event.ctrlKey, shift: event.shiftKey, alt: event.altKey, meta: event.metaKey } as ContextShortcut;
 }
 
 /**
@@ -721,11 +659,3 @@ function fitBoxOf(elements: readonly MindmapElement[]): ViewBox {
 // Kept exported for the panel and tests; the model type is re-exported so consumers need one import.
 export type { MindmapModel };
 
-/** Whether an event's target is a text input the browser should handle instead of the canvas. */
-function isTextTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-  const tag = target.tagName.toLowerCase();
-  return tag === "input" || tag === "textarea" || target.isContentEditable;
-}

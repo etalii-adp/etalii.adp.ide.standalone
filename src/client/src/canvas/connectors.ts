@@ -86,6 +86,19 @@ export function branchAnchorsBetween(parent: ConnectorBox, child: ConnectorBox):
 }
 
 /**
+ * Where a connector between two boxes at the same conceptual level should start and end: on the
+ * vertical sides that face each other, at mid-height.
+ *
+ * Unlike {@link branchAnchorsBetween} there is no parent and child here - just two boxes side by
+ * side, each lending the side nearest the other. The timeline's relations read this way, and any
+ * other row-oriented notation would too.
+ */
+export function facingAnchorsBetween(from: ConnectorBox, to: ConnectorBox): [Point, Point] {
+  const toIsRight = to.x >= from.x;
+  return [sideAnchorOf(from, toIsRight ? "right" : "left"), sideAnchorOf(to, toIsRight ? "left" : "right")];
+}
+
+/**
  * A horizontal cubic bezier from one point to another, as an SVG path.
  *
  * Both control points sit at the horizontal midpoint, which is what makes the curve leave and

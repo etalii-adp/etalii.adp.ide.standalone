@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { create } from "@bufbuild/protobuf";
-import { EmptySchema } from "@bufbuild/protobuf/wkt";
-import { forwardBezierPath, horizontalBezierPath, sideAnchorOf, type ConnectorBox } from "@client/canvas/connectors";
+import { facingAnchorsBetween, horizontalBezierPath, sideAnchorOf, type ConnectorBox } from "@client/canvas/connectors";
+import { InteractiveBezierConnection } from "@client/canvas/connections/interactive-bezier/InteractiveBezierConnection";
+import { SpanElement, type SpanElementClasses } from "@client/canvas/elements/span/SpanElement";
+import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
+import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
+import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
 import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { ContextMenu } from "@client/shell/context/ContextMenu";
 import { toMenuGroups } from "@client/shell/context/toMenuGroups";
@@ -10,13 +13,7 @@ import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxCo
 import { useRegisterDiagramView } from "@client/shell/panels/DiagramViewContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
-import {
-  ContextSelectionAction,
-  ContextSelectionSchema,
-  ContextSourceSchema,
-  type ContextSelection,
-  type ContextShortcut,
-} from "@client/generated/context_pb";
+import { ContextSelectionAction } from "@client/generated/context_pb";
 import { TimelineRuler } from "./TimelineRuler";
 import { TimelineScrollbars } from "./TimelineScrollbars";
 import { useTimelineStream } from "./useTimelineStream";
@@ -104,11 +101,6 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
   const { selection, actions } = useContextSelection();
   const surfaceRef = useRef<HTMLDivElement | null>(null);
 
-  // A right-click's menu, opened once the pushed selection for that element arrives with its
-  // actions: the menu shows the backend's answer, never a guess - the C4 canvas's discipline.
-  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
-  const pendingMenuRef = useRef<{ id: string; position: { x: number; y: number } } | null>(null);
-
   useRegisterDiagramToolbox(useToolboxItems(projectId, path));
 
   const [view, setView] = useState<TimelineView>(() => ({
@@ -127,17 +119,15 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
   const connectRef = useRef<ConnectDrag | null>(null);
   const [rejection, setRejection] = useState("");
 
-  const selectedId = elementIdOf(innermostKey(selection) ?? null);
   const selectionKey = innermostKey(selection);
+  const selectedId = elementIdOfKey(selectionKey ?? null);
 
-  // The right-click's menu opens when the selection it asked for arrives, actions and all.
-  useEffect(() => {
-    const pending = pendingMenuRef.current;
-    if (pending && selectionKey === `element:${pending.id}`) {
-      pendingMenuRef.current = null;
-      setMenuPosition(pending.position);
-    }
-  }, [selectionKey]);
+  // A right-click's menu, opened once the pushed selection for that target arrives with its
+  // actions: the menu shows the backend's answer, never a guess - and the shared hook opens
+  // at once when the target is already the selection, actions in hand.
+  const { menuPosition, openMenuAt, closeMenu } = useElementContextMenu(selectionKey, actions.length > 0, (id) =>
+    select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
+  );
 
   /** Fits the whole timeline into view, with a margin. */
   const fitToView = useCallback(() => {
@@ -253,7 +243,7 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
       return;
     }
 
-    setMenuPosition(null);
+    closeMenu();
     if (event.button === 0) {
       select(null);
     }
@@ -368,7 +358,7 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
 
     if (dragging && !dragging.moved) {
       // A press with no movement is a click: a selection, never an edit.
-      select(elementSelection(entryId, path, dragging.id));
+      select(elementSelectionOf(entryId, path, dragging.id));
       return;
     }
 
@@ -409,7 +399,7 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
       // between calls, and a stale arm related the wrong pair.
       const landing = targetId ?? newPlacementId(connecting.x, nearestRow(connecting.y));
       void (async () => {
-        const outcome = await executeAction("timeline.connect", elementSource(`rel:${connecting.fromId}->${landing}`));
+        const outcome = await executeAction("timeline.connect", elementSourceOf(`rel:${connecting.fromId}->${landing}`));
         if (!outcome.accepted) {
           setRejection(outcome.error);
         }
@@ -436,38 +426,24 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
   };
 
   /** One menu opening for elements and relations alike - both select through the same channel. */
-  const openMenuAt = (event: React.MouseEvent, id: string) => {
-    event.preventDefault();
-    event.stopPropagation();
+  const openTargetMenuAt = (event: React.MouseEvent, id: string) => {
     if (panRef.current?.moved) {
       // The right button was panning; releasing it must not also open a menu.
       return;
     }
 
-    const position = { x: event.clientX, y: event.clientY };
-    if (selectionKey === `element:${id}`) {
-      // Already the selection: re-selecting would push the same key, the effect waiting for a
-      // key change would never fire, and the menu never opened - which is exactly how a second
-      // right-click on the same element used to do nothing. The actions are already here.
-      setMenuPosition(position);
-      return;
-    }
-
-    // The menu opens once the pushed selection for this target arrives with its actions, so
-    // what it shows is the backend's answer rather than a guess.
-    pendingMenuRef.current = { id, position };
-    select(elementSelection(entryId, path, id, ContextSelectionAction.CONTEXT_MENU));
+    openMenuAt(event, id);
   };
 
   const onElementContextMenu = (event: React.MouseEvent, element: TimelineElement) => {
-    openMenuAt(event, element.id);
+    openTargetMenuAt(event, element.id);
   };
 
   const onConnectionClick = (event: React.MouseEvent, connectionId: string) => {
     // A left-click on a relation selects it, exactly as it does an element (the resolver
     // answers for both). stopPropagation keeps the surface from reading it as background.
     event.stopPropagation();
-    select(elementSelection(entryId, path, connectionId));
+    select(elementSelectionOf(entryId, path, connectionId));
   };
 
   /**
@@ -485,7 +461,7 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
     void (async () => {
       const outcome = await executeAction(
         actionId,
-        elementSource(newPlacementId(toSeconds(event.clientX), nearestRow(toModuleY(event.clientY)))));
+        elementSourceOf(newPlacementId(toSeconds(event.clientX), nearestRow(toModuleY(event.clientY)))));
       if (!outcome.accepted) {
         setRejection(outcome.error);
       }
@@ -510,14 +486,14 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
       return;
     }
 
-    const shortcut = shortcutFor(event);
+    const shortcut = structuralShortcutFor(event, ["F2", "Delete", "Insert", "Tab", "Enter"]);
     if (!shortcut) {
       return;
     }
 
     event.preventDefault();
     void (async () => {
-      const outcome = await executeShortcut(shortcut, elementSource(selectedId));
+      const outcome = await executeShortcut(shortcut, elementSourceOf(selectedId));
       if (!outcome.accepted && outcome.error) {
         setRejection(outcome.error);
       }
@@ -570,33 +546,25 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
               return null;
             }
 
-            // Side anchors and a bezier, from the shared geometry and nothing else
-            // (Requirements 8.1-8.3). When the target begins before the source ends - in time,
-            // not pixels - the line leaves the source forward and loops back into the target,
-            // so the direction still reads left to right; otherwise the sides face each other.
-            const overlapping = toElement.x < endSecondsOf(fromElement);
-            const [a, b] = overlapping
-              ? [sideAnchorOf(from, "right"), sideAnchorOf(to, "left")]
-              : facingAnchors(from, to);
-            const d = overlapping ? forwardBezierPath(a, b) : horizontalBezierPath(a, b);
+            // The shared interactive connection (Requirements 8.1-8.3). Whether the line must
+            // loop - the target beginning before the source ends - is decided here in the
+            // module's own coordinates, time, and handed over as a fact.
             return (
-              <g
+              <InteractiveBezierConnection
                 key={connection.id}
-                className={connection.id === selectedId ? "timeline-connection timeline-selected" : "timeline-connection"}
-                data-connection-id={connection.id}
-                onClick={(event) => onConnectionClick(event, connection.id)}
-                onMouseDown={(event) => event.stopPropagation()}
-                onContextMenu={(event) => openMenuAt(event, connection.id)}
-              >
-                {/* An invisible fat twin carries the pointer: a 1.5px stroke is no target. */}
-                <path className="timeline-connection-hit" d={d} />
-                <path className="timeline-connection-line" d={d} />
-                {connection.label ? (
-                  <text x={(a.x + b.x) / 2} y={(a.y + b.y) / 2 - 6}>
-                    {connection.label}
-                  </text>
-                ) : null}
-              </g>
+                id={connection.id}
+                from={from}
+                to={to}
+                loopsBack={toElement.x < endSecondsOf(fromElement)}
+                selected={connection.id === selectedId}
+                label={connection.label || undefined}
+                className="timeline-connection"
+                selectedClassName="timeline-selected"
+                hitClassName="timeline-connection-hit"
+                lineClassName="timeline-connection-line"
+                onSelect={(event) => onConnectionClick(event, connection.id)}
+                onOpenMenu={(event) => openTargetMenuAt(event, connection.id)}
+              />
             );
           })}
 
@@ -626,11 +594,11 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
       <ContextMenu
         open={menuPosition !== null}
         groups={toMenuGroups(actions, (action) => {
-          setMenuPosition(null);
-          void executeAction(action.id, selectedId ? elementSource(selectedId) : undefined);
+          closeMenu();
+          void executeAction(action.id, selectedId ? elementSourceOf(selectedId) : undefined);
         })}
         position={menuPosition ?? { x: 0, y: 0 }}
-        onClose={() => setMenuPosition(null)}
+        onClose={closeMenu}
       />
       {loading ? <p className="timeline-status">Opening…</p> : null}
       {rejection ? <p className="timeline-rejection">{rejection}</p> : null}
@@ -641,25 +609,6 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
 /** The placement id a gesture carries when it lands on empty canvas: `new:{seconds},{row}`. */
 function newPlacementId(seconds: number, row: number): string {
   return `new:${seconds},${row}`;
-}
-
-/** A structural key as data. The backend holds the key-to-action table, not this canvas. */
-function shortcutFor(event: React.KeyboardEvent): ContextShortcut | null {
-  const structural = ["F2", "Delete", "Insert", "Tab", "Enter"];
-  if (!structural.includes(event.key)) {
-    return null;
-  }
-
-  return { key: event.key, ctrl: event.ctrlKey, shift: event.shiftKey, alt: event.altKey, meta: event.metaKey } as ContextShortcut;
-}
-
-function isTextTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-
-  const tag = target.tagName.toLowerCase();
-  return tag === "input" || tag === "textarea" || target.isContentEditable;
 }
 
 /** An element's box in pixels, with any in-flight preview applied. Centre-based, as the shared geometry expects. */
@@ -712,12 +661,6 @@ function endSecondsOf(element: TimelineElement): number {
   return Number.isFinite(parsed) ? parsed : element.x;
 }
 
-/** The anchors on the sides that face each other, per Requirement 8.1. */
-function facingAnchors(from: ConnectorBox, to: ConnectorBox): [ReturnType<typeof sideAnchorOf>, ReturnType<typeof sideAnchorOf>] {
-  const toIsRight = to.x >= from.x;
-  return [sideAnchorOf(from, toIsRight ? "right" : "left"), sideAnchorOf(to, toIsRight ? "left" : "right")];
-}
-
 /** The nearest row for a module-space y, matching TimelineRows.ToNearestRow's away-from-zero midpoint. */
 function nearestRow(y: number): number {
   const exact = y / ROW_HEIGHT;
@@ -729,38 +672,6 @@ function formatSeconds(seconds: number, dateOnly: boolean): string {
   const pad = (value: number) => String(value).padStart(2, "0");
   const day = `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
   return dateOnly ? day : `${day}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
-}
-
-function elementIdOf(key: string | null): string | null {
-  return key?.startsWith("element:") ? key.slice("element:".length) : null;
-}
-
-function elementSource(elementId: string) {
-  return create(ContextSourceSchema, { source: { case: "elementId", value: { value: elementId } } });
-}
-
-function elementSelection(
-  entryId: Uint8Array,
-  path: readonly string[],
-  elementId: string,
-  gesture?: ContextSelectionAction,
-): ContextSelection {
-  const child = create(ContextSelectionSchema, {
-    source: 2, // DIAGRAM_CANVAS
-    id: { source: { case: "elementId", value: { value: elementId } } },
-    // Empty asks the backend to fill in the full path; sending a partial one is refused.
-    path: { segments: [] },
-    detail: gesture === undefined
-      ? { case: "none" as const, value: create(EmptySchema) }
-      : { case: "action" as const, value: gesture },
-  });
-
-  return create(ContextSelectionSchema, {
-    source: 1,
-    id: { source: { case: "entryId", value: { value: entryId } } },
-    path: { segments: [...path] },
-    detail: { case: "child", value: child },
-  });
 }
 
 interface TimelineElementShapeProps {
@@ -778,6 +689,17 @@ interface TimelineElementShapeProps {
   onElementContextMenu: (event: React.MouseEvent, element: TimelineElement) => void;
 }
 
+/** The class names the shared span element hangs the timeline's styling on. */
+const SPAN_CLASSES: SpanElementClasses = {
+  span: "timeline-period",
+  moment: "timeline-moment",
+  label: "timeline-label",
+  hint: "timeline-hint",
+  adorner: "timeline-adorner",
+  anchor: "timeline-anchor",
+  anchorHit: "timeline-anchor-hit",
+};
+
 function TimelineElementShape({
   element,
   box,
@@ -792,8 +714,6 @@ function TimelineElementShape({
   onElementLeave,
   onElementContextMenu,
 }: TimelineElementShapeProps) {
-  const left = box.x - box.width / 2;
-  const top = box.y - box.height / 2;
   const classes = ["timeline-element"];
   if (selected) {
     classes.push("timeline-selected");
@@ -810,93 +730,29 @@ function TimelineElementShape({
       ? formatSeconds(resizePreview.edgeSeconds, element.dateOnly)
       : null;
 
+  // The drawing - the box or diamond, the label that steps aside when the box is too narrow,
+  // the resize adorners and the connection anchors painted over them - is the shared span
+  // element's; only what the timeline says through it is decided here.
   return (
-    <g
+    <SpanElement
       className={classes.join(" ")}
       data-element-id={element.id}
+      box={box}
+      moment={!element.isPeriod}
+      label={element.label || element.id}
+      hint={hint}
+      selected={selected}
+      pointRadius={MOMENT_RADIUS}
+      classes={SPAN_CLASSES}
+      onResizeStart={(event, side) => onResizeDown(event, element, side)}
+      onAnchorStart={(event) => onAnchorDown(event, element)}
       onMouseDown={(event) => onElementDown(event, element)}
       onMouseEnter={() => onElementEnter(element)}
       onMouseLeave={onElementLeave}
       onContextMenu={(event) => onElementContextMenu(event, element)}
       onDragOver={(event) => event.preventDefault()}
-    >
-      {element.isPeriod ? (
-        <rect className="timeline-period" x={left} y={top} width={box.width} height={box.height} rx={6} />
-      ) : (
-        <path
-          className="timeline-moment"
-          d={diamond(box.x, box.y)}
-        />
-      )}
-      <text
-        className="timeline-label"
-        // A label wider than its box sits beside it instead of overflowing invisibly under the
-        // neighbours - the same placement a moment's label always has. Approximated at 7px per
-        // character, which errs on the side of moving outside a little early.
-        {...(element.isPeriod && box.width >= (element.label || element.id).length * 7 + 8
-          ? { x: box.x, textAnchor: undefined }
-          : { x: element.isPeriod ? box.x + box.width / 2 + 6 : box.x + MOMENT_RADIUS + 6, textAnchor: "start" as const })}
-        y={box.y + 4}
-      >
-        {element.label || element.id}
-      </text>
-      {hint ? (
-        <text className="timeline-hint" x={box.x} y={top - 8}>
-          {hint}
-        </text>
-      ) : null}
-      {selected ? (
-        <>
-          {/* Adorners first, anchors after: SVG paints in order, and the full-height adorner
-              strip used to cover the anchor down to a one-pixel sliver - which is why starting
-              a relation felt unreliable, and why a grab meant as a relate became a resize. Now
-              the dot and its generous hit circle sit on top; the strip stays grabbable above
-              and below the dot. The left edge edits begin; the right edits end; a moment has no
-              right edge to offer, and the menu's "Give it an end" is the path instead
-              (Requirement 7.5). */}
-          <rect
-            className="timeline-adorner"
-            x={left - 4}
-            y={top}
-            width={8}
-            height={box.height}
-            onMouseDown={(event) => onResizeDown(event, element, "left")}
-          />
-          {element.isPeriod ? (
-            <rect
-              className="timeline-adorner"
-              x={left + box.width - 4}
-              y={top}
-              width={8}
-              height={box.height}
-              onMouseDown={(event) => onResizeDown(event, element, "right")}
-            />
-          ) : null}
-          <circle className="timeline-anchor" cx={left} cy={box.y} r={5} />
-          <circle
-            className="timeline-anchor-hit"
-            cx={left}
-            cy={box.y}
-            r={14}
-            onMouseDown={(event) => onAnchorDown(event, element)}
-          />
-          <circle className="timeline-anchor" cx={left + box.width} cy={box.y} r={5} />
-          <circle
-            className="timeline-anchor-hit"
-            cx={left + box.width}
-            cy={box.y}
-            r={14}
-            onMouseDown={(event) => onAnchorDown(event, element)}
-          />
-        </>
-      ) : null}
-    </g>
+    />
   );
-}
-
-function diamond(cx: number, cy: number): string {
-  const r = MOMENT_RADIUS;
-  return `M ${cx - r} ${cy} L ${cx} ${cy - r} L ${cx + r} ${cy} L ${cx} ${cy + r} Z`;
 }
 
 function PendingConnection({
@@ -916,7 +772,7 @@ function PendingConnection({
   }
 
   const end = connect.overId && boxes.has(connect.overId)
-    ? facingAnchors(from, boxes.get(connect.overId)!)[1]
+    ? facingAnchorsBetween(from, boxes.get(connect.overId)!)[1]
     : { x: secondsToPx(connect.x), y: yToPx(connect.y) };
   const start = sideAnchorOf(from, end.x >= from.x ? "right" : "left");
 

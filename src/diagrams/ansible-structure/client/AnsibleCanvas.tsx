@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { create } from "@bufbuild/protobuf";
-import { EmptySchema } from "@bufbuild/protobuf/wkt";
-import { anchorsBetween, midpointOf, straightPath, type ConnectorBox } from "@client/canvas/connectors";
+import { straightPath, type ConnectorBox } from "@client/canvas/connectors";
+import { StraightConnection } from "@client/canvas/connections/straight/StraightConnection";
+import { BoxElement } from "@client/canvas/elements/box/BoxElement";
+import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
 import { useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
-import { ContextSelectionAction, ContextSelectionSchema } from "@client/generated/context_pb";
-import type { ContextSelection } from "@client/generated/context_pb";
+import { ContextSelectionAction } from "@client/generated/context_pb";
 import { AnsibleEdgeKind, AnsibleElementKind } from "@client/generated/ansible-structure_pb";
 import { anchorsOf, edgesOf, nodesOf, paletteSlotOf, type AnsibleElement, type AnsibleModel } from "./ansibleModel";
 import { useAnsibleStream } from "./useAnsibleStream";
@@ -55,7 +55,7 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
   const bounds = useMemo(() => boundsOf(nodes), [nodes]);
   const effective = view ?? bounds;
 
-  const selectedId = nodeIdOf(selection);
+  const selectedId = selectedElementIdOf(selection);
 
   // The backend culls to what a connection can see, so it has to be told - debounced, because
   // a pan produces a report per frame otherwise.
@@ -72,7 +72,7 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
   const onSelect = useCallback(
     (element: AnsibleElement, gesture?: ContextSelectionAction) => {
       setFocusedId(element.id);
-      select(elementSelection(entryId, path, element, gesture));
+      select(elementSelectionOf(entryId, path, element.id, gesture));
     },
     [entryId, path, select],
   );
@@ -226,11 +226,17 @@ function Node({
     .join(" ");
 
   return (
-    <g
+    <BoxElement
       className={classes}
       data-element-id={node.id}
       data-kind={kindClass(node.payload.kind)}
-      transform={`translate(${node.x} ${node.y})`}
+      x={node.x}
+      y={node.y}
+      width={node.payload.width}
+      height={node.payload.height}
+      label={node.payload.name}
+      boxClassName="ansible-node-box"
+      labelClassName="ansible-node-label"
       role="button"
       tabIndex={0}
       aria-label={`${kindLabel(node.payload.kind)} ${node.payload.name}`}
@@ -241,16 +247,12 @@ function Node({
         onSelect(node, ContextSelectionAction.CONTEXT_MENU);
       }}
     >
-      <rect className="ansible-node-box" width={node.payload.width} height={node.payload.height} rx={4} />
-      <text className="ansible-node-label" x={8} y={node.payload.height / 2 + 4}>
-        {node.payload.name}
-      </text>
       {node.payload.hosts ? (
         <title>{`${kindLabel(node.payload.kind)} ${node.payload.name} — hosts: ${node.payload.hosts}`}</title>
       ) : (
         <title>{`${kindLabel(node.payload.kind)} ${node.payload.name}`}</title>
       )}
-    </g>
+    </BoxElement>
   );
 }
 
@@ -291,8 +293,6 @@ function Edge({ edge, model }: { edge: AnsibleElement; model: AnsibleModel }) {
     );
   }
 
-  const [from, to] = anchorsBetween(boxOf(anchors.from), boxOf(anchors.to));
-  const label = midpointOf(from, to);
   const classes = [
     "ansible-edge",
     `ansible-edge-${edgeClass(wire.kind)}`,
@@ -300,12 +300,15 @@ function Edge({ edge, model }: { edge: AnsibleElement; model: AnsibleModel }) {
   ].join(" ");
 
   return (
-    <g className={classes} data-edge-id={edge.id}>
-      <path className="ansible-edge-line" d={straightPath(from, to)} />
-      <text className="ansible-edge-label" x={label.x} y={label.y - 4}>
-        {wire.condition ? `${wire.directive} when ${wire.condition}` : wire.directive}
-      </text>
-    </g>
+    <StraightConnection
+      from={boxOf(anchors.from)}
+      to={boxOf(anchors.to)}
+      className={classes}
+      pathClassName="ansible-edge-line"
+      label={wire.condition ? `${wire.directive} when ${wire.condition}` : wire.directive}
+      labelClassName="ansible-edge-label"
+      labelDy={-4}
+    />
   );
 }
 
@@ -390,38 +393,3 @@ function edgeClass(kind: AnsibleEdgeKind): string {
   }
 }
 
-/** The element id in the pushed selection chain, wherever it sits. */
-function nodeIdOf(selection: ContextSelection | null): string | undefined {
-  let cursor: ContextSelection | undefined = selection ?? undefined;
-  while (cursor) {
-    if (cursor.id?.source.case === "elementId") {
-      return cursor.id.source.value.value;
-    }
-    cursor = cursor.detail.case === "child" ? cursor.detail.value : undefined;
-  }
-  return undefined;
-}
-
-/** The nested `file -> element` selection a canvas click reports. */
-function elementSelection(
-  entryId: Uint8Array,
-  path: readonly string[],
-  element: AnsibleElement,
-  gesture?: ContextSelectionAction,
-): ContextSelection {
-  const child = create(ContextSelectionSchema, {
-    source: 2, // DIAGRAM_CANVAS
-    id: { source: { case: "elementId", value: { value: element.id } } },
-    // Empty asks the backend to fill it in: the resolver derives the element's path and echoes
-    // it back, and a canvas that guessed at it would be rejected for disagreeing.
-    path: { segments: [] },
-    detail: gesture === undefined ? { case: "none", value: create(EmptySchema) } : { case: "action", value: gesture },
-  });
-
-  return create(ContextSelectionSchema, {
-    source: 1, // EXPLORER-origin file, selected on the canvas's behalf
-    id: { source: { case: "entryId", value: { value: entryId } } },
-    path: { segments: [...path] },
-    detail: { case: "child", value: child },
-  });
-}

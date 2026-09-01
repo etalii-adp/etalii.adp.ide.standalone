@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { anchorsBetween, straightPath, type ConnectorBox } from "@client/canvas/connectors";
+import { straightPath, type ConnectorBox } from "@client/canvas/connectors";
+import { StraightConnection } from "@client/canvas/connections/straight/StraightConnection";
+import { SymbolElement } from "@client/canvas/elements/symbol/SymbolElement";
 import { useRegisterDiagramView } from "@client/shell/panels/DiagramViewContext";
 import {
   WardleyAttitudeKind,
@@ -387,17 +389,16 @@ function WardleyContents({
           return null;
         }
 
-        // The shared connector geometry: a Wardley link joins two boxes, and that the centres
-        // came from the document rather than from a layout changes nothing about the maths.
-        const [from, to] = anchorsBetween(boxOf(source), boxOf(target));
+        // The shared connection: a Wardley link joins two boxes, and that the centres came
+        // from the document rather than from a layout changes nothing about the maths.
         return (
-          <path
+          <StraightConnection
             key={link.id}
-            className={`wardley-link${link.isFlow ? " wardley-link-flow" : ""}`}
-            d={straightPath(from, to)}
-          >
-            {link.context ? <title>{link.context}</title> : null}
-          </path>
+            from={boxOf(source)}
+            to={boxOf(target)}
+            pathClassName={`wardley-link${link.isFlow ? " wardley-link-flow" : ""}`}
+            title={link.context || undefined}
+          />
         );
       })}
 
@@ -411,10 +412,9 @@ function WardleyContents({
         .filter((element) => element.evolve)
         .map((element) => {
           const target = { x: element.evolve!.maturity, y: element.y };
-          const [from, to] = anchorsBetween(boxOf(element), boxOf(target));
           return (
             <g key={`${element.id}-evolve`}>
-              <path className="wardley-evolve" d={straightPath(from, to)} />
+              <StraightConnection from={boxOf(element)} to={boxOf(target)} pathClassName="wardley-evolve" />
               <circle
                 className="wardley-evolve-target"
                 cx={scale(target.x)}
@@ -507,41 +507,35 @@ function WardleyElementShape({
   const decorations = element.decorators.map(decoratorName).filter((name) => name.length > 0);
   const badges = [...decorations, ...(element.inertia ? ["inertia"] : [])];
 
+  // An anchor is the user need the chain hangs from, drawn as a distinct mark rather than one
+  // more component; a submap's double ring says there is something behind it.
+  const variant =
+    element.kind === WardleyElementKind.ANCHOR
+      ? ("square" as const)
+      : element.kind === WardleyElementKind.SUBMAP
+        ? ("double-circle" as const)
+        : ("circle" as const);
+
   return (
-    <g
+    <SymbolElement
       className={`wardley-element-group wardley-kind-${kindName(element.kind)}${dragging ? " wardley-dragging" : ""}`}
+      x={x}
+      y={y}
+      radius={DOT}
+      variant={variant}
+      label={element.name}
+      labelX={labelX}
+      labelY={labelY}
+      badges={badges}
+      inertia={element.inertia}
+      markClassName="wardley-element"
+      outerClassName="wardley-element-outer"
+      labelClassName="wardley-element-label"
+      badgesClassName="wardley-element-badges"
+      inertiaClassName="wardley-inertia"
       onMouseDown={(event) => onPointerDown(event, element)}
       data-element-id={element.id}
-    >
-      {element.kind === WardleyElementKind.ANCHOR ? (
-        // An anchor is the user need the chain hangs from, so it is drawn as a distinct mark
-        // rather than as one more component.
-        <rect className="wardley-element" x={x - DOT} y={y - DOT} width={DOT * 2} height={DOT * 2} />
-      ) : element.kind === WardleyElementKind.SUBMAP ? (
-        // A submap is a door to another map; the double ring says there is something behind it.
-        <g>
-          <circle className="wardley-element" cx={x} cy={y} r={DOT} />
-          <circle className="wardley-element-outer" cx={x} cy={y} r={DOT + 4} />
-        </g>
-      ) : (
-        <circle className="wardley-element" cx={x} cy={y} r={DOT} />
-      )}
-
-      {element.inertia ? (
-        // The wall a component is pushed against: drawn where movement would be resisted.
-        <line className="wardley-inertia" x1={x + DOT + 4} y1={y - DOT - 2} x2={x + DOT + 4} y2={y + DOT + 2} />
-      ) : null}
-
-      <text className="wardley-element-label" x={labelX} y={labelY}>
-        {element.name}
-      </text>
-
-      {badges.length > 0 ? (
-        <text className="wardley-element-badges" x={labelX} y={labelY + 16}>
-          {badges.join(" · ")}
-        </text>
-      ) : null}
-    </g>
+    />
   );
 }
 

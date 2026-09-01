@@ -1,14 +1,17 @@
-import { anchorsBetween, midpointOf, straightPath, type ConnectorBox } from "@client/canvas/connectors";
+import type { ConnectorBox } from "@client/canvas/connectors";
+import { StraightConnection } from "@client/canvas/connections/straight/StraightConnection";
+import { StyledBoxElement } from "@client/canvas/elements/styled-box/StyledBoxElement";
+import { FrameElement } from "@client/canvas/elements/frame/FrameElement";
+import { elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
+import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
+import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { create } from "@bufbuild/protobuf";
-import { EmptySchema } from "@bufbuild/protobuf/wkt";
 import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
-import { ContextSelectionAction, ContextSelectionSchema, ContextSourceSchema } from "@client/generated/context_pb";
+import { ContextSelectionAction } from "@client/generated/context_pb";
 import { ContextMenu } from "@client/shell/context/ContextMenu";
 import { toMenuGroups } from "@client/shell/context/toMenuGroups";
 import { TOOLBOX_DRAG_TYPE, useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
-import type { ContextSelection, ContextShortcut } from "@client/generated/context_pb";
 import { useRegisterDiagramView, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
 import { boxesOf, type C4BoundaryBox, type C4Model, type C4Node, type C4Relationship } from "./c4Model";
 import type { C4RelationshipPayload } from "@client/generated/c4_pb";
@@ -49,17 +52,12 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
   useRegisterDiagramToolbox(useToolboxItems(projectId, path));
 
   // A right-click's menu, opened once the pushed selection for that element arrives with its
-  // actions: the menu shows the backend's answer, never a guess.
-  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
-  const pendingMenuRef = useRef<{ id: string; position: { x: number; y: number } } | null>(null);
+  // actions: the menu shows the backend's answer, never a guess. The shared hook also opens
+  // at once when the element is already the selection, actions in hand.
   const selectionKey = innermostKey(selection);
-  useEffect(() => {
-    const pending = pendingMenuRef.current;
-    if (pending && selectionKey === `element:${pending.id}`) {
-      pendingMenuRef.current = null;
-      setMenuPosition(pending.position);
-    }
-  }, [selectionKey, actions]);
+  const { menuPosition, openMenuAt, closeMenu } = useElementContextMenu(selectionKey, actions.length > 0, (id) =>
+    select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
+  );
 
   // The element a toolbox drag is held over - highlighted so the drop's outcome is visible
   // before the button is released.
@@ -235,7 +233,7 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
 
     setFocusedId(node.id);
     surfaceRef.current?.focus();
-    select(nodeSelection(entryId, path, node.id));
+    select(elementSelectionOf(entryId, path, node.id));
   };
 
   const onNodePointerDown = (node: C4Node, event: React.MouseEvent) => {
@@ -248,17 +246,9 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
 
   /** Right-click an element: select it with the menu gesture, open the menu on the push. */
   const onNodeContextMenu = (node: C4Node, event: React.MouseEvent) => {
-    event.preventDefault();
     setFocusedId(node.id);
     surfaceRef.current?.focus();
-    if (selectionKey === `element:${node.id}` && actions.length > 0) {
-      pendingMenuRef.current = null;
-      setMenuPosition({ x: event.clientX, y: event.clientY });
-      return;
-    }
-
-    pendingMenuRef.current = { id: node.id, position: { x: event.clientX, y: event.clientY } };
-    select(nodeSelection(entryId, path, node.id, ContextSelectionAction.CONTEXT_MENU));
+    openMenuAt(event, node.id);
   };
 
   /** A toolbox entry held over an element: allowed, and shown as the drop's outcome. */
@@ -289,7 +279,7 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
 
     event.preventDefault();
     setFocusedId(node.id);
-    void executeAction(actionId, create(ContextSourceSchema, { source: { case: "elementId", value: { value: node.id } } }));
+    void executeAction(actionId, elementSourceOf(node.id));
   };
 
   /**
@@ -331,14 +321,14 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
       return;
     }
 
-    const shortcut = shortcutFor(event);
+    const shortcut = structuralShortcutFor(event, ["F2", "Delete", "Insert"]);
     if (!shortcut) {
       return;
     }
 
     event.preventDefault();
     // The backend holds the key-to-action table; the canvas forwards the keystroke as data.
-    void executeShortcut(shortcut, create(ContextSourceSchema, { source: { case: "elementId", value: { value: focusedId } } }));
+    void executeShortcut(shortcut, elementSourceOf(focusedId));
   };
 
   if (failed) {
@@ -419,11 +409,11 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
           <ContextMenu
             open={menuPosition !== null}
             groups={toMenuGroups(actions, (action) => {
-              setMenuPosition(null);
+              closeMenu();
               void executeAction(action.id);
             })}
             position={menuPosition ?? { x: 0, y: 0 }}
-            onClose={() => setMenuPosition(null)}
+            onClose={closeMenu}
           />
 
           {/* C4 requires a key explaining every shape and colour the diagram uses, so it can be
@@ -472,16 +462,23 @@ function C4NodeShape({
   onDrop: (event: React.DragEvent) => void;
 }) {
   const { name, typeLine, description, width, height, style } = node.payload;
-  const halfWidth = width / 2;
-  const halfHeight = height / 2;
-  const background = style?.background ?? "#1168bd";
-  const color = style?.color ?? "#ffffff";
-  const shape = style?.shape ?? "RoundedBox";
 
   return (
-    <g
+    <StyledBoxElement
       className={`c4-node${focused ? " c4-node-focused" : ""}${dropTarget ? " c4-node-drop-target" : ""}${offset ? " c4-node-dragging" : ""}`}
-      transform={`translate(${node.x + (offset?.dx ?? 0)} ${node.y + (offset?.dy ?? 0)})`}
+      x={node.x + (offset?.dx ?? 0)}
+      y={node.y + (offset?.dy ?? 0)}
+      width={width}
+      height={height}
+      shape={style?.shape ?? "RoundedBox"}
+      background={style?.background ?? "#1168bd"}
+      color={style?.color ?? "#ffffff"}
+      name={name}
+      typeLine={typeLine}
+      description={description}
+      nameClassName="c4-node-name"
+      typeClassName="c4-node-type"
+      descriptionClassName="c4-node-description"
       onClick={onSelect}
       onMouseDown={onPointerDown}
       onContextMenu={onContextMenu}
@@ -489,43 +486,7 @@ function C4NodeShape({
       onDrop={onDrop}
       role="button"
       aria-label={name}
-    >
-      {shape === "Person" ? (
-        <>
-          {/* The person shape: a head above the box, as the reference diagrams draw it. */}
-          <circle cx={0} cy={-halfHeight - 8} r={10} fill={background} />
-          <rect x={-halfWidth} y={-halfHeight} width={width} height={height} rx={8} fill={background} />
-        </>
-      ) : shape === "Cylinder" ? (
-        <>
-          {/* A data store, drawn as the cylinder the notation uses for one. */}
-          <rect x={-halfWidth} y={-halfHeight + 6} width={width} height={height - 12} fill={background} />
-          <ellipse cx={0} cy={-halfHeight + 6} rx={halfWidth} ry={6} fill={background} />
-          <ellipse cx={0} cy={halfHeight - 6} rx={halfWidth} ry={6} fill={background} />
-        </>
-      ) : (
-        <rect
-          x={-halfWidth}
-          y={-halfHeight}
-          width={width}
-          height={height}
-          rx={shape === "Box" ? 0 : 8}
-          fill={background}
-        />
-      )}
-
-      <text className="c4-node-name" y={-halfHeight + 22} textAnchor="middle" fill={color}>
-        {name}
-      </text>
-      <text className="c4-node-type" y={-halfHeight + 38} textAnchor="middle" fill={color}>
-        {typeLine}
-      </text>
-      {description && (
-        <text className="c4-node-description" y={-halfHeight + 58} textAnchor="middle" fill={color}>
-          {description}
-        </text>
-      )}
-    </g>
+    />
   );
 }
 
@@ -535,24 +496,22 @@ function C4NodeShape({
  */
 function C4RelationshipShape({ relationship }: { relationship: C4Relationship }) {
   const p = relationship.payload;
-  const [from, to] = anchorsBetween(sourceBoxOf(p), destinationBoxOf(p));
   const label = p.technology ? `${p.description} [${p.technology}]` : p.description;
   const order = p.interactionOrder;
-  const middle = midpointOf(from, to);
 
+  // Straight, deliberately: a C4 relationship joins any two elements in any direction, so
+  // there is no corridor for a curve to stay inside, and Structurizr and the C4 notation
+  // both draw these straight.
   return (
-    <g className="c4-relationship">
-      {/* Straight, deliberately. The shared geometry offers a horizontal bezier - what the
-          mindmap draws - and C4 does not use it: a C4 relationship joins any two elements in
-          any direction, so there is no corridor for a curve to stay inside, and Structurizr
-          and the C4 notation both draw these straight. */}
-      <path d={straightPath(from, to)} markerEnd="url(#c4-arrow)" />
-      {label && (
-        <text className="c4-relationship-label" x={middle.x} y={middle.y - 6} textAnchor="middle">
-          {order ? `${order}. ${label}` : label}
-        </text>
-      )}
-    </g>
+    <StraightConnection
+      from={sourceBoxOf(p)}
+      to={destinationBoxOf(p)}
+      className="c4-relationship"
+      markerEnd="url(#c4-arrow)"
+      label={label ? (order ? `${order}. ${label}` : label) : undefined}
+      labelClassName="c4-relationship-label"
+      labelTextAnchor="middle"
+    />
   );
 }
 
@@ -560,12 +519,15 @@ function C4RelationshipShape({ relationship }: { relationship: C4Relationship })
 function C4BoundaryShape({ boundary }: { boundary: C4BoundaryBox }) {
   const { name, kind, width, height } = boundary.payload;
   return (
-    <g className="c4-boundary" transform={`translate(${boundary.x} ${boundary.y})`}>
-      <rect x={-width / 2} y={-height / 2} width={width} height={height} rx={6} />
-      <text className="c4-boundary-label" x={-width / 2 + 12} y={height / 2 - 12}>
-        {name} [{kind}]
-      </text>
-    </g>
+    <FrameElement
+      className="c4-boundary"
+      x={boundary.x}
+      y={boundary.y}
+      width={width}
+      height={height}
+      label={`${name} [${kind}]`}
+      labelClassName="c4-boundary-label"
+    />
   );
 }
 
@@ -619,50 +581,6 @@ function fitBoxOf(model: C4Model): ViewBox {
   const maxX = Math.max(...boxes.map((box) => box.x + box.width)) + margin;
   const maxY = Math.max(...boxes.map((box) => box.y + box.height)) + margin;
   return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
-}
-
-/** The nested `file -> element` selection a canvas click reports. */
-/** A structural key as data. The backend holds the key-to-action table, not this canvas. */
-function shortcutFor(event: React.KeyboardEvent): ContextShortcut | null {
-  const structural = ["F2", "Delete", "Insert"];
-  if (!structural.includes(event.key)) {
-    return null;
-  }
-
-  return { key: event.key, ctrl: event.ctrlKey, shift: event.shiftKey, alt: event.altKey, meta: event.metaKey } as ContextShortcut;
-}
-
-function isTextTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-
-  const tag = target.tagName.toLowerCase();
-  return tag === "input" || tag === "textarea" || target.isContentEditable;
-}
-
-function nodeSelection(
-  entryId: Uint8Array,
-  path: readonly string[],
-  elementId: string,
-  gesture?: ContextSelectionAction,
-): ContextSelection {
-  const child = create(ContextSelectionSchema, {
-    source: 2, // DIAGRAM_CANVAS
-    id: { source: { case: "elementId", value: { value: elementId } } },
-    // Empty asks the backend to fill in the full path; sending a partial one is refused.
-    path: { segments: [] },
-    detail: gesture === undefined
-      ? { case: "none" as const, value: create(EmptySchema) }
-      : { case: "action" as const, value: gesture },
-  });
-
-  return create(ContextSelectionSchema, {
-    source: 1,
-    id: { source: { case: "entryId", value: { value: entryId } } },
-    path: { segments: [...path] },
-    detail: { case: "child", value: child },
-  });
 }
 
 export type { C4Model };

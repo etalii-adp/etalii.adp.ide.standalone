@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { create } from "@bufbuild/protobuf";
-import { EmptySchema } from "@bufbuild/protobuf/wkt";
-import { ContextSelectionSchema } from "@client/generated/context_pb";
-import type { ContextSelection } from "@client/generated/context_pb";
+import { FixedBezierConnection } from "@client/canvas/connections/fixed-bezier/FixedBezierConnection";
+import { BoxElement } from "@client/canvas/elements/box/BoxElement";
+import { elementSelectionOf } from "@client/canvas/selection";
 import { useContextConnection, useContextProblems } from "@client/shell/context/ContextConnectionProvider";
 import { useRegisterDiagramView, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
 import { PipelineElementKindProto } from "@client/generated/azure-pipeline_pb";
@@ -182,7 +181,7 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
   const onNodeClick = (node: PipelineNode) => {
     setFocusedId(node.id);
     surfaceRef.current?.focus();
-    select(nodeSelection(entryId, path, node.id));
+    select(elementSelectionOf(entryId, path, node.id));
   };
 
   if (failed) {
@@ -294,19 +293,24 @@ function PipelineStageShape({
     .join(" ");
 
   return (
-    <g
+    <BoxElement
       className={classes}
-      transform={`translate(${stage.x} ${stage.y})`}
+      x={stage.x}
+      y={stage.y}
+      width={width}
+      height={height}
+      rx={6}
+      label={displayName}
+      boxClassName="pipeline-stage-box"
+      labelClassName="pipeline-stage-name"
+      labelX={12}
+      labelY={24}
       onClick={onSelect}
       role="button"
       aria-label={displayName}
       data-testid={`stage-${stage.id}`}
       data-expanded={expanded}
     >
-      <rect className="pipeline-stage-box" x={0} y={0} width={width} height={height} rx={6} />
-      <text className="pipeline-stage-name" x={12} y={24}>
-        {displayName}
-      </text>
       {!expanded && (
         <text className="pipeline-stage-count" x={12} y={44}>
           {jobCountLabel(jobCount)}
@@ -314,7 +318,7 @@ function PipelineStageShape({
       )}
       <PipelineIndicators indicators={indicatorsOf(stage.payload)} x={width - 12} y={20} />
       {problem && <ProblemMark elementId={stage.id} problem={problem} x={width - 12} y={height - 12} />}
-    </g>
+    </BoxElement>
   );
 }
 
@@ -402,22 +406,25 @@ function PipelineBoxShape({
     .join(" ");
 
   return (
-    <g
+    <BoxElement
       className={classes}
-      transform={`translate(${node.x} ${node.y})`}
+      x={node.x}
+      y={node.y}
+      width={width}
+      height={height}
+      label={displayName}
+      boxClassName="pipeline-box"
+      labelClassName="pipeline-box-name"
+      labelX={10}
       onClick={onSelect}
       role="button"
       aria-label={displayName}
       data-testid={`node-${node.id}`}
     >
-      <rect className="pipeline-box" x={0} y={0} width={width} height={height} rx={4} />
-      <text className="pipeline-box-name" x={10} y={height / 2 + 4}>
-        {displayName}
-      </text>
       <PipelineIndicators indicators={indicatorsOf(node.payload)} x={width - 8} y={16} />
       {problem && <ProblemMark elementId={node.id} problem={problem} x={width - 8} y={height - 6} />}
       {unresolvedReason.length > 0 && <title>{unresolvedReason}</title>}
-    </g>
+    </BoxElement>
   );
 }
 
@@ -447,12 +454,12 @@ function PipelineEdgeShape({ edge, model }: { edge: PipelineEdgeLine; model: Pip
     .join(" ");
 
   return (
-    <path
+    <FixedBezierConnection
+      from={from}
+      to={to}
       className={classes}
       data-testid={`edge-${edge.id}`}
-      d={`M ${from.x} ${from.y} C ${from.x + 30} ${from.y}, ${to.x - 30} ${to.y}, ${to.x} ${to.y}`}
       markerEnd="url(#pipeline-arrow)"
-      fill="none"
     />
   );
 }
@@ -482,26 +489,3 @@ function shownRectOf(box: ViewBox) {
   return { minX: box.x, minY: box.y, maxX: box.x + box.w, maxY: box.y + box.h };
 }
 
-/**
- * The selection a click on an element publishes, so the rest of the shell follows along.
- *
- * Nested: the outer level is the diagram entry, the inner one the element inside it. That is the
- * shape the context mechanism expects, and it is what lets the property grid ask about the stage
- * while the explorer still knows which file is open.
- */
-function nodeSelection(entryId: Uint8Array, path: readonly string[], elementId: string): ContextSelection {
-  const child = create(ContextSelectionSchema, {
-    source: 2, // DIAGRAM_CANVAS
-    id: { source: { case: "elementId", value: { value: elementId } } },
-    // Empty asks the backend to fill in the full path; sending a partial one is refused.
-    path: { segments: [] },
-    detail: { case: "none", value: create(EmptySchema) },
-  });
-
-  return create(ContextSelectionSchema, {
-    source: 1,
-    id: { source: { case: "entryId", value: { value: entryId } } },
-    path: { segments: [...path] },
-    detail: { case: "child", value: child },
-  });
-}
