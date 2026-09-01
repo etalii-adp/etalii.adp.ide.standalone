@@ -1,3 +1,4 @@
+using EtAlii.Adp.Diagram;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -19,15 +20,17 @@ public sealed class HierarchyModel
 
     private readonly Lock _gate = new();
     private readonly string _rootPath;
+    private readonly IDiagramDefinitionCatalog? _catalog;
     private readonly Dictionary<ShortGuid, EntryNode> _entriesById = new();
     private readonly Dictionary<ShortGuid, string> _pathById = new();
     private readonly Dictionary<string, ShortGuid> _idByPath = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<ShortGuid> _listedFolderIds = new();
     private bool _rootListed;
 
-    public HierarchyModel(string rootPath)
+    public HierarchyModel(string rootPath, IDiagramDefinitionCatalog? catalog = null)
     {
         _rootPath = IoPath.GetFullPath(rootPath);
+        _catalog = catalog;
     }
 
     public event Action<HierarchyEntryChange>? EntryChanged;
@@ -36,6 +39,17 @@ public sealed class HierarchyModel
     {
         lock (_gate)
         {
+            if (folderId is { } id && _entriesById.TryGetValue(id, out var entry) && !entry.IsFolder)
+            {
+                // Listing a FILE: its children are its nested registrations (adp-file-nesting
+                // Requirement 3). Syncing the containing folder is what nests them.
+                SyncFolder(entry.ParentId, raiseEvents: false);
+                return _entriesById.Values
+                    .Where(e => e.ParentId == id)
+                    .OrderBy(e => e.Name, Comparer<string>.Create(HierarchyNesting.CompareRegistrations))
+                    .ToList();
+            }
+
             return SyncFolder(folderId, raiseEvents: false);
         }
     }
@@ -216,6 +230,11 @@ public sealed class HierarchyModel
         var isFolder = Directory.Exists(path);
         var node = AddEntry(parentId, IoPath.GetFileName(path), isFolder, path);
         EntryChanged?.Invoke(new HierarchyEntryCreated(node));
+
+        // A created registration nests immediately, and a created subject adopts its orphans -
+        // both are re-parents pushed as updates, so a client applying them in order arrives at
+        // the same tree a fresh listing would build (Requirements 10.1, 10.3, 10.4).
+        ApplyNesting(parentPath, raiseEvents: true);
     }
 
     private void OnRemoved(string path)
@@ -234,8 +253,26 @@ public sealed class HierarchyModel
             return; // never known on this connection
         }
 
+        // A removed SUBJECT must not take its nested registrations with it - their files still
+        // exist. They re-parent back to the folder first, visibly orphaned rather than silently
+        // gone (Requirement 8.1), and only then does the subject's own subtree go.
+        if (_entriesById.TryGetValue(id, out var removedEntry) && !removedEntry.IsFolder)
+        {
+            var folderParent = removedEntry.ParentId;
+            foreach (var childId in _entriesById.Values.Where(e => e.ParentId == id).Select(e => e.Id).ToList())
+            {
+                _entriesById[childId] = _entriesById[childId] with { ParentId = folderParent };
+                EntryChanged?.Invoke(new HierarchyEntryUpdated(childId, _entriesById[childId].HasChildren, ParentChanged: true, ParentId: folderParent));
+            }
+        }
+
         RemoveSubtree(id);
         EntryChanged?.Invoke(new HierarchyEntryRemoved(id));
+
+        if (parentPath is not null)
+        {
+            ApplyNesting(parentPath, raiseEvents: true);
+        }
     }
 
     /// <summary>
@@ -291,6 +328,13 @@ public sealed class HierarchyModel
         RenumberPath(id, oldPath, newPath);
         _entriesById[id] = _entriesById[id] with { Name = newName };
         EntryChanged?.Invoke(new HierarchyEntryRenamed(id, newName));
+
+        // A rename can change what nests where - a subject gaining or losing its name, a
+        // registration changing which subject it derives.
+        if (IoPath.GetDirectoryName(newPath) is { } directory)
+        {
+            ApplyNesting(directory, raiseEvents: true);
+        }
     }
 
     private IReadOnlyList<EntryNode> SyncFolder(ShortGuid? folderId, bool raiseEvents)
@@ -347,7 +391,11 @@ public sealed class HierarchyModel
             if (_idByPath.TryGetValue(entryPath, out var existingId))
             {
                 var existing = _entriesById[existingId];
-                var refreshedHasChildren = existing.IsFolder && SafeHasAnyChild(entryPath);
+
+                // A folder's HasChildren comes from disk; a FILE's comes from its nested
+                // registrations, which ApplyNesting below owns - zeroing it here would make
+                // every sync flap a subject's expander.
+                var refreshedHasChildren = existing.IsFolder ? SafeHasAnyChild(entryPath) : existing.HasChildren;
                 if (!existing.Available || existing.HasChildren != refreshedHasChildren)
                 {
                     existing = existing with { Available = true, HasChildren = refreshedHasChildren };
@@ -369,8 +417,13 @@ public sealed class HierarchyModel
             }
         }
 
+        // Stale detection keys on the DISK parent, not the model parent: a nested
+        // registration's model parent is its subject, but it still lives in this folder,
+        // and its deletion must still be noticed here.
         foreach (var staleId in _entriesById.Values
-                     .Where(e => Equals(e.ParentId, folderId) && _pathById.TryGetValue(e.Id, out var p) && !currentPaths.Contains(p))
+                     .Where(e => _pathById.TryGetValue(e.Id, out var p)
+                                 && string.Equals(IoPath.GetDirectoryName(p), folderPath, StringComparison.OrdinalIgnoreCase)
+                                 && !currentPaths.Contains(p))
                      .Select(e => e.Id)
                      .ToList())
         {
@@ -381,10 +434,109 @@ public sealed class HierarchyModel
             }
         }
 
-        return results
+        ApplyNesting(folderPath, raiseEvents);
+
+        // Rebuilt rather than returned from `results`: the nesting pass may have re-parented
+        // entries after their snapshot was taken, and a registration appears under its subject
+        // and nowhere else (Requirement 3.5) - so a folder listing carries only what still has
+        // this folder as its parent.
+        return _entriesById.Values
+            .Where(e => Equals(e.ParentId, folderId)
+                        && _pathById.TryGetValue(e.Id, out var p)
+                        && string.Equals(IoPath.GetDirectoryName(p), folderPath, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(e => e.IsFolder)
             .ThenBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    /// <summary>
+    /// Applies <see cref="HierarchyNesting"/>'s placement to one folder's entries: registrations
+    /// re-parent under their subject files, subjects' <see cref="EntryNode.HasChildren"/> follow,
+    /// and every change is pushed so a watching client converges without a reload.
+    /// </summary>
+    private void ApplyNesting(string folderPath, bool raiseEvents)
+    {
+        if (_catalog is null)
+        {
+            return;
+        }
+
+        var siblings = _entriesById.Values
+            .Where(e => _pathById.TryGetValue(e.Id, out var p)
+                        && string.Equals(IoPath.GetDirectoryName(p), folderPath, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        ShortGuid? folderParentId = null;
+        if (!string.Equals(folderPath, _rootPath, StringComparison.OrdinalIgnoreCase) && _idByPath.TryGetValue(folderPath, out var ownId))
+        {
+            folderParentId = ownId;
+        }
+
+        var placements = HierarchyNesting.Assign(
+            siblings.Select(sibling => (sibling.Name, sibling.IsFolder)).ToList(),
+            name => ResolvedBodyNameOf(folderPath, name));
+
+        var byName = siblings.ToDictionary(sibling => sibling.Name, sibling => sibling, StringComparer.OrdinalIgnoreCase);
+        foreach (var placement in placements)
+        {
+            if (!byName.TryGetValue(placement.Name, out var registration))
+            {
+                continue;
+            }
+
+            ShortGuid? wantedParent = placement.SubjectName is { } subjectName && byName.TryGetValue(subjectName, out var subject)
+                ? subject.Id
+                : folderParentId;
+
+            var current = _entriesById[registration.Id];
+            if (!Equals(current.ParentId, wantedParent))
+            {
+                _entriesById[registration.Id] = current with { ParentId = wantedParent };
+                if (raiseEvents)
+                {
+                    EntryChanged?.Invoke(new HierarchyEntryUpdated(registration.Id, current.HasChildren, ParentChanged: true, ParentId: wantedParent));
+                }
+            }
+        }
+
+        // A subject file's HasChildren is exactly "does anything nest under it now".
+        foreach (var file in siblings.Where(sibling => !sibling.IsFolder))
+        {
+            var current = _entriesById[file.Id];
+            var hasChildren = _entriesById.Values.Any(e => e.ParentId == file.Id);
+            if (current.HasChildren != hasChildren)
+            {
+                _entriesById[file.Id] = current with { HasChildren = hasChildren };
+                if (raiseEvents)
+                {
+                    EntryChanged?.Invoke(new HierarchyEntryUpdated(file.Id, hasChildren));
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// The body file name a registration resolves inside its own folder, or null: no catalog,
+    /// no resolution, or a body living elsewhere. The resolution itself is
+    /// <see cref="DiagramFilePair"/>'s; only same-folder bodies nest, since a header can point
+    /// across folders and relocating an entry into another folder's subtree is not this spec.
+    /// </summary>
+    private string? ResolvedBodyNameOf(string folderPath, string fileName)
+    {
+        if (_catalog is null)
+        {
+            return null;
+        }
+
+        var body = DiagramFilePair.BodyOf(IoPath.Combine(folderPath, fileName), _catalog, _rootPath);
+        if (body is not { } resolved || resolved.Path.Length == 0)
+        {
+            return null;
+        }
+
+        return string.Equals(IoPath.GetDirectoryName(resolved.Path), folderPath, StringComparison.OrdinalIgnoreCase)
+            ? IoPath.GetFileName(resolved.Path)
+            : null;
     }
 
     private EntryNode AddEntry(ShortGuid? parentId, string name, bool isFolder, string path)

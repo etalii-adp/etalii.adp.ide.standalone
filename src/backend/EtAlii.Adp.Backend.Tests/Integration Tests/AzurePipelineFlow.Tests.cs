@@ -291,12 +291,30 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
         ShortGuid? watchId = null)
     {
         var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
+        var effectiveWatchId = watchId ?? ShortGuid.NewShortGuid();
         var response = await hierarchyClient.ListEntriesAsync(
-            new ListEntriesRequest { ProjectId = projectId, WatchId = watchId ?? ShortGuid.NewShortGuid() },
+            new ListEntriesRequest { ProjectId = projectId, WatchId = effectiveWatchId },
             headers,
             cancellationToken: TestContext.Current.CancellationToken);
 
-        return response.Entries.Entries_.ToDictionary(entry => entry.Name, entry => entry.Id, StringComparer.Ordinal);
+        // A registration is a child of its subject now, so the flat dictionary walks one nested
+        // level too - same watch id, so the same model answers both listings.
+        var byName = response.Entries.Entries_.ToDictionary(entry => entry.Name, entry => entry.Id, StringComparer.Ordinal);
+        foreach (var parent in response.Entries.Entries_.Where(entry => entry.HasChildren && !IsFolderEntry(entry)))
+        {
+            var children = await hierarchyClient.ListEntriesAsync(
+                new ListEntriesRequest { ProjectId = projectId, WatchId = effectiveWatchId, FolderId = parent.Id },
+                headers,
+                cancellationToken: TestContext.Current.CancellationToken);
+            foreach (var child in children.Entries.Entries_)
+            {
+                byName[child.Name] = child.Id;
+            }
+        }
+
+        return byName;
+
+        static bool IsFolderEntry(Entry entry) => entry.Kind == EntryKind.Folder;
     }
 
     /// <summary>The action ids offered on one hierarchy entry.</summary>

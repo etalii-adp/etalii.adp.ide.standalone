@@ -111,12 +111,9 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
             new ContextService.ContextServiceClient(channel));
     }
 
-    private static async Task<Contracts.ShortGuid> EntryIdOfAsync(ContextSelectionFlowSession session, string name)
-    {
-        var entries = await session.Hierarchy.ListEntriesAsync(
-            new ListEntriesRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
-        return entries.Entries.Entries_.Single(e => e.Name == name).Id;
-    }
+    private static Task<Contracts.ShortGuid> EntryIdOfAsync(ContextSelectionFlowSession session, string name) =>
+        // A registration is a child of its subject now, so the lookup follows the nesting.
+        NestedEntryLookup.EntryIdOfAsync(session.Hierarchy, session.ProjectId, session.WatchId, session.Headers, name);
 
     private static ContextSelection Selection(Contracts.ShortGuid entryId, params string[] path)
     {

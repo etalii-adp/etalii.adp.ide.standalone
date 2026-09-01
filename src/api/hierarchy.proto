@@ -68,7 +68,7 @@ message EntryRenamed {
 message EntryUpdated {
   ShortGuid entry_id = 1;
   bool has_children = 2; // pushed when an existing, already-known entry's has_children changes
-  ShortGuid parent_id = 3; // set only for a re-parent (an orphan whose subject appeared); unset means the parent is unchanged. A re-parent is an update rather than remove-then-create so the entry keeps its id and any selection a client holds on it (adp-file-nesting Requirement 10.3)
+  ShortGuid parent_id = 3; // set only for a re-parent (an orphan whose subject appeared, or a subject vanishing under its registrations); unset means the parent is unchanged, and a set-but-empty id means the root. A re-parent is an update rather than remove-then-create so the entry keeps its id and any selection a client holds on it (adp-file-nesting Requirement 10.3)
 }
 
 message RootUnavailable {
