@@ -57,14 +57,14 @@
 
 > Nothing in this phase renames anything. Every test here runs green against `develop` as it stands before Phase C begins, and that is how it is verified: **run Phase B to green, commit it, and only then start Phase C.**
 
-- [-] 5. `ExampleRegistrationTests` over every tracked example
+- [x] 5. `ExampleRegistrationTests` over every tracked example
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/ExampleRegistration.Tests.cs` (new)
   - One theory walking every `.adp` under `src/diagrams/*/examples/**`: each resolves to a definition in the catalog, and a registration with a body resolves to a file that exists
   - Purpose: 26 of 39 registrations currently have no test opening them
   - _Requirements: 11.1, 12.3_
   - _Prompt: Implement the task for spec adp-file-nesting, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA-minded C# developer | Task: Build the safety net against the current example names | Restrictions: walk the tree rather than hard-coding a list, so an example set added by a later spec is covered on arrival; this task renames NOTHING and must pass on develop as it stands before any rename exists | Success: all 39 registrations are exercised and the suite is green before Phase C starts. Mark in progress, log when done, then mark complete._
 
-- [ ] 6. A fixture for the unknown-MIME branch
+- [-] 6. A fixture for the unknown-MIME branch
   - File: `src/backend/EtAlii.Adp.Backend.Tests/Fixtures/` (new)
   - A registration whose first line names no definition in the catalog
   - Purpose: Requirement 8.4, which has no coverage anywhere and cannot get it from an example
