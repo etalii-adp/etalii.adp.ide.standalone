@@ -6,16 +6,16 @@ using Serilog;
 
 namespace EtAlii.Adp.Backend.Hierarchy;
 
-public sealed class HierarchyServiceImpl : HierarchyService.HierarchyServiceBase
+public sealed class HierarchyService : EtAlii.Adp.HierarchyService.HierarchyServiceBase
 {
     private static readonly TimeSpan RootRecoveryPollInterval = TimeSpan.FromSeconds(2);
 
-    private static readonly ILogger _logger = Log.ForContext<HierarchyServiceImpl>();
+    private static readonly ILogger _logger = Log.ForContext<HierarchyService>();
 
     private readonly IProjectStore _projectStore;
     private readonly IHierarchyModelStore _hierarchyModelStore;
 
-    public HierarchyServiceImpl(IProjectStore projectStore, IHierarchyModelStore hierarchyModelStore)
+    public HierarchyService(IProjectStore projectStore, IHierarchyModelStore hierarchyModelStore)
     {
         _projectStore = projectStore;
         _hierarchyModelStore = hierarchyModelStore;
