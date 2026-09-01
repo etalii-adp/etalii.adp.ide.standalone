@@ -375,4 +375,47 @@ public class DiagramFilePairTests : IDisposable
         Assert.True(File.Exists(shared), "deleting one view destroyed the shared model");
     }
 
+    /// <summary>
+    /// Requirement 4.3, corrected: .NET does NOT apply the Unix "leading dot means no extension"
+    /// convention. The requirement originally asserted the opposite of both values below, and the
+    /// error survived until its own "verify by test" clause forced a measurement. These two facts
+    /// pin the measured behaviour so the correction cannot decay back into folklore - name-based
+    /// reasoning about a bare `.adp` is the hazard (the base name is empty), extension-based
+    /// reasoning is safe.
+    /// </summary>
+    [Fact]
+    public void GetExtension_OfABareFolderRegistrationName_IsTheWholeName()
+    {
+        // Arrange, act and assert.
+        Assert.Equal(DiagramFileName.Extension, IoPath.GetExtension(DiagramFileName.Extension));
+    }
+
+    [Fact]
+    public void GetFileNameWithoutExtension_OfABareFolderRegistrationName_IsEmpty()
+    {
+        // Arrange, act and assert.
+        Assert.Equal("", IoPath.GetFileNameWithoutExtension(DiagramFileName.Extension));
+    }
+
+    [Fact]
+    public void StripExtension_OfABareFolderRegistrationName_IsEmpty()
+    {
+        // Arrange, act and assert: the empty base name is exactly why Requirement 4.4 excludes
+        // the folder-scoped form from sibling derivation - a derived path would be bare extension.
+        Assert.Equal("", DiagramFileName.StripExtension(DiagramFileName.Extension));
+    }
+
+    [Fact]
+    public void SiblingDerivation_OfAFolderScopedRegistration_ProducesNoPath()
+    {
+        // Arrange.
+        var folderScoped = IoPath.Combine(_root, DiagramFileName.Extension);
+
+        // Act.
+        var derived = DiagramFilePair.SiblingPathFor(folderScoped, Mindmap.Extension);
+
+        // Assert: empty rather than a path that is just the extension (Requirement 4.4).
+        Assert.Equal("", derived);
+    }
+
 }
