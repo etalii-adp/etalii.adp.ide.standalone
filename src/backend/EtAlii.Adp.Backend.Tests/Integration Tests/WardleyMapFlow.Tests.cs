@@ -353,6 +353,7 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
         // Assert. The pushed selection is self-describing: the innermost level carries the
         // element's name and the module's own payload, so a consumer needs no second call
         // (Requirement 11.3).
+        Assert.NotNull(entries);
         Assert.Equal("", selected.Error);
         var changed = await pendingSelection;
         var innermost = changed.Levels[^1].Element;

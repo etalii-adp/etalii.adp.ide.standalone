@@ -111,6 +111,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
             headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
+        Assert.NotNull(entries);
         Assert.True(executed.Accepted, executed.Error);
         var prompt = await pendingPrompt;
         Assert.Equal(ContextPrompt.PromptOneofCase.InputDialog, prompt.PromptCase);
@@ -167,6 +168,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
             headers, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert.
+        Assert.NotNull(entries);
         Assert.True(executed.Accepted, executed.Error);
         var prompt = await pendingPrompt;
         Assert.Equal(ContextPrompt.PromptOneofCase.InputDialog, prompt.PromptCase);
@@ -257,6 +259,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         var partialPath = await contextClient.SelectAsync(
             new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = NodeChain(entryId, "ID_d1", filePath: ["deep.adp"], nodePath: ["Alpha"]) },
             headers, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.NotNull(entries);
         Assert.NotEqual("", partialPath.Error);
     }
 
@@ -311,6 +314,7 @@ public class DiagramElementActionFlowTests : IClassFixture<WebApplicationFactory
         Assert.True(executed.Accepted, executed.Error);
 
         // Assert.
+        Assert.NotNull(entries);
         Assert.Contains("Expand", ActionLabels(await ReadUntilSelectionActionsAsync(contextCall.ResponseStream, cts.Token)));
     }
 
