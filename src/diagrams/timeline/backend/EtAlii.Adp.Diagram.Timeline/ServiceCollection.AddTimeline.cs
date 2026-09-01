@@ -31,6 +31,10 @@ public static class ServiceCollectionAddTimelineExtension
 
         services.AddSingleton<IDiagramSessionFactory, TimelineSessionFactory>();
 
+        // The reload seam: an external write to a timeline reaches the store, and through it
+        // every open session (modular-text-editors Requirement 5.3).
+        services.AddSingleton<IDiagramDocumentReloader, TimelineDocumentReloader>();
+
         // The commands, one handler each: the whole editable surface of a timeline
         // (Requirement 11.1), and nothing writes the file except through them.
         services.AddSingleton<ICommandHandler<SetTimelinePlacementCommand>, SetTimelinePlacementCommandHandler>();

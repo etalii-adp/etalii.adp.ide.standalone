@@ -10,6 +10,10 @@ public sealed class C4DocumentStore : IC4DocumentStore
 
     private readonly ConcurrentDictionary<string, C4DocumentEntry> _entries = new(StringComparer.OrdinalIgnoreCase);
 
+    // The paths this store is writing right now, so its own save does not bounce back through
+    // Reload as an "external" change - PlainEditorSession's saving guard, per path.
+    private readonly ConcurrentDictionary<string, byte> _selfWrites = new(StringComparer.OrdinalIgnoreCase);
+
     public event EventHandler<C4DocumentChangedEventArgs>? Changed;
 
     public C4Document GetOrLoad(string path)
@@ -30,6 +34,7 @@ public sealed class C4DocumentStore : IC4DocumentStore
 
         var entry = Loaded(path);
         var text = entry.Document.ToText();
+        _selfWrites[path] = 1;
         try
         {
             var directory = System.IO.Path.GetDirectoryName(path);
@@ -46,6 +51,10 @@ public sealed class C4DocumentStore : IC4DocumentStore
             // a save the user can retry once the file is writable again.
             _logger.Warning(exception, "Could not write {Path}; the change is kept in memory", path);
             return;
+        }
+        finally
+        {
+            _selfWrites.TryRemove(path, out _);
         }
 
         var workspace = C4Parser.Parse(entry.Document);
@@ -69,6 +78,13 @@ public sealed class C4DocumentStore : IC4DocumentStore
     public void Reload(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        if (_selfWrites.ContainsKey(path))
+        {
+            // The change on disk is this store's own save, mid-write; Save reparses and tells
+            // the sessions itself.
+            return;
+        }
 
         _entries.TryRemove(path, out _);
         var entry = Loaded(path);

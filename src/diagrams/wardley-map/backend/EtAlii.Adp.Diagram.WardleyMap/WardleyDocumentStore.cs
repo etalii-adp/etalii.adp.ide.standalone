@@ -17,6 +17,10 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
 
     private readonly WardleyIdentities _sidecar = new();
 
+    // The paths this store is writing right now, so its own save does not bounce back through
+    // Reload as an "external" change - PlainEditorSession's saving guard, per path.
+    private readonly ConcurrentDictionary<string, byte> _selfWrites = new(StringComparer.OrdinalIgnoreCase);
+
     public event EventHandler<WardleyDocumentChangedEventArgs>? Changed;
 
     public WardleyDocument GetOrLoad(string path)
@@ -56,17 +60,26 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
         var document = GetOrLoad(path);
-        if (!WriteAtomically(path, document.ToText()))
+        _selfWrites[path] = 1;
+        try
         {
-            return;
-        }
+            if (!WriteAtomically(path, document.ToText()))
+            {
+                return;
+            }
 
-        // The edit may have added or removed elements, so identities are re-reconciled against
-        // what was already assigned - anything that survived keeps its id - and only now
-        // written. A map opened and never edited reaches none of this (Requirement 4.3).
-        var reconciled = WardleyIdentities.Reconcile(WardleyParser.Parse(document), Identities(path));
-        _identities[path] = reconciled;
-        _sidecar.Write(path, reconciled);
+            // The edit may have added or removed elements, so identities are re-reconciled
+            // against what was already assigned - anything that survived keeps its id - and
+            // only now written. A map opened and never edited reaches none of this
+            // (Requirement 4.3).
+            var reconciled = WardleyIdentities.Reconcile(WardleyParser.Parse(document), Identities(path));
+            _identities[path] = reconciled;
+            _sidecar.Write(path, reconciled);
+        }
+        finally
+        {
+            _selfWrites.TryRemove(path, out _);
+        }
 
         Changed?.Invoke(this, new WardleyDocumentChangedEventArgs(path));
     }
@@ -87,6 +100,13 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
     public void Reload(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        if (_selfWrites.ContainsKey(path))
+        {
+            // The change on disk is this store's own save, mid-write; Save reconciles and
+            // tells the sessions itself.
+            return;
+        }
 
         var previous = _identities.TryGetValue(path, out var known) ? known : [];
         _documents.TryRemove(path, out _);

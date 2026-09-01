@@ -15,12 +15,16 @@ public sealed class RootFolderWatcher : IDisposable
 
     private readonly FileSystemWatcher _watcher;
 
-    public RootFolderWatcher(string rootPath, ChangeCallback onChange, Action<Exception> onError)
+    public RootFolderWatcher(string rootPath, ChangeCallback onChange, Action<Exception> onError, bool includeContentChanges = false)
     {
         _watcher = new FileSystemWatcher(rootPath)
         {
             IncludeSubdirectories = true,
-            NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName,
+            NotifyFilter = includeContentChanges
+                // The reload bridge cares what a file says, not only what it is called: an
+                // in-place write raises no name event at all, so it needs LastWrite and Size.
+                ? NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite | NotifyFilters.Size
+                : NotifyFilters.FileName | NotifyFilters.DirectoryName,
         };
 
         // Guarded: these run on the watcher's own thread, where an unhandled exception is not
@@ -32,6 +36,10 @@ public sealed class RootFolderWatcher : IDisposable
         _watcher.Deleted += (_, e) => Dispatch(onChange, WatcherChangeTypes.Deleted, e.FullPath, null);
         _watcher.Renamed += (_, e) => Dispatch(onChange, WatcherChangeTypes.Renamed, e.OldFullPath, e.FullPath);
         _watcher.Error += (_, e) => onError(e.GetException());
+        if (includeContentChanges)
+        {
+            _watcher.Changed += (_, e) => Dispatch(onChange, WatcherChangeTypes.Changed, null, e.FullPath);
+        }
 
         _watcher.EnableRaisingEvents = true;
     }

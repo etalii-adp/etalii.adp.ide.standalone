@@ -56,7 +56,9 @@ public interface IWardleyDocumentStore
     /// <summary>
     /// Re-reads a document an external tool changed, and tells the sessions on it. The reload
     /// is never recorded on the history: it arrives through the watcher and never becomes a
-    /// command (Requirement 10.7).
+    /// command (Requirement 10.7). A no-op while the store's own save of that path is in
+    /// flight: its own write on disk is not an external change, and must not bounce back as
+    /// one.
     /// </summary>
     void Reload(string path);
 

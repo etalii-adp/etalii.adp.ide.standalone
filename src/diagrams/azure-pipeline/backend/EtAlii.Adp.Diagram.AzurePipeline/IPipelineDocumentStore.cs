@@ -42,7 +42,9 @@ public interface IPipelineDocumentStore
 
     /// <summary>
     /// Re-reads a document something outside changed, and tells the sessions on it. Templates are
-    /// forgotten too: the edit may well have been to one of them.
+    /// forgotten too: the edit may well have been to one of them. A no-op while the store's own
+    /// save of that path is in flight: its own write on disk is not an external change, and must
+    /// not bounce back as one.
     /// </summary>
     void Reload(string rootPath, string path);
 
