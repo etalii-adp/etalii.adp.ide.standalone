@@ -208,11 +208,11 @@ Every group's gate: backend groups run `dotnet test --solution EtAlii.Adp.slnx` 
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec modular-text-editors, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, and npm test/npm run typecheck from src/client, checking all exit codes. If clean, merge editors-context into develop and retire the worktree | Restrictions: do not merge on a failing gate | Success: all four gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7. Examples, steering docs, and final sign-off
+- [-] 7. Examples, steering docs, and final sign-off
   - Worktree: `.claude/worktrees/editors-docs`
   - _Requirements: 1.1, 1.5, 10.4_
 
-- [ ] 7.1 Populate each module's `examples/` folder
+- [-] 7.1 Populate each module's `examples/` folder
   - File: `src/editors/plain/examples/` and `src/editors/markdown/examples/` (new sample files)
   - Each module's tests actually open these files (R10.4 - "the examples cannot drift from what the code supports"); `plain`'s examples exercise its encoding/line-ending edge cases (a CRLF file, a UTF-8-BOM file), `markdown`'s exercise headings and preview
   - _Requirements: 10.4_
