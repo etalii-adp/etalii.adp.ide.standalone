@@ -13,7 +13,7 @@ public class ExamplesTests
     private static string ExamplesRoot { get; } = Locate("src", "editors", "markdown", "examples");
 
     /// <summary>The combined project's replica of this module's examples (structure.md's replication rule).</summary>
-    private static string ReplicaRoot { get; } = Locate("src", "examples", "markdown");
+    private static string ReplicaRoot { get; } = Locate("src", "examples", "editors", "markdown");
 
     private static string Locate(params string[] segments)
     {
@@ -99,7 +99,7 @@ public class ExamplesTests
         var replica = IoPath.Combine(ReplicaRoot, relativePath);
 
         // Act and assert.
-        Assert.True(File.Exists(replica), $"{relativePath} has no replica under src/examples/markdown");
+        Assert.True(File.Exists(replica), $"{relativePath} has no replica under src/examples/editors/markdown");
         Assert.Equal(
             await File.ReadAllBytesAsync(moduleCopy, TestContext.Current.CancellationToken),
             await File.ReadAllBytesAsync(replica, TestContext.Current.CancellationToken));

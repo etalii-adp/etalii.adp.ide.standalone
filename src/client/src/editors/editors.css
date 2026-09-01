@@ -66,8 +66,16 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--accent, #06c);
+  /* The app's own accent green (--color-primary), not a blue of this panel's invention:
+     --accent was never a variable this theme defines, so the old value always fell through
+     to its hardcoded blue fallback. */
+  color: var(--color-primary, limegreen);
   padding: 0;
+}
+
+.markdown-outline button:hover {
+  color: var(--color-primary-hover, #4be64b);
+  text-decoration: underline;
 }
 
 .markdown-preview {

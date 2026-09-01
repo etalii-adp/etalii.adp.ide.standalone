@@ -144,17 +144,16 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
         var textAfterSave = await NextAddAsync(textCall.ResponseStream, add => ContentOf(add) == editedText);
         Assert.Equal(editedText, ContentOf(textAfterSave));
 
-        // Assert 1b - RECORDED DESIGN GAP (modular-text-editors task 6.2's own restriction:
-        // "if it does not pass without new code, that is a design gap to report"). R5.3's
-        // other half - the diagram hearing this save as pushed deltas - does NOT hold today:
-        // every diagram document store exposes Reload("re-reads a document an external tool
-        // changed") but nothing in the codebase invokes it, and no watcher is wired to any
-        // diagram store, so an external write never reaches an open diagram session - the
-        // store's cache even outlives the stream, so a closed-and-reopened diagram still
-        // serves the pre-save model. Wiring the watcher-to-store bridge is the diagram
-        // family's own missing feature, not editor-family synchronisation code, and is
-        // deliberately not added here. When that bridge lands, assert here that the diagram
-        // stream delivers an Add whose element payload contains "Quartermaster".
+        // Assert 1b: R5.3's other half - the diagram hears the same save as pushed deltas.
+        // The DiagramDocumentReloadBridge sees the write land, the C4 store re-reads the
+        // body, and the open diagram stream re-delivers its view with the renamed person in
+        // it. (Task 6.2 recorded a design gap here - every store exposed Reload but nothing
+        // in the codebase invoked it, so an external write never reached an open diagram -
+        // and the bridge is what closed it.)
+        var diagramAfterSave = await NextAddAsync(
+            diagramCall.ResponseStream,
+            add => add.Elements.Any(element => PayloadTextOf(element).Contains("Quartermaster", StringComparison.Ordinal)));
+        Assert.DoesNotContain(diagramAfterSave.Elements, element => element.Id?.Value == "content");
 
         // Act 2 and assert 2: the reverse direction. A diagram-side save lands on the same
         // disk path through its own store; the write below takes that identical
@@ -172,6 +171,13 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
         var element = add.Elements.FirstOrDefault(candidate => candidate.Id?.Value == "content");
         return element?.Payload is { } payload ? Encoding.UTF8.GetString(payload.Value.Span) : "";
     }
+
+    /// <summary>
+    /// An element's payload bytes as text - enough to find a name inside a serialized proto
+    /// payload, which carries its strings as UTF-8 verbatim.
+    /// </summary>
+    private static string PayloadTextOf(Element element) =>
+        element.Payload is { } payload ? Encoding.UTF8.GetString(payload.Value.Span) : "";
 
     /// <summary>Reads the stream until an Add matches; the call's own deadline is the timeout.</summary>
     private static async Task<Add> NextAddAsync(IAsyncStreamReader<Delta> stream, Func<Add, bool> matches)

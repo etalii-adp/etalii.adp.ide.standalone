@@ -16,6 +16,11 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
     private static readonly ILogger Logger = Log.ForContext<MindmapDocumentStore>();
 
     private readonly ConcurrentDictionary<string, MindmapDocument> _documents = new(StringComparer.OrdinalIgnoreCase);
+
+    // The paths this store is writing right now, so its own save does not bounce back through
+    // Reload as an "external" change - PlainEditorSession's saving guard, per path.
+    private readonly ConcurrentDictionary<string, byte> _selfWrites = new(StringComparer.OrdinalIgnoreCase);
+
     private readonly IDiagramDocumentFactory _factory;
 
     public MindmapDocumentStore(IDiagramDocumentFactory factory)
@@ -54,8 +59,16 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
         // matches the pattern the hierarchy watcher already ignores.
         var folder = IoPath.GetDirectoryName(bodyPath) ?? ".";
         var temporary = IoPath.Combine(folder, $"~adp-{Guid.NewGuid():N}.tmp");
-        File.WriteAllText(temporary, document.ToText(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-        File.Move(temporary, bodyPath, overwrite: true);
+        _selfWrites[bodyPath] = 1;
+        try
+        {
+            File.WriteAllText(temporary, document.ToText(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            File.Move(temporary, bodyPath, overwrite: true);
+        }
+        finally
+        {
+            _selfWrites.TryRemove(bodyPath, out _);
+        }
 
         Logger.Debug("Saved {BodyPath} after {Change}", bodyPath, change.GetType().Name);
         Changed?.Invoke(this, new MindmapChangedEventArgs(bodyPath, change));
@@ -67,6 +80,12 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
     /// <summary>Re-reads a map changed on disk outside ADP and announces it (Requirement 11.8).</summary>
     public void Reload(string bodyPath)
     {
+        if (_selfWrites.ContainsKey(bodyPath))
+        {
+            // The change on disk is this store's own save, mid-write; Save announces it itself.
+            return;
+        }
+
         if (!_documents.ContainsKey(bodyPath))
         {
             return;

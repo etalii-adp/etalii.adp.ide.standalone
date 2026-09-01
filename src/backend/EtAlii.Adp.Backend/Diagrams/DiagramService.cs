@@ -26,6 +26,7 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
     private readonly EditorSessionFactories _editorSessionFactories;
     private readonly IDiagramViewportRegistry _viewports;
     private readonly IHistoryStackStore _historyStacks;
+    private readonly DiagramDocumentReloadBridge _reloadBridge;
     private readonly IReadOnlyList<Diagram.IDiagramToolboxProvider> _toolboxProviders;
 
     public DiagramService(
@@ -36,6 +37,7 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
         EditorSessionFactories editorSessionFactories,
         IDiagramViewportRegistry viewports,
         IHistoryStackStore historyStacks,
+        DiagramDocumentReloadBridge reloadBridge,
         IEnumerable<Diagram.IDiagramToolboxProvider> toolboxProviders)
     {
         _historyStacks = historyStacks;
@@ -45,6 +47,7 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
         _editorResolver = editorResolver;
         _editorSessionFactories = editorSessionFactories;
         _viewports = viewports;
+        _reloadBridge = reloadBridge;
         _toolboxProviders = [.. toolboxProviders];
     }
 
@@ -82,6 +85,10 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
                 ?? throw new RpcException(new Status(StatusCode.Unimplemented, $"'{origin}' diagrams cannot be opened yet."));
             bodyPath = diagramBody;
             openedSession = factory.Open(watchId, rootPath, bodyPath, registrationPath);
+
+            // From here on, an external write to this body or its .adp reaches the module's
+            // store as a Reload and every open session as pushed deltas (Requirement 5.3).
+            _reloadBridge.Track(rootPath, bodyPath, registrationPath, origin);
         }
         else if (TryResolveEditor(request.ProjectId, request.Path, context, out var editorRoot, out var fullPath, out var editorDefinitionId))
         {
@@ -353,10 +360,10 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
         }
 
         // Through the project's history, not straight to disk: a save is one undo away like
-        // every other change (Requirement 6.2). Every open session of the file - text and
-        // diagram alike - holds its own watcher, so the write comes back to all of them as an
-        // ordinary pushed change; the file on disk is the tie-breaker by construction
-        // (Requirements 5.3, 5.5).
+        // every other change (Requirement 6.2). The write comes back to every open session of
+        // the file as an ordinary pushed change - each text session through its own watcher,
+        // each diagram through the reload bridge and its store - so the file on disk is the
+        // tie-breaker by construction (Requirements 5.3, 5.5).
         var result = await _historyStacks.Get(rootPath).ExecuteAsync(
             new SaveTextFileCommand(fullPath, request.Content), context.CancellationToken);
 

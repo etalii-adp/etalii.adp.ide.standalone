@@ -121,6 +121,11 @@ elements:
     label: New moment
     begin: 2027-08-12
     row: 6
+  - id: 3wcctm69gg5exkr4ofyct04bv
+    label: New element
+    begin: 2024-10-22
+    end: 2024-11-05
+    row: 11
 connections:
   - id: c1
     from: discovery
@@ -219,3 +224,6 @@ connections:
   - id: 6edbd9efy9cg8yo6zk7uk961b
     from: 18g3b7b6kp2icm9vzi5ncd91a
     to: 2qghim1my3ekkmliufk5yk2w5
+  - id: 9dm7zb9l5tm8il668fzxthlvg
+    from: discovery
+    to: 3wcctm69gg5exkr4ofyct04bv

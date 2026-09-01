@@ -4,6 +4,34 @@ import { EditorView, keymap, lineNumbers } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 
 /**
+ * The editor surface in the application's own colors. Without this, CodeMirror runs its
+ * built-in LIGHT base theme whatever the app shows: a #f5f5f5 gutter with gray numbers, and -
+ * the invisible half of the bug - `caret-color: black`, which on the dark surface makes the
+ * blinking caret disappear entirely while the text stays perfectly editable. Bound to the
+ * shell's CSS variables rather than literal colors, so the same extension is right in both
+ * light and dark mode and follows a theme switch live.
+ */
+const appTheme = EditorView.theme({
+  "&": {
+    backgroundColor: "var(--color-surface)",
+    color: "var(--color-text)",
+  },
+  ".cm-content": {
+    caretColor: "var(--color-text)",
+  },
+  // The drawn cursor some extensions add; kept in step so a module adding drawSelection
+  // does not resurface the invisible-caret bug.
+  ".cm-cursor, .cm-dropCursor": {
+    borderLeftColor: "var(--color-text)",
+  },
+  ".cm-gutters": {
+    backgroundColor: "var(--color-surface)",
+    color: "var(--color-text-muted)",
+    borderRight: "1px solid var(--color-border)",
+  },
+});
+
+/**
  * The one text-editing surface every editor module wraps (modular-text-editors task 5.1):
  * CodeMirror 6, chosen over Monaco because its modular per-language packages match the
  * plugin-per-module shape and it needs no bespoke worker/Vite configuration touching shared
@@ -38,6 +66,7 @@ export function BaseTextEditor({ content, onChange, extensions = [], onSave }: B
       state: EditorState.create({
         doc: content,
         extensions: [
+          appTheme,
           lineNumbers(),
           history(),
           keymap.of([
