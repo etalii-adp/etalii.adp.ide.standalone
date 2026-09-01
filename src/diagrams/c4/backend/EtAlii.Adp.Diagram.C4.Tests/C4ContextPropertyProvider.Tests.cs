@@ -56,10 +56,7 @@ public class C4ContextPropertyProviderTests : IDisposable
     {
         GC.SuppressFinalize(this);
         _services.Dispose();
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, recursive: true);
-        }
+        TestFolder.TryDelete(_root);
     }
 
     private ContextTarget Target(string elementId) => new(

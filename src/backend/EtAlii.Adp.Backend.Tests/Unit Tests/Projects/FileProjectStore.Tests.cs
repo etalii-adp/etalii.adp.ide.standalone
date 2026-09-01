@@ -18,10 +18,7 @@ public class FileProjectStoreTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(_appDataRoot))
-        {
-            Directory.Delete(_appDataRoot, recursive: true);
-        }
+        TestFolder.TryDelete(_appDataRoot);
     }
 
     private string CreateRealFolder(string name)

@@ -39,10 +39,7 @@ public class C4LayoutSidecarTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, recursive: true);
-        }
+        TestFolder.TryDelete(_root);
     }
 
     private (C4Workspace Workspace, C4View View) Load(string dsl = Model)

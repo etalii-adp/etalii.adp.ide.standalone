@@ -16,10 +16,7 @@ public class HierarchyModelTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, recursive: true);
-        }
+        TestFolder.TryDelete(_root);
     }
 
     private string CreateFolder(params string[] segments)
@@ -313,7 +310,7 @@ public class HierarchyModelTests : IDisposable
         }
         finally
         {
-            Directory.Delete(outsideRoot, recursive: true);
+            TestFolder.TryDelete(outsideRoot);
         }
     }
 
@@ -382,7 +379,7 @@ public class HierarchyModelTests : IDisposable
         }
         finally
         {
-            Directory.Delete(outsideRoot, recursive: true);
+            TestFolder.TryDelete(outsideRoot);
         }
     }
     [Fact]

@@ -12,14 +12,7 @@ public sealed class WardleyIdentitiesTests : IDisposable
 
     public void Dispose()
     {
-        try
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A scratch folder that outlives the test is untidy, never a failure.
-        }
+        TestFolder.TryDelete(_folder);
     }
 
     private string BodyPath => IoPath.Combine(_folder, "map.owm");

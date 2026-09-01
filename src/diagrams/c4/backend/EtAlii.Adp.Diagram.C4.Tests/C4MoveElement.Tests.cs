@@ -50,10 +50,7 @@ public class C4MoveElementTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, recursive: true);
-        }
+        TestFolder.TryDelete(_root);
     }
 
     private C4Session Open() => (C4Session)_services

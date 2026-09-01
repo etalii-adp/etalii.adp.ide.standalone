@@ -17,10 +17,7 @@ public class DiagramFileNameTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(_folder))
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
+        TestFolder.TryDelete(_folder);
     }
 
     private void Existing(string fileName) => File.WriteAllText(IoPath.Combine(_folder, fileName), "");

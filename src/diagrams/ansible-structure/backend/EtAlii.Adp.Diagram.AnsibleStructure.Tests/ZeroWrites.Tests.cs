@@ -40,10 +40,7 @@ public class ZeroWritesTests : IDisposable
     public void Dispose()
     {
         _store.Dispose();
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, recursive: true);
-        }
+        TestFolder.TryDelete(_root);
     }
 
     [Fact]

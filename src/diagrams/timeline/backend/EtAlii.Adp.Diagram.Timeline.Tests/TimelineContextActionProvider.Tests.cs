@@ -28,10 +28,7 @@ public class TimelineContextActionProviderTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(_workspace))
-        {
-            Directory.Delete(_workspace, recursive: true);
-        }
+        TestFolder.TryDelete(_workspace);
 
         GC.SuppressFinalize(this);
     }
@@ -332,10 +329,7 @@ public class TimelineActionRealityTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(_workspace))
-        {
-            Directory.Delete(_workspace, recursive: true);
-        }
+        TestFolder.TryDelete(_workspace);
 
         GC.SuppressFinalize(this);
     }
@@ -420,10 +414,7 @@ public class TimelineRelationGestureTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(_workspace))
-        {
-            Directory.Delete(_workspace, recursive: true);
-        }
+        TestFolder.TryDelete(_workspace);
 
         GC.SuppressFinalize(this);
     }

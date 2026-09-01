@@ -78,7 +78,7 @@ public class ExamplesTests
         }
         finally
         {
-            Directory.Delete(IoPath.GetDirectoryName(temp)!, recursive: true);
+            TestFolder.TryDelete(IoPath.GetDirectoryName(temp)!);
         }
     }
 

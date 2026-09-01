@@ -1,6 +1,15 @@
 <Project>
 
   <!--
+    Every test project compiles in the shared teardown helper, so scratch-folder
+    deletion goes through TestFolder.TryDelete instead of a bare Directory.Delete
+    that races the OS over handles released only moments before (see the helper).
+  -->
+  <ItemGroup Condition="'$(MSBuildProjectName.EndsWith(`.Tests`))' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)TestSupport\TestFolder.cs" Link="TestSupport\TestFolder.cs" />
+  </ItemGroup>
+
+  <!--
     Windows MAX_PATH guard.
 
     On Windows without effective long-path support, MSBuild's Exists() silently returns false

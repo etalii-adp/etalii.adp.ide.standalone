@@ -43,10 +43,7 @@ public class MindmapSessionTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, recursive: true);
-        }
+        TestFolder.TryDelete(_root);
     }
 
     private MindmapSession Open() => new(_watchId, _bodyPath, _documents, _views, _mapper, _history);

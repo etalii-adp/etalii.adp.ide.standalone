@@ -58,10 +58,7 @@ public class AddC4ElementTests : IDisposable
     {
         GC.SuppressFinalize(this);
         _services.Dispose();
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, recursive: true);
-        }
+        TestFolder.TryDelete(_root);
     }
 
     private async Task<CommandResult> AddAsync(C4ElementKind kind, string name, string parentId = "") =>

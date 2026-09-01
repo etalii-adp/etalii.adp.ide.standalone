@@ -67,10 +67,7 @@ public class AnsibleValidationFlowTests : IDisposable
     public void Dispose()
     {
         _provider.Dispose();
-        if (Directory.Exists(_appDataRoot))
-        {
-            Directory.Delete(_appDataRoot, recursive: true);
-        }
+        TestFolder.TryDelete(_appDataRoot);
     }
 
     [Fact]

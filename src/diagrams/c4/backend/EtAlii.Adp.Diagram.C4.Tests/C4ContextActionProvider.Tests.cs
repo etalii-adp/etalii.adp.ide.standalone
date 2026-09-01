@@ -53,10 +53,7 @@ public class C4ContextActionProviderTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, recursive: true);
-        }
+        TestFolder.TryDelete(_root);
     }
 
     private ContextTarget TargetFor(string elementId) =>

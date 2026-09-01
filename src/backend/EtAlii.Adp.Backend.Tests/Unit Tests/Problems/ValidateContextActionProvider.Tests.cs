@@ -36,10 +36,7 @@ public class ValidateContextActionProviderTests : IDisposable
     {
         _store.Dispose();
         var scratch = IoPath.GetDirectoryName(_root)!;
-        if (Directory.Exists(scratch))
-        {
-            Directory.Delete(scratch, recursive: true);
-        }
+        TestFolder.TryDelete(scratch);
     }
 
     // ---- what is offered where ---------------------------------------------------------

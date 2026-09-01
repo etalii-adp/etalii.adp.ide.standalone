@@ -70,10 +70,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
     public void Dispose()
     {
         _factory.Dispose();
-        if (Directory.Exists(_appDataRoot))
-        {
-            Directory.Delete(_appDataRoot, recursive: true);
-        }
+        TestFolder.TryDelete(_appDataRoot);
     }
 
     [Fact]

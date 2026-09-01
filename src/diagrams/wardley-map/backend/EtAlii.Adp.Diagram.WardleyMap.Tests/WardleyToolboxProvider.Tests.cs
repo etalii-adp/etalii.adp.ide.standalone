@@ -32,14 +32,7 @@ public sealed class WardleyToolboxProviderTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        try
-        {
-            Directory.Delete(_root, recursive: true);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // A scratch folder that outlives the test is untidy, never a failure.
-        }
+        TestFolder.TryDelete(_root);
     }
 
     [Fact]

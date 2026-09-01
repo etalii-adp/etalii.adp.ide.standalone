@@ -22,10 +22,7 @@ public class PipelineCommandsTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(_workspace))
-        {
-            Directory.Delete(_workspace, recursive: true);
-        }
+        TestFolder.TryDelete(_workspace);
 
         GC.SuppressFinalize(this);
     }

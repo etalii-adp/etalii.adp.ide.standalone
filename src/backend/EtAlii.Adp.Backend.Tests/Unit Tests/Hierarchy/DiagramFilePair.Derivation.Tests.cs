@@ -27,10 +27,7 @@ public class DiagramFilePairDerivationTests : IDisposable
     public void Dispose()
     {
         GC.SuppressFinalize(this);
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, recursive: true);
-        }
+        TestFolder.TryDelete(_root);
     }
 
     private string Write(string name, string content = "c4/context")

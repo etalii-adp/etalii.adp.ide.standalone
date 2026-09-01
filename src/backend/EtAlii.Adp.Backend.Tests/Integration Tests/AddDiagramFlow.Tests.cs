@@ -57,10 +57,7 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
     public void Dispose()
     {
         _factory.Dispose();
-        if (Directory.Exists(_appDataRoot))
-        {
-            Directory.Delete(_appDataRoot, recursive: true);
-        }
+        TestFolder.TryDelete(_appDataRoot);
     }
 
     /// <summary>
