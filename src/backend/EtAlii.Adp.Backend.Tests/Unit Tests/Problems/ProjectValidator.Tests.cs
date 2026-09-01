@@ -23,10 +23,7 @@ public class ProjectValidatorTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, recursive: true);
-        }
+        TestFolder.TryDelete(_root);
     }
 
     // ---- what the walk finds -----------------------------------------------------------
@@ -304,7 +301,7 @@ public class ProjectValidatorTests : IDisposable
         }
         finally
         {
-            Directory.Delete(elsewhere, recursive: true);
+            TestFolder.TryDelete(elsewhere);
         }
     }
 

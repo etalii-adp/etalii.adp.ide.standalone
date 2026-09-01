@@ -40,10 +40,7 @@ public class AddDiagramContextActionProviderRegistrationTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, recursive: true);
-        }
+        TestFolder.TryDelete(_root);
     }
 
     private string CreateFile(string name, string content = "stages:\n")

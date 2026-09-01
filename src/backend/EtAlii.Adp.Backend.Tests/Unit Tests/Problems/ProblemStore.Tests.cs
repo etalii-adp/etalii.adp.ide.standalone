@@ -30,10 +30,7 @@ public class ProblemStoreTests : IDisposable
     public void Dispose()
     {
         var scratch = IoPath.GetDirectoryName(_root)!;
-        if (Directory.Exists(scratch))
-        {
-            Directory.Delete(scratch, recursive: true);
-        }
+        TestFolder.TryDelete(scratch);
     }
 
     // ---- what an untouched project answers ---------------------------------------------

@@ -22,10 +22,7 @@ public class AnsibleYamlTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(_scratch))
-        {
-            Directory.Delete(_scratch, recursive: true);
-        }
+        TestFolder.TryDelete(_scratch);
     }
 
     [Fact]

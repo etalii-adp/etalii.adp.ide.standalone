@@ -17,10 +17,7 @@ public class AdpFileWriterTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(_folder))
-        {
-            Directory.Delete(_folder, recursive: true);
-        }
+        TestFolder.TryDelete(_folder);
     }
 
     private string[] TempFiles() =>

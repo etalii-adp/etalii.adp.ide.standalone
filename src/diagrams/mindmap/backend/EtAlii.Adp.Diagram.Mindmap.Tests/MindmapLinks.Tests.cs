@@ -18,10 +18,7 @@ public class MindmapLinksTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, recursive: true);
-        }
+        TestFolder.TryDelete(_root);
     }
 
     private string MapAt(string folder) => IoPath.Combine(_root, folder, "map.mm");

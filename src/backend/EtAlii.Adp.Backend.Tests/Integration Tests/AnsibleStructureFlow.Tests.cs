@@ -67,10 +67,7 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
     public void Dispose()
     {
         _factory.Dispose();
-        if (Directory.Exists(_appDataRoot))
-        {
-            Directory.Delete(_appDataRoot, recursive: true);
-        }
+        TestFolder.TryDelete(_appDataRoot);
     }
 
     [Fact]

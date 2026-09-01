@@ -77,10 +77,7 @@ internal sealed class MindmapTestProject : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        if (Directory.Exists(Root))
-        {
-            Directory.Delete(Root, recursive: true);
-        }
+        TestFolder.TryDelete(Root);
     }
 
 }

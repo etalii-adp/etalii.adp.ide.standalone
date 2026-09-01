@@ -212,7 +212,7 @@ public class AnsibleRuleSetTests
         }
         finally
         {
-            Directory.Delete(scratch, recursive: true);
+            TestFolder.TryDelete(scratch);
         }
     }
 
@@ -231,7 +231,7 @@ public class AnsibleRuleSetTests
         }
         finally
         {
-            Directory.Delete(scratch, recursive: true);
+            TestFolder.TryDelete(scratch);
         }
     }
 
@@ -250,7 +250,7 @@ public class AnsibleRuleSetTests
         }
         finally
         {
-            Directory.Delete(scratch, recursive: true);
+            TestFolder.TryDelete(scratch);
         }
     }
 

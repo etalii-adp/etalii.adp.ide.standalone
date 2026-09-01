@@ -33,10 +33,7 @@ public class CommandsTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, recursive: true);
-        }
+        TestFolder.TryDelete(_root);
     }
 
     private MindmapDocument Document => _documents.GetOrLoad(_bodyPath);

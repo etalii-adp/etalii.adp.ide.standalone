@@ -213,7 +213,7 @@ public class AnsibleLayoutTests
         }
         finally
         {
-            Directory.Delete(scratch, recursive: true);
+            TestFolder.TryDelete(scratch);
         }
     }
 }

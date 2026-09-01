@@ -50,10 +50,7 @@ public class C4CommandsTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, recursive: true);
-        }
+        TestFolder.TryDelete(_root);
     }
 
     private string OnDisk() => File.ReadAllText(_bodyPath);

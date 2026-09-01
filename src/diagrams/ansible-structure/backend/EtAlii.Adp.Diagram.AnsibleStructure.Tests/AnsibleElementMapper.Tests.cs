@@ -199,7 +199,7 @@ public class AnsibleElementMapperTests
         }
         finally
         {
-            Directory.Delete(scratch, recursive: true);
+            TestFolder.TryDelete(scratch);
         }
     }
 
@@ -289,7 +289,7 @@ public class AnsibleElementMapperTests
         }
         finally
         {
-            Directory.Delete(scratch, recursive: true);
+            TestFolder.TryDelete(scratch);
         }
     }
 

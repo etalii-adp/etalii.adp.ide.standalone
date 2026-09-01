@@ -27,10 +27,7 @@ public class DiagramFilePairTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, recursive: true);
-        }
+        TestFolder.TryDelete(_root);
     }
 
     private string WriteRegistration(string baseName, DiagramDefinition definition)
