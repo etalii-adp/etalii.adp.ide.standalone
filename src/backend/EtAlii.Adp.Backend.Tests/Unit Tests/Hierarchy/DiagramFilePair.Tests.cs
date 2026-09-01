@@ -445,6 +445,52 @@ public class DiagramFilePairTests : IDisposable
         Assert.True(File.Exists(second), "deleting one registration destroyed a peer registration");
     }
 
+    /// <summary>
+    /// Requirement 8.4: a registration naming a MIME type the catalog does not carry resolves to
+    /// no definition and no body, and that is NOT an error. No example can exercise this branch -
+    /// all 39 tracked registrations name known types, measured across every one - so the fixture
+    /// is created, not found.
+    /// </summary>
+    [Fact]
+    public void ARegistrationNamingAnUnknownType_ResolvesToNoDefinitionAndNoBody()
+    {
+        // Arrange.
+        var fixture = IoPath.Combine(AppContext.BaseDirectory, "Fixtures", "unknown-type.adp");
+        Assert.True(File.Exists(fixture), "the unknown-type fixture did not ship with the tests");
+
+        // Act.
+        var definition = DiagramFilePair.DefinitionOf(fixture, _catalog);
+        var body = DiagramFilePair.BodyOf(fixture, _catalog, IoPath.GetDirectoryName(fixture));
+
+        // Assert: unknown, bodyless, and quietly so.
+        Assert.True(DiagramFilePair.IsRegistrationFile(fixture));
+        Assert.Null(definition);
+        Assert.Null(body);
+    }
+
+    /// <summary>
+    /// The branch `code-level.adp` actually exercises, distinct from the unknown-type one above:
+    /// the definition IS found, and it is `HasDocumentSibling` - no declared extension - that
+    /// yields no body. A test asserting only "no body" would pass for both branches and prove
+    /// nothing about which ran; these assertions tell them apart. (Whether this case deserves a
+    /// requirement of its own is the reviewer's open question, deliberately not answered here.)
+    /// </summary>
+    [Fact]
+    public void ARegistrationOfAKnownTypeKeepingNoBody_ResolvesItsDefinitionButNoBody()
+    {
+        // Arrange: ClassDiagram declares no Extension, exactly like the shipped c4/code.
+        var adp = WriteRegistration("code-level", ClassDiagram);
+
+        // Act.
+        var definition = DiagramFilePair.DefinitionOf(adp, _catalog);
+        var body = DiagramFilePair.BodyOf(adp, _catalog, _root);
+
+        // Assert: found, and bodyless for a stated reason rather than an unknown one.
+        Assert.NotNull(definition);
+        Assert.False(definition.HasDocumentSibling);
+        Assert.Null(body);
+    }
+
     [Fact]
     public void SiblingOf_AnUnqualifiedRegistration_StillOwnsItsSibling()
     {

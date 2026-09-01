@@ -16,6 +16,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Content fixtures, not code fixtures: the unknown-MIME registration (Requirement 8.4)
+         has to exist as a real file for DiagramFilePair to read its first line. -->
+    <Content Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Backend.Service\EtAlii.Adp.Backend.Service.csproj" />
   </ItemGroup>
