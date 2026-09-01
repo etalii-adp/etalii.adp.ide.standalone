@@ -118,7 +118,7 @@ app.MapGrpcService<AuthenticationServiceImpl>();
 app.MapGrpcService<ProjectServiceImpl>();
 app.MapGrpcService<HierarchyServiceImpl>();
 app.MapGrpcService<ContextService>();
-app.MapGrpcService<DiagramServiceImpl>();
+app.MapGrpcService<DiagramService>();
 
 app.MapClientApp();
 

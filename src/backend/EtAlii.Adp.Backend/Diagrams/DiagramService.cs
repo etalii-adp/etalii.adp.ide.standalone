@@ -15,9 +15,9 @@ namespace EtAlii.Adp.Backend.Diagrams;
 /// the module's backend delta records to the contract's proto in the one place that mapping
 /// lives. It knows no diagram type (mindmap-diagram Requirement 13.4).
 /// </summary>
-public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
+public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBase
 {
-    private static readonly ILogger _logger = Log.ForContext<DiagramServiceImpl>();
+    private static readonly ILogger _logger = Log.ForContext<DiagramService>();
 
     private readonly IProjectStore _projectStore;
     private readonly DiagramFileRouter _router;
@@ -25,7 +25,7 @@ public sealed class DiagramServiceImpl : DiagramService.DiagramServiceBase
     private readonly IDiagramViewportRegistry _viewports;
     private readonly IReadOnlyList<Diagram.IDiagramToolboxProvider> _toolboxProviders;
 
-    public DiagramServiceImpl(
+    public DiagramService(
         IProjectStore projectStore,
         DiagramFileRouter router,
         DiagramSessionFactories sessionFactories,
