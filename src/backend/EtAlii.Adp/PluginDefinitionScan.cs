@@ -5,8 +5,8 @@ namespace EtAlii.Adp;
 
 /// <summary>
 /// The definition-agnostic half of module discovery: find, in a set of assemblies, every
-/// static class with a given name whose public static definitions property holds a sequence
-/// of <typeparamref name="T"/>. Extracted from the diagram family's discovery so the editor
+/// static class with a given name whose public static definitions property holds a sequence.
+/// Extracted from the diagram family's discovery so the editor
 /// family extends the same scan rather than duplicating it (modular-text-editors
 /// Requirement 1.3); each family keeps its own semantics - duplicate detection, coherence
 /// rules, ordering - on top of what this returns.
