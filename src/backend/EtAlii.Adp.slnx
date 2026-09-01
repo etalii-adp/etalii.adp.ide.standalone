@@ -12,6 +12,10 @@
   <Project Path="EtAlii.Adp.Diagram/EtAlii.Adp.Diagram.csproj" />
   <Project Path="EtAlii.Adp.Editor/EtAlii.Adp.Editor.csproj" />
   <Project Path="EtAlii.Adp.Editor.Tests/EtAlii.Adp.Editor.Tests.csproj" />
+  <Folder Name="/editors/">
+    <Project Path="../editors/plain/backend/EtAlii.Adp.Editor.Plain/EtAlii.Adp.Editor.Plain.csproj" />
+    <Project Path="../editors/plain/backend/EtAlii.Adp.Editor.Plain.Tests/EtAlii.Adp.Editor.Plain.Tests.csproj" />
+  </Folder>
   <Project Path="EtAlii.Adp.Diagram.Tests/EtAlii.Adp.Diagram.Tests.csproj" />
   <Project Path="EtAlii.Adp.Tests/EtAlii.Adp.Tests.csproj" />
   <Project Path="EtAlii.Adp.Backend.Service/EtAlii.Adp.Backend.Service.csproj" />

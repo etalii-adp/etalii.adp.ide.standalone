@@ -22,20 +22,29 @@ namespace EtAlii.Adp.Backend.Hierarchy;
 /// </remarks>
 public sealed class EditorResolver
 {
-    private static readonly ILogger _logger = Log.ForContext<EditorResolver>();
-
     private readonly Dictionary<string, EditorRouting> _byFileName;
     private readonly Dictionary<string, EditorRouting> _byExtension;
     private readonly EditorRouting? _fallback;
 
     public EditorResolver(IEditorDefinitionCatalog catalog)
+        : this(catalog, Log.ForContext<EditorResolver>())
+    {
+    }
+
+    /// <summary>
+    /// The logger is injectable so the once-at-Error contract stays assertable: the shared
+    /// static pipeline is replaced whenever an integration test builds a real host, which
+    /// makes a global capture's view of these lines depend on test ordering.
+    /// </summary>
+    internal EditorResolver(IEditorDefinitionCatalog catalog, ILogger logger)
     {
         ArgumentNullException.ThrowIfNull(catalog);
+        ArgumentNullException.ThrowIfNull(logger);
 
         var definitions = catalog.All;
-        _byFileName = ResolveGroups(definitions, definition => definition.FileNames, "file name");
-        _byExtension = ResolveGroups(definitions, definition => definition.Extensions, "extension");
-        _fallback = ResolveFallback(definitions);
+        _byFileName = ResolveGroups(definitions, definition => definition.FileNames, "file name", logger);
+        _byExtension = ResolveGroups(definitions, definition => definition.Extensions, "extension", logger);
+        _fallback = ResolveFallback(definitions, logger);
     }
 
     /// <summary>
@@ -72,7 +81,8 @@ public sealed class EditorResolver
     private static Dictionary<string, EditorRouting> ResolveGroups(
         IReadOnlyList<EditorDefinition> definitions,
         Func<EditorDefinition, IReadOnlyList<string>> keysOf,
-        string keyKind)
+        string keyKind,
+        ILogger logger)
     {
         var groups = new Dictionary<string, List<EditorDefinition>>(StringComparer.Ordinal);
         foreach (var definition in definitions)
@@ -105,7 +115,7 @@ public sealed class EditorResolver
             }
 
             var ordered = claimants.OrderBy(claimant => claimant.Id, StringComparer.Ordinal).ToArray();
-            _logger.Error(
+            logger.Error(
                 "Editors {Ids} all claim the {KeyKind} '{Key}' and {Reason}; every such file will report the conflict instead of opening",
                 string.Join(", ", ordered.Select(claimant => claimant.Id)),
                 keyKind,
@@ -122,7 +132,7 @@ public sealed class EditorResolver
     /// or with rivals for the role - is broken in a way worth one <c>Error</c> at startup,
     /// never a crash.
     /// </summary>
-    private static EditorRouting? ResolveFallback(IReadOnlyList<EditorDefinition> definitions)
+    private static EditorRouting? ResolveFallback(IReadOnlyList<EditorDefinition> definitions, ILogger logger)
     {
         var fallbacks = definitions.Where(definition => definition.IsFallback)
             .OrderBy(definition => definition.Id, StringComparer.Ordinal)
@@ -133,11 +143,11 @@ public sealed class EditorResolver
             case 1:
                 return new EditorRouted(fallbacks[0]);
             case 0:
-                _logger.Error(
+                logger.Error(
                     "No editor declares IsFallback; files nothing claims will report a conflict instead of opening as plain text");
                 return null;
             default:
-                _logger.Error(
+                logger.Error(
                     "Editors {Ids} all declare IsFallback; keeping {Kept}",
                     string.Join(", ", fallbacks.Select(fallback => fallback.Id)),
                     fallbacks[0].Id);

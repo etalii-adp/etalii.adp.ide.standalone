@@ -1,5 +1,7 @@
 using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Editor;
+using Serilog;
+using Serilog.Events;
 using Xunit;
 
 namespace EtAlii.Adp.Backend.Tests;
@@ -11,12 +13,26 @@ namespace EtAlii.Adp.Backend.Tests;
 /// once at Error and degrades per file; it never throws, because an editor clash must not
 /// take diagrams down with it.
 /// </summary>
-[Collection(LogCapture.Collection)]
-public class EditorResolverTests : IDisposable
+public class EditorResolverTests
 {
-    private readonly LogCapture _logger = LogCapture.Start();
+    // A private pipeline per test class, handed straight to the resolver: the SHARED static
+    // pipeline is replaced whenever an integration test in this assembly builds a real host,
+    // so a capture over it sees these Error lines only when the test ordering cooperates -
+    // which is exactly the flakiness this arrangement removes.
+    private readonly List<LogEvent> _events = [];
 
-    public void Dispose() => _logger.Dispose();
+    private EditorResolver Resolver(params EditorDefinition[] definitions) =>
+        new(new StubEditorCatalog(definitions),
+            new LoggerConfiguration().WriteTo.Sink(new ListSink(_events)).CreateLogger());
+
+    private IEnumerable<string> Errors => _events
+        .Where(logEvent => logEvent.Level == LogEventLevel.Error)
+        .Select(logEvent => logEvent.RenderMessage());
+
+    private sealed class ListSink(List<LogEvent> events) : Serilog.Core.ILogEventSink
+    {
+        public void Emit(LogEvent logEvent) => events.Add(logEvent);
+    }
 
     private sealed class StubEditorCatalog(params EditorDefinition[] definitions) : IEditorDefinitionCatalog
     {
@@ -30,7 +46,7 @@ public class EditorResolverTests : IDisposable
     public void Resolve_WithOneClaimant_RoutesToIt()
     {
         // Arrange.
-        var resolver = new EditorResolver(new StubEditorCatalog(Plain, Markdown));
+        var resolver = Resolver(Plain, Markdown);
 
         // Act.
         var routing = resolver.Resolve(@"C:\project\readme.md");
@@ -44,7 +60,7 @@ public class EditorResolverTests : IDisposable
     public void Resolve_WithNoClaimant_FallsBackByConstruction()
     {
         // Arrange: nothing claims .xyz - the fallback is what remains (Requirement 3.2).
-        var resolver = new EditorResolver(new StubEditorCatalog(Plain, Markdown));
+        var resolver = Resolver(Plain, Markdown);
 
         // Act.
         var routing = resolver.Resolve(@"C:\project\data.xyz");
@@ -58,7 +74,7 @@ public class EditorResolverTests : IDisposable
     public void Resolve_IsCaseInsensitiveOnTheExtension()
     {
         // Arrange (Requirement 2.2: ".MD" on disk is ".md"'s claim).
-        var resolver = new EditorResolver(new StubEditorCatalog(Plain, Markdown));
+        var resolver = Resolver(Plain, Markdown);
 
         // Act.
         var routing = resolver.Resolve(@"C:\project\README.MD");
@@ -73,7 +89,7 @@ public class EditorResolverTests : IDisposable
     {
         // Arrange (Requirement 2.3).
         var make = new EditorDefinition("make", "Makefiles", FileNames: ["Makefile"]);
-        var resolver = new EditorResolver(new StubEditorCatalog(Plain, make));
+        var resolver = Resolver(Plain, make);
 
         // Act.
         var routing = resolver.Resolve(@"C:\project\Makefile");
@@ -89,7 +105,7 @@ public class EditorResolverTests : IDisposable
         // Arrange (Requirement 4.4's legitimate case).
         var one = new EditorDefinition("one", "One", Extensions: [".md"]);
         var two = new EditorDefinition("two", "Two", Extensions: [".md"], IsDefaultForSharedExtension: true);
-        var resolver = new EditorResolver(new StubEditorCatalog(Plain, one, two));
+        var resolver = Resolver(Plain, one, two);
 
         // Act.
         var routing = resolver.Resolve(@"C:\project\readme.md");
@@ -109,7 +125,7 @@ public class EditorResolverTests : IDisposable
         var two = new EditorDefinition("two", "Two", Extensions: [".md"]);
 
         // Act.
-        var resolver = new EditorResolver(new StubEditorCatalog(Plain, one, two));
+        var resolver = Resolver(Plain, one, two);
         var routing = resolver.Resolve(@"C:\project\readme.md");
 
         // Assert: the result names the conflict, and the Error line was written - once, at
@@ -119,24 +135,24 @@ public class EditorResolverTests : IDisposable
         var ambiguous = Assert.IsType<EditorAmbiguous>(routing);
         Assert.Equal(".md", ambiguous.Extension);
         Assert.Equal(new[] { "one", "two" }, ambiguous.Claimants.Select(claimant => claimant.Id));
-        var error = Assert.Single(_logger.Errors, line => line.Contains("one, two"));
+        var error = Assert.Single(Errors, line => line.Contains("one, two"));
         Assert.Contains(".md", error);
 
         resolver.Resolve(@"C:\project\other.md");
-        Assert.Single(_logger.Errors, line => line.Contains("one, two"));
+        Assert.Single(Errors, line => line.Contains("one, two"));
     }
 
     [Fact]
     public void Resolve_WithNoFallbackDeployed_ReportsRatherThanCrashes()
     {
         // Arrange: a broken deployment - one Error at startup, degraded results, no throw.
-        var resolver = new EditorResolver(new StubEditorCatalog(Markdown));
+        var resolver = Resolver(Markdown);
 
         // Act.
         var routing = resolver.Resolve(@"C:\project\data.xyz");
 
         // Assert.
         Assert.IsType<EditorAmbiguous>(routing);
-        Assert.Contains(_logger.Errors, error => error.Contains("IsFallback"));
+        Assert.Contains(Errors, error => error.Contains("IsFallback"));
     }
 }
