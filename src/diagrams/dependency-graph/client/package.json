@@ -1,0 +1,12 @@
+{
+  "name": "@adp/diagram-dependency-graph-client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Dependency Graph client: the canvas, its nodes and directed edges, and the registration the shell discovers.",
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.2.3",
+    "@connectrpc/connect": "^2.0.1",
+    "react": "^18.3.1"
+  }
+}

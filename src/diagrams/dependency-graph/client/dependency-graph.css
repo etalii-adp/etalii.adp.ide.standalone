@@ -1,0 +1,214 @@
+/*
+ * Dependency graph canvas styling.
+ *
+ * Lives with the module rather than in the shell's index.css: a diagram type you cannot delete
+ * without also editing the shell's stylesheet is not a module. Imported by this module's
+ * register.ts, so it loads exactly when the module does.
+ *
+ * Forked from the timeline's stylesheet with its ruler rules removed - there is no ruler here,
+ * because naming times was its whole job.
+ */
+
+/* ---- The surface ------------------------------------------------------------------- */
+
+.dependency-graph-canvas {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-surface);
+}
+
+.dependency-graph-canvas-message {
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+}
+
+.dependency-graph-surface {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  cursor: grab;
+}
+
+.dependency-graph-content {
+  width: 100%;
+  height: 100%;
+}
+
+/* ---- Nodes ------------------------------------------------------------------------- */
+
+.dependency-graph-element {
+  cursor: pointer;
+}
+
+.dependency-graph-node {
+  fill: var(--color-surface, #ffffff);
+  stroke: var(--color-border, #8892a6);
+  stroke-width: 1.5;
+}
+
+.dependency-graph-label {
+  fill: var(--color-text, #1c2333);
+  font-size: 12px;
+  text-anchor: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+.dependency-graph-selected .dependency-graph-node,
+.dependency-graph-connect-target .dependency-graph-node {
+  stroke: var(--color-primary, limegreen);
+  stroke-width: 2.5;
+}
+
+/* Where the drag would land, in this type's own terms - a coordinate and a row, never a date. */
+.dependency-graph-hint {
+  fill: var(--color-text-muted, #5a6376);
+  font-size: 11px;
+  text-anchor: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ---- Adorners and anchors ---------------------------------------------------------- */
+
+/*
+ * The shared span element draws resize strips on a selected element's edges. The timeline
+ * resized a duration; a node has no extent to resize, so the strips are hidden here rather than
+ * by adding a flag to the shared component - which would mean touching the timeline, and this
+ * spec's reliability requirement says that module is to be left alone.
+ */
+.dependency-graph-adorner {
+  display: none;
+}
+
+.dependency-graph-anchor {
+  fill: var(--color-surface, #ffffff);
+  stroke: var(--color-primary, limegreen);
+  stroke-width: 1.5;
+  cursor: crosshair;
+  pointer-events: none;
+}
+
+/* The generous, invisible grab target each anchor dot sits inside. */
+.dependency-graph-anchor-hit {
+  fill: transparent;
+  stroke: none;
+  cursor: crosshair;
+}
+
+/* ---- Dependencies ------------------------------------------------------------------ */
+
+.dependency-graph-relation path {
+  fill: none;
+  stroke: var(--color-text-muted, #5a6376);
+  stroke-width: 1.5;
+}
+
+/*
+ * The arrowhead, which is this type's whole difference from the timeline it was forked from.
+ * The shared connection component draws each path from the source anchor to the target anchor,
+ * so a marker on the end always lands on the dependency - the thing being depended upon. Set
+ * here rather than as an attribute because the shared component takes class names and no
+ * markers, and adding one to it would mean editing the timeline's canvas too.
+ */
+.dependency-graph-relation path.dependency-graph-relation-line {
+  marker-end: url(#dependency-graph-arrowhead);
+}
+
+.dependency-graph-arrowhead path {
+  fill: var(--color-text-muted, #5a6376);
+  stroke: none;
+}
+
+/* An invisible fat twin of the line carries the pointer - a 1.5px stroke is no target. */
+.dependency-graph-relation path.dependency-graph-relation-hit {
+  stroke: transparent;
+  stroke-width: 14;
+  cursor: pointer;
+  marker-end: none;
+}
+
+.dependency-graph-relation.dependency-graph-selected path.dependency-graph-relation-line {
+  stroke: var(--color-primary, limegreen);
+  stroke-width: 2.5;
+}
+
+.dependency-graph-relation text {
+  fill: var(--color-text-muted, #5a6376);
+  font-size: 11px;
+  text-anchor: middle;
+  user-select: none;
+}
+
+.dependency-graph-pending-relation {
+  fill: none;
+  stroke: var(--color-primary, limegreen);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+
+/* ---- Messages ---------------------------------------------------------------------- */
+
+.dependency-graph-status,
+.dependency-graph-rejection {
+  position: absolute;
+  bottom: 32px;
+  left: 12px;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--color-surface, #ffffff);
+  color: var(--color-text-muted, #5a6376);
+  font-size: 12px;
+}
+
+.dependency-graph-rejection {
+  color: var(--color-danger, #dc2626);
+}
+
+/* ---- Scrollbars -------------------------------------------------------------------- */
+
+/*
+ * Windows onto the content's extent rather than native scrollbars: the canvas is an unbounded
+ * plane whose size is a transform, which a native bar cannot describe. Dragging a thumb pans.
+ */
+.dependency-graph-scrollbar {
+  position: absolute;
+  background: color-mix(in srgb, var(--color-border, #e2e8f0) 40%, transparent);
+  border-radius: 5px;
+}
+
+.dependency-graph-scrollbar-horizontal {
+  left: 8px;
+  right: 20px;
+  bottom: 10px;
+  height: 10px;
+}
+
+.dependency-graph-scrollbar-vertical {
+  top: 8px;
+  bottom: 26px;
+  right: 6px;
+  width: 10px;
+}
+
+.dependency-graph-scrollbar-thumb {
+  position: absolute;
+  inset: 0;
+  background: var(--color-text-muted, #64748b);
+  opacity: 0.5;
+  border-radius: 5px;
+  cursor: grab;
+}
+
+.dependency-graph-scrollbar-thumb:hover,
+.dependency-graph-scrollbar-thumb:active {
+  opacity: 0.85;
+}
