@@ -21,5 +21,5 @@ without that, nothing here could resolve `react`.
   source order decides, and jsdom cannot catch it.
 
 See [../../readme.md](../../readme.md) for what this folder is for, and
-[`mindmap-diagram`](../../../../.spec-workflow/specs/mindmap-diagram/) for this diagram type's
+[`mindmap-diagram`](../../../../.spec-workflow/archive/specs/mindmap-diagram/) for this diagram type's
 spec.

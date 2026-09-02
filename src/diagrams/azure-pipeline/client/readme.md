@@ -32,5 +32,5 @@ it took. That needs a live Azure DevOps connection and credentials ADP does not 
 Requirement 8.8 excludes it deliberately rather than half-building it.
 
 See [../../readme.md](../../readme.md) for what this folder is for, and
-[`azure-pipeline-diagram`](../../../../.spec-workflow/specs/azure-pipeline-diagram/) for this
+[`azure-pipeline-diagram`](../../../../.spec-workflow/archive/specs/azure-pipeline-diagram/) for this
 diagram type's spec.

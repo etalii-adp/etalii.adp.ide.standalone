@@ -4,7 +4,7 @@
 edge carries, packed into the core `Element`'s `Any`. No core proto is edited from here.
 
 See [../../readme.md](../../readme.md) for what this folder is for, and
-[`ansible-structure-diagram`](../../../../.spec-workflow/specs/ansible-structure-diagram/) for
+[`ansible-structure-diagram`](../../../../.spec-workflow/archive/specs/ansible-structure-diagram/) for
 this diagram type's spec.
 
 ## Two things about this proto worth knowing before editing it
