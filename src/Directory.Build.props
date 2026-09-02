@@ -6,4 +6,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Every assembly is stamped from the repository-root version.json: semver plus git
+         height, commit id embedded in AssemblyInformationalVersion. The one place versioning
+         lives - no project carries a Version property of its own (github-build-pipeline
+         Requirement 2.2). -->
+    <PackageReference Include="Nerdbank.GitVersioning" PrivateAssets="all" />
+  </ItemGroup>
+
 </Project>
