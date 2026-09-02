@@ -5,7 +5,7 @@ One worktree for the whole spec (`.claude/worktrees/depgraph`, per CLAUDE.md's o
 - [ ] 1. Backend document layer: the `.dgr` format
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 1.1 Fork the document layer, dates deleted
+- [-] 1.1 Fork the document layer, dates deleted
   - Files: `src/diagrams/dependency-graph/backend/EtAlii.Adp.Diagram.DependencyGraph/` — `DependencyGraphDocument.cs`, `DependencyGraphParser.cs`, `DependencyGraphWriter.cs`, `DependencyGraphDocumentFactory.cs`, `_Model/`, forked from their `Timeline*` counterparts; `TimelineInstants.cs` and `TimelineScale.cs` have no counterparts — nothing replaces them
   - The element carries `id`, `label`, `x` (plain number), `row`; the relation carries `from`/`to` meaning "from depends on to"; version marker `dependencies: 1`; the writer keeps the timeline's line-preserving discipline (unchanged saves byte-identical, one edited element changes only its lines)
   - Tests: fork the parser/writer/document/factory suites; delete the date-rule tests with their subjects; add directed-relation round-trip facts; write fresh `.dgr` fixtures (no placeholder text), and add a `*.dgr -text` line to `.gitattributes` only if the fixture set byte-compares mixed line endings the way `.tml`'s does
