@@ -1,4 +1,6 @@
+using System.Net;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using EtAlii.Adp.Diagram;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -217,31 +219,58 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
     /// </summary>
     private static IReadOnlyDictionary<string, string> CatalogedTitles()
     {
+        // The catalog carries rows in two shapes: plain markdown pipe rows, and - since the
+        // section tables were combined into one HTML table for rendering - <tr> rows whose
+        // origin sits in a <code> cell. Both are read: the document's format is the document's
+        // own business, and this parser follows it rather than pinning it. (The HTML shape
+        // going unparsed is exactly how 48 stub origins silently fell out of this check once.)
         var titles = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var line in File.ReadLines(LocateCatalog()))
         {
-            if (!line.StartsWith('|'))
+            if (line.StartsWith('|'))
+            {
+                var cells = line.Split('|');
+                if (cells.Length < 5)
+                {
+                    continue;
+                }
+
+                var origin = cells[2].Trim();
+                if (origin.Length < 3 || origin[0] != '`' || origin[^1] != '`')
+                {
+                    continue;
+                }
+
+                titles[origin[1..^1]] = cells[3].Trim();
+                continue;
+            }
+
+            if (!line.Contains("<tr>", StringComparison.Ordinal))
             {
                 continue;
             }
 
-            var cells = line.Split('|');
-            if (cells.Length < 5)
+            var htmlCells = Regex.Matches(line, "<td[^>]*>(.*?)</td>", RegexOptions.Singleline);
+            if (htmlCells.Count < 3)
             {
                 continue;
             }
 
-            var origin = cells[2].Trim();
-            if (origin.Length < 3 || origin[0] != '`' || origin[^1] != '`')
+            var origin2 = Regex.Match(htmlCells[1].Groups[1].Value, "<code>([^<]+)</code>");
+            if (!origin2.Success)
             {
                 continue;
             }
 
-            titles[origin[1..^1]] = cells[3].Trim();
+            titles[origin2.Groups[1].Value.Trim()] = HtmlCellText(htmlCells[2].Groups[1].Value);
         }
 
         return titles;
     }
+
+    /// <summary>A cell's visible text: tags stripped, entities decoded, non-breaking spaces ordinary again.</summary>
+    private static string HtmlCellText(string cell) =>
+        WebUtility.HtmlDecode(Regex.Replace(cell, "<[^>]+>", "")).Replace('\u00A0', ' ').Trim();
 
     /// <summary>
     /// The catalog document, found by walking up from the test binary rather than by counting
