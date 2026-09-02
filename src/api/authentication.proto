@@ -7,6 +7,20 @@ option csharp_namespace = "EtAlii.Adp";
 service AuthenticationService {
   rpc Login(LoginRequest) returns (LoginResponse);
   rpc Logout(LogoutRequest) returns (LogoutResponse);
+
+  // What the running product is - its version, principally - asked by the login page before
+  // any session exists, which is why it lives on this service: the one surface reachable
+  // without a token (github-build-pipeline Requirements 2.3, 3.2). The answer comes from the
+  // backend's own Nerdbank.GitVersioning-stamped assembly, so the login panel, the
+  // assemblies, and the release ZIP can never disagree about the version.
+  rpc DescribeProduct(DescribeProductRequest) returns (DescribeProductResponse);
+}
+
+message DescribeProductRequest {}
+
+message DescribeProductResponse {
+  // AssemblyInformationalVersion: semver plus git height, commit id embedded.
+  string version = 1;
 }
 
 message LoginRequest {

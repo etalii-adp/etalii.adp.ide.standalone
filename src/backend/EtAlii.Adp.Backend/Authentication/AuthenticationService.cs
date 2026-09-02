@@ -1,3 +1,4 @@
+using System.Reflection;
 using EtAlii.Adp.Backend.Sessions;
 using Grpc.Core;
 using Serilog;
@@ -7,6 +8,12 @@ namespace EtAlii.Adp.Backend.Authentication;
 public sealed class AuthenticationService : EtAlii.Adp.AuthenticationService.AuthenticationServiceBase
 {
     private static readonly ILogger _logger = Log.ForContext<AuthenticationService>();
+
+    // The one product version, read once: what Nerdbank.GitVersioning stamped into this very
+    // assembly (semver plus git height, commit id embedded). Never configuration - a stamped
+    // binary cannot disagree with itself (github-build-pipeline Requirement 2.3).
+    private static readonly string _productVersion =
+        typeof(AuthenticationService).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "";
 
     private readonly IAuthenticator _authenticator;
     private readonly ISessionStore _sessionStore;
@@ -46,4 +53,7 @@ public sealed class AuthenticationService : EtAlii.Adp.AuthenticationService.Aut
         _logger.Information("Session revoked for {UserId}", SessionContext.GetUserId(context));
         return Task.FromResult(new LogoutResponse());
     }
+
+    public override Task<DescribeProductResponse> DescribeProduct(DescribeProductRequest request, ServerCallContext context) =>
+        Task.FromResult(new DescribeProductResponse { Version = _productVersion });
 }

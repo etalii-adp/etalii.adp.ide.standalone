@@ -41,6 +41,21 @@ public class SessionInterceptorTests
     }
 
     [Fact]
+    public async Task UnaryServerHandler_DescribeProductMethod_IsExemptEvenWithoutToken()
+    {
+        // Arrange: the login page names the product version before any session exists
+        // (github-build-pipeline R3.2) - the exemption is the wire that makes that possible.
+        var interceptor = new SessionInterceptor(new InMemorySessionStore());
+        var context = CreateContext("/etalii.adp.AuthenticationService/DescribeProduct");
+
+        // Act.
+        var result = await interceptor.UnaryServerHandler("ping", context, Handler);
+
+        // Assert.
+        Assert.Equal("ping", result);
+    }
+
+    [Fact]
     public async Task UnaryServerHandler_WithoutToken_ThrowsUnauthenticated()
     {
         // Arrange.

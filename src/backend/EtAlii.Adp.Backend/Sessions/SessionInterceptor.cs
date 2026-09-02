@@ -52,7 +52,11 @@ public sealed class SessionInterceptor : Interceptor
     }
 
     private static bool IsExempt(string method) =>
-        method.EndsWith("/Login", StringComparison.Ordinal);
+        // Login is how a token is first obtained; DescribeProduct is how the login page names
+        // the product version before any session exists - a version is not a secret, and the
+        // page that shows it renders before anyone can log in (github-build-pipeline R3.2).
+        method.EndsWith("/Login", StringComparison.Ordinal)
+        || method.EndsWith("/DescribeProduct", StringComparison.Ordinal);
 
     private void EnsureAuthenticatedUnlessExempt(ServerCallContext context)
     {
