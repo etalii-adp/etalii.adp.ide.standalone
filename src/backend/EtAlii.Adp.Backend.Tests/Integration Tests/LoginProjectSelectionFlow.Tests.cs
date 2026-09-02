@@ -81,6 +81,22 @@ public class LoginProjectSelectionFlowTests : IClassFixture<WebApplicationFactor
     }
 
     [Fact]
+    public async Task DescribeProduct_AnswersUnauthenticated_WithTheStampedVersion()
+    {
+        // Arrange: no login, no token - the login page asks before any session exists
+        // (github-build-pipeline R2.3, R3.2), so the exemption must hold end-to-end.
+        using var channel = CreateChannel();
+        var authClient = new AuthenticationService.AuthenticationServiceClient(channel);
+
+        // Act.
+        var response = await authClient.DescribeProductAsync(new DescribeProductRequest(), cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert: the Nerdbank.GitVersioning-stamped informational version - semver-shaped,
+        // never empty and never a hand-maintained string.
+        Assert.Matches(@"^\d+\.\d+", response.Version);
+    }
+
+    [Fact]
     public async Task FullFlow_LoginThenAddSelectRemove_Works()
     {
         // Arrange.
