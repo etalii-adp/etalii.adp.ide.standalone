@@ -147,9 +147,6 @@ Not tied to one methodology — each cloud vendor's official icon set functions 
 | 💡 Identified               | `gcp/architecture` | GCP architecture diagram | [Google Cloud Architecture Icons](https://cloud.google.com/icons) | [Google Cloud Architecture Center](https://cloud.google.com/architecture) |
 | ✅ Implemented (prototype)  | `azure-devops/pipeline` | Azure DevOps pipeline diagram | [Azure Pipelines YAML schema](https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/) · [Key pipelines concepts](https://learn.microsoft.com/en-us/azure/devops/pipelines/get-started/key-pipelines-concepts) | [Stages, dependsOn and conditions](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/stages) · the pipeline `.yml` a repository already has |
 | ✅ Implemented (prototype)  | `ansible/structure` | Ansible project structure (read-only: playbooks, roles, inventories and their include/import/dependency relationships) | [Ansible directory layout](https://charlesreid1.com/wiki/Ansible/Directory_Layout/Details) · [Role dependencies](https://oneuptime.com/blog/post/2026-01-24-ansible-roles-dependencies/view) | [ansible-playbook-grapher](https://github.com/haidaraM/ansible-playbook-grapher) · [ansible-viz](https://github.com/aspiers/ansible-viz) · the folder tree a repository already has |
-| 📝 Specified                | `databricks/bundle` | Databricks Asset Bundle topology (targets, resources, overrides) · [`databricks-diagrams`](../.spec-workflow/specs/databricks-diagrams/requirements.md) | [Bundle configuration](https://docs.databricks.com/aws/en/dev-tools/bundles/settings) · [reference](https://docs.databricks.com/aws/en/dev-tools/bundles/reference) | the `databricks.yml` a repository already has |
-| 📝 Specified                | `databricks/job` | Lakeflow Jobs task DAG (tasks, depends_on, run_if, clusters) · [`databricks-diagrams`](../.spec-workflow/specs/databricks-diagrams/requirements.md) | [Job task types](https://docs.databricks.com/aws/en/dev-tools/bundles/job-task-types) | the job resource `.yml` a bundle already has |
-| 📝 Specified                | `databricks/pipeline` | Lakeflow Declarative Pipelines settings (sources, pipeline, target catalog) · [`databricks-diagrams`](../.spec-workflow/specs/databricks-diagrams/requirements.md) | [Pipeline properties](https://docs.databricks.com/aws/en/ldp/properties) | the pipeline settings `.json` a workspace exports |
 
 ---
 
@@ -221,3 +218,52 @@ Text-based tools that render many of the notations above from plain text, well s
 | State | Origin | Diagram | Theory | Example |
 |---|---|---|---|---|
 | 💡 Identified | `contextmapper/context-map` | DDD Context Map, plus generated PlantUML/BPMN sketches | [contextmapper.org](https://contextmapper.org/) | [Context Mapper example](https://contextmapper.org/docs/context-map/) |
+
+---
+
+## 12. Data platforms & pipeline orchestration
+
+Configuration and definition files that data platforms already carry — bundles, DAGs, workflow definitions, lineage events. Every one of them is an established text artifact another tool deploys or executes, which is exactly the "files are the source of truth" shape ADP wants: the diagram renders (and where safe, edits) the file, and never invents a format of its own. Open-source standards are preferred where they exist.
+
+| State | Origin | Diagram | Theory | Example |
+|---|---|---|---|---|
+| 📝 Specified | `databricks/bundle` | Databricks Asset Bundle topology (targets, resources, overrides) · [`databricks-diagrams`](../.spec-workflow/specs/databricks-diagrams/requirements.md) | [Bundle configuration](https://docs.databricks.com/aws/en/dev-tools/bundles/settings) · [reference](https://docs.databricks.com/aws/en/dev-tools/bundles/reference) | the `databricks.yml` a repository already has |
+| 📝 Specified | `databricks/job` | Lakeflow Jobs task DAG (tasks, depends_on, run_if, clusters) · [`databricks-diagrams`](../.spec-workflow/specs/databricks-diagrams/requirements.md) | [Job task types](https://docs.databricks.com/aws/en/dev-tools/bundles/job-task-types) | the job resource `.yml` a bundle already has |
+| 📝 Specified | `databricks/pipeline` | Lakeflow Declarative Pipelines settings (sources, pipeline, target catalog) · [`databricks-diagrams`](../.spec-workflow/specs/databricks-diagrams/requirements.md) | [Pipeline properties](https://docs.databricks.com/aws/en/ldp/properties) | the pipeline settings `.json` a workspace exports |
+| 💡 Identified | `airflow/dag` | Apache Airflow DAG (tasks and dependencies; DAG files are Python, so a read-only structural view is the realistic first step) | [airflow.apache.org](https://airflow.apache.org/) · [DAGs concept](https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/dags.html) | [Airflow graph view](https://airflow.apache.org/docs/apache-airflow/stable/ui.html) |
+| 💡 Identified | `dbt/lineage` | dbt project lineage (models, sources, `ref()`/`source()` edges from `dbt_project.yml` + `schema.yml` + manifest) | [docs.getdbt.com](https://docs.getdbt.com/) · [About dbt projects](https://docs.getdbt.com/docs/build/projects) | [dbt lineage graph](https://docs.getdbt.com/terms/data-lineage) |
+| 💡 Identified | `dagster/assets` | Dagster asset graph (software-defined assets and their dependencies) | [dagster.io](https://dagster.io/) · [Asset definitions](https://docs.dagster.io/guides/build/assets/) | [Dagster asset lineage UI](https://docs.dagster.io/guides/operate/webserver) |
+| 💡 Identified | `nifi/flow` | Apache NiFi flow definition (processors, connections, process groups from an exported flow definition JSON) | [nifi.apache.org](https://nifi.apache.org/) | [NiFi flow canvas](https://nifi.apache.org/docs/nifi-docs/html/user-guide.html) |
+| 💡 Identified | `argoproj/workflow` | Argo Workflows definition (Kubernetes CRD YAML: steps, DAG templates, artifacts) | [argo-workflows docs](https://argo-workflows.readthedocs.io/) | [DAG template examples](https://argo-workflows.readthedocs.io/en/latest/walk-through/dag/) |
+| 💡 Identified | `kubeflow/pipeline` | Kubeflow Pipelines definition (compiled pipeline IR YAML: components, inputs/outputs, DAG) | [kubeflow.org](https://www.kubeflow.org/docs/components/pipelines/) | [KFP pipeline graph](https://www.kubeflow.org/docs/components/pipelines/overview/) |
+| 💡 Identified | `commonwl/workflow` | Common Workflow Language workflow (open standard YAML: steps, inputs/outputs, scatter) | [commonwl.org](https://www.commonwl.org/) · [CWL user guide](https://www.commonwl.org/user_guide/) | [CWL Viewer](https://view.commonwl.org/) |
+| 💡 Identified | `openwdl/workflow` | Workflow Description Language workflow (open standard `.wdl`: tasks, calls, dataflow) | [openwdl.org](https://openwdl.org/) | [WDL examples](https://github.com/openwdl/wdl) |
+| 💡 Identified | `nextflow/workflow` | Nextflow pipeline (`.nf` DSL2 processes and channels; read-only structural view) | [nextflow.io](https://www.nextflow.io/) | [nf-core pipelines](https://nf-co.re/pipelines) |
+| 💡 Identified | `snakemake/workflow` | Snakemake workflow (Snakefile rules and their input/output dependency DAG) | [snakemake.readthedocs.io](https://snakemake.readthedocs.io/) | [Snakemake --dag output](https://snakemake.readthedocs.io/en/stable/executing/cli.html) |
+| 💡 Identified | `meltano/project` | Meltano ELT project (`meltano.yml`: extractors, loaders, transforms, schedules as a source→target flow) | [meltano.com](https://meltano.com/) · [meltano.yml reference](https://docs.meltano.com/reference/project) | the `meltano.yml` a repository already has |
+| 💡 Identified | `openlineage/lineage` | OpenLineage lineage graph (open standard run/job/dataset events, LF AI & Data; read-only graph over captured events) | [openlineage.io](https://openlineage.io/) · [spec on GitHub](https://github.com/OpenLineage/openlineage) | [Marquez](https://marquezproject.ai/) |
+
+---
+
+## 13. Ontologies & semantic web
+
+Open W3C and community standards for knowledge representation. The visualization tradition here is strong (VOWL and its kin), and the files are plain text — Turtle, RDF/XML, YAML — that other tools own outright.
+
+| State | Origin | Diagram | Theory | Example |
+|---|---|---|---|---|
+| 💡 Identified | `w3c/owl` | OWL 2 ontology (classes, properties, individuals, axioms; Turtle/RDF-XML/functional syntax) | [W3C OWL 2 overview](https://www.w3.org/TR/owl2-overview/) | [WebVOWL](https://service.tib.eu/webvowl/) · [VOWL notation](http://vowl.visualdataweb.org/) |
+| 💡 Identified | `w3c/skos` | SKOS concept scheme (concepts, broader/narrower/related, collections) | [W3C SKOS reference](https://www.w3.org/TR/skos-reference/) | [SKOS Play](https://skos-play.sparna.fr/) |
+| 💡 Identified | `w3c/shacl` | SHACL shapes graph (node/property shapes, targets, constraints over an RDF data graph) | [W3C SHACL](https://www.w3.org/TR/shacl/) | [SHACL Play](https://shacl-play.sparna.fr/play/) |
+| 💡 Identified | `linkml/schema` | LinkML schema (open-source YAML modeling language: classes, slots, enums, inheritance) | [linkml.io](https://linkml.io/) · [schema guide](https://linkml.io/linkml/schemas/) | [LinkML generated ER/UML views](https://linkml.io/linkml/generators/) |
+
+---
+
+## 14. Database queries & results
+
+Query languages whose statements and result sets are themselves worth a picture — the query as a structure (a graph pattern, a stage pipeline) and the result as a graph or document set. Distinct from section 7's schema diagrams: these visualize *asking*, not modeling.
+
+| State | Origin | Diagram | Theory | Example |
+|---|---|---|---|---|
+| 💡 Identified | `neo4j/cypher` | Cypher query and result graph (MATCH patterns as node/edge structure; results as an interactive graph). Cypher is standardized via [openCypher](https://opencypher.org/) and the ISO [GQL](https://www.gqlstandards.org/) standard | [Cypher manual](https://neo4j.com/docs/cypher-manual/current/) | [Neo4j Browser graph view](https://neo4j.com/docs/browser-manual/current/) |
+| 💡 Identified | `mongodb/aggregation-pipeline` | MongoDB aggregation pipeline (MQL stages — `$match`, `$group`, `$lookup`, … — as a left-to-right stage flow, with document shape per stage) | [Aggregation pipeline manual](https://www.mongodb.com/docs/manual/core/aggregation-pipeline/) | [Compass aggregation builder](https://www.mongodb.com/docs/compass/current/create-agg-pipeline/) |
+| 💡 Identified | `mongodb/query` | MongoDB find query and result documents (MQL filter/projection as a predicate tree; results as a document/tree view) | [MongoDB CRUD queries](https://www.mongodb.com/docs/manual/tutorial/query-documents/) | [Compass documents view](https://www.mongodb.com/docs/compass/current/documents/) |
