@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("zachman", "matrix"),
             "Zachman Framework matrix",
-            "The Zachman grid: six questions against six perspectives, as a checklist of what is documented."),
+            "The Zachman grid: six questions against six perspectives, as a checklist of what is documented.",
+            Icon: "mdi-matrix"),
     ];
 }

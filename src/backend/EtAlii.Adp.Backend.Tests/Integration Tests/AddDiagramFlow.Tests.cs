@@ -158,9 +158,12 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
         var validate = Assert.Single(actions, action => action.Id == Problems.ValidateContextActionProvider.ValidateActionId);
         Assert.True(validate.Available); // Validating the root is validating the whole project - always sensible.
         // The root is a folder, but the one folder the project must not rename or delete.
+        // The additive actions - Add, Validate, New folder - stay enabled: they act within
+        // the root, never on it.
         Assert.All(
             actions.Where(action => action.Id is not AddDiagramContextActionProvider.AddActionId
-                and not Problems.ValidateContextActionProvider.ValidateActionId),
+                and not Problems.ValidateContextActionProvider.ValidateActionId
+                and not HierarchyContextActionProvider.AddFolderActionId),
             action =>
             {
                 ArgumentNullException.ThrowIfNull(action);

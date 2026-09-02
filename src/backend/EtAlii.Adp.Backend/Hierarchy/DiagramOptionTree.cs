@@ -59,7 +59,8 @@ public static class DiagramOptionTree
                     definition.Title,
                     Selectable: true,
                     SuggestedValue: Suggestion(suggest, definition),
-                    Description: definition.Description))
+                    Description: definition.Description,
+                    Icon: definition.Icon))
                 .ToArray();
 
             if (plain is not null)
@@ -71,7 +72,8 @@ public static class DiagramOptionTree
                     Selectable: true,
                     Children: subtypes.Length == 0 ? null : subtypes,
                     SuggestedValue: Suggestion(suggest, plain),
-                    Description: plain.Description));
+                    Description: plain.Description,
+                    Icon: plain.Icon));
             }
             else
             {

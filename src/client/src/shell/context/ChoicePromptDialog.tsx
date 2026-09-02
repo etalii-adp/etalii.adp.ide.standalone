@@ -449,6 +449,7 @@ function ChoiceRow({ row, selected, tabbable, rowRefs, onFocus, onToggle, onChoo
           }
         }}
       >
+        {option.icon && <span className={`mdi ${option.icon} choice-tree-icon`} aria-hidden="true" />}
         <span className="choice-tree-label-text">{option.label}</span>
       </button>
     </li>

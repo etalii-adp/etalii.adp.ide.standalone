@@ -1,3 +1,3 @@
 c4/dynamic
-body: diagrams/c4/reference/architecture/courier.dsl
+body: courier.dsl
 view: ParcelScanned

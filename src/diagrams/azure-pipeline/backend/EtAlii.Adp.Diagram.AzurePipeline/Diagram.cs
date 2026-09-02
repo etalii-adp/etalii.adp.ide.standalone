@@ -20,6 +20,7 @@ public static class Diagram
         new DiagramOrigin("azure-devops", "pipeline"),
         "Azure DevOps pipeline",
         "A CI/CD pipeline's stages, jobs and steps, and which of them wait for which.",
+        Icon: "mdi-rocket-launch-outline",
         Extension: DocumentExtension,
         SharedExtension: true,
         // Azure DevOps pipelines: a document the repository already owns, registered by the user

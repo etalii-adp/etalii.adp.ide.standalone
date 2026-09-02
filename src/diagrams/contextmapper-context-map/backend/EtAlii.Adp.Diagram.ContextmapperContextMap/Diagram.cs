@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("contextmapper", "context-map"),
             "DDD Context Map, plus generated PlantUML/BPMN sketches",
-            "Bounded contexts and the strategic relationships between the teams that own them."),
+            "Bounded contexts and the strategic relationships between the teams that own them.",
+            Icon: "mdi-map-legend"),
     ];
 }

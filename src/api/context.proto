@@ -327,6 +327,9 @@ message ContextOption {
   // long as the user has not typed a value of their own. Computed when the prompt is
   // built, so picking an option costs no round trip. Empty for a group.
   string suggested_value = 5;
+  // The @mdi/font class marking this option - the diagram type's own icon. Empty for
+  // a group, and for an option whose definition declares none.
+  string icon = 7;
   // One sentence on what the diagram type is for, shown when this option is selected.
   // Empty for a group, which is a heading rather than a thing that can be created.
   string description = 6;

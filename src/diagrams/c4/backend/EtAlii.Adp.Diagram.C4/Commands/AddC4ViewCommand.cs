@@ -11,7 +11,7 @@ namespace EtAlii.Adp.Diagram.C4;
 /// <param name="MimeType">The C4 type the registration declares.</param>
 /// <param name="ViewKind">Which view to declare.</param>
 /// <param name="ViewKey">The key the registration's <c>view:</c> header names.</param>
-/// <param name="BodyRelativePath">The body, project-relative, as the header records it.</param>
+/// <param name="BodyRelativePath">The body, relative to the registration's own folder, as the header records it.</param>
 public sealed record AddC4ViewCommand(
     string BodyPath,
     string RegistrationPath,
@@ -107,8 +107,8 @@ internal sealed class RemoveC4ViewCommandHandler(IC4DocumentStore documents) : I
             return Task.FromResult(CommandResult.Failure($"Could not remove {System.IO.Path.GetFileName(command.RegistrationPath)}: {exception.Message}"));
         }
 
-        // The inverse needs the body path relative to the project, which the registration
-        // carried; it is reconstructed from the file names, which is all this needs to redo.
+        // The inverse needs the body path relative to the registration's own folder; the
+        // registration and its body sit side by side, so the file name is the whole path.
         return Task.FromResult(CommandResult.Success(new AddC4ViewCommand(
             command.BodyPath,
             command.RegistrationPath,

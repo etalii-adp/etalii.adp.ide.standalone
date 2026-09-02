@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("mermaid", "class"),
             "Class diagram",
-            "Classes, attributes and relationships, in Mermaid's class syntax."),
+            "Classes, attributes and relationships, in Mermaid's class syntax.",
+            Icon: "mdi-cube-outline"),
     ];
 }

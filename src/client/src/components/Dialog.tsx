@@ -17,6 +17,12 @@ export interface DialogProps {
   title: ReactNode;
   buttons: DialogButton[];
   onClose: () => void;
+  /**
+   * A dialog whose content needs no vertical room - a confirmation, a single field - sizes
+   * to that content instead of claiming the fixed half-page height the content-heavy
+   * dialogs keep.
+   */
+  compact?: boolean;
   children: ReactNode;
 }
 
@@ -32,7 +38,7 @@ const FOCUSABLE_SELECTOR =
  * `Dialog`, that consumer wires it to their embedded content's own callbacks
  * (e.g. an `onValidityChange` prop) to enable/disable buttons in response.
  */
-export function Dialog({ open, icon, title, buttons, onClose, children }: DialogProps) {
+export function Dialog({ open, icon, title, buttons, onClose, compact = false, children }: DialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
@@ -94,7 +100,7 @@ export function Dialog({ open, icon, title, buttons, onClose, children }: Dialog
         }
       }}
     >
-      <div className="dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} ref={dialogRef}>
+      <div className={`dialog${compact ? " dialog-compact" : ""}`} role="dialog" aria-modal="true" aria-labelledby={titleId} ref={dialogRef}>
         <div className="dialog-header">
           {icon && <span className={`mdi ${icon} dialog-header-icon`} aria-hidden="true" />}
           <span className="dialog-header-title" id={titleId}>

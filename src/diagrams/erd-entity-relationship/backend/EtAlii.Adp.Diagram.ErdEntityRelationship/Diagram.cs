@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("erd", "entity-relationship"),
             "Entity-Relationship Diagram (Chen or Crow's Foot notation)",
-            "Entities, their attributes and the cardinality of every relationship between them."),
+            "Entities, their attributes and the cardinality of every relationship between them.",
+            Icon: "mdi-relation-many-to-many"),
     ];
 }

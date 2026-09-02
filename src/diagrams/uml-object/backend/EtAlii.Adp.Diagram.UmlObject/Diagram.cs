@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("uml", "object"),
             "Object diagram",
-            "A snapshot of instances and their links at one moment, to make a class diagram concrete."),
+            "A snapshot of instances and their links at one moment, to make a class diagram concrete.",
+            Icon: "mdi-shape-outline"),
     ];
 }

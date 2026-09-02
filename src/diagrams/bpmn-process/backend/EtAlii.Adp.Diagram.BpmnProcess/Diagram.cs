@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("bpmn", "process"),
             "BPMN process diagram",
-            "A business process as an executable flow: events, tasks, gateways and the lanes that own them."),
+            "A business process as an executable flow: events, tasks, gateways and the lanes that own them.",
+            Icon: "mdi-arrow-decision"),
     ];
 }

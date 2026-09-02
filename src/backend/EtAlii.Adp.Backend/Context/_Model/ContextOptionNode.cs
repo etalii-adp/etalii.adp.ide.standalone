@@ -11,4 +11,5 @@ public sealed record ContextOptionNode(
     bool Selectable,
     IReadOnlyList<ContextOptionNode>? Children = null,
     string SuggestedValue = "",
-    string Description = "");
+    string Description = "",
+    string Icon = "");

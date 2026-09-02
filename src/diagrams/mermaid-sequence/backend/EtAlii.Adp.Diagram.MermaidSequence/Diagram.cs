@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("mermaid", "sequence"),
             "Sequence diagram",
-            "Messages exchanged between participants over time, in Mermaid's sequence syntax."),
+            "Messages exchanged between participants over time, in Mermaid's sequence syntax.",
+            Icon: "mdi-swap-horizontal"),
     ];
 }

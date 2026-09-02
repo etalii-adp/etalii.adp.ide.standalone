@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("uml", "state-machine"),
             "State machine diagram",
-            "The states an object can be in, and the events and guards that move it between them."),
+            "The states an object can be in, and the events and guards that move it between them.",
+            Icon: "mdi-state-machine"),
     ];
 }

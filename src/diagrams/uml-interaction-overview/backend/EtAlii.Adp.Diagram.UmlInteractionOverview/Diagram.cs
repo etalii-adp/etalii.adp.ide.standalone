@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("uml", "interaction-overview"),
             "Interaction overview diagram",
-            "Several interactions stitched into one flow, so an activity's branches lead into scenarios."),
+            "Several interactions stitched into one flow, so an activity's branches lead into scenarios.",
+            Icon: "mdi-map-marker-path"),
     ];
 }

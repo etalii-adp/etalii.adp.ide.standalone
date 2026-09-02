@@ -88,7 +88,10 @@
 }
 
 /* Relationships are dashed, unidirectional and labelled - the notation C4 shows. */
-.c4-relationship line {
+/* The connection is a <path> (the shared StraightConnection draws one); this selector
+   briefly said `line` after the shape changed, and every relationship went invisible -
+   labels and arrowheads floating with no line between them. */
+.c4-relationship path {
   stroke: var(--color-border);
   stroke-width: 1.5;
   stroke-dasharray: 6 4;

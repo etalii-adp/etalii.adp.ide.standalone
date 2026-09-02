@@ -1,3 +1,3 @@
 c4/system-landscape
-body: architecture/courier.dsl
+body: courier.dsl
 view: Landscape

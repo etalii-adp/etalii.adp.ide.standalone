@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("plantuml", "uml"),
             "Full UML set (see section 1)",
-            "UML written as PlantUML text and rendered from it."),
+            "UML written as PlantUML text and rendered from it.",
+            Icon: "mdi-drawing"),
     ];
 }

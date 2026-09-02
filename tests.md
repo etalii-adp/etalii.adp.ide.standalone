@@ -441,3 +441,17 @@ CodeMirror's injected styles, so no unit test can see any of this.
   text surface with lighter, muted numbers (not a light-grey strip with dark numbers); a
   blinking caret is clearly visible at the click position; and switching the OS to light
   mode flips the whole editor - gutter, text, caret - along with the rest of the app.
+
+## An editor save is one undo away on the ribbon (editor/undo batch)
+
+The save travels through the project history (`SaveTextFileCommand`), so the ribbon's
+Undo/Redo must reflect it - verified live, and kept here because it needs a running app,
+a keyboard save and the ribbon together.
+
+- **Preconditions**: backend + client running; a project with a markdown or plain-text
+  file open in its editor tab; ribbon Undo greyed ("There is nothing to undo").
+- **Actions**: type a marker into the editor, press Ctrl+S, then click the ribbon's Undo;
+  then click Redo.
+- **Expected**: after the save the ribbon Undo enables; Undo restores the file's previous
+  content on disk (and the editor follows once it reloads the pushed change); Redo brings
+  the save back. No conflict banner should appear for the editor's own save.

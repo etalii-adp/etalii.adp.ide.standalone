@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("mermaid", "architecture"),
             "Architecture diagram",
-            "Services and their connections, in Mermaid's architecture syntax."),
+            "Services and their connections, in Mermaid's architecture syntax.",
+            Icon: "mdi-office-building-outline"),
     ];
 }

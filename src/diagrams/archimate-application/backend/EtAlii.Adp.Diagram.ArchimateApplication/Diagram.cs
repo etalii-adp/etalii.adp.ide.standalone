@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("archimate", "application"),
             "ArchiMate — Application layer",
-            "How application services, components and their interfaces support the business."),
+            "How application services, components and their interfaces support the business.",
+            Icon: "mdi-apps"),
     ];
 }

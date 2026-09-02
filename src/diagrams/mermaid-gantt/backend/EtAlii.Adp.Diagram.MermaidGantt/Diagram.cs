@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("mermaid", "gantt"),
             "Gantt chart",
-            "Tasks over time, with dependencies and milestones, in Mermaid's Gantt syntax."),
+            "Tasks over time, with dependencies and milestones, in Mermaid's Gantt syntax.",
+            Icon: "mdi-chart-gantt"),
     ];
 }

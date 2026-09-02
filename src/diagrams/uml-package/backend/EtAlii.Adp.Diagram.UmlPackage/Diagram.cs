@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("uml", "package"),
             "Package diagram",
-            "How a model is grouped into packages, and which package depends on which."),
+            "How a model is grouped into packages, and which package depends on which.",
+            Icon: "mdi-package-variant-closed"),
     ];
 }

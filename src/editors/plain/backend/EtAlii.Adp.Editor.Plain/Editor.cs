@@ -13,6 +13,7 @@ public static class Editor
         "plain",
         "Plain Text",
         "Any text file, as it is - the editor every file can fall back to.",
+        Icon: "mdi-text-box-outline",
         Extensions: [],
         FileNames: [],
         IsFallback: true,

@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("iso", "flowchart"),
             "Flowchart",
-            "A procedure as a flow of steps and decisions, in the ISO 5807 shapes everyone recognises."),
+            "A procedure as a flow of steps and decisions, in the ISO 5807 shapes everyone recognises.",
+            Icon: "mdi-ray-start-arrow"),
     ];
 }

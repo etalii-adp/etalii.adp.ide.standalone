@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("uml", "composite-structure"),
             "Composite structure diagram",
-            "What one class is made of internally: its parts, ports and connectors."),
+            "What one class is made of internally: its parts, ports and connectors.",
+            Icon: "mdi-group"),
     ];
 }

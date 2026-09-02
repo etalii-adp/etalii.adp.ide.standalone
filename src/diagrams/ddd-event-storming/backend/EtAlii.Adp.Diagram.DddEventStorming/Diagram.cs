@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("ddd", "event-storming"),
             "Event Storming",
-            "A domain explored as a timeline of events, commands and the aggregates that react."),
+            "A domain explored as a timeline of events, commands and the aggregates that react.",
+            Icon: "mdi-lightning-bolt-outline"),
     ];
 }

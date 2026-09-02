@@ -69,7 +69,7 @@ public class HierarchyContextActionProviderTests : IDisposable
     }
 
     [Fact]
-    public async Task DiscoverAsync_ForAFolder_ReportsTheSameTwoActions()
+    public async Task DiscoverAsync_ForAFolder_AlsoOffersToGrowASubfolder()
     {
         // Arrange.
         var target = FolderTarget(CreateFolder("sub"));
@@ -79,8 +79,93 @@ public class HierarchyContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.Equal(
-            new[] { HierarchyContextActionProvider.RenameActionId, HierarchyContextActionProvider.DeleteActionId },
+            new[]
+            {
+                HierarchyContextActionProvider.RenameActionId,
+                HierarchyContextActionProvider.DeleteActionId,
+                HierarchyContextActionProvider.AddFolderActionId,
+            },
             actions.Select(a => a.Id));
+    }
+
+    [Fact]
+    public async Task DiscoverAsync_ForAFile_DoesNotOfferNewFolder()
+    {
+        // Arrange & act.
+        var actions = await DiscoverAsync(FileTarget(CreateFile("a.txt")));
+
+        // Assert.
+        Assert.DoesNotContain(HierarchyContextActionProvider.AddFolderActionId, actions.Select(a => a.Id));
+    }
+
+    [Fact]
+    public async Task CommitAsync_NewFolder_CreatesIt_AndUndoRemovesItAgain()
+    {
+        // Arrange.
+        var target = FolderTarget(CreateFolder("sub"));
+
+        // Act.
+        var result = await _provider.CommitAsync(
+            target, HierarchyContextActionProvider.AddFolderActionId, "child", "", TestContext.Current.CancellationToken);
+        var created = IoPath.Combine(_root, "sub", "child");
+        var existedAfterCommit = Directory.Exists(created);
+        await _history.UndoAsync(TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(result.Completed);
+        Assert.True(existedAfterCommit);
+        Assert.False(Directory.Exists(created));
+    }
+
+    [Fact]
+    public async Task CommitAsync_NewFolder_OnTheProjectRootItself_IsAllowed()
+    {
+        // Arrange.
+        // Rename and delete rightly refuse the root; an add acts WITHIN the folder, never on
+        // it, and the root is where a project's first folder belongs.
+        var root = new ContextTarget(ContextScope.Hierarchy, _root, IsContainer: true, SourceId: default, RootPath: _root);
+
+        // Act.
+        var result = await _provider.CommitAsync(
+            root, HierarchyContextActionProvider.AddFolderActionId, "docs", "", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(result.Completed);
+        Assert.True(Directory.Exists(IoPath.Combine(_root, "docs")));
+    }
+
+    [Fact]
+    public async Task UndoOfANewFolder_ThatGainedContentSince_IsRefused()
+    {
+        // Arrange.
+        // An undo must never take work with it: once anything landed inside the new folder,
+        // undoing its creation is refused rather than cascading.
+        var target = FolderTarget(CreateFolder("sub"));
+        await _provider.CommitAsync(
+            target, HierarchyContextActionProvider.AddFolderActionId, "child", "", TestContext.Current.CancellationToken);
+        File.WriteAllText(IoPath.Combine(_root, "sub", "child", "kept.txt"), "work");
+
+        // Act.
+        var undone = await _history.UndoAsync(TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.False(undone.IsSuccess);
+        Assert.True(File.Exists(IoPath.Combine(_root, "sub", "child", "kept.txt")));
+    }
+
+    [Fact]
+    public async Task ValidateAsync_NewFolder_RejectsANameAlreadyThere()
+    {
+        // Arrange.
+        var target = FolderTarget(CreateFolder("sub"));
+        CreateFolder("sub", "taken");
+
+        // Act.
+        var verdict = await _provider.ValidateAsync(
+            target, HierarchyContextActionProvider.AddFolderActionId, "taken", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.False(verdict.Valid);
     }
 
     [Fact]
@@ -317,10 +402,17 @@ public class HierarchyContextActionProviderTests : IDisposable
         var groups = await _provider.DiscoverAsync(RootTarget(_root), TestContext.Current.CancellationToken);
 
         // Act and assert, step by step.
-        var actions = Assert.Single(groups).Actions;
-        Assert.Equal(2, actions.Count);
-        Assert.All(actions, action => Assert.False(action.Available));
-        Assert.All(actions, action => Assert.Equal("The project folder itself cannot be renamed or deleted here.", action.UnavailableReason));
+        var actions = groups.SelectMany(group => group.Actions).ToList();
+        var untouchable = actions
+            .Where(action => action.Id != HierarchyContextActionProvider.AddFolderActionId)
+            .ToList();
+        Assert.Equal(2, untouchable.Count);
+        Assert.All(untouchable, action => Assert.False(action.Available));
+        Assert.All(untouchable, action => Assert.Equal("The project folder itself cannot be renamed or deleted here.", action.UnavailableReason));
+
+        // Adding INTO the root stays available: the add acts within the folder, never on it.
+        var addFolder = Assert.Single(actions, action => action.Id == HierarchyContextActionProvider.AddFolderActionId);
+        Assert.True(addFolder.Available);
     }
 
     [Fact]

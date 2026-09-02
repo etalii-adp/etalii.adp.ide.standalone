@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("mermaid", "er"),
             "Entity-Relationship diagram",
-            "Entities and relationships, in Mermaid's ER syntax."),
+            "Entities and relationships, in Mermaid's ER syntax.",
+            Icon: "mdi-database-outline"),
     ];
 }

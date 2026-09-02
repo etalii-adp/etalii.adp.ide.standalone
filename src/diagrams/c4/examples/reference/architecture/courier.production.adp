@@ -1,3 +1,3 @@
 c4/deployment
-body: architecture/courier.dsl
+body: courier.dsl
 view: ProductionDeployment

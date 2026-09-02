@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("mermaid", "state"),
             "State diagram",
-            "States and the events that move between them, in Mermaid's state syntax."),
+            "States and the events that move between them, in Mermaid's state syntax.",
+            Icon: "mdi-state-machine"),
     ];
 }

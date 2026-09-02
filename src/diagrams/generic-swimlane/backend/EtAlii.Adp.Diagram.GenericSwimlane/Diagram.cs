@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("generic", "swimlane"),
             "Swimlane diagram",
-            "A process split into lanes, so each step is visibly somebody's responsibility."),
+            "A process split into lanes, so each step is visibly somebody's responsibility.",
+            Icon: "mdi-view-column-outline"),
     ];
 }

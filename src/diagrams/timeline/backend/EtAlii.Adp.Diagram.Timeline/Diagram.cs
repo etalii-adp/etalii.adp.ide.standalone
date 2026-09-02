@@ -34,6 +34,7 @@ public static class Diagram
         new DiagramOrigin("generic", "timeline"),
         "Timeline",
         "When things happen and for how long - periods and moments on rows along a time axis, connected however the author means it.",
+        Icon: "mdi-chart-timeline",
         Extension: DocumentExtension,
         // Both axes authored, neither a raw coordinate: x is authored as time through begin/end,
         // y as a row index a drag snaps to.

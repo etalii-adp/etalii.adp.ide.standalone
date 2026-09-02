@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("uml", "class"),
             "Class diagram",
-            "Classes, their attributes and operations, and the associations between them."),
+            "Classes, their attributes and operations, and the associations between them.",
+            Icon: "mdi-cube-outline"),
     ];
 }

@@ -15,6 +15,7 @@ public static class Diagram
         new DiagramOrigin("freeplane", "mindmap"),
         "Mind map (radial/hierarchical, single central topic)",
         "Ideas branching from one central topic, for thinking a subject through rather than specifying it.",
+        Icon: "mdi-family-tree",
         Extension: DocumentExtension,
         // everything resolves by DiagramOrigin (mindmap-diagram Requirement 13).
         Build: builder => builder.Services.AddMindmap(builder.Configuration));

@@ -123,7 +123,8 @@ public sealed class OpenAsTextContextActionProvider : IContextActionProvider
                     Id: claimant.Id,
                     Label: claimant.Title,
                     Selectable: true,
-                    Description: claimant.Description))],
+                    Description: claimant.Description,
+                    Icon: claimant.Icon))],
                 EmptyMessage: "No editors are available.",
                 NameField: null)));
     }

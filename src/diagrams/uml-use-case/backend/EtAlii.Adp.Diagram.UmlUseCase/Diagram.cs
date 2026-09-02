@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("uml", "use-case"),
             "Use case diagram",
-            "What actors want from a system, as use cases and the relationships between them."),
+            "What actors want from a system, as use cases and the relationships between them.",
+            Icon: "mdi-account-group-outline"),
     ];
 }

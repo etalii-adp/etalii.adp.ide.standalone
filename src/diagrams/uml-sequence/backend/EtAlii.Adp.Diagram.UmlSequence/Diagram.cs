@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("uml", "sequence"),
             "Sequence diagram",
-            "Messages between lifelines in time order, for one scenario."),
+            "Messages between lifelines in time order, for one scenario.",
+            Icon: "mdi-swap-horizontal-bold"),
     ];
 }

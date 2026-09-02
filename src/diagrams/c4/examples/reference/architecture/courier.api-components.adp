@@ -1,3 +1,3 @@
 c4/component
-body: architecture/courier.dsl
+body: courier.dsl
 view: ApiComponents

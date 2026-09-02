@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("dfd", "data-flow"),
             "Data Flow Diagram (Yourdon/DeMarco or Gane–Sarson notation)",
-            "How data moves between processes, stores and outside parties - and where it crosses a trust boundary."),
+            "How data moves between processes, stores and outside parties - and where it crosses a trust boundary.",
+            Icon: "mdi-transfer"),
     ];
 }

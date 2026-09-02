@@ -14,6 +14,11 @@ namespace EtAlii.Adp.Diagram;
 /// answers - rather than restating the title, so a user meeting a notation for the first time
 /// can tell whether it is the one they want.
 /// </param>
+/// <param name="Icon">
+/// The @mdi/font class naming this type's icon - <c>"mdi-graph-outline"</c> and its kin -
+/// shown wherever the type introduces itself: the Add dialog's tree, and any surface that
+/// wants to mark a diagram of this type. Empty falls back to the generic diagram mark.
+/// </param>
 /// <param name="Extension">
 /// The extension, dot included, of the sibling file that holds this type's document body -
 /// <c>".mm"</c> for a mindmap. Empty means the <c>.adp</c> registration file is the whole
@@ -47,6 +52,7 @@ public sealed record DiagramDefinition(
     DiagramOrigin Origin,
     string Title,
     string Description = "",
+    string Icon = "",
     string Extension = "",
     bool SharedExtension = false,
     DiagramSubject Subject = DiagramSubject.Document,

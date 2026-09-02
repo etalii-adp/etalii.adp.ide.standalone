@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("mermaid", "c4"),
             "C4 diagram (subset)",
-            "A C4 model written in Mermaid's C4 syntax rather than a dedicated tool."),
+            "A C4 model written in Mermaid's C4 syntax rather than a dedicated tool.",
+            Icon: "mdi-earth-box"),
     ];
 }

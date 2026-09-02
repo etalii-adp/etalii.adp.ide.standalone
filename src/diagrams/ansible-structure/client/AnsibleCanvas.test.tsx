@@ -160,6 +160,32 @@ describe("AnsibleCanvas", () => {
     expect(container.querySelector(".ansible-edge-dynamic")).not.toBeNull();
   });
 
+  it("anchors an edge on the source's right side and the target's left side, arrow and all", () => {
+    // Arrange: playbook at (0,0), role at (300,0), both 120x32.
+    currentModel = modelOf(
+      element("playbook:a.yml", "ansible/structure+playbook", AnsibleElementKind.PLAYBOOK),
+      element("role:r", "ansible/structure+role", AnsibleElementKind.ROLE, {}, 300, 0),
+      element("edge:static", "ansible/structure+edge", AnsibleElementKind.EDGE, {
+        edge: { sourceId: "playbook:a.yml", targetId: "role:r", kind: AnsibleEdgeKind.USES_ROLE, directive: "roles:", dynamic: false },
+      }),
+    );
+
+    // Act.
+    const { container } = renderCanvas();
+    const line = container.querySelector(".ansible-edge-line")!;
+    const numbers = line.getAttribute("d")!.match(/-?[\d.]+/g)!.map(Number);
+
+    // Assert.
+    // From (120, 16) - the source's right edge at mid-height - to (300, 16), the target's
+    // left edge. The old centre-line anchoring fed the boxes' top-left corners in as centres,
+    // so every line started half a box off and cut diagonally across the columns.
+    expect(numbers[0]).toBe(120);
+    expect(numbers[1]).toBe(16);
+    expect(numbers[numbers.length - 2]).toBe(300);
+    expect(numbers[numbers.length - 1]).toBe(16);
+    expect(line.getAttribute("marker-end")).toBe("url(#ansible-arrow)");
+  });
+
   it("gives a dependsOn edge a style of its own", () => {
     // Arrange.
     currentModel = modelOf(

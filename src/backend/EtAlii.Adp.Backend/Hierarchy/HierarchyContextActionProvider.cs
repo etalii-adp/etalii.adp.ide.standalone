@@ -66,7 +66,20 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
                 DeleteActionId, "Delete", "mdi-trash-can-outline", DeleteShortcut, available, unavailableReason),
         });
 
-        return ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>(new[] { group });
+        if (!target.IsContainer)
+        {
+            return ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>(new[] { group });
+        }
+
+        // A folder also offers to grow a subfolder - the project root included, which is the
+        // one place rename and delete rightly refuse but an add belongs most.
+        var additions = new ContextActionGroupDefinition(new[]
+        {
+            new ContextActionDefinition(
+                AddFolderActionId, "New folder…", "mdi-folder-plus-outline", Shortcut: null, Available: true, UnavailableReason: ""),
+        });
+
+        return ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>(new[] { group, additions });
     }
 
     public ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)
@@ -77,7 +90,9 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
                 new ContextExecutionFailed("This item no longer exists."));
         }
 
-        if (HierarchyTargets.IsRoot(target))
+        // Adding INTO a folder is fine anywhere, the root included; only acting ON the root
+        // itself is refused.
+        if (HierarchyTargets.IsRoot(target) && actionId != AddFolderActionId)
         {
             return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionFailed(RootUntouchable));
         }
@@ -86,6 +101,14 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
 
         return ValueTask.FromResult<ContextExecutionResult>(actionId switch
         {
+            AddFolderActionId when target.IsContainer => new ContextExecutionRequiresInput(
+                new ContextInputRequest(
+                    Title: "New folder",
+                    Icon: "mdi-folder-plus-outline",
+                    FieldLabel: "Name",
+                    InitialValue: "",
+                    ConfirmLabel: "Create")),
+
             RenameActionId => new ContextExecutionRequiresInput(
                 new ContextInputRequest(
                     Title: target.IsContainer ? "Rename folder" : "Rename file",
@@ -113,16 +136,20 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
     /// </summary>
     public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
     {
-        return ValueTask.FromResult(actionId != RenameActionId
-            ? ContextValidationResult.Accepted // Delete takes no value, so there is nothing to judge.
-            : ValidateRename(target, value));
+        return ValueTask.FromResult(actionId switch
+        {
+            RenameActionId => ValidateRename(target, value),
+            AddFolderActionId => ValidateNewFolder(target, value),
+            _ => ContextValidationResult.Accepted, // Delete takes no value, so there is nothing to judge.
+        });
     }
 
     public async ValueTask<ContextCommitResult> CommitAsync(ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken)
     {
         // Re-checked here, not only in ExecuteAsync: a client that skipped the prompt step
-        // must still be unable to rename or delete the project folder.
-        if (HierarchyTargets.IsRoot(target))
+        // must still be unable to rename or delete the project folder. Adding into it stays
+        // allowed - the add acts within the folder, never on it.
+        if (HierarchyTargets.IsRoot(target) && actionId != AddFolderActionId)
         {
             return ContextCommitResult.Failed(RootUntouchable);
         }
@@ -137,6 +164,7 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
         {
             RenameActionId => await DispatchAsync(target, new RenameEntryCommand(target.ResolvedFullPath, value), cancellationToken),
             DeleteActionId => await DispatchAsync(target, new DeleteEntryCommand(target.ResolvedFullPath), cancellationToken),
+            AddFolderActionId when target.IsContainer => await CreateFolderAsync(target, value.Trim(), cancellationToken),
             _ => ContextCommitResult.Failed($"Unknown action '{actionId}'."),
         };
     }
@@ -150,6 +178,17 @@ public sealed partial class HierarchyContextActionProvider : IContextActionProvi
     {
         var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? ContextCommitResult.Succeeded : ContextCommitResult.Failed(result.Error);
+    }
+
+    /// <summary>
+    /// Creates the subfolder and answers with its location, so the explorer can reveal what
+    /// just appeared instead of leaving the user to hunt for it.
+    /// </summary>
+    private async ValueTask<ContextCommitResult> CreateFolderAsync(ContextTarget target, string name, CancellationToken cancellationToken)
+    {
+        var fullPath = IoPath.Combine(target.ResolvedFullPath, name);
+        var result = await _historyStacks.Get(target.RootPath).ExecuteAsync(new CreateFolderCommand(fullPath), cancellationToken);
+        return result.IsSuccess ? ContextCommitResult.Created(fullPath) : ContextCommitResult.Failed(result.Error);
     }
 
     private static string? ParentFolderOf(ContextTarget target) => IoPath.GetDirectoryName(target.ResolvedFullPath);

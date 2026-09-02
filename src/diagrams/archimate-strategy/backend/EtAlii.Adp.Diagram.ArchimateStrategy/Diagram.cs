@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("archimate", "strategy"),
             "ArchiMate — Strategy layer",
-            "Capabilities, resources and courses of action, above the level of any single system."),
+            "Capabilities, resources and courses of action, above the level of any single system.",
+            Icon: "mdi-chess-knight"),
     ];
 }

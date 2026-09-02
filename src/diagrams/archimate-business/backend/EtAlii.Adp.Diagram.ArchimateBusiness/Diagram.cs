@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("archimate", "business"),
             "ArchiMate — Business layer",
-            "The business layer: actors, roles, processes and the services they offer each other."),
+            "The business layer: actors, roles, processes and the services they offer each other.",
+            Icon: "mdi-domain"),
     ];
 }

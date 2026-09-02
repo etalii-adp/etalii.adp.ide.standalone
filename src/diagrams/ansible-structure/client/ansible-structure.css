@@ -132,6 +132,10 @@
   stroke-width: 1.5;
 }
 
+.ansible-arrowhead {
+  fill: var(--ansible-edge-stroke, var(--color-text-muted));
+}
+
 .ansible-edge-label {
   fill: var(--color-text-muted);
   font-size: 10px;

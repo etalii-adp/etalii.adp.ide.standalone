@@ -46,10 +46,16 @@ public static class DiagramFilePair
     /// <c>body:</c> header points outside <paramref name="projectRoot"/>, which is refused
     /// rather than followed (Requirement 2.4).
     /// </summary>
+    /// <remarks>
+    /// A <c>body:</c> header is relative to the registration file's OWN folder, not to the
+    /// project root: a body beside its registration is just its file name, and moving the
+    /// pair together never invalidates the header. <c>..</c> may climb within the project;
+    /// the containment rule still refuses anything that escapes it.
+    /// </remarks>
     /// <param name="catalog">The diagram definition catalog.</param>
     /// <param name="projectRoot">
-    /// The project folder a <c>body:</c> header is resolved against and must stay inside. Null
-    /// means "no header may be followed": the caller only wants the owned sibling.
+    /// The project folder a resolved <c>body:</c> header must stay inside. Null means "no
+    /// header may be followed": the caller only wants the owned sibling.
     /// </param>
     /// <param name="adpPath">The path to the diagram registration file.</param>
     public static DiagramBodyFile? BodyOf(string adpPath, IDiagramDefinitionCatalog catalog, string? projectRoot)
@@ -90,17 +96,18 @@ public static class DiagramFilePair
             return new DiagramBodyFile(Path: string.Empty, view, IsOwned: false);
         }
 
-        var resolved = ResolveWithin(projectRoot, body);
+        var resolved = ResolveWithin(projectRoot, IoPath.GetDirectoryName(adpPath) ?? projectRoot, body);
         return resolved is null ? null : new DiagramBodyFile(resolved, view, IsOwned: false);
     }
 
     /// <summary>
-    /// <paramref name="relativePath"/> resolved against <paramref name="projectRoot"/>, or null
-    /// when it escapes it. A body outside the project is refused rather than read: the header
-    /// is user-editable text, and following it anywhere on disk would make an <c>.adp</c> file
-    /// a way to read arbitrary files through the backend.
+    /// <paramref name="relativePath"/> resolved against <paramref name="baseDirectory"/> - the
+    /// registration's own folder - or null when the result escapes
+    /// <paramref name="projectRoot"/>. A body outside the project is refused rather than read:
+    /// the header is user-editable text, and following it anywhere on disk would make an
+    /// <c>.adp</c> file a way to read arbitrary files through the backend.
     /// </summary>
-    private static string? ResolveWithin(string projectRoot, string relativePath)
+    private static string? ResolveWithin(string projectRoot, string baseDirectory, string relativePath)
     {
         if (IoPath.IsPathRooted(relativePath))
         {
@@ -112,7 +119,7 @@ public static class DiagramFilePair
         try
         {
             fullRoot = IoPath.GetFullPath(projectRoot);
-            fullPath = IoPath.GetFullPath(IoPath.Combine(fullRoot, relativePath));
+            fullPath = IoPath.GetFullPath(IoPath.Combine(IoPath.GetFullPath(baseDirectory), relativePath));
         }
         catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
         {

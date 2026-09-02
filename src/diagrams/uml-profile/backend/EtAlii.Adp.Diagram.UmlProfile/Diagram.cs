@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("uml", "profile"),
             "Profile diagram",
-            "A UML extension: the stereotypes and tagged values that adapt UML to a domain."),
+            "A UML extension: the stereotypes and tagged values that adapt UML to a domain.",
+            Icon: "mdi-tag-outline"),
     ];
 }

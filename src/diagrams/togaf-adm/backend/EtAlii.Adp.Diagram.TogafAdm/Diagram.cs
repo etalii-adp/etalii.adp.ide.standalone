@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("togaf", "adm"),
             "TOGAF ADM cycle diagram",
-            "The TOGAF Architecture Development Method cycle and where a piece of work sits in it."),
+            "The TOGAF Architecture Development Method cycle and where a piece of work sits in it.",
+            Icon: "mdi-sync-circle"),
     ];
 }

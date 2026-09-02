@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("network", "topology"),
             "Network topology diagram",
-            "Hosts, links and segments: what is connected to what, and how."),
+            "Hosts, links and segments: what is connected to what, and how.",
+            Icon: "mdi-lan"),
     ];
 }

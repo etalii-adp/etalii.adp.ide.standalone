@@ -148,7 +148,7 @@ export function ProjectGridPage({ onProjectSelected }: ProjectGridPageProps) {
         </li>
       </ul>
 
-      <Dialog
+      <Dialog compact
         open={isAddOpen}
         icon="mdi-plus"
         title="Add project"

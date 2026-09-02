@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("archimate", "technology"),
             "ArchiMate — Technology layer",
-            "The nodes, devices and system software applications actually run on."),
+            "The nodes, devices and system software applications actually run on.",
+            Icon: "mdi-server"),
     ];
 }

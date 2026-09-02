@@ -81,3 +81,12 @@
 .markdown-preview {
   line-height: 1.5;
 }
+
+/* Links wear the same highlight green the rest of the shell accents with. */
+.markdown-preview a {
+  color: var(--color-primary, limegreen);
+}
+
+.markdown-preview a:hover {
+  text-decoration: underline;
+}

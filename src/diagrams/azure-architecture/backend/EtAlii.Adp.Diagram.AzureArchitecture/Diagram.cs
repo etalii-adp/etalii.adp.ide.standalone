@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("azure", "architecture"),
             "Azure architecture diagram",
-            "How a solution is built out of Azure services, drawn with the vendor's own icon set."),
+            "How a solution is built out of Azure services, drawn with the vendor's own icon set.",
+            Icon: "mdi-microsoft-azure"),
     ];
 }

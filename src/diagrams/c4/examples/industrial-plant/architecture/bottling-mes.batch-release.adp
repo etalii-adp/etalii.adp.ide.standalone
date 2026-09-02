@@ -1,3 +1,3 @@
 c4/dynamic
-body: architecture/bottling-mes.dsl
+body: bottling-mes.dsl
 view: BatchRelease

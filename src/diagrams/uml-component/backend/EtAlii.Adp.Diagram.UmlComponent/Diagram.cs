@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("uml", "component"),
             "Component diagram",
-            "Components, the interfaces they provide and require, and how they plug together."),
+            "Components, the interfaces they provide and require, and how they plug together.",
+            Icon: "mdi-toy-brick-outline"),
     ];
 }

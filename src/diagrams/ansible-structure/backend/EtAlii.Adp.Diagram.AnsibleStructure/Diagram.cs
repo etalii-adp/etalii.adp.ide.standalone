@@ -28,6 +28,7 @@ public static class Diagram
         "Ansible project structure (read-only)",
         "What runs what, and where a value comes from: playbooks, roles, inventories and the "
         + "include, import and dependency edges between them, drawn from the folder as it is.",
+        Icon: "mdi-sitemap",
         Subject: DiagramSubject.Folder,
         // Read-only, and the only type whose subject is a folder rather than a document.
         Build: builder => builder.Services.AddAnsibleStructure());

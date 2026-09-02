@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("structurizr", "c4"),
             "C4 model (\"model once, view many\")",
-            "One C4 model in the Structurizr DSL, with several views generated from it."),
+            "One C4 model in the Structurizr DSL, with several views generated from it.",
+            Icon: "mdi-city-variant-outline"),
     ];
 }

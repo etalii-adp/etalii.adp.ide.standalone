@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("uml", "activity"),
             "Activity diagram",
-            "A workflow as actions, decisions and parallel branches - the UML take on a flowchart."),
+            "A workflow as actions, decisions and parallel branches - the UML take on a flowchart.",
+            Icon: "mdi-arrow-decision-auto"),
     ];
 }

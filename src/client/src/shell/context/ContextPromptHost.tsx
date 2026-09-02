@@ -71,7 +71,7 @@ export function ContextPromptHost({ prompt, onPropose, onSubmit, onCancel }: Con
     // Either there is nothing to show, or there was something this build could not show -
     // whose interaction the effect above has already cancelled.
     return unsupportedNotice ? (
-      <Dialog
+      <Dialog compact
         open
         icon="mdi-alert-circle-outline"
         title="Action not supported"
@@ -130,7 +130,7 @@ export function ContextPromptHost({ prompt, onPropose, onSubmit, onCancel }: Con
 
     case "closed":
       return (
-        <Dialog
+        <Dialog compact
           open
           icon="mdi-alert-circle-outline"
           title="Action cancelled"
@@ -212,7 +212,7 @@ function InputPromptDialog({ prompt, onPropose, onSubmit, onCancel }: InputPromp
   const message = submitError || (verdictIsCurrent && !verdict.valid ? verdict.reason : "");
 
   return (
-    <Dialog
+    <Dialog compact
       open
       icon={prompt.icon}
       title={prompt.title}

@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("d2", "diagram"),
             "General-purpose declarative diagram",
-            "A general-purpose diagram written as text and laid out automatically by D2."),
+            "A general-purpose diagram written as text and laid out automatically by D2.",
+            Icon: "mdi-drawing-box"),
     ];
 }

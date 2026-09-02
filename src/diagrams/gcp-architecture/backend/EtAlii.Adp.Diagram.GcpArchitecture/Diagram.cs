@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("gcp", "architecture"),
             "GCP architecture diagram",
-            "How a solution is built out of Google Cloud services, drawn with the vendor's own icon set."),
+            "How a solution is built out of Google Cloud services, drawn with the vendor's own icon set.",
+            Icon: "mdi-google-cloud"),
     ];
 }

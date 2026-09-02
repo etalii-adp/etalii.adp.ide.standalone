@@ -381,6 +381,7 @@ public sealed partial class ContextService
             Selectable = node.Selectable,
             SuggestedValue = node.SuggestedValue,
             Description = node.Description,
+            Icon = node.Icon,
         };
         if (node.Children is { Count: > 0 } children)
         {

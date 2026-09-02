@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("ddd", "context-map"),
             "Bounded Context / Context Map",
-            "Where each bounded context ends, and which pattern governs each boundary between them."),
+            "Where each bounded context ends, and which pattern governs each boundary between them.",
+            Icon: "mdi-map-outline"),
     ];
 }

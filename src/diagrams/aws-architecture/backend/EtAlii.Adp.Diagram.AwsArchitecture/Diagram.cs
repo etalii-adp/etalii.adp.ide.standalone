@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("aws", "architecture"),
             "AWS architecture diagram",
-            "How a solution is built out of AWS services, drawn with the vendor's own icon set."),
+            "How a solution is built out of AWS services, drawn with the vendor's own icon set.",
+            Icon: "mdi-aws"),
     ];
 }

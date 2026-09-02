@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("uml", "timing"),
             "Timing diagram",
-            "How states change against an explicit time axis, for timing-sensitive behaviour."),
+            "How states change against an explicit time axis, for timing-sensitive behaviour.",
+            Icon: "mdi-timer-sand"),
     ];
 }

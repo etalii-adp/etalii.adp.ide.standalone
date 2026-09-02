@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { straightPath, type ConnectorBox } from "@client/canvas/connectors";
-import { StraightConnection } from "@client/canvas/connections/straight/StraightConnection";
+import { forwardBezierPath, straightPath } from "@client/canvas/connectors";
 import { BoxElement } from "@client/canvas/elements/box/BoxElement";
 import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
 import { useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
@@ -178,6 +177,12 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
       onPointerUp={onPointerUp}
       onKeyDown={onKeyDown}
     >
+      <defs>
+        {/* One arrowhead, reused: every Ansible edge points from the user of a thing to it. */}
+        <marker id="ansible-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" className="ansible-arrowhead" />
+        </marker>
+      </defs>
       <g className="ansible-edges">
         {edges.map((edge) => (
           <Edge key={edge.id} edge={edge} model={model} />
@@ -299,21 +304,22 @@ function Edge({ edge, model }: { edge: AnsibleElement; model: AnsibleModel }) {
     wire.dynamic ? "ansible-edge-dynamic" : "ansible-edge-static",
   ].join(" ");
 
-  return (
-    <StraightConnection
-      from={boxOf(anchors.from)}
-      to={boxOf(anchors.to)}
-      className={classes}
-      pathClassName="ansible-edge-line"
-      label={wire.condition ? `${wire.directive} when ${wire.condition}` : wire.directive}
-      labelClassName="ansible-edge-label"
-      labelDy={-4}
-    />
-  );
-}
+  // The layout is columnar, left to right, so an edge reads the same way: out of the source's
+  // right side, into the target's left side, curving horizontally through the corridor
+  // between the columns. The forward bezier loops around for the rare backward edge. The
+  // centre-line anchoring this replaces treated each box's top-left corner as its centre,
+  // which is why every line started half a box off and cut diagonally across the layout.
+  const from = { x: anchors.from.x + anchors.from.payload.width, y: anchors.from.y + anchors.from.payload.height / 2 };
+  const to = { x: anchors.to.x, y: anchors.to.y + anchors.to.payload.height / 2 };
 
-function boxOf(element: AnsibleElement): ConnectorBox {
-  return { x: element.x, y: element.y, width: element.payload.width, height: element.payload.height };
+  return (
+    <g className={classes} data-edge-id={edge.id}>
+      <path className="ansible-edge-line" d={forwardBezierPath(from, to)} markerEnd="url(#ansible-arrow)" />
+      <text className="ansible-edge-label" x={(from.x + to.x) / 2} y={(from.y + to.y) / 2 - 6} textAnchor="middle">
+        {wire.condition ? `${wire.directive} when ${wire.condition}` : wire.directive}
+      </text>
+    </g>
+  );
 }
 
 function boundsOf(nodes: readonly AnsibleElement[]): ViewBox {

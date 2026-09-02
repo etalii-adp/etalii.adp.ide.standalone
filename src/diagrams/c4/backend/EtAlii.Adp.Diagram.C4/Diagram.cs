@@ -25,6 +25,7 @@ public static class Diagram
         new DiagramOrigin("c4", "context"),
         "System Context",
         "The system in its world: who uses it, and what it depends on. The map to start with.",
+        Icon: "mdi-earth",
         Extension: DocumentExtension,
         // Seven C4 types over one shared engine, differing only in the view each binds.
         // We register these services only once.
@@ -35,6 +36,7 @@ public static class Diagram
         new DiagramOrigin("c4", "container"),
         "Container",
         "The applications and data stores that make up a system, and how they talk to each other.",
+        Icon: "mdi-package-variant",
         Extension: DocumentExtension);
 
     /// <summary>Inside one container: its components.</summary>
@@ -42,6 +44,7 @@ public static class Diagram
         new DiagramOrigin("c4", "component"),
         "Component",
         "The components inside one container, and how each collaborates with the others.",
+        Icon: "mdi-puzzle-outline",
         Extension: DocumentExtension);
 
     /// <summary>
@@ -52,13 +55,15 @@ public static class Diagram
     public static DiagramDefinition Code { get; } = new(
         new DiagramOrigin("c4", "code"),
         "Code (optional)",
-        "The classes and their relations inside one component, at the level source code is written.");
+        "The classes and their relations inside one component, at the level source code is written.",
+        Icon: "mdi-code-braces");
 
     /// <summary>Above any single system: the enterprise around them.</summary>
     public static DiagramDefinition SystemLandscape { get; } = new(
         new DiagramOrigin("c4", "system-landscape"),
         "System Landscape (supplementary)",
         "Every system in an enterprise and how they relate, above any single one of them.",
+        Icon: "mdi-terrain",
         Extension: DocumentExtension);
 
     /// <summary>One scenario, step by numbered step.</summary>
@@ -66,6 +71,7 @@ public static class Diagram
         new DiagramOrigin("c4", "dynamic"),
         "Dynamic (supplementary)",
         "How a handful of elements collaborate to serve one scenario, step by numbered step.",
+        Icon: "mdi-motion-play-outline",
         Extension: DocumentExtension);
 
     /// <summary>The static model mapped onto the infrastructure it runs on.</summary>
@@ -73,6 +79,7 @@ public static class Diagram
         new DiagramOrigin("c4", "deployment"),
         "Deployment (supplementary)",
         "Which containers run on which infrastructure, in one environment.",
+        Icon: "mdi-server-network",
         Extension: DocumentExtension);
 
     /// <summary>

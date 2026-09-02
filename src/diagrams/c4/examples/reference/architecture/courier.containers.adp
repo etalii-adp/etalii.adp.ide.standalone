@@ -1,3 +1,3 @@
 c4/container
-body: architecture/courier.dsl
+body: courier.dsl
 view: Containers

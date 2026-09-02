@@ -281,7 +281,8 @@ button {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  /* Five across: the cards shrink to fit rather than the count drifting with the window. */
+  grid-template-columns: repeat(5, 1fr);
   gap: 1rem;
 }
 
@@ -925,6 +926,13 @@ button {
   overflow: hidden;
 }
 
+/* A confirmation or a single-field prompt needs no vertical room: it hugs its content
+   instead of claiming the half-page height the content-heavy dialogs keep. */
+.dialog-compact {
+  height: auto;
+  max-height: 80vh;
+}
+
 .dialog-header {
   display: flex;
   align-items: center;
@@ -1102,6 +1110,12 @@ button {
   gap: 0.375rem;
   flex: 1 1 auto;
   min-width: 0;
+}
+
+.choice-tree-icon {
+  flex: 0 0 auto;
+  font-size: 1rem;
+  color: var(--color-text-muted);
 }
 
 .choice-tree-label-text {

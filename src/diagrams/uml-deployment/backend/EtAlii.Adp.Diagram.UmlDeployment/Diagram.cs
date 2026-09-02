@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("uml", "deployment"),
             "Deployment diagram",
-            "Artifacts placed on nodes: what is installed where, and over which links."),
+            "Artifacts placed on nodes: what is installed where, and over which links.",
+            Icon: "mdi-server-network-outline"),
     ];
 }

@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("mermaid", "flowchart"),
             "Flowchart",
-            "A flow of steps and decisions, in Mermaid's flowchart syntax."),
+            "A flow of steps and decisions, in Mermaid's flowchart syntax.",
+            Icon: "mdi-arrow-decision-outline"),
     ];
 }

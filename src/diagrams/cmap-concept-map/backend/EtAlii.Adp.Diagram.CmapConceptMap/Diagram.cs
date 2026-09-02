@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("cmap", "concept-map"),
             "Concept map (free-form network of concepts with labeled relationships)",
-            "Concepts joined by labelled phrases, so each connection states a proposition."),
+            "Concepts joined by labelled phrases, so each connection states a proposition.",
+            Icon: "mdi-graph-outline"),
     ];
 }

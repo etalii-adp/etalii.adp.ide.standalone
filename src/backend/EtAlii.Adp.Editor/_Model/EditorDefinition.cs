@@ -21,6 +21,10 @@ namespace EtAlii.Adp.Editor;
 /// One sentence saying what this editor is for, written from the reader's point of view
 /// rather than restating the title.
 /// </param>
+/// <param name="Icon">
+/// The @mdi/font class naming this editor's icon, shown wherever the editor introduces
+/// itself - "Open with…" among them. Empty falls back to the generic document mark.
+/// </param>
 /// <param name="Extensions">
 /// The extensions this editor claims, dot included; normalised to lower case on construction
 /// so lookup never depends on how a module happened to type them. Empty for a name-only or
@@ -43,6 +47,7 @@ public sealed record EditorDefinition(
     string Id,
     string Title,
     string Description = "",
+    string Icon = "",
     IReadOnlyList<string>? Extensions = null,
     IReadOnlyList<string>? FileNames = null,
     bool IsFallback = false,

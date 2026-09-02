@@ -278,7 +278,7 @@ public class DiagramFilePairTests : IDisposable
     }
 
     [Fact]
-    public void BodyOf_ABodyHeader_ResolvesAgainstTheProjectRoot_AndIsNotOwned()
+    public void BodyOf_ABodyHeader_ResolvesAgainstTheRegistrationsOwnFolder_AndIsNotOwned()
     {
         // Arrange.
         var adp = WriteRegistrationNamingBody("containers", Mindmap, "shared/model.mm", "containers");
@@ -291,6 +291,43 @@ public class DiagramFilePairTests : IDisposable
         Assert.Equal(IoPath.Combine(_root, "shared", "model.mm"), body.Value.Path);
         Assert.Equal("containers", body.Value.ViewKey);
         Assert.False(body.Value.IsOwned);
+    }
+
+    [Fact]
+    public void BodyOf_ABodyHeaderInANestedRegistration_ResolvesBesideTheRegistration()
+    {
+        // Arrange.
+        // The header is relative to the registration's OWN folder, never to the project root:
+        // a body beside its registration is just its file name, and moving the pair together
+        // never invalidates the header.
+        Directory.CreateDirectory(IoPath.Combine(_root, "architecture"));
+        var adp = IoPath.Combine(_root, "architecture", "containers.adp");
+        File.WriteAllText(adp, Mindmap.Origin.MimeType + "\nbody: model.mm\n");
+
+        // Act.
+        var body = DiagramFilePair.BodyOf(adp, _catalog, _root);
+
+        // Assert.
+        Assert.NotNull(body);
+        Assert.Equal(IoPath.Combine(_root, "architecture", "model.mm"), body.Value.Path);
+    }
+
+    [Fact]
+    public void BodyOf_ABodyHeaderClimbingWithinTheProject_IsFollowed()
+    {
+        // Arrange.
+        // ".." may climb as long as the result stays inside the project; only escaping it is
+        // refused.
+        Directory.CreateDirectory(IoPath.Combine(_root, "views"));
+        var adp = IoPath.Combine(_root, "views", "containers.adp");
+        File.WriteAllText(adp, Mindmap.Origin.MimeType + "\nbody: ../shared/model.mm\n");
+
+        // Act.
+        var body = DiagramFilePair.BodyOf(adp, _catalog, _root);
+
+        // Assert.
+        Assert.NotNull(body);
+        Assert.Equal(IoPath.Combine(_root, "shared", "model.mm"), body.Value.Path);
     }
 
     [Fact]

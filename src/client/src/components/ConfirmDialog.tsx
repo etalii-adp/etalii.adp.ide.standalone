@@ -27,6 +27,7 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <Dialog
+      compact
       open={open}
       icon={icon}
       title={title}

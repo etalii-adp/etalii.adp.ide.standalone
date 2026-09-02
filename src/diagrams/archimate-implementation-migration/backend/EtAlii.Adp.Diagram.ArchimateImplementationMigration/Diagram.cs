@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("archimate", "implementation-migration"),
             "ArchiMate — Implementation & Migration layer",
-            "The work packages, deliverables and plateaus that carry an architecture from where it is to where it should be."),
+            "The work packages, deliverables and plateaus that carry an architecture from where it is to where it should be.",
+            Icon: "mdi-transit-connection-variant"),
     ];
 }

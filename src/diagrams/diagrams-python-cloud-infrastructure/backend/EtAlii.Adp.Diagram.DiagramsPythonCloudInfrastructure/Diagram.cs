@@ -8,6 +8,7 @@ public static class Diagram
         new(
             new DiagramOrigin("diagrams-python", "cloud-infrastructure"),
             "Cloud/infrastructure diagram with official-style vendor icons",
-            "Cloud infrastructure drawn as code with the Diagrams Python library."),
+            "Cloud infrastructure drawn as code with the Diagrams Python library.",
+            Icon: "mdi-cloud-outline"),
     ];
 }

@@ -13,6 +13,7 @@ public static class Editor
         "markdown",
         "Markdown",
         "Markdown documents, edited as text - with the preview and heading navigation that make them worth their own editor.",
+        Icon: "mdi-language-markdown-outline",
         Extensions: [".md", ".markdown"],
         FileNames: [],
         Build: builder => builder.Services.AddSingleton<IEditorSessionFactory, MarkdownEditorSessionFactory>());

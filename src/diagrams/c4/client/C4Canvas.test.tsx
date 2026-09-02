@@ -176,6 +176,24 @@ describe("C4Canvas", () => {
     expect(relationships[0].textContent).toContain("Uses [HTTPS]");
   });
 
+  it("keeps the stylesheet aimed at the element the relationship actually draws", async () => {
+    // Arrange.
+    // jsdom loads no CSS, so a selector saying `line` while the markup says `path` passes
+    // every DOM test and ships invisible relationships - which is exactly what happened when
+    // the connection became a shared <path>. The stylesheet's own text is the only witness.
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    // Resolved from the workspace the runner starts in (src/client); import.meta.url is not
+    // a file: URL under the test transform, so the path is spelled out.
+    const css = readFileSync(resolve(process.cwd(), "../diagrams/c4/client/c4.css"), "utf8");
+    const { container } = render(<C4Canvas {...props} />);
+
+    // Act & assert.
+    expect(container.querySelector(".c4-relationship path")).not.toBeNull();
+    expect(css).toMatch(/\.c4-relationship path\s*\{/);
+    expect(css).not.toMatch(/\.c4-relationship line\s*\{/);
+  });
+
   it("anchors a relationship on the boxes' edges, not their centres", () => {
     // Arrange.
     // A line drawn centre-to-centre disappears under the boxes at both ends.
