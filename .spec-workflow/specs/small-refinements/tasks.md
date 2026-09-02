@@ -10,11 +10,11 @@ Standing notes an implementer should not have to rediscover:
 - **An agent commits under its own name** with the model trailer, per tech.md; never the repository owner's.
 - **Bugs found leave a guard behind** per CLAUDE.md: a test where one can express it, a `tests.md` entry naming this spec where only a running app can.
 
-- [ ] 1. One scroll view, shared by the timeline and the mindmap
+- [-] 1. One scroll view, shared by the timeline and the mindmap
   - Worktree: `.claude/worktrees/smref`
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
 
-- [ ] 1.1 `scrollGeometry.ts` — the two pure calculations, with their tests
+- [-] 1.1 `scrollGeometry.ts` — the two pure calculations, with their tests
   - Files: `src/client/src/canvas/scroll/scrollGeometry.ts` (new), `src/client/src/canvas/scroll/scrollGeometry.test.ts` (new)
   - `thumbOf(axis)` returning size and offset as fractions of the track, size clamped to `[0.05, 1]` and offset to `[0, 1 - size]`; `scrollExtentOf(min, max, options)` with `factor`, `minimum` and `minimumSpan`, so margin equals `max((max - min clamped to minimumSpan) * factor, minimum)`. The `ScrollAxis` interface lives here too
   - The margin is the reasoning Requirement 1.6 asks the extraction to carry: a bar over an unbounded plane must let the user drag a little past the content, or the plane stops feeling unbounded. Its shape differs per canvas, so the helper is parameterized and the units stay the caller's
