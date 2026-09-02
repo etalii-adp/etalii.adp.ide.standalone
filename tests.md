@@ -455,3 +455,20 @@ a keyboard save and the ribbon together.
 - **Expected**: after the save the ribbon Undo enables; Undo restores the file's previous
   content on disk (and the editor follows once it reloads the pushed change); Redo brings
   the save back. No conflict banner should appear for the editor's own save.
+
+## One build, one number, four places (github-build-pipeline, task 3.1)
+
+The version below the login panel, the version stamped into the assemblies, the release
+tag, and the ZIP's name must all be the same number - a claim only a person with a real
+release artifact can check end to end.
+
+- **Preconditions**: a published GitHub release with its ZIP asset (or, before the first
+  release exists: a local `dotnet publish` of the service with the client's production
+  build copied into `wwwroot/`).
+- **Actions**: download and unzip the release; run `dotnet EtAlii.Adp.Backend.Service.dll`
+  (requires the .NET 10 runtime); browse to the listening address; read the line below the
+  login panel. Compare it with the release tag, the ZIP file name, and
+  `[System.Diagnostics.FileVersionInfo]::GetVersionInfo("EtAlii.Adp.Backend.dll").ProductVersion`.
+- **Expected**: all four carry the same version. The login line is quiet and centered under
+  the card; killing the backend and reloading the page shows no version line at all rather
+  than a stale one.

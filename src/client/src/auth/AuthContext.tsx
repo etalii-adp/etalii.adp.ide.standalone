@@ -9,7 +9,9 @@ import {
 } from "react";
 import { createClient, type Transport } from "@connectrpc/connect";
 import { createGrpcWebTransport } from "@connectrpc/connect-web";
-import { AuthenticationService } from "../generated/auth_pb";
+// authentication_pb, not the retired auth_pb: the stub regenerated from the proto that
+// actually exists (src/api/authentication.proto), which is where DescribeProduct lives.
+import { AuthenticationService } from "../generated/authentication_pb";
 import { createAuthInterceptor } from "./grpcAuthInterceptor";
 
 export type LoginResult = { ok: true } | { ok: false; message: string };
