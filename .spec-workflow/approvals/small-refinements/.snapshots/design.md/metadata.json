@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/small-refinements/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-02T17:07:29.597Z",
       "trigger": "initial",
+      "approvalId": "approval_1788368849428_o0mjrnwpw",
+      "approvalTitle": "small-refinements - Design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-02T17:23:20.873Z",
+      "trigger": "approved",
       "approvalId": "approval_1788368849428_o0mjrnwpw",
       "approvalTitle": "small-refinements - Design"
     }

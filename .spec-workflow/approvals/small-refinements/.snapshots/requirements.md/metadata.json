@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/small-refinements/requirements.md",
-  "currentVersion": 2,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
@@ -17,6 +17,14 @@
       "trigger": "revision_requested",
       "approvalId": "approval_1788361125817_e6c2vgpat",
       "approvalTitle": "small-refinements - Requirements"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-09-02T16:56:39.749Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788366816857_qcuapldaq",
+      "approvalTitle": "small-refinements - Requirements (rev 2: centralized scroll view)"
     }
   ]
 }

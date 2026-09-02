@@ -3,8 +3,10 @@
   "title": "small-refinements - Requirements (rev 2: centralized scroll view)",
   "filePath": ".spec-workflow/specs/small-refinements/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-02T16:33:36.857Z",
   "category": "spec",
-  "categoryName": "small-refinements"
+  "categoryName": "small-refinements",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-02T16:56:39.754Z"
 }
