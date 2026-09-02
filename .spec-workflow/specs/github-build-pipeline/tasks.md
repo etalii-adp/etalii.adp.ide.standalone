@@ -4,7 +4,7 @@ Grouped the way the repository works them: each group in one worktree, gated wit
 
 **Worktree note (implementation-time correction).** The four per-group worktree names below were replaced by a single worktree for the whole spec, `.claude/worktrees/ghpipe`, for two reasons: CLAUDE.md's rule is one worktree per specification, and Windows' 260-character `MAX_PATH` makes long worktree names silently break the xUnit v3 apphost (now an explicit `ADP0001` error). Each group's "gate and merge" step still runs all four gates before its commits reach `develop`; only the directory count changed.
 
-- [-] 1. Versioning: Nerdbank.GitVersioning wired in
+- [x] 1. Versioning: Nerdbank.GitVersioning wired in
   - Worktree: `.claude/worktrees/ghpipe`
   - _Requirements: 2.1, 2.2, 2.4_
 
@@ -15,16 +15,16 @@ Grouped the way the repository works them: each group in one worktree, gated wit
   - _Requirements: 2.1, 2.2, 2.4_
   - _Prompt: Implement the task for spec github-build-pipeline, first run spec-workflow-guide to get the workflow guide then implement the task: Role: .NET build engineer familiar with Nerdbank.GitVersioning | Task: Add version.json at the repository root (version 0.1-alpha, publicReleaseRefSpec for refs/heads/develop) and reference Nerdbank.GitVersioning once in src/Directory.Build.props (version pinned in src/Directory.Packages.props, PrivateAssets=all), so every C# assembly is stamped with the computed AssemblyInformationalVersion on every build, local and CI alike | Restrictions: no per-project version properties anywhere; do not break the git-worktree build - verify a build from a .claude/worktrees checkout stamps correctly before calling this done | _Leverage: src/Directory.Build.props and src/Directory.Packages.props central-management pattern | Success: dotnet build stamps semver+height+commit into AssemblyInformationalVersion, from the main checkout and from a worktree, with no hand-maintained version anywhere. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 1.2 Gate and merge
+- [x] 1.2 Gate and merge
   - Run all four gates (backend test + format from `src/backend`, npm test + typecheck from `src/client`), exit codes checked; merge `pipeline-version` into `develop`, retire the worktree
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec github-build-pipeline, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, and npm test/npm run typecheck from src/client, checking all exit codes; if clean, merge the worktree into develop and retire it | Restrictions: do not merge on a failing gate | Success: all gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. The version wire: DescribeProduct
+- [-] 2. The version wire: DescribeProduct
   - Worktree: `.claude/worktrees/pipeline-wire`
   - _Requirements: 2.3, 3.2_
 
-- [ ] 2.1 Proto and backend handler
+- [-] 2.1 Proto and backend handler
   - Files: `src/api/authentication.proto`, the `AuthenticationService` backend implementation, `src/backend/EtAlii.Adp.Backend/Sessions/SessionInterceptor.cs`
   - Add `rpc DescribeProduct(DescribeProductRequest) returns (DescribeProductResponse)` with `string version = 1`; the handler reads the executing assembly's `AssemblyInformationalVersionAttribute` once and caches it; `SessionInterceptor` exempts `/DescribeProduct` beside `/Login`, with a comment saying why
   - Tests: a handler unit test (non-empty, informational-version-shaped answer); an interceptor test pinning that `/DescribeProduct` passes without a token while other calls still refuse; a `WebApplicationFactory` fact calling it over an unauthenticated channel
