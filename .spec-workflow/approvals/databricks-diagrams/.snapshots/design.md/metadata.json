@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/databricks-diagrams/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-02T22:05:19.509Z",
       "trigger": "initial",
+      "approvalId": "approval_1788386719454_f4wtxfzs0",
+      "approvalTitle": "databricks-diagrams: design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-02T22:09:38.103Z",
+      "trigger": "approved",
       "approvalId": "approval_1788386719454_f4wtxfzs0",
       "approvalTitle": "databricks-diagrams: design"
     }
