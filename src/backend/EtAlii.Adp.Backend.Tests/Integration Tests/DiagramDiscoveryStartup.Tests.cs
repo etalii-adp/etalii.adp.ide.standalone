@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.RegularExpressions;
 using EtAlii.Adp.Diagram;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -215,32 +216,73 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
     /// The diagram catalog table, origin tag to Diagram-column title, read from the repository's
     /// own docs/diagrams.md - the source of truth the module doc-comments already point at.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The rows are <b>HTML</b>: the catalog's fourteen markdown section tables were combined
+    /// into one <c>&lt;table&gt;</c> so they could share a header. This reader was written
+    /// against the markdown form and kept splitting on <c>|</c> afterwards, which matched
+    /// nothing - so every stub read as "not cataloged" and the origin check failed for all
+    /// forty-odd of them, while the title check beside it passed <em>vacuously</em> against an
+    /// empty dictionary. That second half is the reason this is worth a note: a parser that
+    /// silently finds nothing turns one of these two tests red and the other into a test that
+    /// asserts nothing at all.
+    /// </para>
+    /// <para>
+    /// Only the diagram rows are read. A section heading is a single full-width cell, so the
+    /// three-cell minimum skips it, and the legend above the table is still plain markdown and
+    /// carries no <c>&lt;tr&gt;</c> at all.
+    /// </para>
+    /// </remarks>
     private static IReadOnlyDictionary<string, string> CatalogedTitles()
     {
         var titles = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var line in File.ReadLines(LocateCatalog()))
         {
-            if (!line.StartsWith('|'))
+            var trimmed = line.TrimStart();
+            if (!trimmed.StartsWith("<tr>", StringComparison.Ordinal))
             {
                 continue;
             }
 
-            var cells = line.Split('|');
-            if (cells.Length < 5)
+            var cells = Regex.Matches(trimmed, "<td[^>]*>(.*?)</td>", RegexOptions.Singleline)
+                .Select(match => match.Groups[1].Value)
+                .ToList();
+            if (cells.Count < 3)
+            {
+                // A section heading: one cell spanning the width, with no origin in it.
+                continue;
+            }
+
+            // The origin cell is the tag and nothing else, so a row whose second cell carries
+            // prose rather than a bare <code> tag is not a diagram row.
+            var origin = cells[1].Trim();
+            var match = Regex.Match(origin, "^<code>([^<]+)</code>$");
+            if (!match.Success)
             {
                 continue;
             }
 
-            var origin = cells[2].Trim();
-            if (origin.Length < 3 || origin[0] != '`' || origin[^1] != '`')
-            {
-                continue;
-            }
-
-            titles[origin[1..^1]] = cells[3].Trim();
+            titles[match.Groups[1].Value] = Plain(cells[2]);
         }
 
         return titles;
+    }
+
+    /// <summary>
+    /// A table cell as the text it reads as: tags removed, the handful of entities the catalog
+    /// uses decoded, and the whitespace collapsed the way a browser would render it.
+    /// </summary>
+    private static string Plain(string cell)
+    {
+        var text = Regex.Replace(cell, "<[^>]+>", "");
+        text = text
+            .Replace("&nbsp;", " ", StringComparison.Ordinal)
+            .Replace("&amp;", "&", StringComparison.Ordinal)
+            .Replace("&lt;", "<", StringComparison.Ordinal)
+            .Replace("&gt;", ">", StringComparison.Ordinal)
+            .Replace("&quot;", "\"", StringComparison.Ordinal);
+
+        return Regex.Replace(text, @"\s+", " ").Trim();
     }
 
     /// <summary>
