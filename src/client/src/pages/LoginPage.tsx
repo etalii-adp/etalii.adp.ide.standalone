@@ -1,16 +1,38 @@
-import { useState, type FormEvent } from "react";
-import { ConnectError } from "@connectrpc/connect";
+import { useEffect, useState, type FormEvent } from "react";
+import { ConnectError, createClient } from "@connectrpc/connect";
 import { AdpLogo } from "../components/AdpLogo";
 import { AppHeader } from "../components/AppHeader";
 import { useAuth } from "../auth/AuthContext";
+import { AuthenticationService } from "../generated/authentication_pb";
 
 export function LoginPage() {
-  const { login } = useAuth();
+  const { login, transport } = useAuth();
   const [username, setUsername] = useState("");
   const [credential, setCredential] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [version, setVersion] = useState("");
+
+  useEffect(() => {
+    // Fire-and-forget: the backend names its own NB.GV-stamped version - the one source of
+    // truth (github-build-pipeline R3.2) - and a failed or empty answer renders nothing
+    // rather than a stale or invented number (R3.3).
+    let active = true;
+    createClient(AuthenticationService, transport)
+      .describeProduct({})
+      .then((response) => {
+        if (active) {
+          setVersion(response.version);
+        }
+      })
+      .catch(() => {
+        // No line is the honest state; the connection error surfaces through login itself.
+      });
+    return () => {
+      active = false;
+    };
+  }, [transport]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -72,6 +94,7 @@ export function LoginPage() {
             {loginError && <p className="error-text" role="alert">{loginError}</p>}
             {connectionError && <p className="error-text" role="alert">{connectionError}</p>}
           </form>
+          {version !== "" && <p className="auth-version">{version}</p>}
         </div>
       </div>
     </div>

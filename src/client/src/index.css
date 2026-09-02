@@ -166,6 +166,16 @@ button {
   padding: 2rem;
 }
 
+/* The product version below the login panel (github-build-pipeline R3.1): quiet, centered,
+   themed - and absent entirely when the backend has not answered, so it never shows a stale
+   or invented number. */
+.auth-version {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
 .field {
   display: flex;
   flex-direction: column;
