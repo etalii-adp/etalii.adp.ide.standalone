@@ -20,252 +20,117 @@ A catalog of diagram types EtAlii.Adp could support, adapted from a broader refe
 
 ---
 
-## 1. UML — Unified Modeling Language
-
-A standardized general-purpose visual modeling language (OMG standard) defining 14 diagram types across two families.
-
-- Theory: [OMG UML specification](https://www.omg.org/spec/UML/) · [uml-diagrams.org](https://www.uml-diagrams.org/)
-
-### 1a. Structural diagrams
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| 💡 Identified | `uml/class` | Class diagram | [uml-diagrams.org](https://www.uml-diagrams.org/class-diagrams-overview.html) | [Example](https://www.uml-diagrams.org/class-reference-uml-example.png) |
-| 💡 Identified | `uml/object` | Object diagram | [uml-diagrams.org](https://www.uml-diagrams.org/object-diagrams.html) | [Example](https://www.uml-diagrams.org/examples/object-diagram-example.html) |
-| 💡 Identified | `uml/component` | Component diagram | [uml-diagrams.org](https://www.uml-diagrams.org/component-diagrams.html) | [Example](https://www.uml-diagrams.org/examples/component-diagram-example.html) |
-| 💡 Identified | `uml/composite-structure` | Composite structure diagram | [uml-diagrams.org](https://www.uml-diagrams.org/composite-structure-diagrams.html) | [Example](https://www.uml-diagrams.org/composite-structure-diagrams.html) |
-| 💡 Identified | `uml/deployment` | Deployment diagram | [uml-diagrams.org](https://www.uml-diagrams.org/deployment-diagrams.html) | [Example](https://www.uml-diagrams.org/examples/deployment-diagram-example.html) |
-| 💡 Identified | `uml/package` | Package diagram | [uml-diagrams.org](https://www.uml-diagrams.org/package-diagrams.html) | [Example](https://www.uml-diagrams.org/package-diagrams.html) |
-| 💡 Identified | `uml/profile` | Profile diagram | [uml-diagrams.org](https://www.uml-diagrams.org/profile-diagrams.html) | [Example](https://www.uml-diagrams.org/profile-diagrams.html) |
-
-### 1b. Behavioral diagrams
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| 💡 Identified | `uml/use-case` | Use case diagram | [uml-diagrams.org](https://www.uml-diagrams.org/use-case-diagrams.html) | [Example](https://www.uml-diagrams.org/examples/use-case-diagram-example.html) |
-| 💡 Identified | `uml/activity` | Activity diagram | [uml-diagrams.org](https://www.uml-diagrams.org/activity-diagrams.html) | [Example](https://www.uml-diagrams.org/examples/activity-diagram-example.html) |
-| 💡 Identified | `uml/state-machine` | State machine diagram | [uml-diagrams.org](https://www.uml-diagrams.org/state-machine-diagrams.html) | [Example](https://www.uml-diagrams.org/examples/state-machine-diagram-example.html) |
-
-### 1c. Interaction diagrams
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| 💡 Identified | `uml/sequence` | Sequence diagram | [uml-diagrams.org](https://www.uml-diagrams.org/sequence-diagrams.html) | [Example](https://www.uml-diagrams.org/examples/sequence-diagram-example.html) |
-| 💡 Identified | `uml/communication` | Communication diagram | [uml-diagrams.org](https://www.uml-diagrams.org/communication-diagrams.html) | [Example](https://www.uml-diagrams.org/communication-diagrams.html) |
-| 💡 Identified | `uml/interaction-overview` | Interaction overview diagram | [uml-diagrams.org](https://www.uml-diagrams.org/interaction-overview-diagrams.html) | [Example](https://www.uml-diagrams.org/interaction-overview-diagrams.html) |
-| 💡 Identified | `uml/timing` | Timing diagram | [uml-diagrams.org](https://www.uml-diagrams.org/timing-diagrams.html) | [Example](https://www.uml-diagrams.org/timing-diagrams.html) |
-
----
-
-## 2. The C4 Model
-
-A lightweight, notation-independent hierarchy of zoom levels (Simon Brown, 2006–2018) — Context + Container covers most teams' needs.
-
-- Theory: [c4model.com](https://c4model.com/) · [Diagrams overview](https://c4model.com/diagrams)
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| ✅ Implemented (prototype) | `c4/context` | System Context | [c4model.com](https://c4model.com/diagrams/system-context) | Everyone-facing overview |
-| ✅ Implemented (prototype) | `c4/container` | Container | [c4model.com](https://c4model.com/diagrams/container) | Deployable/runnable units |
-| ✅ Implemented (prototype) | `c4/component` | Component | [c4model.com](https://c4model.com/diagrams/component) | Building blocks inside one container |
-| 📝 Specified | `c4/code` | Code (optional) | [c4model.com](https://c4model.com/diagrams/code) | Usually IDE-generated |
-| ✅ Implemented (prototype) | `c4/system-landscape` | System Landscape (supplementary) | [c4model.com](https://c4model.com/diagrams/system-landscape) | Multiple systems across an org |
-| ✅ Implemented (prototype) | `c4/dynamic` | Dynamic (supplementary) | [c4model.com](https://c4model.com/diagrams/dynamic) | One scenario across containers/components |
-| ✅ Implemented (prototype) | `c4/deployment` | Deployment (supplementary) | [c4model.com](https://c4model.com/diagrams/deployment) | Containers mapped onto infrastructure |
-
-Tooling: [Structurizr](https://structurizr.com/) · [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) · [IcePanel](https://icepanel.io/).
-
----
-
-## 3. The 4+1 Architectural View Model (Kruchten)
-
-Not a separate notation — a way of *organizing* 5 concurrent stakeholder views, each typically expressed using the UML diagrams already listed in section 1 (Logical → class/state, Process → activity/sequence, Development → component/package, Physical → deployment, Scenarios → use case). No dedicated `Origin` rows here since it introduces no renderable diagram type of its own.
-
-- Theory: [Kruchten's original paper (PDF)](https://www.cs.ubc.ca/~gregor/teaching/papers/4+1view-architecture.pdf) · [Wikipedia](https://en.wikipedia.org/wiki/4+1_architectural_view_model)
-
----
-
-## 4. Enterprise Architecture frameworks
-
-Model how business, application, and technology fit together across a whole organization — one level up from software architecture.
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| 💡 Identified | `archimate/motivation` | ArchiMate — Motivation layer | [ArchiMate spec](https://pubs.opengroup.org/architecture/archimate3-doc/) | [Archi example models](https://www.archimatetool.com/examples/) |
-| 💡 Identified | `archimate/strategy` | ArchiMate — Strategy layer | [ArchiMate spec](https://pubs.opengroup.org/architecture/archimate3-doc/) | [Archi example models](https://www.archimatetool.com/examples/) |
-| 💡 Identified | `archimate/business` | ArchiMate — Business layer | [ArchiMate spec](https://pubs.opengroup.org/architecture/archimate3-doc/) | [Archi example models](https://www.archimatetool.com/examples/) |
-| 💡 Identified | `archimate/application` | ArchiMate — Application layer | [ArchiMate spec](https://pubs.opengroup.org/architecture/archimate3-doc/) | [Archi example models](https://www.archimatetool.com/examples/) |
-| 💡 Identified | `archimate/technology` | ArchiMate — Technology layer | [ArchiMate spec](https://pubs.opengroup.org/architecture/archimate3-doc/) | [Archi example models](https://www.archimatetool.com/examples/) |
-| 💡 Identified | `archimate/implementation-migration` | ArchiMate — Implementation & Migration layer | [ArchiMate spec](https://pubs.opengroup.org/architecture/archimate3-doc/) | [Archi example models](https://www.archimatetool.com/examples/) |
-| 💡 Identified | `togaf/adm` | TOGAF ADM cycle diagram | [TOGAF Standard](https://www.opengroup.org/togaf) | [GitHub: TOGAF 10 diagram set](https://github.com/nelsambrose/togaf-diagrams) |
-| 💡 Identified | `zachman/matrix` | Zachman Framework matrix | [Zachman International](https://www.zachman.com/about-the-zachman-framework) | [Visual Paradigm comparison](https://www.visual-paradigm.com/guide/togaf/togaf-vs-zachman-framework/) |
-
-Layers can be diagrammed individually or combined into a cross-layer viewpoint; TOGAF is a process methodology often paired with ArchiMate as its notation, not a notation itself.
-
----
-
-## 5. Business process & workflow notation
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| 💡 Identified | `bpmn/process` | BPMN process diagram | [bpmn.org](https://www.bpmn.org/) · [OMG BPMN spec](https://www.omg.org/bpmn/) | [Camunda BPMN examples](https://camunda.com/bpmn/examples/) |
-| 💡 Identified | `iso/flowchart` | Flowchart | [ISO 5807 overview](https://en.wikipedia.org/wiki/Flowchart) | [Lucidchart examples](https://www.lucidchart.com/pages/examples/flowchart-symbols-and-meaning) |
-| 💡 Identified | `generic/swimlane` | Swimlane diagram | [Lucidchart guide](https://www.lucidchart.com/pages/tutorial/swim-lane-diagram) | [Lucidchart examples](https://www.lucidchart.com/pages/examples/flowchart-symbols-and-meaning) |
-| ✅ Implemented | `generic/timeline` | Timeline diagram (left-to-right, elements spanning begin→end on snap-to rows, bezier connections; `.tml` — Timeline Markup Language); [`timeline-diagram`](../.spec-workflow/specs/timeline-diagram/requirements.md) | Distinct from `mermaid/gantt`: placement is authored on both axes, not computed, and connections are arbitrary rather than scheduling dependencies | — |
-| 📝 Specified | `generic/dependencies` | Dependency graph (named nodes and directed depends-on edges, freely placed and freely connected; ADP's own YAML schema and extension, on the `generic/timeline` model — authored placement, directed depends-on edges, one command per edit); [`dependency-graph`](../.spec-workflow/specs/dependency-graph/requirements.md) | Follows the `generic/timeline` precedent: no standards body owns "a box depends on a box", so ADP defines the schema and owns the extension outright, keeping the document diffable text. Specified as a duplicate of the timeline module with every time-related aspect removed | — |
-
----
-
-## 6. Domain-Driven Design collaborative modeling
-
-Workshop techniques from Eric Evans' DDD tradition that produce a diagram as a byproduct of a group activity.
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| 💡 Identified | `ddd/event-storming` | Event Storming | [eventstorming.com](https://www.eventstorming.com/) | [Miro template](https://miro.com/templates/event-storming/) |
-| 💡 Identified | `ddd/context-map` | Bounded Context / Context Map | [Context Mapping reference](https://www.domainlanguage.com/ddd/context-mapping/) | [Context Mapper example](https://contextmapper.org/docs/context-map/) |
-
----
-
-## 7. Data-oriented diagrams
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| 💡 Identified | `erd/entity-relationship` | Entity-Relationship Diagram (Chen or Crow's Foot notation) | [Chen's original paper](https://dl.acm.org/doi/10.1145/320434.320440) | [Lucidchart ERD examples](https://www.lucidchart.com/pages/examples/entity-relationship-diagram-tool) |
-| 💡 Identified | `dfd/data-flow` | Data Flow Diagram (Yourdon/DeMarco or Gane–Sarson notation) | [DeMarco's foundational text](https://en.wikipedia.org/wiki/Data_flow_diagram) | [Lucidchart DFD examples](https://www.lucidchart.com/pages/examples/data-flow-diagram) |
-
----
-
-## 8. Infrastructure, network & cloud diagrams
-
-Not tied to one methodology — each cloud vendor's official icon set functions as a de-facto shared notation.
-
-| State                       | Origin | Diagram | Theory | Example |
-|-----------------------------|---|---|---|---|
-| 💡 Identified               | `network/topology` | Network topology diagram | [Cisco iconography](https://www.cisco.com/c/en/us/products/downloads.html) | [Lucidchart examples](https://www.lucidchart.com/pages/examples/network-diagram-software) |
-| 💡 Identified               | `aws/architecture` | AWS architecture diagram | [AWS Architecture Icons](https://aws.amazon.com/architecture/icons/) | [AWS Architecture Center](https://aws.amazon.com/architecture/) |
-| 💡 Identified               | `azure/architecture` | Azure architecture diagram | [Azure Architecture Icons](https://learn.microsoft.com/en-us/azure/architecture/icons/) | [Azure Architecture Center](https://learn.microsoft.com/en-us/azure/architecture/browse/) |
-| 💡 Identified               | `gcp/architecture` | GCP architecture diagram | [Google Cloud Architecture Icons](https://cloud.google.com/icons) | [Google Cloud Architecture Center](https://cloud.google.com/architecture) |
-| ✅ Implemented (prototype)  | `azure-devops/pipeline` | Azure DevOps pipeline diagram | [Azure Pipelines YAML schema](https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/) · [Key pipelines concepts](https://learn.microsoft.com/en-us/azure/devops/pipelines/get-started/key-pipelines-concepts) | [Stages, dependsOn and conditions](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/stages) · the pipeline `.yml` a repository already has |
-| ✅ Implemented (prototype)  | `ansible/structure` | Ansible project structure (read-only: playbooks, roles, inventories and their include/import/dependency relationships) | [Ansible directory layout](https://charlesreid1.com/wiki/Ansible/Directory_Layout/Details) · [Role dependencies](https://oneuptime.com/blog/post/2026-01-24-ansible-roles-dependencies/view) | [ansible-playbook-grapher](https://github.com/haidaraM/ansible-playbook-grapher) · [ansible-viz](https://github.com/aspiers/ansible-viz) · the folder tree a repository already has |
-
----
-
-## 9. Strategy & landscape mapping
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| ✅ Implemented (prototype) | `wardley/map` | Wardley Map | [learnwardleymapping.com](https://learnwardleymapping.com/) · reads and writes the [OnlineWardleyMaps `.owm` DSL](https://onlinewardleymaps.com/), keeping a map another tool wrote byte-for-byte · [`wardley-map`](../.spec-workflow/archive/specs/wardley-map/requirements.md) | [Online Wardley Maps editor](https://onlinewardleymaps.com/) |
-
----
-
-## 10. Knowledge & informal modeling
-
-Diagram types for capturing and structuring knowledge rather than formal system architecture — no single standards body owns these, so `Origin` names the tool/author most associated with the notation, per `<vendor>/<diagram-type>`.
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| ✅ Implemented (prototype) | `freeplane/mindmap` | Mind map (radial/hierarchical, single central topic) | [Freeplane](https://www.freeplane.org/) · `.mm` file format (tech.md's diagram-type test fixture) | [Freeplane example maps](https://www.freeplane.org/wiki/index.php/Gallery) |
-| 💡 Identified | `cmap/concept-map` | Concept map (free-form network of concepts with labeled relationships) | [Novak & Cañas, "The Theory Underlying Concept Maps"](https://cmap.ihmc.us/docs/theory-of-concept-maps) | [CmapTools example maps](https://cmap.ihmc.us/) |
-
-Other mind-mapping tools (XMind, MindMeister, Coggle, FreeMind) could each get their own `<vendor>/mindmap` row if ADP ever needs to read/write their specific file formats; `mindmap-diagram`'s spec settled on Freeplane's `.mm` format specifically (see tech.md).
-
----
-
-## 11. "Diagrams as code" tooling
-
-Text-based tools that render many of the notations above from plain text, well suited to version control and to generation by Claude Code. Each one is a distinct *rendering path* for one or more diagram types already cataloged above — a code-authored `uml/class` diagram is still fundamentally a class diagram, but rendering it via Mermaid vs. ADP's own native editor is a different `Origin`, so each tool/diagram-type pair gets its own row here rather than being folded into the sections above.
-
-### 11a. Mermaid
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| 💡 Identified | `mermaid/flowchart` | Flowchart | [mermaid.js.org](https://mermaid.js.org/) | [Mermaid Live Editor](https://mermaid.live/) |
-| 💡 Identified | `mermaid/sequence` | Sequence diagram | [mermaid.js.org](https://mermaid.js.org/) | [Mermaid Live Editor](https://mermaid.live/) |
-| 💡 Identified | `mermaid/class` | Class diagram | [mermaid.js.org](https://mermaid.js.org/) | [Mermaid Live Editor](https://mermaid.live/) |
-| 💡 Identified | `mermaid/state` | State diagram | [mermaid.js.org](https://mermaid.js.org/) | [Mermaid Live Editor](https://mermaid.live/) |
-| 💡 Identified | `mermaid/er` | Entity-Relationship diagram | [mermaid.js.org](https://mermaid.js.org/) | [Mermaid Live Editor](https://mermaid.live/) |
-| 💡 Identified | `mermaid/gantt` | Gantt chart | [mermaid.js.org](https://mermaid.js.org/) | [Mermaid Live Editor](https://mermaid.live/) |
-| 💡 Identified | `mermaid/c4` | C4 diagram (subset) | [mermaid.js.org](https://mermaid.js.org/) | [Mermaid Live Editor](https://mermaid.live/) |
-| 💡 Identified | `mermaid/architecture` | Architecture diagram | [mermaid.js.org](https://mermaid.js.org/) | [Mermaid Live Editor](https://mermaid.live/) |
-
-### 11b. PlantUML
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| 📝 Specified | `plantuml/uml` | Full UML set (see section 1) | [plantuml.com](https://plantuml.com/) · [`plantuml-uml`](../.spec-workflow/specs/plantuml-uml/requirements.md) specifies class and sequence first | [Real World PlantUML gallery](https://real-world-plantuml.com/) |
-| 💡 Identified | `plantuml/c4` | C4 diagram, via C4-PlantUML | [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) | [Real World PlantUML gallery](https://real-world-plantuml.com/) |
-
-### 11c. Structurizr
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| 💡 Identified | `structurizr/c4` | C4 model ("model once, view many") | [structurizr.com](https://structurizr.com/) | [structurizr.com/help/examples](https://structurizr.com/help/examples) |
-
-### 11d. D2
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| 💡 Identified | `d2/diagram` | General-purpose declarative diagram | [d2lang.com](https://d2lang.com/) | [D2 Playground](https://play.d2lang.com/) |
-
-### 11e. Diagrams (Python)
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| 💡 Identified | `diagrams-python/cloud-infrastructure` | Cloud/infrastructure diagram with official-style vendor icons | [diagrams.mingrammer.com](https://diagrams.mingrammer.com/) | [Diagrams gallery](https://diagrams.mingrammer.com/docs/getting-started/examples) |
-
-### 11f. Context Mapper
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| 💡 Identified | `contextmapper/context-map` | DDD Context Map, plus generated PlantUML/BPMN sketches | [contextmapper.org](https://contextmapper.org/) | [Context Mapper example](https://contextmapper.org/docs/context-map/) |
-
----
-
-## 12. Data platforms & pipeline orchestration
-
-Configuration and definition files that data platforms already carry — bundles, DAGs, workflow definitions, lineage events. Every one of them is an established text artifact another tool deploys or executes, which is exactly the "files are the source of truth" shape ADP wants: the diagram renders (and where safe, edits) the file, and never invents a format of its own. Open-source standards are preferred where they exist.
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| 📝 Specified | `databricks/bundle` | Databricks Asset Bundle topology (targets, resources, overrides) · [`databricks-diagrams`](../.spec-workflow/specs/databricks-diagrams/requirements.md) | [Bundle configuration](https://docs.databricks.com/aws/en/dev-tools/bundles/settings) · [reference](https://docs.databricks.com/aws/en/dev-tools/bundles/reference) | the `databricks.yml` a repository already has |
-| 📝 Specified | `databricks/job` | Lakeflow Jobs task DAG (tasks, depends_on, run_if, clusters) · [`databricks-diagrams`](../.spec-workflow/specs/databricks-diagrams/requirements.md) | [Job task types](https://docs.databricks.com/aws/en/dev-tools/bundles/job-task-types) | the job resource `.yml` a bundle already has |
-| 📝 Specified | `databricks/pipeline` | Lakeflow Declarative Pipelines settings (sources, pipeline, target catalog) · [`databricks-diagrams`](../.spec-workflow/specs/databricks-diagrams/requirements.md) | [Pipeline properties](https://docs.databricks.com/aws/en/ldp/properties) | the pipeline settings `.json` a workspace exports |
-| 💡 Identified | `spark/declarative-pipeline` | Spark Declarative Pipelines (SDP) spec (`spark-pipeline.yml`: name, libraries, storage; flows, streaming tables and materialized views declared in the SQL/Python sources it names). The open-source donation of Databricks DLT, native to Apache Spark since 4.1 — the upstream sibling of `databricks/pipeline` | [SDP programming guide](https://spark.apache.org/docs/latest/declarative-pipelines-programming-guide.html) | the `spark-pipeline.yml` a repository already has |
-| 💡 Identified | `airflow/dag` | Apache Airflow DAG (tasks and dependencies; DAG files are Python, so a read-only structural view is the realistic first step) | [airflow.apache.org](https://airflow.apache.org/) · [DAGs concept](https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/dags.html) | [Airflow graph view](https://airflow.apache.org/docs/apache-airflow/stable/ui.html) |
-| 💡 Identified | `dbt/lineage` | dbt project lineage (models, sources, `ref()`/`source()` edges from `dbt_project.yml` + `schema.yml` + manifest) | [docs.getdbt.com](https://docs.getdbt.com/) · [About dbt projects](https://docs.getdbt.com/docs/build/projects) | [dbt lineage graph](https://docs.getdbt.com/terms/data-lineage) |
-| 💡 Identified | `dagster/assets` | Dagster asset graph (software-defined assets and their dependencies) | [dagster.io](https://dagster.io/) · [Asset definitions](https://docs.dagster.io/guides/build/assets/) | [Dagster asset lineage UI](https://docs.dagster.io/guides/operate/webserver) |
-| 💡 Identified | `nifi/flow` | Apache NiFi flow definition (processors, connections, process groups from an exported flow definition JSON) | [nifi.apache.org](https://nifi.apache.org/) | [NiFi flow canvas](https://nifi.apache.org/docs/nifi-docs/html/user-guide.html) |
-| 💡 Identified | `argoproj/workflow` | Argo Workflows definition (Kubernetes CRD YAML: steps, DAG templates, artifacts) | [argo-workflows docs](https://argo-workflows.readthedocs.io/) | [DAG template examples](https://argo-workflows.readthedocs.io/en/latest/walk-through/dag/) |
-| 💡 Identified | `kubeflow/pipeline` | Kubeflow Pipelines definition (compiled pipeline IR YAML: components, inputs/outputs, DAG) | [kubeflow.org](https://www.kubeflow.org/docs/components/pipelines/) | [KFP pipeline graph](https://www.kubeflow.org/docs/components/pipelines/overview/) |
-| 💡 Identified | `commonwl/workflow` | Common Workflow Language workflow (open standard YAML: steps, inputs/outputs, scatter) | [commonwl.org](https://www.commonwl.org/) · [CWL user guide](https://www.commonwl.org/user_guide/) | [CWL Viewer](https://view.commonwl.org/) |
-| 💡 Identified | `openwdl/workflow` | Workflow Description Language workflow (open standard `.wdl`: tasks, calls, dataflow) | [openwdl.org](https://openwdl.org/) | [WDL examples](https://github.com/openwdl/wdl) |
-| 💡 Identified | `nextflow/workflow` | Nextflow pipeline (`.nf` DSL2 processes and channels; read-only structural view) | [nextflow.io](https://www.nextflow.io/) | [nf-core pipelines](https://nf-co.re/pipelines) |
-| 💡 Identified | `snakemake/workflow` | Snakemake workflow (Snakefile rules and their input/output dependency DAG) | [snakemake.readthedocs.io](https://snakemake.readthedocs.io/) | [Snakemake --dag output](https://snakemake.readthedocs.io/en/stable/executing/cli.html) |
-| 💡 Identified | `meltano/project` | Meltano ELT project (`meltano.yml`: extractors, loaders, transforms, schedules as a source→target flow) | [meltano.com](https://meltano.com/) · [meltano.yml reference](https://docs.meltano.com/reference/project) | the `meltano.yml` a repository already has |
-| 💡 Identified | `openlineage/lineage` | OpenLineage lineage graph (open standard run/job/dataset events, LF AI & Data; read-only graph over captured events) | [openlineage.io](https://openlineage.io/) · [spec on GitHub](https://github.com/OpenLineage/openlineage) | [Marquez](https://marquezproject.ai/) |
-
----
-
-## 13. Ontologies & semantic web
-
-Open W3C and community standards for knowledge representation. The visualization tradition here is strong (VOWL and its kin), and the files are plain text — Turtle, RDF/XML, YAML — that other tools own outright.
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| 💡 Identified | `w3c/owl` | OWL 2 ontology (classes, properties, individuals, axioms; Turtle/RDF-XML/functional syntax) | [W3C OWL 2 overview](https://www.w3.org/TR/owl2-overview/) | [WebVOWL](https://service.tib.eu/webvowl/) · [VOWL notation](http://vowl.visualdataweb.org/) |
-| 💡 Identified | `w3c/skos` | SKOS concept scheme (concepts, broader/narrower/related, collections) | [W3C SKOS reference](https://www.w3.org/TR/skos-reference/) | [SKOS Play](https://skos-play.sparna.fr/) |
-| 💡 Identified | `w3c/shacl` | SHACL shapes graph (node/property shapes, targets, constraints over an RDF data graph) | [W3C SHACL](https://www.w3.org/TR/shacl/) | [SHACL Play](https://shacl-play.sparna.fr/play/) |
-| 💡 Identified | `linkml/schema` | LinkML schema (open-source YAML modeling language: classes, slots, enums, inheritance) | [linkml.io](https://linkml.io/) · [schema guide](https://linkml.io/linkml/schemas/) | [LinkML generated ER/UML views](https://linkml.io/linkml/generators/) |
-
----
-
-## 14. Database queries & results
-
-Query languages whose statements and result sets are themselves worth a picture — the query as a structure (a graph pattern, a stage pipeline) and the result as a graph or document set. Distinct from section 7's schema diagrams: these visualize *asking*, not modeling.
-
-| State | Origin | Diagram | Theory | Example |
-|---|---|---|---|---|
-| 💡 Identified | `neo4j/cypher` | Cypher query and result graph (MATCH patterns as node/edge structure; results as an interactive graph). Cypher is standardized via [openCypher](https://opencypher.org/) and the ISO [GQL](https://www.gqlstandards.org/) standard | [Cypher manual](https://neo4j.com/docs/cypher-manual/current/) | [Neo4j Browser graph view](https://neo4j.com/docs/browser-manual/current/) |
-| 💡 Identified | `mongodb/aggregation-pipeline` | MongoDB aggregation pipeline (MQL stages — `$match`, `$group`, `$lookup`, … — as a left-to-right stage flow, with document shape per stage) | [Aggregation pipeline manual](https://www.mongodb.com/docs/manual/core/aggregation-pipeline/) | [Compass aggregation builder](https://www.mongodb.com/docs/compass/current/create-agg-pipeline/) |
-| 💡 Identified | `mongodb/query` | MongoDB find query and result documents (MQL filter/projection as a predicate tree; results as a document/tree view) | [MongoDB CRUD queries](https://www.mongodb.com/docs/manual/tutorial/query-documents/) | [Compass documents view](https://www.mongodb.com/docs/compass/current/documents/) |
+<table>
+  <thead>
+    <tr><th>State</th><th>Origin</th><th>Diagram</th><th>Theory</th><th>Example</th></tr>
+  </thead>
+  <tbody>
+    <tr><td colspan="5"><h3>1. UML — Unified Modeling Language</h3><p>A standardized general-purpose visual modeling language (OMG standard) defining 14 diagram types across two families.</p><p>Theory: <a href="https://www.omg.org/spec/UML/">OMG UML specification</a> · <a href="https://www.uml-diagrams.org/">uml-diagrams.org</a></p></td></tr>
+    <tr><td colspan="5"><h4>1a. Structural diagrams</h4></td></tr>
+    <tr><td>💡 Identified</td><td><code>uml/class</code></td><td>Class diagram</td><td><a href="https://www.uml-diagrams.org/class-diagrams-overview.html">uml-diagrams.org</a></td><td><a href="https://www.uml-diagrams.org/class-reference-uml-example.png">Example</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>uml/object</code></td><td>Object diagram</td><td><a href="https://www.uml-diagrams.org/object-diagrams.html">uml-diagrams.org</a></td><td><a href="https://www.uml-diagrams.org/examples/object-diagram-example.html">Example</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>uml/component</code></td><td>Component diagram</td><td><a href="https://www.uml-diagrams.org/component-diagrams.html">uml-diagrams.org</a></td><td><a href="https://www.uml-diagrams.org/examples/component-diagram-example.html">Example</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>uml/composite-structure</code></td><td>Composite structure diagram</td><td><a href="https://www.uml-diagrams.org/composite-structure-diagrams.html">uml-diagrams.org</a></td><td><a href="https://www.uml-diagrams.org/composite-structure-diagrams.html">Example</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>uml/deployment</code></td><td>Deployment diagram</td><td><a href="https://www.uml-diagrams.org/deployment-diagrams.html">uml-diagrams.org</a></td><td><a href="https://www.uml-diagrams.org/examples/deployment-diagram-example.html">Example</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>uml/package</code></td><td>Package diagram</td><td><a href="https://www.uml-diagrams.org/package-diagrams.html">uml-diagrams.org</a></td><td><a href="https://www.uml-diagrams.org/package-diagrams.html">Example</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>uml/profile</code></td><td>Profile diagram</td><td><a href="https://www.uml-diagrams.org/profile-diagrams.html">uml-diagrams.org</a></td><td><a href="https://www.uml-diagrams.org/profile-diagrams.html">Example</a></td></tr>
+    <tr><td colspan="5"><h4>1b. Behavioral diagrams</h4></td></tr>
+    <tr><td>💡 Identified</td><td><code>uml/use-case</code></td><td>Use case diagram</td><td><a href="https://www.uml-diagrams.org/use-case-diagrams.html">uml-diagrams.org</a></td><td><a href="https://www.uml-diagrams.org/examples/use-case-diagram-example.html">Example</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>uml/activity</code></td><td>Activity diagram</td><td><a href="https://www.uml-diagrams.org/activity-diagrams.html">uml-diagrams.org</a></td><td><a href="https://www.uml-diagrams.org/examples/activity-diagram-example.html">Example</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>uml/state-machine</code></td><td>State machine diagram</td><td><a href="https://www.uml-diagrams.org/state-machine-diagrams.html">uml-diagrams.org</a></td><td><a href="https://www.uml-diagrams.org/examples/state-machine-diagram-example.html">Example</a></td></tr>
+    <tr><td colspan="5"><h4>1c. Interaction diagrams</h4></td></tr>
+    <tr><td>💡 Identified</td><td><code>uml/sequence</code></td><td>Sequence diagram</td><td><a href="https://www.uml-diagrams.org/sequence-diagrams.html">uml-diagrams.org</a></td><td><a href="https://www.uml-diagrams.org/examples/sequence-diagram-example.html">Example</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>uml/communication</code></td><td>Communication diagram</td><td><a href="https://www.uml-diagrams.org/communication-diagrams.html">uml-diagrams.org</a></td><td><a href="https://www.uml-diagrams.org/communication-diagrams.html">Example</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>uml/interaction-overview</code></td><td>Interaction overview diagram</td><td><a href="https://www.uml-diagrams.org/interaction-overview-diagrams.html">uml-diagrams.org</a></td><td><a href="https://www.uml-diagrams.org/interaction-overview-diagrams.html">Example</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>uml/timing</code></td><td>Timing diagram</td><td><a href="https://www.uml-diagrams.org/timing-diagrams.html">uml-diagrams.org</a></td><td><a href="https://www.uml-diagrams.org/timing-diagrams.html">Example</a></td></tr>
+    <tr><td colspan="5"><h3>2. The C4 Model</h3><p>A lightweight, notation-independent hierarchy of zoom levels (Simon Brown, 2006–2018) — Context + Container covers most teams' needs.</p><p>Theory: <a href="https://c4model.com/">c4model.com</a> · <a href="https://c4model.com/diagrams">Diagrams overview</a></p><p>Tooling: <a href="https://structurizr.com/">Structurizr</a> · <a href="https://github.com/plantuml-stdlib/C4-PlantUML">C4-PlantUML</a> · <a href="https://icepanel.io/">IcePanel</a>.</p></td></tr>
+    <tr><td>✅ Implemented (prototype)</td><td><code>c4/context</code></td><td>System Context</td><td><a href="https://c4model.com/diagrams/system-context">c4model.com</a></td><td>Everyone-facing overview</td></tr>
+    <tr><td>✅ Implemented (prototype)</td><td><code>c4/container</code></td><td>Container</td><td><a href="https://c4model.com/diagrams/container">c4model.com</a></td><td>Deployable/runnable units</td></tr>
+    <tr><td>✅ Implemented (prototype)</td><td><code>c4/component</code></td><td>Component</td><td><a href="https://c4model.com/diagrams/component">c4model.com</a></td><td>Building blocks inside one container</td></tr>
+    <tr><td>📝 Specified</td><td><code>c4/code</code></td><td>Code (optional)</td><td><a href="https://c4model.com/diagrams/code">c4model.com</a></td><td>Usually IDE-generated</td></tr>
+    <tr><td>✅ Implemented (prototype)</td><td><code>c4/system-landscape</code></td><td>System Landscape (supplementary)</td><td><a href="https://c4model.com/diagrams/system-landscape">c4model.com</a></td><td>Multiple systems across an org</td></tr>
+    <tr><td>✅ Implemented (prototype)</td><td><code>c4/dynamic</code></td><td>Dynamic (supplementary)</td><td><a href="https://c4model.com/diagrams/dynamic">c4model.com</a></td><td>One scenario across containers/components</td></tr>
+    <tr><td>✅ Implemented (prototype)</td><td><code>c4/deployment</code></td><td>Deployment (supplementary)</td><td><a href="https://c4model.com/diagrams/deployment">c4model.com</a></td><td>Containers mapped onto infrastructure</td></tr>
+    <tr><td colspan="5"><h3>3. The 4+1 Architectural View Model (Kruchten)</h3><p>Not a separate notation — a way of <i>organizing</i> 5 concurrent stakeholder views, each typically expressed using the UML diagrams already listed in section 1 (Logical → class/state, Process → activity/sequence, Development → component/package, Physical → deployment, Scenarios → use case). No dedicated <code>Origin</code> rows here since it introduces no renderable diagram type of its own.</p><p>Theory: <a href="https://www.cs.ubc.ca/~gregor/teaching/papers/4+1view-architecture.pdf">Kruchten's original paper (PDF)</a> · <a href="https://en.wikipedia.org/wiki/4+1_architectural_view_model">Wikipedia</a></p></td></tr>
+    <tr><td colspan="5"><h3>4. Enterprise Architecture frameworks</h3><p>Model how business, application, and technology fit together across a whole organization — one level up from software architecture.</p><p>Layers can be diagrammed individually or combined into a cross-layer viewpoint; TOGAF is a process methodology often paired with ArchiMate as its notation, not a notation itself.</p></td></tr>
+    <tr><td>💡 Identified</td><td><code>archimate/motivation</code></td><td>ArchiMate — Motivation layer</td><td><a href="https://pubs.opengroup.org/architecture/archimate3-doc/">ArchiMate spec</a></td><td><a href="https://www.archimatetool.com/examples/">Archi example models</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>archimate/strategy</code></td><td>ArchiMate — Strategy layer</td><td><a href="https://pubs.opengroup.org/architecture/archimate3-doc/">ArchiMate spec</a></td><td><a href="https://www.archimatetool.com/examples/">Archi example models</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>archimate/business</code></td><td>ArchiMate — Business layer</td><td><a href="https://pubs.opengroup.org/architecture/archimate3-doc/">ArchiMate spec</a></td><td><a href="https://www.archimatetool.com/examples/">Archi example models</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>archimate/application</code></td><td>ArchiMate — Application layer</td><td><a href="https://pubs.opengroup.org/architecture/archimate3-doc/">ArchiMate spec</a></td><td><a href="https://www.archimatetool.com/examples/">Archi example models</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>archimate/technology</code></td><td>ArchiMate — Technology layer</td><td><a href="https://pubs.opengroup.org/architecture/archimate3-doc/">ArchiMate spec</a></td><td><a href="https://www.archimatetool.com/examples/">Archi example models</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>archimate/implementation-migration</code></td><td>ArchiMate — Implementation & Migration layer</td><td><a href="https://pubs.opengroup.org/architecture/archimate3-doc/">ArchiMate spec</a></td><td><a href="https://www.archimatetool.com/examples/">Archi example models</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>togaf/adm</code></td><td>TOGAF ADM cycle diagram</td><td><a href="https://www.opengroup.org/togaf">TOGAF Standard</a></td><td><a href="https://github.com/nelsambrose/togaf-diagrams">GitHub: TOGAF 10 diagram set</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>zachman/matrix</code></td><td>Zachman Framework matrix</td><td><a href="https://www.zachman.com/about-the-zachman-framework">Zachman International</a></td><td><a href="https://www.visual-paradigm.com/guide/togaf/togaf-vs-zachman-framework/">Visual Paradigm comparison</a></td></tr>
+    <tr><td colspan="5"><h3>5. Business process & workflow notation</h3></td></tr>
+    <tr><td>💡 Identified</td><td><code>bpmn/process</code></td><td>BPMN process diagram</td><td><a href="https://www.bpmn.org/">bpmn.org</a> · <a href="https://www.omg.org/bpmn/">OMG BPMN spec</a></td><td><a href="https://camunda.com/bpmn/examples/">Camunda BPMN examples</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>iso/flowchart</code></td><td>Flowchart</td><td><a href="https://en.wikipedia.org/wiki/Flowchart">ISO 5807 overview</a></td><td><a href="https://www.lucidchart.com/pages/examples/flowchart-symbols-and-meaning">Lucidchart examples</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>generic/swimlane</code></td><td>Swimlane diagram</td><td><a href="https://www.lucidchart.com/pages/tutorial/swim-lane-diagram">Lucidchart guide</a></td><td><a href="https://www.lucidchart.com/pages/examples/flowchart-symbols-and-meaning">Lucidchart examples</a></td></tr>
+    <tr><td>✅ Implemented</td><td><code>generic/timeline</code></td><td>Timeline diagram (left-to-right, elements spanning begin→end on snap-to rows, bezier connections; <code>.tml</code> — Timeline Markup Language); <a href="../.spec-workflow/specs/timeline-diagram/requirements.md"><code>timeline-diagram</code></a></td><td>Distinct from <code>mermaid/gantt</code>: placement is authored on both axes, not computed, and connections are arbitrary rather than scheduling dependencies</td><td>—</td></tr>
+    <tr><td>📝 Specified</td><td><code>generic/dependencies</code></td><td>Dependency graph (named nodes and directed depends-on edges, freely placed and freely connected; ADP's own YAML schema and extension, on the <code>generic/timeline</code> model — authored placement, directed depends-on edges, one command per edit); <a href="../.spec-workflow/specs/dependency-graph/requirements.md"><code>dependency-graph</code></a></td><td>Follows the <code>generic/timeline</code> precedent: no standards body owns "a box depends on a box", so ADP defines the schema and owns the extension outright, keeping the document diffable text. Specified as a duplicate of the timeline module with every time-related aspect removed</td><td>—</td></tr>
+    <tr><td colspan="5"><h3>6. Domain-Driven Design collaborative modeling</h3><p>Workshop techniques from Eric Evans' DDD tradition that produce a diagram as a byproduct of a group activity.</p></td></tr>
+    <tr><td>💡 Identified</td><td><code>ddd/event-storming</code></td><td>Event Storming</td><td><a href="https://www.eventstorming.com/">eventstorming.com</a></td><td><a href="https://miro.com/templates/event-storming/">Miro template</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>ddd/context-map</code></td><td>Bounded Context / Context Map</td><td><a href="https://www.domainlanguage.com/ddd/context-mapping/">Context Mapping reference</a></td><td><a href="https://contextmapper.org/docs/context-map/">Context Mapper example</a></td></tr>
+    <tr><td colspan="5"><h3>7. Data-oriented diagrams</h3></td></tr>
+    <tr><td>💡 Identified</td><td><code>erd/entity-relationship</code></td><td>Entity-Relationship Diagram (Chen or Crow's Foot notation)</td><td><a href="https://dl.acm.org/doi/10.1145/320434.320440">Chen's original paper</a></td><td><a href="https://www.lucidchart.com/pages/examples/entity-relationship-diagram-tool">Lucidchart ERD examples</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>dfd/data-flow</code></td><td>Data Flow Diagram (Yourdon/DeMarco or Gane–Sarson notation)</td><td><a href="https://en.wikipedia.org/wiki/Data_flow_diagram">DeMarco's foundational text</a></td><td><a href="https://www.lucidchart.com/pages/examples/data-flow-diagram">Lucidchart DFD examples</a></td></tr>
+    <tr><td colspan="5"><h3>8. Infrastructure, network & cloud diagrams</h3><p>Not tied to one methodology — each cloud vendor's official icon set functions as a de-facto shared notation.</p></td></tr>
+    <tr><td>💡 Identified</td><td><code>network/topology</code></td><td>Network topology diagram</td><td><a href="https://www.cisco.com/c/en/us/products/downloads.html">Cisco iconography</a></td><td><a href="https://www.lucidchart.com/pages/examples/network-diagram-software">Lucidchart examples</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>aws/architecture</code></td><td>AWS architecture diagram</td><td><a href="https://aws.amazon.com/architecture/icons/">AWS Architecture Icons</a></td><td><a href="https://aws.amazon.com/architecture/">AWS Architecture Center</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>azure/architecture</code></td><td>Azure architecture diagram</td><td><a href="https://learn.microsoft.com/en-us/azure/architecture/icons/">Azure Architecture Icons</a></td><td><a href="https://learn.microsoft.com/en-us/azure/architecture/browse/">Azure Architecture Center</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>gcp/architecture</code></td><td>GCP architecture diagram</td><td><a href="https://cloud.google.com/icons">Google Cloud Architecture Icons</a></td><td><a href="https://cloud.google.com/architecture">Google Cloud Architecture Center</a></td></tr>
+    <tr><td>✅ Implemented (prototype)</td><td><code>azure-devops/pipeline</code></td><td>Azure DevOps pipeline diagram</td><td><a href="https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/">Azure Pipelines YAML schema</a> · <a href="https://learn.microsoft.com/en-us/azure/devops/pipelines/get-started/key-pipelines-concepts">Key pipelines concepts</a></td><td><a href="https://learn.microsoft.com/en-us/azure/devops/pipelines/process/stages">Stages, dependsOn and conditions</a> · the pipeline <code>.yml</code> a repository already has</td></tr>
+    <tr><td>✅ Implemented (prototype)</td><td><code>ansible/structure</code></td><td>Ansible project structure (read-only: playbooks, roles, inventories and their include/import/dependency relationships)</td><td><a href="https://charlesreid1.com/wiki/Ansible/Directory_Layout/Details">Ansible directory layout</a> · <a href="https://oneuptime.com/blog/post/2026-01-24-ansible-roles-dependencies/view">Role dependencies</a></td><td><a href="https://github.com/haidaraM/ansible-playbook-grapher">ansible-playbook-grapher</a> · <a href="https://github.com/aspiers/ansible-viz">ansible-viz</a> · the folder tree a repository already has</td></tr>
+    <tr><td colspan="5"><h3>9. Strategy & landscape mapping</h3></td></tr>
+    <tr><td>✅ Implemented (prototype)</td><td><code>wardley/map</code></td><td>Wardley Map</td><td><a href="https://learnwardleymapping.com/">learnwardleymapping.com</a> · reads and writes the <a href="https://onlinewardleymaps.com/">OnlineWardleyMaps <code>.owm</code> DSL</a>, keeping a map another tool wrote byte-for-byte · <a href="../.spec-workflow/archive/specs/wardley-map/requirements.md"><code>wardley-map</code></a></td><td><a href="https://onlinewardleymaps.com/">Online Wardley Maps editor</a></td></tr>
+    <tr><td colspan="5"><h3>10. Knowledge & informal modeling</h3><p>Diagram types for capturing and structuring knowledge rather than formal system architecture — no single standards body owns these, so <code>Origin</code> names the tool/author most associated with the notation, per <code><vendor>/<diagram-type></code>.</p><p>Other mind-mapping tools (XMind, MindMeister, Coggle, FreeMind) could each get their own <code><vendor>/mindmap</code> row if ADP ever needs to read/write their specific file formats; <code>mindmap-diagram</code>'s spec settled on Freeplane's <code>.mm</code> format specifically (see tech.md).</p></td></tr>
+    <tr><td>✅ Implemented (prototype)</td><td><code>freeplane/mindmap</code></td><td>Mind map (radial/hierarchical, single central topic)</td><td><a href="https://www.freeplane.org/">Freeplane</a> · <code>.mm</code> file format (tech.md's diagram-type test fixture)</td><td><a href="https://www.freeplane.org/wiki/index.php/Gallery">Freeplane example maps</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>cmap/concept-map</code></td><td>Concept map (free-form network of concepts with labeled relationships)</td><td><a href="https://cmap.ihmc.us/docs/theory-of-concept-maps">Novak & Cañas, "The Theory Underlying Concept Maps"</a></td><td><a href="https://cmap.ihmc.us/">CmapTools example maps</a></td></tr>
+    <tr><td colspan="5"><h3>11. "Diagrams as code" tooling</h3><p>Text-based tools that render many of the notations above from plain text, well suited to version control and to generation by Claude Code. Each one is a distinct <i>rendering path</i> for one or more diagram types already cataloged above — a code-authored <code>uml/class</code> diagram is still fundamentally a class diagram, but rendering it via Mermaid vs. ADP's own native editor is a different <code>Origin</code>, so each tool/diagram-type pair gets its own row here rather than being folded into the sections above.</p></td></tr>
+    <tr><td colspan="5"><h4>11a. Mermaid</h4></td></tr>
+    <tr><td>💡 Identified</td><td><code>mermaid/flowchart</code></td><td>Flowchart</td><td><a href="https://mermaid.js.org/">mermaid.js.org</a></td><td><a href="https://mermaid.live/">Mermaid Live Editor</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>mermaid/sequence</code></td><td>Sequence diagram</td><td><a href="https://mermaid.js.org/">mermaid.js.org</a></td><td><a href="https://mermaid.live/">Mermaid Live Editor</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>mermaid/class</code></td><td>Class diagram</td><td><a href="https://mermaid.js.org/">mermaid.js.org</a></td><td><a href="https://mermaid.live/">Mermaid Live Editor</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>mermaid/state</code></td><td>State diagram</td><td><a href="https://mermaid.js.org/">mermaid.js.org</a></td><td><a href="https://mermaid.live/">Mermaid Live Editor</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>mermaid/er</code></td><td>Entity-Relationship diagram</td><td><a href="https://mermaid.js.org/">mermaid.js.org</a></td><td><a href="https://mermaid.live/">Mermaid Live Editor</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>mermaid/gantt</code></td><td>Gantt chart</td><td><a href="https://mermaid.js.org/">mermaid.js.org</a></td><td><a href="https://mermaid.live/">Mermaid Live Editor</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>mermaid/c4</code></td><td>C4 diagram (subset)</td><td><a href="https://mermaid.js.org/">mermaid.js.org</a></td><td><a href="https://mermaid.live/">Mermaid Live Editor</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>mermaid/architecture</code></td><td>Architecture diagram</td><td><a href="https://mermaid.js.org/">mermaid.js.org</a></td><td><a href="https://mermaid.live/">Mermaid Live Editor</a></td></tr>
+    <tr><td colspan="5"><h4>11b. PlantUML</h4></td></tr>
+    <tr><td>📝 Specified</td><td><code>plantuml/uml</code></td><td>Full UML set (see section 1)</td><td><a href="https://plantuml.com/">plantuml.com</a> · <a href="../.spec-workflow/specs/plantuml-uml/requirements.md"><code>plantuml-uml</code></a> specifies class and sequence first</td><td><a href="https://real-world-plantuml.com/">Real World PlantUML gallery</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>plantuml/c4</code></td><td>C4 diagram, via C4-PlantUML</td><td><a href="https://github.com/plantuml-stdlib/C4-PlantUML">C4-PlantUML</a></td><td><a href="https://real-world-plantuml.com/">Real World PlantUML gallery</a></td></tr>
+    <tr><td colspan="5"><h4>11c. Structurizr</h4></td></tr>
+    <tr><td>💡 Identified</td><td><code>structurizr/c4</code></td><td>C4 model ("model once, view many")</td><td><a href="https://structurizr.com/">structurizr.com</a></td><td><a href="https://structurizr.com/help/examples">structurizr.com/help/examples</a></td></tr>
+    <tr><td colspan="5"><h4>11d. D2</h4></td></tr>
+    <tr><td>💡 Identified</td><td><code>d2/diagram</code></td><td>General-purpose declarative diagram</td><td><a href="https://d2lang.com/">d2lang.com</a></td><td><a href="https://play.d2lang.com/">D2 Playground</a></td></tr>
+    <tr><td colspan="5"><h4>11e. Diagrams (Python)</h4></td></tr>
+    <tr><td>💡 Identified</td><td><code>diagrams-python/cloud-infrastructure</code></td><td>Cloud/infrastructure diagram with official-style vendor icons</td><td><a href="https://diagrams.mingrammer.com/">diagrams.mingrammer.com</a></td><td><a href="https://diagrams.mingrammer.com/docs/getting-started/examples">Diagrams gallery</a></td></tr>
+    <tr><td colspan="5"><h4>11f. Context Mapper</h4></td></tr>
+    <tr><td>💡 Identified</td><td><code>contextmapper/context-map</code></td><td>DDD Context Map, plus generated PlantUML/BPMN sketches</td><td><a href="https://contextmapper.org/">contextmapper.org</a></td><td><a href="https://contextmapper.org/docs/context-map/">Context Mapper example</a></td></tr>
+    <tr><td colspan="5"><h3>12. Data platforms & pipeline orchestration</h3><p>Configuration and definition files that data platforms already carry — bundles, DAGs, workflow definitions, lineage events. Every one of them is an established text artifact another tool deploys or executes, which is exactly the "files are the source of truth" shape ADP wants: the diagram renders (and where safe, edits) the file, and never invents a format of its own. Open-source standards are preferred where they exist.</p></td></tr>
+    <tr><td>📝 Specified</td><td><code>databricks/bundle</code></td><td>Databricks Asset Bundle topology (targets, resources, overrides) · <a href="../.spec-workflow/specs/databricks-diagrams/requirements.md"><code>databricks-diagrams</code></a></td><td><a href="https://docs.databricks.com/aws/en/dev-tools/bundles/settings">Bundle configuration</a> · <a href="https://docs.databricks.com/aws/en/dev-tools/bundles/reference">reference</a></td><td>the <code>databricks.yml</code> a repository already has</td></tr>
+    <tr><td>📝 Specified</td><td><code>databricks/job</code></td><td>Lakeflow Jobs task DAG (tasks, depends_on, run_if, clusters) · <a href="../.spec-workflow/specs/databricks-diagrams/requirements.md"><code>databricks-diagrams</code></a></td><td><a href="https://docs.databricks.com/aws/en/dev-tools/bundles/job-task-types">Job task types</a></td><td>the job resource <code>.yml</code> a bundle already has</td></tr>
+    <tr><td>📝 Specified</td><td><code>databricks/pipeline</code></td><td>Lakeflow Declarative Pipelines settings (sources, pipeline, target catalog) · <a href="../.spec-workflow/specs/databricks-diagrams/requirements.md"><code>databricks-diagrams</code></a></td><td><a href="https://docs.databricks.com/aws/en/ldp/properties">Pipeline properties</a></td><td>the pipeline settings <code>.json</code> a workspace exports</td></tr>
+    <tr><td>💡 Identified</td><td><code>spark/declarative-pipeline</code></td><td>Spark Declarative Pipelines (SDP) spec (<code>spark-pipeline.yml</code>: name, libraries, storage; flows, streaming tables and materialized views declared in the SQL/Python sources it names). The open-source donation of Databricks DLT, native to Apache Spark since 4.1 — the upstream sibling of <code>databricks/pipeline</code></td><td><a href="https://spark.apache.org/docs/latest/declarative-pipelines-programming-guide.html">SDP programming guide</a></td><td>the <code>spark-pipeline.yml</code> a repository already has</td></tr>
+    <tr><td>💡 Identified</td><td><code>airflow/dag</code></td><td>Apache Airflow DAG (tasks and dependencies; DAG files are Python, so a read-only structural view is the realistic first step)</td><td><a href="https://airflow.apache.org/">airflow.apache.org</a> · <a href="https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/dags.html">DAGs concept</a></td><td><a href="https://airflow.apache.org/docs/apache-airflow/stable/ui.html">Airflow graph view</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>dbt/lineage</code></td><td>dbt project lineage (models, sources, <code>ref()</code>/<code>source()</code> edges from <code>dbt_project.yml</code> + <code>schema.yml</code> + manifest)</td><td><a href="https://docs.getdbt.com/">docs.getdbt.com</a> · <a href="https://docs.getdbt.com/docs/build/projects">About dbt projects</a></td><td><a href="https://docs.getdbt.com/terms/data-lineage">dbt lineage graph</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>dagster/assets</code></td><td>Dagster asset graph (software-defined assets and their dependencies)</td><td><a href="https://dagster.io/">dagster.io</a> · <a href="https://docs.dagster.io/guides/build/assets/">Asset definitions</a></td><td><a href="https://docs.dagster.io/guides/operate/webserver">Dagster asset lineage UI</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>nifi/flow</code></td><td>Apache NiFi flow definition (processors, connections, process groups from an exported flow definition JSON)</td><td><a href="https://nifi.apache.org/">nifi.apache.org</a></td><td><a href="https://nifi.apache.org/docs/nifi-docs/html/user-guide.html">NiFi flow canvas</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>argoproj/workflow</code></td><td>Argo Workflows definition (Kubernetes CRD YAML: steps, DAG templates, artifacts)</td><td><a href="https://argo-workflows.readthedocs.io/">argo-workflows docs</a></td><td><a href="https://argo-workflows.readthedocs.io/en/latest/walk-through/dag/">DAG template examples</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>kubeflow/pipeline</code></td><td>Kubeflow Pipelines definition (compiled pipeline IR YAML: components, inputs/outputs, DAG)</td><td><a href="https://www.kubeflow.org/docs/components/pipelines/">kubeflow.org</a></td><td><a href="https://www.kubeflow.org/docs/components/pipelines/overview/">KFP pipeline graph</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>commonwl/workflow</code></td><td>Common Workflow Language workflow (open standard YAML: steps, inputs/outputs, scatter)</td><td><a href="https://www.commonwl.org/">commonwl.org</a> · <a href="https://www.commonwl.org/user_guide/">CWL user guide</a></td><td><a href="https://view.commonwl.org/">CWL Viewer</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>openwdl/workflow</code></td><td>Workflow Description Language workflow (open standard <code>.wdl</code>: tasks, calls, dataflow)</td><td><a href="https://openwdl.org/">openwdl.org</a></td><td><a href="https://github.com/openwdl/wdl">WDL examples</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>nextflow/workflow</code></td><td>Nextflow pipeline (<code>.nf</code> DSL2 processes and channels; read-only structural view)</td><td><a href="https://www.nextflow.io/">nextflow.io</a></td><td><a href="https://nf-co.re/pipelines">nf-core pipelines</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>snakemake/workflow</code></td><td>Snakemake workflow (Snakefile rules and their input/output dependency DAG)</td><td><a href="https://snakemake.readthedocs.io/">snakemake.readthedocs.io</a></td><td><a href="https://snakemake.readthedocs.io/en/stable/executing/cli.html">Snakemake --dag output</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>meltano/project</code></td><td>Meltano ELT project (<code>meltano.yml</code>: extractors, loaders, transforms, schedules as a source→target flow)</td><td><a href="https://meltano.com/">meltano.com</a> · <a href="https://docs.meltano.com/reference/project">meltano.yml reference</a></td><td>the <code>meltano.yml</code> a repository already has</td></tr>
+    <tr><td>💡 Identified</td><td><code>openlineage/lineage</code></td><td>OpenLineage lineage graph (open standard run/job/dataset events, LF AI & Data; read-only graph over captured events)</td><td><a href="https://openlineage.io/">openlineage.io</a> · <a href="https://github.com/OpenLineage/openlineage">spec on GitHub</a></td><td><a href="https://marquezproject.ai/">Marquez</a></td></tr>
+    <tr><td colspan="5"><h3>13. Ontologies & semantic web</h3><p>Open W3C and community standards for knowledge representation. The visualization tradition here is strong (VOWL and its kin), and the files are plain text — Turtle, RDF/XML, YAML — that other tools own outright.</p></td></tr>
+    <tr><td>💡 Identified</td><td><code>w3c/owl</code></td><td>OWL 2 ontology (classes, properties, individuals, axioms; Turtle/RDF-XML/functional syntax)</td><td><a href="https://www.w3.org/TR/owl2-overview/">W3C OWL 2 overview</a></td><td><a href="https://service.tib.eu/webvowl/">WebVOWL</a> · <a href="http://vowl.visualdataweb.org/">VOWL notation</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>w3c/skos</code></td><td>SKOS concept scheme (concepts, broader/narrower/related, collections)</td><td><a href="https://www.w3.org/TR/skos-reference/">W3C SKOS reference</a></td><td><a href="https://skos-play.sparna.fr/">SKOS Play</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>w3c/shacl</code></td><td>SHACL shapes graph (node/property shapes, targets, constraints over an RDF data graph)</td><td><a href="https://www.w3.org/TR/shacl/">W3C SHACL</a></td><td><a href="https://shacl-play.sparna.fr/play/">SHACL Play</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>linkml/schema</code></td><td>LinkML schema (open-source YAML modeling language: classes, slots, enums, inheritance)</td><td><a href="https://linkml.io/">linkml.io</a> · <a href="https://linkml.io/linkml/schemas/">schema guide</a></td><td><a href="https://linkml.io/linkml/generators/">LinkML generated ER/UML views</a></td></tr>
+    <tr><td colspan="5"><h3>14. Database queries & results</h3><p>Query languages whose statements and result sets are themselves worth a picture — the query as a structure (a graph pattern, a stage pipeline) and the result as a graph or document set. Distinct from section 7's schema diagrams: these visualize <i>asking</i>, not modeling.</p></td></tr>
+    <tr><td>💡 Identified</td><td><code>neo4j/cypher</code></td><td>Cypher query and result graph (MATCH patterns as node/edge structure; results as an interactive graph). Cypher is standardized via <a href="https://opencypher.org/">openCypher</a> and the ISO <a href="https://www.gqlstandards.org/">GQL</a> standard</td><td><a href="https://neo4j.com/docs/cypher-manual/current/">Cypher manual</a></td><td><a href="https://neo4j.com/docs/browser-manual/current/">Neo4j Browser graph view</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>mongodb/aggregation-pipeline</code></td><td>MongoDB aggregation pipeline (MQL stages — <code>$match</code>, <code>$group</code>, <code>$lookup</code>, … — as a left-to-right stage flow, with document shape per stage)</td><td><a href="https://www.mongodb.com/docs/manual/core/aggregation-pipeline/">Aggregation pipeline manual</a></td><td><a href="https://www.mongodb.com/docs/compass/current/create-agg-pipeline/">Compass aggregation builder</a></td></tr>
+    <tr><td>💡 Identified</td><td><code>mongodb/query</code></td><td>MongoDB find query and result documents (MQL filter/projection as a predicate tree; results as a document/tree view)</td><td><a href="https://www.mongodb.com/docs/manual/tutorial/query-documents/">MongoDB CRUD queries</a></td><td><a href="https://www.mongodb.com/docs/compass/current/documents/">Compass documents view</a></td></tr>
+  </tbody>
+</table>
