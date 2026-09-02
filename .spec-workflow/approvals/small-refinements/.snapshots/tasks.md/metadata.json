@@ -1,12 +1,28 @@
 {
   "filePath": ".spec-workflow/specs/small-refinements/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-02T22:02:27.781Z",
       "trigger": "initial",
+      "approvalId": "approval_1788386547546_ctlb3cs9z",
+      "approvalTitle": "small-refinements — tasks document"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-02T22:04:45.483Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788386547546_ctlb3cs9z",
+      "approvalTitle": "small-refinements — tasks document"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-09-02T22:04:53.879Z",
+      "trigger": "approved",
       "approvalId": "approval_1788386547546_ctlb3cs9z",
       "approvalTitle": "small-refinements — tasks document"
     }

@@ -3,8 +3,10 @@
   "title": "small-refinements — tasks document",
   "filePath": ".spec-workflow/specs/small-refinements/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-02T22:02:27.546Z",
   "category": "spec",
-  "categoryName": "small-refinements"
+  "categoryName": "small-refinements",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-02T22:04:54.156Z"
 }
