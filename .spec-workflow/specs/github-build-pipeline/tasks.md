@@ -20,27 +20,27 @@ Grouped the way the repository works them: each group in one worktree, gated wit
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec github-build-pipeline, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run dotnet test --solution EtAlii.Adp.slnx and dotnet format style --verify-no-changes --severity info from src/backend, and npm test/npm run typecheck from src/client, checking all exit codes; if clean, merge the worktree into develop and retire it | Restrictions: do not merge on a failing gate | Success: all gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2. The version wire: DescribeProduct
+- [x] 2. The version wire: DescribeProduct
   - Worktree: `.claude/worktrees/pipeline-wire`
   - _Requirements: 2.3, 3.2_
 
-- [-] 2.1 Proto and backend handler
+- [x] 2.1 Proto and backend handler
   - Files: `src/api/authentication.proto`, the `AuthenticationService` backend implementation, `src/backend/EtAlii.Adp.Backend/Sessions/SessionInterceptor.cs`
   - Add `rpc DescribeProduct(DescribeProductRequest) returns (DescribeProductResponse)` with `string version = 1`; the handler reads the executing assembly's `AssemblyInformationalVersionAttribute` once and caches it; `SessionInterceptor` exempts `/DescribeProduct` beside `/Login`, with a comment saying why
   - Tests: a handler unit test (non-empty, informational-version-shaped answer); an interceptor test pinning that `/DescribeProduct` passes without a token while other calls still refuse; a `WebApplicationFactory` fact calling it over an unauthenticated channel
   - _Requirements: 2.3, 3.2_
   - _Prompt: Implement the task for spec github-build-pipeline, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# gRPC developer | Task: Add the DescribeProduct unary to AuthenticationService per the design - proto message pair, handler reading the cached AssemblyInformationalVersion, SessionInterceptor exemption beside /Login with an explanatory comment - plus the three tests the design names (handler unit, interceptor pin, unauthenticated integration call) | Restrictions: no new service and no REST side-channel; the version string comes from the stamped assembly, never from configuration | _Leverage: SessionInterceptor's existing /Login exemption; the WebApplicationFactory harness in EtAlii.Adp.Backend.Tests | Success: an unauthenticated channel gets the stamped version; a tokenless call to any other method still refuses; all tests green. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.2 Gate and merge
+- [x] 2.2 Gate and merge
   - The proto changed, so the client gates regenerate stubs; run all four gates, merge `pipeline-wire` into `develop`, retire the worktree
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec github-build-pipeline, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked (the client gates regenerate proto stubs; commit the genuinely changed generated file, excluding line-ending-churn-only files per this repository's practice), merge the worktree into develop, retire it | Restrictions: do not merge on a failing gate | Success: all gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. The login panel's version line
+- [-] 3. The login panel's version line
   - Worktree: `.claude/worktrees/pipeline-login`
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 3.1 LoginPage calls DescribeProduct and renders the line
+- [-] 3.1 LoginPage calls DescribeProduct and renders the line
   - Files: `src/client/src/pages/LoginPage.tsx`, its test, the page's stylesheet
   - On mount, call `describeProduct` fire-and-forget into state; render `<p className="auth-version">` below the `auth-card` form only when a version arrived; style centered/small/`--color-text-muted` through the centralized variables, no literal colors
   - Tests: version shown when the mocked call answers; nothing rendered when it fails or answers empty (R3.3)
