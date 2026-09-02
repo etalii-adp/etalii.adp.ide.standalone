@@ -48,6 +48,7 @@ The idea is that the solution can:
 
 * Diagrams are persisted as plain, text-based files under the user's chosen workspace folder - never in a database - so they remain diffable and version-control-friendly.
 * Wherever possible already existing text-based file formats will be used. If needed additional files will be used to store meta-data (for example to link to other elements/diagrams).
+* **When a diagram's file format carries no layout information but authored layout makes sense for the type, the layout is stored in the `.adp` registration file** - as metadata enriching the body, never written into the body itself. The body file belongs to whatever tool owns its format, and positions ADP invented must not show up in its diffs; the `.adp` is ADP's own file, already sits beside the body, and is the one place such enrichment belongs. A format that carries its own layout natively keeps using it; a type whose layout is computed and never authored stores nothing.
 * The backend is the sole owner of reading/writing diagram files; the web client never touches the filesystem directly, it only talks gRPC to the backend.
 * File-system access from the backend is scoped to explicitly opened workspace folders, not the whole machine.
 
