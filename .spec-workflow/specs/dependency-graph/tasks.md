@@ -2,32 +2,32 @@
 
 One worktree for the whole spec (`.claude/worktrees/depgraph`, per CLAUDE.md's one-worktree-per-specification rule), merged into `develop` once at the end; the fork lands as one coherent module rather than half a diagram type at a time.
 
-- [ ] 1. Backend document layer: the `.dgr` format
+- [x] 1. Backend document layer: the `.dgr` format
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [-] 1.1 Fork the document layer, dates deleted
+- [x] 1.1 Fork the document layer, dates deleted
   - Files: `src/diagrams/dependency-graph/backend/EtAlii.Adp.Diagram.DependencyGraph/` — `DependencyGraphDocument.cs`, `DependencyGraphParser.cs`, `DependencyGraphWriter.cs`, `DependencyGraphDocumentFactory.cs`, `_Model/`, forked from their `Timeline*` counterparts; `TimelineInstants.cs` and `TimelineScale.cs` have no counterparts — nothing replaces them
   - The element carries `id`, `label`, `x` (plain number), `row`; the relation carries `from`/`to` meaning "from depends on to"; version marker `dependencies: 1`; the writer keeps the timeline's line-preserving discipline (unchanged saves byte-identical, one edited element changes only its lines)
   - Tests: fork the parser/writer/document/factory suites; delete the date-rule tests with their subjects; add directed-relation round-trip facts; write fresh `.dgr` fixtures (no placeholder text), and add a `*.dgr -text` line to `.gitattributes` only if the fixture set byte-compares mixed line endings the way `.tml`'s does
   - _Requirements: 2.1, 2.2, 2.3_
   - _Prompt: Implement the task for spec dependency-graph, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the timeline module | Task: Fork the timeline's document layer into EtAlii.Adp.Diagram.DependencyGraph per the design's fork map - elements with id/label/x/row, directed from/to relations, dependencies:1 marker, TimelineInstants and TimelineScale deleted with nothing replacing them - keeping the byte-preserving writer discipline, with the forked test suites and fresh fixtures | Restrictions: the timeline module stays completely untouched; no date, duration or instant field survives anywhere in the new module; fixtures contain believable content, never placeholder text | _Leverage: src/diagrams/timeline/backend as the fork source, file by file per design.md's table | Success: the forked document suite passes; an unchanged .dgr saves byte-identically; a single-element edit changes only that element's lines. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 1.2 Fork the rules and validator
+- [x] 1.2 Fork the rules and validator
   - Files: `DependencyGraphRuleSet.cs`, `DependencyGraphRules.cs`, `DependencyGraphValidator.cs` + their tests
   - Endpoint and duplicate-id rules kept (a relation naming a missing element reports at its line; a duplicate id names the second occurrence's line); date rules deleted with nothing replacing them
   - _Requirements: 2.4_
   - _Prompt: Implement the task for spec dependency-graph, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Fork the timeline's validation into the new module keeping endpoint and duplicate-id rules with their line-accurate reporting and deleting every date rule, with forked tests covering the kept rules and the dangling-relation case from Requirement 2.4 | Restrictions: rule ids follow the new module's own prefix; the problems panel wiring comes through registration, not new core code | _Leverage: TimelineRuleSet/TimelineRules/TimelineValidator and their tests | Success: a .dgr naming a missing endpoint reports at the offending line; duplicates report; no date rule exists. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. Backend session layer and registration
+- [x] 2. Backend session layer and registration
   - _Requirements: 1.1, 1.2, 3.2, 3.5_
 
-- [ ] 2.1 Fork store, session, commands, mapper, placement, gestures, reloader
+- [x] 2.1 Fork store, session, commands, mapper, placement, gestures, reloader
   - Files: `DependencyGraphDocumentStore.cs` (+ interface), `DependencyGraphSession.cs`, `DependencyGraphSessionFactory.cs`, `DependencyGraphUnsubscriber.cs`, `DependencyGraphDocumentReloader.cs`, `Commands/`, `DependencyGraphElementMapper.cs`, `DependencyGraphNewPlacement.cs`, `DependencyGraphRelationGesture.cs`, `DependencyGraphRows.cs` + tests
   - The mapper reads the authored `x` directly (no time projection) and marks the relation's `to` end for the arrowhead; placement math is plain coordinates (Tab a fixed x-step after the source, Enter one row below); the reloader keeps external edits reaching open graphs
   - _Requirements: 3.2 (backend half), 3.4_
   - _Prompt: Implement the task for spec dependency-graph, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Fork the timeline's session layer per the design - store, session, factory, unsubscriber, reloader, commands, mapper (authored x, arrowhead end marked), placement (plain-coordinate Tab/Enter/drop math), relation gesture (from=source depends on to=created), rows unchanged - with the forked tests re-pointed at .dgr fixtures | Restrictions: timeline untouched; one command per edit on the project history, undo intact; no time arithmetic anywhere | _Leverage: the timeline session layer file-for-file; TimelineDocumentReloader's watcher bridge pattern | Success: forked session and command suites pass, including undo round-trips and the reloader's external-change push. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.2 Discovery, providers, toolbox
+- [x] 2.2 Discovery, providers, toolbox
   - Files: `Diagram.cs`, `ServiceCollection.AddDependencyGraph.cs`, `DependencyGraphContextActionProvider.cs`, `DependencyGraphContextPropertyProvider.cs`, `DependencyGraphContextSourceResolver.cs`, `DependencyGraphToolboxProvider.cs` + tests; the service csproj wildcard already covers `src/diagrams/*/backend/*`, and the solution gains the two new projects
   - Origin `generic/dependencies`, name **Dependency Graph**, extension `.dgr`, document sibling; properties offer label and position with begin/end/duration rows absent; the toolbox offers **Node** only — no Moment
   - _Requirements: 1.1, 1.2, 3.5_
@@ -36,7 +36,7 @@ One worktree for the whole spec (`.claude/worktrees/depgraph`, per CLAUDE.md's o
 - [ ] 3. Client: the canvas, minus time, plus arrowheads
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 3.1 Fork the canvas and model
+- [-] 3.1 Fork the canvas and model
   - Files: `src/diagrams/dependency-graph/client/` — `DependencyGraphCanvas.tsx`, `dependencyGraphModel.ts`, `useDependencyGraphStream.ts`, `register.ts`, `dependency-graph.css`, `package.json` + tests; `TimelineRuler.tsx` and `timelineTicks.ts` have no counterparts
   - View window in plain units (`startX`/`pixelsPerUnit`); drag hints show `x · row`; edges keep the bezier curves and gain an SVG arrowhead marker at the `to` end; the scroll view: consume the centralized component if `small-refinements` has landed it, otherwise fork `TimelineScrollbars` temporarily with a comment pointing at the pending extraction
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
