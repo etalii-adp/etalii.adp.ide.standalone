@@ -2,8 +2,8 @@ timeline: 1
 elements:
   - id: discovery
     label: Discovery
-    begin: 2025-02-21
-    end: 2025-05-07
+    begin: 2024-11-21
+    end: 2025-02-04
     row: 9
   - id: build
     label: Test
@@ -21,14 +21,14 @@ elements:
     row: 8
   - id: a0p2gj4xxf8feve0nn8cxd1tz
     label: New element
-    begin: 2025-06-12
-    end: 2025-08-15
+    begin: 2025-05-21
+    end: 2025-08-31
     row: 6
   - id: 6ez55ypjmbp2zawzfvphb4rbr
     label: New element
-    begin: 2025-04-08
-    end: 2025-07-11
-    row: 14
+    begin: 2025-02-13
+    end: 2025-05-18
+    row: 16
   - id: 1x5mmoj5j4ia9i8w95tfm8x40
     label: New element
     begin: 2026-08-08
@@ -115,17 +115,32 @@ elements:
     row: 8
   - id: 3vhbnpa7zzitrxc6t93nc584v
     label: New moment
-    begin: 2024-12-03
-    row: 8
+    begin: 2024-09-24
+    row: 7
   - id: 2qghim1my3ekkmliufk5yk2w5
     label: New moment
-    begin: 2027-08-12
-    row: 6
+    begin: 2027-08-23
+    row: 7
   - id: 3wcctm69gg5exkr4ofyct04bv
     label: New element
-    begin: 2024-10-22
-    end: 2024-11-05
+    begin: 2025-04-30
+    end: 2025-07-09
     row: 11
+  - id: 3s7wp03sk5lipmr05cvl63o4n
+    label: New element
+    begin: 2027-04-30
+    end: 2027-08-10
+    row: 14
+  - id: 34m16sooctj2idd2klzpkba6t
+    label: David's test
+    begin: 2027-08-28
+    end: 2027-12-19
+    row: 3
+  - id: 4fq9mkfgiazha5cbsf56a1d98
+    label: New element
+    begin: 2028-03-07
+    end: 2028-06-16
+    row: 5
 connections:
   - id: c1
     from: discovery
@@ -227,3 +242,12 @@ connections:
   - id: 9dm7zb9l5tm8il668fzxthlvg
     from: discovery
     to: 3wcctm69gg5exkr4ofyct04bv
+  - id: cgte1bi3s0ndguk7vvup5b82q
+    from: 18g3b7b6kp2icm9vzi5ncd91a
+    to: 3s7wp03sk5lipmr05cvl63o4n
+  - id: b3ffrjeo21k9gq1l0ni577exf
+    from: 05fhm8rdmgccnxhkoc7sbimff
+    to: 34m16sooctj2idd2klzpkba6t
+  - id: bcb46r10af71c76sk1l1fxf7x
+    from: 34m16sooctj2idd2klzpkba6t
+    to: 4fq9mkfgiazha5cbsf56a1d98
