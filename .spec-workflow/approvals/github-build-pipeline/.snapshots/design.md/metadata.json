@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/github-build-pipeline/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-02T16:35:45.441Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788366945283_tfxvv3ykg",
+      "approvalTitle": "github-build-pipeline - Design"
+    }
+  ]
+}
