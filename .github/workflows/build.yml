@@ -1,0 +1,157 @@
+# The repository's gates, automated (github-build-pipeline spec). Every step runs the exact
+# command a person runs locally - CLAUDE.md defines them - and every step is judged by its
+# exit code, never by grepping output: a zero-test run exits 5 and FAILS here, because in this
+# repository "Zero tests ran" has always meant a broken build, not an empty suite.
+name: Build
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # fetch-depth: 0, not the default shallow clone: Nerdbank.GitVersioning computes the
+      # version from git height, and a shallow clone is the classic silently-wrong-version
+      # mistake - NB.GV fails loudly on one, which is this line's whole justification.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: src/global.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+
+      # NuGet, cached on the central version manifest - the one file every package version
+      # goes through in this repository.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('src/Directory.Packages.props', 'src/global.json') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Install client dependencies
+        working-directory: src
+        run: npm ci
+
+      # The four gates, verbatim and separate, so a red run names the gate that failed.
+      # No retries anywhere: the known teardown flakes are Windows file-lock races and this
+      # runner is Linux - if a flake reproduces here, it should be seen, not hidden.
+      - name: Backend tests
+        working-directory: src/backend
+        run: dotnet test --solution EtAlii.Adp.slnx
+
+      - name: Backend style gate
+        working-directory: src/backend
+        run: dotnet format style --verify-no-changes --severity info
+
+      - name: Client tests
+        working-directory: src/client
+        run: npm test
+
+      - name: Client typecheck
+        working-directory: src/client
+        run: npm run typecheck
+
+  release:
+    # Publishing is the merge's reward: pull requests gate only (Requirement 4.3).
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    needs: gates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: src/global.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/package-lock.json
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('src/Directory.Packages.props', 'src/global.json') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Compute the version
+        id: version
+        run: |
+          dotnet tool install --global nbgv
+          echo "semver=$(nbgv get-version --variable SemVer2)" >> "$GITHUB_OUTPUT"
+
+      # A published asset is never overwritten (Requirement 4.5): a re-run of an
+      # already-published commit fails here, loudly, and the gate job's result stands.
+      - name: Refuse to republish an existing version
+        run: |
+          if git ls-remote --tags origin "refs/tags/v${{ steps.version.outputs.semver }}" | grep -q .; then
+            echo "::error::v${{ steps.version.outputs.semver }} is already published - not overwriting a released asset."
+            exit 1
+          fi
+
+      - name: Install client dependencies
+        working-directory: src
+        run: npm ci
+
+      - name: Build the client
+        working-directory: src/client
+        run: npm run build
+
+      # Framework-dependent and platform-neutral: one ZIP for every OS, at the price of a
+      # .NET 10 runtime on the target machine - the design's recorded trade-off. The client's
+      # production build lands in wwwroot/, which is exactly what MapClientApp's production
+      # mode (no Client:DevServerUrl configured) serves.
+      - name: Publish the service
+        run: |
+          dotnet publish src/backend/EtAlii.Adp.Backend.Service -c Release -o publish
+          cp -r src/client/dist publish/wwwroot
+
+      - name: Write the release readme
+        run: |
+          cat > publish/readme.md <<EOF
+          # EtAlii.Adp ${{ steps.version.outputs.semver }}
+
+          Built from commit ${{ github.sha }}.
+
+          To run (requires the .NET 10 runtime):
+
+              dotnet EtAlii.Adp.Backend.Service.dll
+
+          then browse to the address it logs. Before the first login, set a username and
+          credential under "LocalAuthenticator" in appsettings.json - the shipped values are
+          deliberately empty.
+          EOF
+
+      - name: Zip
+        run: |
+          cd publish
+          zip -qr "../EtAlii.Adp-${{ steps.version.outputs.semver }}.zip" .
+
+      # gh is preinstalled on the runner; no third-party release action, no extra supply
+      # chain, only the built-in token (Requirement 4.4).
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ steps.version.outputs.semver }}" \
+            "EtAlii.Adp-${{ steps.version.outputs.semver }}.zip" \
+            --title "EtAlii.Adp ${{ steps.version.outputs.semver }}" \
+            --generate-notes
