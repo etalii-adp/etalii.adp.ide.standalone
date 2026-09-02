@@ -36,11 +36,11 @@ Grouped the way the repository works them: each group in one worktree, gated wit
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec github-build-pipeline, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked (the client gates regenerate proto stubs; commit the genuinely changed generated file, excluding line-ending-churn-only files per this repository's practice), merge the worktree into develop, retire it | Restrictions: do not merge on a failing gate | Success: all gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3. The login panel's version line
+- [x] 3. The login panel's version line
   - Worktree: `.claude/worktrees/pipeline-login`
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [-] 3.1 LoginPage calls DescribeProduct and renders the line
+- [x] 3.1 LoginPage calls DescribeProduct and renders the line
   - Files: `src/client/src/pages/LoginPage.tsx`, its test, the page's stylesheet
   - On mount, call `describeProduct` fire-and-forget into state; render `<p className="auth-version">` below the `auth-card` form only when a version arrived; style centered/small/`--color-text-muted` through the centralized variables, no literal colors
   - Tests: version shown when the mocked call answers; nothing rendered when it fails or answers empty (R3.3)
@@ -48,16 +48,16 @@ Grouped the way the repository works them: each group in one worktree, gated wit
   - _Requirements: 3.1, 3.2, 3.3_
   - _Prompt: Implement the task for spec github-build-pipeline, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer familiar with this client's auth pages | Task: Show the DescribeProduct version below the login form per the design - fire-and-forget on mount, .auth-version styled through the centralized theme variables, omitted entirely on failure or empty answer - with the two component tests and the tests.md end-to-end entry | Restrictions: no version string maintained in the client; no literal colors; the line must not shift the form's layout when absent | _Leverage: LoginPage.tsx's existing auth-card structure and stylesheet; the client's existing service-mocking test patterns | Success: version renders when answered, nothing renders when not, tests green, tests.md entry added. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.2 Gate and merge
+- [x] 3.2 Gate and merge
   - Run all four gates; merge `pipeline-login` into `develop`, retire the worktree
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec github-build-pipeline, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked; if clean, merge the worktree into develop and retire it | Restrictions: do not merge on a failing gate | Success: all gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. The workflow itself, and the docs that stop lying
+- [-] 4. The workflow itself, and the docs that stop lying
   - Worktree: `.claude/worktrees/pipeline-workflow`
   - _Requirements: 1.1-1.4, 4.1-4.5_
 
-- [ ] 4.1 `.github/workflows/build.yml`
+- [-] 4.1 `.github/workflows/build.yml`
   - Files: `.github/workflows/build.yml` (new)
   - The design's two jobs verbatim: gates on push-to-develop and PRs (checkout `fetch-depth: 0`, setup-dotnet honouring `src/global.json`, setup-node, NuGet/npm caching, `npm ci` at `src/`, the four gate commands as their own exit-code-judged steps, no retries); release only on push to develop (`permissions: contents: write`, `nbgv get-version`, the tag-exists loud-fail guard, client `npm run build`, `dotnet publish` framework-dependent, `dist/` into `publish/wwwroot/`, the readme naming version/commit/how-to-run, `EtAlii.Adp-$V.zip`, `gh release create v$V`)
   - _Requirements: 1.1, 1.2, 1.3, 4.1, 4.2, 4.3, 4.4, 4.5_
