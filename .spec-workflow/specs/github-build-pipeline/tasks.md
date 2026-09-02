@@ -2,11 +2,11 @@
 
 Grouped the way the repository works them: each group in one worktree, gated with the four existing gates before merging into `develop`. The workflow itself can only be proven by GitHub running it, so group 4 ends with a push-and-watch step rather than a local gate alone.
 
-- [ ] 1. Versioning: Nerdbank.GitVersioning wired in
+- [-] 1. Versioning: Nerdbank.GitVersioning wired in
   - Worktree: `.claude/worktrees/pipeline-version`
   - _Requirements: 2.1, 2.2, 2.4_
 
-- [ ] 1.1 `version.json` and the central package reference
+- [-] 1.1 `version.json` and the central package reference
   - Files: `version.json` (new, repository root), `src/Directory.Build.props`, `src/Directory.Packages.props`
   - `version.json`: an initial `0.1-alpha` version with `publicReleaseRefSpec` naming `develop`, per the design; the NB.GV package referenced once in `Directory.Build.props` with `PrivateAssets="all"`, its version pinned centrally
   - Verify locally: `dotnet build` any backend project and confirm the produced assembly's `AssemblyInformationalVersion` carries semver+height+commit; a worktree build must work too (NB.GV supports worktrees, but this repository lives in them - measure, don't assume)
