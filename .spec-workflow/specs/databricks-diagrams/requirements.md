@@ -183,6 +183,19 @@ This spec covers a **family of three Databricks diagram types** over the configu
 2. Every finding SHALL carry the file, the line where determinable, and a sentence a person can act on, surfaced through the standard problems panel with go-to navigation.
 3. Validation SHALL NOT attempt what needs a workspace (does the notebook exist? is the catalog real?) — those are connectivity-spec territory, and their absence here is deliberate.
 
+### Requirement 13 — Examples, in the module and in the central showcase
+
+**User Story:** As a user meeting these diagram types for the first time, I want ready-made examples I can open and poke at, so that the family explains itself the way every shipped type already does.
+
+#### Acceptance Criteria
+
+1. WHEN the module ships THEN it SHALL carry its own example sets under `src/diagrams/databricks/examples/`, one subfolder per set, following the shape the sibling modules established (`src/diagrams/c4/examples/reference/`, `src/diagrams/timeline/examples/example-1/`).
+2. WHEN the central showcase is browsed THEN `src/examples/diagrams/databricks/` SHALL hold the same family with per-example subfolders, exactly as `src/examples/diagrams/` already holds ansible-structure, azure-pipeline, c4, dependency-graph, mindmap, timeline and wardley-map.
+3. WHEN the examples are authored THEN every one of the three types SHALL be covered: at least one bundle example whose `databricks.yml` declares a dev and a prod target with a visible override; at least one job example whose task DAG exercises several task types, a `condition_task` with `outcome` edges and a non-default `run_if`; and at least one pipeline example with multiple libraries, a target catalog and schema, and notifications. One coherent scenario MAY provide all three (a bundle containing the job and the pipeline), and SHOULD, so the examples also demonstrate the reference edges of Requirement 3.3.
+4. WHEN an example is opened THEN it SHALL be complete: each config file beside the `.adp` registration that routes it, so double-clicking in the explorer opens the diagram with no setup step, and each example folder SHALL carry a short readme naming what the example demonstrates.
+5. WHEN validation (Requirement 12) runs over the shipped examples THEN it SHALL report no findings — the examples are the family's first test fixtures, and a red example is a broken example.
+6. WHEN the byte-identity discipline of Requirement 2 needs fixtures THEN the example files SHALL serve as some of them, and any extension that must not be line-ending-normalized SHALL gain its `.gitattributes` line per the repository's established rule.
+
 ## Sources
 
 * [Databricks Asset Bundles configuration](https://docs.databricks.com/aws/en/dev-tools/bundles/settings) — `databricks.yml` structure, targets and overrides
