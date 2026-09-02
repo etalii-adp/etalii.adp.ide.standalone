@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/dependency-graph/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-02T16:47:12.399Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788367632332_cqf5qkz1c",
+      "approvalTitle": "dependency-graph - Design"
+    }
+  ]
+}

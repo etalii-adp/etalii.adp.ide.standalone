@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/github-build-pipeline/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-02T16:47:05.511Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788367625347_eqvdybi7p",
+      "approvalTitle": "github-build-pipeline - Tasks"
+    }
+  ]
+}

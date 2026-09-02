@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/dependency-graph/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-02T14:58:52.514Z",
       "trigger": "initial",
+      "approvalId": "approval_1788361132332_hecu4urpq",
+      "approvalTitle": "dependency-graph - Requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-02T16:36:53.573Z",
+      "trigger": "approved",
       "approvalId": "approval_1788361132332_hecu4urpq",
       "approvalTitle": "dependency-graph - Requirements"
     }
