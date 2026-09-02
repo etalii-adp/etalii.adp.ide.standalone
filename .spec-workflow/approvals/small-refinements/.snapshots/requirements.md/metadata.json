@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/small-refinements/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-02T14:58:46.016Z",
       "trigger": "initial",
+      "approvalId": "approval_1788361125817_e6c2vgpat",
+      "approvalTitle": "small-refinements - Requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-02T16:31:35.084Z",
+      "trigger": "revision_requested",
       "approvalId": "approval_1788361125817_e6c2vgpat",
       "approvalTitle": "small-refinements - Requirements"
     }

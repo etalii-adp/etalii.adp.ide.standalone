@@ -30,7 +30,8 @@ All three serve the same product idea: the tool should *show* what it knows inst
 2. WHEN a thumb is dragged THEN the view SHALL pan accordingly — dragging a thumb only pans; zoom stays on the wheel and the ribbon, per the timeline's own rule.
 3. WHEN the view is panned or zoomed by any other means THEN the thumbs SHALL follow, staying an honest description of the view.
 4. WHEN the whole map fits in the view THEN the scrollbars SHALL claim the whole track (or hide, matching whatever the timeline does in that state) rather than inviting a pan that cannot happen.
-5. WHEN this lands THEN the scrollbar implementation SHALL NOT be a copy-paste second implementation if a shared one is reasonably extractable — the timeline's component is the reference; whether it is generalised and shared or mirrored is a design decision, but two independently drifting scrollbar behaviours is not an acceptable outcome.
+5. WHEN this lands THEN the scroll-view code and its styling SHALL be **centralized as one reusable piece** — a shared component (and its CSS) living in the client's shared code, not in any one diagram module — with the timeline **migrated onto it** and the mindmap consuming the same one. Copying `TimelineScrollbars` into the mindmap module is not an acceptable implementation; after this spec there SHALL be exactly one scroll-view implementation, positioned so the next canvas (the dependency graph among them) picks it up by importing it.
+6. WHEN the shared component is extracted THEN the timeline's behaviour SHALL be unchanged — its existing tests and manual checks still pass, and the extraction carries the timeline's own reasoning (a windowed bar over an unbounded plane, margin included) with it.
 
 ### Requirement 2 — Real data in the shipped examples
 
@@ -61,7 +62,7 @@ The current state, measured: the mindmap examples are keyboard-mash (`sdfsdf`, `
 ## Non-Functional Requirements
 
 ### Code Architecture and Modularity
-- **Reuse over duplication**: Requirement 1 explicitly prefers sharing or extracting the timeline's scrollbar logic over a second implementation; Requirement 3 reuses the existing routing/resolution seams rather than adding a parallel client-side notion of "diagram file".
+- **Reuse over duplication**: Requirement 1 mandates one centralized scroll-view component and stylesheet, shared by the timeline and the mindmap and importable by every later canvas; Requirement 3 reuses the existing routing/resolution seams rather than adding a parallel client-side notion of "diagram file".
 - **Centralized theming**: every color this spec introduces lives in `index.css`'s variable block, with both light and dark values, per the shell's existing convention.
 
 ### Performance
