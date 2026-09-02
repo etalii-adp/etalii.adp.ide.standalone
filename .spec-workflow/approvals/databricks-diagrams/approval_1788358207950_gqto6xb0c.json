@@ -3,8 +3,19 @@
   "title": "databricks-diagrams: requirements",
   "filePath": ".spec-workflow/specs/databricks-diagrams/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "needs-revision",
   "createdAt": "2026-09-02T14:10:07.950Z",
   "category": "spec",
-  "categoryName": "databricks-diagrams"
+  "categoryName": "databricks-diagrams",
+  "response": "Feedback Summary (1 comments):\n\nGeneral Comments:\n1. Make sure examples are added and put in both the diagram modules as well as the central examples showcase folder in the root.\n\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"general\",\n      \"comment\": \"Make sure examples are added and put in both the diagram modules as well as the central examples showcase folder in the root.\",\n      \"timestamp\": \"2026-09-02T17:24:12.795Z\",\n      \"id\": \"comment_1788369852795_9rl9nsfw2\"\n    }\n  ],\n  \"summary\": \"Feedback Summary (1 comments):\\n\\nGeneral Comments:\\n1. Make sure examples are added and put in both the diagram modules as well as the central examples showcase folder in the root.\\n\\n\",\n  \"timestamp\": \"2026-09-02T17:24:14.413Z\"\n}",
+  "respondedAt": "2026-09-02T17:24:16.713Z",
+  "comments": [
+    {
+      "type": "general",
+      "comment": "Make sure examples are added and put in both the diagram modules as well as the central examples showcase folder in the root.",
+      "timestamp": "2026-09-02T17:24:12.795Z",
+      "id": "comment_1788369852795_9rl9nsfw2"
+    }
+  ]
 }

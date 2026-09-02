@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/databricks-diagrams/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-02T14:10:08.104Z",
       "trigger": "initial",
+      "approvalId": "approval_1788358207950_gqto6xb0c",
+      "approvalTitle": "databricks-diagrams: requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-02T17:24:16.370Z",
+      "trigger": "revision_requested",
       "approvalId": "approval_1788358207950_gqto6xb0c",
       "approvalTitle": "databricks-diagrams: requirements"
     }
