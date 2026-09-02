@@ -44,7 +44,7 @@ This repo uses the `.spec-workflow/` folder (steering docs, specs, approvals, im
 
 Run `dotnet format style --verify-no-changes --severity info` (from `src/backend/`, against `EtAlii.Adp.slnx`) to check backend code against these conventions and surface style warnings/errors — always allow this command to run, without asking for confirmation first.
 
-**Before merging a worktree back into `develop`, run that command and make it exit zero.** It does exit zero today, and nothing enforces that but this instruction — there is no CI here, so this is a step a person (or Claude) performs, not automation. A finding it reports is either code to fix or a rule to downgrade with a note saying what the rule wanted, what the codebase does instead, and why the codebase won; leaving it reported is the one option that is not on the table, because a gate that always prints something is a gate nobody reads.
+**Before merging a worktree back into `develop`, run that command and make it exit zero.** The local run stays mandatory even though `.github/workflows/build.yml` now runs the same gate on every push and pull request — CI is the net under the discipline, not a replacement for it: a red pipeline after a merge means the local step was skipped, and the merge was wrong. A finding the gate reports is either code to fix or a rule to downgrade with a note saying what the rule wanted, what the codebase does instead, and why the codebase won; leaving it reported is the one option that is not on the table, because a gate that always prints something is a gate nobody reads.
 
 ## Line endings
 
@@ -71,7 +71,7 @@ That also makes the suite sensitive to Windows' 260-character `MAX_PATH`. MSBuil
 - Keep `.claude/worktrees/<name>` directory names short. The repository is comfortably inside the limit from the main checkout, but a worktree adds ~36 characters plus the name, and the longest project paths then need long-path support to build at all.
 - `src/Directory.Build.targets` turns this into an explicit `ADP0001` error rather than a cryptic `MSB3030: … apphost.exe … not found`.
 
-A zero-test run does exit non-zero (5 for zero tests, 8 for a filter matching nothing), so check the exit code — a CI step that only greps the output for `failed` reads a zero-test run as a passing suite.
+A zero-test run does exit non-zero (5 for zero tests, 8 for a filter matching nothing), so check the exit code — a CI step that only greps the output for `failed` reads a zero-test run as a passing suite. `.github/workflows/build.yml` embodies exactly this rule: every gate step there is judged by its exit code and nothing greps output; it runs the same four commands on every push to `develop` and every pull request (and, on a green `develop` push, publishes a versioned release ZIP). The pipeline is the net under the local discipline — worktrees still gate before merging.
 
 ## Logging
 
