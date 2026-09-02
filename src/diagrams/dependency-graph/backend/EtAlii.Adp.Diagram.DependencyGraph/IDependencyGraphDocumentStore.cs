@@ -1,0 +1,40 @@
+namespace EtAlii.Adp.Diagram.DependencyGraph;
+
+/// <summary>
+/// The one owner of dependency graph documents on disk: one per open graph, keyed by path, so two
+/// diagrams on the same file share it and an edit made through one is visible in the other.
+/// </summary>
+/// <remarks>
+/// No workspace root in any signature, deliberately. The pipeline store carries one because a
+/// pipeline's templates resolve relative to it; a graph is one file and reads nothing else, so a
+/// root would be a parameter every caller supplies and nothing uses.
+/// </remarks>
+public interface IDependencyGraphDocumentStore
+{
+    /// <summary>
+    /// The graph at <paramref name="path"/>, loaded once and kept. A file that is not there yet
+    /// yields an empty document rather than throwing, so a freshly created diagram opens and the
+    /// first save creates it.
+    /// </summary>
+    DependencyGraphDocumentEntry GetOrLoad(string path);
+
+    /// <summary>
+    /// Writes the document back and tells every session on it. Refuses while the document does
+    /// not parse, so a file that is already broken is never made worse.
+    /// </summary>
+    /// <returns>Empty on success, or why it was not written.</returns>
+    string Save(string path);
+
+    /// <summary>Forgets a document, so the next open reads it afresh.</summary>
+    void Forget(string path);
+
+    /// <summary>
+    /// Re-reads a document something outside changed, and tells the sessions on it. A no-op
+    /// while the store's own save of that path is in flight: its own write on disk is not an
+    /// external change, and must not bounce back as one.
+    /// </summary>
+    void Reload(string path);
+
+    /// <summary>Raised after a save, and after an external change is picked up.</summary>
+    event EventHandler<DependencyGraphDocumentChangedEventArgs>? Changed;
+}

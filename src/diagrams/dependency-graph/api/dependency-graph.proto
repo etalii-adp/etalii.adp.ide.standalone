@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package etalii.adp.dependencygraph;
+
+option csharp_namespace = "EtAlii.Adp.Diagram.DependencyGraph";
+
+// The payloads of a dependency graph's nodes and relations, packed into the core Element's Any.
+// Defined in the module's own api folder; no core proto is edited to add them. The id and canvas
+// position live on the core Element - this carries only what is the element's own.
+//
+// Nothing here is a time. This type is the timeline with time taken out: a node is a labelled box
+// at an authored position, and the horizontal coordinate means nothing beyond where the author
+// put it.
+
+// One node of the graph.
+message DependencyGraphElementPayload {
+  // The authored horizontal coordinate, in canvas units. The core Element's x already carries it
+  // for the canvas; the raw value is here for the property grid, which shows and edits the
+  // authored number rather than a pixel.
+  double x = 1;
+
+  // The authored row. The core Element's y already carries row * height for the canvas; the raw
+  // index is here for the property grid, for the same reason x is.
+  int32 row = 2;
+
+  // What the node is called. On the payload rather than the core Element because the core record
+  // carries no label of its own.
+  string label = 3;
+}
+
+// A directed depends-on edge: `from` depends on `to`. The direction is in the document rather
+// than in a drawing convention, and the canvas draws the arrowhead at the `to` end.
+message DependencyGraphRelationPayload {
+  string from_element_id = 1;
+  string to_element_id = 2;
+  string label = 3;
+}
