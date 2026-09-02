@@ -22,7 +22,7 @@ That third row is what makes this type worth specifying. An `azure-pipelines.yml
 * [`wardley-map`](../wardley-map/requirements.md) — which established that a module may read a document it did not invent, and that round-tripping a hand-authored text format needs a concrete syntax tree rather than a regenerator.
 * `IDiagramToolboxProvider` and `DescribeToolbox` — the toolbox seam the mindmap module already uses.
 * [`context-service`](../context-service/requirements.md), [`diagram-undo-redo`](../diagram-undo-redo/requirements.md), and `tech.md`'s **Commands** rule.
-* [`errors-and-warnings-panel`](../../../specs/errors-and-warnings-panel/requirements.md) — `IDiagramValidator`, which this type has unusually much to say through (Requirement 10).
+* [`errors-and-warnings-panel`](../errors-and-warnings-panel/requirements.md) — `IDiagramValidator`, which this type has unusually much to say through (Requirement 10).
 
 **What this spec changes in core.** Two things, both type-agnostic and both earned rather than convenient. First, a diagram type must be able to declare an extension **shared** — too common to claim on sight — so a bare `.yml` is not routed to whichever type happens to declare it (Requirement 2.2). Second, **Add must be offered on a file**, listing the types that declare that file's extension, so a user registers an existing file as a diagram by naming its type (Requirement 2.3). The second amends [`add-diagram-action`](../add-diagram-action/requirements.md) Requirement 4.3, which forbids Add on a file; Requirement 2.10 says why that reasoning does not cover this case. Everything else is a module registration.
 

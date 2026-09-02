@@ -6,17 +6,17 @@ This spec covers a **timeline diagram**: elements laid out left to right along a
 
 **What is genuinely new here, and what is not.** Two things are new. First, **an element occupies a period rather than a point**: every type so far positions a box, while here the box's *width is data* — begin and end are properties a user edits, and resizing the box edits them. Second, **the canvas needs chrome fixed to the viewport rather than to the diagram**: a time ruler along the bottom that stays put while the diagram scrolls beneath it, growing and shedding labels as the visible window moves. Everything else is deliberately not new — the connector geometry, the positional drag, the command/undo path, the toolbox, the property grid and the context actions are all mechanisms that already exist and that this type consumes unchanged.
 
-**Where it sits among the types already built.** [`mindmap-diagram`](../../archive/specs/mindmap-diagram/requirements.md) proved positions that are *computed* and never written back. [`wardley-map`](../../archive/specs/wardley-map/requirements.md) proved the mirror image, where coordinates are *authored* and moving one is an edit. This type is wardley's shape with **both axes authored, but neither of them a raw coordinate**: x is authored *as time*, through the begin and end a user types in the property grid or drags an element horizontally to change; y is authored *as a row*, an index a user changes by dragging an element vertically onto another row. That pairing — one axis carrying domain data, one axis carrying a placement the author chooses — is the thing worth proving, because it is the shape every scheduling, roadmap and process-over-time diagram takes.
+**Where it sits among the types already built.** [`mindmap-diagram`](../mindmap-diagram/requirements.md) proved positions that are *computed* and never written back. [`wardley-map`](../wardley-map/requirements.md) proved the mirror image, where coordinates are *authored* and moving one is an edit. This type is wardley's shape with **both axes authored, but neither of them a raw coordinate**: x is authored *as time*, through the begin and end a user types in the property grid or drags an element horizontally to change; y is authored *as a row*, an index a user changes by dragging an element vertically onto another row. That pairing — one axis carrying domain data, one axis carrying a placement the author chooses — is the thing worth proving, because it is the shape every scheduling, roadmap and process-over-time diagram takes.
 
 **Dependencies.** This spec redefines none of them:
 
-* [`adp-diagram-ide`](../../archive/specs/adp-diagram-ide/requirements.md) — the workspace shell, the pannable/zoomable canvas, read-only mode.
-* [`grpc-core-communication-specification`](../../archive/specs/grpc-core-communication-specification/requirements.md) — `Element`, `Delta`, `Point2D`, and the `Any` payload extension point.
-* [`diagram-workspace-tabs`](../../archive/specs/diagram-workspace-tabs/requirements.md) — the tab host and its unavailable state.
-* [`add-diagram-action`](../../archive/specs/add-diagram-action/requirements.md) and [`create-diagram-file`](../../archive/specs/create-diagram-file/requirements.md) — the Add action, the `.adp` file and its MIME first line.
-* [`context-service`](../../archive/specs/context-service/requirements.md) — the selection chain, `IContextActionProvider`, and the pushing of a selection's actions.
-* [`property-grid`](../../archive/specs/property-grid/requirements.md) — `IContextPropertyProvider`, `ContextProperty`, `DescribeProperties`/`SetProperty`.
-* [`diagram-undo-redo`](../../archive/specs/diagram-undo-redo/requirements.md) and `tech.md`'s **Commands** rule.
+* [`adp-diagram-ide`](../adp-diagram-ide/requirements.md) — the workspace shell, the pannable/zoomable canvas, read-only mode.
+* [`grpc-core-communication-specification`](../grpc-core-communication-specification/requirements.md) — `Element`, `Delta`, `Point2D`, and the `Any` payload extension point.
+* [`diagram-workspace-tabs`](../diagram-workspace-tabs/requirements.md) — the tab host and its unavailable state.
+* [`add-diagram-action`](../add-diagram-action/requirements.md) and [`create-diagram-file`](../create-diagram-file/requirements.md) — the Add action, the `.adp` file and its MIME first line.
+* [`context-service`](../context-service/requirements.md) — the selection chain, `IContextActionProvider`, and the pushing of a selection's actions.
+* [`property-grid`](../property-grid/requirements.md) — `IContextPropertyProvider`, `ContextProperty`, `DescribeProperties`/`SetProperty`.
+* [`diagram-undo-redo`](../diagram-undo-redo/requirements.md) and `tech.md`'s **Commands** rule.
 
 **Reused code is generic code, and generic code lives in the shared projects.** The mechanisms this type consumes are already there, and this module depends on the **projects** that hold them rather than on the diagram modules that happened to introduce them:
 
@@ -27,7 +27,7 @@ This spec covers a **timeline diagram**: elements laid out left to right along a
 | The positional move a drag dispatches | `MoveElementRequest.position` in `src/api/diagrams.proto`, `IDiagramSession.MoveElementToAsync` in `src/backend/EtAlii.Adp.Backend/Diagrams/` |
 | Connector anchors and curves (`sideAnchorOf`, `horizontalBezierPath`) | `src/client/src/canvas/connectors.ts` |
 
-The specs that introduced each of these — [`wardley-map`](../../archive/specs/wardley-map/requirements.md) for the positional move, [`azure-pipeline-diagram`](../../archive/specs/azure-pipeline-diagram/requirements.md) for the routing work — are **provenance, not dependencies**; nothing here reaches into another diagram module. WHERE implementation finds that something it needs still sits inside a diagram module rather than in the shared project it belongs to, **lifting it into that project is part of this work**, not a reason to copy it or to depend on the module.
+The specs that introduced each of these — [`wardley-map`](../wardley-map/requirements.md) for the positional move, [`azure-pipeline-diagram`](../azure-pipeline-diagram/requirements.md) for the routing work — are **provenance, not dependencies**; nothing here reaches into another diagram module. WHERE implementation finds that something it needs still sits inside a diagram module rather than in the shared project it belongs to, **lifting it into that project is part of this work**, not a reason to copy it or to depend on the module.
 
 **What this spec changes in core: nothing.** Stated positively because it is unusual and worth checking rather than assuming. The two new things above are both satisfied without a core change: the time ruler is drawn by this module's own canvas component, which knows its own scroll offset natively in the client and needs nothing from the backend to render view-fixed chrome; and the resize adorners are this module's own pointer handling, dispatching ordinary commands. If implementation finds a core change is genuinely required, that is a **finding to report** per the established practice, not a licence to make one quietly.
 
@@ -39,12 +39,12 @@ The specs that introduced each of these — [`wardley-map`](../../archive/specs/
 
 ## Alignment with Product Vision
 
-* [product.md](../../steering/product.md)'s **"Files are the source of truth"** — a timeline is a plain text document in the project folder, diffable and reviewable, and a document ADP did not change comes back byte-identical.
+* [product.md](../../../steering/product.md)'s **"Files are the source of truth"** — a timeline is a plain text document in the project folder, diffable and reviewable, and a document ADP did not change comes back byte-identical.
 * product.md's **"A familiar surface"** — dragging an element's edge to change when it ends is the interaction every scheduling tool has taught people to expect; this spec asks for that rather than a dialog.
-* [tech.md](../../steering/tech.md)'s **Diagram storage** — an established text format wherever possible, with ADP's own data never smuggled into a file another tool owns. Requirement 1.4 is where that rule is applied *and* where its limit is stated honestly.
+* [tech.md](../../../steering/tech.md)'s **Diagram storage** — an established text format wherever possible, with ADP's own data never smuggled into a file another tool owns. Requirement 1.4 is where that rule is applied *and* where its limit is stated honestly.
 * tech.md's **Specifying a diagram type** — its four mandatory aspects are Requirements 1–2 (file format), 4–8 (visualization), 9 (toolbox) and 11 (context actions and commands).
 * tech.md's **Commands** — every edit, including a drag and a resize, is a command with an inverse.
-* [structure.md](../../steering/structure.md)'s **dependency direction** — the module depends on core; core never depends on it. The time ruler is the test: it is timeline-specific chrome, so it lives in the module, not in the shell.
+* [structure.md](../../../steering/structure.md)'s **dependency direction** — the module depends on core; core never depends on it. The time ruler is the test: it is timeline-specific chrome, so it lives in the module, not in the shell.
 
 ## Requirements
 
@@ -177,12 +177,12 @@ The specs that introduced each of these — [`wardley-map`](../../archive/specs/
 
 #### Acceptance Criteria
 
-1. WHEN an element is selected THEN its properties SHALL be contributed through the `IContextPropertyProvider` seam [`property-grid`](../../archive/specs/property-grid/requirements.md) defines, as `ContextProperty` rows the panel renders without understanding — this module SHALL introduce no panel change.
+1. WHEN an element is selected THEN its properties SHALL be contributed through the `IContextPropertyProvider` seam [`property-grid`](../property-grid/requirements.md) defines, as `ContextProperty` rows the panel renders without understanding — this module SHALL introduce no panel change.
 2. WHEN an element is selected THEN the contributed properties SHALL include: **Label**, **Begin**, **End**, and **Row**.
 3. WHEN Begin or End is edited THEN the value SHALL be validated on commit and an invalid or malformed value SHALL be **rejected with a reason** rather than written — including a value that would put end before begin, which the grid SHALL refuse on exactly the terms the adorner does (Requirements 3.4, 7.4). The grid is the second of the two paths that must be closed for Requirement 3.4 to hold, and closing only one of them would leave the state reachable.
 4. WHEN a connection is selected THEN its **Label** SHALL be contributed, and its source and target SHALL be shown **read-only** with a reason saying that reconnecting is done on the canvas.
 5. WHEN a property is edited THEN the change SHALL travel as a command, land on the project's history, and reach every other open view through the existing delta stream — never written directly to the file by the panel.
-6. **Editor gap, stated rather than worked around:** `ContextPropertyEditor` now offers `Line`, `Text`, `Toggle` and `Choice` — the `Choice` editor having been added by [`azure-pipeline-diagram`](../../archive/specs/azure-pipeline-diagram/requirements.md), the type that first needed it. None of the four is date-aware, so Begin and End SHALL use `Line` with the validation in 10.3 until one exists. `property-grid` Requirement 9 owns that gap; this spec records a **date editor** as the next want against the same seam and SHALL NOT add a private one. WHERE implementation does add it, it SHALL be added to the shared seam for every type to use, exactly as `Choice` was.
+6. **Editor gap, stated rather than worked around:** `ContextPropertyEditor` now offers `Line`, `Text`, `Toggle` and `Choice` — the `Choice` editor having been added by [`azure-pipeline-diagram`](../azure-pipeline-diagram/requirements.md), the type that first needed it. None of the four is date-aware, so Begin and End SHALL use `Line` with the validation in 10.3 until one exists. `property-grid` Requirement 9 owns that gap; this spec records a **date editor** as the next want against the same seam and SHALL NOT add a private one. WHERE implementation does add it, it SHALL be added to the shared seam for every type to use, exactly as `Choice` was.
 
 ### Requirement 11 — Context actions and commands
 

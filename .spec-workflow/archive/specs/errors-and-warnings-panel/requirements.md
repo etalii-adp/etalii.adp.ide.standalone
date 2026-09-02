@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The Errors & Warnings panel is the last of the workspace shell's panels still standing empty — [`ErrorsWarningsPanel.tsx`](../../../src/client/src/shell/panels/ErrorsWarningsPanel.tsx) is a `PanelPlaceholder` saying "Problems detected in the current project." This spec makes it real: **one list of everything wrong with the project**, kept current, and the means to ask for it to be rechecked.
+The Errors & Warnings panel is the last of the workspace shell's panels still standing empty — [`ErrorsWarningsPanel.tsx`](../../../../src/client/src/shell/panels/ErrorsWarningsPanel.tsx) is a `PanelPlaceholder` saying "Problems detected in the current project." This spec makes it real: **one list of everything wrong with the project**, kept current, and the means to ask for it to be rechecked.
 
 Two things feed that list, and they are different in kind:
 
@@ -13,17 +13,17 @@ The second is expensive, so its results are **cached** — keyed per file, persi
 
 Those requests come at three scopes, and each is an ordinary context action rather than an RPC of its own: **a diagram** (its context menu and the ribbon), **a folder** (its context menu, covering everything beneath it), and **everything** — "Validate all", offered on the panel's own right-click menu and, when the panel has focus, in the ribbon.
 
-What counts as a problem is deliberately not core's business. Core contributes the problems it can already see — [`DiagramFileRouter`](../../../src/backend/EtAlii.Adp.Backend/Hierarchy/DiagramFileRouter.cs) already decides a file is `UnknownType`, `Ambiguous` or `Unreadable`, and each of those *is* a problem — and each diagram type contributes its own through a seam alongside the one it already uses to create an empty document.
+What counts as a problem is deliberately not core's business. Core contributes the problems it can already see — [`DiagramFileRouter`](../../../../src/backend/EtAlii.Adp.Backend/Hierarchy/DiagramFileRouter.cs) already decides a file is `UnknownType`, `Ambiguous` or `Unreadable`, and each of those *is* a problem — and each diagram type contributes its own through a seam alongside the one it already uses to create an empty document.
 
-**Dependencies:** [`context-service`](../../archive/specs/context-service/requirements.md) (the `Watch` stream, the selection that a problem's `PROBLEMS` source already has a place in, the provider seam every action reaches the ribbon and the menu through), [`project-root-folder-explorer`](../../archive/specs/project-root-folder-explorer/requirements.md) (the watcher that reports a changed file), [`create-diagram-file`](../../archive/specs/create-diagram-file/requirements.md) and [`mindmap-diagram`](../../archive/specs/mindmap-diagram/requirements.md) (`.adp` registration, the router, and the first diagram type with a body worth validating).
+**Dependencies:** [`context-service`](../context-service/requirements.md) (the `Watch` stream, the selection that a problem's `PROBLEMS` source already has a place in, the provider seam every action reaches the ribbon and the menu through), [`project-root-folder-explorer`](../project-root-folder-explorer/requirements.md) (the watcher that reports a changed file), [`create-diagram-file`](../create-diagram-file/requirements.md) and [`mindmap-diagram`](../mindmap-diagram/requirements.md) (`.adp` registration, the router, and the first diagram type with a body worth validating).
 
 ## Alignment with Product Vision
 
-* [product.md](../../steering/product.md)'s **"A familiar surface"**: every IDE has this panel, and the expectations that come with it — a list you can click to get to the thing, a count, and a way to rebuild it on demand. This spec meets those rather than inventing a new idea of what "problems" means.
+* [product.md](../../../steering/product.md)'s **"A familiar surface"**: every IDE has this panel, and the expectations that come with it — a list you can click to get to the thing, a count, and a way to rebuild it on demand. This spec meets those rather than inventing a new idea of what "problems" means.
 * product.md's **"Files are the source of truth"**: the panel reports on what is *on disk*, not on what happens to be open. A diagram nobody opened this session still appears if it is broken, which is the whole reason for the traversal.
-* [tech.md](../../steering/tech.md)'s **frontend-backend synchronization**: problems are state the backend owns and pushes; the client renders what arrives and never computes a problem itself.
+* [tech.md](../../../steering/tech.md)'s **frontend-backend synchronization**: problems are state the backend owns and pushes; the client renders what arrives and never computes a problem itself.
 * tech.md's **Context service** rules: the Validate actions are `IContextActionProvider` contributions with their shortcuts declared as data, so they reach the ribbon, the right-click menu and the keyboard through the one path — no new RPC, no key-to-action table on the client.
-* [structure.md](../../steering/structure.md)'s **Core vs diagram-type plugins**: core knows how to *collect* problems and nothing about what makes a particular diagram wrong. A type's rules live in that type's module, behind a seam shaped like the `IDiagramDocumentFactory` one it already implements.
+* [structure.md](../../../steering/structure.md)'s **Core vs diagram-type plugins**: core knows how to *collect* problems and nothing about what makes a particular diagram wrong. A type's rules live in that type's module, behind a seam shaped like the `IDiagramDocumentFactory` one it already implements.
 
 ## Requirements
 
@@ -122,7 +122,7 @@ What counts as a problem is deliberately not core's business. Core contributes t
 4. WHEN the Errors & Warnings panel has focus THEN **Validate all** SHALL appear in the ribbon - which follows from the panel reporting itself as the current selection, exactly as the explorer and the canvas already do, rather than from the ribbon being taught about this panel.
 5. WHEN an action is offered THEN its label, icon, availability, unavailable reason and shortcut SHALL all be data supplied by the backend, so the client gains no knowledge of what Validate means.
 6. IF there are no diagram types with validators deployed THEN Validate SHALL still be offered, since core's own router problems (Requirement 2.2) are worth finding on their own.
-7. WHEN a problem in the panel is activated THEN the system SHALL reveal and select the file it concerns - the flow [`context-service`](../../archive/specs/context-service/requirements.md) already catalogs, where a problem *references* the file and, within it, the element or line.
+7. WHEN a problem in the panel is activated THEN the system SHALL reveal and select the file it concerns - the flow [`context-service`](../context-service/requirements.md) already catalogs, where a problem *references* the file and, within it, the element or line.
 
 ### Requirement 8 — Keyboard shortcuts that match the conventions already in use
 

@@ -100,7 +100,7 @@ If `webservers.yml` names a role that has no folder, the errors-and-warnings pan
 * [`mindmap-diagram`](../mindmap-diagram/requirements.md) / [`wardley-map`](../wardley-map/requirements.md) / [`azure-pipeline-diagram`](../azure-pipeline-diagram/requirements.md) — the pluggable type model, reading documents ADP did not invent, and `Add` on existing content.
 * [`add-diagram-action`](../add-diagram-action/requirements.md) and [`create-diagram-file`](../create-diagram-file/requirements.md) — the Add flow that creates the `.adp` registration.
 * [`context-service`](../context-service/requirements.md) — targets, scopes, selection.
-* [`errors-and-warnings-panel`](../../../specs/errors-and-warnings-panel/requirements.md) — `IDiagramValidator` (Requirement 9).
+* [`errors-and-warnings-panel`](../errors-and-warnings-panel/requirements.md) — `IDiagramValidator` (Requirement 9).
 * [`property-grid`](../property-grid/requirements.md) — `IContextPropertyProvider`, and specifically its Requirement 4: **read-only is a reason, and the reason is a contract** (Requirement 10 builds on exactly that).
 
 **What this spec changes in core: nothing new.** The one novelty — a diagram whose subject is the `.adp`'s *folder* rather than a body file — fits the existing contract: the type declares **no document extension**, so the `.adp` itself is the registration *and* the document (`DiagramRouting.Routed` with `BodyPath == RegistrationPath` already models this), and the Add flow already offers type creation on a folder. The module resolves "the subject" as *the folder the `.adp` sits in*.

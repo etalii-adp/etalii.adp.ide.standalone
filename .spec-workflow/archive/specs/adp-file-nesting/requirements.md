@@ -14,9 +14,9 @@ The measurements and code references below were taken from the tree at `21e806a3
 
 ## Alignment with Product Vision
 
-- [product.md](../../steering/product.md)'s **file-native** premise: the nesting is a presentation of what the filesystem already contains. No index, no database, no hidden state — `test.first.adp` and `test.second.adp` are real files that a user can see, copy and commit, and the tree only stops pretending they are unrelated to `test.dsl`.
-- [product.md](../../steering/product.md)'s **"A familiar surface"**: nesting a generated or companion file under its subject is what Visual Studio's file nesting and VS Code's file nesting both do, so the shape is one users arrive already knowing.
-- [tech.md](../../steering/tech.md)'s **Context** rule — "the context service owns what is selected" — is the reason Requirement 7 does not adopt single-click activation. Selection is load-bearing.
+- [product.md](../../../steering/product.md)'s **file-native** premise: the nesting is a presentation of what the filesystem already contains. No index, no database, no hidden state — `test.first.adp` and `test.second.adp` are real files that a user can see, copy and commit, and the tree only stops pretending they are unrelated to `test.dsl`.
+- [product.md](../../../steering/product.md)'s **"A familiar surface"**: nesting a generated or companion file under its subject is what Visual Studio's file nesting and VS Code's file nesting both do, so the shape is one users arrive already knowing.
+- [tech.md](../../../steering/tech.md)'s **Context** rule — "the context service owns what is selected" — is the reason Requirement 7 does not adopt single-click activation. Selection is load-bearing.
 
 ## Requirements
 
@@ -180,11 +180,11 @@ This count was originally six. The three that were missed — sort, icon, activa
 12.3. The naming, derivation and ambiguity rules of Requirements 1 and 2 SHALL be covered by unit tests against `DiagramFileName` and `DiagramFilePair`, which already have test files.
 12.4. Rename in both directions, including the atomicity of 5.3 and the refusal of 5.2, SHALL be covered by tests on `RenameEntryCommandHandler`.
 12.5. The client tree's expandable-file behaviour SHALL be covered in `ExplorerTreePanel.test.tsx`.
-12.6. Per [CLAUDE.md](../../../CLAUDE.md), any bug found during implementation or verification SHALL leave a guard behind — a test where one can express it, an entry in `tests.md` where only a running app can.
+12.6. Per [CLAUDE.md](../../../../CLAUDE.md), any bug found during implementation or verification SHALL leave a guard behind — a test where one can express it, an entry in `tests.md` where only a running app can.
 
 ## What this spec does not change
 
-- **No new diagram type.** This is hierarchy and routing, so [docs/diagrams.md](../../../docs/diagrams.md) needs no new row and the four mandatory aspects of a diagram-type spec do not apply.
+- **No new diagram type.** This is hierarchy and routing, so [docs/diagrams.md](../../../../docs/diagrams.md) needs no new row and the four mandatory aspects of a diagram-type spec do not apply.
 - **No change to the `.adp` file format.** The first line stays the MIME type; `body:` and `view:` headers keep their meaning.
 - **No change to how a diagram renders** once opened.
 - **No change to the tree's activation gesture** for any node type, per Requirement 7's note.

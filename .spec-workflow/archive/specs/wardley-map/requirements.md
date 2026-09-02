@@ -26,7 +26,7 @@ The first revision of this document was written when the mindmap was the only sh
 * [`mindmap-diagram`](../mindmap-diagram/requirements.md) — which introduced, and this spec reuses unchanged: `DiagramDefinition.Extension`, `IDiagramDocumentFactory`, `ContextSource.element_id`, `ContextScope.DIAGRAM_ELEMENT`, the `IDiagramSession` seam of its Requirement 13, and `DiagramService`'s `Open` + `UpdateView` legs.
 * [`c4-diagrams`](../c4-diagrams/requirements.md) — the sidecar rule for data a foreign format has no place for (Requirements 3.5–3.6), the `body:` registration header, and the pure-function validator shape.
 * [`context-service`](../context-service/requirements.md) — the selection chain and the pushing of a selection's actions.
-* [`errors-and-warnings-panel`](../../../specs/errors-and-warnings-panel/requirements.md) — where a validator's problems go (its Requirement 3).
+* [`errors-and-warnings-panel`](../errors-and-warnings-panel/requirements.md) — where a validator's problems go (its Requirement 3).
 * [`property-grid`](../property-grid/requirements.md) — the per-scope property provider, the read-only reason, the commit cadence.
 * [`diagram-undo-redo`](../diagram-undo-redo/requirements.md) and `tech.md`'s **Commands** rule.
 

@@ -19,7 +19,7 @@ This spec covers the **PlantUML diagram module** — the type `docs/diagrams.md`
 * [`diagram-workspace-tabs`](../../archive/specs/diagram-workspace-tabs/requirements.md) — the tab host and its unavailable state.
 * [`context-service`](../../archive/specs/context-service/requirements.md) — the selection chain, `IContextActionProvider`, and the pushing of a selection's actions.
 * [`property-grid`](../../archive/specs/property-grid/requirements.md) — `IContextPropertyProvider`, `ContextProperty`, `DescribeProperties`/`SetProperty`.
-* [`errors-and-warnings-panel`](../errors-and-warnings-panel/requirements.md) — where Requirement 11's diagnostics surface.
+* [`errors-and-warnings-panel`](../../archive/specs/errors-and-warnings-panel/requirements.md) — where Requirement 11's diagnostics surface.
 * [`diagram-undo-redo`](../../archive/specs/diagram-undo-redo/requirements.md) and `tech.md`'s **Commands** rule.
 
 **What this spec changes in core.** One thing, named rather than smuggled: ADP has no **drawing-tool** concept. The Toolbox can drop an element onto the canvas (`DescribeToolbox`, `drop_action_id`), but there is no gesture for *drag from one element to another to connect them*, which is how every diagram editor creates a relationship and which Requirement 8 needs. That gesture is core — the canvas owns pointer input — while *which* relationship kinds exist is the module's, described as data exactly as toolbox items and context actions already are. This is the only core change this spec asks for. If anything else in core turns out to need changing, that is a finding worth reporting rather than a licence to change it.
@@ -266,7 +266,7 @@ This spec covers the **PlantUML diagram module** — the type `docs/diagrams.md`
 
 #### Acceptance Criteria
 
-1. WHEN a document parses THEN any diagnostic SHALL be reported through the [`errors-and-warnings-panel`](../errors-and-warnings-panel/requirements.md), not through a canvas overlay of this module's own invention.
+1. WHEN a document parses THEN any diagnostic SHALL be reported through the [`errors-and-warnings-panel`](../../archive/specs/errors-and-warnings-panel/requirements.md), not through a canvas overlay of this module's own invention.
 2. WHEN a diagnostic is reported THEN it SHALL name the file, the line where it applies, and what the consequence is — "this element is not drawn", "this edit is unavailable" — rather than only what the construct was.
 3. WHEN an `!include` or other structure-bearing construct is unresolved (Requirement 3.4) THEN it SHALL be reported as a **warning**, because the canvas is showing less than the file means and the user is entitled to know.
 4. WHEN a construct is preserved but not modelled (Requirement 3.3) THEN it SHALL be reported at most **once per kind per document**, as information rather than as a warning — a document with forty `skinparam` lines has one fact worth stating, not forty.

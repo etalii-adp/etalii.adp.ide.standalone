@@ -20,10 +20,10 @@ The catalog row for this type already exists (`docs/diagrams.md`, `generic/depen
 
 **Dependencies.** This spec redefines none of them:
 
-* [`timeline-diagram`](../timeline-diagram/requirements.md) — the module being duplicated; its requirements apply here wholesale except where this document deletes or overrides them.
+* [`timeline-diagram`](../../archive/specs/timeline-diagram/requirements.md) — the module being duplicated; its requirements apply here wholesale except where this document deletes or overrides them.
 * structure.md — the `diagrams/<diagram>/` module layout and the example-replication rule.
 * tech.md's **Commands** rule and [`diagram-undo-redo`](../../archive/specs/diagram-undo-redo/requirements.md) — every edit is one undo away.
-* [`errors-and-warnings-panel`](../errors-and-warnings-panel/requirements.md) — where this type's validation findings land.
+* [`errors-and-warnings-panel`](../../archive/specs/errors-and-warnings-panel/requirements.md) — where this type's validation findings land.
 
 ## Alignment with Product Vision
 

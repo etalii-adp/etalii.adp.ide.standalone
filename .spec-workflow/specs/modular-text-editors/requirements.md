@@ -36,7 +36,7 @@ Saving in any of them goes through the same command pipeline every other edit us
 * [`project-root-folder-explorer`](../../archive/specs/project-root-folder-explorer/requirements.md) — where a file is double-clicked, and the watcher that reports an external change.
 * [`context-service`](../../archive/specs/context-service/requirements.md) — selection, scopes, and the `IContextActionProvider` that offers **Open as text**.
 * [`diagram-undo-redo`](../../archive/specs/diagram-undo-redo/requirements.md) and tech.md's **Commands** rule — a save is a command.
-* [`errors-and-warnings-panel`](../errors-and-warnings-panel/requirements.md) — where a problem's line number leads (Requirement 8).
+* [`errors-and-warnings-panel`](../../archive/specs/errors-and-warnings-panel/requirements.md) — where a problem's line number leads (Requirement 8).
 * [`property-grid`](../../archive/specs/property-grid/requirements.md) — an open file's own properties (Requirement 9).
 
 ## Alignment with Product Vision

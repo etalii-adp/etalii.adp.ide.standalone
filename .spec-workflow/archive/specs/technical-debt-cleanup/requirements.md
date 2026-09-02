@@ -10,17 +10,17 @@ The governing constraint is that this work changes no behaviour. The value of a 
 
 ## Alignment with Product Vision
 
-- [structure.md](../../steering/structure.md)'s **`EtAlii.Adp` (Library)** — "Contains all reusable helper classes, mechanisms and extension methods" — is the stated home for anything this spec centralizes. The library exists and already holds `ShortGuid`; several findings below are helpers that should have gone there and did not.
-- [tech.md](../../steering/tech.md)'s **"Treat an InspectCode finding the way an `.editorconfig` finding is treated"**: fix it, or record a deliberate decision not to. This spec applies that rule to findings gathered by hand, and Requirement 10 applies it in the one direction the steering doc did not anticipate — correcting a steering claim that measurement has overtaken.
-- [tech.md](../../steering/tech.md)'s **"Expect a backlog ... and do not treat it as a gate on unrelated work"**: this spec is explicitly not a gate. Requirement 11 sequences it around in-flight specs rather than in front of them.
+- [structure.md](../../../steering/structure.md)'s **`EtAlii.Adp` (Library)** — "Contains all reusable helper classes, mechanisms and extension methods" — is the stated home for anything this spec centralizes. The library exists and already holds `ShortGuid`; several findings below are helpers that should have gone there and did not.
+- [tech.md](../../../steering/tech.md)'s **"Treat an InspectCode finding the way an `.editorconfig` finding is treated"**: fix it, or record a deliberate decision not to. This spec applies that rule to findings gathered by hand, and Requirement 10 applies it in the one direction the steering doc did not anticipate — correcting a steering claim that measurement has overtaken.
+- [tech.md](../../../steering/tech.md)'s **"Expect a backlog ... and do not treat it as a gate on unrelated work"**: this spec is explicitly not a gate. Requirement 11 sequences it around in-flight specs rather than in front of them.
 
 ## What this spec is not
 
 Stated up front, because each of these is a plausible reading of "cleanup" that would make the work unbounded:
 
-- **Not a behaviour change.** No bug fixes, no new features, no changed output. A defect found while cleaning is recorded and routed per [CLAUDE.md](../../../CLAUDE.md)'s bug rule, not fixed inside this spec's commits.
+- **Not a behaviour change.** No bug fixes, no new features, no changed output. A defect found while cleaning is recorded and routed per [CLAUDE.md](../../../../CLAUDE.md)'s bug rule, not fixed inside this spec's commits.
 - **Not a re-opening of approved specs.** Where a module's shape was approved through a spec, converging it is a change to that spec's territory and needs its own approval.
-- **Not a rewrite of the 48 stub modules' identity data.** Their origins, titles and descriptions are catalog content, governed by [docs/diagrams.md](../../../docs/diagrams.md).
+- **Not a rewrite of the 48 stub modules' identity data.** Their origins, titles and descriptions are catalog content, governed by [docs/diagrams.md](../../../../docs/diagrams.md).
 - **Not a performance exercise.** Structure only.
 - **Not a dependency upgrade or a build-system change.**
 
@@ -87,7 +87,7 @@ There is a precedent for where this belongs. The "every definition carries a des
 
 #### Acceptance Criteria
 
-5.1. One shape SHALL be chosen, and the choice SHALL be recorded in [tech.md](../../steering/tech.md) so the next module follows it without re-deciding.
+5.1. One shape SHALL be chosen, and the choice SHALL be recorded in [tech.md](../../../steering/tech.md) so the next module follows it without re-deciding.
 5.2. The five implemented modules SHALL be brought to that shape.
 5.3. WHERE splitting is genuinely warranted by size, the recorded rule SHALL say at what point to split, rather than leaving it to taste.
 
@@ -148,7 +148,7 @@ There is a precedent for where this belongs. The "every definition carries a des
 
 **User Story:** As a developer reading the steering docs, I want their factual claims to be true, so that I can trust the rest of what they say.
 
-**Finding:** [tech.md](../../steering/tech.md) states that "roughly a hundred nested types remain from before the rule" and that "they are being lifted out". The measured count is 2. The lifting was substantially completed and the document was never updated, so it now overstates its own backlog roughly fiftyfold.
+**Finding:** [tech.md](../../../steering/tech.md) states that "roughly a hundred nested types remain from before the rule" and that "they are being lifted out". The measured count is 2. The lifting was substantially completed and the document was never updated, so it now overstates its own backlog roughly fiftyfold.
 
 This matters beyond the number. A steering document telling a developer to expect a hundred offenders is telling them the rule is widely broken and their own violation would be unremarkable. The true state — two left — supports the opposite conclusion.
 
@@ -170,7 +170,7 @@ This matters beyond the number. A steering document telling a developer to expec
 11.2. Requirements SHALL be ordered by blast radius, smallest first: Requirements 2 and 9 touch a handful of files; Requirement 4 touches 48 projects. The small ones establish that the process works before the large one is attempted.
 11.3. BEFORE a requirement touching a module lands, the specs currently active against that module SHALL be checked, and the merge SHALL be timed against them.
 11.4. This spec SHALL NOT block any feature spec. WHERE cleanup and feature work conflict, the feature work wins and the cleanup rebases.
-11.5. Per [CLAUDE.md](../../../CLAUDE.md), each piece SHALL be done in its own worktree with a short directory name, since the repository sits close enough to Windows' `MAX_PATH` limit that a long worktree name breaks the build in a way that reports as `Zero tests ran` rather than as a failure.
+11.5. Per [CLAUDE.md](../../../../CLAUDE.md), each piece SHALL be done in its own worktree with a short directory name, since the repository sits close enough to Windows' `MAX_PATH` limit that a long worktree name breaks the build in a way that reports as `Zero tests ran` rather than as a failure.
 
 ### Requirement 12 — Close the client test-coverage gap this survey exposed
 
