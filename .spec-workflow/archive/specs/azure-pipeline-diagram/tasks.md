@@ -50,7 +50,7 @@
   - _Prompt: Implement the task for spec azure-pipeline-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Verify DiagramOptionTree.Build handles a filtered definition list and cover it with a test | Restrictions: do not change the grouping rules; do not special-case any diagram type | Success: a filtered list of one vendor's types builds a correct tree and the existing tests still pass_
 
 - [x] 5. Revise `add-diagram-action` Requirement 4.3 — **the gate**
-  - File: `.spec-workflow/specs/add-diagram-action/requirements.md` (edited)
+  - File: `.spec-workflow/archive/specs/add-diagram-action/requirements.md` (edited)
   - Requirement 4.3 forbids Add on a file. Revise it to distinguish the two acts: Add on a folder creates a diagram *inside* it; Add on a file registers that file by creating an `.adp` *beside* it, in the file's parent folder. Keep the original reasoning visible rather than deleting it, as that spec's own "Correction from the first version" note does elsewhere
   - Commit the change on `develop` per CLAUDE.md, and raise it for approval — this is a change to an approved document, so it does not go in quietly
   - Purpose: task 6 implements a behaviour the approved spec currently forbids

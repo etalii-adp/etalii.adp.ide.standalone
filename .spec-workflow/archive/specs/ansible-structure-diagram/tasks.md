@@ -259,7 +259,7 @@
   - _Prompt: Implement the task for spec ansible-structure-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer writing integration tests against the real host | Task: Cover the Add-open-select-follow flow and the validate-fix-clear flow end to end | Restrictions: use the real host and the real module registrations; assert that Add wrote exactly one file; the clear must come from the watcher, not from an explicit revalidate call | Success: both flows pass, and the validation flow fails if task 6's walk-up is removed_
 
 - [x] 26. Catalog, manual pass and implementation log
-  - File: `docs/diagrams.md` (edited), `tests.md` (edited), `.spec-workflow/specs/ansible-structure-diagram/Implementation Logs/` (new)
+  - File: `docs/diagrams.md` (edited), `tests.md` (edited), `.spec-workflow/archive/specs/ansible-structure-diagram/Implementation Logs/` (new)
   - Move the `ansible/structure` row from 📝 Specified to ✅ Implemented per CLAUDE.md's catalog rule
   - Run the app from the worktree on a free port pair and verify by hand: right-click a folder → **Add… → Ansible project structure** creates one file; the diagram opens; double-clicking the `nginx` role reveals `roles/nginx/tasks/main.yml` in the explorer; selecting an edge shows which file and directive declared it; deleting `roles/common/` in a text editor moves both the diagram and the problems panel; the toolbox says the type has no entries and the ribbon offers no edit; `git status` is clean apart from the deletion made by hand. Revert both port files before merging
   - Anything the harness cannot exercise goes into `tests.md` as a step-by-step check rather than being claimed

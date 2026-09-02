@@ -23,12 +23,12 @@
 ## Phase A — the gate, and the corpus
 
 - [x] 1. Correct the two stale statements in the approved requirements
-  - File: `.spec-workflow/specs/wardley-map/requirements.md` (edited)
+  - File: `.spec-workflow/archive/specs/wardley-map/requirements.md` (edited)
   - Requirement 12.4: replace "This spec anticipates no core change at all" with the truth — one core change was found, reported per Requirement 12.5, accepted, and implemented elsewhere: `MoveElementRequest.position` and `IDiagramSession.MoveElementToAsync`. Say that this module **consumes** it rather than adding it, and that it removed C4's `"x,y"` encoding rather than adding a special case
   - The `Code style` bullet under *Code Architecture and Modularity*: replace "SHALL satisfy `src/.editorconfig` as `dotnet format style --verify-no-changes --severity info` checks it" with "SHALL introduce no new style-diagnostic categories beyond those the repository already reports", citing `quality-gates` Requirement 5 for the gate itself. Measured on an untouched checkout the gate reports 115 `IMPORTS` errors, 131 `IDE0130` and 19 `IDE0046`; `IDE0130` fires on the `_Model`/`Commands` folder convention `tech.md` and `structure.md` mandate, so a module obeying the steering documents cannot avoid it
   - This is an edit to an **approved** document, so it needs a fresh approval request and a dashboard approval before task 3 starts. Requirements 1–11 and 13–15 are untouched, and the numbering other specs cite stays fixed
   - Purpose: nothing should be implemented against a requirement that is known to be false
-  - _Leverage: .spec-workflow/specs/wardley-map/design.md (Deviations and notes, which states both corrections)_
+  - _Leverage: .spec-workflow/archive/specs/wardley-map/design.md (Deviations and notes, which states both corrections)_
   - _Requirements: 12.4, 12.5_
   - _Prompt: Implement the task for spec wardley-map, first run spec-workflow-guide to get the workflow guide then implement the task: Role: technical writer maintaining a requirements document | Task: Correct Requirement 12.4 and the Code style non-functional clause to match what is true, then request approval | Restrictions: change only those two statements; do not renumber anything, since c4-diagrams, plantuml-uml and azure-pipeline-diagram cite this document by number; do not proceed past this task on a verbal approval | Success: both statements are accurate, an approval request exists against the edited file, and every other requirement is byte-identical_
 
