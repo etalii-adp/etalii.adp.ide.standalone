@@ -48,6 +48,9 @@
     <Project Path="../diagrams/d2-diagram/backend/EtAlii.Adp.Diagram.D2Diagram/EtAlii.Adp.Diagram.D2Diagram.csproj" />
     <Project Path="../diagrams/ddd-context-map/backend/EtAlii.Adp.Diagram.DddContextMap/EtAlii.Adp.Diagram.DddContextMap.csproj" />
     <Project Path="../diagrams/ddd-event-storming/backend/EtAlii.Adp.Diagram.DddEventStorming/EtAlii.Adp.Diagram.DddEventStorming.csproj" />
+    <!-- The timeline minus time, plus directed edges: a fork, and its own module. -->
+    <Project Path="../diagrams/dependency-graph/backend/EtAlii.Adp.Diagram.DependencyGraph/EtAlii.Adp.Diagram.DependencyGraph.csproj" />
+    <Project Path="../diagrams/dependency-graph/backend/EtAlii.Adp.Diagram.DependencyGraph.Tests/EtAlii.Adp.Diagram.DependencyGraph.Tests.csproj" />
     <Project Path="../diagrams/dfd-data-flow/backend/EtAlii.Adp.Diagram.DfdDataFlow/EtAlii.Adp.Diagram.DfdDataFlow.csproj" />
     <Project Path="../diagrams/diagrams-python-cloud-infrastructure/backend/EtAlii.Adp.Diagram.DiagramsPythonCloudInfrastructure/EtAlii.Adp.Diagram.DiagramsPythonCloudInfrastructure.csproj" />
     <Project Path="../diagrams/erd-entity-relationship/backend/EtAlii.Adp.Diagram.ErdEntityRelationship/EtAlii.Adp.Diagram.ErdEntityRelationship.csproj" />

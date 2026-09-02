@@ -426,6 +426,82 @@ clipping, and that is only visible on screen.
 - **Verified 2026-09-01** against the running app (Tab and right-drag live; Enter and the
   thumbs through the same handlers in the test suite).
 
+## A dependency graph shows no ruler, no dates and no moments (dependency-graph, task 4.1)
+
+- **Preconditions**: `src/examples/diagrams/dependency-graph/example-1/` opened as a project,
+  with `services.dgr` on the canvas.
+- **Actions**: look at the whole canvas; open the Toolbox; select a node and read the property
+  grid; select an edge and read it too.
+- **Expected**: no ruler strip along any edge, no date anywhere on the canvas or in either grid,
+  and no moment marker. The Toolbox offers **Node** and nothing else. A node's grid rows are
+  Label, X and Row - begin, end and duration are **absent**, not blank. An edge's rows are its
+  label plus its two ends, read-only.
+- **Why manual**: the absences are the requirement (Requirement 3.3 calls a ruler, a date or a
+  moment appearing here a defect), and an absence in a running UI is what a test suite is least
+  able to see.
+
+## Every edge visibly points at its dependency (dependency-graph, task 4.1)
+
+- **Preconditions**: as above.
+- **Actions**: follow the edge from Checkout web to API gateway, and the one from Order service
+  to Orders database; then select a node, drag from its **left** anchor onto another node, and
+  look at the new edge.
+- **Expected**: each edge carries an arrowhead at the end it depends on - the arrow on the first
+  points at API gateway, not at Checkout web. The left-anchor drag produces an edge pointing at
+  the node the drag *started* from, because what depends on a node arrives at it.
+- **Why manual**: an arrowhead drawn at the wrong end still renders a plausible graph, so the
+  failure is silent to anything that only checks that an edge exists.
+
+## Edges follow a drag while it is in progress, and Escape abandons it (dependency-graph, task 4.1)
+
+- **Preconditions**: as above, with at least one edge between two nodes.
+- **Actions**: press on a connected node and move the pointer without releasing; watch the
+  edge's curve and the hint above the node; press Escape; then check the `.dgr` file.
+- **Expected**: the curve is redrawn continuously as the node moves - not only on release - and
+  the hint shows the coordinate and row the node would land on (for example `612 · row 1`),
+  never a date. Escape returns the node and its curves to where they started, and the file on
+  disk is byte-for-byte untouched.
+
+## A toolbox drop lands a Node where it was dropped (dependency-graph, task 4.1)
+
+- **Preconditions**: as above; the Toolbox showing Node.
+- **Actions**: drag Node from the Toolbox and drop it on empty canvas at a chosen place; repeat
+  over an existing node.
+- **Expected**: a "New node" appears at the dropped coordinate and row immediately - no dialog -
+  and one undo removes it. Dropping never answers "That action is not available for this item"
+  (the placement target must discover the add action, or executing by id resolves nothing).
+
+## The context menu removes nodes and dependencies (dependency-graph, task 4.1)
+
+- **Preconditions**: as above, with at least one edge.
+- **Actions**: right-click a node with no edges and choose Remove; right-click an edge and
+  choose Remove dependency; right-click a node with edges and confirm the dialog that names the
+  dependency count.
+- **Expected**: each removal happens and is one undo away. A dependency-free Remove must act
+  immediately - an execute that answers Completed without dispatching has done nothing, because
+  the commit leg only runs after a dialog. The confirmation counts dependencies at **both** ends
+  of the node, not only the ones leaving it.
+
+## A dependency dragged onto empty space creates the node it reaches (dependency-graph, task 4.1)
+
+- **Preconditions**: as above; a node selected so its anchors show.
+- **Actions**: drag from the right anchor and release over empty canvas; undo; then drag from
+  the left anchor and release over empty canvas.
+- **Expected**: a "New node" appears at the release point with an edge between it and the source
+  - one history entry, one undo removing both. From the right anchor the source depends on the
+  new node; from the left anchor the new node depends on the source. Releasing back on the
+  source cancels quietly.
+
+## Right-drag pans; Tab and Enter add; scrollbars pan (dependency-graph, task 4.1)
+
+- **Preconditions**: as above.
+- **Actions**: right-press empty canvas and drag (no browser menu may appear); select a node and
+  press Tab, then Enter; drag each scrollbar thumb.
+- **Expected**: the right-drag pans exactly as a left-drag; Tab adds a node a fixed step to the
+  right on the same row and Enter adds one on the next row at the same coordinate, both depended
+  upon by the node they grew from and neither asking anything; the thumbs pan the view within
+  the content's extent.
+
 ## The text editor is drawn in the application's colors, caret included (modular-text-editors, manual pass)
 
 Guarded here because it is pure styling: without a theme extension CodeMirror runs its
