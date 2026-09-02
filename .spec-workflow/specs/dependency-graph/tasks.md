@@ -33,10 +33,10 @@ One worktree for the whole spec (`.claude/worktrees/depgraph`, per CLAUDE.md's o
   - _Requirements: 1.1, 1.2, 3.5_
   - _Prompt: Implement the task for spec dependency-graph, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Fork discovery and the context/toolbox providers - generic/dependencies origin, Dependency Graph name, .dgr extension, Node-only toolbox, properties without any time-derived row - registering everything through the definition's Build delegate, and add the two projects to EtAlii.Adp.slnx | Restrictions: core learns nothing new; no Moment survives anywhere; the property grid's absent rows are absent, not blanked | _Leverage: the timeline's Diagram.cs and providers; the diagrams service-csproj wildcard | Success: a real host discovers the type, offers it in Add…, shows its properties and Node-only toolbox; forked provider tests pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. Client: the canvas, minus time, plus arrowheads
+- [x] 3. Client: the canvas, minus time, plus arrowheads
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [-] 3.1 Fork the canvas and model
+- [x] 3.1 Fork the canvas and model
   - Files: `src/diagrams/dependency-graph/client/` — `DependencyGraphCanvas.tsx`, `dependencyGraphModel.ts`, `useDependencyGraphStream.ts`, `register.ts`, `dependency-graph.css`, `package.json` + tests; `TimelineRuler.tsx` and `timelineTicks.ts` have no counterparts
   - View window in plain units (`startX`/`pixelsPerUnit`); drag hints show `x · row`; edges keep the bezier curves and gain an SVG arrowhead marker at the `to` end; the scroll view: consume the centralized component if `small-refinements` has landed it, otherwise fork `TimelineScrollbars` temporarily with a comment pointing at the pending extraction
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
@@ -45,7 +45,7 @@ One worktree for the whole spec (`.claude/worktrees/depgraph`, per CLAUDE.md's o
 - [ ] 4. Examples, catalog, and the manual checks
   - _Requirements: 4.1, 1.3_
 
-- [ ] 4.1 A believable example, replicated and test-opened
+- [-] 4.1 A believable example, replicated and test-opened
   - Files: `src/diagrams/dependency-graph/examples/example-1/` (a service-dependency graph with real names, `.adp` + `.dgr`), replicated to `src/examples/diagrams/dependency-graph/example-1/`; module tests open every example file; `docs/diagrams.md` row moves to 🛠️/✅ as the state changes; `tests.md` gains the type's interaction entries rewritten from the timeline's, plus the no-ruler/no-dates/arrowheads check
   - _Requirements: 4.1, 1.3_
   - _Prompt: Implement the task for spec dependency-graph, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Ship a believable service-dependency example (real service names, several nodes and directed edges), replicate it into src/examples/diagrams/dependency-graph/ with the .adp header adjusted per the diagram replication convention, cover every example file with module tests, update the docs/diagrams.md row's state, and add the tests.md entries the design's End-to-End strategy lists | Restrictions: no placeholder text; the example-registration walk must pick the example up; replicas must not drift | _Leverage: the timeline's example layout and the example-walking tests; the timeline's tests.md entries as the template | Success: example opens in tests and on the canvas, replica in place, catalog row current, tests.md entries added. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
