@@ -72,13 +72,13 @@ One worktree for the whole spec (`.claude/worktrees/dbx`, per CLAUDE.md's one-wo
 - [-] 4. Client: three canvases and the simulation engine
   - _Requirements: 3.1-3.5, 4.1-4.6, 5.1-5.4, 6.1-6.3, 7.2, 8.1, 8.2, 8.4, 8.5, 11.2, 11.3, 11.6_
 
-- [-] 4.1 Canvases from the central library
+- [x] 4.1 Canvases from the central library
   - Files: `src/diagrams/databricks/client/` — `BundleCanvas.tsx`, `JobCanvas.tsx`, `PipelineCanvas.tsx`, models and stream hooks, `register.ts` (three registrations), `databricks.css`, `package.json` + tests
   - Composed from `src/client/src/canvas/` (BoxElement, FrameElement, FixedBezierConnection, StraightConnection, selection/menu/keyboard plumbing); job canvas reuses the timeline interaction set with repositioning dispatching the layout command; badges for run_if, clusters, outcome edges, override counts, unresolved stubs
   - _Requirements: 3.1-3.5, 4.1-4.6, 5.1-5.4, 6.1-6.3, 7.2, 11.2, 11.3_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/SVG developer familiar with the central canvas library and the timeline canvas | Task: Implement the three canvases per Requirements 3-5 composed from the central library, with the job canvas carrying the timeline's interaction set (drag repositioning through the layout path, rel: anchor gestures, new: toolbox drops, shared context menu), stub edges for missing targets, and jsdom tests per canvas over mocked streams | Restrictions: draw through the central components, no per-module reimplementation; repositioning must never write the body file; CSS classes live in the module stylesheet | _Leverage: src/client/src/canvas/ throughout; TimelineCanvas.tsx as the interaction reference | Success: canvas tests pass per type; structure, badges, stubs and gestures verified; repositions land as layout commands. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.2 The simulation engine
+- [-] 4.2 The simulation engine
   - Files: `useSimulatedRun.ts` + tests; menu interception in the canvases
   - The client-only mock runs of Requirement 8: pending → running → succeeded/failed over the DAG honoring run_if/outcome, one configurable failure path; deploy and pipeline-update sequences; the canvas intercepts simulated action ids in its own menu callback, plays the show, marks everything simulated
   - _Requirements: 8.1, 8.2, 8.4, 8.5 (the simulated halves), 8.6, 11.6_
