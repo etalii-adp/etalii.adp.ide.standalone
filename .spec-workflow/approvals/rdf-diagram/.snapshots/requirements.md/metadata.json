@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/rdf-diagram/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T10:54:31.736Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788432871496_9ax6dc1ih",
+      "approvalTitle": "rdf-diagram: requirements (the split's anchor spec)"
+    }
+  ]
+}
