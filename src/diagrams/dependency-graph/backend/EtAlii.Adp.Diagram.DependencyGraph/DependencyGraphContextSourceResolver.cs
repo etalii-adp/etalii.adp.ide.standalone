@@ -89,7 +89,8 @@ public sealed class DependencyGraphContextSourceResolver : IContextSourceResolve
                     SourceId: default,
                     rootPath,
                     watchId,
-                    elementId),
+                    elementId,
+                    routed.Definition.Origin),
                 new ContextLevelDetail { Element = new ElementDetail { Text = "New node" } },
                 this)));
         }
@@ -145,7 +146,8 @@ public sealed class DependencyGraphContextSourceResolver : IContextSourceResolve
                 SourceId: default,
                 rootPath,
                 watchId,
-                elementId),
+                elementId,
+                routed.Definition.Origin),
             detail,
             this);
 

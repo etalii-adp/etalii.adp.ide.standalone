@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Context;
 using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.Rdf;
@@ -23,6 +24,34 @@ internal static class RdfSelection
     /// <summary>Whether a path could be one of this family's bodies at all - a cheap first gate.</summary>
     public static bool CouldBeFamilyFile(string path) =>
         IoPath.GetExtension(path).ToLowerInvariant() is ".ttl" or ".nt";
+
+    /// <summary>
+    /// Whether this family's own providers should answer for <paramref name="target"/>: the
+    /// origin decides where the resolver supplied one, and the extension decides where it did not.
+    /// </summary>
+    /// <remarks>
+    /// The family answers for EVERY reading in the family - a rename or a remove-statement is as
+    /// true of an ontology or a shapes graph as of a data graph - which is what makes it the
+    /// family's provider rather than the data graph's. A sibling reading answers only for its own
+    /// origin, so the two never shadow each other; where both answer, the reading's group is listed
+    /// first and the family's beneath it (the family coordination ruling of 2026-09-04).
+    /// <para>
+    /// What this buys is delegation precision, not shortcut arbitration. The family provider
+    /// hands a selection to the reading the REGISTRATION named, instead of inferring the reading
+    /// from what the document happens to assert - so a vocabulary opened as a plain data graph
+    /// stops offering scheme verbs. Keystrokes are a separate matter: this family's readings
+    /// delegate inside one provider, and <c>ContextActionResolver</c> flattens a provider's own
+    /// groups and takes the first match, so within it the group ORDER is the shortcut order.
+    /// </para>
+    /// <para>
+    /// A null origin means the resolver has not adopted the field yet, never "no reading", so the
+    /// answer falls back to what this provider did before the field existed.
+    /// </para>
+    /// </remarks>
+    public static bool AnswersFor(ContextTarget target) =>
+        target.Origin is { } origin
+            ? origin.Vendor == ServiceCollectionAddRdfExtension.RdfOrigin.Vendor
+            : CouldBeFamilyFile(target.ResolvedFullPath);
 
     /// <summary>The IRI a <c>res:</c> id names, when the model actually states it; null otherwise.</summary>
     public static string? ResourceOf(RdfDocumentEntry entry, string? elementId)

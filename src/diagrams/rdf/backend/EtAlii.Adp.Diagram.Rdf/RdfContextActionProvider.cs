@@ -85,7 +85,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!RdfSelection.CouldBeFamilyFile(target.ResolvedFullPath))
+        if (!RdfSelection.AnswersFor(target))
         {
             // Another type's element; a provider consulted for every element in its scope
             // answers with nothing rather than parsing another notation's file.
