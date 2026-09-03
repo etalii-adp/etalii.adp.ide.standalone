@@ -2,7 +2,7 @@
 
 One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short, because the Windows MAX_PATH failure mode (apphost never produced, `dotnet test` reporting zero tests) was traced to long worktree names, and this module's deepest project paths are long. Each group ends in a gate-and-merge task judged by exit code. Tasks marked **(new work)** build the design's genuinely new pieces; everything else replicates established Ansible/Databricks patterns. Example ordering is fact-based: `ExampleReplication.Tests` demands central copies land in the same change as module copies, and `ExampleRegistration.Tests` opens every example `.adp` against the registered definitions — so the charts arrive in group 1 (the external-risk-first task) while their `.adp` registrations wait for group 7, after the definition exists.
 
-- [-] 1. Examples acquired and attributed **(new work: the acquisition plan executed)**
+- [x] 1. Examples acquired and attributed **(new work: the acquisition plan executed)**
   - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
 
 - [x] 1.1 Acquire the three charts, licenses re-verified at acquisition
@@ -17,11 +17,11 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - _Requirements: 11.1, 11.3, 11.4, 11.6_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical writer and repository curator | Task: Author the nginx values-dev/values-prod overrides and the per-example readmes with full provenance, then replicate the examples tree to src/examples/diagrams/helm-charts/ byte-identically, adding the .gitattributes archive line if needed | Restrictions: every local addition is named in its example's readme; upstream files stay untouched; module and central copies must not differ by a byte — helm .adp files do not exist yet so the body: tolerance is irrelevant | _Leverage: ExampleReplication.Tests' path mapping; the ansible-structure example readmes as the format precedent | Success: readmes complete and honest, overrides in place, ExampleReplication.Tests green over the new trees. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 1.3 Gate and merge group 1
+- [x] 1.3 Gate and merge group 1
   - Backend tests + format from `src/backend` (format introduces no findings beyond develop's baseline), npm test + typecheck from `src/client`, exit codes checked; merge `.claude/worktrees/helm` into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge the helm worktree's group-1 work into develop via the main checkout | Restrictions: do not merge on a failing gate; a zero-test run is a broken build, never an empty suite | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2. Reading: tolerant YAML and the template scanner
+- [x] 2. Reading: tolerant YAML and the template scanner
   - _Requirements: 1.1, 1.2, 1.3, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3_
 
 - [x] 2.1 HelmYaml, the tolerant reader (replication of AnsibleYaml)
@@ -42,14 +42,14 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - _Requirements: 1.1, 1.2, 1.3, 3.3, 3.4, 4.1, 4.2, 4.3_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the ansible module's reader | Task: Implement the _Model records and HelmChartReader over the three fixture charts per design — well-formed, broken (bad YAML, missing fields), unconventional (v1 legacy, alias, tgz + unpacked mix, library chart) — with the directory-local .gitattributes protecting fixture bytes | Restrictions: templates go through TemplateScan only; one recursion level into charts/; deeper content summarized by count; no file writes anywhere in the read path | _Leverage: HelmYaml and TemplateScan from 2.1/2.2; AnsibleProjectReader's fixture discipline and Describe()-style test comparisons | Success: reader tests cover all three fixtures; a broken file degrades to an unreadable node while the rest reads; v1 marks legacy. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2.4 Gate and merge group 2
+- [x] 2.4 Gate and merge group 2
   - Same gates as 1.3; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-2 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. Graph and store
+- [-] 3. Graph and store
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 1.4_
 
-- [ ] 3.1 The dependency resolution matcher **(new work)**
+- [-] 3.1 The dependency resolution matcher **(new work)**
   - Files: `DependencyResolution.cs` (or the design's equivalent home in `HelmGraph`) + tests
   - `EffectiveName` (alias-over-name) matched ordinally against `charts/` entries (directory name; archive name stripped of `-<version>.tgz`); dependencies get Resolved/Unvendored, unmatched vendored content gets Undeclared; no semver-range evaluation, deliberately
   - _Requirements: 5.2_
