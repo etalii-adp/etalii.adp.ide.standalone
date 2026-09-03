@@ -106,7 +106,7 @@ One worktree for the whole spec (`.claude/worktrees/skos`, per CLAUDE.md's one-w
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer who takes license verification personally | Task: Vendor the example vocabularies per Requirement 9 - re-verify each license at the source before copying, carry license text and provenance readmes, build the extracts described as extracts, replicate to the central showcase, register everything, and ensure one file exceeds the budget - substituting only under the same verification if a source has changed terms | Restrictions: share-alike is rejected on sight; unmodified content stays unmodified; no example ships without its readme | _Leverage: ExampleRegistrationTests and ExampleReplicationTests join by existing; the helm examples' provenance readme shape | Success: examples open clean (nothing above info), replicas byte-identical, licenses on disk beside the data. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.2 Manual checks and the catalog row
+- [x] 5.2 Manual checks and the catalog row
   - Files: `tests.md`, `docs/diagrams.md`
   - `tests.md` gains this spec's three checks (the language chip on the EuroVoc extract under a non-English display language; the truncation banner on the over-budget file; file-under then undo leaving the vocabulary byte-identical under `git diff`), each naming spec and task; the catalog row advances per CLAUDE.md's rule using the legend's own vocabulary
   - _Requirements: 9.3_
