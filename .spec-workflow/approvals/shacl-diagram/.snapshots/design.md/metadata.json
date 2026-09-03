@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/shacl-diagram/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T11:40:33.082Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788435632872_t3gcnqn0b",
+      "approvalTitle": "Design: shacl-diagram"
+    }
+  ]
+}
