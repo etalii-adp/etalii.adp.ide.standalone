@@ -1,5 +1,4 @@
 using Serilog;
-using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Backend.Projects;
 
@@ -25,7 +24,7 @@ public static class ProjectRootResolver
             return false;
         }
 
-        var candidatePath = IoPath.Combine(project.Path.Segments.ToArray());
+        var candidatePath = project.Path.Segments.AbsolutePath();
         if (!Directory.Exists(candidatePath))
         {
             _logger.Warning(
