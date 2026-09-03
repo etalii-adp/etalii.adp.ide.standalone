@@ -51,6 +51,10 @@ public static class ServiceCollectionAddHelmChartsExtension
         // service itself is untouched.
         services.AddSingleton<IContextSourceResolver, HelmContextSourceResolver>();
 
+        // Every row read-only with a true reason naming its defining file; the write path
+        // refuses unconditionally - enforced, not styled (Requirement 9.3).
+        services.AddSingleton<IContextPropertyProvider, HelmContextPropertyProvider>();
+
         return services;
     }
 }
