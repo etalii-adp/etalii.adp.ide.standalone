@@ -25,7 +25,7 @@ namespace EtAlii.Adp.Diagram.HelmCharts;
 /// authored position - one path for computed and dragged alike.
 /// </para>
 /// </remarks>
-public sealed class HelmSession : IDiagramSession
+internal sealed class HelmSession : IDiagramSession
 {
     private static readonly ILogger _logger = Log.ForContext<HelmSession>();
 

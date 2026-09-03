@@ -1,4 +1,3 @@
-using EtAlii.Adp.Backend.Diagrams;
 using Microsoft.Extensions.DependencyInjection;
 
 using Xunit;
@@ -47,7 +46,7 @@ public class DiagramTests
         // services to construct): present and correctly typed. A silent no-op edit once left
         // both unregistered while every other test stayed green - this is that guard.
         Assert.Contains(services, descriptor =>
-            descriptor.ServiceType == typeof(EtAlii.Adp.Backend.Diagrams.IDiagramSessionFactory)
+            descriptor.ServiceType == typeof(Backend.Diagrams.IDiagramSessionFactory)
             && descriptor.ImplementationType == typeof(HelmSessionFactory));
         Assert.Contains(services, descriptor =>
             descriptor.ServiceType == typeof(IDiagramValidator)

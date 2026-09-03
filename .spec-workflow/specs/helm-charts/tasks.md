@@ -152,7 +152,7 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - Same gates; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-6 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 7. Proof and finish
+- [x] 7. Proof and finish
   - _Requirements: 7.1, 7.2, 2.3, 11.6, 12.3, 10.9_
 
 - [x] 7.1 Zero-writes proof
@@ -173,7 +173,7 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - _Requirements: 11.1, 11.6, 10.9_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior developer | Task: Add the .adp registrations to the three examples in both trees and prove the registration sweep, replication sweep and validation are all green | Restrictions: one MIME line per .adp, nothing else; both trees in the same change | _Leverage: the ansible example's structure.adp precedent | Success: both sweeps green; every example opens by double-click and validates clean. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 7.4 Catalog, manual pass, final gates, retire
+- [x] 7.4 Catalog, manual pass, final gates, retire
   - Files: `docs/diagrams.md` (the `helm/chart` row to its earned state, catalog vocabulary), `tests.md` (manual checks for what only a running app shows: Add-flow suggestion on a Chart.yaml folder, per-kind double-click navigation, the drag-reposition-reopen cycle through the real client)
   - Run the manual verification pass against a live app from the worktree — changing the client dev port and `Client:DevServerUrl` to a free pair first and reverting both before the final merge; run the full gates; merge; the worktree is then retirable (removal is the user's call to confirm)
   - _Requirements: 12.3_
