@@ -34,10 +34,14 @@ message DatabricksTaskPayload {
   bool unresolved = 6;
 }
 
-// One depends_on edge. Empty outcome is an ordinary edge; "true"/"false" follow a condition
-// task's outcomes (Requirement 4.3).
+// One edge - a depends_on dependency, a target's override, a pipeline flow line. Empty outcome
+// is an ordinary edge; "true"/"false" follow a condition task's outcomes (Requirement 4.3).
+// The endpoints ride here because a connection travels as an element and the canvas redraws its
+// curve from its endpoints' boxes - the same contract the timeline's connection payload carries.
 message DatabricksEdgePayload {
   string outcome = 1;
+  string from_element_id = 2;
+  string to_element_id = 3;
 }
 
 // One resource a bundle declares - a node of the bundle diagram's middle band (Requirement 3).
