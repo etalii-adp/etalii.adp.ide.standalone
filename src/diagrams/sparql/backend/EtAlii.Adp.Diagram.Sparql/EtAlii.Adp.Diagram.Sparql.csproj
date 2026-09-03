@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+    <!--
+      Core abstractions only. The dependency runs module -> core and never back - and for this
+      module in particular, never sideways: nothing here may reference src/diagrams/rdf. A query
+      is not a serialization of a graph, so this module has its own parser and model, and the
+      two family pieces it consumes (the canvas conventions and the .adp layout block) arrive
+      through core alone.
+    -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Google.Protobuf is the runtime; Grpc.Tools compiles the .proto below at build. -->
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- This module's own wire payloads, packed into the core Element's Any. -->
+    <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="None" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="EtAlii.Adp.Diagram.Sparql.Tests" />
+  </ItemGroup>
+
+</Project>
