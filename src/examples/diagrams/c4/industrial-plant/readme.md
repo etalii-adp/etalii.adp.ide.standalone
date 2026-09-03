@@ -20,19 +20,19 @@ cappers and palletisers — sit on an air-gapped VLAN with no route to the enter
 only path across is the plant DMZ, where the OPC UA Gateway runs, and the industrial firewall
 permits exactly one thing: OPC UA outbound, initiated by the gateway. Nothing initiates inbound.
 
-[`plant-deployment.adp`](architecture/plant-deployment.adp) is where that is visible. The
+[`bottling-mes.plant-deployment.adp`](architecture/bottling-mes.plant-deployment.adp) is where that is visible. The
 `"OT"` and `"DMZ"` tags are styled so the zones read at a glance.
 
 ## The six diagrams
 
 | File | Type | Shows |
 |---|---|---|
-| [`plant-landscape.adp`](architecture/plant-landscape.adp) | `c4/system-landscape` | Every system on the site, OT and IT together |
+| [`bottling-mes.plant-landscape.adp`](architecture/bottling-mes.plant-landscape.adp) | `c4/system-landscape` | Every system on the site, OT and IT together |
 | [`bottling-mes.adp`](architecture/bottling-mes.adp) | `c4/context` | The MES, the four roles that use it, and the six systems around it |
-| [`mes-containers.adp`](architecture/mes-containers.adp) | `c4/container` | What the MES is made of, and which part crosses into the control network |
-| [`order-service-components.adp`](architecture/order-service-components.adp) | `c4/component` | Inside the Order Service |
-| [`batch-release.adp`](architecture/batch-release.adp) | `c4/dynamic` | Releasing a batch, from last pallet to ERP confirmation |
-| [`plant-deployment.adp`](architecture/plant-deployment.adp) | `c4/deployment` | Three zones and the firewall between them |
+| [`bottling-mes.mes-containers.adp`](architecture/bottling-mes.mes-containers.adp) | `c4/container` | What the MES is made of, and which part crosses into the control network |
+| [`bottling-mes.order-service-components.adp`](architecture/bottling-mes.order-service-components.adp) | `c4/component` | Inside the Order Service |
+| [`bottling-mes.batch-release.adp`](architecture/bottling-mes.batch-release.adp) | `c4/dynamic` | Releasing a batch, from last pallet to ERP confirmation |
+| [`bottling-mes.plant-deployment.adp`](architecture/bottling-mes.plant-deployment.adp) | `c4/deployment` | Three zones and the firewall between them |
 
 ## Three modelling decisions worth arguing about
 

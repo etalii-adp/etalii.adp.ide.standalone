@@ -4,18 +4,21 @@
 
 This repository has no front door. There is no readme at the root, so the first thing a visitor sees is a folder listing, and the first explanation of what ADP *is* lives in `.spec-workflow/steering/product.md` — a file written for the people building the product, in a folder nobody browsing a repository would think to open. Meanwhile the answer to "how do I add a diagram type?" exists only as a trail through dozens of existing modules, a handful of scattered folder readmes, and the steering documents — enough for the agents that built those modules, and far too little for a newcomer.
 
-This spec covers two deliverables that fix that:
+This spec covers three deliverables that fix that:
 
 1. **The primary readme** at the repository root: why ADP exists, whether the build is green, how to run it, what it looks like, and where to go next.
 2. **Developer documentation for creating a new diagram or editor module**: a written path through the two plugin families the repository already ships — dozens of diagram modules under `src/diagrams/` and the editor family under `src/editors/` — naming the touch points a newcomer cannot guess.
+3. **A dependency inventory** (`docs/dependencies.md`): what the backend and the client depend on, at which version, why, and under which license — readable at a glance and guarded against going stale.
 
-Both deliverables document a system that already exists. Nothing here changes product behaviour; the risk this spec manages is not "will it work" but "will it be true" — documentation that drifts from the code is worse than none, so the requirements below put as much weight on verification and refresh rules as on the prose itself.
+All three deliverables document a system that already exists. Nothing here changes product behaviour; the risk this spec manages is not "will it work" but "will it be true" — documentation that drifts from the code is worse than none, so the requirements below put as much weight on verification and refresh rules as on the prose itself.
 
 ## Alignment with Product Vision
 
 `product.md` positions ADP for "developers and architects who already live inside a code repository", with "minimal footprint, incremental value" — a team should get something useful from ADP after adding it to one repository. That promise fails at the doorstep if the repository itself cannot explain what it is for or how to start it. A readme that leads with the *why* (the same why `product.md` records) is that principle applied to ADP's own repository.
 
 The developer documentation serves the pluggability that `structure.md` mandates ("new diagram types can be added without touching core code") and that the `wardley-map` spec's Requirement 12.5 treats as an acceptance test. A plugin architecture whose extension path exists only in the heads of its authors is pluggable in name only; writing the path down — and verifying it against a real module — is what makes the claim usable by someone who was not here.
+
+The dependency inventory serves the same "don't reinvent, integrate" principle from the other side: a product built deliberately on established formats and libraries should be able to say what it stands on, why, and under which licenses — an answer a team evaluating ADP for adoption needs before any wider rollout decision.
 
 ## Requirements
 
@@ -37,10 +40,10 @@ The developer documentation serves the pluggability that `structure.md` mandates
 
 #### Acceptance Criteria
 
-1. WHEN the readme renders THEN it SHALL show a status badge for the `Build` workflow (`.github/workflows/build.yml`) on the `develop` branch of `vrenken/EtAlii.Adp`, and the badge SHALL link to that workflow's runs page.
+1. WHEN the readme renders THEN it SHALL show the status badge for the `Build` workflow (`.github/workflows/build.yml`) of `vrenken/EtAlii.Adp`, using this markdown **exactly as given by the user**: `[![Build](https://github.com/vrenken/EtAlii.Adp/actions/workflows/build.yml/badge.svg)](https://github.com/vrenken/EtAlii.Adp/actions/workflows/build.yml)` — the badge image linking to the workflow's runs page.
 2. WHEN the badge mechanism is chosen THEN the choice SHALL account for the repository being **private**. GitHub's native workflow badge (`…/actions/workflows/build.yml/badge.svg`) is served only to viewers authenticated with read access; third-party badge services (e.g. shields.io) cannot see a private repository at all without a token, and embedding a token in a readme is not acceptable. The requirement is therefore: use the **native GitHub badge**, and accept that its audience is exactly the readme's audience — anyone who can see a private repository's readme is, by definition, an authenticated reader for whom the badge resolves. The readme SHALL NOT embed tokens, and SHALL NOT use a third-party badge service for this repository's private state.
 3. IF the repository is later made public THEN the same native badge keeps working unchanged; the spec SHALL note this so the choice is understood as future-proof rather than a compromise to revisit.
-4. WHEN the badge is added THEN the branch SHALL be pinned in the badge URL (`?branch=develop`), so the badge unambiguously reports the latest `develop` run. The `Build` workflow also runs on `pull_request` events, and an unpinned badge leaves it to GitHub's defaulting rules which run is shown; pinning removes the ambiguity for the cost of one query parameter.
+4. The given markdown carries no `?branch=develop` parameter, so which run the badge reports is left to GitHub's defaulting rules; a branch pin remains the noted alternative if the badge is ever observed reporting a run other than the latest on `develop`, but the markdown as given in criterion 1 is the requirement.
 
 ### Requirement 3 — How to use: from download or checkout to a running app
 
@@ -75,7 +78,8 @@ The developer documentation serves the pluggability that `structure.md` mandates
 
 1. WHEN the readme ends THEN it SHALL link to `docs/diagrams.md` as the catalog of every diagram type ADP could support, described as such — including that the catalog tracks each type's state from identified through implemented.
 2. WHEN the readme ends THEN it SHALL link to the developer documentation of Requirements 6–8 for readers who want to extend ADP with a module of their own.
-3. WHEN links are written THEN every link to repository content SHALL be relative (working on GitHub, in clones, and in forks), and every linked target SHALL exist — a readme link landing on a 404 fails this requirement.
+3. WHEN the readme ends THEN it SHALL link to the dependency inventory of Requirement 9, so what ADP is built on is one click from the front page.
+4. WHEN links are written THEN every link to repository content SHALL be relative (working on GitHub, in clones, and in forks), and every linked target SHALL exist — a readme link landing on a 404 fails this requirement.
 
 ### Requirement 6 — Developer documentation: creating a diagram module
 
@@ -118,11 +122,26 @@ The developer documentation serves the pluggability that `structure.md` mandates
 3. IF the documentation and CLAUDE.md state the same rule THEN one of them SHALL link to the other rather than both stating it (CLAUDE.md wins for rules that bind agents working in the repository; the developer docs summarise and link). The same holds against `tech.md` and `structure.md`: the steering documents are upstream, the developer documentation is the readable path through them.
 4. WHEN a later change moves a documented touch point (a renamed seam, a new registration shape) THEN the documentation SHALL be updated in the same change or flagged as stale — the same standing rule the diagram catalog already has in CLAUDE.md, extended to these documents. The design SHALL decide where this refresh rule is recorded so it binds future work.
 
+### Requirement 9 — The dependency inventory
+
+**User Story:** As a reader assessing ADP — a developer, a security reviewer, or someone checking license compatibility — I want one document listing what the backend and the client depend on, at which version, why, and under which license, so that the answer does not require walking the package manifests myself.
+
+#### Acceptance Criteria
+
+1. WHEN the inventory is written THEN it SHALL be a `dependencies.md` under `docs/`, linked from the root readme (Requirement 5.3), and split into **two sections: one for the backend and one for the client**.
+2. WHEN each section is written THEN it SHALL be a table with exactly these columns: **dependency name**, **version**, **reason for usage**, and **license**.
+3. WHEN the backend section is filled THEN its rows SHALL come from `src/Directory.Packages.props` — the central version manifest every backend package version already goes through — one row per `PackageVersion` entry, with the version column matching that file. Direct dependencies only; transitive packages are the package manager's business, not this document's.
+4. WHEN the client section is filled THEN its rows SHALL come from the npm workspace manifests: `src/package.json` and the workspace packages it declares (`src/client/package.json` and the `src/diagrams/*/client/package.json` files), covering `dependencies` and `devDependencies`. One row per distinct package, with the version column matching the manifests.
+5. WHEN versions are recorded THEN the document SHALL be kept true by a **guard, not by discipline**: a test in the backend test suite SHALL parse the manifests of criteria 3 and 4 and `docs/dependencies.md`, and fail when a dependency is missing from the document, listed but no longer referenced, or version-mismatched. This position is chosen deliberately over a generation step (which would overwrite the hand-written reason column) and over accepted staleness (which this repository's own history argues against — a copy without a guard drifts): a package bump then updates one more line, and the same CI gates that run the backend tests enforce it. The guard checks **names and versions only**.
+6. WHEN the **reason for usage** column is filled THEN it SHALL be written by the author from how the repository actually uses the package — one sentence in the reader's terms, not the package's own tagline. This column cannot be generated, and that is the point of having it. IF a dependency's reason cannot be stated THEN that is a **finding** — either the usage is discovered and documented, or the dependency is questioned — never a blank cell.
+7. WHEN the **license** column is filled THEN each value SHALL be read from the package's own machine-readable metadata — the NuGet package's license expression for backend rows, the `license` field of the npm package for client rows — at time of writing, not guessed or copied from a project homepage. The guard of criterion 5 does not verify licenses (doing so would make a unit test depend on package metadata availability); instead, WHEN a version changes THEN the row's license SHALL be re-checked as part of the same edit the guard already forces.
+8. WHEN the tables are formatted THEN they SHALL use standard markdown tables — this document is read on GitHub and has no need of the raw-HTML style `docs/diagrams.md` uses for its colspan-heavy catalog.
+
 ## Non-Functional Requirements
 
 ### Code Architecture and Modularity
 
-- **Documentation only**: this spec adds and edits markdown and image files (plus, at most, a commented `.gitattributes` line). No production code, no behaviour change, no new build steps.
+- **Documentation, plus its guard**: this spec adds and edits markdown and image files (plus, at most, a commented `.gitattributes` line) and one test — the dependency-inventory guard of Requirement 9.5, which lives in the existing backend test suite and adds no new build step. No production code, no behaviour change.
 - **Single source of truth**: every rule stated in the new documents is either original to them or a link to where the rule already lives (`CLAUDE.md`, `tech.md`, `structure.md`, `docs/diagrams.md`, module readmes). No forked copies.
 - **House style**: the new markdown files follow the repository's line-ending policy as-is (ordinary text files under the root `.gitattributes` rule; no exemptions needed) and use lower-case `readme.md` naming where a readme is created.
 

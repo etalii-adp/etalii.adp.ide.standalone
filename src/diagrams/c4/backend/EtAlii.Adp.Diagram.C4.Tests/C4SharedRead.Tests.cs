@@ -1,5 +1,4 @@
 using EtAlii.Adp.Backend;
-using EtAlii.Adp.Backend.Diagrams;
 
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;

@@ -24,6 +24,11 @@ public class DiagramTests
         // the user registers it (Requirement 1.2).
         Assert.All(Diagram.Definitions, definition =>
         {
+            if (definition == null!)
+            {
+                throw new ArgumentNullException(nameof(definition));
+            }
+
             Assert.True(definition.SharedExtension);
             Assert.False(definition.RoutesBareBody);
             Assert.True(definition.HasDocumentSibling);

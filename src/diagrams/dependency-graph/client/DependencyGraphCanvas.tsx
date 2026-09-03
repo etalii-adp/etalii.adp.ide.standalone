@@ -14,9 +14,10 @@ import { useRegisterDiagramView } from "@client/shell/panels/DiagramViewContext"
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { ContextSelectionAction } from "@client/generated/context_pb";
-import { DependencyGraphScrollbars } from "./DependencyGraphScrollbars";
+import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
+import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import { useDependencyGraphStream } from "./useDependencyGraphStream";
-import type { DependencyGraphElement } from "./dependencyGraphModel";
+import type { DependencyGraphElement, DependencyGraphModel } from "./dependencyGraphModel";
 
 /**
  * The vertical distance between adjacent rows, in the module's own y units.
@@ -595,10 +596,9 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
             />
           ))}
         </svg>
-        <DependencyGraphScrollbars
-          model={model}
-          view={view}
-          widthPx={width}
+        <CanvasScrollbars
+          {...scrollAxesOf(model, view, width)}
+          className="dependency-graph-scrollbars"
           onPan={(startX, panY) => setView((current) => ({ ...current, startX, panY }))}
         />
       </div>
@@ -766,6 +766,31 @@ function PendingRelation({
   const start = sideAnchorOf(from, end.x >= from.x ? "right" : "left");
 
   return <path className="dependency-graph-pending-relation" d={horizontalBezierPath(start, end)} />;
+}
+
+/**
+ * The two scroll axes as the shared scroll view wants them - the fork's own extent
+ * arithmetic, term for term: the x extent from the elements' range (each widened by
+ * NODE_WIDTH) with a half-span margin floored at one node width, the y extent with a fixed
+ * two-row margin. The 400px height, like the fork's, only shapes the thumb ratio; an empty
+ * model falls back to the view's own window.
+ */
+function scrollAxesOf(model: DependencyGraphModel, view: DependencyGraphView, widthPx: number) {
+  const elements = [...model.elements.values()];
+  const heightPx = 400;
+  const viewSpan = widthPx / view.pixelsPerUnit;
+  const minX = elements.length > 0 ? Math.min(...elements.map((element) => element.x)) : view.startX;
+  const maxX = elements.length > 0
+    ? Math.max(...elements.map((element) => element.x + NODE_WIDTH))
+    : view.startX + viewSpan;
+  const horizontalExtent = scrollExtentOf(minX, maxX, { factor: 0.5, minimumSpan: NODE_WIDTH });
+  const minY = elements.length > 0 ? Math.min(...elements.map((element) => element.y)) : view.panY;
+  const maxY = elements.length > 0 ? Math.max(...elements.map((element) => element.y + ROW_HEIGHT)) : view.panY + heightPx;
+  const verticalExtent = scrollExtentOf(minY, maxY, { factor: 0, minimum: 2 * ROW_HEIGHT });
+  return {
+    horizontal: { viewStart: view.startX, viewSpan, ...horizontalExtent },
+    vertical: { viewStart: view.panY, viewSpan: heightPx / view.verticalScale, ...verticalExtent },
+  };
 }
 
 function clampVerticalScale(scale: number): number {
