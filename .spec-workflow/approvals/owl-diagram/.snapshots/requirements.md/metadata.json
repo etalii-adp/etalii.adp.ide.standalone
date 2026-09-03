@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/owl-diagram/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T11:13:01.589Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788433981404_84ygiuw6o",
+      "approvalTitle": "owl-diagram - Requirements"
+    }
+  ]
+}
