@@ -369,6 +369,11 @@ public class HierarchyContextActionProviderTests : IDisposable
     [Fact]
     public async Task CommitAsync_DeletingAFolderHoldingALockedFile_ReportsThatTheDeleteDidNotComplete()
     {
+        // Windows-only by nature, not by neglect: FileShare.None is a mandatory lock only
+        // there. Unix advisory semantics let the delete succeed, so the phenomenon this
+        // pins - an honest report when the OS refuses - cannot occur on the Linux runner.
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "Mandatory file locks exist only on Windows.");
+
         // Arrange.
         CreateFolder("sub");
         var lockedPath = IoPath.Combine(_root, "sub", "locked.txt");

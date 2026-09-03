@@ -65,8 +65,12 @@ public sealed class PipelineTemplates
         {
             combined = IoPath.Combine(WorkspaceRoot, raw.TrimStart('/'));
         }
-        else if (IoPath.IsPathRooted(raw))
+        else if (IoPath.IsPathRooted(raw) || IsWindowsAbsolute(raw))
         {
+            // Judged portably, not by the host platform: a pipeline file travels between
+            // machines, and "C:/Windows/win.ini" is an absolute path wherever the YAML is
+            // parsed - on Linux, IsPathRooted alone reads it as a workspace-relative name
+            // and misreports the escape attempt as merely NotFound.
             return ("", PipelineTemplateUnresolvedReason.OutsideWorkspace);
         }
         else
@@ -85,6 +89,10 @@ public sealed class PipelineTemplates
             ? (full, PipelineTemplateUnresolvedReason.None)
             : ("", PipelineTemplateUnresolvedReason.NotFound);
     }
+
+    /// <summary>A Windows drive path (<c>C:/…</c>) or UNC path (<c>//server/…</c>), absolute on any platform.</summary>
+    private static bool IsWindowsAbsolute(string raw) =>
+        (raw.Length >= 2 && char.IsAsciiLetter(raw[0]) && raw[1] == ':') || raw.StartsWith("//", StringComparison.Ordinal);
 
     /// <summary>
     /// The document at <paramref name="path"/>, read once and kept. Null where it could not be

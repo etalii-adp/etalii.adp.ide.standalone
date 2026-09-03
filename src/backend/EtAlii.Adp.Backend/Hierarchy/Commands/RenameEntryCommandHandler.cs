@@ -239,10 +239,12 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
         // Kept as a guard clause to match the checks above. This trips IDE0046 at info level;
         // collapsing it would only push the same suggestion onto the previous clause and turn a
         // readable chain into nested ternaries (PathTruncator.cs carries the same info already).
-        if (name.IndexOfAny(IoPath.GetInvalidFileNameChars()) >= 0)
+        // Judged against the portable set, not the platform's: on Linux the platform's own
+        // list would let 'report*.txt' through as a name Windows could never check out.
+        if (name.IndexOfAny(PortableFileNames.InvalidChars) >= 0)
         {
             return "A name cannot contain any of these characters: " +
-                   string.Join(' ', IoPath.GetInvalidFileNameChars().Where(c => !char.IsControl(c)));
+                   string.Join(' ', PortableFileNames.InvalidChars.Where(c => !char.IsControl(c)));
         }
 
         return null;
