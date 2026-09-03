@@ -88,6 +88,7 @@ public static class ServiceCollectionAddRdfExtension
         // (owl-diagram Requirement 5.5).
         services.TryAddSingleton<OwlElementMapper>();
         services.AddSingleton<IDiagramValidator>(_ => new OwlValidator(OwlOrigin));
+        services.AddSingleton<IDiagramToolboxProvider>(_ => new OwlToolboxProvider(OwlOrigin));
         services.AddSingleton<IDiagramSessionFactory>(provider => new OwlSessionFactory(
             OwlOrigin,
             provider.GetRequiredService<IRdfDocumentStore>(),
