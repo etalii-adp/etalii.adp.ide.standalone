@@ -98,6 +98,19 @@ beforeEach(() => {
 });
 
 describe("the dependency graph canvas", () => {
+  it("wears the shared canvas classes, so the central stylesheet is what dresses it", () => {
+    // Arrange & act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    expect(container.querySelector(".dependency-graph-canvas")!.classList.contains("canvas-host")).toBe(true);
+    expect(container.querySelector(".dependency-graph-node")!.classList.contains("canvas-node")).toBe(true);
+    expect(container.querySelector(".dependency-graph-label")!.classList.contains("canvas-node-label")).toBe(true);
+    expect(container.querySelector(".dependency-graph-relation")!.classList.contains("canvas-connection")).toBe(true);
+    expect(container.querySelector(".dependency-graph-relation-line")!.classList.contains("canvas-connection-line")).toBe(true);
+    expect(container.querySelector("marker#dependency-graph-arrowhead")!.classList.contains("canvas-arrowhead")).toBe(true);
+  });
+
   it("draws the nodes and the directed dependency between them", () => {
     // Act.
     const { container } = renderCanvas();
