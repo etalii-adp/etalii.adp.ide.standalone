@@ -53,7 +53,7 @@ Grouped the way the repository works them: each group in one worktree, gated wit
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec github-build-pipeline, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked; if clean, merge the worktree into develop and retire it | Restrictions: do not merge on a failing gate | Success: all gates pass, worktree merged and retired. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4. The workflow itself, and the docs that stop lying
+- [x] 4. The workflow itself, and the docs that stop lying
   - Worktree: `.claude/worktrees/pipeline-workflow`
   - _Requirements: 1.1-1.4, 4.1-4.5_
 
@@ -69,7 +69,7 @@ Grouped the way the repository works them: each group in one worktree, gated wit
   - _Requirements: 1.4_
   - _Prompt: Implement the task for spec github-build-pipeline, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical writer familiar with this repository's CLAUDE.md voice | Task: Update the passages that say no CI exists (Backend code style, Running the backend tests) to describe .github/workflows/build.yml as the enforcement net while keeping the local gate-before-merge discipline and the zero-tests-exit-code lesson intact | Restrictions: do not weaken any local discipline; do not rewrite unrelated sections | _Leverage: the existing CLAUDE.md prose style | Success: a reader of CLAUDE.md learns both that CI enforces the gates and that they still gate locally before merging. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4.3 Gate, merge, push, and watch the first run
+- [x] 4.3 Gate, merge, push, and watch the first run
   - Run all four local gates; merge `pipeline-workflow` into `develop` and retire the worktree; then - with the user's go-ahead, since nothing has been pushed for a while - push `develop` and watch the first Actions run: the gate job must go green, and the release job must publish `v0.1.x` with its ZIP; download that ZIP, run it, and confirm the login panel shows the release's own version (the tests.md entry from task 3.1, executed once for real)
   - _Requirements: 1.1, 4.1, Non-Functional Usability_
   - _Prompt: Implement the task for spec github-build-pipeline, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the four local gates and merge as usual; then coordinate with the user to push develop (many local commits are unpushed - the push is theirs to authorize), watch the first workflow run to green, confirm the release and ZIP appear, and execute the tests.md four-places-one-number check against the downloaded ZIP | Restrictions: do not push without the user's explicit go-ahead; a red first run is fixed forward with ordinary commits, never by force-push | Success: gates green locally and on GitHub, a versioned release with a runnable ZIP exists, and the ZIP's login panel shows the matching version. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
