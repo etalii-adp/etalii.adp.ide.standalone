@@ -45,6 +45,9 @@
     <!-- The W3C RDF family: one store and one Turtle/N-Triples parser, several readings over it. -->
     <Project Path="../diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf/EtAlii.Adp.Diagram.Rdf.csproj" />
     <Project Path="../diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf.Tests/EtAlii.Adp.Diagram.Rdf.Tests.csproj" />
+    <!-- SPARQL queries: the RDF family's deliberate sibling - its own parser, no writer at all. -->
+    <Project Path="../diagrams/sparql/backend/EtAlii.Adp.Diagram.Sparql/EtAlii.Adp.Diagram.Sparql.csproj" />
+    <Project Path="../diagrams/sparql/backend/EtAlii.Adp.Diagram.Sparql.Tests/EtAlii.Adp.Diagram.Sparql.Tests.csproj" />
     <Project Path="../diagrams/archimate-application/backend/EtAlii.Adp.Diagram.ArchimateApplication/EtAlii.Adp.Diagram.ArchimateApplication.csproj" />
     <Project Path="../diagrams/archimate-business/backend/EtAlii.Adp.Diagram.ArchimateBusiness/EtAlii.Adp.Diagram.ArchimateBusiness.csproj" />
     <Project Path="../diagrams/archimate-implementation-migration/backend/EtAlii.Adp.Diagram.ArchimateImplementationMigration/EtAlii.Adp.Diagram.ArchimateImplementationMigration.csproj" />

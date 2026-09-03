@@ -1,0 +1,46 @@
+/*
+ * The RDF module's own appearance. Everything a canvas shares - host, viewport, nodes, labels,
+ * connection lines, anchors, selection, status and rejection - comes from the central
+ * canvas.css classes composed in the markup; only what is genuinely this module's lives here.
+ */
+
+/* The type badges worn under a card's title (Requirement 3.3). */
+.rdf-badges {
+  font-size: 11px;
+  fill: var(--color-primary);
+  pointer-events: none;
+}
+
+/* One literal property row inside a card (Requirement 3.2). */
+.rdf-row {
+  font-size: 11px;
+  fill: var(--color-text-muted);
+  pointer-events: none;
+}
+
+/* A blank node: present, and visibly provisional - the identity boundary's look. */
+.rdf-node-blank .rdf-node-box {
+  stroke-dasharray: 5 3;
+  opacity: 0.75;
+}
+
+/* The predicate riding its edge. */
+.rdf-edge-label {
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+/* The showing-N-of-M banner over a budget-cut view (Requirement 8.2). */
+.rdf-truncation-banner {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 4px 12px;
+  border: 1px solid var(--color-warning);
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-warning);
+  font-size: 12px;
+}
