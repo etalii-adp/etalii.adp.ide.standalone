@@ -69,14 +69,14 @@ One worktree for the whole spec (`.claude/worktrees/skos`, per CLAUDE.md's one-w
   - _Requirements: 1.3, 3.3, 8.1_
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer comfortable with the proto-over-Any element pattern | Task: Add skos.proto per design, wire generation for backend and client, and stream the projection through the session as elements with these payloads, reusing the family truncation payload - with round-trip payload tests and a stream test over a fixture vocabulary | Restrictions: no new services or streams - Any on the shared Element; no duplicate truncation message | _Leverage: the family's rdf.proto and generation wiring; the anchor session's streaming shape | Success: payloads round-trip, the stream carries the projection, the client decodes type-checked. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3.4 Gate and merge group 3
+- [x] 3.4 Gate and merge group 3
   - The four gates, exit codes checked before any pipe; merge into `develop`
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes captured before any pipe and merge group 3 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 - [ ] 4. The canvas
   - _Requirements: 1.1-1.6, 3.1, 3.3, 3.4, 4.1, 5.1-5.3, 8.1_
 
-- [ ] 4.1 SkosCanvas: boxes, three edge styles, regions, the chip
+- [-] 4.1 SkosCanvas: boxes, three edge styles, regions, the chip
   - Files: `src/diagrams/rdf/client/` skos canvas module + client tests
   - Concept nodes as `BoxElement`s — deliberately rectangular per the design's divergence note (the family's circular element is the OWL reading's alone) — with notation badge, label, the language chip rendered when the payload tag differs from the session's display language, alternate/fallback styling by kind; scheme regions and collection groups in the shared boundary styling; solid hierarchy, dashed related, dotted mapping edges over `StraightConnection`; drag to the core layout command, the two `rel:` gestures, the `new:` drop with the label dialog, shared menu/keyboard/scrollbars, the truncation banner
   - _Requirements: 1.1, 1.3, 1.4, 1.5, 3.1, 3.3, 3.4, 4.1, 8.1_
