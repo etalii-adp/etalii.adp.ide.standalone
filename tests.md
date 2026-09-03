@@ -688,6 +688,39 @@ space, which is one candidate to rule out.
   Script step. Both screenshots retaken; capture.mjs now raises dblclick in the page, since
   a fresh puppeteer-core install opened nothing through CDP click({ clickCount: 2 }).
 
+## The Add flow lists helm/chart on a folder, and the registration opens the chart (helm-charts, task 7.4)
+
+- **Preconditions**: backend + client running; `src/examples/` added as a project; a scratch
+  folder inside the project containing a `Chart.yaml` (name + version) and nothing else.
+- **Actions**: right-click the scratch folder in the explorer, choose Add; find `helm/chart`
+  in the choice tree, pick it, accept the suggested name; double-click the created `.adp`.
+- **Expected**: `helm/chart` appears in the tree with its ship-wheel icon (listed, not
+  pre-selected - content-based pre-selection is a recorded finding, not a shipped feature);
+  the created `.adp` holds only the MIME line; the diagram opens showing the chart node and
+  the metadata band.
+
+## Every helm node kind navigates on double-click (helm-charts, task 7.4)
+
+- **Preconditions**: backend + client running; `src/examples/` added as a project.
+- **Actions**: open `diagrams/helm-charts/nginx/helm-chart.adp`; double-click, in turn: the
+  chart node, `values.yaml`, `values-prod.yaml`, a template, the `_helpers.tpl` partial, the
+  `charts/common` subchart, and the `Chart.lock` node; then double-click the `cache`
+  dependency node.
+- **Expected**: each file-backed node reveals its artifact in the explorer (the subchart
+  reveals its folder, beside its own registration if one exists); the dependency node reveals
+  nothing, and its Properties panel says the declaration lives in `Chart.yaml` with every row
+  read-only.
+
+## A helm reposition lands in the .adp, survives a reopen, and undoes byte-for-byte (helm-charts, task 7.4)
+
+- **Preconditions**: backend + client running; `src/examples/` added as a project;
+  `diagrams/helm-charts/hello-world/helm-chart.adp` unmodified (one MIME line).
+- **Actions**: open the diagram; drag the chart node somewhere new; inspect the `.adp` in a
+  text editor; close and reopen the diagram tab; press the undo shortcut; inspect the `.adp`
+  again; run `git status` over the example.
+- **Expected**: after the drag the `.adp` carries a `layout:` block with one `chart: <x> <y>`
+  entry and no chart file changed; the reopened tab shows the node at the dragged spot; undo
+  returns the `.adp` to its single MIME line; `git status` shows the example clean at the end.
 ## The over-budget RDF file draws its first thousand and says so (rdf-diagram, task 5.3)
 
 The drawn-element budget's honest degradation (Requirement 8): the whole Nobel laureates
