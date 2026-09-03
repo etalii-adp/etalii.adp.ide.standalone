@@ -11,7 +11,7 @@ Read these sections of the diagram walkthrough first; they apply verbatim, with 
 - [The client](creating-a-diagram-module.md#the-client) — a `client/register.ts` found by the *same* `import.meta.glob` in [`diagramCanvases.ts`](../src/client/src/shell/panels/diagramCanvases.ts) (its pattern covers `editors/*/client/register.ts` too), matching on the editor's mime.
 - [Tests and examples](creating-a-diagram-module.md#tests-fixtures-and-examples) — xUnit v3 executable test projects, the CLAUDE.md test command, and `examples/` replicated into `src/examples/` under the same `ExampleReplicationTests` enforcement. An editor's examples replicate byte-for-byte (no `body:` headers to differ).
 
-The one shared piece with a family twist: an editor module's spec still comes first, and the family's own requirements live in the [`modular-text-editors`](../.spec-workflow/specs/modular-text-editors/requirements.md) spec — the analogue of tech.md's diagram-type checklist.
+The one shared piece with a family twist: an editor module's spec still comes first, and the family's own requirements live in the [`modular-text-editors`](../.spec-workflow/archive/specs/modular-text-editors/requirements.md) spec — the analogue of tech.md's diagram-type checklist.
 
 ## The definition, and what it claims
 
@@ -40,7 +40,7 @@ Two editors claiming the same extension (or file name) *unintentionally* is a de
 
 The backend seam is [`IEditorSessionFactory`](../src/backend/EtAlii.Adp.Editor/IEditorSessionFactory.cs) / [`IEditorSession`](../src/backend/EtAlii.Adp.Editor/IEditorSession.cs), resolved by editor id through `EditorSessionFactories` — the editor family's mirror of the diagram family's session factories. Markdown's [`MarkdownEditorSessionFactory.cs`](../src/editors/markdown/backend/EtAlii.Adp.Editor.Markdown/MarkdownEditorSessionFactory.cs) and [`MarkdownEditorSession.cs`](../src/editors/markdown/backend/EtAlii.Adp.Editor.Markdown/MarkdownEditorSession.cs) are the worked example; plain's session is the same contract at its simplest.
 
-What a session owes is the family's whole editing contract: content served to the client, edits saved **as a command** (undoable like everything else), external changes reaching the open editor, and the file's shape preserved — encoding, BOM, line endings, the presence or absence of a final newline. The shared [`TextFileBuffer`](../src/backend/EtAlii.Adp.Editor/TextFileBuffer.cs) in `EtAlii.Adp.Editor` owns that shape-preserving read/write, so a module does not re-derive it; plain's examples (`crlf-notes.txt`, `utf8-bom-notes.txt`) exist to pin exactly those properties.
+What a session owes is the family's whole editing contract: content served to the client, external changes reaching the open editor, and the file's shape preserved — encoding, BOM, line endings, the presence or absence of a final newline. The shared [`TextFileBuffer`](../src/backend/EtAlii.Adp.Editor/TextFileBuffer.cs) in `EtAlii.Adp.Editor` owns that shape-preserving read/write, so a module does not re-derive it; plain's examples (`crlf-notes.txt`, `utf8-bom-notes.txt`) exist to pin exactly those properties. Saving is not your session's job to make undoable: core's service dispatches one shared `SaveTextFileCommand` through the history for every editor alike, and your session's `SaveAsync` only carries the content to the buffer — the command layer above is family-wide, not per module.
 
 ## The client panel
 
