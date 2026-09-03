@@ -180,4 +180,43 @@ public class EditorResolverTests
         // Assert.
         Assert.Empty(resolver.ClaimantsOf(@"C:\project\notes.txt"));
     }
+
+    [Fact]
+    public void IsClaimed_AnExtensionClaim_IsTrue()
+    {
+        // Arrange, act and assert.
+        Assert.True(Resolver(Plain, Markdown).IsClaimed(@"C:\project\readme.md"));
+    }
+
+    [Fact]
+    public void IsClaimed_AnExactNameClaim_IsTrue()
+    {
+        // Arrange.
+        var make = new EditorDefinition("make", "Makefiles", FileNames: ["Makefile"]);
+
+        // Act and assert.
+        Assert.True(Resolver(Plain, make).IsClaimed(@"C:\project\Makefile"));
+    }
+
+    [Fact]
+    public void IsClaimed_AnAmbiguousExtension_IsStillTrue()
+    {
+        // Arrange.
+        // The test is whether an editor claims the file, not whether opening will succeed:
+        // two editors fighting over .md is a deployment fault the log already reports, and
+        // the claim stays true (small-refinements Requirement 3.2).
+        var one = new EditorDefinition("one", "One", Extensions: [".md"]);
+        var two = new EditorDefinition("two", "Two", Extensions: [".md"]);
+
+        // Act and assert.
+        Assert.True(Resolver(Plain, one, two).IsClaimed(@"C:\project\readme.md"));
+    }
+
+    [Fact]
+    public void IsClaimed_AFileOnlyTheFallbackAnswers_IsFalse()
+    {
+        // Arrange, act and assert: the fallback claims everything by construction, so it
+        // never counts as a claim.
+        Assert.False(Resolver(Plain, Markdown).IsClaimed(@"C:\project\notes.txt"));
+    }
 }
