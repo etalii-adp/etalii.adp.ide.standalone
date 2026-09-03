@@ -122,4 +122,16 @@ describe("the bundle canvas", () => {
     // Assert.
     expect(container.querySelectorAll(".databricks-anchor-hit")).toHaveLength(0);
   });
+
+  it("wears the shared canvas classes and draws the shared scrollbars", () => {
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    expect(container.querySelector(".databricks-canvas")!.classList.contains("canvas-host")).toBe(true);
+    expect(container.querySelector(".databricks-node-box")!.classList.contains("canvas-node")).toBe(true);
+    expect(container.querySelector(".databricks-override-line")!.classList.contains("canvas-connection-line")).toBe(true);
+    expect(container.querySelector(".databricks-scrollbars.canvas-scrollbar-horizontal")).not.toBeNull();
+    expect(container.querySelector(".databricks-scrollbars.canvas-scrollbar-vertical")).not.toBeNull();
+  });
 });

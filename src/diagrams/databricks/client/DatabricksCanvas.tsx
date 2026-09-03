@@ -3,6 +3,8 @@ import { BoxElement } from "@client/canvas/elements/box/BoxElement";
 import { FrameElement } from "@client/canvas/elements/frame/FrameElement";
 import { FixedBezierConnection } from "@client/canvas/connections/fixed-bezier/FixedBezierConnection";
 import { StraightConnection } from "@client/canvas/connections/straight/StraightConnection";
+import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
+import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import type { ConnectorBox, Point } from "@client/canvas/connectors";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
@@ -17,7 +19,7 @@ import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { ContextSelectionAction } from "@client/generated/context_pb";
 import { useDatabricksStream } from "./useDatabricksStream";
 import { useSimulatedRun } from "./useSimulatedRun";
-import type { DatabricksEdge } from "./databricksModel";
+import type { DatabricksEdge, DatabricksModel } from "./databricksModel";
 
 /** A node's drawn size, in the module's own canvas units - matching the backend layouts' spacing. */
 export const NODE_WIDTH = 200;
@@ -417,7 +419,7 @@ export function DatabricksCanvas({
 
   if (failed) {
     return (
-      <div className="databricks-canvas databricks-canvas-message">
+      <div className="databricks-canvas canvas-host databricks-canvas-message canvas-host-message">
         <p>This diagram could not be opened.</p>
       </div>
     );
@@ -433,10 +435,10 @@ export function DatabricksCanvas({
   }
 
   return (
-    <div className="databricks-canvas">
+    <div className="databricks-canvas canvas-host">
       <div
         ref={surfaceRef}
-        className="databricks-surface"
+        className="databricks-surface canvas-viewport"
         role="application"
         aria-label={ariaLabel}
         tabIndex={0}
@@ -449,11 +451,11 @@ export function DatabricksCanvas({
         onDragOver={onDragOver}
         onDrop={onSurfaceDrop}
       >
-        <svg className="databricks-content">
+        <svg className="databricks-content canvas-drawing">
           <defs>
             <marker
               id={ARROWHEAD_ID}
-              className="databricks-arrowhead"
+              className="databricks-arrowhead canvas-arrowhead"
               viewBox="0 0 10 10"
               refX="9"
               refY="5"
@@ -500,7 +502,7 @@ export function DatabricksCanvas({
 
           {[...model.nodes.values()].map((node) => {
             const box = boxes.get(node.id)!;
-            const classes = ["databricks-node", `databricks-node-${node.kind}`];
+            const classes = ["databricks-node canvas-element", `databricks-node-${node.kind}`];
             if (node.unresolved) {
               classes.push("databricks-node-missing");
             }
@@ -511,11 +513,11 @@ export function DatabricksCanvas({
             }
 
             if (node.id === selectedId) {
-              classes.push("databricks-selected");
+              classes.push("databricks-selected canvas-selected");
             }
 
             if (connect?.overId === node.id) {
-              classes.push("databricks-connect-target");
+              classes.push("databricks-connect-target canvas-connect-target");
             }
 
             return (
@@ -528,8 +530,8 @@ export function DatabricksCanvas({
                 width={box.width}
                 height={box.height}
                 label={node.label}
-                boxClassName="databricks-node-box"
-                labelClassName="databricks-label"
+                boxClassName="databricks-node-box canvas-node"
+                labelClassName="databricks-label canvas-node-label"
                 labelY={box.height / 2 - 4}
                 onMouseDown={(event) => onBoxPointerDown(event, node.id, at(node, drag).x, at(node, drag).y)}
                 onMouseEnter={() => onBoxPointerEnter(node.id)}
@@ -544,15 +546,18 @@ export function DatabricksCanvas({
                 ) : null}
                 {connectable && node.id === selectedId && movable(node.id) ? (
                   <>
+                    {/* A visible dot with an invisible fat grab twin - the shared anchor pair. */}
+                    <circle className="databricks-anchor canvas-anchor" cx={0} cy={box.height / 2} r={4} />
+                    <circle className="databricks-anchor canvas-anchor" cx={box.width} cy={box.height / 2} r={4} />
                     <circle
-                      className="databricks-anchor-hit"
+                      className="databricks-anchor-hit canvas-anchor-hit"
                       cx={0}
                       cy={box.height / 2}
                       r={10}
                       onMouseDown={(event) => onAnchorPointerDown(event, node.id)}
                     />
                     <circle
-                      className="databricks-anchor-hit"
+                      className="databricks-anchor-hit canvas-anchor-hit"
                       cx={box.width}
                       cy={box.height / 2}
                       r={10}
@@ -564,6 +569,11 @@ export function DatabricksCanvas({
             );
           })}
         </svg>
+        <CanvasScrollbars
+          {...scrollAxesOf(model, view, surfaceRef.current?.getBoundingClientRect() ?? null)}
+          className="databricks-scrollbars"
+          onPan={(startX, startY) => setView((current) => ({ ...current, startX, startY }))}
+        />
       </div>
       <ContextMenu
         open={menuPosition !== null}
@@ -579,8 +589,8 @@ export function DatabricksCanvas({
           {simulation.marker} · dismiss
         </button>
       ) : null}
-      {loading ? <p className="databricks-status">Opening…</p> : null}
-      {rejection ? <p className="databricks-rejection">{rejection}</p> : null}
+      {loading ? <p className="databricks-status canvas-status">Opening…</p> : null}
+      {rejection ? <p className="databricks-rejection canvas-rejection">{rejection}</p> : null}
     </div>
   );
 }
@@ -588,6 +598,40 @@ export function DatabricksCanvas({
 /** Whether an id is a box a gesture may start from - the dependency gesture is tasks-only. */
 function movable(id: string): boolean {
   return id.startsWith("task:");
+}
+
+/**
+ * The two scroll axes as the shared bars want them: the view's window, and the content's
+ * bounds - nodes and frames alike - padded so a drag can go a little past the content, or the
+ * plane stops feeling unbounded. Everything in the module's own canvas units.
+ */
+function scrollAxesOf(model: DatabricksModel, view: DatabricksView, surface: DOMRect | null) {
+  const widthPx = surface?.width || 1200;
+  const heightPx = surface?.height || 600;
+  const boxes = [
+    ...[...model.nodes.values()].map((node) => ({ x: node.x, y: node.y, width: NODE_WIDTH, height: NODE_HEIGHT })),
+    ...[...model.frames.values()].map((frame) => ({ x: frame.x, y: frame.y, width: FRAME_WIDTH, height: FRAME_HEIGHT })),
+  ];
+
+  const horizontalSpan = widthPx / view.pixelsPerUnit;
+  const verticalSpan = heightPx / view.pixelsPerUnit;
+  const minX = boxes.length > 0 ? Math.min(...boxes.map((box) => box.x)) : view.startX;
+  const maxX = boxes.length > 0 ? Math.max(...boxes.map((box) => box.x + box.width)) : view.startX + horizontalSpan;
+  const minY = boxes.length > 0 ? Math.min(...boxes.map((box) => box.y)) : view.startY;
+  const maxY = boxes.length > 0 ? Math.max(...boxes.map((box) => box.y + box.height)) : view.startY + verticalSpan;
+
+  return {
+    horizontal: {
+      viewStart: view.startX,
+      viewSpan: horizontalSpan,
+      ...scrollExtentOf(minX, maxX, { factor: 0.5, minimumSpan: NODE_WIDTH }),
+    },
+    vertical: {
+      viewStart: view.startY,
+      viewSpan: verticalSpan,
+      ...scrollExtentOf(minY, maxY, { factor: 0, minimum: 2 * NODE_HEIGHT }),
+    },
+  };
 }
 
 function overrides(count: number): string {
@@ -636,8 +680,8 @@ function renderEdge(edge: DatabricksEdge, boxes: Map<string, ConnectorBox>, sele
         key={edge.id}
         from={from}
         to={to}
-        className={`databricks-override${edge.id === selectedId ? " databricks-selected" : ""}`}
-        pathClassName="databricks-override-line"
+        className={`databricks-override${edge.id === selectedId ? " databricks-selected canvas-selected" : ""}`}
+        pathClassName="databricks-override-line canvas-connection-line"
         markerEnd={`url(#${ARROWHEAD_ID})`}
       />
     );
@@ -645,7 +689,7 @@ function renderEdge(edge: DatabricksEdge, boxes: Map<string, ConnectorBox>, sele
 
   const start: Point = { x: from.x + from.width / 2, y: from.y };
   const end: Point = { x: to.x - to.width / 2, y: to.y };
-  const classes = [`databricks-edge databricks-edge-${edge.kind}`];
+  const classes = [`databricks-edge canvas-connection-line databricks-edge-${edge.kind}`];
   if (edge.outcome === "true") {
     classes.push("databricks-edge-outcome-true");
   } else if (edge.outcome === "false") {
@@ -653,7 +697,7 @@ function renderEdge(edge: DatabricksEdge, boxes: Map<string, ConnectorBox>, sele
   }
 
   if (edge.id === selectedId) {
-    classes.push("databricks-selected");
+    classes.push("databricks-selected canvas-selected");
   }
 
   return (
@@ -665,7 +709,7 @@ function renderEdge(edge: DatabricksEdge, boxes: Map<string, ConnectorBox>, sele
         markerEnd={`url(#${ARROWHEAD_ID})`}
       />
       {edge.outcome ? (
-        <text className="databricks-outcome-label" x={(start.x + end.x) / 2} y={(start.y + end.y) / 2 - 6}>
+        <text className="databricks-outcome-label canvas-hint" x={(start.x + end.x) / 2} y={(start.y + end.y) / 2 - 6}>
           {edge.outcome}
         </text>
       ) : null}
@@ -696,7 +740,7 @@ function PendingEdge({
 
   return (
     <path
-      className="databricks-pending-edge"
+      className="databricks-pending-edge canvas-pending-connection"
       d={`M ${start.x} ${start.y} C ${start.x + 30} ${start.y}, ${end.x - 30} ${end.y}, ${end.x} ${end.y}`}
     />
   );

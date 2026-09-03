@@ -2,6 +2,7 @@ import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanv
 import { BundleCanvas } from "./BundleCanvas";
 import { JobCanvas } from "./JobCanvas";
 import { PipelineCanvas } from "./PipelineCanvas";
+import "@client/canvas/canvas.css";
 import "./databricks.css";
 
 /**

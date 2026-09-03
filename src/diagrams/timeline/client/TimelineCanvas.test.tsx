@@ -111,6 +111,21 @@ beforeEach(() => {
 });
 
 describe("the timeline canvas", () => {
+  it("wears the shared canvas classes, so the central stylesheet is what dresses it", () => {
+    // Arrange & act.
+    // The appearance moved to @client/canvas/canvas.css; the timeline is one of its two
+    // reference consumers, and a class falling out of the markup would silently unstyle it.
+    const { container } = renderCanvas();
+
+    // Assert.
+    expect(container.querySelector(".timeline-canvas")!.classList.contains("canvas-host")).toBe(true);
+    expect(container.querySelector(".timeline-surface")!.classList.contains("canvas-viewport")).toBe(true);
+    expect(container.querySelector(".timeline-period")!.classList.contains("canvas-node")).toBe(true);
+    expect(container.querySelector(".timeline-label")!.classList.contains("canvas-node-label")).toBe(true);
+    expect(container.querySelector(".timeline-connection")!.classList.contains("canvas-connection")).toBe(true);
+    expect(container.querySelector(".timeline-connection-line")!.classList.contains("canvas-connection-line")).toBe(true);
+  });
+
   it("still shows both scrollbars and still pans on a thumb drag after moving to the shared scroll view", () => {
     // Arrange.
     // small-refinements Requirement 1.6: the migration onto CanvasScrollbars is not a silent
