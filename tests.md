@@ -798,6 +798,52 @@ data rather than a fixture.
   one undo returned the `.adp` byte-for-byte. The validator panel showed "No problems found"
   on the real Wikidata export the whole time.
 
+## A language chip shows a translation gap, and only a gap (skos-diagram, task 5.2)
+
+The label chain is pinned exhaustively as a pure function, and the chip's condition is decided
+backend-side so the chip can never disagree with the label beside it. What no test can settle is
+whether a reader takes the point: a quiet tag beside a name is meant to read as "this vocabulary
+has not been translated here", not as decoration.
+
+- **Preconditions**: backend + client running; a project holding a multilingual vocabulary whose
+  translations are incomplete (the vendored EuroVoc extract is one), registered as `w3c/skos`
+  with a `language:` header naming a language the vocabulary does not translate everything into
+  — the header sits after `body:` and before `layout:`.
+- **Actions**: open the diagram and read a band of concepts.
+- **Expected**: concepts translated into the header's language show their translated label and
+  no chip; concepts that are not show a fallback label with a small language tag beside it. The
+  chip is legible but quiet - it should never out-shout the label. Removing the `language:`
+  header and reopening moves the chips to the concepts that lack English instead.
+
+## A misplaced language: header changes nothing, and says why (skos-diagram, task 5.2)
+
+The hazard this guards is silent: core's registration scan stops at the first line it does not
+recognise, so a `language:` line above `body:` would sever the diagram from its document with no
+error at all. The reading refuses to honour such a header and reports it instead - the panel
+message is the only place a user learns why their header did nothing.
+
+- **Preconditions**: as above.
+- **Actions**: move the `language:` line above the `body:` line, save, and reopen the diagram.
+- **Expected**: the diagram still opens on its document - the pairing is intact - and draws in
+  the default language order rather than the header's. The Errors and Warnings panel carries one
+  `skos.misplaced-header` entry naming the line and saying to move it below `body:`. Moving it
+  back and reopening restores the header's language and clears the entry.
+
+## Filing a concept under another is one gesture and one undo (skos-diagram, task 5.2)
+
+The hierarchy is the picture, so the gesture that builds it is the one to see working end to
+end: dragged from the top anchor, written as a single `skos:broader` on the narrower end - the
+direction thesauri are authored in - with no inverse invented, and reversible byte-for-byte.
+
+- **Preconditions**: a vendored SKOS example open as `w3c/skos`, in a git checkout so
+  `git diff` works; two concepts visible that are not yet related.
+- **Actions**: select a concept, drag from its **top** anchor onto another concept and release;
+  run `git diff`; press Ctrl+Z; run `git diff` again. Then repeat from the **side** anchor.
+- **Expected**: the top-anchor drag adds exactly one line, a `skos:broader` naming the target,
+  on the dragged concept - no `skos:narrower` anywhere, no re-indentation, no reordered keys, no
+  changed line endings. The canvas re-layers so the concept sits below its new parent. Ctrl+Z
+  leaves `git diff` empty. The side-anchor drag does the same with one `skos:related` line, and
+  does not change the layering.
 ## A shared variable draws once, with edges crossing region borders (sparql-diagram, task 5.3)
 
 The one drawing rule the whole module is built around: every occurrence of a variable is one
