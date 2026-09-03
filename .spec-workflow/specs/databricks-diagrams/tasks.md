@@ -2,16 +2,16 @@
 
 One worktree for the whole spec (`.claude/worktrees/dbx`, per CLAUDE.md's one-worktree-per-specification rule). Each group ends in a gate-and-merge task judged by exit code, so `develop` grows the family a working layer at a time and the worktree never drifts far from it.
 
-- [ ] 1. Core: the `.adp` layout block
+- [-] 1. Core: the `.adp` layout block
   - _Requirements: 7.3, 7.4, 7.5, 7.6, 7.7_
 
-- [ ] 1.1 RegistrationLayout beside DiagramFilePair
+- [x] 1.1 RegistrationLayout beside DiagramFilePair
   - Files: `src/backend/EtAlii.Adp.Backend/Hierarchy/RegistrationLayout.cs` + tests in `EtAlii.Adp.Backend.Tests`
   - Reads and writes the `layout:` block after the `body:`/`view:`/`resource:` headers: indented `<element-id>: <x> <y>` entries; read merges over computed positions element by element; stale ids are ignored on read and dropped on the next write; the `.adp` is ADP's own file, so the writer may normalize the block freely while never touching the headers above it
   - _Requirements: 7.3, 7.4, 7.5, 7.7_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with DiagramFilePair | Task: Implement the core layout: block reader/writer per design - parse after the existing headers, merge stored positions over computed ones, ignore stale ids on read and drop them on write - with tests covering read, merge, stale-drop, write and header preservation | Restrictions: the body:/view: header handling in DiagramFilePair stays untouched; the block is defined once in core for every module, nothing databricks-specific leaks in | _Leverage: DiagramFilePair.cs's header scanning shape and its test suite's temp-folder harness | Success: round-trip tests pass; an .adp with headers and a layout block reads and rewrites correctly; stale entries vanish on the next write. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 1.2 SetRegistrationLayoutCommand, one undo per reposition
+- [-] 1.2 SetRegistrationLayoutCommand, one undo per reposition
   - Files: `src/backend/EtAlii.Adp.Backend/Hierarchy/Commands/SetRegistrationLayoutCommandHandler.cs` (command + inverse + handler), registration in `History/ServiceCollection.AddCommands.cs`, tests
   - Writes one element's position; the inverse restores the prior entry or its absence, so undo returns the `.adp` byte-for-byte
   - _Requirements: 7.6_
