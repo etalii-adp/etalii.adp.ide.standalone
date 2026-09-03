@@ -118,6 +118,16 @@ message RdfTruncationPayload { int32 shown = 1; int32 total = 2; } // rides one 
 
 ## Testing Strategy
 
+**Ask what the corpus has never been given.** Two defects in this family were invisible for the
+same reason and were both found the same way — not by rereading the code, but by naming a shape
+every existing test had quietly avoided. A `RdfDocument` whose lines disagree about their
+terminators had never been seeded, because every fixture was written in one convention; a skos
+edge selected through the family provider had never been exercised, because each reading's tests
+selected through its own. Neither is exotic, and neither would have been caught by another pass
+over the implementation. So when a suite here is green, the useful question is which input it has
+never seen — mixed endings, a term two readings both recognise, a selection arriving through the
+other reading's door — rather than which branch is uncovered.
+
 ### Unit Testing
 
 - Parser: a fixture corpus per serialization covering every R1.1 construct, CRLF/LF/no-trailing variants, comments — byte-identity on the untouched round trip; span correctness asserted for multi-line and shared-line triples. Fixture files `-text` in `.gitattributes`: by extension (`*.ttl -text`, `*.nt -text`) since this family owns the extensions — the reasoning recorded there per the standing instruction.
