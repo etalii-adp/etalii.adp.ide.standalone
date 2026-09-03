@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/ansible-refinements/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T16:53:05.724Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788454385653_wkjvx5o2b",
+      "approvalTitle": "ansible-refinements requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-03T17:33:50.007Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788454385653_wkjvx5o2b",
+      "approvalTitle": "ansible-refinements requirements"
+    }
+  ]
+}

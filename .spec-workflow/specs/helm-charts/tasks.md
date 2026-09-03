@@ -133,41 +133,41 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - Same gates; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-5 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 6. Client
+- [x] 6. Client
   - _Requirements: 6.2, 7.1, 8.1, 8.2, 8.3_
 
-- [-] 6.1 Model and stream hook
+- [x] 6.1 Model and stream hook
   - Files: `src/diagrams/helm-charts/client/helmModel.ts`, `useHelmStream.ts` + tests
   - Payload decoding, two delta cases, anchor/palette helpers, and `moveElementTo` — the member the ansible hook deliberately lacked
   - _Requirements: 6.2_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior TypeScript developer | Task: Implement the client model and stream hook with moveElementTo, tested over mocked streams | Restrictions: follow the client editorconfig sections; two delta cases only — the wire emits Remove-then-Add | _Leverage: ansibleModel.ts and useAnsibleStream.ts, plus the databricks client's move dispatch | Success: model and hook tests pass; typecheck clean. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 6.2 Canvas, styles, registration
+- [x] 6.2 Canvas, styles, registration
   - Files: `HelmCanvas.tsx`, `helm-charts.css`, `register.ts`, client `readme.md` + tests
   - Central canvas composition, band chrome, drag-to-reposition wired to `moveElementTo`, activation per node kind (open in text editor; subchart diagram offer; sealed/open-end no-op), palette as CSS classes per kind
   - _Requirements: 7.1, 8.1, 8.2, 8.3_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior TypeScript/React developer | Task: Implement HelmCanvas from the central canvas library with band chrome, reposition dispatch and per-kind activation, plus module CSS and registration, tested over mocked streams | Restrictions: reuse src/client/src/canvas primitives — no bespoke drawing; every tab's content keyed per tab (the React instance-reuse lesson) | _Leverage: AnsibleCanvas.tsx and its css slot pattern; canvas elements/connections | Success: canvas tests cover structure, activation and move dispatch; npm test and typecheck green. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 6.3 Gate and merge group 6
+- [x] 6.3 Gate and merge group 6
   - Same gates; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-6 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7. Proof and finish
+- [-] 7. Proof and finish
   - _Requirements: 7.1, 7.2, 2.3, 11.6, 12.3, 10.9_
 
-- [ ] 7.1 Zero-writes proof
+- [x] 7.1 Zero-writes proof
   - Files: `ZeroWrites.Tests.cs` (module tests)
   - Open, browse, lay out, validate and close a fixture chart; every file byte-identical via `SequenceEqual` naming the offending file (never tuple/record equality over byte arrays); no file created or deleted
   - _Requirements: 7.1, 7.2_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the zero-writes proof over a fixture chart with byte-level assertions naming any offending file | Restrictions: SequenceEqual per file — Assert.Equal over dictionaries of byte arrays compares references (the recorded lesson); assert file-set equality too | _Leverage: the ansible ZeroWrites.Tests and its AssertUnchanged helper shape | Success: the proof passes and fails loudly (naming the file) when sabotaged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7.2 Integration tests against the real host
+- [x] 7.2 Integration tests against the real host
   - Files: `EtAlii.Adp.Backend.Tests/Integration Tests/HelmChartsFlow.Tests.cs`, `HelmValidationFlow.Tests.cs` (+ fixture plumbing)
   - The gRPC flow: open a chart end-to-end, baseline observed, a disk change producing a delta; validation findings at project-relative paths; layout persistence — move through the session, `.adp` gains the entry, reopen overlays, undo removes, chart bytes untouched
   - _Requirements: 2.2, 6.2, 6.3, 6.4, 10.8_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the integration flows per design — open/delta, validation placement, and the full reposition-undo cycle with byte checks | Restrictions: run via dotnet test --solution per the repo's xUnit v3 conventions; zero tests ran means broken build | _Leverage: AnsibleStructureFlow.Tests.cs and AnsibleValidationFlow.Tests.cs as templates | Success: all flows green against the real host. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7.3 Example registrations, now that the definition exists
+- [-] 7.3 Example registrations, now that the definition exists
   - Files: one `helm-chart.adp` (MIME line `helm/chart`) inside each of the three module example chart roots, replicated to the central copies
   - `ExampleRegistration.Tests` now opens them against the registered definition; `ExampleReplication.Tests` stays green (identical copies — no `body:` header exists to differ); validation over all shipped examples reports zero findings
   - _Requirements: 11.1, 11.6, 10.9_

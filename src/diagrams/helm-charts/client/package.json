@@ -1,0 +1,12 @@
+{
+  "name": "@adp/diagram-helm-charts-client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Helm chart client: the chart-anatomy canvas (read-only content, repositionable view) and the registration the shell discovers.",
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.2.3",
+    "@connectrpc/connect": "^2.0.1",
+    "react": "^18.3.1"
+  }
+}
