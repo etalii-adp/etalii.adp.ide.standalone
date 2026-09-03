@@ -564,3 +564,21 @@ the timeline was migrated onto the same component and must look unchanged.
   the zoom. On a freshly opened (fitted) mindmap the thumbs claim nearly the whole track, and
   dragging one takes over from the fitted state just as a canvas drag does. The timeline's
   bars sit above its ruler, exactly where they were before the migration.
+
+## Rewritten examples look presentable in the running app (small-refinements, task 2.5)
+
+Executed 2026-09-03 against the task 2.2/2.3 rewrites, from the spec worktree on its own
+port pair. Re-run this after any future example rewrite.
+
+- **Preconditions**: backend + client running; a project opened on `src/examples`.
+- **Actions**: open `diagrams/mindmap/example 1` (both `mindmap.mm` and `design.mm`) and
+  `diagrams/timeline/example-1` and `example-2`; zoom and pan around each, dragging the
+  scrollbar thumbs.
+- **Expected**: every node and element carries real themed text (rendering engine,
+  developer onboarding, product/data-platform roadmaps) - no `Test`, `sdfsdf`, `New
+  element` or keyboard-mash anywhere; the mindmaps show their full trees, the timelines
+  show distinct, non-overlapping elements across their rows; thumbs track zoom and pan on
+  both canvases, and dragging a thumb pans.
+- **Result 2026-09-03**: pass - all four diagrams presentable on first look; mindmap
+  fitted-state thumb drag and timeline vertical thumb drag both pan as the shared scroll
+  view intends.

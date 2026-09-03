@@ -5,7 +5,7 @@ anchor Customer [0.95, 0.63]
 
 component Order Portal [0.85, 0.42]
 component Payment [0.70, 0.72] (buy)
-component Fraud Scoring [0.62, 0.30] (build)
+component Fraud Scoring [0.6626, 0.2824] (build)
 component Ledger [0.48, 0.55] (outsource)
 component Datacentre [0.15, 0.55] inertia
 component Card Networks [0.66, 0.88] (market)
