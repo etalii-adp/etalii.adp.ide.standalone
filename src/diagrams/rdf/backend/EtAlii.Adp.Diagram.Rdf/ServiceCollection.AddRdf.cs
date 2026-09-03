@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Diagrams;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -39,6 +40,21 @@ public static class ServiceCollectionAddRdfExtension
         // The rules, resolved by origin through core's validator registry, so the family's
         // problems reach the Errors and Warnings panel like any other type's (Requirement 7).
         services.AddSingleton<IDiagramValidator>(_ => new RdfValidator(RdfOrigin));
+
+        // One mapper for the family; the projections it renders differ per reading.
+        services.TryAddSingleton<RdfElementMapper>();
+
+        // The session seam, the empty body a new diagram starts as, and the reload seam - the
+        // arranged-module trio every sibling reading registers its own instances of.
+        services.AddSingleton<IDiagramSessionFactory>(provider => new RdfSessionFactory(
+            RdfOrigin,
+            provider.GetRequiredService<IRdfDocumentStore>(),
+            provider.GetRequiredService<RdfElementMapper>(),
+            provider.GetRequiredService<IHistoryStackStore>()));
+        services.AddSingleton<IDiagramDocumentFactory>(_ => new RdfDocumentFactory(RdfOrigin));
+        services.AddSingleton<IDiagramDocumentReloader>(provider => new RdfDocumentReloader(
+            RdfOrigin,
+            provider.GetRequiredService<IRdfDocumentStore>()));
 
         return services;
     }

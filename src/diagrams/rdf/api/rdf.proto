@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package etalii.adp.rdf;
+
+option csharp_namespace = "EtAlii.Adp.Diagram.Rdf";
+
+// The payloads of the RDF family's elements, packed into the core Element's Any. Defined in the
+// module's own api folder; no core proto is edited to add them, and there are no new services or
+// streams - the elements ride the existing Element/Delta shapes.
+//
+// The display forms travel beside the identities: the canvas shows prefixed names the way the
+// author's prefixes spell them, while ids and edits key off the full IRIs.
+
+// One drawn resource - a card of the data graph (Requirement 3).
+message RdfResourcePayload {
+  // The full IRI; empty for a blank node, whose identity is this parse's alone.
+  string iri = 1;
+
+  // What the card is titled: a prefixed name, the IRI's local name, or a _:label.
+  string display = 2;
+
+  // The prefixed names of the resource's rdf:type triples, badge order (Requirement 3.3).
+  // Named type_badges rather than types because protobuf's own nested Types class claims that
+  // property name in the generated C#.
+  repeated string type_badges = 3;
+
+  // The literal-valued properties, rendered as rows inside the card, never as nodes
+  // (Requirement 3.2).
+  repeated RdfLiteralRow rows = 4;
+
+  // True for a blank node: drawn, but refusing positions and edits per the identity boundary
+  // (Requirements 3.4, 4.5).
+  bool blank = 5;
+}
+
+// One literal property row inside a resource card.
+message RdfLiteralRow {
+  // The predicate, display form.
+  string predicate = 1;
+
+  // The value's lexical form.
+  string value = 2;
+
+  // The row's annotation: a language tag with its '@', or a prefixed datatype - empty for a
+  // plain string.
+  string annotation = 3;
+}
+
+// One edge - a triple between two drawn terms. The endpoints ride here because a connection
+// travels as an element and the canvas redraws its line from its endpoints' cards.
+message RdfEdgePayload {
+  string from_element_id = 1;
+  string to_element_id = 2;
+
+  // The predicate, display form, drawn as the edge's label.
+  string predicate = 3;
+
+  // The predicate's full IRI, which edits key off.
+  string predicate_iri = 4;
+}
+
+// The truncation banner's facts, riding one element when the drawn-element budget cut a large
+// graph down to its first N (Requirement 8.2).
+message RdfTruncationPayload {
+  int32 shown = 1;
+  int32 total = 2;
+}
