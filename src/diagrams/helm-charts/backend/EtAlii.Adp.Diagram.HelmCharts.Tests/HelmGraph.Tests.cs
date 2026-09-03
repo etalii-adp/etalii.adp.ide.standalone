@@ -183,6 +183,25 @@ public class HelmGraphTests
         Assert.DoesNotContain(graph.Edges, edge => edge.Kind == HelmEdgeKind.Configures);
     }
 
+    [Fact]
+    public void TwoIncludesOfDifferentNames_OnOnePartial_AreTwoEdgesWithTwoIds()
+    {
+        // Arrange & Act.
+        // The composite edge id (target AND label): the mapper found the collision when both
+        // includes of deployment.yaml keyed to the same partial - this pins the fix.
+        var graph = WellFormed();
+
+        // Assert.
+        var ids = graph.Edges
+            .Where(edge => edge.Kind == HelmEdgeKind.Includes)
+            .Select(edge => edge.Id)
+            .ToArray();
+        Assert.Equal(ids.Length, ids.Distinct(StringComparer.Ordinal).Count());
+        // And across the whole graph: element identity is what the wire and the layout store.
+        var all = graph.Edges.Select(edge => edge.Id).ToArray();
+        Assert.Equal(all.Length, all.Distinct(StringComparer.Ordinal).Count());
+    }
+
     private static HelmChart Minimal() => new(
         IsChart: true,
         new ChartMetadata("sample", "1.0.0", null, "v2", "application", string.Empty, false, 1, 3),

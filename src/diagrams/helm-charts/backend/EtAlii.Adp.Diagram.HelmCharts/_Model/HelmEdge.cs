@@ -14,8 +14,10 @@ public sealed record HelmEdge(
     bool OpenEnd)
 {
     /// <summary>
-    /// Stable within one graph: keyed by the target when there is one and by the label when
-    /// there is not, so an open end keeps its identity when what it names finally appears.
+    /// Stable within one graph: keyed by target AND label, because either alone collides -
+    /// two includes of different names land on the same partial (same target), and two
+    /// declares can share a constraint (same label). The mapper caught the first form as a
+    /// duplicate element id, so the composite key is a pinned lesson, not a nicety.
     /// </summary>
-    public string Id => $"edge:{SourceId}|{Kind}|{(TargetId.Length > 0 ? TargetId : Label)}";
+    public string Id => $"edge:{SourceId}|{Kind}|{TargetId}|{Label}";
 }
