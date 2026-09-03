@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/small-refinements/tasks.md",
-  "currentVersion": 3,
+  "currentVersion": 4,
   "snapshots": [
     {
       "version": 1,
@@ -25,6 +25,14 @@
       "trigger": "approved",
       "approvalId": "approval_1788386547546_ctlb3cs9z",
       "approvalTitle": "small-refinements — tasks document"
+    },
+    {
+      "version": 4,
+      "filename": "snapshot-004.json",
+      "timestamp": "2026-09-03T06:09:42.323Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788415486520_qsxsx007j",
+      "approvalTitle": "small-refinements tasks revision: adds task 1.6, the third scroll-view consumer (dependency-graph) that Requirement 1.5 already covers"
     }
   ]
 }
