@@ -102,7 +102,7 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - Same gates; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-4 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 5. Validation and context
+- [x] 5. Validation and context
   - _Requirements: 10.1–10.9, 8.1, 8.2, 8.3, 9.2, 9.3, 9.4_
 
 - [x] 5.1 HelmRuleSet
@@ -129,14 +129,14 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - _Requirements: 9.3, 9.4_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the read-only property grids per element kind with the house reason on every row and an unconditional SetAsync refusal, tested per kind | Restrictions: every row read-only with a true reason naming its defining file; no editable path exists | _Leverage: AnsibleContextPropertyProvider's Row helper shape | Success: grid tests cover each element kind and the summary grid; every row carries the reason. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 5.5 Gate and merge group 5
+- [x] 5.5 Gate and merge group 5
   - Same gates; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-5 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 6. Client
+- [-] 6. Client
   - _Requirements: 6.2, 7.1, 8.1, 8.2, 8.3_
 
-- [ ] 6.1 Model and stream hook
+- [-] 6.1 Model and stream hook
   - Files: `src/diagrams/helm-charts/client/helmModel.ts`, `useHelmStream.ts` + tests
   - Payload decoding, two delta cases, anchor/palette helpers, and `moveElementTo` — the member the ansible hook deliberately lacked
   - _Requirements: 6.2_
