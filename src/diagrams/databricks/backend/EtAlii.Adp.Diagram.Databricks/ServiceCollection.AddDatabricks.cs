@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Diagrams;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -36,8 +37,33 @@ public static class ServiceCollectionAddDatabricksExtension
         services.TryAddSingleton<IDatabricksDocumentStore, DatabricksDocumentStore>();
         services.TryAddSingleton<DatabricksElementMapper>();
 
+        // The family's commands, so every real edit is one undo away (tech.md's Commands rule).
+        services.AddSingleton<ICommandHandler<InsertDatabricksTaskCommand>, InsertDatabricksTaskCommandHandler>();
+        services.AddSingleton<ICommandHandler<RemoveDatabricksTaskCommand>, RemoveDatabricksTaskCommandHandler>();
+        services.AddSingleton<ICommandHandler<ConnectDatabricksTasksCommand>, ConnectDatabricksTasksCommandHandler>();
+        services.AddSingleton<ICommandHandler<DisconnectDatabricksTasksCommand>, DisconnectDatabricksTasksCommandHandler>();
+        services.AddSingleton<ICommandHandler<RenameDatabricksTaskCommand>, RenameDatabricksTaskCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetDatabricksRunIfCommand>, SetDatabricksRunIfCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetDatabricksClusterCommand>, SetDatabricksClusterCommandHandler>();
+        services.AddSingleton<ICommandHandler<AddDatabricksResourceCommand>, AddDatabricksResourceCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetDatabricksBundleNameCommand>, SetDatabricksBundleNameCommandHandler>();
+        services.AddSingleton<ICommandHandler<InsertDatabricksLibraryCommand>, InsertDatabricksLibraryCommandHandler>();
+        services.AddSingleton<ICommandHandler<RemoveDatabricksLibraryCommand>, RemoveDatabricksLibraryCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetDatabricksPipelineScalarCommand>, SetDatabricksPipelineScalarCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreDatabricksDocumentCommand>, RestoreDatabricksDocumentCommandHandler>();
+
+        // The context seams, once for the whole family: which of the three types a file is does
+        // not change what an element is (the C4 precedent).
+        services.AddSingleton<IContextSourceResolver, DatabricksContextSourceResolver>();
+        services.AddSingleton<IContextActionProvider, DatabricksContextActionProvider>();
+        services.AddSingleton<IContextPropertyProvider, DatabricksContextPropertyProvider>();
+
         foreach (var origin in (DiagramOrigin[])[BundleOrigin, JobOrigin, PipelineOrigin])
         {
+            // The palette this type offers: entries name actions above rather than carrying an
+            // implementation, so a drop and a menu click are the same edit (Requirement 9).
+            services.AddSingleton<IDiagramToolboxProvider>(_ => new DatabricksToolboxProvider(origin));
+
             // The empty body a new diagram of this type starts as - the one thing core cannot
             // derive from the definition on its own.
             services.AddSingleton<IDiagramDocumentFactory>(_ => new DatabricksDocumentFactory(origin));
