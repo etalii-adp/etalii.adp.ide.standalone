@@ -1,6 +1,6 @@
+using System.Text;
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
-using System.Text;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
