@@ -54,7 +54,7 @@ public sealed class CreateDiagramFileCommandHandler : ICommandHandler<CreateDiag
             return Task.FromResult(CommandResult.Failure("The folder no longer exists."));
         }
 
-        var files = new List<(string FileName, string Content)> { (command.FileName, command.FirstLine + "\n") };
+        var files = new List<(string FileName, string Content)> { (command.FileName, command.FirstLine + AdpFileWriter.NewLine) };
         if (command.HasSibling)
         {
             files.Add((command.SiblingFileName, command.SiblingContent));

@@ -229,7 +229,7 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
         var expectedMimeType = catalog.All.Single(definition => definition.Origin.Key == leaf.Id).Origin.MimeType;
         var actualBytes = await File.ReadAllBytesAsync(created, cts.Token);
-        Assert.Equal(Encoding.UTF8.GetBytes(expectedMimeType + "\n"), actualBytes);
+        Assert.Equal(Encoding.UTF8.GetBytes(expectedMimeType + "\r\n"), actualBytes);
     }
 
     [Fact]
