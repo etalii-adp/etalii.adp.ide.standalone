@@ -34,7 +34,7 @@
 
 .ansible-canvas-message code {
   font-family: var(--font-mono, monospace);
-  background: var(--color-surface-raised, rgb(0 0 0 / 6%));
+  background: var(--color-surface-raised);
   padding: 0 0.25rem;
   border-radius: 3px;
 }
@@ -178,11 +178,11 @@
  * in the warning colour, because one of those two cases is a mistake.
  */
 .ansible-edge-unresolved .ansible-edge-line {
-  --ansible-edge-stroke: var(--color-warning, #c9a84f);
+  --ansible-edge-stroke: var(--color-warning);
   stroke-dasharray: 3 3;
 }
 
 .ansible-edge-unresolved .ansible-edge-label {
-  fill: var(--color-warning, #c9a84f);
+  fill: var(--color-warning);
   text-anchor: start;
 }
