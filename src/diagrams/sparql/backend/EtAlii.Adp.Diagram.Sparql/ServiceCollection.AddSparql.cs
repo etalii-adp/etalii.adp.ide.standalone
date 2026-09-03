@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Diagrams;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -40,6 +41,15 @@ public static class ServiceCollectionAddSparqlExtension
         services.AddSingleton<IDiagramDocumentReloader>(provider => new SparqlDocumentReloader(
             SparqlOrigin,
             provider.GetRequiredService<ISparqlDocumentStore>()));
+
+        // The rules, resolved by origin through core's validator registry.
+        services.AddSingleton<IDiagramValidator>(_ => new SparqlValidator(SparqlOrigin));
+
+        // The context seams. The action provider is registered precisely so it can offer
+        // nothing: an empty answer states in code that this diagram is a reading surface.
+        services.AddSingleton<IContextSourceResolver, SparqlContextSourceResolver>();
+        services.AddSingleton<IContextActionProvider, SparqlContextActionProvider>();
+        services.AddSingleton<IContextPropertyProvider, SparqlContextPropertyProvider>();
 
         return services;
     }
