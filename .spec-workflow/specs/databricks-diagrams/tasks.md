@@ -46,7 +46,7 @@ One worktree for the whole spec (`.claude/worktrees/dbx`, per CLAUDE.md's one-wo
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 2 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3. Backend sessions, wire and providers
+- [x] 3. Backend sessions, wire and providers
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 3.1-3.5, 4.1-4.6, 5.1-5.4, 6.1-6.3, 8.1-8.6, 9.1-9.3, 10.1-10.5, 11.1-11.6_
 
 - [x] 3.1 Wire payloads
@@ -65,14 +65,14 @@ One worktree for the whole spec (`.claude/worktrees/dbx`, per CLAUDE.md's one-wo
   - _Requirements: 6.1-6.3, 8.1, 8.3-8.5 (the real-edit halves), 9.1-9.3, 10.1-10.5, 11.1-11.6_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the timeline's providers | Task: Implement the four providers per Requirements 9-11 - menus, property grids with the placeholder and simulated-state properties, toolbox drops via placement ids, relation gestures via rel: ids, rename rewriting references in one command, simulated ids discovered with markers but executed as no-ops off the history - with discovery, execute/undo/redo and refusal tests per selection kind | Restrictions: simulated actions never dispatch a command; every real edit is one undo; property writes go through the standard SetProperty path | _Leverage: TimelineContextActionProvider's gesture and menu shapes; the writers from 2.2 | Success: provider tests pass covering each menu, property and gesture; undo round-trips hold; simulated executions leave the history untouched. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3.4 Gate and merge group 3
+- [x] 3.4 Gate and merge group 3
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 3 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. Client: three canvases and the simulation engine
+- [-] 4. Client: three canvases and the simulation engine
   - _Requirements: 3.1-3.5, 4.1-4.6, 5.1-5.4, 6.1-6.3, 7.2, 8.1, 8.2, 8.4, 8.5, 11.2, 11.3, 11.6_
 
-- [ ] 4.1 Canvases from the central library
+- [-] 4.1 Canvases from the central library
   - Files: `src/diagrams/databricks/client/` — `BundleCanvas.tsx`, `JobCanvas.tsx`, `PipelineCanvas.tsx`, models and stream hooks, `register.ts` (three registrations), `databricks.css`, `package.json` + tests
   - Composed from `src/client/src/canvas/` (BoxElement, FrameElement, FixedBezierConnection, StraightConnection, selection/menu/keyboard plumbing); job canvas reuses the timeline interaction set with repositioning dispatching the layout command; badges for run_if, clusters, outcome edges, override counts, unresolved stubs
   - _Requirements: 3.1-3.5, 4.1-4.6, 5.1-5.4, 6.1-6.3, 7.2, 11.2, 11.3_
