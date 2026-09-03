@@ -80,13 +80,13 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - _Requirements: 4.4_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer with protobuf experience | Task: Define helm-charts.proto with the Wire namespace, wire generation, and implement HelmElementMapper projecting graph plus layout to Elements with Any payloads and a Remove-then-Add Diff | Restrictions: the Wire sub-namespace is mandatory — generated names collide with _Model records without it (the CS0101 lesson); ids must be stable across sessions because the layout block stores them | _Leverage: ansible-structure.proto and AnsibleElementMapper as templates | Success: generation builds clean; mapper tests cover projection, ids and Diff. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4.2 HelmLayout
+- [x] 4.2 HelmLayout
   - Files: `HelmLayout.cs` + tests
   - Banded computed layout per design: metadata band, values column, templates column, dependencies/vendored column; pure and deterministic on fixtures
   - _Requirements: 6.1_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the banded layout as a pure deterministic function with fixture tests | Restrictions: no randomness, no filesystem; determinism is a test | _Leverage: AnsibleLayout's band approach | Success: layout tests pin the banding on the fixtures. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.3 The definition and service registration
+- [-] 4.3 The definition and service registration
   - Files: `Diagram.cs` (implemented shape: named `Chart` property with `Build`, `Subject: DiagramSubject.Folder`, no `Extension`, fitting mdi icon), `ServiceCollection.AddHelmCharts.cs`, registration/discovery tests
   - No document factory, no toolbox provider, no action provider, no commands — each absence is the requirements' stated position; the Add flow suggests `helm/chart` on a folder containing `Chart.yaml`
   - _Requirements: 2.1, 2.3, 2.4, 12.1, 12.2_
