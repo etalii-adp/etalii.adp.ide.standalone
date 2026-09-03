@@ -62,6 +62,31 @@ describe("TextEditorPanel", () => {
     expect(screen.getByTestId("dirty-indicator").textContent).toBe("Saved");
   });
 
+  it("opens a CRLF file clean - the editor's line-ending normalisation is not an edit", () => {
+    // Arrange. The stream serves the file as it is on disk, CRLF included (this repository's
+    // own house style), while CodeMirror holds every document LF-only and echoes the
+    // normalised text back through onChange when the doc is first populated. Before the fix,
+    // that echo compared LF against CRLF and every CRLF file opened with "Unsaved changes"
+    // and a dirty tab - found when a readme screenshot of a freshly opened file showed the
+    // dirty flag (documentation spec, task 9).
+    streamState.model = model("line one\r\nline two\r\n", 1);
+    render(<TextEditorPanel {...props} />);
+
+    // Act. What CodeMirror does on mount: report the document it now holds, LF-only.
+    fireEvent.change(screen.getByTestId("base-text-editor"), { target: { value: "line one\nline two\n" } });
+
+    // Assert. Not an edit - nothing the user did, and nothing the save-side buffer (which
+    // re-applies each line's own terminator) would write differently.
+    expect(screen.getByTestId("dirty-indicator").textContent).toBe("Saved");
+    expect(isTabDirty("notes.txt")).toBe(false);
+
+    // Act, continued. A real edit still counts.
+    fireEvent.change(screen.getByTestId("base-text-editor"), { target: { value: "line one edited\nline two\n" } });
+
+    // Assert.
+    expect(screen.getByTestId("dirty-indicator").textContent).toContain("Unsaved");
+  });
+
   it("marks unsaved edits, in the panel and in the tab registry (R6.5)", () => {
     // Arrange.
     render(<TextEditorPanel {...props} />);
