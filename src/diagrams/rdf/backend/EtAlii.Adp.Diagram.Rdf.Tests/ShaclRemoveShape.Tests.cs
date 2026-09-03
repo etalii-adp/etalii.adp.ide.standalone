@@ -75,7 +75,7 @@ public class ShaclRemoveShapeTests
     {
         // The case that matters most: _:shared is reachable from ex:S, but ex:Keep names it too.
         // Removing it would damage a shape nobody asked to touch.
-        const string Body = """
+        const string body = """
             ex:S a sh:NodeShape ;
               sh:property _:shared .
             ex:Keep a sh:NodeShape ;
@@ -83,7 +83,7 @@ public class ShaclRemoveShapeTests
             _:shared sh:path ex:name ;
               sh:minCount 1 .
             """ + "\n";
-        var (document, model) = Open(Body);
+        var (document, model) = Open(body);
 
         var refusal = ShaclWriter.RemoveShapeWithSubtrees(document, model, Ex + "S");
 
@@ -120,13 +120,13 @@ public class ShaclRemoveShapeTests
     {
         // The referrer is not a shape at all - co-resident data. It still counts as an outside
         // referrer, because exclusivity is about the file, not about this reading's projection.
-        const string Body = """
+        const string body = """
             ex:S a sh:NodeShape ;
               sh:property _:b .
             _:b sh:path ex:name .
             ex:someData ex:mentions _:b .
             """ + "\n";
-        var (document, model) = Open(Body);
+        var (document, model) = Open(body);
 
         var refusal = ShaclWriter.RemoveShapeWithSubtrees(document, model, Ex + "S");
 
@@ -162,7 +162,7 @@ public class ShaclRemoveShapeTests
     {
         // _:one is exclusive, but _:two is also reached by a surviving shape - so _:two and the
         // _:three below it must both survive, byte-identical, while _:one goes.
-        const string Body = """
+        const string body = """
             ex:S a sh:NodeShape ;
               sh:node _:one .
             _:one sh:node _:two .
@@ -171,7 +171,7 @@ public class ShaclRemoveShapeTests
             ex:Keep a sh:NodeShape ;
               sh:node _:two .
             """ + "\n";
-        var (document, model) = Open(Body);
+        var (document, model) = Open(body);
 
         var refusal = ShaclWriter.RemoveShapeWithSubtrees(document, model, Ex + "S");
 
@@ -189,14 +189,14 @@ public class ShaclRemoveShapeTests
     [Fact]
     public void TheCount_IsStatedBeforeAnythingRuns_AndMatchesWhatGoes()
     {
-        const string Body = """
+        const string body = """
             ex:S a sh:NodeShape ;
               sh:property _:row .
             _:row sh:path ex:name ;
               sh:minCount 1 .
             ex:Keep a sh:NodeShape .
             """ + "\n";
-        var (document, model) = Open(Body);
+        var (document, model) = Open(body);
 
         var announced = ShaclWriter.CountShapeRemoval(model, Ex + "S");
         var before = model.Triples.Count;
@@ -240,14 +240,14 @@ public class ShaclRemoveShapeTests
     {
         // Mixed form: the subtree is written inline under ex:Keep and referenced by label from
         // ex:S. Removing ex:S must not reach into ex:Keep's statement.
-        const string Body = """
+        const string body = """
             ex:Keep a sh:NodeShape ;
               sh:property _:shared .
             _:shared sh:path ex:name .
             ex:S a sh:NodeShape ;
               sh:property _:shared .
             """ + "\n";
-        var (document, model) = Open(Body);
+        var (document, model) = Open(body);
 
         Assert.Equal("", ShaclWriter.RemoveShapeWithSubtrees(document, model, Ex + "S"));
 
