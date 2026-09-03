@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Diagrams;
 
@@ -21,6 +22,10 @@ public class AddAnsibleStructureTests
     private static ServiceProvider Build()
     {
         var services = new ServiceCollection();
+        // AddCommands first, as the host and every sibling module's test do: the session
+        // factory resolves the project's history store from there for its one edit, and the
+        // module registers no history of its own.
+        services.AddCommands();
         services.AddAnsibleStructure();
         return services.BuildServiceProvider();
     }
