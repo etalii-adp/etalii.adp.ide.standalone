@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/rdf-diagram/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T11:40:34.051Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788435633832_ud2z5ujhv",
+      "approvalTitle": "rdf-diagram tasks"
+    }
+  ]
+}
