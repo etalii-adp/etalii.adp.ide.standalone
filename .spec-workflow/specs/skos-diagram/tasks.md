@@ -25,14 +25,14 @@ One worktree for the whole spec (`.claude/worktrees/skos`, per CLAUDE.md's one-w
   - _Requirements: 4.1, 4.2_
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer comfortable with graph layering algorithms | Task: Implement SkosLayout per design - deterministic top-down layering with scheme regions, polyhierarchy placed once, the documented cycle break, and the detection pass exposed so the validator consumes the same cycles - with determinism tests (same fixture, same positions), a cycle fixture asserting the excluded edge is the documented lowest-sorting one and still drawn, and a polyhierarchy fixture | Restrictions: pure and deterministic - no physics, no randomness; layering-only exclusion, never element omission | _Leverage: 1.1's projection output; the anchor's RdfLayout as the purity template | Success: identical output across runs; the cycle fixture draws every edge and layers without hanging; the detection result is a first-class output. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 1.4 Gate and merge group 1
+- [x] 1.4 Gate and merge group 1
   - All four gates (backend test + format from `src/backend`, npm test + typecheck from `src/client`), exit codes checked before any pipe; merge `.claude/worktrees/skos` into `develop`
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes captured before any pipe and merge the skos worktree's group-1 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 - [ ] 2. Definition, session, header and validation — after anchor tasks 3.2 and 1.1
   - _Requirements: 2.1-2.5, 3.2, 4.3-4.4, 7.1-7.7_
 
-- [ ] 2.1 The w3c/skos definition, session factory and the language: header
+- [-] 2.1 The w3c/skos definition, session factory and the language: header
   - Files: `Skos/SkosSessionFactory.cs`, `Skos/SkosSession.cs`, the definition appended in `Diagram.cs` (+ tests)
   - `SharedExtension: true` over `.ttl`/`.nt` (never claims a bare body); Add suggested off an asserted `skos:ConceptScheme` marker triple; the `language:` header read module-side through **anchor task 3.2's registration header helper**, scanning only the safe band (after `body:`/`view:`, before `layout:`) — **a header found outside the band is ignored, never guessed at**, with the finding left to 2.2; session composes projection, chooser (seeded from the header or the default order) and layout, applies the layout overlay, refuses repositions per the blank-node boundary and the unregistered-bare-file rule
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 3.2, 4.3, 4.4_

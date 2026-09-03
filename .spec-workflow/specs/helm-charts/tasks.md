@@ -155,13 +155,13 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
 - [-] 7. Proof and finish
   - _Requirements: 7.1, 7.2, 2.3, 11.6, 12.3, 10.9_
 
-- [-] 7.1 Zero-writes proof
+- [x] 7.1 Zero-writes proof
   - Files: `ZeroWrites.Tests.cs` (module tests)
   - Open, browse, lay out, validate and close a fixture chart; every file byte-identical via `SequenceEqual` naming the offending file (never tuple/record equality over byte arrays); no file created or deleted
   - _Requirements: 7.1, 7.2_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the zero-writes proof over a fixture chart with byte-level assertions naming any offending file | Restrictions: SequenceEqual per file — Assert.Equal over dictionaries of byte arrays compares references (the recorded lesson); assert file-set equality too | _Leverage: the ansible ZeroWrites.Tests and its AssertUnchanged helper shape | Success: the proof passes and fails loudly (naming the file) when sabotaged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7.2 Integration tests against the real host
+- [-] 7.2 Integration tests against the real host
   - Files: `EtAlii.Adp.Backend.Tests/Integration Tests/HelmChartsFlow.Tests.cs`, `HelmValidationFlow.Tests.cs` (+ fixture plumbing)
   - The gRPC flow: open a chart end-to-end, baseline observed, a disk change producing a delta; validation findings at project-relative paths; layout persistence — move through the session, `.adp` gains the entry, reopen overlays, undo removes, chart bytes untouched
   - _Requirements: 2.2, 6.2, 6.3, 6.4, 10.8_
