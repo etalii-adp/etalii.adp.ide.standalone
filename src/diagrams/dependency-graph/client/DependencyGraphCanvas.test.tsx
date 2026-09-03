@@ -109,6 +109,31 @@ describe("the dependency graph canvas", () => {
     expect(container.textContent).toContain("verifies tokens with");
   });
 
+  it("still shows both scrollbars and still pans on a thumb drag after moving to the shared scroll view", () => {
+    // Arrange.
+    // The migration pin: the bars come from @client/canvas/scroll now, wear this module's
+    // placement class, and a thumb drag still pans. jsdom lays nothing out, so the track is
+    // given a real width by hand.
+    const { container } = renderCanvas();
+    const horizontalBar = container.querySelector(".canvas-scrollbar-horizontal")!;
+    const verticalBar = container.querySelector(".canvas-scrollbar-vertical")!;
+    Object.defineProperty(horizontalBar, "getBoundingClientRect", {
+      value: () => ({ x: 0, y: 0, top: 0, left: 0, right: 200, bottom: 10, width: 200, height: 10, toJSON: () => ({}) }),
+    });
+    const thumb = horizontalBar.querySelector<HTMLElement>(".canvas-scrollbar-thumb")!;
+    const before = thumb.style.left;
+
+    // Act.
+    fireEvent.mouseDown(thumb, { clientX: 100, clientY: 5 });
+    fireEvent.mouseMove(window, { clientX: 140, clientY: 5 });
+    fireEvent.mouseUp(window);
+
+    // Assert.
+    expect(horizontalBar.classList.contains("dependency-graph-scrollbars")).toBe(true);
+    expect(verticalBar.classList.contains("dependency-graph-scrollbars")).toBe(true);
+    expect(thumb.style.left).not.toBe(before);
+  });
+
   it("defines the arrowhead marker its edges point at", () => {
     // Act.
     const { container } = renderCanvas();
@@ -576,7 +601,7 @@ describe("the dependency graph canvas", () => {
   it("pans horizontally from the scrollbar thumb", () => {
     // Arrange.
     const { container } = renderCanvas();
-    const thumb = container.querySelector(".dependency-graph-scrollbar-horizontal .dependency-graph-scrollbar-thumb")!;
+    const thumb = container.querySelector(".canvas-scrollbar-horizontal .canvas-scrollbar-thumb")!;
     const before = container.querySelector(".dependency-graph-node")!.getAttribute("x");
 
     // Act.

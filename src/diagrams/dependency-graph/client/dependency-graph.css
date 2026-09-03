@@ -176,39 +176,14 @@
 /* ---- Scrollbars -------------------------------------------------------------------- */
 
 /*
- * Windows onto the content's extent rather than native scrollbars: the canvas is an unbounded
- * plane whose size is a transform, which a native bar cannot describe. Dragging a thumb pans.
+ * The scrollbars themselves are the shared scroll view (`@client/canvas/scroll`); their look
+ * lives there. What this module owns is only placement: both bars sit above the status line,
+ * so their bottom insets grow past the shared defaults.
  */
-.dependency-graph-scrollbar {
-  position: absolute;
-  background: color-mix(in srgb, var(--color-border, #e2e8f0) 40%, transparent);
-  border-radius: 5px;
-}
-
-.dependency-graph-scrollbar-horizontal {
-  left: 8px;
-  right: 20px;
+.dependency-graph-scrollbars.canvas-scrollbar-horizontal {
   bottom: 10px;
-  height: 10px;
 }
 
-.dependency-graph-scrollbar-vertical {
-  top: 8px;
+.dependency-graph-scrollbars.canvas-scrollbar-vertical {
   bottom: 26px;
-  right: 6px;
-  width: 10px;
-}
-
-.dependency-graph-scrollbar-thumb {
-  position: absolute;
-  inset: 0;
-  background: var(--color-text-muted, #64748b);
-  opacity: 0.5;
-  border-radius: 5px;
-  cursor: grab;
-}
-
-.dependency-graph-scrollbar-thumb:hover,
-.dependency-graph-scrollbar-thumb:active {
-  opacity: 0.85;
 }
