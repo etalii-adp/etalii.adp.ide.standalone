@@ -67,11 +67,11 @@ Standing notes an implementer should not have to rediscover:
   - _Requirements: 1.5, 1.6_
   - _Prompt: Implement the task for spec small-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer familiar with this dependency-graph's view window and the shared scroll view | Task: Render `CanvasScrollbars` in `DependencyGraphCanvas` with axes built from the fork's own extent arithmetic through `scrollExtentOf`, wire a thumb drag to the view exactly as the fork did, delete `DependencyGraphScrollbars.tsx`, and reduce the module's scrollbar CSS to placement overrides at most | Restrictions: change none of the fork's numbers - this is a move, not a redesign; zoom stays on the wheel and the ribbon; no scrollbar code or CSS copied into the module | _Leverage: `DependencyGraphScrollbars.tsx` (the constants and their reasoning), `CanvasScrollbars.tsx`, `scrollGeometry.ts` | Success: the graph shows both bars driven by the shared component, the fork file is gone, tests pass, gates green, merged to develop with the worktree kept. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. Real data in the shipped examples
+- [-] 2. Real data in the shipped examples
   - Worktree: `.claude/worktrees/smref`
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 2.1 Measure before rewriting
+- [-] 2.1 Measure before rewriting
   - Files: none changed; a recorded inventory in the implementation log
   - Re-run the placeholder search over every example root (`src/diagrams/*/examples/`, `src/editors/*/examples/`, `src/examples/`) against the **committed** tree, and diff every in-scope module example against its `src/examples/` replica. Two facts are already known and must be confirmed rather than assumed: the requirements name only timeline example-2, but example-1 carries seven `New element` entries and fails criterion 2.1 just as squarely, so it is in scope; and the mindmap module's `design.mm` and its replica already differ in content, not only in the `design.adp` asymmetry the design records — the placeholder search matches the replica and not the module copy. The sweep starts from what is committed, never from the uncommitted position drags currently sitting in the main checkout's working tree
   - Purpose: criterion 2.1 applied where the requirements' survey was incomplete, and criterion 2.4 made checkable by knowing what "identical" has to reconcile
