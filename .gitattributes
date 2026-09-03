@@ -66,6 +66,23 @@
 # the subject rather than the content.
 src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline.Tests/Fixtures/** -text
 
+# The databricks module's fixtures, scoped the same way and for the same reason - with one turn
+# tighter. What the by-extension rule above wants is for the guarantee to follow the format: a
+# byte-compared document type earns one `-text` line naming its extension. The databricks module
+# cannot have that, because its documents ARE Databricks' own `databricks.yml`, job resource YAML
+# and pipeline settings JSON - `.yml` and `.json` are shared by every workflow, compose file and
+# manifest in the tree, so marking them repo-wide would freeze line endings for files where the
+# house style should simply apply. Hence a glob, like azure-pipeline's - but naming the
+# byte-compared extensions individually rather than the folder wholesale. That narrowing is what
+# makes this glob safe where the withdrawn directory rule was not: `Fixtures/**` alone also
+# catches the readme that documents the corpus (and any recorded verdicts or exports that join it
+# later), which are ordinary text - the exact trap that got the directory rule withdrawn. These
+# lines cannot catch them by construction, because they name only the extensions whose bytes are
+# the test subject.
+src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/**/*.yml -text
+src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/**/*.yaml -text
+src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Fixtures/**/*.json -text
+
 # `.owm` and the ansible-structure fixture tree are covered by `.gitattributes` files inside those
 # modules rather than from here. Both are scoped more narrowly than an extension rule would be -
 # `.owm` is byte-exact under the wardley-map tests and under `examples/example 2`, but not under

@@ -34,6 +34,9 @@
     <!-- Azure DevOps pipelines: a document the repository already owns, not one ADP creates. -->
     <Project Path="../diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline/EtAlii.Adp.Diagram.AzurePipeline.csproj" />
     <Project Path="../diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline.Tests/EtAlii.Adp.Diagram.AzurePipeline.Tests.csproj" />
+    <!-- Databricks asset bundles, jobs and declarative pipelines: three MIME types, one engine. -->
+    <Project Path="../diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks/EtAlii.Adp.Diagram.Databricks.csproj" />
+    <Project Path="../diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/EtAlii.Adp.Diagram.Databricks.Tests.csproj" />
     <Project Path="../diagrams/archimate-application/backend/EtAlii.Adp.Diagram.ArchimateApplication/EtAlii.Adp.Diagram.ArchimateApplication.csproj" />
     <Project Path="../diagrams/archimate-business/backend/EtAlii.Adp.Diagram.ArchimateBusiness/EtAlii.Adp.Diagram.ArchimateBusiness.csproj" />
     <Project Path="../diagrams/archimate-implementation-migration/backend/EtAlii.Adp.Diagram.ArchimateImplementationMigration/EtAlii.Adp.Diagram.ArchimateImplementationMigration.csproj" />
