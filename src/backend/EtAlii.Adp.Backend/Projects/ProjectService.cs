@@ -37,7 +37,7 @@ public sealed class ProjectService : EtAlii.Adp.ProjectService.ProjectServiceBas
                 added.Name,
                 added.Id,
                 userId,
-                System.IO.Path.Combine(added.Path.Segments.ToArray()));
+                added.Path.Segments.AbsolutePath());
             return Task.FromResult(new AddProjectResponse { Added = ToProto(added) });
         }
         catch (InvalidProjectPathException ex)

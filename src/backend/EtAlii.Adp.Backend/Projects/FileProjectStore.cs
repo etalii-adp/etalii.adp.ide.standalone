@@ -26,7 +26,7 @@ public sealed class FileProjectStore : IProjectStore
 
     public ProjectRecord Add(ShortGuid userId, string name, PathRecord path)
     {
-        var folderPath = IoPath.Combine(path.Segments.ToArray());
+        var folderPath = path.Segments.AbsolutePath();
         if (!Directory.Exists(folderPath))
         {
             throw new InvalidProjectPathException($"Folder not found: {folderPath}");
