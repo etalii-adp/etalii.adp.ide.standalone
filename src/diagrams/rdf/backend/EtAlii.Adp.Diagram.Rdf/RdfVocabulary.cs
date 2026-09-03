@@ -32,4 +32,13 @@ public static class RdfVocabulary
 
     /// <summary>The datatype of the bare keywords <c>true</c> and <c>false</c>.</summary>
     public const string XsdBoolean = "http://www.w3.org/2001/XMLSchema#boolean";
+
+    /// <summary>The human-readable name property the property grid edits.</summary>
+    public const string Label = "http://www.w3.org/2000/01/rdf-schema#label";
+
+    /// <summary>The documentation property the property grid edits.</summary>
+    public const string Comment = "http://www.w3.org/2000/01/rdf-schema#comment";
+
+    /// <summary>The most general class - what a freshly dropped resource is typed as.</summary>
+    public const string Resource = "http://www.w3.org/2000/01/rdf-schema#Resource";
 }

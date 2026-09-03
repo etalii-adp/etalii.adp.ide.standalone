@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Diagrams;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -40,6 +41,16 @@ public static class ServiceCollectionAddRdfExtension
         // The rules, resolved by origin through core's validator registry, so the family's
         // problems reach the Errors and Warnings panel like any other type's (Requirement 7).
         services.AddSingleton<IDiagramValidator>(_ => new RdfValidator(RdfOrigin));
+
+        // The context seams, once for the whole family: which reading a file is opened under
+        // does not change what an element is (the C4 precedent).
+        services.AddSingleton<IContextSourceResolver, RdfContextSourceResolver>();
+        services.AddSingleton<IContextActionProvider, RdfContextActionProvider>();
+        services.AddSingleton<IContextPropertyProvider, RdfContextPropertyProvider>();
+
+        // The palette: entries name actions rather than carrying an implementation, so a drop
+        // and a menu click are the same edit (Requirement 6).
+        services.AddSingleton<IDiagramToolboxProvider>(_ => new RdfToolboxProvider(RdfOrigin));
 
         // One mapper for the family; the projections it renders differ per reading.
         services.TryAddSingleton<RdfElementMapper>();

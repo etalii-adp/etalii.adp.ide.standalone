@@ -42,7 +42,9 @@ public static class RdfWriter
             return BlankRefusal;
         }
 
-        var written = $"{Compress(model, predicateIri)} {WriteTerm(model, objectTerm)}";
+        // rdf:type is written as Turtle's own keyword, the way an author would.
+        var predicate = predicateIri == RdfVocabulary.Type ? "a" : Compress(model, predicateIri);
+        var written = $"{predicate} {WriteTerm(model, objectTerm)}";
         var anchor = model.Triples
             .Where(t => t.Subject is IriTerm subject && subject.Iri == subjectIri)
             .OrderBy(t => t.TerminatorOffset)
