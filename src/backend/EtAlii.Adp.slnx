@@ -39,6 +39,9 @@
     <!-- Databricks asset bundles, jobs and declarative pipelines: three MIME types, one engine. -->
     <Project Path="../diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks/EtAlii.Adp.Diagram.Databricks.csproj" />
     <Project Path="../diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/EtAlii.Adp.Diagram.Databricks.Tests.csproj" />
+    <!-- The W3C RDF family: one store and one Turtle/N-Triples parser, several readings over it. -->
+    <Project Path="../diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf/EtAlii.Adp.Diagram.Rdf.csproj" />
+    <Project Path="../diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf.Tests/EtAlii.Adp.Diagram.Rdf.Tests.csproj" />
     <Project Path="../diagrams/archimate-application/backend/EtAlii.Adp.Diagram.ArchimateApplication/EtAlii.Adp.Diagram.ArchimateApplication.csproj" />
     <Project Path="../diagrams/archimate-business/backend/EtAlii.Adp.Diagram.ArchimateBusiness/EtAlii.Adp.Diagram.ArchimateBusiness.csproj" />
     <Project Path="../diagrams/archimate-implementation-migration/backend/EtAlii.Adp.Diagram.ArchimateImplementationMigration/EtAlii.Adp.Diagram.ArchimateImplementationMigration.csproj" />
