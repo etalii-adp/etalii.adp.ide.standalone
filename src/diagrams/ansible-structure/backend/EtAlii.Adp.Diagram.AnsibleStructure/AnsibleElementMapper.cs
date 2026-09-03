@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend.Diagrams;
+using EtAlii.Adp.Backend.Hierarchy;
 
 using Google.Protobuf;
 
@@ -45,12 +46,16 @@ public sealed class AnsibleElementMapper
     /// Every element a connection with this viewport should see: the nodes it intersects, their
     /// one-hop partners, and every edge whose two ends are both delivered.
     /// </summary>
-    public IReadOnlyList<DiagramElement> Visible(AnsibleProject project, AnsibleGraph graph, DiagramViewport viewport)
+    public IReadOnlyList<DiagramElement> Visible(
+        AnsibleProject project,
+        AnsibleGraph graph,
+        DiagramViewport viewport,
+        IReadOnlyDictionary<string, RegistrationPosition>? stored = null)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(graph);
 
-        var boxes = AnsibleLayout.Compute(graph, _metrics);
+        var boxes = Arranged(AnsibleLayout.Compute(graph, _metrics), stored);
 
         var delivered = new HashSet<string>(StringComparer.Ordinal);
         foreach (var node in graph.Nodes.Where(node => boxes.TryGetValue(node.Id, out var box) && Intersects(box, viewport)))
@@ -122,6 +127,39 @@ public sealed class AnsibleElementMapper
         }
 
         return deltas;
+    }
+
+    /// <summary>
+    /// The computed layout with authored positions overlaid: a node the registration's
+    /// <c>layout:</c> block names sits where the user put it, every other node stays where the
+    /// layout engine put it (Requirement 1.4).
+    /// </summary>
+    /// <remarks>
+    /// Only the origin moves; a box keeps the size the backend computed, because the client
+    /// draws the box it is given rather than re-measuring. A stored id the folder no longer
+    /// produces - a play removed, a file renamed - is dropped here by
+    /// <see cref="RegistrationLayout.Apply"/> rather than being drawn at a phantom position
+    /// (Requirement 3.1).
+    /// </remarks>
+    private static IReadOnlyDictionary<string, AnsibleBox> Arranged(
+        IReadOnlyDictionary<string, AnsibleBox> computed,
+        IReadOnlyDictionary<string, RegistrationPosition>? stored)
+    {
+        if (stored is not { Count: > 0 })
+        {
+            return computed;
+        }
+
+        var positions = RegistrationLayout.Apply(
+            computed.ToDictionary(entry => entry.Key, entry => new RegistrationPosition(entry.Value.X, entry.Value.Y), StringComparer.Ordinal),
+            stored);
+
+        return computed.ToDictionary(
+            entry => entry.Key,
+            entry => positions.TryGetValue(entry.Key, out var position)
+                ? entry.Value with { X = position.X, Y = position.Y }
+                : entry.Value,
+            StringComparer.Ordinal);
     }
 
     private DiagramElement NodeElement(AnsibleProject project, AnsibleNode node, AnsibleBox box)
