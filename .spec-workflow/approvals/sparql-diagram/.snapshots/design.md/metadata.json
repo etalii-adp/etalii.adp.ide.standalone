@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/sparql-diagram/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T11:40:57.075Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788435656853_n97w78pkw",
+      "approvalTitle": "sparql-diagram design"
+    }
+  ]
+}
