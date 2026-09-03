@@ -4,6 +4,8 @@ import { BoxElement } from "@client/canvas/elements/box/BoxElement";
 import { elementSelectionOf } from "@client/canvas/selection";
 import { useContextConnection, useContextProblems } from "@client/shell/context/ContextConnectionProvider";
 import { useRegisterDiagramView, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
+import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
+import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { PipelineElementKindProto } from "@client/generated/azure-pipeline_pb";
 import { indicatorsOf, problemMarkOf, problemsOn, type PipelineIndicator } from "./pipelineIndicators";
 import {
@@ -53,6 +55,10 @@ export interface PipelineCanvasProps {
  */
 export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps) {
   const { model, loading, failed, reportView } = usePipelineStream(projectId, path);
+
+  // The palette the Toolbox panel shows while this pipeline is open - described by the
+  // backend (Requirement 9.6), registered here and withdrawn on unmount.
+  useRegisterDiagramToolbox(useToolboxItems(projectId, path));
   const { select } = useContextConnection();
   // Problems arrive for the whole project, so an element only wears the ones that name it and
   // this file - two pipelines may each have a stage called Build (Requirement 8.7).

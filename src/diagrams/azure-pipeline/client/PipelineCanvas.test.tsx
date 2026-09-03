@@ -16,6 +16,8 @@ import {
   TEMPLATE_TYPE,
   type PipelineModel,
 } from "./pipelineModel";
+import { ToolboxItemSchema, type ToolboxItem } from "@client/generated/diagrams_pb";
+import { DiagramToolboxProvider, useDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 
 const select = vi.fn();
 let currentModel: PipelineModel = emptyModel;
@@ -42,6 +44,16 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
     useContextProblems: () => currentProblems,
   };
 });
+
+let currentToolboxItems: ToolboxItem[] = [];
+let toolboxRequests: (readonly string[])[] = [];
+
+vi.mock("@client/shell/panels/useToolboxItems", () => ({
+  useToolboxItems: (_projectId: Uint8Array, path: readonly string[]) => {
+    toolboxRequests.push(path);
+    return currentToolboxItems;
+  },
+}));
 
 const { PipelineCanvas } = await import("./PipelineCanvas");
 
@@ -439,5 +451,38 @@ describe("PipelineCanvas", () => {
 
     // Assert.
     expect(view.getByRole("alert").textContent).toContain("no longer available");
+  });
+});
+
+/** Reads what the shell's Toolbox panel reads: null is what renders the "Open a diagram" placeholder. */
+function ToolboxProbe() {
+  const items = useDiagramToolbox();
+  return <div data-testid="toolbox-probe">{items === null ? "placeholder" : "palette:" + items.map((item) => item.label).join(",")}</div>;
+}
+
+describe("PipelineCanvas toolbox", () => {
+  it("registers the backend-described palette with the shell while mounted", () => {
+    // Arrange. The Toolbox panel shows its placeholder until a mounted canvas registers -
+    // which an open pipeline must therefore do (tests.md, documentation task 9: this palette
+    // stayed on the placeholder while c4 and mindmap filled theirs on the same flow).
+    currentModel = emptyModel;
+    currentToolboxItems = [
+      create(ToolboxItemSchema, { id: "azure-pipeline.toolbox.stage", label: "Stage", dropActionId: "azure-pipeline.add-stage" }),
+      create(ToolboxItemSchema, { id: "azure-pipeline.toolbox.job", label: "Job", dropActionId: "azure-pipeline.add-job" }),
+    ];
+    toolboxRequests = [];
+    const path = ["diagrams", "azure-pipeline", "example 1", "multi-stage.adp"];
+
+    // Act.
+    const { getByTestId } = render(
+      <DiagramToolboxProvider>
+        <PipelineCanvas projectId={new Uint8Array(16)} entryId={new Uint8Array(16)} path={path} />
+        <ToolboxProbe />
+      </DiagramToolboxProvider>,
+    );
+
+    // Assert: the shell sees this canvas's palette, asked for this diagram's own path.
+    expect(getByTestId("toolbox-probe").textContent).toBe("palette:Stage,Job");
+    expect(toolboxRequests[0]).toEqual(path);
   });
 });

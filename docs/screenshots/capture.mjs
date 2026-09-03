@@ -30,7 +30,16 @@ async function clickText(text, { double = false } = {}) {
     return matches.length > 0;
   }, { timeout: 15000 }, text);
   const handle = await page.evaluateHandle(finder, text);
-  await handle.asElement().click({ clickCount: double ? 2 : 1 });
+  const element = handle.asElement();
+  await element.click();
+  if (double) {
+    // The dblclick is raised in the page itself: CDP-synthesized double-clicks proved
+    // version-sensitive (a fresh puppeteer-core install opened nothing on any of them),
+    // and the app only needs the DOM event.
+    await element.evaluate((node) => {
+      node.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true, view: window, detail: 2 }));
+    });
+  }
   await sleep(400);
 }
 

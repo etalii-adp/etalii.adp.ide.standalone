@@ -8,6 +8,7 @@ import {
   AnsibleElementPayloadSchema,
 } from "@client/generated/ansible-structure_pb";
 import { applyDelta, emptyModel, type AnsibleModel } from "./ansibleModel";
+import { DiagramToolboxProvider, useDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 
 const select = vi.fn();
 const revealPath = vi.fn();
@@ -35,6 +36,20 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
 });
 
 // Imported after the mocks so the component picks them up.
+let toolboxRequests: (readonly string[])[] = [];
+
+// The backend answers an empty palette for this type: it registers no toolbox provider,
+// deliberately - the module is read-only. One stable instance, as the real hook returns:
+// a fresh array per render would re-register on every one (see useRegisterDiagramToolbox).
+const emptyPalette: never[] = [];
+
+vi.mock("@client/shell/panels/useToolboxItems", () => ({
+  useToolboxItems: (_projectId: Uint8Array, path: readonly string[]) => {
+    toolboxRequests.push(path);
+    return emptyPalette;
+  },
+}));
+
 const { AnsibleCanvas } = await import("./AnsibleCanvas");
 
 function element(
@@ -348,5 +363,35 @@ describe("AnsibleCanvas", () => {
     // says where this type looks.
     expect(container.textContent).toContain("playbooks/");
     expect(container.textContent).toContain("roles/");
+  });
+});
+
+/** Reads what the shell's Toolbox panel reads: null is what renders the "Open a diagram" placeholder. */
+function ToolboxProbe() {
+  const items = useDiagramToolbox();
+  return <div data-testid="toolbox-probe">{items === null ? "placeholder" : "palette:" + items.map((item) => item.label).join(",")}</div>;
+}
+
+describe("AnsibleCanvas toolbox", () => {
+  it("registers its empty palette, so the panel says this type offers nothing rather than that no diagram is open", () => {
+    // Arrange. The module registers no toolbox provider by design - but the *panel* can only
+    // say so ("This diagram type offers no toolbox elements") if the mounted canvas registers
+    // the empty answer. Unregistered, an open structure diagram wears the misleading
+    // "Open a diagram" placeholder - the same defect the wardley and pipeline canvases had.
+    currentModel = emptyModel;
+    toolboxRequests = [];
+    const path = ["diagrams", "ansible-structure", "example 1", "structure.adp"];
+
+    // Act.
+    const { getByTestId } = render(
+      <DiagramToolboxProvider>
+        <AnsibleCanvas projectId={new Uint8Array(16)} entryId={new Uint8Array(16)} path={path} />
+        <ToolboxProbe />
+      </DiagramToolboxProvider>,
+    );
+
+    // Assert: registered-and-empty, not unregistered.
+    expect(getByTestId("toolbox-probe").textContent).toBe("palette:");
+    expect(toolboxRequests[0]).toEqual(path);
   });
 });
