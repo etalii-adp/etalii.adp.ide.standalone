@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/rdf-diagram/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T11:10:41.519Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788433841349_lzo3pbeeg",
+      "approvalTitle": "rdf-diagram design"
+    }
+  ]
+}
