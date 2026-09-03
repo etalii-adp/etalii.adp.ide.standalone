@@ -136,13 +136,13 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
 - [-] 6. Client
   - _Requirements: 6.2, 7.1, 8.1, 8.2, 8.3_
 
-- [-] 6.1 Model and stream hook
+- [x] 6.1 Model and stream hook
   - Files: `src/diagrams/helm-charts/client/helmModel.ts`, `useHelmStream.ts` + tests
   - Payload decoding, two delta cases, anchor/palette helpers, and `moveElementTo` — the member the ansible hook deliberately lacked
   - _Requirements: 6.2_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior TypeScript developer | Task: Implement the client model and stream hook with moveElementTo, tested over mocked streams | Restrictions: follow the client editorconfig sections; two delta cases only — the wire emits Remove-then-Add | _Leverage: ansibleModel.ts and useAnsibleStream.ts, plus the databricks client's move dispatch | Success: model and hook tests pass; typecheck clean. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 6.2 Canvas, styles, registration
+- [-] 6.2 Canvas, styles, registration
   - Files: `HelmCanvas.tsx`, `helm-charts.css`, `register.ts`, client `readme.md` + tests
   - Central canvas composition, band chrome, drag-to-reposition wired to `moveElementTo`, activation per node kind (open in text editor; subchart diagram offer; sealed/open-end no-op), palette as CSS classes per kind
   - _Requirements: 7.1, 8.1, 8.2, 8.3_
