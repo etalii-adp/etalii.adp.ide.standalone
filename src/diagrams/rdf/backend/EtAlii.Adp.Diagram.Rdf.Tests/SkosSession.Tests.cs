@@ -67,6 +67,13 @@ public class SkosSessionTests : IDisposable
         Assert.True(Diagram.Skos.DeclaresExtension(".nt"));
         Assert.False(Diagram.Rdf.SharedExtension);
         Assert.Equal(new DiagramOrigin("w3c", "skos"), Diagram.Skos.Origin);
+
+        // Add suggests this reading exactly where the marker triple is (Requirement 2.3), and
+        // stays quiet on a file that is RDF but not a vocabulary.
+        Assert.NotNull(Diagram.Skos.SuggestsBody);
+        Assert.True(Diagram.Skos.SuggestsBody!("ex:s a skos:ConceptScheme ."));
+        Assert.True(Diagram.Skos.SuggestsBody!("<http://x> a <http://www.w3.org/2004/02/skos/core#ConceptScheme> ."));
+        Assert.False(Diagram.Skos.SuggestsBody!("ex:alice foaf:knows ex:bob ."));
     }
 
     [Fact]

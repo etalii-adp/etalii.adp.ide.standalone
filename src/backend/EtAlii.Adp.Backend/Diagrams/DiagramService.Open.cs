@@ -27,19 +27,33 @@ public sealed partial class DiagramService
             // coexist on one connection (modular-text-editors Requirements 5.2, 5.3).
             if (!TryResolveTextFile(request.ProjectId, request.Path, context, out var forcedRoot, out var forcedPath))
             {
+                // The client is told only that it failed; the log keeps what it asked for.
+                _logger.Warning("Refusing to open {Path} as text on watch {WatchId}: it does not resolve inside the project", string.Join('/', request.Path.Segments), watchId);
                 throw new RpcException(new Status(StatusCode.FailedPrecondition, "The file cannot be opened as text."));
             }
 
             var forcedId = request.EditorId == "*" ? ResolvedEditorIdOf(forcedPath) : request.EditorId;
-            var forcedFactory = _editorSessionFactories.Find(forcedId)
-                                ?? throw new RpcException(new Status(StatusCode.FailedPrecondition, $"No '{forcedId}' editor is deployed."));
+            var forcedFactory = _editorSessionFactories.Find(forcedId);
+            if (forcedFactory is null)
+            {
+                _logger.Warning("Refusing to open {FullPath} on watch {WatchId}: no {EditorId} editor is deployed", forcedPath, watchId, forcedId);
+                throw new RpcException(new Status(StatusCode.FailedPrecondition, $"No '{forcedId}' editor is deployed."));
+            }
+
+            _logger.Debug("Opening {FullPath} as text in the {EditorId} editor (forced) on watch {WatchId}", forcedPath, forcedId, watchId);
             bodyPath = forcedPath;
             openedSession = new EditorSessionAdapter(forcedFactory.Open(watchId, forcedRoot, forcedPath), forcedId);
         }
         else if (TryResolveBody(request.ProjectId, request.Path, context, out var rootPath, out var diagramBody, out var origin, out var registrationPath))
         {
-            var factory = _sessionFactories.Find(origin)
-                          ?? throw new RpcException(new Status(StatusCode.Unimplemented, $"'{origin}' diagrams cannot be opened yet."));
+            var factory = _sessionFactories.Find(origin);
+            if (factory is null)
+            {
+                _logger.Warning("Refusing to open {BodyPath} on watch {WatchId}: no session factory is deployed for {Origin}", diagramBody, watchId, origin.Key);
+                throw new RpcException(new Status(StatusCode.Unimplemented, $"'{origin}' diagrams cannot be opened yet."));
+            }
+
+            _logger.Debug("Routed {FullPath} to {Origin}, body {BodyPath}, on watch {WatchId}", string.Join('/', request.Path.Segments), origin.Key, diagramBody, watchId);
             bodyPath = diagramBody;
             openedSession = factory.Open(watchId, rootPath, bodyPath, registrationPath);
 
@@ -49,13 +63,22 @@ public sealed partial class DiagramService
         }
         else if (TryResolveEditor(request.ProjectId, request.Path, context, out var editorRoot, out var fullPath, out var editorDefinitionId))
         {
-            var editorFactory = _editorSessionFactories.Find(editorDefinitionId)
-                                ?? throw new RpcException(new Status(StatusCode.Unimplemented, $"The '{editorDefinitionId}' editor registered no session factory."));
+            var editorFactory = _editorSessionFactories.Find(editorDefinitionId);
+            if (editorFactory is null)
+            {
+                _logger.Warning("Refusing to open {FullPath} on watch {WatchId}: the {EditorId} editor registered no session factory", fullPath, watchId, editorDefinitionId);
+                throw new RpcException(new Status(StatusCode.Unimplemented, $"The '{editorDefinitionId}' editor registered no session factory."));
+            }
+
+            _logger.Debug("Opening {FullPath} in the {EditorId} editor on watch {WatchId}", fullPath, editorDefinitionId, watchId);
             bodyPath = fullPath;
             openedSession = new EditorSessionAdapter(editorFactory.Open(watchId, editorRoot, fullPath), editorDefinitionId);
         }
         else
         {
+            // The refusal every misrouted open lands on: without this line there is nothing
+            // anywhere saying which file was asked for, and people debug it blind.
+            _logger.Warning("Refusing to open {Path} on watch {WatchId}: neither a diagram type nor an editor claims it", string.Join('/', request.Path.Segments), watchId);
             throw new RpcException(new Status(StatusCode.FailedPrecondition, "The diagram cannot be opened."));
         }
 
@@ -64,6 +87,15 @@ public sealed partial class DiagramService
 
         void OnChanged(object? sender, DiagramDeltasEventArgs args)
         {
+            // What the module decided to push, by kind - the one place a reader can see that an
+            // edit produced (say) a remove plus an add rather than the move they expected.
+            _logger.Debug(
+                "Pushing {DeltaCount} deltas for {BodyPath} on watch {WatchId}: {DeltaKinds}",
+                args.Deltas.Count,
+                bodyPath,
+                watchId,
+                KindsOf(args.Deltas));
+
             foreach (var delta in args.Deltas)
             {
                 channel.Writer.TryWrite(ToProto(delta));
@@ -89,7 +121,15 @@ public sealed partial class DiagramService
 
         try
         {
-            foreach (var delta in session.Baseline())
+            var baseline = session.Baseline();
+            _logger.Debug(
+                "Sending the baseline of {BodyPath} on watch {WatchId}: {DeltaCount} deltas, {DeltaKinds}",
+                bodyPath,
+                watchId,
+                baseline.Count,
+                KindsOf(baseline));
+
+            foreach (var delta in baseline)
             {
                 await responseStream.WriteAsync(ToProto(delta), context.CancellationToken);
             }

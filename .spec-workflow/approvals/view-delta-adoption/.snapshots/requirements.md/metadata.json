@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/view-delta-adoption/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T23:29:14.036Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788478153455_5afb8xeed",
+      "approvalTitle": "view-delta-adoption requirements"
+    }
+  ]
+}
