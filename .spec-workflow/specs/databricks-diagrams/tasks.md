@@ -30,13 +30,13 @@ One worktree for the whole spec (`.claude/worktrees/dbx`, per CLAUDE.md's one-wo
   - _Requirements: 2.1, 2.3, 2.4, 13.6_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the timeline's document layer | Task: Implement the shared line-CST store and the three models per design, with parse fixtures for databricks.yml, a job resource file and pipeline settings JSON, byte-identity round-trip tests, and the scoped .gitattributes fixture entry carrying the full reasoning the task description spells out | Restrictions: no YAML/JSON library that reserializes - the lines are the truth; unknown constructs preserved, never dropped; the .gitattributes note must read at the depth of the existing one | _Leverage: the timeline's TimelineDocument/TimelineParser discipline; TestFolder and the module test-project conventions | Success: untouched files of all three formats round-trip byte-identically under mixed line endings; unknown constructs survive; the fixture glob and its note are in .gitattributes. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2.2 Writers: named splices, schema refusals
+- [x] 2.2 Writers: named splices, schema refusals
   - Files: `BundleWriter.cs`, `JobWriter.cs`, `PipelineWriter.cs` + tests
   - Insert/remove task block (removing its dependsOn references with it), connect/disconnect dependsOn, rewrite scalar, insert/remove library, add resource skeleton, rename task key rewriting every reference in one operation; a write producing a schema-invalid file is refused with a sentence before any splice
   - _Requirements: 2.2, 6.4, 11.4_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the three writers as named splice operations per design, including rename-with-references as one operation and up-front schema refusals, with smallest-diff tests per operation and refusal tests | Restrictions: only the lines an edit concerns change; refusals happen before any splice, never write-then-repair | _Leverage: the store and models from 2.1; TimelineWriter's splice shape | Success: every operation's diff is minimal in tests; rename strands no reference; invalid writes are refused with actionable sentences. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.3 Validator
+- [-] 2.3 Validator
   - Files: `DatabricksValidator.cs` + tests
   - The Requirement 12.1 findings with file and line, through the standard problems pipeline; nothing workspace-dependent
   - _Requirements: 12.1, 12.2, 12.3_
