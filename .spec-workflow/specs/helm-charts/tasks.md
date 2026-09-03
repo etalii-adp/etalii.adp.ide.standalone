@@ -123,13 +123,13 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - _Requirements: 8.1, 8.2, 8.3_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the resolver and subscription per the ansible shape, with the deleted-artifact selection-clearing test watching the correct folder | Restrictions: do not GetDirectoryName a path that is already the folder — the exact ansible Track bug, pinned by test | _Leverage: AnsibleContextSourceResolver and its ADeletedRole_ClearsTheSelection test | Success: resolver tests pass including the deletion case at speed (no timeout-driven pass). Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 5.4 HelmContextPropertyProvider
+- [x] 5.4 HelmContextPropertyProvider
   - Files: `HelmContextPropertyProvider.cs` + tests
   - One private `Row(id, label, value, source, group)` helper always setting `ReadOnlyReason = $"Defined in {source}; edit it in a text editor."`; `SetAsync` refuses unconditionally; the nothing-selected grid summarizes the chart
   - _Requirements: 9.3, 9.4_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the read-only property grids per element kind with the house reason on every row and an unconditional SetAsync refusal, tested per kind | Restrictions: every row read-only with a true reason naming its defining file; no editable path exists | _Leverage: AnsibleContextPropertyProvider's Row helper shape | Success: grid tests cover each element kind and the summary grid; every row carries the reason. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.5 Gate and merge group 5
+- [-] 5.5 Gate and merge group 5
   - Same gates; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-5 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
