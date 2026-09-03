@@ -12,7 +12,7 @@ namespace EtAlii.Adp.Diagram.Sparql.Tests;
 /// </summary>
 public class ExampleCorpusTests
 {
-    private static string ExamplesRoot()
+    internal static string ExamplesRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null && !Directory.Exists(IoPath.Combine(directory.FullName, "examples")))
