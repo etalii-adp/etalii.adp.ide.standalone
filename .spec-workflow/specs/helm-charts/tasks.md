@@ -105,13 +105,13 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
 - [-] 5. Validation and context
   - _Requirements: 10.1–10.9, 8.1, 8.2, 8.3, 9.2, 9.3, 9.4_
 
-- [-] 5.1 HelmRuleSet
+- [x] 5.1 HelmRuleSet
   - Files: `HelmRuleSet.cs` + `_Model` finding records + tests
   - The Requirement 10 rules as a pure function with chart-root-relative paths and lines; tested fire **and** non-fire per rule — including that Unvendored never fires, library charts escape the templates rule, and lock rules stay silent without a lock
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the rule set as a pure function over the model with both-direction tests per rule | Restrictions: no filesystem access in rules; noise guards are part of the specification — Unvendored and missing-lock are silence, not findings | _Leverage: AnsibleRuleSet's pure-function shape and its noise-guard precedent | Success: every rule has a fire and a non-fire test; the shipped example fixtures produce zero findings. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.2 HelmValidator
+- [-] 5.2 HelmValidator
   - Files: `HelmValidator.cs` + tests
   - Rebases folder-relative findings to project-relative (the `Rebased()` discipline — the bug class 177 unit tests missed once), attributes the not-a-chart finding to the folder, registers into the problems pipeline
   - _Requirements: 10.1, 10.8, 10.9_
