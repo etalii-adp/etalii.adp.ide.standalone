@@ -677,3 +677,13 @@ space, which is one candidate to rule out.
   module's entries - not the "Open a diagram" placeholder. Once this passes, retake
   `docs/screenshots/wardley-map.png` and `docs/screenshots/azure-pipeline.png` per
   `docs/screenshots/readme.md`.
+- **Result 2026-09-03**: pass - the cause was client-side: neither WardleyCanvas nor
+  PipelineCanvas called useRegisterDiagramToolbox(useToolboxItems(...)), so the panel was
+  never told a diagram was open and DescribeToolbox was never asked. The folder-name space
+  was ruled out: mindmap shares it and worked, and a new backend integration test serves the
+  full wardley palette from "example 1/tea.adp" (DiagramToolboxFlow). Both canvases wired
+  (AnsibleCanvas too, so its read-only type reports "offers no toolbox elements" instead of
+  the placeholder), each guarded by a canvas test that fails while unregistered. Verified
+  live: tea.adp lists all eight entries, multi-stage.adp lists Stage / Job / Deployment job /
+  Script step. Both screenshots retaken; capture.mjs now raises dblclick in the page, since
+  a fresh puppeteer-core install opened nothing through CDP click({ clickCount: 2 }).

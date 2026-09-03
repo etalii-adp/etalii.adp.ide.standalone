@@ -3,6 +3,8 @@ import { forwardBezierPath, straightPath } from "@client/canvas/connectors";
 import { BoxElement } from "@client/canvas/elements/box/BoxElement";
 import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
 import { useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
+import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { ContextSelectionAction } from "@client/generated/context_pb";
 import { AnsibleEdgeKind, AnsibleElementKind } from "@client/generated/ansible-structure_pb";
 import { anchorsOf, edgesOf, nodesOf, paletteSlotOf, type AnsibleElement, type AnsibleModel } from "./ansibleModel";
@@ -41,6 +43,11 @@ export interface AnsibleCanvasProps {
  */
 export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) {
   const { model, loading, failed, reportView } = useAnsibleStream(projectId, path);
+
+  // This type's palette is empty by design - the module registers no toolbox provider,
+  // because it edits nothing. Registering the backend's empty answer makes the panel say
+  // exactly that, instead of claiming no diagram is open.
+  useRegisterDiagramToolbox(useToolboxItems(projectId, path));
   const { select, revealPath } = useContextConnection();
   const { selection } = useContextSelection();
 

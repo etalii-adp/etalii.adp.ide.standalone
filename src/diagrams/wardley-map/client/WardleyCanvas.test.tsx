@@ -14,6 +14,8 @@ import {
   WardleyLinkPayloadSchema,
 } from "@client/generated/wardley-map_pb";
 import { applyDelta, emptyModel, type WardleyModel } from "./wardleyModel";
+import { ToolboxItemSchema, type ToolboxItem } from "@client/generated/diagrams_pb";
+import { DiagramToolboxProvider, useDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 
 let currentModel: WardleyModel = emptyModel;
 let currentLoading = false;
@@ -35,6 +37,16 @@ vi.mock("./useWardleyStream", () => ({
 
 vi.mock("@client/shell/panels/DiagramViewContext", () => ({
   useRegisterDiagramView: () => undefined,
+}));
+
+let currentToolboxItems: ToolboxItem[] = [];
+let toolboxRequests: (readonly string[])[] = [];
+
+vi.mock("@client/shell/panels/useToolboxItems", () => ({
+  useToolboxItems: (_projectId: Uint8Array, path: readonly string[]) => {
+    toolboxRequests.push(path);
+    return currentToolboxItems;
+  },
 }));
 
 const { WardleyCanvas } = await import("./WardleyCanvas");
@@ -507,5 +519,38 @@ describe("WardleyCanvas dragging", () => {
 
     // Assert.
     expect(surface.getAttribute("viewBox")).toBe(before);
+  });
+});
+
+/** Reads what the shell's Toolbox panel reads: null is what renders the "Open a diagram" placeholder. */
+function ToolboxProbe() {
+  const items = useDiagramToolbox();
+  return <div data-testid="toolbox-probe">{items === null ? "placeholder" : "palette:" + items.map((item) => item.label).join(",")}</div>;
+}
+
+describe("WardleyCanvas toolbox", () => {
+  it("registers the backend-described palette with the shell while mounted", () => {
+    // Arrange. The Toolbox panel shows its placeholder until a mounted canvas registers -
+    // which an open wardley map must therefore do (tests.md, documentation task 9: this
+    // palette stayed on the placeholder while c4 and mindmap filled theirs on the same flow).
+    currentModel = withAxis();
+    currentToolboxItems = [
+      create(ToolboxItemSchema, { id: "wardley.toolbox.component", label: "Component", dropActionId: "wardley.add-component" }),
+      create(ToolboxItemSchema, { id: "wardley.toolbox.anchor", label: "Anchor", dropActionId: "wardley.add-anchor" }),
+    ];
+    toolboxRequests = [];
+    const path = ["diagrams", "wardley-map", "example 1", "tea.adp"];
+
+    // Act.
+    const { getByTestId } = render(
+      <DiagramToolboxProvider>
+        <WardleyCanvas projectId={new Uint8Array([1])} entryId={new Uint8Array([2])} path={path} />
+        <ToolboxProbe />
+      </DiagramToolboxProvider>,
+    );
+
+    // Assert: the shell sees this canvas's palette, asked for this diagram's own path.
+    expect(getByTestId("toolbox-probe").textContent).toBe("palette:Component,Anchor");
+    expect(toolboxRequests[0]).toEqual(path);
   });
 });

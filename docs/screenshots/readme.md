@@ -26,7 +26,3 @@ The whole procedure is executable: [`capture.mjs`](capture.mjs) drives all of th
 | `markdown-editor.png` | `editors/markdown/` → `guide.md` | The three-part editor: heading outline above, CodeMirror text left, rendered preview right — and the status line reading **Saved**, since nothing was edited. |
 
 Each diagram capture clicks **Fit to View** after opening (where the toolbar offers it), so the content's framing does not depend on the previous session's pan and zoom. Two captures that follow one row of this table should differ only in rendering noise.
-
-## Known blemish, deliberately shown
-
-At capture time the Toolbox panel stays on "Open a diagram to see the elements its type offers" for the wardley-map and azure-pipeline tabs, while every other type's toolbox fills — deterministic across runs, and recorded as a manual check in [`tests.md`](../../tests.md). The screenshots show the app as it is; when that check is fixed, retake those two images.

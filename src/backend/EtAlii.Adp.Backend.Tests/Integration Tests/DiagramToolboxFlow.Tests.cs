@@ -38,6 +38,14 @@ public class DiagramToolboxFlowTests : IClassFixture<WebApplicationFactory<Progr
             IoPath.Combine(_projectFolder, "roadmap.mm"),
             "<map version=\"freeplane 1.11.5\">\n<node TEXT=\"roadmap\" ID=\"ID_1\"/>\n</map>\n");
         File.WriteAllText(IoPath.Combine(_projectFolder, "notes.txt"), "not a diagram\n");
+        // The shape the combined examples project actually uses: a registration in a subfolder
+        // whose name contains a space. Documentation task 9's manual pass found the Toolbox
+        // panel empty for exactly this shape and named the space as a candidate cause; the test
+        // below rules that out at this seam (the defect was the canvas never registering).
+        var subfolder = IoPath.Combine(_projectFolder, "example 1");
+        Directory.CreateDirectory(subfolder);
+        File.WriteAllText(IoPath.Combine(subfolder, "tea.adp"), "wardley/map\n");
+        File.WriteAllText(IoPath.Combine(subfolder, "tea.owm"), "anchor Need [0.9, 0.5]\ncomponent Thing [0.4, 0.4]\n");
 
         _factory = baseFactory.WithWebHostBuilder(builder =>
         {
@@ -106,6 +114,31 @@ public class DiagramToolboxFlowTests : IClassFixture<WebApplicationFactory<Progr
         // Assert.
         Assert.Empty(unroutable.Items);
         Assert.Empty(missing.Items);
+    }
+
+    [Fact]
+    public async Task AWardleyMapInASubfolderWithASpace_AnswersWithTheModulesPalette()
+    {
+        // Arrange.
+        using var channel = CreateChannel();
+        var diagramClient = new DiagramService.DiagramServiceClient(channel);
+        var headers = await LoginAsync(channel);
+        var projectId = await AddProjectAsync(channel, headers);
+
+        var path = new Path();
+        path.Segments.Add("example 1");
+        path.Segments.Add("tea.adp");
+
+        // Act.
+        var response = await diagramClient.DescribeToolboxAsync(
+            new DescribeToolboxRequest { ProjectId = projectId, Path = path },
+            headers, cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert: the module's whole palette, unimpressed by where the document lives.
+        Assert.Equal(
+            ["Component", "Anchor", "Market", "Ecosystem", "Submap", "Pipeline", "Note", "Annotation"],
+            response.Items.Select(item => item.Label));
+        Assert.DoesNotContain(response.Items, item => item.DropActionId.Length == 0);
     }
 
     private static Path PathOf(string fileName)

@@ -3,6 +3,8 @@ import { straightPath, type ConnectorBox } from "@client/canvas/connectors";
 import { StraightConnection } from "@client/canvas/connections/straight/StraightConnection";
 import { SymbolElement } from "@client/canvas/elements/symbol/SymbolElement";
 import { useRegisterDiagramView } from "@client/shell/panels/DiagramViewContext";
+import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
+import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import {
   WardleyAttitudeKind,
   WardleyDecorator,
@@ -69,6 +71,10 @@ function scale(value: number): number {
 // nothing here does.
 export function WardleyCanvas({ projectId, path }: WardleyCanvasProps) {
   const { model, loading, failed, moveElementTo } = useWardleyStream(projectId, path);
+
+  // The palette the Toolbox panel shows while this map is open - described by the backend
+  // (Requirement 13), registered here and withdrawn on unmount.
+  useRegisterDiagramToolbox(useToolboxItems(projectId, path));
   const [view, setView] = useState<ViewBox>(fullView);
   const surfaceRef = useRef<SVGSVGElement | null>(null);
   const panRef = useRef<{ clientX: number; clientY: number; view: ViewBox } | null>(null);

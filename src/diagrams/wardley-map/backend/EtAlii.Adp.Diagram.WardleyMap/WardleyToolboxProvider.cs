@@ -24,10 +24,11 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// component to put in it.
 /// </para>
 /// <para>
-/// The panel that renders this does not exist yet. That is why Requirement 13.7 asks for a
-/// provider whose <see cref="Items"/> are static and assertable without a UI - and why the two
-/// criteria that need a UI to exist (13.4's drop position, 13.5's unavailable entries) are
-/// reported as gaps rather than implemented against a contract that has no field for either.
+/// The Toolbox panel renders this now, and the canvas registers it while a map is open. The
+/// provider stays as Requirement 13.7 asked - <see cref="Items"/> static and assertable
+/// without a UI - and the two criteria that need contract fields that do not exist (13.4's
+/// drop position, 13.5's unavailable entries) remain reported as gaps rather than implemented
+/// against a contract that has no field for either.
 /// </para>
 /// </remarks>
 public sealed class WardleyToolboxProvider : IDiagramToolboxProvider
