@@ -17,4 +17,14 @@ public sealed record ProjectProblemSet(
     IReadOnlyList<StoredProblem> Problems,
     int ErrorCount,
     int WarningCount,
-    int TruncatedAt);
+    int TruncatedAt,
+    int InfoCount = 0)
+{
+    /// <summary>
+    /// Informational findings, counted apart from the warnings. Defaulted so every existing
+    /// construction of this record still compiles and still means what it meant: a set built
+    /// without an info count has none, which is exactly true of every producer that predates
+    /// the level.
+    /// </summary>
+    public int InfoCount { get; init; } = InfoCount;
+}

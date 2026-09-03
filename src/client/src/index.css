@@ -1484,6 +1484,12 @@ button {
   color: #d97706;
 }
 
+/* Informational: deliberately the quietest of the three, so a panel showing infos still
+   reads error-first at a glance. */
+.problems-icon-info {
+  color: var(--color-text-muted);
+}
+
 .problems-count {
   font-variant-numeric: tabular-nums;
 }

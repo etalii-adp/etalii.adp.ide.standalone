@@ -47,6 +47,8 @@ public sealed class OwlValidator(DiagramOrigin origin) : IDiagramValidator
         RdfModel model;
         try
         {
+            // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+            // Reason: Can still be null if the document is empty.
             model = RdfParser.Parse(RdfDocument.Parse(request.Document ?? ""));
         }
         catch (RdfParseException exception)
