@@ -4,10 +4,10 @@ One worktree for the whole spec (`.claude/worktrees/rdf`, per CLAUDE.md's one-wo
 
 **Seams the sibling specs attach to.** Four sibling specs (`owl-diagram`, `skos-diagram`, `shacl-diagram`; `sparql-diagram` stands apart) implement over this document, so the tasks that create their attachment points are named as such and sequenced first: task 1.1 (**the triplestore document store** and **`RdfModel`** — siblings add projections over this model, never parsers), task 2.1 (**the splice discipline's triple writer** — sibling edit gestures are this writer under reading-specific names), task 3.2 (**the registration header helper** — item 10's module-side header scanning, written once here), and task 3.3 (**the selection vocabulary** — sibling providers extend the same element-id shapes). A sibling's tasks document names a dependency on these tasks rather than duplicating them.
 
-- [ ] 1. The document layer: two serializations, one store, spans
+- [-] 1. The document layer: two serializations, one store, spans
   - _Requirements: 1.1-1.7_
 
-- [ ] 1.1 Line-and-fragment CST: document, tokenizer, parser, model, store — **sibling seam**
+- [-] 1.1 Line-and-fragment CST: document, tokenizer, parser, model, store — **sibling seam**
   - Files: `src/diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf/` — `RdfDocument.cs`, `RdfTokenizer.cs`, `RdfParser.cs` (Turtle recursive descent + the trivial N-Triples reader), `_Model/` (`RdfModel`, `RdfTriple`, `RdfTerm` closed set, `PrefixMap`, `SourceSpan`), `RdfDocumentStore.cs` (+ interface, load/save/forget/reload lifecycle, self-write guard, `Changed`); `EtAlii.Adp.Diagram.Rdf.Tests` project (Exe, xUnit v3); both projects added to `EtAlii.Adp.slnx`; `.gitattributes` gains `*.ttl -text` and `*.nt -text` lines with the byte-compared-fixture reasoning written beside the existing entries
   - Every triple carries its span: the line range it occupies plus, where a line holds several triples (`,`/`;` lists), the character fragment within the line that this triple and its separator own; refused serializations (RDF/XML, JSON-LD, TriG, N-Quads) named with reasons in the unavailable state; parse failures carry file, line and reason
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7_
