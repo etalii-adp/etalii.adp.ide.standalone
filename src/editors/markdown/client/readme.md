@@ -1,5 +1,6 @@
 # markdown - client
 
-The markdown editor's canvas - the preview rendering and heading navigation that make this
-module worth being its own module - arrives with the client group of the
-modular-text-editors spec (group 5); until then this folder holds its place.
+The markdown editor's canvas: `MarkdownEditorPanel.tsx`, a CodeMirror-based editor with a
+rendered preview and a clickable heading outline, registered for `editor/markdown` through
+`register.ts` - which the shell discovers by the same glob that finds every diagram module's
+registrations.
