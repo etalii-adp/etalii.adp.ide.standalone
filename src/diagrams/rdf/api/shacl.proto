@@ -1,0 +1,133 @@
+syntax = "proto3";
+
+package etalii.adp.shacl;
+
+option csharp_namespace = "EtAlii.Adp.Diagram.Rdf";
+
+// The payloads of the SHACL reading's elements, packed into the core Element's Any beside the
+// rdf.proto family payloads - no new services, no new streams, and truncation reuses the
+// family's RdfTruncationPayload rather than duplicating the message.
+//
+// Two shapes of this reading's data are deliberately NOT elements. A target declaration is a
+// chip carried inside its shape's payload, because the data it aims at lives in another file
+// entirely and drawing an edge to it would either dangle or invent a node (Requirement 1.3).
+// A property shape is a row carried inside the payload of the card that references it, because
+// it is written as a blank node and a row has no position to store - which is how this reading
+// satisfies the blank-node identity boundary by construction rather than by refusal
+// (Requirement 3.1).
+
+// What a target declaration selects its focus nodes by (Requirement 1.3).
+enum ShaclTargetKind {
+  // Never sent; proto3's required zero value.
+  SHACL_TARGET_KIND_UNSPECIFIED = 0;
+
+  // sh:targetClass - every instance of a class.
+  SHACL_TARGET_KIND_CLASS = 1;
+
+  // sh:targetNode - one named node.
+  SHACL_TARGET_KIND_NODE = 2;
+
+  // sh:targetSubjectsOf - every subject of a predicate.
+  SHACL_TARGET_KIND_SUBJECTS_OF = 3;
+
+  // sh:targetObjectsOf - every object of a predicate.
+  SHACL_TARGET_KIND_OBJECTS_OF = 4;
+
+  // The implicit class target: a shape the file also states to be a class targets its own
+  // instances. No triple declares it, so no edit can remove it.
+  SHACL_TARGET_KIND_IMPLICIT_CLASS = 5;
+}
+
+// One target declaration, drawn as a chip on its shape's card (Requirement 1.3).
+message ShaclTargetChip {
+  ShaclTargetKind kind = 1;
+
+  // The targeted term's display form - a prefixed name, or a literal's lexical form.
+  string term_display = 2;
+
+  // The targeted term's full IRI; empty for a literal target.
+  string term_iri = 3;
+
+  // Whether the targeted term occurs as a subject in THIS file. A fact the property grid
+  // states, never a finding: a shapes graph aiming at data held elsewhere is the medium
+  // working as designed (Requirement 4.3). The canvas renders both cases identically.
+  bool described_in_file = 4;
+
+  // The first two thirds of the chip's address, which is what lets the context menu remove a
+  // target without the chip ever being a selectable element: the owning shape's IRI (empty for
+  // an anonymous shape, whose targets are read-only under the identity boundary) and the target
+  // predicate (empty for the implicit chip, which no triple states).
+  string shape_iri = 5;
+  string predicate_iri = 6;
+}
+
+// One constraint row on a card - a property shape rendered as a line rather than as the
+// blank-node constellation it is written as (Requirement 3.1).
+message ShaclPropertyRow {
+  // The sh:path printed as SHACL path syntax - "^ex:parent", "ex:a/ex:b", "ex:next*" - never
+  // expanded into its rdf:first/rdf:rest plumbing. Empty for a card-level row.
+  string path = 1;
+
+  // The shape's sh:name, where the author wrote one.
+  string name = 2;
+
+  // The constraint summary, assembled in one fixed parameter order so two files stating the
+  // same constraints read the same way.
+  string summary = 3;
+
+  // The "[min..max]" form, with "*" where no maximum is stated. Empty for card-level rows.
+  string cardinality = 4;
+
+  // An opaque SPARQL constraint: drawn as a labelled row, its query text readable in the
+  // property grid, never parsed beyond extraction and never executed (Requirement 4.1).
+  bool sparql = 5;
+
+  // Whether this row's shape is blank-rooted - readable everywhere, editable nowhere. The
+  // canvas gates its own affordances on this; the backend refusal remains the authority.
+  bool blank = 6;
+
+  // The row's own non-default sh:severity, display form; empty when it takes the default.
+  string severity = 7;
+}
+
+// One drawn shape - a card (Requirement 1.1).
+message ShaclShapePayload {
+  // The full IRI; empty for an anonymous shape.
+  string iri = 1;
+
+  // The card's title: a prefixed name, a _:label, or an anonymous marker.
+  string display = 2;
+
+  // The identity-boundary marker: an anonymous card draws and describes, but takes only its
+  // computed position and refuses every mutation (Requirement 3.2).
+  bool blank = 3;
+
+  // sh:deactivated true - the card renders dimmed and badged, because a reader auditing shapes
+  // needs to see what is switched off.
+  bool deactivated = 4;
+
+  // A non-default sh:severity, display form; empty when it takes the default (sh:Violation).
+  string severity = 5;
+
+  // sh:closed true.
+  bool closed = 6;
+
+  string name = 7;
+  string description = 8;
+
+  repeated ShaclTargetChip targets = 9;
+  repeated ShaclPropertyRow rows = 10;
+}
+
+// One drawn shape-to-shape reference (Requirements 1.4, 1.5).
+message ShaclEdgePayload {
+  string from_element_id = 1;
+  string to_element_id = 2;
+
+  // node | class | and | or | xone | not.
+  string kind = 3;
+
+  // What the canvas writes on the edge: the operator, or the referring row's path where the
+  // reference came from a property row.
+  string label = 4;
+}
