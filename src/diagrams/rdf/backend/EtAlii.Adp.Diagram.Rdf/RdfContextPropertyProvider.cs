@@ -60,6 +60,15 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
 
         var entry = _documents.GetOrLoad(target.ResolvedFullPath);
 
+        // An element the file asserts to be a concept, scheme or collection gets the scheme
+        // reading's grid wholesale; every other resource keeps the family's rows - the ontology
+        // reading's individuals among them. Data-driven, because the context seam does not carry
+        // which registration selected the element.
+        if (SkosProperties.Describe(entry, target) is { } skosRows)
+        {
+            return Rows(skosRows);
+        }
+
         if ((RdfSelection.ResourceOf(entry, target.ElementId) ?? OwlSelection.IndividualIriOf(entry, target.ElementId)) is { } iri)
         {
             var truncated = RdfSelection.IsTruncated(entry);
@@ -151,6 +160,11 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
 
     private static ICommand? CommandFor(RdfDocumentEntry entry, ContextTarget target, string propertyId, string value)
     {
+        if (SkosProperties.CommandFor(entry, target, propertyId, value) is { } skosCommand)
+        {
+            return skosCommand;
+        }
+
         var predicateIri = propertyId switch
         {
             LabelProperty => RdfVocabulary.Label,

@@ -49,14 +49,14 @@ One worktree for the whole spec (`.claude/worktrees/owl`, short per the MAX_PATH
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 7.1, 7.2, 7.3_
   - _Prompt: Implement the task for spec owl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the family providers | Task: Implement the OWL provider cases per Requirements 6 and 7 - the four toolbox entries writing their declaration triples, the subclass and domain/range gestures as anchor writer splices, rename and remove through the family operations, the property grid with label and comment edits dispatching ReplaceObjectLiteral, and the expr: read-only grid path - with discovery, execute/undo/redo and refusal-sentence tests per selection kind | Restrictions: every edit dispatches an anchor writer operation - this reading owns gesture names, not splice code; every real edit is one undo; refusals before any splice | _Leverage: anchor tasks 2.1 and 3.3 - the writer including ReplaceObjectLiteral, and the selection vocabulary and provider trio | Success: provider tests pass per menu, property and gesture; label edits produce single-literal diffs via the family writer; each refusal carries its sentence. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2.4 Gate and merge group 2
+- [x] 2.4 Gate and merge group 2
   - The four gates, exit codes captured before any pipe; merge into `develop`
   - _Prompt: Implement the task for spec owl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 2 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 - [ ] 3. Client: the ellipse and the canvas
   - _Requirements: 1.1-1.6, 2.1-2.4, 3.1-3.4, 4.1, 8.3_
 
-- [ ] 3.1 The ellipse element, in the central canvas library
+- [-] 3.1 The ellipse element, in the central canvas library
   - Files: `src/client/src/canvas/elements/` gains the ellipse element, styled and themed like its box siblings, with tests in that library's own suite alongside the existing element tests
   - Its own task deliberately: this is a change to shared code that a later round-node reading should find rather than rewrite; nothing OWL-specific goes into it
   - _Requirements: 1.1 (the class primitive)_
