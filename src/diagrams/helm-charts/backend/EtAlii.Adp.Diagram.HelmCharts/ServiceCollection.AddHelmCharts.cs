@@ -1,3 +1,5 @@
+using EtAlii.Adp.Backend.Diagrams;
+
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Diagram.HelmCharts;
@@ -32,6 +34,16 @@ public static class ServiceCollectionAddHelmChartsExtension
         services.AddSingleton<IHelmChartStore>(provider => provider.GetRequiredService<HelmChartStore>());
 
         services.AddSingleton<HelmElementMapper>();
+
+        // One session per open diagram: whole chart at Baseline, deltas from the watcher, the
+        // one edit (a reposition) dispatched to core's layout command through the history.
+        services.AddSingleton<IDiagramSessionFactory, HelmSessionFactory>();
+
+        // Read-only does not mean silent: the structural mistakes this type can see are exactly
+        // the ones that bite at deploy time (Requirement 10). The validator reads the folder
+        // directly rather than through the store - validation is a one-shot question, and
+        // routing it through the store would leave a watcher behind on every "Validate all".
+        services.AddSingleton<IDiagramValidator, HelmValidator>();
 
         return services;
     }
