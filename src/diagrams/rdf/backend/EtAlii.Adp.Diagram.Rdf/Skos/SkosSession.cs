@@ -17,7 +17,6 @@ public sealed class SkosSession : IDiagramSession
 
     private readonly string _bodyPath;
     private readonly string? _registrationPath;
-    private readonly string _displayLanguage;
     private readonly IRdfDocumentStore _documents;
     private readonly SkosElementMapper _mapper;
 
@@ -42,7 +41,7 @@ public sealed class SkosSession : IDiagramSession
 
         _bodyPath = bodyPath;
         _registrationPath = registrationPath;
-        _displayLanguage = displayLanguage.ToLowerInvariant();
+        DisplayLanguage = displayLanguage.ToLowerInvariant();
         _documents = documents;
         _mapper = mapper;
         _history = history;
@@ -53,7 +52,7 @@ public sealed class SkosSession : IDiagramSession
     public event EventHandler<DiagramDeltasEventArgs>? Changed;
 
     /// <summary>The language the chooser was seeded with - what the canvas compares chips against.</summary>
-    public string DisplayLanguage => _displayLanguage;
+    public string DisplayLanguage { get; }
 
     /// <inheritdoc />
     public IReadOnlyList<DiagramDelta> Baseline()
@@ -137,7 +136,7 @@ public sealed class SkosSession : IDiagramSession
             : new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
 
         var positions = RegistrationLayout.Apply(layout.Positions, stored);
-        return _mapper.Elements(projection, positions, _displayLanguage);
+        return _mapper.Elements(projection, positions, DisplayLanguage);
     }
 
     private void OnDocumentChanged(object? sender, RdfDocumentChangedEventArgs args)

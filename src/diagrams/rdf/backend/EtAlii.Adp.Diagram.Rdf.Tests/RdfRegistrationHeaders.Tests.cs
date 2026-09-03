@@ -62,4 +62,18 @@ public class RdfRegistrationHeadersTests : IDisposable
         Assert.Null(RdfRegistrationHeaders.Read(IoPath.Combine(_root, "absent.adp"), "language"));
         Assert.Null(RdfRegistrationHeaders.Read(null, "language"));
     }
+
+    [Fact]
+    public void TheRead_SucceedsWhileAWriterHoldsTheRegistration()
+    {
+        // Arrange: the shared-read discipline - a rename rewrites .adp headers in place, and a
+        // default-share reader would refuse (and be refused by) that write on Windows. The
+        // handle below is File.WriteAllText's own mode; before the shared read this scan was
+        // refused here. (Guard for the 2026-09-03 family coordination ruling.)
+        var path = Write("w3c/rdf\r\nbody: graph.ttl\r\nlanguage: nl\r\n");
+        using var writer = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
+
+        // Act & assert.
+        Assert.Equal("nl", RdfRegistrationHeaders.Read(path, "language"));
+    }
 }
