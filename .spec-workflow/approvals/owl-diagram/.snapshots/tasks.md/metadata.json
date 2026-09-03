@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/owl-diagram/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-03T15:41:25.319Z",
       "trigger": "initial",
+      "approvalId": "approval_1788450085086_0h9of4jip",
+      "approvalTitle": "owl-diagram - Tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-03T17:30:49.341Z",
+      "trigger": "approved",
       "approvalId": "approval_1788450085086_0h9of4jip",
       "approvalTitle": "owl-diagram - Tasks"
     }

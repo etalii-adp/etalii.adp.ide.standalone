@@ -73,7 +73,7 @@ public sealed class HelmChartReader
         var legacy = string.Equals(metadata?.ApiVersion, "v1", StringComparison.OrdinalIgnoreCase);
 
         var (values, defaultValuesRoot) = ReadValues(rootPath);
-        var dependencies = ReadDependencies(rootPath, chartRoot, legacy, defaultValuesRoot);
+        var (dependencies, dependenciesFailure) = ReadDependencies(rootPath, chartRoot, legacy, defaultValuesRoot);
 
         return new HelmChart(
             IsChart: true,
@@ -86,7 +86,8 @@ public sealed class HelmChartReader
             ReadCrds(rootPath),
             dependencies,
             ReadVendored(rootPath),
-            ReadLock(rootPath, legacy));
+            ReadLock(rootPath, legacy),
+            dependenciesFailure);
     }
 
     private static ChartMetadata ReadMetadata(YamlMappingNode root)
@@ -235,18 +236,25 @@ public sealed class HelmChartReader
         return new CrdsSummary(count, [.. failures.OrderBy(failure => failure.RelativePath, StringComparer.Ordinal)]);
     }
 
-    private static IReadOnlyList<DependencyDeclaration> ReadDependencies(
+    private static (IReadOnlyList<DependencyDeclaration> Dependencies, HelmYamlFailure? Failure) ReadDependencies(
         string rootPath, YamlMappingNode? chartRoot, bool legacy, YamlMappingNode? defaultValuesRoot)
     {
         YamlNode? list = null;
         if (legacy)
         {
-            // Helm 2: dependencies live in their own file beside Chart.yaml.
+            // Helm 2: dependencies live in their own file beside Chart.yaml - whose own parse
+            // failure is a reportable fact, not a silent absence (Requirement 10.3).
             var requirements = IoPath.Combine(rootPath, "requirements.yaml");
-            if (File.Exists(requirements)
-                && HelmYaml.Read(requirements, "requirements.yaml") is HelmYamlDocument { Root: YamlMappingNode root })
+            if (File.Exists(requirements))
             {
-                root.Children.TryGetValue(new YamlScalarNode("dependencies"), out list);
+                switch (HelmYaml.Read(requirements, "requirements.yaml"))
+                {
+                    case HelmYamlDocument { Root: YamlMappingNode root }:
+                        root.Children.TryGetValue(new YamlScalarNode("dependencies"), out list);
+                        break;
+                    case HelmYamlUnreadable unreadable:
+                        return ([], unreadable.Failure);
+                }
             }
         }
         else
@@ -256,7 +264,7 @@ public sealed class HelmChartReader
 
         if (list is not YamlSequenceNode sequence)
         {
-            return [];
+            return ([], null);
         }
 
         var result = new List<DependencyDeclaration>();
@@ -280,7 +288,7 @@ public sealed class HelmChartReader
                 Line(entry)));
         }
 
-        return [.. result.OrderBy(dependency => dependency.EffectiveName, StringComparer.Ordinal)];
+        return ([.. result.OrderBy(dependency => dependency.EffectiveName, StringComparer.Ordinal)], null);
 
         static string? Scalar(YamlMappingNode entry, string key) =>
             entry.Children.TryGetValue(new YamlScalarNode(key), out var node) && node is YamlScalarNode scalar

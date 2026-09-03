@@ -36,7 +36,7 @@ One worktree for the whole spec (`.claude/worktrees/rdf`, per CLAUDE.md's one-wo
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec rdf-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 2 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3. Sessions, wire, routing and providers
+- [x] 3. Sessions, wire, routing and providers
   - _Requirements: 2.1-2.5, 3.1-3.6, 4.1-4.5, 6.1-6.5, 8.1-8.4_
 
 - [x] 3.1 Wire payloads
@@ -49,20 +49,20 @@ One worktree for the whole spec (`.claude/worktrees/rdf`, per CLAUDE.md's one-wo
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 3.1-3.6, 4.1-4.5, 8.1, 8.3, 8.4_
   - _Prompt: Implement the task for spec rdf-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the databricks session factory | Task: Implement the definition, bare-file routing for .ttl and .nt, the budget-bounded projection, the pure type-banded layout, the session with the RegistrationLayout overlay and res:{iri} move refusal rules, the RdfRegistrationHeaders helper the sibling readings will reuse for their item-10 headers, the document factory and the reloader, with tests on fixtures including an over-budget file, blank-node position refusal, and layout determinism | Restrictions: layout is pure and unit-tested, no physics; stored positions win element by element; the header helper follows the DatabricksHeaders shape and enforces nothing reading-specific - it scans, the reading interprets | _Leverage: C4SessionFactory and the databricks session shape; RegistrationLayout; DatabricksHeaders.cs as the helper template; the store from 1.1 | Success: a registered .ttl opens with computed layout and stored positions overlaid; a bare .ttl routes on sight; the over-budget fixture draws first-N with the truncation fact; the helper reads headers placed per item 10 and ignores everything else. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.3 Context providers and toolbox — **sibling seam (selection vocabulary)**
+- [x] 3.3 Context providers and toolbox — **sibling seam (selection vocabulary)**
   - Files: `RdfSelection.cs` (`res:{iri}`, `edge:{s}|{p}|{o-hash}`, `blank:{ordinal}`), `RdfContextSourceResolver.cs`, `RdfContextActionProvider.cs`, `RdfContextPropertyProvider.cs`, `RdfToolboxProvider.cs` + tests
   - The Requirement 6 menus and commands (rename-with-references, remove-with-count, disconnect, add-triple via `rel:` gestures, add-resource via `new:` placement with prefix-validated dialogs), the property grid rows with editable `rdfs:label`/`rdfs:comment`, the toolbox entries; edits withheld under truncation naming the reason
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 8.4_
   - _Prompt: Implement the task for spec rdf-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the databricks providers | Task: Implement the selection vocabulary and the four providers per Requirement 6 - menus, prefix-validated dialogs, rel: and new: gesture ids, rename rewriting references as one command, property rows with editable label and comment - with discovery, execute/undo/redo and refusal tests per selection kind including truncation-withheld edits | Restrictions: every real edit is one undo; property writes go through the standard SetProperty path; the selection shapes are the seam sibling providers extend, so parsing them lives in RdfSelection alone | _Leverage: DatabricksSelection and the databricks provider trio; the commands from 2.2 | Success: provider tests pass for each menu, property and gesture; undo round-trips hold; truncated documents refuse edits with the stated sentence. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.4 Gate and merge group 3
+- [x] 3.4 Gate and merge group 3
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec rdf-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 3 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. Client: the graph canvas
+- [-] 4. Client: the graph canvas
   - _Requirements: 3.1-3.6, 4.1-4.5, 6.1-6.5, 8.1, 8.2_
 
-- [ ] 4.1 RdfCanvas from the central library
+- [-] 4.1 RdfCanvas from the central library
   - Files: `src/diagrams/rdf/client/` — `RdfCanvas.tsx`, model and stream hooks, `register.ts` (importing the shared `canvas.css`), `rdf.css` (module-own rules only), `package.json` + tests
   - Composed from `src/client/src/canvas/`: `BoxElement` cards sized by literal-row count with rows as text lines, type badges, `StraightConnection` edges with the shared arrowhead and predicate labels, blank-node styling, `CanvasScrollbars`, drag repositioning through the layout command, `rel:` anchors, `new:` drops, the shared context menu, the showing-N-of-M truncation banner; payload decode type-checked before `fromBinary`
   - _Requirements: 3.1-3.6, 4.1-4.5, 6.1-6.5, 8.1, 8.2_
