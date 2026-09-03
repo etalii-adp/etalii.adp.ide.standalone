@@ -96,6 +96,7 @@ Implements the seven approved rules — cycle naming (from the layout's own dete
 
 ### `SkosCanvas` — client
 
+- Concept nodes are deliberately rectangular: the VOWL circle is the OWL sibling's tradition, and a label-carrying node needs a shape that carries text — the family's circular canvas element (introduced by `owl-diagram`'s design) is consumed by that reading alone, and SKOS's divergence is this sentence, chosen rather than drifted.
 - Concept nodes as `BoxElement`s: notation badge, label, language chip (rendered when payload tag differs from the session's display language), alternate/fallback styling by `kind`; scheme regions and collection groups in the shared boundary styling; three edge styles over `StraightConnection` — solid hierarchy (arrowless, layered top-down carries direction), dashed related, dotted mapping.
 - Interaction: drag → core layout command; hierarchy and related anchors as two `rel:`-style gestures; `new:` toolbox drop with the label dialog; the shared menu, keyboard, `CanvasScrollbars` and truncation banner. Payload decode type-checked before `fromBinary`, per the family client shape.
 
