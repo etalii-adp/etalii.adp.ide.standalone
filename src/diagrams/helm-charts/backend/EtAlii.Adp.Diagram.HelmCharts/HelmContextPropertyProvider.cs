@@ -72,9 +72,9 @@ public sealed class HelmContextPropertyProvider : IContextPropertyProvider
             HelmNodeKind.Template => TemplateRows(chart, node),
             HelmNodeKind.Dependency => DependencyRows(chart, graph, node),
             HelmNodeKind.Subchart or HelmNodeKind.Archive => VendoredRows(chart, graph, node),
-            HelmNodeKind.Lock => LockRows(chart, node),
+            HelmNodeKind.Lock => LockRows(chart),
             HelmNodeKind.Schema => [Row("path", "Path", node.RelativePath, node.RelativePath, "Identity")],
-            HelmNodeKind.Crds => CrdsRows(chart, node),
+            HelmNodeKind.Crds => CrdsRows(chart),
             _ => [],
         };
 
@@ -276,7 +276,7 @@ public sealed class HelmContextPropertyProvider : IContextPropertyProvider
         return rows;
     }
 
-    private static IReadOnlyList<ContextPropertyDefinition> LockRows(HelmChart chart, HelmNode node)
+    private static IReadOnlyList<ContextPropertyDefinition> LockRows(HelmChart chart)
     {
         if (chart.Lock is not { } chartLock)
         {
@@ -297,7 +297,7 @@ public sealed class HelmContextPropertyProvider : IContextPropertyProvider
         return rows;
     }
 
-    private static IReadOnlyList<ContextPropertyDefinition> CrdsRows(HelmChart chart, HelmNode node) =>
+    private static IReadOnlyList<ContextPropertyDefinition> CrdsRows(HelmChart chart) =>
         chart.Crds is { } crds
             ?
             [
