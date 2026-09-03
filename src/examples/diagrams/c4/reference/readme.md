@@ -10,15 +10,15 @@ it is in [`architecture/courier.dsl`](architecture/courier.dsl) with a comment s
 
 | File | Type | Shows |
 |---|---|---|
-| [`landscape.adp`](architecture/landscape.adp) | `c4/system-landscape` | Every system in the estate, with no single one in focus |
+| [`courier.landscape.adp`](architecture/courier.landscape.adp) | `c4/system-landscape` | Every system in the estate, with no single one in focus |
 | [`courier.adp`](architecture/courier.adp) | `c4/context` | Courier Tracking, its people, and what it depends on |
-| [`containers.adp`](architecture/containers.adp) | `c4/container` | The applications and stores inside it, and the protocols between them |
-| [`api-components.adp`](architecture/api-components.adp) | `c4/component` | Inside the API application |
-| [`parcel-scanned.adp`](architecture/parcel-scanned.adp) | `c4/dynamic` | What happens, in order, when a courier scans a parcel |
-| [`production.adp`](architecture/production.adp) | `c4/deployment` | Where Production runs, with instance counts |
+| [`courier.containers.adp`](architecture/courier.containers.adp) | `c4/container` | The applications and stores inside it, and the protocols between them |
+| [`courier.api-components.adp`](architecture/courier.api-components.adp) | `c4/component` | Inside the API application |
+| [`courier.parcel-scanned.adp`](architecture/courier.parcel-scanned.adp) | `c4/dynamic` | What happens, in order, when a courier scans a parcel |
+| [`courier.production.adp`](architecture/courier.production.adp) | `c4/deployment` | Where Production runs, with instance counts |
 | [`code-level.adp`](architecture/code-level.adp) | `c4/code` | The one type with no canvas — it explains itself instead |
 
-Open `courier.adp` and `containers.adp` at the same time and rename a container in either. The
+Open `courier.adp` and `courier.containers.adp` at the same time and rename a container in either. The
 other updates, because both are views of one document.
 
 ## What each construct in the model is there to show
