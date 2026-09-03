@@ -90,7 +90,8 @@ public sealed class PipelineContextSourceResolver : IContextSourceResolver
                 SourceId: default,
                 rootPath,
                 watchId,
-                elementId),
+                elementId,
+                routed.Definition.Origin),
             new ContextLevelDetail
             {
                 Element = new ElementDetail

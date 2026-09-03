@@ -75,7 +75,8 @@ public sealed class DatabricksContextSourceResolver : IContextSourceResolver
                     SourceId: default,
                     rootPath,
                     watchId,
-                    elementId),
+                    elementId,
+                    routed.Definition.Origin),
                 new ContextLevelDetail { Element = new ElementDetail { Text = "New element" } },
                 this)));
         }
@@ -104,7 +105,8 @@ public sealed class DatabricksContextSourceResolver : IContextSourceResolver
                 SourceId: default,
                 rootPath,
                 watchId,
-                elementId),
+                elementId,
+                routed.Definition.Origin),
             new ContextLevelDetail { Element = new ElementDetail { Text = text } },
             this);
 
