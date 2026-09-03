@@ -32,7 +32,7 @@ public sealed class SkosValidator(DiagramOrigin origin) : IDiagramValidator
     /// <summary>A concept with no <c>skos:prefLabel</c> in any language.</summary>
     public const string MissingPrefLabelRuleId = "skos.missing-preflabel";
 
-    /// <summary>A concept asserted into no scheme and reachable from no top concept. The requirements grade this and <see cref="XlLabelsRuleId"/> info; core's severity set is Warning/Error only, so Warning is the mildest honest grade - recorded here as the deviation it is.</summary>
+    /// <summary>A concept asserted into no scheme and reachable from no top concept - legal SKOS, and usually a mistake.</summary>
     public const string UnfiledConceptRuleId = "skos.unfiled-concept";
 
     /// <summary>SKOS-XL label triples are present and deliberately unread (Requirement 3.6).</summary>
@@ -126,7 +126,7 @@ public sealed class SkosValidator(DiagramOrigin origin) : IDiagramValidator
         if (SkosProjection.HasXlLabels(model))
         {
             problems.Add(new DiagramProblem(
-                DiagramProblemSeverity.Warning,
+                DiagramProblemSeverity.Info,
                 "This file labels concepts through SKOS-XL, which this reading does not resolve; the plain-SKOS fallbacks apply (Requirement 3.6).",
                 XlLabelsRuleId));
         }
@@ -182,7 +182,7 @@ public sealed class SkosValidator(DiagramOrigin origin) : IDiagramValidator
             if (concept.SchemeIris.Count == 0 && !reached.Contains(concept.Id))
             {
                 problems.Add(new DiagramProblem(
-                    DiagramProblemSeverity.Warning,
+                    DiagramProblemSeverity.Info,
                     $"{Short(concept.Iri)} is in no concept scheme and under no top concept - legal SKOS, and usually a mistake. It draws in the unfiled band.",
                     UnfiledConceptRuleId));
             }

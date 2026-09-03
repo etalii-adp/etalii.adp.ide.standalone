@@ -102,8 +102,13 @@ public sealed class RdfContextActionProvider : IContextActionProvider
 
         if (RdfSelection.EdgeOf(entry, target.ElementId) is not null)
         {
+            // A skos hierarchy or related pair is drawn as ONE edge whose id happens to be a
+            // valid family edge id too, so the reading's disconnect - which takes every asserted
+            // direction as one undo - leads, and the family's single-statement removal stays
+            // beneath it for the reader who means exactly that statement.
             return Result(
             [
+                .. SkosActions.Discover(entry, target),
                 new ContextActionGroupDefinition(
                 [
                     new ContextActionDefinition(RemoveEdgeActionId, "Remove statement", "mdi-vector-polyline-remove", new ContextShortcutDefinition("Delete")),
