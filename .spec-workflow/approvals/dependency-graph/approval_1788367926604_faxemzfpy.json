@@ -3,8 +3,10 @@
   "title": "dependency-graph - Tasks",
   "filePath": ".spec-workflow/specs/dependency-graph/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-02T16:52:06.604Z",
   "category": "spec",
-  "categoryName": "dependency-graph"
+  "categoryName": "dependency-graph",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-02T16:52:30.855Z"
 }

@@ -98,6 +98,31 @@ public class ProjectValidatorTests : IDisposable
     }
 
     [Fact]
+    public async Task ValidateAsync_ReadsADocumentAnEditorIsStillWriting()
+    {
+        // Arrange.
+        // The handle every document store's save holds: FileMode.Create aside, this is the
+        // mode File.WriteAllText opens with - write access, sharing only reads. Windows
+        // sharing is mutual, so a validation read opened with plain FileShare.Read is refused
+        // while this handle is open, and mirrored, an in-flight validation read makes the
+        // editor's save fail - the intermittent "plan.tml could not be written" that
+        // github-build-pipeline task 4.3's verification caught in TimelineFlowTests. This
+        // pins the share mode that keeps Requirement 6.7 ("validation must never contend
+        // with an editor") true; Unix does not enforce sharing, so the guard bites on
+        // Windows, where the bug lived.
+        CreatePair("flow", "the document");
+        await using var editor = new FileStream(
+            IoPath.Combine(_root, "flow.mm"), FileMode.Open, FileAccess.Write, FileShare.Read);
+
+        // Act: validate while the editor's write handle is open.
+        var outcome = await Validate(Validator(problems: []), new ProjectValidationScope(_root));
+
+        // Assert: read, routed and judged - no "could not be read" in sight.
+        Assert.Empty(outcome.Problems);
+        Assert.Equal(1, outcome.FilesConsidered);
+    }
+
+    [Fact]
     public async Task ValidateAsync_IsSilentForATypeWithoutRules()
     {
         // Arrange.

@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/databricks-diagrams/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T00:05:10.402Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788393910342_p13x8pf35",
+      "approvalTitle": "databricks-diagrams: tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-03T00:07:05.631Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788393910342_p13x8pf35",
+      "approvalTitle": "databricks-diagrams: tasks"
+    }
+  ]
+}
