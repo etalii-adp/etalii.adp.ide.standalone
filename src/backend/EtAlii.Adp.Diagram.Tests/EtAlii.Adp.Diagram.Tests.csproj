@@ -16,11 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
-    <!-- Referenced but never USED: the compiler prunes the metadata reference while the
-         deployment manifest still lists the assembly - the walk tests' proof that manifest
-         seeding finds what no metadata reference leads to. Do not use a probe type anywhere,
-         or the reference becomes real and the demonstration is lost. -->
-    <ProjectReference Include="..\EtAlii.Adp.DiscoveryProbe\EtAlii.Adp.DiscoveryProbe.csproj" />
   </ItemGroup>
 
 </Project>

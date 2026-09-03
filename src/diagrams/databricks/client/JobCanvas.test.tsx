@@ -230,6 +230,39 @@ describe("the job canvas", () => {
     expect(container.textContent).toContain("could not be opened");
   });
 
+  it("wears the shared canvas classes, so the central stylesheet is what dresses it", () => {
+    // Arrange & act.
+    // The appearance lives in @client/canvas/canvas.css (loaded by register.ts); what a canvas
+    // owns is composing the shared class names. A node missing canvas-node here would render
+    // unstyled however correct the stylesheet is.
+    const { container } = renderCanvas();
+
+    // Assert.
+    expect(container.querySelector(".databricks-canvas")!.classList.contains("canvas-host")).toBe(true);
+    expect(container.querySelector(".databricks-surface")!.classList.contains("canvas-viewport")).toBe(true);
+    expect(container.querySelector(".databricks-content")!.classList.contains("canvas-drawing")).toBe(true);
+    expect(container.querySelector(".databricks-node-box")!.classList.contains("canvas-node")).toBe(true);
+    expect(container.querySelector(".databricks-label")!.classList.contains("canvas-node-label")).toBe(true);
+    expect(container.querySelector(".databricks-edge")!.classList.contains("canvas-connection-line")).toBe(true);
+    expect(container.querySelector("marker#databricks-arrowhead")!.classList.contains("canvas-arrowhead")).toBe(true);
+  });
+
+  it("draws the shared scrollbars, and dragging the horizontal thumb pans", () => {
+    // Arrange.
+    const { container } = renderCanvas();
+    const thumb = container.querySelector(".databricks-scrollbars.canvas-scrollbar-horizontal .canvas-scrollbar-thumb")!;
+    const before = container.querySelector(".databricks-node-box")!.parentElement!.getAttribute("transform");
+
+    // Act.
+    fireEvent.mouseDown(thumb, { clientX: 100, clientY: 300 });
+    fireEvent.mouseMove(window, { clientX: 180, clientY: 300 });
+    fireEvent.mouseUp(window);
+
+    // Assert.
+    expect(container.querySelector(".databricks-scrollbars.canvas-scrollbar-vertical")).not.toBeNull();
+    expect(container.querySelector(".databricks-node-box")!.parentElement!.getAttribute("transform")).not.toBe(before);
+  });
+
   it("intercepts a simulated action id: the show plays locally and executeAction is never called", () => {
     // Arrange.
     // The Requirement 8.6 seam: the id is exactly what the backend discovers, the marker is

@@ -24,7 +24,7 @@ public class AdpFileWriterTests : IDisposable
         Directory.GetFiles(_folder, $"{AdpFileWriter.TempPrefix}*{AdpFileWriter.TempExtension}");
 
     [Fact]
-    public void Create_WritesExactlyTheLineAndALineFeed_WithoutAByteOrderMark()
+    public void Create_WritesExactlyTheLineAndACrlfEnding_WithoutAByteOrderMark()
     {
         var result = AdpFileWriter.Create(_folder, "domain.adp", "freeplane/mindmap");
 
@@ -32,8 +32,35 @@ public class AdpFileWriterTests : IDisposable
         Assert.Equal(IoPath.Combine(_folder, "domain.adp"), created.FullPath);
 
         // Asserting bytes, not the string: a BOM would be invisible in a string comparison.
+        // CRLF, because the repository's house style is CRLF in the working tree and the app
+        // must not be the tool CLAUDE.md's line-endings section warns about. It once wrote LF
+        // here while the layout writer wrote CRLF, leaving mixed endings inside one file.
         var bytes = File.ReadAllBytes(created.FullPath);
-        Assert.Equal(Encoding.UTF8.GetBytes("freeplane/mindmap\n"), bytes);
+        Assert.Equal(Encoding.UTF8.GetBytes("freeplane/mindmap\r\n"), bytes);
+    }
+
+    [Fact]
+    public void Create_ThenALayoutBlock_LeavesNoMixedLineEndings()
+    {
+        // Arrange. The two writers that once disagreed: creation wrote LF, the layout block
+        // CRLF, so a registration created and then repositioned in the running app carried
+        // both conventions at once.
+        var created = Assert.IsType<AdpFileCreated>(AdpFileWriter.Create(_folder, "map.adp", "wardley/map"));
+
+        // Act.
+        RegistrationLayout.SetPosition(created.FullPath, "kettle", new RegistrationPosition(120.5, 44));
+
+        // Assert. Every line feed is half of a CRLF - one convention for the whole file.
+        var text = File.ReadAllText(created.FullPath);
+        for (var index = 0; index < text.Length; index++)
+        {
+            if (text[index] == '\n')
+            {
+                Assert.True(
+                    index > 0 && text[index - 1] == '\r',
+                    $"Bare LF at index {index} in: {text.Replace("\r", "<CR>").Replace("\n", "<LF>")}");
+            }
+        }
     }
 
     [Fact]
@@ -95,8 +122,8 @@ public class AdpFileWriterTests : IDisposable
         AdpFileWriter.Create(_folder, "b.adp", "x/b");
 
         // Assert.
-        Assert.Equal("x/a\n", File.ReadAllText(IoPath.Combine(_folder, "a.adp")));
-        Assert.Equal("x/b\n", File.ReadAllText(IoPath.Combine(_folder, "b.adp")));
+        Assert.Equal("x/a\r\n", File.ReadAllText(IoPath.Combine(_folder, "a.adp")));
+        Assert.Equal("x/b\r\n", File.ReadAllText(IoPath.Combine(_folder, "b.adp")));
         Assert.Empty(TempFiles());
     }
 }

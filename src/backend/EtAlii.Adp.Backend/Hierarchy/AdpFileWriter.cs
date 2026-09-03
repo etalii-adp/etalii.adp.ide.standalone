@@ -21,10 +21,27 @@ public static class AdpFileWriter
 
     public const string TempExtension = ".tmp";
 
+    /// <summary>
+    /// The terminator every NEW line ADP writes into a repository file gets: CRLF, the house
+    /// style the root <c>.gitattributes</c> and <c>src/.editorconfig</c> agree on for the
+    /// working tree.
+    /// </summary>
+    /// <remarks>
+    /// One constant rather than a literal per call site, because each site choosing for itself
+    /// is exactly how this went wrong once: file creation wrote LF while the layout writer
+    /// wrote CRLF, and a registration created and then repositioned in the running app ended
+    /// up with mixed endings inside one file. CLAUDE.md's line-endings section calls a tool
+    /// that writes LF against the house style a bug to fix at the tool - this constant is that
+    /// fix. It governs new content only: a writer REWRITING an existing line keeps that line's
+    /// own terminator (see <c>RegistrationLayout</c>'s per-line preservation), which is what
+    /// keeps a hand-authored file byte-stable.
+    /// </remarks>
+    public const string NewLine = "\r\n";
+
     private static readonly ILogger _logger = Log.ForContext(typeof(AdpFileWriter));
 
     public static AdpFileWriteResult Create(string folder, string fileName, string firstLine) =>
-        CreateAll(folder, [(fileName, firstLine + "\n")]);
+        CreateAll(folder, [(fileName, firstLine + NewLine)]);
 
     /// <summary>
     /// Creates every file in <paramref name="files"/> or none of them: all are written to

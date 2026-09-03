@@ -491,7 +491,7 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
 
   if (failed) {
     return (
-      <div className="dependency-graph-canvas dependency-graph-canvas-message">
+      <div className="dependency-graph-canvas canvas-host dependency-graph-canvas-message canvas-host-message">
         <p>This dependency graph could not be opened.</p>
       </div>
     );
@@ -508,10 +508,10 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
   const width = surfaceRef.current?.getBoundingClientRect().width ?? 1200;
 
   return (
-    <div className="dependency-graph-canvas">
+    <div className="dependency-graph-canvas canvas-host">
       <div
         ref={surfaceRef}
-        className="dependency-graph-surface"
+        className="dependency-graph-surface canvas-viewport"
         role="application"
         aria-label="Dependency graph"
         tabIndex={0}
@@ -524,7 +524,7 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
         onDragOver={onDragOver}
         onDrop={onSurfaceDrop}
       >
-        <svg className="dependency-graph-content">
+        <svg className="dependency-graph-content canvas-drawing">
           <defs>
             {/*
               The arrowhead, and the reason this type exists rather than the timeline. The shared
@@ -534,7 +534,7 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
             */}
             <marker
               id={ARROWHEAD_ID}
-              className="dependency-graph-arrowhead"
+              className="dependency-graph-arrowhead canvas-arrowhead"
               viewBox="0 0 10 10"
               refX="9"
               refY="5"
@@ -568,10 +568,10 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
                 loopsBack={toElement.x < fromElement.x + NODE_WIDTH}
                 selected={relation.id === selectedId}
                 label={relation.label || undefined}
-                className="dependency-graph-relation"
-                selectedClassName="dependency-graph-selected"
-                hitClassName="dependency-graph-relation-hit"
-                lineClassName="dependency-graph-relation-line"
+                className="dependency-graph-relation canvas-connection"
+                selectedClassName="dependency-graph-selected canvas-selected"
+                hitClassName="dependency-graph-relation-hit canvas-connection-hit"
+                lineClassName="dependency-graph-relation-line canvas-connection-line"
                 onSelect={(event) => onRelationClick(event, relation.id)}
                 onOpenMenu={(event) => openTargetMenuAt(event, relation.id)}
               />
@@ -611,8 +611,8 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
         position={menuPosition ?? { x: 0, y: 0 }}
         onClose={closeMenu}
       />
-      {loading ? <p className="dependency-graph-status">Opening…</p> : null}
-      {rejection ? <p className="dependency-graph-rejection">{rejection}</p> : null}
+      {loading ? <p className="dependency-graph-status canvas-status">Opening…</p> : null}
+      {rejection ? <p className="dependency-graph-rejection canvas-rejection">{rejection}</p> : null}
     </div>
   );
 }
@@ -692,13 +692,13 @@ interface DependencyGraphNodeShapeProps {
  * timeline untouched, which this spec's reliability requirement asks for outright.
  */
 const SPAN_CLASSES: SpanElementClasses = {
-  span: "dependency-graph-node",
+  span: "dependency-graph-node canvas-node",
   moment: "dependency-graph-node-point",
-  label: "dependency-graph-label",
-  hint: "dependency-graph-hint",
+  label: "dependency-graph-label canvas-node-label",
+  hint: "dependency-graph-hint canvas-hint",
   adorner: "dependency-graph-adorner",
-  anchor: "dependency-graph-anchor",
-  anchorHit: "dependency-graph-anchor-hit",
+  anchor: "dependency-graph-anchor canvas-anchor",
+  anchorHit: "dependency-graph-anchor-hit canvas-anchor-hit",
 };
 
 function DependencyGraphNodeShape({
@@ -713,13 +713,13 @@ function DependencyGraphNodeShape({
   onElementLeave,
   onElementContextMenu,
 }: DependencyGraphNodeShapeProps) {
-  const classes = ["dependency-graph-element"];
+  const classes = ["dependency-graph-element canvas-element"];
   if (selected) {
-    classes.push("dependency-graph-selected");
+    classes.push("dependency-graph-selected canvas-selected");
   }
 
   if (connectTarget) {
-    classes.push("dependency-graph-connect-target");
+    classes.push("dependency-graph-connect-target canvas-connect-target");
   }
 
   // The drawing - the box, the label that trims when the box is too narrow, and the connection
@@ -765,7 +765,7 @@ function PendingRelation({
     : { x: xToPx(connect.x), y: yToPx(connect.y) };
   const start = sideAnchorOf(from, end.x >= from.x ? "right" : "left");
 
-  return <path className="dependency-graph-pending-relation" d={horizontalBezierPath(start, end)} />;
+  return <path className="dependency-graph-pending-relation canvas-pending-connection" d={horizontalBezierPath(start, end)} />;
 }
 
 /**

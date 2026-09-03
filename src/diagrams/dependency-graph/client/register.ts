@@ -1,5 +1,6 @@
 import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
 import { DependencyGraphCanvas } from "./DependencyGraphCanvas";
+import "@client/canvas/canvas.css";
 import "./dependency-graph.css";
 
 /**

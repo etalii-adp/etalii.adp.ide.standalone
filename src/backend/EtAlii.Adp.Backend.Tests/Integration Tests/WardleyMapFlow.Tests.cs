@@ -162,7 +162,7 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
 
         // Assert. Both files, and the `.adp` carrying exactly its MIME line.
         Assert.True(submitted.Completed, submitted.Error);
-        Assert.Equal("wardley/map\n", File.ReadAllText(IoPath.Combine(_projectFolder, "strategy.adp")));
+        Assert.Equal("wardley/map\r\n", File.ReadAllText(IoPath.Combine(_projectFolder, "strategy.adp")));
         Assert.True(File.Exists(IoPath.Combine(_projectFolder, "strategy.owm")), "the .owm sibling was not created");
     }
 
