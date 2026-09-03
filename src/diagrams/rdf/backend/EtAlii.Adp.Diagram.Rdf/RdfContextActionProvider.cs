@@ -93,6 +93,13 @@ public sealed class RdfContextActionProvider : IContextActionProvider
             ]);
         }
 
+        if (SkosSelection.PairOf(entry, target.ElementId) is not null)
+        {
+            // A hierarchy or related pair is the scheme reading's edge: its disconnect takes
+            // every asserted direction as one undo, which the generic remove-statement cannot.
+            return Result(SkosActions.Discover(entry, target));
+        }
+
         if (RdfSelection.EdgeOf(entry, target.ElementId) is not null)
         {
             return Result(
@@ -106,8 +113,11 @@ public sealed class RdfContextActionProvider : IContextActionProvider
 
         if (RdfNewPlacement.TryParse(target.ElementId, out _, out _))
         {
+            // The scheme reading's entries lead where the file's own assertions say a thesaurus
+            // is (SkosActions' data-driven delegation); the family's stay beneath.
             return Result(
             [
+                .. SkosActions.Discover(entry, target),
                 new ContextActionGroupDefinition(
                 [
                     new ContextActionDefinition(AddResourceActionId, "Add resource here…", "mdi-card-plus-outline"),
@@ -120,13 +130,15 @@ public sealed class RdfContextActionProvider : IContextActionProvider
         {
             return Result(
             [
+                .. SkosActions.Discover(entry, target),
                 new ContextActionGroupDefinition(
                     [new ContextActionDefinition(ConnectActionId, "Relate…", "mdi-ray-start-arrow")]),
             ]);
         }
 
-        // Blank nodes and the banner: describable, never editable.
-        return Result([]);
+        // A skos edge id (the canonical broader-direction shape) is the scheme reading's alone;
+        // blank nodes and the banner stay describable, never editable.
+        return Result(SkosActions.Discover(entry, target));
     }
 
     /// <inheritdoc />
@@ -139,6 +151,11 @@ public sealed class RdfContextActionProvider : IContextActionProvider
         if (RdfSelection.IsTruncated(entry))
         {
             return new ContextExecutionFailed(RdfSelection.TruncatedRefusal);
+        }
+
+        if (await SkosActions.ExecuteAsync(_historyStacks, entry, target, actionId, cancellationToken) is { } skosResult)
+        {
+            return skosResult;
         }
 
         var iri = RdfSelection.ResourceOf(entry, target.ElementId);
@@ -213,6 +230,11 @@ public sealed class RdfContextActionProvider : IContextActionProvider
 
         // The writers refuse on exactly these terms at commit; validating here lets the dialog
         // refuse first - an undeclared prefix by name, never silently invented (Requirement 5.7).
+        if (SkosActions.Validate(_documents.GetOrLoad(target.ResolvedFullPath), actionId, value) is { } skosValidation)
+        {
+            return ValueTask.FromResult(skosValidation);
+        }
+
         if (actionId is RenameResourceActionId or ConnectActionId or AddResourceActionId)
         {
             var entry = _documents.GetOrLoad(target.ResolvedFullPath);
@@ -269,6 +291,11 @@ public sealed class RdfContextActionProvider : IContextActionProvider
 
     private static ICommand? CommandFor(RdfDocumentEntry entry, ContextTarget target, string actionId, string value)
     {
+        if (SkosActions.CommandFor(entry, target, actionId, value) is { } skosCommand)
+        {
+            return skosCommand;
+        }
+
         var body = target.ResolvedFullPath;
         var iri = RdfSelection.ResourceOf(entry, target.ElementId);
 
