@@ -131,6 +131,8 @@ public class ShaclTargetChipsTests
         // Every explicit chip is fully addressable for removal.
         Assert.All(card.Targets, chip =>
         {
+            ArgumentNullException.ThrowIfNull(chip);
+
             Assert.Equal("http://example.org/S", chip.ShapeIri);
             Assert.NotEqual("", chip.PredicateIri);
         });
