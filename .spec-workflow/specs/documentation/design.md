@@ -1,5 +1,14 @@
 # Design Document
 
+> **Correction, 2026-09-03.** Where this document names `ExampleReplicationTests`, that test no
+> longer exists: it byte-compared each module's `examples/` tree against its `src/examples/`
+> replica and was deleted when the two trees were deliberately disconnected. The root-locating
+> walk this spec borrows from it survives unchanged in `ExampleRegistrationTests.Locate()` and
+> in this spec's own `DocumentationLinksTests`, and the references have been repointed there.
+> The remaining mentions describe guide content about what the guard enforced; the shipped
+> guide does not name it, so nothing in `docs/` is stale as a result.
+
+
 ## Overview
 
 Three deliverables, all documentation, one small guard test:
@@ -31,7 +40,7 @@ The design's one organising idea: **every claim these documents make is either v
 
 ### Existing Components to Leverage
 
-- **`ExampleReplicationTests.Locate()`** (`src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/ExampleReplication.Tests.cs`): the walk-up-from-the-test-binary pattern for finding `src/` — the exact shape the dependency guard and link test need, reused rather than re-derived.
+- **`ExampleRegistrationTests.Locate()`** (`src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/ExampleRegistration.Tests.cs`): the walk-up-from-the-test-binary pattern for finding `src/` — the exact shape the dependency guard and link test need, reused rather than re-derived.
 - **`src/package.json` workspaces declaration**: the client-manifest discovery rule. The guard expands the workspace globs from this file rather than hard-coding a folder list, so a module client that gains a `package.json` tomorrow is covered on arrival.
 - **`src/Directory.Packages.props`**: the single authoritative backend version manifest (17 `PackageVersion` entries today), already carrying reason-for-usage prose in comments for the non-obvious packages (YamlDotNet's is a worked example of the tone the reason column wants).
 - **The steering documents and CLAUDE.md**: the upstream sources every rule links to. The readme derives from `product.md`; the walkthroughs link CLAUDE.md's catalog rule, test command, line-ending policy and code-style sections.
@@ -141,7 +150,7 @@ flowchart LR
 - **Purpose:** Requirement 9.5's guard. Fails when `docs/dependencies.md` and the manifests disagree; passes silently otherwise.
 - **Interfaces:** xUnit v3 facts in the existing backend test project, run by the existing gate.
 - **Behaviour:**
-  1. Locate the repository root by walking up from the test binary (the `ExampleReplicationTests.Locate()` shape — the folder that contains both `src/diagrams` and `docs`).
+  1. Locate the repository root by walking up from the test binary (the `ExampleRegistrationTests.Locate()` shape — the folder that contains both `src/diagrams` and `docs`).
   2. Parse `src/Directory.Packages.props` with `XDocument`: every `PackageVersion` `Include`/`Version` pair.
   3. Parse `src/package.json` with `System.Text.Json`, read its `workspaces` globs, expand them against the filesystem (supporting the literal form and the one-level `*` those globs use), and collect `dependencies` + `devDependencies` from the root and every workspace manifest. **The discovery rule is the workspaces declaration, not a folder scan** — the 55 module folders of which only 8 carry a manifest today are exactly why: a folder scan would have to define "counts as a client package" a second time, and the two definitions would drift. If a manifest exists that the workspaces do not name, npm does not install for it either — that is a repository inconsistency this test is not responsible for.
   4. Parse the two tables in `docs/dependencies.md`: under the `## Backend` and `## Client` headings, each `|`-delimited row's first two cells, back-ticks stripped, header and separator rows skipped.
@@ -230,7 +239,7 @@ CaptureEntry
 
 ### Integration Testing
 
-- Both new tests live in `Integration Tests/` beside `ExampleReplicationTests`, follow its repository-locating pattern, and run in the existing backend gate — integration in the sense that the repository itself is the fixture.
+- Both new tests live in `Integration Tests/` beside `ExampleRegistrationTests`, follow its repository-locating pattern, and run in the existing backend gate — integration in the sense that the repository itself is the fixture.
 
 ### End-to-End Testing
 

@@ -1,5 +1,16 @@
 # Tasks Document
 
+> **Correction, 2026-09-03: `ExampleReplicationTests` no longer exists.** It byte-compared each
+> module's `examples/` tree against its `src/examples/` replica, and was deleted when the two
+> trees were deliberately disconnected. Wherever a task below names it — as a guard, a
+> verification step or a `_Leverage` — or requires the showcase copy to be **byte-identical**, read it as follows: **seeding the showcase copy remains a
+> step of that task**, it is simply no longer held byte-identical, and the guard that covers both
+> trees now is `ExampleRegistrationTests`, which opens every registration in each against the
+> deployed catalog. The task wording is otherwise left exactly as written, deliberately: several
+> of these tasks are in flight, and rewording a criterion under the agent working it would be
+> worse than a stale sentence.
+
+
 One worktree for the whole spec (`.claude/worktrees/shacl`, per CLAUDE.md's one-worktree-per-specification rule). Each group ends in a gate-and-merge task judged by exit code — all four gates, exit codes captured before any pipe.
 
 **Dependencies on the anchor's seams.** This reading implements over `rdf-diagram`'s approved tasks and starts only once those seam tasks are merged into `develop`: task 1.1 (**the triplestore document store** and `RdfModel` with source spans — the discovery and projection here consume that model, never text), task 2.1 (**the triple writer** — targets, the type triple, `sh:deactivated` and rename all ride its named operations, and any single-literal rewrite such as `sh:name` rides the family-level `ReplaceObjectLiteral` rather than a private splice), task 3.2 (the definition/session/routing arrangement this reading's session follows — the item-10 header helper in that task goes deliberately unused here, per approved Requirement 4.5), and task 3.3 (**the selection vocabulary** — the shacl providers extend `res:{iri}`/`blank:{ordinal}` and add only `shacl-edge:`). The two operations owned here because their definitions speak SHACL rather than Turtle — `AppendPropertyShapeBlock` and `RemoveShapeWithSubtrees` — are tasks 2.1 and 2.2 below.
@@ -29,7 +40,7 @@ One worktree for the whole spec (`.claude/worktrees/shacl`, per CLAUDE.md's one-
   - All four gates (backend test + format from `src/backend`, npm test + typecheck from `src/client`), exit codes checked; merge `.claude/worktrees/shacl` into `develop`
   - _Prompt: Implement the task for spec shacl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge the shacl worktree's group-1 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. The writers: two SHACL-owned operations, commands, the double refusal, the validator
+- [x] 2. The writers: two SHACL-owned operations, commands, the double refusal, the validator
   - _Requirements: 5.1-5.7, 3.3, 7.1-7.6_
 
 - [x] 2.1 AppendPropertyShapeBlock and the triple-shaped gestures
@@ -56,14 +67,14 @@ One worktree for the whole spec (`.claude/worktrees/shacl`, per CLAUDE.md's one-
   - _Requirements: 5.1, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6_
   - _Prompt: Implement the task for spec shacl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the family command discipline | Task: Wrap the shacl gestures as commands with whole-document snapshot inverses and implement ShaclValidator's Requirement 7 findings, each with a fixture, plus the explicit fixture proving an absent target term produces no finding | Restrictions: undo restores bytes; the validator consults nothing outside the file and never evaluates data conformance; family-generic findings stay the anchor validator's | _Leverage: the command pattern and validator registration from rdf-diagram task 2.2; ShaclVocabulary from 1.1 | Success: every edit is one undo away restoring bytes; each finding fires on its fixture and the absent-target fixture stays silent. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2.5 Gate and merge group 2
+- [x] 2.5 Gate and merge group 2
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec shacl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 2 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 - [ ] 3. Wire, definition, session, providers, canvas
   - _Requirements: 2.1-2.3, 3.2, 3.4, 4.1-4.5, 6.1-6.4, 8.1_
 
-- [ ] 3.1 Wire payloads
+- [-] 3.1 Wire payloads
   - Files: `src/diagrams/rdf/api/shacl.proto` per the design's Data Models section (`ShaclShapePayload`, `ShaclTargetChip`, `ShaclTargetKind`, `ShaclPropertyRow`, `ShaclEdgePayload`); generation wired beside `rdf.proto`
   - _Requirements: 1.2, 1.3, 1.4_
   - _Prompt: Implement the task for spec shacl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Backend developer familiar with the module proto setup | Task: Add shacl.proto with the design's payload messages and wire generation for backend and client beside the family's rdf.proto | Restrictions: payloads ride the existing Element/Delta as Any; no new services or streams | _Leverage: the rdf.proto wiring from rdf-diagram task 3.1 | Success: both sides generate and the payloads are usable from backend and client code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._

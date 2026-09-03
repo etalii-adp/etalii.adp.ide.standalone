@@ -1,5 +1,16 @@
 # Tasks Document
 
+> **Correction, 2026-09-03: `ExampleReplicationTests` no longer exists.** It byte-compared each
+> module's `examples/` tree against its `src/examples/` replica, and was deleted when the two
+> trees were deliberately disconnected. Wherever a task below names it — as a guard, a
+> verification step or a `_Leverage` — or requires the showcase copy to be **byte-identical**, read it as follows: **seeding the showcase copy remains a
+> step of that task**, it is simply no longer held byte-identical, and the guard that covers both
+> trees now is `ExampleRegistrationTests`, which opens every registration in each against the
+> deployed catalog. The task wording is otherwise left exactly as written, deliberately: several
+> of these tasks are in flight, and rewording a criterion under the agent working it would be
+> worse than a stale sentence.
+
+
 One worktree for the whole spec (`.claude/worktrees/skos`, per CLAUDE.md's one-worktree-per-specification rule). Each group ends in a gate-and-merge task judged by exit code — all four gates, exit codes captured before any pipe — so `develop` grows the reading a working layer at a time.
 
 **Anchor dependencies, named rather than restated.** This reading implements over `rdf-diagram`'s approved tasks and adds no engine of its own: anchor task 1.1 (**the triplestore document store** and **`RdfModel`** — this spec's group 1 projects over that model and cannot start before it merges), anchor task 2.1 (**the triple writer**, whose operation list includes `ReplaceObjectLiteral` — adopted from this spec's review — so the label and documentation edits below cite that seam instead of specifying a splice), anchor task 3.2 (**the registration header helper**, which the `language:` header parsing reuses), and anchor task 3.3 (**the selection vocabulary**, which the provider delegation extends). Groups below name the anchor tasks they wait on.
@@ -76,13 +87,13 @@ One worktree for the whole spec (`.claude/worktrees/skos`, per CLAUDE.md's one-w
 - [ ] 4. The canvas
   - _Requirements: 1.1-1.6, 3.1, 3.3, 3.4, 4.1, 5.1-5.3, 8.1_
 
-- [-] 4.1 SkosCanvas: boxes, three edge styles, regions, the chip
+- [x] 4.1 SkosCanvas: boxes, three edge styles, regions, the chip
   - Files: `src/diagrams/rdf/client/` skos canvas module + client tests
   - Concept nodes as `BoxElement`s — deliberately rectangular per the design's divergence note (the family's circular element is the OWL reading's alone) — with notation badge, label, the language chip rendered when the payload tag differs from the session's display language, alternate/fallback styling by kind; scheme regions and collection groups in the shared boundary styling; solid hierarchy, dashed related, dotted mapping edges over `StraightConnection`; drag to the core layout command, the two `rel:` gestures, the `new:` drop with the label dialog, shared menu/keyboard/scrollbars, the truncation banner
   - _Requirements: 1.1, 1.3, 1.4, 1.5, 3.1, 3.3, 3.4, 4.1, 8.1_
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Front-end developer fluent in the central canvas library | Task: Implement the skos canvas per design - BoxElement concept nodes with badge, chip and kind styling, scheme regions and collection groups, the three edge styles, the interaction set and the truncation banner - with client tests for the chip condition, the kind styles, the edge styles and the gesture dispatches | Restrictions: consume the central library and shared appearance - no module-private canvas forks; the chip compares payload data, no client-side label logic | _Leverage: the anchor's canvas composition; BoxElement, StraightConnection, CanvasScrollbars, the C4 boundary styling | Success: a fixture vocabulary renders layered with regions, chips and styles per design; gestures dispatch the right commands. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.2 Gate and merge group 4
+- [-] 4.2 Gate and merge group 4
   - The four gates, exit codes checked before any pipe; merge into `develop`
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes captured before any pipe and merge group 4 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 

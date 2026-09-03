@@ -6,6 +6,7 @@ import { StyledBoxElement } from "./styled-box/StyledBoxElement";
 import { FrameElement } from "./frame/FrameElement";
 import { SymbolElement } from "./symbol/SymbolElement";
 import { SpanElement, type SpanElementClasses } from "./span/SpanElement";
+import { EllipseElement } from "./ellipse/EllipseElement";
 
 function renderSvg(children: React.ReactNode) {
   return render(<svg>{children}</svg>);
@@ -54,6 +55,53 @@ describe("the shared element implementations", () => {
     expect(container.querySelector("g.a text")!.getAttribute("text-anchor")).toBe("middle");
     expect(container.querySelector("g.a .ind")).not.toBeNull();
     expect(container.querySelector("g.b .ind")).toBeNull();
+  });
+
+  it("draws an ellipse with centred text, and a second ring only when doubled", () => {
+    // Act.
+    const onClick = vi.fn();
+    const { container } = renderSvg(
+      <>
+        <EllipseElement
+          className="round"
+          data-element-id="c1"
+          x={30}
+          y={40}
+          radiusX={60}
+          radiusY={30}
+          text="Pizza"
+          ellipseClassName="outline"
+          labelClassName="lbl"
+          onClick={onClick}
+        >
+          <text className="extra">badge</text>
+        </EllipseElement>
+        <EllipseElement className="twin" x={0} y={0} radiusX={20} radiusY={10} text="Same" doubled innerClassName="inner" />
+        <EllipseElement className="tiny" x={0} y={0} radiusX={2} radiusY={2} text="" doubled innerClassName="inner-tiny" />
+      </>,
+    );
+
+    // Assert.
+    const group = container.querySelector('[data-element-id="c1"]')!;
+    expect(group.getAttribute("transform")).toBe("translate(30 40)");
+    const outline = group.querySelector("ellipse.outline")!;
+    expect(outline.getAttribute("rx")).toBe("60");
+    expect(outline.getAttribute("ry")).toBe("30");
+    const label = group.querySelector("text.lbl")!;
+    expect(label.textContent).toBe("Pizza");
+    expect(label.getAttribute("text-anchor")).toBe("middle");
+    expect(group.querySelector("text.extra")).not.toBeNull();
+    fireEvent.click(group);
+    expect(onClick).toHaveBeenCalled();
+
+    // The doubled ring is drawn just inside the outline, and only when asked for.
+    expect(container.querySelector("g.round .inner")).toBeNull();
+    const inner = container.querySelector("g.twin ellipse.inner")!;
+    expect(inner.getAttribute("rx")).toBe("16");
+    expect(inner.getAttribute("ry")).toBe("6");
+
+    // A radius smaller than the inset keeps a positive one rather than inverting.
+    expect(container.querySelector("g.tiny ellipse.inner-tiny")!.getAttribute("rx")).toBe("1");
   });
 
   it("draws each styled-box silhouette the document's styling asks for", () => {
