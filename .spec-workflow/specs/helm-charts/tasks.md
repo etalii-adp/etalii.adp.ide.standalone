@@ -2,10 +2,10 @@
 
 One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short, because the Windows MAX_PATH failure mode (apphost never produced, `dotnet test` reporting zero tests) was traced to long worktree names, and this module's deepest project paths are long. Each group ends in a gate-and-merge task judged by exit code. Tasks marked **(new work)** build the design's genuinely new pieces; everything else replicates established Ansible/Databricks patterns. Example ordering is fact-based: `ExampleReplication.Tests` demands central copies land in the same change as module copies, and `ExampleRegistration.Tests` opens every example `.adp` against the registered definitions — so the charts arrive in group 1 (the external-risk-first task) while their `.adp` registrations wait for group 7, after the definition exists.
 
-- [ ] 1. Examples acquired and attributed **(new work: the acquisition plan executed)**
+- [-] 1. Examples acquired and attributed **(new work: the acquisition plan executed)**
   - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
 
-- [ ] 1.1 Acquire the three charts, licenses re-verified at acquisition
+- [-] 1.1 Acquire the three charts, licenses re-verified at acquisition
   - Files: `src/diagrams/helm-charts/examples/hello-world/`, `…/prometheus/`, `…/nginx/` (with bitnami's `common` vendored unpacked under `nginx/charts/common/`), each carrying the upstream `LICENSE` (and `NOTICE` where provided)
   - Download from the three sources the design names. **Acceptance criterion, not a note: re-verify each source's license text reads permissive (Apache-2.0/MIT/BSD) at the moment of acquisition, before copying a byte** — the research verification of 2026-09-03 is a candidate list, not a verification. A source that has changed, or whose license reads differently than the research said, is a finding to report and a stop for that source, never a step to push through; substitution needs the same verification. Review every acquired file for secrets or credentials before committing; record chart name, version and retrieval date for the readmes of task 1.2. No `.adp` files in this task.
   - _Requirements: 11.2, 11.3, 11.5_
