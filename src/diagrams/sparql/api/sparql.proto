@@ -86,6 +86,12 @@ message SparqlRegionPayload {
 
   // The region this region nests inside; empty at the top level.
   string parent_region_id = 3;
+
+  // The frame's size, computed by the deterministic layout so that a region's bounds always
+  // contain its contents - the tested invariant. The core Element carries only a position, so
+  // the extent travels here.
+  double width = 4;
+  double height = 5;
 }
 
 // One annotation badge: a FILTER, BIND or VALUES, showing its text as written and anchored to
