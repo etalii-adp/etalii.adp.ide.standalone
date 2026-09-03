@@ -1,0 +1,125 @@
+syntax = "proto3";
+
+package etalii.adp.sparql;
+
+option csharp_namespace = "EtAlii.Adp.Diagram.Sparql";
+
+// The payloads of the SPARQL query diagram's elements, packed into the core Element's Any.
+// Defined in the module's own api folder; no core proto is edited, and there are no new services
+// or streams - the elements ride the existing Element/Delta shapes.
+//
+// Everything textual here is as the author wrote it: expressions, property paths, modifiers and
+// labels are source text, never rebuilt from a tree, because this diagram shows what a query
+// says rather than what an engine would compile it to.
+
+// One variable node - drawn once per name however many patterns mention it, because the shared
+// identity is the join the diagram exists to show (Requirement 4.1).
+message SparqlVariablePayload {
+  // The name without its sigil; the canvas renders ?name.
+  string name = 1;
+
+  // Whether the query's projection carries it outward - the mark that says "what leaves this
+  // query" without consulting the header (Requirement 4.2).
+  bool projected = 2;
+
+  // How many triple-pattern positions mention it: the node's degree, stated as a fact so the
+  // property grid can say it in words.
+  int32 join_count = 3;
+
+  // The BIND or projection alias that defines it, as written; empty for an ordinary variable.
+  string defining_expression = 4;
+
+  // True for an anonymous variable (blank-node syntax): drawn, labeled as anonymous, and
+  // refusing authored positions because it has no stable identity to key one by
+  // (Requirement 5.4 - this module's own rule, not the RDF family's identity boundary).
+  bool anonymous = 5;
+}
+
+// One concrete term node: an IRI (solid, prefixed display) or a literal (rectangle with its
+// lexical form) - the QueryVOWL-derived distinction between what is pinned down and what is
+// asked for (Requirement 3.7).
+message SparqlTermPayload {
+  // What the node shows: a prefixed name, or a literal's lexical form.
+  string display = 1;
+
+  // The full IRI, or the literal as written - what selection resolves to.
+  string full = 2;
+
+  // A literal's datatype or language annotation; empty for IRIs and plain strings.
+  string annotation = 3;
+
+  // Which kind of concrete term this is.
+  SparqlTermKind kind = 4;
+}
+
+// The two concrete-term kinds a node can be.
+enum SparqlTermKind {
+  SPARQL_TERM_KIND_UNSPECIFIED = 0;
+  SPARQL_TERM_KIND_IRI = 1;
+  SPARQL_TERM_KIND_LITERAL = 2;
+}
+
+// One triple-pattern edge between two drawn nodes. The label is the predicate or property path
+// exactly as written - a path is an edge label, never a parsed structure (Requirement 3.1).
+message SparqlEdgePayload {
+  string from_element_id = 1;
+  string to_element_id = 2;
+
+  // The predicate's display form, or the whole property path as written.
+  string label = 3;
+
+  // True when the label is a property path rather than a single predicate, so the canvas can
+  // mark the edge as a multi-step ask.
+  bool is_path = 4;
+}
+
+// One containment region: OPTIONAL, a UNION branch, MINUS, GRAPH, SERVICE, or the CONSTRUCT
+// template - drawn as a labeled frame holding its patterns (Requirement 3.2).
+message SparqlRegionPayload {
+  // The construct kind, lowercase as the element-id scheme spells it: optional, union, branch,
+  // minus, graph, service, template.
+  string kind = 1;
+
+  // The frame's label: the construct's name, plus its term where it has one (GRAPH ?g, the
+  // SERVICE endpoint - drawn, never contacted).
+  string label = 2;
+
+  // The region this region nests inside; empty at the top level.
+  string parent_region_id = 3;
+
+  // The frame's size, computed by the deterministic layout so that a region's bounds always
+  // contain its contents - the tested invariant. The core Element carries only a position, so
+  // the extent travels here.
+  double width = 4;
+  double height = 5;
+}
+
+// One annotation badge: a FILTER, BIND or VALUES, showing its text as written and anchored to
+// the element it constrains, defines or feeds (Requirement 3.3).
+message SparqlAnnotationPayload {
+  // filter, bind, or values.
+  string kind = 1;
+
+  // The whole construct as the author wrote it.
+  string text = 2;
+
+  // The element id this annotation anchors to: a variable node, or a region.
+  string attached_to = 3;
+}
+
+// The query's frame: its form and solution modifiers, rendered as a header band - frame, never
+// canvas structure (Requirement 3.4).
+message SparqlHeaderPayload {
+  // SELECT, CONSTRUCT, ASK or DESCRIBE - with DISTINCT/REDUCED where written.
+  string form = 1;
+
+  // The dataset clauses and solution modifiers as written rows, in source order.
+  repeated string modifier_rows = 2;
+}
+
+// The truncation banner's facts, riding one element when the local sanity bound cut a
+// degenerately large query down to its first N (Requirement 7.5).
+message SparqlTruncationPayload {
+  int32 shown = 1;
+  int32 total = 2;
+}
