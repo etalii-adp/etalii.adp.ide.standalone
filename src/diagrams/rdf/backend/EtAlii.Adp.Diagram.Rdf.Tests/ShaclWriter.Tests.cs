@@ -33,7 +33,7 @@ public class ShaclWriterTests
         var (document, model) = Open("""
             ex:PersonShape a sh:NodeShape ;
               sh:targetClass ex:Person .
-            """ + "\n");
+            """ + "\r\n");
 
         // Act.
         var refusal = ShaclWriter.AppendPropertyShapeBlock(
@@ -48,20 +48,20 @@ public class ShaclWriterTests
             ex:PersonShape a sh:NodeShape ;
               sh:targetClass ex:Person ;
               sh:property [ sh:path ex:name ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ; sh:name "name" ] .
-            """ + "\n",
+            """ + "\r\n",
             document.Text);
     }
 
     [Fact]
     public void AppendPropertyShapeBlock_OnASingleLineStatement_IndentsOneStepIn()
     {
-        var (document, model) = Open("ex:S a sh:NodeShape .\n");
+        var (document, model) = Open("ex:S a sh:NodeShape .\r\n");
 
         var refusal = ShaclWriter.AppendPropertyShapeBlock(document, model, Ex + "S", Ex + "p");
 
         Assert.Equal("", refusal);
         Assert.Equal(
-            Prelude + "ex:S a sh:NodeShape ;\n    sh:property [ sh:path ex:p ] .\n",
+            Prelude + "ex:S a sh:NodeShape ;\r\n    sh:property [ sh:path ex:p ] .\r\n",
             document.Text);
     }
 
@@ -72,7 +72,7 @@ public class ShaclWriterTests
             ex:Other a sh:NodeShape ; sh:closed true .
             ex:S a sh:NodeShape .
             ex:Third a sh:NodeShape ; sh:targetNode ex:x .
-            """ + "\n");
+            """ + "\r\n");
         var before = document.Text;
 
         ShaclWriter.AppendPropertyShapeBlock(document, model, Ex + "S", Ex + "p");
@@ -88,7 +88,7 @@ public class ShaclWriterTests
     {
         // ex: is declared, foaf: is not - so foaf's IRI is written in full brackets rather than
         // gaining a declaration as a side effect.
-        var (document, model) = Open("ex:S a sh:NodeShape .\n");
+        var (document, model) = Open("ex:S a sh:NodeShape .\r\n");
 
         ShaclWriter.AppendPropertyShapeBlock(document, model, Ex + "S", "http://xmlns.com/foaf/0.1/name");
 
@@ -101,7 +101,7 @@ public class ShaclWriterTests
     [InlineData("http://example.org/S", "")]
     public void AppendPropertyShapeBlock_RefusesBeforeAnySplice(string shapeIri, string pathIri)
     {
-        var (document, model) = Open("ex:S a sh:NodeShape .\n");
+        var (document, model) = Open("ex:S a sh:NodeShape .\r\n");
         var before = document.Text;
 
         var refusal = ShaclWriter.AppendPropertyShapeBlock(document, model, shapeIri, pathIri);
@@ -113,7 +113,7 @@ public class ShaclWriterTests
     [Fact]
     public void AppendPropertyShapeBlock_RefusesAnUnknownShape()
     {
-        var (document, model) = Open("ex:S a sh:NodeShape .\n");
+        var (document, model) = Open("ex:S a sh:NodeShape .\r\n");
         var before = document.Text;
 
         var refusal = ShaclWriter.AppendPropertyShapeBlock(document, model, Ex + "Missing", Ex + "p");
@@ -125,7 +125,7 @@ public class ShaclWriterTests
     [Fact]
     public void AddTarget_AndRemoveTarget_RoundTripThroughTheFamilyWriter()
     {
-        var (document, model) = Open("ex:S a sh:NodeShape .\n");
+        var (document, model) = Open("ex:S a sh:NodeShape .\r\n");
         var before = document.Text;
 
         Assert.Equal("", ShaclWriter.AddTarget(document, model, Ex + "S", ShaclVocabulary.TargetClass, new IriTerm(Ex + "Person", "ex:Person")));
@@ -140,7 +140,7 @@ public class ShaclWriterTests
     [Fact]
     public void RemoveTarget_RefusesWhatIsNotThere_AndTheImplicitTarget()
     {
-        var (document, model) = Open("ex:S a sh:NodeShape .\n");
+        var (document, model) = Open("ex:S a sh:NodeShape .\r\n");
         var before = document.Text;
 
         Assert.Equal(ShaclRefusals.NoSuchTarget, ShaclWriter.RemoveTarget(document, model, Ex + "S", ShaclVocabulary.TargetClass, Ex + "Person"));
@@ -153,7 +153,7 @@ public class ShaclWriterTests
     [Fact]
     public void CreateNodeShape_WritesOneTypeTriple()
     {
-        var (document, model) = Open("ex:Existing a sh:NodeShape .\n");
+        var (document, model) = Open("ex:Existing a sh:NodeShape .\r\n");
 
         Assert.Equal("", ShaclWriter.CreateNodeShape(document, model, Ex + "Fresh"));
 
@@ -164,7 +164,7 @@ public class ShaclWriterTests
     [Fact]
     public void SetDeactivated_AddsAndRemovesTheTriple_AndIsIdempotent()
     {
-        var (document, model) = Open("ex:S a sh:NodeShape .\n");
+        var (document, model) = Open("ex:S a sh:NodeShape .\r\n");
         var before = document.Text;
 
         Assert.Equal("", ShaclWriter.SetDeactivated(document, model, Ex + "S", deactivated: true));
@@ -194,7 +194,7 @@ public class ShaclWriterTests
             ex:S a sh:NodeShape ;
               sh:name "Old name" ;
               sh:description "Kept exactly." .
-            """ + "\n");
+            """ + "\r\n");
 
         Assert.Equal("", ShaclWriter.SetLiteral(document, model, Ex + "S", ShaclVocabulary.Name, "New name"));
 
@@ -203,14 +203,14 @@ public class ShaclWriterTests
             ex:S a sh:NodeShape ;
               sh:name "New name" ;
               sh:description "Kept exactly." .
-            """ + "\n",
+            """ + "\r\n",
             document.Text);
     }
 
     [Fact]
     public void SetLiteral_AddsTheTripleWhereNoneIsStated()
     {
-        var (document, model) = Open("ex:S a sh:NodeShape .\n");
+        var (document, model) = Open("ex:S a sh:NodeShape .\r\n");
 
         Assert.Equal("", ShaclWriter.SetLiteral(document, model, Ex + "S", ShaclVocabulary.Name, "Fresh"));
 
@@ -220,7 +220,7 @@ public class ShaclWriterTests
     [Fact]
     public void EveryGesture_RefusesABlankRootedShape_WithTheOneBoundarySentence()
     {
-        var (document, model) = Open("[] a sh:NodeShape .\n");
+        var (document, model) = Open("[] a sh:NodeShape .\r\n");
         var before = document.Text;
 
         // An anonymous shape carries no IRI, so every gesture keyed to one refuses identically.
