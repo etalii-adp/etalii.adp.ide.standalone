@@ -88,7 +88,7 @@ One worktree for the whole spec (`.claude/worktrees/dbx`, per CLAUDE.md's one-wo
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 4 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 5. Examples, showcase, catalog and manual checks
+- [x] 5. Examples, showcase, catalog and manual checks
   - _Requirements: 13.1-13.6, plus the integration halves of 2, 7 and 12_
 
 - [x] 5.1 Module examples: one coherent scenario
@@ -107,7 +107,7 @@ One worktree for the whole spec (`.claude/worktrees/dbx`, per CLAUDE.md's one-wo
   - _Requirements: 7.3-7.6, 13.5, and the integration halves of 2 and 12_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Add the integration tests the design's strategy lists (per-type gRPC flow with undo; move-reopen-persist with body bytes unchanged throughout), update the three docs/diagrams.md rows' state, and add the three tests.md manual entries with preconditions, actions and expected results | Restrictions: docs/diagrams.md is an HTML table now - edit the existing rows in place, do not restructure; tests.md entries name this spec | _Leverage: the existing integration harness; the timeline's tests.md entries as the template | Success: integration facts pass, catalog rows current, manual entries added. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 5.4 Final gate, merge, retire, manual pass
+- [x] 5.4 Final gate, merge, retire, manual pass
   - The four gates with exit codes checked; merge `.claude/worktrees/dbx` into `develop`; retire the worktree; run the new tests.md entries against the running app as a manual verification pass
   - _Requirements: (gate + the manual halves of 7 and 8)_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked, merge the dbx worktree into develop, retire it per CLAUDE.md's worktree rules, and execute the new tests.md manual pass with the app running - the simulated ripple, the simulated deploy, and the reposition persistence check | Restrictions: do not merge on a failing gate; report worktree-removal failures rather than forcing them | Success: gates green, merged, worktree retired, manual pass recorded. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
