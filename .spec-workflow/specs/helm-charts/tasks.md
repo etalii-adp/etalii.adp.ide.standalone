@@ -46,7 +46,7 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - Same gates as 1.3; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-2 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3. Graph and store
+- [x] 3. Graph and store
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 1.4_
 
 - [x] 3.1 The dependency resolution matcher **(new work)**
@@ -67,32 +67,32 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - _Requirements: 1.4_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Replicate the ansible watched-folder store shape for chart roots with coalescing burst re-reads and acquire/release lifetimes, tested with range assertions | Restrictions: no save path anywhere; the watcher watches the chart root itself, not a parent; burst assertions use Assert.InRange, not exact counts | _Leverage: AnsibleProjectStore/AnsibleWatchedFolder and their tests, including the range-assertion lesson | Success: store tests pass reliably including the burst case; release stops the watcher. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3.4 Gate and merge group 3
+- [x] 3.4 Gate and merge group 3
   - Same gates; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-3 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. Wire, layout, session and registration
+- [-] 4. Wire, layout, session and registration
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 4.4, 6.1, 6.2, 6.3, 6.4, 12.1, 12.2_
 
-- [ ] 4.1 The proto and the element mapper
+- [x] 4.1 The proto and the element mapper
   - Files: `src/diagrams/helm-charts/api/helm-charts.proto` (`option csharp_namespace = "EtAlii.Adp.Diagram.HelmCharts.Wire";`), buf generation wired like the sibling modules, `HelmElementMapper.cs` + tests
   - The design's payload set; element types `helm/chart+{chart,values,schema,template,partial,crds,dependency,subchart,archive,lock,edge}`; stable content-derived ids (`dep:`, `tpl:`, `values:`, `edge:` prefixes); `Diff()` emits Remove-then-Add, never group/ungroup
   - _Requirements: 4.4_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer with protobuf experience | Task: Define helm-charts.proto with the Wire namespace, wire generation, and implement HelmElementMapper projecting graph plus layout to Elements with Any payloads and a Remove-then-Add Diff | Restrictions: the Wire sub-namespace is mandatory — generated names collide with _Model records without it (the CS0101 lesson); ids must be stable across sessions because the layout block stores them | _Leverage: ansible-structure.proto and AnsibleElementMapper as templates | Success: generation builds clean; mapper tests cover projection, ids and Diff. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.2 HelmLayout
+- [x] 4.2 HelmLayout
   - Files: `HelmLayout.cs` + tests
   - Banded computed layout per design: metadata band, values column, templates column, dependencies/vendored column; pure and deterministic on fixtures
   - _Requirements: 6.1_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the banded layout as a pure deterministic function with fixture tests | Restrictions: no randomness, no filesystem; determinism is a test | _Leverage: AnsibleLayout's band approach | Success: layout tests pin the banding on the fixtures. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.3 The definition and service registration
+- [x] 4.3 The definition and service registration
   - Files: `Diagram.cs` (implemented shape: named `Chart` property with `Build`, `Subject: DiagramSubject.Folder`, no `Extension`, fitting mdi icon), `ServiceCollection.AddHelmCharts.cs`, registration/discovery tests
   - No document factory, no toolbox provider, no action provider, no commands — each absence is the requirements' stated position; the Add flow suggests `helm/chart` on a folder containing `Chart.yaml`
   - _Requirements: 2.1, 2.3, 2.4, 12.1, 12.2_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Declare the helm/chart folder-subject definition and the single-file service registration with discovery tests, wiring the Add-flow folder suggestion | Restrictions: no DocumentExtension constant — tech.md says that omission is correct for a folder subject, do not fix it; core files are not edited | _Leverage: the ansible module's Diagram.cs and ServiceCollection.AddAnsibleStructure.cs | Success: discovery tests see the definition; Add suggests on a Chart.yaml folder; the module registers without core changes. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.4 HelmSession and factory, with the verified seam as precondition
+- [-] 4.4 HelmSession and factory, with the verified seam as precondition
   - Files: `HelmSession.cs`, `HelmSessionFactory.cs` + tests
   - **Stated preconditions, verified in code at design time — an implementer finding any of them false stops and reports rather than working around:** (a) `RegistrationLayout.Read` tolerates a registration whose only header is the MIME line; (b) the router hands a folder-subject factory the `.adp` as both `bodyPath` and `registrationPath` (pinned in `AnsibleSessionFactory`); (c) `IDiagramSession.MoveElementToAsync` is a default-refused, overridable member. The session delivers the whole diagram at `Baseline()`, `UpdateView` answers nothing new, `MoveElementAsync` (reparent) refuses with a sentence, `MoveElementToAsync` refuses edge ids then dispatches `SetRegistrationLayoutCommand` through the history stack; store changes diff against the last delivery; positions overlay via `RegistrationLayout.Apply`
   - _Requirements: 6.2, 6.3, 6.4, 2.2_

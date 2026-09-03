@@ -19,7 +19,6 @@ public sealed class HierarchyModel
     private static readonly ILogger _logger = Log.ForContext<HierarchyModel>();
 
     private readonly Lock _gate = new();
-    private readonly string _rootPath;
     private readonly IDiagramDefinitionCatalog? _catalog;
     private readonly DiagramFileRouter? _router;
     private readonly EditorResolver? _editorResolver;
@@ -29,15 +28,75 @@ public sealed class HierarchyModel
     private readonly HashSet<ShortGuid> _listedFolderIds = new();
     private bool _rootListed;
 
+    // Renames this model has already applied directly, from a command it caused rather than
+    // from the watcher (see ApplyLocalRename). The FileSystemWatcher still reports the same
+    // move moments later - as one Renamed on Windows, but as a separate Delete+Create on Linux,
+    // where inotify does not correlate the two halves - and that echo must not double-apply or,
+    // worse, land as a Remove+Create that discards the entry's id. Each applied rename is
+    // remembered briefly so its watcher echo, whatever shape it takes, is recognised and
+    // dropped. The window only needs to outlast the watcher's own latency.
+    private static readonly TimeSpan RenameEchoWindow = TimeSpan.FromSeconds(5);
+    private readonly List<(string OldPath, string NewPath, long Ticks)> _appliedRenames = new();
+
     public HierarchyModel(string rootPath, IDiagramDefinitionCatalog? catalog = null, DiagramFileRouter? router = null, EditorResolver? editorResolver = null)
     {
-        _rootPath = IoPath.GetFullPath(rootPath);
+        RootPath = IoPath.GetFullPath(rootPath);
         _catalog = catalog;
         _router = router;
         _editorResolver = editorResolver;
     }
 
+    /// <summary>The absolute project root this model views; what the store matches on to route a rename to it.</summary>
+    public string RootPath { get; }
+
     public event Action<HierarchyEntryChange>? EntryChanged;
+
+    /// <summary>
+    /// Applies a rename this connection's own command just performed on disk, deterministically
+    /// and on every platform - a stable-id <see cref="HierarchyEntryRenamed"/>, not the
+    /// Remove+Create the Linux watcher would otherwise produce. The watcher's later echo of the
+    /// same move is suppressed. Idempotent: an old path this model never listed is a no-op.
+    /// </summary>
+    public void ApplyLocalRename(string oldPath, string newPath)
+    {
+        ArgumentNullException.ThrowIfNull(oldPath);
+        ArgumentNullException.ThrowIfNull(newPath);
+
+        lock (_gate)
+        {
+            _appliedRenames.Add((IoPath.GetFullPath(oldPath), IoPath.GetFullPath(newPath), DateTime.UtcNow.Ticks));
+            OnRenamed(oldPath, newPath);
+        }
+    }
+
+    /// <summary>
+    /// Whether a watcher event is the echo of a rename this model already applied directly. A
+    /// Renamed matches the pair; a Delete matches the old half; a Create matches the new half
+    /// (the two halves the Linux watcher splits a move into). Expired records are pruned here.
+    /// </summary>
+    private bool IsRenameEcho(WatcherChangeTypes changeType, string? oldPath, string? newPath)
+    {
+        if (_appliedRenames.Count == 0)
+        {
+            return false;
+        }
+
+        var cutoff = DateTime.UtcNow.Ticks - RenameEchoWindow.Ticks;
+        _appliedRenames.RemoveAll(entry => entry.Ticks < cutoff);
+
+        var old = oldPath is null ? null : IoPath.GetFullPath(oldPath);
+        var fresh = newPath is null ? null : IoPath.GetFullPath(newPath);
+        return changeType switch
+        {
+            WatcherChangeTypes.Renamed => _appliedRenames.Any(r => PathEquals(r.OldPath, old) && PathEquals(r.NewPath, fresh)),
+            WatcherChangeTypes.Deleted => _appliedRenames.Any(r => PathEquals(r.OldPath, old)),
+            WatcherChangeTypes.Created => _appliedRenames.Any(r => PathEquals(r.NewPath, fresh)),
+            _ => false,
+        };
+    }
+
+    private static bool PathEquals(string? left, string? right) =>
+        string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
 
     public IReadOnlyList<EntryNode> ListChildren(ShortGuid? folderId)
     {
@@ -74,7 +133,7 @@ public sealed class HierarchyModel
             // already logged where it happened, and this only says how much was re-scanned.
             _logger.Debug(
                 "Reconciling {RootPath} against disk: the root plus {FolderCount} known folders",
-                _rootPath,
+                RootPath,
                 knownFolderIds.Count);
 
             SyncFolder(null, raiseEvents: true);
@@ -127,6 +186,14 @@ public sealed class HierarchyModel
 
         lock (_gate)
         {
+            if (IsRenameEcho(changeType, oldPath, newPath))
+            {
+                // Already applied directly from the command that caused it; this is only the
+                // watcher catching up. Dropping it is what keeps a rename's id stable on Linux.
+                _logger.Verbose("Dropping the watcher echo of an already-applied rename: {ChangeType} {OldPath} -> {NewPath}", changeType, oldPath, newPath);
+                return;
+            }
+
             switch (changeType)
             {
                 case WatcherChangeTypes.Created when newPath is not null:
@@ -164,7 +231,7 @@ public sealed class HierarchyModel
 
     public void NotifyRootUnavailable(string message)
     {
-        _logger.Warning("Telling the client that {RootPath} is unavailable: {Reason}", _rootPath, message);
+        _logger.Warning("Telling the client that {RootPath} is unavailable: {Reason}", RootPath, message);
         EntryChanged?.Invoke(new HierarchyRootUnavailable(message));
     }
 
@@ -212,7 +279,7 @@ public sealed class HierarchyModel
         RecomputeHasChildren(parentPath);
 
         ShortGuid? parentId;
-        if (string.Equals(parentPath, _rootPath, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(parentPath, RootPath, StringComparison.OrdinalIgnoreCase))
         {
             if (!_rootListed)
             {
@@ -296,7 +363,7 @@ public sealed class HierarchyModel
     /// </summary>
     private void RecomputeHasChildren(string folderPath)
     {
-        if (string.Equals(folderPath, _rootPath, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(folderPath, RootPath, StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
@@ -364,7 +431,7 @@ public sealed class HierarchyModel
         }
         else
         {
-            folderPath = _rootPath;
+            folderPath = RootPath;
         }
 
         IEnumerable<string> diskEntries;
@@ -481,7 +548,7 @@ public sealed class HierarchyModel
             .ToList();
 
         ShortGuid? folderParentId = null;
-        if (!string.Equals(folderPath, _rootPath, StringComparison.OrdinalIgnoreCase) && _idByPath.TryGetValue(folderPath, out var ownId))
+        if (!string.Equals(folderPath, RootPath, StringComparison.OrdinalIgnoreCase) && _idByPath.TryGetValue(folderPath, out var ownId))
         {
             folderParentId = ownId;
         }
@@ -540,7 +607,7 @@ public sealed class HierarchyModel
     /// <summary>The same refresh, addressed by path - what the watcher handlers hold.</summary>
     private void RefreshDiagramStatesAt(string folderPath, bool raiseEvents)
     {
-        if (string.Equals(folderPath, _rootPath, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(folderPath, RootPath, StringComparison.OrdinalIgnoreCase))
         {
             RefreshDiagramStates(null, folderPath, raiseEvents);
         }
@@ -575,7 +642,7 @@ public sealed class HierarchyModel
         // keeps deployments without folder-subject types from paying any reads at all.
         bool DeclaresFolderSubject(string registration) =>
             _router.HasFolderSubjectTypes
-            && _router.Route(IoPath.Combine(folderPath, registration), _rootPath) is DiagramRouted { Definition.HasFolderSubject: true };
+            && _router.Route(IoPath.Combine(folderPath, registration), RootPath) is DiagramRouted { Definition.HasFolderSubject: true };
 
         void Apply(ShortGuid entryId, EntryDiagramState state, bool raise)
         {
@@ -624,7 +691,7 @@ public sealed class HierarchyModel
             return null;
         }
 
-        var body = DiagramFilePair.BodyOf(IoPath.Combine(folderPath, fileName), _catalog, _rootPath);
+        var body = DiagramFilePair.BodyOf(IoPath.Combine(folderPath, fileName), _catalog, RootPath);
         if (body is not { } resolved || resolved.Path.Length == 0)
         {
             return null;
@@ -679,9 +746,9 @@ public sealed class HierarchyModel
     private bool IsContained(string path)
     {
         var fullPath = IoPath.GetFullPath(path);
-        var normalizedRoot = _rootPath.EndsWith(IoPath.DirectorySeparatorChar)
-            ? _rootPath
-            : _rootPath + IoPath.DirectorySeparatorChar;
+        var normalizedRoot = RootPath.EndsWith(IoPath.DirectorySeparatorChar)
+            ? RootPath
+            : RootPath + IoPath.DirectorySeparatorChar;
 
         if (!fullPath.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase))
         {

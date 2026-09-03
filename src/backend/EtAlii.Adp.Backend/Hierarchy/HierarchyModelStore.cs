@@ -40,6 +40,37 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
         entry.Watcher = watcher;
     }
 
+    public void NotifyRenamed(string oldPath, string newPath)
+    {
+        ArgumentNullException.ThrowIfNull(oldPath);
+        ArgumentNullException.ThrowIfNull(newPath);
+        var old = System.IO.Path.GetFullPath(oldPath);
+
+        // Every model that contains the moved entry - a project may be watched on several
+        // connections at once, each with its own private view, so each is told directly rather
+        // than one relying on another connection's watcher. A model whose root does not contain
+        // the entry simply skips it.
+        foreach (var entry in _entries.Values)
+        {
+            if (Contains(entry.Model.RootPath, old))
+            {
+                entry.Model.ApplyLocalRename(oldPath, newPath);
+            }
+        }
+    }
+
+    /// <summary>Whether <paramref name="path"/> is the folder <paramref name="root"/> itself or something inside it.</summary>
+    private static bool Contains(string root, string path)
+    {
+        if (string.Equals(root, path, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var prefix = root.EndsWith(System.IO.Path.DirectorySeparatorChar) ? root : root + System.IO.Path.DirectorySeparatorChar;
+        return path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+    }
+
     public void Remove(ShortGuid watchId)
     {
         if (_entries.TryRemove(watchId, out var entry))

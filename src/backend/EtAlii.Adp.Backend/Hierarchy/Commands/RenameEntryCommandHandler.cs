@@ -39,11 +39,42 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
     private static readonly ILogger _logger = Log.ForContext<RenameEntryCommandHandler>();
 
     private readonly IDiagramDefinitionCatalog _catalog;
+    private readonly IHierarchyModelStore? _modelStore;
 
-    public RenameEntryCommandHandler(IDiagramDefinitionCatalog catalog)
+    /// <param name="modelStore">
+    /// Optional, and injected in every real deployment (AddHierarchy registers it): where the
+    /// stable-id rename notification below is sent. Absent only in a partial test container that
+    /// wires up commands without the hierarchy area, where a rename still happens on disk and
+    /// simply raises no direct model notification.
+    /// </param>
+    public RenameEntryCommandHandler(IDiagramDefinitionCatalog catalog, IHierarchyModelStore? modelStore = null)
     {
         ArgumentNullException.ThrowIfNull(catalog);
         _catalog = catalog;
+        _modelStore = modelStore;
+    }
+
+    /// <summary>
+    /// Tells the hierarchy models a move happened, so a rename keeps the entry's id on every
+    /// platform rather than depending on the FileSystemWatcher's event shape (Renamed on
+    /// Windows, an uncorrelated Delete+Create on Linux). Guarded on what the disk actually
+    /// shows - the source gone, the target present - so a move that did not take this exact
+    /// shape (a cascade's secondary files, a case-only rename) is left to the watcher untouched.
+    /// Runs for forward, undo and redo alike, since every one executes this handler.
+    /// </summary>
+    private void NotifyMoved(string source, string target)
+    {
+        if (_modelStore is null)
+        {
+            return;
+        }
+
+        var sourceGone = !File.Exists(source) && !Directory.Exists(source);
+        var targetPresent = File.Exists(target) || Directory.Exists(target);
+        if (sourceGone && targetPresent)
+        {
+            _modelStore.NotifyRenamed(source, target);
+        }
     }
 
     public Task<CommandResult> ExecuteAsync(
@@ -128,6 +159,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             }
 
             _logger.Information("Renamed {SourcePath} to {NewName}", sourcePath, command.NewName);
+            NotifyMoved(sourcePath, targetPath);
             return Task.FromResult(CommandResult.Success(new RenameEntryCommand(targetPath, originalName)));
         }
 
@@ -139,6 +171,13 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
             var setResult = RenameSubjectWithItsRegistrations(sourcePath, targetPath, originalName, command.NewName, isCaseOnlyRename);
             if (setResult is not null)
             {
+                if (setResult.IsSuccess)
+                {
+                    // The subject's own move; the cascade's registration siblings still ride the
+                    // watcher (NotifyMoved's disk guard skips any that did not land here).
+                    NotifyMoved(sourcePath, targetPath);
+                }
+
                 return Task.FromResult(setResult);
             }
         }
@@ -210,6 +249,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
 
         // The inverse re-derives the sibling from the renamed registration file, so it
         // restores both names without carrying either.
+        NotifyMoved(sourcePath, targetPath);
         return Task.FromResult(CommandResult.Success(new RenameEntryCommand(targetPath, originalName)));
     }
 

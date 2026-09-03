@@ -17,7 +17,7 @@ One worktree for the whole spec (`.claude/worktrees/rdf`, per CLAUDE.md's one-wo
   - All four gates (backend test + format from `src/backend`, npm test + typecheck from `src/client`), exit codes checked; merge `.claude/worktrees/rdf` into `develop`
   - _Prompt: Implement the task for spec rdf-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge the rdf worktree's group-1 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2. Editing and validation: fragment splices, refusals, findings
+- [x] 2. Editing and validation: fragment splices, refusals, findings
   - _Requirements: 5.1-5.7, 7.1-7.5_
 
 - [x] 2.1 The triple writer: named operations, fragment splices, refusals — **sibling seam**
@@ -26,13 +26,13 @@ One worktree for the whole spec (`.claude/worktrees/rdf`, per CLAUDE.md's one-wo
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7_
   - _Prompt: Implement the task for spec rdf-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement RdfWriter's named operations per design including the fragment splice - rewriting a single shared line to remove only the fragment one triple owns - with smallest-diff tests per operation (comma-list member removal leaving neighbours byte-untouched, semicolon-list removal, last-triple block removal, rename stranding no reference, single-literal rewrite touching no neighbouring byte) and refusal tests including blank-node-rooted edits and unknown-prefix dialog input | Restrictions: only the lines and fragments an edit concerns change; refusals happen before any splice, never write-then-repair; this writer is the seam sibling gestures dispatch through, so operations stay reading-agnostic | _Leverage: the store and model from 1.1; the databricks writers' named-operation and refusal shape | Success: every operation's diff is minimal in tests; refusals carry actionable sentences; N-Triples paths covered. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.2 Commands and the validator
+- [x] 2.2 Commands and the validator
   - Files: `Commands/` (per-operation commands through the standard history, inverse = whole-document snapshot restore whose redo is the original command), `RdfValidator.cs` + tests
   - The Requirement 7 findings with file and line (unparseable once; duplicate prefix redeclaration; relative IRIs without a base, warned once; malformed language tags; unknown XSD datatypes), through the standard problems pipeline; no network, no inference
   - _Requirements: 5.5, 7.1, 7.2, 7.3, 7.4, 7.5_
   - _Prompt: Implement the task for spec rdf-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the databricks command discipline | Task: Wrap the writer operations as commands with whole-document snapshot inverses per the databricks RestoreDocumentCommand pattern, and implement RdfValidator's Requirement 7 findings with file and line, registered like the sibling validators, with execute/undo/redo byte-identity tests and per-finding fixture tests | Restrictions: undo restores the file byte-for-byte; the validator does no IRI dereferencing and no entailment; clean files report nothing | _Leverage: the databricks commands and validator registration shape; the writer from 2.1 | Success: every edit is one undo away and undo restores bytes; each finding reports on its fixture with an actionable sentence. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.3 Gate and merge group 2
+- [x] 2.3 Gate and merge group 2
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec rdf-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 2 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
