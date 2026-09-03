@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/skos-diagram/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-03T15:43:28.223Z",
       "trigger": "initial",
+      "approvalId": "approval_1788450207959_5ztspyxum",
+      "approvalTitle": "skos-diagram tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-03T17:30:44.945Z",
+      "trigger": "approved",
       "approvalId": "approval_1788450207959_5ztspyxum",
       "approvalTitle": "skos-diagram tasks"
     }

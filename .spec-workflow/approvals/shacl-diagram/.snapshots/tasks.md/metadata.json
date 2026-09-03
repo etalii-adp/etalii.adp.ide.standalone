@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/shacl-diagram/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-03T15:42:32.514Z",
       "trigger": "initial",
+      "approvalId": "approval_1788450152266_ovem8rp4v",
+      "approvalTitle": "Tasks: shacl-diagram"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-03T17:30:46.691Z",
+      "trigger": "approved",
       "approvalId": "approval_1788450152266_ovem8rp4v",
       "approvalTitle": "Tasks: shacl-diagram"
     }
