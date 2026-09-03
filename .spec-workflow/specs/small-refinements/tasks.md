@@ -10,7 +10,7 @@ Standing notes an implementer should not have to rediscover:
 - **An agent commits under its own name** with the model trailer, per tech.md; never the repository owner's.
 - **Bugs found leave a guard behind** per CLAUDE.md: a test where one can express it, a `tests.md` entry naming this spec where only a running app can.
 
-- [-] 1. One scroll view, shared by the timeline and the mindmap
+- [x] 1. One scroll view, shared by the timeline and the mindmap
   - Worktree: `.claude/worktrees/smref`
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
 
@@ -58,7 +58,7 @@ Standing notes an implementer should not have to rediscover:
   - _Requirements: (gate only)_
   - _Prompt: Implement the task for spec small-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the four gates with exit codes captured directly rather than read after a pipe; if all four are zero, merge the worktree branch into develop with a merge commit and leave the worktree in place for the next group | Restrictions: do not merge on any failing gate; a zero-test run exits 5 while printing no failures, so the exit code is what is judged, not the output | Success: four zero exit codes, group 1's commits on develop. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 1.6 The dependency-graph consumes it
+- [x] 1.6 The dependency-graph consumes it
   - Files: `src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`, `src/diagrams/dependency-graph/client/dependency-graph.css`, `src/diagrams/dependency-graph/client/DependencyGraphCanvas.test.tsx`; `src/diagrams/dependency-graph/client/DependencyGraphScrollbars.tsx` deleted
   - The third consumer, forked from the timeline after this group's tasks were written. Its own header says what to do: "When the shared component arrives, delete this file and consume it: the extraction task then covers three consumers rather than two." The fork's numbers move as they are: horizontal extent from the elements' x range (each widened by `NODE_WIDTH`) through `scrollExtentOf` with `factor: 0.5`, vertical with the fixed `2 * ROW_HEIGHT` margin; axes `{ viewStart: view.startX, viewSpan: widthPx / view.pixelsPerUnit }` and `{ viewStart: view.panY, viewSpan: heightPx / view.verticalScale }`; a thumb drag writes `startX` and `panY` in one view update, zoom untouched. The `.dependency-graph-scrollbar*` rules leave the module's stylesheet the way the timeline's did - at most a placement override remains
   - Tests: the bars render with the shared classes, and a thumb drag pans - mirroring the pinning test the timeline migration added
@@ -108,7 +108,7 @@ Standing notes an implementer should not have to rediscover:
   - _Requirements: 2.3, (gate)_
   - _Prompt: Implement the task for spec small-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer doing the visual check the tests cannot | Task: Run the app from the worktree on a free port pair, open every example changed in tasks 2.2 and 2.3, record the presentability pass in `tests.md`, revert the two port files, then run the four gates with exit codes captured directly and merge into develop, leaving the worktree for group 3 | Restrictions: do not merge with the port changes still in place; do not merge on any failing gate; a `tests.md` entry is required even if everything looked right the first time | Success: `tests.md` records the pass, both port files are back to their committed values, four zero exit codes, group 2's commits on develop. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. Explorer icons that show diagram state
+- [-] 3. Explorer icons that show diagram state
   - Worktree: `.claude/worktrees/smref`
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
