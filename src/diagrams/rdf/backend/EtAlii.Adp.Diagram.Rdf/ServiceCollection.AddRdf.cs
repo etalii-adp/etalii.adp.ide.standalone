@@ -1,6 +1,7 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Diagrams;
+using EtAlii.Adp.Diagram.Rdf.Shacl;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -103,6 +104,7 @@ public static class ServiceCollectionAddRdfExtension
         // The sibling readings ride the family's one Build (the C4 arrangement): each registers
         // its own reading seams here, over the store and commands registered above.
         services.AddSkos();
+        services.AddShacl();
 
         return services;
     }
