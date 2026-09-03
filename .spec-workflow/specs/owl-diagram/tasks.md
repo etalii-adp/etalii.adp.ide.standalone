@@ -7,14 +7,14 @@ One worktree for the whole spec (`.claude/worktrees/owl`, short per the MAX_PATH
 - [ ] 1. The reading, pure: projection, expressions, layout, validation
   - _Requirements: 1.1-1.6, 2.1-2.4, 3.1-3.5, 4.1-4.2, 5.1-5.5_
 
-- [-] 1.1 OwlProjection: three sweeps, structural ids
+- [x] 1.1 OwlProjection: three sweeps, structural ids
   - Files: `src/diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf/Owl/` — `OwlProjection.cs`, `OwlGraph.cs` (node/edge model with kind, deprecation and externality flags) + tests in `EtAlii.Adp.Diagram.Rdf.Tests`
   - The entity, axiom and expression sweeps per design over `RdfModel` (anchor task 1.1's seam): per-role classification so punning yields both roles; `owl:Thing` anchors for domain-less/range-less properties; characteristics and `owl:inverseOf` folded into property labels; named terms on family `res:{iri}` ids, expressions on structural `expr:{owner}|{predicate}|{ordinal}` ids with `/{child}` suffixes; the drawn-element budget applied after projection with the truncation cut keeping each class's expression neighborhood whole
   - Acceptance criterion, its own test: structural ids are deterministic within a parse (same bytes twice, same ids) **and demonstrably unstable across an inserted axiom** — the test that keeps the blank-node boundary's stated reason true in code rather than merely asserted
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 3.1, 8.3_
   - _Prompt: Implement the task for spec owl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer who knows the OWL 2 RDF mapping | Task: Implement OwlProjection per design - the entity, axiom and expression sweeps over the anchor's RdfModel, per-role classification including punning, owl:Thing anchoring, characteristic folding, res: ids for named terms and structural expr: ids for expressions, and the neighborhood-whole budget cut - with fixture tests per construct, determinism-within-a-parse asserted, and the id-instability-across-edits test as its own named test | Restrictions: pure functions over RdfModel, no parser and no store code of this reading's own; nothing here writes files | _Leverage: the anchor's RdfModel and RdfProjection as the seam and the shape template | Success: every R1/R2 construct projects per design on fixtures; both id tests pass; the budget cut never splits a class from its expressions. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 1.2 ExpressionRenderer: Manchester labels, depth cap, cycle guard
+- [-] 1.2 ExpressionRenderer: Manchester labels, depth cap, cycle guard
   - Files: `Owl/ExpressionRenderer.cs` + tests
   - The pure recursive renderer per design: each restriction form (`∃`/`∀`/`∋`/cardinalities, qualified forms), union/intersection/complement over `rdf:List` walks, named fillers as display names, recursion for expression fillers; depth-2 cap with the visible `…` elision and the uncapped form for the property grid; the visited-set cycle guard rendering `…` and raising the R3.5 finding; malformed structures short-circuiting to the problem-node label
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 7.2_
