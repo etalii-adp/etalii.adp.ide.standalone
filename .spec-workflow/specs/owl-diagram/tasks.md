@@ -26,14 +26,14 @@ One worktree for the whole spec (`.claude/worktrees/owl`, short per the MAX_PATH
   - _Requirements: 2.1, 4.1, 4.2, 5.1, 5.2, 5.3, 5.4, 5.5_
   - _Prompt: Implement the task for spec owl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement OwlLayout and OwlValidator per design - the subclass-depth column layout with cycle collapse and banding, and the five R5/R4.2 findings - with determinism tests (same input, same geometry twice), a cycle fixture exercising both the layout collapse and the warning, overlay-wins tests for res: and never-applies tests for expr:, and per-finding fixtures | Restrictions: both pure; layout recursion must terminate on cyclic input; clean files report nothing | _Leverage: the anchor's RdfLayout and RdfValidator shapes; the projection from 1.1 | Success: geometry is deterministic and physics-free; each finding fires on its fixture with an actionable sentence and stays quiet on clean files. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 1.4 Gate and merge group 1
+- [x] 1.4 Gate and merge group 1
   - All four gates (backend test + format from `src/backend`, npm test + typecheck from `src/client`), exit codes captured before any pipe; merge `.claude/worktrees/owl` into `develop`
   - _Prompt: Implement the task for spec owl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge the owl worktree's group-1 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 - [ ] 2. Wire, definition, session and providers
   - _Requirements: 1.1-1.6, 6.1-6.5, 7.1-7.3, 8.1-8.4_
 
-- [ ] 2.1 Wire payloads
+- [-] 2.1 Wire payloads
   - Files: `src/diagrams/rdf/api/rdf.proto` gains `OwlNodePayload`, `OwlEdgePayload`, `OwlExpressionPayload` per design's Data Models section, reusing `RdfLiteralRow` and `RdfTruncationPayload`; generation already wired
   - _Requirements: 1.1, 3.1, 8.3_
   - _Prompt: Implement the task for spec owl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Backend developer familiar with the module proto setup | Task: Add the three OWL payload messages from design.md's Data Models section to rdf.proto, reusing the anchor's row and truncation messages, and verify both sides generate | Restrictions: payloads ride the existing Element/Delta as Any; no new services or streams; no changes to the anchor's messages | _Leverage: rdf.proto and its generation wiring from the anchor's task 3.1 | Success: both sides generate and the payloads are usable from backend and client code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
