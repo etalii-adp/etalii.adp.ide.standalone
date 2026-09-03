@@ -42,7 +42,7 @@ public static class HelmRuleSet
                     DiagramProblemSeverity.Warning,
                     "This folder is not a Helm chart: it has no Chart.yaml.",
                     HelmRules.NotAChart,
-                    new DiagramProblemFileLocation(".", 0)),
+                    new DiagramProblemFileLocation(".")),
             ];
         }
 
@@ -150,7 +150,7 @@ public static class HelmRuleSet
                 DiagramProblemSeverity.Warning,
                 $"'{entry.RelativePath}' sits in charts/ but no dependency declares it.",
                 HelmRules.UndeclaredVendored,
-                new DiagramProblemFileLocation(entry.RelativePath, 0)));
+                new DiagramProblemFileLocation(entry.RelativePath)));
 
     /// <summary>Lock drift, both directions - only when a lock exists at all (R10.5).</summary>
     private static IEnumerable<DiagramProblem> LockDrift(HelmChart chart)
@@ -171,7 +171,7 @@ public static class HelmRuleSet
                 DiagramProblemSeverity.Warning,
                 $"The dependency '{name}' is declared but not in {chartLock.RelativePath}; run helm dependency update.",
                 HelmRules.LockDrift,
-                new DiagramProblemFileLocation(chartLock.RelativePath, 0));
+                new DiagramProblemFileLocation(chartLock.RelativePath));
         }
 
         foreach (var entry in chartLock.Entries.Where(entry => !declared.Contains(entry.Name)))

@@ -34,7 +34,7 @@ public class SkosLabelsTests
         // Hidden labels never display, even when they are all there is.
         { "en", new[] { Label(SkosLabelSource.Hidden, "misspellling", "en") }, "ex:tea", "", SkosLabelKind.IriFallback },
         // No label at all: the IRI's display form, dimmed - and validation reports it.
-        { "en", System.Array.Empty<SkosLabel>(), "ex:tea", "", SkosLabelKind.IriFallback },
+        { "en", Array.Empty<SkosLabel>(), "ex:tea", "", SkosLabelKind.IriFallback },
     };
 
     [Theory]
