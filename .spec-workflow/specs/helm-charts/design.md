@@ -1,0 +1,174 @@
+# Design Document
+
+## Overview
+
+One module, `src/diagrams/helm-charts/`, serving the `helm/chart` folder-subject diagram. The design's center of gravity is that **almost nothing here is new**: the folder subject, the tolerant reader, the watched-folder store, the read-only property grid and the validation walk-up all come from `ansible/structure`; the authored-reposition path comes from the core `layout:` machinery `databricks-diagrams` built. What is genuinely designed here rather than consumed is small and sharp: the **template line-scanner** (extracting literal facts from files that are deliberately never parsed as YAML), the **dependency resolution matcher** (declared entries against vendored `charts/` content, alias-aware, three states), and the **example acquisition plan** (which chart gets which demonstration duty, with licensing mechanics attached).
+
+The one seam intersection the requirements flagged — the core `layout:` block meeting a folder-subject `.adp` — was verified against the code before this document was written, and it needs **no core change**: `RegistrationLayout.Read` scans forward to the `layout:` line and tolerates a registration with no `body:` header; the router hands a folder-subject factory the `.adp` as both `bodyPath` and `registrationPath` (pinned in `AnsibleSessionFactory`), which is exactly the `AdpPath` that `SetRegistrationLayoutCommand` wants; and `IDiagramSession.MoveElementToAsync` is a default-refused interface member that this module's session overrides the way `DatabricksSession` does.
+
+## Steering Document Alignment
+
+### Technical Standards (tech.md)
+
+- **Diagram storage** — the chart belongs to Helm's tooling; the module has no writer for chart content at all, and the only authored artifact (positions) goes to the `.adp` per the layout-in-.adp rule.
+- **Commands** — the module's single edit, a reposition, dispatches the core `SetRegistrationLayoutCommand`/`RemoveRegistrationLayoutCommand` pair and is one undo. No module-owned commands exist, stated per tech.md's not-applying rule: there is nothing else to edit.
+- **gRPC call shapes** — no new services, no new streams; elements travel as `Element`/`Delta` with one `Any` payload per element kind.
+- **Declaring a diagram definition** — implemented shape: a named `public static DiagramDefinition Chart` property with a `Build` delegate, `Definitions` referencing it. No `DocumentExtension` constant, and per tech.md that omission is correct for a folder subject, not a gap.
+- **Registering services** — one `ServiceCollection.AddHelmCharts.cs`; no commands file, because no consumer needs commands registered alone (there are none).
+
+### Project Structure (structure.md)
+
+- `src/diagrams/helm-charts/backend/EtAlii.Adp.Diagram.HelmCharts/` (+ `.Tests`), `client/`, `api/helm-charts.proto`, `examples/` — the layout every sibling module has. `_Model/` stays in the module's own namespace. The module depends on core only; core is not touched.
+
+## Code Reuse Analysis
+
+### Existing Components to Leverage
+
+- **`DiagramSubject.Folder`** (`DiagramDefinition.Subject`) — the registration is the document, its folder is the subject; discovery already refuses a folder-subject definition that also claims a document sibling.
+- **`RegistrationLayout` + `SetRegistrationLayoutCommand` (core)** — read/overlay/write of the `.adp` `layout:` block, stale-id dropping, undo restoring the prior entry or its absence. This module is the second consumer and changes nothing in it.
+- **The Ansible module's shapes, copied as patterns** (module code is not shared across modules): `AnsibleYaml`'s tolerant never-throwing YAML read with line marks becomes `HelmYaml`; `AnsibleProjectStore`'s `GetOrLoad`/`Acquire`/`Release` with a guarded coalescing watcher becomes `HelmChartStore`; the folder-target `ContextTarget.ResolvedFullPath` resolution and deleted-folder selection clearing become `HelmContextSourceResolver`; the read-only property rows with `ReadOnlyReason = "Defined in {file}; edit it in a text editor."` become `HelmContextPropertyProvider`; the `Rebased()` folder-relative→project-relative finding conversion becomes part of `HelmValidator`. A third folder-subject consumer would justify promoting the YAML/store shapes into a shared project; two copies do not.
+- **`ProblemStamp` (core)** — folder-attributed findings (the not-a-chart finding, R10.1) stay fresh because staleness stamps folders as well as files; built during the Ansible work precisely because any future folder-blaming rule would need it. This is that future rule.
+- **Central canvas library** (`src/client/src/canvas/`) — `BoxElement` for nodes, the shared straight/bezier connections with arrowheads for edges, `elementSelectionOf`/`useElementContextMenu` for interaction plumbing.
+- **YamlDotNet 18.1.0** — already in the tree (the Ansible module introduced it); same package, same representation-model usage for line marks.
+- **`ExampleReplicationTests` (existing, central)** — guards the module↔showcase example copies generically; no second guard is built (R11.1).
+
+### Integration Points
+
+- **Hierarchy/routing** — the `.adp` routes as its own body (no extension, no sibling); nothing new.
+- **Context channel** — one source resolver and one property provider, registered like every sibling's. No action provider (navigation rides the standard activate path), no toolbox provider (R9.1's stated non-contribution).
+- **History** — the session takes the project's `IHistoryStack` so a reposition is one undo; this is the only history traffic the module produces.
+- **Problems pipeline** — `HelmValidator` registers as the `IDiagramValidator` for the origin; folder findings flow through the `DiagramProblemFileLocation`/walk-up machinery unchanged.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    ADP[.adp: mime line + layout block] --> ROUTE[DiagramFileRouter]
+    DIR[Chart folder: Chart.yaml, values*, templates/, charts/] --> STORE[HelmChartStore watched folder]
+    STORE --> READER[HelmChartReader + TemplateScan]
+    READER --> GRAPH[HelmGraph nodes and edges]
+    ROUTE --> SESS[HelmSessionFactory folder resolution]
+    GRAPH --> SESS
+    SESS -->|Element + Any payload| CANVAS[HelmCanvas]
+    CANVAS -->|MoveElementTo| CMD[core SetRegistrationLayoutCommand]
+    CMD --> ADP
+    GRAPH --> VAL[HelmValidator + HelmRuleSet]
+    VAL --> PROBLEMS[Problems panel]
+```
+
+### Key decisions, and why
+
+- **Templates are lines, not YAML.** `TemplateScan` is a pure static scanner over a file's lines: a `kind:`/`apiVersion:` whose value contains no `{{` counts as a discovered fact; `{{- define "name" }}` and `{{ include "name" … }}`/`{{ template "name" … }}` count only when the name is a literal double-quoted string. Everything else is unknown by design. Keeping this in one fixture-pinned class makes "what counts as literal" a set of test cases rather than folklore (NFR).
+- **Whole diagram at open, no viewport filtering.** A chart is bounded — dozens of nodes even for prometheus — so the session delivers everything at `Baseline()` and `UpdateView` answers with nothing new, the same reasoning every arranged module records. (The Ansible module's one-hop visibility filter exists because an Ansible estate is unbounded; a chart is not.)
+- **Resolution matching is a pure function.** `Dependency.EffectiveName` (alias when set, else name) matched ordinally against `charts/` entry names (directory name; archive filename stripped of `-<version>.tgz`); each dependency gets `Resolved`/`Unvendored`, each `charts/` entry without a match gets `Undeclared`. No semver-range evaluation — the lock's pinned version is displayed beside the constraint, never validated against it (a range evaluator is a dependency this spec refuses, mirroring the schema-evaluation refusal).
+- **No module registration header is claimed.** The sanctioned per-registration `key: value` header mechanism (rdf-diagram anchor, shared-machinery item 10) exists, but this module has nothing to configure per registration — the diagram shows the layering, so there is no "selected environment" to store. If a later spec adds resolved-values views, that mechanism is where the selection would live, name claimed in the anchor first.
+- **The `.adp` watcher rides the store.** The chart folder watcher (which sees every file under the chart root) also sees the `.adp` change when a layout write lands; the store's coalesced re-read plus the session's re-render with `RegistrationLayout.Apply` overlay is the whole update path — no second watcher.
+
+### Modular Design Principles
+
+- Reader, scanner, graph, layout and mapper are separate classes, each testable without a server or browser; the session composes them.
+- `_Model/` records carry no behaviour beyond derived properties; equality-sensitive comparisons in tests use rendered descriptions, not record equality over lists (the lesson the Ansible tests recorded).
+
+## Components and Interfaces
+
+### Backend: reading
+
+- **`HelmYaml` (static)** — tolerant YAML load: returns a document with line marks, or an unreadable result carrying the stripped error message and line; never throws.
+- **`TemplateScan` (static)** — the literal-fact line scanner described above; returns discovered kinds, defined names, referenced names, all sorted ordinally.
+- **`HelmChartReader`** — folder → `HelmChart` model: reads `Chart.yaml` (v2 fields; v1 falls back to `requirements.yaml`/`requirements.lock` and marks legacy), the values stack (`values.yaml` + `values*.y(a)ml` siblings, sorted), `values.schema.json` presence, `templates/` (role per file: manifest, partial `_*`, `NOTES.txt`, `templates/tests/`), `crds/` summary, `charts/` (unpacked directories read one level deep as nested chart summaries; `.tgz` sealed), and the lock. Skips reparse points, sorts every enumeration ordinally, never writes.
+- **`HelmChart` + `_Model` records** — `ChartMetadata`, `ValuesFile`, `TemplateFile`, `DependencyDeclaration`, `VendoredEntry`, `LockFile`, each carrying its source path (chart-root-relative) and line marks where parsed.
+
+### Backend: model to wire
+
+- **`HelmGraph`** — builds nodes and the five edge families from the model: declares (chart→dependency, constraint label), resolves (dependency→vendored entry, three-state), overrides (override values→default values), configures (default values top-level key→dependency by effective name; `global:` marks the values node), includes (template→partial by literal name; unmatched references become open ends). Condition badges resolve their path against the parsed default values where the path exists.
+- **`HelmLayout` (static, pure)** — banded computed layout: a metadata band (chart, lock, schema, crds), the values stack as a column, templates grouped in a column (partials/notes/tests visually separated by the mapper's typing, not by position tricks), dependencies and vendored entries in a right-hand column so resolves edges run short. Deterministic for fixtures.
+- **`HelmElementMapper`** — projects graph + layout to `Element`s (`helm/chart+{chart,values,schema,template,partial,crds,dependency,subchart,archive,lock,edge}`) with `Any` payloads from the module proto; `Diff()` emits Remove-then-Add, never group/ungroup; positions come from `RegistrationLayout.Apply(computed, stored)`.
+
+### Backend: session and store
+
+- **`IHelmChartStore` / `HelmChartStore`** — `GetOrLoad`/`Get`/`Acquire`/`Release` per chart root; one coalescing watcher per acquired folder re-reads the whole chart per settled burst (a `helm dependency build` rewriting `charts/` lands as one re-read). No save method exists, structurally.
+- **`HelmSessionFactory`** — resolves the subject folder from the registration path exactly as `AnsibleSessionFactory` does (`registrationPath ?? bodyPath`, its directory); passes the `.adp` path and the project's history stack into the session.
+- **`HelmSession`** — `Baseline()` delivers the full mapped diagram; store change events diff against the last delivery. `MoveElementAsync` (reparent) refuses with a sentence — nothing nests. `MoveElementToAsync` overrides the core default: refuses edges by id prefix, then dispatches `SetRegistrationLayoutCommand` with the `.adp` path, mirroring `DatabricksSession`; the write comes back through the folder watcher and re-renders with the authored position overlaid.
+
+### Backend: context and validation
+
+- **`HelmContextSourceResolver`** — resolves selections to the chart folder target; node subscriptions clear the selection when the backing file or folder disappears, watching the chart root (not one level up — the bug the Ansible tests pinned).
+- **`HelmContextPropertyProvider`** — the R9.3/R9.4 grids; a single private `Row(id, label, value, source, group)` helper always sets `ReadOnlyReason = $"Defined in {source}; edit it in a text editor."`; `SetAsync` refuses unconditionally. The chart-level (nothing-selected) grid summarizes name, version, type, apiVersion and counts.
+- **`HelmValidator` + `HelmRuleSet`** — the rule set is a pure function over the model returning findings with chart-root-relative paths and lines; the validator rebases them to project-relative before reporting (the `Rebased()` discipline) and attributes folder findings to folders. Rules: not-a-chart (exactly one finding, R10.1); Chart.yaml parse/`name`/`version` errors and non-SemVer warning; other-YAML parse errors; Undeclared vendored content warning; lock-drift warnings (declared-missing-from-lock, lock-entry-undeclared) only when a lock exists; empty/absent `templates/` warning for application charts only; condition-path-missing warning; effective-name collision error; apiVersion v1 informational.
+- **`ServiceCollection.AddHelmCharts.cs`** — registers store, reader, mapper, session factory, validator, source resolver, property provider. No document factory (core writes the bare folder-subject `.adp`), no toolbox provider, no action provider, no commands — each absence is the requirements' stated position, not an oversight.
+
+### Client
+
+- **`helmModel.ts`** — decodes the payloads, two delta cases (add, remove), anchor and palette-slot helpers.
+- **`useHelmStream.ts`** — the open/baseline/delta stream hook, plus `moveElementTo` (the one thing the Ansible hook deliberately lacked).
+- **`HelmCanvas.tsx`** — composes the central canvas pieces; band chrome; drag-to-reposition wired to `moveElementTo`; activation per node kind (open file in text editor; subchart offer; sealed/open-end no-op with the grid explaining).
+- **`helm-charts.css`** — the module's palette as CSS classes per element kind, following the Ansible module's slot pattern.
+- **`register.ts` + `readme.md`** — standard registration and module notes.
+
+## Data Models
+
+`src/diagrams/helm-charts/api/helm-charts.proto`, with `option csharp_namespace = "EtAlii.Adp.Diagram.HelmCharts.Wire";` so generated messages never collide with `_Model` records (the CS0101 lesson the Databricks module paid for first):
+
+- `HelmChartPayload` — name, version, app_version, chart_type, api_version, description, deprecated, legacy
+- `HelmValuesPayload` — path, role (default | override), has_global
+- `HelmTemplatePayload` — path, role (manifest | partial | notes | test), repeated kinds, kinds_undetermined
+- `HelmDependencyPayload` — name, alias, constraint, repository, condition, condition_state (on | off | unknown | none), pinned_version, resolution (resolved | unvendored)
+- `HelmVendoredPayload` — name, version, sealed (archive vs unpacked), declared, chart_type, template_count, deeper_count
+- `HelmCrdsPayload` / `HelmLockPayload` / `HelmSchemaPayload` — path and summary counts
+- `HelmEdgePayload` — kind (declares | resolves | overrides | configures | includes), label, open_end
+
+Element ids are stable, content-derived (`dep:<effective-name>`, `tpl:<relative-path>`, `values:<file-name>`, edge ids prefixed `edge:`), because the `layout:` block stores them across sessions — a renamed file intentionally forfeits its stored position.
+
+## Error Handling
+
+### Error Scenarios
+
+1. **Registered folder has no `Chart.yaml`** — the model is the empty not-a-chart state; the canvas shows the empty state, validation reports exactly one folder-attributed finding, and `ProblemStamp` keeps it fresh (R10.1).
+2. **`Chart.yaml` (or any chart-owned YAML) fails to parse** — that file becomes an unreadable-marked node with the error and line; the rest of the chart renders; validation names file and line (R3.1, R10.2/10.3).
+3. **A template is binary or unreadable** — the scan yields no facts; the node renders with kinds undetermined; no finding (partials and NOTES.txt legitimately yield nothing).
+4. **The chart folder is deleted while open** — the watcher's re-read finds nothing; the diagram degrades to the not-a-chart state; the resolver clears selections whose backing artifacts vanished.
+5. **A layout write races a folder change** — the command writes the `.adp` atomically through core; the watcher coalesces; stale stored ids are ignored on read and dropped on the next write (core behaviour, already tested there).
+6. **`charts/` holds a deeply nested vendored tree** — one level is read; deeper content is summarized by count, never recursed unbounded (R3.4).
+
+## Testing Strategy
+
+### Unit Testing
+
+- `HelmYaml`: parse, line marks, unreadable results, never-throws (fixture-driven, pattern of `AnsibleYaml.Tests`).
+- `TemplateScan`: the literal/templated boundary pinned case by case — literal kind, templated kind, quoted define/include names, unquoted names rejected, multi-document files, `NOTES.txt`.
+- `HelmChartReader`: fixtures under `backend/…/Tests/Fixtures/` — a well-formed chart, a broken one (bad YAML, missing fields), an unconventional one (v1 legacy, alias, `.tgz` + unpacked mix, library chart); fixtures carry a directory-local `.gitattributes` (`* -text`) so their bytes survive checkout, per the module-fixtures precedent recorded in the root `.gitattributes` reasoning.
+- `HelmGraph`: every edge family, effective-name matching, three-state resolution, condition-state resolution, `global:` handling, include open ends.
+- `HelmLayout`: deterministic banding on fixtures.
+- `HelmElementMapper`: projection and `Diff`, stored-position overlay.
+- `HelmChartStore`: coalesced bursts asserted as a range, not an exact count (the flaky-burst lesson).
+- `HelmRuleSet`: each rule's fire and non-fire cases — including that Unvendored never fires and that a library chart escapes the templates rule; `HelmValidator`: path rebasing to project-relative.
+- `HelmContextSourceResolver`/`PropertyProvider`: folder target, deleted-artifact clearing, every row read-only with the house reason.
+- **Zero-writes**: open, browse, validate, close over a fixture chart; assert every file byte-identical via `SequenceEqual` naming the offending file (the ValueTuple-equality lesson), including that no file was created or deleted.
+- Client: model decoding, stream hook, canvas structure, move dispatch.
+
+### Integration Testing
+
+- The gRPC flow against the real host: open a fixture chart end-to-end, baseline observed, a disk change producing a delta.
+- Validation flow: findings surface with project-relative paths at the right files and lines; folder findings render fresh.
+- Layout persistence: move an element through the session, `.adp` gains the entry, reopen overlays it, undo removes it — chart bytes untouched throughout.
+- The shipped examples resolve, open and validate clean; `ExampleReplicationTests` covers module↔showcase byte-identity by construction.
+
+### End-to-End Testing
+
+- `tests.md` entries for what only a running app shows: double-click-to-open on each node kind, the drag-reposition-reopen cycle through the real client, and the Add-flow suggestion on a folder containing `Chart.yaml` — preconditions, actions, expected results, per the established manual-check format.
+
+## Example Acquisition Plan (Requirement 11, made concrete)
+
+| Example | Source (license verified 2026-09-03) | Demonstration duty |
+| --- | --- | --- |
+| `hello-world` | [helm/examples](https://github.com/helm/examples), Apache-2.0 | The pristine minimal chart: one deployment/service, no dependencies — untouched upstream bytes |
+| `prometheus` | [prometheus-community/helm-charts](https://github.com/prometheus-community/helm-charts), Apache-2.0 | Four conditional dependencies, all Unvendored open ends (deliberately not findings), condition badges resolved against its values |
+| `nginx` | [bitnami/charts](https://github.com/bitnami/charts), Apache-2.0 | OCI-repository dependency; the `common` library subchart from the same source vendored under `charts/` (Resolved edge + library-chart handling); ADP-authored `values-dev.yaml`/`values-prod.yaml` demonstrating the override stack, listed in the readme as local additions |
+
+Each example folder carries the upstream `LICENSE` (and `NOTICE` where provided), a readme with source URL, chart version, retrieval date, verified license and the exact local-additions list, and the one-line `.adp` inside the chart root. Acquisition happens at implementation time by download from the named sources, with the license text re-verified at that moment; secrets review before commit per the NFR.
+
+## Deviations and notes
+
+1. **No core changes — verified, not assumed.** The requirements flagged the layout-block-meets-folder-subject intersection for design-time verification; it was verified against `RegistrationLayout.cs`, `SetRegistrationLayoutCommandHandler.cs`, `AnsibleSessionFactory.cs` and `IDiagramSession.cs` before this document was written. Anything further found during implementation is a finding to report.
+2. **Pattern reuse over code sharing.** `HelmYaml` and `HelmChartStore` replicate Ansible shapes module-locally because modules do not depend on modules; the rule of three says a third folder-subject consumer is the moment to promote those shapes into a shared project, and that promotion is deliberately not smuggled into this spec.
+3. **No registration header claimed.** The module-side `key: value` header facility exists and is the sanctioned home for any future per-registration configuration (a resolved-values environment selection, say); this spec needs none and claims no name.
