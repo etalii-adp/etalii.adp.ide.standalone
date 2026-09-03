@@ -119,10 +119,15 @@ jobs:
       # .NET 10 runtime on the target machine - the design's recorded trade-off. The client's
       # production build lands in wwwroot/, which is exactly what MapClientApp's production
       # mode (no Client:DevServerUrl configured) serves.
+      #
+      # No copy step: the service project's own PublishClientApp target already places
+      # client/dist into wwwroot/. A `cp -r src/client/dist publish/wwwroot` on top of that
+      # copied the bundle INTO the existing directory - shipping every release with a second,
+      # unreachable copy at wwwroot/dist/ - because cp treats an existing destination as a
+      # parent. Verified against a real publish: wwwroot/ comes out with index.html,
+      # favicon.svg and assets/ before anything is copied.
       - name: Publish the service
-        run: |
-          dotnet publish src/backend/EtAlii.Adp.Backend.Service -c Release -o publish
-          cp -r src/client/dist publish/wwwroot
+        run: dotnet publish src/backend/EtAlii.Adp.Backend.Service -c Release -o publish
 
       - name: Write the release readme
         run: |

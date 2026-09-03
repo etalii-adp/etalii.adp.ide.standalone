@@ -542,8 +542,9 @@ tag, and the ZIP's name must all be the same number - a claim only a person with
 release artifact can check end to end.
 
 - **Preconditions**: a published GitHub release with its ZIP asset (or, before the first
-  release exists: a local `dotnet publish` of the service with the client's production
-  build copied into `wwwroot/`).
+  release exists: a local `dotnet publish` of the service - the project's own
+  `PublishClientApp` target builds the client and places it in `wwwroot/`, so no copy
+  step is needed and adding one nests a second bundle at `wwwroot/dist/`).
 - **Actions**: download and unzip the release; run `dotnet EtAlii.Adp.Backend.Service.dll`
   (requires the .NET 10 runtime); browse to the listening address; read the line below the
   login panel. Compare it with the release tag, the ZIP file name, and
@@ -551,6 +552,11 @@ release artifact can check end to end.
 - **Expected**: all four carry the same version. The login line is quiet and centered under
   the card; killing the backend and reloading the page shows no version line at all rather
   than a stale one.
+- **Publish layout confirmed 2026-09-04**: `dotnet publish` alone produces `wwwroot/` holding
+  `index.html`, `favicon.svg` and `assets/`, and the published `EtAlii.Adp.Backend.dll` reads
+  ProductVersion `0.1.388-alpha+e051580749`, naming the commit it was built from. This run
+  checked the layout and the assembly stamp only - not the login line, which the entry below
+  covers - and it was a branch build rather than a release, so tag and ZIP name are untested.
 - **Partially verified 2026-09-03** against a locally running developer build: the login line
   and `EtAlii.Adp.Backend.dll`'s ProductVersion both read `0.1.80-alpha+af55382d1f` - the
   stamp's first live trip from assembly through gRPC to the login panel. The release tag and
