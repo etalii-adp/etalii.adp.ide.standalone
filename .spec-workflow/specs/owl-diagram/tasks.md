@@ -7,7 +7,7 @@ One worktree for the whole spec (`.claude/worktrees/owl`, short per the MAX_PATH
 - [ ] 1. The reading, pure: projection, expressions, layout, validation
   - _Requirements: 1.1-1.6, 2.1-2.4, 3.1-3.5, 4.1-4.2, 5.1-5.5_
 
-- [ ] 1.1 OwlProjection: three sweeps, structural ids
+- [-] 1.1 OwlProjection: three sweeps, structural ids
   - Files: `src/diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf/Owl/` — `OwlProjection.cs`, `OwlGraph.cs` (node/edge model with kind, deprecation and externality flags) + tests in `EtAlii.Adp.Diagram.Rdf.Tests`
   - The entity, axiom and expression sweeps per design over `RdfModel` (anchor task 1.1's seam): per-role classification so punning yields both roles; `owl:Thing` anchors for domain-less/range-less properties; characteristics and `owl:inverseOf` folded into property labels; named terms on family `res:{iri}` ids, expressions on structural `expr:{owner}|{predicate}|{ordinal}` ids with `/{child}` suffixes; the drawn-element budget applied after projection with the truncation cut keeping each class's expression neighborhood whole
   - Acceptance criterion, its own test: structural ids are deterministic within a parse (same bytes twice, same ids) **and demonstrably unstable across an inserted axiom** — the test that keeps the blank-node boundary's stated reason true in code rather than merely asserted
