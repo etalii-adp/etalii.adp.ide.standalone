@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { create } from "@bufbuild/protobuf";
 import { base64Encode } from "@bufbuild/protobuf/wire";
 import {
+  EntryDiagramState,
   EntryKind,
   EntrySchema,
   HierarchyChangeSchema,
@@ -25,6 +26,7 @@ import {
   matchShortcut,
   neighbourKey,
   pathOf,
+  iconClassFor,
   resolveRevealPath,
   visibleKeys,
   type ShortcutEventLike,
@@ -76,7 +78,7 @@ function key(byte: number): string {
   return base64Encode(id(byte));
 }
 
-function makeEntry(idByte: number, name: string, kind: EntryKind, parentByte?: number, hasChildren = false): Entry {
+function makeEntry(idByte: number, name: string, kind: EntryKind, parentByte?: number, hasChildren = false, diagramState = EntryDiagramState.ENTRY_DIAGRAM_STATE_UNSPECIFIED): Entry {
   return create(EntrySchema, {
     id: { value: id(idByte) },
     parentId: parentByte === undefined ? undefined : { value: id(parentByte) },
@@ -84,6 +86,7 @@ function makeEntry(idByte: number, name: string, kind: EntryKind, parentByte?: n
     kind,
     available: true,
     hasChildren,
+    diagramState,
   });
 }
 
@@ -227,6 +230,36 @@ describe("applyHierarchyChange", () => {
     // Assert.
     expect(next.nodesByKey[key(2)]?.name).toBe("renamed-sub");
     expect(next.nodesByKey[key(2)]?.childKeys).toEqual([]);
+  });
+
+  it("carries each entry's diagram state into its node, and iconClassFor names the class", () => {
+    // Arrange and act: one node per state the backend can push (small-refinements Req 3.1-3.3).
+    const state = applyEntries(EMPTY_TREE_STATE, undefined, [
+      makeEntry(1, "ideas.mm", EntryKind.FILE, undefined, false, EntryDiagramState.REGISTERED),
+      makeEntry(2, "build.yml", EntryKind.FILE, undefined, false, EntryDiagramState.POTENTIAL),
+      makeEntry(3, "notes.txt", EntryKind.FILE),
+    ]);
+
+    // Assert: registered and potential get their classes; neutral gets none at all.
+    expect(iconClassFor(state.nodesByKey[key(1)]!)).toBe("explorer-tree-icon-registered");
+    expect(iconClassFor(state.nodesByKey[key(2)]!)).toBe("explorer-tree-icon-potential");
+    expect(iconClassFor(state.nodesByKey[key(3)]!)).toBe("");
+  });
+
+  it("updated: moves an entry's diagram state - a registration appearing upgrades its subject", () => {
+    // Arrange.
+    let state = applyEntries(EMPTY_TREE_STATE, undefined, [
+      makeEntry(1, "bare.mm", EntryKind.FILE, undefined, false, EntryDiagramState.POTENTIAL),
+    ]);
+    const change = create(HierarchyChangeSchema, {
+      change: { case: "updated", value: { entryId: { value: id(1) }, hasChildren: false, diagramState: EntryDiagramState.REGISTERED } },
+    });
+
+    // Act.
+    state = applyHierarchyChange(state, change);
+
+    // Assert.
+    expect(iconClassFor(state.nodesByKey[key(1)]!)).toBe("explorer-tree-icon-registered");
   });
 
   it("updated: refreshes a folder's hasChildren flag", () => {

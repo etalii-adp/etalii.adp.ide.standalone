@@ -577,7 +577,7 @@ public sealed class HierarchyModel
             _router.HasFolderSubjectTypes
             && _router.Route(IoPath.Combine(folderPath, registration), _rootPath) is DiagramRouted { Definition.HasFolderSubject: true };
 
-        void Apply(ShortGuid entryId, EntryDiagramState state)
+        void Apply(ShortGuid entryId, EntryDiagramState state, bool raise)
         {
             var current = _entriesById[entryId];
             if (current.DiagramState == state)
@@ -586,7 +586,7 @@ public sealed class HierarchyModel
             }
 
             _entriesById[entryId] = current with { DiagramState = state };
-            if (raiseEvents)
+            if (raise)
             {
                 EntryChanged?.Invoke(new HierarchyEntryUpdated(entryId, current.HasChildren, DiagramState: state));
             }
@@ -595,15 +595,19 @@ public sealed class HierarchyModel
         foreach (var file in contained.Where(entry => !entry.IsFolder))
         {
             Apply(file.Id, EntryDiagramStates.Decide(
-                file.Name, isFolder: false, names, BodyNameOf, _router.ClaimsExtensionOf, _editorResolver.IsClaimed, DeclaresFolderSubject));
+                file.Name, isFolder: false, names, BodyNameOf, _router.ClaimsExtensionOf, _editorResolver.IsClaimed, DeclaresFolderSubject), raiseEvents);
         }
 
         // The folder's own state comes from its contents, so it is decided here - in ITS scan -
-        // rather than in its parent's, which never enumerates it. The root has no entry.
+        // rather than in its parent's, which never enumerates it. The root has no entry. Its
+        // update is raised even on a listing-triggered scan (raiseEvents false): the listing's
+        // response carries the folder's CHILDREN, never the folder itself, so the watch stream
+        // is the only channel this change can reach the client on - found live, where the
+        // folder stayed neutral after expanding it.
         if (folderId is { } id && _entriesById.TryGetValue(id, out var folder))
         {
             Apply(id, EntryDiagramStates.Decide(
-                folder.Name, isFolder: true, names, BodyNameOf, _router.ClaimsExtensionOf, _editorResolver.IsClaimed, DeclaresFolderSubject));
+                folder.Name, isFolder: true, names, BodyNameOf, _router.ClaimsExtensionOf, _editorResolver.IsClaimed, DeclaresFolderSubject), raise: true);
         }
     }
 

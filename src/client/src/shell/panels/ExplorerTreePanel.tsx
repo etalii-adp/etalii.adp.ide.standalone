@@ -10,7 +10,7 @@ import {
 import { createClient } from "@connectrpc/connect";
 import { base64Encode } from "@bufbuild/protobuf/wire";
 import { useAuth } from "../../auth/AuthContext";
-import { EntryKind, HierarchyService } from "../../generated/hierarchy_pb";
+import { EntryDiagramState, EntryKind, HierarchyService } from "../../generated/hierarchy_pb";
 import type { Entry, HierarchyChange } from "../../generated/hierarchy_pb";
 import { ContextSelectionAction, ContextSelectionSource } from "../../generated/context_pb";
 import type { ContextAction, ContextActionGroup, ContextSelection } from "../../generated/context_pb";
@@ -33,6 +33,8 @@ export interface TreeNode {
   available: boolean;
   /** For a folder: whether it currently has any entry inside it; always false for a file. */
   hasChildren: boolean;
+  /** What ADP's routing says about the entry - the icon's color, decided by the backend. */
+  diagramState: EntryDiagramState;
   /** undefined = never fetched (Requirement 2.2's expand-on-demand). */
   childKeys?: string[];
   expanded: boolean;
@@ -104,6 +106,7 @@ function entryToNode(entry: Entry, previous?: TreeNode): TreeNode {
     kind: entry.kind,
     available: entry.available,
     hasChildren: entry.hasChildren,
+    diagramState: entry.diagramState,
     childKeys: previous?.childKeys,
     expanded: previous?.expanded ?? false,
     loading: previous?.loading ?? false,
@@ -227,11 +230,11 @@ export function applyHierarchyChange(state: TreeState, change: HierarchyChange):
       // focus survive the move (adp-file-nesting Requirement 10.3).
       const parentId = change.change.value.parentId;
       if (parentId === undefined) {
-        return { ...state, nodesByKey: { ...state.nodesByKey, [key]: { ...node, hasChildren: change.change.value.hasChildren } } };
+        return { ...state, nodesByKey: { ...state.nodesByKey, [key]: { ...node, hasChildren: change.change.value.hasChildren, diagramState: change.change.value.diagramState } } };
       }
 
       const newParentKey = keyOf(parentId.value) || undefined;
-      const nodesByKey = { ...state.nodesByKey, [key]: { ...node, hasChildren: change.change.value.hasChildren, parentKey: newParentKey } };
+      const nodesByKey = { ...state.nodesByKey, [key]: { ...node, hasChildren: change.change.value.hasChildren, diagramState: change.change.value.diagramState, parentKey: newParentKey } };
       let rootKeys = state.rootKeys;
 
       if (node.parentKey === undefined) {
@@ -384,6 +387,24 @@ function iconFor(node: TreeNode): string {
   // (`mdi-graph-outline`, by extension) beside its subject's own file icon - the two are
   // already told apart, so kind-plus-extension stays the whole rule.
   return node.kind === EntryKind.FOLDER ? folderIcon(node) : fileIcon(node.name);
+}
+
+/**
+ * The icon's state color class - which COLOR, never which glyph. The glyph stays iconFor's
+ * client-side decoration table; the state comes from the backend's own routing, and the two
+ * are kept apart on purpose so the glyph table is not mistaken for what small-refinements
+ * Requirement 3.5 forbids. Neutral adds nothing at all.
+ */
+/** Exported for unit testing, like the reducers above. */
+export function iconClassFor(node: TreeNode): string {
+  switch (node.diagramState) {
+    case EntryDiagramState.REGISTERED:
+      return "explorer-tree-icon-registered";
+    case EntryDiagramState.POTENTIAL:
+      return "explorer-tree-icon-potential";
+    default:
+      return "";
+  }
 }
 
 export interface ExplorerTreePanelProps {
@@ -1060,7 +1081,7 @@ function ExplorerTreeNodeView({
           onFocus={() => onFocusNode(nodeKey)}
           onContextMenu={(event) => onContextMenu(event, nodeKey)}
         >
-          <span className={`mdi ${iconFor(node)}`} aria-hidden="true" />
+          <span className={["mdi", iconFor(node), iconClassFor(node)].filter(Boolean).join(" ")} aria-hidden="true" />
           <span className="explorer-tree-node-name">{node.name}</span>
         </button>
       </div>
