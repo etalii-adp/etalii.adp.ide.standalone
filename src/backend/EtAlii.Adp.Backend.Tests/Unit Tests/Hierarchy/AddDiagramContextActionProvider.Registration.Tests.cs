@@ -163,4 +163,53 @@ public class AddDiagramContextActionProviderRegistrationTests : IDisposable
         Assert.False(File.Exists(adp));
         Assert.True(File.Exists(path));
     }
+
+    // ------------------------------------------------------------------------------------------
+    // The marker suggestion (owl-diagram Requirement 8.2): a definition may declare a body test,
+    // and Add offers it exactly on the files whose text passes - a family's alternative reading
+    // of a shared extension is suggested off its marker rather than on every family file.
+
+    private static readonly DiagramDefinition MarkedReading = new(
+        new DiagramOrigin("azure-devops", "release"),
+        "Release pipeline",
+        Extension: ".yml",
+        SharedExtension: true,
+        SuggestsBody: text => text.Contains("marker!", StringComparison.Ordinal));
+
+    private AddDiagramContextActionProvider MarkerProvider() => new(
+        _historyStacks,
+        NoFactories,
+        new DiagramDefinitionCatalog { All = [Pipeline, MarkedReading] });
+
+    [Fact]
+    public async Task ExecuteAsync_OnAFileWithoutTheMarker_DoesNotOfferTheMarkedReading()
+    {
+        // Arrange.
+        var target = FileTarget(CreateFile("plain.yml", "stages:\n"));
+
+        // Act.
+        var execution = await MarkerProvider().ExecuteAsync(target, AddDiagramContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
+
+        // Assert: only the unconditional type is on offer.
+        var choice = Assert.IsType<ContextExecutionRequiresChoice>(execution);
+        var vendor = Assert.Single(choice.Request.Options);
+        var type = Assert.Single(vendor.Children!);
+        Assert.Equal(Pipeline.Origin.Key, type.Id);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_OnAFileCarryingTheMarker_OffersTheMarkedReadingToo()
+    {
+        // Arrange.
+        var target = FileTarget(CreateFile("marked.yml", "stages: marker!\n"));
+
+        // Act.
+        var execution = await MarkerProvider().ExecuteAsync(target, AddDiagramContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
+
+        // Assert: both types are on offer under the shared vendor.
+        var choice = Assert.IsType<ContextExecutionRequiresChoice>(execution);
+        var vendor = Assert.Single(choice.Request.Options);
+        Assert.Equal(2, vendor.Children!.Count);
+        Assert.Contains(vendor.Children!, node => node.Id == MarkedReading.Origin.Key);
+    }
 }

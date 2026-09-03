@@ -1,5 +1,16 @@
 # Tasks Document
 
+> **Correction, 2026-09-03: `ExampleReplicationTests` no longer exists.** It byte-compared each
+> module's `examples/` tree against its `src/examples/` replica, and was deleted when the two
+> trees were deliberately disconnected. Wherever a task below names it — as a guard, a
+> verification step or a `_Leverage` — read it as follows: **seeding the showcase copy remains a
+> step of that task**, it is simply no longer held byte-identical, and the guard that covers both
+> trees now is `ExampleRegistrationTests`, which opens every registration in each against the
+> deployed catalog. The task wording is otherwise left exactly as written, deliberately: several
+> of these tasks are in flight, and rewording a criterion under the agent working it would be
+> worse than a stale sentence.
+
+
 One worktree for the whole spec (`.claude/worktrees/owl`, short per the MAX_PATH and apphost trap). Each group ends in a gate-and-merge task with the four gates judged by exit code, codes captured before any pipe.
 
 **Dependencies on the anchor's seams.** This reading implements over `rdf-diagram`'s approved tasks and duplicates none of them: **anchor task 1.1** (the triplestore document store and `RdfModel` — this spec's projection consumes that model, never a parser), **anchor task 2.1** (the family triple writer, including `ReplaceObjectLiteral` for this reading's label and annotation edits, family-level per the writer boundary rule), **anchor task 3.2** (definition/session/routing shapes and the registration header helper — unused here, as this spec claims no header), and **anchor task 3.3** (the selection vocabulary this reading's provider cases extend). A task below that builds on a seam names it, and cannot start before that anchor task has merged into `develop`.
@@ -49,33 +60,33 @@ One worktree for the whole spec (`.claude/worktrees/owl`, short per the MAX_PATH
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 7.1, 7.2, 7.3_
   - _Prompt: Implement the task for spec owl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the family providers | Task: Implement the OWL provider cases per Requirements 6 and 7 - the four toolbox entries writing their declaration triples, the subclass and domain/range gestures as anchor writer splices, rename and remove through the family operations, the property grid with label and comment edits dispatching ReplaceObjectLiteral, and the expr: read-only grid path - with discovery, execute/undo/redo and refusal-sentence tests per selection kind | Restrictions: every edit dispatches an anchor writer operation - this reading owns gesture names, not splice code; every real edit is one undo; refusals before any splice | _Leverage: anchor tasks 2.1 and 3.3 - the writer including ReplaceObjectLiteral, and the selection vocabulary and provider trio | Success: provider tests pass per menu, property and gesture; label edits produce single-literal diffs via the family writer; each refusal carries its sentence. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2.4 Gate and merge group 2
+- [x] 2.4 Gate and merge group 2
   - The four gates, exit codes captured before any pipe; merge into `develop`
   - _Prompt: Implement the task for spec owl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 2 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 - [ ] 3. Client: the ellipse and the canvas
   - _Requirements: 1.1-1.6, 2.1-2.4, 3.1-3.4, 4.1, 8.3_
 
-- [ ] 3.1 The ellipse element, in the central canvas library
+- [x] 3.1 The ellipse element, in the central canvas library
   - Files: `src/client/src/canvas/elements/` gains the ellipse element, styled and themed like its box siblings, with tests in that library's own suite alongside the existing element tests
   - Its own task deliberately: this is a change to shared code that a later round-node reading should find rather than rewrite; nothing OWL-specific goes into it
   - _Requirements: 1.1 (the class primitive)_
   - _Prompt: Implement the task for spec owl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/SVG developer familiar with the central canvas library | Task: Add an ellipse element to src/client/src/canvas/elements/ following the existing elements' props, styling and theming conventions, with unit tests in the central library's own suite covering rendering, sizing, label centering and selection styling | Restrictions: nothing OWL-specific in the shared element - no reading vocabulary, no module imports; follow the conventions the box elements set | _Leverage: the existing elements in src/client/src/canvas/elements/ and their tests as the template | Success: the ellipse renders and tests green in the central suite; no module code references leak in. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.2 OwlCanvas from the central library
+- [x] 3.2 OwlCanvas from the central library
   - Files: `src/diagrams/rdf/client/` — `OwlCanvas.tsx`, registration for `w3c/owl` beside the family's, module-own CSS rules only + tests
   - The VOWL vocabulary per design: ellipse class nodes (doubled border for equivalence, small dashed `owl:Thing`, dimmed deprecated/external), rectangle datatype nodes, dotted subclass edges, labeled property edges with characteristic words, set-operator circles, expression nodes with the visible elided marker, individual cards in the family shape, the truncation banner; theme-aware styling, no fixed palette; drag repositioning through the layout path for `res:` elements only; payload decode type-checked before `fromBinary`
   - _Requirements: 1.1-1.6, 2.1-2.3, 3.1, 3.4, 4.1, 8.3_
   - _Prompt: Implement the task for spec owl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/SVG developer familiar with the central canvas library | Task: Implement OwlCanvas per design composed from the central library - the ellipse from 3.1 for classes, the family card for individuals, every edge kind styled per its axiom, expression nodes with elision markers, dimming, the banner - with jsdom tests over mocked streams covering each node and edge kind, the elided marker, dimming, repositioning res: elements and the refusal of expr: drags | Restrictions: draw through central components and shared classes; kind distinctions ride shape and edge style with theme colors, never a fixed palette; repositioning never writes the ontology file | _Leverage: the ellipse from 3.1; the anchor's RdfCanvas and the databricks composition reference | Success: canvas tests pass per kind; VOWL vocabulary visible per design; drags land as layout commands for res: only. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.3 Gate and merge group 3
+- [x] 3.3 Gate and merge group 3
   - The four gates, exit codes captured before any pipe; merge into `develop`
   - _Prompt: Implement the task for spec owl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 3 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 - [ ] 4. Examples, catalog and manual checks
   - _Requirements: 9.1-9.3, plus the integration halves of 3, 4 and 8_
 
-- [ ] 4.1 Vendored ontologies under the licensing discipline
+- [-] 4.1 Vendored ontologies under the licensing discipline
   - Files: `src/diagrams/rdf/examples/` gains the ontology set per Requirement 9 — PROV-O (W3C Software and Document License), OWL-Time or the Organization ontology (W3C-licensed, Turtle-native), the pizza ontology (verified CC BY 3.0, attribution carried; RDF/XML upstream, converted to Turtle with tool and version recorded as exactly the local change it is), and optionally a Gene Ontology extract (CC BY 4.0) exceeding the budget — each beside its `w3c/owl` registration `.adp`, licenses individually re-verified at acquisition, provenance readmes per source, substitution allowed under the same verification
   - _Requirements: 9.1, 9.2, 9.3_
   - _Prompt: Implement the task for spec owl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer executing the family example vendoring rule | Task: Acquire and vendor the Requirement 9 ontology set - re-verifying each license independently before copying, carrying upstream license and notice text plus CC BY attribution, converting RDF/XML upstreams to Turtle with the tool and version recorded in the provenance readme, and registering each with its w3c/owl .adp | Restrictions: nothing copied before its license is verified; share-alike rejected even if convenient; unmodified content unmodified - a conversion is a declared local change, never a silent one; at least one example must exercise restrictions, set operators and deep nesting and one must carry individuals | _Leverage: the anchor's vendored examples and the helm-charts Requirement 11 discipline | Success: every example opens from the explorer with zero findings above info; provenance complete; the restriction showcase and the individuals case both present. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._

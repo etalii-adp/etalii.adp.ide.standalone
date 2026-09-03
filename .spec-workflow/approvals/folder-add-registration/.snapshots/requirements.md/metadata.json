@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/folder-add-registration/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T22:25:42.062Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788474340860_ev0u15esf",
+      "approvalTitle": "folder-add-registration — Requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-03T22:27:29.245Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788474340860_ev0u15esf",
+      "approvalTitle": "folder-add-registration — Requirements"
+    }
+  ]
+}

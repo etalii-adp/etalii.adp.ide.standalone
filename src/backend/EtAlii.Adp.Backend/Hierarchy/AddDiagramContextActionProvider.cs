@@ -105,7 +105,35 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
             return [];
         }
 
-        return [.. _definitions.Where(definition => string.Equals(definition.Extension, extension, StringComparison.OrdinalIgnoreCase))];
+        return
+        [
+            .. _definitions
+                .Where(definition => string.Equals(definition.Extension, extension, StringComparison.OrdinalIgnoreCase))
+                .Where(definition => SuggestsFor(definition, target)),
+        ];
+    }
+
+    /// <summary>
+    /// Whether <paramref name="definition"/> should be offered for this file: yes by default,
+    /// and by its own marker test where it declares one - a family's alternative reading is
+    /// suggested exactly on the bodies that carry its marker. A file that cannot be read right
+    /// now is simply not suggested for such a reading; nothing fails.
+    /// </summary>
+    private static bool SuggestsFor(DiagramDefinition definition, ContextTarget target)
+    {
+        if (definition.SuggestsBody is null)
+        {
+            return true;
+        }
+
+        try
+        {
+            return definition.SuggestsBody(File.ReadAllText(target.ResolvedFullPath));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 
     public ValueTask<ContextExecutionResult> ExecuteAsync(ContextTarget target, string actionId, CancellationToken cancellationToken)

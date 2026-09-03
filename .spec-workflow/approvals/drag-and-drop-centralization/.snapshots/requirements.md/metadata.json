@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/drag-and-drop-centralization/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-03T21:31:12.342Z",
       "trigger": "initial",
+      "approvalId": "approval_1788471071933_0nbrmohno",
+      "approvalTitle": "drag-and-drop-centralization requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-03T22:28:32.894Z",
+      "trigger": "approved",
       "approvalId": "approval_1788471071933_0nbrmohno",
       "approvalTitle": "drag-and-drop-centralization requirements"
     }

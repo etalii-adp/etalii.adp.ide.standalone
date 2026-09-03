@@ -93,6 +93,36 @@ public static class RdfWriter
     /// </summary>
     public static string RemoveTriple(RdfDocument document, RdfModel model, RdfTriple triple)
     {
+        ArgumentNullException.ThrowIfNull(triple);
+
+        if (triple.Subject is BlankTerm || triple.Object is BlankTerm)
+        {
+            return BlankRefusal;
+        }
+
+        return RemoveTripleAnchored(document, model, triple);
+    }
+
+    /// <summary>
+    /// Removes one triple without the blank-node refusal, for a caller that has already anchored
+    /// the edit to an IRI-named subject.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The blank-node identity boundary refuses edits that would have to be <em>keyed</em> to a
+    /// blank node, because no such key survives a reparse. It does not forbid a blank node being
+    /// swept by an edit keyed to something stable: removing an IRI-named SHACL shape takes the
+    /// constraint blocks written inside it, and every one of those is a triple that has to be
+    /// spliced. The caller owes the anchor and a whole-document inverse; this owes the splice.
+    /// </para>
+    /// <para>
+    /// Internal, and deliberately not the public entry point - <see cref="RemoveTriple"/> keeps
+    /// the refusal so nothing reaches this by default. The splice mechanics below are pure Turtle
+    /// and so belong here rather than duplicated inside a reading, per the writer-boundary rule.
+    /// </para>
+    /// </remarks>
+    internal static string RemoveTripleAnchored(RdfDocument document, RdfModel model, RdfTriple triple)
+    {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(triple);
@@ -100,11 +130,6 @@ public static class RdfWriter
         if (!model.Triples.Contains(triple))
         {
             return "That triple is not part of the document as it stands - the file may have changed since it was read.";
-        }
-
-        if (triple.Subject is BlankTerm || triple.Object is BlankTerm)
-        {
-            return BlankRefusal;
         }
 
         var statementMates = model.Triples.Where(t => t.Statement == triple.Statement && !t.Equals(triple)).ToList();
