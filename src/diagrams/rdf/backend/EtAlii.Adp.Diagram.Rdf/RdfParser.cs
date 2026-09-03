@@ -143,7 +143,17 @@ public sealed class RdfParser
         var statement = new LineRange(_tokenizer.LineOf(statementStart), _tokenizer.LineOf(dot.Start));
         foreach (var triple in pending)
         {
-            _triples.Add(new RdfTriple(triple.Subject, triple.Predicate, triple.Object, SpanOf(triple.Start, triple.End), statement));
+            _triples.Add(new RdfTriple(
+                triple.Subject,
+                triple.Predicate,
+                triple.Object,
+                SpanOf(triple.Start, triple.End),
+                statement,
+                triple.Start,
+                triple.End,
+                triple.ObjectStart,
+                triple.End,
+                dot.Start));
         }
     }
 
@@ -204,7 +214,7 @@ public sealed class RdfParser
         {
             var objectStart = _current.Start;
             var (term, end) = ParseObject(pending);
-            pending.Add(new RdfPendingTriple(subject, verb, term, first ? pairStart : objectStart, end));
+            pending.Add(new RdfPendingTriple(subject, verb, term, first ? pairStart : objectStart, end, objectStart));
 
             if (_current.Kind != RdfTokenKind.Comma)
             {
@@ -369,15 +379,15 @@ public sealed class RdfParser
 
             if (previous is not null)
             {
-                pending.Add(new RdfPendingTriple(previous, rest, node, previousSpan.Start, previousSpan.End));
+                pending.Add(new RdfPendingTriple(previous, rest, node, previousSpan.Start, previousSpan.End, previousSpan.Start));
             }
 
-            pending.Add(new RdfPendingTriple(node, first, element, elementStart, elementEnd));
+            pending.Add(new RdfPendingTriple(node, first, element, elementStart, elementEnd, elementStart));
             previous = node;
             previousSpan = (elementStart, elementEnd);
         }
 
-        pending.Add(new RdfPendingTriple(previous!, rest, new IriTerm(RdfVocabulary.Nil, "rdf:nil"), previousSpan.Start, previousSpan.End));
+        pending.Add(new RdfPendingTriple(previous!, rest, new IriTerm(RdfVocabulary.Nil, "rdf:nil"), previousSpan.Start, previousSpan.End, previousSpan.Start));
 
         var close = _current;
         Advance();
