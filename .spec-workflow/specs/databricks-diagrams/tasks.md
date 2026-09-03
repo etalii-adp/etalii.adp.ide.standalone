@@ -2,7 +2,7 @@
 
 One worktree for the whole spec (`.claude/worktrees/dbx`, per CLAUDE.md's one-worktree-per-specification rule). Each group ends in a gate-and-merge task judged by exit code, so `develop` grows the family a working layer at a time and the worktree never drifts far from it.
 
-- [-] 1. Core: the `.adp` layout block
+- [x] 1. Core: the `.adp` layout block
   - _Requirements: 7.3, 7.4, 7.5, 7.6, 7.7_
 
 - [x] 1.1 RegistrationLayout beside DiagramFilePair
@@ -17,32 +17,32 @@ One worktree for the whole spec (`.claude/worktrees/dbx`, per CLAUDE.md's one-wo
   - _Requirements: 7.6_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the core layout command and its inverse per design - execute writes one element's entry via RegistrationLayout, the inverse restores the previous entry or absence - registered in AddCommands, with execute/undo/redo tests proving the .adp returns byte-identically on undo | Restrictions: follow CreateFolderCommandHandler's shape; no module-specific knowledge in core | _Leverage: RegistrationLayout from task 1.1; CreateFolderCommandHandler.cs as the command-pair template | Success: a reposition is one undo away and undo restores the file's bytes; command tests pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 1.3 Gate and merge group 1
+- [x] 1.3 Gate and merge group 1
   - All four gates (backend test + format from `src/backend`, npm test + typecheck from `src/client`), exit codes checked; merge `.claude/worktrees/dbx` into `develop`
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge the dbx worktree's group-1 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. Backend document layer: three formats, one store
+- [-] 2. Backend document layer: three formats, one store
   - _Requirements: 1.4, 2.1, 2.2, 2.3, 2.4, 12.1, 12.2_
 
-- [ ] 2.1 Line-CST store and models
+- [x] 2.1 Line-CST store and models
   - Files: `src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks/` — `DatabricksDocumentStore.cs` (+ interface), `_Model/` (`BundleModel`, `JobModel`, `PipelineModel` and their parts, each element carrying its line range), parsers per format; `EtAlii.Adp.Diagram.Databricks.Tests` project (Exe, xUnit v3) with parse fixtures; both projects added to `EtAlii.Adp.slnx`
   - YAML and JSON alike held as raw lines plus a range-carrying model; unknown constructs land as `UnknownNode`s; unparseable files carry the error for the unavailable state; fixtures whose bytes are the test subject get a tightly-scoped `Fixtures/**` glob line in `.gitattributes` with the full three-part reasoning written beside the existing note - what the by-extension rule wants, why `.yml`/`.json` are shared repository-wide and cannot use it, and why this glob is safe where the withdrawn directory rule was not (it names only byte-compared fixture files; readmes and verdicts sit outside it by construction)
   - _Requirements: 2.1, 2.3, 2.4, 13.6_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the timeline's document layer | Task: Implement the shared line-CST store and the three models per design, with parse fixtures for databricks.yml, a job resource file and pipeline settings JSON, byte-identity round-trip tests, and the scoped .gitattributes fixture entry carrying the full reasoning the task description spells out | Restrictions: no YAML/JSON library that reserializes - the lines are the truth; unknown constructs preserved, never dropped; the .gitattributes note must read at the depth of the existing one | _Leverage: the timeline's TimelineDocument/TimelineParser discipline; TestFolder and the module test-project conventions | Success: untouched files of all three formats round-trip byte-identically under mixed line endings; unknown constructs survive; the fixture glob and its note are in .gitattributes. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.2 Writers: named splices, schema refusals
+- [x] 2.2 Writers: named splices, schema refusals
   - Files: `BundleWriter.cs`, `JobWriter.cs`, `PipelineWriter.cs` + tests
   - Insert/remove task block (removing its dependsOn references with it), connect/disconnect dependsOn, rewrite scalar, insert/remove library, add resource skeleton, rename task key rewriting every reference in one operation; a write producing a schema-invalid file is refused with a sentence before any splice
   - _Requirements: 2.2, 6.4, 11.4_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the three writers as named splice operations per design, including rename-with-references as one operation and up-front schema refusals, with smallest-diff tests per operation and refusal tests | Restrictions: only the lines an edit concerns change; refusals happen before any splice, never write-then-repair | _Leverage: the store and models from 2.1; TimelineWriter's splice shape | Success: every operation's diff is minimal in tests; rename strands no reference; invalid writes are refused with actionable sentences. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.3 Validator
+- [x] 2.3 Validator
   - Files: `DatabricksValidator.cs` + tests
   - The Requirement 12.1 findings with file and line, through the standard problems pipeline; nothing workspace-dependent
   - _Requirements: 12.1, 12.2, 12.3_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the family validator per Requirement 12 - parse failures, missing task keys, cycles, default-target count, overrides of undeclared resources, dangling cluster keys, empty libraries, schema-without-catalog, duplicate keys - each with file and line and an actionable sentence, registered like the azure-pipeline validator | Restrictions: no workspace lookups; line numbers from the models' ranges | _Leverage: the azure-pipeline validator's registration shape; models from 2.1 | Success: fixture files exercising each finding report correctly; clean files report nothing. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.4 Gate and merge group 2
+- [-] 2.4 Gate and merge group 2
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 2 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
