@@ -67,17 +67,20 @@ public class RdfExamplesTests
         var full = IoPath.Combine(ExamplesFolder, relativePath);
         var folder = IoPath.GetDirectoryName(full)!;
 
-        // Act.
+        // Act. Any of the family's readings counts: the vendored corpus grew ontologies and
+        // schemes beside the data graphs, and what this guards is that a document opens from
+        // the explorer at all - not which reading of it was registered.
+        var familyTypes = Diagram.Definitions.Select(definition => definition.Origin.MimeType).ToHashSet(StringComparer.Ordinal);
         var registered = Directory.EnumerateFiles(folder, "*.adp").Any(adp =>
         {
             var lines = File.ReadAllLines(adp);
             return lines.Length > 0
-                && lines[0].Trim() == "w3c/rdf"
+                && familyTypes.Contains(lines[0].Trim())
                 && lines.Skip(1).Any(line => line.Trim() == $"body: {IoPath.GetFileName(full)}");
         });
 
         // Assert: opening from the explorer needs no setup (Requirement 9.3).
-        Assert.True(registered, $"{relativePath} has no w3c/rdf registration naming it.");
+        Assert.True(registered, $"{relativePath} has no registration of this family naming it.");
     }
 
     [Fact]
