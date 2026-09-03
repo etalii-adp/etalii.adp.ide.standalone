@@ -583,6 +583,43 @@ port pair. Re-run this after any future example rewrite.
   fitted-state thumb drag and timeline vertical thumb drag both pan as the shared scroll
   view intends.
 
+## A simulated job run ripples the DAG, honoring run_if and outcome (databricks-diagrams, task 5.3)
+
+Guarded by `useSimulatedRun.test.ts` for the state machine itself; kept here because the visible
+show - badges walking the canvas with nothing written anywhere - is the requirement, and only a
+running app shows it.
+
+- **Preconditions**: backend + client running; the lakehouse example open as the job diagram
+  (`src/diagrams/databricks/examples/lakehouse/resources/nightly-ingest.adp`).
+- **Actions**: right-click any task and choose **Run job (simulated)**; watch the ripple; then
+  check the file on disk and the Edit menu.
+- **Expected**: a "Simulated: job run" banner appears; `land_raw` runs first, `quality_gate`
+  after it, then `publish` and `refresh_dashboard` follow the `"true"` outcome while
+  `alert_on_empty` greys out as skipped; every touched node wears a simulation border. Neither
+  `nightly-ingest.yml` nor the `.adp` changes, and undo offers nothing new - the show never
+  reaches the history. Clicking the banner dismisses the whole state.
+
+## A simulated deploy progresses over a target's resources (databricks-diagrams, task 5.3)
+
+- **Preconditions**: the lakehouse example open as the bundle diagram (`databricks.adp`).
+- **Actions**: right-click the `prod` target frame and choose **Deploy here (simulated)**.
+- **Expected**: a "Simulated: deploy" banner appears and the bundle's resources light up
+  running → succeeded one after another, left to right; the banner ends with "finished". No
+  file changes, no history entry.
+
+## A reposition lands in the .adp, survives a reopen, and undoes byte-for-byte (databricks-diagrams, task 5.3)
+
+Guarded end-to-end by `DatabricksFlowTests.AReposition_LandsInTheAdp_SurvivesReopen_AndUndoReturnsIt_WithTheBodyUntouchedThroughout`;
+kept here because the tab-close/reopen half runs through the real shell.
+
+- **Preconditions**: the lakehouse example open as the job diagram; `nightly-ingest.adp` and
+  `nightly-ingest.yml` visible in an editor or on disk.
+- **Actions**: drag the `publish` task somewhere distinctive; close the diagram tab; reopen it;
+  then press undo.
+- **Expected**: after the drag, `nightly-ingest.adp` gains a `layout:` block with a
+  `task:publish` entry while `nightly-ingest.yml` is byte-identical to before; the reopened
+  diagram shows `publish` exactly where it was dropped; undo removes the entry (and the block,
+  if it was the only one) and the task returns to its computed place on every open connection.
 ## Explorer state icons are distinguishable in both modes (small-refinements, task 3.5)
 
 The unit tests assert the classes; only a person (or a computed-style probe) can say the
