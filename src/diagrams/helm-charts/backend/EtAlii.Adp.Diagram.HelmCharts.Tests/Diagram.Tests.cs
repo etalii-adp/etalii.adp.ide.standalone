@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Diagrams;
 using Microsoft.Extensions.DependencyInjection;
 
 using Xunit;
@@ -42,6 +43,15 @@ public class DiagramTests
         Assert.NotNull(provider.GetRequiredService<IHelmChartStore>());
         Assert.Same(provider.GetRequiredService<HelmChartStore>(), provider.GetRequiredService<IHelmChartStore>());
         Assert.NotNull(provider.GetRequiredService<HelmElementMapper>());
+        // The session factory and validator, asserted as DESCRIPTORS (the factory needs core
+        // services to construct): present and correctly typed. A silent no-op edit once left
+        // both unregistered while every other test stayed green - this is that guard.
+        Assert.Contains(services, descriptor =>
+            descriptor.ServiceType == typeof(EtAlii.Adp.Backend.Diagrams.IDiagramSessionFactory)
+            && descriptor.ImplementationType == typeof(HelmSessionFactory));
+        Assert.Contains(services, descriptor =>
+            descriptor.ServiceType == typeof(IDiagramValidator)
+            && descriptor.ImplementationType == typeof(HelmValidator));
     }
 
     [Fact]
