@@ -2,6 +2,8 @@
   <Folder Name="/_Globals/">
     <File Path="../../.gitignore" />
     <File Path="../../CLAUDE.md" />
+    <File Path="../../tests.md" />
+    <File Path="../../version.json" />
     <File Path="../.editorconfig" />
     <File Path="../Directory.Build.props" />
     <File Path="../Directory.Packages.props" />
