@@ -598,6 +598,10 @@ running app shows it.
   `alert_on_empty` greys out as skipped; every touched node wears a simulation border. Neither
   `nightly-ingest.yml` nor the `.adp` changes, and undo offers nothing new - the show never
   reaches the history. Clicking the banner dismisses the whole state.
+- **Result 2026-09-03**: pass - banner up, land_raw ran first, the gate followed, publish and
+  refresh_dashboard went succeeded-green down the "true" edge while alert_on_empty faded as
+  skipped; "finished" banner; git status clean on the example, Undo stayed "nothing to undo";
+  dismiss cleared everything.
 
 ## A simulated deploy progresses over a target's resources (databricks-diagrams, task 5.3)
 
@@ -606,6 +610,9 @@ running app shows it.
 - **Expected**: a "Simulated: deploy" banner appears and the bundle's resources light up
   running → succeeded one after another, left to right; the banner ends with "finished". No
   file changes, no history entry.
+- **Result 2026-09-03**: pass - "Deploy here (simulated)" on the prod frame played the ripple,
+  bronze_to_gold ended succeeded-green, the banner reached "finished", git status stayed clean
+  and the history untouched.
 
 ## A reposition lands in the .adp, survives a reopen, and undoes byte-for-byte (databricks-diagrams, task 5.3)
 
@@ -620,6 +627,10 @@ kept here because the tab-close/reopen half runs through the real shell.
   `task:publish` entry while `nightly-ingest.yml` is byte-identical to before; the reopened
   diagram shows `publish` exactly where it was dropped; undo removes the entry (and the block,
   if it was the only one) and the task returns to its computed place on every open connection.
+- **Result 2026-09-03**: pass - the drag wrote `task:publish: 548.546 377.104` into a fresh
+  layout: block with nightly-ingest.yml byte-identical (git saw only the .adp); the reopened
+  tab showed publish exactly at the drop; undo removed entry and block, git status went clean,
+  and the canvas snapped publish back to its computed spot.
 ## Explorer state icons are distinguishable in both modes (small-refinements, task 3.5)
 
 The unit tests assert the classes; only a person (or a computed-style probe) can say the
