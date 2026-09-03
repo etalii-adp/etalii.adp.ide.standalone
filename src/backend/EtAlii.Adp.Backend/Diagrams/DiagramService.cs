@@ -15,7 +15,7 @@ namespace EtAlii.Adp.Backend.Diagrams;
 /// the module's backend delta records to the contract's proto in the one place that mapping
 /// lives. It knows no diagram type (mindmap-diagram Requirement 13.4).
 /// </summary>
-public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBase
+public sealed partial class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBase
 {
     private static readonly ILogger _logger = Log.ForContext<DiagramService>();
 
@@ -24,7 +24,6 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
     private readonly DiagramSessionFactories _sessionFactories;
     private readonly EditorResolver _editorResolver;
     private readonly EditorSessionFactories _editorSessionFactories;
-    private readonly IDiagramViewportRegistry _viewports;
     private readonly IHistoryStackStore _historyStacks;
     private readonly DiagramDocumentReloadBridge _reloadBridge;
     private readonly IReadOnlyList<Diagram.IDiagramToolboxProvider> _toolboxProviders;
@@ -156,21 +155,6 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
 
             _logger.Information("Closed {BodyPath} on watch {WatchId}", bodyPath, watchId);
         }
-    }
-
-    public override Task<UpdateViewResponse> UpdateView(UpdateViewRequest request, ServerCallContext context)
-    {
-        var watchId = (ShortGuid)request.WatchId;
-        if (!TryResolveBody(request.ProjectId, request.Path, context, out _, out var bodyPath, out _, out _))
-        {
-            return Task.FromResult(new UpdateViewResponse { Error = "The diagram is not open." });
-        }
-
-        var box = request.View.BoundingBox;
-        var viewport = new DiagramViewport(box.Min.X, box.Min.Y, box.Max.X, box.Max.Y);
-        return Task.FromResult(_viewports.Report(watchId, bodyPath, viewport)
-            ? new UpdateViewResponse()
-            : new UpdateViewResponse { Error = "The diagram is not open on this connection." });
     }
 
     public override async Task<MoveElementResponse> MoveElement(MoveElementRequest request, ServerCallContext context)
@@ -369,13 +353,6 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
 
         _logger.Information("Saved {FullPath} through the history: {Outcome}", fullPath, result.IsSuccess ? "ok" : result.Error);
         return new SaveTextResponse { Error = result.IsSuccess ? "" : result.Error };
-    }
-
-    private static bool IsInside(string rootPath, string fullPath)
-    {
-        var root = System.IO.Path.GetFullPath(rootPath)
-            .TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar) + System.IO.Path.DirectorySeparatorChar;
-        return fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase);
     }
 
     private static Delta ToProto(DiagramDelta delta) => delta switch
