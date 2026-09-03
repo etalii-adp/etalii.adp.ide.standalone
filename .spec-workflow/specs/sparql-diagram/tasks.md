@@ -1,5 +1,16 @@
 # Tasks Document
 
+> **Correction, 2026-09-03: `ExampleReplicationTests` no longer exists.** It byte-compared each
+> module's `examples/` tree against its `src/examples/` replica, and was deleted when the two
+> trees were deliberately disconnected. Wherever a task below names it — as a guard, a
+> verification step or a `_Leverage` — or requires the showcase copy to be **byte-identical**, read it as follows: **seeding the showcase copy remains a
+> step of that task**, it is simply no longer held byte-identical, and the guard that covers both
+> trees now is `ExampleRegistrationTests`, which opens every registration in each against the
+> deployed catalog. The task wording is otherwise left exactly as written, deliberately: several
+> of these tasks are in flight, and rewording a criterion under the agent working it would be
+> worse than a stale sentence.
+
+
 One worktree for the whole spec (`.claude/worktrees/sparql`, short per the MAX_PATH/apphost trap; CLAUDE.md's one-worktree-per-specification rule). Each group ends in a gate-and-merge task with all four gates judged by exit code, codes captured before any pipe.
 
 **Seams this spec deliberately does not depend on.** The `rdf-diagram` tasks name three sibling seams; this document depends on **none of them**, and says so rather than leaving a reader to notice the absence: not task 1.1's triplestore document store and `RdfModel` (a query is not a serialization of a graph — this module has its own parser and model), not task 2.1's triple writer and splice discipline (nothing here writes the body; the no-writer proof in task 5.2 is the guarantee), and not task 3.2's registration header helper (the requirements claim no item-10 header — a `.rq` needs no reading-specific configuration). What this spec consumes arrives through core alone: the central canvas library and family visual conventions, the core `layout:` block, and the example vendoring discipline. Nothing in `src/diagrams/sparql/` may reference `src/diagrams/rdf/`.

@@ -16,6 +16,9 @@ shapes is a later, separate decision, and easier to take with them sitting side 
   the C4 boundary.
 - `symbol/` - a small mark (circle, square, double ring) with a label beside it, badges and
   an optional inertia bar. Grew in the Wardley map.
+- `ellipse/` - a centre-origin ellipse with centred text and an optional second ring just
+  inside the first. Grew in the RDF family's ontology reading, whose notation draws classes as
+  circles and marks equivalence by doubling the outline.
 - `span/` - a horizontal extent on a row (or a diamond for a single point in time) with
   selection adorners: resize strips on the edges and connection anchors painted over them.
   Grew in the timeline.
