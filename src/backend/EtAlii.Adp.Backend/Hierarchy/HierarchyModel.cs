@@ -21,16 +21,20 @@ public sealed class HierarchyModel
     private readonly Lock _gate = new();
     private readonly string _rootPath;
     private readonly IDiagramDefinitionCatalog? _catalog;
+    private readonly DiagramFileRouter? _router;
+    private readonly EditorResolver? _editorResolver;
     private readonly Dictionary<ShortGuid, EntryNode> _entriesById = new();
     private readonly Dictionary<ShortGuid, string> _pathById = new();
     private readonly Dictionary<string, ShortGuid> _idByPath = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<ShortGuid> _listedFolderIds = new();
     private bool _rootListed;
 
-    public HierarchyModel(string rootPath, IDiagramDefinitionCatalog? catalog = null)
+    public HierarchyModel(string rootPath, IDiagramDefinitionCatalog? catalog = null, DiagramFileRouter? router = null, EditorResolver? editorResolver = null)
     {
         _rootPath = IoPath.GetFullPath(rootPath);
         _catalog = catalog;
+        _router = router;
+        _editorResolver = editorResolver;
     }
 
     public event Action<HierarchyEntryChange>? EntryChanged;
@@ -235,6 +239,10 @@ public sealed class HierarchyModel
         // both are re-parents pushed as updates, so a client applying them in order arrives at
         // the same tree a fresh listing would build (Requirements 10.1, 10.3, 10.4).
         ApplyNesting(parentPath, raiseEvents: true);
+
+        // An .adp appearing changes its subject's state; the update rides the same stream
+        // (small-refinements Requirement 3.6).
+        RefreshDiagramStatesAt(parentPath, raiseEvents: true);
     }
 
     private void OnRemoved(string path)
@@ -262,7 +270,7 @@ public sealed class HierarchyModel
             foreach (var childId in _entriesById.Values.Where(e => e.ParentId == id).Select(e => e.Id).ToList())
             {
                 _entriesById[childId] = _entriesById[childId] with { ParentId = folderParent };
-                EntryChanged?.Invoke(new HierarchyEntryUpdated(childId, _entriesById[childId].HasChildren, ParentChanged: true, ParentId: folderParent));
+                EntryChanged?.Invoke(new HierarchyEntryUpdated(childId, _entriesById[childId].HasChildren, ParentChanged: true, ParentId: folderParent, DiagramState: _entriesById[childId].DiagramState));
             }
         }
 
@@ -272,6 +280,10 @@ public sealed class HierarchyModel
         if (parentPath is not null)
         {
             ApplyNesting(parentPath, raiseEvents: true);
+
+            // The reverse of the create: a deleted .adp downgrades its subject's state
+            // (small-refinements Requirement 3.6).
+            RefreshDiagramStatesAt(parentPath, raiseEvents: true);
         }
     }
 
@@ -302,7 +314,7 @@ public sealed class HierarchyModel
         }
 
         _entriesById[folderId] = entry with { HasChildren = hasChildren };
-        EntryChanged?.Invoke(new HierarchyEntryUpdated(folderId, hasChildren));
+        EntryChanged?.Invoke(new HierarchyEntryUpdated(folderId, hasChildren, DiagramState: entry.DiagramState));
     }
 
     private static bool SafeHasAnyChild(string path)
@@ -334,6 +346,7 @@ public sealed class HierarchyModel
         if (IoPath.GetDirectoryName(newPath) is { } directory)
         {
             ApplyNesting(directory, raiseEvents: true);
+            RefreshDiagramStatesAt(directory, raiseEvents: true);
         }
     }
 
@@ -435,6 +448,7 @@ public sealed class HierarchyModel
         }
 
         ApplyNesting(folderPath, raiseEvents);
+        RefreshDiagramStates(folderId, folderPath, raiseEvents);
 
         // Rebuilt rather than returned from `results`: the nesting pass may have re-parented
         // entries after their snapshot was taken, and a registration appears under its subject
@@ -494,7 +508,7 @@ public sealed class HierarchyModel
                 _entriesById[registration.Id] = current with { ParentId = wantedParent };
                 if (raiseEvents)
                 {
-                    EntryChanged?.Invoke(new HierarchyEntryUpdated(registration.Id, current.HasChildren, ParentChanged: true, ParentId: wantedParent));
+                    EntryChanged?.Invoke(new HierarchyEntryUpdated(registration.Id, current.HasChildren, ParentChanged: true, ParentId: wantedParent, DiagramState: current.DiagramState));
                 }
             }
         }
@@ -509,9 +523,91 @@ public sealed class HierarchyModel
                 _entriesById[file.Id] = current with { HasChildren = hasChildren };
                 if (raiseEvents)
                 {
-                    EntryChanged?.Invoke(new HierarchyEntryUpdated(file.Id, hasChildren));
+                    EntryChanged?.Invoke(new HierarchyEntryUpdated(file.Id, hasChildren, DiagramState: current.DiagramState));
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Computes every entry's <see cref="EntryDiagramState"/> for one scanned folder - its
+    /// files against their sibling set, and the folder itself against its contents - and
+    /// raises <see cref="HierarchyEntryUpdated"/> where a rescan changed one (small-refinements
+    /// Requirements 3.1, 3.2, 3.6). The decision is <see cref="EntryDiagramStates.Decide"/>;
+    /// everything here is the wiring, over the same name set the nesting pass just used, with
+    /// each registration's body resolved once rather than per file.
+    /// </summary>
+    /// <summary>The same refresh, addressed by path - what the watcher handlers hold.</summary>
+    private void RefreshDiagramStatesAt(string folderPath, bool raiseEvents)
+    {
+        if (string.Equals(folderPath, _rootPath, StringComparison.OrdinalIgnoreCase))
+        {
+            RefreshDiagramStates(null, folderPath, raiseEvents);
+        }
+        else if (_idByPath.TryGetValue(folderPath, out var folderId))
+        {
+            RefreshDiagramStates(folderId, folderPath, raiseEvents);
+        }
+    }
+
+    private void RefreshDiagramStates(ShortGuid? folderId, string folderPath, bool raiseEvents)
+    {
+        if (_router is null || _editorResolver is null)
+        {
+            return; // A model built without routing (older tests, degraded hosts) stays neutral.
+        }
+
+        var contained = _entriesById.Values
+            .Where(e => _pathById.TryGetValue(e.Id, out var p)
+                        && string.Equals(IoPath.GetDirectoryName(p), folderPath, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        var names = contained.Select(entry => entry.Name).ToList();
+
+        // Each registration's resolution and routing, once: rule 2 would otherwise re-read
+        // every registration per sibling file (the NFR Performance clause).
+        var bodyByRegistration = names
+            .Where(DiagramFilePair.IsRegistrationFile)
+            .ToDictionary(name => name, name => ResolvedBodyNameOf(folderPath, name), StringComparer.OrdinalIgnoreCase);
+        string? BodyNameOf(string registration) => bodyByRegistration.GetValueOrDefault(registration);
+
+        // An unreadable registration routes to DiagramUnreadable, which simply is not a
+        // folder-subject type: neutral, never an exception out of the scan. The catalog probe
+        // keeps deployments without folder-subject types from paying any reads at all.
+        bool DeclaresFolderSubject(string registration) =>
+            _router.HasFolderSubjectTypes
+            && _router.Route(IoPath.Combine(folderPath, registration), _rootPath) is DiagramRouted { Definition.HasFolderSubject: true };
+
+        void Apply(ShortGuid entryId, EntryDiagramState state, bool raise)
+        {
+            var current = _entriesById[entryId];
+            if (current.DiagramState == state)
+            {
+                return;
+            }
+
+            _entriesById[entryId] = current with { DiagramState = state };
+            if (raise)
+            {
+                EntryChanged?.Invoke(new HierarchyEntryUpdated(entryId, current.HasChildren, DiagramState: state));
+            }
+        }
+
+        foreach (var file in contained.Where(entry => !entry.IsFolder))
+        {
+            Apply(file.Id, EntryDiagramStates.Decide(
+                file.Name, isFolder: false, names, BodyNameOf, _router.ClaimsExtensionOf, _editorResolver.IsClaimed, DeclaresFolderSubject), raiseEvents);
+        }
+
+        // The folder's own state comes from its contents, so it is decided here - in ITS scan -
+        // rather than in its parent's, which never enumerates it. The root has no entry. Its
+        // update is raised even on a listing-triggered scan (raiseEvents false): the listing's
+        // response carries the folder's CHILDREN, never the folder itself, so the watch stream
+        // is the only channel this change can reach the client on - found live, where the
+        // folder stayed neutral after expanding it.
+        if (folderId is { } id && _entriesById.TryGetValue(id, out var folder))
+        {
+            Apply(id, EntryDiagramStates.Decide(
+                folder.Name, isFolder: true, names, BodyNameOf, _router.ClaimsExtensionOf, _editorResolver.IsClaimed, DeclaresFolderSubject), raise: true);
         }
     }
 

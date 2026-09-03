@@ -14,11 +14,15 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
     private readonly ConcurrentDictionary<ShortGuid, HierarchyModelEntry> _entries = new();
 
     private readonly IDiagramDefinitionCatalog? _catalog;
+    private readonly DiagramFileRouter? _router;
+    private readonly EditorResolver? _editorResolver;
 
-    public HierarchyModelStore(IDiagramDefinitionCatalog? catalog = null, TimeSpan? idleTimeout = null)
+    public HierarchyModelStore(IDiagramDefinitionCatalog? catalog = null, TimeSpan? idleTimeout = null, DiagramFileRouter? router = null, EditorResolver? editorResolver = null)
     {
         _catalog = catalog;
         _idleTimeout = idleTimeout ?? DefaultIdleTimeout;
+        _router = router;
+        _editorResolver = editorResolver;
     }
 
     public HierarchyModel GetOrCreate(ShortGuid watchId, string rootPath) =>
@@ -58,7 +62,7 @@ public sealed class HierarchyModelStore : IHierarchyModelStore, IDisposable
     {
         var entry = new HierarchyModelEntry
         {
-            Model = new HierarchyModel(rootPath, _catalog),
+            Model = new HierarchyModel(rootPath, _catalog, _router, _editorResolver),
             IdleTimer = new Timer(_ => EvictIfIdle(watchId), null, _idleTimeout, Timeout.InfiniteTimeSpan),
         };
         return entry;

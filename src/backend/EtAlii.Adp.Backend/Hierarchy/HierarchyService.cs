@@ -147,6 +147,7 @@ public sealed class HierarchyService : EtAlii.Adp.HierarchyService.HierarchyServ
             Kind = node.IsFolder ? EntryKind.Folder : EntryKind.File,
             Available = node.Available,
             HasChildren = node.HasChildren,
+            DiagramState = (EtAlii.Adp.EntryDiagramState)node.DiagramState,
         };
         if (node.ParentId is { } parentId)
         {
@@ -166,8 +167,8 @@ public sealed class HierarchyService : EtAlii.Adp.HierarchyService.HierarchyServ
         HierarchyEntryUpdated up => new HierarchyChange
         {
             Updated = up.ParentChanged
-                ? new EntryUpdated { EntryId = up.EntryId, HasChildren = up.HasChildren, ParentId = up.ParentId ?? default }
-                : new EntryUpdated { EntryId = up.EntryId, HasChildren = up.HasChildren },
+                ? new EntryUpdated { EntryId = up.EntryId, HasChildren = up.HasChildren, ParentId = up.ParentId ?? default, DiagramState = (EtAlii.Adp.EntryDiagramState)up.DiagramState }
+                : new EntryUpdated { EntryId = up.EntryId, HasChildren = up.HasChildren, DiagramState = (EtAlii.Adp.EntryDiagramState)up.DiagramState },
         },
         HierarchyRootUnavailable u => new HierarchyChange { RootUnavailable = new RootUnavailable { Message = u.Message } },
         _ => throw new ArgumentOutOfRangeException(nameof(change)),

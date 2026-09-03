@@ -70,6 +70,22 @@ public sealed class DiagramFileRouter
             .Select(group => group.Key)
             .ToArray();
 
+    /// <summary>
+    /// Whether any discovered type declares <paramref name="path"/>'s extension, shared or
+    /// not. Deliberately not <see cref="Route"/>: Route refuses a shared extension on sight,
+    /// while a registrable file counts as potential (small-refinements Requirement 3.2) - a
+    /// .yml an Azure Pipeline would happily register is claimed here even though Route will
+    /// not route it unasked.
+    /// </summary>
+    public bool ClaimsExtensionOf(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        var extension = IoPath.GetExtension(path);
+        return extension.Length > 0
+            && _catalog.All.Any(definition => string.Equals(definition.Extension, extension, StringComparison.OrdinalIgnoreCase));
+    }
+
     private DiagramRouting RouteRegistration(string adpPath, string? projectRoot)
     {
         var mimeType = DiagramFilePair.ReadMimeType(adpPath);

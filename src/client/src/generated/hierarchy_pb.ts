@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file hierarchy.proto.
  */
 export const file_hierarchy: GenFile = /*@__PURE__*/
-  fileDesc("Cg9oaWVyYXJjaHkucHJvdG8SCmV0YWxpaS5hZHAisAEKBUVudHJ5EiEKAmlkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSKAoJcGFyZW50X2lkGAIgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSDAoEbmFtZRgDIAEoCRIjCgRraW5kGAQgASgOMhUuZXRhbGlpLmFkcC5FbnRyeUtpbmQSEQoJYXZhaWxhYmxlGAUgASgIEhQKDGhhc19jaGlsZHJlbhgGIAEoCCKSAQoSTGlzdEVudHJpZXNSZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBIoCglmb2xkZXJfaWQYAiABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgDIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkIiMKEExpc3RFbnRyaWVzRXJyb3ISDwoHbWVzc2FnZRgBIAEoCSItCgdFbnRyaWVzEiIKB2VudHJpZXMYASADKAsyES5ldGFsaWkuYWRwLkVudHJ5InYKE0xpc3RFbnRyaWVzUmVzcG9uc2USJgoHZW50cmllcxgBIAEoCzITLmV0YWxpaS5hZHAuRW50cmllc0gAEi0KBWVycm9yGAIgASgLMhwuZXRhbGlpLmFkcC5MaXN0RW50cmllc0Vycm9ySABCCAoGcmVzdWx0ImsKFVdhdGNoSGllcmFyY2h5UmVxdWVzdBIpCgpwcm9qZWN0X2lkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSJwoId2F0Y2hfaWQYAiABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZCIwCgxFbnRyeUNyZWF0ZWQSIAoFZW50cnkYASABKAsyES5ldGFsaWkuYWRwLkVudHJ5IjcKDEVudHJ5UmVtb3ZlZBInCghlbnRyeV9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkIkkKDEVudHJ5UmVuYW1lZBInCghlbnRyeV9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEhAKCG5ld19uYW1lGAIgASgJIncKDEVudHJ5VXBkYXRlZBInCghlbnRyeV9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEhQKDGhhc19jaGlsZHJlbhgCIAEoCBIoCglwYXJlbnRfaWQYAyABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZCIiCg9Sb290VW5hdmFpbGFibGUSDwoHbWVzc2FnZRgBIAEoCSKIAgoPSGllcmFyY2h5Q2hhbmdlEisKB2NyZWF0ZWQYASABKAsyGC5ldGFsaWkuYWRwLkVudHJ5Q3JlYXRlZEgAEisKB3JlbW92ZWQYAiABKAsyGC5ldGFsaWkuYWRwLkVudHJ5UmVtb3ZlZEgAEisKB3JlbmFtZWQYAyABKAsyGC5ldGFsaWkuYWRwLkVudHJ5UmVuYW1lZEgAEjcKEHJvb3RfdW5hdmFpbGFibGUYBCABKAsyGy5ldGFsaWkuYWRwLlJvb3RVbmF2YWlsYWJsZUgAEisKB3VwZGF0ZWQYBSABKAsyGC5ldGFsaWkuYWRwLkVudHJ5VXBkYXRlZEgAQggKBmNoYW5nZSJSChBIaWVyYXJjaHlNZXNzYWdlEi0KBmNoYW5nZRgBIAEoCzIbLmV0YWxpaS5hZHAuSGllcmFyY2h5Q2hhbmdlSABCCQoHbWVzc2FnZUoECAIQAyo9CglFbnRyeUtpbmQSGgoWRU5UUllfS0lORF9VTlNQRUNJRklFRBAAEggKBEZJTEUQARIKCgZGT0xERVIQAjK3AQoQSGllcmFyY2h5U2VydmljZRJOCgtMaXN0RW50cmllcxIeLmV0YWxpaS5hZHAuTGlzdEVudHJpZXNSZXF1ZXN0Gh8uZXRhbGlpLmFkcC5MaXN0RW50cmllc1Jlc3BvbnNlElMKDldhdGNoSGllcmFyY2h5EiEuZXRhbGlpLmFkcC5XYXRjaEhpZXJhcmNoeVJlcXVlc3QaHC5ldGFsaWkuYWRwLkhpZXJhcmNoeU1lc3NhZ2UwAUINqgIKRXRBbGlpLkFkcGIGcHJvdG8z", [file_shared]);
+  fileDesc("Cg9oaWVyYXJjaHkucHJvdG8SCmV0YWxpaS5hZHAi5gEKBUVudHJ5EiEKAmlkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSKAoJcGFyZW50X2lkGAIgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSDAoEbmFtZRgDIAEoCRIjCgRraW5kGAQgASgOMhUuZXRhbGlpLmFkcC5FbnRyeUtpbmQSEQoJYXZhaWxhYmxlGAUgASgIEhQKDGhhc19jaGlsZHJlbhgGIAEoCBI0Cg1kaWFncmFtX3N0YXRlGAcgASgOMh0uZXRhbGlpLmFkcC5FbnRyeURpYWdyYW1TdGF0ZSKSAQoSTGlzdEVudHJpZXNSZXF1ZXN0EikKCnByb2plY3RfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBIoCglmb2xkZXJfaWQYAiABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBInCgh3YXRjaF9pZBgDIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkIiMKEExpc3RFbnRyaWVzRXJyb3ISDwoHbWVzc2FnZRgBIAEoCSItCgdFbnRyaWVzEiIKB2VudHJpZXMYASADKAsyES5ldGFsaWkuYWRwLkVudHJ5InYKE0xpc3RFbnRyaWVzUmVzcG9uc2USJgoHZW50cmllcxgBIAEoCzITLmV0YWxpaS5hZHAuRW50cmllc0gAEi0KBWVycm9yGAIgASgLMhwuZXRhbGlpLmFkcC5MaXN0RW50cmllc0Vycm9ySABCCAoGcmVzdWx0ImsKFVdhdGNoSGllcmFyY2h5UmVxdWVzdBIpCgpwcm9qZWN0X2lkGAEgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSJwoId2F0Y2hfaWQYAiABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZCIwCgxFbnRyeUNyZWF0ZWQSIAoFZW50cnkYASABKAsyES5ldGFsaWkuYWRwLkVudHJ5IjcKDEVudHJ5UmVtb3ZlZBInCghlbnRyeV9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkIkkKDEVudHJ5UmVuYW1lZBInCghlbnRyeV9pZBgBIAEoCzIVLmV0YWxpaS5hZHAuU2hvcnRHdWlkEhAKCG5ld19uYW1lGAIgASgJIq0BCgxFbnRyeVVwZGF0ZWQSJwoIZW50cnlfaWQYASABKAsyFS5ldGFsaWkuYWRwLlNob3J0R3VpZBIUCgxoYXNfY2hpbGRyZW4YAiABKAgSKAoJcGFyZW50X2lkGAMgASgLMhUuZXRhbGlpLmFkcC5TaG9ydEd1aWQSNAoNZGlhZ3JhbV9zdGF0ZRgEIAEoDjIdLmV0YWxpaS5hZHAuRW50cnlEaWFncmFtU3RhdGUiIgoPUm9vdFVuYXZhaWxhYmxlEg8KB21lc3NhZ2UYASABKAkiiAIKD0hpZXJhcmNoeUNoYW5nZRIrCgdjcmVhdGVkGAEgASgLMhguZXRhbGlpLmFkcC5FbnRyeUNyZWF0ZWRIABIrCgdyZW1vdmVkGAIgASgLMhguZXRhbGlpLmFkcC5FbnRyeVJlbW92ZWRIABIrCgdyZW5hbWVkGAMgASgLMhguZXRhbGlpLmFkcC5FbnRyeVJlbmFtZWRIABI3ChByb290X3VuYXZhaWxhYmxlGAQgASgLMhsuZXRhbGlpLmFkcC5Sb290VW5hdmFpbGFibGVIABIrCgd1cGRhdGVkGAUgASgLMhguZXRhbGlpLmFkcC5FbnRyeVVwZGF0ZWRIAEIICgZjaGFuZ2UiUgoQSGllcmFyY2h5TWVzc2FnZRItCgZjaGFuZ2UYASABKAsyGy5ldGFsaWkuYWRwLkhpZXJhcmNoeUNoYW5nZUgAQgkKB21lc3NhZ2VKBAgCEAMqPQoJRW50cnlLaW5kEhoKFkVOVFJZX0tJTkRfVU5TUEVDSUZJRUQQABIICgRGSUxFEAESCgoGRk9MREVSEAIqVwoRRW50cnlEaWFncmFtU3RhdGUSIwofRU5UUllfRElBR1JBTV9TVEFURV9VTlNQRUNJRklFRBAAEg4KClJFR0lTVEVSRUQQARINCglQT1RFTlRJQUwQAjK3AQoQSGllcmFyY2h5U2VydmljZRJOCgtMaXN0RW50cmllcxIeLmV0YWxpaS5hZHAuTGlzdEVudHJpZXNSZXF1ZXN0Gh8uZXRhbGlpLmFkcC5MaXN0RW50cmllc1Jlc3BvbnNlElMKDldhdGNoSGllcmFyY2h5EiEuZXRhbGlpLmFkcC5XYXRjaEhpZXJhcmNoeVJlcXVlc3QaHC5ldGFsaWkuYWRwLkhpZXJhcmNoeU1lc3NhZ2UwAUINqgIKRXRBbGlpLkFkcGIGcHJvdG8z", [file_shared]);
 
 /**
  * @generated from message etalii.adp.Entry
@@ -53,6 +53,11 @@ export type Entry = Message<"etalii.adp.Entry"> & {
    * @generated from field: bool has_children = 6;
    */
   hasChildren: boolean;
+
+  /**
+   * @generated from field: etalii.adp.EntryDiagramState diagram_state = 7;
+   */
+  diagramState: EntryDiagramState;
 };
 
 /**
@@ -260,6 +265,13 @@ export type EntryUpdated = Message<"etalii.adp.EntryUpdated"> & {
    * @generated from field: etalii.adp.ShortGuid parent_id = 3;
    */
   parentId?: ShortGuid | undefined;
+
+  /**
+   * always the entry's full current state, never a delta - like has_children, because an unset enum is indistinguishable from a genuine neutral
+   *
+   * @generated from field: etalii.adp.EntryDiagramState diagram_state = 4;
+   */
+  diagramState: EntryDiagramState;
 };
 
 /**
@@ -385,6 +397,38 @@ export enum EntryKind {
  */
 export const EntryKindSchema: GenEnum<EntryKind> = /*@__PURE__*/
   enumDesc(file_hierarchy, 0);
+
+/**
+ * What ADP's own routing says about an entry (small-refinements Requirement 3): a
+ * registration governs it, something merely claims it, or neither. Zero is neutral on
+ * purpose - an older peer's silence and "nothing to say" must read identically.
+ *
+ * @generated from enum etalii.adp.EntryDiagramState
+ */
+export enum EntryDiagramState {
+  /**
+   * neutral
+   *
+   * @generated from enum value: ENTRY_DIAGRAM_STATE_UNSPECIFIED = 0;
+   */
+  ENTRY_DIAGRAM_STATE_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: REGISTERED = 1;
+   */
+  REGISTERED = 1,
+
+  /**
+   * @generated from enum value: POTENTIAL = 2;
+   */
+  POTENTIAL = 2,
+}
+
+/**
+ * Describes the enum etalii.adp.EntryDiagramState.
+ */
+export const EntryDiagramStateSchema: GenEnum<EntryDiagramState> = /*@__PURE__*/
+  enumDesc(file_hierarchy, 1);
 
 /**
  * @generated from service etalii.adp.HierarchyService
