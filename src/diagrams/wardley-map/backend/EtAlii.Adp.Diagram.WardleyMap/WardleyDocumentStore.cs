@@ -128,7 +128,7 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
             // A body that does not exist yet is an empty document, not an error: the `.adp`
             // file may have been created a moment ago, and a map that cannot open at all is a
             // worse answer than an empty one (Requirement 2.4).
-            text = File.Exists(path) ? File.ReadAllText(path) : "";
+            text = File.Exists(path) ? SharedDocumentReader.ReadAllText(path) : "";
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

@@ -92,7 +92,7 @@ internal static class DiagramRegistrationSet
     {
         try
         {
-            return File.ReadAllText(path);
+            return SharedDocumentReader.ReadAllText(path);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

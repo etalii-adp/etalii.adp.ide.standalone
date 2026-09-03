@@ -548,3 +548,19 @@ release artifact can check end to end.
 - **Expected**: all four carry the same version. The login line is quiet and centered under
   the card; killing the backend and reloading the page shows no version line at all rather
   than a stale one.
+
+## Shared scroll view: thumbs track the view, dragging a thumb pans (small-refinements, task 1.4)
+
+The unit tests drive the bars with hand-sized tracks; only the running app shows the thumbs
+and the canvas moving together. Checked on the mindmap and the timeline side by side, since
+the timeline was migrated onto the same component and must look unchanged.
+
+- **Preconditions**: backend + client running; a project with a mindmap and a timeline each
+  open in a diagram tab.
+- **Actions**: on the mindmap - wheel-zoom in and out, drag the canvas, then drag each
+  scrollbar thumb; repeat the same three gestures on the timeline.
+- **Expected**: on both diagrams the thumbs shrink on zoom-in, grow on zoom-out, and slide as
+  the canvas is dragged; dragging a thumb pans the view in that axis only, without changing
+  the zoom. On a freshly opened (fitted) mindmap the thumbs claim nearly the whole track, and
+  dragging one takes over from the fitted state just as a canvas drag does. The timeline's
+  bars sit above its ruler, exactly where they were before the migration.

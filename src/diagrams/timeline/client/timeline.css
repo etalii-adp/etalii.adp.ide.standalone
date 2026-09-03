@@ -193,38 +193,17 @@
  * Windows onto the content's extent rather than native scrollbars: the canvas is an unbounded
  * plane whose size is a transform, which a native bar cannot describe. Dragging a thumb pans.
  */
-.timeline-scrollbar {
-  position: absolute;
-  background: color-mix(in srgb, var(--color-border, #e2e8f0) 40%, transparent);
-  border-radius: 5px;
-}
-
-.timeline-scrollbar-horizontal {
-  left: 8px;
-  right: 20px;
+/*
+ * The scrollbars themselves are the shared scroll view (`@client/canvas/scroll`); their look
+ * lives there. What the timeline owns is only placement: both bars sit above the ruler, so
+ * their bottom insets are the ruler's height plus the shared default.
+ */
+.timeline-scrollbars.canvas-scrollbar-horizontal {
   bottom: 26px;
-  height: 10px;
 }
 
-.timeline-scrollbar-vertical {
-  top: 8px;
+.timeline-scrollbars.canvas-scrollbar-vertical {
   bottom: 40px;
-  right: 6px;
-  width: 10px;
-}
-
-.timeline-scrollbar-thumb {
-  position: absolute;
-  inset: 0;
-  background: var(--color-text-muted, #64748b);
-  opacity: 0.5;
-  border-radius: 5px;
-  cursor: grab;
-}
-
-.timeline-scrollbar-thumb:hover,
-.timeline-scrollbar-thumb:active {
-  opacity: 0.85;
 }
 
 /* The generous, invisible grab target each anchor dot sits inside. */

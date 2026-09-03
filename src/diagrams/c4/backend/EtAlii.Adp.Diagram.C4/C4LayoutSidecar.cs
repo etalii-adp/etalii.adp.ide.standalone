@@ -1,4 +1,5 @@
 using System.Text.Json;
+using EtAlii.Adp.Backend.Hierarchy;
 using Serilog;
 
 namespace EtAlii.Adp.Diagram.C4;
@@ -14,9 +15,13 @@ namespace EtAlii.Adp.Diagram.C4;
 /// document, so one file beside the `.dsl` holds them all.
 /// </para>
 /// <para>
-/// An optimisation, never a dependency (Requirement 3.6). A missing, unreadable or nonsense
-/// sidecar means the computed layout stands - a diagram that will not open because its cosmetic
-/// file is corrupt would be a poor trade.
+/// On <b>opening</b>, an optimisation, never a dependency (Requirement 3.6): a missing,
+/// unreadable or nonsense sidecar means the computed layout stands - a diagram that will not
+/// open because its cosmetic file is corrupt would be a poor trade. That requirement covers
+/// the open path only. The <b>modify</b> path holds the opposite discipline: every update is
+/// read-modify-write over the whole file, so proceeding after a read that was merely refused
+/// this instant would persist an empty arrangement over every other view's - the positions
+/// Requirement 8.3 says survive reopening. A refused read therefore refuses the modify.
 /// </para>
 /// </remarks>
 public sealed class C4LayoutSidecar
@@ -60,10 +65,10 @@ public sealed class C4LayoutSidecar
         ArgumentException.ThrowIfNullOrWhiteSpace(elementId);
         ArgumentNullException.ThrowIfNull(position);
 
-        var all = new Dictionary<string, Dictionary<string, C4SidecarPosition>>(ReadAll(bodyPath).ToDictionary(
-            pair => pair.Key,
-            pair => new Dictionary<string, C4SidecarPosition>(pair.Value, StringComparer.OrdinalIgnoreCase),
-            StringComparer.OrdinalIgnoreCase), StringComparer.OrdinalIgnoreCase);
+        if (!TryReadAllForModify(bodyPath, out var all))
+        {
+            return;
+        }
 
         if (!all.TryGetValue(viewKey, out var view))
         {
@@ -72,17 +77,7 @@ public sealed class C4LayoutSidecar
         }
 
         view[elementId] = position;
-
-        try
-        {
-            File.WriteAllText(PathFor(bodyPath), JsonSerializer.Serialize(all, Options));
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // Losing an arrangement is a nuisance; failing the edit that caused it would be
-            // worse, and the computed layout still shows a correct diagram.
-            _logger.Warning(exception, "Could not write the layout sidecar beside {BodyPath}", bodyPath);
-        }
+        Persist(bodyPath, all);
     }
 
     /// <summary>Forgets one element's authored position, handing it back to the layout.</summary>
@@ -92,20 +87,17 @@ public sealed class C4LayoutSidecar
         ArgumentNullException.ThrowIfNull(viewKey);
         ArgumentException.ThrowIfNullOrWhiteSpace(elementId);
 
-        var all = ReadAll(bodyPath).ToDictionary(
-            pair => pair.Key,
-            pair => pair.Value.Where(entry => !entry.Key.Equals(elementId, StringComparison.OrdinalIgnoreCase))
-                .ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.OrdinalIgnoreCase),
-            StringComparer.OrdinalIgnoreCase);
+        if (!TryReadAllForModify(bodyPath, out var all))
+        {
+            return;
+        }
 
-        try
+        foreach (var view in all.Values)
         {
-            File.WriteAllText(PathFor(bodyPath), JsonSerializer.Serialize(all, Options));
+            view.Remove(elementId);
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            _logger.Warning(exception, "Could not update the layout sidecar beside {BodyPath}", bodyPath);
-        }
+
+        Persist(bodyPath, all);
     }
 
     /// <summary>Forgets every authored position for one view - what "reset layout" would do.</summary>
@@ -114,29 +106,38 @@ public sealed class C4LayoutSidecar
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(viewKey);
 
-        var all = ReadAll(bodyPath).Where(pair => !pair.Key.Equals(viewKey, StringComparison.OrdinalIgnoreCase))
-            .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
-
-        try
+        if (!TryReadAllForModify(bodyPath, out var all))
         {
-            if (all.Count == 0)
+            return;
+        }
+
+        all.Remove(viewKey);
+
+        if (all.Count == 0)
+        {
+            try
             {
                 if (File.Exists(PathFor(bodyPath)))
                 {
                     File.Delete(PathFor(bodyPath));
                 }
-
-                return;
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                _logger.Warning(exception, "Could not clear the layout sidecar beside {BodyPath}", bodyPath);
             }
 
-            File.WriteAllText(PathFor(bodyPath), JsonSerializer.Serialize(all, Options));
+            return;
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            _logger.Warning(exception, "Could not clear the layout sidecar beside {BodyPath}", bodyPath);
-        }
+
+        Persist(bodyPath, all);
     }
 
+    /// <summary>
+    /// The whole sidecar for the open path. Requirement 3.6 governs here: anything that cannot
+    /// be read - absent, locked or nonsense alike - yields none, so the diagram still opens on
+    /// the computed layout.
+    /// </summary>
     private static Dictionary<string, IReadOnlyDictionary<string, C4SidecarPosition>> ReadAll(string bodyPath)
     {
         var empty = new Dictionary<string, IReadOnlyDictionary<string, C4SidecarPosition>>(StringComparer.OrdinalIgnoreCase);
@@ -161,10 +162,100 @@ public sealed class C4LayoutSidecar
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
         {
-            // Requirement 3.6: the sidecar is an optimisation. A corrupt one costs the
-            // arrangement, not the diagram.
             _logger.Warning(exception, "Ignoring an unreadable layout sidecar beside {BodyPath}", bodyPath);
             return empty;
+        }
+    }
+
+    /// <summary>
+    /// The whole sidecar for a modify, distinguishing the two ways a read fails. False - do
+    /// not write - when the file is there but could not be read this instant (a lock, a
+    /// permission): its arrangements still exist, and rewriting from the nothing that was read
+    /// would destroy them; the refused caller loses one drag's position, not every view's.
+    /// True with empty content when the file is absent or its content is already nonsense
+    /// (JsonException): proceeding then costs nothing that still exists, which keeps a corrupt
+    /// sidecar self-healing on the next drag.
+    /// </summary>
+    private static bool TryReadAllForModify(string bodyPath, out Dictionary<string, Dictionary<string, C4SidecarPosition>> all)
+    {
+        all = new Dictionary<string, Dictionary<string, C4SidecarPosition>>(StringComparer.OrdinalIgnoreCase);
+        var path = PathFor(bodyPath);
+        if (!File.Exists(path))
+        {
+            return true;
+        }
+
+        string text;
+        try
+        {
+            text = File.ReadAllText(path);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            _logger.Warning(exception, "Not updating the layout sidecar beside {BodyPath}: it could not be read right now", bodyPath);
+            return false;
+        }
+
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, C4SidecarPosition>>>(text, Options);
+            if (parsed is not null)
+            {
+                foreach (var pair in parsed)
+                {
+                    all[pair.Key] = new Dictionary<string, C4SidecarPosition>(pair.Value, StringComparer.OrdinalIgnoreCase);
+                }
+            }
+        }
+        catch (JsonException exception)
+        {
+            _logger.Warning(exception, "Replacing the unparseable layout sidecar beside {BodyPath}", bodyPath);
+            all.Clear();
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Temp-then-move in the same folder, as every other write in ADP: a reader sees the old
+    /// arrangement or the new one, never a half-written file. The scratch name matches the
+    /// pattern the hierarchy watcher already ignores.
+    /// </summary>
+    private static void Persist(string bodyPath, Dictionary<string, Dictionary<string, C4SidecarPosition>> all)
+    {
+        var path = PathFor(bodyPath);
+        var directory = System.IO.Path.GetDirectoryName(path);
+        var folder = directory is { Length: > 0 } ? directory : ".";
+        var temporary = System.IO.Path.Combine(
+            folder,
+            $"{AdpFileWriter.TempPrefix}{Guid.NewGuid():N}{AdpFileWriter.TempExtension}");
+
+        try
+        {
+            File.WriteAllText(temporary, JsonSerializer.Serialize(all, Options));
+            File.Move(temporary, path, overwrite: true);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // Losing an arrangement is a nuisance; failing the edit that caused it would be
+            // worse, and the computed layout still shows a correct diagram.
+            _logger.Warning(exception, "Could not write the layout sidecar beside {BodyPath}", bodyPath);
+            TryDelete(temporary);
+        }
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            _logger.Debug(exception, "Could not remove the scratch file {Path}", path);
         }
     }
 }

@@ -245,16 +245,7 @@ public sealed class ProjectValidator
         try
         {
             // Read-only, shared: validation must never contend with an editor (Requirement 6.7).
-            // Spelled out rather than File.ReadAllTextAsync because that opens with
-            // FileShare.Read, which on Windows both refuses an editor's open write handle and
-            // makes an editor's save fail while this read is in flight. ReadWrite | Delete lets
-            // the write win; at worst a torn read mis-judges once, and the write's own change
-            // event schedules the validation that corrects it.
-            await using var stream = new FileStream(
-                bodyPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete,
-                bufferSize: 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
-            using var reader = new StreamReader(stream);
-            document = await reader.ReadToEndAsync(cancellationToken);
+            document = await SharedDocumentReader.ReadAllTextAsync(bodyPath, cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

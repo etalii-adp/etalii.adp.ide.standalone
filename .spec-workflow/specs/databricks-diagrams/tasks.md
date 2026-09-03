@@ -21,7 +21,7 @@ One worktree for the whole spec (`.claude/worktrees/dbx`, per CLAUDE.md's one-wo
   - All four gates (backend test + format from `src/backend`, npm test + typecheck from `src/client`), exit codes checked; merge `.claude/worktrees/dbx` into `develop`
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge the dbx worktree's group-1 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2. Backend document layer: three formats, one store
+- [x] 2. Backend document layer: three formats, one store
   - _Requirements: 1.4, 2.1, 2.2, 2.3, 2.4, 12.1, 12.2_
 
 - [x] 2.1 Line-CST store and models
@@ -42,30 +42,30 @@ One worktree for the whole spec (`.claude/worktrees/dbx`, per CLAUDE.md's one-wo
   - _Requirements: 12.1, 12.2, 12.3_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the family validator per Requirement 12 - parse failures, missing task keys, cycles, default-target count, overrides of undeclared resources, dangling cluster keys, empty libraries, schema-without-catalog, duplicate keys - each with file and line and an actionable sentence, registered like the azure-pipeline validator | Restrictions: no workspace lookups; line numbers from the models' ranges | _Leverage: the azure-pipeline validator's registration shape; models from 2.1 | Success: fixture files exercising each finding report correctly; clean files report nothing. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2.4 Gate and merge group 2
+- [x] 2.4 Gate and merge group 2
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 2 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. Backend sessions, wire and providers
+- [-] 3. Backend sessions, wire and providers
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 3.1-3.5, 4.1-4.6, 5.1-5.4, 6.1-6.3, 8.1-8.6, 9.1-9.3, 10.1-10.5, 11.1-11.6_
 
-- [ ] 3.1 Wire payloads
+- [x] 3.1 Wire payloads
   - Files: `src/diagrams/databricks/api/databricks.proto` per the design's Data Models section; generation wired the way the sibling module protos are
   - _Requirements: 3.1, 4.1, 5.1_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Backend developer familiar with the module proto setup | Task: Add databricks.proto with the payload messages from design.md's Data Models section and wire its generation for backend and client exactly as the sibling module protos are wired | Restrictions: payloads ride the existing Element/Delta as Any; no new services or streams | _Leverage: src/diagrams/timeline/api and its buf wiring | Success: both sides generate; the payloads are usable from backend and client code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.2 Definitions, sessions, computed layout, layout overlay
+- [x] 3.2 Definitions, sessions, computed layout, layout overlay
   - Files: `Diagram.cs` (three definitions: `databricks/bundle`, `databricks/job`, `databricks/pipeline`; descriptions, icons `mdi-package-variant-closed`/`mdi-transit-connection-horizontal`/`mdi-pipe`, `SharedExtension: true`), `ServiceCollection.AddDatabricks.cs`, session factories per type over the shared store, layout functions (layered DAG for job, bands for bundle and pipeline), the `resource:` header read, `RegistrationLayout` overlay, document factory minimal files, reloader; tests including cycle and missing-target layout cases
   - _Requirements: 1.1, 1.3, 1.4, 3.1-3.5, 4.1-4.6, 5.1-5.4, 7.1, 7.4_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with C4SessionFactory | Task: Implement the three definitions, session factories over the shared store, pure computed-layout functions per type (cycle-tolerant layering for the job DAG), the resource: header, the RegistrationLayout overlay from group 1, minimal document factories and the reloader, with tests on fixtures including cycles, missing depends_on targets, override edges and unresolved variables | Restrictions: one engine serving three MIME types like C4; layout functions pure and unit-tested; stored positions win element-by-element | _Leverage: C4SessionFactory's multi-mime shape; RegistrationLayout; the store from group 2 | Success: each type opens from a registered example fixture with computed layout, stored positions overlaid, elements carrying their payloads. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.3 Context providers and toolbox
+- [x] 3.3 Context providers and toolbox
   - Files: `DatabricksContextSourceResolver.cs`, `DatabricksContextActionProvider.cs`, `DatabricksContextPropertyProvider.cs`, `DatabricksToolboxProvider.cs` + tests
   - The Requirement 11 menus and commands (rename-with-references dispatching writer operations, `rel:`/`new:` gesture ids, remove-with-edges as one undo); the Requirement 10 property grids including the read-only `Workspace connection` placeholder and simulated-last-run property; the Requirement 9 toolbox entries; simulated action ids discovering with their marker and executing as no-op `Completed` without touching the history
   - _Requirements: 6.1-6.3, 8.1, 8.3-8.5 (the real-edit halves), 9.1-9.3, 10.1-10.5, 11.1-11.6_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the timeline's providers | Task: Implement the four providers per Requirements 9-11 - menus, property grids with the placeholder and simulated-state properties, toolbox drops via placement ids, relation gestures via rel: ids, rename rewriting references in one command, simulated ids discovered with markers but executed as no-ops off the history - with discovery, execute/undo/redo and refusal tests per selection kind | Restrictions: simulated actions never dispatch a command; every real edit is one undo; property writes go through the standard SetProperty path | _Leverage: TimelineContextActionProvider's gesture and menu shapes; the writers from 2.2 | Success: provider tests pass covering each menu, property and gesture; undo round-trips hold; simulated executions leave the history untouched. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.4 Gate and merge group 3
+- [-] 3.4 Gate and merge group 3
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 3 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 

@@ -8,7 +8,11 @@ namespace EtAlii.Adp.Backend.Tests;
 public class ContextSelectionStoreTests : IDisposable
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
-    private const string Root = @"C:\root";
+
+    // Rooted on the current platform ("\root" here, "/root" there), not a Windows drive
+    // literal: Relocate walks the path with the platform's own separators, and a "C:\..."
+    // literal dissolved into nothing on the Linux CI runner.
+    private static readonly string Root = System.IO.Path.DirectorySeparatorChar + "root";
 
     private readonly ContextSelectionStore _store = new(idleTimeout: TimeSpan.FromMinutes(5));
 
@@ -23,7 +27,7 @@ public class ContextSelectionStoreTests : IDisposable
         chain.Path.Segments.AddRange(path);
         var level = new ContextResolvedLevel(
             ContextSelectionSource.Explorer, id, path, ContextScope.Hierarchy,
-            new ContextTarget(ContextScope.Hierarchy, System.IO.Path.Combine(Root, string.Join('\\', path)), false, (ShortGuid)id.EntryId),
+            new ContextTarget(ContextScope.Hierarchy, System.IO.Path.Combine([Root, .. path]), false, (ShortGuid)id.EntryId),
             new ContextLevelDetail { Entry = new EntryDetail { Kind = EntryKind.File, Available = true } },
             resolver);
         return new ContextSelectionRecord(chain, [level], [], null, []);

@@ -142,7 +142,7 @@ public static class DiagramFilePair
     {
         try
         {
-            using var reader = new StreamReader(adpPath);
+            using var reader = SharedDocumentReader.OpenText(adpPath);
             reader.ReadLine(); // the MIME line, which DefinitionOf has already used
 
             string? body = null;
@@ -266,7 +266,7 @@ public static class DiagramFilePair
     {
         try
         {
-            using var reader = new StreamReader(adpPath);
+            using var reader = SharedDocumentReader.OpenText(adpPath);
             return reader.ReadLine()?.Trim();
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)

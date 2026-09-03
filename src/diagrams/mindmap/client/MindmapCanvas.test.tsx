@@ -79,6 +79,43 @@ describe("MindmapCanvas", () => {
     expect(container.textContent).toContain("Alpha");
   });
 
+  it("renders both shared scrollbars over the map", () => {
+    // Act.
+    const { container } = render(<MindmapCanvas {...props} />);
+
+    // Assert.
+    expect(container.querySelector(".canvas-scrollbar-horizontal")).not.toBeNull();
+    expect(container.querySelector(".canvas-scrollbar-vertical")).not.toBeNull();
+  });
+
+  it("pans from the fitted state when a scrollbar thumb is dragged", () => {
+    // Arrange.
+    // The one interaction the mindmap has that the timeline does not: no pan or zoom has
+    // happened yet, so the bars describe the fitted box - and a thumb drag must take over
+    // from it the same way dragging the canvas does. jsdom lays nothing out, so the track
+    // is given a real width by hand.
+    const { container } = render(<MindmapCanvas {...props} />);
+    const horizontalBar = container.querySelector(".canvas-scrollbar-horizontal")!;
+    Object.defineProperty(horizontalBar, "getBoundingClientRect", {
+      value: () => ({ x: 0, y: 0, top: 0, left: 0, right: 200, bottom: 10, width: 200, height: 10, toJSON: () => ({}) }),
+    });
+    const thumb = horizontalBar.querySelector(".canvas-scrollbar-thumb")!;
+    const surface = container.querySelector(".mindmap-canvas-surface")!;
+    const fitted = surface.getAttribute("viewBox");
+
+    // Act.
+    fireEvent.mouseDown(thumb, { clientX: 100, clientY: 5 });
+    fireEvent.mouseMove(window, { clientX: 140, clientY: 5 });
+    fireEvent.mouseUp(window);
+
+    // Assert.
+    // Fitted box: x -80, w 280 (two nodes at their fallback sizes plus the 20-unit margin).
+    // The extent pads that by half its span to 560 units, so the 200px track maps the
+    // 40-pixel drag to 112 units - and only x moves, never the zoom.
+    expect(fitted).toBe("-80 -56 280 92");
+    expect(surface.getAttribute("viewBox")).toBe("32 -56 280 92");
+  });
+
   it("gives the surface the keyboard when a node is clicked", () => {
     // Arrange.
     // Found by the diagram-workspace-tabs manual pass: clicking an SVG child shape does not
