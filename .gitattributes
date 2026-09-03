@@ -64,6 +64,12 @@
 # by-extension rule applies exactly as written above: the guarantee follows the format.
 *.ttl   -text
 *.nt    -text
+# `.rq` is the sparql-diagram module's query extension. The module never writes a query - its
+# round-trip guarantee is held by having no writer at all - but its parser fixtures include a
+# `crlf-line-endings.rq` / `lf-line-endings.rq` pair and a `no-trailing-newline.rq`, which are
+# byte-compared and collapse into one file under conversion, exactly the pair the comment above
+# exists to protect. And like `.ttl`, `.rq` means SPARQL everywhere in the tree.
+*.rq    -text
 
 # `.yml` is deliberately NOT marked repo-wide, however byte-sensitive the Azure Pipelines module's
 # fixtures are: it is far too common an extension, and a blanket rule would catch every workflow,

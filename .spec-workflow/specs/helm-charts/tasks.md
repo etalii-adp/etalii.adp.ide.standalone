@@ -133,7 +133,7 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - Same gates; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-5 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 6. Client
+- [x] 6. Client
   - _Requirements: 6.2, 7.1, 8.1, 8.2, 8.3_
 
 - [x] 6.1 Model and stream hook
@@ -148,32 +148,32 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - _Requirements: 7.1, 8.1, 8.2, 8.3_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior TypeScript/React developer | Task: Implement HelmCanvas from the central canvas library with band chrome, reposition dispatch and per-kind activation, plus module CSS and registration, tested over mocked streams | Restrictions: reuse src/client/src/canvas primitives — no bespoke drawing; every tab's content keyed per tab (the React instance-reuse lesson) | _Leverage: AnsibleCanvas.tsx and its css slot pattern; canvas elements/connections | Success: canvas tests cover structure, activation and move dispatch; npm test and typecheck green. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 6.3 Gate and merge group 6
+- [x] 6.3 Gate and merge group 6
   - Same gates; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-6 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7. Proof and finish
+- [-] 7. Proof and finish
   - _Requirements: 7.1, 7.2, 2.3, 11.6, 12.3, 10.9_
 
-- [ ] 7.1 Zero-writes proof
+- [x] 7.1 Zero-writes proof
   - Files: `ZeroWrites.Tests.cs` (module tests)
   - Open, browse, lay out, validate and close a fixture chart; every file byte-identical via `SequenceEqual` naming the offending file (never tuple/record equality over byte arrays); no file created or deleted
   - _Requirements: 7.1, 7.2_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the zero-writes proof over a fixture chart with byte-level assertions naming any offending file | Restrictions: SequenceEqual per file — Assert.Equal over dictionaries of byte arrays compares references (the recorded lesson); assert file-set equality too | _Leverage: the ansible ZeroWrites.Tests and its AssertUnchanged helper shape | Success: the proof passes and fails loudly (naming the file) when sabotaged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7.2 Integration tests against the real host
+- [x] 7.2 Integration tests against the real host
   - Files: `EtAlii.Adp.Backend.Tests/Integration Tests/HelmChartsFlow.Tests.cs`, `HelmValidationFlow.Tests.cs` (+ fixture plumbing)
   - The gRPC flow: open a chart end-to-end, baseline observed, a disk change producing a delta; validation findings at project-relative paths; layout persistence — move through the session, `.adp` gains the entry, reopen overlays, undo removes, chart bytes untouched
   - _Requirements: 2.2, 6.2, 6.3, 6.4, 10.8_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the integration flows per design — open/delta, validation placement, and the full reposition-undo cycle with byte checks | Restrictions: run via dotnet test --solution per the repo's xUnit v3 conventions; zero tests ran means broken build | _Leverage: AnsibleStructureFlow.Tests.cs and AnsibleValidationFlow.Tests.cs as templates | Success: all flows green against the real host. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7.3 Example registrations, now that the definition exists
+- [x] 7.3 Example registrations, now that the definition exists
   - Files: one `helm-chart.adp` (MIME line `helm/chart`) inside each of the three module example chart roots, replicated to the central copies
   - `ExampleRegistration.Tests` now opens them against the registered definition; `ExampleReplication.Tests` stays green (identical copies — no `body:` header exists to differ); validation over all shipped examples reports zero findings
   - _Requirements: 11.1, 11.6, 10.9_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior developer | Task: Add the .adp registrations to the three examples in both trees and prove the registration sweep, replication sweep and validation are all green | Restrictions: one MIME line per .adp, nothing else; both trees in the same change | _Leverage: the ansible example's structure.adp precedent | Success: both sweeps green; every example opens by double-click and validates clean. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7.4 Catalog, manual pass, final gates, retire
+- [-] 7.4 Catalog, manual pass, final gates, retire
   - Files: `docs/diagrams.md` (the `helm/chart` row to its earned state, catalog vocabulary), `tests.md` (manual checks for what only a running app shows: Add-flow suggestion on a Chart.yaml folder, per-kind double-click navigation, the drag-reposition-reopen cycle through the real client)
   - Run the manual verification pass against a live app from the worktree — changing the client dev port and `Client:DevServerUrl` to a free pair first and reverting both before the final merge; run the full gates; merge; the worktree is then retirable (removal is the user's call to confirm)
   - _Requirements: 12.3_
