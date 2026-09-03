@@ -133,7 +133,7 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - Same gates; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-5 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 6. Client
+- [x] 6. Client
   - _Requirements: 6.2, 7.1, 8.1, 8.2, 8.3_
 
 - [x] 6.1 Model and stream hook
@@ -148,14 +148,14 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - _Requirements: 7.1, 8.1, 8.2, 8.3_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior TypeScript/React developer | Task: Implement HelmCanvas from the central canvas library with band chrome, reposition dispatch and per-kind activation, plus module CSS and registration, tested over mocked streams | Restrictions: reuse src/client/src/canvas primitives — no bespoke drawing; every tab's content keyed per tab (the React instance-reuse lesson) | _Leverage: AnsibleCanvas.tsx and its css slot pattern; canvas elements/connections | Success: canvas tests cover structure, activation and move dispatch; npm test and typecheck green. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 6.3 Gate and merge group 6
+- [x] 6.3 Gate and merge group 6
   - Same gates; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-6 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7. Proof and finish
+- [-] 7. Proof and finish
   - _Requirements: 7.1, 7.2, 2.3, 11.6, 12.3, 10.9_
 
-- [ ] 7.1 Zero-writes proof
+- [-] 7.1 Zero-writes proof
   - Files: `ZeroWrites.Tests.cs` (module tests)
   - Open, browse, lay out, validate and close a fixture chart; every file byte-identical via `SequenceEqual` naming the offending file (never tuple/record equality over byte arrays); no file created or deleted
   - _Requirements: 7.1, 7.2_
