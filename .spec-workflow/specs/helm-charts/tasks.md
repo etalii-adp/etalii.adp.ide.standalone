@@ -21,10 +21,10 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - Backend tests + format from `src/backend` (format introduces no findings beyond develop's baseline), npm test + typecheck from `src/client`, exit codes checked; merge `.claude/worktrees/helm` into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge the helm worktree's group-1 work into develop via the main checkout | Restrictions: do not merge on a failing gate; a zero-test run is a broken build, never an empty suite | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. Reading: tolerant YAML and the template scanner
+- [-] 2. Reading: tolerant YAML and the template scanner
   - _Requirements: 1.1, 1.2, 1.3, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3_
 
-- [ ] 2.1 HelmYaml, the tolerant reader (replication of AnsibleYaml)
+- [-] 2.1 HelmYaml, the tolerant reader (replication of AnsibleYaml)
   - Files: `src/diagrams/helm-charts/backend/EtAlii.Adp.Diagram.HelmCharts/HelmYaml.cs` + `_Model/` result records; `EtAlii.Adp.Diagram.HelmCharts.Tests` project (Exe, xUnit v3) with its first tests; both projects added to `EtAlii.Adp.slnx`
   - YamlDotNet 18.1.0 representation model, line marks kept, the `(Line: n, Col: m): ` prefix stripped from error messages, never throws
   - _Requirements: 3.1, 3.5_
