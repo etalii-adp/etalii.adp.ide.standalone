@@ -59,7 +59,7 @@ public static class ShaclProjection
         var edges = new List<ShaclEdge>();
         foreach (var shape in drawn)
         {
-            cards.Add(BuildCard(model, shape, context, claimants, drawnIds, edges));
+            cards.Add(BuildCard(model, shape, context, claimants, edges));
         }
 
         var uniqueEdges = edges
@@ -106,7 +106,6 @@ public static class ShaclProjection
         ShaclShape shape,
         ProjectionContext context,
         Dictionary<string, string?> claimants,
-        HashSet<string> drawnIds,
         List<ShaclEdge> edges)
     {
         var id = IdOf(shape.Key);
@@ -195,7 +194,7 @@ public static class ShaclProjection
 
         return new ShaclCard(id, iri, display, shape.Term is BlankTerm, deactivated, severity, closed, name, description, chips, rows);
 
-        void Reference(List<ShaclEdge> into, string fromId, RdfTerm target, string kind, string label)
+        static void Reference(List<ShaclEdge> into, string fromId, RdfTerm target, string kind, string label)
         {
             if (ShaclShapeDiscovery.KeyOf(target) is { } key)
             {
