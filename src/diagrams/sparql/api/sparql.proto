@@ -15,7 +15,8 @@ option csharp_namespace = "EtAlii.Adp.Diagram.Sparql";
 // One variable node - drawn once per name however many patterns mention it, because the shared
 // identity is the join the diagram exists to show (Requirement 4.1).
 message SparqlVariablePayload {
-  // The name without its sigil; the canvas renders ?name.
+  // The variable as a reader sees it: "?name" for a named variable, "[]" or "_:label" for an
+  // anonymous one - the display form, so the canvas never has to know which it is holding.
   string name = 1;
 
   // Whether the query's projection carries it outward - the mark that says "what leaves this

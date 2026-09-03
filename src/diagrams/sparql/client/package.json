@@ -1,0 +1,12 @@
+{
+  "name": "@adp/diagram-sparql-client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "SPARQL client: the query canvas and the registration the shell discovers - a reading surface, with no editing gesture but a drag.",
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.2.3",
+    "@connectrpc/connect": "^2.0.1",
+    "react": "^18.3.1"
+  }
+}
