@@ -71,7 +71,7 @@ Standing notes an implementer should not have to rediscover:
   - Worktree: `.claude/worktrees/smref`
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [-] 2.1 Measure before rewriting
+- [x] 2.1 Measure before rewriting
   - Files: none changed; a recorded inventory in the implementation log
   - Re-run the placeholder search over every example root (`src/diagrams/*/examples/`, `src/editors/*/examples/`, `src/examples/`) against the **committed** tree, and diff every in-scope module example against its `src/examples/` replica. Two facts are already known and must be confirmed rather than assumed: the requirements name only timeline example-2, but example-1 carries seven `New element` entries and fails criterion 2.1 just as squarely, so it is in scope; and the mindmap module's `design.mm` and its replica already differ in content, not only in the `design.adp` asymmetry the design records — the placeholder search matches the replica and not the module copy. The sweep starts from what is committed, never from the uncommitted position drags currently sitting in the main checkout's working tree
   - Purpose: criterion 2.1 applied where the requirements' survey was incomplete, and criterion 2.4 made checkable by knowing what "identical" has to reconcile
@@ -79,7 +79,7 @@ Standing notes an implementer should not have to rediscover:
   - _Requirements: 2.1, 2.4_
   - _Prompt: Implement the task for spec small-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: developer doing the survey before the edit | Task: Produce the definitive list of example files carrying placeholder text and the definitive list of module-versus-replica differences for the families in scope, working from committed content in the worktree, and record both in the implementation log with the exact strings found | Restrictions: change no file in this task; do not read the main checkout's working tree, which carries other sessions' uncommitted drags; treat every example root, including the two editors', even where the expectation is "nothing found" | _Leverage: grep over the example roots; `git diff --no-index` between module and replica | Success: the log names every placeholder occurrence and every module-replica divergence, and states for each family whether the sweep is expected to change it. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.2 Rewrite the mindmap examples
+- [-] 2.2 Rewrite the mindmap examples
   - Files: `src/diagrams/mindmap/examples/example 1/mindmap.mm`, `src/diagrams/mindmap/examples/example 1/design.mm`, and their replicas `src/examples/diagrams/mindmap/example 1/mindmap.mm`, `src/examples/diagrams/mindmap/example 1/design.mm`
   - Structure is preserved, content is replaced: node IDs, parent/child nesting and Freeplane attributes stay; only the human-readable text changes, on one coherent real-looking subject per map. A map that showed nesting keeps the same tree shape. The replica is byte-identical to its module copy after the edit and changes in the same commit; the `design.adp` file-set asymmetry is left exactly as found
   - Purpose: criteria 2.1, 2.2 and 2.3 for the mindmap family
