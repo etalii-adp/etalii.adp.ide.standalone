@@ -149,6 +149,46 @@ public class ShaclValidatorTests
     }
 
     [Fact]
+    public async Task AShapeReferenceLeavingTheFile_IsAnInfo_NotAWarning()
+    {
+        var problems = await Validate("ex:S a sh:NodeShape ; sh:node ex:DefinedNextDoor .\n");
+
+        var problem = Assert.Single(problems, candidate => candidate.RuleId == ShaclValidator.ReferenceLeavesFileRuleId);
+
+        // Info because this tool reads one file: it cannot tell "missing" from "described
+        // elsewhere", and a warning would be an accusation the evidence does not support.
+        Assert.Equal(DiagramProblemSeverity.Info, problem.Severity);
+        Assert.Contains("elsewhere, or missing", problem.Message, StringComparison.Ordinal);
+
+        // And it is below the bar the examples are measured against.
+        Assert.DoesNotContain(problems, candidate => candidate.Severity > DiagramProblemSeverity.Info);
+    }
+
+    [Fact]
+    public async Task AShapeReferenceThisFileDescribes_IsNotAFinding()
+    {
+        var problems = await Validate("""
+            ex:S a sh:NodeShape ; sh:node ex:Other .
+            ex:Other a sh:NodeShape .
+            """ + "\n");
+
+        Assert.DoesNotContain(problems, problem => problem.RuleId == ShaclValidator.ReferenceLeavesFileRuleId);
+    }
+
+    [Fact]
+    public async Task ATargetLeavingTheFile_StaysSilentWhileAReferenceDoesNot()
+    {
+        // The distinction Requirement 4.3 draws, in one file: the target is the medium working,
+        // the shape reference is a loose end worth mentioning quietly.
+        var problems = await Validate("ex:S a sh:NodeShape ; sh:targetClass ex:UnseenClass ; sh:node ex:UnseenShape .\n");
+
+        var problem = Assert.Single(problems);
+        Assert.Equal(ShaclValidator.ReferenceLeavesFileRuleId, problem.RuleId);
+        Assert.Contains("UnseenShape", problem.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("UnseenClass", problem.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task AnUnparseableFile_IsThatOneFindingAndNothingElse()
     {
         var problems = await Validate("ex:S a sh:NodeShape ; sh:property [ sh:path ex:p \n");

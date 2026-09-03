@@ -19,12 +19,11 @@ namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 /// not judged at all: no data graph is loaded and no shape is run (Requirement 4.1).
 /// </para>
 /// <para>
-/// <b>One approved finding is not here yet.</b> Requirement 7.5 asks for an <em>info</em> when
-/// <c>sh:node</c> or <c>sh:property</c> names an IRI the file does not describe - info precisely
-/// because, under the no-network rule, this tool cannot tell "missing" from "described
-/// elsewhere", and a warning would be an accusation the evidence does not support. Core's
-/// severity set is Warning and Error today; the Info level is being added across the pipeline,
-/// and this rule lands with it rather than shipping as a warning to be flipped later.
+/// <b>Why the reference finding is an info.</b> Requirement 7.5's rule fires when
+/// <c>sh:node</c> or <c>sh:property</c> names an IRI this file does not describe. Info precisely
+/// because, under the no-network rule, this tool cannot tell "missing" from "described in
+/// another file" - a warning would be an accusation the evidence does not support, and the
+/// honest report is that the reference leaves the file.
 /// </para>
 /// </remarks>
 public sealed class ShaclValidator(DiagramOrigin origin) : IDiagramValidator
@@ -40,6 +39,9 @@ public sealed class ShaclValidator(DiagramOrigin origin) : IDiagramValidator
 
     /// <summary>A term in the <c>sh:</c> namespace the recommendation does not define - the typo that silently disables a constraint.</summary>
     public const string UnknownTermRuleId = "shacl.unknown-term";
+
+    /// <summary>A <c>sh:node</c> or <c>sh:property</c> reference leaving this file (Requirement 7.5).</summary>
+    public const string ReferenceLeavesFileRuleId = "shacl.reference-leaves-file";
 
     private readonly RdfValidator _family = new(origin);
 
@@ -108,6 +110,31 @@ public sealed class ShaclValidator(DiagramOrigin origin) : IDiagramValidator
                     DatatypeAndClassRuleId,
                     Location(datatype)));
             }
+        }
+
+        // A shape reference whose target this file never describes. Info, not warning: this tool
+        // reads one file and cannot tell a missing shape from one defined next door
+        // (Requirement 7.5). A TARGET naming an absent term is different and stays silent - that
+        // is the medium working, not a loose end (Requirement 4.3).
+        var described = model.Triples
+            .Select(triple => ShaclShapeDiscovery.KeyOf(triple.Subject))
+            .Where(key => key is not null)
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (var triple in model.Triples)
+        {
+            if (triple.Predicate.Iri is not (ShaclVocabulary.Node or ShaclVocabulary.Property)
+                || triple.Object is not IriTerm reference
+                || described.Contains(ShaclShapeDiscovery.KeyOf(reference)))
+            {
+                continue;
+            }
+
+            problems.Add(new DiagramProblem(
+                DiagramProblemSeverity.Info,
+                $"{RdfProjection.Display(model, reference)} is referenced as a shape but not described in this file - it is defined elsewhere, or missing. Nothing outside the file is read to find out.",
+                ReferenceLeavesFileRuleId,
+                Location(triple)));
         }
 
         // The typo that silently disables a constraint: a sh: term the recommendation does not
