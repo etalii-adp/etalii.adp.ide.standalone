@@ -117,13 +117,13 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - _Requirements: 10.1, 10.8, 10.9_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the validator wrapping the rule set with path rebasing and folder attribution, tested for a chart registered in a subfolder | Restrictions: rebasing is tested against a nested chart, not just the root — that is where the ansible bug hid; folder findings rely on core ProblemStamp, which is not modified | _Leverage: AnsibleValidator's Rebased() and the DiagramProblemFileLocation seam | Success: validator tests place findings at real project-relative paths; the folder finding renders fresh. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 5.3 HelmContextSourceResolver
+- [x] 5.3 HelmContextSourceResolver
   - Files: `HelmContextSourceResolver.cs`, `HelmNodeSubscription.cs` + tests
   - Folder target (`ResolvedFullPath` is the chart root); node subscriptions clear the selection when the backing artifact disappears, watching the chart root itself — the one-folder-too-high bug is a named test
   - _Requirements: 8.1, 8.2, 8.3_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the resolver and subscription per the ansible shape, with the deleted-artifact selection-clearing test watching the correct folder | Restrictions: do not GetDirectoryName a path that is already the folder — the exact ansible Track bug, pinned by test | _Leverage: AnsibleContextSourceResolver and its ADeletedRole_ClearsTheSelection test | Success: resolver tests pass including the deletion case at speed (no timeout-driven pass). Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.4 HelmContextPropertyProvider
+- [-] 5.4 HelmContextPropertyProvider
   - Files: `HelmContextPropertyProvider.cs` + tests
   - One private `Row(id, label, value, source, group)` helper always setting `ReadOnlyReason = $"Defined in {source}; edit it in a text editor."`; `SetAsync` refuses unconditionally; the nothing-selected grid summarizes the chart
   - _Requirements: 9.3, 9.4_
