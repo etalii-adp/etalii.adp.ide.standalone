@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using EtAlii.Adp.Backend.Hierarchy;
 using Serilog;
 
 namespace EtAlii.Adp.Diagram.C4;
@@ -101,7 +102,7 @@ public sealed class C4DocumentStore : IC4DocumentStore
             // A body that does not exist yet is an empty document, not an error: the .adp file
             // may have been created a moment ago, and a diagram that cannot open at all is a
             // worse answer than an empty one.
-            text = File.Exists(path) ? File.ReadAllText(path) : "";
+            text = File.Exists(path) ? SharedDocumentReader.ReadAllText(path) : "";
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

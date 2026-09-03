@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text;
+using EtAlii.Adp.Backend.Hierarchy;
 using Serilog;
 using IoPath = System.IO.Path;
 
@@ -97,7 +98,7 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
 
     private MindmapDocument Load(string bodyPath)
     {
-        var text = File.Exists(bodyPath) ? File.ReadAllText(bodyPath) : "";
+        var text = File.Exists(bodyPath) ? SharedDocumentReader.ReadAllText(bodyPath) : "";
         if (string.IsNullOrWhiteSpace(text))
         {
             // A registration without its body - or with an empty one, which a zero-byte file
