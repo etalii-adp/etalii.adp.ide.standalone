@@ -701,11 +701,17 @@ truncated first-N view with its banner, and withhold edits naming the reason.
   with a "Showing 1000 of 1657 resources — edits are withheld on this truncated view" banner
   at the top; the context menu offers no edits, and any attempted edit answers with the
   withheld sentence rather than touching the file.
+- **Result 2026-09-03**: pass - the banner reads exactly as expected, the layout bands are
+  visible (categories, then prizes, then laureates), and right-clicking `laureate:1` (Wilhelm
+  Conrad Röntgen, correctly first) selects the card and opens no menu at all: nothing
+  discovers under truncation, so there is no edit to attempt.
 
-## A comma-list fragment splice leaves the neighbouring bytes untouched (rdf-diagram, task 5.3)
+## A statement splice leaves the neighbouring bytes untouched (rdf-diagram, task 5.3)
 
-The fragment splice is the family's one extension to the splice discipline: removing one
-member of a `,` object list rewrites exactly one line, keeping the other members' bytes.
+The splice discipline live: removing one statement of a `;` predicate list takes exactly its
+own line, keeping every neighbouring byte - comments, abbreviations and the `,` object list on
+the line below it included. (The intra-line `,`-member splice itself is byte-pinned by the
+`RdfWriter` unit tests; this check exercises the discipline through the whole running stack.)
 
 - **Preconditions**: backend + client running; `src/examples/` added as a project; a git
   client or diff view on `src/examples/diagrams/rdf/w3c-turtle/example-1.ttl`.
@@ -715,6 +721,13 @@ member of a `,` object list rewrites exactly one line, keeping the other members
 - **Expected**: only the one statement's tokens leave the file - the surrounding lines,
   comments and abbreviation style are byte-identical - and one undo returns the file
   byte-for-byte, with the removal one redo away.
+- **Result 2026-09-03**: pass - the diff after removal was exactly one line
+  (`    rel:enemyOf <#green-goblin> ;` gone), and `cmp` confirmed byte identity after undo.
+  Found and fixed live before the check could run at all: nothing on the canvas could SELECT
+  an edge - `renderEdge` wired no handlers, so the removal Requirement 6 promises was
+  unreachable by mouse. The edge `<g>` now selects on click and opens its menu on
+  right-click, with an invisible fat `canvas-connection-hit` twin because a thin stroke is no
+  target, guarded by a canvas test that fails while unwired.
 
 ## A reposition on a vendored example survives reopen and undoes byte-for-byte (rdf-diagram, task 5.3)
 
@@ -728,3 +741,8 @@ data rather than a fixture.
   `res:http://www.wikidata.org/entity/Q7186` while `marie-curie.ttl` never changes by a byte
   (its LF endings included); the reopened diagram draws the card at the stored spot; one undo
   returns the `.adp` byte-for-byte.
+- **Result 2026-09-03**: pass - the drag wrote
+  `res:http://www.wikidata.org/entity/Q7186: 866.348 158.78` into the block, `cmp` held the
+  `.ttl` byte-identical throughout, the reopened tab drew the card at the stored spot, and
+  one undo returned the `.adp` byte-for-byte. The validator panel showed "No problems found"
+  on the real Wikidata export the whole time.
