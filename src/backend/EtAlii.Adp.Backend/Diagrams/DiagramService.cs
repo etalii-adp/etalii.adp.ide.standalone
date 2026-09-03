@@ -70,19 +70,33 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
             // coexist on one connection (modular-text-editors Requirements 5.2, 5.3).
             if (!TryResolveTextFile(request.ProjectId, request.Path, context, out var forcedRoot, out var forcedPath))
             {
+                // The client is told only that it failed; the log keeps what it asked for.
+                _logger.Warning("Refusing to open {Path} as text on watch {WatchId}: it does not resolve inside the project", string.Join('/', request.Path.Segments), watchId);
                 throw new RpcException(new Status(StatusCode.FailedPrecondition, "The file cannot be opened as text."));
             }
 
             var forcedId = request.EditorId == "*" ? ResolvedEditorIdOf(forcedPath) : request.EditorId;
-            var forcedFactory = _editorSessionFactories.Find(forcedId)
-                ?? throw new RpcException(new Status(StatusCode.FailedPrecondition, $"No '{forcedId}' editor is deployed."));
+            var forcedFactory = _editorSessionFactories.Find(forcedId);
+            if (forcedFactory is null)
+            {
+                _logger.Warning("Refusing to open {FullPath} on watch {WatchId}: no {EditorId} editor is deployed", forcedPath, watchId, forcedId);
+                throw new RpcException(new Status(StatusCode.FailedPrecondition, $"No '{forcedId}' editor is deployed."));
+            }
+
+            _logger.Debug("Opening {FullPath} as text in the {EditorId} editor (forced) on watch {WatchId}", forcedPath, forcedId, watchId);
             bodyPath = forcedPath;
             openedSession = new EditorSessionAdapter(forcedFactory.Open(watchId, forcedRoot, forcedPath), forcedId);
         }
         else if (TryResolveBody(request.ProjectId, request.Path, context, out var rootPath, out var diagramBody, out var origin, out var registrationPath))
         {
-            var factory = _sessionFactories.Find(origin)
-                ?? throw new RpcException(new Status(StatusCode.Unimplemented, $"'{origin}' diagrams cannot be opened yet."));
+            var factory = _sessionFactories.Find(origin);
+            if (factory is null)
+            {
+                _logger.Warning("Refusing to open {BodyPath} on watch {WatchId}: no session factory is deployed for {Origin}", diagramBody, watchId, origin.Key);
+                throw new RpcException(new Status(StatusCode.Unimplemented, $"'{origin}' diagrams cannot be opened yet."));
+            }
+
+            _logger.Debug("Routed {FullPath} to {Origin}, body {BodyPath}, on watch {WatchId}", string.Join('/', request.Path.Segments), origin.Key, diagramBody, watchId);
             bodyPath = diagramBody;
             openedSession = factory.Open(watchId, rootPath, bodyPath, registrationPath);
 
@@ -92,13 +106,22 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
         }
         else if (TryResolveEditor(request.ProjectId, request.Path, context, out var editorRoot, out var fullPath, out var editorDefinitionId))
         {
-            var editorFactory = _editorSessionFactories.Find(editorDefinitionId)
-                ?? throw new RpcException(new Status(StatusCode.Unimplemented, $"The '{editorDefinitionId}' editor registered no session factory."));
+            var editorFactory = _editorSessionFactories.Find(editorDefinitionId);
+            if (editorFactory is null)
+            {
+                _logger.Warning("Refusing to open {FullPath} on watch {WatchId}: the {EditorId} editor registered no session factory", fullPath, watchId, editorDefinitionId);
+                throw new RpcException(new Status(StatusCode.Unimplemented, $"The '{editorDefinitionId}' editor registered no session factory."));
+            }
+
+            _logger.Debug("Opening {FullPath} in the {EditorId} editor on watch {WatchId}", fullPath, editorDefinitionId, watchId);
             bodyPath = fullPath;
             openedSession = new EditorSessionAdapter(editorFactory.Open(watchId, editorRoot, fullPath), editorDefinitionId);
         }
         else
         {
+            // The refusal every misrouted open lands on: without this line there is nothing
+            // anywhere saying which file was asked for, and people debug it blind.
+            _logger.Warning("Refusing to open {Path} on watch {WatchId}: neither a diagram type nor an editor claims it", string.Join('/', request.Path.Segments), watchId);
             throw new RpcException(new Status(StatusCode.FailedPrecondition, "The diagram cannot be opened."));
         }
 
@@ -107,6 +130,15 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
 
         void OnChanged(object? sender, DiagramDeltasEventArgs args)
         {
+            // What the module decided to push, by kind - the one place a reader can see that an
+            // edit produced (say) a remove plus an add rather than the move they expected.
+            _logger.Debug(
+                "Pushing {DeltaCount} deltas for {BodyPath} on watch {WatchId}: {DeltaKinds}",
+                args.Deltas.Count,
+                bodyPath,
+                watchId,
+                KindsOf(args.Deltas));
+
             foreach (var delta in args.Deltas)
             {
                 channel.Writer.TryWrite(ToProto(delta));
@@ -132,7 +164,15 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
 
         try
         {
-            foreach (var delta in session.Baseline())
+            var baseline = session.Baseline();
+            _logger.Debug(
+                "Sending the baseline of {BodyPath} on watch {WatchId}: {DeltaCount} deltas, {DeltaKinds}",
+                bodyPath,
+                watchId,
+                baseline.Count,
+                KindsOf(baseline));
+
+            foreach (var delta in baseline)
             {
                 await responseStream.WriteAsync(ToProto(delta), context.CancellationToken);
             }
@@ -163,14 +203,32 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
         var watchId = (ShortGuid)request.WatchId;
         if (!TryResolveBody(request.ProjectId, request.Path, context, out _, out var bodyPath, out _, out _))
         {
+            // Debug, not Warning: view reports arrive continuously, and a stale one racing a
+            // closed diagram is ordinary. The path is what a reader needs to correlate.
+            _logger.Debug("Ignoring a view report for {Path} on watch {WatchId}: the diagram does not resolve", string.Join('/', request.Path.Segments), watchId);
             return Task.FromResult(new UpdateViewResponse { Error = "The diagram is not open." });
         }
 
         var box = request.View.BoundingBox;
         var viewport = new DiagramViewport(box.Min.X, box.Min.Y, box.Max.X, box.Max.Y);
-        return Task.FromResult(_viewports.Report(watchId, bodyPath, viewport)
-            ? new UpdateViewResponse()
-            : new UpdateViewResponse { Error = "The diagram is not open on this connection." });
+        // The window the client says it is looking at. What the module decides to send back for
+        // it - if anything - is logged by Apply below, so the pair reads as request and answer.
+        _logger.Debug(
+            "View reported for {BodyPath} on watch {WatchId}: ({MinX}, {MinY}) to ({MaxX}, {MaxY})",
+            bodyPath,
+            watchId,
+            viewport.MinX,
+            viewport.MinY,
+            viewport.MaxX,
+            viewport.MaxY);
+
+        if (!_viewports.Report(watchId, bodyPath, viewport))
+        {
+            _logger.Debug("Ignoring a view report for {BodyPath}: watch {WatchId} has no open stream for it", bodyPath, watchId);
+            return Task.FromResult(new UpdateViewResponse { Error = "The diagram is not open on this connection." });
+        }
+
+        return Task.FromResult(new UpdateViewResponse());
     }
 
     public override async Task<MoveElementResponse> MoveElement(MoveElementRequest request, ServerCallContext context)
@@ -178,6 +236,7 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
         var watchId = (ShortGuid)request.WatchId;
         if (!TryResolveBody(request.ProjectId, request.Path, context, out _, out var bodyPath, out _, out _))
         {
+            _logger.Warning("Refused to move {ElementId} on watch {WatchId}: {Path} does not resolve to an open diagram", request.ElementId, watchId, string.Join('/', request.Path.Segments));
             return new MoveElementResponse { Error = "The diagram is not open." };
         }
 
@@ -187,6 +246,7 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
         var session = _viewports.Find(watchId, bodyPath);
         if (session is null)
         {
+            _logger.Warning("Refused to move {ElementId} on {BodyPath}: watch {WatchId} has no open stream for it", request.ElementId, bodyPath, watchId);
             return new MoveElementResponse { Error = "The diagram is not open on this connection." };
         }
 
@@ -196,6 +256,20 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
         var error = request.Position is { } position
             ? await session.MoveElementToAsync(request.ElementId, position.X, position.Y, context.CancellationToken)
             : await session.MoveElementAsync(request.ElementId, request.NewParentId, request.Index, context.CancellationToken);
+        if (error.Length > 0)
+        {
+            // The module said no; its reason otherwise reaches only the one client that asked.
+            _logger.Warning("The module refused the move of {ElementId} on {BodyPath}: {Reason}", request.ElementId, bodyPath, error);
+        }
+        else
+        {
+            _logger.Debug(
+                "Moved {ElementId} on {BodyPath} via {Gesture}",
+                request.ElementId,
+                bodyPath,
+                request.Position is null ? "re-parent" : "position");
+        }
+
         return new MoveElementResponse { Error = error };
     }
 
@@ -206,6 +280,7 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
         {
             // Unresolvable is answered with an empty toolbox, the same non-revealing shape an
             // unauthorized DiscoverActions gets: the palette simply has nothing to offer.
+            _logger.Debug("Answering an empty toolbox for {Path}: it does not resolve to a diagram", string.Join('/', request.Path.Segments));
             return Task.FromResult(response);
         }
 
@@ -229,11 +304,38 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
 
     private static void Apply(IDiagramSession session, DiagramViewport viewport, Channel<Delta> channel)
     {
-        foreach (var delta in session.UpdateView(viewport))
+        var deltas = session.UpdateView(viewport);
+        // What the new window cost: a module that streams by viewport answers with the elements
+        // that just came into view (and the ones that left), and this is where that shows.
+        // Silent at zero - a view update that changes nothing is the common case and would
+        // otherwise drown the log during a pan.
+        if (deltas.Count > 0)
+        {
+            _logger.Debug("The view update produced {DeltaCount} deltas: {DeltaKinds}", deltas.Count, KindsOf(deltas));
+        }
+
+        foreach (var delta in deltas)
         {
             channel.Writer.TryWrite(ToProto(delta));
         }
     }
+
+    /// <summary>
+    /// A batch of deltas as "kind×count" pairs - what was sent, without the payloads. Element
+    /// contents are deliberately not logged: a baseline can carry a whole document.
+    /// </summary>
+    private static string KindsOf(IReadOnlyList<DiagramDelta> deltas) =>
+        string.Join(", ", deltas
+            .GroupBy(delta => delta switch
+            {
+                DiagramAddDelta => "add",
+                DiagramRemoveDelta => "remove",
+                DiagramGroupDelta => "group",
+                DiagramUngroupDelta => "ungroup",
+                _ => delta.GetType().Name,
+            })
+            .OrderBy(group => group.Key, StringComparer.Ordinal)
+            .Select(group => $"{group.Key}×{group.Count()}"));
 
     private bool TryResolveBody(
         Contracts.ShortGuid projectId,
@@ -356,6 +458,8 @@ public sealed class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBas
     {
         if (!TryResolveTextFile(request.ProjectId, request.Path, context, out var rootPath, out var fullPath))
         {
+            // The content is deliberately not logged - only which file the save asked for.
+            _logger.Warning("Refused to save {Path}: it does not resolve inside the project any more", string.Join('/', request.Path.Segments));
             return new SaveTextResponse { Error = "The file no longer exists." };
         }
 
