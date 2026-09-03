@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/file-io-centralization/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T21:29:31.840Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788470971475_mazuqpo1p",
+      "approvalTitle": "file-io-centralization - Requirements"
+    }
+  ]
+}

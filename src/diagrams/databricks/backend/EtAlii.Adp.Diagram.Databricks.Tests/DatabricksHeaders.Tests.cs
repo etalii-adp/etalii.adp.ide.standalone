@@ -1,18 +1,18 @@
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Diagram.Rdf.Tests;
+namespace EtAlii.Adp.Diagram.Databricks.Tests;
 
 /// <summary>
-/// The registration header facility, shared-machinery item 10: a reading's own <c>key: value</c>
-/// line after core's headers and before the <c>layout:</c> block, scanned here once for the
-/// whole family - it scans, the reading interprets.
+/// The <c>resource:</c> header scan: what it reads, where it stops, and that it reads through
+/// the shared reader - the guard shape <c>RdfRegistrationHeaders</c> carries, kept identical
+/// because the two helpers are the same helper under different names.
 /// </summary>
-public class RdfRegistrationHeadersTests : IDisposable
+public class DatabricksHeadersTests : IDisposable
 {
     private readonly string _root;
 
-    public RdfRegistrationHeadersTests()
+    public DatabricksHeadersTests()
     {
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_root);
@@ -21,46 +21,46 @@ public class RdfRegistrationHeadersTests : IDisposable
     public void Dispose()
     {
         TestFolder.TryDelete(_root);
+        GC.SuppressFinalize(this);
     }
 
     private string Write(string content)
     {
-        var path = IoPath.Combine(_root, "graph.adp");
+        var path = IoPath.Combine(_root, "plan.adp");
         File.WriteAllText(path, content);
         return path;
     }
 
     [Fact]
-    public void AHeaderAfterBodyAndView_IsRead()
+    public void TheResourceHeader_IsReadAfterTheMimeAndBodyLines()
     {
         // Arrange.
-        var path = Write("w3c/skos\r\nbody: vocab.ttl\r\nview: something\r\nlanguage: nl\r\nlayout:\r\n  res:x: 1 2\r\n");
+        var path = Write("databricks/pipeline\r\nbody: lakehouse.yml\r\nresource: bronze\r\n");
 
         // Act & assert.
-        Assert.Equal("nl", RdfRegistrationHeaders.Read(path, "language"));
+        Assert.Equal("bronze", DatabricksHeaders.ReadResourceKey(path));
     }
 
     [Fact]
     public void AHeaderBelowTheLayoutBlock_IsNotAHeader()
     {
         // Arrange: the layout: block starts the position region; headers do not follow it.
-        var path = Write("w3c/rdf\r\nbody: graph.ttl\r\nlayout:\r\n  res:x: 1 2\r\nlanguage: nl\r\n");
+        var path = Write("databricks/job\r\nbody: lakehouse.yml\r\nlayout:\r\n  task:ingest: 1 2\r\nresource: bronze\r\n");
 
         // Act & assert.
-        Assert.Null(RdfRegistrationHeaders.Read(path, "language"));
+        Assert.Null(DatabricksHeaders.ReadResourceKey(path));
     }
 
     [Fact]
     public void AMissingHeaderAnEmptyValueAndAMissingFile_AllAnswerNull()
     {
         // Arrange.
-        var path = Write("w3c/rdf\r\nbody: graph.ttl\r\nlanguage:\r\n");
+        var path = Write("databricks/bundle\r\nbody: lakehouse.yml\r\nresource:\r\n");
 
         // Act & assert.
-        Assert.Null(RdfRegistrationHeaders.Read(path, "language"));
-        Assert.Null(RdfRegistrationHeaders.Read(path, "profile"));
-        Assert.Null(RdfRegistrationHeaders.Read(IoPath.Combine(_root, "absent.adp"), "language"));
-        Assert.Null(RdfRegistrationHeaders.Read(null, "language"));
+        Assert.Null(DatabricksHeaders.ReadResourceKey(path));
+        Assert.Null(DatabricksHeaders.ReadResourceKey(IoPath.Combine(_root, "absent.adp")));
+        Assert.Null(DatabricksHeaders.ReadResourceKey(null));
     }
 
     [Fact]
@@ -70,10 +70,10 @@ public class RdfRegistrationHeadersTests : IDisposable
         // default-share reader would refuse (and be refused by) that write on Windows. The
         // handle below is File.WriteAllText's own mode; before the shared read this scan was
         // refused here. (Guard for the 2026-09-03 family coordination ruling.)
-        var path = Write("w3c/rdf\r\nbody: graph.ttl\r\nlanguage: nl\r\n");
+        var path = Write("databricks/pipeline\r\nbody: lakehouse.yml\r\nresource: bronze\r\n");
         using var writer = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act & assert.
-        Assert.Equal("nl", RdfRegistrationHeaders.Read(path, "language"));
+        Assert.Equal("bronze", DatabricksHeaders.ReadResourceKey(path));
     }
 }

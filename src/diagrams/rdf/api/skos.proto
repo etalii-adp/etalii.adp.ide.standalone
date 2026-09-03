@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package etalii.adp.skos;
+
+option csharp_namespace = "EtAlii.Adp.Diagram.Rdf";
+
+// The payloads of the SKOS reading's elements, packed into the core Element's Any beside the
+// rdf.proto family payloads - no new services, no new streams, and truncation reuses the
+// family's RdfTruncationPayload rather than duplicating the message.
+
+// One drawn concept (skos-diagram Requirements 1, 3).
+message SkosConceptPayload {
+  // The full IRI; empty for a blank-node concept, whose identity is this parse's alone.
+  string iri = 1;
+
+  // The chosen display name - SkosLabels.Choose's answer, never recomputed client-side.
+  string label = 2;
+
+  // The chosen label's language tag, lowercased; empty for untagged literals and the IRI
+  // fallback. The canvas shows a chip exactly when this is non-empty and differs from the
+  // session's display language (Requirement 3.3).
+  string language_tag = 3;
+
+  // 0 preferred, 1 alternate (marked), 2 iri-fallback (dimmed) - SkosLabelKind's order.
+  int32 label_kind = 4;
+
+  // The first skos:notation, badged before the label; empty when the concept has none.
+  string notation = 5;
+
+  // The schemes the concept is asserted into; empty means the unfiled band.
+  repeated string scheme_iris = 6;
+
+  // True for a blank-node concept: drawn, refusing positions and edits per the identity boundary.
+  bool blank = 7;
+}
+
+// One concept scheme, drawn as a titled region (Requirement 1.1).
+message SkosSchemePayload {
+  string iri = 1;
+  string label = 2;
+  string language_tag = 3;
+  int32 label_kind = 4;
+  int32 member_count = 5;
+}
+
+// One collection, drawn as a labeled group (Requirement 1.5).
+message SkosCollectionPayload {
+  string iri = 1;
+  string label = 2;
+  string language_tag = 3;
+  int32 label_kind = 4;
+  bool ordered = 5;
+  repeated string member_ids = 6;
+}
+
+// One drawn edge in one of the three edge languages (Requirements 1.2, 1.3).
+message SkosEdgePayload {
+  string from_element_id = 1;
+  string to_element_id = 2;
+
+  // 0 hierarchy (solid, broader above), 1 related (dashed), 2 mapping (dotted) -
+  // SkosEdgeKind's order.
+  int32 kind = 3;
+
+  // The mapping property's display form for mapping edges; empty for hierarchy and related.
+  string predicate = 4;
+
+  // Whether the file asserts both directions of a hierarchy or related pair - the disconnect
+  // confirmation names it.
+  bool asserted_both_ways = 5;
+}
