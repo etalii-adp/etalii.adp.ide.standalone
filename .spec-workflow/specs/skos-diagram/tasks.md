@@ -93,14 +93,14 @@ One worktree for the whole spec (`.claude/worktrees/skos`, per CLAUDE.md's one-w
   - _Requirements: 1.1, 1.3, 1.4, 1.5, 3.1, 3.3, 3.4, 4.1, 8.1_
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Front-end developer fluent in the central canvas library | Task: Implement the skos canvas per design - BoxElement concept nodes with badge, chip and kind styling, scheme regions and collection groups, the three edge styles, the interaction set and the truncation banner - with client tests for the chip condition, the kind styles, the edge styles and the gesture dispatches | Restrictions: consume the central library and shared appearance - no module-private canvas forks; the chip compares payload data, no client-side label logic | _Leverage: the anchor's canvas composition; BoxElement, StraightConnection, CanvasScrollbars, the C4 boundary styling | Success: a fixture vocabulary renders layered with regions, chips and styles per design; gestures dispatch the right commands. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4.2 Gate and merge group 4
+- [x] 4.2 Gate and merge group 4
   - The four gates, exit codes checked before any pipe; merge into `develop`
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes captured before any pipe and merge group 4 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 - [ ] 5. Examples, manual checks and closure
   - _Requirements: 9.1-9.5_
 
-- [ ] 5.1 Vendored vocabularies: licenses verified, provenance carried
+- [-] 5.1 Vendored vocabularies: licenses verified, provenance carried
   - Files: `src/diagrams/rdf/examples/skos/` + replicas at `src/examples/diagrams/skos/` + registration
   - Under the **example vendoring rule**, each license re-verified at acquisition: a NALT extract (CC0 1.0), a EuroVoc extract (CC0 per the EU portal — re-verify; the multilingual and many-schemes demonstration, including an incomplete translation so the chip shows on real data), the W3C SKOS reference examples (W3C Software and Document License; collections, notations, documentation, mappings), optionally STW (CC BY 4.0, attribution carried); one file exceeding the drawn-element budget; upstream license text and provenance readme per folder; rejects (UNESCO share-alike, AGROVOC SKOS-XL) recorded in the examples readme so the verification survives
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
