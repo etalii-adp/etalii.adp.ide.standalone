@@ -49,25 +49,25 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
 - [-] 3. Graph and store
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 1.4_
 
-- [-] 3.1 The dependency resolution matcher **(new work)**
+- [x] 3.1 The dependency resolution matcher **(new work)**
   - Files: `DependencyResolution.cs` (or the design's equivalent home in `HelmGraph`) + tests
   - `EffectiveName` (alias-over-name) matched ordinally against `charts/` entries (directory name; archive name stripped of `-<version>.tgz`); dependencies get Resolved/Unvendored, unmatched vendored content gets Undeclared; no semver-range evaluation, deliberately
   - _Requirements: 5.2_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the alias-aware three-state resolution matcher as a pure function with tests for alias matching, archive-name stripping, Unvendored open ends and Undeclared leftovers | Restrictions: ordinal matching only; no version-constraint evaluation — the lock's pin is display data, never validated against the range | _Leverage: the _Model records from 2.3; AnsibleEdge's three-state TargetResolution as the shape precedent | Success: matcher tests pin every state transition including the alias and tgz cases. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.2 HelmGraph: nodes and the five edge families
+- [x] 3.2 HelmGraph: nodes and the five edge families
   - Files: `HelmGraph.cs` + `_Model` node/edge records + tests
   - declares (constraint label), resolves (via 3.1), overrides (stack), configures (effective-name key; `global:` marks the node), includes (literal names to local partials; unmatched become open ends, not findings); condition badges resolved against parsed default values where the path exists; lock pins carried onto dependency nodes
   - _Requirements: 5.1, 5.3, 5.4, 5.5, 5.6, 5.7_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Build HelmGraph from the model per design, every edge family and badge tested on the fixtures, unmatched includes drawn as open ends | Restrictions: pure function over the model; no filesystem access; open ends are model states, never exceptions | _Leverage: the matcher from 3.1; AnsibleGraph's node/edge shape | Success: graph tests cover each edge family's fire and non-fire cases on the three fixtures. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.3 HelmChartStore and the watched folder
+- [x] 3.3 HelmChartStore and the watched folder
   - Files: `IHelmChartStore.cs`, `HelmChartStore.cs`, `HelmWatchedFolder.cs` + tests
   - `GetOrLoad`/`Get`/`Acquire`/`Release`; one guarded coalescing watcher per acquired chart root; a settled burst is one whole-folder re-read; burst tests assert a range, never an exact count; no save method exists
   - _Requirements: 1.4_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Replicate the ansible watched-folder store shape for chart roots with coalescing burst re-reads and acquire/release lifetimes, tested with range assertions | Restrictions: no save path anywhere; the watcher watches the chart root itself, not a parent; burst assertions use Assert.InRange, not exact counts | _Leverage: AnsibleProjectStore/AnsibleWatchedFolder and their tests, including the range-assertion lesson | Success: store tests pass reliably including the burst case; release stops the watcher. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.4 Gate and merge group 3
+- [-] 3.4 Gate and merge group 3
   - Same gates; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-3 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
