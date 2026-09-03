@@ -182,7 +182,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
         File.WriteAllText(IoPath.Combine(_root, "values-prod.yaml"), "replicaCount: 3\n");
 
         // Assert.
-        Assert.True(pushed.Wait(WaitLimit), "The session never pushed the change.");
+        Assert.True(pushed.Wait(WaitLimit, TestContext.Current.CancellationToken), "The session never pushed the change.");
         Assert.NotNull(deltas);
         var add = deltas.OfType<DiagramAddDelta>().Single();
         Assert.Contains(add.Elements, element => element.Id == "values:values-prod.yaml");

@@ -438,7 +438,18 @@ export function RdfCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
             </marker>
           </defs>
 
-          {[...model.edges.values()].map((edge) => renderEdge(edge, boxes, selectedId))}
+          {[...model.edges.values()].map((edge) =>
+            renderEdge(edge, boxes, selectedId, {
+              onMouseDown: (event) => {
+                // A click on an edge is a selection, never a drag: an edge has no position of
+                // its own, so there is nothing to move - but its menu carries the removal.
+                event.stopPropagation();
+                setRejection("");
+                select(elementSelectionOf(entryId, path, edge.id));
+              },
+              onContextMenu: (event) => openTargetMenuAt(event, edge.id),
+            }),
+          )}
 
           {connect ? <PendingEdge boxes={boxes} connect={connect} xToPx={xToPx} yToPx={yToPx} /> : null}
 
@@ -599,9 +610,19 @@ function boxFor(
 
 /**
  * One edge: a straight labeled line with the shared arrowhead - the any-direction graph case
- * the straight connection exists for. An edge whose end is missing draws nothing.
+ * the straight connection exists for. An edge whose end is missing draws nothing. The handlers
+ * make the edge selectable: found in the first manual pass, where the removal Requirement 6
+ * promises was unreachable because nothing on the canvas could select an edge.
  */
-function renderEdge(edge: RdfDiagramEdge, boxes: Map<string, ConnectorBox>, selectedId: string | null) {
+function renderEdge(
+  edge: RdfDiagramEdge,
+  boxes: Map<string, ConnectorBox>,
+  selectedId: string | null,
+  handlers: {
+    onMouseDown: (event: React.MouseEvent) => void;
+    onContextMenu: (event: React.MouseEvent) => void;
+  },
+) {
   const from = boxes.get(edge.fromElementId);
   const to = boxes.get(edge.toElementId);
   if (!from || !to) {
@@ -609,7 +630,14 @@ function renderEdge(edge: RdfDiagramEdge, boxes: Map<string, ConnectorBox>, sele
   }
 
   return (
-    <g key={edge.id} data-element-id={edge.id}>
+    <g
+      key={edge.id}
+      data-element-id={edge.id}
+      onMouseDown={handlers.onMouseDown}
+      onContextMenu={handlers.onContextMenu}
+    >
+      {/* The invisible fat grab twin the shared class defines - a thin stroke is no target. */}
+      <path className="rdf-edge-hit canvas-connection-hit" d={`M ${from.x} ${from.y} L ${to.x} ${to.y}`} />
       <StraightConnection
         from={from}
         to={to}

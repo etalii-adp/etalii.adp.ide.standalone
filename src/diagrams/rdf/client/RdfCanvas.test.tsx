@@ -213,6 +213,19 @@ describe("the rdf canvas", () => {
     expect(executed[0].actionId).toBe("rdf.connect");
   });
 
+  it("selects an edge on click, so its removal is reachable (found in the manual pass)", () => {
+    // Arrange: the first manual pass found the Requirement 6 edge removal unreachable - no
+    // handler on the edge, so nothing on the canvas could ever select one.
+    const { container } = renderCanvas();
+    const edge = container.querySelector('[data-element-id^="edge:"]')!;
+
+    // Act.
+    fireEvent.mouseDown(edge.querySelector(".canvas-connection-hit")!);
+
+    // Assert.
+    expect(selections.length).toBeGreaterThan(0);
+  });
+
   it("offers no anchors on a blank node - the identity boundary starts at the gesture", () => {
     // Arrange.
     currentSelectionKey = "element:blank:0";

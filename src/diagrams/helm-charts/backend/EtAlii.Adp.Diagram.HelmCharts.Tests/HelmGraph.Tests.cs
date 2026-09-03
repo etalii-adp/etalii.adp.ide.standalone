@@ -82,6 +82,11 @@ public class HelmGraphTests
         Assert.Equal(2, includes.Length);
         Assert.All(includes, edge =>
         {
+            if (edge == null!)
+            {
+                throw new ArgumentNullException(nameof(edge));
+            }
+
             Assert.Equal("tpl:templates/_helpers.tpl", edge.TargetId);
             Assert.False(edge.OpenEnd);
         });

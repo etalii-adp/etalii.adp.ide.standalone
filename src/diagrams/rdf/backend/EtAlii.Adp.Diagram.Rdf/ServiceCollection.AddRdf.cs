@@ -67,6 +67,10 @@ public static class ServiceCollectionAddRdfExtension
             RdfOrigin,
             provider.GetRequiredService<IRdfDocumentStore>()));
 
+        // The sibling readings ride the family's one Build (the C4 arrangement): each registers
+        // its own reading seams here, over the store and commands registered above.
+        services.AddSkos();
+
         return services;
     }
 }

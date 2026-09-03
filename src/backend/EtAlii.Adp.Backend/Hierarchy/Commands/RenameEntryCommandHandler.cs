@@ -41,6 +41,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
     private readonly IDiagramDefinitionCatalog _catalog;
     private readonly IHierarchyModelStore? _modelStore;
 
+    /// <param name="catalog">The catalog.</param>
     /// <param name="modelStore">
     /// Optional, and injected in every real deployment (AddHierarchy registers it): where the
     /// stable-id rename notification below is sent. Absent only in a partial test container that

@@ -71,7 +71,7 @@ public class HelmChartStoreTests : IDisposable
         File.WriteAllText(IoPath.Combine(_scratch, "values.yaml"), "replicaCount: 1\n");
 
         // Assert.
-        Assert.True(settled.Wait(WaitLimit), "The store never announced the change.");
+        Assert.True(settled.Wait(WaitLimit, TestContext.Current.CancellationToken), "The store never announced the change.");
         Assert.NotNull(announced);
         Assert.Single(announced.Values);
         // The store answers with the new chart from the moment of the event.
@@ -101,7 +101,7 @@ public class HelmChartStoreTests : IDisposable
             File.WriteAllText(IoPath.Combine(_scratch, $"values-{i}.yaml"), $"layer: {i}\n");
         }
 
-        Assert.True(settled.Wait(WaitLimit), "The store never announced the burst.");
+        Assert.True(settled.Wait(WaitLimit, TestContext.Current.CancellationToken), "The store never announced the burst.");
         // Let any trailing timer fire before counting.
         Thread.Sleep(SettleDelay + SettleDelay);
 
