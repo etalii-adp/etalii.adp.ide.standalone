@@ -1,5 +1,8 @@
+using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Diagrams;
+
+using Microsoft.Extensions.DependencyInjection;
 
 using Xunit;
 
@@ -9,7 +12,17 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests;
 
 /// <summary>
 /// The claim this whole diagram type turns on: it reads an Ansible project and changes
-/// <b>nothing</b> in it (Requirement 1.1, and the spec's first non-functional requirement).
+/// <b>nothing of Ansible's</b> in it (Requirement 1.1, and the spec's first non-functional
+/// requirement).
+///
+/// <para>
+/// That claim was once "changes nothing at all", and ansible-refinements narrowed it by exactly
+/// one file: a reposition writes the <c>layout:</c> block of the <c>.adp</c> registration, which
+/// is ADP's own file sitting in the folder. Playbooks, roles, inventories, variable folders and
+/// every other byte Ansible owns remain untouched, and
+/// <see cref="AReposition_WritesTheRegistrationAndNothingOfAnsibles"/> is what holds that line
+/// now that a write path exists at all.
+/// </para>
 /// </summary>
 /// <remarks>
 /// <para>
@@ -29,9 +42,13 @@ public class ZeroWritesTests : IDisposable
 {
     private readonly string _root;
     private readonly AnsibleProjectStore _store = new();
+    private readonly ServiceProvider _provider;
+    private readonly IHistoryStackStore _historyStacks;
 
     public ZeroWritesTests()
     {
+        _provider = new ServiceCollection().AddCommands().AddAnsibleStructure().BuildServiceProvider();
+        _historyStacks = _provider.GetRequiredService<IHistoryStackStore>();
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         CopyTree(IoPath.Combine("Fixtures", "infrastructure"), _root);
         File.WriteAllText(IoPath.Combine(_root, "infrastructure.adp"), "ansible/structure\n");
@@ -39,6 +56,7 @@ public class ZeroWritesTests : IDisposable
 
     public void Dispose()
     {
+        _provider.Dispose();
         _store.Dispose();
         TestFolder.TryDelete(_root);
     }
@@ -52,7 +70,7 @@ public class ZeroWritesTests : IDisposable
         var before = Snapshot();
 
         var mapper = new AnsibleElementMapper();
-        var factory = new AnsibleSessionFactory(_store, mapper);
+        var factory = new AnsibleSessionFactory(_store, mapper, _historyStacks);
         var registration = IoPath.Combine(_root, "infrastructure.adp");
 
         // Act.
@@ -92,6 +110,46 @@ public class ZeroWritesTests : IDisposable
 
         // Assert.
         AssertUnchanged(before, Snapshot());
+    }
+
+    [Fact]
+    public async Task AReposition_WritesTheRegistrationAndNothingOfAnsibles()
+    {
+        // Arrange: the one write path this module has (Requirement 2.3). The guard is not that
+        // nothing is written - something is, deliberately - but that the blast radius is exactly
+        // one file, and it is ADP's own.
+        var registration = IoPath.Combine(_root, "infrastructure.adp");
+        var before = Snapshot();
+
+        var factory = new AnsibleSessionFactory(_store, new AnsibleElementMapper(), _historyStacks);
+        await using var session = factory.Open(ShortGuid.NewShortGuid(), _root, registration, registration);
+        session.Baseline();
+
+        // Act.
+        var answer = await session.MoveElementToAsync("role:common", 321, 123, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal(string.Empty, answer);
+
+        var after = Snapshot();
+        Assert.Equal(before.Count, after.Count);
+
+        var changed = before.Keys
+            .Where(path => !before[path].Bytes.SequenceEqual(after[path].Bytes))
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        Assert.Equal([registration], changed);
+
+        // Contents and timestamps both, for every file Ansible owns: a file rewritten with
+        // identical bytes is still a file this module wrote.
+        foreach (var (path, expected) in before.Where(pair => !string.Equals(pair.Key, registration, StringComparison.OrdinalIgnoreCase)))
+        {
+            var (actualBytes, actualWritten) = after[path];
+            Assert.True(expected.Bytes.SequenceEqual(actualBytes), $"The module rewrote the contents of {path}.");
+            Assert.True(
+                expected.Written == actualWritten,
+                $"The module touched {path}: written {expected.Written:O} before, {actualWritten:O} after.");
+        }
     }
 
     /// <summary>
@@ -141,7 +199,7 @@ public class ZeroWritesTests : IDisposable
         // The only editor this diagram type ever expects a user to have open is a text editor on
         // these very files. Holding an exclusive handle would fight it.
         var registration = IoPath.Combine(_root, "infrastructure.adp");
-        var factory = new AnsibleSessionFactory(_store, new AnsibleElementMapper());
+        var factory = new AnsibleSessionFactory(_store, new AnsibleElementMapper(), _historyStacks);
         await using var session = factory.Open(ShortGuid.NewShortGuid(), _root, registration, registration);
         session.Baseline();
 
@@ -174,9 +232,11 @@ public class ZeroWritesTests : IDisposable
             .ToArray();
 
         // Assert.
-        // Move is deliberately not in the list above: MoveElementAsync is core's seam, which
-        // this module must implement and does by refusing. The first test in this class proves
-        // that refusal touches nothing on disk, which is the guarantee that actually matters.
+        // Move is deliberately not in the list above: MoveElementAsync and MoveElementToAsync
+        // are core's seams, which this module must implement. The first refuses; the second
+        // writes the registration's layout block and nothing else, which the reposition test
+        // above pins. Neither is a verb that writes an Ansible file, which is what this list
+        // is watching for.
         Assert.Empty(named);
     }
 

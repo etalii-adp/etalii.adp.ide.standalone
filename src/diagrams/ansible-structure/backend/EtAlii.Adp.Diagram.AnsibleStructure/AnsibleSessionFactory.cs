@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Diagrams;
 
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -9,21 +10,25 @@ namespace EtAlii.Adp.Diagram.AnsibleStructure;
 /// the diagram's subject is the folder its registration sits in (Requirement 2.2).
 /// </summary>
 /// <remarks>
-/// Note what is <em>not</em> injected. Every other module's session factory takes the project's
-/// history store, because every other module's session can be edited through. This one takes a
-/// store and a mapper, and that is all a read-only type needs.
+/// It takes the history store like every other module's factory, for the module's single edit:
+/// a reposition, dispatched as core's <c>SetRegistrationLayoutCommand</c>. The Ansible files
+/// themselves stay read-only - the only thing this type ever writes is the <c>layout:</c> block
+/// of its own registration.
 /// </remarks>
 public sealed class AnsibleSessionFactory : IDiagramSessionFactory
 {
     private readonly IAnsibleProjectStore _store;
     private readonly AnsibleElementMapper _mapper;
+    private readonly IHistoryStackStore _historyStacks;
 
-    public AnsibleSessionFactory(IAnsibleProjectStore store, AnsibleElementMapper mapper)
+    public AnsibleSessionFactory(IAnsibleProjectStore store, AnsibleElementMapper mapper, IHistoryStackStore historyStacks)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(mapper);
+        ArgumentNullException.ThrowIfNull(historyStacks);
         _store = store;
         _mapper = mapper;
+        _historyStacks = historyStacks;
     }
 
     public DiagramOrigin Origin => Diagram.AnsibleStructure.Origin;
@@ -40,6 +45,8 @@ public sealed class AnsibleSessionFactory : IDiagramSessionFactory
         var folder = IoPath.GetDirectoryName(IoPath.GetFullPath(marker))
                      ?? throw new InvalidOperationException($"'{marker}' has no folder to read.");
 
-        return new AnsibleSession(folder, _store, _mapper);
+        // The marker is the registration: the file that made this folder a diagram, and the
+        // file a position is authored into. The project's history makes that write undoable.
+        return new AnsibleSession(folder, _store, _mapper, marker, _historyStacks.Get(rootPath));
     }
 }

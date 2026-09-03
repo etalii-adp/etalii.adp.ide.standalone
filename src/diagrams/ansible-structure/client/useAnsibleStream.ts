@@ -21,6 +21,13 @@ export interface AnsibleStream {
   failed: boolean;
   /** Tells the backend what the canvas can see, so a large project does not stream in full. */
   reportView: (viewport: Viewport) => void;
+  /**
+   * Records where the user dragged an element to. The backend dispatches the core
+   * SetRegistrationLayoutCommand, so the position lands in the `.adp`'s layout: block - never
+   * in a file Ansible owns - and the change is one undo away (Requirements 1.1, 2.1).
+   * Resolves to the empty string on success, or the backend's own reason for refusing.
+   */
+  moveElementTo: (elementId: string, x: number, y: number) => Promise<string>;
 }
 
 /**
@@ -29,10 +36,11 @@ export interface AnsibleStream {
  * module's own here is the model, its mapping, and the viewport report built on the returned
  * client.
  *
- * Note what this hook does NOT expose, compared with `useMindmapStream`: there is no move
- * call. The backend refuses one with a sentence, so offering it here would put a gesture in
- * the client's reach whose only possible outcome is a refusal. A read-only type's client
- * should not be able to ask.
+ * It exposes exactly one write, `moveElementTo`, and deliberately no other: this type still
+ * edits no Ansible file, and the one thing a user may author is where a node sits. The comment
+ * here used to say the hook exposed no move call at all, on the reasoning that a read-only
+ * type's client should not be able to ask - ansible-refinements gave the backend a position to
+ * store, so the gesture now has an answer other than a refusal.
  */
 export function useAnsibleStream(projectId: Uint8Array, path: readonly string[]): AnsibleStream {
   const { watchId } = useContextConnection();
@@ -54,5 +62,22 @@ export function useAnsibleStream(projectId: Uint8Array, path: readonly string[])
       });
   };
 
-  return { model, loading, failed, reportView };
+  const moveElementTo = async (elementId: string, x: number, y: number): Promise<string> => {
+    try {
+      const response = await client.moveElement({
+        projectId: { value: projectId },
+        watchId: { value: watchId },
+        path: { segments: [...path] },
+        elementId,
+        // The position is what makes this an arrangement rather than a re-parenting; the
+        // backend routes on its presence.
+        position: { x, y },
+      });
+      return response.error;
+    } catch {
+      return "The position could not be saved.";
+    }
+  };
+
+  return { model, loading, failed, reportView, moveElementTo };
 }

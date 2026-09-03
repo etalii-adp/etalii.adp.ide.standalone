@@ -12,6 +12,8 @@ import { DiagramToolboxProvider, useDiagramToolbox } from "@client/shell/panels/
 
 const select = vi.fn();
 const revealPath = vi.fn();
+// Typed with the real signature, so the call assertions below can read the arguments.
+const moveElementTo = vi.fn(async (_elementId: string, _x: number, _y: number) => "");
 let currentModel: AnsibleModel = emptyModel;
 let currentLoading = false;
 let currentFailed = false;
@@ -23,6 +25,7 @@ vi.mock("./useAnsibleStream", () => ({
     loading: currentLoading,
     failed: currentFailed,
     reportView: () => {},
+    moveElementTo,
   }),
 }));
 
@@ -88,7 +91,23 @@ function renderCanvas() {
   return render(<AnsibleCanvas projectId={new Uint8Array(16)} entryId={new Uint8Array(16)} path={["infrastructure.adp"]} />);
 }
 
+/**
+ * A pointer event jsdom can actually carry. jsdom implements no PointerEvent at all, so
+ * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined - and the canvas
+ * checks `button !== 0` so a right-drag never repositions anything. A MouseEvent typed
+ * "pointerdown" bubbles the same way and carries the button, which is what a real browser
+ * delivers. The guard is right; the environment is what is missing.
+ */
+const pointer = (type: string, init: MouseEventInit) =>
+  new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
+
+// jsdom implements no pointer capture on SVG elements. The canvas uses it so a drag whose
+// pointer leaves the svg still delivers its pointerup, which every real browser supports -
+// stubbed here rather than feature-detected in the component, so the production path stays
+// the one that actually ships.
 beforeEach(() => {
+  SVGElement.prototype.setPointerCapture ??= () => {};
+  SVGElement.prototype.releasePointerCapture ??= () => {};
   select.mockClear();
   revealPath.mockClear();
   currentLoading = false;
@@ -135,8 +154,82 @@ describe("AnsibleCanvas", () => {
     // Assert.
     const role = container.querySelector('[data-element-id="role:nginx"]');
     expect(role?.getAttribute("class")).toContain("ansible-play-0");
-    // Nothing inline: the palette lives in the stylesheet so a theme change is a CSS change.
-    expect(container.querySelector("[style]")).toBeNull();
+    // Nothing inline on the drawing: the palette lives in the stylesheet so a theme change is
+    // a CSS change. Scoped to the svg rather than the whole container, because the shared
+    // scrollbars below it position their thumbs inline - a thumb's offset is geometry, not
+    // theme, and it cannot be a class.
+    expect(container.querySelector(".ansible-canvas [style]")).toBeNull();
+  });
+
+
+  // ---- scrollbars and drag (Requirements 1.1, 1.2, 6.1-6.3) --------------------------------
+
+  it("shows the shared scrollbars over the canvas", () => {
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert: the shared component, not an ansible-specific one - both bars, each with a thumb.
+    expect(container.querySelectorAll(".canvas-scrollbar")).toHaveLength(2);
+    expect(container.querySelectorAll(".canvas-scrollbar-thumb")).toHaveLength(2);
+  });
+
+  it("composes the shared canvas chrome alongside its own class names", () => {
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert: the module keeps its names, so existing selectors and tests hold, and gains the
+    // shared appearance beside them.
+    expect(container.querySelector(".ansible-canvas.canvas-drawing")).not.toBeNull();
+    expect(container.querySelector(".ansible-canvas-host.canvas-host")).not.toBeNull();
+    expect(container.querySelector(".ansible-canvas-viewport.canvas-viewport")).not.toBeNull();
+  });
+
+  it("repositions a node when it is dragged past the threshold", async () => {
+    // Arrange.
+    moveElementTo.mockClear();
+    const { container } = renderCanvas();
+    const role = container.querySelector('[data-element-id="role:nginx"]')!;
+
+    // Act.
+    fireEvent(role, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(container.querySelector(".ansible-canvas")!, pointer("pointermove", { clientX: 90, clientY: 70 }));
+    fireEvent(container.querySelector(".ansible-canvas")!, pointer("pointerup", { clientX: 90, clientY: 70 }));
+
+    // Assert: the element's id and a position, in canvas units.
+    expect(moveElementTo).toHaveBeenCalledTimes(1);
+    expect(moveElementTo.mock.calls[0][0]).toBe("role:nginx");
+  });
+
+  it("does not reposition on a click that barely moves", () => {
+    // Arrange: a hand that shifts by a pixel while clicking must not author a position.
+    moveElementTo.mockClear();
+    const { container } = renderCanvas();
+    const role = container.querySelector('[data-element-id="role:nginx"]')!;
+
+    // Act.
+    fireEvent(role, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(container.querySelector(".ansible-canvas")!, pointer("pointermove", { clientX: 11, clientY: 10 }));
+    fireEvent(container.querySelector(".ansible-canvas")!, pointer("pointerup", { clientX: 11, clientY: 10 }));
+
+    // Assert.
+    expect(moveElementTo).not.toHaveBeenCalled();
+  });
+
+  it("never repositions an edge, which follows its endpoints", () => {
+    // Arrange.
+    moveElementTo.mockClear();
+    const { container } = renderCanvas();
+    const edge = container.querySelector("[data-edge-id]");
+
+    // Act.
+    if (edge) {
+      fireEvent(edge, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+      fireEvent(container.querySelector(".ansible-canvas")!, pointer("pointermove", { clientX: 90, clientY: 70 }));
+      fireEvent(container.querySelector(".ansible-canvas")!, pointer("pointerup", { clientX: 90, clientY: 70 }));
+    }
+
+    // Assert: an edge carries no drag handler at all, so nothing is written.
+    expect(moveElementTo).not.toHaveBeenCalled();
   });
 
   it("marks a hollow role so it looks unfinished", () => {
