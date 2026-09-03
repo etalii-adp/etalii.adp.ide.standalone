@@ -95,6 +95,29 @@ public class HierarchyModelDiagramStateTests : IDisposable
     }
 
     [Fact]
+    public void ListChildren_AFoldersOwnStateChange_IsRaisedEvenOnAListingTriggeredScan()
+    {
+        // Arrange.
+        // Found by the task 3.5 live check: a listing's response carries the folder's
+        // CHILDREN, never the folder itself, so if its own state change stays silent on a
+        // listing-triggered (raiseEvents: false) scan the client can never learn it - the
+        // expanded infrastructure folder sat neutral. The watch stream is the only channel.
+        Directory.CreateDirectory(IoPath.Combine(_root, "infrastructure"));
+        Write(IoPath.Combine("infrastructure", "structure.adp"), Structure.Origin.MimeType + "\n");
+        var model = Model();
+        var folder = Assert.Single(model.ListChildren(null));
+        var changes = new List<HierarchyEntryChange>();
+        model.EntryChanged += changes.Add;
+
+        // Act: an expand - ListChildren, not a watcher event.
+        model.ListChildren(folder.Id);
+
+        // Assert.
+        var update = changes.OfType<HierarchyEntryUpdated>().Single(change => change.EntryId == folder.Id);
+        Assert.Equal(Hierarchy.EntryDiagramState.Registered, update.DiagramState);
+    }
+
+    [Fact]
     public void OnWatcherEvent_AnAdpAppearingAndVanishing_MovesItsSubjectsState()
     {
         // Arrange: a bare body, listed, so the model is watching its folder.
