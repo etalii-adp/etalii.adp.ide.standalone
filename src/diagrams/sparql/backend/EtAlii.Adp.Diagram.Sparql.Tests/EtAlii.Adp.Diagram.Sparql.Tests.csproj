@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- xUnit v3 test projects are executables: the test host is the project itself. -->
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EtAlii.Adp.Diagram.Sparql\EtAlii.Adp.Diagram.Sparql.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The parser corpus, beside the test binary so a test reads a query from disk exactly as the
+      backend will. PreserveNewest, and the fixtures are `-text` in .gitattributes: the CRLF/LF
+      pair exists to prove the parser is indifferent to line endings, which requires the pair to
+      stay two different files.
+    -->
+    <Content Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

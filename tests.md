@@ -721,3 +721,43 @@ space, which is one candidate to rule out.
 - **Expected**: after the drag the `.adp` carries a `layout:` block with one `chart: <x> <y>`
   entry and no chart file changed; the reopened tab shows the node at the dragged spot; undo
   returns the `.adp` to its single MIME line; `git status` shows the example clean at the end.
+## The over-budget RDF file draws its first thousand and says so (rdf-diagram, task 5.3)
+
+The drawn-element budget's honest degradation (Requirement 8): the whole Nobel laureates
+dataset holds 1,657 resources against the 1,000-node budget, so the diagram must show the
+truncated first-N view with its banner, and withhold edits naming the reason.
+
+- **Preconditions**: backend + client running; `src/examples/` added as a project.
+- **Actions**: open `diagrams/rdf/nobel/laureates.adp`; read the banner; right-click any
+  resource card and try an edit from its menu.
+- **Expected**: the canvas draws cards (categories, prizes, then laureates in document order)
+  with a "Showing 1000 of 1657 resources — edits are withheld on this truncated view" banner
+  at the top; the context menu offers no edits, and any attempted edit answers with the
+  withheld sentence rather than touching the file.
+
+## A comma-list fragment splice leaves the neighbouring bytes untouched (rdf-diagram, task 5.3)
+
+The fragment splice is the family's one extension to the splice discipline: removing one
+member of a `,` object list rewrites exactly one line, keeping the other members' bytes.
+
+- **Preconditions**: backend + client running; `src/examples/` added as a project; a git
+  client or diff view on `src/examples/diagrams/rdf/w3c-turtle/example-1.ttl`.
+- **Actions**: open `diagrams/rdf/w3c-turtle/example-1.adp`; select the edge from
+  `<#spiderman>` to `<#green-goblin>` (`rel:enemyOf`); remove the statement from its context
+  menu; inspect the file's diff; then undo.
+- **Expected**: only the one statement's tokens leave the file - the surrounding lines,
+  comments and abbreviation style are byte-identical - and one undo returns the file
+  byte-for-byte, with the removal one redo away.
+
+## A reposition on a vendored example survives reopen and undoes byte-for-byte (rdf-diagram, task 5.3)
+
+Layout lives in the registration, never in the RDF (Requirement 4), proven on real Wikidata
+data rather than a fixture.
+
+- **Preconditions**: backend + client running; `src/examples/` added as a project.
+- **Actions**: open `diagrams/rdf/wikidata/marie-curie.adp`; drag the `wd:Q7186` card to a
+  clearly different spot; close and reopen the diagram; then undo.
+- **Expected**: the position lands in `marie-curie.adp`'s `layout:` block keyed
+  `res:http://www.wikidata.org/entity/Q7186` while `marie-curie.ttl` never changes by a byte
+  (its LF endings included); the reopened diagram draws the card at the stored spot; one undo
+  returns the `.adp` byte-for-byte.
