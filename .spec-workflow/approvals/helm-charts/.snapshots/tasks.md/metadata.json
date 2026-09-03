@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/helm-charts/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T12:28:20.401Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788438500185_bhef9evs9",
+      "approvalTitle": "helm-charts tasks"
+    }
+  ]
+}
