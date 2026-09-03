@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/skos-diagram/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T11:10:35.374Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788433835186_hh19hy8tn",
+      "approvalTitle": "skos-diagram requirements"
+    }
+  ]
+}
