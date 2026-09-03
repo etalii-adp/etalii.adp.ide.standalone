@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/multi-select/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T22:35:38.064Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788474937670_eqol38m71",
+      "approvalTitle": "multi-select requirements"
+    }
+  ]
+}
