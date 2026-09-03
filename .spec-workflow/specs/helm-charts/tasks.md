@@ -74,13 +74,13 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
 - [-] 4. Wire, layout, session and registration
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 4.4, 6.1, 6.2, 6.3, 6.4, 12.1, 12.2_
 
-- [-] 4.1 The proto and the element mapper
+- [x] 4.1 The proto and the element mapper
   - Files: `src/diagrams/helm-charts/api/helm-charts.proto` (`option csharp_namespace = "EtAlii.Adp.Diagram.HelmCharts.Wire";`), buf generation wired like the sibling modules, `HelmElementMapper.cs` + tests
   - The design's payload set; element types `helm/chart+{chart,values,schema,template,partial,crds,dependency,subchart,archive,lock,edge}`; stable content-derived ids (`dep:`, `tpl:`, `values:`, `edge:` prefixes); `Diff()` emits Remove-then-Add, never group/ungroup
   - _Requirements: 4.4_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer with protobuf experience | Task: Define helm-charts.proto with the Wire namespace, wire generation, and implement HelmElementMapper projecting graph plus layout to Elements with Any payloads and a Remove-then-Add Diff | Restrictions: the Wire sub-namespace is mandatory — generated names collide with _Model records without it (the CS0101 lesson); ids must be stable across sessions because the layout block stores them | _Leverage: ansible-structure.proto and AnsibleElementMapper as templates | Success: generation builds clean; mapper tests cover projection, ids and Diff. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.2 HelmLayout
+- [-] 4.2 HelmLayout
   - Files: `HelmLayout.cs` + tests
   - Banded computed layout per design: metadata band, values column, templates column, dependencies/vendored column; pure and deterministic on fixtures
   - _Requirements: 6.1_
