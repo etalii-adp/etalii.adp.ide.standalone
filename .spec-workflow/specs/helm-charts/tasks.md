@@ -111,13 +111,13 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the rule set as a pure function over the model with both-direction tests per rule | Restrictions: no filesystem access in rules; noise guards are part of the specification — Unvendored and missing-lock are silence, not findings | _Leverage: AnsibleRuleSet's pure-function shape and its noise-guard precedent | Success: every rule has a fire and a non-fire test; the shipped example fixtures produce zero findings. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 5.2 HelmValidator
+- [x] 5.2 HelmValidator
   - Files: `HelmValidator.cs` + tests
   - Rebases folder-relative findings to project-relative (the `Rebased()` discipline — the bug class 177 unit tests missed once), attributes the not-a-chart finding to the folder, registers into the problems pipeline
   - _Requirements: 10.1, 10.8, 10.9_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the validator wrapping the rule set with path rebasing and folder attribution, tested for a chart registered in a subfolder | Restrictions: rebasing is tested against a nested chart, not just the root — that is where the ansible bug hid; folder findings rely on core ProblemStamp, which is not modified | _Leverage: AnsibleValidator's Rebased() and the DiagramProblemFileLocation seam | Success: validator tests place findings at real project-relative paths; the folder finding renders fresh. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.3 HelmContextSourceResolver
+- [-] 5.3 HelmContextSourceResolver
   - Files: `HelmContextSourceResolver.cs`, `HelmNodeSubscription.cs` + tests
   - Folder target (`ResolvedFullPath` is the chart root); node subscriptions clear the selection when the backing artifact disappears, watching the chart root itself — the one-folder-too-high bug is a named test
   - _Requirements: 8.1, 8.2, 8.3_
