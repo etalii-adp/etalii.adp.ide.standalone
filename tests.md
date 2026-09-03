@@ -552,6 +552,13 @@ release artifact can check end to end.
 - **Expected**: all four carry the same version. The login line is quiet and centered under
   the card; killing the backend and reloading the page shows no version line at all rather
   than a stale one.
+- **First release published 2026-09-04**: the pipeline went green end to end and tagged
+  `v0.1.402-alpha` at commit `99796eba` - the commit that was pushed, so the tag and the
+  build agree. Two halves of the check still need a person with access: the ZIP's own name
+  (expected `EtAlii.Adp-0.1.402-alpha.zip`) and the login line inside the downloaded
+  artifact. The repository is private and neither `gh` nor a token is available on the
+  development machine, so the asset cannot be fetched from here at all - this half of the
+  entry is executable only by someone signed in to GitHub.
 - **Publish layout confirmed 2026-09-04**: `dotnet publish` alone produces `wwwroot/` holding
   `index.html`, `favicon.svg` and `assets/`, and the published `EtAlii.Adp.Backend.dll` reads
   ProductVersion `0.1.388-alpha+e051580749`, naming the commit it was built from. This run
