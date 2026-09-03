@@ -12,7 +12,7 @@ This spec covers **one diagram type, `w3c/sparql`** — a SPARQL query file draw
 
 ## What this spec consumes from the family — and what it deliberately does not
 
-The anchor spec names nine pieces of shared machinery. This spec consumes **two of them, plus the vendoring discipline**, and the paragraph below exists so nobody later wires this module into the wrong engine.
+The anchor spec names ten pieces of shared machinery. This spec consumes **two of them, plus the vendoring discipline**, and the paragraph below exists so nobody later wires this module into the wrong engine.
 
 **Consumed:**
 
@@ -28,6 +28,7 @@ The anchor spec names nine pieces of shared machinery. This spec consumes **two 
 - **The drawn-element budget** (item 5): hand-written queries hold tens of patterns, not thousands; the budget solves a data-scale problem queries do not have. A local sanity bound exists so a generated monster degrades honestly (Requirement 7.5), but it is this spec's own number, not the family's machinery.
 - **The routing arrangement** (item 7): that arrangement is about `.ttl`/`.nt` bodies and marker-triple suggestions. `.rq` routes on sight by its own extension, competing with nothing (Requirement 2).
 - **The no-network rule** (item 8) is not inherited as machinery but holds here with this spec's own, sharper reason: executing a query needs an endpoint, so **results are out of scope entirely** (Requirement 7.4).
+- **The registration header facility** (item 10): available to this spec — it is a property of the `.adp` registration, not of the engine being avoided — and deliberately **not used**. A `.rq` needs no reading-specific configuration: the query carries its own prologue (`BASE`/`PREFIX`), so there is no prefix source to name; nothing executes, so there is no dataset or endpoint to select; and a query file holds one query, so there is nothing to choose among. This spec claims no header name in the anchor's item 10, and a future need for one goes through that claim, not around it.
 
 ## How SPARQL queries are visualized — research, and the positions taken
 
