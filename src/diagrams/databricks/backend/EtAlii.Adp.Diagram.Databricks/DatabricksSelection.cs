@@ -27,7 +27,7 @@ internal static class DatabricksSelection
         var key = elementId["task:".Length..];
         foreach (var job in entry.Jobs)
         {
-            if (job.Tasks.FirstOrDefault(task => task.Key == key) is { } task)
+            if (job.Tasks.FirstOrDefault(t => t.Key == key) is { } task)
             {
                 return (job, task);
             }
@@ -76,7 +76,7 @@ internal static class DatabricksSelection
         var path = elementId["library:".Length..];
         foreach (var pipeline in entry.Pipelines)
         {
-            if (pipeline.Libraries.FirstOrDefault(library => library.Path == path) is { } library)
+            if (pipeline.Libraries.FirstOrDefault(l => l.Path == path) is { } library)
             {
                 return (pipeline, library);
             }

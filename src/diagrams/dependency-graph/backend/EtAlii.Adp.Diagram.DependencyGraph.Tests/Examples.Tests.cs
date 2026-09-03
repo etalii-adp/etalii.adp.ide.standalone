@@ -151,6 +151,11 @@ public class ExamplesTests
         // Assert.
         Assert.All(model.Elements, element =>
         {
+            if (element == null!)
+            {
+                throw new ArgumentNullException(nameof(element));
+            }
+
             Assert.NotEmpty(element.Label);
             Assert.DoesNotContain("New element", element.Label, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("New node", element.Label, StringComparison.OrdinalIgnoreCase);

@@ -1,0 +1,197 @@
+/* The Databricks family's canvases: boxes, frames and directed edges. */
+
+.databricks-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-surface, #1e1e1e);
+}
+
+.databricks-canvas-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted, #9a9a9a);
+}
+
+.databricks-surface {
+  position: absolute;
+  inset: 0;
+  cursor: default;
+  outline: none;
+}
+
+.databricks-content {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.databricks-node-box {
+  fill: var(--color-surface-raised, #2a2a2a);
+  stroke: var(--color-border, #555);
+  stroke-width: 1.5;
+}
+
+.databricks-node.databricks-selected .databricks-node-box {
+  stroke: var(--color-accent, #4ea1ff);
+  stroke-width: 2;
+}
+
+.databricks-node.databricks-connect-target .databricks-node-box {
+  stroke: var(--color-accent, #4ea1ff);
+  stroke-dasharray: 4 3;
+}
+
+/* A depends_on stub no task declares: present, and visibly missing (Requirement 4.5). */
+.databricks-node-missing .databricks-node-box {
+  stroke-dasharray: 5 4;
+  fill: transparent;
+  opacity: 0.7;
+}
+
+/* Condition tasks read differently at a glance: their outcomes branch. */
+.databricks-node-condition .databricks-node-box {
+  rx: 16;
+}
+
+.databricks-label {
+  fill: var(--color-text, #e6e6e6);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.databricks-badges {
+  fill: var(--color-text-muted, #9a9a9a);
+  font-size: 10px;
+  pointer-events: none;
+}
+
+.databricks-frame rect {
+  fill: transparent;
+  stroke: var(--color-border, #555);
+  stroke-dasharray: 6 4;
+}
+
+.databricks-frame.databricks-selected rect {
+  stroke: var(--color-accent, #4ea1ff);
+}
+
+.databricks-frame-label {
+  fill: var(--color-text-muted, #9a9a9a);
+  font-size: 12px;
+}
+
+.databricks-edge {
+  stroke: var(--color-border, #777);
+  stroke-width: 1.5;
+  fill: none;
+  marker-end: url(#databricks-arrowhead);
+}
+
+.databricks-edge.databricks-selected {
+  stroke: var(--color-accent, #4ea1ff);
+}
+
+/* Outcome edges wear their answer (Requirement 4.3). */
+.databricks-edge-outcome-true {
+  stroke: var(--color-success, #3fb950);
+}
+
+.databricks-edge-outcome-false {
+  stroke: var(--color-danger, #f85149);
+}
+
+.databricks-outcome-label {
+  fill: var(--color-text-muted, #9a9a9a);
+  font-size: 10px;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.databricks-override-line {
+  stroke: var(--color-border, #777);
+  stroke-width: 1.2;
+  stroke-dasharray: 3 3;
+  fill: none;
+}
+
+.databricks-override.databricks-selected .databricks-override-line {
+  stroke: var(--color-accent, #4ea1ff);
+}
+
+.databricks-arrowhead {
+  fill: var(--color-border, #777);
+}
+
+.databricks-pending-edge {
+  stroke: var(--color-accent, #4ea1ff);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  fill: none;
+  pointer-events: none;
+}
+
+.databricks-anchor-hit {
+  fill: var(--color-accent, #4ea1ff);
+  opacity: 0.35;
+  cursor: crosshair;
+}
+
+.databricks-anchor-hit:hover {
+  opacity: 0.8;
+}
+
+.databricks-status,
+.databricks-rejection {
+  position: absolute;
+  bottom: 8px;
+  left: 12px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-muted, #9a9a9a);
+  pointer-events: none;
+}
+
+.databricks-rejection {
+  color: var(--color-danger, #f85149);
+}
+
+/* The simulation's badge states - every simulated surface carries its marker (Requirement 8). */
+.databricks-sim-pending .databricks-node-box {
+  opacity: 0.5;
+}
+
+.databricks-sim-running .databricks-node-box {
+  stroke: var(--color-accent, #4ea1ff);
+  stroke-width: 2.5;
+}
+
+.databricks-sim-succeeded .databricks-node-box {
+  stroke: var(--color-success, #3fb950);
+  stroke-width: 2;
+}
+
+.databricks-sim-failed .databricks-node-box {
+  stroke: var(--color-danger, #f85149);
+  stroke-width: 2.5;
+}
+
+.databricks-sim-skipped .databricks-node-box {
+  opacity: 0.35;
+  stroke-dasharray: 3 3;
+}
+
+.databricks-simulation-banner {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  padding: 2px 10px;
+  font-size: 12px;
+  color: var(--color-text, #e6e6e6);
+  background: color-mix(in srgb, var(--color-accent, #4ea1ff) 25%, transparent);
+  border: 1px solid var(--color-accent, #4ea1ff);
+  border-radius: 4px;
+  cursor: pointer;
+}

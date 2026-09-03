@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/documentation/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T06:52:42.114Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788418361979_h84u7lse7",
+      "approvalTitle": "documentation - design"
+    }
+  ]
+}
