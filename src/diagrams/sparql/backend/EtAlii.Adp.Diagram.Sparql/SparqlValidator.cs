@@ -79,16 +79,14 @@ public sealed class SparqlValidator(DiagramOrigin origin) : IDiagramValidator
             }
         }
 
-        // An unused prefix declaration is harmless but misleading, at its own line
+        // An unused prefix declaration is harmless but misleading - info, at its own line
         // (Requirement 7.3). A prefix used but not declared is a parse error, reported above.
-        // The requirement calls this info-level; core's severities are Warning and Error only,
-        // so it takes the lower of the two rather than being promoted to an error it is not.
         foreach (var prefix in model.Prefixes)
         {
             if (!IsUsed(prefix.Prefix, text))
             {
                 problems.Add(new DiagramProblem(
-                    DiagramProblemSeverity.Warning,
+                    DiagramProblemSeverity.Info,
                     $"The prefix '{prefix.Prefix}:' is declared but never used.",
                     UnusedPrefixRuleId,
                     new DiagramProblemLineLocation((uint)Math.Max(prefix.Line, 1))));

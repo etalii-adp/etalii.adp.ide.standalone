@@ -212,15 +212,14 @@ public class SparqlValidatorTests
     }
 
     [Fact]
-    public async Task AnUnusedPrefixDeclaration_IsReportedAtItsLine()
+    public async Task AnUnusedPrefixDeclaration_IsInfoAtItsLine()
     {
         // Arrange & act.
         var problems = await Validate("PREFIX ex: <http://example.org/>\nPREFIX unused: <http://example.org/unused/>\nSELECT * WHERE { ?s ex:p ?o }\n");
 
-        // Assert: the requirement calls this info-level; core has Warning and Error only, so it
-        // takes the lower rather than being promoted to an error it is not.
+        // Assert.
         var problem = Assert.Single(problems, candidate => candidate.RuleId == SparqlValidator.UnusedPrefixRuleId);
-        Assert.Equal(DiagramProblemSeverity.Warning, problem.Severity);
+        Assert.Equal(DiagramProblemSeverity.Info, problem.Severity);
         Assert.Contains("unused:", problem.Message);
         Assert.Equal(2u, Assert.IsType<DiagramProblemLineLocation>(problem.Location).Number);
     }
