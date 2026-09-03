@@ -44,14 +44,14 @@ One worktree for the whole spec (`.claude/worktrees/skos`, per CLAUDE.md's one-w
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 3.2_
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the family validator registration | Task: Implement SkosValidator per design - the seven approved findings plus the misplaced-header finding, each with file and line from spans, the cycle finding fed by the layout's own detection pass - with a fixture per finding and a clean-vocabulary fixture reporting nothing | Restrictions: no network, no inference - the S27 check stays direct-case-only with the boundary documented; the parse-failure finding belongs to the anchor validator, not here | _Leverage: 1.1-1.3's outputs; the anchor's validator registration shape | Success: each fixture reports exactly its finding with the right line; the cycle finding and the drawn cycle cannot disagree because they share one detection. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2.3 Gate and merge group 2
+- [x] 2.3 Gate and merge group 2
   - The four gates, exit codes checked before any pipe; merge into `develop`
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes captured before any pipe and merge group 2 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 - [ ] 3. Edits, providers and the wire — after anchor tasks 2.1 and 3.3
   - _Requirements: 5.1-5.6, 6.1-6.4, 1.3_
 
-- [ ] 3.1 SkosEdits: thesaurus gestures over the anchor's writer
+- [-] 3.1 SkosEdits: thesaurus gestures over the anchor's writer
   - Files: `Skos/SkosEdits.cs` + command wrappers + tests
   - `FileUnder` (one `AddTriple(narrower, skos:broader, broader)` — the authoring direction, no inverse triple), `Relate`, `NewConcept` (three triples, one command, IRI minted under the file's base/prefix rules, collision-refused first), `EditLabel`/`EditDocumentation` **via anchor task 2.1's `ReplaceObjectLiteral`** (cited, not specified - the language tag survives by construction), `RemoveConcept` (count-first), `Disconnect` (a both-directions hierarchy edge removes both spans as one command, stated in the confirmation); every refusal (blank-rooted, refused serialization, truncation, out-of-file mapping, SKOS-XL label) answered before any splice; inverses restore bytes through the family command pattern
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_

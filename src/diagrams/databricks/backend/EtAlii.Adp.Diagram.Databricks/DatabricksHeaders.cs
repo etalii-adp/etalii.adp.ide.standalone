@@ -20,7 +20,12 @@ internal static class DatabricksHeaders
 
         try
         {
-            using var reader = new StreamReader(registrationPath);
+            // Shared, per the repository's shared-read discipline: a rename rewrites .adp
+            // headers in place, and a default-share reader would refuse - and be refused by -
+            // that write on Windows. (The same one-line fix RdfRegistrationHeaders took under
+            // the family coordination ruling of 2026-09-03; these two helpers postdated the
+            // shared-read audit and are deliberately identical.)
+            using var reader = Backend.Hierarchy.SharedDocumentReader.OpenText(registrationPath);
             reader.ReadLine(); // the MIME line
             for (var scanned = 0; scanned < 8; scanned++)
             {

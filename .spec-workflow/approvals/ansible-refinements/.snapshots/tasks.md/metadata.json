@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/ansible-refinements/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T21:28:13.926Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788470893859_lpwho8faf",
+      "approvalTitle": "ansible-refinements tasks"
+    }
+  ]
+}

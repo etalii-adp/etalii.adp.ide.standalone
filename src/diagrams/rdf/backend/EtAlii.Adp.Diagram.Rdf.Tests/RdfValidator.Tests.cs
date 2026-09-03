@@ -118,7 +118,7 @@ public class RdfValidatorTests
     {
         // Arrange & act.
         var provider = new ServiceCollection().AddRdf().BuildServiceProvider();
-        var validator = provider.GetServices<IDiagramValidator>().Single();
+        var validator = provider.GetServices<IDiagramValidator>().Single(candidate => candidate.Origin == ServiceCollectionAddRdfExtension.RdfOrigin);
 
         // Assert.
         Assert.Equal(ServiceCollectionAddRdfExtension.RdfOrigin, validator.Origin);

@@ -74,6 +74,7 @@ public sealed class ProblemBroadcaster : IDisposable
             },
             ErrorCount = (uint)set.ErrorCount,
             WarningCount = (uint)set.WarningCount,
+            InfoCount = (uint)set.InfoCount,
             TruncatedAt = (uint)set.TruncatedAt,
         };
         proto.Problems.AddRange(set.Problems.Select(ToProto));
@@ -84,9 +85,16 @@ public sealed class ProblemBroadcaster : IDisposable
     {
         var problem = new Problem
         {
-            Severity = stored.Problem.Severity == DiagramProblemSeverity.Error
-                ? ProblemSeverity.Error
-                : ProblemSeverity.Warning,
+            // A switch rather than a ternary, and one arm per level: the ternary this replaced
+            // collapsed everything that was not an Error into a Warning, so a third severity
+            // would have reached the client disguised as the second one.
+            Severity = stored.Problem.Severity switch
+            {
+                DiagramProblemSeverity.Error => ProblemSeverity.Error,
+                DiagramProblemSeverity.Warning => ProblemSeverity.Warning,
+                DiagramProblemSeverity.Info => ProblemSeverity.Info,
+                _ => ProblemSeverity.Unspecified,
+            },
             Message = stored.Problem.Message,
             RuleId = stored.Problem.RuleId,
             Stale = stored.Stale,
