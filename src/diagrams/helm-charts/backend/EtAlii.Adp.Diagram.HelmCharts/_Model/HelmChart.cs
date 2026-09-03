@@ -19,6 +19,7 @@ namespace EtAlii.Adp.Diagram.HelmCharts;
 /// <param name="Dependencies">Declared dependencies - from <c>Chart.yaml</c> for v2, from <c>requirements.yaml</c> for v1.</param>
 /// <param name="Vendored">What actually sits in <c>charts/</c>: unpacked chart directories and sealed archives.</param>
 /// <param name="Lock">The <c>Chart.lock</c> (or <c>requirements.lock</c>), when present.</param>
+/// <param name="DependenciesFailure">Why a legacy chart's <c>requirements.yaml</c> did not parse, when it did not - v2 declarations live in <c>Chart.yaml</c>, whose failure is <paramref name="MetadataFailure"/>.</param>
 public sealed record HelmChart(
     bool IsChart,
     ChartMetadata? Metadata,
@@ -30,7 +31,8 @@ public sealed record HelmChart(
     CrdsSummary? Crds,
     IReadOnlyList<DependencyDeclaration> Dependencies,
     IReadOnlyList<VendoredEntry> Vendored,
-    LockFile? Lock)
+    LockFile? Lock,
+    HelmYamlFailure? DependenciesFailure = null)
 {
     /// <summary>The folder had no <c>Chart.yaml</c>: a registered non-chart, not an error page.</summary>
     public static HelmChart NotAChart { get; } = new(
