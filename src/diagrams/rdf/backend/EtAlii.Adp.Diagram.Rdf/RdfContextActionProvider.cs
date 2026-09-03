@@ -40,6 +40,30 @@ public sealed class RdfContextActionProvider : IContextActionProvider
     /// <summary>Declare a prefix, asking for <c>prefix: iri</c> in one line.</summary>
     public const string AddPrefixActionId = "rdf.add-prefix";
 
+    /// <summary>The subclass gesture: one <c>rdfs:subClassOf</c> splice, a duplicate refused first (owl-diagram Requirement 6.1).</summary>
+    public const string SubclassActionId = "owl.subclass";
+
+    /// <summary>Add a class at a placement: one <c>a owl:Class</c> declaration (owl-diagram Requirement 6.2).</summary>
+    public const string AddClassActionId = "owl.add-class";
+
+    /// <inheritdoc cref="AddClassActionId" />
+    public const string AddObjectPropertyActionId = "owl.add-object-property";
+
+    /// <inheritdoc cref="AddClassActionId" />
+    public const string AddDatatypePropertyActionId = "owl.add-datatype-property";
+
+    /// <inheritdoc cref="AddClassActionId" />
+    public const string AddIndividualActionId = "owl.add-individual";
+
+    /// <summary>What each OWL add action declares its new term as.</summary>
+    private static readonly Dictionary<string, string> _owlDeclarationTypes = new(StringComparer.Ordinal)
+    {
+        [AddClassActionId] = OwlVocabulary.Class,
+        [AddObjectPropertyActionId] = OwlVocabulary.ObjectProperty,
+        [AddDatatypePropertyActionId] = OwlVocabulary.DatatypeProperty,
+        [AddIndividualActionId] = OwlVocabulary.NamedIndividual,
+    };
+
     private readonly IHistoryStackStore _historyStacks;
     private readonly IRdfDocumentStore _documents;
 
@@ -76,7 +100,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
             return Result([]);
         }
 
-        if (RdfSelection.ResourceOf(entry, target.ElementId) is { } iri)
+        if ((RdfSelection.ResourceOf(entry, target.ElementId) ?? OwlSelection.IndividualIriOf(entry, target.ElementId)) is { } iri)
         {
             var touching = RdfSelection.Touching(entry, iri).Count;
             return Result(
@@ -106,23 +130,40 @@ public sealed class RdfContextActionProvider : IContextActionProvider
 
         if (RdfNewPlacement.TryParse(target.ElementId, out _, out _))
         {
-            return Result(
-            [
-                new ContextActionGroupDefinition(
-                [
-                    new ContextActionDefinition(AddResourceActionId, "Add resource here…", "mdi-card-plus-outline"),
-                    new ContextActionDefinition(AddPrefixActionId, "Declare prefix…", "mdi-at"),
-                ]),
-            ]);
+            var placementActions = new List<ContextActionDefinition>
+            {
+                new(AddResourceActionId, "Add resource here…", "mdi-card-plus-outline"),
+                new(AddPrefixActionId, "Declare prefix…", "mdi-at"),
+            };
+            if (OwlSelection.IsOntologyDocument(entry))
+            {
+                // The ontology vocabulary, offered exactly where the document carries the
+                // marker - the same entries the OWL toolbox drops (owl-diagram Requirement 7.1).
+                placementActions.Add(new ContextActionDefinition(AddClassActionId, "Add class here…", "mdi-shape-circle-plus"));
+                placementActions.Add(new ContextActionDefinition(AddObjectPropertyActionId, "Add object property…", "mdi-ray-start-arrow"));
+                placementActions.Add(new ContextActionDefinition(AddDatatypePropertyActionId, "Add datatype property…", "mdi-form-textbox"));
+                placementActions.Add(new ContextActionDefinition(AddIndividualActionId, "Add individual…", "mdi-account-outline"));
+            }
+
+            return Result([new ContextActionGroupDefinition(placementActions)]);
         }
 
-        if (RdfRelationGesture.TryParse(target.ElementId, out _, out _))
+        if (RdfRelationGesture.TryParse(target.ElementId, out var gestureFrom, out var gestureTo))
         {
-            return Result(
-            [
-                new ContextActionGroupDefinition(
-                    [new ContextActionDefinition(ConnectActionId, "Relate…", "mdi-ray-start-arrow")]),
-            ]);
+            var relationActions = new List<ContextActionDefinition>();
+
+            // Between two classes the gesture's first meaning is hierarchy: one
+            // rdfs:subClassOf splice, no dialog (owl-diagram Requirement 6.1).
+            var fromIri = RdfSelection.ResourceOf(entry, gestureFrom);
+            var toIri = RdfSelection.ResourceOf(entry, gestureTo);
+            if (fromIri is not null && toIri is not null
+                && OwlSelection.IsClass(entry, fromIri) && OwlSelection.IsClass(entry, toIri))
+            {
+                relationActions.Add(new ContextActionDefinition(SubclassActionId, "Subclass of", "mdi-file-tree"));
+            }
+
+            relationActions.Add(new ContextActionDefinition(ConnectActionId, "Relate…", "mdi-ray-start-arrow"));
+            return Result([new ContextActionGroupDefinition(relationActions)]);
         }
 
         // Blank nodes and the banner: describable, never editable.
@@ -141,10 +182,38 @@ public sealed class RdfContextActionProvider : IContextActionProvider
             return new ContextExecutionFailed(RdfSelection.TruncatedRefusal);
         }
 
-        var iri = RdfSelection.ResourceOf(entry, target.ElementId);
+        var iri = RdfSelection.ResourceOf(entry, target.ElementId) ?? OwlSelection.IndividualIriOf(entry, target.ElementId);
 
         switch (actionId)
         {
+            case SubclassActionId when RdfRelationGesture.TryParse(target.ElementId, out var from, out var to):
+            {
+                var fromIri = RdfSelection.ResourceOf(entry, from);
+                var toIri = RdfSelection.ResourceOf(entry, to);
+                if (fromIri is null || toIri is null)
+                {
+                    return new ContextExecutionFailed("A subclass relation needs two named classes.");
+                }
+
+                // Refused before any splice (owl-diagram Requirement 6.1).
+                var alreadyAsserted = entry.Model.Triples.Any(t =>
+                    t.Subject is IriTerm s && s.Iri == fromIri
+                    && t.Predicate.Iri == OwlVocabulary.SubClassOf
+                    && t.Object is IriTerm o && o.Iri == toIri);
+                if (alreadyAsserted)
+                {
+                    return new ContextExecutionFailed(OwlSelection.DuplicateSubclassRefusal);
+                }
+
+                return await DispatchAsync(
+                    target, new AddRdfTripleCommand(target.ResolvedFullPath, fromIri, OwlVocabulary.SubClassOf, toIri), cancellationToken);
+            }
+
+            case AddClassActionId or AddObjectPropertyActionId or AddDatatypePropertyActionId or AddIndividualActionId:
+                return new ContextExecutionRequiresInput(new ContextInputRequest(
+                    "Add " + actionId["owl.add-".Length..].Replace('-', ' '),
+                    "mdi-shape-circle-plus", "IRI or prefixed name", "", "Add"));
+
             case RenameResourceActionId when iri is not null:
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
                     "Rename resource", "mdi-pencil-outline", "New IRI or prefixed name",
@@ -213,7 +282,8 @@ public sealed class RdfContextActionProvider : IContextActionProvider
 
         // The writers refuse on exactly these terms at commit; validating here lets the dialog
         // refuse first - an undeclared prefix by name, never silently invented (Requirement 5.7).
-        if (actionId is RenameResourceActionId or ConnectActionId or AddResourceActionId)
+        if (actionId is RenameResourceActionId or ConnectActionId or AddResourceActionId
+            || _owlDeclarationTypes.ContainsKey(actionId))
         {
             var entry = _documents.GetOrLoad(target.ResolvedFullPath);
             var (resolved, error) = RdfTermInput.Resolve(entry.Model, value);
@@ -270,7 +340,15 @@ public sealed class RdfContextActionProvider : IContextActionProvider
     private static ICommand? CommandFor(RdfDocumentEntry entry, ContextTarget target, string actionId, string value)
     {
         var body = target.ResolvedFullPath;
-        var iri = RdfSelection.ResourceOf(entry, target.ElementId);
+        var iri = RdfSelection.ResourceOf(entry, target.ElementId) ?? OwlSelection.IndividualIriOf(entry, target.ElementId);
+
+        if (_owlDeclarationTypes.TryGetValue(actionId, out var declarationType))
+        {
+            // A new ontology term is one stated triple: itself, declared as what the palette
+            // entry says it is (owl-diagram Requirement 6.2).
+            var (declared, _) = RdfTermInput.Resolve(entry.Model, value);
+            return declared is null ? null : new AddRdfTripleCommand(body, declared, RdfVocabulary.Type, declarationType);
+        }
 
         switch (actionId)
         {
