@@ -33,7 +33,7 @@ One worktree for the whole spec (`.claude/worktrees/owl`, short per the MAX_PATH
 - [ ] 2. Wire, definition, session and providers
   - _Requirements: 1.1-1.6, 6.1-6.5, 7.1-7.3, 8.1-8.4_
 
-- [ ] 2.1 Wire payloads
+- [-] 2.1 Wire payloads
   - Files: `src/diagrams/rdf/api/rdf.proto` gains `OwlNodePayload`, `OwlEdgePayload`, `OwlExpressionPayload` per design's Data Models section, reusing `RdfLiteralRow` and `RdfTruncationPayload`; generation already wired
   - _Requirements: 1.1, 3.1, 8.3_
   - _Prompt: Implement the task for spec owl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Backend developer familiar with the module proto setup | Task: Add the three OWL payload messages from design.md's Data Models section to rdf.proto, reusing the anchor's row and truncation messages, and verify both sides generate | Restrictions: payloads ride the existing Element/Delta as Any; no new services or streams; no changes to the anchor's messages | _Leverage: rdf.proto and its generation wiring from the anchor's task 3.1 | Success: both sides generate and the payloads are usable from backend and client code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
