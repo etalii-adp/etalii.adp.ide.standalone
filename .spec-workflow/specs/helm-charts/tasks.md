@@ -86,13 +86,13 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - _Requirements: 6.1_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the banded layout as a pure deterministic function with fixture tests | Restrictions: no randomness, no filesystem; determinism is a test | _Leverage: AnsibleLayout's band approach | Success: layout tests pin the banding on the fixtures. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4.3 The definition and service registration
+- [x] 4.3 The definition and service registration
   - Files: `Diagram.cs` (implemented shape: named `Chart` property with `Build`, `Subject: DiagramSubject.Folder`, no `Extension`, fitting mdi icon), `ServiceCollection.AddHelmCharts.cs`, registration/discovery tests
   - No document factory, no toolbox provider, no action provider, no commands — each absence is the requirements' stated position; the Add flow suggests `helm/chart` on a folder containing `Chart.yaml`
   - _Requirements: 2.1, 2.3, 2.4, 12.1, 12.2_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Declare the helm/chart folder-subject definition and the single-file service registration with discovery tests, wiring the Add-flow folder suggestion | Restrictions: no DocumentExtension constant — tech.md says that omission is correct for a folder subject, do not fix it; core files are not edited | _Leverage: the ansible module's Diagram.cs and ServiceCollection.AddAnsibleStructure.cs | Success: discovery tests see the definition; Add suggests on a Chart.yaml folder; the module registers without core changes. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.4 HelmSession and factory, with the verified seam as precondition
+- [-] 4.4 HelmSession and factory, with the verified seam as precondition
   - Files: `HelmSession.cs`, `HelmSessionFactory.cs` + tests
   - **Stated preconditions, verified in code at design time — an implementer finding any of them false stops and reports rather than working around:** (a) `RegistrationLayout.Read` tolerates a registration whose only header is the MIME line; (b) the router hands a folder-subject factory the `.adp` as both `bodyPath` and `registrationPath` (pinned in `AnsibleSessionFactory`); (c) `IDiagramSession.MoveElementToAsync` is a default-refused, overridable member. The session delivers the whole diagram at `Baseline()`, `UpdateView` answers nothing new, `MoveElementAsync` (reparent) refuses with a sentence, `MoveElementToAsync` refuses edge ids then dispatches `SetRegistrationLayoutCommand` through the history stack; store changes diff against the last delivery; positions overlay via `RegistrationLayout.Apply`
   - _Requirements: 6.2, 6.3, 6.4, 2.2_
