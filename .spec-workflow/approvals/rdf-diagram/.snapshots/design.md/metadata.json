@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/rdf-diagram/design.md",
-  "currentVersion": 2,
+  "currentVersion": 3,
   "snapshots": [
     {
       "version": 1,
@@ -17,6 +17,14 @@
       "trigger": "approved",
       "approvalId": "approval_1788433841349_lzo3pbeeg",
       "approvalTitle": "rdf-diagram design"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-09-03T13:30:38.295Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788435806817_t0i1z2xj4",
+      "approvalTitle": "rdf-diagram design amendment: ReplaceObjectLiteral in the family writer"
     }
   ]
 }
