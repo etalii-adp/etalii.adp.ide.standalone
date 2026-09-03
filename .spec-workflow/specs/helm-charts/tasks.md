@@ -55,13 +55,13 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - _Requirements: 5.2_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the alias-aware three-state resolution matcher as a pure function with tests for alias matching, archive-name stripping, Unvendored open ends and Undeclared leftovers | Restrictions: ordinal matching only; no version-constraint evaluation — the lock's pin is display data, never validated against the range | _Leverage: the _Model records from 2.3; AnsibleEdge's three-state TargetResolution as the shape precedent | Success: matcher tests pin every state transition including the alias and tgz cases. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3.2 HelmGraph: nodes and the five edge families
+- [x] 3.2 HelmGraph: nodes and the five edge families
   - Files: `HelmGraph.cs` + `_Model` node/edge records + tests
   - declares (constraint label), resolves (via 3.1), overrides (stack), configures (effective-name key; `global:` marks the node), includes (literal names to local partials; unmatched become open ends, not findings); condition badges resolved against parsed default values where the path exists; lock pins carried onto dependency nodes
   - _Requirements: 5.1, 5.3, 5.4, 5.5, 5.6, 5.7_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Build HelmGraph from the model per design, every edge family and badge tested on the fixtures, unmatched includes drawn as open ends | Restrictions: pure function over the model; no filesystem access; open ends are model states, never exceptions | _Leverage: the matcher from 3.1; AnsibleGraph's node/edge shape | Success: graph tests cover each edge family's fire and non-fire cases on the three fixtures. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.3 HelmChartStore and the watched folder
+- [-] 3.3 HelmChartStore and the watched folder
   - Files: `IHelmChartStore.cs`, `HelmChartStore.cs`, `HelmWatchedFolder.cs` + tests
   - `GetOrLoad`/`Get`/`Acquire`/`Release`; one guarded coalescing watcher per acquired chart root; a settled burst is one whole-folder re-read; burst tests assert a range, never an exact count; no save method exists
   - _Requirements: 1.4_
