@@ -24,7 +24,7 @@ The `w3c/shacl` reading joins `src/diagrams/rdf/` as a further definition over t
 - **`RdfWriter`** — `AddTriple` carries targets, `rdf:type sh:NodeShape` and `sh:deactivated`; `RenameTerm` is the family rename verbatim; only two shacl-specific operations are added (below).
 - **`RegistrationLayout` + core layout command** — consumed unchanged; only `res:{iri}` card ids ever reach it.
 - **Central canvas library** — `BoxElement` cards (rows and chips as internal content, the mindmap/rdf card idiom), `StraightConnection` edges with labels, shared appearance classes, `CanvasScrollbars`, truncation banner precedent.
-- **Provider trio pattern, problems pipeline, `ExampleRegistrationTests`/`ExampleReplicationTests`** — joined by existing.
+- **Provider trio pattern, problems pipeline, `ExampleRegistrationTests`** — joined by existing. (`ExampleReplicationTests`, which byte-compared the two example trees, was deleted on 2026-09-03 when they were deliberately disconnected: the showcase copy is still seeded, no longer byte-compared.)
 
 ### Integration Points
 

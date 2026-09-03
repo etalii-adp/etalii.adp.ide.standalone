@@ -1,5 +1,14 @@
 # Tasks Document
 
+> **Note, added 2026-09-03 after this spec completed.** The `ExampleReplication.Tests` named
+> below no longer exists: it byte-compared each module's `examples/` tree against its
+> `src/examples/` replica, and was deleted when the two trees were deliberately disconnected.
+> Every sentence mentioning it describes what was true while these tasks ran, and is left
+> standing as the record of that — the tasks did pass that guard. What holds today is
+> `ExampleRegistration.Tests`, which opens every registration in both trees against the
+> deployed catalog; seeding the showcase copy is still a step of the work, it is simply no
+> longer held byte-identical.
+
 One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short, because the Windows MAX_PATH failure mode (apphost never produced, `dotnet test` reporting zero tests) was traced to long worktree names, and this module's deepest project paths are long. Each group ends in a gate-and-merge task judged by exit code. Tasks marked **(new work)** build the design's genuinely new pieces; everything else replicates established Ansible/Databricks patterns. Example ordering is fact-based: `ExampleReplication.Tests` demands central copies land in the same change as module copies, and `ExampleRegistration.Tests` opens every example `.adp` against the registered definitions — so the charts arrive in group 1 (the external-risk-first task) while their `.adp` registrations wait for group 7, after the definition exists.
 
 - [x] 1. Examples acquired and attributed **(new work: the acquisition plan executed)**

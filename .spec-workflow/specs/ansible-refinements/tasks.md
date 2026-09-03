@@ -8,19 +8,19 @@ One worktree for the whole spec: `.claude/worktrees/ansible-ref` — deliberatel
 
 **Pattern citation, not re-derivation.** The layout mechanism has four shipped consumers (databricks built it, helm shipped it, rdf uses it, the core command underpins them). Helm's implementation proved the full cycle live: a drag lands in the registration, undo restores it, and the subject's own files stay byte-identical, with dragged and computed positions sharing one render path because the registration lives inside the watched folder. Ansible has exactly that shape. Cite it; do not re-verify it.
 
-- [ ] 1. The theme token, completed centrally
+- [x] 1. The theme token, completed centrally
   - _Requirements: 5.1, 5.6_
 
-- [ ] 1.1 Define `--color-surface-raised` for both themes
+- [x] 1.1 Define `--color-surface-raised` for both themes
   - Files: `src/client/src/index.css` (two definitions, light and dark); `src/diagrams/ansible-structure/client/ansible-structure.css` (drop the literal fallbacks now the tokens resolve)
   - The token is referenced 14 times across four files — `index.css` itself once, ansible eight, helm-charts three, wardley-map twice — and defined nowhere, so every rule using it currently falls back silently. **The commit message must say that defining it changes the rendered shade of the helm-charts and wardley-map canvases too**: a reviewer seeing unrelated diagrams shift deserves the reason in the history rather than in a chat. Dark adopts the value `index.css` already uses as its own fallback (`rgb(255 255 255 / 0.06)`); light takes the mirror-image faint dark tint, starting from ansible's `rgb(0 0 0 / 6%)` fallback and checked against a real light-mode canvas.
   - _Requirements: 5.1, 5.6_
   - _Prompt: Implement the task for spec ansible-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer with design-system experience | Task: Add light and dark definitions of --color-surface-raised to src/client/src/index.css beside the existing colour tokens, then remove the now-redundant literal fallbacks from ansible-structure.css, following requirements 5.1 and 5.6 | Restrictions: do not add --color-warning, it already exists via commit 3e130bba; do not touch helm-charts.css or wardley.css — they heal by resolving the token, which the commit message must state explicitly; verify both themes visually rather than assuming the values | _Leverage: the existing --color-danger/--color-success/--color-warning definitions in index.css as the shape and commentary style | Success: the token has exactly two definitions, ansible's stylesheet references no undefined custom property, and the commit message names the helm and wardley side effect. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. Backend: authored positions
+- [-] 2. Backend: authored positions
   - _Requirements: 1.1, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 2.6, 3.1, 3.2, 3.4_
 
-- [ ] 2.1 The mapper overlays authored positions
+- [-] 2.1 The mapper overlays authored positions
   - Files: `src/diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure/AnsibleElementMapper.cs` and its tests
   - `Visible` takes the stored positions and applies `RegistrationLayout.Apply` to the computed box centres before viewport filtering and diffing; edges keep following their endpoints' final positions. `AnsibleLayout.Compute` stays pure and untouched, so computed layout remains testable on its own.
   - Tests: an authored position overrides the computed centre; unauthored elements keep computed positions; a stored id the graph no longer produces changes nothing (Requirement 3.1's stale-key case); an edge tracks a moved endpoint.

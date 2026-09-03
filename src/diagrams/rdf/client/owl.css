@@ -1,0 +1,114 @@
+/*
+ * The ontology reading's own appearance. Everything a canvas shares - host, viewport, nodes,
+ * labels, connection lines, anchors, selection, status and rejection - comes from the central
+ * canvas.css classes composed in the markup; only what is genuinely this reading's lives here.
+ *
+ * Kind is carried by SHAPE and edge STYLE, with theme-aware colours from the shared variables:
+ * the notation's own fixed palette is an identity rather than a semantics, and a diagram has to
+ * read in both light and dark.
+ */
+
+/* A class, a Thing anchor or an expression: the round shapes. */
+.owl-shape {
+  fill: var(--color-surface);
+  stroke: var(--color-border);
+}
+
+/* Equivalence, drawn as the notation draws it: a second ring just inside the first. */
+.owl-shape-inner {
+  fill: none;
+  stroke: var(--color-border);
+}
+
+/* owl:Thing - present, and visibly not one of this ontology's own terms. */
+.owl-thing .owl-shape {
+  stroke-dasharray: 4 3;
+}
+
+/* A datatype rectangle: the schema half of the literal-node position. */
+.owl-datatype-box {
+  fill: var(--color-surface);
+  stroke: var(--color-border);
+}
+
+/* An individual's card and the ontology header card. */
+.owl-card-box {
+  fill: var(--color-surface);
+  stroke: var(--color-border);
+}
+
+/* The type badges worn under a card's title. */
+.owl-badges {
+  font-size: 11px;
+  fill: var(--color-primary);
+  pointer-events: none;
+}
+
+/* One annotation or assertion row inside a card. */
+.owl-row {
+  font-size: 11px;
+  fill: var(--color-text-muted);
+  pointer-events: none;
+}
+
+/* A class expression: compact, and visibly not an entity of its own. */
+.owl-restriction .owl-shape,
+.owl-operator .owl-shape {
+  stroke-dasharray: 3 2;
+}
+
+.owl-restriction .owl-label,
+.owl-operator .owl-label {
+  font-size: 11px;
+}
+
+/* Deprecated, and borrowed-from-elsewhere: dimmed, as the notation dims them. */
+.owl-deprecated,
+.owl-external {
+  opacity: 0.55;
+}
+
+/* A structurally broken expression - marked rather than hidden. */
+.owl-malformed .owl-shape {
+  stroke: var(--color-warning);
+}
+
+/* The axiom edges, each recognisable by its own line rather than by colour alone. */
+.owl-edge-subclass .owl-edge-line {
+  stroke-dasharray: 6 4;
+}
+
+.owl-edge-expression .owl-edge-line {
+  stroke-dasharray: 2 3;
+  opacity: 0.7;
+}
+
+.owl-edge-disjoint .owl-edge-line {
+  stroke-dasharray: 1 5;
+  stroke-linecap: round;
+}
+
+.owl-edge-equivalent .owl-edge-line {
+  stroke-width: 2;
+}
+
+/* The property riding its edge. */
+.owl-edge-label {
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+/* The showing-N-of-M banner over a budget-cut view (Requirement 8.3). */
+.owl-truncation-banner {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 4px 12px;
+  border: 1px solid var(--color-warning);
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-warning);
+  font-size: 12px;
+}

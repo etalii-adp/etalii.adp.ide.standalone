@@ -1,5 +1,16 @@
 # Tasks Document
 
+> **Correction, 2026-09-03: `ExampleReplicationTests` no longer exists.** It byte-compared each
+> module's `examples/` tree against its `src/examples/` replica, and was deleted when the two
+> trees were deliberately disconnected. Wherever a task below names it — as a guard, a
+> verification step or a `_Leverage` — or requires the showcase copy to be **byte-identical**, read it as follows: **seeding the showcase copy remains a
+> step of that task**, it is simply no longer held byte-identical, and the guard that covers both
+> trees now is `ExampleRegistrationTests`, which opens every registration in each against the
+> deployed catalog. The task wording is otherwise left exactly as written, deliberately: several
+> of these tasks are in flight, and rewording a criterion under the agent working it would be
+> worse than a stale sentence.
+
+
 One worktree for the whole spec (`.claude/worktrees/sparql`, short per the MAX_PATH/apphost trap; CLAUDE.md's one-worktree-per-specification rule). Each group ends in a gate-and-merge task with all four gates judged by exit code, codes captured before any pipe.
 
 **Seams this spec deliberately does not depend on.** The `rdf-diagram` tasks name three sibling seams; this document depends on **none of them**, and says so rather than leaving a reader to notice the absence: not task 1.1's triplestore document store and `RdfModel` (a query is not a serialization of a graph — this module has its own parser and model), not task 2.1's triple writer and splice discipline (nothing here writes the body; the no-writer proof in task 5.2 is the guarantee), and not task 3.2's registration header helper (the requirements claim no item-10 header — a `.rq` needs no reading-specific configuration). What this spec consumes arrives through core alone: the central canvas library and family visual conventions, the core `layout:` block, and the example vendoring discipline. Nothing in `src/diagrams/sparql/` may reference `src/diagrams/rdf/`.
@@ -55,14 +66,14 @@ One worktree for the whole spec (`.claude/worktrees/sparql`, short per the MAX_P
   - _Requirements: 6.1, 6.2, 7.1, 7.2, 7.3_
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the context providers | Task: Implement the resolver, the read-only property provider with every row carrying its reason, the action provider yielding no mutating actions, and the validator's three findings, plus the registration-layer no-writer test asserting no toolbox entries and no mutating action can reach the client | Restrictions: read-only reasons are enforced per the property-grid contract, not decorative; the validator does no execution, no network, no endpoint contact; register no toolbox provider at all | _Leverage: the property-grid contract and an existing module's provider registration shape; the model from 1.1 | Success: provider tests pass per selection kind with reasons asserted; each finding reports on its fixture with file and line; the registration test fails if a toolbox entry or mutating action appears. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3.3 Gate and merge group 3
+- [x] 3.3 Gate and merge group 3
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 3 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 - [ ] 4. Client: the query canvas
   - _Requirements: 3.1-3.7, 4.2, 6.1, 6.3_
 
-- [ ] 4.1 SparqlCanvas from the central library
+- [-] 4.1 SparqlCanvas from the central library
   - Files: `src/diagrams/sparql/client/` — `SparqlCanvas.tsx`, model and stream hooks, `register.ts` (importing the shared `canvas.css`), `sparql.css` (module-own rules only), `package.json` + tests
   - Composed from `src/client/src/canvas/`: dashed-outline variable nodes with the projection mark, solid IRI nodes with prefixed display, literal rectangles with annotation, `StraightConnection` edges labeled with predicate or as-written path, labeled containment frames for regions (the library's boundary element where it offers one, a module-styled frame otherwise), `FILTER`/`BIND`/`VALUES` badges anchored to their targets, the header band, `CanvasScrollbars`, drag repositioning for accepted ids only, the truncation banner per precedent; payload decode type-checked before `fromBinary`
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 4.2, 6.1, 6.3_
