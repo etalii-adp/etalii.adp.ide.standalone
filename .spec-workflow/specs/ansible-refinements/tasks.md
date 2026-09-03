@@ -20,14 +20,14 @@ One worktree for the whole spec: `.claude/worktrees/ansible-ref` — deliberatel
 - [-] 2. Backend: authored positions
   - _Requirements: 1.1, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 2.6, 3.1, 3.2, 3.4_
 
-- [-] 2.1 The mapper overlays authored positions
+- [x] 2.1 The mapper overlays authored positions
   - Files: `src/diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure/AnsibleElementMapper.cs` and its tests
   - `Visible` takes the stored positions and applies `RegistrationLayout.Apply` to the computed box centres before viewport filtering and diffing; edges keep following their endpoints' final positions. `AnsibleLayout.Compute` stays pure and untouched, so computed layout remains testable on its own.
   - Tests: an authored position overrides the computed centre; unauthored elements keep computed positions; a stored id the graph no longer produces changes nothing (Requirement 3.1's stale-key case); an edge tracks a moved endpoint.
   - _Requirements: 1.4, 3.1, 3.4_
   - _Prompt: Implement the task for spec ansible-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Extend AnsibleElementMapper.Visible to overlay stored registration positions onto the computed layout via RegistrationLayout.Apply, covering requirements 1.4, 3.1 and 3.4 | Restrictions: AnsibleLayout.Compute stays pure and unmodified; no core changes; the overlay happens before viewport filtering so a dragged element leaving the viewport behaves like any other | _Leverage: core RegistrationLayout.Apply; DatabricksSession.Render's overlay call as the shape | Success: the four mapper tests pass, computed-only rendering is unchanged when no positions are stored. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.2 The session dispatches the reposition
+- [-] 2.2 The session dispatches the reposition
   - Files: `AnsibleSession.cs` and its tests
   - Constructor gains the `.adp` path and an optional `IHistoryStack`; `Render` reads stored positions with `RegistrationLayout.Read` and passes them to the mapper. `MoveElementToAsync` overrides the core default: refuse when there is no history stack (the house read-only sentence), refuse when there is no registration path, refuse `edge:`-prefixed ids ("an edge follows its endpoints"), otherwise dispatch `SetRegistrationLayoutCommand(adpPath, elementId, x, y)` and return the result's error or empty. `MoveElementAsync` (reparent) keeps refusing, with today's wording.
   - **Rewrite the class remark** that says taking no `IHistoryStack` is the design's clearest statement — that statement stops being true in this task, and a comment asserting the opposite of the code is worse than no comment.
