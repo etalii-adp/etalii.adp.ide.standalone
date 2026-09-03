@@ -56,8 +56,21 @@ public sealed record DiagramDefinition(
     string Extension = "",
     bool SharedExtension = false,
     DiagramSubject Subject = DiagramSubject.Document,
-    Action<IHostApplicationBuilder>? Build = null!)
+    Action<IHostApplicationBuilder>? Build = null!,
+    string AlternateExtension = "")
 {
+    /// <summary>
+    /// Whether this type declares <paramref name="extension"/> - its own, or the alternate a
+    /// second serialization of the same format uses (<c>.nt</c> beside <c>.ttl</c> for the RDF
+    /// family). The alternate shares the primary's <see cref="SharedExtension"/> stance and
+    /// routes through the same engine; it does not derive registration siblings, so a body
+    /// carrying it registers with an explicit <c>body:</c> header.
+    /// </summary>
+    public bool DeclaresExtension(string extension) =>
+        Extension.Length > 0
+        && (string.Equals(Extension, extension, StringComparison.OrdinalIgnoreCase)
+            || (AlternateExtension.Length > 0 && string.Equals(AlternateExtension, extension, StringComparison.OrdinalIgnoreCase)));
+
     /// <summary>Whether this type keeps its body in a sibling file rather than in the <c>.adp</c> file itself.</summary>
     public bool HasDocumentSibling => Extension.Length > 0;
 

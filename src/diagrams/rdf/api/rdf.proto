@@ -20,7 +20,9 @@ message RdfResourcePayload {
   string display = 2;
 
   // The prefixed names of the resource's rdf:type triples, badge order (Requirement 3.3).
-  repeated string types = 3;
+  // Named type_badges rather than types because protobuf's own nested Types class claims that
+  // property name in the generated C#.
+  repeated string type_badges = 3;
 
   // The literal-valued properties, rendered as rows inside the card, never as nodes
   // (Requirement 3.2).

@@ -83,7 +83,7 @@ public sealed class DiagramFileRouter
 
         var extension = IoPath.GetExtension(path);
         return extension.Length > 0
-            && _catalog.All.Any(definition => string.Equals(definition.Extension, extension, StringComparison.OrdinalIgnoreCase));
+            && _catalog.All.Any(definition => definition.DeclaresExtension(extension));
     }
 
     private DiagramRouting RouteRegistration(string adpPath, string? projectRoot)
@@ -141,7 +141,7 @@ public sealed class DiagramFileRouter
         }
 
         var claimants = _catalog.All
-            .Where(definition => string.Equals(definition.Extension, extension, StringComparison.OrdinalIgnoreCase))
+            .Where(definition => definition.DeclaresExtension(extension))
             .ToArray();
 
         // An extension every claimant calls shared is one nobody may claim on sight: a repository
