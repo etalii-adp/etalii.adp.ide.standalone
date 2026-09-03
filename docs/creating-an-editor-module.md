@@ -9,7 +9,7 @@ Read these sections of the diagram walkthrough first; they apply verbatim, with 
 - [What a module is](creating-a-diagram-module.md#what-a-module-is) — the same four folders (`backend/` holding `EtAlii.Adp.Editor.<Editor>` and its `.Tests`, `api/`, `client/`, `examples/`), the same absolute dependency direction. [`src/editors/readme.md`](../src/editors/readme.md) states the layout in the family's own words.
 - [The definition](creating-a-diagram-module.md#the-definition) — a static `Editor` class exposing `Definitions`, discovered at startup by `EditorDefinitionDiscovery` ([`src/backend/EtAlii.Adp.Editor/EditorDefinitionDiscovery.cs`](../src/backend/EtAlii.Adp.Editor/EditorDefinitionDiscovery.cs)), the same reflection walk the diagram family uses, feeding `AddEditorDefinitions` which invokes each definition's `Build` delegate. Adding a module edits no core file here either.
 - [The client](creating-a-diagram-module.md#the-client) — a `client/register.ts` found by the *same* `import.meta.glob` in [`diagramCanvases.ts`](../src/client/src/shell/panels/diagramCanvases.ts) (its pattern covers `editors/*/client/register.ts` too), matching on the editor's mime.
-- [Tests and examples](creating-a-diagram-module.md#tests-fixtures-and-examples) — xUnit v3 executable test projects, the CLAUDE.md test command, and `examples/` replicated into `src/examples/` under the same `ExampleReplicationTests` enforcement. An editor's examples replicate byte-for-byte (no `body:` headers to differ).
+- [Tests and examples](creating-a-diagram-module.md#tests-fixtures-and-examples) — xUnit v3 executable test projects, the CLAUDE.md test command, and `examples/` seeded into `src/examples/`. The two copies are not held in sync (see the linked section); what is checked in both trees is that every registration opens against the deployed catalog.
 
 The one shared piece with a family twist: an editor module's spec still comes first, and the family's own requirements live in the [`modular-text-editors`](../.spec-workflow/archive/specs/modular-text-editors/requirements.md) spec — the analogue of tech.md's diagram-type checklist.
 
@@ -54,5 +54,5 @@ For a new editor `foo`:
 2. `Editor.cs` with the definition: id, title, description, icon, claims, `Build` registering your `IEditorSessionFactory`.
 3. The session, on `TextFileBuffer`, with tests pinning round-trip shape (copy plain's fixtures approach).
 4. `client/register.ts` matching `editor/foo`, and the panel it mounts.
-5. `examples/` with files the editor is for — and their byte-identical copies under `src/examples/editors/foo/`.
+5. `examples/` with files the editor is for — seeded into `src/examples/editors/foo/` so the editor appears in the combined showcase project; the two copies are not held in sync afterwards.
 6. No core edits, no shell edits, no catalog row — the diagram catalog tracks diagram types; editors are listed by `src/editors/readme.md`'s own folder.

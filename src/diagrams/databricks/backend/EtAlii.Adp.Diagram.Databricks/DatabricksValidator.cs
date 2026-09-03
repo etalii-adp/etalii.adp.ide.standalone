@@ -32,6 +32,8 @@ public sealed class DatabricksValidator(DiagramOrigin origin) : IDiagramValidato
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
+        // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+        // Reason: Can still be null if the document is empty.
         var document = DatabricksDocument.Parse(request.Document ?? "");
         DatabricksDocumentEntry entry;
         try

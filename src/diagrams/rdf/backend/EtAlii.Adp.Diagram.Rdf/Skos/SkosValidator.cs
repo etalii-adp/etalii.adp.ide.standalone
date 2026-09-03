@@ -63,6 +63,8 @@ public sealed class SkosValidator(DiagramOrigin origin) : IDiagramValidator
             return problems;
         }
 
+        // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+        // Reason: Can still be null if the document is empty.
         var model = RdfParser.Parse(RdfDocument.Parse(request.Document ?? ""));
         var projection = SkosProjection.Project(model);
         var layout = SkosLayout.Layout(projection);

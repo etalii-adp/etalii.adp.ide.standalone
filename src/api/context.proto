@@ -221,6 +221,11 @@ enum ProblemSeverity {
   PROBLEM_SEVERITY_UNSPECIFIED = 0;
   WARNING = 1;
   ERROR = 2;
+  // Informational: worth saying, nothing wrong. Numbered 3 rather than inserted below
+  // WARNING because proto enum values are append-only - renumbering WARNING and ERROR would
+  // reinterpret every message already on a wire or in a client's hands. The severity ORDER
+  // lives in the domain enum (DiagramProblemSeverity), never in these numbers.
+  INFO = 3;
 }
 
 // One thing wrong with one file, as validation found it.
@@ -254,6 +259,9 @@ message ProjectProblems {
   uint32 error_count = 3;
   uint32 warning_count = 4;
   uint32 truncated_at = 5;         // 0 when the whole set was sent
+  // Informational findings are counted separately and never folded into warning_count: a
+  // panel that adds them together would report a clean file as having something wrong.
+  uint32 info_count = 6;
 }
 
 // Everything the Watch stream carries: selection changes, prompts an action started on this
