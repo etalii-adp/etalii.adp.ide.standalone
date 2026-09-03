@@ -104,7 +104,7 @@ internal static class OwlLayout
         double Band(IEnumerable<OwlNode> nodes, double top)
         {
             var y = top + BandGap;
-            var placed = 0;
+            var placed = 0f;
             var bottom = top;
             foreach (var node in nodes)
             {

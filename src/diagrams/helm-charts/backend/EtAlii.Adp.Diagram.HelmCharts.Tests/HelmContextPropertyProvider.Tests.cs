@@ -45,6 +45,11 @@ public class HelmContextPropertyProviderTests : IDisposable
             // Assert.
             Assert.All(rows, row =>
             {
+                if (row == null!)
+                {
+                    throw new ArgumentNullException(nameof(row));
+                }
+
                 Assert.False(string.IsNullOrEmpty(row.ReadOnlyReason), $"{elementId}/{row.Id} has no reason");
                 Assert.Contains("Defined in ", row.ReadOnlyReason, StringComparison.Ordinal);
                 Assert.Contains("edit it in a text editor", row.ReadOnlyReason, StringComparison.Ordinal);

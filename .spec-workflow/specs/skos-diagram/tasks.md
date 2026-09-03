@@ -32,26 +32,26 @@ One worktree for the whole spec (`.claude/worktrees/skos`, per CLAUDE.md's one-w
 - [ ] 2. Definition, session, header and validation — after anchor tasks 3.2 and 1.1
   - _Requirements: 2.1-2.5, 3.2, 4.3-4.4, 7.1-7.7_
 
-- [-] 2.1 The w3c/skos definition, session factory and the language: header
+- [x] 2.1 The w3c/skos definition, session factory and the language: header
   - Files: `Skos/SkosSessionFactory.cs`, `Skos/SkosSession.cs`, the definition appended in `Diagram.cs` (+ tests)
   - `SharedExtension: true` over `.ttl`/`.nt` (never claims a bare body); Add suggested off an asserted `skos:ConceptScheme` marker triple; the `language:` header read module-side through **anchor task 3.2's registration header helper**, scanning only the safe band (after `body:`/`view:`, before `layout:`) — **a header found outside the band is ignored, never guessed at**, with the finding left to 2.2; session composes projection, chooser (seeded from the header or the default order) and layout, applies the layout overlay, refuses repositions per the blank-node boundary and the unregistered-bare-file rule
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 3.2, 4.3, 4.4_
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer who has wired a multi-definition diagram family | Task: Add the w3c/skos definition, session factory and session per design - marker-triple Add suggestion, the language: header via the anchor's header helper with safe-band-only scanning and ignore-outside-band behaviour, layout overlay application, and the standard refusals - with tests for the header read from the safe band, a header above body: ignored (and the pairing intact), an unknown key left alone, both-registrations-one-store sharing, and the marker-triple suggestion | Restrictions: core never parses the header; never require or repair a misplaced header - ignore and let validation report; no bare-body claim | _Leverage: anchor task 3.2's header helper; C4SessionFactory as the per-origin template; SharedDocumentReader for every registration read | Success: the header works only in the safe band; a misplaced one changes nothing and severs nothing; the reading opens beside w3c/rdf over one store. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.2 SkosValidator: the seven rules, plus the misplaced header
+- [x] 2.2 SkosValidator: the seven rules, plus the misplaced header
   - Files: `Skos/SkosValidator.cs` + tests
   - The approved Requirement 7 findings with lines from source spans: the cycle finding consuming **1.3's detection pass** (never a second detector); per-language duplicate `prefLabel`; the S27 clash in its **direct case only**, the transitive boundary stated in the rule's doc text; missing labels; unfiled concepts; the SKOS-XL once-per-file info; non-concept targets — and the misplaced `language:` header reported with its line (2.1 ignores; this names)
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 3.2_
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the family validator registration | Task: Implement SkosValidator per design - the seven approved findings plus the misplaced-header finding, each with file and line from spans, the cycle finding fed by the layout's own detection pass - with a fixture per finding and a clean-vocabulary fixture reporting nothing | Restrictions: no network, no inference - the S27 check stays direct-case-only with the boundary documented; the parse-failure finding belongs to the anchor validator, not here | _Leverage: 1.1-1.3's outputs; the anchor's validator registration shape | Success: each fixture reports exactly its finding with the right line; the cycle finding and the drawn cycle cannot disagree because they share one detection. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.3 Gate and merge group 2
+- [x] 2.3 Gate and merge group 2
   - The four gates, exit codes checked before any pipe; merge into `develop`
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes captured before any pipe and merge group 2 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 - [ ] 3. Edits, providers and the wire — after anchor tasks 2.1 and 3.3
   - _Requirements: 5.1-5.6, 6.1-6.4, 1.3_
 
-- [ ] 3.1 SkosEdits: thesaurus gestures over the anchor's writer
+- [-] 3.1 SkosEdits: thesaurus gestures over the anchor's writer
   - Files: `Skos/SkosEdits.cs` + command wrappers + tests
   - `FileUnder` (one `AddTriple(narrower, skos:broader, broader)` — the authoring direction, no inverse triple), `Relate`, `NewConcept` (three triples, one command, IRI minted under the file's base/prefix rules, collision-refused first), `EditLabel`/`EditDocumentation` **via anchor task 2.1's `ReplaceObjectLiteral`** (cited, not specified - the language tag survives by construction), `RemoveConcept` (count-first), `Disconnect` (a both-directions hierarchy edge removes both spans as one command, stated in the confirmation); every refusal (blank-rooted, refused serialization, truncation, out-of-file mapping, SKOS-XL label) answered before any splice; inverses restore bytes through the family command pattern
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_

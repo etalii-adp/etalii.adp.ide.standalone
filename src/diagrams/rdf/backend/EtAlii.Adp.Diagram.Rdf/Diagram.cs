@@ -44,10 +44,26 @@ public static class Diagram
         // The same family Build as the anchor's; AddRdf registers once and no-ops after.
         Build: builder => builder.Services.AddRdf());
 
+    /// <summary>
+    /// The scheme reading (skos-diagram Requirement 2): a thesaurus over the same bytes. It
+    /// never claims a bare body - the shared-extension stance - so a `.ttl`/`.nt` becomes a
+    /// scheme diagram only through Add, where the choice tree offers it for the family's
+    /// extensions; a file asserting a <c>skos:ConceptScheme</c> is where that choice belongs.
+    /// </summary>
+    public static DiagramDefinition Skos { get; } = new(
+        ServiceCollectionAddSkosExtension.SkosOrigin,
+        "SKOS Concept Scheme",
+        "A thesaurus or controlled vocabulary: concepts under their schemes, broader and narrower drawn as a hierarchy, related links across it.",
+        Icon: "mdi-file-tree",
+        Extension: ".ttl",
+        AlternateExtension: ".nt",
+        SharedExtension: true);
+
     /// <summary>What discovery reads: the anchor and its readings, the family as it grows.</summary>
     public static DiagramDefinition[] Definitions { get; } =
     [
         Rdf,
         Owl,
+        Skos,
     ];
 }

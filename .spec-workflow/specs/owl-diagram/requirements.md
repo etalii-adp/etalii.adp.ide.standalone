@@ -176,3 +176,7 @@ OWL has the strongest visualization tradition of the four family readings, and o
 - Pizza ontology — github.com/owlcs/pizza-ontology (verified CC BY 3.0; attribution carried if vendored)
 - OWL-Time — w3.org/TR/owl-time · The Organization Ontology — w3.org/TR/vocab-org (W3C-licensed Turtle-native candidates)
 - Gene Ontology — geneontology.org (CC BY 4.0; the budget-exceeding candidate, extract + conversion recorded if used)
+
+## Recorded deviations
+
+- Requirements 4.2, 5.3 and 5.4 specify info-level findings, and Requirement 9.3 measures examples against "zero findings above info level" - but the problems pipeline knows only Error and Warning (`DiagramProblemSeverity`, the problems proto, and the errors-and-warnings panel are all two-valued). Per the Scrum master's ruling (2026-09-03), the three findings ship as warnings; this note records the deviation until an Info severity exists end to end, at which point the three findings move down and this note goes.
