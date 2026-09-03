@@ -54,6 +54,57 @@ public class ShaclRemoveShapeTests
     }
 
     [Fact]
+    public void AShapeWithSeveralPropertyBlocks_SweepsThemAll_WithoutStaleOffsets()
+    {
+        // The case a one-block shape cannot catch. Each removal shifts every offset after it, so
+        // a walk that collected its victims from a single parse and then looped over that list
+        // would splice the second one at a position that has moved - silently, no exception and
+        // no refusal, just wrong bytes. Four blocks and a following statement that must survive
+        // byte-identical is what proves the loop re-derives from a fresh parse each time.
+        var (document, model) = Open("""
+            ex:S a sh:NodeShape ;
+              sh:property [ sh:path ex:one ; sh:minCount 1 ] ;
+              sh:property [ sh:path ex:two ; sh:datatype xsd:string ] ;
+              sh:property [ sh:path ex:three ] ;
+              sh:property [ sh:path ex:four ; sh:maxCount 2 ] .
+            ex:Keep a sh:NodeShape ;
+              sh:property [ sh:path ex:kept ; sh:minCount 1 ] .
+            """ + "\n");
+
+        var refusal = ShaclWriter.RemoveShapeWithSubtrees(document, model, Ex + "S");
+
+        Assert.Equal("", refusal);
+        Assert.Equal(
+            Prelude + """
+            ex:Keep a sh:NodeShape ;
+              sh:property [ sh:path ex:kept ; sh:minCount 1 ] .
+            """ + "\n",
+            document.Text);
+    }
+
+    [Fact]
+    public void SeveralSeparatelyStatedSubtrees_GoWithoutStaleOffsets()
+    {
+        // The same hazard on the other pass: four subtree statements removed in sequence, each
+        // splice moving what follows it.
+        var (document, model) = Open("""
+            ex:S a sh:NodeShape ;
+              sh:property _:a ;
+              sh:property _:b ;
+              sh:property _:c .
+            _:a sh:path ex:one ; sh:minCount 1 .
+            _:b sh:path ex:two ; sh:datatype xsd:string .
+            _:c sh:path ex:three .
+            ex:Keep a sh:NodeShape .
+            """ + "\n");
+
+        var refusal = ShaclWriter.RemoveShapeWithSubtrees(document, model, Ex + "S");
+
+        Assert.Equal("", refusal);
+        Assert.Equal(Prelude + "ex:Keep a sh:NodeShape .\n", document.Text);
+    }
+
+    [Fact]
     public void AnExclusiveSeparatelyStatedSubtree_Goes()
     {
         var (document, model) = Open("""

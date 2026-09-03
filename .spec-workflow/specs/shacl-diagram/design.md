@@ -24,7 +24,7 @@ The `w3c/shacl` reading joins `src/diagrams/rdf/` as a further definition over t
 - **`RdfWriter`** — `AddTriple` carries targets, `rdf:type sh:NodeShape` and `sh:deactivated`; `RenameTerm` is the family rename verbatim; only two shacl-specific operations are added (below).
 - **`RegistrationLayout` + core layout command** — consumed unchanged; only `res:{iri}` card ids ever reach it.
 - **Central canvas library** — `BoxElement` cards (rows and chips as internal content, the mindmap/rdf card idiom), `StraightConnection` edges with labels, shared appearance classes, `CanvasScrollbars`, truncation banner precedent.
-- **Provider trio pattern, problems pipeline, `ExampleRegistrationTests`/`ExampleReplicationTests`** — joined by existing.
+- **Provider trio pattern, problems pipeline, `ExampleRegistrationTests`** — joined by existing. (`ExampleReplicationTests`, which byte-compared the two example trees, was deleted on 2026-09-03 when they were deliberately disconnected: the showcase copy is still seeded, no longer byte-compared.)
 
 ### Integration Points
 
@@ -135,6 +135,7 @@ Element ids reuse the family vocabulary: `res:{iri}` for IRI cards, `blank:{ordi
 - Projection: rows in span order; chip kinds including implicit class targets; `described_in_file` both ways; the `sh:class` single-claimant edge rule (zero, one, two claimants); combinator inline summaries at depth; budget counting cards only.
 - Writer: `AppendPropertyShapeBlock` smallest-diff and byte-restoring inverse through the real command pipeline; `RemoveShapeWithSubtrees` reachability (shared blank subtree stays; exclusive subtree goes) and bottom-up span removal; every refusal sentence.
 - Validator: each Requirement 7 rule, plus the explicit not-a-finding case for absent target terms.
+- **Byte-comparison expectations are never built from a raw string literal.** A C# raw literal takes its interior newlines from the source file *as it sits on disk*, and `.gitattributes` checks every `.cs` out as CRLF while a tool that writes one leaves it LF — so the same committed test compares against different bytes in different working trees, passing where it was written and failing on every fresh checkout. Found the hard way (2026-09-04): four writer tests gated green in the authoring worktree and red for three other agents, which is a worse property than the wrong assertion underneath it. A test whose subject is bytes builds both the seed and the expectation from one explicit terminator, so it exercises a stated line ending rather than whichever one its file happens to have.
 
 ### Integration Testing
 

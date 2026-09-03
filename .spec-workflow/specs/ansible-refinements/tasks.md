@@ -8,46 +8,46 @@ One worktree for the whole spec: `.claude/worktrees/ansible-ref` — deliberatel
 
 **Pattern citation, not re-derivation.** The layout mechanism has four shipped consumers (databricks built it, helm shipped it, rdf uses it, the core command underpins them). Helm's implementation proved the full cycle live: a drag lands in the registration, undo restores it, and the subject's own files stay byte-identical, with dragged and computed positions sharing one render path because the registration lives inside the watched folder. Ansible has exactly that shape. Cite it; do not re-verify it.
 
-- [-] 1. The theme token, completed centrally
+- [x] 1. The theme token, completed centrally
   - _Requirements: 5.1, 5.6_
 
-- [-] 1.1 Define `--color-surface-raised` for both themes
+- [x] 1.1 Define `--color-surface-raised` for both themes
   - Files: `src/client/src/index.css` (two definitions, light and dark); `src/diagrams/ansible-structure/client/ansible-structure.css` (drop the literal fallbacks now the tokens resolve)
   - The token is referenced 14 times across four files — `index.css` itself once, ansible eight, helm-charts three, wardley-map twice — and defined nowhere, so every rule using it currently falls back silently. **The commit message must say that defining it changes the rendered shade of the helm-charts and wardley-map canvases too**: a reviewer seeing unrelated diagrams shift deserves the reason in the history rather than in a chat. Dark adopts the value `index.css` already uses as its own fallback (`rgb(255 255 255 / 0.06)`); light takes the mirror-image faint dark tint, starting from ansible's `rgb(0 0 0 / 6%)` fallback and checked against a real light-mode canvas.
   - _Requirements: 5.1, 5.6_
   - _Prompt: Implement the task for spec ansible-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer with design-system experience | Task: Add light and dark definitions of --color-surface-raised to src/client/src/index.css beside the existing colour tokens, then remove the now-redundant literal fallbacks from ansible-structure.css, following requirements 5.1 and 5.6 | Restrictions: do not add --color-warning, it already exists via commit 3e130bba; do not touch helm-charts.css or wardley.css — they heal by resolving the token, which the commit message must state explicitly; verify both themes visually rather than assuming the values | _Leverage: the existing --color-danger/--color-success/--color-warning definitions in index.css as the shape and commentary style | Success: the token has exactly two definitions, ansible's stylesheet references no undefined custom property, and the commit message names the helm and wardley side effect. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. Backend: authored positions
+- [-] 2. Backend: authored positions
   - _Requirements: 1.1, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 2.6, 3.1, 3.2, 3.4_
 
-- [ ] 2.1 The mapper overlays authored positions
+- [x] 2.1 The mapper overlays authored positions
   - Files: `src/diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure/AnsibleElementMapper.cs` and its tests
   - `Visible` takes the stored positions and applies `RegistrationLayout.Apply` to the computed box centres before viewport filtering and diffing; edges keep following their endpoints' final positions. `AnsibleLayout.Compute` stays pure and untouched, so computed layout remains testable on its own.
   - Tests: an authored position overrides the computed centre; unauthored elements keep computed positions; a stored id the graph no longer produces changes nothing (Requirement 3.1's stale-key case); an edge tracks a moved endpoint.
   - _Requirements: 1.4, 3.1, 3.4_
   - _Prompt: Implement the task for spec ansible-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Extend AnsibleElementMapper.Visible to overlay stored registration positions onto the computed layout via RegistrationLayout.Apply, covering requirements 1.4, 3.1 and 3.4 | Restrictions: AnsibleLayout.Compute stays pure and unmodified; no core changes; the overlay happens before viewport filtering so a dragged element leaving the viewport behaves like any other | _Leverage: core RegistrationLayout.Apply; DatabricksSession.Render's overlay call as the shape | Success: the four mapper tests pass, computed-only rendering is unchanged when no positions are stored. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.2 The session dispatches the reposition
+- [x] 2.2 The session dispatches the reposition
   - Files: `AnsibleSession.cs` and its tests
   - Constructor gains the `.adp` path and an optional `IHistoryStack`; `Render` reads stored positions with `RegistrationLayout.Read` and passes them to the mapper. `MoveElementToAsync` overrides the core default: refuse when there is no history stack (the house read-only sentence), refuse when there is no registration path, refuse `edge:`-prefixed ids ("an edge follows its endpoints"), otherwise dispatch `SetRegistrationLayoutCommand(adpPath, elementId, x, y)` and return the result's error or empty. `MoveElementAsync` (reparent) keeps refusing, with today's wording.
   - **Rewrite the class remark** that says taking no `IHistoryStack` is the design's clearest statement — that statement stops being true in this task, and a comment asserting the opposite of the code is worse than no comment.
   - _Requirements: 1.1, 1.3, 1.5, 2.1, 2.3, 3.2_
   - _Prompt: Implement the task for spec ansible-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Give AnsibleSession the reposition path per requirements 1.1, 1.3, 1.5, 2.1, 2.3 and 3.2 — dispatching the core SetRegistrationLayoutCommand with the three refusal guards — and update the class remark that currently claims the absent history stack is a design statement | Restrictions: never write inside the registered Ansible folder; no module-owned command is introduced; reparenting keeps its existing refusal wording; do not re-verify the folder-subject/layout-block intersection, which helm's design settled in code | _Leverage: DatabricksSession.MoveElementToAsync as the dispatch and guard shape; HelmSession for the folder-subject variant | Success: tests cover dispatch with the right path and id, all three refusals, and the unchanged reparent refusal. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.3 The factory wires the registration and the history
+- [x] 2.3 The factory wires the registration and the history
   - Files: `AnsibleSessionFactory.cs`, `ServiceCollection.AddAnsibleStructure.cs`, and the factory's tests
   - The factory already resolves `marker = registrationPath ?? bodyPath` to find the folder; it now also passes that marker as the `.adp` path and `IHistoryStackStore.Get(rootPath)` as the history. Update the remark noting no history store is injected — same reason as 2.2.
   - _Requirements: 2.1, 2.6_
   - _Prompt: Implement the task for spec ansible-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Wire the .adp path and the project's history stack into AnsibleSession through AnsibleSessionFactory and its DI registration, per requirements 2.1 and 2.6, updating the stale remark about the uninjected history store | Restrictions: the Open signature does not change; a null history stack must leave the diagram read-only rather than throwing | _Leverage: HelmSessionFactory's identical wiring | Success: factory tests assert the marker path and history reach the session; the module's DI registration resolves cleanly. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.4 Gate and merge group 2
+- [-] 2.4 Gate and merge group 2 - BLOCKED: gates green for this spec, merge held while develop carries four inherited ShaclWriterTests failures (proven present at develop 1b4e99db with none of this branch applied)
   - Backend tests and `dotnet format style --verify-no-changes --severity info` from `src/backend`, both judged by captured exit code with the build variables set; merge `.claude/worktrees/ansible-ref` into `develop` through the main checkout
   - _Prompt: Implement the task for spec ansible-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Set MSBUILDDISABLENODEREUSE=1 and DOTNET_CLI_USE_MSBUILD_SERVER=0, run the backend test and format gates redirecting output to a log and capturing each exit code on the next line, then merge the worktree into develop via the main checkout | Restrictions: never judge a gate by piped output or by grepping for "failed"; a zero-test run (exit 5) is a broken build, not an empty suite; do not merge on a failing gate | Success: both gates exit zero by captured code and the merge lands. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. Client: shared appearance, scrollbars, drag
+- [-] 3. Client: shared appearance, scrollbars, drag
   - _Requirements: 1.1, 1.2, 4.1, 4.2, 4.3, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3_
 
-- [ ] 3.1 Adopt the shared stylesheet and theme the palette
+- [-] 3.1 Adopt the shared stylesheet and theme the palette
   - Files: `src/diagrams/ansible-structure/client/register.ts`, `ansible-structure.css`, `AnsibleCanvas.tsx` (class composition only)
   - `register.ts` imports `@client/canvas/canvas.css` before the module stylesheet. Every rule the shared stylesheet already states is deleted; the component composes `canvas-*` classes alongside the existing ansible class names, which are kept so existing selectors and tests keep holding. The six per-play hues become module-owned custom properties declared once in a `.ansible-canvas` scope block, applied via `color-mix` against `--color-surface-raised`, with a `prefers-color-scheme: dark` block retuning individual hues where the dark surface needs it; tinting keeps wrapping beyond six plays. No colour literal survives outside a custom-property definition.
   - _Requirements: 4.1, 4.2, 4.3, 5.3, 5.4, 5.5, 5.6_

@@ -55,12 +55,12 @@ internal static class OwlSelection
         }
 
         var graph = OwlProjection.Project(entry.Model);
-        if (graph.Nodes.FirstOrDefault(node => node.Id == elementId) is { } node)
+        if (graph.Nodes.FirstOrDefault(n => n.Id == elementId) is { } node)
         {
             return node.Display;
         }
 
-        if (graph.Edges.FirstOrDefault(edge => edge.Id == elementId) is { } edge)
+        if (graph.Edges.FirstOrDefault(e => e.Id == elementId) is { } edge)
         {
             var from = graph.Nodes.First(n => n.Id == edge.FromId).Display;
             var to = graph.Nodes.First(n => n.Id == edge.ToId).Display;

@@ -25,7 +25,7 @@ One module, `src/diagrams/rdf/`, carrying the `w3c/rdf` type and — by construc
 - **The databricks module as the structural template** — store lifecycle with self-write guard, per-origin session factory reading `.adp` headers module-side, `DatabricksEdits.Run`-style command discipline with whole-document snapshot inverses, provider trio over a shared selection vocabulary, per-type toolbox.
 - **The core `layout:` block** — `RegistrationLayout` and `SetRegistrationLayoutCommand`, consumed unchanged; element ids are `res:{full-iri}` (safe in the block's `<id>: <x> <y>` grammar because IRIs cannot contain spaces).
 - **Central canvas library and appearance** — `BoxElement` for resource cards, `StraightConnection` for edges (the any-direction graph case its own remarks name), the shared `canvas.css` classes, `CanvasScrollbars`, selection/menu/keyboard plumbing.
-- **The problems pipeline, `ExampleRegistrationTests`, `ExampleReplicationTests`** — joined by existing.
+- **The problems pipeline, `ExampleRegistrationTests`** — joined by existing. (`ExampleReplicationTests`, which byte-compared the two example trees, was deleted on 2026-09-03 when they were deliberately disconnected: the showcase copy is still seeded, no longer byte-compared.)
 
 ### Integration Points
 
@@ -118,6 +118,16 @@ message RdfTruncationPayload { int32 shown = 1; int32 total = 2; } // rides one 
 
 ## Testing Strategy
 
+**Ask what the corpus has never been given.** Two defects in this family were invisible for the
+same reason and were both found the same way — not by rereading the code, but by naming a shape
+every existing test had quietly avoided. A `RdfDocument` whose lines disagree about their
+terminators had never been seeded, because every fixture was written in one convention; a skos
+edge selected through the family provider had never been exercised, because each reading's tests
+selected through its own. Neither is exotic, and neither would have been caught by another pass
+over the implementation. So when a suite here is green, the useful question is which input it has
+never seen — mixed endings, a term two readings both recognise, a selection arriving through the
+other reading's door — rather than which branch is uncovered.
+
 ### Unit Testing
 
 - Parser: a fixture corpus per serialization covering every R1.1 construct, CRLF/LF/no-trailing variants, comments — byte-identity on the untouched round trip; span correctness asserted for multi-line and shared-line triples. Fixture files `-text` in `.gitattributes`: by extension (`*.ttl -text`, `*.nt -text`) since this family owns the extensions — the reasoning recorded there per the standing instruction.
@@ -128,7 +138,7 @@ message RdfTruncationPayload { int32 shown = 1; int32 total = 2; } // rides one 
 ### Integration Testing
 
 - The gRPC flow: open a registered `.ttl`, stream cards and edges, reposition into the `.adp` with the body byte-identical, undo byte-for-byte; a bare `.ttl` routing on sight; one file under two registrations sharing edits.
-- Examples joining `ExampleRegistrationTests` and `ExampleReplicationTests` by existing; the license/provenance readme presence asserted by a module test walking the vendored folders.
+- Examples joining `ExampleRegistrationTests` by existing; the license/provenance readme presence asserted by a module test walking the vendored folders.
 
 ### End-to-End Testing
 

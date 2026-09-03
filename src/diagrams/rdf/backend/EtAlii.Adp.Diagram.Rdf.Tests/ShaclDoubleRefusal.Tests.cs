@@ -94,6 +94,27 @@ public class ShaclDoubleRefusalTests
         Assert.Equal(ShaclRefusals.BlankRooted, fromTheGate);
     }
 
+    // ---- the family writer's public refusal, which this reading's sweep must not have loosened ----
+
+    [Fact]
+    public void TheFamilyWritersPublicRemoveTriple_StillRefusesABlankInvolvingTriple()
+    {
+        // This reading needed the splice mechanics without the blank guard, so the guard was
+        // split from them: RemoveTriple keeps it, an internal anchored path does not. The risk
+        // in splitting a guard from its mechanics is that a later change moves the guard again
+        // and nothing notices, because every other test exercises the anchored path. This is the
+        // test that notices - it pins the PUBLIC entry point's behaviour, not the new one's.
+        var (document, model) = Open("ex:S a sh:NodeShape ; sh:property [ sh:path ex:p ] .\n");
+        var before = document.Text;
+
+        var blankInvolving = model.Triples.First(triple => triple.Subject is BlankTerm || triple.Object is BlankTerm);
+        var refusal = RdfWriter.RemoveTriple(document, model, blankInvolving);
+
+        Assert.NotEqual("", refusal);
+        Assert.Contains("blank node", refusal, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(before, document.Text);
+    }
+
     // ---- the gate's scoping, which keeps this reading's verbs off other readings' elements ----
 
     [Fact]

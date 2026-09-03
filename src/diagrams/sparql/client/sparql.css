@@ -1,0 +1,115 @@
+/*
+ * The SPARQL module's own appearance. Everything a canvas shares - host, viewport, nodes,
+ * labels, connection lines, selection, status and rejection - comes from the central canvas.css
+ * classes composed in the markup; only what is genuinely this module's lives here.
+ */
+
+/* A variable: dashed, because it is what the query is asking for rather than what it pins down. */
+.sparql-node-variable .sparql-node-box,
+.sparql-node-anonymous .sparql-node-box {
+  stroke-dasharray: 5 3;
+}
+
+/* An anonymous variable is a variable nobody named: present, and visibly provisional. */
+.sparql-node-anonymous .sparql-node-box {
+  opacity: 0.7;
+}
+
+/* A literal pins a value down: square corners, to read as a value rather than a thing. */
+.sparql-node-literal .sparql-node-box {
+  rx: 0;
+}
+
+/* A collapsed subquery states its projection and hides its internals (Requirement 3.6). */
+.sparql-node-subquery .sparql-node-box {
+  stroke-width: 2;
+}
+
+/* What leaves this query, marked so the header never has to be consulted (Requirement 4.2). */
+.sparql-projection-mark {
+  font-size: 12px;
+  fill: var(--color-primary);
+  pointer-events: none;
+}
+
+/* A literal's datatype or language tag, or a variable's defining expression. */
+.sparql-node-annotation {
+  font-size: 10px;
+  fill: var(--color-text-muted);
+  pointer-events: none;
+}
+
+/* The predicate or property path riding its edge. */
+.sparql-edge-label {
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+/* A property path is a multi-step ask, and says so. */
+.sparql-edge-path .sparql-edge-line {
+  stroke-dasharray: 6 2;
+}
+
+/* A group construct's frame: OPTIONAL dashed, the rest solid, each labelled with what it is. */
+.sparql-region rect {
+  fill: none;
+  stroke: var(--color-border);
+}
+
+.sparql-region-optional rect,
+.sparql-region-minus rect {
+  stroke-dasharray: 4 4;
+}
+
+.sparql-region-service rect,
+.sparql-region-graph rect {
+  stroke-dasharray: 2 3;
+}
+
+.sparql-region-label {
+  font-size: 11px;
+  pointer-events: none;
+}
+
+/* FILTER, BIND and VALUES, showing their text exactly as the author wrote it. */
+.sparql-annotation {
+  font-size: 11px;
+  fill: var(--color-text-muted);
+  cursor: pointer;
+}
+
+/* The query's frame: form and modifiers, above the canvas rather than on it. */
+.sparql-header-band {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: baseline;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 12px;
+}
+
+.sparql-header-form {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.sparql-header-modifier {
+  color: var(--color-text-muted);
+}
+
+/* The showing-N-of-M banner over a sanity-bound view (Requirement 7.5). */
+.sparql-truncation-banner {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 4px 12px;
+  border: 1px solid var(--color-warning);
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-warning);
+  font-size: 12px;
+}

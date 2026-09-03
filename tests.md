@@ -826,3 +826,71 @@ direction thesauri are authored in - with no inverse invented, and reversible by
   changed line endings. The canvas re-layers so the concept sits below its new parent. Ctrl+Z
   leaves `git diff` empty. The side-anchor drag does the same with one `skos:related` line, and
   does not change the layering.
+## A shared variable draws once, with edges crossing region borders (sparql-diagram, task 5.3)
+
+The one drawing rule the whole module is built around: every occurrence of a variable is one
+node, so its degree on the canvas is its join count in the query (Requirement 4.1), and an
+`OPTIONAL` pattern that mentions an outside variable reaches out to it rather than drawing a
+second copy inside the region (Requirement 3.2).
+
+- **Preconditions**: backend + client running; `src/examples/` added as a project.
+- **Actions**: open `diagrams/sparql/w3c-sparql/optional.adp`. Count the nodes labelled `?x`,
+  `?name` and `?mbox`. Look at where `?mbox` sits relative to the dashed `OPTIONAL` frame, and
+  follow the edge that ends at it.
+- **Expected**: exactly one node per variable name - three in total, plus no others. `?mbox` is
+  used only inside the `OPTIONAL`, so its node sits inside the dashed frame; `?x` is used both
+  inside and outside, so its node sits outside and the `OPTIONAL`'s edge crosses the frame's
+  border to reach it. The property grid on `?x` states its join count.
+
+## The projection mark matches the SELECT list (sparql-diagram, task 5.3)
+
+What leaves a query should read off the canvas without consulting the header (Requirement 4.2).
+
+- **Preconditions**: as above.
+- **Actions**: open `diagrams/sparql/w3c-sparql/optional.adp` and note which variable nodes
+  carry the projection mark; compare against the `SELECT ?name ?mbox` line in the header band.
+  Then open `diagrams/sparql/w3c-sparql/aggregate.adp` and do the same.
+- **Expected**: in the first, `?name` and `?mbox` are marked and `?x` is not. In the second,
+  `?totalPrice` is marked - the alias the query projects - and `?org`, `?auth`, `?book` and
+  `?lprice` are not, with `GROUP BY ?org` and `HAVING (SUM(?lprice) > 10)` shown in the header
+  band rather than drawn on the canvas.
+
+## A reposition leaves the query untouched in a visible diff (sparql-diagram, task 5.3)
+
+The read-only position, proven on a real vendored query rather than a fixture: the one gesture
+this diagram has writes the registration and never the `.rq` (Requirements 5.1, 6.3).
+
+- **Preconditions**: as above; a shell in `src/examples/diagrams/sparql/uniprot/`.
+- **Actions**: `git status` to confirm a clean tree. Open
+  `diagrams/sparql/uniprot/proteome-location-of-gene.adp`; drag the `?proteomeData` node to a
+  clearly different spot; close and reopen the diagram; then undo. Run `git status` and
+  `git diff` after each step.
+- **Expected**: the position lands in `proteome-location-of-gene.adp`'s `layout:` block keyed
+  `var:proteomeData`, and `git diff` never shows a single changed line in
+  `proteome-location-of-gene.rq` at any point; the reopened diagram draws the node at the
+  stored spot; one undo returns the `.adp` byte-for-byte, leaving the tree clean again.
+
+## The context menu offers no edits (sparql-diagram, task 5.3)
+
+The read-only position is meant to be visible, not merely enforced: a menu that offered an
+action the backend refuses would be worse than a menu with nothing in it (Requirement 6.1).
+
+- **Preconditions**: as above.
+- **Actions**: open `diagrams/sparql/uniprot/proteome-location-of-gene.adp`. Right-click a
+  variable node, a concrete term, an edge and a region frame in turn. Select a variable and
+  look at the property grid; try to type into a row.
+- **Expected**: no mutating action appears on any of them, and the toolbox panel offers this
+  diagram no entries. Every property row is read-only and states the same reason - that the
+  diagram reads the query and the `.rq` is edited in a text editor.
+
+**Status of the four sparql-diagram checks above (2026-09-03): specified, not yet executed.**
+The app was built and both dev servers started cleanly against this module (backend on 5090,
+client on 5194, worktree ports since reverted), but the app opens on a sign-in form, and
+entering a credential into a login field is outside what the implementing agent may do — even
+the checked-in developer placeholder. The behaviours themselves are covered automatically:
+the byte-identity of the query across every offered surface by `NoWriterSweepTests`, the
+one-node-per-variable and shallowest-scope placement rules by `SparqlProjectionTests`, the
+projection mark and the absence of any editing affordance by `SparqlCanvas.test.tsx`, and the
+read-only reason on every property row by `SparqlProvidersTests`. What these four checks add is
+the eyes-on confirmation that the drawing reads correctly to a person, which is exactly the part
+a test cannot assert - so they are left here to be run by someone who can sign in.
