@@ -69,7 +69,7 @@ One worktree for the whole spec (`.claude/worktrees/dbx`, per CLAUDE.md's one-wo
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 3 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4. Client: three canvases and the simulation engine
+- [x] 4. Client: three canvases and the simulation engine
   - _Requirements: 3.1-3.5, 4.1-4.6, 5.1-5.4, 6.1-6.3, 7.2, 8.1, 8.2, 8.4, 8.5, 11.2, 11.3, 11.6_
 
 - [x] 4.1 Canvases from the central library
@@ -84,14 +84,14 @@ One worktree for the whole spec (`.claude/worktrees/dbx`, per CLAUDE.md's one-wo
   - _Requirements: 8.1, 8.2, 8.4, 8.5 (the simulated halves), 8.6, 11.6_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Implement useSimulatedRun per the design - a state machine playing mock runs over the parsed DAG honoring run_if and outcome with a configurable failure path, plus deploy and pipeline-update sequences - and wire the canvases' menu callbacks to intercept the simulated action ids before executeAction, with hook state-machine tests and interception tests | Restrictions: simulations never touch the history or any file; every simulated surface carries its marker; action ids stay exactly the ones the backend discovers, per Requirement 8.6's seam | _Leverage: the canvases from 4.1; the timeline test harness patterns for menu callbacks | Success: hook tests cover order, run_if, outcome and the failure path; intercepted ids play locally while unmarked ids still reach executeAction. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4.3 Gate and merge group 4
+- [x] 4.3 Gate and merge group 4
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 4 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5. Examples, showcase, catalog and manual checks
+- [-] 5. Examples, showcase, catalog and manual checks
   - _Requirements: 13.1-13.6, plus the integration halves of 2, 7 and 12_
 
-- [ ] 5.1 Module examples: one coherent scenario
+- [-] 5.1 Module examples: one coherent scenario
   - Files: `src/diagrams/databricks/examples/lakehouse/` — a believable bundle (`databricks.yml`, dev and prod targets with a visible override) containing a job resource (several task types, a condition task with outcome edges, a non-default run_if) and a pipeline (multiple libraries, catalog and schema, notifications), each config beside its routing `.adp`, plus a readme naming what the example demonstrates; validated clean
   - _Requirements: 13.1, 13.3, 13.4, 13.5_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Data platform engineer writing believable configs | Task: Author the lakehouse example per Requirement 13 - real-sounding names, one coherent bundle whose job and pipeline also exercise the reference edges of Requirement 3.3 - complete with .adp registrations and a readme, opening from the explorer with no setup and validating clean | Restrictions: no placeholder text; every config file must be schema-plausible Databricks configuration; validation findings on the example are defects | _Leverage: the c4 reference example's layout as the shape; the validator from 2.3 as the cleanliness check | Success: the example registers, opens as all three diagram types, and reports zero findings. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
