@@ -6,7 +6,7 @@ elements:
     end: 2025-06-05
     row: 11
   - id: build
-    label: Test
+    label: Private beta
     begin: 2025-09-04
     end: 2025-10-19
     row: 11
@@ -15,42 +15,42 @@ elements:
     begin: 2025-12-04
     row: 8
   - id: 467lu0vgaiudevamnkpl6k052
-    label: New element
+    label: Enterprise tier
     begin: 2026-03-10
     end: 2026-05-14
     row: 8
   - id: a0p2gj4xxf8feve0nn8cxd1tz
-    label: New element
+    label: Pricing research
     begin: 2025-08-02
     end: 2025-10-05
     row: 5
   - id: 6ez55ypjmbp2zawzfvphb4rbr
-    label: New element
+    label: Security hardening
     begin: 2025-12-21
     end: 2026-03-25
     row: 14
   - id: 1x5mmoj5j4ia9i8w95tfm8x40
-    label: New element
+    label: Mobile app
     begin: 2026-01-20
     end: 2026-04-02
     row: 11
   - id: 18g3b7b6kp2icm9vzi5ncd91a
-    label: New element
+    label: Analytics dashboard
     begin: 2026-06-01
     end: 2026-08-11
     row: 12
   - id: 9s462vri4qn9ww06akis5rqli
-    label: New element
+    label: Integration marketplace
     begin: 2026-06-15
     end: 2026-07-26
     row: 9
   - id: elvtk68a6tc7nniqgonud96zx
-    label: New element
+    label: Onboarding revamp
     begin: 2025-12-08
     end: 2026-02-01
     row: 5
   - id: 1rat1anz81doeib7uhti0fbsb
-    label: New moment
+    label: Version 2.0
     begin: 2026-06-26
     row: 16
 connections:
