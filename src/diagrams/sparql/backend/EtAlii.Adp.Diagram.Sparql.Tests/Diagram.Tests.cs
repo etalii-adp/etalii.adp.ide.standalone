@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Diagrams;
 using EtAlii.Adp.Backend.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
@@ -76,7 +77,7 @@ public class DiagramTests : IDisposable
     }
 
     [Fact]
-    public void TheModule_RegistersNoToolboxNoDocumentFactoryAndNoCommands()
+    public void TheModule_RegistersNoToolboxAndNoCommands()
     {
         // Arrange: the third layer of the no-writer proof - what the module offers core is what
         // the client can offer a user, so a read-only diagram registers no mutating seam at all.
@@ -90,16 +91,47 @@ public class DiagramTests : IDisposable
         Assert.DoesNotContain(
             provider.GetServices<IDiagramToolboxProvider>(),
             toolbox => toolbox.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin);
-        Assert.DoesNotContain(
-            provider.GetServices<IDiagramDocumentFactory>(),
-            factory => factory.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin);
 
-        // The session and reload seams are the two this module does register.
+        // The action provider is registered and offers nothing, which is stronger than being
+        // absent: it says in code that this diagram has no edits rather than leaving it open.
+        Assert.Single(
+            provider.GetServices<IContextActionProvider>().OfType<SparqlContextActionProvider>());
+
+        // The seams this module does register.
         Assert.Single(
             provider.GetServices<IDiagramSessionFactory>(),
             factory => factory.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin);
         Assert.Single(
             provider.GetServices<IDiagramDocumentReloader>(),
             reloader => reloader.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin);
+    }
+
+    [Fact]
+    public void TheDocumentFactory_ExistsBecauseCoreRequiresIt_AndItsStarterQueryValidatesClean()
+    {
+        // Arrange: core refuses to start a host whose type declares an extension and registers
+        // no factory, so this module has one; what it produces has to open as a diagram rather
+        // than as a finding. It supplies a new file's text and never rewrites an existing one.
+        using var provider = new ServiceCollection()
+            .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
+            .AddCommands()
+            .AddSparql()
+            .BuildServiceProvider();
+
+        // Act.
+        var factory = Assert.Single(
+            provider.GetServices<IDiagramDocumentFactory>(),
+            candidate => candidate.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin);
+        var text = factory.CreateEmptyDocument("people");
+
+        // Assert: the deployment invariant core checks at startup holds for this module.
+        Assert.Empty(new DiagramDocumentFactories([factory]).Verify(Diagram.Definitions));
+
+        // And the starter query parses, draws, and reports nothing at all.
+        var model = SparqlParser.Parse(text);
+        Assert.Equal(SparqlQueryForm.Select, model.Form);
+        Assert.NotEmpty(SparqlProjection.Project(model).Nodes);
+        Assert.Empty(SparqlValidator.Judge(model, text));
+        Assert.EndsWith("\r\n", text);
     }
 }

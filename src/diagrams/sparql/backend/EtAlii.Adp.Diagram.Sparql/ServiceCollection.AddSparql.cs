@@ -11,10 +11,11 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// </summary>
 /// <remarks>
 /// Shorter than every sibling's registration, and that is the point: there are no commands,
-/// because nothing writes the query; no document factory, because queries are authored in text
-/// editors rather than created here; and no toolbox provider, because a read-only diagram that
+/// because nothing writes the query, and no toolbox provider, because a read-only diagram that
 /// offered a palette would be promising an edit it cannot make. What remains is the store, the
-/// mapper, the session, the reloader, the validator and the read-only context seams.
+/// mapper, the session, the reloader, the validator, the read-only context seams - and the
+/// document factory core requires of any type declaring an extension, which supplies a starter
+/// query for a file being created and never touches one that exists.
 /// </remarks>
 public static class ServiceCollectionAddSparqlExtension
 {
@@ -41,6 +42,11 @@ public static class ServiceCollectionAddSparqlExtension
         services.AddSingleton<IDiagramDocumentReloader>(provider => new SparqlDocumentReloader(
             SparqlOrigin,
             provider.GetRequiredService<ISparqlDocumentStore>()));
+
+        // The starter body a new query file is created with. Registered because core refuses to
+        // start a host whose type declares an extension without one - see SparqlDocumentFactory,
+        // which records why this exists against the design's stated intent.
+        services.AddSingleton<IDiagramDocumentFactory>(_ => new SparqlDocumentFactory(SparqlOrigin));
 
         // The rules, resolved by origin through core's validator registry.
         services.AddSingleton<IDiagramValidator>(_ => new SparqlValidator(SparqlOrigin));
