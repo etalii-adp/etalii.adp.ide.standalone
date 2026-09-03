@@ -120,6 +120,22 @@ public static class RdfWriter
     /// the refusal so nothing reaches this by default. The splice mechanics below are pure Turtle
     /// and so belong here rather than duplicated inside a reading, per the writer-boundary rule.
     /// </para>
+    /// <para>
+    /// <b>Reparse between every call.</b> A triple's offsets are valid only for the parse they
+    /// came from, and this splice shifts everything after it, so a caller that collects several
+    /// triples from one model and then loops over that captured list will write wrong bytes on
+    /// the second call - silently, with no exception and no refusal. Re-run
+    /// <see cref="RdfParser.Parse(RdfDocument)"/> after each removal and find the next victim in
+    /// the fresh model, as <see cref="RemoveResource"/> does.
+    /// </para>
+    /// <para>
+    /// <b>For wholesale sweeps, not surgical removal.</b> A triple written inside an inline blank
+    /// property list carries the ENCLOSING statement's range, because the parser stamps one range
+    /// from subject to terminating dot onto every triple the statement pends. When such a triple
+    /// is the last of that statement, removing it takes the whole statement. That is correct for
+    /// a caller removing the enclosing subject anyway; for a caller trying to remove one
+    /// blank-rooted triple on its own it would take an unrelated statement with it.
+    /// </para>
     /// </remarks>
     internal static string RemoveTripleAnchored(RdfDocument document, RdfModel model, RdfTriple triple)
     {

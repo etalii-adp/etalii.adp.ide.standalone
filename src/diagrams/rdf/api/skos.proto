@@ -32,6 +32,12 @@ message SkosConceptPayload {
 
   // True for a blank-node concept: drawn, refusing positions and edits per the identity boundary.
   bool blank = 7;
+
+  // Whether to wear the language chip: the label's tag is non-empty AND differs from the
+  // session's display language, which is a comparison only the backend can make - the session
+  // knows its language: header and the canvas does not. Data, not client logic, so the rule
+  // stays where SkosLabels.Choose is (Requirement 3.3).
+  bool language_chip = 8;
 }
 
 // One concept scheme, drawn as a titled region (Requirement 1.1).

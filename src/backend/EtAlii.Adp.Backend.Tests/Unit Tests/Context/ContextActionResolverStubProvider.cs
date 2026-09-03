@@ -7,9 +7,16 @@ internal sealed class ContextActionResolverStubProvider : IContextActionProvider
     private readonly string _actionId;
     private readonly ContextShortcutDefinition? _shortcut;
     private readonly bool _available;
+    private readonly Diagram.DiagramOrigin? _answersFor;
 
-    public ContextActionResolverStubProvider(ContextScope scope, string actionId, ContextShortcutDefinition? shortcut = null, bool available = true)
+    public ContextActionResolverStubProvider(
+        ContextScope scope,
+        string actionId,
+        ContextShortcutDefinition? shortcut = null,
+        bool available = true,
+        Diagram.DiagramOrigin? answersFor = null)
     {
+        _answersFor = answersFor;
         Scope = scope;
         _actionId = actionId;
         _shortcut = shortcut;
@@ -23,6 +30,14 @@ internal sealed class ContextActionResolverStubProvider : IContextActionProvider
     public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(ContextTarget target, CancellationToken cancellationToken)
     {
         WasConsulted = true;
+
+        // A reading's provider answers only for its own origin; one built without an origin
+        // answers for anything, which is what a family provider - and every provider written
+        // before the field existed - does.
+        if (_answersFor is not null && target.Origin != _answersFor)
+        {
+            return ValueTask.FromResult<IReadOnlyList<ContextActionGroupDefinition>>([]);
+        }
         var group = new ContextActionGroupDefinition(new[]
         {
             new ContextActionDefinition(_actionId, _actionId, "mdi-circle", _shortcut, _available),

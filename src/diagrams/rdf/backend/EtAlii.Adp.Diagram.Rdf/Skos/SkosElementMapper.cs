@@ -63,6 +63,9 @@ public sealed class SkosElementMapper
                 Notation = concept.Notations.Count > 0 ? concept.Notations[0] : "",
                 SchemeIris = { concept.SchemeIris },
                 Blank = concept.Blank,
+                // The comparison lives here because only the session knows its display
+                // language; an untagged label is language-neutral and wears no chip.
+                LanguageChip = chosen.LanguageTag.Length > 0 && chosen.LanguageTag != displayLanguage,
             }));
         }
 

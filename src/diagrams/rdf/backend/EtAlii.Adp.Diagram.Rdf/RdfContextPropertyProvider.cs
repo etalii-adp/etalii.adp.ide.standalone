@@ -53,7 +53,7 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
         ArgumentNullException.ThrowIfNull(target);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!RdfSelection.CouldBeFamilyFile(target.ResolvedFullPath))
+        if (!RdfSelection.AnswersFor(target))
         {
             return Rows([]);
         }

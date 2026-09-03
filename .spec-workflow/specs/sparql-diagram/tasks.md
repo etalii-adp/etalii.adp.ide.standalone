@@ -15,7 +15,7 @@ One worktree for the whole spec (`.claude/worktrees/sparql`, short per the MAX_P
 
 **Seams this spec deliberately does not depend on.** The `rdf-diagram` tasks name three sibling seams; this document depends on **none of them**, and says so rather than leaving a reader to notice the absence: not task 1.1's triplestore document store and `RdfModel` (a query is not a serialization of a graph — this module has its own parser and model), not task 2.1's triple writer and splice discipline (nothing here writes the body; the no-writer proof in task 5.2 is the guarantee), and not task 3.2's registration header helper (the requirements claim no item-10 header — a `.rq` needs no reading-specific configuration). What this spec consumes arrives through core alone: the central canvas library and family visual conventions, the core `layout:` block, and the example vendoring discipline. Nothing in `src/diagrams/sparql/` may reference `src/diagrams/rdf/`.
 
-- [ ] 1. The query layer: parser, model, read-only store
+- [x] 1. The query layer: parser, model, read-only store
   - _Requirements: 1.1-1.5_
 
 - [x] 1.1 Three-tier parser, query model, store with no save surface
@@ -28,7 +28,7 @@ One worktree for the whole spec (`.claude/worktrees/sparql`, short per the MAX_P
   - All four gates (backend test + format from `src/backend`, npm test + typecheck from `src/client`), exit codes captured before any pipe; merge `.claude/worktrees/sparql` into `develop`
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge the sparql worktree's group-1 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. Projection and layout: one variable, one node, containment held
+- [x] 2. Projection and layout: one variable, one node, containment held
   - _Requirements: 3.1-3.7, 4.1-4.5, 5.5, 7.5_
 
 - [x] 2.1 Wire payloads
@@ -52,7 +52,7 @@ One worktree for the whole spec (`.claude/worktrees/sparql`, short per the MAX_P
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 2 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. Definition, session, providers, validation
+- [x] 3. Definition, session, providers, validation
   - _Requirements: 2.1-2.3, 5.1-5.4, 6.1-6.3, 7.1-7.4_
 
 - [x] 3.1 Definition, routing, session, reloader
@@ -70,7 +70,7 @@ One worktree for the whole spec (`.claude/worktrees/sparql`, short per the MAX_P
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 3 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. Client: the query canvas
+- [x] 4. Client: the query canvas
   - _Requirements: 3.1-3.7, 4.2, 6.1, 6.3_
 
 - [x] 4.1 SparqlCanvas from the central library
@@ -83,25 +83,25 @@ One worktree for the whole spec (`.claude/worktrees/sparql`, short per the MAX_P
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 4 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5. Examples, the no-writer proof, catalog and manual checks
+- [x] 5. Examples, the no-writer proof, catalog and manual checks
   - _Requirements: 8.1-8.5, 1.4, 6.1-6.3_
 
-- [-] 5.1 Vendored examples under the licensing discipline
+- [x] 5.1 Vendored examples under the licensing discipline
   - Files: `src/diagrams/sparql/examples/` — the W3C SPARQL 1.1 recommendation's example queries (W3C Software and Document License) and SIB/UniProt example queries (CC BY 4.0, attribution carried); each beside its routing `.adp`; upstream license text travelling with the files; a provenance readme per source (URL, version or retrieval date, verified license, exact local changes); unmodified content unmodified; the Requirement 8.3 coverage set (each query form; one `OPTIONAL`+`UNION`+`FILTER` query; one property path; one subquery or aggregate); byte-identical copies at `src/examples/diagrams/sparql/` joining `ExampleReplicationTests` by existing; the Wikidata wiki-page candidate stays rejected (CC BY-SA) unless re-verified otherwise at acquisition
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer acting as a careful librarian | Task: Vendor the example queries per Requirement 8 - verify each source's license individually at acquisition, carry license text and per-source provenance readmes, keep unmodified content unmodified, cover the 8.3 construct set, register each with an .adp, and replicate byte-identically to src/examples/diagrams/sparql | Restrictions: no example ships whose license was not individually verified; CC BY attribution must actually be carried; share-alike licenses are rejected; a module test walks the folders asserting license and readme presence | _Leverage: the rdf-diagram examples' provenance readme shape; ExampleRegistrationTests and ExampleReplicationTests join by existing | Success: every example opens from the explorer resolving in the deployed catalog with zero findings above info; the licensing walk test passes; replication is byte-identical. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.2 The no-writer proof, three layers complete
+- [x] 5.2 The no-writer proof, three layers complete
   - Files: the behavioural sweep integration test joining the surface test (1.1) and registration test (3.2) — named together here so the guarantee is verified whole
   - **Layer 1, surface (from 1.1)**: the reflection test fails if a write-shaped member merely exists — the layer that stops a convenience method in six months. **Layer 2, behavioural (this task)**: byte-snapshot a vendored `.rq`, exercise a full render, every action the provider offers, a reposition and its undo, an external-edit reload — assert the `.rq` byte-identical and only the `.adp` changed. **Layer 3, registration (from 3.2)**: no toolbox entries, no mutating actions. This task implements layer 2 and asserts all three are present and passing
   - _Requirements: 1.4, 6.1, 6.3, 5.1_
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer writing integration tests | Task: Implement the behavioural no-writer sweep on a vendored example - snapshot the .rq bytes, drive render, every offered action, reposition, undo and external-edit reload through the real gRPC flow, assert the .rq identical and only the .adp changed - and add an assertion that all three no-writer layers (reflection surface, this sweep, registration) exist and run in the suite | Restrictions: the sweep goes through the real command and session pipeline, not module internals; if any gesture changes the .rq by one byte the test names the gesture | _Leverage: the integration-test host the module tests use; the examples from 5.1 | Success: the sweep passes with byte-identity asserted; removing any of the three layers fails the meta-assertion. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.3 Catalog, docs and manual checks
+- [x] 5.3 Catalog, docs and manual checks
   - Files: `docs/diagrams.md` (the `w3c/sparql` row to ✅ Implemented, section style kept), `tests.md` entries (the shared-variable-once check on the `OPTIONAL`+`UNION`+`FILTER` example with edges crossing region borders; the projection mark matching the `SELECT` list; reposition-reopen-undo leaving the `.rq` untouched in a visible diff), `docs/creating-a-diagram-module.md` touch points verified still true
   - _Requirements: 3.1, 4.2, 5.1, 6.3_
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical writer with the app running | Task: Move the catalog row to implemented in its section's existing style, add the tests.md manual checks from the design's end-to-end list, execute them against the running app, and verify the creating-a-diagram-module touch points still hold | Restrictions: catalog row edits keep the section's HTML row style; tests.md entries name this spec and task; a failed manual check is a bug to guard per CLAUDE.md before this task completes | Success: the row reads implemented with the spec link intact; the manual checks pass and are recorded; documentation matches reality. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.4 Final gates and merge; retire the worktree
+- [x] 5.4 Final gates and merge; retire the worktree
   - The four gates, exit codes checked; merge into `develop`; retire `.claude/worktrees/sparql` per CLAUDE.md's rules (never with unmerged work; report Windows removal failures rather than forcing)
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked, merge the final group into develop, and retire the sparql worktree per CLAUDE.md | Restrictions: do not merge on a failing gate; never remove a worktree with uncommitted or unmerged work; report removal failures rather than forcing | Success: gates green, merged, worktree retired or its failure reported. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._

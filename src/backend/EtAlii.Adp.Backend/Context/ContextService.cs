@@ -61,6 +61,8 @@ public sealed partial class ContextService : EtAlii.Adp.ContextService.ContextSe
         var userId = SessionContext.GetUserId(context);
         if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var rootPath, out var error))
         {
+            // The refusal reason otherwise reaches only the one client that asked.
+            _logger.Warning("Rejected a selection from {UserId} on project {ProjectId}: {Reason}", userId, request.ProjectId, error);
             return new SelectResponse { Error = error };
         }
 
@@ -114,6 +116,7 @@ public sealed partial class ContextService : EtAlii.Adp.ContextService.ContextSe
         var userId = SessionContext.GetUserId(context);
         if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var rootPath, out var error))
         {
+            _logger.Warning("Refused a context stream for {UserId} on project {ProjectId}: {Reason}", userId, request.ProjectId, error);
             throw new RpcException(new Status(StatusCode.FailedPrecondition, error));
         }
 

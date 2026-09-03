@@ -28,6 +28,9 @@ public sealed class ProjectService : EtAlii.Adp.ProjectService.ProjectServiceBas
     public override Task<AddProjectResponse> AddProject(AddProjectRequest request, ServerCallContext context)
     {
         var userId = SessionContext.GetUserId(context);
+        // The REQUESTED name and path, before validation: the rejection below carries only the
+        // reason, and this is where what was actually asked for is kept beside it.
+        _logger.Debug("Adding project {ProjectName} at {ProjectPath} for {UserId}", request.Name, string.Join('/', request.Path.Segments), userId);
         try
         {
             var added = _projectStore.Add(userId, request.Name, new PathRecord(request.Path.Segments.ToList()));

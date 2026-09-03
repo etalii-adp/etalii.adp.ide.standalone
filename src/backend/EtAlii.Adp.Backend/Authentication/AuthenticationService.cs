@@ -54,6 +54,11 @@ public sealed class AuthenticationService : EtAlii.Adp.AuthenticationService.Aut
         return Task.FromResult(new LogoutResponse());
     }
 
-    public override Task<DescribeProductResponse> DescribeProduct(DescribeProductRequest request, ServerCallContext context) =>
-        Task.FromResult(new DescribeProductResponse { Version = _productVersion });
+    public override Task<DescribeProductResponse> DescribeProduct(DescribeProductRequest request, ServerCallContext context)
+    {
+        // Debug: issued on every login-page load, but the one line that correlates a client's
+        // session with the exact binary that served it.
+        _logger.Debug("Described the product as {Version}", _productVersion);
+        return Task.FromResult(new DescribeProductResponse { Version = _productVersion });
+    }
 }
