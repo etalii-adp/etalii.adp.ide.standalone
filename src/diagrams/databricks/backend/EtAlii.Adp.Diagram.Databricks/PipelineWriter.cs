@@ -53,28 +53,28 @@ internal static class PipelineWriter
             return "";
         }
 
-        var entry = (string entryIndent) => new[]
-        {
+        string[] Entry(string entryIndent) =>
+        [
             $"{entryIndent}- {kind}:",
             $"{entryIndent}    {pathKey}: {DatabricksSplices.Quote(path)}",
-        };
+        ];
 
         if (pipeline.Libraries.Count > 0)
         {
             var last = pipeline.Libraries[^1];
-            document.Insert(last.Lines.End + 1, entry(DatabricksSplices.Indent(document.Lines[last.Lines.Start].Text)));
+            document.Insert(last.Lines.End + 1, Entry(DatabricksSplices.Indent(document.Lines[last.Lines.Start].Text)));
             return "";
         }
 
         var librariesLine = DatabricksSplices.FindKey(document, pipeline.Lines, "libraries");
         if (librariesLine >= 0)
         {
-            document.Insert(librariesLine + 1, entry(DatabricksSplices.Indent(document.Lines[librariesLine].Text) + "  "));
+            document.Insert(librariesLine + 1, Entry(DatabricksSplices.Indent(document.Lines[librariesLine].Text) + "  "));
             return "";
         }
 
         var keyIndent = DatabricksSplices.KeyIndentWithin(document, pipeline.Lines);
-        document.Insert(pipeline.Lines.End + 1, [$"{keyIndent}libraries:", .. entry(keyIndent + "  ")]);
+        document.Insert(pipeline.Lines.End + 1, [$"{keyIndent}libraries:", .. Entry(keyIndent + "  ")]);
         return "";
     }
 
