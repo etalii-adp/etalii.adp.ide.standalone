@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/skos-diagram/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T11:40:13.256Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788435613061_lbf40rsji",
+      "approvalTitle": "skos-diagram design"
+    }
+  ]
+}
