@@ -649,3 +649,24 @@ three colors actually read apart on both surfaces. Checked live from the spec wo
   light mode: limegreen / rgb(22,101,52) / muted slate. Found and fixed live: the
   folder's own state update was swallowed on listing-triggered scans, so an expanded
   `infrastructure` stayed neutral until the raise was made unconditional for the folder.
+
+## The wardley-map and azure-pipeline toolboxes fill for an open diagram (documentation, task 9)
+
+Found while capturing the readme screenshots: with a wardley map or an Azure pipeline open
+from the combined `src/examples/` project, the Toolbox panel stays on "Open a diagram to see
+the elements its type offers" - while the c4, mindmap, timeline and dependency-graph tabs all
+fill their toolbox on the same flow. Deterministic across headless capture runs (byte-identical
+screenshots), so not a timing race. Both modules register an `IDiagramToolboxProvider`, and the
+wardley one is covered by a passing `DescribeToolbox` integration test at the project root -
+the reproduction here differs in the document living in a subfolder whose name contains a
+space, which is one candidate to rule out.
+
+- **Preconditions**: backend + client running; `src/examples/` added as a project.
+- **Actions**: open `diagrams/wardley-map/example 1/tea.adp` (nested under `tea.owm` in the
+  explorer) in a diagram tab; look at the Toolbox panel. Repeat for
+  `diagrams/azure-pipeline/example 1/multi-stage.adp`.
+- **Expected**: the wardley toolbox lists its eight entries (Component, Anchor, Market,
+  Ecosystem, Submap, Pipeline, Note, Annotation) and the azure-pipeline toolbox lists that
+  module's entries - not the "Open a diagram" placeholder. Once this passes, retake
+  `docs/screenshots/wardley-map.png` and `docs/screenshots/azure-pipeline.png` per
+  `docs/screenshots/readme.md`.

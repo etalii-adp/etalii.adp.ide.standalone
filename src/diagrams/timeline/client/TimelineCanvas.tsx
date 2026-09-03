@@ -539,7 +539,7 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
 
   if (failed) {
     return (
-      <div className="timeline-canvas timeline-canvas-message">
+      <div className="timeline-canvas canvas-host timeline-canvas-message canvas-host-message">
         <p>This timeline could not be opened.</p>
       </div>
     );
@@ -556,10 +556,10 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
   const width = surfaceRef.current?.getBoundingClientRect().width ?? 1200;
 
   return (
-    <div className="timeline-canvas">
+    <div className="timeline-canvas canvas-host">
       <div
         ref={surfaceRef}
-        className="timeline-surface"
+        className="timeline-surface canvas-viewport"
         role="application"
         aria-label="Timeline"
         tabIndex={0}
@@ -572,7 +572,7 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
         onDragOver={onDragOver}
         onDrop={onSurfaceDrop}
       >
-        <svg className="timeline-content">
+        <svg className="timeline-content canvas-drawing">
           {[...model.connections.values()].map((connection) => {
             const from = boxes.get(connection.fromElementId);
             const to = boxes.get(connection.toElementId);
@@ -595,10 +595,10 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
                 loopsBack={toElement.x < endSecondsOf(fromElement)}
                 selected={connection.id === selectedId}
                 label={connection.label || undefined}
-                className="timeline-connection"
-                selectedClassName="timeline-selected"
-                hitClassName="timeline-connection-hit"
-                lineClassName="timeline-connection-line"
+                className="timeline-connection canvas-connection"
+                selectedClassName="timeline-selected canvas-selected"
+                hitClassName="timeline-connection-hit canvas-connection-hit"
+                lineClassName="timeline-connection-line canvas-connection-line"
                 onSelect={(event) => onConnectionClick(event, connection.id)}
                 onOpenMenu={(event) => openTargetMenuAt(event, connection.id)}
               />
@@ -641,8 +641,8 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
         position={menuPosition ?? { x: 0, y: 0 }}
         onClose={closeMenu}
       />
-      {loading ? <p className="timeline-status">Opening…</p> : null}
-      {rejection ? <p className="timeline-rejection">{rejection}</p> : null}
+      {loading ? <p className="timeline-status canvas-status">Opening…</p> : null}
+      {rejection ? <p className="timeline-rejection canvas-rejection">{rejection}</p> : null}
     </div>
   );
 }
@@ -736,13 +736,13 @@ interface TimelineElementShapeProps {
 
 /** The class names the shared span element hangs the timeline's styling on. */
 const SPAN_CLASSES: SpanElementClasses = {
-  span: "timeline-period",
+  span: "timeline-period canvas-node",
   moment: "timeline-moment",
-  label: "timeline-label",
-  hint: "timeline-hint",
+  label: "timeline-label canvas-node-label",
+  hint: "timeline-hint canvas-hint",
   adorner: "timeline-adorner",
-  anchor: "timeline-anchor",
-  anchorHit: "timeline-anchor-hit",
+  anchor: "timeline-anchor canvas-anchor",
+  anchorHit: "timeline-anchor-hit canvas-anchor-hit",
 };
 
 function TimelineElementShape({
@@ -759,13 +759,13 @@ function TimelineElementShape({
   onElementLeave,
   onElementContextMenu,
 }: TimelineElementShapeProps) {
-  const classes = ["timeline-element"];
+  const classes = ["timeline-element canvas-element"];
   if (selected) {
-    classes.push("timeline-selected");
+    classes.push("timeline-selected canvas-selected");
   }
 
   if (connectTarget) {
-    classes.push("timeline-connect-target");
+    classes.push("timeline-connect-target canvas-connect-target");
   }
 
   // What the gesture would land on, visible before the user commits (Requirements 6.5, 7.7).
@@ -821,7 +821,7 @@ function PendingConnection({
     : { x: secondsToPx(connect.x), y: yToPx(connect.y) };
   const start = sideAnchorOf(from, end.x >= from.x ? "right" : "left");
 
-  return <path className="timeline-pending-connection" d={horizontalBezierPath(start, end)} />;
+  return <path className="timeline-pending-connection canvas-pending-connection" d={horizontalBezierPath(start, end)} />;
 }
 
 function clampVerticalScale(scale: number): number {

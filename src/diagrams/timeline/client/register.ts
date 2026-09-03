@@ -1,5 +1,6 @@
 import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
 import { TimelineCanvas } from "./TimelineCanvas";
+import "@client/canvas/canvas.css";
 import "./timeline.css";
 
 /**

@@ -1,0 +1,159 @@
+/*
+ * The shared canvas appearance: the element, connection and chrome styling every arranged
+ * canvas states once, here, beside the components it dresses. Extracted from the timeline's
+ * and the dependency graph's stylesheets, which had grown value-identical copies of every rule
+ * below - and which the databricks canvases were about to fork a third time, against theme
+ * variables that did not even exist.
+ *
+ * A module composes these classes alongside its own (`timeline-period canvas-node`), keeps its
+ * own names for behaviour and tests, and keeps in its own stylesheet only what is genuinely
+ * its - a ruler, a run-state colouring, a frame. The values here ARE the timeline's and the
+ * dependency graph's values; those two canvases are the reference, and changing a value here
+ * changes every canvas at once, which is the point.
+ *
+ * Loaded by a JS import from each consuming module's register.ts - the same file loading the
+ * module's own stylesheet - so it arrives exactly when a canvas that needs it does, once.
+ */
+
+/* ---- The chrome -------------------------------------------------------------------- */
+
+.canvas-host {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-surface);
+}
+
+.canvas-host-message {
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+}
+
+.canvas-viewport {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  cursor: grab;
+}
+
+.canvas-drawing {
+  width: 100%;
+  height: 100%;
+}
+
+.canvas-status,
+.canvas-rejection {
+  position: absolute;
+  bottom: 32px;
+  left: 12px;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--color-surface, #ffffff);
+  color: var(--color-text-muted, #5a6376);
+  font-size: 12px;
+}
+
+.canvas-rejection {
+  color: var(--color-danger, #dc2626);
+}
+
+/* ---- Elements ---------------------------------------------------------------------- */
+
+.canvas-element {
+  cursor: pointer;
+}
+
+.canvas-node {
+  fill: var(--color-surface, #ffffff);
+  stroke: var(--color-border, #8892a6);
+  stroke-width: 1.5;
+}
+
+.canvas-selected .canvas-node,
+.canvas-connect-target .canvas-node {
+  stroke: var(--color-primary, limegreen);
+  stroke-width: 2.5;
+}
+
+.canvas-node-label {
+  fill: var(--color-text, #1c2333);
+  font-size: 12px;
+  text-anchor: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* What the in-flight gesture would land on, visible before the user commits. */
+.canvas-hint {
+  fill: var(--color-text-muted, #5a6376);
+  font-size: 11px;
+  text-anchor: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ---- Anchors ----------------------------------------------------------------------- */
+
+.canvas-anchor {
+  fill: var(--color-surface, #ffffff);
+  stroke: var(--color-primary, limegreen);
+  stroke-width: 1.5;
+  cursor: crosshair;
+  pointer-events: none;
+}
+
+/* The generous, invisible grab target each anchor dot sits inside. */
+.canvas-anchor-hit {
+  fill: transparent;
+  stroke: none;
+  cursor: crosshair;
+}
+
+/* ---- Connections ------------------------------------------------------------------- */
+
+.canvas-connection-line {
+  fill: none;
+  stroke: var(--color-text-muted, #5a6376);
+  stroke-width: 1.5;
+}
+
+.canvas-selected .canvas-connection-line,
+.canvas-selected.canvas-connection-line {
+  stroke: var(--color-primary, limegreen);
+  stroke-width: 2.5;
+}
+
+/* An invisible fat twin of the line carries the pointer - a 1.5px stroke is no target. */
+.canvas-connection-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 14;
+  cursor: pointer;
+}
+
+.canvas-connection text {
+  fill: var(--color-text-muted, #5a6376);
+  font-size: 11px;
+  text-anchor: middle;
+  user-select: none;
+}
+
+.canvas-pending-connection {
+  fill: none;
+  stroke: var(--color-primary, limegreen);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+
+/* The arrowhead a directed canvas defines; each module attaches its own marker id. */
+.canvas-arrowhead {
+  fill: var(--color-text-muted, #5a6376);
+  stroke: none;
+}
