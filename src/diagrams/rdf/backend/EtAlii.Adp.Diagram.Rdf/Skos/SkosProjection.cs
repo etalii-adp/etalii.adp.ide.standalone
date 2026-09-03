@@ -146,9 +146,9 @@ public static class SkosProjection
 
         // The budget order (Requirement 8.2), walked over the drawable element set.
         var childrenOf = new Dictionary<string, List<string>>(StringComparer.Ordinal);
-        foreach (var pair in hierarchyPairs.Keys)
+        foreach (var (broaderId, narrowerId) in hierarchyPairs.Keys)
         {
-            Add(childrenOf, pair.BroaderId, pair.NarrowerId);
+            Add(childrenOf, broaderId, narrowerId);
         }
 
         var order = new List<string>();
