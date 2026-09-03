@@ -16,6 +16,8 @@ This spec covers **one diagram type, `w3c/shacl`** — a SHACL shapes file drawn
 
 Referenced from the anchor, by name, rules unrepeated: the **triplestore document store**, the **serialization boundary**, the **splice discipline**, the **blank-node identity boundary**, the **drawn-element budget**, the **layout overlay**, the **routing arrangement**, the **no-network, no-inference rule**, and the **example vendoring rule**.
 
+The anchor's tenth item, the **registration header facility**, is deliberately not consumed — Requirement 4.5 states the choice and its reason.
+
 Owned here: the `w3c/shacl` projection (which triples become which elements), its visual language with the research below, its reading-specific validation, its editing surface and refusals, its vendored examples, and its catalog row. The module code joins `src/diagrams/rdf/` as further `DiagramDefinition`s over the family store — the C4/databricks one-engine arrangement — naming no new module folder.
 
 ## How SHACL shapes are visualized — research, and the positions taken
@@ -88,6 +90,7 @@ Owned here: the `w3c/shacl` projection (which triples become which elements), it
 2. WHEN a user looks for validation THEN what this module offers instead SHALL be exactly two things: the shapes' structure made readable (Requirement 1), and findings about the shapes file itself (Requirement 7) — the problems panel speaks about the shapes graph, never about data conformance.
 3. WHEN a target names a term absent from the file THEN that absence SHALL NOT be a finding — a shapes graph aiming at data that is elsewhere is the medium working as designed, not an error.
 4. A future spec MAY add deliberate execution — choose a data file, run, report — without contradicting this one: this spec constrains what opening a diagram does, not what a future explicitly invoked action may do; until such a spec exists the action does not either.
+5. The anchor's **registration header facility** — whose own text names a SHACL target hint as a possible claimant — is available and SHALL remain deliberately unclaimed by this reading: a shapes graph is written to constrain any number of data graphs, so a registration bound to one particular data file would misstate the medium; and annotating targets against a chosen data graph (present, absent, counted) is the first step of the execution path, which 4.4 assigns to a future spec as a whole rather than admitting piecemeal. That spec is the facility's natural claimant, under the anchor's claim-before-use rule.
 
 ### Requirement 5 — Editing: this reading's writers under the splice discipline
 
