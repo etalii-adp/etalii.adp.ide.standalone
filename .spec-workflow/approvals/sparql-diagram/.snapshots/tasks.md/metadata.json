@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/sparql-diagram/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T15:42:00.571Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788450120349_2b9dm3fej",
+      "approvalTitle": "sparql-diagram tasks"
+    }
+  ]
+}
