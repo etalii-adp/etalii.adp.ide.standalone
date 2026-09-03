@@ -3,8 +3,10 @@
   "title": "databricks-diagrams: tasks",
   "filePath": ".spec-workflow/specs/databricks-diagrams/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-03T00:05:10.342Z",
   "category": "spec",
-  "categoryName": "databricks-diagrams"
+  "categoryName": "databricks-diagrams",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-03T00:07:05.890Z"
 }
