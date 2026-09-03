@@ -38,6 +38,9 @@
     <!-- Databricks asset bundles, jobs and declarative pipelines: three MIME types, one engine. -->
     <Project Path="../diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks/EtAlii.Adp.Diagram.Databricks.csproj" />
     <Project Path="../diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/EtAlii.Adp.Diagram.Databricks.Tests.csproj" />
+    <!-- Helm charts: a folder-subject reading of the chart directory a repository already has. -->
+    <Project Path="../diagrams/helm-charts/backend/EtAlii.Adp.Diagram.HelmCharts/EtAlii.Adp.Diagram.HelmCharts.csproj" />
+    <Project Path="../diagrams/helm-charts/backend/EtAlii.Adp.Diagram.HelmCharts.Tests/EtAlii.Adp.Diagram.HelmCharts.Tests.csproj" />
     <Project Path="../diagrams/archimate-application/backend/EtAlii.Adp.Diagram.ArchimateApplication/EtAlii.Adp.Diagram.ArchimateApplication.csproj" />
     <Project Path="../diagrams/archimate-business/backend/EtAlii.Adp.Diagram.ArchimateBusiness/EtAlii.Adp.Diagram.ArchimateBusiness.csproj" />
     <Project Path="../diagrams/archimate-implementation-migration/backend/EtAlii.Adp.Diagram.ArchimateImplementationMigration/EtAlii.Adp.Diagram.ArchimateImplementationMigration.csproj" />
