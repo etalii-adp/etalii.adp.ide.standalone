@@ -112,7 +112,7 @@ Standing notes an implementer should not have to rediscover:
   - Worktree: `.claude/worktrees/smref`
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
-- [ ] 3.1 The two routing queries, with their tests
+- [-] 3.1 The two routing queries, with their tests
   - Files: `src/backend/EtAlii.Adp.Backend/Hierarchy/DiagramFileRouter.cs`, `src/backend/EtAlii.Adp.Backend/Hierarchy/EditorResolver.cs`, `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/DiagramFileRouter.Tests.cs`, `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/EditorResolver.Tests.cs`
   - `DiagramFileRouter.ClaimsExtensionOf(path)`: true when any catalog definition declares the path's extension, shared or not. This is deliberately not `Route`: `Route` refuses a shared extension on sight, but Requirement 3.2 counts a registrable file as potential, so a `.yml` Azure Pipeline would happily register is potential even though `Route` will not route it unasked. `EditorResolver.IsClaimed(path)`: true when a non-fallback editor claims the path by exact name or extension, including the ambiguous case — the test is whether an editor claims it, not whether opening will succeed, and the fallback claims everything by construction so it never counts
   - Tests: `ClaimsExtensionOf` true for a bare-body extension, true for a shared one, false for an unclaimed one — the shared case is what distinguishes it from `Route`; `IsClaimed` true for an extension claim, an exact-name claim and an ambiguous extension, false for a file only the fallback answers
