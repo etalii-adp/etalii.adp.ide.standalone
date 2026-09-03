@@ -249,9 +249,9 @@ public sealed class HelmChartReader
                 root.Children.TryGetValue(new YamlScalarNode("dependencies"), out list);
             }
         }
-        else if (chartRoot is not null)
+        else
         {
-            chartRoot.Children.TryGetValue(new YamlScalarNode("dependencies"), out list);
+            chartRoot?.Children.TryGetValue(new YamlScalarNode("dependencies"), out list);
         }
 
         if (list is not YamlSequenceNode sequence)
