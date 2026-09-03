@@ -167,13 +167,13 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - _Requirements: 2.2, 6.2, 6.3, 6.4, 10.8_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the integration flows per design — open/delta, validation placement, and the full reposition-undo cycle with byte checks | Restrictions: run via dotnet test --solution per the repo's xUnit v3 conventions; zero tests ran means broken build | _Leverage: AnsibleStructureFlow.Tests.cs and AnsibleValidationFlow.Tests.cs as templates | Success: all flows green against the real host. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 7.3 Example registrations, now that the definition exists
+- [x] 7.3 Example registrations, now that the definition exists
   - Files: one `helm-chart.adp` (MIME line `helm/chart`) inside each of the three module example chart roots, replicated to the central copies
   - `ExampleRegistration.Tests` now opens them against the registered definition; `ExampleReplication.Tests` stays green (identical copies — no `body:` header exists to differ); validation over all shipped examples reports zero findings
   - _Requirements: 11.1, 11.6, 10.9_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior developer | Task: Add the .adp registrations to the three examples in both trees and prove the registration sweep, replication sweep and validation are all green | Restrictions: one MIME line per .adp, nothing else; both trees in the same change | _Leverage: the ansible example's structure.adp precedent | Success: both sweeps green; every example opens by double-click and validates clean. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7.4 Catalog, manual pass, final gates, retire
+- [-] 7.4 Catalog, manual pass, final gates, retire
   - Files: `docs/diagrams.md` (the `helm/chart` row to its earned state, catalog vocabulary), `tests.md` (manual checks for what only a running app shows: Add-flow suggestion on a Chart.yaml folder, per-kind double-click navigation, the drag-reposition-reopen cycle through the real client)
   - Run the manual verification pass against a live app from the worktree — changing the client dev port and `Client:DevServerUrl` to a free pair first and reverting both before the final merge; run the full gates; merge; the worktree is then retirable (removal is the user's call to confirm)
   - _Requirements: 12.3_
