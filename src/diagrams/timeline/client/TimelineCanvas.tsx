@@ -15,9 +15,10 @@ import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { ContextSelectionAction } from "@client/generated/context_pb";
 import { TimelineRuler } from "./TimelineRuler";
-import { TimelineScrollbars } from "./TimelineScrollbars";
+import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
+import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import { useTimelineStream } from "./useTimelineStream";
-import type { TimelineElement } from "./timelineModel";
+import type { TimelineElement, TimelineModel } from "./timelineModel";
 
 /**
  * The vertical distance between adjacent rows, in the module's own y units.
@@ -625,7 +626,11 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
           ))}
         </svg>
         <TimelineRuler startSeconds={view.startSeconds} secondsPerPixel={view.secondsPerPixel} widthPx={width} />
-        <TimelineScrollbars model={model} view={view} widthPx={width} onPan={(startSeconds, panY) => setView((current) => ({ ...current, startSeconds, panY }))} />
+        <CanvasScrollbars
+          {...scrollAxesOf(model, view, width)}
+          className="timeline-scrollbars"
+          onPan={(startSeconds, panY) => setView((current) => ({ ...current, startSeconds, panY }))}
+        />
       </div>
       <ContextMenu
         open={menuPosition !== null}
@@ -821,6 +826,43 @@ function PendingConnection({
 
 function clampVerticalScale(scale: number): number {
   return Math.min(MAX_VERTICAL_SCALE, Math.max(MIN_VERTICAL_SCALE, scale));
+}
+
+/**
+ * The two scroll axes in the timeline's own units, for the shared scroll view.
+ *
+ * Horizontal is seconds: the view spans `widthPx * secondsPerPixel` from `startSeconds`, and
+ * the extent is the elements' time span padded by half of itself on each side, never less than
+ * a day. Vertical is row units: the view spans `heightPx / verticalScale` from `panY`, and the
+ * extent is the elements' rows padded by two rows top and bottom. Both parameterisations
+ * reproduce, term for term, what the timeline's own scrollbars computed before the extraction -
+ * `scrollGeometry.test.ts` pins that.
+ *
+ * Two things are inherited unchanged on purpose (small-refinements Requirement 1.6): the 400px
+ * height approximation, which only shapes the vertical thumb's ratio, and the empty-model
+ * fallbacks that substitute the view's own window when there is nothing to measure. The 400 is
+ * a known imprecision rather than a bug this change fixes - changing it would change the thumb
+ * on every timeline.
+ */
+function scrollAxesOf(model: TimelineModel, view: TimelineView, widthPx: number) {
+  const elements = [...model.elements.values()];
+  const heightPx = 400;
+
+  const viewSpanSeconds = widthPx * view.secondsPerPixel;
+  const minSeconds = elements.length > 0 ? Math.min(...elements.map((element) => element.x)) : view.startSeconds;
+  const maxSeconds = elements.length > 0
+    ? Math.max(...elements.map((element) => element.x + DAY))
+    : view.startSeconds + viewSpanSeconds;
+  const horizontalExtent = scrollExtentOf(minSeconds, maxSeconds, { factor: 0.5, minimumSpan: DAY });
+
+  const minY = elements.length > 0 ? Math.min(...elements.map((element) => element.y)) : view.panY;
+  const maxY = elements.length > 0 ? Math.max(...elements.map((element) => element.y + ROW_HEIGHT)) : view.panY + heightPx;
+  const verticalExtent = scrollExtentOf(minY, maxY, { factor: 0, minimum: 2 * ROW_HEIGHT });
+
+  return {
+    horizontal: { viewStart: view.startSeconds, viewSpan: viewSpanSeconds, ...horizontalExtent },
+    vertical: { viewStart: view.panY, viewSpan: heightPx / view.verticalScale, ...verticalExtent },
+  };
 }
 
 function clampZoom(secondsPerPixel: number): number {

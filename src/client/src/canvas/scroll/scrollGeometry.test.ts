@@ -108,7 +108,7 @@ describe("scrollExtentOf", () => {
 
   it("reproduces the timeline's horizontal extent term for term", () => {
     // Arrange.
-    // What TimelineScrollbars computed before the extraction, written out as it was:
+    // What the timeline's own scrollbars computed before the extraction, written out as it was:
     //   timeSpan    = max(maxSeconds - minSeconds, DAY)
     //   extentStart = minSeconds - timeSpan * 0.5
     //   extentEnd   = maxSeconds + timeSpan * 0.5
