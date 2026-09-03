@@ -10,4 +10,5 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// <param name="Object">The object term.</param>
 /// <param name="Start">Offset of the triple's first own token.</param>
 /// <param name="End">Offset just past the triple's last own token.</param>
-internal sealed record RdfPendingTriple(RdfTerm Subject, IriTerm Predicate, RdfTerm Object, int Start, int End);
+/// <param name="ObjectStart">Offset of the object's first token.</param>
+internal sealed record RdfPendingTriple(RdfTerm Subject, IriTerm Predicate, RdfTerm Object, int Start, int End, int ObjectStart);
