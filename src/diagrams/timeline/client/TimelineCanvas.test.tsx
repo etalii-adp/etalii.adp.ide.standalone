@@ -111,6 +111,31 @@ beforeEach(() => {
 });
 
 describe("the timeline canvas", () => {
+  it("still shows both scrollbars and still pans on a thumb drag after moving to the shared scroll view", () => {
+    // Arrange.
+    // small-refinements Requirement 1.6: the migration onto CanvasScrollbars is not a silent
+    // no-op. Before it, nothing in this file asserted a scrollbar at all.
+    const { container } = renderCanvas();
+    const horizontalBar = container.querySelector(".canvas-scrollbar-horizontal")!;
+    const verticalBar = container.querySelector(".canvas-scrollbar-vertical")!;
+    const thumb = horizontalBar.querySelector<HTMLElement>(".canvas-scrollbar-thumb")!;
+    // jsdom lays nothing out; the drag divides the extent by the track width, so give it one.
+    Object.defineProperty(horizontalBar, "getBoundingClientRect", {
+      value: () => ({ x: 0, y: 0, top: 0, left: 0, right: 400, bottom: 10, width: 400, height: 10, toJSON: () => ({}) }),
+    });
+    const before = thumb.style.left;
+
+    // Act.
+    fireEvent.mouseDown(thumb, { clientX: 100, clientY: 5 });
+    fireEvent.mouseMove(window, { clientX: 180, clientY: 5 });
+    fireEvent.mouseUp(window);
+
+    // Assert.
+    expect(horizontalBar.classList.contains("timeline-scrollbars")).toBe(true);
+    expect(verticalBar.classList.contains("timeline-scrollbars")).toBe(true);
+    expect(thumb.style.left).not.toBe(before);
+  });
+
   it("draws the period, the moment, the connection and the ruler", () => {
     // Act.
     const { container } = renderCanvas();
