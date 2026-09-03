@@ -1,4 +1,3 @@
-using EtAlii.Adp.Diagram.Sparql;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -21,7 +20,7 @@ public class ExampleCorpusTests
         }
 
         Assert.NotNull(directory);
-        return IoPath.Combine(directory!.FullName, "examples");
+        return IoPath.Combine(directory.FullName, "examples");
     }
 
     public static TheoryData<string> EveryQuery()

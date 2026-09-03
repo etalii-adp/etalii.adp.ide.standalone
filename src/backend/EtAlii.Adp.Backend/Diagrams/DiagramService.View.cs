@@ -1,5 +1,4 @@
 ﻿using Grpc.Core;
-using Serilog;
 
 namespace EtAlii.Adp.Backend.Diagrams;
 
