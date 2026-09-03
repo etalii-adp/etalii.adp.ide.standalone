@@ -185,7 +185,11 @@ public static class RegistrationLayout
             return; // no entries, no block: the empty block is removed rather than kept
         }
 
-        builder.Append(BlockHeader).Append("\r\n");
+        // New lines take the shared terminator - the constant exists because this writer and
+        // file creation once chose differently and produced mixed endings in one file. Lines
+        // that already exist keep their own terminator (RawLine, below); only new content is
+        // governed here.
+        builder.Append(BlockHeader).Append(AdpFileWriter.NewLine);
         foreach (var (id, position) in positions.OrderBy(entry => entry.Key, StringComparer.Ordinal))
         {
             builder
@@ -193,7 +197,7 @@ public static class RegistrationLayout
                 .Append(position.X.ToString("0.###", CultureInfo.InvariantCulture))
                 .Append(' ')
                 .Append(position.Y.ToString("0.###", CultureInfo.InvariantCulture))
-                .Append("\r\n");
+                .Append(AdpFileWriter.NewLine);
         }
     }
 

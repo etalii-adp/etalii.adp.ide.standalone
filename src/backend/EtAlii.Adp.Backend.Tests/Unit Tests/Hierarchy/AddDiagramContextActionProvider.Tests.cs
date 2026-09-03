@@ -251,7 +251,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
         Assert.True(result.Completed);
         var created = IoPath.Combine(_root, "domain.adp");
         Assert.Equal(created, result.CreatedFullPath);
-        Assert.Equal("c4/context\n", await File.ReadAllTextAsync(created, TestContext.Current.CancellationToken));
+        Assert.Equal("c4/context\r\n", await File.ReadAllTextAsync(created, TestContext.Current.CancellationToken));
     }
 
     [Fact]

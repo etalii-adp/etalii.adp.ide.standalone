@@ -94,7 +94,7 @@ public class DiagramFilePairTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal("freeplane/mindmap\n", await File.ReadAllTextAsync(IoPath.Combine(_root, "domain.adp"), TestContext.Current.CancellationToken));
+        Assert.Equal("freeplane/mindmap\r\n", await File.ReadAllTextAsync(IoPath.Combine(_root, "domain.adp"), TestContext.Current.CancellationToken));
         Assert.Equal("<map/>", await File.ReadAllTextAsync(IoPath.Combine(_root, "domain.mm"), TestContext.Current.CancellationToken));
     }
 
