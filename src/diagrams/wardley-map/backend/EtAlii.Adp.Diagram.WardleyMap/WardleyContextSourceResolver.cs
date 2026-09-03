@@ -129,7 +129,8 @@ public sealed class WardleyContextSourceResolver : IContextSourceResolver
                 SourceId: default,
                 rootPath,
                 watchId,
-                elementId),
+                elementId,
+                routed.Definition.Origin),
             detail,
             // The level carries its own resolver, which is how the selection store re-resolves
             // it after the document changes.

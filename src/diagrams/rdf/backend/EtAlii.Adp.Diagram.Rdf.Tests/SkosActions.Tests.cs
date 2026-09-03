@@ -105,6 +105,32 @@ public class SkosActionsTests : IDisposable
     }
 
     [Fact]
+    public async Task FileUnder_OnAnLfDocument_KeepsItsLineEndings_AndUndoesByteForByte()
+    {
+        // Arrange: an LF vocabulary, which is what a .ttl authored anywhere but Windows is -
+        // and what every other test in this file is NOT, since they all seed CRLF. A writer
+        // that appended its own house ending here would leave the user's file mixed, and the
+        // family's Requirement 1.4 says only the lines an edit concerns may change.
+        var body = WriteBody(Vocabulary.Replace("\r\n", "\n", StringComparison.Ordinal));
+        var before = File.ReadAllBytes(body);
+        Assert.DoesNotContain("\r\n", File.ReadAllText(body), StringComparison.Ordinal);
+
+        // Act.
+        var result = await _actions.ExecuteAsync(
+            Target(body, RdfRelationGesture.IdFor(Milk, Tea)), SkosActions.FileUnderActionId, TestContext.Current.CancellationToken);
+
+        // Assert: the statement landed, and the file is still LF throughout - no CR anywhere.
+        Assert.IsType<ContextExecutionCompleted>(result);
+        var after = File.ReadAllText(body);
+        Assert.Contains("skos:broader ex:tea", after, StringComparison.Ordinal);
+        Assert.DoesNotContain("\r", after, StringComparison.Ordinal);
+
+        // Assert, continued: and the undo returns the original bytes, endings included.
+        Assert.True((await _history.UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
+        Assert.Equal(before, File.ReadAllBytes(body));
+    }
+
+    [Fact]
     public async Task Disconnect_TakesBothAssertedDirections_AsOneUndo()
     {
         // Arrange: the pair asserted both ways; the drawn edge is one, its id canonical.

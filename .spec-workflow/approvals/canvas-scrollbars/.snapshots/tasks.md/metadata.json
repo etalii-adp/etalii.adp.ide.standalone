@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/canvas-scrollbars/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T23:57:55.551Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788479875439_csxizl20o",
+      "approvalTitle": "canvas-scrollbars tasks"
+    }
+  ]
+}

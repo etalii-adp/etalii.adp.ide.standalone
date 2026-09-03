@@ -89,7 +89,8 @@ public sealed class TimelineContextSourceResolver : IContextSourceResolver
                     SourceId: default,
                     rootPath,
                     watchId,
-                    elementId),
+                    elementId,
+                    routed.Definition.Origin),
                 new ContextLevelDetail { Element = new ElementDetail { Text = "New element" } },
                 this)));
         }
@@ -145,7 +146,8 @@ public sealed class TimelineContextSourceResolver : IContextSourceResolver
                 SourceId: default,
                 rootPath,
                 watchId,
-                elementId),
+                elementId,
+                routed.Definition.Origin),
             detail,
             this);
 

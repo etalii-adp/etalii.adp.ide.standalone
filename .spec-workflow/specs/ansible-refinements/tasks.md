@@ -47,20 +47,20 @@ One worktree for the whole spec: `.claude/worktrees/ansible-ref` — deliberatel
 - [-] 3. Client: shared appearance, scrollbars, drag
   - _Requirements: 1.1, 1.2, 4.1, 4.2, 4.3, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3_
 
-- [-] 3.1 Adopt the shared stylesheet and theme the palette
+- [x] 3.1 Adopt the shared stylesheet and theme the palette
   - Files: `src/diagrams/ansible-structure/client/register.ts`, `ansible-structure.css`, `AnsibleCanvas.tsx` (class composition only)
   - `register.ts` imports `@client/canvas/canvas.css` before the module stylesheet. Every rule the shared stylesheet already states is deleted; the component composes `canvas-*` classes alongside the existing ansible class names, which are kept so existing selectors and tests keep holding. The six per-play hues become module-owned custom properties declared once in a `.ansible-canvas` scope block, applied via `color-mix` against `--color-surface-raised`, with a `prefers-color-scheme: dark` block retuning individual hues where the dark surface needs it; tinting keeps wrapping beyond six plays. No colour literal survives outside a custom-property definition.
   - _Requirements: 4.1, 4.2, 4.3, 5.3, 5.4, 5.5, 5.6_
   - _Prompt: Implement the task for spec ansible-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer with CSS architecture experience | Task: Import the shared canvas stylesheet from register.ts, compose the shared canvas-* classes in AnsibleCanvas, delete the duplicating rules, and convert the six per-play hex literals into module-owned custom properties mixed against --color-surface-raised for both themes, per requirements 4.1-4.3 and 5.3-5.6 | Restrictions: ansible class names are composed with, never renamed away — existing tests must keep passing; the palette stays module-owned and is not promoted into the central theme; per-play tinting keeps wrapping modulo the palette length | _Leverage: databricks/register.ts and databricks.css for the import order and the color-mix derivation shape; timeline.css for what a module keeps after extraction | Success: existing client tests pass, no rule references an undefined custom property, and both themes render deliberately rather than by fallback. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.2 Scrollbars
+- [x] 3.2 Scrollbars
   - Files: `AnsibleCanvas.tsx`, `AnsibleCanvas.test.tsx`
   - `CanvasScrollbars` rendered from `scrollExtentOf(content bounds, view)`, wired exactly as the timeline and databricks canvases wire it: thumbs track position and extent, dragging a thumb pans, and nothing shows when the content fits.
   - Scope note: a separate specification will cover the other canvases that still lack scrollbars (c4, wardley-map, azure-pipeline, helm-charts, sparql). This task stays ansible-only and lands first; the broader spec references it rather than duplicating it.
   - _Requirements: 6.1, 6.2, 6.3_
   - _Prompt: Implement the task for spec ansible-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Wire CanvasScrollbars and scrollExtentOf into AnsibleCanvas per requirements 6.1-6.3, with tests covering appearance on overflow, thumb tracking while panning, and absence when content fits | Restrictions: use the shared component and geometry unchanged — no ansible-specific scrollbar; keep this change scoped to ansible, since a separate spec covers the remaining canvases | _Leverage: TimelineCanvas.tsx and its test for the wiring and the assertions; MindmapCanvas for a second reading | Success: the three scrollbar behaviours are asserted and pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.3 Drag to reposition
+- [x] 3.3 Drag to reposition
   - Files: `AnsibleCanvas.tsx`, `useAnsibleStream.ts`, and both test files
   - `useAnsibleStream` gains `moveElementTo` issuing the existing `MoveElement` call with a position — no contract change. The canvas gains drag state with a 3px threshold separating a click from a drag, a drag preview, and a drop that calls `moveElementTo` in canvas units; edges are not draggable. **Remove the component's remark that there is no drag**, along with the limitation it describes.
   - _Requirements: 1.1, 1.2_

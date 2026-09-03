@@ -63,7 +63,7 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
             var relationship = workspace.Relationships.FirstOrDefault(candidate => candidate.Id == elementId);
             return relationship is null
                 ? Rejected("Unknown element.")
-                : Resolve(watchId, rootPath, source, id, bodyPath, elementId, RelationshipDetail(workspace, relationship), []);
+                : Resolve(watchId, rootPath, source, id, bodyPath, elementId, RelationshipDetail(workspace, relationship), [], routed.Definition.Origin);
         }
 
         // The path is the element's chain of names from the top of the model, relative to the
@@ -86,7 +86,7 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
             },
         };
 
-        return Resolve(watchId, rootPath, source, id, bodyPath, elementId, detail, relativePath);
+        return Resolve(watchId, rootPath, source, id, bodyPath, elementId, detail, relativePath, routed.Definition.Origin);
     }
 
     /// <summary>Nothing nests inside an element for selection purposes.</summary>
@@ -160,14 +160,15 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
         string bodyPath,
         string elementId,
         ContextLevelDetail detail,
-        IReadOnlyList<string> relativePath)
+        IReadOnlyList<string> relativePath,
+        DiagramOrigin origin)
     {
         var level = new ContextResolvedLevel(
             source,
             id,
             relativePath,
             ContextScope.DiagramElement,
-            new ContextTarget(ContextScope.DiagramElement, bodyPath, IsContainer: false, SourceId: default, rootPath, watchId, elementId),
+            new ContextTarget(ContextScope.DiagramElement, bodyPath, IsContainer: false, SourceId: default, rootPath, watchId, elementId, origin),
             detail,
             // The level carries its own resolver, which is how the selection store re-resolves
             // it after the document changes.

@@ -59,7 +59,15 @@ public static class Diagram
         Icon: "mdi-file-tree",
         Extension: ".ttl",
         AlternateExtension: ".nt",
-        SharedExtension: true);
+        SharedExtension: true,
+        // The marker triple Requirement 2.3 names, tested textually rather than by parsing: it
+        // judges whether the reading is worth offering, not whether the file is good SKOS - the
+        // parse decides that once the reading opens. A file with concepts but no scheme stays
+        // registrable by explicit choice, which is what the choice tree is for.
+        SuggestsBody: text => text.Contains("skos:ConceptScheme", StringComparison.Ordinal)
+            || text.Contains(SkosVocabulary.ConceptScheme, StringComparison.Ordinal),
+        // The same family Build as the anchor's; AddRdf registers once and no-ops after.
+        Build: builder => builder.Services.AddRdf());
 
     /// <summary>
     /// The shapes reading (shacl-diagram Requirement 2): the constraints a file states over data

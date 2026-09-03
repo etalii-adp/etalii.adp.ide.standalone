@@ -15,7 +15,7 @@ One worktree for the whole spec (`.claude/worktrees/sparql`, short per the MAX_P
 
 **Seams this spec deliberately does not depend on.** The `rdf-diagram` tasks name three sibling seams; this document depends on **none of them**, and says so rather than leaving a reader to notice the absence: not task 1.1's triplestore document store and `RdfModel` (a query is not a serialization of a graph — this module has its own parser and model), not task 2.1's triple writer and splice discipline (nothing here writes the body; the no-writer proof in task 5.2 is the guarantee), and not task 3.2's registration header helper (the requirements claim no item-10 header — a `.rq` needs no reading-specific configuration). What this spec consumes arrives through core alone: the central canvas library and family visual conventions, the core `layout:` block, and the example vendoring discipline. Nothing in `src/diagrams/sparql/` may reference `src/diagrams/rdf/`.
 
-- [ ] 1. The query layer: parser, model, read-only store
+- [x] 1. The query layer: parser, model, read-only store
   - _Requirements: 1.1-1.5_
 
 - [x] 1.1 Three-tier parser, query model, store with no save surface
@@ -28,7 +28,7 @@ One worktree for the whole spec (`.claude/worktrees/sparql`, short per the MAX_P
   - All four gates (backend test + format from `src/backend`, npm test + typecheck from `src/client`), exit codes captured before any pipe; merge `.claude/worktrees/sparql` into `develop`
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge the sparql worktree's group-1 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. Projection and layout: one variable, one node, containment held
+- [x] 2. Projection and layout: one variable, one node, containment held
   - _Requirements: 3.1-3.7, 4.1-4.5, 5.5, 7.5_
 
 - [x] 2.1 Wire payloads
@@ -52,7 +52,7 @@ One worktree for the whole spec (`.claude/worktrees/sparql`, short per the MAX_P
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 2 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. Definition, session, providers, validation
+- [x] 3. Definition, session, providers, validation
   - _Requirements: 2.1-2.3, 5.1-5.4, 6.1-6.3, 7.1-7.4_
 
 - [x] 3.1 Definition, routing, session, reloader
@@ -70,7 +70,7 @@ One worktree for the whole spec (`.claude/worktrees/sparql`, short per the MAX_P
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 3 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. Client: the query canvas
+- [x] 4. Client: the query canvas
   - _Requirements: 3.1-3.7, 4.2, 6.1, 6.3_
 
 - [x] 4.1 SparqlCanvas from the central library
@@ -83,7 +83,7 @@ One worktree for the whole spec (`.claude/worktrees/sparql`, short per the MAX_P
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 4 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5. Examples, the no-writer proof, catalog and manual checks
+- [x] 5. Examples, the no-writer proof, catalog and manual checks
   - _Requirements: 8.1-8.5, 1.4, 6.1-6.3_
 
 - [x] 5.1 Vendored examples under the licensing discipline
@@ -102,6 +102,6 @@ One worktree for the whole spec (`.claude/worktrees/sparql`, short per the MAX_P
   - _Requirements: 3.1, 4.2, 5.1, 6.3_
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Technical writer with the app running | Task: Move the catalog row to implemented in its section's existing style, add the tests.md manual checks from the design's end-to-end list, execute them against the running app, and verify the creating-a-diagram-module touch points still hold | Restrictions: catalog row edits keep the section's HTML row style; tests.md entries name this spec and task; a failed manual check is a bug to guard per CLAUDE.md before this task completes | Success: the row reads implemented with the spec link intact; the manual checks pass and are recorded; documentation matches reality. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 5.4 Final gates and merge; retire the worktree
+- [x] 5.4 Final gates and merge; retire the worktree
   - The four gates, exit codes checked; merge into `develop`; retire `.claude/worktrees/sparql` per CLAUDE.md's rules (never with unmerged work; report Windows removal failures rather than forcing)
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked, merge the final group into develop, and retire the sparql worktree per CLAUDE.md | Restrictions: do not merge on a failing gate; never remove a worktree with uncommitted or unmerged work; report removal failures rather than forcing | Success: gates green, merged, worktree retired or its failure reported. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
