@@ -60,7 +60,7 @@ Spec bookkeeping (marking tasks in progress and complete in this file, logging i
   - _Requirements: 8.1, 8.2, 7.3_
   - _Prompt: Implement the task for spec documentation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: reviewer who trusts nothing that is written down | Task: Trace the markdown and plain editor modules against docs/creating-an-editor-module.md, in both directions, and check every cross-document anchor resolves | Restrictions: fix the document, never the modules (beyond task 5's sanctioned readme line); log every finding | Success: the implementation log records the trace, every anchor link lands on an existing heading, and both modules are fully accounted for_
 
-- [-] 7. Gate and merge phase B
+- [x] 7. Gate and merge phase B
   - File: none (verification and merge)
   - The same four gates as task 2, exit codes captured before any pipe, then merge into develop from the main checkout.
   - Purpose: develop receives both walkthroughs, verified.
@@ -70,7 +70,7 @@ Spec bookkeeping (marking tasks in progress and complete in this file, logging i
 
 ## Phase C — the front door
 
-- [ ] 8. `readme.md` at the repository root
+- [-] 8. `readme.md` at the repository root
   - File: `readme.md` (new)
   - The design's five sections in order: title, tagline and the badge **exactly as the user gave it** — the markdown from Requirement 2.1, character for character, no `?branch=` added; the why, three to five paragraphs derived from `product.md`, prose not bullets; the screenshots section referencing the design's seven image paths under `docs/screenshots/` (captured in task 9); getting started — from a release (matching the release readme the pipeline writes: the ZIP, `dotnet EtAlii.Adp.Backend.Service.dll`, the .NET 10 runtime, the empty-by-design `LocalAuthenticator`), from source (SDK via `src/global.json`, `npm install` at `src/`, backend from `src/backend/EtAlii.Adp.Backend.Service/` in the `developer` environment on 5080, Vite from `src/client/` on 5174, `admin`/`changeme`), and the first session (log in, add a project, point it at `src/examples/`, open diagrams); going deeper — the four relative links: `docs/diagrams.md` with its state tracking named, both walkthroughs, `docs/dependencies.md`.
   - Purpose: Requirements 1, 2, 3 and 5 — the front door exists.
