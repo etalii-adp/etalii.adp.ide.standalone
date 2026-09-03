@@ -71,7 +71,7 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - Same gates; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-3 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4. Wire, layout, session and registration
+- [x] 4. Wire, layout, session and registration
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 4.4, 6.1, 6.2, 6.3, 6.4, 12.1, 12.2_
 
 - [x] 4.1 The proto and the element mapper
@@ -92,44 +92,44 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - _Requirements: 2.1, 2.3, 2.4, 12.1, 12.2_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Declare the helm/chart folder-subject definition and the single-file service registration with discovery tests, wiring the Add-flow folder suggestion | Restrictions: no DocumentExtension constant — tech.md says that omission is correct for a folder subject, do not fix it; core files are not edited | _Leverage: the ansible module's Diagram.cs and ServiceCollection.AddAnsibleStructure.cs | Success: discovery tests see the definition; Add suggests on a Chart.yaml folder; the module registers without core changes. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4.4 HelmSession and factory, with the verified seam as precondition
+- [x] 4.4 HelmSession and factory, with the verified seam as precondition
   - Files: `HelmSession.cs`, `HelmSessionFactory.cs` + tests
   - **Stated preconditions, verified in code at design time — an implementer finding any of them false stops and reports rather than working around:** (a) `RegistrationLayout.Read` tolerates a registration whose only header is the MIME line; (b) the router hands a folder-subject factory the `.adp` as both `bodyPath` and `registrationPath` (pinned in `AnsibleSessionFactory`); (c) `IDiagramSession.MoveElementToAsync` is a default-refused, overridable member. The session delivers the whole diagram at `Baseline()`, `UpdateView` answers nothing new, `MoveElementAsync` (reparent) refuses with a sentence, `MoveElementToAsync` refuses edge ids then dispatches `SetRegistrationLayoutCommand` through the history stack; store changes diff against the last delivery; positions overlay via `RegistrationLayout.Apply`
   - _Requirements: 6.2, 6.3, 6.4, 2.2_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with DatabricksSession's move path | Task: Implement the session and factory per design — folder resolution as AnsibleSessionFactory does it, reposition dispatching the core layout command as DatabricksSession does it — with execute/undo tests proving the .adp gains and loses the entry while chart bytes never change | Restrictions: the three stated preconditions are stop-and-report if found false, never worked around; no module writer for chart content exists | _Leverage: AnsibleSessionFactory.cs, DatabricksSession.cs MoveElementToAsync, RegistrationLayout + SetRegistrationLayoutCommand from core | Success: session tests cover baseline, diffing, refusals and the undoable reposition; chart files stay byte-identical throughout. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.5 Gate and merge group 4
+- [x] 4.5 Gate and merge group 4
   - Same gates; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-4 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5. Validation and context
+- [-] 5. Validation and context
   - _Requirements: 10.1–10.9, 8.1, 8.2, 8.3, 9.2, 9.3, 9.4_
 
-- [ ] 5.1 HelmRuleSet
+- [x] 5.1 HelmRuleSet
   - Files: `HelmRuleSet.cs` + `_Model` finding records + tests
   - The Requirement 10 rules as a pure function with chart-root-relative paths and lines; tested fire **and** non-fire per rule — including that Unvendored never fires, library charts escape the templates rule, and lock rules stay silent without a lock
   - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the rule set as a pure function over the model with both-direction tests per rule | Restrictions: no filesystem access in rules; noise guards are part of the specification — Unvendored and missing-lock are silence, not findings | _Leverage: AnsibleRuleSet's pure-function shape and its noise-guard precedent | Success: every rule has a fire and a non-fire test; the shipped example fixtures produce zero findings. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.2 HelmValidator
+- [x] 5.2 HelmValidator
   - Files: `HelmValidator.cs` + tests
   - Rebases folder-relative findings to project-relative (the `Rebased()` discipline — the bug class 177 unit tests missed once), attributes the not-a-chart finding to the folder, registers into the problems pipeline
   - _Requirements: 10.1, 10.8, 10.9_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the validator wrapping the rule set with path rebasing and folder attribution, tested for a chart registered in a subfolder | Restrictions: rebasing is tested against a nested chart, not just the root — that is where the ansible bug hid; folder findings rely on core ProblemStamp, which is not modified | _Leverage: AnsibleValidator's Rebased() and the DiagramProblemFileLocation seam | Success: validator tests place findings at real project-relative paths; the folder finding renders fresh. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.3 HelmContextSourceResolver
+- [x] 5.3 HelmContextSourceResolver
   - Files: `HelmContextSourceResolver.cs`, `HelmNodeSubscription.cs` + tests
   - Folder target (`ResolvedFullPath` is the chart root); node subscriptions clear the selection when the backing artifact disappears, watching the chart root itself — the one-folder-too-high bug is a named test
   - _Requirements: 8.1, 8.2, 8.3_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the resolver and subscription per the ansible shape, with the deleted-artifact selection-clearing test watching the correct folder | Restrictions: do not GetDirectoryName a path that is already the folder — the exact ansible Track bug, pinned by test | _Leverage: AnsibleContextSourceResolver and its ADeletedRole_ClearsTheSelection test | Success: resolver tests pass including the deletion case at speed (no timeout-driven pass). Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.4 HelmContextPropertyProvider
+- [x] 5.4 HelmContextPropertyProvider
   - Files: `HelmContextPropertyProvider.cs` + tests
   - One private `Row(id, label, value, source, group)` helper always setting `ReadOnlyReason = $"Defined in {source}; edit it in a text editor."`; `SetAsync` refuses unconditionally; the nothing-selected grid summarizes the chart
   - _Requirements: 9.3, 9.4_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the read-only property grids per element kind with the house reason on every row and an unconditional SetAsync refusal, tested per kind | Restrictions: every row read-only with a true reason naming its defining file; no editable path exists | _Leverage: AnsibleContextPropertyProvider's Row helper shape | Success: grid tests cover each element kind and the summary grid; every row carries the reason. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.5 Gate and merge group 5
+- [-] 5.5 Gate and merge group 5
   - Same gates; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-5 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 

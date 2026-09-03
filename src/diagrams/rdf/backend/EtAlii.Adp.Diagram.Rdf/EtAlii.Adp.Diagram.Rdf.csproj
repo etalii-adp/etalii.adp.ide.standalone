@@ -12,6 +12,19 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Google.Protobuf is the runtime; Grpc.Tools compiles the .proto below at build. -->
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- This family's own wire payloads, packed into the core Element's Any. -->
+    <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="None" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="EtAlii.Adp.Diagram.Rdf.Tests" />
   </ItemGroup>
 
