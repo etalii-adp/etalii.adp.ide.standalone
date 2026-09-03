@@ -222,6 +222,9 @@ worktree name, and the longest project path needs the machine's long-path suppor
 - **Note**: a genuinely empty run does exit non-zero (5 for zero tests, 8 for a filter matching
   nothing), so any CI step must check the exit code rather than grepping the output for
   `failed`. Grepping alone reads a zero-test run as a pass.
+- **Verified 2026-09-03** in a 39-character worktree (`a-deliberately-long-worktree-name-x`,
+  develop at 228721e7): full `dotnet test --solution` run, exit 0 with tests discovered and
+  executed, and no `ADP0001`, `ADP0002` or `MSB3030` anywhere in the output.
 
 ## A real pipeline opens, reads and still runs (azure-pipeline-diagram, task 29)
 
@@ -548,6 +551,10 @@ release artifact can check end to end.
 - **Expected**: all four carry the same version. The login line is quiet and centered under
   the card; killing the backend and reloading the page shows no version line at all rather
   than a stale one.
+- **Partially verified 2026-09-03** against a locally running developer build: the login line
+  and `EtAlii.Adp.Backend.dll`'s ProductVersion both read `0.1.80-alpha+af55382d1f` - the
+  stamp's first live trip from assembly through gRPC to the login panel. The release tag and
+  ZIP name halves still await the first published release.
 
 ## Shared scroll view: thumbs track the view, dragging a thumb pans (small-refinements, task 1.4)
 
