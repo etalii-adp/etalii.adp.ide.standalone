@@ -27,6 +27,17 @@ export interface TextEditorPanelProps extends DiagramCanvasProps {
   header?: (text: string, goToLine: (line: number) => void) => React.ReactNode;
 }
 
+/**
+ * The stream serves a file's text as it is on disk - CRLF included - while CodeMirror holds
+ * every document LF-only. Comparing the two raw would call the editor's normalisation an edit,
+ * which is exactly how every CRLF file once opened already "dirty". So the panel works in the
+ * editor's normal form throughout; the save-side `TextFileBuffer` re-applies each line's own
+ * terminator, so nothing is lost by normalising here.
+ */
+export function normalizeLineEndings(text: string): string {
+  return text.replace(/\r\n|\r/g, "\n");
+}
+
 export function TextEditorPanel({ projectId, path, editorId, initialLine, extensions, onSave, aside, header }: TextEditorPanelProps) {
   const { model, loading, failed, save: streamSave } = useEditorText(projectId, path, editorId);
   const [localText, setLocalText] = useState<string | null>(null);
@@ -37,7 +48,8 @@ export function TextEditorPanel({ projectId, path, editorId, initialLine, extens
   const appliedInitialLine = useRef<number | undefined>(undefined);
   const hostRef = useRef<HTMLDivElement | null>(null);
 
-  const dirty = localText !== null && localText !== model.text;
+  const baseText = normalizeLineEndings(model.text);
+  const dirty = localText !== null && localText !== baseText;
   const tabKey = path.join("/");
 
   useEffect(() => {
@@ -52,7 +64,7 @@ export function TextEditorPanel({ projectId, path, editorId, initialLine, extens
 
     // The disk changed while this tab was open. With no local edits the new text simply takes
     // over; with edits in flight, both sides are real and the user decides (R6.4).
-    if (localText !== null && localText !== model.text) {
+    if (localText !== null && localText !== normalizeLineEndings(model.text)) {
       setConflict(true);
     } else {
       setLocalText(null);
@@ -102,7 +114,7 @@ export function TextEditorPanel({ projectId, path, editorId, initialLine, extens
     return <p className="text-editor-loading">Loading…</p>;
   }
 
-  const shown = localText ?? model.text;
+  const shown = localText ?? baseText;
 
   return (
     <div className="text-editor-panel" ref={hostRef}>
