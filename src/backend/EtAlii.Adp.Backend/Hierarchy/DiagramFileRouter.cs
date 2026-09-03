@@ -159,6 +159,14 @@ public sealed class DiagramFileRouter
             return new NotADiagram(bodyPath);
         }
 
+        // A type that calls the extension shared never claims a bare body - that is what the
+        // stance means - so it is dropped here rather than left in the running. Without this a
+        // family whose alternative readings share the anchor's extension could win the bare file
+        // on catalog order alone: with w3c/owl, w3c/rdf and w3c/skos all declaring .ttl, the
+        // ontology reading sorts first and a plain data graph would open as an empty ontology.
+        // The anchor - the one type that does claim the extension - is what a bare file wants.
+        claimants = [.. claimants.Where(definition => !definition.SharedExtension)];
+
         switch (claimants.Length)
         {
             case 0:

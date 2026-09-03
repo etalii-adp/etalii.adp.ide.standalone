@@ -48,6 +48,15 @@ namespace EtAlii.Adp.Diagram;
 /// any other malformed one.
 /// </para>
 /// </param>
+/// <param name="SuggestsBody">
+/// Optionally, whether a given body text is one this type should be offered for when a user
+/// registers an existing file through Add. Null - the default - means the extension alone
+/// decides, which is every anchor type's behaviour. A family's alternative reading of a shared
+/// body sets this to its marker test (<c>owl:Ontology</c> for the ontology reading of a
+/// <c>.ttl</c>), so Add suggests the reading exactly on the files that carry the marker rather
+/// than on every file of the family's extension. The test receives the file's text and judges
+/// it module-side; core never learns what a marker means.
+/// </param>
 public sealed record DiagramDefinition(
     DiagramOrigin Origin,
     string Title,
@@ -57,7 +66,8 @@ public sealed record DiagramDefinition(
     bool SharedExtension = false,
     DiagramSubject Subject = DiagramSubject.Document,
     Action<IHostApplicationBuilder>? Build = null!,
-    string AlternateExtension = "")
+    string AlternateExtension = "",
+    Func<string, bool>? SuggestsBody = null)
 {
     /// <summary>
     /// Whether this type declares <paramref name="extension"/> - its own, or the alternate a
