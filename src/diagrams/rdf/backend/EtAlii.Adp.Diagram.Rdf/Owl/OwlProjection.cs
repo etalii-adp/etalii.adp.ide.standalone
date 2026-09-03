@@ -380,7 +380,10 @@ public static class OwlProjection
             var malformed = !isOperator && (!hasOnProperty || quantifiers != 1);
 
             var kind = isOperator ? OwlNodeKind.Operator : OwlNodeKind.Restriction;
-            nodes[id] = new OwlNode(id, kind, "", "…", [], [], Deprecated: false, External: false, ownerId, root, malformed);
+            var rendered = ExpressionRenderer.Render(root, index, model, ExpressionRenderer.CanvasDepth);
+            nodes[id] = new OwlNode(
+                id, kind, "", rendered.Text, [], [], Deprecated: false, External: false, ownerId, root,
+                malformed || rendered.Cyclic, rendered.Elided);
             order.Add(id);
             unitOf[id] = ownerId;
 

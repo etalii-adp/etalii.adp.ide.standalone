@@ -70,6 +70,7 @@ public enum OwlEdgeKind
 /// <param name="OwnerId">For an expression node, the element id of the named class whose axiom attaches it; empty elsewhere.</param>
 /// <param name="ExpressionRoot">For an expression node, the blank term rooting its structure - what the renderer walks; null elsewhere.</param>
 /// <param name="Malformed">Whether the expression structure is broken (Requirement 3.5) - drawn as a marked problem node.</param>
+/// <param name="Elided">Whether the expression label hides structure deeper than the depth cap - the visible <c>…</c> marker's flag; the full form is one selection away (Requirement 3.4).</param>
 public sealed record OwlNode(
     string Id,
     OwlNodeKind Kind,
@@ -81,7 +82,8 @@ public sealed record OwlNode(
     bool External,
     string OwnerId = "",
     RdfTerm? ExpressionRoot = null,
-    bool Malformed = false);
+    bool Malformed = false,
+    bool Elided = false);
 
 /// <summary>One drawn axiom or assertion (owl-diagram Requirement 2).</summary>
 /// <param name="Id">The element id, unique within the projection.</param>
