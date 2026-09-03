@@ -54,6 +54,19 @@ public static class ShaclShapeDiscovery
             }
         }
 
+        // One pass each for the two per-shape facts, so discovery stays linear in triples
+        // whatever the shape count (the reading's performance requirement).
+        var pathSubjects = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var triple in model.Triples)
+        {
+            if (triple.Predicate.Iri == ShaclVocabulary.Path && KeyOf(triple.Subject) is { } subject)
+            {
+                pathSubjects.Add(subject);
+            }
+        }
+
+        var classSubjects = ClassSubjects(model);
+
         return
         [
             .. found
@@ -63,8 +76,8 @@ public static class ShaclShapeDiscovery
                     entry.Key,
                     entry.Value.Index,
                     model.Triples[entry.Value.Index].Span,
-                    IsPropertyShape: HasPath(model, entry.Key),
-                    ImplicitClassTarget: entry.Value.Term is IriTerm && IsClass(model, entry.Key))),
+                    IsPropertyShape: pathSubjects.Contains(entry.Key),
+                    ImplicitClassTarget: entry.Value.Term is IriTerm && classSubjects.Contains(entry.Key))),
         ];
     }
 
@@ -136,47 +149,46 @@ public static class ShaclShapeDiscovery
         return null;
     }
 
-    private static bool HasPath(RdfModel model, string shapeKey) =>
-        model.Triples.Any(triple => triple.Predicate.Iri == ShaclVocabulary.Path && KeyOf(triple.Subject) == shapeKey);
-
     /// <summary>
-    /// Whether the file states the term to be a class: typed <c>rdfs:Class</c> directly, or typed
-    /// with something the file's own <c>rdfs:subClassOf</c> triples reach <c>rdfs:Class</c> from.
+    /// Every subject the file states to be a class: typed <c>rdfs:Class</c> directly, or typed
+    /// with a class the file's own <c>rdfs:subClassOf</c> triples reach <c>rdfs:Class</c> from.
     /// Only stated triples count - the no-inference rule holds here as everywhere.
     /// </summary>
-    private static bool IsClass(RdfModel model, string shapeKey)
+    private static HashSet<string> ClassSubjects(RdfModel model)
     {
+        // The classes: rdfs:Class plus everything a stated subClassOf chain connects to it,
+        // walked backward from rdfs:Class over the file's own triples.
+        var classIris = new HashSet<string>(StringComparer.Ordinal) { ShaclVocabulary.RdfsClass };
+        bool grew;
+        do
+        {
+            grew = false;
+            foreach (var triple in model.Triples)
+            {
+                if (triple.Predicate.Iri == ShaclVocabulary.RdfsSubClassOf
+                    && triple.Subject is IriTerm subject
+                    && triple.Object is IriTerm parent
+                    && classIris.Contains(parent.Iri)
+                    && classIris.Add(subject.Iri))
+                {
+                    grew = true;
+                }
+            }
+        }
+        while (grew);
+
+        var subjects = new HashSet<string>(StringComparer.Ordinal);
         foreach (var triple in model.Triples)
         {
-            if (triple.Predicate.Iri != RdfVocabulary.Type || KeyOf(triple.Subject) != shapeKey)
+            if (triple.Predicate.Iri == RdfVocabulary.Type
+                && triple.Object is IriTerm type
+                && classIris.Contains(type.Iri)
+                && KeyOf(triple.Subject) is { } subject)
             {
-                continue;
-            }
-
-            if (triple.Object is IriTerm type && ReachesRdfsClass(model, type.Iri, []))
-            {
-                return true;
+                subjects.Add(subject);
             }
         }
 
-        return false;
-    }
-
-    private static bool ReachesRdfsClass(RdfModel model, string classIri, HashSet<string> visited)
-    {
-        if (classIri == ShaclVocabulary.RdfsClass)
-        {
-            return true;
-        }
-
-        if (!visited.Add(classIri))
-        {
-            return false;
-        }
-
-        return model.Triples.Any(triple =>
-            triple.Predicate.Iri == ShaclVocabulary.RdfsSubClassOf
-            && triple.Subject is IriTerm { } subject && subject.Iri == classIri
-            && triple.Object is IriTerm parent && ReachesRdfsClass(model, parent.Iri, visited));
+        return subjects;
     }
 }
