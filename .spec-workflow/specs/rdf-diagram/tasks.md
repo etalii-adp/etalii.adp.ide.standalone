@@ -59,10 +59,10 @@ One worktree for the whole spec (`.claude/worktrees/rdf`, per CLAUDE.md's one-wo
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec rdf-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 3 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. Client: the graph canvas
+- [-] 4. Client: the graph canvas
   - _Requirements: 3.1-3.6, 4.1-4.5, 6.1-6.5, 8.1, 8.2_
 
-- [ ] 4.1 RdfCanvas from the central library
+- [-] 4.1 RdfCanvas from the central library
   - Files: `src/diagrams/rdf/client/` — `RdfCanvas.tsx`, model and stream hooks, `register.ts` (importing the shared `canvas.css`), `rdf.css` (module-own rules only), `package.json` + tests
   - Composed from `src/client/src/canvas/`: `BoxElement` cards sized by literal-row count with rows as text lines, type badges, `StraightConnection` edges with the shared arrowhead and predicate labels, blank-node styling, `CanvasScrollbars`, drag repositioning through the layout command, `rel:` anchors, `new:` drops, the shared context menu, the showing-N-of-M truncation banner; payload decode type-checked before `fromBinary`
   - _Requirements: 3.1-3.6, 4.1-4.5, 6.1-6.5, 8.1, 8.2_
