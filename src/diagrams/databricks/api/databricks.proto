@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package etalii.adp.databricks;
+
+option csharp_namespace = "EtAlii.Adp.Diagram.Databricks";
+
+// The payloads of the databricks family's elements, packed into the core Element's Any. Defined
+// in the module's own api folder; no core proto is edited to add them, and there are no new
+// services or streams - the elements ride the existing Element/Delta shapes.
+//
+// The values travel AS WRITTEN, not normalized: the property grid shows what the author typed,
+// and defaults are the payload's to explain rather than the wire's to fill in - an empty run_if
+// MEANS the schema default ALL_SUCCESS, an empty cluster_key MEANS serverless.
+
+// One task of a job - a node of the job diagram's DAG (Requirement 4).
+message DatabricksTaskPayload {
+  string task_key = 1;
+
+  // notebook, python, wheel, sql, dbt, pipeline, run-job, condition, for-each, jar - or other,
+  // which still draws as a box (Requirement 2.4).
+  string task_type = 2;
+
+  // The type's principal source, display form: a notebook path, a python file, a query id.
+  string source = 3;
+
+  // The job_cluster_key the task binds to; empty means serverless.
+  string cluster_key = 4;
+
+  // The run_if as written; empty means the default ALL_SUCCESS (Requirement 4.4).
+  string run_if = 5;
+
+  // True for the stub node a depends_on names but no task declares (Requirement 4.5): drawn
+  // marked-missing, kept so connect/disconnect still work on the healthy parts.
+  bool unresolved = 6;
+}
+
+// One edge - a depends_on dependency, a target's override, a pipeline flow line. Empty outcome
+// is an ordinary edge; "true"/"false" follow a condition task's outcomes (Requirement 4.3).
+// The endpoints ride here because a connection travels as an element and the canvas redraws its
+// curve from its endpoints' boxes - the same contract the timeline's connection payload carries.
+message DatabricksEdgePayload {
+  string outcome = 1;
+  string from_element_id = 2;
+  string to_element_id = 3;
+}
+
+// One resource a bundle declares - a node of the bundle diagram's middle band (Requirement 3).
+message DatabricksResourcePayload {
+  // jobs, pipelines - or the kind as written for one this module does not model.
+  string kind = 1;
+
+  string key = 2;
+
+  // The file that declares it, relative to the bundle's folder; empty for the bundle's own file.
+  string defining_file = 3;
+}
+
+// One deployment target - a frame of the bundle diagram's target band (Requirement 3.3).
+message DatabricksTargetPayload {
+  // development, production - or empty when the target does not say.
+  string mode = 1;
+
+  bool is_default = 2;
+
+  // How many resources this target overrides - the frame's badge; the edges themselves are
+  // connections.
+  int32 override_count = 3;
+}
+
+// One node of the pipeline diagram's flow (Requirement 5).
+message DatabricksPipelineNodePayload {
+  // source | pipeline | target | compute | notifications.
+  string role = 1;
+
+  string label = 2;
+
+  // Small facts worn on the node: serverless, continuous, development, the channel.
+  repeated string badges = 3;
+}
