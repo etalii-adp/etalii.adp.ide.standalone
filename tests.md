@@ -549,16 +549,21 @@ release artifact can check end to end.
   (requires the .NET 10 runtime); browse to the listening address; read the line below the
   login panel. Compare it with the release tag, the ZIP file name, and
   `[System.Diagnostics.FileVersionInfo]::GetVersionInfo("EtAlii.Adp.Backend.dll").ProductVersion`.
-- **Expected**: all four carry the same version. The login line is quiet and centered under
-  the card; killing the backend and reloading the page shows no version line at all rather
-  than a stale one.
-- **First release published 2026-09-04**: the pipeline went green end to end and tagged
-  `v0.1.402-alpha` at commit `99796eba` - the commit that was pushed, so the tag and the
-  build agree. Two halves of the check still need a person with access: the ZIP's own name
-  (expected `EtAlii.Adp-0.1.402-alpha.zip`) and the login line inside the downloaded
-  artifact. The repository is private and neither `gh` nor a token is available on the
-  development machine, so the asset cannot be fetched from here at all - this half of the
-  entry is executable only by someone signed in to GitHub.
+- **Expected**: all four carry the same version, in Nerdbank.GitVersioning's two shapes -
+  the tag and the ZIP name spell SemVer2 (`0.1.402-alpha`), while the assemblies and the
+  login line append the commit as build metadata (`0.1.402-alpha+99796ebafe`). Deliberate,
+  not drift: the release names the version, the running binary names the commit it came
+  from. Anything that disagrees on the digits before the `+` is the failure this check is
+  looking for. The login line is quiet and centered under the card; killing the backend and
+  reloading the page shows no version line at all rather than a stale one.
+- **Verified end to end 2026-09-04**, against the first release this pipeline has ever
+  produced. The run went green on the Linux runner and tagged `v0.1.402-alpha` at commit
+  `99796eba` - the commit that was pushed. The user downloaded the ZIP, ran
+  `dotnet EtAlii.Adp.Backend.Service.dll` from it, and the line below the login panel read
+  **`0.1.402-alpha+99796ebafe`**. Four places, one number. Note this could only be finished
+  by someone signed in to GitHub: the repository is private, and a development machine with
+  neither `gh` nor a token cannot fetch a release asset at all - the unauthenticated API
+  answers `Not Found`.
 - **Publish layout confirmed 2026-09-04**: `dotnet publish` alone produces `wwwroot/` holding
   `index.html`, `favicon.svg` and `assets/`, and the published `EtAlii.Adp.Backend.dll` reads
   ProductVersion `0.1.388-alpha+e051580749`, naming the commit it was built from. This run
