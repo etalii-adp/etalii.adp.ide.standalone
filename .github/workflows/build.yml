@@ -19,15 +19,15 @@ jobs:
       # fetch-depth: 0, not the default shallow clone: Nerdbank.GitVersioning computes the
       # version from git height, and a shallow clone is the classic silently-wrong-version
       # mistake - NB.GV fails loudly on one, which is this line's whole justification.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           global-json-file: src/global.json
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -35,7 +35,7 @@ jobs:
 
       # NuGet, cached on the central version manifest - the one file every package version
       # goes through in this repository.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('src/Directory.Packages.props', 'src/global.json') }}
@@ -72,21 +72,21 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           global-json-file: src/global.json
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: src/package-lock.json
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('src/Directory.Packages.props', 'src/global.json') }}

@@ -4,44 +4,44 @@ dependencies: 1
 elements:
   - id: checkout-web
     label: Checkout web
-    x: 65.20506675795959
-    row: 4
+    x: 0
+    row: 2
   - id: api-gateway
     label: API gateway
-    x: 336.6432239448329
-    row: 4
+    x: 240
+    row: 2
   - id: identity-service
     label: Identity service
-    x: 832.052819484521
-    row: 4
+    x: 520
+    row: 0
   - id: order-service
     label: Order service
-    x: 582.8763143737467
+    x: 520
     row: 2
   - id: notification-service
     label: Notification service
-    x: 829.724067100308
-    row: 6
+    x: 520
+    row: 5
   - id: payment-service
     label: Payment service
-    x: 908.2869858658972
-    row: -1
+    x: 800
+    row: 1
   - id: inventory-service
     label: Inventory service
-    x: 1011.9164669633687
-    row: 1
+    x: 800
+    row: 3
   - id: payments-db
     label: Payments database
-    x: 1167.3282144079815
-    row: -1
+    x: 1080
+    row: 0
   - id: orders-db
     label: Orders database
-    x: 1249.9989240475375
+    x: 1080
     row: 2
   - id: message-broker
     label: RabbitMQ broker
-    x: 1114.9312857631926
-    row: 4
+    x: 1080
+    row: 5
 relations:
   - id: r-web-gateway
     from: checkout-web
