@@ -49,7 +49,7 @@ public class EditorResolverTests
         var resolver = Resolver(Plain, Markdown);
 
         // Act.
-        var routing = resolver.Resolve(@"C:\project\readme.md");
+        var routing = resolver.Resolve("project/readme.md");
 
         // Assert.
         var routed = Assert.IsType<EditorRouted>(routing);
@@ -63,7 +63,7 @@ public class EditorResolverTests
         var resolver = Resolver(Plain, Markdown);
 
         // Act.
-        var routing = resolver.Resolve(@"C:\project\data.xyz");
+        var routing = resolver.Resolve("project/data.xyz");
 
         // Assert.
         var routed = Assert.IsType<EditorRouted>(routing);
@@ -77,7 +77,7 @@ public class EditorResolverTests
         var resolver = Resolver(Plain, Markdown);
 
         // Act.
-        var routing = resolver.Resolve(@"C:\project\README.MD");
+        var routing = resolver.Resolve("project/README.MD");
 
         // Assert.
         var routed = Assert.IsType<EditorRouted>(routing);
@@ -109,7 +109,7 @@ public class EditorResolverTests
         var resolver = Resolver(Plain, one, two);
 
         // Act.
-        var routing = resolver.Resolve(@"C:\project\readme.md");
+        var routing = resolver.Resolve("project/readme.md");
 
         // Assert.
         var routed = Assert.IsType<EditorRouted>(routing);
@@ -127,7 +127,7 @@ public class EditorResolverTests
 
         // Act.
         var resolver = Resolver(Plain, one, two);
-        var routing = resolver.Resolve(@"C:\project\readme.md");
+        var routing = resolver.Resolve("project/readme.md");
 
         // Assert: the result names the conflict, and the Error line was written - once, at
         // construction, not per resolve. Filtered to this resolver's own line: other Backend
@@ -139,7 +139,7 @@ public class EditorResolverTests
         var error = Assert.Single(Errors, line => line.Contains("one, two"));
         Assert.Contains(".md", error);
 
-        resolver.Resolve(@"C:\project\other.md");
+        resolver.Resolve("project/other.md");
         Assert.Single(Errors, line => line.Contains("one, two"));
     }
 
@@ -150,7 +150,7 @@ public class EditorResolverTests
         var resolver = Resolver(Markdown);
 
         // Act.
-        var routing = resolver.Resolve(@"C:\project\data.xyz");
+        var routing = resolver.Resolve("project/data.xyz");
 
         // Assert.
         Assert.IsType<EditorAmbiguous>(routing);
@@ -167,7 +167,7 @@ public class EditorResolverTests
         var resolver = Resolver(Plain, one, two);
 
         // Act and assert.
-        Assert.Equal(["one", "two"], resolver.ClaimantsOf(@"C:\project\readme.md").Select(claimant => claimant.Id));
+        Assert.Equal(["one", "two"], resolver.ClaimantsOf("project/readme.md").Select(claimant => claimant.Id));
     }
 
     [Fact]
@@ -178,14 +178,14 @@ public class EditorResolverTests
         var resolver = Resolver(Plain, Markdown);
 
         // Assert.
-        Assert.Empty(resolver.ClaimantsOf(@"C:\project\notes.txt"));
+        Assert.Empty(resolver.ClaimantsOf("project/notes.txt"));
     }
 
     [Fact]
     public void IsClaimed_AnExtensionClaim_IsTrue()
     {
         // Arrange, act and assert.
-        Assert.True(Resolver(Plain, Markdown).IsClaimed(@"C:\project\readme.md"));
+        Assert.True(Resolver(Plain, Markdown).IsClaimed("project/readme.md"));
     }
 
     [Fact]
@@ -195,7 +195,7 @@ public class EditorResolverTests
         var make = new EditorDefinition("make", "Makefiles", FileNames: ["Makefile"]);
 
         // Act and assert.
-        Assert.True(Resolver(Plain, make).IsClaimed(@"C:\project\Makefile"));
+        Assert.True(Resolver(Plain, make).IsClaimed("project/Makefile"));
     }
 
     [Fact]
@@ -209,7 +209,7 @@ public class EditorResolverTests
         var two = new EditorDefinition("two", "Two", Extensions: [".md"]);
 
         // Act and assert.
-        Assert.True(Resolver(Plain, one, two).IsClaimed(@"C:\project\readme.md"));
+        Assert.True(Resolver(Plain, one, two).IsClaimed("project/readme.md"));
     }
 
     [Fact]
@@ -217,6 +217,6 @@ public class EditorResolverTests
     {
         // Arrange, act and assert: the fallback claims everything by construction, so it
         // never counts as a claim.
-        Assert.False(Resolver(Plain, Markdown).IsClaimed(@"C:\project\notes.txt"));
+        Assert.False(Resolver(Plain, Markdown).IsClaimed("project/notes.txt"));
     }
 }
