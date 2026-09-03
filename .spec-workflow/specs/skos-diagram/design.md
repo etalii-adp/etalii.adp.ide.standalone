@@ -26,7 +26,7 @@ No new engine and no new module: the `w3c/skos` reading joins `src/diagrams/rdf/
 - **The family element-id vocabulary** — `res:{iri}` for concepts, schemes and collections (all IRI-named resources), `edge:{s}|{p}|{o-hash}` for hierarchy/related/mapping edges, unchanged; the core `layout:` block therefore works verbatim (shared machinery item 6), and ids never collide across readings because each registration owns its own block.
 - **`C4SessionFactory.ReadViewKey` as the header-reading template** — the `language:` header is parsed the same way: module-side, a bounded line scan through `SharedDocumentReader.OpenText` so the read never contends with a rename's in-place `.adp` rewrite.
 - **Central canvas library and appearance** — `BoxElement` for concept nodes, `StraightConnection` for all three edge styles, the shared boundary/region styling the C4 canvas established for scheme regions and collection groups, `CanvasScrollbars`, the shared selection/menu/keyboard plumbing, the truncation banner precedent.
-- **The problems pipeline, `ExampleRegistrationTests`, `ExampleReplicationTests`** — joined by existing.
+- **The problems pipeline, `ExampleRegistrationTests`** — joined by existing. (`ExampleReplicationTests`, which byte-compared the two example trees, was deleted on 2026-09-03 when they were deliberately disconnected: the showcase copy is still seeded, no longer byte-compared.)
 
 ### Integration Points
 
@@ -151,7 +151,7 @@ The truncation banner reuses the family's `RdfTruncationPayload` — same fact, 
 ### Integration Testing
 
 - The gRPC flow: open a registered scheme, stream regions/concepts/edges, reposition into the `.adp` with the body byte-identical, undo byte-for-byte; Add suggesting `w3c/skos` off the marker triple; one file under `w3c/rdf` and `w3c/skos` registrations sharing one store and history.
-- Examples joining `ExampleRegistrationTests` and `ExampleReplicationTests` by existing; the license/provenance readme walk extended to the skos examples.
+- Examples joining `ExampleRegistrationTests` by existing; the license/provenance readme walk extended to the skos examples.
 
 ### End-to-End Testing
 

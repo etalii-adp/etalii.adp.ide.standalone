@@ -1,0 +1,269 @@
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { fireEvent, render } from "@testing-library/react";
+import {
+  emptyModel,
+  type SparqlAnnotation,
+  type SparqlDiagramEdge,
+  type SparqlModel,
+  type SparqlNode,
+  type SparqlRegion,
+} from "./sparqlModel";
+
+let currentModel: SparqlModel = emptyModel;
+let currentLoading = false;
+let currentFailed = false;
+let currentSelectionKey: string | null = null;
+let currentActions: unknown[] = [];
+let moves: { elementId: string; x: number; y: number }[] = [];
+let selections: unknown[] = [];
+let moveError = "";
+
+vi.mock("./useSparqlStream", () => ({
+  useSparqlStream: () => ({
+    model: currentModel,
+    loading: currentLoading,
+    failed: currentFailed,
+    moveElementTo: (elementId: string, x: number, y: number) => {
+      moves.push({ elementId, x, y });
+      return Promise.resolve(moveError);
+    },
+  }),
+}));
+
+vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
+  innermostKey: () => currentSelectionKey,
+  useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: currentActions }),
+  useContextConnection: () => ({
+    select: (selection: unknown) => selections.push(selection),
+    executeAction: () => Promise.resolve({ accepted: true, error: "" }),
+    executeShortcut: () => Promise.resolve({ accepted: true, error: "" }),
+    setProperty: () => Promise.resolve({ accepted: true, error: "" }),
+  }),
+}));
+
+vi.mock("@client/shell/panels/DiagramViewContext", () => ({
+  useRegisterDiagramView: () => undefined,
+}));
+
+const { SparqlCanvas } = await import("./SparqlCanvas");
+
+function node(id: string, display: string, kind: SparqlNode["kind"], options: Partial<SparqlNode> = {}): SparqlNode {
+  return {
+    id,
+    x: 0,
+    y: 0,
+    display,
+    kind,
+    projected: false,
+    joinCount: 0,
+    annotation: "",
+    full: "",
+    ...options,
+  };
+}
+
+function region(id: string, kind: string, label: string, options: Partial<SparqlRegion> = {}): SparqlRegion {
+  return { id, x: 0, y: 0, width: 300, height: 200, kind, label, parentRegionId: "", ...options };
+}
+
+function edge(id: string, from: string, to: string, label: string, isPath = false): SparqlDiagramEdge {
+  return { id, fromElementId: from, toElementId: to, label, isPath };
+}
+
+function annotation(id: string, kind: string, text: string, attachedTo: string): SparqlAnnotation {
+  return { id, kind, text, attachedTo };
+}
+
+/** A query with one of everything the canvas draws. */
+function modelWith(): SparqlModel {
+  return {
+    nodes: new Map([
+      ["var:person", node("var:person", "?person", "variable", { projected: true, joinCount: 3, x: 0, y: 0 })],
+      ["var:friend", node("var:friend", "?friend", "variable", { joinCount: 1, x: 240, y: 0 })],
+      ["anon:0", node("anon:0", "[]", "anonymous", { x: 480, y: 0 })],
+      ["iri:http://xmlns.com/foaf/0.1/Person", node("iri:http://xmlns.com/foaf/0.1/Person", "foaf:Person", "iri", { x: 0, y: 120 })],
+      ["lit:42", node("lit:42", "42", "literal", { annotation: "integer", x: 240, y: 120 })],
+      ["sub:where.0", node("sub:where.0", "SELECT ?person (COUNT(?p) AS ?n)", "subquery", { x: 480, y: 120 })],
+    ]),
+    edges: new Map([
+      ["edge:a", edge("edge:a", "var:person", "iri:http://xmlns.com/foaf/0.1/Person", "a")],
+      ["edge:knows", edge("edge:knows", "var:person", "var:friend", "foaf:knows+", true)],
+    ]),
+    regions: new Map([
+      ["region:where/optional.0", region("region:where/optional.0", "optional", "OPTIONAL", { x: 200, y: 200 })],
+    ]),
+    annotations: new Map([
+      ["note:where/filter.0", annotation("note:where/filter.0", "filter", "FILTER(?friend != ?person)", "var:friend")],
+    ]),
+    header: { form: "SELECT DISTINCT", modifierRows: ["ORDER BY ?person", "LIMIT 10"] },
+    truncation: null,
+  };
+}
+
+function renderCanvas() {
+  return render(
+    <SparqlCanvas projectId={new Uint8Array([1])} entryId={new Uint8Array([2])} path={["people.rq"]} />,
+  );
+}
+
+describe("SparqlCanvas", () => {
+  beforeEach(() => {
+    currentModel = modelWith();
+    currentLoading = false;
+    currentFailed = false;
+    currentSelectionKey = null;
+    currentActions = [];
+    moves = [];
+    selections = [];
+    moveError = "";
+  });
+
+  it("draws one node per variable, styled apart from the concrete terms", () => {
+    // Arrange & act.
+    const { container } = renderCanvas();
+
+    // Assert: a variable is dashed and a concrete term is not - what is being asked for, told
+    // apart from what is pinned down, at a glance.
+    expect(container.querySelectorAll(".sparql-node-variable")).toHaveLength(2);
+    expect(container.querySelectorAll(".sparql-node-anonymous")).toHaveLength(1);
+    expect(container.querySelectorAll(".sparql-node-iri")).toHaveLength(1);
+    expect(container.querySelectorAll(".sparql-node-literal")).toHaveLength(1);
+    expect(container.querySelectorAll(".sparql-node-subquery")).toHaveLength(1);
+    expect(container.textContent).toContain("?person");
+  });
+
+  it("marks the projected variable, so what leaves the query reads without the header", () => {
+    // Arrange & act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    const projected = container.querySelectorAll(".sparql-node-projected");
+    expect(projected).toHaveLength(1);
+    expect(projected[0].getAttribute("data-element-id")).toBe("var:person");
+    expect(container.querySelectorAll(".sparql-projection-mark")).toHaveLength(1);
+  });
+
+  it("draws a region as a labelled frame behind its contents", () => {
+    // Arrange & act.
+    const { container } = renderCanvas();
+
+    // Assert: the frame is in the document before any node, so it paints underneath.
+    const frame = container.querySelector(".sparql-region-optional");
+    expect(frame).not.toBeNull();
+    expect(frame!.textContent).toContain("OPTIONAL");
+
+    const drawn = [...container.querySelectorAll("[data-element-id]")].map((element) =>
+      element.getAttribute("data-element-id"),
+    );
+    expect(drawn.indexOf("region:where/optional.0")).toBeLessThan(drawn.indexOf("var:person"));
+  });
+
+  it("labels an edge with its predicate, and marks a property path as the multi-step ask it is", () => {
+    // Arrange & act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    expect(container.textContent).toContain("foaf:knows+");
+    expect(container.querySelectorAll(".sparql-edge-path")).toHaveLength(1);
+  });
+
+  it("shows an annotation's text exactly as written", () => {
+    // Arrange & act.
+    const { container } = renderCanvas();
+
+    // Assert: the expression as the author wrote it, never a parsed reconstruction.
+    const badge = container.querySelector(".sparql-annotation-filter");
+    expect(badge?.textContent).toBe("FILTER(?friend != ?person)");
+  });
+
+  it("states the form and modifiers in the header band rather than on the canvas", () => {
+    // Arrange & act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    const band = container.querySelector(".sparql-header-band");
+    expect(band?.textContent).toContain("SELECT DISTINCT");
+    expect(band?.textContent).toContain("LIMIT 10");
+    // The header is a band, not a drawn element - nothing on the canvas carries its id.
+    expect(container.querySelector('[data-element-id="header:query"]')).toBeNull();
+  });
+
+  it("sends a drag as a layout move and nothing else", () => {
+    // Arrange.
+    const { container } = renderCanvas();
+    const target = container.querySelector('[data-element-id="var:person"]')!;
+
+    // Act.
+    fireEvent.mouseDown(target, { clientX: 10, clientY: 10 });
+    fireEvent.mouseMove(container.querySelector(".sparql-surface")!, { clientX: 90, clientY: 60 });
+    fireEvent.mouseUp(container.querySelector(".sparql-surface")!);
+
+    // Assert.
+    expect(moves).toHaveLength(1);
+    expect(moves[0].elementId).toBe("var:person");
+    expect(moves[0].x).toBeGreaterThan(0);
+  });
+
+  it("shows the backend's refusal when a move is declined", async () => {
+    // Arrange.
+    moveError = "That is an anonymous variable - it takes its computed place.";
+    const { container, findByText } = renderCanvas();
+    const target = container.querySelector('[data-element-id="anon:0"]')!;
+
+    // Act.
+    fireEvent.mouseDown(target, { clientX: 10, clientY: 10 });
+    fireEvent.mouseMove(container.querySelector(".sparql-surface")!, { clientX: 90, clientY: 60 });
+    fireEvent.mouseUp(container.querySelector(".sparql-surface")!);
+
+    // Assert: the reason reaches the user where they are looking.
+    expect(await findByText(/anonymous variable/)).toBeTruthy();
+  });
+
+  it("treats a press without movement as a selection", () => {
+    // Arrange.
+    const { container } = renderCanvas();
+    const target = container.querySelector('[data-element-id="var:friend"]')!;
+
+    // Act.
+    fireEvent.mouseDown(target, { clientX: 10, clientY: 10 });
+    fireEvent.mouseUp(container.querySelector(".sparql-surface")!);
+
+    // Assert.
+    expect(moves).toHaveLength(0);
+    expect(selections).toHaveLength(1);
+  });
+
+  it("offers no editing affordance at all", () => {
+    // Arrange & act: the backend registers no toolbox and no mutating action, so the canvas
+    // must invent none - no drop target, no connect anchors, no pending edge.
+    const { container } = renderCanvas();
+
+    // Assert.
+    expect(container.querySelectorAll(".canvas-anchor")).toHaveLength(0);
+    expect(container.querySelectorAll(".canvas-anchor-hit")).toHaveLength(0);
+    expect(container.querySelectorAll(".canvas-pending-connection")).toHaveLength(0);
+    expect(container.querySelector(".sparql-surface")?.getAttribute("ondrop")).toBeNull();
+  });
+
+  it("shows the showing-N-of-M banner when the sanity bound cut the query", () => {
+    // Arrange.
+    currentModel = { ...modelWith(), truncation: { shown: 500, total: 1200 } };
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    expect(container.querySelector(".sparql-truncation-banner")?.textContent).toContain("Showing 500 of 1200");
+  });
+
+  it("says so when the query could not be opened", () => {
+    // Arrange.
+    currentFailed = true;
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    expect(container.textContent).toContain("could not be opened");
+  });
+});
