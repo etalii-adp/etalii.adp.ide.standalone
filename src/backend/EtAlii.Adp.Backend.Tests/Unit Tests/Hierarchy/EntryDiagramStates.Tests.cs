@@ -24,7 +24,7 @@ public class EntryDiagramStatesTests
     }
 
     /// <summary>The decision wired the way the model will wire it, over the given names.</summary>
-    private static EntryDiagramState Decide(
+    private static Hierarchy.EntryDiagramState Decide(
         string name,
         bool isFolder,
         IReadOnlyCollection<string> names,
@@ -47,14 +47,14 @@ public class EntryDiagramStatesTests
     public void ARegistrationFileItself_IsRegistered()
     {
         // Arrange, act and assert.
-        Assert.Equal(EntryDiagramState.Registered, Decide("ideas.adp", isFolder: false, ["ideas.adp", "ideas.mm"]));
+        Assert.Equal(Hierarchy.EntryDiagramState.Registered, Decide("ideas.adp", isFolder: false, ["ideas.adp", "ideas.mm"]));
     }
 
     [Fact]
     public void AFileWithASameNamedRegistrationBesideIt_IsRegistered()
     {
         // Arrange, act and assert.
-        Assert.Equal(EntryDiagramState.Registered, Decide("ideas.mm", isFolder: false, ["ideas.adp", "ideas.mm"]));
+        Assert.Equal(Hierarchy.EntryDiagramState.Registered, Decide("ideas.mm", isFolder: false, ["ideas.adp", "ideas.mm"]));
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public class EntryDiagramStatesTests
 
         // Act and assert.
         Assert.Equal(
-            EntryDiagramState.Registered,
+            Hierarchy.EntryDiagramState.Registered,
             Decide("model.mm", isFolder: false, ["design.adp", "model.mm"], BodyOf));
     }
 
@@ -78,14 +78,14 @@ public class EntryDiagramStatesTests
         // Arrange, act and assert.
         // The shared .yml is the branch that distinguishes this from Route: registrable
         // counts as potential (Requirement 3.2).
-        Assert.Equal(EntryDiagramState.Potential, Decide("build.yml", isFolder: false, ["build.yml"]));
+        Assert.Equal(Hierarchy.EntryDiagramState.Potential, Decide("build.yml", isFolder: false, ["build.yml"]));
     }
 
     [Fact]
     public void AFileANonFallbackEditorClaims_IsPotential()
     {
         // Arrange, act and assert.
-        Assert.Equal(EntryDiagramState.Potential, Decide("readme.md", isFolder: false, ["readme.md"]));
+        Assert.Equal(Hierarchy.EntryDiagramState.Potential, Decide("readme.md", isFolder: false, ["readme.md"]));
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public class EntryDiagramStatesTests
     {
         // Arrange, act and assert: the fallback answers it, and the fallback never counts
         // (Requirement 3.3) - zero, so an older peer's silence reads the same.
-        Assert.Equal(EntryDiagramState.Unspecified, Decide("notes.txt", isFolder: false, ["notes.txt"]));
+        Assert.Equal(Hierarchy.EntryDiagramState.Unspecified, Decide("notes.txt", isFolder: false, ["notes.txt"]));
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public class EntryDiagramStatesTests
 
         // Act and assert.
         Assert.Equal(
-            EntryDiagramState.Registered,
+            Hierarchy.EntryDiagramState.Registered,
             Decide("infrastructure", isFolder: true, ["structure.adp", "site.yml"], declaresFolderSubject: DeclaresFolderSubject));
     }
 
@@ -115,6 +115,6 @@ public class EntryDiagramStatesTests
     {
         // Arrange, act and assert: contents a diagram type would claim do not make the folder
         // potential - greening every directory would say nothing.
-        Assert.Equal(EntryDiagramState.Unspecified, Decide("docs", isFolder: true, ["ideas.mm", "readme.md"]));
+        Assert.Equal(Hierarchy.EntryDiagramState.Unspecified, Decide("docs", isFolder: true, ["ideas.mm", "readme.md"]));
     }
 }

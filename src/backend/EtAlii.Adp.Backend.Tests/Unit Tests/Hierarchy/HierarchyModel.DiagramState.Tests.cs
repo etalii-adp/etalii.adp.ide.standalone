@@ -66,15 +66,15 @@ public class HierarchyModelDiagramStateTests : IDisposable
 
         // Assert: a registered pair, a bare body, a registrable-but-unregistered file, an
         // editor-claimed file, and a file only the fallback answers.
-        Assert.Equal(EntryDiagramState.Registered, byName["ideas.mm"].DiagramState);
-        Assert.Equal(EntryDiagramState.Potential, byName["bare.mm"].DiagramState);
-        Assert.Equal(EntryDiagramState.Potential, byName["build.yml"].DiagramState);
-        Assert.Equal(EntryDiagramState.Potential, byName["readme.md"].DiagramState);
-        Assert.Equal(EntryDiagramState.Unspecified, byName["notes.txt"].DiagramState);
+        Assert.Equal(Hierarchy.EntryDiagramState.Registered, byName["ideas.mm"].DiagramState);
+        Assert.Equal(Hierarchy.EntryDiagramState.Potential, byName["bare.mm"].DiagramState);
+        Assert.Equal(Hierarchy.EntryDiagramState.Potential, byName["build.yml"].DiagramState);
+        Assert.Equal(Hierarchy.EntryDiagramState.Potential, byName["readme.md"].DiagramState);
+        Assert.Equal(Hierarchy.EntryDiagramState.Unspecified, byName["notes.txt"].DiagramState);
 
         // The registration itself, nested under its subject, is Registered too.
         var nested = Assert.Single(model.ListChildren(byName["ideas.mm"].Id));
-        Assert.Equal(EntryDiagramState.Registered, nested.DiagramState);
+        Assert.Equal(Hierarchy.EntryDiagramState.Registered, nested.DiagramState);
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public class HierarchyModelDiagramStateTests : IDisposable
 
         // Assert.
         var rescanned = Assert.Single(model.ListChildren(null));
-        Assert.Equal(EntryDiagramState.Registered, rescanned.DiagramState);
+        Assert.Equal(Hierarchy.EntryDiagramState.Registered, rescanned.DiagramState);
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public class HierarchyModelDiagramStateTests : IDisposable
         Write("bare.mm", "<map/>");
         var model = Model();
         var subject = Assert.Single(model.ListChildren(null));
-        Assert.Equal(EntryDiagramState.Potential, subject.DiagramState);
+        Assert.Equal(Hierarchy.EntryDiagramState.Potential, subject.DiagramState);
         var changes = new List<HierarchyEntryChange>();
         model.EntryChanged += changes.Add;
 
@@ -111,7 +111,7 @@ public class HierarchyModelDiagramStateTests : IDisposable
 
         // Assert: the subject's update rides the existing stream and carries the new state.
         var upgraded = changes.OfType<HierarchyEntryUpdated>().Last(update => update.EntryId == subject.Id);
-        Assert.Equal(EntryDiagramState.Registered, upgraded.DiagramState);
+        Assert.Equal(Hierarchy.EntryDiagramState.Registered, upgraded.DiagramState);
 
         // Act: and the reverse (Requirement 3.6's other half).
         changes.Clear();
@@ -120,6 +120,6 @@ public class HierarchyModelDiagramStateTests : IDisposable
 
         // Assert.
         var downgraded = changes.OfType<HierarchyEntryUpdated>().Last(update => update.EntryId == subject.Id);
-        Assert.Equal(EntryDiagramState.Potential, downgraded.DiagramState);
+        Assert.Equal(Hierarchy.EntryDiagramState.Potential, downgraded.DiagramState);
     }
 }

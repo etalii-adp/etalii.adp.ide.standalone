@@ -17,6 +17,15 @@ enum EntryKind {
   FOLDER = 2;
 }
 
+// What ADP's own routing says about an entry (small-refinements Requirement 3): a
+// registration governs it, something merely claims it, or neither. Zero is neutral on
+// purpose - an older peer's silence and "nothing to say" must read identically.
+enum EntryDiagramState {
+  ENTRY_DIAGRAM_STATE_UNSPECIFIED = 0; // neutral
+  REGISTERED = 1;
+  POTENTIAL = 2;
+}
+
 message Entry {
   ShortGuid id = 1;
   ShortGuid parent_id = 2; // unset for a root-level entry
@@ -24,6 +33,7 @@ message Entry {
   EntryKind kind = 4;
   bool available = 5; // false when a listed folder becomes inaccessible (permissions, deletion)
   bool has_children = 6; // whether the entry currently has children: a folder's entries, or a file's nested diagram registrations (adp-file-nesting Requirement 3.1)
+  EntryDiagramState diagram_state = 7;
 }
 
 message ListEntriesRequest {
@@ -69,6 +79,7 @@ message EntryUpdated {
   ShortGuid entry_id = 1;
   bool has_children = 2; // pushed when an existing, already-known entry's has_children changes
   ShortGuid parent_id = 3; // set only for a re-parent (an orphan whose subject appeared, or a subject vanishing under its registrations); unset means the parent is unchanged, and a set-but-empty id means the root. A re-parent is an update rather than remove-then-create so the entry keeps its id and any selection a client holds on it (adp-file-nesting Requirement 10.3)
+  EntryDiagramState diagram_state = 4; // always the entry's full current state, never a delta - like has_children, because an unset enum is indistinguishable from a genuine neutral
 }
 
 message RootUnavailable {
