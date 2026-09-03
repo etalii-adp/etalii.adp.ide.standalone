@@ -24,7 +24,7 @@ No new module: `w3c/owl` is a further `DiagramDefinition` inside `src/diagrams/r
 - **`RdfWriter`** — every OWL gesture is an anchor writer operation under a reading-specific name: subclass edge = `AddTriple(s, rdfs:subClassOf, o)`; create class = `AddTriple(iri, rdf:type, owl:Class)` on a new statement; rename and remove-with-references = `RenameTerm`/`RemoveResource` verbatim; label/comment edits = the same annotation-triple splice the anchor's own property grid uses. This reading adds zero splice code.
 - **The family provider trio and `Diagram.cs`** — the anchor registers one resolver/action/property/toolbox provider set switching on element-id shape; this design extends that switch with the OWL id shapes and adds the `w3c/owl` definition to `Definitions`.
 - **Central canvas library** — `StraightConnection` for every edge kind (styled per axiom), the shared selection/menu/keyboard plumbing, `CanvasScrollbars`, the truncation banner precedent. Classes draw as circles per the adopted VOWL vocabulary: if the central library has no ellipse element by build time, the ellipse is added **to the central library** as a shared component (the skos sibling's concept nodes will want it too), never as a module-private fork — flagged in tasks as the one potential central touch.
-- **`ExampleRegistrationTests` / `ExampleReplicationTests` / the problems pipeline** — joined by existing.
+- **`ExampleRegistrationTests` / the problems pipeline** — joined by existing. (`ExampleReplicationTests`, which byte-compared the two example trees, was deleted on 2026-09-03 when they were deliberately disconnected: the showcase copy is still seeded, no longer byte-compared.)
 
 ### Integration Points
 
@@ -145,7 +145,7 @@ message OwlExpressionPayload {
 ### Integration Testing
 
 - Open a registered ontology through the gRPC flow: classes, edges and expression nodes stream; reposition a class into the `.adp` with the body byte-identical; draw a subclass edge and undo byte-for-byte; the same file open under `w3c/rdf` and `w3c/owl` sharing one store and one history (R8.4).
-- Examples joining `ExampleRegistrationTests` and `ExampleReplicationTests` by existing; provenance readmes asserted by the anchor's vendored-folder test; the RDF/XML→Turtle conversions recorded per R9.2.
+- Examples joining `ExampleRegistrationTests` by existing; provenance readmes asserted by the anchor's vendored-folder test; the RDF/XML→Turtle conversions recorded per R9.2.
 
 ### End-to-End Testing
 

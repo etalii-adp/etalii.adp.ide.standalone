@@ -1,5 +1,16 @@
 # Tasks Document
 
+> **Correction, 2026-09-03: `ExampleReplicationTests` no longer exists.** It byte-compared each
+> module's `examples/` tree against its `src/examples/` replica, and was deleted when the two
+> trees were deliberately disconnected. Wherever a task below names it — as a guard, a
+> verification step or a `_Leverage` — or requires the showcase copy to be **byte-identical**, read it as follows: **seeding the showcase copy remains a
+> step of that task**, it is simply no longer held byte-identical, and the guard that covers both
+> trees now is `ExampleRegistrationTests`, which opens every registration in each against the
+> deployed catalog. The task wording is otherwise left exactly as written, deliberately: several
+> of these tasks are in flight, and rewording a criterion under the agent working it would be
+> worse than a stale sentence.
+
+
 One worktree for the whole spec (`.claude/worktrees/rdf`, per CLAUDE.md's one-worktree-per-specification rule). Each group ends in a gate-and-merge task judged by exit code, so `develop` grows the family a working layer at a time.
 
 **Seams the sibling specs attach to.** Four sibling specs (`owl-diagram`, `skos-diagram`, `shacl-diagram`; `sparql-diagram` stands apart) implement over this document, so the tasks that create their attachment points are named as such and sequenced first: task 1.1 (**the triplestore document store** and **`RdfModel`** — siblings add projections over this model, never parsers), task 2.1 (**the splice discipline's triple writer** — sibling edit gestures are this writer under reading-specific names), task 3.2 (**the registration header helper** — item 10's module-side header scanning, written once here), and task 3.3 (**the selection vocabulary** — sibling providers extend the same element-id shapes). A sibling's tasks document names a dependency on these tasks rather than duplicating them.

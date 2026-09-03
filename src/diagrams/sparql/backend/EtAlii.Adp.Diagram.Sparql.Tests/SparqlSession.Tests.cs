@@ -1,6 +1,5 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Diagrams;
-using EtAlii.Adp.Backend.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
