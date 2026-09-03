@@ -21,22 +21,22 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - Backend tests + format from `src/backend` (format introduces no findings beyond develop's baseline), npm test + typecheck from `src/client`, exit codes checked; merge `.claude/worktrees/helm` into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge the helm worktree's group-1 work into develop via the main checkout | Restrictions: do not merge on a failing gate; a zero-test run is a broken build, never an empty suite | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. Reading: tolerant YAML and the template scanner
+- [-] 2. Reading: tolerant YAML and the template scanner
   - _Requirements: 1.1, 1.2, 1.3, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3_
 
-- [ ] 2.1 HelmYaml, the tolerant reader (replication of AnsibleYaml)
+- [x] 2.1 HelmYaml, the tolerant reader (replication of AnsibleYaml)
   - Files: `src/diagrams/helm-charts/backend/EtAlii.Adp.Diagram.HelmCharts/HelmYaml.cs` + `_Model/` result records; `EtAlii.Adp.Diagram.HelmCharts.Tests` project (Exe, xUnit v3) with its first tests; both projects added to `EtAlii.Adp.slnx`
   - YamlDotNet 18.1.0 representation model, line marks kept, the `(Line: n, Col: m): ` prefix stripped from error messages, never throws
   - _Requirements: 3.1, 3.5_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Create the module and test projects and implement HelmYaml as a tolerant never-throwing YAML reader with line marks, replicating AnsibleYaml's shape module-locally per the design's pattern-reuse note | Restrictions: module code depends on core only, never on the ansible module; test project is Exe per xUnit v3; use IoPath alias where EtAlii.Adp.Path shadows System.IO.Path | _Leverage: AnsibleYaml.cs and AnsibleYaml.Tests as the pattern to replicate | Success: parse, line-mark and unreadable-result tests pass; malformed YAML yields an error result, never an exception. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.2 TemplateScan **(new work)**
+- [x] 2.2 TemplateScan **(new work)**
   - Files: `TemplateScan.cs` + tests
   - The literal-fact line scanner: `kind:`/`apiVersion:` count only when the value carries no `{{`; `define`/`include`/`template` names count only as literal double-quoted strings; everything else is unknown by design; results sorted ordinally
   - _Requirements: 3.2, 4.2_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement TemplateScan as a pure static line scanner per the design's literal/templated boundary, with the boundary pinned case by case in tests — literal kind, templated kind, quoted and unquoted names, multi-document files, NOTES.txt yielding nothing | Restrictions: no YAML parsing of templates, no Go-template evaluation, no guessing at templated values; one class, fixture-pinned | _Leverage: HelmYaml only for nothing — this is line-based on purpose | Success: the boundary tests pass and read as the specification of what counts as literal. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.3 The model and HelmChartReader
+- [-] 2.3 The model and HelmChartReader
   - Files: `_Model/` records (`HelmChart`, `ChartMetadata`, `ValuesFile`, `TemplateFile`, `DependencyDeclaration`, `VendoredEntry`, `LockFile`), `HelmChartReader.cs`; test fixtures under `…Tests/Fixtures/{well-formed,broken,unconventional}/` with a directory-local `.gitattributes` (`* -text`) and a fixtures readme
   - Reads the full Requirement 1 inventory: v2 fields, v1 legacy fallback to `requirements.yaml`/`.lock`, values stack, schema presence, template roles, `crds/`, `charts/` one level deep (`.tgz` sealed), lock; skips reparse points; sorts ordinally; never writes; foreign files ignored without complaint; record equality over lists is not asserted in tests — rendered descriptions are
   - _Requirements: 1.1, 1.2, 1.3, 3.3, 3.4, 4.1, 4.2, 4.3_

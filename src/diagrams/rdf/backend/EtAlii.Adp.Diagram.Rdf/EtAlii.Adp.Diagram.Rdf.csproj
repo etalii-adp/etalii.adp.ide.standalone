@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+    <!--
+      Core abstractions only. The dependency runs module -> core and never back: core must
+      compile and test with this module absent. The piece of core this family leans on -
+      RegistrationLayout and its command - lives in core because the .adp format is core's,
+      not because this module asked for a hook.
+    -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="EtAlii.Adp.Diagram.Rdf.Tests" />
+  </ItemGroup>
+
+</Project>
