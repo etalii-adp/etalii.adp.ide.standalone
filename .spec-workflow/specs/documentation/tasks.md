@@ -28,7 +28,7 @@ Spec bookkeeping (marking tasks in progress and complete in this file, logging i
 
 ## Phase B — the two walkthroughs
 
-- [-] 3. `docs/creating-a-diagram-module.md`
+- [x] 3. `docs/creating-a-diagram-module.md`
   - File: `docs/creating-a-diagram-module.md` (new)
   - The diagram-family walkthrough, tracing the **timeline** module (`src/diagrams/timeline/`) by name in every section, ordered by tech.md's bottom-up implementation order: layout and dependency direction; specify-first (linking tech.md's "Specifying a diagram type" rather than duplicating it); the definition (`Diagram.cs`: origin, extension, named definition, `Build` delegate, discovery — why no core file changes); the document path (store, never-throwing parser, splicing writer, the byte-identical round-trip guarantee); the session and the layout fork (authored positions — wardley-map, timeline — versus computed — mindmap); commands with inverses; the context seams with one sentence each and `ServiceCollection.AddTimeline.cs` as the single registration surface; the wire (`api/timeline.proto`, the buf generate step in `src/client/package.json`); the client (`register.ts`, the `import.meta.glob` discovery in `src/client/src/shell/panels/diagramCanvases.ts`, the workspace `package.json`, the canvas library under `src/client/src/canvas/` via its readmes); tests, fixtures and the `.gitattributes` extension rule (linking the reasoning already written in `.gitattributes`); examples and their replication into `src/examples/` — **described as what `ExampleReplicationTests` actually enforces today (byte-identical mirrors, `body:` headers excepted), noting the policy is settled by that test**, since whether showcase examples stay exact mirrors is an open question this document must not pre-decide; the catalog rule, linked to CLAUDE.md.
   - Purpose: Requirement 6 — a newcomer builds a diagram module from this document alone.
@@ -36,7 +36,7 @@ Spec bookkeeping (marking tasks in progress and complete in this file, logging i
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 8.3_
   - _Prompt: Implement the task for spec documentation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: technical writer with C# and TypeScript fluency | Task: Write the diagram-module walkthrough in the docs worktree, opening every timeline file you name as you name it | Restrictions: link CLAUDE.md, tech.md and structure.md where they already state a rule — never restate; every abstract statement gets a concrete timeline file beside it; describe the examples convention as what ExampleReplicationTests enforces, not as settled policy; GitHub-flavoured markdown, relative links only | Success: the document covers every touch point Requirement 6.1 lists, each with a repository path that exists, and contains no rule stated in both this document and a steering file_
 
-- [ ] 4. Verify the diagram walkthrough by tracing timeline end to end
+- [x] 4. Verify the diagram walkthrough by tracing timeline end to end
   - File: `docs/creating-a-diagram-module.md` (edited where the trace demands it)
   - The verification pass as its own task, because it is the step most likely to be skipped under pressure: walk `src/diagrams/timeline/` file by file against the document. Every file in the module must be explained by some section (or the document must say the piece is optional and when); every path, project name, type name and command in the document must be opened and found real. Anything the module has that the document cannot explain is a finding — resolve it in the document before this task closes, and record the findings in the implementation log.
   - Purpose: Requirement 8.1 and 8.2 — the document is a map of the territory, not of memory.
@@ -44,7 +44,7 @@ Spec bookkeeping (marking tasks in progress and complete in this file, logging i
   - _Requirements: 8.1, 8.2, 6.2_
   - _Prompt: Implement the task for spec documentation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: reviewer who trusts nothing that is written down | Task: Trace the timeline module file by file against docs/creating-a-diagram-module.md, in both directions | Restrictions: the trace is module-to-document AND document-to-module — an unexplained module file and a dangling document claim are both findings; fix the document, never force the module; log every finding, including "none" if truly none | Success: the implementation log lists the trace's findings and their resolutions, and after the pass every named path in the document opens and every timeline file has a home in some section_
 
-- [ ] 5. `docs/creating-an-editor-module.md`, and the stale readme line it corrects
+- [x] 5. `docs/creating-an-editor-module.md`, and the stale readme line it corrects
   - File: `docs/creating-an-editor-module.md` (new), `src/editors/markdown/client/readme.md` (one-line correction)
   - The editor-family walkthrough, tracing **markdown** with **plain** as the fallback contrast. Shared mechanics (layout, discovery, workspace, client glob, examples replication, tests) are one short section of anchor links into the diagram walkthrough — written once, referenced here (Requirement 7.2). Family-specific sections: `Editor.cs` and `EditorDefinition` claims by extension and exact file name, case-insensitive; the plain editor claiming nothing and being last-resort by construction; two editors over one extension as a startup error; the `IEditorSessionFactory` seam; the client panel registered under the `editor/<id>` mime through the same glob. While tracing, correct the stale line in `src/editors/markdown/client/readme.md` — it currently says the canvas "arrives with the client group of the modular-text-editors spec (group 5); until then this folder holds its place", while `MarkdownEditorPanel.tsx` and its test sit in that same folder and the spec is complete; quote that actual sentence in the commit message when replacing it.
   - Purpose: Requirement 7 — the second plugin family as approachable as the first, with what is shared shared.
@@ -52,7 +52,7 @@ Spec bookkeeping (marking tasks in progress and complete in this file, logging i
   - _Requirements: 7.1, 7.2, 7.3_
   - _Prompt: Implement the task for spec documentation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: technical writer with C# and TypeScript fluency | Task: Write the editor-module walkthrough in the docs worktree, referencing the diagram walkthrough for everything the families share, and correct the stale markdown-client readme line in passing | Restrictions: no section may restate what the diagram walkthrough already covers — anchor-link it; anything found to be a placeholder is documented as such rather than described as intent; the readme correction quotes the actual outdated sentence in the commit message | Success: the document covers every family-specific point in Requirement 7.1, shares by reference, and the stale readme line is replaced with what is actually in the folder_
 
-- [ ] 6. Verify the editor walkthrough by tracing markdown and plain
+- [x] 6. Verify the editor walkthrough by tracing markdown and plain
   - File: `docs/creating-an-editor-module.md` (edited where the trace demands it)
   - Same discipline as task 4, over both editor modules: every file explained, every claim opened, findings logged and resolved in the document. Verify in particular that the anchor links into the diagram walkthrough resolve to real headings.
   - Purpose: Requirements 8.1 and 8.2 for the editor half.
@@ -60,7 +60,7 @@ Spec bookkeeping (marking tasks in progress and complete in this file, logging i
   - _Requirements: 8.1, 8.2, 7.3_
   - _Prompt: Implement the task for spec documentation, first run spec-workflow-guide to get the workflow guide then implement the task: Role: reviewer who trusts nothing that is written down | Task: Trace the markdown and plain editor modules against docs/creating-an-editor-module.md, in both directions, and check every cross-document anchor resolves | Restrictions: fix the document, never the modules (beyond task 5's sanctioned readme line); log every finding | Success: the implementation log records the trace, every anchor link lands on an existing heading, and both modules are fully accounted for_
 
-- [ ] 7. Gate and merge phase B
+- [-] 7. Gate and merge phase B
   - File: none (verification and merge)
   - The same four gates as task 2, exit codes captured before any pipe, then merge into develop from the main checkout.
   - Purpose: develop receives both walkthroughs, verified.
