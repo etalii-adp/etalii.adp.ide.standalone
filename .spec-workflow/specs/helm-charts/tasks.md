@@ -49,13 +49,13 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
 - [-] 3. Graph and store
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 1.4_
 
-- [-] 3.1 The dependency resolution matcher **(new work)**
+- [x] 3.1 The dependency resolution matcher **(new work)**
   - Files: `DependencyResolution.cs` (or the design's equivalent home in `HelmGraph`) + tests
   - `EffectiveName` (alias-over-name) matched ordinally against `charts/` entries (directory name; archive name stripped of `-<version>.tgz`); dependencies get Resolved/Unvendored, unmatched vendored content gets Undeclared; no semver-range evaluation, deliberately
   - _Requirements: 5.2_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the alias-aware three-state resolution matcher as a pure function with tests for alias matching, archive-name stripping, Unvendored open ends and Undeclared leftovers | Restrictions: ordinal matching only; no version-constraint evaluation — the lock's pin is display data, never validated against the range | _Leverage: the _Model records from 2.3; AnsibleEdge's three-state TargetResolution as the shape precedent | Success: matcher tests pin every state transition including the alias and tgz cases. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.2 HelmGraph: nodes and the five edge families
+- [-] 3.2 HelmGraph: nodes and the five edge families
   - Files: `HelmGraph.cs` + `_Model` node/edge records + tests
   - declares (constraint label), resolves (via 3.1), overrides (stack), configures (effective-name key; `global:` marks the node), includes (literal names to local partials; unmatched become open ends, not findings); condition badges resolved against parsed default values where the path exists; lock pins carried onto dependency nodes
   - _Requirements: 5.1, 5.3, 5.4, 5.5, 5.6, 5.7_
