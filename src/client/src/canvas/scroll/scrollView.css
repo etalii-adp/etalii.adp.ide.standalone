@@ -1,0 +1,40 @@
+/*
+ * The shared scroll view's look. Moved from the timeline's stylesheet, where these rules grew,
+ * and renamed generically. The colours come from the theme variables, as they did there; a
+ * canvas that needs its bars placed differently - the timeline insets both above its ruler -
+ * overrides only the offsets, through the component's `className` prop, and never these rules.
+ */
+
+.canvas-scrollbar {
+  position: absolute;
+  background: color-mix(in srgb, var(--color-border, #e2e8f0) 40%, transparent);
+  border-radius: 5px;
+}
+
+.canvas-scrollbar-horizontal {
+  left: 8px;
+  right: 20px;
+  bottom: 6px;
+  height: 10px;
+}
+
+.canvas-scrollbar-vertical {
+  top: 8px;
+  bottom: 20px;
+  right: 6px;
+  width: 10px;
+}
+
+.canvas-scrollbar-thumb {
+  position: absolute;
+  inset: 0;
+  background: var(--color-text-muted, #64748b);
+  opacity: 0.5;
+  border-radius: 5px;
+  cursor: grab;
+}
+
+.canvas-scrollbar-thumb:hover,
+.canvas-scrollbar-thumb:active {
+  opacity: 0.85;
+}
