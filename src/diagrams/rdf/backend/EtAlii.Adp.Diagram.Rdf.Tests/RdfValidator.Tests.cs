@@ -114,13 +114,19 @@ public class RdfValidatorTests
     }
 
     [Fact]
-    public void AddRdf_RegistersTheValidatorUnderTheFamilyOrigin()
+    public void AddRdf_RegistersTheValidatorsPerReading()
     {
         // Arrange & act.
         var provider = new ServiceCollection().AddRdf().BuildServiceProvider();
-        var validator = provider.GetServices<IDiagramValidator>().Single();
+        var validators = provider.GetServices<IDiagramValidator>().ToList();
 
-        // Assert.
-        Assert.Equal(ServiceCollectionAddRdfExtension.RdfOrigin, validator.Origin);
+        // Assert: exactly one validator per origin - the anchor's own for w3c/rdf, and the
+        // ontology reading's for w3c/owl, which delegates the file-level rules to the family
+        // validator rather than restating them (owl-diagram Requirement 5.5).
+        Assert.Single(validators, validator =>
+            validator is RdfValidator && validator.Origin == ServiceCollectionAddRdfExtension.RdfOrigin);
+        Assert.Single(validators, validator =>
+            validator is OwlValidator && validator.Origin == ServiceCollectionAddRdfExtension.OwlOrigin);
+        Assert.Equal(2, validators.Count);
     }
 }

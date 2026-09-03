@@ -24,9 +24,30 @@ public static class Diagram
         // The family's engine registers once; the siblings joining later add their readings.
         Build: builder => builder.Services.AddRdf());
 
-    /// <summary>What discovery reads: the anchor now, the family as it grows.</summary>
+    /// <summary>
+    /// The ontology reading of the same bytes: asserted OWL 2, drawn in the VOWL vocabulary.
+    /// Never routed from a bare file - the anchor keeps that - and Add suggests it exactly on
+    /// the files that carry the <c>owl:Ontology</c> marker (the routing arrangement).
+    /// </summary>
+    public static DiagramDefinition Owl { get; } = new(
+        ServiceCollectionAddRdfExtension.OwlOrigin,
+        "OWL Ontology",
+        "An OWL 2 ontology's classes, hierarchy, properties and restrictions - what the file asserts, not what a reasoner would infer.",
+        Icon: "mdi-shape-outline",
+        Extension: ".ttl",
+        AlternateExtension: ".nt",
+        SharedExtension: true,
+        // A textual marker test, deliberately: it judges whether the reading is worth offering,
+        // not whether the file is valid OWL - the parse decides that once the reading opens.
+        SuggestsBody: text => text.Contains("owl:Ontology", StringComparison.Ordinal)
+            || text.Contains(OwlVocabulary.Ontology, StringComparison.Ordinal),
+        // The same family Build as the anchor's; AddRdf registers once and no-ops after.
+        Build: builder => builder.Services.AddRdf());
+
+    /// <summary>What discovery reads: the anchor and its readings, the family as it grows.</summary>
     public static DiagramDefinition[] Definitions { get; } =
     [
         Rdf,
+        Owl,
     ];
 }
