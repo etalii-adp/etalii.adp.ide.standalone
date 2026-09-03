@@ -7,7 +7,7 @@ One worktree for the whole spec (`.claude/worktrees/skos`, per CLAUDE.md's one-w
 - [ ] 1. The projection layer: pure functions over the anchor's model — after anchor task 1.1
   - _Requirements: 1.1-1.6, 3.1-3.6, 4.1-4.2, 8.1-8.2_
 
-- [ ] 1.1 SkosProjection: the vocabulary out of the triples
+- [-] 1.1 SkosProjection: the vocabulary out of the triples
   - Files: `src/diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf/Skos/SkosProjection.cs` (+ `_Model/` records for schemes, concepts, edges, collections) + tests in the family test project
   - Schemes, concepts and memberships by assertion (`inScheme`/`topConceptOf`/`hasTopConcept`, any of them); **one hierarchy edge per unordered pair where `skos:broader` or `skos:narrower` is asserted in either direction**, oriented broader-above-narrower, both-directions collapsing to one edge whose payload records each contributing triple's span; `related` edges; mapping edges only when both ends are in-file, out-of-file mappings surfaced as property rows; collections with `rdf:List` order preserved; notation carried; unfiled concepts in their own band; the **drawn-element budget** counted in the hierarchy-aware deterministic order (schemes, top concepts, breadth-first by layer, ties by IRI)
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 8.1, 8.2_
