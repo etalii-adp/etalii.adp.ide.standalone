@@ -29,9 +29,10 @@ public static class EntryNameRules
 
         // A name is a name, not a location - so anything that could reach outside this very
         // folder is refused outright rather than sanitised: the user can see it and fix it.
-        if (newName is "." or ".." ||
-            newName.IndexOfAny(new[] { IoPath.DirectorySeparatorChar, IoPath.AltDirectorySeparatorChar, ':' }) >= 0 ||
-            newName.IndexOfAny(IoPath.GetInvalidFileNameChars()) >= 0)
+        // Judged against the portable set, not the platform's: the platform's own idea of an
+        // invalid character let `bad*name.txt` through on Linux while this message promised
+        // otherwise, and the file would never check out on Windows anyway.
+        if (newName is "." or ".." || newName.IndexOfAny(PortableFileNames.InvalidChars) >= 0)
         {
             return ContextValidationResult.Rejected("A name cannot contain a path or any of \\ / : * ? \" < > |");
         }

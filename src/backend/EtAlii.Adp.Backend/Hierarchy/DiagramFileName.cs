@@ -74,7 +74,9 @@ public static class DiagramFileName
     /// </remarks>
     public static string Sanitise(string value)
     {
-        var invalid = IoPath.GetInvalidFileNameChars();
+        // The portable set, not the platform's: a suggested file name must be creatable on
+        // every OS the project is checked out on, so ':' and '\' sanitise on Linux too.
+        var invalid = PortableFileNames.InvalidChars;
         var characters = value.Select(character => invalid.Contains(character) || character is '.' or ' ' ? '-' : character);
 
         var sanitised = new string(characters.ToArray());

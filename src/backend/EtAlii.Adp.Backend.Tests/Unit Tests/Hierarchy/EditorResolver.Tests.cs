@@ -91,8 +91,9 @@ public class EditorResolverTests
         var make = new EditorDefinition("make", "Makefiles", FileNames: ["Makefile"]);
         var resolver = Resolver(Plain, make);
 
-        // Act.
-        var routing = resolver.Resolve(@"C:\project\Makefile");
+        // Act. Forward slashes, deliberately: the exact-name match reads the path's file
+        // name, and a backslash literal is not a separator on the Linux CI runner.
+        var routing = resolver.Resolve("project/Makefile");
 
         // Assert.
         var routed = Assert.IsType<EditorRouted>(routing);
