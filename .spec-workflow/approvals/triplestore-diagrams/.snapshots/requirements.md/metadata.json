@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/triplestore-diagrams/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-03T10:45:28.497Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788432328246_1u406n3op",
+      "approvalTitle": "triplestore-diagrams: requirements"
+    }
+  ]
+}
