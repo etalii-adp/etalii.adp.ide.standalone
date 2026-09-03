@@ -44,10 +44,10 @@ One worktree for the whole spec: `.claude/worktrees/ansible-ref` — deliberatel
   - Backend tests and `dotnet format style --verify-no-changes --severity info` from `src/backend`, both judged by captured exit code with the build variables set; merge `.claude/worktrees/ansible-ref` into `develop` through the main checkout
   - _Prompt: Implement the task for spec ansible-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Set MSBUILDDISABLENODEREUSE=1 and DOTNET_CLI_USE_MSBUILD_SERVER=0, run the backend test and format gates redirecting output to a log and capturing each exit code on the next line, then merge the worktree into develop via the main checkout | Restrictions: never judge a gate by piped output or by grepping for "failed"; a zero-test run (exit 5) is a broken build, not an empty suite; do not merge on a failing gate | Success: both gates exit zero by captured code and the merge lands. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. Client: shared appearance, scrollbars, drag
+- [-] 3. Client: shared appearance, scrollbars, drag
   - _Requirements: 1.1, 1.2, 4.1, 4.2, 4.3, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3_
 
-- [ ] 3.1 Adopt the shared stylesheet and theme the palette
+- [-] 3.1 Adopt the shared stylesheet and theme the palette
   - Files: `src/diagrams/ansible-structure/client/register.ts`, `ansible-structure.css`, `AnsibleCanvas.tsx` (class composition only)
   - `register.ts` imports `@client/canvas/canvas.css` before the module stylesheet. Every rule the shared stylesheet already states is deleted; the component composes `canvas-*` classes alongside the existing ansible class names, which are kept so existing selectors and tests keep holding. The six per-play hues become module-owned custom properties declared once in a `.ansible-canvas` scope block, applied via `color-mix` against `--color-surface-raised`, with a `prefers-color-scheme: dark` block retuning individual hues where the dark surface needs it; tinting keeps wrapping beyond six plays. No colour literal survives outside a custom-property definition.
   - _Requirements: 4.1, 4.2, 4.3, 5.3, 5.4, 5.5, 5.6_
