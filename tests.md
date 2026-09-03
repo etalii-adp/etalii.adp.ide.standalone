@@ -583,6 +583,7 @@ port pair. Re-run this after any future example rewrite.
   fitted-state thumb drag and timeline vertical thumb drag both pan as the shared scroll
   view intends.
 
+<<<<<<< HEAD
 ## A simulated job run ripples the DAG, honoring run_if and outcome (databricks-diagrams, task 5.3)
 
 Guarded by `useSimulatedRun.test.ts` for the state machine itself; kept here because the visible
@@ -620,3 +621,23 @@ kept here because the tab-close/reopen half runs through the real shell.
   `task:publish` entry while `nightly-ingest.yml` is byte-identical to before; the reopened
   diagram shows `publish` exactly where it was dropped; undo removes the entry (and the block,
   if it was the only one) and the task returns to its computed place on every open connection.
+=======
+## Explorer state icons are distinguishable in both modes (small-refinements, task 3.5)
+
+The unit tests assert the classes; only a person (or a computed-style probe) can say the
+three colors actually read apart on both surfaces. Checked live from the spec worktree.
+
+- **Preconditions**: backend + client running; a project on `src/examples` open; the
+  ansible-structure example expanded down to `infrastructure/`.
+- **Actions**: look at the tree in dark mode, then in light mode (emulate
+  `prefers-color-scheme` or switch the OS theme).
+- **Expected**: registrations and registered subjects (`structure.adp`, `mindmap.mm`, the
+  `infrastructure` folder once expanded) wear the accent limegreen; registrable files
+  (`*.yml`, `*.md`) a clearly darker green; unclaimed files (`ansible.cfg`, `Makefile`
+  with no make editor deployed) stay the muted neutral - three visibly distinct colors in
+  BOTH modes, and folders without a folder-subject registration never green.
+- **Result 2026-09-03**: pass - dark mode: limegreen / rgb(63,145,66) / muted slate;
+  light mode: limegreen / rgb(22,101,52) / muted slate. Found and fixed live: the
+  folder's own state update was swallowed on listing-triggered scans, so an expanded
+  `infrastructure` stayed neutral until the raise was made unconditional for the folder.
+>>>>>>> develop

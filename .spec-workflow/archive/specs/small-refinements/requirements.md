@@ -8,9 +8,9 @@ They share a spec because none of them is big enough to carry one alone, and bec
 
 **Dependencies.** This spec redefines none of them:
 
-* [`mindmap-diagram`](../../archive/specs/mindmap-diagram/requirements.md) — the canvas gaining scrollbars.
-* [`timeline-diagram`](../../archive/specs/timeline-diagram/requirements.md) — where the scrollbar behaviour, and its reasoning, already live.
-* [`project-root-folder-explorer`](../../archive/specs/project-root-folder-explorer/requirements.md) — the tree whose icons gain state colors.
+* [`mindmap-diagram`](../mindmap-diagram/requirements.md) — the canvas gaining scrollbars.
+* [`timeline-diagram`](../timeline-diagram/requirements.md) — where the scrollbar behaviour, and its reasoning, already live.
+* [`project-root-folder-explorer`](../project-root-folder-explorer/requirements.md) — the tree whose icons gain state colors.
 * [`modular-text-editors`](../modular-text-editors/requirements.md) — the editor family whose claims contribute to the "could open as" knowledge.
 * structure.md's example-replication rule — every example touched here exists twice, in its module and in `src/examples/`, and the two must not drift.
 

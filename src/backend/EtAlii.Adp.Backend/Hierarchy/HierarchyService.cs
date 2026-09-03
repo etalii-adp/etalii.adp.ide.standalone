@@ -62,8 +62,36 @@ public sealed class HierarchyService : EtAlii.Adp.HierarchyService.HierarchyServ
         model.EntryChanged += OnEntryChanged;
 
         using var recoveryCts = new CancellationTokenSource();
-        var watcher = CreateWatcher(rootPath, model, recoveryCts.Token);
+
+        // One notification per outage, whichever detector saw it first. On Windows the
+        // watcher's own Error event reports the root's deletion almost instantly; on Linux,
+        // inotify never reports the watched directory's own deletion at all - the watch just
+        // goes silent - so the presence poll below is the only detector there (found by the
+        // first Linux CI run, where the RootUnavailable push never came). The latch keeps the
+        // two from double-announcing the same outage, and resets once the root recovers so a
+        // second outage announces again.
+        var rootLost = 0;
+
+        void HandleRootLost(string message)
+        {
+            if (Interlocked.Exchange(ref rootLost, 1) == 1)
+            {
+                return;
+            }
+
+            model.NotifyRootUnavailable(message);
+            _ = RecoverAsync();
+        }
+
+        async Task RecoverAsync()
+        {
+            await WaitForRootRecoveryAsync(rootPath, model, recoveryCts.Token);
+            Interlocked.Exchange(ref rootLost, 0);
+        }
+
+        var watcher = CreateWatcher(rootPath, model, HandleRootLost);
         _hierarchyModelStore.AttachWatcher(watchId, watcher);
+        _ = WatchRootPresenceAsync(rootPath, HandleRootLost, recoveryCts.Token);
         // Information: a watch is a long-lived resource with a file system watcher behind it,
         // so its open and close are the pair to look for when one is suspected of leaking.
         _logger.Information(
@@ -94,7 +122,7 @@ public sealed class HierarchyService : EtAlii.Adp.HierarchyService.HierarchyServ
         }
     }
 
-    private RootFolderWatcher CreateWatcher(string rootPath, HierarchyModel model, CancellationToken recoveryToken)
+    private RootFolderWatcher CreateWatcher(string rootPath, HierarchyModel model, Action<string> onRootLost)
     {
         return new RootFolderWatcher(
             rootPath,
@@ -114,9 +142,33 @@ public sealed class HierarchyService : EtAlii.Adp.HierarchyService.HierarchyServ
                 }
 
                 _logger.Error(ex, "The watcher for {RootPath} failed; waiting for the folder to come back", rootPath);
-                model.NotifyRootUnavailable(ex.Message);
-                _ = WaitForRootRecoveryAsync(rootPath, model, recoveryToken);
+                onRootLost(ex.Message);
             });
+    }
+
+    /// <summary>
+    /// The platform-independent root-vanish detector: a low-frequency existence poll on the
+    /// same cadence the recovery wait already uses. Windows' watcher reports the root's own
+    /// deletion through its Error event; Linux's inotify-based watcher does not - it simply
+    /// goes quiet - so without this poll a deleted root was never announced there at all.
+    /// </summary>
+    private static async Task WatchRootPresenceAsync(string rootPath, Action<string> onRootLost, CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (true)
+            {
+                await Task.Delay(RootRecoveryPollInterval, cancellationToken);
+                if (!Directory.Exists(rootPath))
+                {
+                    onRootLost("The project's root folder is no longer accessible.");
+                }
+            }
+        }
+        catch (Exception exception) when (exception is OperationCanceledException or ObjectDisposedException)
+        {
+            // The WatchHierarchy call ended; the poll dies with it.
+        }
     }
 
     private async Task WaitForRootRecoveryAsync(string rootPath, HierarchyModel model, CancellationToken cancellationToken)
@@ -147,6 +199,7 @@ public sealed class HierarchyService : EtAlii.Adp.HierarchyService.HierarchyServ
             Kind = node.IsFolder ? EntryKind.Folder : EntryKind.File,
             Available = node.Available,
             HasChildren = node.HasChildren,
+            DiagramState = (EtAlii.Adp.EntryDiagramState)node.DiagramState,
         };
         if (node.ParentId is { } parentId)
         {
@@ -166,8 +219,8 @@ public sealed class HierarchyService : EtAlii.Adp.HierarchyService.HierarchyServ
         HierarchyEntryUpdated up => new HierarchyChange
         {
             Updated = up.ParentChanged
-                ? new EntryUpdated { EntryId = up.EntryId, HasChildren = up.HasChildren, ParentId = up.ParentId ?? default }
-                : new EntryUpdated { EntryId = up.EntryId, HasChildren = up.HasChildren },
+                ? new EntryUpdated { EntryId = up.EntryId, HasChildren = up.HasChildren, ParentId = up.ParentId ?? default, DiagramState = (EtAlii.Adp.EntryDiagramState)up.DiagramState }
+                : new EntryUpdated { EntryId = up.EntryId, HasChildren = up.HasChildren, DiagramState = (EtAlii.Adp.EntryDiagramState)up.DiagramState },
         },
         HierarchyRootUnavailable u => new HierarchyChange { RootUnavailable = new RootUnavailable { Message = u.Message } },
         _ => throw new ArgumentOutOfRangeException(nameof(change)),

@@ -6,7 +6,7 @@ This spec covers **modular text editors**: a plugin family for *editing a file a
 
 Today ADP can open a file only if some diagram type claims it. Everything else in a project — a `README.md`, an `ansible.cfg`, the `.dsl` behind a C4 diagram, a `.yml` a pipeline diagram draws — is visible in the explorer and openable nowhere. That is a real gap for a tool whose product vision is *files are the source of truth*: the architect who sees a broken value in the property grid, or a validator complaining about a line, has nowhere in ADP to go and fix it. This family closes it.
 
-**Why a family rather than one editor.** A single generic text box would be simpler, and would also be the wrong shape twice over. First, a `.md` file wants preview and heading structure, a `.dsl` wants the diagram it drives to update as it is typed, a `.yml` wants indentation-aware editing — each is a different editor over the same primitive. Second, ADP already proved the plugin seam works for diagram types; a second family that plugs in the same way costs a seam it already has, while a monolith with a `switch (extension)` inside it would put every format's knowledge in core, which [structure.md](../../steering/structure.md) forbids.
+**Why a family rather than one editor.** A single generic text box would be simpler, and would also be the wrong shape twice over. First, a `.md` file wants preview and heading structure, a `.dsl` wants the diagram it drives to update as it is typed, a `.yml` wants indentation-aware editing — each is a different editor over the same primitive. Second, ADP already proved the plugin seam works for diagram types; a second family that plugs in the same way costs a seam it already has, while a monolith with a `switch (extension)` inside it would put every format's knowledge in core, which [structure.md](../../../steering/structure.md) forbids.
 
 **Extension-dependent, deliberately.** A diagram type is selected by the MIME line in its `.adp` registration; a text editor has no registration and must not need one — the whole point is that an *ordinary file already in the repository* opens. So an editor declares the extensions it serves, and the extension is the key. This spec's central design problems both follow from that: what happens when two editors claim `.md`, and what happens when a file is *both* a diagram body and a text file (Requirements 4 and 5).
 
@@ -31,20 +31,20 @@ Saving in any of them goes through the same command pipeline every other edit us
 
 **Dependencies.** This spec redefines none of them:
 
-* [`adp-diagram-ide`](../../archive/specs/adp-diagram-ide/requirements.md) — the workspace shell that hosts panels.
-* [`diagram-workspace-tabs`](../../archive/specs/diagram-workspace-tabs/requirements.md) — the tab strip an editor opens into, and the open/close/activate rules it inherits rather than reinvents.
-* [`project-root-folder-explorer`](../../archive/specs/project-root-folder-explorer/requirements.md) — where a file is double-clicked, and the watcher that reports an external change.
-* [`context-service`](../../archive/specs/context-service/requirements.md) — selection, scopes, and the `IContextActionProvider` that offers **Open as text**.
-* [`diagram-undo-redo`](../../archive/specs/diagram-undo-redo/requirements.md) and tech.md's **Commands** rule — a save is a command.
-* [`errors-and-warnings-panel`](../../archive/specs/errors-and-warnings-panel/requirements.md) — where a problem's line number leads (Requirement 8).
-* [`property-grid`](../../archive/specs/property-grid/requirements.md) — an open file's own properties (Requirement 9).
+* [`adp-diagram-ide`](../adp-diagram-ide/requirements.md) — the workspace shell that hosts panels.
+* [`diagram-workspace-tabs`](../diagram-workspace-tabs/requirements.md) — the tab strip an editor opens into, and the open/close/activate rules it inherits rather than reinvents.
+* [`project-root-folder-explorer`](../project-root-folder-explorer/requirements.md) — where a file is double-clicked, and the watcher that reports an external change.
+* [`context-service`](../context-service/requirements.md) — selection, scopes, and the `IContextActionProvider` that offers **Open as text**.
+* [`diagram-undo-redo`](../diagram-undo-redo/requirements.md) and tech.md's **Commands** rule — a save is a command.
+* [`errors-and-warnings-panel`](../errors-and-warnings-panel/requirements.md) — where a problem's line number leads (Requirement 8).
+* [`property-grid`](../property-grid/requirements.md) — an open file's own properties (Requirement 9).
 
 ## Alignment with Product Vision
 
-* [product.md](../../steering/product.md)'s **"Files are the source of truth"** — taken to its conclusion: if the file is the truth, the user must be able to *see and edit the file*, not only the picture ADP draws of it.
+* [product.md](../../../steering/product.md)'s **"Files are the source of truth"** — taken to its conclusion: if the file is the truth, the user must be able to *see and edit the file*, not only the picture ADP draws of it.
 * product.md's **"Don't reinvent, integrate"** — ADP writes no editor engine of its own; a module wraps an existing one (CodeMirror or Monaco, decided in design) exactly as diagram modules wrap existing formats.
 * product.md's **"A familiar surface"** — an IDE opens the file you double-click. Not opening it is the surprise.
-* [tech.md](../../steering/tech.md)'s **Commands** rule — a save is a functional state change, therefore a command, therefore undoable.
+* [tech.md](../../../steering/tech.md)'s **Commands** rule — a save is a functional state change, therefore a command, therefore undoable.
 * structure.md's **Core vs plugins** — core routes by extension and hosts a panel; what Markdown *is* lives in the Markdown module.
 
 ## Requirements
@@ -144,7 +144,7 @@ Saving in any of them goes through the same command pipeline every other edit us
 
 **User Story:** As a user with a file open, I want the Properties panel to tell me about the file itself.
 
-> Binds to [`property-grid`](../../archive/specs/property-grid/requirements.md): one `IContextPropertyProvider` (its Requirement 3), properties described as data (2), and read-only carrying a **reason** enforced server-side (4).
+> Binds to [`property-grid`](../property-grid/requirements.md): one `IContextPropertyProvider` (its Requirement 3), properties described as data (2), and read-only carrying a **reason** enforced server-side (4).
 
 #### Acceptance Criteria
 

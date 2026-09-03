@@ -244,4 +244,33 @@ public class DiagramFileRouterTests : IDisposable
         Assert.Equal([".dsl"], Router(C4Context, RivalDsl).AmbiguousExtensions());
     }
 
+    [Fact]
+    public void ClaimsExtensionOf_ABareBodyExtension_IsTrue()
+    {
+        // Arrange, act and assert.
+        Assert.True(Router(Mindmap).ClaimsExtensionOf(@"C:\project\ideas.mm"));
+    }
+
+    [Fact]
+    public void ClaimsExtensionOf_ASharedExtension_IsTrue_WhichRouteRefuses()
+    {
+        // Arrange.
+        // The case that distinguishes this predicate from Route: a shared extension is
+        // refused on sight by Route, but the file is registrable, so it is claimed
+        // (small-refinements Requirement 3.2).
+        var pipeline = new DiagramDefinition(new DiagramOrigin("azure-devops", "pipeline"), "Azure DevOps pipeline", Extension: ".yml", SharedExtension: true);
+        var yml = Write("build.yml", "stages: []\n");
+
+        // Act and assert.
+        Assert.True(Router(pipeline).ClaimsExtensionOf(yml));
+        Assert.IsType<NotADiagram>(Router(pipeline).Route(yml));
+    }
+
+    [Fact]
+    public void ClaimsExtensionOf_AnUnclaimedExtension_IsFalse()
+    {
+        // Arrange, act and assert.
+        Assert.False(Router(Mindmap).ClaimsExtensionOf(@"C:\project
+otes.txt"));
+    }
 }

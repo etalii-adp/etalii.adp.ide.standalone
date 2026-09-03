@@ -71,6 +71,29 @@ public sealed class EditorResolver
     }
 
     /// <summary>
+    /// Whether a non-fallback editor claims <paramref name="path"/> - by exact file name or
+    /// by extension, the ambiguous case included: the test is whether an editor claims the
+    /// file, not whether opening it will succeed, and the fallback claims everything by
+    /// construction so it never counts (small-refinements Requirement 3.2). Kept beside
+    /// <see cref="Resolve"/> so the precedence lives in one place: Resolve never answers
+    /// null-like, so a caller could not tell "claimed" from "fell through" without
+    /// re-implementing it.
+    /// </summary>
+    public bool IsClaimed(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+
+        var fileName = IoPath.GetFileName(path);
+        if (_byFileName.ContainsKey(fileName))
+        {
+            return true;
+        }
+
+        var extension = IoPath.GetExtension(fileName).ToLowerInvariant();
+        return extension.Length > 0 && _byExtension.ContainsKey(extension);
+    }
+
+    /// <summary>
     /// The editor for <paramref name="path"/>. Never null-like: the fallback answers when
     /// nothing claims the file, which is its entire role.
     /// </summary>
