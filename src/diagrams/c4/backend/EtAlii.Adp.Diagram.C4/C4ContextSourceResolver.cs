@@ -161,7 +161,7 @@ public sealed class C4ContextSourceResolver : IContextSourceResolver
         string elementId,
         ContextLevelDetail detail,
         IReadOnlyList<string> relativePath,
-        EtAlii.Adp.Diagram.DiagramOrigin origin)
+        DiagramOrigin origin)
     {
         var level = new ContextResolvedLevel(
             source,
