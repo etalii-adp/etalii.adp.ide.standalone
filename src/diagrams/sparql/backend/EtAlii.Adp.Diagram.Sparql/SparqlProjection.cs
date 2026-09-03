@@ -72,6 +72,14 @@ public static class SparqlProjection
                     DefiningExpression: usage.DefiningExpression));
             }
 
+            // A DESCRIBE names its targets outright, and for a bare `DESCRIBE <iri>` those are
+            // the whole query - so a target draws as a node like any other term. Found by the
+            // vendored corpus: without this, a real one-line DESCRIBE drew nothing at all.
+            foreach (var term in model.DescribeTerms)
+            {
+                EnsureTermNode(term);
+            }
+
             // Patterns: concrete and anonymous nodes on first mention, then the edges.
             CollectPatterns(model.Where);
             if (model.Template is not null)

@@ -239,6 +239,7 @@ public static class SparqlParser
             Advance(); // DESCRIBE
 
             var targets = new List<string>();
+            var terms = new List<SparqlTerm>();
             var projection = new List<SparqlProjectionItem>();
             if (Current.IsPunct("*"))
             {
@@ -249,10 +250,20 @@ public static class SparqlParser
             {
                 while (Current.Kind is SparqlTokenKind.Variable or SparqlTokenKind.Iri or SparqlTokenKind.PrefixedName)
                 {
-                    targets.Add(Current.Value);
-                    if (Current.Kind == SparqlTokenKind.Variable)
+                    var token = Current;
+                    targets.Add(token.Value);
+                    switch (token.Kind)
                     {
-                        projection.Add(new SparqlProjectionItem(Current.Value[1..], ""));
+                        case SparqlTokenKind.Variable:
+                            projection.Add(new SparqlProjectionItem(token.Value[1..], ""));
+                            terms.Add(new VariableTerm(token.Value[1..], token.Value));
+                            break;
+                        case SparqlTokenKind.Iri:
+                            terms.Add(new IriTerm(ResolveIri(token), token.Value));
+                            break;
+                        default:
+                            terms.Add(new IriTerm(ExpandPrefixed(token), token.Value));
+                            break;
                     }
 
                     Advance();
@@ -282,6 +293,7 @@ public static class SparqlParser
             {
                 Form = SparqlQueryForm.Describe,
                 DescribeTargets = targets,
+                DescribeTerms = terms,
                 Projection = projection,
                 DatasetClauses = datasets,
                 Where = where,
