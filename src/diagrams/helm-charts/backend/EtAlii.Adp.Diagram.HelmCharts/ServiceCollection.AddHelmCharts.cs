@@ -45,6 +45,11 @@ public static class ServiceCollectionAddHelmChartsExtension
         // routing it through the store would leave a watcher behind on every "Validate all".
         services.AddSingleton<IDiagramValidator, HelmValidator>();
 
+        // One resolver makes every node and edge selectable, so the property grid, the ribbon
+        // and the menu answer for one like any other element (Requirement 8). The context
+        // service itself is untouched.
+        services.AddSingleton<IContextSourceResolver, HelmContextSourceResolver>();
+
         return services;
     }
 }
