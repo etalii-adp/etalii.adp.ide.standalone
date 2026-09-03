@@ -61,13 +61,13 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - _Requirements: 5.1, 5.3, 5.4, 5.5, 5.6, 5.7_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Build HelmGraph from the model per design, every edge family and badge tested on the fixtures, unmatched includes drawn as open ends | Restrictions: pure function over the model; no filesystem access; open ends are model states, never exceptions | _Leverage: the matcher from 3.1; AnsibleGraph's node/edge shape | Success: graph tests cover each edge family's fire and non-fire cases on the three fixtures. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3.3 HelmChartStore and the watched folder
+- [x] 3.3 HelmChartStore and the watched folder
   - Files: `IHelmChartStore.cs`, `HelmChartStore.cs`, `HelmWatchedFolder.cs` + tests
   - `GetOrLoad`/`Get`/`Acquire`/`Release`; one guarded coalescing watcher per acquired chart root; a settled burst is one whole-folder re-read; burst tests assert a range, never an exact count; no save method exists
   - _Requirements: 1.4_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Replicate the ansible watched-folder store shape for chart roots with coalescing burst re-reads and acquire/release lifetimes, tested with range assertions | Restrictions: no save path anywhere; the watcher watches the chart root itself, not a parent; burst assertions use Assert.InRange, not exact counts | _Leverage: AnsibleProjectStore/AnsibleWatchedFolder and their tests, including the range-assertion lesson | Success: store tests pass reliably including the burst case; release stops the watcher. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.4 Gate and merge group 3
+- [-] 3.4 Gate and merge group 3
   - Same gates; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-3 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
