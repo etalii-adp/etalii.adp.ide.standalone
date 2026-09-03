@@ -70,6 +70,54 @@ public class HierarchyModelTests : IDisposable
     }
 
     [Fact]
+    public void ApplyLocalRename_RaisesRenamedWithAStableId_AndSuppressesTheWindowsWatcherEcho()
+    {
+        // Arrange: a listed file, so the model knows its id.
+        var oldPath = CreateFile(segments: "original.txt");
+        var newPath = IoPath.Combine(_root, "renamed.txt");
+        var model = new HierarchyModel(_root);
+        var originalId = model.ListChildren(null).Single().Id;
+        var changes = new List<HierarchyEntryChange>();
+        model.EntryChanged += changes.Add;
+
+        // Act: the command applies the rename directly, then the Windows watcher echoes the
+        // same move as one Renamed event.
+        File.Move(oldPath, newPath);
+        model.ApplyLocalRename(oldPath, newPath);
+        model.OnWatcherEvent(WatcherChangeTypes.Renamed, oldPath, newPath);
+
+        // Assert: exactly one Renamed, the id preserved, the echo dropped.
+        var renamed = Assert.IsType<HierarchyEntryRenamed>(Assert.Single(changes));
+        Assert.Equal(originalId, renamed.EntryId);
+        Assert.Equal("renamed.txt", renamed.NewName);
+    }
+
+    [Fact]
+    public void ApplyLocalRename_SuppressesTheLinuxWatcherEcho_DeliveredAsDeleteThenCreate()
+    {
+        // Arrange: the same, but the watcher splits the move into a Delete and a Create - what
+        // inotify does on Linux, where it does not correlate the two halves of a rename. Without
+        // suppression this would land as Remove+Create and discard the entry's id.
+        var oldPath = CreateFile(segments: "original.txt");
+        var newPath = IoPath.Combine(_root, "renamed.txt");
+        var model = new HierarchyModel(_root);
+        var originalId = model.ListChildren(null).Single().Id;
+        var changes = new List<HierarchyEntryChange>();
+        model.EntryChanged += changes.Add;
+
+        // Act.
+        File.Move(oldPath, newPath);
+        model.ApplyLocalRename(oldPath, newPath);
+        model.OnWatcherEvent(WatcherChangeTypes.Deleted, oldPath, null);
+        model.OnWatcherEvent(WatcherChangeTypes.Created, null, newPath);
+
+        // Assert: still one Renamed with the same id; no Removed, no second Created.
+        var renamed = Assert.IsType<HierarchyEntryRenamed>(Assert.Single(changes));
+        Assert.Equal(originalId, renamed.EntryId);
+        Assert.Equal("renamed.txt", renamed.NewName);
+    }
+
+    [Fact]
     public void OnWatcherEvent_Created_UnderAListedParent_RaisesCreatedWithParentIdNameAndKind()
     {
         // Arrange.

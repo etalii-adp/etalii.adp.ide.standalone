@@ -472,7 +472,7 @@ public sealed class RdfParser
             : iri;
     }
 
-    private static bool IsAbsolute(string iri)
+    internal static bool IsAbsolute(string iri)
     {
         if (iri.Length == 0 || !char.IsAsciiLetter(iri[0]))
         {
