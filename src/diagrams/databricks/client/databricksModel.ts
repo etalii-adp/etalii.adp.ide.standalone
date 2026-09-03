@@ -36,6 +36,8 @@ export interface DatabricksNode {
   badges: string[];
   /** A depends_on stub no task declares - drawn marked-missing (Requirement 4.5). */
   unresolved: boolean;
+  /** A task's run_if, kept structurally for the simulation engine; "" means ALL_SUCCESS. */
+  runIf: string;
 }
 
 /** One target frame of the bundle diagram, drawn behind the nodes. */
@@ -121,6 +123,7 @@ function added(model: DatabricksModel, elements: readonly Element[]): Databricks
           label: payload.taskKey,
           badges,
           unresolved: payload.unresolved,
+          runIf: payload.runIf,
         });
         break;
       }
@@ -135,6 +138,7 @@ function added(model: DatabricksModel, elements: readonly Element[]): Databricks
           label: payload.key || payload.kind,
           badges: element.type === BUNDLE ? [] : [payload.kind],
           unresolved: false,
+          runIf: "",
         });
         break;
       }
@@ -149,6 +153,7 @@ function added(model: DatabricksModel, elements: readonly Element[]): Databricks
           label: payload.label,
           badges: [...payload.badges],
           unresolved: false,
+          runIf: "",
         });
         break;
       }

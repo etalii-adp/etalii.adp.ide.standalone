@@ -53,7 +53,7 @@ vi.mock("@client/shell/panels/useToolboxItems", () => ({
 const { JobCanvas } = await import("./JobCanvas");
 
 function task(id: string, label: string, x: number, y: number, badges: string[] = [], unresolved = false, kind = "notebook") {
-  return { id, x, y, kind, label, badges, unresolved };
+  return { id, x, y, kind, label, badges, unresolved, runIf: "" };
 }
 
 function modelWith(): DatabricksModel {
@@ -62,7 +62,7 @@ function modelWith(): DatabricksModel {
       ["task:ingest", task("task:ingest", "ingest", 0, 0, ["ingest_cluster"])],
       ["task:publish", task("task:publish", "publish", 520, 0, ["serverless"])],
       ["task:gone", task("task:gone", "gone", 260, 200, [], true)],
-      ["cluster:ingest_cluster", { id: "cluster:ingest_cluster", x: 0, y: 400, kind: "compute", label: "ingest_cluster", badges: ["2 workers"], unresolved: false }],
+      ["cluster:ingest_cluster", { id: "cluster:ingest_cluster", x: 0, y: 400, kind: "compute", label: "ingest_cluster", badges: ["2 workers"], unresolved: false, runIf: "" }],
     ]),
     frames: new Map(),
     edges: new Map([
@@ -228,5 +228,25 @@ describe("the job canvas", () => {
 
     // Assert.
     expect(container.textContent).toContain("could not be opened");
+  });
+
+  it("intercepts a simulated action id: the show plays locally and executeAction is never called", () => {
+    // Arrange.
+    // The Requirement 8.6 seam: the id is exactly what the backend discovers, the marker is
+    // what the canvas intercepts on - and nothing may reach the history (Requirement 11.6).
+    const { container } = renderCanvas();
+    const surface = container.querySelector(".databricks-surface")!;
+    const data = new Map([["application/x-adp-toolbox-item", "databricks.simulated.run-job"]]);
+
+    // Act.
+    fireEvent.drop(surface, {
+      dataTransfer: { getData: (type: string) => data.get(type) ?? "", types: [...data.keys()] },
+    });
+
+    // Assert.
+    expect(executed).toHaveLength(0);
+    expect(container.querySelector(".databricks-simulation-banner")!.textContent).toContain("Simulated");
+    // The show marks the tasks; the unmarked drop test above proves ordinary ids still travel.
+    expect(container.querySelector('[class*="databricks-sim-"]')).not.toBeNull();
   });
 });

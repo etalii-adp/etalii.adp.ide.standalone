@@ -157,3 +157,41 @@
 .databricks-rejection {
   color: var(--color-danger, #f85149);
 }
+
+/* The simulation's badge states - every simulated surface carries its marker (Requirement 8). */
+.databricks-sim-pending .databricks-node-box {
+  opacity: 0.5;
+}
+
+.databricks-sim-running .databricks-node-box {
+  stroke: var(--color-accent, #4ea1ff);
+  stroke-width: 2.5;
+}
+
+.databricks-sim-succeeded .databricks-node-box {
+  stroke: var(--color-success, #3fb950);
+  stroke-width: 2;
+}
+
+.databricks-sim-failed .databricks-node-box {
+  stroke: var(--color-danger, #f85149);
+  stroke-width: 2.5;
+}
+
+.databricks-sim-skipped .databricks-node-box {
+  opacity: 0.35;
+  stroke-dasharray: 3 3;
+}
+
+.databricks-simulation-banner {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  padding: 2px 10px;
+  font-size: 12px;
+  color: var(--color-text, #e6e6e6);
+  background: color-mix(in srgb, var(--color-accent, #4ea1ff) 25%, transparent);
+  border: 1px solid var(--color-accent, #4ea1ff);
+  border-radius: 4px;
+  cursor: pointer;
+}

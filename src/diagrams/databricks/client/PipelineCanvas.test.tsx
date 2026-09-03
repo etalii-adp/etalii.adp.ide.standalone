@@ -40,7 +40,7 @@ vi.mock("@client/shell/panels/useToolboxItems", () => ({
 const { PipelineCanvas } = await import("./PipelineCanvas");
 
 function node(id: string, kind: string, label: string, x: number, y: number, badges: string[] = []) {
-  return { id, x, y, kind, label, badges, unresolved: false };
+  return { id, x, y, kind, label, badges, unresolved: false, runIf: "" };
 }
 
 function modelWith(): DatabricksModel {

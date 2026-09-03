@@ -16,6 +16,7 @@ import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { ContextSelectionAction } from "@client/generated/context_pb";
 import { useDatabricksStream } from "./useDatabricksStream";
+import { useSimulatedRun } from "./useSimulatedRun";
 import type { DatabricksEdge } from "./databricksModel";
 
 /** A node's drawn size, in the module's own canvas units - matching the backend layouts' spacing. */
@@ -96,6 +97,7 @@ export function DatabricksCanvas({
   interceptAction,
 }: DiagramCanvasProps & DatabricksCanvasConfig) {
   const { model, loading, failed, moveElementTo } = useDatabricksStream(projectId, path);
+  const simulation = useSimulatedRun(model);
   const { select, executeAction, executeShortcut } = useContextConnection();
   const { selection, actions } = useContextSelection();
   const surfaceRef = useRef<HTMLDivElement | null>(null);
@@ -222,9 +224,13 @@ export function DatabricksCanvas({
   const xToPx = (x: number): number => (x - view.startX) * view.pixelsPerUnit;
   const yToPx = (y: number): number => (y - view.startY) * view.pixelsPerUnit;
 
-  /** Runs an action, letting the interception seam play it locally first (Requirement 8.6). */
+  /**
+   * Runs an action, letting the interception seam play it locally first (Requirement 8.6): a
+   * simulated id starts the client-side show and never reaches executeAction, the history or
+   * a file (Requirement 11.6); everything else travels as ever.
+   */
   const runAction = (actionId: string, sourceId?: string) => {
-    if (interceptAction?.(actionId)) {
+    if ((interceptAction ?? simulation.intercept)(actionId)) {
       return;
     }
 
@@ -499,6 +505,11 @@ export function DatabricksCanvas({
               classes.push("databricks-node-missing");
             }
 
+            const simulated = simulation.states.get(node.id);
+            if (simulated) {
+              classes.push(`databricks-sim-${simulated}`);
+            }
+
             if (node.id === selectedId) {
               classes.push("databricks-selected");
             }
@@ -563,6 +574,11 @@ export function DatabricksCanvas({
         position={menuPosition ?? { x: 0, y: 0 }}
         onClose={closeMenu}
       />
+      {simulation.marker ? (
+        <button type="button" className="databricks-simulation-banner" onClick={simulation.dismiss}>
+          {simulation.marker} · dismiss
+        </button>
+      ) : null}
       {loading ? <p className="databricks-status">Opening…</p> : null}
       {rejection ? <p className="databricks-rejection">{rejection}</p> : null}
     </div>

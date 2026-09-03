@@ -46,9 +46,9 @@ const { BundleCanvas } = await import("./BundleCanvas");
 function modelWith(): DatabricksModel {
   return {
     nodes: new Map([
-      ["bundle", { id: "bundle", x: 0, y: 0, kind: "bundle", label: "lakehouse-nightly", badges: [], unresolved: false }],
-      ["resource:jobs/nightly_ingest", { id: "resource:jobs/nightly_ingest", x: 0, y: 180, kind: "jobs", label: "nightly_ingest", badges: ["jobs"], unresolved: false }],
-      ["unknown:sync", { id: "unknown:sync", x: 260, y: 180, kind: "sync", label: "sync", badges: ["sync"], unresolved: false }],
+      ["bundle", { id: "bundle", x: 0, y: 0, kind: "bundle", label: "lakehouse-nightly", badges: [], unresolved: false, runIf: "" }],
+      ["resource:jobs/nightly_ingest", { id: "resource:jobs/nightly_ingest", x: 0, y: 180, kind: "jobs", label: "nightly_ingest", badges: ["jobs"], unresolved: false, runIf: "" }],
+      ["unknown:sync", { id: "unknown:sync", x: 260, y: 180, kind: "sync", label: "sync", badges: ["sync"], unresolved: false, runIf: "" }],
     ]),
     frames: new Map([
       ["target:prod", { id: "target:prod", x: 0, y: 400, label: "prod", mode: "production", isDefault: false, overrideCount: 1 }],
