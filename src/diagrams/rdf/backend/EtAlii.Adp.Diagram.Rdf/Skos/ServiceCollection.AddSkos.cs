@@ -19,9 +19,12 @@ public static class ServiceCollectionAddSkosExtension
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        // The reading's own seams; the store, commands and context providers are the family's,
-        // registered once by AddRdf.
+        // The reading's own seams; the store, base commands and the provider trio are the
+        // family's, registered once by AddRdf - the trio delegates skos selections here.
         services.TryAddSingleton<SkosElementMapper>();
+        services.AddSingleton<ICommandHandler<AddSkosConceptCommand>, AddSkosConceptCommandHandler>();
+        services.AddSingleton<ICommandHandler<DisconnectSkosPairCommand>, DisconnectSkosPairCommandHandler>();
+        services.AddSingleton<IDiagramToolboxProvider>(_ => new SkosToolboxProvider(SkosOrigin));
         services.AddSingleton<IDiagramValidator>(_ => new SkosValidator(SkosOrigin));
         services.AddSingleton<IDiagramSessionFactory>(provider => new SkosSessionFactory(
             SkosOrigin,

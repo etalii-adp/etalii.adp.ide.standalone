@@ -26,11 +26,11 @@ One module, `src/diagrams/sparql/`, carrying the `w3c/sparql` type alone. Its ce
 - **`DiagramDefinition`** — `w3c/sparql` with `Extension: ".rq"`, routing a bare `.rq` on sight; no shared-extension arrangement needed because nothing else claims the extension. Icon in the `mdi-` set suggesting a question over a graph (final pick at implementation).
 - **The core `layout:` block** — `RegistrationLayout` and `SetRegistrationLayoutCommand`, consumed unchanged; element ids per the scheme below (space-free, satisfying the block's `<id>: <x> <y>` grammar).
 - **Central canvas library and appearance** — `BoxElement` for term and variable nodes, `StraightConnection` for pattern edges, the shared `canvas.css`, `CanvasScrollbars`, selection/menu/keyboard plumbing; the truncation banner styled per the established precedent.
-- **The problems pipeline, `ExampleRegistrationTests`, `ExampleReplicationTests`** — joined by existing.
+- **The problems pipeline, `ExampleRegistrationTests`** — joined by existing. (`ExampleReplicationTests`, which byte-compared the two example trees, was deleted on 2026-09-03 when they were deliberately disconnected: the showcase copy is still seeded, no longer byte-compared.)
 
 ### Integration Points
 
-- **Routing** — `.rq` routes bare to `w3c/sparql`; the Add flow on an existing `.rq` creates only the registration. There is **no document factory**: creating a fresh query from inside ADP is not offered — queries are authored in text editors, per the requirements' read-only position — and the create-new path states that reason.
+- **Routing** — `.rq` routes bare to `w3c/sparql`; the Add flow on an existing `.rq` creates only the registration. There **is** a document factory, and core leaves no choice: `DiagramDocumentFactories.Verify` makes a type that declares a document extension without one a startup error naming the type (`Program.cs`), so the original plan here — no factory, because queries are authored in text editors — could not boot a host at all; the gate caught it as 488 failing integration tests. `SparqlDocumentFactory` therefore supplies the starter text of a **new** file only. **The read-only position is untouched by this**, because `IDiagramDocumentFactory` cannot reach an existing document: its one method takes a base name and returns the text of a file that does not exist yet. All three no-writer layers stand — the module still registers no writer, still refuses every edit, and still cannot rewrite a query somebody authored. (Corrected 2026-09-03.)
 - **Context channel** — one resolver and one property provider, registered like every module's; the action provider offers no mutating actions and no toolbox provider is registered at all (part of the no-writer proof below).
 - **History** — repositions ride the core layout command through `IHistoryStackStore`; nothing else enters history because nothing else mutates.
 
@@ -134,7 +134,7 @@ message SparqlTruncationPayload { int32 shown = 1; int32 total = 2; }
 
 - The gRPC flow: open a registered `.rq`, stream nodes/regions/header, reposition a variable and a region into the `.adp` with the body byte-identical, undo restoring the `.adp` bytes; a bare `.rq` routing on sight and refusing repositions with the reason.
 - The behavioural no-writer sweep (above) on a vendored example.
-- Examples joining `ExampleRegistrationTests` and `ExampleReplicationTests` by existing; a module test walks the vendored folders asserting license text and provenance readme presence.
+- Examples joining `ExampleRegistrationTests` by existing; a module test walks the vendored folders asserting license text and provenance readme presence.
 
 ### End-to-End Testing
 

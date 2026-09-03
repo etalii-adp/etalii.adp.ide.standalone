@@ -120,16 +120,19 @@ public class OwlValidatorTests
     }
 
     [Fact]
-    public async Task AnUnparseableFile_LeavesTheFindingToTheFamilyValidator()
+    public async Task AnUnparseableFile_CarriesTheFamilyFindingExactlyOnce()
     {
         // Arrange: nothing the parser can read.
         var validator = new OwlValidator(new DiagramOrigin("w3c", "owl"));
 
         // Act.
-        var problems = await validator.ValidateAsync(new DiagramValidationRequest("not turtle at all {{{", "broken.ttl", "", "", null), TestContext.Current.CancellationToken);
+        var problems = await validator.ValidateAsync(
+            new DiagramValidationRequest("not turtle at all {{{", "broken.ttl", "", "", null),
+            TestContext.Current.CancellationToken);
 
-        // Assert: empty - the anchor's validator beside this one reports the parse failure once
-        // (Requirement 5.5: nothing of the anchor's restated).
-        Assert.Empty(problems);
+        // Assert: the one finding is the family's unparseable rule, delegated rather than
+        // restated (Requirement 5.5) - and this reading adds nothing on top of a broken file.
+        var problem = Assert.Single(problems);
+        Assert.Equal(RdfValidator.UnparseableRuleId, problem.RuleId);
     }
 }

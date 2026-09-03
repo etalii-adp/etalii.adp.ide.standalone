@@ -30,7 +30,7 @@ The one seam intersection the requirements flagged — the core `layout:` block 
 - **`ProblemStamp` (core)** — folder-attributed findings (the not-a-chart finding, R10.1) stay fresh because staleness stamps folders as well as files; built during the Ansible work precisely because any future folder-blaming rule would need it. This is that future rule.
 - **Central canvas library** (`src/client/src/canvas/`) — `BoxElement` for nodes, the shared straight/bezier connections with arrowheads for edges, `elementSelectionOf`/`useElementContextMenu` for interaction plumbing.
 - **YamlDotNet 18.1.0** — already in the tree (the Ansible module introduced it); same package, same representation-model usage for line marks.
-- **`ExampleReplicationTests` (existing, central)** — guards the module↔showcase example copies generically; no second guard is built (R11.1).
+- **`ExampleRegistrationTests` (existing, central)** — walks both the module's own `examples/` tree and `src/examples/`, opening every registration against the deployed catalog; no second guard is built (R11.1). It replaces `ExampleReplicationTests`, which byte-compared the two trees and was deleted on 2026-09-03 when they were deliberately disconnected — the showcase copy is still seeded, it is simply no longer held byte-identical.
 
 ### Integration Points
 
@@ -151,7 +151,7 @@ Element ids are stable, content-derived (`dep:<effective-name>`, `tpl:<relative-
 - The gRPC flow against the real host: open a fixture chart end-to-end, baseline observed, a disk change producing a delta.
 - Validation flow: findings surface with project-relative paths at the right files and lines; folder findings render fresh.
 - Layout persistence: move an element through the session, `.adp` gains the entry, reopen overlays it, undo removes it — chart bytes untouched throughout.
-- The shipped examples resolve, open and validate clean; `ExampleReplicationTests` covers module↔showcase byte-identity by construction.
+- The shipped examples resolve, open and validate clean; `ExampleRegistrationTests` covers both trees by opening every registration in each. Module↔showcase byte-identity is no longer asserted anywhere, its guard having been deleted with the disconnection of the two trees.
 
 ### End-to-End Testing
 

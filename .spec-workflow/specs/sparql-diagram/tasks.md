@@ -1,5 +1,16 @@
 # Tasks Document
 
+> **Correction, 2026-09-03: `ExampleReplicationTests` no longer exists.** It byte-compared each
+> module's `examples/` tree against its `src/examples/` replica, and was deleted when the two
+> trees were deliberately disconnected. Wherever a task below names it — as a guard, a
+> verification step or a `_Leverage` — or requires the showcase copy to be **byte-identical**, read it as follows: **seeding the showcase copy remains a
+> step of that task**, it is simply no longer held byte-identical, and the guard that covers both
+> trees now is `ExampleRegistrationTests`, which opens every registration in each against the
+> deployed catalog. The task wording is otherwise left exactly as written, deliberately: several
+> of these tasks are in flight, and rewording a criterion under the agent working it would be
+> worse than a stale sentence.
+
+
 One worktree for the whole spec (`.claude/worktrees/sparql`, short per the MAX_PATH/apphost trap; CLAUDE.md's one-worktree-per-specification rule). Each group ends in a gate-and-merge task with all four gates judged by exit code, codes captured before any pipe.
 
 **Seams this spec deliberately does not depend on.** The `rdf-diagram` tasks name three sibling seams; this document depends on **none of them**, and says so rather than leaving a reader to notice the absence: not task 1.1's triplestore document store and `RdfModel` (a query is not a serialization of a graph — this module has its own parser and model), not task 2.1's triple writer and splice discipline (nothing here writes the body; the no-writer proof in task 5.2 is the guarantee), and not task 3.2's registration header helper (the requirements claim no item-10 header — a `.rq` needs no reading-specific configuration). What this spec consumes arrives through core alone: the central canvas library and family visual conventions, the core `layout:` block, and the example vendoring discipline. Nothing in `src/diagrams/sparql/` may reference `src/diagrams/rdf/`.
@@ -49,33 +60,33 @@ One worktree for the whole spec (`.claude/worktrees/sparql`, short per the MAX_P
   - _Requirements: 2.1, 2.2, 2.3, 1.5, 5.1, 5.3, 5.4, 6.3_
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the module session shape | Task: Implement the w3c/sparql definition with .rq routing on sight, the session rendering projection plus the RegistrationLayout overlay, MoveElementToAsync through the core layout command with the design's acceptance and refusal table, the external-change reloader, and the stated absence of a document factory | Restrictions: repositioning is the only mutation and lands only in the .adp; every refusal names its reason where the user is looking; no reference to src/diagrams/rdf | _Leverage: an existing module's session factory shape; RegistrationLayout and the core layout command | Success: a registered .rq opens with computed layout and stored positions overlaid; a bare .rq routes on sight and refuses repositions naming the missing registration; each refusal case is tested with its sentence. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3.2 Providers and validator: read-only with reasons, no mutating surface
+- [x] 3.2 Providers and validator: read-only with reasons, no mutating surface
   - Files: `SparqlContextSourceResolver.cs`, `SparqlContextPropertyProvider.cs`, `SparqlContextActionProvider.cs` (no mutating actions), `SparqlValidator.cs` + tests — **no toolbox provider file exists in the module**
   - Property rows per Requirement 6.2 (variable: name, projected, join count, defining expression; term: full and prefixed/lexical forms; region: kind and constraint text; header selection: form and modifiers), every row read-only with the reason naming the text editor; the validator's three findings (unparseable once with line; projected-but-never-used warned; unused prefix declaration as info). The third no-writer layer lands here: the registration test asserting no toolbox entries and no action carrying a mutation marker
   - _Requirements: 6.1, 6.2, 7.1, 7.2, 7.3_
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the context providers | Task: Implement the resolver, the read-only property provider with every row carrying its reason, the action provider yielding no mutating actions, and the validator's three findings, plus the registration-layer no-writer test asserting no toolbox entries and no mutating action can reach the client | Restrictions: read-only reasons are enforced per the property-grid contract, not decorative; the validator does no execution, no network, no endpoint contact; register no toolbox provider at all | _Leverage: the property-grid contract and an existing module's provider registration shape; the model from 1.1 | Success: provider tests pass per selection kind with reasons asserted; each finding reports on its fixture with file and line; the registration test fails if a toolbox entry or mutating action appears. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.3 Gate and merge group 3
+- [x] 3.3 Gate and merge group 3
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 3 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 - [ ] 4. Client: the query canvas
   - _Requirements: 3.1-3.7, 4.2, 6.1, 6.3_
 
-- [ ] 4.1 SparqlCanvas from the central library
+- [x] 4.1 SparqlCanvas from the central library
   - Files: `src/diagrams/sparql/client/` — `SparqlCanvas.tsx`, model and stream hooks, `register.ts` (importing the shared `canvas.css`), `sparql.css` (module-own rules only), `package.json` + tests
   - Composed from `src/client/src/canvas/`: dashed-outline variable nodes with the projection mark, solid IRI nodes with prefixed display, literal rectangles with annotation, `StraightConnection` edges labeled with predicate or as-written path, labeled containment frames for regions (the library's boundary element where it offers one, a module-styled frame otherwise), `FILTER`/`BIND`/`VALUES` badges anchored to their targets, the header band, `CanvasScrollbars`, drag repositioning for accepted ids only, the truncation banner per precedent; payload decode type-checked before `fromBinary`
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 4.2, 6.1, 6.3_
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/SVG developer familiar with the central canvas library | Task: Implement SparqlCanvas per Requirements 3 and 4 composed from the central library - variable/term/literal node styling, region frames, annotation badges, the header band, edges with as-written labels, scrollbars, drag repositioning for accepted ids, the truncation banner - with jsdom tests over mocked streams covering node styling by kind, the projection mark, region nesting, badges, the header, and that drag lands as a layout command | Restrictions: draw through the central components and shared classes; no gesture may exist that would write the .rq - the backend offers none and the client invents none; only genuinely module-own rules in sparql.css | _Leverage: src/client/src/canvas/ throughout; an existing module canvas and its tests as the composition reference | Success: canvas tests pass; all node kinds, regions, badges, header and banner verified; repositions land as layout commands only. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.2 Gate and merge group 4
+- [x] 4.2 Gate and merge group 4
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 4 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 - [ ] 5. Examples, the no-writer proof, catalog and manual checks
   - _Requirements: 8.1-8.5, 1.4, 6.1-6.3_
 
-- [ ] 5.1 Vendored examples under the licensing discipline
+- [-] 5.1 Vendored examples under the licensing discipline
   - Files: `src/diagrams/sparql/examples/` — the W3C SPARQL 1.1 recommendation's example queries (W3C Software and Document License) and SIB/UniProt example queries (CC BY 4.0, attribution carried); each beside its routing `.adp`; upstream license text travelling with the files; a provenance readme per source (URL, version or retrieval date, verified license, exact local changes); unmodified content unmodified; the Requirement 8.3 coverage set (each query form; one `OPTIONAL`+`UNION`+`FILTER` query; one property path; one subquery or aggregate); byte-identical copies at `src/examples/diagrams/sparql/` joining `ExampleReplicationTests` by existing; the Wikidata wiki-page candidate stays rejected (CC BY-SA) unless re-verified otherwise at acquisition
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer acting as a careful librarian | Task: Vendor the example queries per Requirement 8 - verify each source's license individually at acquisition, carry license text and per-source provenance readmes, keep unmodified content unmodified, cover the 8.3 construct set, register each with an .adp, and replicate byte-identically to src/examples/diagrams/sparql | Restrictions: no example ships whose license was not individually verified; CC BY attribution must actually be carried; share-alike licenses are rejected; a module test walks the folders asserting license and readme presence | _Leverage: the rdf-diagram examples' provenance readme shape; ExampleRegistrationTests and ExampleReplicationTests join by existing | Success: every example opens from the explorer resolving in the deployed catalog with zero findings above info; the licensing walk test passes; replication is byte-identical. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._

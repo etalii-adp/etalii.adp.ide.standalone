@@ -9,6 +9,11 @@ namespace EtAlii.Adp.Diagram.Sparql.Tests;
 /// test fails when a write-shaped member merely exists - before it is ever called. The second
 /// layer (the behavioural byte-snapshot sweep) and the third (no toolbox, no mutating actions)
 /// land with the integration tests and providers respectively.
+/// <para>
+/// <see cref="SparqlDocumentFactory"/> is deliberately not caught by any of this, and the
+/// distinction is the whole point: it hands core the text of a file being created, and nothing
+/// in this module can rewrite a query that already exists.
+/// </para>
 /// </summary>
 public class NoWriterSurfaceTests
 {

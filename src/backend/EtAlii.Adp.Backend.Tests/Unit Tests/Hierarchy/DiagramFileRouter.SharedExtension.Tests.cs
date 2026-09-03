@@ -107,4 +107,28 @@ public class DiagramFileRouterSharedExtensionTests : IDisposable
         Assert.True(distinctive);
         Assert.False(noSibling);
     }
+
+    [Fact]
+    public void AFamilysSharedReadings_NeverWinTheBareBodyFromTheAnchor()
+    {
+        // Arrange: one vendor's family where the anchor claims the extension and its alternative
+        // readings share it - the rdf/owl/skos shape. The catalog is ordered by origin, so a
+        // reading whose type sorts before the anchor's would win on order alone; declaring the
+        // extension shared is exactly the statement that it must not.
+        var anchor = new DiagramDefinition(new DiagramOrigin("w3c", "rdf"), "RDF Graph", Extension: ".ttl", AlternateExtension: ".nt");
+        var reading = new DiagramDefinition(
+            new DiagramOrigin("w3c", "owl"), "OWL Ontology", Extension: ".ttl", AlternateExtension: ".nt", SharedExtension: true);
+        var body = Write("graph.ttl", "@prefix ex: <http://example.org/> .\nex:a ex:knows ex:b .\n");
+
+        // Act: the reading first in catalog order, as the real catalog sorts it.
+        var routed = Assert.IsType<DiagramRouted>(Router(reading, anchor).Route(body));
+
+        // Assert: the anchor opens the bare file, whichever order the catalog holds them in.
+        Assert.Equal(anchor.Origin, routed.Definition.Origin);
+        Assert.Equal(anchor.Origin, Assert.IsType<DiagramRouted>(Router(anchor, reading).Route(body)).Definition.Origin);
+
+        // And the alternate extension follows the same rule.
+        var alternate = Write("graph.nt", "<http://example.org/a> <http://example.org/knows> <http://example.org/b> .\n");
+        Assert.Equal(anchor.Origin, Assert.IsType<DiagramRouted>(Router(reading, anchor).Route(alternate)).Definition.Origin);
+    }
 }

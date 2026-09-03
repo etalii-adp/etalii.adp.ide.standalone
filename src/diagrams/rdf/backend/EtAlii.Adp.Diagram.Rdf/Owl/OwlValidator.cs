@@ -5,13 +5,17 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// <summary>
 /// Judges a document read as an ontology (owl-diagram Requirement 5): structural facts about the
 /// asserted OWL, no inference, no network. The anchor's file-level rules (parse failures, prefix
-/// redeclarations, datatype and language-tag facts) are NOT restated here - the family registers
-/// the anchor's validator beside this one for the ontology origin, so they arrive from the shared
-/// engine (Requirement 5.5).
+/// redeclarations, datatype and language-tag facts) are NOT restated here - core allows one
+/// validator per origin, so this one delegates to the family's <see cref="RdfValidator"/> and
+/// appends its own findings, the shared rules still living in exactly one place
+/// (Requirement 5.5).
 /// </summary>
 public sealed class OwlValidator(DiagramOrigin origin) : IDiagramValidator
 {
     private static readonly ILogger _logger = Log.ForContext<OwlValidator>();
+
+    /// <summary>The family's file-level rules, judged once here for this origin.</summary>
+    private readonly RdfValidator _family = new(origin);
 
     /// <summary>The rule reported when classes assert each other as subclasses in a cycle.</summary>
     public const string SubclassCycleRuleId = "owl.subclass-cycle";
@@ -32,26 +36,30 @@ public sealed class OwlValidator(DiagramOrigin origin) : IDiagramValidator
     public DiagramOrigin Origin { get; } = origin;
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
+    public async ValueTask<IReadOnlyList<DiagramProblem>> ValidateAsync(
         DiagramValidationRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
+        var familyProblems = await _family.ValidateAsync(request, cancellationToken);
+
         RdfModel model;
         try
         {
+            // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+            // Reason: Can still be null if the document is empty.
             model = RdfParser.Parse(RdfDocument.Parse(request.Document ?? ""));
         }
         catch (RdfParseException exception)
         {
-            // The anchor's validator, registered beside this one, reports the parse failure;
-            // reporting it twice would say less, not more.
-            _logger.Debug(exception, "{BaseName} does not parse; leaving the finding to the family validator", request.BaseName);
-            return ValueTask.FromResult<IReadOnlyList<DiagramProblem>>([]);
+            // The family judgment already carries the parse failure; reporting it twice would
+            // say less, not more.
+            _logger.Debug(exception, "{BaseName} does not parse; the family finding stands alone", request.BaseName);
+            return familyProblems;
         }
 
-        return ValueTask.FromResult(Judge(model));
+        return [.. familyProblems, .. Judge(model)];
     }
 
     /// <summary>The Requirement 5 findings over a parsed model - a pure function, tested as one.</summary>

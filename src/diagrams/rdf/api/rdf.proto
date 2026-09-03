@@ -65,3 +65,68 @@ message RdfTruncationPayload {
   int32 shown = 1;
   int32 total = 2;
 }
+
+// ---------------------------------------------------------------------------------------------
+// The ontology reading's payloads (owl-diagram design, Data Models). Same family, same file:
+// the w3c/owl definition packs these into the same Element/Delta shapes.
+
+// One drawn ontology element that is not an expression (owl-diagram Requirement 1).
+message OwlNodePayload {
+  // What the node draws as: class | datatype | individual | thing | ontology | operator |
+  // restriction - the canvas styles by this, shape first, color second.
+  string kind = 1;
+
+  // The full IRI; empty for expression nodes and materialized Thing/Literal anchors.
+  string iri = 2;
+
+  // The label: rdfs:label preferred, prefixed name as fallback (Requirement 1.4).
+  string display = 3;
+
+  // Type badges on an individual card; empty elsewhere.
+  repeated string badges = 4;
+
+  // Annotation and literal-assertion rows - the family card convention reused.
+  repeated RdfLiteralRow rows = 5;
+
+  // Drawn dimmed: owl:deprecated true (Requirement 1.6).
+  bool deprecated = 6;
+
+  // Drawn dimmed: used here, declared nowhere in this file (Requirement 1.6).
+  bool external = 7;
+}
+
+// One drawn axiom or assertion (owl-diagram Requirement 2).
+message OwlEdgePayload {
+  // subclass | equivalent | disjoint | object-property | datatype-property | assertion |
+  // expression - what the canvas styles the line by.
+  string kind = 1;
+
+  string from_element_id = 2;
+  string to_element_id = 3;
+
+  // A property's display with its characteristic words folded in; empty for pure axiom edges.
+  string label = 4;
+
+  // The property's full IRI for property and assertion edges; the axiom predicate's otherwise.
+  string property_iri = 5;
+}
+
+// One class-expression node - blank-node-rooted, structural-id-addressed, canvas-read-only
+// (owl-diagram Requirement 3).
+message OwlExpressionPayload {
+  // The Manchester-style label, depth-capped at two expression levels.
+  string label = 1;
+
+  // True when deeper structure was cut to the visible ellipsis; the full text is one selection
+  // away in the property grid (Requirement 3.4).
+  bool elided = 2;
+
+  // True for a structurally broken expression - drawn as a marked problem node (Requirement 3.5).
+  bool malformed = 3;
+
+  // The element id of the named class whose axiom attaches this expression.
+  string owner_element_id = 4;
+
+  // restriction | operator - the compact shape the canvas draws.
+  string kind = 5;
+}

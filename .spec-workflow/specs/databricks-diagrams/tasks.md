@@ -1,5 +1,16 @@
 # Tasks Document
 
+> **Correction, 2026-09-03: `ExampleReplicationTests` no longer exists.** It byte-compared each
+> module's `examples/` tree against its `src/examples/` replica, and was deleted when the two
+> trees were deliberately disconnected. Wherever a task below names it — as a guard, a
+> verification step or a `_Leverage` — or requires the showcase copy to be **byte-identical**, read it as follows: **seeding the showcase copy remains a
+> step of that task**, it is simply no longer held byte-identical, and the guard that covers both
+> trees now is `ExampleRegistrationTests`, which opens every registration in each against the
+> deployed catalog. The task wording is otherwise left exactly as written, deliberately: several
+> of these tasks are in flight, and rewording a criterion under the agent working it would be
+> worse than a stale sentence.
+
+
 One worktree for the whole spec (`.claude/worktrees/dbx`, per CLAUDE.md's one-worktree-per-specification rule). Each group ends in a gate-and-merge task judged by exit code, so `develop` grows the family a working layer at a time and the worktree never drifts far from it.
 
 - [x] 1. Core: the `.adp` layout block
