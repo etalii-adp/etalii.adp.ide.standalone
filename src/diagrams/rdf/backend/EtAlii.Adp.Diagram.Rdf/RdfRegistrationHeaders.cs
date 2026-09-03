@@ -34,7 +34,11 @@ public static class RdfRegistrationHeaders
         var header = key + ":";
         try
         {
-            using var reader = new StreamReader(registrationPath);
+            // Shared, per the repository's shared-read discipline: a rename rewrites .adp
+            // headers in place, and a default-share reader would refuse - and be refused by -
+            // that write on Windows. (Changed under the family coordination ruling of
+            // 2026-09-03, alongside the skos-diagram group 2 work.)
+            using var reader = EtAlii.Adp.Backend.Hierarchy.SharedDocumentReader.OpenText(registrationPath);
             reader.ReadLine(); // the MIME line
             for (var scanned = 0; scanned < HeaderScanLimit; scanned++)
             {

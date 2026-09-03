@@ -51,7 +51,7 @@ public class RdfSessionTests : IDisposable
 
     private IDiagramSession Open(string bodyPath, string? registrationPath)
     {
-        var factory = _provider.GetServices<IDiagramSessionFactory>().Single();
+        var factory = _provider.GetServices<IDiagramSessionFactory>().Single(candidate => candidate.Origin == ServiceCollectionAddRdfExtension.RdfOrigin);
         return factory.Open(ShortGuid.NewShortGuid(), _root, bodyPath, registrationPath);
     }
 
