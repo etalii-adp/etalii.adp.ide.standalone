@@ -59,6 +59,11 @@
 *.dsl   -text
 *.tml   -text
 *.dgr   -text
+# `.ttl` and `.nt` belong to the RDF family, whose round-trip requirement byte-compares them -
+# and unlike `.yml`, these extensions mean Turtle and N-Triples everywhere in the tree, so the
+# by-extension rule applies exactly as written above: the guarantee follows the format.
+*.ttl   -text
+*.nt    -text
 
 # `.yml` is deliberately NOT marked repo-wide, however byte-sensitive the Azure Pipelines module's
 # fixtures are: it is far too common an extension, and a blanket rule would catch every workflow,
