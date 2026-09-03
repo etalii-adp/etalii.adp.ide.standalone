@@ -16,17 +16,7 @@ import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { ContextSelectionAction } from "@client/generated/context_pb";
 import { useSkosStream } from "./useSkosStream";
-import {
-  ALTERNATE,
-  HIERARCHY,
-  IRI_FALLBACK,
-  MAPPING,
-  type SkosCollection,
-  type SkosConcept,
-  type SkosEdge,
-  type SkosModel,
-  type SkosScheme,
-} from "./skosModel";
+import { ALTERNATE, HIERARCHY, IRI_FALLBACK, MAPPING, type SkosEdge, type SkosModel } from "./skosModel";
 
 /** A concept's drawn width, in the module's own canvas units - matching the layout's spacing. */
 export const CONCEPT_WIDTH = 200;
