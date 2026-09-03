@@ -8,10 +8,10 @@ One worktree for the whole spec: `.claude/worktrees/ansible-ref` — deliberatel
 
 **Pattern citation, not re-derivation.** The layout mechanism has four shipped consumers (databricks built it, helm shipped it, rdf uses it, the core command underpins them). Helm's implementation proved the full cycle live: a drag lands in the registration, undo restores it, and the subject's own files stay byte-identical, with dragged and computed positions sharing one render path because the registration lives inside the watched folder. Ansible has exactly that shape. Cite it; do not re-verify it.
 
-- [-] 1. The theme token, completed centrally
+- [x] 1. The theme token, completed centrally
   - _Requirements: 5.1, 5.6_
 
-- [-] 1.1 Define `--color-surface-raised` for both themes
+- [x] 1.1 Define `--color-surface-raised` for both themes
   - Files: `src/client/src/index.css` (two definitions, light and dark); `src/diagrams/ansible-structure/client/ansible-structure.css` (drop the literal fallbacks now the tokens resolve)
   - The token is referenced 14 times across four files — `index.css` itself once, ansible eight, helm-charts three, wardley-map twice — and defined nowhere, so every rule using it currently falls back silently. **The commit message must say that defining it changes the rendered shade of the helm-charts and wardley-map canvases too**: a reviewer seeing unrelated diagrams shift deserves the reason in the history rather than in a chat. Dark adopts the value `index.css` already uses as its own fallback (`rgb(255 255 255 / 0.06)`); light takes the mirror-image faint dark tint, starting from ansible's `rgb(0 0 0 / 6%)` fallback and checked against a real light-mode canvas.
   - _Requirements: 5.1, 5.6_
