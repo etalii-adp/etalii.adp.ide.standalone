@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/helm-charts/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-03T11:27:09.714Z",
       "trigger": "initial",
+      "approvalId": "approval_1788434829569_zjindnaqg",
+      "approvalTitle": "helm-charts design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-03T11:29:11.757Z",
+      "trigger": "approved",
       "approvalId": "approval_1788434829569_zjindnaqg",
       "approvalTitle": "helm-charts design"
     }
