@@ -23,11 +23,29 @@ import {
   useContextSelection,
 } from "../context/ContextConnectionProvider";
 
-/** The rows the current severity filter leaves visible. Exported for unit testing. */
-export function visibleProblems(problems: Problem[], showErrors: boolean, showWarnings: boolean): Problem[] {
-  return problems.filter((problem) =>
-    problem.severity === ProblemSeverity.ERROR ? showErrors : showWarnings,
-  );
+/**
+ * The rows the current severity filter leaves visible. Exported for unit testing.
+ *
+ * One arm per severity rather than the two-way ternary this replaced: that one sent
+ * everything which was not an error down the warnings arm, so an informational row would have
+ * appeared and disappeared with the warnings toggle while claiming to be its own level.
+ */
+export function visibleProblems(
+  problems: Problem[],
+  showErrors: boolean,
+  showWarnings: boolean,
+  showInfos: boolean,
+): Problem[] {
+  return problems.filter((problem) => {
+    switch (problem.severity) {
+      case ProblemSeverity.ERROR:
+        return showErrors;
+      case ProblemSeverity.INFO:
+        return showInfos;
+      default:
+        return showWarnings;
+    }
+  });
 }
 
 /**
@@ -101,6 +119,12 @@ export function ErrorsWarningsPanel() {
 
   const [showErrors, setShowErrors] = useState(true);
   const [showWarnings, setShowWarnings] = useState(true);
+  // Off by default, and that is the design rather than an oversight: informational findings
+  // are the level a healthy file is expected to carry ("zero findings above info level" is
+  // how several specs measure their own examples), so showing them by default would bury the
+  // warnings this panel exists to surface. The chip still shows the count, so nothing is
+  // hidden - it says how many there are and waits to be asked.
+  const [showInfos, setShowInfos] = useState(false);
   const [focusedKey, setFocusedKey] = useState<string | undefined>();
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
   const menuPendingRef = useRef<{ x: number; y: number } | null>(null);
@@ -116,7 +140,7 @@ export function ErrorsWarningsPanel() {
   const panelActions = selectionKey === "problems" ? actions : [];
 
   const list = problems?.problems ?? [];
-  const rows = visibleProblems(list, showErrors, showWarnings);
+  const rows = visibleProblems(list, showErrors, showWarnings, showInfos);
   const state = problems?.state ?? ProblemSetState.NEVER_VALIDATED;
 
   /** Focus arriving from outside the panel is the moment it becomes the selection. */
@@ -274,7 +298,9 @@ export function ErrorsWarningsPanel() {
   const tabbableKey = focusedKey !== undefined && keys.includes(focusedKey) ? focusedKey : keys[0];
 
   const truncated = problems !== undefined && problems !== null && problems.truncatedAt > 0
-    ? Number(problems.errorCount) + Number(problems.warningCount) - list.length
+    // Every level counts toward what was cut, informational included: leaving it out would
+    // under-report how many rows the truncation actually withheld.
+    ? Number(problems.errorCount) + Number(problems.warningCount) + Number(problems.infoCount) - list.length
     : 0;
 
   return (
@@ -300,6 +326,16 @@ export function ErrorsWarningsPanel() {
         >
           <span className="mdi mdi-alert-outline problems-icon-warning" aria-hidden="true" />
           <span className="problems-count">{Number(problems?.warningCount ?? 0)}</span>
+        </button>
+        <button
+          type="button"
+          className={`problems-filter${showInfos ? " problems-filter-on" : ""}`}
+          aria-pressed={showInfos}
+          title={showInfos ? "Hide information" : "Show information"}
+          onClick={() => setShowInfos((previous) => !previous)}
+        >
+          <span className="mdi mdi-information-outline problems-icon-info" aria-hidden="true" />
+          <span className="problems-count">{Number(problems?.infoCount ?? 0)}</span>
         </button>
         {state === ProblemSetState.VALIDATING && (
           <span className="problems-validating">

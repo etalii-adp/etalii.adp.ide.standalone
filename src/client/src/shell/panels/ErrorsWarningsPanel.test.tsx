@@ -108,9 +108,28 @@ describe("visibleProblems", () => {
     const warning = problem({ severity: ProblemSeverity.WARNING, ruleId: "mindmap.unnamed-root" });
 
     // Assert.
-    expect(visibleProblems([error, warning], true, true)).toEqual([error, warning]);
-    expect(visibleProblems([error, warning], true, false)).toEqual([error]);
-    expect(visibleProblems([error, warning], false, true)).toEqual([warning]);
+    expect(visibleProblems([error, warning], true, true, false)).toEqual([error, warning]);
+    expect(visibleProblems([error, warning], true, false, false)).toEqual([error]);
+    expect(visibleProblems([error, warning], false, true, false)).toEqual([warning]);
+  });
+
+  it("gives informational rows their own toggle rather than the warnings one", () => {
+    // Arrange.
+    // The guard for this level's real failure mode: the two-way ternary this replaced sent
+    // everything which was not an error down the warnings arm, so an info would have
+    // appeared and disappeared with the warnings chip while claiming to be its own level.
+    const error = problem();
+    const warning = problem({ severity: ProblemSeverity.WARNING, ruleId: "mindmap.unnamed-root" });
+    const info = problem({ severity: ProblemSeverity.INFO, ruleId: "shacl.described-elsewhere" });
+
+    // Assert.
+    // Hidden by default - the panel opens with infos off, so the default view is unchanged.
+    expect(visibleProblems([error, warning, info], true, true, false)).toEqual([error, warning]);
+    // Shown when asked for, and only then.
+    expect(visibleProblems([error, warning, info], true, true, true)).toEqual([error, warning, info]);
+    // Its own toggle: warnings off must not take the info with it, and vice versa.
+    expect(visibleProblems([error, warning, info], false, false, true)).toEqual([info]);
+    expect(visibleProblems([error, warning, info], false, true, false)).toEqual([warning]);
   });
 });
 
@@ -161,9 +180,10 @@ describe("ErrorsWarningsPanel", () => {
     // Assert.
     // The warning row is gone...
     expect(screen.queryByText("A warning.")).toBeNull();
-    // ...but both counts still say what the whole set holds (Requirement 1.8).
+    // ...but every count still says what the whole set holds (Requirement 1.8), across all
+    // three chips - the informational one reads 0 here because this set carries none.
     const buttons = screen.getAllByRole("button");
-    expect(buttons.map((button) => button.textContent)).toEqual(["1", "1"]);
+    expect(buttons.map((button) => button.textContent)).toEqual(["1", "1", "0"]);
   });
 
   it("says 'not checked yet' and 'no problems found' differently", () => {

@@ -73,7 +73,10 @@ public sealed class ProblemStore : IProblemStore, IDisposable
                 withStaleness,
                 ErrorCount: entry.Problems.Count(problem => problem.Problem.Severity == DiagramProblemSeverity.Error),
                 WarningCount: entry.Problems.Count(problem => problem.Problem.Severity == DiagramProblemSeverity.Warning),
-                TruncatedAt: entry.Problems.Count > _maxReported ? _maxReported : 0);
+                TruncatedAt: entry.Problems.Count > _maxReported ? _maxReported : 0,
+                // Counted apart from the warnings, never added to them: an informational note
+                // must not make a clean file report as having something wrong.
+                InfoCount: entry.Problems.Count(problem => problem.Problem.Severity == DiagramProblemSeverity.Info));
         }
     }
 
