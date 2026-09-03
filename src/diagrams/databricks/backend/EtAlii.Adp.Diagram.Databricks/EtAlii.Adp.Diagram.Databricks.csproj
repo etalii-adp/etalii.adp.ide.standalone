@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+    <!--
+      Core abstractions only. The dependency runs module -> core and never back: core must
+      compile and test with this module absent. The one piece of core this family leans on -
+      RegistrationLayout and its command - lives in core because the .adp format is core's,
+      not because this module asked for a hook.
+    -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Reading only, for all three formats: JSON is a subset of YAML 1.2, so the pipeline
+      settings .json comes through the same door as the two YAML documents. Nothing is ever
+      serialised back through it - every write is a splice through DatabricksDocument.
+    -->
+    <PackageReference Include="YamlDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="EtAlii.Adp.Diagram.Databricks.Tests" />
+  </ItemGroup>
+
+</Project>
