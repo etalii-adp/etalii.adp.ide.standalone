@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/shacl-diagram/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-03T11:14:01.613Z",
       "trigger": "initial",
+      "approvalId": "approval_1788434041418_nreru8ixj",
+      "approvalTitle": "Requirements: shacl-diagram"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-03T11:29:06.283Z",
+      "trigger": "approved",
       "approvalId": "approval_1788434041418_nreru8ixj",
       "approvalTitle": "Requirements: shacl-diagram"
     }
