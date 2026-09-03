@@ -36,13 +36,13 @@ One worktree for the whole spec (`.claude/worktrees/dbx`, per CLAUDE.md's one-wo
   - _Requirements: 2.2, 6.4, 11.4_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the three writers as named splice operations per design, including rename-with-references as one operation and up-front schema refusals, with smallest-diff tests per operation and refusal tests | Restrictions: only the lines an edit concerns change; refusals happen before any splice, never write-then-repair | _Leverage: the store and models from 2.1; TimelineWriter's splice shape | Success: every operation's diff is minimal in tests; rename strands no reference; invalid writes are refused with actionable sentences. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2.3 Validator
+- [x] 2.3 Validator
   - Files: `DatabricksValidator.cs` + tests
   - The Requirement 12.1 findings with file and line, through the standard problems pipeline; nothing workspace-dependent
   - _Requirements: 12.1, 12.2, 12.3_
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Implement the family validator per Requirement 12 - parse failures, missing task keys, cycles, default-target count, overrides of undeclared resources, dangling cluster keys, empty libraries, schema-without-catalog, duplicate keys - each with file and line and an actionable sentence, registered like the azure-pipeline validator | Restrictions: no workspace lookups; line numbers from the models' ranges | _Leverage: the azure-pipeline validator's registration shape; models from 2.1 | Success: fixture files exercising each finding report correctly; clean files report nothing. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.4 Gate and merge group 2
+- [-] 2.4 Gate and merge group 2
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec databricks-diagrams, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 2 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
