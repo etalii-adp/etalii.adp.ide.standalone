@@ -20,12 +20,12 @@ One worktree for the whole spec (`.claude/worktrees/sparql`, short per the MAX_P
 - [ ] 2. Projection and layout: one variable, one node, containment held
   - _Requirements: 3.1-3.7, 4.1-4.5, 5.5, 7.5_
 
-- [-] 2.1 Wire payloads
+- [x] 2.1 Wire payloads
   - Files: `src/diagrams/sparql/api/sparql.proto` per the design's Data Models section (`SparqlVariablePayload`, `SparqlTermPayload`, `SparqlEdgePayload`, `SparqlRegionPayload`, `SparqlAnnotationPayload`, `SparqlHeaderPayload`, `SparqlTruncationPayload`); generation wired the way the sibling module protos are
   - _Requirements: 3.1, 3.4, 4.2_
   - _Prompt: Implement the task for spec sparql-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Backend developer familiar with the module proto setup | Task: Add sparql.proto with the payload messages from design.md's Data Models section and wire generation for backend and client exactly as sibling module protos are wired | Restrictions: payloads ride the existing Element/Delta as Any; no new services or streams | _Leverage: an existing module's api folder and wiring | Success: both sides generate and the payloads are usable from backend and client code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.2 Projection: variable identity through regions
+- [-] 2.2 Projection: variable identity through regions
   - Files: `SparqlProjection.cs` + tests
   - One node per variable name query-wide, subqueries excepted; one node per distinct concrete term form; anonymous variables per expansion ordinal; the placement rule — every node at the shallowest scope that references it, region edges reaching out — tested for a variable inside and outside `OPTIONAL`, across `UNION` branches (node at the union's parent, each branch reaching it), and under `MINUS`; subquery collapse to one node with a labeled edge per projected name; regions nested per the scope tree, each element claimed by exactly one region; annotations attached per Requirement 3.3; the header element; the 500-element sanity cut in document order with the truncation fact carried; element ids per the design's scheme, space-free, stable across reparses of an unchanged file
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 4.1, 4.2, 4.3, 4.4, 4.5, 5.2, 7.5_
