@@ -24,13 +24,13 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
 - [-] 2. Reading: tolerant YAML and the template scanner
   - _Requirements: 1.1, 1.2, 1.3, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3_
 
-- [-] 2.1 HelmYaml, the tolerant reader (replication of AnsibleYaml)
+- [x] 2.1 HelmYaml, the tolerant reader (replication of AnsibleYaml)
   - Files: `src/diagrams/helm-charts/backend/EtAlii.Adp.Diagram.HelmCharts/HelmYaml.cs` + `_Model/` result records; `EtAlii.Adp.Diagram.HelmCharts.Tests` project (Exe, xUnit v3) with its first tests; both projects added to `EtAlii.Adp.slnx`
   - YamlDotNet 18.1.0 representation model, line marks kept, the `(Line: n, Col: m): ` prefix stripped from error messages, never throws
   - _Requirements: 3.1, 3.5_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Create the module and test projects and implement HelmYaml as a tolerant never-throwing YAML reader with line marks, replicating AnsibleYaml's shape module-locally per the design's pattern-reuse note | Restrictions: module code depends on core only, never on the ansible module; test project is Exe per xUnit v3; use IoPath alias where EtAlii.Adp.Path shadows System.IO.Path | _Leverage: AnsibleYaml.cs and AnsibleYaml.Tests as the pattern to replicate | Success: parse, line-mark and unreadable-result tests pass; malformed YAML yields an error result, never an exception. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.2 TemplateScan **(new work)**
+- [-] 2.2 TemplateScan **(new work)**
   - Files: `TemplateScan.cs` + tests
   - The literal-fact line scanner: `kind:`/`apiVersion:` count only when the value carries no `{{`; `define`/`include`/`template` names count only as literal double-quoted strings; everything else is unknown by design; results sorted ordinally
   - _Requirements: 3.2, 4.2_
