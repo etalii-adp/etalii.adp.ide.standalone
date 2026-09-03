@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Hierarchy;
 using Serilog;
 using IoPath = System.IO.Path;
 
@@ -102,7 +103,7 @@ public sealed class PipelineTemplates
         PipelineDocument? document;
         try
         {
-            document = PipelineDocument.Parse(File.ReadAllText(path));
+            document = PipelineDocument.Parse(SharedDocumentReader.ReadAllText(path));
         }
         catch (IOException error)
         {

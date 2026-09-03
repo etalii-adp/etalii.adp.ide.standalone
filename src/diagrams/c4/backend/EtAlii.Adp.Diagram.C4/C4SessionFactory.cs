@@ -1,5 +1,6 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Diagrams;
+using EtAlii.Adp.Backend.Hierarchy;
 
 namespace EtAlii.Adp.Diagram.C4;
 
@@ -45,7 +46,7 @@ public sealed class C4SessionFactory : IDiagramSessionFactory
     {
         try
         {
-            using var reader = new StreamReader(registrationPath);
+            using var reader = SharedDocumentReader.OpenText(registrationPath);
             reader.ReadLine(); // the MIME line
             for (var scanned = 0; scanned < 8; scanned++)
             {

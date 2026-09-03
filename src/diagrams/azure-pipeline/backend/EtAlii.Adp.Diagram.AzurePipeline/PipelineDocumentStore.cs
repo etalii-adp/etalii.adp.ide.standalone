@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using EtAlii.Adp.Backend.Hierarchy;
 using Serilog;
 using YamlDotNet.Core;
 using IoPath = System.IO.Path;
@@ -121,7 +122,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
         {
             // A file that does not exist yet is an empty document, not an error: it may have been
             // registered a moment ago, and a diagram that cannot open at all is the worse answer.
-            text = File.Exists(path) ? File.ReadAllText(path) : "";
+            text = File.Exists(path) ? SharedDocumentReader.ReadAllText(path) : "";
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
