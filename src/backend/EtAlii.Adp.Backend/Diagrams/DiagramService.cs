@@ -1,4 +1,4 @@
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
 using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
@@ -55,6 +55,7 @@ public sealed partial class DiagramService : EtAlii.Adp.DiagramService.DiagramSe
         var watchId = (ShortGuid)request.WatchId;
         if (!TryResolveBody(request.ProjectId, request.Path, context, out _, out var bodyPath, out _, out _))
         {
+            _logger.Warning("Refused to move {ElementId} on watch {WatchId}: {Path} does not resolve to an open diagram", request.ElementId, watchId, string.Join('/', request.Path.Segments));
             return new MoveElementResponse { Error = "The diagram is not open." };
         }
 
@@ -64,6 +65,7 @@ public sealed partial class DiagramService : EtAlii.Adp.DiagramService.DiagramSe
         var session = _viewports.Find(watchId, bodyPath);
         if (session is null)
         {
+            _logger.Warning("Refused to move {ElementId} on {BodyPath}: watch {WatchId} has no open stream for it", request.ElementId, bodyPath, watchId);
             return new MoveElementResponse { Error = "The diagram is not open on this connection." };
         }
 
@@ -73,6 +75,20 @@ public sealed partial class DiagramService : EtAlii.Adp.DiagramService.DiagramSe
         var error = request.Position is { } position
             ? await session.MoveElementToAsync(request.ElementId, position.X, position.Y, context.CancellationToken)
             : await session.MoveElementAsync(request.ElementId, request.NewParentId, request.Index, context.CancellationToken);
+        if (error.Length > 0)
+        {
+            // The module said no; its reason otherwise reaches only the one client that asked.
+            _logger.Warning("The module refused the move of {ElementId} on {BodyPath}: {Reason}", request.ElementId, bodyPath, error);
+        }
+        else
+        {
+            _logger.Debug(
+                "Moved {ElementId} on {BodyPath} via {Gesture}",
+                request.ElementId,
+                bodyPath,
+                request.Position is null ? "re-parent" : "position");
+        }
+
         return new MoveElementResponse { Error = error };
     }
 
@@ -83,6 +99,7 @@ public sealed partial class DiagramService : EtAlii.Adp.DiagramService.DiagramSe
         {
             // Unresolvable is answered with an empty toolbox, the same non-revealing shape an
             // unauthorized DiscoverActions gets: the palette simply has nothing to offer.
+            _logger.Debug("Answering an empty toolbox for {Path}: it does not resolve to a diagram", string.Join('/', request.Path.Segments));
             return Task.FromResult(response);
         }
 
@@ -106,11 +123,38 @@ public sealed partial class DiagramService : EtAlii.Adp.DiagramService.DiagramSe
 
     private static void Apply(IDiagramSession session, DiagramViewport viewport, Channel<Delta> channel)
     {
-        foreach (var delta in session.UpdateView(viewport))
+        var deltas = session.UpdateView(viewport);
+        // What the new window cost: a module that streams by viewport answers with the elements
+        // that just came into view (and the ones that left), and this is where that shows.
+        // Silent at zero - a view update that changes nothing is the common case and would
+        // otherwise drown the log during a pan.
+        if (deltas.Count > 0)
+        {
+            _logger.Debug("The view update produced {DeltaCount} deltas: {DeltaKinds}", deltas.Count, KindsOf(deltas));
+        }
+
+        foreach (var delta in deltas)
         {
             channel.Writer.TryWrite(ToProto(delta));
         }
     }
+
+    /// <summary>
+    /// A batch of deltas as "kind×count" pairs - what was sent, without the payloads. Element
+    /// contents are deliberately not logged: a baseline can carry a whole document.
+    /// </summary>
+    private static string KindsOf(IReadOnlyList<DiagramDelta> deltas) =>
+        string.Join(", ", deltas
+            .GroupBy(delta => delta switch
+            {
+                DiagramAddDelta => "add",
+                DiagramRemoveDelta => "remove",
+                DiagramGroupDelta => "group",
+                DiagramUngroupDelta => "ungroup",
+                _ => delta.GetType().Name,
+            })
+            .OrderBy(group => group.Key, StringComparer.Ordinal)
+            .Select(group => $"{group.Key}×{group.Count()}"));
 
     /// <summary>
     /// The editor half of resolution, consulted only after the router said NotADiagram: the
@@ -187,6 +231,8 @@ public sealed partial class DiagramService : EtAlii.Adp.DiagramService.DiagramSe
     {
         if (!TryResolveTextFile(request.ProjectId, request.Path, context, out var rootPath, out var fullPath))
         {
+            // The content is deliberately not logged - only which file the save asked for.
+            _logger.Warning("Refused to save {Path}: it does not resolve inside the project any more", string.Join('/', request.Path.Segments));
             return new SaveTextResponse { Error = "The file no longer exists." };
         }
 
