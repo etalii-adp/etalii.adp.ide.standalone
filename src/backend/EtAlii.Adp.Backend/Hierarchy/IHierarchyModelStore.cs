@@ -17,4 +17,14 @@ public interface IHierarchyModelStore
 
     /// <summary>Disposes and removes a connection's model and watcher (if attached).</summary>
     void Remove(ShortGuid watchId);
+
+    /// <summary>
+    /// Applies a rename a command just performed on disk to every connection's model that
+    /// contains the moved entry - the deterministic, cross-platform source of a stable-id
+    /// rename, so the tree does not depend on the FileSystemWatcher agreeing about a move's
+    /// shape (which Linux and Windows do not: Windows reports one Renamed, Linux an uncorrelated
+    /// Delete and Create). The watcher's own later echo of the move is suppressed per model.
+    /// Called for forward, undo and redo alike, because all three run through the rename handler.
+    /// </summary>
+    void NotifyRenamed(string oldPath, string newPath);
 }
