@@ -46,7 +46,7 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - Same gates as 1.3; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-2 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3. Graph and store
+- [x] 3. Graph and store
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 1.4_
 
 - [x] 3.1 The dependency resolution matcher **(new work)**
@@ -67,14 +67,14 @@ One worktree for the whole spec: `.claude/worktrees/helm` — deliberately short
   - _Requirements: 1.4_
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Replicate the ansible watched-folder store shape for chart roots with coalescing burst re-reads and acquire/release lifetimes, tested with range assertions | Restrictions: no save path anywhere; the watcher watches the chart root itself, not a parent; burst assertions use Assert.InRange, not exact counts | _Leverage: AnsibleProjectStore/AnsibleWatchedFolder and their tests, including the range-assertion lesson | Success: store tests pass reliably including the burst case; release stops the watcher. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3.4 Gate and merge group 3
+- [x] 3.4 Gate and merge group 3
   - Same gates; merge into `develop`
   - _Prompt: Implement the task for spec helm-charts, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the gates with exit codes checked and merge group-3 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. Wire, layout, session and registration
+- [-] 4. Wire, layout, session and registration
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 4.4, 6.1, 6.2, 6.3, 6.4, 12.1, 12.2_
 
-- [ ] 4.1 The proto and the element mapper
+- [-] 4.1 The proto and the element mapper
   - Files: `src/diagrams/helm-charts/api/helm-charts.proto` (`option csharp_namespace = "EtAlii.Adp.Diagram.HelmCharts.Wire";`), buf generation wired like the sibling modules, `HelmElementMapper.cs` + tests
   - The design's payload set; element types `helm/chart+{chart,values,schema,template,partial,crds,dependency,subchart,archive,lock,edge}`; stable content-derived ids (`dep:`, `tpl:`, `values:`, `edge:` prefixes); `Diff()` emits Remove-then-Add, never group/ungroup
   - _Requirements: 4.4_
