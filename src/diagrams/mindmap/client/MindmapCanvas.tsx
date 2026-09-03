@@ -1,6 +1,8 @@
 import type { ConnectorBox } from "@client/canvas/connectors";
 import { BezierConnection } from "@client/canvas/connections/bezier/BezierConnection";
 import { CenteredBoxElement } from "@client/canvas/elements/centered-box/CenteredBoxElement";
+import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
+import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import { elementSelectionOf, elementSourceOf, selectedElementIdOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
 import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
@@ -307,6 +309,20 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
   const viewRef = useRef(effectiveView);
   viewRef.current = effectiveView;
 
+  // What the bars describe: the effective view against the content's extent - the same box
+  // Fit to View uses, padded the shared way, so a fitted map shows thumbs claiming nearly
+  // the whole track and inviting no pan (Requirement 1.4).
+  const horizontalExtent = scrollExtentOf(fitBox.x, fitBox.x + fitBox.w, { factor: 0.5 });
+  const verticalExtent = scrollExtentOf(fitBox.y, fitBox.y + fitBox.h, { factor: 0.5 });
+
+  // A thumb drag pans: it takes over from the fitted state exactly as dragging the canvas
+  // does, by writing a concrete box derived from what is currently shown. Zoom stays on the
+  // wheel and the ribbon - a thumb never changes w or h.
+  const onScrollPan = useCallback((horizontalStart: number, verticalStart: number) => {
+    const current = viewRef.current;
+    setView({ x: horizontalStart, y: verticalStart, w: current.w, h: current.h });
+  }, []);
+
   /** One zoom step about a point (canvas units); about the view's centre when none is given. */
   const zoomBy = useCallback((factor: number, aboutX?: number, aboutY?: number) => {
     setView(() => {
@@ -441,6 +457,13 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
               location is on screen during the drag, not only once the drop lands. */}
           {dragPreviewOf(model, dragRef.current?.id, dropTargetId, dragPosition)}
         </svg>
+      )}
+      {!loading && (
+        <CanvasScrollbars
+          horizontal={{ viewStart: effectiveView.x, viewSpan: effectiveView.w, ...horizontalExtent }}
+          vertical={{ viewStart: effectiveView.y, viewSpan: effectiveView.h, ...verticalExtent }}
+          onPan={onScrollPan}
+        />
       )}
       {/* The node's right-click menu: the same shared menu the explorer uses, filled with the
           actions the backend pushed for this very selection - never a client-side guess. */}
