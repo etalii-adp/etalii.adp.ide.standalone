@@ -80,7 +80,7 @@ internal static class JobParser
                 source,
                 DatabricksYaml.Scalar(task, "job_cluster_key") ?? "",
                 DatabricksYaml.Scalar(task, "run_if") ?? "",
-                ReadDependencies(task),
+                ReadDependencies(task, document),
                 DatabricksYaml.Range(task, document)));
         }
 
@@ -129,7 +129,7 @@ internal static class JobParser
         return "";
     }
 
-    private static List<JobDependency> ReadDependencies(YamlMappingNode task)
+    private static List<JobDependency> ReadDependencies(YamlMappingNode task, DatabricksDocument document)
     {
         var dependencies = new List<JobDependency>();
         foreach (var node in DatabricksYaml.Sequence(task, "depends_on"))
@@ -137,7 +137,10 @@ internal static class JobParser
             if (node is YamlMappingNode dependency
                 && DatabricksYaml.Scalar(dependency, "task_key") is { Length: > 0 } upstream)
             {
-                dependencies.Add(new JobDependency(upstream, DatabricksYaml.Scalar(dependency, "outcome") ?? ""));
+                dependencies.Add(new JobDependency(
+                    upstream,
+                    DatabricksYaml.Scalar(dependency, "outcome") ?? "",
+                    DatabricksYaml.Range(dependency, document)));
             }
         }
 

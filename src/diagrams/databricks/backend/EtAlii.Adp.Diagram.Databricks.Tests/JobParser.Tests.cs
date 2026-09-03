@@ -61,13 +61,13 @@ public class JobParserTests
 
         // Assert.
         // The condition task's two consumers each follow one outcome edge (Requirement 4.3).
-        var publish = job.Tasks[2];
-        Assert.Equal(new JobDependency("quality_gate", "true"), Assert.Single(publish.DependsOn));
-        var alert = job.Tasks[3];
-        Assert.Equal(new JobDependency("quality_gate", "false"), Assert.Single(alert.DependsOn));
-        Assert.Equal("AT_LEAST_ONE_FAILED", alert.RunIf);
+        var publish = Assert.Single(job.Tasks[2].DependsOn);
+        Assert.Equal(("quality_gate", "true"), (publish.TaskKey, publish.Outcome));
+        var alert = Assert.Single(job.Tasks[3].DependsOn);
+        Assert.Equal(("quality_gate", "false"), (alert.TaskKey, alert.Outcome));
+        Assert.Equal("AT_LEAST_ONE_FAILED", job.Tasks[3].RunIf);
         // An unwritten run_if is empty - the default ALL_SUCCESS is the payload's to say.
-        Assert.Equal("", publish.RunIf);
+        Assert.Equal("", job.Tasks[2].RunIf);
     }
 
     [Fact]
