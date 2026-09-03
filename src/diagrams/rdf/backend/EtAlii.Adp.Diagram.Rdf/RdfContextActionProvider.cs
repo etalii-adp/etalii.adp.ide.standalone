@@ -117,10 +117,22 @@ public sealed class RdfContextActionProvider : IContextActionProvider
             ]);
         }
 
+        if (SkosSelection.PairOf(entry, target.ElementId) is not null)
+        {
+            // A hierarchy or related pair is the scheme reading's edge: its disconnect takes
+            // every asserted direction as one undo, which the generic remove-statement cannot.
+            return Result(SkosActions.Discover(entry, target));
+        }
+
         if (RdfSelection.EdgeOf(entry, target.ElementId) is not null)
         {
+            // A skos hierarchy or related pair is drawn as ONE edge whose id happens to be a
+            // valid family edge id too, so the reading's disconnect - which takes every asserted
+            // direction as one undo - leads, and the family's single-statement removal stays
+            // beneath it for the reader who means exactly that statement.
             return Result(
             [
+                .. SkosActions.Discover(entry, target),
                 new ContextActionGroupDefinition(
                 [
                     new ContextActionDefinition(RemoveEdgeActionId, "Remove statement", "mdi-vector-polyline-remove", new ContextShortcutDefinition("Delete")),
@@ -145,7 +157,10 @@ public sealed class RdfContextActionProvider : IContextActionProvider
                 placementActions.Add(new ContextActionDefinition(AddIndividualActionId, "Add individual…", "mdi-account-outline"));
             }
 
-            return Result([new ContextActionGroupDefinition(placementActions)]);
+            // Each reading's entries lead where the file's own assertions say that reading
+            // applies - a thesaurus for skos, an ontology marker for owl; the family's generic
+            // pair stays beneath both.
+            return Result([.. SkosActions.Discover(entry, target), new ContextActionGroupDefinition(placementActions)]);
         }
 
         if (RdfRelationGesture.TryParse(target.ElementId, out var gestureFrom, out var gestureTo))
@@ -163,11 +178,15 @@ public sealed class RdfContextActionProvider : IContextActionProvider
             }
 
             relationActions.Add(new ContextActionDefinition(ConnectActionId, "Relate…", "mdi-ray-start-arrow"));
-            return Result([new ContextActionGroupDefinition(relationActions)]);
+
+            // The scheme reading's file-under and relate lead between two asserted concepts;
+            // the ontology's subclass and the family's dialog stay beneath.
+            return Result([.. SkosActions.Discover(entry, target), new ContextActionGroupDefinition(relationActions)]);
         }
 
-        // Blank nodes and the banner: describable, never editable.
-        return Result([]);
+        // A skos edge id (the canonical broader-direction shape) is the scheme reading's alone;
+        // blank nodes and the banner stay describable, never editable.
+        return Result(SkosActions.Discover(entry, target));
     }
 
     /// <inheritdoc />
@@ -180,6 +199,11 @@ public sealed class RdfContextActionProvider : IContextActionProvider
         if (RdfSelection.IsTruncated(entry))
         {
             return new ContextExecutionFailed(RdfSelection.TruncatedRefusal);
+        }
+
+        if (await SkosActions.ExecuteAsync(_historyStacks, entry, target, actionId, cancellationToken) is { } skosResult)
+        {
+            return skosResult;
         }
 
         var iri = RdfSelection.ResourceOf(entry, target.ElementId) ?? OwlSelection.IndividualIriOf(entry, target.ElementId);
@@ -282,6 +306,11 @@ public sealed class RdfContextActionProvider : IContextActionProvider
 
         // The writers refuse on exactly these terms at commit; validating here lets the dialog
         // refuse first - an undeclared prefix by name, never silently invented (Requirement 5.7).
+        if (SkosActions.Validate(_documents.GetOrLoad(target.ResolvedFullPath), actionId, value) is { } skosValidation)
+        {
+            return ValueTask.FromResult(skosValidation);
+        }
+
         if (actionId is RenameResourceActionId or ConnectActionId or AddResourceActionId
             || _owlDeclarationTypes.ContainsKey(actionId))
         {
@@ -339,6 +368,11 @@ public sealed class RdfContextActionProvider : IContextActionProvider
 
     private static ICommand? CommandFor(RdfDocumentEntry entry, ContextTarget target, string actionId, string value)
     {
+        if (SkosActions.CommandFor(entry, target, actionId, value) is { } skosCommand)
+        {
+            return skosCommand;
+        }
+
         var body = target.ResolvedFullPath;
         var iri = RdfSelection.ResourceOf(entry, target.ElementId) ?? OwlSelection.IndividualIriOf(entry, target.ElementId);
 
