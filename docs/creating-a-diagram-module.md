@@ -61,6 +61,8 @@ The shape every shipped module converges on, in timeline's files:
 - **A writer that splices** — [`TimelineWriter.cs`](../src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline/TimelineWriter.cs) edits the lines a change touches and re-serialises nothing.
 - **One store owning documents** — [`TimelineDocumentStore.cs`](../src/diagrams/timeline/backend/EtAlii.Adp.Diagram.Timeline/TimelineDocumentStore.cs) behind `ITimelineDocumentStore`: loads a document once, shares the instance across every connection, saves atomically, and raises a changed event sessions subscribe to.
 
+Around these four, a module grows whatever domain helpers its notation needs, in the same project and namespace — timeline has a `TimelineScale` for its time axis, `TimelineRows` for row packing, `TimelineInstants` for date arithmetic — and the client canvas does the same (timeline's ruler, scrollbars and tick calculation are its own files beside the canvas). Those are ordinary internals, not seams: nothing outside the module knows them, and this walkthrough names only what the outside world touches.
+
 All of it serves one promise: **a document ADP did not change comes back byte-identical** — comments, blank lines, odd indentation, line endings, a missing final newline. The round-trip tests compare bytes, which is also why the fixtures need a `.gitattributes` line (below). The model layer is deliberately usable without gRPC, the filesystem or a browser: text in, model out.
 
 ## The session, and the layout fork
@@ -104,4 +106,4 @@ The client half mirrors the backend's discovery, so the shell holds no list of d
 
 ## The catalog, and staying true
 
-`docs/diagrams.md` is how "which diagram types does ADP have?" is answered, and CLAUDE.md's [Diagram type catalog](../CLAUDE.md#diagram-type-catalog) rule requires its row to move with your module's state — add or update the row as the type is identified, specified, implemented. And once this walkthrough names your module's shape, CLAUDE.md's documentation refresh rule applies in return: a change that moves a touch point named here updates this document in the same change.
+`docs/diagrams.md` is how "which diagram types does ADP have?" is answered, and CLAUDE.md's [Diagram type catalog](../CLAUDE.md#diagram-type-catalog) rule requires its row to move with your module's state — add or update the row as the type is identified, specified, implemented. And this walkthrough carries the same duty in return: a change that moves a touch point named here updates this document in the same change.
