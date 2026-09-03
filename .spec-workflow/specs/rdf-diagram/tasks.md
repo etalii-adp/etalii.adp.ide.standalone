@@ -20,7 +20,7 @@ One worktree for the whole spec (`.claude/worktrees/rdf`, per CLAUDE.md's one-wo
 - [-] 2. Editing and validation: fragment splices, refusals, findings
   - _Requirements: 5.1-5.7, 7.1-7.5_
 
-- [-] 2.1 The triple writer: named operations, fragment splices, refusals — **sibling seam**
+- [x] 2.1 The triple writer: named operations, fragment splices, refusals — **sibling seam**
   - Files: `RdfWriter.cs` + tests
   - `AddTriple` (into the subject's block as a `;` continuation matching its indentation, or a new statement; declared prefixes reused, never invented), `RemoveTriple` (whole lines where owned; the fragment splice where a line is shared, stranded separators removed; a subject's last triple takes its block and terminating `.`), `RemoveResource` (every triple the term touches, bottom-up), `RenameTerm` (every occurrence, prefixed or full, one operation; collisions refused first), `ReplaceObjectLiteral` (rewriting exactly one literal object token in place — lexical form, datatype or language tag — what a label or documentation edit is; family-level per the design's writer boundary rule, adopted from the `skos-diagram` review), `AddPrefix`; every operation answers with a refusal sentence before any splice; N-Triples flows through the same operations degenerately
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7_
