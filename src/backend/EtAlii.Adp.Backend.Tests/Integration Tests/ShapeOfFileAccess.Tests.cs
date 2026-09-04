@@ -82,10 +82,10 @@ public partial class ShapeOfFileAccessTests
         ("HelmCharts/HelmChartReader.cs", NarrowShare, "file-io-centralization task 3.3"),
 
         // Hand-rolled temp-then-move publishes.
-        ("Mindmap/MindmapDocumentStore.cs", HandRolledPublish, "unassigned - reported by task 1.1"),
-        ("WardleyMap/WardleyDocumentStore.cs", HandRolledPublish, "unassigned - reported by task 1.1"),
-        ("C4/C4LayoutSidecar.cs", HandRolledPublish, "unassigned - reported by task 1.1"),
-        ("WardleyMap/WardleyIdentities.cs", HandRolledPublish, "unassigned - reported by task 1.1"),
+        ("Mindmap/MindmapDocumentStore.cs", HandRolledPublish, "file-io-centralization task 5.1"),
+        ("WardleyMap/WardleyDocumentStore.cs", HandRolledPublish, "file-io-centralization task 5.2"),
+        ("C4/C4LayoutSidecar.cs", HandRolledPublish, "file-io-centralization task 5.3"),
+        ("WardleyMap/WardleyIdentities.cs", HandRolledPublish, "file-io-centralization task 5.2"),
     ];
 
     private const string RawRead = "reads a file with a raw File.ReadAllText/ReadAllLines, which opens at FileShare.Read and loses to a concurrent save";
