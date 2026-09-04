@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Code, ConnectError, createClient } from "@connectrpc/connect";
 import { useAuth } from "@client/auth/AuthContext";
 import { DiagramService } from "@client/generated/diagrams_pb";
+import { viewReportOf, type Viewport } from "@client/diagrams/viewReport";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { applyDelta, emptyModel, type RdfModel } from "./rdfModel";
 
@@ -11,6 +12,9 @@ export interface RdfStream {
   loading: boolean;
   /** True once the backend answered permanently - this diagram cannot be opened at this path. */
   failed: boolean;
+
+  /** Tells the backend what this canvas can see, so a large document arrives as it is looked at. */
+  reportView: (viewport: Viewport) => void;
   /**
    * Stores a card's authored position, in the module's own coordinate space. A drag is a layout
    * edit: the backend dispatches the core SetRegistrationLayoutCommand, the position lands in
@@ -101,5 +105,9 @@ export function useRdfStream(projectId: Uint8Array, path: readonly string[]): Rd
     }
   };
 
-  return { model, loading, failed, moveElementTo };
+  // Built on the client this hook already created: adopting the shared report does not mean
+  // adopting useDiagramStream, which this reading deliberately does not use (Requirement 3.6).
+  const reportView = viewReportOf(clientRef.current, projectId, watchId, path);
+
+  return { model, loading, failed, reportView, moveElementTo };
 }

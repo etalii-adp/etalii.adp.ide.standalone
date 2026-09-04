@@ -15,6 +15,16 @@ public sealed class SkosSession : IDiagramSession
 {
     private static readonly ILogger _logger = Log.ForContext<SkosSession>();
 
+    /// <summary>
+    /// The cell an element occupies for the purpose of deciding whether it is on screen - the
+    /// layout's own column and row pitch. Over-inclusion is the safe direction: one extra
+    /// element on the wire against a hole the reader looks straight at.
+    /// </summary>
+    private const double CellWidth = 240;
+
+    /// <inheritdoc cref="CellWidth" />
+    private const double CellHeight = 110;
+
     private readonly string _bodyPath;
     private readonly string? _registrationPath;
     private readonly IRdfDocumentStore _documents;
@@ -25,6 +35,16 @@ public sealed class SkosSession : IDiagramSession
 
     /// <summary>What this connection was last sent, so a change can be diffed against it.</summary>
     private IReadOnlyList<DiagramElement> _delivered = [];
+
+    /// <summary>What this connection last said it can see. Everything, until it says otherwise.</summary>
+    private DiagramViewport _viewport = DiagramViewport.Unbounded;
+
+    /// <summary>
+    /// The whole vocabulary, projected and positioned, kept between reports: a pan changes the
+    /// viewport and not the document. Dropped when the document changes, which is the only
+    /// thing that can invalidate it.
+    /// </summary>
+    private (SkosProjectionResult Projection, IReadOnlyDictionary<string, RegistrationPosition> Positions)? _laidOut;
 
     public SkosSession(
         string bodyPath,
@@ -68,8 +88,13 @@ public sealed class SkosSession : IDiagramSession
     /// <inheritdoc />
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
-        _ = viewport;
-        return [];
+        _viewport = viewport;
+
+        var current = Render();
+        var deltas = _mapper.Diff(_delivered, current);
+        _delivered = current;
+
+        return deltas;
     }
 
     /// <summary>Refused: filing a concept under a parent is the broader gesture, not a tree move.</summary>
@@ -128,15 +153,75 @@ public sealed class SkosSession : IDiagramSession
 
     private IReadOnlyList<DiagramElement> Render()
     {
+        var (projection, positions) = LaidOut();
+        return _mapper.Elements(InView(projection, positions), positions, DisplayLanguage);
+    }
+
+    /// <summary>
+    /// The whole vocabulary, projected and positioned, cached until it changes. Projected
+    /// without a budget on purpose: a concept the reader can pan to needs a position, and it
+    /// can only have a stable one in a layout of everything - the hierarchy is laid out by
+    /// walking it, so a layout of the visible set would rearrange as the reader moved.
+    /// </summary>
+    private (SkosProjectionResult Projection, IReadOnlyDictionary<string, RegistrationPosition> Positions) LaidOut()
+    {
+        if (_laidOut is { } cached)
+        {
+            return cached;
+        }
+
         var entry = _documents.GetOrLoad(_bodyPath);
-        var projection = SkosProjection.Project(entry.Model);
+        var projection = SkosProjection.Project(entry.Model, int.MaxValue);
         var layout = SkosLayout.Layout(projection);
         var stored = _registrationPath is { Length: > 0 }
             ? RegistrationLayout.Read(_registrationPath)
             : new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
 
-        var positions = RegistrationLayout.Apply(layout.Positions, stored);
-        return _mapper.Elements(projection, positions, DisplayLanguage);
+        var result = (projection, RegistrationLayout.Apply(layout.Positions, stored));
+        _laidOut = result;
+
+        return result;
+    }
+
+    /// <summary>
+    /// What the reported viewport admits: the schemes, concepts and collections it intersects,
+    /// the edges both of whose endpoints survived, and the budget applied to that set rather
+    /// than to the document.
+    /// </summary>
+    /// <remarks>
+    /// The counts handed on are the document's, not this view's, because
+    /// <see cref="SkosProjectionResult.Truncated" /> drives the banner and the read-only refusal
+    /// and both are decided from the document with no viewport to consult. Reach improves; what
+    /// a document may do does not change.
+    /// </remarks>
+    private SkosProjectionResult InView(
+        SkosProjectionResult projection, IReadOnlyDictionary<string, RegistrationPosition> positions)
+    {
+        bool Visible(string id) => RdfViewport.Admits(_viewport, positions, id, CellWidth, CellHeight);
+
+        var schemes = projection.Schemes.Where(scheme => Visible(scheme.Id)).ToList();
+        var concepts = projection.Concepts.Where(concept => Visible(concept.Id)).ToList();
+        var collections = projection.Collections.Where(collection => Visible(collection.Id)).ToList();
+
+        var truncated = projection.Total > RdfProjection.DefaultBudget;
+        var drawn = schemes.Count + concepts.Count + collections.Count;
+
+        var keptIds = schemes.Select(scheme => scheme.Id)
+            .Concat(concepts.Select(concept => concept.Id))
+            .Concat(collections.Select(collection => collection.Id))
+            .ToHashSet(StringComparer.Ordinal);
+        var edges = projection.Edges
+            .Where(edge => keptIds.Contains(edge.FromId) && keptIds.Contains(edge.ToId))
+            .ToList();
+
+        return new SkosProjectionResult(
+            schemes,
+            concepts,
+            collections,
+            edges,
+            projection.OutOfFileMappings,
+            truncated ? RdfProjection.DefaultBudget : drawn,
+            truncated ? projection.Total : drawn);
     }
 
     private void OnDocumentChanged(object? sender, RdfDocumentChangedEventArgs args)
@@ -148,6 +233,7 @@ public sealed class SkosSession : IDiagramSession
 
         try
         {
+            _laidOut = null;
             var current = Render();
             var deltas = _mapper.Diff(_delivered, current);
             _delivered = current;

@@ -22,6 +22,17 @@ public sealed class ShaclSession : IDiagramSession
 {
     private static readonly ILogger _logger = Log.ForContext<ShaclSession>();
 
+    /// <summary>
+    /// The cell a card occupies for the purpose of deciding whether it is on screen - the
+    /// layout's column pitch, with a height generous enough for a card of many constraints.
+    /// Over-inclusion is the safe direction: one extra element on the wire against a hole the
+    /// reader looks straight at.
+    /// </summary>
+    private const double CardWidth = 320;
+
+    /// <inheritdoc cref="CardWidth" />
+    private const double CardHeight = 400;
+
     private readonly string _bodyPath;
     private readonly string? _registrationPath;
     private readonly IRdfDocumentStore _documents;
@@ -32,6 +43,17 @@ public sealed class ShaclSession : IDiagramSession
 
     /// <summary>What this connection was last sent, so a change can be diffed against it.</summary>
     private IReadOnlyList<DiagramElement> _delivered = [];
+
+    /// <summary>What this connection last said it can see. Everything, until it says otherwise.</summary>
+    private DiagramViewport _viewport = DiagramViewport.Unbounded;
+
+    /// <summary>
+    /// The whole document, projected and positioned, kept between reports: a pan changes the
+    /// viewport and not the document, so re-projecting on every settled pan would be work with
+    /// no new answer. Dropped when the document changes, which is the only thing that can
+    /// invalidate it.
+    /// </summary>
+    private (ShaclProjectionResult Projection, IReadOnlyDictionary<string, RegistrationPosition> Positions)? _laidOut;
 
     public ShaclSession(
         string bodyPath,
@@ -69,8 +91,13 @@ public sealed class ShaclSession : IDiagramSession
     /// <inheritdoc />
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
-        _ = viewport;
-        return [];
+        _viewport = viewport;
+
+        var current = Render();
+        var deltas = _mapper.Diff(_delivered, current);
+        _delivered = current;
+
+        return deltas;
     }
 
     /// <summary>
@@ -134,14 +161,67 @@ public sealed class ShaclSession : IDiagramSession
 
     private IReadOnlyList<DiagramElement> Render()
     {
+        var (projection, positions) = LaidOut();
+        return _mapper.Elements(InView(projection, positions), positions);
+    }
+
+    /// <summary>
+    /// The whole document, projected and positioned, cached until it changes. Projected without
+    /// a budget on purpose: a shape the reader can pan to needs a position, and it can only
+    /// have a stable one in a layout of everything.
+    /// </summary>
+    private (ShaclProjectionResult Projection, IReadOnlyDictionary<string, RegistrationPosition> Positions) LaidOut()
+    {
+        if (_laidOut is { } cached)
+        {
+            return cached;
+        }
+
         var entry = _documents.GetOrLoad(_bodyPath);
-        var projection = ShaclProjection.Project(entry.Model);
+        var projection = ShaclProjection.Project(entry.Model, int.MaxValue);
         var computed = ShaclLayout.Positions(projection);
         var stored = _registrationPath is { Length: > 0 }
             ? RegistrationLayout.Read(_registrationPath)
             : new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
 
-        return _mapper.Elements(projection, RegistrationLayout.Apply(computed, stored));
+        var result = (projection, RegistrationLayout.Apply(computed, stored));
+        _laidOut = result;
+
+        return result;
+    }
+
+    /// <summary>
+    /// What the reported viewport admits: the cards it intersects, the edges both of whose
+    /// endpoints survived, and the budget applied to that set rather than to the document.
+    /// </summary>
+    /// <remarks>
+    /// The counts handed on are the document's, not this view's. <see cref="ShaclProjectionResult.Truncated" />
+    /// drives both the banner and the read-only refusal, and those are decided from the document
+    /// with no viewport to consult - so a banner raised by a narrow view would contradict them.
+    /// Reach improves; what a document may do does not change.
+    /// </remarks>
+    private ShaclProjectionResult InView(
+        ShaclProjectionResult projection, IReadOnlyDictionary<string, RegistrationPosition> positions)
+    {
+        var visible = projection.Cards
+            .Where(card => RdfViewport.Admits(_viewport, positions, card.Id, CardWidth, CardHeight))
+            .ToList();
+
+        var truncated = projection.Total > ShaclProjection.DefaultBudget;
+        var kept = visible.Count > ShaclProjection.DefaultBudget
+            ? visible.Take(ShaclProjection.DefaultBudget).ToList()
+            : visible;
+
+        var keptIds = kept.Select(card => card.Id).ToHashSet(StringComparer.Ordinal);
+        var edges = projection.Edges
+            .Where(edge => keptIds.Contains(edge.FromId) && keptIds.Contains(edge.ToId))
+            .ToList();
+
+        return new ShaclProjectionResult(
+            kept,
+            edges,
+            truncated ? ShaclProjection.DefaultBudget : kept.Count,
+            truncated ? projection.Total : kept.Count);
     }
 
     private void OnDocumentChanged(object? sender, RdfDocumentChangedEventArgs args)
@@ -153,6 +233,7 @@ public sealed class ShaclSession : IDiagramSession
 
         try
         {
+            _laidOut = null;
             var current = Render();
             var deltas = _mapper.Diff(_delivered, current);
             _delivered = current;
