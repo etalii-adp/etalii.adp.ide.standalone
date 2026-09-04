@@ -20,7 +20,9 @@ Full rules and reasoning: [processes.md, *Chat naming*](.spec-workflow/steering/
 
 ## Git worktrees
 
-Implementation work happens in a dedicated worktree (`.claude/worktrees/<name>/`, short name), never in the main checkout, because several sessions share its index. Retire a worktree once its branch is merged and its tree is clean — but never one another session is working in, never one with uncommitted or unmerged work, and never with `--force`.
+**Anything that changes the repository's files happens in a dedicated worktree** (`.claude/worktrees/<name>/`, short name), never in the main checkout, because several sessions share its index. That is implementation, documentation fixes under `docs/`, and structural or complexity work alike — all of it goes through a branch and the four gates.
+
+**The one exception is a specification document.** Requirements, designs and tasks, and the approvals, snapshots and logs beside them, are written on `develop` in the main checkout, because the dashboard reads `.spec-workflow/` from there and nowhere else. `roles.md` draws the same line: an Architect's structural and documentation work is on a worktree, its specification writing is on development. Retire a worktree once its branch is merged and its tree is clean — but never one another session is working in, never one with uncommitted or unmerged work, and never with `--force`.
 
 Full rules and reasoning, including the half-removed-worktree hazard: [processes.md, *Where work happens*](.spec-workflow/steering/processes.md#where-work-happens) and [*Retiring a worktree*](.spec-workflow/steering/processes.md#retiring-a-worktree).
 
