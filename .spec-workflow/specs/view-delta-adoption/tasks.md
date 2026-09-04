@@ -55,7 +55,7 @@ A fifth, about how these were found rather than about the work: **this is the se
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.3, 3.4, 5.2, 5.3_
   - _Prompt: Implement the task for spec view-delta-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer, C# and TypeScript | Task: Implement the view-delta loop in helm-charts, both halves, establishing the adoption pattern for the modules that follow | Restrictions: use the shared client library and add no module-local copy; no shared backend helper; do not change IDiagramSession or the proto; update the class remarks that currently decline the mechanism | _Leverage: MindmapSession.UpdateView for the diff shape, the shared library from task 1 | Success: both tests pass, the backend test fails against a return [], the class remarks match the code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. wardley-map implements the loop
+- [x] 4. wardley-map implements the loop
   - Files: `src/diagrams/wardley-map/client/WardleyCanvas.tsx`, `useWardleyStream.ts`, `src/diagrams/wardley-map/backend/*/WardleySession.cs`, and their tests
   - The same two halves as task 3. **Its viewport is in the map's own 0..1 space**, which is the module's own unit and stays the module's business (Requirement 3.4) — the shared code converts nothing.
   - Update the session's stated reason at the method, which currently declines the mechanism.
