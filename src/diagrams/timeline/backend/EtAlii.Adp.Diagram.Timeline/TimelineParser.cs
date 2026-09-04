@@ -5,7 +5,7 @@ using YamlDotNet.RepresentationModel;
 namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>
-/// Reads a <see cref="TimelineDocument"/> into a <see cref="TimelineModel"/>, recording which
+/// Reads a <see cref="LineDocument"/> into a <see cref="TimelineModel"/>, recording which
 /// lines declare what.
 /// </summary>
 /// <remarks>
@@ -13,7 +13,7 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// YamlDotNet is used here and <b>only</b> for reading. It handles quoting, anchors, aliases and
 /// block scalars correctly, and gives a line number for every node, which is what lets an element
 /// know its own lines and a diagnostic point at the one that caused it. Nothing is ever
-/// serialised back through it: every write is a splice through <see cref="TimelineDocument"/>.
+/// serialised back through it: every write is a splice through <see cref="LineDocument"/>.
 /// </para>
 /// <para>
 /// The parser is forgiving on purpose. A time it cannot read, a row it cannot read, a missing id
@@ -29,7 +29,7 @@ public static class TimelineParser
 
     /// <summary>Reads the document. Throws only when the text is not YAML.</summary>
     /// <exception cref="YamlDotNet.Core.YamlException">The document is not well-formed YAML.</exception>
-    public static TimelineModel Parse(TimelineDocument document)
+    public static TimelineModel Parse(LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
 
@@ -52,7 +52,7 @@ public static class TimelineParser
             ReadConnections(root, document));
     }
 
-    private static List<TimelineElement> ReadElements(YamlMappingNode root, TimelineDocument document)
+    private static List<TimelineElement> ReadElements(YamlMappingNode root, LineDocument document)
     {
         var elements = new List<TimelineElement>();
         foreach (var node in Sequence(root, ElementsKey))
@@ -78,7 +78,7 @@ public static class TimelineParser
         return elements;
     }
 
-    private static List<TimelineConnection> ReadConnections(YamlMappingNode root, TimelineDocument document)
+    private static List<TimelineConnection> ReadConnections(YamlMappingNode root, LineDocument document)
     {
         var connections = new List<TimelineConnection>();
         foreach (var node in Sequence(root, ConnectionsKey))
@@ -154,7 +154,7 @@ public static class TimelineParser
     /// Trailing blank and comment lines are then trimmed, because an edit has no business
     /// rewriting a comment that merely happens to follow an element.
     /// </remarks>
-    private static LineRange Range(YamlNode node, TimelineDocument document)
+    private static LineRange Range(YamlNode node, LineDocument document)
     {
         var last = document.Lines.Count - 1;
         var extent = EndMark(node);

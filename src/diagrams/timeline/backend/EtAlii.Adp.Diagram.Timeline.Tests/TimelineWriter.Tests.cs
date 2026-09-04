@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -15,15 +16,15 @@ public class TimelineWriterTests
 {
     private static string FixturesFolder => IoPath.Combine(AppContext.BaseDirectory, "Fixtures");
 
-    private static (TimelineDocument Document, TimelineModel Model) Load(string fixture)
+    private static (LineDocument Document, TimelineModel Model) Load(string fixture)
     {
-        var document = TimelineDocument.Parse(File.ReadAllText(IoPath.Combine(FixturesFolder, fixture)));
+        var document = LineDocument.Parse(File.ReadAllText(IoPath.Combine(FixturesFolder, fixture)));
         return (document, TimelineParser.Parse(document));
     }
 
-    private static (TimelineDocument Document, TimelineModel Model) From(string yaml)
+    private static (LineDocument Document, TimelineModel Model) From(string yaml)
     {
-        var document = TimelineDocument.Parse(yaml);
+        var document = LineDocument.Parse(yaml);
         return (document, TimelineParser.Parse(document));
     }
 
@@ -148,7 +149,7 @@ public class TimelineWriterTests
         TimelineWriter.SetEnd(document, model.Elements[0], "2026-01-05");
 
         // Assert.
-        var reparsed = TimelineParser.Parse(TimelineDocument.Parse(document.Text));
+        var reparsed = TimelineParser.Parse(LineDocument.Parse(document.Text));
         Assert.True(reparsed.Elements[0].IsPeriod);
         Assert.Equal("2026-01-05", reparsed.Elements[0].End!.Text);
         Assert.Contains("    end: 2026-01-05", document.Text, StringComparison.Ordinal);
@@ -164,7 +165,7 @@ public class TimelineWriterTests
         TimelineWriter.SetEnd(document, model.Elements[0], null);
 
         // Assert.
-        var reparsed = TimelineParser.Parse(TimelineDocument.Parse(document.Text));
+        var reparsed = TimelineParser.Parse(LineDocument.Parse(document.Text));
         Assert.False(reparsed.Elements[0].IsPeriod);
     }
 
@@ -183,7 +184,7 @@ public class TimelineWriterTests
         // All three connections in that fixture touch the element, and the count is knowable
         // before the removal runs, which is what Requirement 2.5 asks for.
         Assert.Equal(3, going.Count);
-        var reparsed = TimelineParser.Parse(TimelineDocument.Parse(document.Text));
+        var reparsed = TimelineParser.Parse(LineDocument.Parse(document.Text));
         Assert.Empty(reparsed.Connections);
         Assert.Single(reparsed.Elements);
         Assert.Equal("dst00001", reparsed.Elements[0].Id);
@@ -203,7 +204,7 @@ public class TimelineWriterTests
         TimelineWriter.RemoveElement(document, model, doomed);
 
         // Assert.
-        var reparsed = TimelineParser.Parse(TimelineDocument.Parse(document.Text));
+        var reparsed = TimelineParser.Parse(LineDocument.Parse(document.Text));
         Assert.Single(reparsed.Elements);
         Assert.Equal("src00001", reparsed.Elements[0].Id);
         Assert.Equal("Source", reparsed.Elements[0].Label);
@@ -221,7 +222,7 @@ public class TimelineWriterTests
 
         // Assert.
         Assert.Contains("    -   id: newone01", document.Text, StringComparison.Ordinal);
-        var reparsed = TimelineParser.Parse(TimelineDocument.Parse(document.Text));
+        var reparsed = TimelineParser.Parse(LineDocument.Parse(document.Text));
         Assert.Equal(3, reparsed.Elements.Count);
         Assert.Equal("Added", reparsed.Elements[2].Label);
         Assert.Equal(5, reparsed.Elements[2].Row);
@@ -237,7 +238,7 @@ public class TimelineWriterTests
         TimelineWriter.InsertElement(document, model, "moment99", "Just a moment", "2026-04-01", null, 2);
 
         // Assert.
-        var reparsed = TimelineParser.Parse(TimelineDocument.Parse(document.Text));
+        var reparsed = TimelineParser.Parse(LineDocument.Parse(document.Text));
         var added = reparsed.Elements.Single(element => element.Id == "moment99");
         Assert.False(added.IsPeriod);
     }
@@ -252,7 +253,7 @@ public class TimelineWriterTests
         TimelineWriter.InsertConnection(document, model, "conn0001", "a", "b", "leads to");
 
         // Assert.
-        var reparsed = TimelineParser.Parse(TimelineDocument.Parse(document.Text));
+        var reparsed = TimelineParser.Parse(LineDocument.Parse(document.Text));
         var connection = Assert.Single(reparsed.Connections);
         Assert.Equal("a", connection.From);
         Assert.Equal("b", connection.To);
@@ -269,7 +270,7 @@ public class TimelineWriterTests
         TimelineWriter.InsertConnection(document, model, "conn0004", "src00001", "dst00001", "and again");
 
         // Assert.
-        var reparsed = TimelineParser.Parse(TimelineDocument.Parse(document.Text));
+        var reparsed = TimelineParser.Parse(LineDocument.Parse(document.Text));
         Assert.Equal(4, reparsed.Connections.Count);
     }
 
@@ -298,7 +299,7 @@ public class TimelineWriterTests
         TimelineWriter.SetConnectionLabel(document, model.Connections[0], "");
 
         // Assert.
-        var reparsed = TimelineParser.Parse(TimelineDocument.Parse(document.Text));
+        var reparsed = TimelineParser.Parse(LineDocument.Parse(document.Text));
         Assert.Equal("", reparsed.Connections[0].Label);
         Assert.DoesNotContain("label: hands over", document.Text, StringComparison.Ordinal);
     }
@@ -312,7 +313,7 @@ public class TimelineWriterTests
         // Act.
         TimelineWriter.SetLabel(document, model.Elements[0], "Plain");
         var afterPlain = document.Text;
-        var reparsedModel = TimelineParser.Parse(TimelineDocument.Parse(afterPlain));
+        var reparsedModel = TimelineParser.Parse(LineDocument.Parse(afterPlain));
         TimelineWriter.SetLabel(document, reparsedModel.Elements[0], "Has: a colon");
 
         // Assert.
@@ -320,7 +321,7 @@ public class TimelineWriterTests
         // when the value genuinely needs them.
         Assert.Contains("label: Plain", afterPlain, StringComparison.Ordinal);
         Assert.Contains("label: \"Has: a colon\"", document.Text, StringComparison.Ordinal);
-        var final = TimelineParser.Parse(TimelineDocument.Parse(document.Text));
+        var final = TimelineParser.Parse(LineDocument.Parse(document.Text));
         Assert.Equal("Has: a colon", final.Elements[0].Label);
     }
 
@@ -335,7 +336,7 @@ public class TimelineWriterTests
 
         // Act.
         TimelineWriter.SetLabel(document, model.Elements[0], "Temporarily different");
-        var reparsed = TimelineParser.Parse(TimelineDocument.Parse(document.Text));
+        var reparsed = TimelineParser.Parse(LineDocument.Parse(document.Text));
         TimelineWriter.SetLabel(document, reparsed.Elements[0], originalLabel);
 
         // Assert.
@@ -351,7 +352,7 @@ public class TimelineWriterTests
 
         // Act.
         TimelineWriter.InsertElement(document, model, "temp0001", "Temporary", "2026-05-01", "2026-05-02", 7);
-        var reparsed = TimelineParser.Parse(TimelineDocument.Parse(document.Text));
+        var reparsed = TimelineParser.Parse(LineDocument.Parse(document.Text));
         var added = reparsed.Elements.Single(element => element.Id == "temp0001");
         TimelineWriter.RemoveElement(document, reparsed, added);
 
@@ -369,7 +370,7 @@ public class TimelineWriterTests
 
         // Act.
         TimelineWriter.InsertElement(document, model, "temp0002", "Temporary", "2026-05-01", null, 3);
-        var reparsed = TimelineParser.Parse(TimelineDocument.Parse(document.Text));
+        var reparsed = TimelineParser.Parse(LineDocument.Parse(document.Text));
         var added = reparsed.Elements.Single(element => element.Id == "temp0002");
         TimelineWriter.RemoveElement(document, reparsed, added);
 

@@ -112,7 +112,7 @@ public sealed class TimelineDocumentStore : ITimelineDocumentStore
             text = "";
         }
 
-        return Parse(path, TimelineDocument.Parse(text));
+        return Parse(path, LineDocument.Parse(text));
     }
 
     /// <summary>
@@ -120,7 +120,7 @@ public sealed class TimelineDocumentStore : ITimelineDocumentStore
     /// ordinary state for a file somebody is editing, so it is carried as an entry with an error
     /// rather than thrown out of the store.
     /// </summary>
-    private static TimelineDocumentEntry Parse(string path, TimelineDocument document)
+    private static TimelineDocumentEntry Parse(string path, LineDocument document)
     {
         try
         {

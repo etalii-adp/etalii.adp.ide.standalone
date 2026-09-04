@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend.Diagrams;
+using EtAlii.Adp.Backend.Hierarchy;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Timeline.Tests;
@@ -11,7 +12,7 @@ public class TimelineElementMapperTests
     private readonly TimelineElementMapper _mapper = new();
 
     private static TimelineModel Parse(string yaml) =>
-        TimelineParser.Parse(TimelineDocument.Parse(yaml));
+        TimelineParser.Parse(LineDocument.Parse(yaml));
 
     private const string TwoElementsAndAConnection = """
         timeline: 1

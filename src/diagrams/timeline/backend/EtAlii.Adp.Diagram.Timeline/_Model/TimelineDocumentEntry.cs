@@ -1,3 +1,5 @@
+using EtAlii.Adp.Backend.Hierarchy;
+
 namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>
@@ -13,7 +15,7 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// <param name="Error">Why it could not be parsed; empty when it could.</param>
 /// <param name="ErrorLine">The line the parser stopped at, 1-based; 0 when there was no error.</param>
 public sealed record TimelineDocumentEntry(
-    TimelineDocument Document,
+    LineDocument Document,
     TimelineModel Model,
     string Error,
     int ErrorLine)

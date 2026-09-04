@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Hierarchy;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Timeline.Tests;
@@ -9,7 +10,7 @@ namespace EtAlii.Adp.Diagram.Timeline.Tests;
 public class TimelineRuleSetTests
 {
     private static IReadOnlyList<DiagramProblem> Judge(string yaml) =>
-        TimelineRuleSet.Judge(TimelineParser.Parse(TimelineDocument.Parse(yaml)));
+        TimelineRuleSet.Judge(TimelineParser.Parse(LineDocument.Parse(yaml)));
 
     private static IEnumerable<DiagramProblem> Of(string yaml, string ruleId) =>
         Judge(yaml).Where(problem => problem.RuleId == ruleId);
@@ -90,7 +91,7 @@ public class TimelineRuleSetTests
         // Act & assert.
         Assert.Single(Of(yaml, TimelineRules.UnreadableTime));
         // The rest of the diagram still draws - the broken element is warned about, not dropped.
-        Assert.Equal(2, TimelineParser.Parse(TimelineDocument.Parse(yaml)).Elements.Count);
+        Assert.Equal(2, TimelineParser.Parse(LineDocument.Parse(yaml)).Elements.Count);
     }
 
     [Fact]
