@@ -27,7 +27,7 @@ from the explorer rather than only in tests.
   triple rather than from the download page. That check mattered: the page carries a
   `rel="license"` link to ODbL and a `by-nc-sa` badge as well, either of which would have
   disqualified the source under the share-alike rule, and the data's own statement is what
-  settles it. Full text in `LICENSE.txt`.
+  settles it. Full text in `LICENSE.md`, verbatim as served by creativecommons.org.
 - **Attribution**, as CC BY requires: *STW Thesaurus for Economics*, ZBW – Leibniz Information
   Centre for Economics, `https://zbw.eu/stw/`, licensed under CC BY 4.0.
 - Exact local changes: both files are **extracts**, not copies. From the full distribution:
