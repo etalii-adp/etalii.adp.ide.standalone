@@ -46,6 +46,8 @@
     <Project Path="../diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf/EtAlii.Adp.Diagram.Rdf.csproj" />
     <Project Path="../diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf.Tests/EtAlii.Adp.Diagram.Rdf.Tests.csproj" />
     <!-- SPARQL queries: the RDF family's deliberate sibling - its own parser, no writer at all. -->
+    <Project Path="../diagrams/causal-loop/backend/EtAlii.Adp.Diagram.CausalLoop/EtAlii.Adp.Diagram.CausalLoop.csproj" />
+    <Project Path="../diagrams/causal-loop/backend/EtAlii.Adp.Diagram.CausalLoop.Tests/EtAlii.Adp.Diagram.CausalLoop.Tests.csproj" />
     <Project Path="../diagrams/sparql/backend/EtAlii.Adp.Diagram.Sparql/EtAlii.Adp.Diagram.Sparql.csproj" />
     <Project Path="../diagrams/sparql/backend/EtAlii.Adp.Diagram.Sparql.Tests/EtAlii.Adp.Diagram.Sparql.Tests.csproj" />
     <Project Path="../diagrams/archimate-application/backend/EtAlii.Adp.Diagram.ArchimateApplication/EtAlii.Adp.Diagram.ArchimateApplication.csproj" />
