@@ -3,8 +3,10 @@
   "title": "test-suite-conformance requirements",
   "filePath": ".spec-workflow/specs/test-suite-conformance/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-04T07:06:45.230Z",
   "category": "spec",
-  "categoryName": "test-suite-conformance"
+  "categoryName": "test-suite-conformance",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-04T08:47:11.935Z"
 }
