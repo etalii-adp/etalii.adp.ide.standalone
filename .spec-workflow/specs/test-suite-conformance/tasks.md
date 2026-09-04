@@ -69,7 +69,7 @@ The design's four shapes — A (files discovered on disk), B (a collection the c
   - _Requirements: 1.1, 1.2, 2.1, 2.2_
   - _Prompt: Implement task 3 for spec test-suite-conformance. Role: C# developer | Task: add floors to the three named c4 sites | Restrictions: change no expected value; add no helper; do not modify Examples.Tests.cs, which already satisfies the rule | _Leverage: c4 Examples.Tests.cs:36 and :93 as the in-module example | Success: each floor has been seen to fail, and all four gates pass by exit code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. backend core — two floors, one of them an extraction
+- [x] 4. backend core — two floors, one of them an extraction
   - Files: `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/EditorFilePropertyProvider.Tests.cs` (:51), `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/DocumentationLinks.Tests.cs` (:66)
   - Shape C and shape D.
   - **`DocumentationLinks` is the only shape-D site.** Its final assertion is that the dead-link list is empty; nothing asserts a link was ever *extracted*, so a `LinkExpression()` that stopped matching would check nothing and pass. Floor the count of relative links extracted across the delivered set, and **preserve the per-target tolerance documented at `:113`** — a target the pattern misses going unchecked is deliberate, and the new comment must say that total extraction failure is the different thing being guarded.
@@ -77,7 +77,7 @@ The design's four shapes — A (files discovered on disk), B (a collection the c
   - _Requirements: 2.1, 2.2, 5.1, 5.2, 5.3, 5.4_
   - _Prompt: Implement task 4 for spec test-suite-conformance. Role: C# developer | Task: add a floor to the Assert.All in EditorFilePropertyProvider.Tests.cs and an extraction floor to DocumentationLinks.Tests.cs | Restrictions: do not widen the delivered-document list; preserve the per-target tolerance at DocumentationLinks.Tests.cs:113 and say in the comment why total extraction failure differs from it | _Leverage: ProblemStoreIsolation.Tests.cs:62-69 | Success: both floors have been seen to fail, and all four gates pass by exit code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5. helm-charts — two floors
+- [x] 5. helm-charts — two floors
   - Files: `src/diagrams/helm-charts/backend/EtAlii.Adp.Diagram.HelmCharts.Tests/` — `HelmContextPropertyProvider.Tests.cs` (:32), `ZeroWrites.Tests.cs` (:48)
   - Both shape B, both sweeping a derived graph.
   - `HelmContextPropertyProvider.Tests.cs:32` is vacuous at two levels: the `foreach` skips on an empty graph, and the `Assert.All(rows, …)` inside it also passes on empty rows. One floor on the graph is what this task asks for; a second on `rows` is a judgement call the adopter may make and should say why in the comment if they do.
