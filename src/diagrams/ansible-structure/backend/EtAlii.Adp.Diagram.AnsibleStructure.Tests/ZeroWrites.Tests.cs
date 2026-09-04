@@ -151,7 +151,19 @@ public class ZeroWritesTests : IDisposable
 
         // Contents and timestamps both, for every file Ansible owns: a file rewritten with
         // identical bytes is still a file this module wrote.
-        foreach (var (path, expected) in before.Where(pair => !string.Equals(pair.Key, registration, StringComparison.OrdinalIgnoreCase)))
+        var untouched = before
+            .Where(pair => !string.Equals(pair.Key, registration, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        // The filter, not the snapshot, is what can empty here: a project holding nothing but
+        // the registration would leave this walk with no file to compare, and the promise that
+        // the module touched only the registration would be asserted about the registration
+        // alone.
+        Assert.True(
+            untouched.Length > 0,
+            "Every file in the snapshot is the registration, so this guard compared no other file and cannot show the module left them alone.");
+
+        foreach (var (path, expected) in untouched)
         {
             var (actualBytes, actualWritten) = after[path];
             Assert.True(expected.Bytes.SequenceEqual(actualBytes), $"The module rewrote the contents of {path}.");
@@ -171,6 +183,14 @@ public class ZeroWritesTests : IDisposable
         Dictionary<string, (byte[] Bytes, DateTime Written)> before,
         Dictionary<string, (byte[] Bytes, DateTime Written)> after)
     {
+        // Assert, first, that there was a project to leave alone. Every check below is either a
+        // `== 0` comparison or sits inside the loop, and an empty snapshot satisfies all three -
+        // so a fixture that failed to copy would let this helper certify that the module wrote
+        // nothing, having watched nothing.
+        Assert.True(
+            before.Count > 0,
+            "The before-snapshot holds no files, so this helper compared nothing and proved nothing about writes.");
+
         var appeared = after.Keys.Except(before.Keys, StringComparer.OrdinalIgnoreCase).Order(StringComparer.Ordinal).ToArray();
         var vanished = before.Keys.Except(after.Keys, StringComparer.OrdinalIgnoreCase).Order(StringComparer.Ordinal).ToArray();
         Assert.True(appeared.Length == 0, $"The module created: {string.Join(", ", appeared)}");
