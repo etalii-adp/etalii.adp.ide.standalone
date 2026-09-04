@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/test-suite-conformance/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-04T07:06:45.714Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788505605230_q8gzrfdxb",
+      "approvalTitle": "test-suite-conformance requirements"
+    }
+  ]
+}
