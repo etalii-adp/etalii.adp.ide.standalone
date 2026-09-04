@@ -25,7 +25,7 @@
   - Backend tests and `dotnet format style --verify-no-changes --severity info` from `src/backend`, judged by captured exit codes
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Set the two MSBuild variables, run the backend gates capturing each exit code before any pipe, then merge via the main checkout committing by explicit pathspec | Restrictions: never judge a gate by piped output; a zero-test run is a broken build; read git status for files you did not touch before merging, and never stash or checkout another session's work | Success: both gates exit zero by captured code and the merge lands. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2. `LineRange`: four identical copies become one
+- [x] 2. `LineRange`: four identical copies become one
   - _Requirements: 1.1, 1.2, 4.1, 4.2_
 
 - [x] 2.1 Move `LineRange` to core and delete the four copies
@@ -35,7 +35,7 @@
   - _Requirements: 1.2, 4.1, 4.2_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Move LineRange into EtAlii.Adp.Backend/Hierarchy, delete the four module copies, and update every referencing namespace, per requirements 1.2, 4.1 and 4.2 | Restrictions: no behaviour change and no signature change - if a copy turns out to differ in any way beyond namespace and comments, stop and report it as a finding rather than reconciling it silently; module code may depend on core and never on another module | _Leverage: the four existing copies (databricks, dependency-graph, rdf, timeline _Model/LineRange.cs) - keep the clearest doc comment | Success: one LineRange exists, four are gone, the solution builds and every existing test passes untouched. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2.2 Gate and merge group 2
+- [x] 2.2 Gate and merge group 2 - merged as 7ea5715a
   - As 1.2. This task gates the move that group 4 depends on, so it must land before group 4 starts.
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run both backend gates by captured exit code and merge via the main checkout, committing by explicit pathspec | Restrictions: as in task 1.2; do not begin group 4 work until this has merged, because LineDocument depends on the moved type | Success: gates exit zero and the merge lands. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
