@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/contracts-and-build-hygiene/requirements.md",
-  "currentVersion": 2,
+  "currentVersion": 4,
   "snapshots": [
     {
       "version": 1,
@@ -17,6 +17,22 @@
       "trigger": "revision_requested",
       "approvalId": "approval_1788509874855_yshwr6i0i",
       "approvalTitle": "contracts-and-build-hygiene — Requirements (revised: proto/POCO naming survey)"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-09-04T09:05:42.132Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788505432516_yl24b1s9j",
+      "approvalTitle": "contracts-and-build-hygiene — Requirements"
+    },
+    {
+      "version": 4,
+      "filename": "snapshot-004.json",
+      "timestamp": "2026-09-04T09:05:42.979Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788512254394_kl3ot2y03",
+      "approvalTitle": "contracts-and-build-hygiene — Requirements (rev 3: wire-data naming criterion)"
     }
   ]
 }
