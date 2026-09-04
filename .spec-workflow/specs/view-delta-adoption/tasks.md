@@ -9,6 +9,17 @@ This is eleven modules across both halves, plus one extraction, one guard and on
 - **The seven adopters follow, plainest first (tasks 3–9)**, with `rdf` **last**, because it is the only one whose existing truncation has to be re-evaluated against the new mechanism (Requirement 5.4) and the one where getting it wrong is most visible.
 - **Guard, then documentation and gates (tasks 10–11).**
 
+## Four things the approved requirements do not say
+
+Reading the code to write the design moved four facts. They are argued in the design's Deviations section; they are repeated here because these are the points a reader working from the requirements alone will trip over, and each one changes a task below.
+
+1. **`sparql` participates in this specification, not a catch-up.** Requirement 1.5 made its participation conditional on it gaining a client canvas. It has one — `SparqlCanvas.tsx`, with the shared scrollbars already wired. The count of seven is unchanged; only the sequencing note is dated. *(Task 8.)*
+2. **ansible-structure's behaviour changes, as a disclosed exception to Requirement 5.1.** Its report effect has no `loading || failed` guard and sits before the component's early returns, so it reports while loading and again for a diagram whose backend has said the path is gone. The shared hook carries the guard and those two reports stop. Preserving them would have centralized a bug. *(Task 2, with a named test.)*
+3. **The emission order is Add-then-Remove.** Requirement 4.3 anticipates the shared diff as "Remove-then-Add"; both reference implementations do the opposite. Every adopting session follows the code, not the requirement's guess. *(Tasks 3–9.)*
+4. **There are four duplicated client pieces, not three.** Beyond `reportView`, the debounced effect and `shownRectOf`, the `Viewport` interface itself is declared identically in all four stream hooks. Requirement 3.2's list of what no module retains is read as covering it. *(Task 2.)*
+
+A fifth, about how these were found rather than about the work: **this is the second specification written against a tree that had moved on.** `canvas-scrollbars` recorded sparql as having no client folder for the same reason, weeks apart. A third will hit it — sparql is changing faster than the specs that reference it, so a module's client surface is worth re-checking at design time rather than trusted from a sibling spec's survey.
+
 **Five rules that apply to every task below, stated once here.**
 
 - **The behavioural test of Requirement 1.3 is the definition of done for a module.** A view *change* produces deltas. A test asserting that `reportView` was called does **not** establish adoption, because it passes against a session whose `UpdateView` returns `[]`; a module is complete only when both halves are tested — the client sends on a view change, and the session answers a changed viewport with deltas.
