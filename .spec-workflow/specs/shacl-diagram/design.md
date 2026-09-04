@@ -29,7 +29,9 @@ The `w3c/shacl` reading joins `src/diagrams/rdf/` as a further definition over t
 ### Integration Points
 
 - **Definition** — `Diagram.Definitions` gains `w3c/shacl` (icon `mdi-check-decagram-outline`), `SharedExtension: true` over `.ttl`/`.nt` per the routing arrangement: never claims a bare body; Add suggests it off `sh:NodeShape` marker triples.
-- **Context channel** — the family resolver learns the `shacl-edge:` id shape; shacl action/property/toolbox providers register beside the rdf ones, switching on the registration's origin.
+- **Context channel** — the family resolver learns the `shacl-edge:` id shape; the shacl action, property and toolbox cases answer for targets whose origin is `w3c/shacl`.
+
+  *Correction, 2026-09-04, recorded during task 3.2.* This bullet first said the shacl providers "register beside the rdf ones". The family has since converged on the opposite arrangement, and the family's is right: **one** `IContextActionProvider` is registered for the whole family and each reading delegates inside it, which is what OWL does today. The reason is not tidiness — discovery concatenates every provider's groups, so a menu would survive either way, but execution and shortcut resolution take the first match, and two providers answering for one selection makes which one wins depend on registration order. One provider makes that order explicit. Scoping is by `ContextTarget.Origin`, which landed for exactly this: a reading's cases answer only for its own origin, the family's answer for any origin in the family, and the reading's group is listed first. `ShaclEditGate` stays as written and becomes the decision those cases consult — it is also the provider half of Requirement 3.3's double refusal, which is why it decides without consulting the writer.
 
 ## Architecture
 
