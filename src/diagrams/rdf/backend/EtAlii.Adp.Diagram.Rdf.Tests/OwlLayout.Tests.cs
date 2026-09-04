@@ -1,5 +1,6 @@
 using EtAlii.Adp.Backend.Hierarchy;
 using Xunit;
+using IoPath = System.IO.Path;
 
 namespace EtAlii.Adp.Diagram.Rdf.Tests;
 
@@ -139,5 +140,88 @@ public class OwlLayoutTests
         Assert.False(OwlLayout.IsPositionable(expressionId));
         Assert.True(OwlLayout.IsPositionable("res:http://example.org/t#A"));
         Assert.True(OwlLayout.IsPositionable("ind:http://example.org/t#A"));
+    }
+
+    [Fact]
+    public void NoTwoElementsOverlap_OnARealOntology()
+    {
+        // The guard behind "this looks chaotic": the first drawing of OWL-Time put expression
+        // satellites on top of the next column and stacked them through the class below, because
+        // a class occupied a fixed row while its satellites needed more. Measured on the real
+        // vendored ontology - 114 elements, 55 of them expressions - because that is the file the
+        // collisions showed up in (owl-diagram Requirement 2.1).
+
+        // Arrange.
+        var graph = OwlProjection.Project(VendoredOntology());
+
+        // Act.
+        var positions = OwlLayout.Positions(graph);
+
+        // Assert: every drawn element has a place, and no two boxes intersect.
+        Assert.All(graph.Nodes, node => Assert.True(positions.ContainsKey(node.Id), $"{node.Id} was not placed"));
+
+        var boxes = graph.Nodes
+            .Select(node =>
+            {
+                var (width, height) = OwlLayout.SizeOf(node);
+                var position = positions[node.Id];
+                return (node.Id, Left: position.X, Top: position.Y, Right: position.X + width, Bottom: position.Y + height);
+            })
+            .ToList();
+
+        var collisions = new List<string>();
+        for (var i = 0; i < boxes.Count; i++)
+        {
+            for (var j = i + 1; j < boxes.Count; j++)
+            {
+                var a = boxes[i];
+                var b = boxes[j];
+                if (a.Left < b.Right && b.Left < a.Right && a.Top < b.Bottom && b.Top < a.Bottom)
+                {
+                    collisions.Add($"{a.Id} overlaps {b.Id}");
+                }
+            }
+        }
+
+        Assert.True(collisions.Count == 0, string.Join("; ", collisions.Take(8)));
+    }
+
+    [Fact]
+    public void ASubclassEdge_RunsBetweenNeighbouringColumns_RatherThanAcrossTheCanvas()
+    {
+        // The other half of the same complaint: crossings. Ordering each column by the barycentre
+        // of its parents' rows is what keeps a hierarchy edge short, so this measures the drop -
+        // the average vertical distance a subclass edge spans - on the real ontology.
+
+        // Arrange.
+        var graph = OwlProjection.Project(VendoredOntology());
+        var positions = OwlLayout.Positions(graph);
+
+        // Act.
+        var drops = graph.Edges
+            .Where(edge => edge.Kind == OwlEdgeKind.Subclass
+                && positions.ContainsKey(edge.FromId) && positions.ContainsKey(edge.ToId))
+            .Select(edge => Math.Abs(positions[edge.FromId].Y - positions[edge.ToId].Y))
+            .ToList();
+
+        // Assert: a hierarchy edge stays local. Without the barycentre pass the same corpus
+        // averages far more, because a column's order has nothing to do with its parents'.
+        Assert.NotEmpty(drops);
+        Assert.True(drops.Average() < 900, $"subclass edges average a {drops.Average():F0} unit drop");
+    }
+
+    /// <summary>The vendored OWL-Time ontology - the real corpus these two guards measure.</summary>
+    private static RdfModel VendoredOntology()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null
+            && !File.Exists(IoPath.Combine(directory.FullName, "src", "diagrams", "rdf", "examples", "owl-time", "owl-time.ttl")))
+        {
+            directory = directory.Parent;
+        }
+
+        Assert.NotNull(directory);
+        var path = IoPath.Combine(directory!.FullName, "src", "diagrams", "rdf", "examples", "owl-time", "owl-time.ttl");
+        return RdfParser.Parse(RdfDocument.Parse(File.ReadAllText(path)));
     }
 }
