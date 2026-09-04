@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/steering/processes.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-04T11:12:50.075Z",
       "trigger": "initial",
+      "approvalId": "approval_1788520369922_sqv9bpwxq",
+      "approvalTitle": "processes steering document, first pass"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-04T11:33:01.105Z",
+      "trigger": "approved",
       "approvalId": "approval_1788520369922_sqv9bpwxq",
       "approvalTitle": "processes steering document, first pass"
     }
