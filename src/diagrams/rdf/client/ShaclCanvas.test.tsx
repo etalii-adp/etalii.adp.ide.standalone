@@ -2,7 +2,6 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import {
   TARGET_CLASS,
-  TARGET_NODE,
   emptyShaclModel,
   type ShaclModel,
   type ShaclShape,
