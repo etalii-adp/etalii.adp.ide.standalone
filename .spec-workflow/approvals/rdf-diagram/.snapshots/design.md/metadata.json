@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/rdf-diagram/design.md",
-  "currentVersion": 3,
+  "currentVersion": 4,
   "snapshots": [
     {
       "version": 1,
@@ -25,6 +25,14 @@
       "trigger": "approved",
       "approvalId": "approval_1788435806817_t0i1z2xj4",
       "approvalTitle": "rdf-diagram design amendment: ReplaceObjectLiteral in the family writer"
+    },
+    {
+      "version": 4,
+      "filename": "snapshot-004.json",
+      "timestamp": "2026-09-04T06:20:42.879Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788476760554_zhn1ov4hg",
+      "approvalTitle": "rdf-diagram design amendment: the testing habit in the Testing Strategy"
     }
   ]
 }
