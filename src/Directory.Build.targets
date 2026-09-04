@@ -10,6 +10,26 @@
   </ItemGroup>
 
   <!--
+    And the log capture, so a test can assert on what the code under test said. It lived in
+    three copies - Backend.Tests, Diagram.Tests and Editor.Tests - differing by exactly one
+    line each, the namespace. Sharing it here rather than referencing a support project is
+    what TestFolder already does, and it means no project gains a reference.
+
+    The duplication was not merely untidy: it taxed new guards. Asserting that a deleted
+    File.Exists check leaves only a spurious warning behind needs this class, which existed in
+    no module test project, so writing that guard would have cost a fourth copy of 118 lines.
+    It was declined at that price. A helper that is expensive to reach is a helper that stops
+    getting used, which is slower to notice than a test that fails.
+
+    These types are `internal`, so each test project gets its own copy of them rather than
+    sharing one instance - which is what the per-project source compile already implied.
+  -->
+  <ItemGroup Condition="'$(MSBuildProjectName.EndsWith(`.Tests`))' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)TestSupport\LogCapture.cs" Link="TestSupport\LogCapture.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)TestSupport\LogCaptureCaptureSink.cs" Link="TestSupport\LogCaptureCaptureSink.cs" />
+  </ItemGroup>
+
+  <!--
     Windows MAX_PATH guard.
 
     On Windows without effective long-path support, MSBuild's Exists() silently returns false

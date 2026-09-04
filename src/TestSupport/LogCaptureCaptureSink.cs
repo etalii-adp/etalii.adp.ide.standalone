@@ -1,7 +1,7 @@
 using Serilog.Core;
 using Serilog.Events;
 
-namespace EtAlii.Adp.Editor.Tests;
+namespace EtAlii.Adp;
 
 /// <summary>Hands each event to whichever capture is active, and drops it when none is.</summary>
 internal sealed class LogCaptureCaptureSink : ILogEventSink
