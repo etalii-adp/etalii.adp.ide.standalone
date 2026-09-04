@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Hierarchy;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Rdf.Tests;

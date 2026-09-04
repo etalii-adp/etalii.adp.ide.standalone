@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using EtAlii.Adp.Backend.Hierarchy;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
