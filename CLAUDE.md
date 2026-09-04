@@ -24,15 +24,11 @@ Full rules and reasoning, including the half-removed-worktree hazard: [processes
 
 Commit with an explicit pathspec - `git commit -F msg -- <paths>` - naming files, never folders: a bare `git commit` commits the whole shared index. Commit your own implementation log the moment the tool writes it.
 
-**Never merge while anything is staged, yours or anyone's.** A failed merge stashes the working state and does not restore it; that lost 26 paths of three sessions' work in one line of output. **Merge through a scratch worktree named for your own agent number — `.claude/worktrees/mrg<N>`, never a shared name.** Two agents merging at once otherwise land in one directory, and the second one's `--ff-only` carries the first one's merge into develop underneath its own — gated together, attributed to one landing, and nothing looking wrong afterwards. That has already happened once. An "already exists" worktree may be someone's live tree rather than an abandoned husk: take a different name, never reset what is there. Prefer `git -C <path>` over `cd`, so a failed `worktree add` cannot leave the next command running somewhere silently wrong.
+**Never merge while anything is staged, yours or anyone's.** Merge through a scratch worktree **named for your own agent number** - `.claude/worktrees/mrg<N>`, never a shared name: merge with `--no-ff`, run the four gates on that merged tree, then `git merge --ff-only` **from the main checkout**, never from inside the scratch tree. **Chain the whole cycle into one command** so the window between gating and landing is seconds. **Re-gate on the merged tree, not before it.**
 
-In it: merge your branch with `--no-ff`, run the four gates on that merged tree, then `git merge --ff-only` it in the main checkout - a fast-forward builds no tree from the index, so foreign staged files neither block it nor get touched. **Re-gate on the merged tree, not before it.**
+If a merge does strand work, do not re-run anything: the stash survives as a dangling commit pair findable with `git fsck --unreachable --no-reflogs`. Never re-apply a deletion that was in flight.
 
-**Chain the whole cycle into one command** — `reset --hard develop`, merge, four gates, `--ff-only` — so the window between gating a tree and landing it is seconds. With several sessions committing minutes apart and a gate run taking about three, a `--ff-only` issued separately is routinely refused; one agent was refused four times running. Refusal is the mechanism working: twice, develop had gained code the earlier gate never saw. **Run that final `--ff-only` from the main checkout, never from inside the scratch worktree** — run in the wrong place it merges the branch into itself and prints `Already up to date`, a success message for something that did not happen.
-
-If it does happen, do not re-run anything: the stash survives as a dangling commit pair findable with `git fsck --unreachable --no-reflogs`. Never re-apply a deletion that was in flight.
-
-Full rules, the incident and the recovery: [processes.md, *Committing and merging in the shared main checkout*](.spec-workflow/steering/processes.md#committing-and-merging-in-the-shared-main-checkout).
+Full rules, the four incidents behind them and the recovery: [processes.md, *Committing and merging in the shared main checkout*](.spec-workflow/steering/processes.md#committing-and-merging-in-the-shared-main-checkout).
 
 ## Git identity
 
@@ -49,11 +45,9 @@ A *wrong* name is worse than an ambiguous one. Full reasoning, and why an identi
 
 ## Checking that a command answered your question
 
-**Ask what the command would print if your belief were false.** If the answer is "the same thing", it is not evidence. `git log --oneline` prints an identical line whoever authored it. `git config user.name` prints the effective value without its source. `grep -c $'\r'` prints `0` for an LF file and for a shell that never expanded the pattern. `md5sum` over whole files reports drift when only a namespace line differs. `git worktree add` fails where a chained `cd` cannot see it. Five instances in one day, each caught only because somebody re-measured — this test would have caught four, and costs a sentence of thought rather than a second command. It is the exit-code rule applied to the other half of a command's output: that one says do not read success from what a command printed, this one says do not read a fact from a command that was never asked for it.
+**Ask what the command would print if your belief were false.** If the answer is "the same thing", it is not evidence - `git log --oneline`, `git config user.name`, `grep -c $'\r'` and a sabotage whose pattern never matched all print the same thing either way. **Apply it to your own reports too**: "fixed" said from a worktree describes the worktree, not `develop`. **And do not write a guard over prose** - a guard that must be edited whenever its subject legitimately changes is a second copy of the data, not a check on it.
 
-**Apply it to your own reports, not just to commands.** "Fixed" said from a worktree describes the worktree, not `develop` — and what you would have seen if it were *not* landed is exactly what you did see, the edited file in front of you. Say where a change is: committed on a branch, merged, or pushed.
-
-**And do not write a guard over prose.** A guard on an owner string, a comment or a description fails when the text legitimately changes, so it must be edited in the same commit as the thing it guards — which makes it a second copy of the data rather than a check on it. Notice rot during work and fix it; do not automate an assertion about wording.
+Six worked instances and the reasoning: [processes.md, *Checking that a command answered your question*](.spec-workflow/steering/processes.md#checking-that-a-command-answered-your-question).
 
 ## spec-workflow
 

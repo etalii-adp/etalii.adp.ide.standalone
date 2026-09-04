@@ -102,6 +102,12 @@ Two things about cards that are noise rather than hazard, recorded because a car
 
 ## Specification bookkeeping
 
+**CLAUDE.md is where a new rule is written; this document is where it settles.** A rule learned the hard way goes into CLAUDE.md first, with enough of its reasoning to be believed, because CLAUDE.md is loaded into every agent's context and steering documents are not. **Moving the narrative down here is then a step in the same pass that raises the approval card**, leaving CLAUDE.md the imperative and a pointer.
+
+That ordering is not a preference; it is what the alternative cost. The original split asked an agent to put the reasoning somewhere nobody loads at exactly the moment they had just been burned and wanted the next agent spared - so the narrative stayed in CLAUDE.md, and within a day two sections had regrown their reasoning and two agents had written the same rule into both documents within an hour of each other, neither knowing. **It works for stable rules and fails for fresh ones**, which is the same lesson as the identity rule: a rule that cannot be got wrong beats one depending on vigilance at the moment nobody is looking.
+
+(This paragraph took three passes to arrive, because the rule that fixes the split was itself held by the mechanism it exists to fix.)
+
 This repository plans and tracks work in `.spec-workflow/` — steering documents, specifications, approvals, implementation logs — before implementation.
 
 - **A set of files added or removed under `.spec-workflow/` is committed immediately, in its own commit.** Not left uncommitted, not bundled with unrelated changes. This covers the logs `log-implementation` writes, not only the documents you author by hand.
@@ -222,17 +228,26 @@ Measured on 2026-09-04: of the 61 merge commits in the preceding 18 hours, **44 
 
 Rewriting the 45-odd commits was considered and rejected: history surgery in a checkout that nine sessions are committing into is a worse incident than a wrong name.
 
-## Ask what a command would print if your belief were false
+## Checking that a command answered your question
 
-Before reporting a fact about the repository, name the output that would appear **if you were wrong**, then run the command and look for it. A check that cannot distinguish the two answers is not a check, and its green tells you nothing.
+**Ask what the command would print if your belief were false.** If the answer is "the same thing", it is not evidence.
 
-Every provenance mistake collected in this document has this shape, and so do several that are not about provenance:
+Six instances in one day, across four sessions, each caught only because somebody re-measured:
 
-- A `grep -c $'\r'` used to test for CRLF returns 0 whether or not the file has any, because the bashism is not expanded. It reported a correctly-CRLF file as LF. `git ls-files --eol` answers the question the tool's own way.
+- `git log --oneline` prints an identical line whoever authored it.
+- `git config user.name` prints the effective value without its source - so it cannot distinguish your own correctly-scoped identity from one you inherited.
+- `grep -c $'\r'` prints `0` for a file with no carriage returns **and** for a shell that never expanded the pattern. It reported a correctly-CRLF file as LF.
+- `md5sum` over whole files reports drift when only a namespace line differs.
+- `git worktree add` fails where a chained `cd` cannot see it.
 - A sabotage whose replacement pattern never matched leaves the suite green, which reads as robust code rather than as a test that never ran.
-- `vrenken` in an author field was read as "the user made this", then as "made in the main checkout". Asking what `git config --show-origin user.name` would print if either belief were false answers it in one command: a global origin means neither.
 
-It is a sharper instrument than "verify before believing", which everybody agrees with and nobody applies under pressure, because it converts a vague duty into a specific question with an answer.
+**It is the exit-code rule applied to the other half of a command's output.** That one says do not read success from what a command printed; this one says do not read a fact from a command that was never asked for it. It costs a sentence of thought rather than a second command, and it is a sharper instrument than "verify before believing" - which everybody agrees with and nobody applies under pressure - because it converts a vague duty into a specific question with an answer.
+
+**Apply it to your own reports, not just to commands.** "Fixed" said from a worktree describes the worktree, not `develop` - and what you would have seen if it were *not* landed is exactly what you did see, the edited file in front of you. Say where a change is: committed on a branch, merged, or pushed.
+
+**And do not write a guard over prose.** A guard on an owner string, a comment or a description fails when the text legitimately changes, so it must be edited in the same commit as the thing it guards - which makes it a second copy of the data rather than a check on it. Notice rot during work and fix it; do not automate an assertion about wording.
+
+**These three are one idea at three scopes** - a command, a claim about your own work, and a check written down - and they move together. Splitting them by which was learned first would break the argument.
 
 ## A settled boundary
 
