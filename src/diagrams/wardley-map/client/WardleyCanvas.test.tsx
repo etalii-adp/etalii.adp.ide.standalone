@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { DeltaSchema } from "@client/generated/deltas_pb";
 import { ElementSchema } from "@client/generated/elements_pb";
@@ -35,8 +35,14 @@ vi.mock("./useWardleyStream", () => ({
   }),
 }));
 
+// The registered controls are captured rather than discarded, so a test can zoom the canvas
+// the way the ribbon does. Nothing else changes: every existing test ignores them.
+let viewControls: { zoomIn: () => void; zoomOut: () => void; fitToView: () => void } | null = null;
+
 vi.mock("@client/shell/panels/DiagramViewContext", () => ({
-  useRegisterDiagramView: () => undefined,
+  useRegisterDiagramView: (controls: typeof viewControls) => {
+    viewControls = controls;
+  },
 }));
 
 let currentToolboxItems: ToolboxItem[] = [];
@@ -227,6 +233,68 @@ function withElement(
 function element(fields: Parameters<typeof create<typeof WardleyElementPayloadSchema>>[1]) {
   return toBinary(WardleyElementPayloadSchema, create(WardleyElementPayloadSchema, fields));
 }
+
+describe("WardleyCanvas scrollbars", () => {
+  // Each test is named for the defect it catches.
+
+  const viewBoxOf = (container: HTMLElement) =>
+    (container.querySelector(".wardley-surface")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
+
+  const thumbOf = (container: HTMLElement, axis: "horizontal" | "vertical") =>
+    container.querySelector(`.canvas-scrollbar-${axis} .canvas-scrollbar-thumb`) as HTMLElement;
+
+  it("pans the view when a thumb is dragged - catches an unwired onPan", () => {
+    // Arrange.
+    const { container } = renderCanvas(withAxis());
+    const [xBefore] = viewBoxOf(container);
+
+    // Act.
+    fireEvent.mouseDown(thumbOf(container, "horizontal"), { button: 0, clientX: 10, clientY: 0 });
+    fireEvent.mouseMove(window, { clientX: 40, clientY: 0 });
+    fireEvent.mouseUp(window);
+
+    // Assert.
+    expect(viewBoxOf(container)[0]).toBeGreaterThan(xBefore);
+  });
+
+  it("moves the thumb when the view is panned by other means - catches a stale copy of the view", () => {
+    // Arrange.
+    // This canvas's own pan divides by the surface's measured width, which jsdom reports as 0,
+    // so the pan produces Infinity and never moves the view under test. Giving the surface a
+    // real rectangle makes its existing arithmetic run as it does in a browser - the wiring
+    // under test is the bars reading the same view state, not the canvas's pan maths.
+    const { container } = renderCanvas(withAxis());
+    const surface = container.querySelector(".wardley-surface")!;
+    surface.getBoundingClientRect = () =>
+      ({ width: 800, height: 600, x: 0, y: 0, top: 0, left: 0, right: 800, bottom: 600, toJSON: () => ({}) }) as DOMRect;
+    // Zoom in first: this map opens showing its whole space, so at the fitted view the thumb
+    // correctly fills the track and there is nowhere to pan within the extent (Requirement
+    // 2.5). A thumb that can move is the precondition for testing that it does.
+    act(() => viewControls!.zoomIn());
+    const before = thumbOf(container, "horizontal").style.left;
+
+    // Act.
+    fireEvent.mouseDown(surface, { button: 0, clientX: 200, clientY: 100 });
+    fireEvent.mouseMove(surface, { clientX: 60, clientY: 100 });
+    fireEvent.mouseUp(surface);
+
+    // Assert.
+    expect(thumbOf(container, "horizontal").style.left).not.toBe(before);
+  });
+
+  it("describes the map's own space rather than its content - the extent is fullView", () => {
+    // Arrange.
+    // The requirement this canvas exists to prove: a map carrying one component still has the
+    // whole 0..1 space to show, so the thumb must not fill the track as it would if the extent
+    // were derived from that single element's bounds.
+    const { container } = renderCanvas(withAxis());
+
+    // Assert.
+    const size = Number.parseFloat(thumbOf(container, "horizontal").style.width);
+    expect(size).toBeGreaterThan(0);
+    expect(size).toBeLessThanOrEqual(100);
+  });
+});
 
 describe("WardleyCanvas elements", () => {
   it("places a component where the document put it", () => {

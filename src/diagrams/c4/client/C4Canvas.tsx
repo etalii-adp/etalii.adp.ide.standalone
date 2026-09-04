@@ -5,6 +5,8 @@ import { FrameElement } from "@client/canvas/elements/frame/FrameElement";
 import { elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
 import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
+import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
+import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { ContextSelectionAction } from "@client/generated/context_pb";
@@ -404,6 +406,11 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
               />
             ))}
           </svg>
+          <CanvasScrollbars
+            {...scrollAxesOf(effectiveView, model)}
+            className="c4-scrollbars"
+            onPan={(x, y) => setView({ ...effectiveView, x, y })}
+          />
 
           {/* The backend's own actions for what is selected - rendered, never invented. */}
           <ContextMenu
@@ -565,6 +572,30 @@ export function shownRectOf(box: ViewBox, surface: SVGSVGElement | null) {
     minY: centerY - shownHeight / 2,
     maxX: centerX + shownWidth / 2,
     maxY: centerY + shownHeight / 2,
+  };
+}
+
+/**
+ * Where the view sits inside the content, as the two axes the shared scrollbars take.
+ *
+ * A ViewBox canvas needs no DOM measurement for this: the view's span in content units IS
+ * `w` and `h`. The pixels-per-unit consumer measures its element and divides because it has
+ * to; copying that here would be importing a workaround for a problem this canvas does not
+ * have. The extent is the drawn content plus a proportional margin, floored at the widest
+ * box so a single-element diagram still has room to either side.
+ */
+function scrollAxesOf(view: ViewBox, model: C4Model) {
+  const boxes = boxesOf(model);
+  const widest = boxes.length > 0 ? Math.max(...boxes.map((box) => box.width)) : view.w;
+  const tallest = boxes.length > 0 ? Math.max(...boxes.map((box) => box.height)) : view.h;
+  const minX = boxes.length > 0 ? Math.min(...boxes.map((box) => box.x)) : view.x;
+  const maxX = boxes.length > 0 ? Math.max(...boxes.map((box) => box.x + box.width)) : view.x + view.w;
+  const minY = boxes.length > 0 ? Math.min(...boxes.map((box) => box.y)) : view.y;
+  const maxY = boxes.length > 0 ? Math.max(...boxes.map((box) => box.y + box.height)) : view.y + view.h;
+
+  return {
+    horizontal: { viewStart: view.x, viewSpan: view.w, ...scrollExtentOf(minX, maxX, { factor: 0.5, minimumSpan: widest }) },
+    vertical: { viewStart: view.y, viewSpan: view.h, ...scrollExtentOf(minY, maxY, { factor: 0.5, minimumSpan: tallest }) },
   };
 }
 

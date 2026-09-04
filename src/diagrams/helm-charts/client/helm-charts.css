@@ -80,13 +80,13 @@
 }
 
 .helm-node-selected .helm-node-box {
-  stroke: var(--color-accent, #3d7bd9);
+  stroke: var(--color-primary);
   stroke-width: 2.5;
 }
 
 /* A node whose artifact did not parse: visibly marked, never hidden. */
 .helm-node-unreadable .helm-node-box {
-  stroke: var(--color-error, #c0392b);
+  stroke: var(--color-danger);
   stroke-dasharray: 4 3;
 }
 
@@ -133,12 +133,12 @@
 
 .helm-edge-line {
   fill: none;
-  stroke: var(--helm-edge-stroke, var(--color-border-strong, #9aa0a6));
+  stroke: var(--helm-edge-stroke, var(--color-text-muted));
   stroke-width: 1.5;
 }
 
 .helm-arrowhead {
-  fill: var(--helm-edge-stroke, var(--color-border-strong, #9aa0a6));
+  fill: var(--helm-edge-stroke, var(--color-text-muted));
 }
 
 .helm-edge-label {

@@ -74,24 +74,24 @@ One worktree for the whole spec (`.claude/worktrees/shacl`, per CLAUDE.md's one-
 - [ ] 3. Wire, definition, session, providers, canvas
   - _Requirements: 2.1-2.3, 3.2, 3.4, 4.1-4.5, 6.1-6.4, 8.1_
 
-- [-] 3.1 Wire payloads
+- [x] 3.1 Wire payloads
   - Files: `src/diagrams/rdf/api/shacl.proto` per the design's Data Models section (`ShaclShapePayload`, `ShaclTargetChip`, `ShaclTargetKind`, `ShaclPropertyRow`, `ShaclEdgePayload`); generation wired beside `rdf.proto`
   - _Requirements: 1.2, 1.3, 1.4_
   - _Prompt: Implement the task for spec shacl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Backend developer familiar with the module proto setup | Task: Add shacl.proto with the design's payload messages and wire generation for backend and client beside the family's rdf.proto | Restrictions: payloads ride the existing Element/Delta as Any; no new services or streams | _Leverage: the rdf.proto wiring from rdf-diagram task 3.1 | Success: both sides generate and the payloads are usable from backend and client code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.2 Definition, session, move refusals
+- [x] 3.2 Definition, session, move refusals
   - Files: the `w3c/shacl` entry in the family `Diagram.cs` (`SharedExtension: true`, icon `mdi-check-decagram-outline`), `Shacl/ShaclSession.cs` + factory + tests
   - Never claims a bare body; Add suggests off the marker triples per the **routing arrangement**; render = projection + `RegistrationLayout` overlay for `res:{iri}` cards; `MoveElementToAsync` refuses `blank:{ordinal}` ids with the boundary sentence; the item-10 header helper from rdf-diagram task 3.2 is deliberately not consumed, per approved Requirement 4.5 — no header parsing exists here to test
   - _Requirements: 2.1, 2.2, 2.3, 3.2, 4.5_
   - _Prompt: Implement the task for spec shacl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the family session factory | Task: Add the w3c/shacl definition as a further entry over the family store and implement the session per design - projection plus layout overlay, blank-id move refusals, coexistence with the w3c/rdf reading on one file - with tests including two registrations over one document sharing one history | Restrictions: no bare-body claim; no header parsing - Requirement 4.5 declines the facility; core untouched | _Leverage: the definition/session arrangement from rdf-diagram task 3.2; the projection from 1.2 | Success: a registered shapes file opens with cards and overlaid positions; both readings live on one file; blank moves refuse with the sentence. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.3 Providers and toolbox
+- [x] 3.3 Providers and toolbox
   - Files: `Shacl/ShaclContextActionProvider.cs` (completed from 2.3's gate), `Shacl/ShaclContextPropertyProvider.cs`, `Shacl/ShaclToolboxProvider.cs`, the `shacl-edge:` extension to the family selection vocabulary + tests
   - The Requirement 6 surface: add-target and per-chip remove-target entries (addressed by the 1.3 contract), add-property-row, deactivate/reactivate, rename (family), remove-with-count; the grid's target rows stating described-in-file as fact; SPARQL query text read-only; toolbox Node shape placement and Property row drop; everything unavailable-with-reason under truncation and on blank-rooted subjects
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 3.4, 8.1_
   - _Prompt: Implement the task for spec shacl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the family providers | Task: Implement the three providers and the toolbox per Requirement 6 over the family selection vocabulary extended with shacl-edge:, with discovery, execute/undo/redo and refusal tests per selection kind, the per-chip remove-target entries addressed by shape IRI + predicate + term, and grid rows stating absent target terms as facts | Restrictions: selection parsing extends rdf-diagram task 3.3's vocabulary rather than forking it; every mutating entry is one undo; no validate-data action exists | _Leverage: the provider trio from rdf-diagram task 3.3; commands from 2.4; the chip addresses from 1.3 | Success: provider tests pass per menu, property and gesture; chip removal round-trips with undo; refusal sentences verbatim. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.4 ShaclCanvas from the central library
+- [-] 3.4 ShaclCanvas from the central library
   - Files: `src/diagrams/rdf/client/` — `ShaclCanvas.tsx`, model/stream hooks, the `w3c/shacl` claim in the family `register.ts`, shacl-own rules in the module css, tests
   - Cards with title, chip band (absent styled exactly like present), rows (path left, cardinality right, summary muted, SPARQL badged), severity/deactivated badges and dimming; operator-labeled edges; drags gated client-side by the `blank` flag with the backend as authority; truncation banner per precedent; toolbox registration through the shell path like every canvas
   - _Requirements: 1.2, 1.3, 1.8, 3.2, 4.1, 4.2, 8.1_

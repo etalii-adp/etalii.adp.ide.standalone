@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { forwardBezierPath, straightPath } from "@client/canvas/connectors";
 import { BoxElement } from "@client/canvas/elements/box/BoxElement";
+import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
+import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
 import { useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
@@ -229,6 +231,11 @@ export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
           })}
         </g>
       </svg>
+      <CanvasScrollbars
+        {...scrollAxesOf(effective, nodes)}
+        className="helm-scrollbars"
+        onPan={(x, y) => setView({ ...effective, x, y })}
+      />
     </div>
   );
 }
@@ -334,6 +341,28 @@ function Edge({ edge, model }: { edge: HelmElement; model: HelmModel }) {
       ) : null}
     </g>
   );
+}
+
+/**
+ * Where the view sits inside the content, as the two axes the shared scrollbars take.
+ *
+ * A ViewBox canvas needs no DOM measurement: the view's span in content units IS `w` and `h`.
+ * The extent is the drawn nodes plus a proportional margin floored at the widest and tallest
+ * node, so a chart with one node still has room either side; the canvas's own PADDING informs
+ * that floor.
+ */
+function scrollAxesOf(view: ViewBox, nodes: readonly HelmElement[]) {
+  const widest = nodes.length > 0 ? Math.max(...nodes.map((node) => node.payload.width)) : view.w;
+  const tallest = nodes.length > 0 ? Math.max(...nodes.map((node) => node.payload.height)) : view.h;
+  const minX = nodes.length > 0 ? Math.min(...nodes.map((node) => node.x)) : view.x;
+  const maxX = nodes.length > 0 ? Math.max(...nodes.map((node) => node.x + node.payload.width)) : view.x + view.w;
+  const minY = nodes.length > 0 ? Math.min(...nodes.map((node) => node.y)) : view.y;
+  const maxY = nodes.length > 0 ? Math.max(...nodes.map((node) => node.y + node.payload.height)) : view.y + view.h;
+
+  return {
+    horizontal: { viewStart: view.x, viewSpan: view.w, ...scrollExtentOf(minX, maxX, { factor: 0.5, minimumSpan: Math.max(widest, PADDING) }) },
+    vertical: { viewStart: view.y, viewSpan: view.h, ...scrollExtentOf(minY, maxY, { factor: 0.5, minimumSpan: Math.max(tallest, PADDING) }) },
+  };
 }
 
 function boundsOf(nodes: readonly HelmElement[]): ViewBox {
