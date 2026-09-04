@@ -35,3 +35,20 @@ It is not a validator fixture. Nothing here is executed against data — this mo
 and never runs them (Requirement 4). The targets name classes no file here describes, which is
 the normal case for a shapes graph and is drawn as a plain statement rather than reported as a
 problem.
+
+## `shacl-shacl.ttl` — the shapes that validate shapes graphs
+
+Appendix C of the same recommendation, vendored **byte-for-byte unmodified**: it declares its
+own prefixes, so unlike `spec-examples.ttl` it needed no header and carries no local change at
+all. Same source, same retrieval date, same licence.
+
+It is here because it is the largest real shapes graph the specification itself publishes — 405
+lines, ten node shapes, sixty-odd property shapes — and because of what it is *about*. These are
+the shapes W3C wrote to check that a shapes graph obeys SHACL's own syntax rules, so opening it
+in this reading draws the very structures it constrains. A card here is a shape describing what
+a shape may look like.
+
+It also earns its keep as a test of this module's vocabulary table. The file uses close to every
+term SHACL Core defines, and the validator's unknown-term rule — the one that catches the typo
+that silently disables a constraint — reports nothing on it. A term the recommendation uses that
+the table had missed would have surfaced here as a warning rather than in somebody's real file.
