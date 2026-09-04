@@ -32,8 +32,7 @@ namespace EtAlii.Adp.Backend.Context;
 /// matters only once a reading registers a provider of its own.
 /// </para>
 /// <para>
-/// The resolver that builds a target already knows this: it routes the registration file to a
-/// <see cref="DiagramRouted"/> and reads the definition off it. It simply used to throw the
+/// The resolver that builds a target already knows this: it routes the registration file and reads the definition off it. It simply used to throw the
 /// answer away. <c>DescribeToolbox</c> has always keyed on exactly this, so carrying it here
 /// makes the context seams agree with the toolbox seam rather than inventing a key.
 /// </para>
