@@ -49,7 +49,11 @@ A *wrong* name is worse than an ambiguous one. Full reasoning, and why an identi
 
 ## Checking that a command answered your question
 
-**Ask what the command would print if your belief were false.** If the answer is "the same thing", it is not evidence. `git log --oneline` prints an identical line whoever authored it. `git config user.name` prints the effective value without its source. `grep -c $'\r'` prints `0` for an LF file and for a shell that never expanded the pattern. `md5sum` over whole files reports drift when only a namespace line differs. `git worktree add` fails where a chained `cd` cannot see it. Five instances in one day, each caught only because somebody re-measured — this test would have caught four, and costs a sentence of thought rather than a second command. It is the exit-code rule applied to the other half of a command's output.
+**Ask what the command would print if your belief were false.** If the answer is "the same thing", it is not evidence. `git log --oneline` prints an identical line whoever authored it. `git config user.name` prints the effective value without its source. `grep -c $'\r'` prints `0` for an LF file and for a shell that never expanded the pattern. `md5sum` over whole files reports drift when only a namespace line differs. `git worktree add` fails where a chained `cd` cannot see it. Five instances in one day, each caught only because somebody re-measured — this test would have caught four, and costs a sentence of thought rather than a second command. It is the exit-code rule applied to the other half of a command's output: that one says do not read success from what a command printed, this one says do not read a fact from a command that was never asked for it.
+
+**Apply it to your own reports, not just to commands.** "Fixed" said from a worktree describes the worktree, not `develop` — and what you would have seen if it were *not* landed is exactly what you did see, the edited file in front of you. Say where a change is: committed on a branch, merged, or pushed.
+
+**And do not write a guard over prose.** A guard on an owner string, a comment or a description fails when the text legitimately changes, so it must be edited in the same commit as the thing it guards — which makes it a second copy of the data rather than a check on it. Notice rot during work and fix it; do not automate an assertion about wording.
 
 ## spec-workflow
 
