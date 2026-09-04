@@ -3,8 +3,10 @@
   "title": "view-delta-adoption tasks",
   "filePath": ".spec-workflow/specs/view-delta-adoption/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-04T06:27:45.004Z",
   "category": "spec",
-  "categoryName": "view-delta-adoption"
+  "categoryName": "view-delta-adoption",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-04T06:27:52.808Z"
 }
