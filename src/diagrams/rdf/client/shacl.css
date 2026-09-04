@@ -1,0 +1,50 @@
+/*
+ * The shapes reading's own rules only - everything structural comes from the central
+ * canvas.css, which register.ts imports once for the whole module.
+ */
+
+.shacl-shape-box {
+  rx: 6px;
+}
+
+/* An anonymous shape draws like any other and simply cannot be moved; the dash says so
+   without hiding it. */
+.shacl-shape-blank .shacl-shape-box {
+  stroke-dasharray: 4 3;
+}
+
+/* A deactivated shape is dimmed rather than removed: a reader auditing shapes needs to see
+   what is switched off. */
+.shacl-shape-deactivated {
+  opacity: 0.55;
+}
+
+.shacl-label {
+  font-weight: 600;
+}
+
+/* A target chip reads as a sentence. Present and absent terms render identically - a shapes
+   graph aims at data held elsewhere, so absence is the normal case, not a warning. */
+.shacl-target {
+  font-size: 11px;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.shacl-row-path {
+  font-size: 11px;
+}
+
+.shacl-row-cardinality,
+.shacl-row-summary {
+  font-size: 10px;
+}
+
+/* A SPARQL constraint is drawn as an opaque row: extracted, never parsed, never run. */
+.shacl-row-sparql .shacl-row-path {
+  font-style: italic;
+}
+
+.shacl-edge-label {
+  font-size: 10px;
+}
