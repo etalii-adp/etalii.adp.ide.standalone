@@ -67,7 +67,9 @@ while editing the description alone.
   edit-notes on the dialog, which is the sharpest example in the tree of where the line falls.
 - **c4** - element names and relationship labels. The element's editor covers its name line
   rather than its box, and a relationship's opens on the description alone, without the
-  technology drawn beside it.
+  technology drawn beside it. Relationships became selectable to make that reachable: they had
+  no click or context-menu handler at all, so the backend offered relabel on them and no gesture
+  could invoke it.
 
 Every canvas without an entry above keeps its dialog **pending adoption**, which is not the same
 as being exempt:

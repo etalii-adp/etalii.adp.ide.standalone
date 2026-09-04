@@ -1315,12 +1315,12 @@ the measured path and the real focus behaviour are verified.
   inline - "Every C4 element needs a name." - with the editor staying open, the text intact, and
   nothing written to the document.
 
-  **Not reachable through the app, and not because of this feature:** a C4 relationship cannot be
-  selected on the canvas at all. `C4RelationshipShape` renders no click or context-menu handler, so
-  there is no gesture that selects one, and the relabel action cannot be invoked from the canvas
-  however it is marked. The backend marker, the midpoint placement and the description-only initial
-  value are all implemented and unit-tested; only the manual leg is blocked, and it stays blocked
-  until relationships become selectable.
+  **The relationship leg was blocked and is now open.** A C4 relationship could not be selected on
+  the canvas at all - `C4RelationshipShape` rendered no click or context-menu handler - so the
+  backend offered relabel on one and no gesture could invoke it. Relationships are now selectable
+  through the same pattern RDF's edges use, and the leg is verified: clicking one selects it, the
+  ribbon offers Relabel and Set technology, and F2 opens the editor on the description **alone** -
+  "Scans parcels using", with the "[Touch]" that is drawn beside it absent from the field.
 
   **Enter was exercised through the editor's own key handler rather than a synthesised keystroke.**
   The automation harness's Return does not reach an input inside a `foreignObject`, while Escape

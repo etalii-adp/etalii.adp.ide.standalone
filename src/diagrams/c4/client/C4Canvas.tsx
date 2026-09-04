@@ -302,6 +302,25 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
     openMenuAt(event, node.id);
   };
 
+  /**
+   * Click a relationship: select it, exactly as clicking an element does. Until this existed no
+   * gesture on this canvas selected a relationship at all, so relabel and set-technology were
+   * offered by the backend and reachable by nothing - and inline relabel, which needs the
+   * selection to run the action, could never be invoked.
+   */
+  const onRelationshipClick = (relationship: C4Relationship) => {
+    setFocusedId(relationship.id);
+    surfaceRef.current?.focus();
+    select(elementSelectionOf(entryId, path, relationship.id));
+  };
+
+  /** Right-click a relationship: the same menu gesture an element uses. */
+  const onRelationshipContextMenu = (relationship: C4Relationship, event: React.MouseEvent) => {
+    setFocusedId(relationship.id);
+    surfaceRef.current?.focus();
+    openMenuAt(event, relationship.id);
+  };
+
   /** A toolbox entry held over an element: allowed, and shown as the drop's outcome. */
   const onNodeDragOver = (node: C4Node, event: React.DragEvent) => {
     if (!event.dataTransfer.types.includes(TOOLBOX_DRAG_TYPE)) {
@@ -438,7 +457,13 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
               <C4BoundaryShape key={boundary.id} boundary={boundary} />
             ))}
             {relationships.map((relationship) => (
-              <C4RelationshipShape key={relationship.id} relationship={relationship} />
+              <C4RelationshipShape
+                key={relationship.id}
+                relationship={relationship}
+                selected={relationship.id === focusedId}
+                onSelect={() => onRelationshipClick(relationship)}
+                onOpenMenu={(event) => onRelationshipContextMenu(relationship, event)}
+              />
             ))}
             {nodes.map((node) => (
               <C4NodeShape
@@ -561,10 +586,21 @@ function C4NodeShape({
  * One relationship: a dashed, unidirectional arrow labelled with what it is for and, where the
  * model says so, the technology it uses - which is what a Container diagram exists to show.
  */
-function C4RelationshipShape({ relationship }: { relationship: C4Relationship }) {
+function C4RelationshipShape({
+  relationship,
+  selected,
+  onSelect,
+  onOpenMenu,
+}: {
+  relationship: C4Relationship;
+  selected: boolean;
+  onSelect: () => void;
+  onOpenMenu: (event: React.MouseEvent) => void;
+}) {
   const p = relationship.payload;
   const label = p.technology ? `${p.description} [${p.technology}]` : p.description;
   const order = p.interactionOrder;
+  const [start, end] = anchorsBetween(sourceBoxOf(p), destinationBoxOf(p));
 
   // Straight, deliberately: a C4 relationship joins any two elements in any direction, so
   // there is no corridor for a curve to stay inside, and Structurizr and the C4 notation
@@ -573,7 +609,22 @@ function C4RelationshipShape({ relationship }: { relationship: C4Relationship })
     // The wrapping group carries the id so the label's rendered text node can be measured for
     // the inline editor; the shared connection component takes no id of its own, and giving it
     // one would be a change to every canvas that draws a line.
-    <g data-c4-relationship={relationship.id}>
+    <g
+      data-c4-relationship={relationship.id}
+      data-element-id={relationship.id}
+      className={`c4-relationship-group${selected ? " canvas-selected" : ""}`}
+      onClick={onSelect}
+      onContextMenu={onOpenMenu}
+      // Belt and braces, and known to be so: `onSurfacePointerDown` already declines a press
+      // whose target is not the surface itself, so removing this line changes nothing today -
+      // measured, not assumed. Kept because it is the shape the shared interactive connection
+      // uses, and because the surface's own check is the kind that gets relaxed later.
+      onMouseDown={(event) => event.stopPropagation()}
+    >
+      {/* The invisible fat twin that actually takes the pointer: a dashed one-pixel stroke is
+          not a target anyone can hit. The class is the shared one every canvas uses for this,
+          so the grab width is the same on all of them. */}
+      <path className="canvas-connection-hit" d={`M ${start.x} ${start.y} L ${end.x} ${end.y}`} />
     <StraightConnection
       from={sourceBoxOf(p)}
       to={destinationBoxOf(p)}
