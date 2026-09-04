@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/contracts-and-build-hygiene/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
@@ -9,6 +9,14 @@
       "trigger": "initial",
       "approvalId": "approval_1788505432516_yl24b1s9j",
       "approvalTitle": "contracts-and-build-hygiene — Requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-04T08:49:46.656Z",
+      "trigger": "revision_requested",
+      "approvalId": "approval_1788509874855_yshwr6i0i",
+      "approvalTitle": "contracts-and-build-hygiene — Requirements (revised: proto/POCO naming survey)"
     }
   ]
 }

@@ -3,8 +3,27 @@
   "title": "contracts-and-build-hygiene — Requirements (revised: proto/POCO naming survey)",
   "filePath": ".spec-workflow/specs/contracts-and-build-hygiene/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "needs-revision",
   "createdAt": "2026-09-04T08:17:54.855Z",
   "category": "spec",
-  "categoryName": "contracts-and-build-hygiene"
+  "categoryName": "contracts-and-build-hygiene",
+  "response": "Feedback Summary (1 comments):\n\nSpecific Text Comments:\n1. \"As someone reading a `.proto` to learn what the wi...\": Also apply the naming convention of the .prot files to any of the backend PROTO and client data classes that represent the wire data.\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"selection\",\n      \"comment\": \"Also apply the naming convention of the .prot files to any of the backend PROTO and client data classes that represent the wire data.\",\n      \"timestamp\": \"2026-09-04T08:49:43.882Z\",\n      \"selectedText\": \"As someone reading a `.proto` to learn what the wire can express, I want every field and value in it to mean something, so I do not build on a promise nothing keeps.\",\n      \"highlightColor\": {\n        \"bg\": \"rgba(255, 235, 59, 0.3)\",\n        \"border\": \"#FFEB3B\",\n        \"name\": \"#ffeb3b\"\n      },\n      \"id\": \"comment_1788511783882_p1h9k233b\",\n      \"startOffset\": 5674,\n      \"endOffset\": 5839\n    }\n  ],\n  \"summary\": \"Feedback Summary (1 comments):\\n\\nSpecific Text Comments:\\n1. \\\"As someone reading a `.proto` to learn what the wi...\\\": Also apply the naming convention of the .prot files to any of the backend PROTO and client data classes that represent the wire data.\\n\",\n  \"timestamp\": \"2026-09-04T08:49:46.650Z\"\n}",
+  "respondedAt": "2026-09-04T08:49:46.667Z",
+  "comments": [
+    {
+      "type": "selection",
+      "comment": "Also apply the naming convention of the .prot files to any of the backend PROTO and client data classes that represent the wire data.",
+      "timestamp": "2026-09-04T08:49:43.882Z",
+      "selectedText": "As someone reading a `.proto` to learn what the wire can express, I want every field and value in it to mean something, so I do not build on a promise nothing keeps.",
+      "highlightColor": {
+        "bg": "rgba(255, 235, 59, 0.3)",
+        "border": "#FFEB3B",
+        "name": "#ffeb3b"
+      },
+      "id": "comment_1788511783882_p1h9k233b",
+      "startOffset": 5674,
+      "endOffset": 5839
+    }
+  ]
 }
