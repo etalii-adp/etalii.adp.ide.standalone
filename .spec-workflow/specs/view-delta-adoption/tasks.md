@@ -75,7 +75,7 @@ A fifth, about how these were found rather than about the work: **this is the se
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.3, 3.4, 5.2, 5.3_
   - _Prompt: Implement the task for spec view-delta-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer, C# and TypeScript | Task: Implement the view-delta loop in dependency-graph, both halves | Restrictions: shared client library only, no shared backend helper, update both stale comments | _Leverage: the adoptions from tasks 3-5 | Success: client and backend tests pass, the backend test fails against a return []. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7. databricks implements the loop
+- [-] 7. databricks implements the loop
   - Files: `src/diagrams/databricks/client/DatabricksCanvas.tsx`, its stream hook, `src/diagrams/databricks/backend/*/DatabricksSession.cs`, and their tests
   - The same two halves. Pixels-per-unit canvas, so it converts at its own call site. Update the class remarks, which document the declining reason there rather than at the method.
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.3, 3.4, 5.2, 5.3_
