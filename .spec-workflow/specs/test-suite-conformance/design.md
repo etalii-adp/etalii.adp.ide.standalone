@@ -119,20 +119,26 @@ This is house practice now rather than a proposal: four view-delta adopters prov
 
 **The sabotage must be checked to have taken effect.** A patch written with LF newlines silently matches nothing in this CRLF tree — it changes no bytes, the suite passes, and the result reads as a robust test that survived tampering. Assert that the pattern matched before writing the file.
 
-### These are two different defects, and the design keeps them apart
-
-A sabotage that silently did nothing and a guard with no floor are not the same finding, and conflating them would misdescribe what the requirements found.
-
-* **A bad sabotage** makes someone wrongly believe a guard works. The guard may be perfectly sound; the verification was worthless.
-* **A missing floor** means the guard has nothing to fail on, regardless of how carefully anyone verified it. No sabotage, good or bad, was involved in creating it.
-
-The 25 findings are the second kind. They were found by reading the code, not by re-running anyone's verification. Requiring sabotage-verified acceptance for the repairs is right and is required above — but it is a rule about how this specification's own work is accepted, not an account of how the defects arose.
-
 ### Regression
 
 The four gates, judged by exit code, before every merge: `dotnet test --solution EtAlii.Adp.slnx` and `dotnet format style --verify-no-changes --severity info` from `src/backend/`, and `npm test` and `npm run typecheck` from `src/client/`. No repair here touches client code, but the gate set is the gate set.
 
 A repair must not change the number of tests that pass for any other reason. If adding a floor turns another test red, the floor has found something and that is a separate finding to report, not a number to tune.
+
+## A separate finding: the sabotage that silently did nothing
+
+This is recorded as a finding in its own right, and deliberately **not** counted among the 25. It concerns how a guard is *verified*, not what is wrong with one — and the two have already been merged twice in conversation about this specification, which is why it gets its own heading rather than a line inside the testing strategy.
+
+**The hazard.** A patch written with LF newlines matches nothing in this CRLF tree. It changes no bytes, the test suite passes, and the outcome is indistinguishable from a guard that genuinely survived having its subject taken away. It is worse than no verification at all, because it produces evidence. An agent recorded a verdict on this basis before catching it, and the three sabotages run elsewhere in this repository on the day this was written were each asserted to have matched the file before it was rewritten, for exactly that reason.
+
+**Why it is not one of the 25.** The distinction matters and is easy to lose:
+
+* **A sabotage that did nothing** makes someone wrongly believe a guard works. The guard itself may be perfectly sound; only the verification was worthless.
+* **A missing floor** means the guard has nothing to fail on, however carefully anyone verified it. The defect is in the test, not in the checking of it.
+
+The 25 are the second kind. They were found by reading the code, not by re-running anyone's verification, and no sabotage — sound or silent — was involved in creating any of them. None of the 25 can be explained by this hazard, and a later reader who assumes otherwise will go looking for a verification history that does not exist.
+
+**What follows from it** is one rule, stated in the testing strategy above and repeated here because this is where the reasoning lives: a patch that sabotages a test must assert it matched the file before writing. A sabotage that cannot prove it changed something proves nothing about the test that survived it.
 
 ## Landability and parallelisation
 
