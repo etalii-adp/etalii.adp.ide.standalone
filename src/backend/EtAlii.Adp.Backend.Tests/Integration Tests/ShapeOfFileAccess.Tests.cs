@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using System.Threading;
 using Xunit;
 using IoPath = System.IO.Path;
 
