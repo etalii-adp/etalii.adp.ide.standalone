@@ -1,3 +1,5 @@
+using EtAlii.Adp.Backend.Hierarchy;
+
 namespace EtAlii.Adp.Diagram.Databricks;
 
 /// <summary>One <c>libraries:</c> entry - a source the pipeline's transformations come from.</summary>

@@ -1,3 +1,5 @@
+using EtAlii.Adp.Backend.Hierarchy;
+
 namespace EtAlii.Adp.Diagram.Databricks;
 
 /// <summary>One <c>notifications:</c> entry - who hears about which pipeline events.</summary>
