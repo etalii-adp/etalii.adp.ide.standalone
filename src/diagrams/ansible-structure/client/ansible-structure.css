@@ -1,40 +1,58 @@
 /*
- * The Ansible structure diagram's whole appearance.
+ * What is genuinely the Ansible structure diagram's own appearance.
  *
- * Everything visual lives here rather than in AnsibleCanvas.tsx - tech.md's centralised-styling
- * rule - and that includes the per-play palette. The backend sends a play INDEX and this file
- * turns it into a colour, which is what keeps a theme change a stylesheet change rather than a
- * protocol change.
+ * The chrome, the element and connection basics and the selection treatment moved to
+ * `@client/canvas/canvas.css` (loaded from this module's register.ts), which the timeline,
+ * dependency-graph and databricks canvases already share. What stays here is what no other
+ * canvas has: the per-play palette, the per-kind outlines, and the static/dynamic/unresolved
+ * edge vocabulary.
+ *
+ * Everything visual still lives in CSS rather than in AnsibleCanvas.tsx - tech.md's
+ * centralised-styling rule - and that includes the palette. The backend sends a play INDEX and
+ * this file turns it into a colour, which keeps a theme change a stylesheet change rather than
+ * a protocol change.
  */
 
+/*
+ * The palette, declared once. Six slots, wrapped by the client: the backend never names a
+ * colour, it sends an index, and these are what the index means. They stay module-owned rather
+ * than moving into the theme - the theme names meanings (primary, danger, success, warning) and
+ * nothing else here needs a categorical ramp. The day a second module wants one, that is the
+ * moment to promote these, not before.
+ */
 .ansible-canvas {
-  width: 100%;
-  height: 100%;
-  display: block;
-  background: var(--color-surface);
   touch-action: none;
-  cursor: grab;
+
+  --ansible-play-hue-0: #4f8cc9;
+  --ansible-play-hue-1: #57a773;
+  --ansible-play-hue-2: #c96f4f;
+  --ansible-play-hue-3: #8a6fc9;
+  --ansible-play-hue-4: #c9a84f;
+  --ansible-play-hue-5: #4fb5c9;
 }
 
-.ansible-canvas:active {
-  cursor: grabbing;
+/* The same six hues, lifted so they still read against the dark surface they are mixed into. */
+@media (prefers-color-scheme: dark) {
+  .ansible-canvas {
+    --ansible-play-hue-0: #7fb0e0;
+    --ansible-play-hue-1: #7fc79a;
+    --ansible-play-hue-2: #e0947a;
+    --ansible-play-hue-3: #ab96e0;
+    --ansible-play-hue-4: #e0c87f;
+    --ansible-play-hue-5: #7fd0e0;
+  }
 }
 
 .ansible-canvas-message {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
   padding: 2rem;
   text-align: center;
-  color: var(--color-text-muted);
   font-size: 0.875rem;
   line-height: 1.5;
 }
 
 .ansible-canvas-message code {
   font-family: var(--font-mono, monospace);
-  background: var(--color-surface-raised, rgb(0 0 0 / 6%));
+  background: var(--color-surface-raised);
   padding: 0 0.25rem;
   border-radius: 3px;
 }
@@ -64,12 +82,12 @@
 }
 
 .ansible-node-selected .ansible-node-box {
-  stroke: var(--color-accent);
+  stroke: var(--color-primary);
   stroke-width: 2.5;
 }
 
 .ansible-node:focus-visible .ansible-node-box {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -78,12 +96,12 @@
  * cannot tell the fills apart - colour is never the only thing carrying the distinction.
  */
 .ansible-node-playbook .ansible-node-box {
-  --ansible-node-stroke: var(--color-accent);
+  --ansible-node-stroke: var(--color-primary);
   stroke-width: 2;
 }
 
 .ansible-node-play .ansible-node-box {
-  --ansible-node-stroke: var(--color-accent);
+  --ansible-node-stroke: var(--color-primary);
   stroke-dasharray: 6 3;
 }
 
@@ -114,15 +132,16 @@
 /* ---- the per-play palette ------------------------------------------------------------------ */
 
 /*
- * Six slots, wrapped by the client. The backend never names a colour; it sends an index, and
- * these are what the index means. Add a slot here and change PALETTE_SLOTS in the canvas.
+ * Six slots, wrapped by the client - add a slot above, here, and in PALETTE_SLOTS in the canvas.
+ * The fill is the hue mixed into the real raised surface, so a play reads as a tint of the
+ * canvas rather than as paint on top of it, in either theme.
  */
-.ansible-play-0 .ansible-node-box { --ansible-node-fill: color-mix(in srgb, #4f8cc9 18%, var(--color-surface-raised)); --ansible-node-stroke: #4f8cc9; }
-.ansible-play-1 .ansible-node-box { --ansible-node-fill: color-mix(in srgb, #57a773 18%, var(--color-surface-raised)); --ansible-node-stroke: #57a773; }
-.ansible-play-2 .ansible-node-box { --ansible-node-fill: color-mix(in srgb, #c96f4f 18%, var(--color-surface-raised)); --ansible-node-stroke: #c96f4f; }
-.ansible-play-3 .ansible-node-box { --ansible-node-fill: color-mix(in srgb, #8a6fc9 18%, var(--color-surface-raised)); --ansible-node-stroke: #8a6fc9; }
-.ansible-play-4 .ansible-node-box { --ansible-node-fill: color-mix(in srgb, #c9a84f 18%, var(--color-surface-raised)); --ansible-node-stroke: #c9a84f; }
-.ansible-play-5 .ansible-node-box { --ansible-node-fill: color-mix(in srgb, #4fb5c9 18%, var(--color-surface-raised)); --ansible-node-stroke: #4fb5c9; }
+.ansible-play-0 .ansible-node-box { --ansible-node-fill: color-mix(in srgb, var(--ansible-play-hue-0) 18%, var(--color-surface-raised)); --ansible-node-stroke: var(--ansible-play-hue-0); }
+.ansible-play-1 .ansible-node-box { --ansible-node-fill: color-mix(in srgb, var(--ansible-play-hue-1) 18%, var(--color-surface-raised)); --ansible-node-stroke: var(--ansible-play-hue-1); }
+.ansible-play-2 .ansible-node-box { --ansible-node-fill: color-mix(in srgb, var(--ansible-play-hue-2) 18%, var(--color-surface-raised)); --ansible-node-stroke: var(--ansible-play-hue-2); }
+.ansible-play-3 .ansible-node-box { --ansible-node-fill: color-mix(in srgb, var(--ansible-play-hue-3) 18%, var(--color-surface-raised)); --ansible-node-stroke: var(--ansible-play-hue-3); }
+.ansible-play-4 .ansible-node-box { --ansible-node-fill: color-mix(in srgb, var(--ansible-play-hue-4) 18%, var(--color-surface-raised)); --ansible-node-stroke: var(--ansible-play-hue-4); }
+.ansible-play-5 .ansible-node-box { --ansible-node-fill: color-mix(in srgb, var(--ansible-play-hue-5) 18%, var(--color-surface-raised)); --ansible-node-stroke: var(--ansible-play-hue-5); }
 
 /* ---- edges --------------------------------------------------------------------------------- */
 
@@ -160,7 +179,7 @@
 
 /* A role depending on a role is not the same as a playbook listing one, so it is not drawn alike. */
 .ansible-edge-depends-on .ansible-edge-line {
-  --ansible-edge-stroke: var(--color-accent);
+  --ansible-edge-stroke: var(--color-primary);
   stroke-dasharray: 1 4;
   stroke-linecap: round;
   stroke-width: 2;
@@ -178,11 +197,11 @@
  * in the warning colour, because one of those two cases is a mistake.
  */
 .ansible-edge-unresolved .ansible-edge-line {
-  --ansible-edge-stroke: var(--color-warning, #c9a84f);
+  --ansible-edge-stroke: var(--color-warning);
   stroke-dasharray: 3 3;
 }
 
 .ansible-edge-unresolved .ansible-edge-label {
-  fill: var(--color-warning, #c9a84f);
+  fill: var(--color-warning);
   text-anchor: start;
 }

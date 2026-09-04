@@ -1,5 +1,6 @@
 import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
 import { AnsibleCanvas } from "./AnsibleCanvas";
+import "@client/canvas/canvas.css";
 import "./ansible-structure.css";
 
 /**

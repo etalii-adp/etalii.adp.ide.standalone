@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend.Diagrams;
+using EtAlii.Adp.Backend.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -327,5 +328,106 @@ public class AnsibleElementMapperTests
             File.Copy(file, IoPath.Combine(destination, IoPath.GetRelativePath(source, file)));
         }
         return destination;
+    }
+
+    // ---- authored positions (Requirements 1.4, 3.1, 3.4) --------------------------------------
+
+    [Fact]
+    public void AnAuthoredPosition_OverridesTheComputedOne()
+    {
+        // Arrange: one node moved somewhere the layout engine would never place it.
+        var (project, graph) = Read("infrastructure");
+        var moved = graph.Nodes[0].Id;
+        var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal)
+        {
+            [moved] = new RegistrationPosition(4321, 1234),
+        };
+
+        // Act.
+        var elements = Mapper.Visible(project, graph, DiagramViewport.Unbounded, stored);
+
+        // Assert.
+        var element = elements.Single(candidate => candidate.Id == moved);
+        Assert.Equal(4321, element.X);
+        Assert.Equal(1234, element.Y);
+    }
+
+    [Fact]
+    public void UnauthoredElements_KeepTheirComputedPositions()
+    {
+        // Arrange.
+        var (project, graph) = Read("infrastructure");
+        var moved = graph.Nodes[0].Id;
+        var computed = Mapper.Visible(project, graph, DiagramViewport.Unbounded);
+        var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal)
+        {
+            [moved] = new RegistrationPosition(4321, 1234),
+        };
+
+        // Act.
+        var arranged = Mapper.Visible(project, graph, DiagramViewport.Unbounded, stored);
+
+        // Assert: everything sits where it sat before, except the moved node itself and the
+        // edges anchored on it - those follow their endpoint, which is the point of moving it.
+        // Compared pairwise rather than by id lookup: two identical directives yield two edges
+        // sharing one id, so an id is not a key in this sequence.
+        var follows = graph.Edges
+            .Where(candidate => candidate.SourceId == moved)
+            .Select(candidate => candidate.Id)
+            .Append(moved)
+            .ToHashSet(StringComparer.Ordinal);
+
+        Assert.Equal(computed.Count, arranged.Count);
+        foreach (var (before, after) in computed.Zip(arranged).Where(pair => !follows.Contains(pair.First.Id)))
+        {
+            Assert.Equal(before.Id, after.Id);
+            Assert.Equal(before.X, after.X);
+            Assert.Equal(before.Y, after.Y);
+        }
+    }
+
+    [Fact]
+    public void AStoredIdTheGraphNoLongerProduces_ChangesNothing()
+    {
+        // Arrange: the stale-key case - a play removed, a file renamed (Requirement 3.1).
+        var (project, graph) = Read("infrastructure");
+        var computed = Mapper.Visible(project, graph, DiagramViewport.Unbounded);
+        var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal)
+        {
+            ["playbook:deleted-yesterday.yml"] = new RegistrationPosition(4321, 1234),
+        };
+
+        // Act.
+        var arranged = Mapper.Visible(project, graph, DiagramViewport.Unbounded, stored);
+
+        // Assert: no phantom element, and nothing displaced. Pairwise, as above.
+        Assert.Equal(computed.Count, arranged.Count);
+        Assert.DoesNotContain(arranged, element => element.Id == "playbook:deleted-yesterday.yml");
+        foreach (var (before, after) in computed.Zip(arranged))
+        {
+            Assert.Equal(before.Id, after.Id);
+            Assert.Equal(before.X, after.X);
+            Assert.Equal(before.Y, after.Y);
+        }
+    }
+
+    [Fact]
+    public void AnEdge_FollowsAMovedEndpoint()
+    {
+        // Arrange: an edge anchors on its source, so moving that source moves the edge with it.
+        var (project, graph) = Read("infrastructure");
+        var edge = graph.Edges.First(candidate => candidate.TargetId.Length > 0);
+        var stored = new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal)
+        {
+            [edge.SourceId] = new RegistrationPosition(4321, 1234),
+        };
+
+        // Act.
+        var elements = Mapper.Visible(project, graph, DiagramViewport.Unbounded, stored);
+
+        // Assert.
+        var drawn = elements.Single(candidate => candidate.Id == edge.Id);
+        Assert.Equal(4321, drawn.X);
+        Assert.Equal(1234, drawn.Y);
     }
 }
