@@ -51,7 +51,7 @@ vi.mock("@client/shell/panels/useToolboxItems", () => ({
   useToolboxItems: () => [],
 }));
 
-const { OwlCanvas, nodeSizeOf } = await import("./OwlCanvas");
+const { OwlCanvas, nodeSizeOf, labelFor, fit } = await import("./OwlCanvas");
 
 const NS = "http://example.org/o#";
 
@@ -298,6 +298,26 @@ describe("the owl canvas", () => {
 
     // Assert (Requirement 8.3).
     expect(container.querySelector(".owl-truncation-banner")!.textContent).toContain("Showing 4 of 10");
+  });
+
+
+  it("keeps a label inside its shape, with the full name still reachable", () => {
+    // The guard behind "this looks chaotic": local names and Manchester expressions run long,
+    // and drawn whole they smear across their neighbours.
+    const long = node("res:x", "class", "TemporalReferenceSystemUsedForDurationDescription", 0, 0);
+    expect(labelFor(long, 190).length).toBeLessThan(long.display.length);
+    expect(labelFor(long, 190).endsWith("…")).toBe(true);
+
+    // A short one is left exactly alone.
+    expect(labelFor(node("res:y", "class", "Pizza", 0, 0), 190)).toBe("Pizza");
+
+    // Card rows are sentences - a comment, a contributor's address - and are cut the same way.
+    expect(fit("dct:contributor: mailto:chris.little@metoffice.gov.uk", 220).endsWith("…")).toBe(true);
+
+    // The shape carries the whole name as a title, so nothing is lost by the trim.
+    const { container } = renderCanvas();
+    const pizza = container.querySelector(`[data-element-id="res:${NS}Pizza"]`)!;
+    expect(pizza.querySelector("title")!.textContent).toBe("Pizza");
   });
 
   it("sizes cards by their content and shapes by their kind", () => {
