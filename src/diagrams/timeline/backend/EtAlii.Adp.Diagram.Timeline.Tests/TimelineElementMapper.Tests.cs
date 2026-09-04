@@ -235,4 +235,60 @@ public class TimelineElementMapperTests
         Assert.Equal("2026-02-01", begin);
         Assert.Equal("not-a-date", end);
     }
+
+    /// <summary>
+    /// This module keeps both an unfiltered <see cref="TimelineElementMapper.Elements"/> and a
+    /// viewport-filtered <see cref="TimelineElementMapper.Visible"/> whose bodies are nearly the
+    /// same. Two bodies with no stated relationship drift apart, so the relationship is stated.
+    /// </summary>
+    [Fact]
+    public void TheUnfilteredMapping_MatchesTheUnboundedViewport()
+    {
+        // Arrange.
+        var model = Parse(TwoElementsAndAConnection);
+
+        // Act & assert: the same elements, in the same order.
+        Assert.Equal(
+            _mapper.Elements(model).Select(element => element.Id),
+            _mapper.Visible(model, DiagramViewport.Unbounded).Select(element => element.Id));
+    }
+
+    /// <summary>
+    /// And where the two part company, which is why they are not collapsed into one.
+    /// </summary>
+    /// <remarks>
+    /// An unbounded viewport is not quite "everything": <see cref="TimelineElementMapper.Visible"/>
+    /// withholds a connection unless both endpoints were sent, so the canvas is never asked to
+    /// draw a curve to an element it does not hold. A connection naming an element the document
+    /// never declares is therefore dropped by <c>Visible</c> at any viewport and kept by
+    /// <c>Elements</c> - which matters, because <c>TimelineContextSourceResolver</c> resolves a
+    /// selection by looking its id up in <c>Elements</c>. Collapsing the two would quietly make
+    /// such a connection unselectable rather than being the pure refactor it looks like.
+    /// </remarks>
+    [Fact]
+    public void TheTwoPartCompany_OverAConnectionToNothing()
+    {
+        // Arrange: a connection whose "to" names an element that is never declared.
+        var model = Parse("""
+            timeline: 1
+            elements:
+              - id: aaa
+                label: Period
+                begin: 2026-01-05
+                row: 0
+            connections:
+              - id: ccc
+                from: aaa
+                to: nowhere
+                label: dangles
+            """);
+
+        // Act.
+        var unfiltered = _mapper.Elements(model).Select(element => element.Id).ToArray();
+        var unbounded = _mapper.Visible(model, DiagramViewport.Unbounded).Select(element => element.Id).ToArray();
+
+        // Assert.
+        Assert.Contains("ccc", unfiltered);
+        Assert.DoesNotContain("ccc", unbounded);
+    }
 }

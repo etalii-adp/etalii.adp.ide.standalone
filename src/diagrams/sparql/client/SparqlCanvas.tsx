@@ -12,6 +12,8 @@ import { ContextMenu } from "@client/shell/context/ContextMenu";
 import { toMenuGroups } from "@client/shell/context/toMenuGroups";
 import { useRegisterDiagramView } from "@client/shell/panels/DiagramViewContext";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
+import { useViewReport } from "@client/diagrams/useViewReport";
+import type { Viewport } from "@client/diagrams/viewReport";
 import { ContextSelectionAction } from "@client/generated/context_pb";
 import { useSparqlStream } from "./useSparqlStream";
 import type { SparqlDiagramEdge, SparqlModel } from "./sparqlModel";
@@ -27,6 +29,10 @@ const ARROWHEAD_ID = "sparql-arrowhead";
 const MIN_PIXELS_PER_UNIT = 0.05;
 const MAX_PIXELS_PER_UNIT = 8;
 const ZOOM_STEP = 1.25;
+
+/** What the viewport spans when the surface has not been laid out yet - jsdom, and the first frame. */
+const FALLBACK_WIDTH_PX = 1200;
+const FALLBACK_HEIGHT_PX = 400;
 
 interface SparqlView {
   /** The canvas coordinate at the view's top-left corner. */
@@ -64,7 +70,7 @@ interface DragPreview {
  * `moveElementTo`. Refusals come back from the backend with their own sentences (Requirement 5.4).
  */
 export function SparqlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
-  const { model, loading, failed, moveElementTo } = useSparqlStream(projectId, path);
+  const { model, loading, failed, moveElementTo, reportView } = useSparqlStream(projectId, path);
   const { select } = useContextConnection();
   const { selection, actions } = useContextSelection();
   const surfaceRef = useRef<HTMLDivElement | null>(null);
@@ -76,6 +82,38 @@ export function SparqlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   const dragRef = useRef<DragState | null>(null);
   const [drag, setDrag] = useState<DragPreview | null>(null);
   const [rejection, setRejection] = useState("");
+
+  /**
+   * The rectangle this canvas is showing, in the module's own units. A pixels-per-unit canvas
+   * converts at its own call site - the shared code converts nothing (Requirement 3.4).
+   */
+  const viewportOf = useCallback((): Viewport => {
+    const rect = surfaceRef.current?.getBoundingClientRect();
+    const widthPx = rect?.width || FALLBACK_WIDTH_PX;
+    const heightPx = rect?.height || FALLBACK_HEIGHT_PX;
+    return {
+      minX: view.startX,
+      minY: view.startY,
+      maxX: view.startX + widthPx / view.pixelsPerUnit,
+      maxY: view.startY + heightPx / view.pixelsPerUnit,
+    };
+  }, [view]);
+
+  // Reported once the view settles. The rectangle is what is keyed on, so a pan and a zoom
+  // that happen to show the same span report once, and a resize that changes nothing else is
+  // still reported because the measured surface is part of the rectangle.
+  const reported = viewportOf();
+  useViewReport({
+    view: {
+      x: reported.minX,
+      y: reported.minY,
+      w: reported.maxX - reported.minX,
+      h: reported.maxY - reported.minY,
+    },
+    report: reportView,
+    convert: viewportOf,
+    ready: !loading && !failed,
+  });
 
   const selectionKey = innermostKey(selection);
   const selectedId = elementIdOfKey(selectionKey ?? null);
