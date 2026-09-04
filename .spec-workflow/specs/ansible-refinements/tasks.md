@@ -17,7 +17,7 @@ One worktree for the whole spec: `.claude/worktrees/ansible-ref` — deliberatel
   - _Requirements: 5.1, 5.6_
   - _Prompt: Implement the task for spec ansible-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer with design-system experience | Task: Add light and dark definitions of --color-surface-raised to src/client/src/index.css beside the existing colour tokens, then remove the now-redundant literal fallbacks from ansible-structure.css, following requirements 5.1 and 5.6 | Restrictions: do not add --color-warning, it already exists via commit 3e130bba; do not touch helm-charts.css or wardley.css — they heal by resolving the token, which the commit message must state explicitly; verify both themes visually rather than assuming the values | _Leverage: the existing --color-danger/--color-success/--color-warning definitions in index.css as the shape and commentary style | Success: the token has exactly two definitions, ansible's stylesheet references no undefined custom property, and the commit message names the helm and wardley side effect. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2. Backend: authored positions
+- [x] 2. Backend: authored positions
   - _Requirements: 1.1, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 2.6, 3.1, 3.2, 3.4_
 
 - [x] 2.1 The mapper overlays authored positions
@@ -40,11 +40,11 @@ One worktree for the whole spec: `.claude/worktrees/ansible-ref` — deliberatel
   - _Requirements: 2.1, 2.6_
   - _Prompt: Implement the task for spec ansible-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Wire the .adp path and the project's history stack into AnsibleSession through AnsibleSessionFactory and its DI registration, per requirements 2.1 and 2.6, updating the stale remark about the uninjected history store | Restrictions: the Open signature does not change; a null history stack must leave the diagram read-only rather than throwing | _Leverage: HelmSessionFactory's identical wiring | Success: factory tests assert the marker path and history reach the session; the module's DI registration resolves cleanly. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2.4 Gate and merge group 2 - BLOCKED: gates green for this spec, merge held while develop carries four inherited ShaclWriterTests failures (proven present at develop 1b4e99db with none of this branch applied)
+- [x] 2.4 Gate and merge group 2 - held while develop carried four inherited ShaclWriterTests failures (proven present at develop 1b4e99db with none of this branch applied); unblocked by 0a190060 and merged with group 3 as eeaee5c9
   - Backend tests and `dotnet format style --verify-no-changes --severity info` from `src/backend`, both judged by captured exit code with the build variables set; merge `.claude/worktrees/ansible-ref` into `develop` through the main checkout
   - _Prompt: Implement the task for spec ansible-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Set MSBUILDDISABLENODEREUSE=1 and DOTNET_CLI_USE_MSBUILD_SERVER=0, run the backend test and format gates redirecting output to a log and capturing each exit code on the next line, then merge the worktree into develop via the main checkout | Restrictions: never judge a gate by piped output or by grepping for "failed"; a zero-test run (exit 5) is a broken build, not an empty suite; do not merge on a failing gate | Success: both gates exit zero by captured code and the merge lands. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3. Client: shared appearance, scrollbars, drag
+- [x] 3. Client: shared appearance, scrollbars, drag
   - _Requirements: 1.1, 1.2, 4.1, 4.2, 4.3, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3_
 
 - [x] 3.1 Adopt the shared stylesheet and theme the palette
@@ -66,14 +66,14 @@ One worktree for the whole spec: `.claude/worktrees/ansible-ref` — deliberatel
   - _Requirements: 1.1, 1.2_
   - _Prompt: Implement the task for spec ansible-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Add drag-to-reposition to AnsibleCanvas and moveElementTo to useAnsibleStream per requirements 1.1 and 1.2, mirroring the databricks canvas, and delete the stale comment claiming this canvas offers no drag | Restrictions: a click must not become a reposition — keep the movement threshold; edges are never draggable; pan on empty canvas keeps working exactly as it does today | _Leverage: DatabricksCanvas.tsx's dragRef/preview shape and useDatabricksStream.ts's moveElementTo | Success: tests assert a drag past the threshold calls moveElementTo with canvas-unit coordinates, a click does not, and an edge drag does nothing. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.4 Gate and merge group 3
+- [x] 3.4 Gate and merge group 3
   - `npm test` and `npm run typecheck` from `src/client`, plus the backend gates, each judged by captured exit code with the build variables set; merge into `develop` through the main checkout
   - _Prompt: Implement the task for spec ansible-refinements, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run the client and backend gates with exit codes captured before any pipe and the MSBuild variables set, then merge the worktree into develop via the main checkout | Restrictions: no gate is judged by reading piped output; do not merge on a failing gate | Success: all four gates exit zero by captured code and the merge lands. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. Proof, documentation and the manual pass
+- [-] 4. Proof, documentation and the manual pass
   - _Requirements: 2.2, 2.3, 2.4, 2.5, 3.2, 3.3, 7.1, 7.2_
 
-- [ ] 4.1 The reposition cycle, proven end to end
+- [-] 4.1 The reposition cycle, proven end to end
   - Files: an integration test under `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/`
   - Helm's proof, for ansible: open a diagram over a fixture folder, move a node through the session, assert the `.adp` gained the layout entry, assert **every file inside the registered folder is byte-identical**, reopen and assert the overlay applies, undo and assert the registration's prior bytes are back. Also assert the watcher return path: the layout write re-renders the open session through the ordinary settle-and-re-read route, with no second watcher involved.
   - _Requirements: 2.2, 2.3, 2.4, 2.5_
