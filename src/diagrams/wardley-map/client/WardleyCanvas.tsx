@@ -14,6 +14,8 @@ import {
 } from "@client/generated/wardley-map_pb";
 import type { WardleyAxis, WardleyElement, WardleyModel } from "./wardleyModel";
 import { useWardleyStream } from "./useWardleyStream";
+import { useViewReport } from "@client/diagrams/useViewReport";
+import { shownRectOf, type Viewport } from "@client/diagrams/viewReport";
 
 /**
  * The map's own space is 0..1 on both axes. It is drawn into a fixed box of canvas units so
@@ -72,12 +74,16 @@ function scale(value: number): number {
 // entry a selection reports as its outer level, which task 19's context resolver needs and
 // nothing here does.
 export function WardleyCanvas({ projectId, path }: WardleyCanvasProps) {
-  const { model, loading, failed, moveElementTo } = useWardleyStream(projectId, path);
+  const { model, loading, failed, moveElementTo, reportView } = useWardleyStream(projectId, path);
 
   // The palette the Toolbox panel shows while this map is open - described by the backend
   // (Requirement 13), registered here and withdrawn on unmount.
   useRegisterDiagramToolbox(useToolboxItems(projectId, path));
   const [view, setView] = useState<ViewBox>(fullView);
+  // Read by the debounced report when it fires rather than when it was scheduled, so the
+  // rectangle sent is where the reader's view came to rest.
+  const viewRef = useRef(view);
+  viewRef.current = view;
   const surfaceRef = useRef<SVGSVGElement | null>(null);
   const panRef = useRef<{ clientX: number; clientY: number; view: ViewBox } | null>(null);
 
@@ -207,6 +213,17 @@ export function WardleyCanvas({ projectId, path }: WardleyCanvasProps) {
     })();
   };
 
+  // What the reader can see, reported once the view settles, so the session delivers what falls
+  // inside it rather than the whole map. Converted here and only here: the canvas draws the 0..1
+  // map into a SPACE-unit box, the session compares against 0..1, and the shared library is not
+  // told about either (view-delta-adoption Requirement 3.4).
+  useViewReport({
+    view,
+    report: reportView,
+    convert: () => inMapSpace(shownRectOf(viewRef.current, surfaceRef.current)),
+    ready: !loading && !failed,
+  });
+
   if (failed) {
     return (
       <div className="wardley-canvas wardley-canvas-message">
@@ -242,6 +259,24 @@ export function WardleyCanvas({ projectId, path }: WardleyCanvasProps) {
       {rejection ? <p className="wardley-rejection">{rejection}</p> : null}
     </div>
   );
+}
+
+/**
+ * A rectangle of canvas units as the map's own 0..1 space - the units its elements are in, and so
+ * the units a viewport report has to be in.
+ *
+ * The map's space is drawn at {@link SPACE} units to the unit interval, so this is a division and
+ * nothing else. It deliberately does **not** clamp to 0..1: the view can and does extend into the
+ * margin where the axis labels sit, and a report clamped to the plotted area would cull the
+ * elements sitting closest to the edge the reader has just panned to.
+ */
+function inMapSpace(rect: Viewport): Viewport {
+  return {
+    minX: rect.minX / SPACE,
+    minY: rect.minY / SPACE,
+    maxX: rect.maxX / SPACE,
+    maxY: rect.maxY / SPACE,
+  };
 }
 
 /**
