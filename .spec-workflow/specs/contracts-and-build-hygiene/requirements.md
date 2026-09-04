@@ -6,7 +6,9 @@ A read of the contracts, the build configuration and the documentation that desc
 
 The build configuration itself came out clean, and that is worth recording as loudly as the defects, because it is what makes the defects legible: one `TargetFramework` (`net10.0`) in `src/Directory.Build.props:5` with no project overriding it, `Nullable` and `ImplicitUsings` enabled centrally, **zero** floated package versions (every `PackageReference` version lives in `src/Directory.Packages.props`), and **every** `*.Tests.csproj` declaring `<OutputType>Exe</OutputType>` — the omission that would report as `Zero tests ran` rather than as a broken build. All four gates pass locally on `469b1fbd`: `dotnet test` **0** (4,399 tests, 0 failed), `dotnet format style` **0**, `npm test` **0** (82 files, 809 tests), `npm run typecheck` **0**.
 
-The most serious finding is that **the release pipeline has been attaching version tags to the wrong commits**, and it has done so at least three times.
+The most serious finding is that **the release pipeline has been attaching version tags to the wrong commits**, and it did so five times before the fix landed as `a95c3b51`.
+
+**Amended 2026-09-04, after two user decisions arrived while the tasks card was still pending.** The five misattributed tags stay, with the reason recorded (Requirement 1.3-1.4). And publishing decouples from pushing (Requirement 11) — which **removes the premise of Requirement 1** rather than merely adding to it, since a dispatched run names its own ref and has no branch tip to resolve. Requirement 1 is kept as the record of a real defect that produced five bad tags, not as a live requirement; both amendments are raised as an amendment rather than folded in silently, because the tasks document was already written against the earlier shape.
 
 ## Alignment with Product Vision
 
@@ -31,7 +33,8 @@ Neither is possible if each run tagged the commit it built: Nerdbank.GitVersioni
 
 1. WHEN the release job creates a tag THEN it SHALL pass the built commit explicitly (`--target ${{ github.sha }}`), so the tag cannot land anywhere else.
 2. WHEN a release is published THEN the tag's commit, the ZIP's name, and the version stamped into the shipped assemblies SHALL all describe the same build — the `tests.md` "one build, one number, four places" check made structural rather than manual.
-3. WHERE existing tags are already misattributed THEN this spec SHALL decide their fate explicitly rather than silently: the affected tags are `v0.1.461-alpha`, `v0.1.465-alpha`, `v0.1.469-alpha` and `v0.1.476-alpha`, and deleting or retaining a published tag is the user's call, not an implementation detail.
+3. WHERE existing tags are already misattributed THEN this spec SHALL decide their fate explicitly rather than silently. **Decided (amendment, 2026-09-04): they stay, and the reason is recorded rather than the tags removed.** The affected set grew to five as the defect kept running — `v0.1.461-alpha`, `v0.1.465-alpha` and `v0.1.476-alpha` on `f5a755c1`, `v0.1.469-alpha` and `v0.1.481-alpha` on `8dfb7f64`. What decided it was a constraint rather than a preference: a development machine here has neither `gh` nor a token, so it can delete a **tag ref** but not the **release** attached to it, and doing that half alone would leave five releases pointing at tags that no longer exist — a stranger state than the one being corrected. `v0.1.402-alpha` was correct by luck and stays on its own merits.
+4. WHEN anyone audits the tag history THEN this document SHALL be the record that **every tag minted before `a95c3b51` names the branch tip at API time rather than the commit it was built from**. A tag from that era is not evidence of what shipped, and the five above are not the only ones that could mislead — they are the ones where the coincidence failed visibly.
 
 ### Requirement 2 — The republish guard guards the commit, not just the version string
 
@@ -182,6 +185,25 @@ All seven images under `docs/screenshots/` were last written 2026-09-03; `src/cl
 
 1. WHEN a UI change lands that alters a captured view THEN the screenshot SHALL be retaken by the recorded procedure.
 2. WHEN this spec runs THEN each of the seven images SHALL be compared against the running app once, and the result recorded — including "unchanged", which is the likely answer for most.
+
+### Requirement 11 — A release happens when someone asks for one, not on every push
+
+**User Story:** As the person who owns this repository, I want publishing to be a decision rather than a side effect of pushing, so a release exists because someone wanted it.
+
+The user's decision, relayed through the scrum master on 2026-09-04 and recorded as relayed rather than as heard directly: *"release on a schedule or manual trigger, which also can be on a request through the chat."* Publishing decouples from pushing entirely. **Every push still gates** — that half is unchanged and valuable.
+
+**This dissolves the premise of Requirement 1, and the document should say so rather than leave a superseded requirement reading as load-bearing.** The misattribution existed because `gh release create` resolved the tag against the default branch *at API time*, and a push-triggered run had no ref of its own to name. A dispatched run is given the ref by its caller, so there is no tip to resolve and nothing to get wrong. `--target ${{ github.sha }}` becomes belt-and-braces — worth keeping, no longer the fix.
+
+**What does not become redundant**: the `concurrency` group and the superseded-commit skip both still matter, because two dispatches can still overlap and a queued one can still be overtaken. The commit-level republish guard matters more, not less: a manual trigger makes "release this commit twice" an easy mistake to make by hand.
+
+#### Acceptance Criteria
+
+1. WHEN a release is wanted THEN it SHALL be triggered deliberately — `workflow_dispatch`, a schedule, or a request relayed into the session — and NOT by a push to `develop`.
+2. WHEN a release is dispatched THEN the trigger SHALL take **the ref to build as an input**, so the caller names the commit rather than inheriting whatever the tip has become.
+3. WHEN a push to `develop` lands THEN the gates SHALL run exactly as they do now and **nothing SHALL be published**. This is a deletion from a workflow already shipped and verified, and the change SHALL state what it removes.
+4. WHERE Requirement 1's `--target` and Requirement 2's guards already exist THEN they SHALL be kept; the first is no longer the fix and the second matters more, because a human trigger makes a duplicate release easy to ask for.
+5. WHEN an agent is asked to trigger a release THEN it SHALL be treated as an outward-facing action requiring the user's **explicit word each time**, never a standing permission — the design SHALL say who may ask and what the agent confirms before acting.
+6. WHERE the concurrency group and the superseded-commit skip exist THEN they SHALL remain, because two dispatched runs can still overlap.
 
 ## Non-Functional Requirements
 
