@@ -1,5 +1,13 @@
 # EtAlii.Adp
 
+## Asking the user something
+
+**Every question to the user is a selection, never open prose.** Offer the concrete options with enough of each to choose on — what it means, what it costs — and end with an "other" so an answer nobody listed is still available. This holds for agents and for the scrum master alike, and it holds for the small ones: a question worth interrupting someone for is worth the minute it takes to enumerate the answers.
+
+An agent that cannot reach the user directly routes the question to the scrum master **already in that shape**, options and all, rather than as a paragraph for someone else to convert. Whoever writes the question knows the options; whoever relays it is guessing.
+
+Where an option is recommended, say which and why in its own text rather than in a preamble around the list.
+
 ## Chat naming
 
 Rename this session to `Agent N - <topic/specification>` whenever its topic changes, keeping any number it already has and taking the next free one otherwise. A finished agent renames itself `Agent N - Idle`.
@@ -14,19 +22,38 @@ Full rules and reasoning, including the half-removed-worktree hazard: [processes
 
 ## Committing and merging in the shared main checkout
 
-Commit with an explicit pathspec — `git commit -F msg -- <paths>` — naming files, never folders: a bare `git commit` commits the whole shared index. Commit your own implementation log the moment the tool writes it. Before merging here, read `git status` for files you did not touch, and never stash or `git checkout --` them.
+Commit with an explicit pathspec - `git commit -F msg -- <paths>` - naming files, never folders: a bare `git commit` commits the whole shared index. Commit your own implementation log the moment the tool writes it.
 
-Full rules and reasoning: [processes.md, *Committing and merging in the shared main checkout*](.spec-workflow/steering/processes.md#committing-and-merging-in-the-shared-main-checkout).
+**Never merge while anything is staged, yours or anyone's.** A failed merge stashes the working state and does not restore it; that lost 26 paths of three sessions' work in one line of output. **Merge through a scratch worktree named for your own agent number — `.claude/worktrees/mrg<N>`, never a shared name.** Two agents merging at once otherwise land in one directory, and the second one's `--ff-only` carries the first one's merge into develop underneath its own — gated together, attributed to one landing, and nothing looking wrong afterwards. That has already happened once. An "already exists" worktree may be someone's live tree rather than an abandoned husk: take a different name, never reset what is there. Prefer `git -C <path>` over `cd`, so a failed `worktree add` cannot leave the next command running somewhere silently wrong.
+
+In it: merge your branch with `--no-ff`, run the four gates on that merged tree, then `git merge --ff-only` it in the main checkout - a fast-forward builds no tree from the index, so foreign staged files neither block it nor get touched. **Re-gate on the merged tree, not before it.**
+
+**Chain the whole cycle into one command** — `reset --hard develop`, merge, four gates, `--ff-only` — so the window between gating a tree and landing it is seconds. With several sessions committing minutes apart and a gate run taking about three, a `--ff-only` issued separately is routinely refused; one agent was refused four times running. Refusal is the mechanism working: twice, develop had gained code the earlier gate never saw. **Run that final `--ff-only` from the main checkout, never from inside the scratch worktree** — run in the wrong place it merges the branch into itself and prints `Already up to date`, a success message for something that did not happen.
+
+If it does happen, do not re-run anything: the stash survives as a dangling commit pair findable with `git fsck --unreachable --no-reflogs`. Never re-apply a deletion that was in flight.
+
+Full rules, the incident and the recovery: [processes.md, *Committing and merging in the shared main checkout*](.spec-workflow/steering/processes.md#committing-and-merging-in-the-shared-main-checkout).
 
 ## Git identity
 
-Commit under a per-task identity `agent-<N>-<task>`, set two different ways depending on where you are:
+Commit under a per-task identity `agent-<N>-<task>`. **Nothing is set locally in this repository** — `.git/config` has no `[user]` section — so any tree without its own identity signs as the machine's **global** name, the user's own. Do not go looking for a local value to fix; there is none.
 
-- **In a dedicated worktree:** `git config --worktree user.name "agent-<N>-<task>"`. **Not** plain `git config user.name` — that writes to `.git/config`, which every worktree and the main checkout share, so it renames *every other agent* too.
-- **In the shared main checkout:** set nothing. Pass the identity per command: `git -c user.name="agent-<N>-<task>" commit -F msg -- <paths>`. Several sessions use that working tree at once, so any config there is shared between them — `--worktree` included. There is no per-session scope.
+- **One scratch worktree per agent, named for the agent** (`.claude/worktrees/mrg<N>`), never a shared name. Two agents merging at once otherwise land in one directory, and the second's `--ff-only` carries the first's merge into develop under its own name.
+- **Set `git config --worktree user.name "agent-<N>-<task>"` the moment you create a worktree.** Every command run there inherits it, merges included, and it cannot leak to another session. Set once, it cannot be got wrong afterwards — which beats any rule depending on vigilance at the moment nobody is looking.
+- **A `--worktree` identity binds to the directory, not to you.** Work in a tree you did not create and your commits are signed as whoever made it. **Read back with plain `git config user.name` before your first commit in any tree you did not create yourself.**
+- **In the shared main checkout only**, pass `-c user.name="agent-<N>-<task>"` on **any command that writes a commit object** — `merge`, `rebase`, `revert` and `cherry-pick` as much as `commit`. `git merge --ff-only` writes *no* object; it moves a ref. The commit that lands is the `--no-ff` merge made earlier in the scratch tree, which is exactly where **45 of 61 merges in one 18-hour stretch** lost their author while every agent believed it was complying.
+- **The two read-backs answer different questions.** Plain `git config user.name` answers *who will sign my next commit here*. `git config --local user.name` answers *did I leak a value into the shared file*. Recommending only the first makes a borrowed identity invisible; only the second makes a correct identity look like a leak. Both happened today.
 - **Never `--global`, and never touch `user.email`.**
 
-Without an identity you inherit `vrenken` from the machine's global config, in every checkout, so your work is indistinguishable from the user's own. But a *wrong* name is worse than an ambiguous one: `.git/config` was set three times in one hour here, and each agent's commits would have carried whichever name was written last. `git -C` changes where a command runs, not whose identity it uses. (The full reasoning moves to `processes.md` once its first pass clears approval; it is deliberately not linked yet, because the section does not exist.)
+A *wrong* name is worse than an ambiguous one. Full reasoning, and why an identity rather than a `Co-Authored-By` trailer: [processes.md, *Git identity*](.spec-workflow/steering/processes.md#git-identity).
+
+## Checking that a command answered your question
+
+**Ask what the command would print if your belief were false.** If the answer is "the same thing", it is not evidence. `git log --oneline` prints an identical line whoever authored it. `git config user.name` prints the effective value without its source. `grep -c $'\r'` prints `0` for an LF file and for a shell that never expanded the pattern. `md5sum` over whole files reports drift when only a namespace line differs. `git worktree add` fails where a chained `cd` cannot see it. Five instances in one day, each caught only because somebody re-measured — this test would have caught four, and costs a sentence of thought rather than a second command. It is the exit-code rule applied to the other half of a command's output: that one says do not read success from what a command printed, this one says do not read a fact from a command that was never asked for it.
+
+**Apply it to your own reports, not just to commands.** "Fixed" said from a worktree describes the worktree, not `develop` — and what you would have seen if it were *not* landed is exactly what you did see, the edited file in front of you. Say where a change is: committed on a branch, merged, or pushed.
+
+**And do not write a guard over prose.** A guard on an owner string, a comment or a description fails when the text legitimately changes, so it must be edited in the same commit as the thing it guards — which makes it a second copy of the data rather than a check on it. Notice rot during work and fix it; do not automate an assertion about wording.
 
 ## spec-workflow
 
@@ -36,18 +63,9 @@ Full rules and reasoning: [processes.md, *Specification bookkeeping*](.spec-work
 
 ## Vendored example data
 
-Diagram modules are tested against **real published example data**, not hand-written toys — the point of vendoring real documents is that they exercise input shapes the author never had in mind. Agents may download it, under two conditions that are not negotiable:
+Test diagram modules against **real published example data**, not hand-written toys. Permissive licences only - **share-alike is refused**. Vendor the licence file itself beside the data as `LICENSE.md`, verbatim; a link or a readme line is not enough. **Read the licence from the dataset's own statement, not from the page around it**, and re-verify at acquisition rather than trusting what a spec recorded. Record in the folder's readme what the corpus does *not* demonstrate.
 
-- **The licence must be permissive.** CC0, CC BY (with the attribution carried), the W3C Software and Document Licence and similar are fine. Share-alike licences are not — UNESCO's thesaurus was rejected on exactly that ground.
-- **Download the licence file itself and keep it beside the data.** Not a link, not a line in a readme naming the licence: the actual file, vendored next to the documents it covers, so the terms travel with the data for anyone who finds it later.
-
-Verify the licence again at acquisition rather than trusting what the spec recorded — terms change between writing a spec and fetching the file.
-
-**Verify from the data, not from the page.** Read the dataset's own licence statement — the `cc:license` triple, or whatever the format's equivalent is — rather than the download page around it. The STW thesaurus was vendored after its page turned out to carry *three* conflicting signals at once: prose saying CC BY 4.0, a `rel="license"` link pointing at ODbL, and a by-nc-sa badge. Two of those three are share-alike and would have disqualified the source. An agent reading the badge, or the link, would have reached a confidently wrong answer in either direction. The data's own statement settles it.
-
-Name the vendored licence file `LICENSE.md`, whatever extension the upstream server serves it under — the family's own provenance guard requires that name. Keep the text verbatim; only the filename follows the house convention.
-
-**Say what the examples do not demonstrate.** A vendored corpus rarely covers every shape a requirement asks for. Record the gaps in the folder's readme, with the reason each candidate source was rejected, so the next reader meets the omission before wondering about it.
+Full rules and reasoning, including the source that carried three conflicting licence signals at once: [processes.md, *Vendored example data*](.spec-workflow/steering/processes.md#vendored-example-data).
 
 ## Diagram type catalog
 
@@ -75,7 +93,9 @@ Run `dotnet format style --verify-no-changes --severity info` (from `src/backend
 
 The policy is in `.gitattributes` rather than in `core.autocrlf` because an attribute overrides `core.autocrlf` completely, so it holds for every clone and worktree regardless of how anyone's git is configured. That matters: `core.autocrlf=true` is only Git for Windows' installer default, and on a machine where it is `false` a CRLF file commits into the index *as CRLF*, after which every diff of that file is a whole-file diff for everybody else.
 
-`warning: LF will be replaced by CRLF` is **not** a sign of damage, and it is deliberately not silenced. The content is LF in the index either way; the warning says a file on disk has LF and will be rewritten to CRLF on next checkout. It is how you find out a tool wrote against the house style — scripts that generate files (`node`, redirected shell output, anything writing `\n`) are the usual culprit. Write CRLF, or let an editor that reads `.editorconfig` do it, and it stops.
+`warning: LF will be replaced by CRLF` is **not** a sign of damage, and it is deliberately not silenced. The content is LF in the index either way; the warning says a file on disk has LF and will be rewritten to CRLF on next checkout. It is how you find out a tool wrote against the house style — scripts that generate files (`node`, redirected shell output, anything writing `\n`) are the usual culprit. Write CRLF, or let an editor that reads `.editorconfig` do it, and it stops. A Python handle left at its default writes LF; opening with `newline='\r\n'` to generate and `newline=''` to rewrite preserves rather than re-translates.
+
+**Check line endings with `git ls-files --eol`, never with a shell-quoted CR pattern.** It reports index and working tree separately — `i/lf w/crlf attr/text=auto eol=crlf` is the house policy satisfied — which is the distinction that makes this question confusing. `grep -c $'\r'` depends on a bashism: under `sh`, `dash` or a PowerShell wrapper the pattern is not expanded, grep searches for four literal characters, and a CRLF file and an LF file return the identical `0`. It fails looking safe rather than loud, which is the worst shape a check can have — it reported a correctly-CRLF file as LF here and was believed.
 
 Some documents are exempt because their **bytes are the test subject**: a module whose round-trip requirement says an unchanged document comes back byte-identical cannot have git rewriting its fixtures, or the test measures git rather than the writer — and a `crlf-line-endings.*`/`lf-line-endings.*` pair collapses into the same file. Those are marked `-text`, **by extension rather than by directory**: a directory rule was tried and withdrawn, because `Fixtures/**` also catches the readmes, recorded verdicts and exported diagrams sitting beside the fixtures, which are ordinary text. **Adding a diagram module whose documents are byte-compared? Add one line for its extension to `.gitattributes`** — the reasoning is written out there, so it does not have to be worked out a sixth time.
 

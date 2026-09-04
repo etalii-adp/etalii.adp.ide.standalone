@@ -217,6 +217,7 @@ public class HelmElementMapperTests
 
         // Assert: the unfiltered mapping still draws the chart; the viewport one has nothing it
         // can place.
+        Assert.NotNull(none);
         Assert.NotEmpty(unfiltered);
         Assert.Empty(unbounded);
     }

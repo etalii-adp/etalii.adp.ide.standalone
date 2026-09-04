@@ -1,3 +1,5 @@
+using EtAlii.Adp.Backend.Hierarchy;
+
 namespace EtAlii.Adp.Diagram.Databricks;
 
 /// <summary>One <c>job_clusters:</c> entry - the compute a task can bind to by key.</summary>

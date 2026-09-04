@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/causal-loop-diagram/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-04T17:10:12.375Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788541812284_4pp51tsnt",
+      "approvalTitle": "causal-loop-diagram design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-04T17:13:23.266Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788541812284_4pp51tsnt",
+      "approvalTitle": "causal-loop-diagram design"
+    }
+  ]
+}

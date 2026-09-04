@@ -124,7 +124,44 @@ The design's four shapes — A (files discovered on disk), B (a collection the c
 
 It is not repaired here because it is not one of the sites the requirements name, and Requirement 3.2 says the seventeen sound walks are left alone. Widening this specification's reach to a guard it did not survey is exactly the scope creep the design argues against. Recorded so the next reader meets it as a known thing rather than discovering it, and so that anyone copying that form knows it is the weaker of the two the requirements permit.
 
-- [x] 11. Confirm the count, once, by hand
+### Four self-comparing counts outside the twenty files
+
+`Assert.Equal(x.Count, x.Distinct().Count())` compares a collection against itself and reads `0 == 0` on an empty one. Five files carry it; **one is inside this specification's twenty** (`WardleyToolboxProvider.Tests.cs:80`, covered by task 2's floor). The other four are recorded here with their paths so the next reader inherits located sites rather than a technique:
+
+| Site | What it guards |
+| --- | --- |
+| `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/DiagramDiscoveryStartup.Tests.cs:104` | Catalog ordering and duplicate-freedom |
+| `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/DiagramOptionTree.Tests.cs:154` | Option-tree id uniqueness |
+| `src/backend/EtAlii.Adp.Diagram.Tests/DiagramDefinitionDiscovery.Walk.Tests.cs:51` | Discovery-walk name uniqueness |
+| `src/diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure.Tests/AnsibleGraph.Tests.cs:225` | Play-index uniqueness |
+
+**The first is the consequential one, verified rather than suspected.** `AfterStartup_AllIsOrderedByOriginAndFreeOfDuplicates` has exactly two assertions and both are vacuous on an empty catalog: the ordering check at `:95` compares two sequences *derived from the same empty list*, and the uniqueness check at `:104` compares a count against itself. **That test passes entirely on an empty catalog.**
+
+**And the distinction this specification's own rule 2 demands, applied to that claim:** the *test* is vacuous, the *file* is not. `Assert.NotEmpty(catalog.All)` at `:67` and `Assert.NotEmpty(declared)` at `:135` sit in sibling tests, so an empty catalog does fail this file loudly. The guard that would tell you no module registered at all is `:67`, and it is sound. So the accurate statement is that one test of a core discovery guard is vacuous, not that discovery is unguarded — a difference worth keeping, because the second would send someone to fix a hole that is not there.
+
+**Not repaired**, under the same ruling as the c4 anchor: these are outside the twenty files this specification names, and Requirement 3.2 and the design's scope section both say no guard's reach widens. Recorded so they are inherited, not rediscovered.
+
+### Stating the count
+
+When the per-collection recount returns, its number is stated **with its boundary in the same sentence** — "N collections across the twenty files this specification names", never "N collections". The first confirmation pass failed by reporting a narrower measurement as a broader claim; a total without its scope invites exactly that misreading from the reader's side instead.
+
+- [-] 11. Confirm the count, once, by hand — **reopened; the first pass answered a narrower question than it claimed**
+
+  **The 24 below does not hold, and the reason matters more than the number.** The first pass verified that every *site the survey named* carries a floor. It reported that as "every collection needing a floor has one". Those are different claims: the survey enumerated `[Fact]` bodies whose assertions all sat inside a top-level `foreach`, and it never enumerated every collection walked at run time. Agent 1's per-collection recount of azure-pipeline found **five more collections** with no floor, proved by control run — emptied with floors in place exactly those five fail, each naming its own guard; emptied with the floors removed the suite is green. They passed with their collections empty. Eleven floors now stand in that group where six did.
+
+  Two of the five are the shape worth learning. `PipelineWriter`'s loop takes a `continue` when a fixture has no editable stage, so **every** iteration can skip: the walk reads fourteen files, renames nothing, and completes green. `PipelineContextActionProvider`'s inner loop walks the actions offered per element, so a provider offering none visits nine ids, executes nothing, and passes. **Neither is reachable from the fixture floor above it** — a floor on the outer collection says nothing about an inner one.
+
+  **Known outstanding, verified by reading and deliberately not repaired here:** `src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline.Tests/PipelineLayout.Tests.cs:147` walks `graph.Edges.Where(edge => !edge.IsBroken)` with every assertion inside it and no floor on the filtered result. Same shape as the two above, outside task 1's named list.
+
+  **A second exempt category, verified rather than reasoned: xUnit floors an empty `[MemberData]` provider itself.** Emptying a provider with `Take(0)` — directory intact, nothing thrown — fails the test on its own with *"No data found for …"*, naming the test, which is most of what rule 2 asks a failure message to do. **The boundary is precise:** this covers a *provider* returning empty. An `Assert.All` or `foreach` **inside** a theory body still needs its own floor, because xUnit guarantees the theory ran with at least one case, not that anything inside it walked anything.
+
+  **That exemption removes nothing from this specification's own list**, which was checked rather than assumed: every site the survey named is a `[Fact]`, except `C4Export.Tests.cs`, whose `Assert.All` sits inside a theory body and therefore needs — and has — its floor. Any "three sites come off" applies to some other enumeration, not this one.
+
+  **A third vacuous shape, beside literal arrays and shape C:** `Assert.Equal(ids.Count, ids.Distinct().Count())` reads `0 == 0` on an empty list. It looks like an assertion and floors nothing.
+
+  **No new total is claimed here, and that is deliberate.** A complete per-collection count is not established: azure-pipeline has been recounted, one site outside it is known unfloored, and the other eight groups have been verified only against the sites the survey named. Producing another number from the same narrower method is what went wrong the first time. Closing this task honestly means recounting per collection across all ten groups, or saying plainly that it has not been done.
+
+  **On the record where git cannot carry it:** commit `8bde83f2`, which recorded the superseded count, is authored `agent-1-test-suite`. Agent 1 never touched task 11 — the shared `user.name` held their value at that moment. The work is Agent 8's and its count is superseded by this note. Nobody is rewriting shared history for a name.
 
   **Result: 24 collections needed a floor, not 25, and all 24 carry one. No site was missed.** Every one confirmed by reading the test, not by a pattern. Three corrections to the requirements' own arithmetic:
 

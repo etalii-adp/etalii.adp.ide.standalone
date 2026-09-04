@@ -473,10 +473,12 @@ public class PipelineContextActionProviderTests : IDisposable
             elementIds.Length >= 5,
             $"Only {elementIds.Length} element ids came back from the fixture pipeline; this guard has stopped finding the elements it offers actions on.");
 
+        var offered = 0;
         foreach (var elementId in elementIds)
         {
             foreach (var actionId in await ActionsOn(Write(), elementId))
             {
+                offered++;
                 // Arrange: a fresh document per action, so one edit does not invalidate the next.
                 var path = Write();
 
@@ -501,6 +503,15 @@ public class PipelineContextActionProviderTests : IDisposable
                 Assert.True(committed.Completed, $"{actionId} was offered on {elementId} but failed: {committed.Error}");
             }
         }
+
+        // And a floor on the inner collection, which is where every assertion above lives.
+        // The element floor proves the ids were found; it says nothing about whether any
+        // action was offered on them, and a provider that offered none would walk nine ids,
+        // execute nothing and pass. The nine ids carry 38 actions between them today, so
+        // twenty is a floor with real headroom on it.
+        Assert.True(
+            offered >= 20,
+            $"Only {offered} actions were offered across every element; this guard has stopped finding the actions it executes.");
     }
 
     [Fact]

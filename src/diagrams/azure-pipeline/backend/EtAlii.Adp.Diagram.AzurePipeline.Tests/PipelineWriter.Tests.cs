@@ -457,6 +457,7 @@ public class PipelineWriterTests
             fixtures.Length >= 10,
             $"Only {fixtures.Length} pipeline fixtures were found; this guard has stopped finding the corpus it renames stages in.");
 
+        var renamed = 0;
         foreach (var path in fixtures)
         {
             var document = PipelineDocument.Parse(File.ReadAllText(path));
@@ -474,6 +475,16 @@ public class PipelineWriterTests
             // Assert.
             var reparsed = PipelineParser.Parse(document);
             Assert.Equal("Edited by a test", reparsed.Stages[stage.index].DisplayName);
+            renamed++;
         }
+
+        // And a floor on the fixtures that actually reached the assertion. Finding the corpus
+        // is not enough here: every iteration can take the continue above, and the walk then
+        // completes green having renamed nothing at all - the whole test passing vacuously
+        // while still reading fourteen files. Eight of the fourteen offer an editable stage
+        // today, so five is a floor with real headroom on it.
+        Assert.True(
+            renamed >= 5,
+            $"Only {renamed} fixtures reached the rename assertion; this guard has stopped finding an editable stage to rename.");
     }
 }

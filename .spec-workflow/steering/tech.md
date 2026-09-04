@@ -90,7 +90,9 @@ A module's `Diagram.cs` takes exactly one of two shapes, and which one is not a 
 
 * **Stub**: `Definitions` is an inline `DiagramDefinition[]` array literal - no `Build` delegate, no named property. This is the shape a cataloged-but-unimplemented type keeps, and the one to copy when adding the next entry to the catalog.
 * **Implemented**: each definition is a `public static DiagramDefinition` property named for what it identifies (`Mindmap`, `Pipeline`), each carrying a `Build` delegate, with `Definitions` referencing the properties (`[Pipeline]`) rather than repeating them. The named property exists because a module's own registrations and tests need to say which definition they serve without indexing into an array - `Diagram.Pipeline.Origin`, never `Diagram.Definitions[0].Origin`.
-* **The trigger is gaining a `Build` delegate.** A module moves from stub to implemented exactly when its implementation spec starts wiring services - which is when `Build` appears - so the transition needs no separate tracking. Divergence beyond these two shapes is a finding, not a third shape.
+* **Family**: several definitions in one module, where **one** carries the `Build` delegate and the registration it names loops over the family's origins, registering a session factory, document factory and toolbox provider for each. `c4` is the worked example - one engine serves all its views, which share a model, a parser, a writer and a layout and differ only in which view they draw - and `databricks` follows it over bundle, job and pipeline. The siblings carry no `Build` of their own and are fully implemented notwithstanding.
+* **So `Build is null` does not mean "a stub".** It means "registers nothing itself", which is true of a stub and equally true of a family sibling. Anything deciding whether a type is *served* must look at the registration rather than at the definition: `AddC4()` and `AddDatabricks()` both loop, and reading their doc comments rather than their code gives the same wrong answer twice. This has already produced one confident, wrong report that seven shipped types were unimplemented.
+* **The trigger is gaining a `Build` delegate.** A module moves from stub to implemented exactly when its implementation spec starts wiring services - which is when `Build` appears somewhere in the module - so the transition needs no separate tracking. The family shape is not consistently applied and that is worth knowing rather than tidying: `rdf` puts `Build:` on all four of its definitions while `c4` and `databricks` put it on one, and both work because the registration is idempotent.
 * **A folder-subject module declares no `DocumentExtension` constant, and that is not a gap.** `ansible-structure` has none because its subject is `DiagramSubject.Folder` - a folder has no sibling body to name an extension for. Do not "fix" that omission.
 
 # Registering a diagram module's services
@@ -105,9 +107,8 @@ A module's service registration lives in **one file** - `ServiceCollection.AddX.
 
 * Tests should be runnable as part of the same local "F5 experience" - no separate environment or manual setup required to run the test suite.
 * Prefer fast, local unit/integration tests over end-to-end tests that depend on hosted infrastructure, given the local-first runtime model.
-* To test the implementation of the modular diagrams use the following diagram visualizations:&#x20;
-  * Mindmap (file extension \= .mm)&#x20;
-* Test classes in C# should follow the filename '\<Classname>.Tests' and the class name \<Classname>Tests. Mind the dot.
+* To test the modular diagram implementation, use the diagram types that are actually implemented, not a fixed list here: `docs/diagrams.md` is the catalog of record and marks each type's state, and `src/examples/` holds a document of each in one explorer tree. This bullet named Mindmap alone until 2026-09-04, which was true when Mindmap was the only module and quietly false for every module added after it - an enumeration in a document that is not the catalog goes stale the moment the catalog moves.
+* Test classes in C# should follow the filename `<Classname>.Tests` and the class name `<Classname>Tests`. Mind the dot.
 * Tests should follow the tripple a pattern: arrange, act, assert.
 
 # Checking that the conventions are actually followed

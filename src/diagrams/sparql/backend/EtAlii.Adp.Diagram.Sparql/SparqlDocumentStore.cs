@@ -56,7 +56,12 @@ public sealed class SparqlDocumentStore : ISparqlDocumentStore
                     0);
             }
 
-            text = File.ReadAllText(path);
+            // Shared with whoever is writing: File.ReadAllText opens at FileShare.Read, and
+            // Windows sharing is mutual, so a save landing while this read is in flight fails
+            // and the author is told their query "could not be written". This module has no
+            // writer of its own (NoWriterSurfaceTests), but the editor the query is authored
+            // in does, which is precisely the contention this reader exists to permit.
+            text = Backend.Hierarchy.SharedDocumentReader.ReadAllText(path);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

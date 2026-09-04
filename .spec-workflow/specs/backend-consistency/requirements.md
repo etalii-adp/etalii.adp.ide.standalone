@@ -45,7 +45,12 @@ be written". Three reads of user-editable documents bypass it.
 4. WHERE a read targets a file ADP itself owns rather than one the user edits — the problem
    cache at `src/backend/EtAlii.Adp.Backend/Problems/ProblemStore.cs:145` and `:274`, and the
    projects file at `src/backend/EtAlii.Adp.Backend/Projects/FileProjectStore.cs:62` — the
-   change is optional and lower priority, because no user-driven writer contends for them.
+   exemption SHALL be **scoped to the sharing-mode rule**, not to the file. No user-driven
+   writer contends for these reads, so the direct read is fine; that says nothing about any
+   other rule the same file must obey. Agent 7 found the cost of the wider form: its first
+   guard version wrote these exemptions file-wide and thereby pardoned a hand-rolled publish
+   in a file whose *read* was legitimately excused. A file can be fine to read directly and
+   wrong to publish by hand at the same time, and one exemption must not buy the other.
 5. THE codebase SHALL carry a guard that fails when a new direct read of a user document
    appears, because nothing prevents the next one. This is the unguarded class named in
    Requirement 5.
@@ -126,7 +131,10 @@ vague message — so nothing gets louder as the problem spreads.
    user-editable document through `File.ReadAllText`, `File.ReadAllLines`, `File.ReadAllBytes`,
    `File.OpenRead` or a bare `new FileStream`, naming the file and the replacement.
 2. WHERE a read targets a file ADP owns exclusively, the guard SHALL allow it through a
-   stated exemption rather than by not noticing.
+   stated exemption rather than by not noticing, and that exemption SHALL name the rule it
+   excuses rather than the file it sits in. A file-wide exemption is the failure mode
+   Requirement 1.4 records: it pardons every future rule at once, including ones nobody has
+   written yet.
 
 ## What was checked and found correct
 
@@ -168,9 +176,12 @@ referenced.
 
 ### Relationship to existing work
 
-The `file-io-centralization` spec already exists and appears to cover the same discipline
-Requirement 1 describes. If its scope includes these three call sites, Requirements 1 and 5
-should be folded into it rather than implemented twice.
+The `file-io-centralization` spec already exists and covers the same discipline Requirement 1
+describes, so the overlap was checked site by site rather than assumed. Agent 7's tasks
+convert **none** of the three core sites: two appear in its allow-list with the owner written
+as `backend-consistency`, and the third is outside its scope. **Requirement 1 therefore stays
+here in full.** Only Requirement 5, the guard, folds into that spec — one guard for one
+discipline, wherever the call sites turn out to live.
 
 ### The client half of Requirement 2
 

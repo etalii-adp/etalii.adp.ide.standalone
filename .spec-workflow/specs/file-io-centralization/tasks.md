@@ -10,7 +10,7 @@
 
 **Gate discipline, every gate task.** Set `MSBUILDDISABLENODEREUSE=1` and `DOTNET_CLI_USE_MSBUILD_SERVER=0`. Capture each exit code before any pipe — redirect to a log, take the code on the next line, judge the variable, read the log only to explain a failure. A zero-test run exits 5 having printed no failures at all.
 
-- [-] 1. The guard, first
+- [x] 1. The guard, first
   - _Requirements: 5.1, 5.2_
 
 - [x] 1.1 `ShapeOfFileAccess` guard, green on landing, with a shrinking allow-list
@@ -21,21 +21,21 @@
   - _Requirements: 5.1, 5.2_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Test engineer with static-analysis experience | Task: Write the ShapeOfFileAccess guard per requirements 5.1 and 5.2, failing on raw file APIs where a central helper exists, naming the replacement call in the message, and carrying two clearly separated allow-list sections - permanent entries with reasons, and tracked entries naming the task that will delete them | Restrictions: the guard must be GREEN when it lands, so the three known module sites go in the tracked section rather than being fixed here; never allow-list by silence; do not scan test projects | _Leverage: the dependency guard and the diagram-catalog guard already in the suite as the message-shape precedent; design section "ShapeOfFileAccess" for the exact rules | Success: the guard passes on today's tree, fails on a planted violation with a message naming the file and the central call, and its two allow-list sections are visibly different in kind. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 1.2 Gate and merge group 1
+- [x] 1.2 Gate and merge group 1 - merged as ebb4e97f
   - Backend tests and `dotnet format style --verify-no-changes --severity info` from `src/backend`, judged by captured exit codes
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Set the two MSBuild variables, run the backend gates capturing each exit code before any pipe, then merge via the main checkout committing by explicit pathspec | Restrictions: never judge a gate by piped output; a zero-test run is a broken build; read git status for files you did not touch before merging, and never stash or checkout another session's work | Success: both gates exit zero by captured code and the merge lands. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. `LineRange`: four identical copies become one
+- [x] 2. `LineRange`: four identical copies become one
   - _Requirements: 1.1, 1.2, 4.1, 4.2_
 
-- [ ] 2.1 Move `LineRange` to core and delete the four copies
+- [x] 2.1 Move `LineRange` to core and delete the four copies
   - Files: new `src/backend/EtAlii.Adp.Backend/Hierarchy/LineRange.cs`; delete `_Model/LineRange.cs` from databricks, dependency-graph, rdf and timeline; add the `using` to each namespace that referenced it
   - The clean rule-of-three case: four consumers of `public readonly record struct LineRange(int Start, int End)`, each at line 13 of its own file, identical once namespace and comments are set aside. No behaviour changes; this is deletion plus a `using`.
   - Carry the best of the four doc comments onto the core type rather than writing a new one — one of them already explains the inclusive-End convention, and that reasoning should survive the move.
   - _Requirements: 1.2, 4.1, 4.2_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Move LineRange into EtAlii.Adp.Backend/Hierarchy, delete the four module copies, and update every referencing namespace, per requirements 1.2, 4.1 and 4.2 | Restrictions: no behaviour change and no signature change - if a copy turns out to differ in any way beyond namespace and comments, stop and report it as a finding rather than reconciling it silently; module code may depend on core and never on another module | _Leverage: the four existing copies (databricks, dependency-graph, rdf, timeline _Model/LineRange.cs) - keep the clearest doc comment | Success: one LineRange exists, four are gone, the solution builds and every existing test passes untouched. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.2 Gate and merge group 2
+- [x] 2.2 Gate and merge group 2 - merged as 7ea5715a
   - As 1.2. This task gates the move that group 4 depends on, so it must land before group 4 starts.
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run both backend gates by captured exit code and merge via the main checkout, committing by explicit pathspec | Restrictions: as in task 1.2; do not begin group 4 work until this has merged, because LineDocument depends on the moved type | Success: gates exit zero and the merge lands. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
@@ -43,6 +43,7 @@
   - **These are the module counterparts to `backend-consistency`'s core sites, and they belong to this spec.** That scan names `AddDiagramContextActionProvider:131`, `RegistrationLayout:293` and `TextFileBuffer:106` — all in core. The three below are in modules and are named by no other spec. Neither spec should claim the other's, and this note exists so neither does.
   - Three of the six open `FileShare.ReadWrite` and omit `Delete`; the other three (tasks 3.4-3.6, found by the guard rather than by the survey) use a raw `File.ReadAllText`, which opens at `FileShare.Read` - the original flaw this spec is named after, still live in three modules. One defect, two symptoms. That is not cosmetic: without `Delete`, ADP's own temp-then-move publish cannot replace the file while the read is open, which is the exact interaction `SharedDocumentReader` exists to permit. Each author's comment shows they thought about sharing and got it *almost* right — which is the argument for the guard, not against these fixes.
   - Tasks 3.1 to 3.6 touch six files across six modules, share no file, and may be worked in parallel, one worktree per agent.
+  - **Keep each site's `File.Exists` check, and say in the comment why it is load-bearing.** `SharedDocumentReader` opens with `FileMode.Open` and throws on a file that does not exist, so the check is what turns a not-yet-created body into an empty document rather than an exception. Agent 4 established during task 3.5 that deleting the check leaves every test green: `FileNotFoundException` derives from `IOException`, so the store catch swallows it and still returns empty - the *outcome* survives while the *mechanism* becomes an exception on an ordinary path, logging a warning for a state the module documents as normal. Guarding that with a test was considered and declined: asserting no warning is logged needs `LogCapture`, which exists only in the three core test projects and is already forked three ways, so the guard would cost a fourth, fifth and sixth copy of a 118-line support class to protect log noise. The proportionate answer is a comment that tells the next editor the check is not redundant.
   - _Requirements: 2.1, 2.5_
 
 - [ ] 3.1 Ansible: convert `AnsibleYaml` to the central shared read
@@ -64,19 +65,19 @@
   - _Requirements: 2.1, 2.5_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Convert HelmChartReader's file read to SharedDocumentReader per requirements 2.1 and 2.5, deleting its tracked allow-list entry | Restrictions: preserve the never-throws contract; the chart reader must still skip reparse points and never write | _Leverage: SharedDocumentReader.OpenText; tasks 3.1 and 3.2 as the shape | Success: the site reads with ReadWrite plus Delete, the allow-list line is gone, helm tests pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.4 Databricks: convert `DatabricksDocumentStore` to the central shared read
+- [x] 3.4 Databricks: convert `DatabricksDocumentStore` to the central shared read
   - Files: `src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks/DatabricksDocumentStore.cs` (line 106); delete this file's tracked allow-list entry
   - **Found by task 1.1's guard, not by the survey.** This is a raw `File.ReadAllText` on a user document, which opens at `FileShare.Read` — the original flaw this spec is named after, still live. Same conversion as 3.1-3.3, different symptom of one defect.
   - _Requirements: 2.1, 2.5_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Convert DatabricksDocumentStore's document read to SharedDocumentReader per requirements 2.1 and 2.5, deleting its tracked allow-list entry | Restrictions: preserve the missing-file-is-an-empty-document behaviour and the unreadable-versus-unparseable distinction; do not touch the rdf or sparql stores, which are tasks 3.5 and 3.6 | _Leverage: SharedDocumentReader.OpenText; the already-converted RdfRegistrationHeaders and DatabricksHeaders as the shape | Success: the site reads shared, its allow-list line is gone, module tests pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.5 RDF: convert `RdfDocumentStore` to the central shared read
+- [x] 3.5 RDF: convert `RdfDocumentStore` to the central shared read
   - Files: `src/diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf/RdfDocumentStore.cs` (line 105); delete its tracked allow-list entry
   - As 3.4. Independently landable alongside it.
   - _Requirements: 2.1, 2.5_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Convert RdfDocumentStore's document read to SharedDocumentReader per requirements 2.1 and 2.5, deleting its tracked allow-list entry | Restrictions: preserve today's read semantics exactly; the rdf family has four readings over one store, so verify all four still open | _Leverage: SharedDocumentReader.OpenText; task 3.4 as the shape | Success: the site reads shared, its allow-list line is gone, the rdf tests pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.6 SPARQL: convert `SparqlDocumentStore` to the central shared read
+- [x] 3.6 SPARQL: convert `SparqlDocumentStore` to the central shared read - merged as eedc8d6e
   - Files: `src/diagrams/sparql/backend/EtAlii.Adp.Diagram.Sparql/SparqlDocumentStore.cs` (line 59); delete its tracked allow-list entry
   - As 3.4. Note sparql ships no writer by design, so this module reads only — the conversion cannot disturb a write path because there is none.
   - _Requirements: 2.1, 2.5_
@@ -86,11 +87,11 @@
   - As 1.2. If 3.1-3.3 landed in separate worktrees, this gates the combined result.
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run both backend gates by captured exit code over the combined result of tasks 3.1 to 3.6 and merge via the main checkout by explicit pathspec | Restrictions: as in task 1.2 | Success: gates exit zero, the merge lands, and the allow-list has lost exactly six tracked lines. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. The whole-line splice fork becomes one implementation
+- [-] 4. The whole-line splice fork becomes one implementation
   - Requires group 2 to have landed. The evidence for treating these as *the same* rather than *alike*: 266 of about 410 lines textually identical ignoring whitespace, eleven identically-named static helpers, and two document types exposing the same six public members at the same six line numbers.
   - _Requirements: 1.2, 3.1, 3.3, 4.1, 4.2, 2.3_
 
-- [ ] 4.1 `Line` and `LineDocument` move to core
+- [-] 4.1 `Line` and `LineDocument` move to core
   - Files: new `src/backend/EtAlii.Adp.Backend/Hierarchy/LineDocument.cs` (with the `Line(string Text, string Ending)` record and a `LoadResult`); nothing deleted yet
   - The surface is exactly what both documents already expose: `Lines`, `DominantEnding`, `Text`, `Replace(LineRange, …)`, `Insert(int, …)`, `Remove(LineRange)`. Loading goes through `SharedDocumentReader`; publishing through `AdpFileWriter`.
   - **Requirement 2.3 is met by shape, not by discipline:** a line carries its own `Ending`, so a rewritten line keeps its terminator by construction, while new content takes `AdpFileWriter.NewLine`. A splice never consults the constant and a create never consults a line, so a caller cannot choose wrongly.
@@ -185,6 +186,11 @@
 - [ ] 7.1 Tighten the guard and prove one home per rule
   - Files: `ShapeOfFileAccess.Tests.cs`
   - The tracked allow-list section should now hold **only** the two core sites that belong to backend-consistency, which are Agent 1 conversions rather than this spec; assert that, so a future tracked entry cannot be added and forgotten. If Agent 1 has landed those first, the section is empty and the assertion says so. The permanent five remain, each with its reason.
+  - **Assert the guard's two-directional property rather than resting on having seen it.** Three agents each watched `ShapeOfFileAccess` fail both ways on a real conversion - converted-but-line-left reports the entry as stale, line-removed-but-unconverted names the file and the replacement call. That is evidence in commit messages, and it is perishable: it does not re-run. Extract the stale-entry and unexcused-offence decisions as pure functions over synthetic inputs and assert both directions, so the property the whole sequencing rests on is guarded rather than remembered. The distinction between *was observed* and *is guarded* is the one this spec exists to draw, so it should hold for the spec's own guard.
+  - **Record why two legitimate guards in this spec could not be written, because the next agent to want one will pay the same price without knowing why.** Both were log-based assertions, and both were blocked by the same root: this repository holds loggers as `private static readonly ILogger` captured at type initialisation, which CLAUDE.md mandates, so a test cannot substitute a sink afterwards. The two instances were the missing-file mechanism (deleting a `File.Exists` check changes nothing observable but a spurious warning) and the `LogCapture` harness itself, which exists in three core test projects and none of the module ones. Neither is a defect in the convention — the static logger is why no class takes an `ILogger` through its constructor — but the consequence is that **log-based assertions are structurally unavailable in module test projects**, and a design that reaches for one should reach for something else instead. Where a property is only observable as a log event, the honest answers are a load-bearing comment or an injectable-logger task of its own, not a test that appears to guard and does not.
+  - **Record the two coverage techniques, because both found real gaps in a document that looked finished.** They are the same question - does anything actually watch this? - asked from opposite ends:
+    - *The requirement-coverage diff.* Extract every `_Requirements:` reference from this tasks document, list every acceptance criterion in the requirements, and diff the two sets. One command. It found that Requirement 2.2 had no task at all while four of its sites were live, which is a spec that cannot reach its own end state while looking complete.
+    - *Narrow sabotage.* Delete the narrowest thing that should break a guard, and see whether anything complains. It found that removing a `File.Exists` check left every test green, because the outcome was observed through the wrong mechanism. **The adverb is load-bearing:** a broad sabotage that disables both halves of a mechanism leaves them consistent with each other and the suite green, which proves a guard works when it does not. Delete one side, never both.
   - Verify Requirement 4.2 concretely: search the tree for a second implementation of each discipline this spec touched — sharing policy, temp-then-move, the CRLF constant, whole-line splice — and record the search and its result in the implementation log. A claim of "one home per rule" that nobody re-measured is a promise, not a guarantee.
   - _Requirements: 4.2, 5.1, 5.2_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Assert the tracked allow-list is empty, keep the five permanent entries with their reasons, and re-measure the tree for any second implementation of the four disciplines this spec touched, per requirements 4.2, 5.1 and 5.2 | Restrictions: if a second home is found, report it as a finding rather than quietly fixing it - it may belong to another spec; record the searches performed in the implementation log so the claim is auditable | Success: the tracked section is empty and asserted so, and the one-home claim is backed by a recorded measurement. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._

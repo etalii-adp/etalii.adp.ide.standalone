@@ -4,7 +4,9 @@ How work moves through this repository: where it happens, how it is committed, h
 
 **`CLAUDE.md` is the enforcement surface and this is the authority.** `CLAUDE.md` is loaded into every agent's context automatically and steering documents are not, so each process below keeps a compact imperative line there pointing at its section here. The rule travels; the reasoning lives here. That split has a cost worth naming: two files mention each process, so a change to one must check the other. The compact lines are deliberately imperative-only — they state what to do and never restate *why*, because rationale in two places is rationale that drifts.
 
-**Almost every rule here was learned rather than designed.** The incident is kept with the rule on purpose: an agent who knows only the rule is the one who carves an exception into it when the rule looks inconvenient, and several of these were bought at the cost of somebody's lost work.
+**Almost every rule here was learned rather than designed.** The incident is kept with the rule on purpose, and for a sharper reason than "context helps": **a rule can only be obeyed or broken, while a reason can be checked against evidence and found to disagree with you.** That is not theoretical — an agent measured what looked like drift between two example trees, read the recorded reason, found it contradicted the measurement, followed it to the commit, and discovered the user had deliberately deleted the guard it was about to ask for. A bare rule would have been read straight past; there was nothing in it for a survey result to collide with. Reasoning is the only part of a document capable of contradicting a careful person who is wrong.
+
+The second reason is the older one: an agent who knows only the rule is the one who carves an exception into it when the rule looks inconvenient, and several of these were bought at the cost of somebody's lost work.
 
 ## Chat naming
 
@@ -51,7 +53,52 @@ Two distinct hazards, and the rule for one does not cover the other.
 
 **Commit your own implementation log the moment the tool writes it.** The other half of the same failure, and the half that is easier to miss: an uncommitted file left in the shared checkout is what turns somebody else's careless pathspec into a wrong commit message. The sweeper gets blamed; whoever left the file there supplied it. This is already what *Specification bookkeeping* asks for — it was being read as covering the documents rather than the logs the tool writes for you.
 
+**Never merge while anything is staged - yours or anyone else's.** `git merge` requires the index to match HEAD; when it does not, git stashes the working state and, on the failure path, does **not** restore it. That silently reverted or deleted **26 paths belonging to three other sessions**, reporting only `Index was not unstashed. Merge with strategy ort failed.` - a single line for two dozen files of other people's work. Reading `git status` first is necessary and not sufficient: it tells you what a merge would *write*, not that attempting one is unsafe.
+
+**Merge through a scratch worktree rather than waiting for a clean index.** The mechanism is the point: `git merge` builds the merge commit's tree *from the index*, which is why a foreign staged file blocks it and why its failure path is what dangles other sessions' work. **A fast-forward builds no tree from the index and does not care.** So create a scratch worktree at the develop tip, `git merge --no-ff` your branch there, run the four gates *in it* - on the actually-merged tree - then in the main checkout `git merge --ff-only` that scratch branch. The last step succeeds with foreign files staged, and leaves them staged and untouched. The resulting history is identical to merging in place, and the route never puts the main checkout in a state where git must save and restore anybody's work - so it **cannot** reproduce the incident rather than merely avoiding it. Waiting for a clean index is not a workable alternative: one staged file has sat in this checkout for over two hours.
+
+**Re-gate on the merged tree, not before it.** An hour's wait is long enough for `develop` to gain code an earlier run never saw - in one case a 311-line integration test and three validator changes.
+
+**If it does happen, the work is recoverable and re-running anything is the wrong move.** The stash survives as a dangling commit pair: `git fsck --unreachable --no-reflogs`, find `WIP on develop` and `index on develop` at the failed merge's timestamp, then `git checkout <wip-commit> -- <path>` per file. Restore only what was present, and **never re-apply a deletion that was in flight** - re-applying somebody's half-finished delete is the one direction that destroys rather than restores.
+
 **Before merging in the main checkout, read `git status` for files you did not touch.** A merge writes every path that differs between the branch point and the tip *regardless of the index*, so uncommitted churn from another session will either block the merge or tempt you into `git checkout --` on files that are not yours. Neither stash nor checkout is acceptable there — both destroy in-flight work. Apply your own files with `git checkout <branch> -- <paths>`, commit by pathspec, then verify with `git diff <branch> develop -- <your paths>` that the result matches what the merge would have produced. The branch is then not recorded as merged, which is a small honest loss of history; say so in the report.
+
+## Git identity
+
+**Commit under a per-task identity, `agent-<N>-<task>`, set differently depending on where you are.**
+
+- **In a dedicated worktree:** `git config --worktree user.name "agent-<N>-<task>"`. **Not** plain `git config user.name`, which writes to `.git/config` - shared by the main checkout and every worktree - and so renames every other agent too.
+- **In the shared main checkout:** set nothing, and pass the identity per command: `git -c user.name="agent-<N>-<task>" commit -F msg -- <paths>`. Several sessions use that one working tree at once, so *any* config there is shared between them, `--worktree` included. There is no per-session scope, and `git -C` does not provide one - it changes where a command runs, not whose identity it uses.
+- **Never `--global`, and never touch `user.email`.**
+- **Read it back with `git config --local user.name`.** Inside a worktree the plain form resolves through `config.worktree` and returns your own correctly-scoped identity, which looks identical to a leaked shared value - that has already prompted an unset nobody needed. Only `--local` shows what is actually in the shared file.
+
+Without an identity you inherit the machine's global `user.name` in every checkout, so your work is indistinguishable from the user's own. The first version of this rule used plain `git config`; four sessions overwrote each other and two commits carry the wrong author.
+
+**Why an identity rather than the `Co-Authored-By` trailer**, which was the alternative considered: the trailer is a per-commit act that can be forgotten, and it is forgotten *structurally* - present exactly when composing a message was a deliberate act, absent whenever the message came for free. `git commit -m "one line"` and `git merge --no-edit` are both ways of not writing one, which is why bookkeeping and merges - the two highest-frequency commit kinds - are the two that fail. Nine of twelve recent merges lacked it. An identity is set once per working tree and cannot be forgotten per commit: one is a discipline, the other is a property.
+
+The trailer remains useful in one direction only, and the limit matters because **the inverse reading is the more useful one**. A present trailer proves an agent made the commit. An absent one proves nothing at all - so "which of these did a human do?" is exactly the question it cannot answer, and a test reliable only in the less useful direction will be used in the other one.
+
+## Provenance is never in the name
+
+**An identifier records what something was called, never how it came to be.** Three agents made this mistake in one afternoon: one inferred an agent from a branch-name substring, then a commit's *location* from its author string; another was about to infer authorship the same way and checked first. Each time the identifier looked like evidence of provenance and was in fact evidence of **configuration** - a branch name somebody chose, a `user.name` somebody had or had not set.
+
+The trap is worth naming separately from "verify before believing", which everybody agrees with and nobody applies under time pressure. This one names the specific move to distrust, and it predicts every case above: **a provenance question is precisely the one whose answer is not in the output already in front of you.** The real answer costs a command; the name is right there.
+
+A related failure with a different cause, worth keeping beside it: **if a number is going into a decision, compute it - do not read it off a list.** One of the corrections above was a miscount of output the agent had already produced and was looking at. No amount of checking-before-believing catches that; only counting does.
+
+## Working under an open approval card
+
+**Commit a specification revision immediately, before anything else.** Not after the next edit, not once the card is answered - immediately.
+
+The reason is an observed incident. A committed requirements document was reverted **in the working tree** while its card was open: 198 lines back to 154, an entire revision gone, while the commit sat intact in history. `git diff --numstat` showed **8 insertions against 52 deletions**, and every one of the eight "added" lines was the pre-revision version of a line the agent had changed - a pure revert of its own work, with nothing of anyone else's mixed in. The working hypothesis is that the dashboard restores the snapshot it captured at request time when a verdict is recorded. It is a hypothesis, not a diagnosis: a second document that was *not* edited after its card was raised came through its verdict unchanged, which is consistent with the hypothesis but cannot discriminate, because there was nothing for a restore to undo.
+
+**Committed, this is a recoverable event: restore from HEAD and reapply the feedback.** Uncommitted, it is lost work. The one agent this happened to survived it by having committed first out of habit, and nobody should have to be lucky.
+
+**Check the document before your next edit, and restore from HEAD rather than re-typing if it has moved.** Re-typing reconstructs from memory what the tree already holds exactly.
+
+**A document under an open card stays stable.** The person reading it should not have the text change under them. If something in it is genuinely wrong, fix it and say so in the same breath - never silently. New material waits for the verdict, which is also the safer order: anything added under an open card is exactly what a restore-on-verdict would discard.
+
+Two things about cards that are noise rather than hazard, recorded because a careful reader got them wrong and warned the user about superseded content nobody was ever seeing: **a card renders the file rather than a copy**, so several cards on one document all show the same current content. And **an agent cannot delete a pending card** - the tool refuses. Only the user clears those, so an agent that finds a stale one reports it rather than trying.
 
 ## Specification bookkeeping
 
@@ -107,6 +154,22 @@ CI runs the same four on every push and pull request, but that is the net under 
 
 **Running the client suite in a fresh worktree:** `src/client/src/generated/` is both gitignored and tracked, so a fresh worktree holds only the tracked stubs until codegen runs. `npx vitest` bypasses the `pretest` hook that runs it, and the suite then fails with dozens of `Failed to resolve import "../generated/..."` — which looks exactly like a broken build and is not. Run `npm run generate` once, or `npm test`, which runs it for you. Re-running `npx vitest` alone never helps.
 
+## Vendored example data
+
+**Diagram modules are tested against real published example data, not hand-written toys.** The point of vendoring real documents is that they exercise input shapes the author never had in mind - a fixture tests what its writer thought of, which is the half already covered by the code.
+
+Agents may download it, under conditions that are not negotiable.
+
+- **The licence must be permissive.** CC0, CC BY with the attribution carried, the W3C Software and Document Licence and similar. **Share-alike licences are not** - UNESCO's thesaurus was rejected on exactly that ground.
+- **Download the licence file itself and keep it beside the data.** Not a link, not a line in a readme naming the licence: the actual file, vendored next to the documents it covers, so the terms travel with the data for whoever finds it later. Name it `LICENSE.md` whatever extension the server serves it under - the family's own provenance guard requires that name - and keep the text verbatim; only the filename follows the house convention.
+- **Verify the licence again at acquisition**, rather than trusting what a specification recorded. Terms change between writing a spec and fetching the file.
+
+**Verify from the data, not from the page.** Read the dataset's own licence statement - the `cc:license` triple, or whatever the format's equivalent is - rather than the download page around it. The STW thesaurus was vendored after its page turned out to carry **three conflicting signals at once**: prose saying CC BY 4.0, a `rel="license"` link pointing at ODbL, and a by-nc-sa badge. Two of the three are share-alike and would have disqualified the source. An agent reading the badge, or the link, would have reached a confidently wrong answer in either direction. The data's own statement settles it.
+
+That is the same trap as *Provenance is never in the name*, one level up: the page around a file records how somebody described it, not what it is. A licence question, like a provenance question, is answered by the artefact rather than by its packaging.
+
+**Say what the examples do not demonstrate.** A vendored corpus rarely covers every shape a requirement asks for. Record the gaps in the folder's readme, with the reason each candidate source was rejected, so the next reader meets the omission before wondering about it.
+
 ## Keeping documentation true
 
 A change that makes a document untrue fixes it in the same change. Four artefacts carry that duty explicitly.
@@ -115,6 +178,7 @@ A change that makes a document untrue fixes it in the same change. Four artefact
 - **`docs/creating-a-diagram-module.md` and `docs/creating-an-editor-module.md`** — a change that moves a touch point either names (a renamed seam, a moved file, a changed registration shape) updates that document in the same change.
 - **`docs/screenshots/`** — a UI change that makes an image misleading means retaking it, following the procedure in that folder's readme.
 - **`.proto` files** are the primary API documentation for the public gRPC contracts and must stay self-explanatory: clear message and field naming, comments for non-obvious constraints.
+- **Non-obvious architectural decisions belong in `tech.md`'s decision log**, not scattered through the code as comments. A decision recorded where it was implemented is findable only by whoever already knows where that is.
 
 (`docs/dependencies.md` needs no rule here — its guard is a test.)
 
@@ -141,10 +205,39 @@ Conventions that are only written down drift. Two tools check them and they see 
 - **Treat an InspectCode finding as an `.editorconfig` finding is treated**: fix it, or decide deliberately that the rule does not fit and record that decision where the rule lives — in the `.DotSettings` file, with a note saying why. Silently ignoring findings turns the tool into noise, which is how a codebase ends up with a check nobody runs. **A finding left reported is the one option that is not available**, because a gate that always prints something is a gate nobody reads.
 - **Expect a backlog on the first full run, and do not treat it as a gate on unrelated work.** What matters is that code being written now is clean and that any backlog shrinks, not that an unrelated change is blocked by something it did not cause.
 
-## Still to move
+## Merges made before the identity rule
 
-This document is a first pass and deliberately does not yet carry everything that belongs in it. Left where it is, for a later pass, with the reason:
+**Merges made before 2026-09-04 carry the machine owner's name, `vrenken`, and were made by agents.** They are deliberately not being rewritten. Anyone auditing later should read them as agent work with a known mechanical cause, not as the user's.
 
-- **Vendored example data** (`CLAUDE.md`) — genuinely mixed. The licence policy is a rule about what may enter the repository; the acquisition steps are process. Splitting it needs care that a first pass should not spend.
-- **Testing & quality** (`tech.md`) — overlaps both this document's *Running the backend tests* and `CLAUDE.md`'s code conventions, and reconciling the three is its own piece of work.
-- **Documentation standards** (`structure.md`) — its `.proto` clause has moved to *Keeping documentation true*; what remains should be reviewed against that section rather than moved blind.
+Measured on 2026-09-04: of the 61 merge commits in the preceding 18 hours, **44 were authored `vrenken`** and 17 carried an agent identity.
+
+**Record a measurement with the window it was taken in, or do not record it.** That count is a *sliding* window and decays: the same command over 17, 18, 19 and 20 hours returns 39, 44, 51 and 66 `vrenken` merges. Two agents measuring the same fact half an hour apart got 45 and 44 and both were right. A number like this belongs in a durable document only with a fixed date or commit range attached, and the shape - most merges, not a few - is what actually survives.
+
+**Two mechanisms compounded, and neither is the one first assumed.** Nothing was ever set locally: `.git/config` has no `[user]` section, so the name comes from **global**, and any tree without its own identity signs as the machine's owner. Saying that imprecisely cost real time - an earlier account described the shared value as wrong, and an agent went looking for a local value to fix and found none.
+
+- **A `--worktree` identity binds to the directory, not to the agent.** Working in a tree somebody else created signs your commits as whoever made it.
+- **The rule guarded `git commit` and nothing else.** `merge`, `rebase`, `revert` and `cherry-pick` all write commit objects and all take the ambient identity - and the landing step this document prescribes, `merge --ff-only`, **writes no object at all**. The commit that lands is the `--no-ff` merge made minutes earlier in a scratch worktree, where it feels like scratch work rather than like history. That is precisely where the names were lost.
+
+**The rule is therefore written around writing a commit object, and the per-worktree identity comes first.** The agent whose merges were correctly attributed did not remember to pass an identity at merge time; it never had to remember, having set `--worktree` once when it created the tree. **A rule that cannot be got wrong beats one that depends on vigilance at the moment nobody is looking.**
+
+Rewriting the 45-odd commits was considered and rejected: history surgery in a checkout that nine sessions are committing into is a worse incident than a wrong name.
+
+## Ask what a command would print if your belief were false
+
+Before reporting a fact about the repository, name the output that would appear **if you were wrong**, then run the command and look for it. A check that cannot distinguish the two answers is not a check, and its green tells you nothing.
+
+Every provenance mistake collected in this document has this shape, and so do several that are not about provenance:
+
+- A `grep -c $'\r'` used to test for CRLF returns 0 whether or not the file has any, because the bashism is not expanded. It reported a correctly-CRLF file as LF. `git ls-files --eol` answers the question the tool's own way.
+- A sabotage whose replacement pattern never matched leaves the suite green, which reads as robust code rather than as a test that never ran.
+- `vrenken` in an author field was read as "the user made this", then as "made in the main checkout". Asking what `git config --show-origin user.name` would print if either belief were false answers it in one command: a global origin means neither.
+
+It is a sharper instrument than "verify before believing", which everybody agrees with and nobody applies under pressure, because it converts a vague duty into a specific question with an answer.
+
+## A settled boundary
+
+Everything this document deferred on its first pass has moved: vendored example data, and structure.md's documentation standards.
+
+**One thing was surveyed as a candidate and stays where it is.** `tech.md`'s *Testing & quality* is about the artefact rather than about how work moves. Two of its clauses are technical standards (a suite runnable inside the local F5 experience, fast local tests preferred over hosted end-to-end ones) and two are code conventions (`<Classname>.Tests` for the file and `<Classname>Tests` for the class - mind the dot; and the arrange/act/assert shape). Neither kind is process.
+
+That is recorded as settled rather than as pending, because the reason is the boundary itself: **moving them would make this document the place things go when nobody is sure, which is how a steering document stops being read.**

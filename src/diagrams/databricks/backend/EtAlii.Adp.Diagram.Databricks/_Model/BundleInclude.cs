@@ -1,3 +1,5 @@
+using EtAlii.Adp.Backend.Hierarchy;
+
 namespace EtAlii.Adp.Diagram.Databricks;
 
 /// <summary>One <c>include:</c> entry of a bundle - a glob naming resource files to pull in.</summary>

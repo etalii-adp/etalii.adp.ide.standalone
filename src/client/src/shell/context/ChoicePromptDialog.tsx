@@ -16,7 +16,7 @@ export interface ChoicePromptDialogProps {
 
 /** The suggestion a selectable option carries for the text field, if the prompt has one. */
 /** The selected option is own description, or empty when nothing (or a group) is selected. */
-export function descriptionFor(options: ContextOption[], id: string | null): string {
+function descriptionFor(options: ContextOption[], id: string | null): string {
   if (id === null) {
     return "";
   }
@@ -36,7 +36,7 @@ export function descriptionFor(options: ContextOption[], id: string | null): str
   return walk(options);
 }
 
-export function suggestionFor(options: ContextOption[], id: string | null): string {
+function suggestionFor(options: ContextOption[], id: string | null): string {
   if (id === null) {
     return "";
   }

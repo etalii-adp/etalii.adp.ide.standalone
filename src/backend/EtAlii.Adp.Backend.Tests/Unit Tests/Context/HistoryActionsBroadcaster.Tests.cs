@@ -85,9 +85,16 @@ public class HistoryActionsBroadcasterTests
         store.Raise(Root);
 
         // Act and assert, step by step.
-        // The discovery runs on a timer thread; wait past the window, then assert it left no
-        // push behind and did not take the process down with it.
-        await Task.Delay(200, TestContext.Current.CancellationToken);
+        // The discovery runs on a timer thread, so wait for it to have run rather than for a
+        // fixed span. This waited 200ms and asserted the count afterwards, which is a race the
+        // machine wins whenever it is busy: the assertion failed in two of three full-suite
+        // runs while passing three of three in isolation, because a loaded machine had not got
+        // to the timer thread yet. Waiting on the observable fact is deterministic; waiting on
+        // a duration is a bet on the scheduler.
+        await WaitUntilAsync(() => resolver.DiscoverCount >= 1);
+
+        // The negative cannot be waited for, and does not need to be: once the discovery has
+        // run and thrown, a push either happened or never will.
         Assert.Empty(selection.Pushes);
         Assert.Equal(1, resolver.DiscoverCount);
     }

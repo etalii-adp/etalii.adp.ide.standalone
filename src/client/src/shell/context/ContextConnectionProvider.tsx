@@ -58,8 +58,47 @@ export const SELECT_COALESCE_MS = 80;
 const RECONNECT_INITIAL_MS = 500;
 const RECONNECT_MAX_MS = 5000;
 
+/**
+ * How this channel reports a transport fault. It is one rule, not a choice made per method:
+ *
+ * **A method that returns a value its caller acts on resolves with the failure expressed in
+ * that value. A method that returns `void` is advisory: it swallows its fault and says so in
+ * a comment.**
+ *
+ * `select` and `onCancel` are the advisory pair and were always written this way; the rule is
+ * not new, it was simply never written down, so every method added since had to guess. What a
+ * value-returning method must not do is reject, because its callers are React event handlers
+ * and effects: a rejection there is an unhandled rejection, which shows the user nothing while
+ * leaving the component's own state saying the write succeeded.
+ *
+ * `channelResolvesRatherThanRejects.test.tsx` iterates the value-returning methods and holds
+ * this true for whichever one is added next.
+ */
+
+/**
+ * What to show for a transport fault. A `ConnectError` carries a message worth reading;
+ * anything else would render as "[object Object]", which reads as a broken dialog rather than
+ * as a connection that dropped.
+ */
+function faultMessage(caught: unknown): string {
+  return caught instanceof Error && caught.message.length > 0 ? caught.message : "The connection to the project was lost.";
+}
+
 export interface ActionOutcome {
   accepted: boolean;
+  error: string;
+}
+
+/**
+ * The properties of what is selected, and whether they could be read at all.
+ *
+ * The array alone cannot say which happened: empty means both "this selection has no
+ * properties" and "the describe never arrived", and those are exactly the two states the grid
+ * has to show differently. An empty `properties` with an empty `error` stays the ordinary
+ * no-properties case.
+ */
+export interface PropertyDescription {
+  properties: ContextProperty[];
   error: string;
 }
 
@@ -84,7 +123,7 @@ export interface ContextConnectionValue {
    * rather than pushed: the property grid is the only thing that wants them, and asking keeps
    * them off the selection stream every other panel reads.
    */
-  describeProperties: (source?: ContextSource) => Promise<ContextProperty[]>;
+  describeProperties: (source?: ContextSource) => Promise<PropertyDescription>;
   /** Writes one property, through a command on the backend. Rejected values come back as an error to show. */
   setProperty: (propertyId: string, value: string, source?: ContextSource) => Promise<ActionOutcome>;
 }
@@ -312,27 +351,35 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
   }, []);
 
   const describeProperties = useCallback(
-    async (source?: ContextSource): Promise<ContextProperty[]> => {
-      const response = await client.describeProperties({
-        projectId: { value: projectId },
-        watchId: { value: watchIdRef.current },
-        source,
-      });
-      return response.properties;
+    async (source?: ContextSource): Promise<PropertyDescription> => {
+      try {
+        const response = await client.describeProperties({
+          projectId: { value: projectId },
+          watchId: { value: watchIdRef.current },
+          source,
+        });
+        return { properties: response.properties, error: "" };
+      } catch (caught) {
+        return { properties: [], error: faultMessage(caught) };
+      }
     },
     [client, projectId],
   );
 
   const setProperty = useCallback(
     async (propertyId: string, value: string, source?: ContextSource): Promise<ActionOutcome> => {
-      const response = await client.setProperty({
-        projectId: { value: projectId },
-        watchId: { value: watchIdRef.current },
-        source,
-        propertyId,
-        value,
-      });
-      return { accepted: response.accepted, error: response.error };
+      try {
+        const response = await client.setProperty({
+          projectId: { value: projectId },
+          watchId: { value: watchIdRef.current },
+          source,
+          propertyId,
+          value,
+        });
+        return { accepted: response.accepted, error: response.error };
+      } catch (caught) {
+        return { accepted: false, error: faultMessage(caught) };
+      }
     },
     [client, projectId],
   );
@@ -342,13 +389,21 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
       trigger: { case: "actionId"; value: string } | { case: "shortcut"; value: ContextShortcut },
       source?: ContextSource,
     ): Promise<ActionOutcome> => {
-      const response = await client.executeAction({
-        projectId: { value: projectId },
-        watchId: { value: watchIdRef.current },
-        source,
-        interactionId: { value: crypto.getRandomValues(new Uint8Array(16)) },
-        trigger,
-      });
+      // Only the call is guarded. What follows opens a workspace tab, and a fault there is a
+      // defect in this client rather than a connection that dropped - reporting it as one would
+      // send the reader looking down the wire for a bug that is here.
+      let response: Awaited<ReturnType<typeof client.executeAction>>;
+      try {
+        response = await client.executeAction({
+          projectId: { value: projectId },
+          watchId: { value: watchIdRef.current },
+          source,
+          interactionId: { value: crypto.getRandomValues(new Uint8Array(16)) },
+          trigger,
+        });
+      } catch (caught) {
+        return { accepted: false, error: faultMessage(caught) };
+      }
 
       // The editor family's open gestures end client-side: workspace tabs are per-connection
       // client state, so the backend's Completed answer means "your request stands" and the
@@ -386,23 +441,38 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
 
   const onPropose = useCallback(
     async (revision: number, value: string) => {
-      const response = await client.proposeInput({
-        interactionId: promptInteractionId ? { value: promptInteractionId } : undefined,
-        revision,
-        value,
-      });
-      return { revision: response.revision, valid: response.valid, reason: response.reason };
+      try {
+        const response = await client.proposeInput({
+          interactionId: promptInteractionId ? { value: promptInteractionId } : undefined,
+          revision,
+          value,
+        });
+        return { revision: response.revision, valid: response.valid, reason: response.reason };
+      } catch (caught) {
+        // Carrying the revision back matters as much as the reason: a dialog compares it
+        // against what is in the box, so a failure for text the user has since edited is
+        // recognisably stale rather than a complaint about what they are typing now.
+        return { revision, valid: false, reason: faultMessage(caught) };
+      }
     },
     [client, promptInteractionId],
   );
 
   const onSubmit = useCallback(
     async (value: string, text?: string) => {
-      const response = await client.submitInteraction({
-        interactionId: promptInteractionId ? { value: promptInteractionId } : undefined,
-        value,
-        text,
-      });
+      // As in `execute`: the call is guarded, and what it sets in motion afterwards is not.
+      let response: Awaited<ReturnType<typeof client.submitInteraction>>;
+      try {
+        response = await client.submitInteraction({
+          interactionId: promptInteractionId ? { value: promptInteractionId } : undefined,
+          value,
+          text,
+        });
+      } catch (caught) {
+        // The dialog stays open with what the user typed intact, which is what its own
+        // not-completed path already does for a value the backend refused.
+        return { completed: false, error: faultMessage(caught) };
+      }
       if (response.completed) {
         setPrompt(null);
 

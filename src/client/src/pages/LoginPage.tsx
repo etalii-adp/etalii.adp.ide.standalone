@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { ConnectError, createClient } from "@connectrpc/connect";
 import { AdpLogo } from "../components/AdpLogo";
 import { AppHeader } from "../components/AppHeader";
@@ -14,12 +14,17 @@ export function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [version, setVersion] = useState("");
 
+  // One shape for acquiring a service client, `useMemo` on the transport, the same as every
+  // other site that needs one. What stood here was a client constructed inline inside the
+  // effect - not wrong, since the effect runs once, but a third way of doing a single thing.
+  const authClient = useMemo(() => createClient(AuthenticationService, transport), [transport]);
+
   useEffect(() => {
     // Fire-and-forget: the backend names its own NB.GV-stamped version - the one source of
     // truth (github-build-pipeline R3.2) - and a failed or empty answer renders nothing
     // rather than a stale or invented number (R3.3).
     let active = true;
-    createClient(AuthenticationService, transport)
+    authClient
       .describeProduct({})
       .then((response) => {
         if (active) {
@@ -32,7 +37,7 @@ export function LoginPage() {
     return () => {
       active = false;
     };
-  }, [transport]);
+  }, [authClient]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

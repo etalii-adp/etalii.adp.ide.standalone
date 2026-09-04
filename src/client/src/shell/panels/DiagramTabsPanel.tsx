@@ -7,6 +7,7 @@ import type { ContextLevelDetail, ContextSelection } from "../../generated/conte
 import { innermostAction, useContextSelection } from "../context/ContextConnectionProvider";
 import { TabbedPane, type TabDef } from "../panes/TabbedPane";
 import { DiagramPanel, type OpenDiagram } from "./DiagramPanel";
+import { PanelEmptyState } from "./PanelEmptyState";
 
 interface DiagramTab {
   /** Entry AND location: re-activating a renamed file opens a fresh tab while the stale one stays closable. */
@@ -159,9 +160,7 @@ export function DiagramTabsPanel({ projectId }: DiagramTabsPanelProps) {
       onSelectTab={setActiveKey}
       onCloseTab={close}
       emptyState={
-        <div className="panel-placeholder">
-          <p className="panel-placeholder-description">Double-click a diagram in the explorer to open it here.</p>
-        </div>
+        <PanelEmptyState description="Double-click a diagram in the explorer to open it here." />
       }
     />
   );
