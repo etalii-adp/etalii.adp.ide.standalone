@@ -73,7 +73,7 @@ One worktree for the whole spec: `.claude/worktrees/rename` — deliberately sho
   - _Requirements: 9.3_
   - _Prompt: Implement the task for spec inline-rename, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior TypeScript developer writing a convention guard | Task: Add a test that fails when any module client renders an editable text field on a canvas without importing the shared editor, naming every offender in one failure | Restrictions: must not fire on a module importing the shared editor, nor on inputs outside canvas components; document the guard's own limit as noPrivateScrollbars does | _Leverage: noPrivateScrollbars.test.ts, in the same shape | Success: the guard passes on the tree as it stands and fails, naming the file, when a private editor is introduced experimentally. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 8. Documentation, the manual check, gates and merge
+- [x] 8. Documentation, the manual check, gates and merge
   - Files: `src/client/src/canvas/label/readme.md`, `docs/creating-a-diagram-module.md`, `tests.md`
   - Record in the label readme which canvases have adopted, and that the rest keep their dialogs **pending adoption, not as an exemption** — the same distinction the scroll readme draws.
   - `docs/creating-a-diagram-module.md` names the module touch points, and this specification adds one: a module that wants its rename inline sets the marker. One paragraph, per CLAUDE.md's documentation-refresh rule.
