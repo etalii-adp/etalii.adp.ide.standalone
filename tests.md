@@ -976,3 +976,17 @@ case.
   their contents swap - the play now first sits where the previously-first play was put.
   Nothing overlaps, disappears, or lands at a phantom position, and one drag per play
   re-authors them. No warning is shown, deliberately.
+
+## A click on an Ansible node still selects it after the drag feature (ansible-refinements, task 4.3)
+
+The regression this exists for, found in this spec's own manual pass: the node drag captured
+the pointer on the `<svg>`, and a capture retargets the pointerup, so the browser fired `click`
+on the svg instead of the node. Click-to-select stopped working while every unit test passed,
+because jsdom implements no pointer capture at all and cannot reproduce the consequence. The
+capture now goes on the node; `AnsibleCanvas.test.tsx` asserts which element takes it, and this
+check is what catches the behaviour itself.
+
+- **Preconditions**: an Ansible diagram open with several nodes.
+- **Actions**: single-click a role node, without moving the mouse.
+- **Expected**: the node becomes selected - its border turns the accent colour (limegreen) -
+  and the Properties panel fills with that node's details. The node does not move.
