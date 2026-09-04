@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/diagram-module-conformance/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-04T07:03:38.300Z",
       "trigger": "initial",
+      "approvalId": "approval_1788505417431_v0c04b10n",
+      "approvalTitle": "diagram-module-conformance - Requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-04T11:59:33.261Z",
+      "trigger": "approved",
       "approvalId": "approval_1788505417431_v0c04b10n",
       "approvalTitle": "diagram-module-conformance - Requirements"
     }

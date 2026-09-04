@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/steering/processes.md",
-  "currentVersion": 4,
+  "currentVersion": 5,
   "snapshots": [
     {
       "version": 1,
@@ -33,6 +33,14 @@
       "trigger": "approved",
       "approvalId": "approval_1788547861662_s37e5wv9z",
       "approvalTitle": "processes steering document, third pass: identity, attribution and the falsifying-command test"
+    },
+    {
+      "version": 5,
+      "filename": "snapshot-005.json",
+      "timestamp": "2026-09-04T19:30:07.088Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788549584114_8s6zefomv",
+      "approvalTitle": "processes steering document, fourth pass: the intake workflow and the settled command-evidence cluster"
     }
   ]
 }
