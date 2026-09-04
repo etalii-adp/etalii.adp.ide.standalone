@@ -74,7 +74,6 @@ public partial class ShapeOfFileAccessTests
     [
         // Reads of a user document at FileShare.Read, the original flaw.
         ("Databricks/DatabricksDocumentStore.cs", RawRead, "unassigned - reported by task 1.1"),
-        ("Rdf/RdfDocumentStore.cs", RawRead, "unassigned - reported by task 1.1"),
         ("Sparql/SparqlDocumentStore.cs", RawRead, "unassigned - reported by task 1.1"),
 
         // Core reads of a user document - owned by backend-consistency, not by this spec.
