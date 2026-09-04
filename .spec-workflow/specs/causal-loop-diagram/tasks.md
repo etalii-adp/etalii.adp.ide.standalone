@@ -17,7 +17,7 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 1.1, 1.4, 5.1, 5.2_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer building a diagram module | Task: Create the module skeleton with its definition, service registration and document factory, and a test that the factory's document opens and draws | Restrictions: do not skip the document factory; the origin is `systems/causal-loop-diagram` exactly, `causal` not `casual` and the `-diagram` suffix is deliberate | _Leverage: any recent module's skeleton, and sparql's document-factory correction | Success: a new .cld can be created from the UI path and opens. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 1.2 The body format, the parser and the document
+- [x] 1.2 The body format, the parser and the document
   - Files: `CausalLoopDocument.cs`, `CausalLoopParser.cs`, `_Model/` — `CausalLoopModel`, `CausalLoopVariable`, `CausalLoopLink` (`From`, `To`, `Polarity`, `Delayed`, `Weight`, `Label`), `CausalLoopLoop` (`Identifier`, `Name`, member links, and no position)
   - The design records XMILE as considered and rejected with three reasons; the format is this module's own, line-oriented, one statement per line so a new link is a one-line diff. Preserve line positions in the document so writers splice rather than reserialize
   - `Polarity` has three cases and `Unstated` is a real one — never default an unmarked link to positive, because Requirement 3.6 turns on telling "unknown" from "positive". Read `s` and `o` as the same two meanings as `+` and `-`
@@ -25,7 +25,7 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 1.2, 1.3, 1.5, 2.2_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer designing a small text format | Task: Define the line-oriented .cld body format, write its parser and model, preserving line positions for later splicing | Restrictions: no XMILE, per the design's recorded reasons; an unmarked polarity is Unstated and never Positive; one statement per line | _Leverage: any module whose writer splices rather than reserializes | Success: a document round-trips, an unmarked link reads as Unstated, and s/o read as +/-. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 1.3 Cycle enumeration and computed polarity — the reason this module exists
+- [-] 1.3 Cycle enumeration and computed polarity — the reason this module exists
   - Files: `CycleFinder.cs` (Johnson's elementary cycles over the link graph, bounded), `LoopPolarity.cs`
   - Reinforcing where the count of `Negative` member links is **even** — zero is even, and it is the case readers most often get wrong — balancing where odd, undecidable where any member link is `Unstated`
   - The bound is part of the contract, not a safety valve: when it is reached the count examined is carried out so the reader can be told, rather than the check silently doing less than it claims
