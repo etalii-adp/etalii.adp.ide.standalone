@@ -28,6 +28,11 @@ public static class ServiceCollectionAddCausalLoopExtension
         // a host whose type declares an extension without one.
         services.AddSingleton<IDiagramDocumentFactory>(_ => new CausalLoopDocumentFactory(CausalLoopOrigin));
 
+        // The rules, resolved by origin through core's validator registry. This reading only
+        // ever reports: the disagreement between a stated label and the arithmetic is a finding,
+        // never a correction.
+        services.AddSingleton<IDiagramValidator>(_ => new CausalLoopValidator(CausalLoopOrigin));
+
         return services;
     }
 }
