@@ -1322,10 +1322,11 @@ the measured path and the real focus behaviour are verified.
   value are all implemented and unit-tested; only the manual leg is blocked, and it stays blocked
   until relationships become selectable.
 
-  **Enter was exercised through the editor's own key handler rather than a synthesised keystroke.**
-  The automation harness's Return does not reach an input inside a `foreignObject`, while Escape
-  through the identical mechanism does, and typing reaches the field. So the commit path is proven;
-  the last inch of the keystroke is not, and a human should press Enter once.
+  **Enter confirmed by hand on 2026-09-04**, against a clean build of merged `develop`: F2, type,
+  Enter, and the node takes the new text. Worth knowing for whoever automates this next - a
+  synthesised Return does not reach an input inside a `foreignObject`, while Escape through the
+  identical mechanism does and typing reaches the field, so an automated pass will see Enter do
+  nothing and be wrong about it.
 
   Four defects were found by this pass, every one invisible to the suite. In order: the editor
   cancelling its own interaction the instant it appeared; an empty placement registry read as "the
