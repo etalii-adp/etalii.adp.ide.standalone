@@ -12,6 +12,8 @@ import { TOOLBOX_DRAG_TYPE } from "@client/shell/panels/DiagramToolboxContext";
 import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { useRegisterDiagramView } from "@client/shell/panels/DiagramViewContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
+import { useViewReport } from "@client/diagrams/useViewReport";
+import type { Viewport } from "@client/diagrams/viewReport";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { ContextSelectionAction } from "@client/generated/context_pb";
 import { TimelineRuler } from "./TimelineRuler";
@@ -36,6 +38,14 @@ const ELEMENT_HEIGHT = 36;
 const MOMENT_RADIUS = 9;
 
 const DAY = 86400;
+
+/**
+ * What the surface is assumed to be before it has been measured - jsdom, or the render before
+ * the first layout. The same two numbers the view fit and the scroll axes already assume, named
+ * here so the three agree and a reader can find them.
+ */
+const FALLBACK_WIDTH_PX = 1200;
+const FALLBACK_HEIGHT_PX = 400;
 
 /** Zoom limits, in seconds per pixel: from about a minute across the view to about a century. */
 const MIN_SECONDS_PER_PIXEL = 0.05;
@@ -115,7 +125,7 @@ interface ConnectDrag {
  * what keeps the backend ignorant of the viewport (Requirement 5).
  */
 export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
-  const { model, loading, failed, moveElementTo } = useTimelineStream(projectId, path);
+  const { model, loading, failed, moveElementTo, reportView } = useTimelineStream(projectId, path);
   const { select, executeAction, executeShortcut, setProperty } = useContextConnection();
   const { selection, actions } = useContextSelection();
   const surfaceRef = useRef<HTMLDivElement | null>(null);
@@ -129,6 +139,43 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
     verticalScale: 1,
   }));
   const fittedRef = useRef(false);
+
+  /**
+   * What the reader can see, in the module's own units: seconds across, row-derived y down.
+   *
+   * The conversion lives here rather than in the shared code, which converts nothing
+   * (view-delta-adoption Requirement 3.4). This canvas drives seconds-per-pixel and a vertical
+   * scale rather than a `viewBox`, so it works the rectangle out from its own view state and the
+   * measured surface - the same two lines `scrollAxesOf` below already computes for the
+   * scrollbars, and the second of the two caller shapes `canvas/scroll/readme.md` records.
+   */
+  const viewportOf = useCallback((): Viewport => {
+    const rect = surfaceRef.current?.getBoundingClientRect();
+    const widthPx = rect?.width || FALLBACK_WIDTH_PX;
+    const heightPx = rect?.height || FALLBACK_HEIGHT_PX;
+    return {
+      minX: view.startSeconds,
+      minY: view.panY,
+      maxX: view.startSeconds + widthPx * view.secondsPerPixel,
+      maxY: view.panY + heightPx / view.verticalScale,
+    };
+  }, [view]);
+
+  // Reported once the view settles. The rectangle is what is keyed on, so a pan and a zoom that
+  // happen to show the same span report once - and a resize that changes nothing else does not
+  // go unreported, because the measured surface is part of the rectangle.
+  const reported = viewportOf();
+  useViewReport({
+    view: {
+      x: reported.minX,
+      y: reported.minY,
+      w: reported.maxX - reported.minX,
+      h: reported.maxY - reported.minY,
+    },
+    report: reportView,
+    convert: viewportOf,
+    ready: !loading && !failed,
+  });
 
   const panRef = useRef<{ clientX: number; clientY: number; view: TimelineView; moved: boolean } | null>(null);
   const dragRef = useRef<DragState | null>(null);

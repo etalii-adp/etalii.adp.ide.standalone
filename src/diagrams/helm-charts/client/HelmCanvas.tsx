@@ -9,16 +9,10 @@ import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxCo
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { ContextSelectionAction } from "@client/generated/context_pb";
 import { HelmEdgeKind, HelmElementKind } from "@client/generated/helm-charts_pb";
+import { shownRectOf, type ViewBox } from "@client/diagrams/viewReport";
+import { useViewReport } from "@client/diagrams/useViewReport";
 import { anchorsOf, edgesOf, nodesOf, type HelmElement, type HelmModel } from "./helmModel";
 import { useHelmStream } from "./useHelmStream";
-
-/** The visible rectangle, in canvas units - the svg viewBox as data. */
-interface ViewBox {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
 
 const ZOOM_STEP = 1.25;
 const MIN_VIEW_WIDTH = 40;
@@ -41,7 +35,7 @@ export interface HelmCanvasProps {
  * a file-backed node reveals it, which is most of the value (Requirement 8).
  */
 export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
-  const { model, loading, failed, moveElementTo } = useHelmStream(projectId, path);
+  const { model, loading, failed, moveElementTo, reportView } = useHelmStream(projectId, path);
 
   // This type's palette is empty by design - the module registers no toolbox provider,
   // because chart content is created by helm tooling, not by dropping shapes. Registering
@@ -61,6 +55,23 @@ export function HelmCanvas({ projectId, entryId, path }: HelmCanvasProps) {
   const edges = useMemo(() => edgesOf(model), [model]);
   const bounds = useMemo(() => boundsOf(nodes), [nodes]);
   const effective = view ?? bounds;
+
+  // The ref mirrors the effective view so the debounced report reads the current one rather
+  // than the one captured when the effect was scheduled.
+  const viewRef = useRef<ViewBox>(effective);
+  viewRef.current = effective;
+
+  // What the reader is looking at, reported once it settles: the backend answers with what
+  // newly falls inside it and removes what left (view-delta-adoption Requirements 1.1, 1.2).
+  // This canvas drives an svg viewBox, so it hands over its box and its surface and measures
+  // nothing itself - preserveAspectRatio="meet" shows more than the box on the roomier axis,
+  // and the shared function accounts for that.
+  useViewReport({
+    view: effective,
+    report: reportView,
+    convert: () => shownRectOf(viewRef.current, svgRef.current),
+    ready: !loading && !failed,
+  });
 
   const selectedId = selectedElementIdOf(selection);
 

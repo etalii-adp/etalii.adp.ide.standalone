@@ -23,6 +23,13 @@ Four rules make this safe, and none of them is optional:
 
 **A half-removed worktree is worse than either outcome.** When the deletion fails, the directory survives without its `.git` file, so every git command run inside it walks up and resolves against the main checkout — `git status` there reports the *main checkout's* dirty files, and a `git add -A` would commit another session's work. The files themselves are safe: copy anything uncommitted out, then start again with `git worktree add .claude/worktrees/<new-name> <branch>`. (The `Filename too long` failure is git's own limit, not the OS one — it wants `core.longpaths=true`, which is the user's call to set.)
 
+## Committing and merging in the shared main checkout
+
+Several sessions use the main checkout at once, so its index and working tree are shared. Two distinct hazards follow, and the rule for one does not cover the other.
+
+- **Commit with an explicit pathspec: `git commit -F msg -- <paths>`.** `git add <path>` stages one file, but a bare `git commit` commits *the whole index*, including whatever another session has staged into it. This has swept another agent's files into an unrelated commit three times, under the wrong message and the wrong identity. "Stage carefully" is not the fix; the pathspec is.
+- **Before merging in the main checkout, read `git status` for files you did not touch.** A merge writes every path that differs between the branch point and the tip *regardless of the index*, so uncommitted approval churn from another session will either block the merge or tempt you into `git checkout --` on files that are not yours. Neither stash nor checkout is acceptable there — both destroy in-flight work. Apply your own files with `git checkout <branch> -- <paths>`, commit by pathspec, then verify with `git diff <branch> develop -- <your paths>` that the result matches what the merge would have produced. The branch is then not recorded as merged, which is a small, honest loss of history; say so in the report.
+
 ## spec-workflow
 
 This repo uses the `.spec-workflow/` folder (steering docs, specs, approvals, implementation logs) to plan and track work before implementation.
@@ -108,7 +115,7 @@ The client's conventions live in the same `src/.editorconfig` (see *Backend code
 ## Worktrees
 
 - When changing files in the `.spec-workflow/` folder, always change these on the development branch.
-- When working on tasks from `.spec-workflow/` specifications, always do so in one single worktree for the specification.
+- When working on tasks from `.spec-workflow/` specifications, always do so in one single worktree for the specification — **unless the specification's tasks are independently landable and are being worked in parallel by several agents, in which case each agent takes its own worktree.** Never share one worktree between sessions: a shared working tree means a shared index, which is the cross-contamination the rule above exists to prevent, and it is a worse failure than several worktrees for one spec. A tasks document that claims its tasks are independently landable is claiming exactly this, and should say so where a reader will meet it.
 - When manually running the app (backend `dotnet run` + client `npm run dev`) for verification from inside a git worktree (not the main checkout), change both the client's dev server port (`src/client/vite.config.ts`'s `server.port`) and the backend's `Client:DevServerUrl` (`src/backend/EtAlii.Adp.Backend.Service/appsettings.developer.json`) to a different, free pair of ports before starting either server — the main checkout's own dev servers may already be running on the defaults (5174 client / 5080 backend). Before merging the worktree back, revert both files to their original values so the merge never carries a stray port change into `develop`.
 
 ## Bugs found during implementation or verification

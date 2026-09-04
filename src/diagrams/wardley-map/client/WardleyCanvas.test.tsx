@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { DeltaSchema } from "@client/generated/deltas_pb";
@@ -23,6 +23,9 @@ let currentFailed = false;
 let moves: { elementId: string; x: number; y: number }[] = [];
 let moveAnswer = "";
 
+/** Every viewport this canvas reported, in the order it reported them. */
+let reports: { minX: number; minY: number; maxX: number; maxY: number }[] = [];
+
 vi.mock("./useWardleyStream", () => ({
   useWardleyStream: () => ({
     model: currentModel,
@@ -31,6 +34,9 @@ vi.mock("./useWardleyStream", () => ({
     moveElementTo: (elementId: string, x: number, y: number) => {
       moves.push({ elementId, x, y });
       return Promise.resolve(moveAnswer);
+    },
+    reportView: (viewport: { minX: number; minY: number; maxX: number; maxY: number }) => {
+      reports.push(viewport);
     },
   }),
 }));
@@ -293,6 +299,60 @@ describe("WardleyCanvas scrollbars", () => {
     const size = Number.parseFloat(thumbOf(container, "horizontal").style.width);
     expect(size).toBeGreaterThan(0);
     expect(size).toBeLessThanOrEqual(100);
+  });
+});
+
+describe("WardleyCanvas view reporting", () => {
+  const SPACE = 1000;
+  const MARGIN = 90;
+
+  beforeEach(() => {
+    reports = [];
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("reports the settled view in the map's own 0..1 space, not in canvas units", () => {
+    // Arrange. The session compares a viewport against element positions that are 0..1, so a
+    // report left in canvas units would be a thousand times too large and cull nothing, ever -
+    // a bug that looks exactly like a working loop from the client side.
+    vi.useFakeTimers();
+    const { container } = renderCanvas(withAxis());
+    const surface = container.querySelector(".wardley-surface")!;
+    surface.getBoundingClientRect = () =>
+      ({ width: 800, height: 800, x: 0, y: 0, top: 0, left: 0, right: 800, bottom: 800, toJSON: () => ({}) }) as DOMRect;
+
+    // Act. The report is debounced, so nothing is sent until the view settles.
+    expect(reports).toHaveLength(0);
+    act(() => void vi.advanceTimersByTime(500));
+
+    // Assert. The opening view is the whole space plus the label margin, divided by SPACE - and
+    // deliberately not clamped to 0..1, because the margin is where the axis labels live.
+    expect(reports).toHaveLength(1);
+    expect(reports[0].minX).toBeCloseTo(-MARGIN / SPACE, 6);
+    expect(reports[0].maxX).toBeCloseTo((SPACE + MARGIN) / SPACE, 6);
+  });
+
+  it("reports again when the view changes - catches a report wired to a gesture instead of the view", () => {
+    // Arrange.
+    vi.useFakeTimers();
+    const { container } = renderCanvas(withAxis());
+    const surface = container.querySelector(".wardley-surface")!;
+    surface.getBoundingClientRect = () =>
+      ({ width: 800, height: 800, x: 0, y: 0, top: 0, left: 0, right: 800, bottom: 800, toJSON: () => ({}) }) as DOMRect;
+    act(() => void vi.advanceTimersByTime(500));
+    const opening = reports[0];
+
+    // Act. Zoom through the registered controls - the ribbon's route into the view, which is not
+    // the pan gesture, so a report attached to the gesture would miss this entirely.
+    act(() => viewControls!.zoomIn());
+    act(() => void vi.advanceTimersByTime(500));
+
+    // Assert. A second, smaller rectangle.
+    expect(reports).toHaveLength(2);
+    expect(reports[1].maxX - reports[1].minX).toBeLessThan(opening.maxX - opening.minX);
   });
 });
 

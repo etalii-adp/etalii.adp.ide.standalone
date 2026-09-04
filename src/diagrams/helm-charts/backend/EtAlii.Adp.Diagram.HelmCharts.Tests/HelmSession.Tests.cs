@@ -72,9 +72,46 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
         var add = Assert.IsType<DiagramAddDelta>(Assert.Single(deltas));
         Assert.Contains(add.Elements, element => element.Id == "chart");
         Assert.Contains(add.Elements, element => element.Id == "values:values.yaml");
-        // The viewport has nothing to add - a chart is bounded.
+        // A viewport that admits the whole chart changes nothing: everything the baseline
+        // delivered is still visible, so nothing appeared and nothing left.
         Assert.Empty(session.UpdateView(new DiagramViewport(0, 0, 10_000, 10_000)));
     }
+
+    /// <summary>
+    /// The loop this module exists to close (view-delta-adoption Requirements 1.2, 1.3): a
+    /// changed viewport answers with what came into view and what left it. Written against
+    /// element positions rather than literal coordinates, so a layout change moves the test
+    /// with the code instead of breaking it.
+    /// </summary>
+    [Fact]
+    public void UpdateView_AnswersAChangedViewportWithWhatAppearedAndWhatLeft()
+    {
+        // Arrange: the whole chart, and the two elements furthest apart on the x axis - the
+        // layout lays its kinds out in columns, so those two are never in one narrow viewport.
+        var session = Session();
+        var all = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline())).Elements;
+        var leftmost = all.MinBy(element => element.X)!;
+        var rightmost = all.MaxBy(element => element.X)!;
+        Assert.NotEqual(leftmost.Id, rightmost.Id);
+
+        // Act: look at the left edge only, then at the right edge only.
+        var narrowed = session.UpdateView(Around(leftmost));
+        var moved = session.UpdateView(Around(rightmost));
+
+        // Assert: narrowing removed the far element and added nothing...
+        Assert.DoesNotContain(narrowed.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements), element => element.Id == rightmost.Id);
+        Assert.Contains(rightmost.Id, narrowed.OfType<DiagramRemoveDelta>().SelectMany(delta => delta.ElementIds));
+
+        // ...and moving across added the far element and removed the near one, in that order.
+        Assert.Contains(moved.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements), element => element.Id == rightmost.Id);
+        Assert.Contains(leftmost.Id, moved.OfType<DiagramRemoveDelta>().SelectMany(delta => delta.ElementIds));
+        Assert.IsType<DiagramAddDelta>(moved[0]);
+        Assert.IsType<DiagramRemoveDelta>(moved[1]);
+    }
+
+    /// <summary>A viewport tight around one element, in the module's own units.</summary>
+    private static DiagramViewport Around(DiagramElement element) =>
+        new(element.X - 1, element.Y - 1, element.X + 1, element.Y + 1);
 
     [Fact]
     public async Task Reparenting_IsRefusedWithASentence()

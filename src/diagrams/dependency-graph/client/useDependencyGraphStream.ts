@@ -3,7 +3,10 @@ import { Code, ConnectError, createClient } from "@connectrpc/connect";
 import { useAuth } from "@client/auth/AuthContext";
 import { DiagramService } from "@client/generated/diagrams_pb";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
+import { viewReportOf, type Viewport } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type DependencyGraphModel } from "./dependencyGraphModel";
+
+export type { Viewport };
 
 export interface DependencyGraphStream {
   model: DependencyGraphModel;
@@ -18,14 +21,22 @@ export interface DependencyGraphStream {
    * every other connection.
    */
   moveElementTo: (elementId: string, x: number, y: number) => Promise<string>;
+  /**
+   * Tells the backend which rectangle the canvas can see, so a graph larger than the view is
+   * not held in full. The rectangle is in the module's own units - x as authored, y in the
+   * same row-height units `moveElementTo` uses - because the shared library converts nothing.
+   */
+  reportView: (viewport: Viewport) => void;
 }
 
 /**
  * Opens the graph at `path` over `DiagramService.Open` and folds its delta stream into a
  * `DependencyGraphModel`, re-baselining on reconnect - the shape `useTimelineStream` established.
  *
- * There is deliberately no `reportView`: the whole graph is delivered at open, and zoom and pan
- * are this canvas's own transform that never reach the backend.
+ * `reportView` is built on this hook's own client rather than through `useDiagramStream`, which
+ * this module does not use (view-delta-adoption Requirement 3.6). The earlier note here said
+ * there was deliberately no report because the whole graph is delivered at open; that is what
+ * adoption changed.
  */
 export function useDependencyGraphStream(projectId: Uint8Array, path: readonly string[]): DependencyGraphStream {
   const { transport } = useAuth();
@@ -34,6 +45,8 @@ export function useDependencyGraphStream(projectId: Uint8Array, path: readonly s
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const clientRef = useRef(createClient(DiagramService, transport));
+
+  const reportView = viewReportOf(clientRef.current, projectId, watchId, path);
 
   const pathKey = path.join("/");
 
@@ -104,5 +117,5 @@ export function useDependencyGraphStream(projectId: Uint8Array, path: readonly s
     }
   };
 
-  return { model, loading, failed, moveElementTo };
+  return { model, loading, failed, moveElementTo, reportView };
 }

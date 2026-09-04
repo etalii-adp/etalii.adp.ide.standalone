@@ -12,9 +12,17 @@ namespace EtAlii.Adp.Diagram.Databricks;
 /// </summary>
 /// <remarks>
 /// <para>
-/// It filters nothing: <see cref="UpdateView"/> answers with nothing new because the whole
-/// diagram is delivered at open - a bounded diagram of tens of elements has nothing to
-/// virtualize, the reasoning every arranged module here shares.
+/// It filters to what the reader can see: <see cref="UpdateView"/> renders against the last
+/// reported viewport and answers with the difference from what this connection already holds, so
+/// panning and zooming bring content in rather than merely moving over a set fixed at open
+/// (view-delta-adoption Requirement 1.1). This class used to say the opposite - that a bounded
+/// diagram of tens of elements has nothing to virtualize - and that was a fair local judgement
+/// while the documents stayed small. It is superseded: the loop belongs everywhere, and a module
+/// that declines it stays correct only for as long as nobody writes a large bundle.
+/// </para>
+/// <para>
+/// A connection that never reports keeps exactly the old behaviour, because the viewport starts
+/// <see cref="DiagramViewport.Unbounded"/> and everything intersects it.
 /// </para>
 /// <para>
 /// A drag never touches the body file: repositioning dispatches the core
@@ -40,6 +48,13 @@ public sealed class DatabricksSession : IDiagramSession
 
     /// <summary>What this connection was last sent, so a change can be diffed against it.</summary>
     private IReadOnlyList<DiagramElement> _delivered = [];
+
+    /// <summary>
+    /// The last viewport this connection reported. Unbounded until it reports one, so a diagram
+    /// opens whole and a client that never reports keeps the behaviour it had before this
+    /// session filtered anything (view-delta-adoption Requirement 1.4).
+    /// </summary>
+    private DiagramViewport _viewport = DiagramViewport.Unbounded;
 
     public DatabricksSession(
         string bodyPath,
@@ -71,7 +86,7 @@ public sealed class DatabricksSession : IDiagramSession
     /// <inheritdoc />
     public IReadOnlyList<DiagramDelta> Baseline()
     {
-        var elements = Render();
+        var elements = Visible();
         _delivered = elements;
 
         return elements.Count > 0
@@ -80,10 +95,22 @@ public sealed class DatabricksSession : IDiagramSession
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The whole loop, in four lines: remember what the reader can see, render what falls inside
+    /// it, and answer with the difference from what this connection already holds. A pan that
+    /// brings nothing new into view diffs to nothing and answers with an empty list, which is the
+    /// same shape this returned before it filtered anything - and the reason a reader who is not
+    /// moving costs the backend nothing.
+    /// </remarks>
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
-        _ = viewport;
-        return [];
+        _viewport = viewport;
+
+        var after = Visible();
+        var deltas = _mapper.Diff(_delivered, after);
+        _delivered = after;
+
+        return deltas;
     }
 
     /// <summary>Refused: nothing in these diagrams nests under a parent - their place is a position.</summary>
@@ -137,6 +164,10 @@ public sealed class DatabricksSession : IDiagramSession
         _documents.Changed -= OnDocumentChanged;
         return ValueTask.CompletedTask;
     }
+
+    /// <summary>What this connection should currently hold: the full rendering, culled to the
+    /// viewport it last reported.</summary>
+    private IReadOnlyList<DiagramElement> Visible() => _mapper.Visible(Render(), _viewport);
 
     private IReadOnlyList<DiagramElement> Render()
     {
@@ -199,7 +230,10 @@ public sealed class DatabricksSession : IDiagramSession
 
         try
         {
-            var current = Render();
+            // Filtered through the same viewport the reader last reported: an edit outside what
+            // they can see must not arrive as an add for a box they would then have to be sent a
+            // remove for.
+            var current = Visible();
             var deltas = _mapper.Diff(_delivered, current);
             _delivered = current;
 
