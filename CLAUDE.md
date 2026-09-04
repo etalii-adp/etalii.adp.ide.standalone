@@ -20,9 +20,13 @@ Full rules and reasoning: [processes.md, *Committing and merging in the shared m
 
 ## Git identity
 
-Set a per-task git identity before your first commit: `git config user.name "agent-<N>-<task>"` — in your worktree, or with `git -C` for main-checkout work. Never change `user.email`, and never set either globally.
+Commit under a per-task identity `agent-<N>-<task>`, set two different ways depending on where you are:
 
-Without it you inherit `vrenken` from the machine's global config, in every checkout, so your work is indistinguishable from the user's own. Full reasoning: [processes.md, *Git identity*](.spec-workflow/steering/processes.md#git-identity).
+- **In a dedicated worktree:** `git config --worktree user.name "agent-<N>-<task>"`. **Not** plain `git config user.name` — that writes to `.git/config`, which every worktree and the main checkout share, so it renames *every other agent* too.
+- **In the shared main checkout:** set nothing. Pass the identity per command: `git -c user.name="agent-<N>-<task>" commit -F msg -- <paths>`. Several sessions use that working tree at once, so any config there is shared between them — `--worktree` included. There is no per-session scope.
+- **Never `--global`, and never touch `user.email`.**
+
+Without an identity you inherit `vrenken` from the machine's global config, in every checkout, so your work is indistinguishable from the user's own. But a *wrong* name is worse than an ambiguous one: `.git/config` was set three times in one hour here, and each agent's commits would have carried whichever name was written last. `git -C` changes where a command runs, not whose identity it uses. Full reasoning: [processes.md, *Git identity*](.spec-workflow/steering/processes.md#git-identity).
 
 ## spec-workflow
 
