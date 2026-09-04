@@ -79,6 +79,8 @@ export function PropertyGridPanel() {
   const { selection, levels } = useContextSelection();
   const { describeProperties, setProperty } = useContextConnection();
   const [properties, setProperties] = useState<ContextProperty[]>([]);
+  // Kept apart from an empty `properties`, which is the ordinary "nothing to edit here" state.
+  const [describeError, setDescribeError] = useState("");
 
   // Held in a ref rather than depended on. What should re-ask for properties is the selection
   // changing, not the identity of the function that asks - and a caller that hands us a fresh
@@ -96,12 +98,14 @@ export function PropertyGridPanel() {
     let cancelled = false;
     if (!selection) {
       setProperties([]);
+      setDescribeError("");
       return;
     }
 
     void describeRef.current().then((described) => {
       if (!cancelled) {
-        setProperties(described);
+        setProperties(described.properties);
+        setDescribeError(described.error);
       }
     });
 
@@ -155,6 +159,19 @@ export function PropertyGridPanel() {
                   here - a folder above a diagram is context, not a second thing to edit, and
                   offering two editable Names at once would be a good way to change the wrong
                   one. */}
+              {/* A describe that failed says so, rather than showing the empty grid a selection
+                  with no properties shows. The two look identical from an array alone, and a
+                  user told nothing would reasonably conclude this thing has no properties. */}
+              {isInnermost && describeError.length > 0 && (
+                <div className="property-grid-row property-grid-row-readonly property-grid-row-unavailable">
+                  <dt>Properties</dt>
+                  <dd>
+                    <span className="property-grid-value">Unavailable</span>
+                    <span className="property-grid-readonly-reason">{describeError}</span>
+                  </dd>
+                </div>
+              )}
+
               {isInnermost &&
                 groupsOf(properties).map((group) => (
                   <div className="property-grid-group" key={group.name}>
