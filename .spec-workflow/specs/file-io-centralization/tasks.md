@@ -13,7 +13,7 @@
 - [-] 1. The guard, first
   - _Requirements: 5.1, 5.2_
 
-- [-] 1.1 `ShapeOfFileAccess` guard, green on landing, with a shrinking allow-list
+- [x] 1.1 `ShapeOfFileAccess` guard, green on landing, with a shrinking allow-list
   - Files: `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/ShapeOfFileAccess.Tests.cs`
   - Walks production `*.cs` under `src/` (excluding `bin`, `obj`, `*.Tests`) and fails on: a raw `File.ReadAllText`/`ReadAllLines`/`OpenText` against a user-editable document; a `new FileStream(...)` whose sharing is not `FileShare.ReadWrite | FileShare.Delete`; a hand-rolled `~adp-` temp-then-move outside `AdpFileWriter`. Each failure names the offending `file:line` **and the central call to use instead** — the message is the deliverable, not the assertion.
   - **Two kinds of allow-list entry, and the difference is the point.** *Permanent, with a reason:* `TextFileBuffer` (deliberately strict decode), `AdpFileWriter` (it is the temp-then-move), `SharedDocumentReader` (it is the sharing), `FileProjectStore` and `ProblemStore` (ADP-owned files, not user documents). *Tracked, with a task reference and an expiry:* `AnsibleYaml.cs`, `HelmYaml.cs`, `HelmChartReader.cs`, each annotated "tracked by task 3.x, delete this line when that task lands". A tracked entry that outlives its task is the failure mode to avoid, so 5.1 checks the list is down to the permanent five.
