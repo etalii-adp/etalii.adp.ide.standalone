@@ -17,10 +17,13 @@ describe("useHelmStream", () => {
     expect(source).toContain("moveElement");
   });
 
-  it("reports no viewport - the whole chart arrives at open", () => {
+  it("exposes reportView, so the canvas can close the view-delta loop", () => {
     // Arrange, act and assert.
+    // This test asserted the opposite until view-delta-adoption task 3: the chart used to
+    // arrive whole at open and the hook deliberately reported nothing. It now narrows to what
+    // the reader is looking at, and the hook hands the canvas the report function to do it.
     const source = useHelmStream.toString();
-    expect(source).not.toContain("reportView");
+    expect(source).toContain("reportView");
     expect(source).toContain("loading");
     expect(source).toContain("failed");
   });

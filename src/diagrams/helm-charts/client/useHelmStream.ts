@@ -3,6 +3,7 @@ import { Code, ConnectError, createClient } from "@connectrpc/connect";
 import { useAuth } from "@client/auth/AuthContext";
 import { DiagramService } from "@client/generated/diagrams_pb";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
+import { viewReportOf, type Viewport } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type HelmModel } from "./helmModel";
 
 export interface HelmStream {
@@ -19,12 +20,17 @@ export interface HelmStream {
    * one edit this type has.
    */
   moveElementTo: (elementId: string, x: number, y: number) => Promise<string>;
+  /**
+   * Reports what the reader is looking at, so the backend answers with the elements that
+   * newly fall inside it and removes the ones that left (view-delta-adoption Requirement 1.2).
+   */
+  reportView: (viewport: Viewport) => void;
 }
 
 /**
  * Opens the chart diagram at `path` over `DiagramService.Open` and folds its delta stream into
- * a `HelmModel`, re-baselining on reconnect. No view reporting: the whole chart is delivered
- * at open, because a chart is bounded.
+ * a `HelmModel`, re-baselining on reconnect. The whole chart is delivered at open and the
+ * view report narrows it from there.
  */
 export function useHelmStream(projectId: Uint8Array, path: readonly string[]): HelmStream {
   const { transport } = useAuth();
@@ -35,6 +41,8 @@ export function useHelmStream(projectId: Uint8Array, path: readonly string[]): H
   const clientRef = useRef(createClient(DiagramService, transport));
 
   const pathKey = path.join("/");
+
+  const reportView = viewReportOf(clientRef.current, projectId, watchId, path);
 
   useEffect(() => {
     const client = clientRef.current;
@@ -103,5 +111,5 @@ export function useHelmStream(projectId: Uint8Array, path: readonly string[]): H
     }
   };
 
-  return { model, loading, failed, moveElementTo };
+  return { model, loading, failed, moveElementTo, reportView };
 }
