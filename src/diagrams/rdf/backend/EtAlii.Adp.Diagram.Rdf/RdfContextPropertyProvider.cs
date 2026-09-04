@@ -130,6 +130,8 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
             ]);
         }
 
+        // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+        // Reason: Can still be null if the target element ID is empty.
         if (RdfSelection.IsBlank(target.ElementId) && RdfSelection.Describe(entry, target.ElementId ?? "") is { } text)
         {
             return Rows(

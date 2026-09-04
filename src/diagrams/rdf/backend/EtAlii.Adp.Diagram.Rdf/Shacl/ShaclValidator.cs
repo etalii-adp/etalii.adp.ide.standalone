@@ -62,6 +62,8 @@ public sealed class ShaclValidator(DiagramOrigin origin) : IDiagramValidator
             return problems;
         }
 
+        // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+        // Reason: Can still be null if the document is empty.
         var model = RdfParser.Parse(RdfDocument.Parse(request.Document ?? ""));
         var shapes = ShaclShapeDiscovery.Discover(model);
 
