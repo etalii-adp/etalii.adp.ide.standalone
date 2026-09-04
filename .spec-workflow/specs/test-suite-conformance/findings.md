@@ -263,6 +263,18 @@ The last is `ExampleCorpus.Tests.cs:153`: `Scopes` is a recursive generator, and
 
  The sites the tasks named are repaired and verified; the residue is the nested and helper walks the original survey could not see, which is exactly where the census predicted the work would be. No total is claimed until every one of the 39 has been judged.
 
+## The eleven are floored
+
+Merged as `0f5e9ee5`; the work is `e29873af`. All eleven were seen to fail, each by emptying the collection it guards and confirming the failure carries that floor's own message.
+
+**Three needed the floor on the loop's effective work rather than on a collection**, because the collection is legitimately empty for some items. A childless mindmap node yields no column and a single-child column yields no pair, so the floor counts *sibling pairs actually compared*. A parent with fewer than two placed children takes a `continue`, so the floor counts *parents actually examined*. This is the conditional-`continue` rule stated earlier, now applied three times.
+
+**Two were wrong on the first attempt, and real data corrected them.** Flooring each c4 view's boxes at `boxes.Length >= 2` failed on `SignIn` — a dynamic view in the Big Bank model that legitimately lays out to no boxes at all. The invariant is weaker than it looked: not every view yields a comparable pair, but *some* view must, or "no view overlaps" means nothing. The floor moved to the aggregate. The same correction applies to `FirstOverlap`, whose `null` return means "nothing overlaps" and "nothing was compared" alike; it now offers a comparability predicate and the caller floors how many views were comparable.
+
+**Two sabotages had to be retargeted after failing for the wrong reason.** Emptying the mindmap layout throws `KeyNotFoundException` in the nested walks before their floors are reached — red, and proof of nothing. Emptying each nested collection *at its own walk* produced exactly two failures carrying exactly the two floors' messages. That is the control the acceptance rule asks for, and it caught a bad sabotage in the doing rather than in the review.
+
+**One process failure of my own, recorded because the rule names this exact command.** The merge `0f5e9ee5` is authored `vrenken`: `git merge --no-ff` writes a commit object in the shared main checkout, so it needed `-c user.name=`, and I did not pass it. I had quoted that rule to the scrum master hours earlier. History is not being rewritten for a name — the work commit `e29873af` carries the correct identity, and this line is the record git cannot hold.
+
 ## Every walk, by group
 
 `d` is nesting depth among walks: `d1` sits inside one other walk, `d2` inside two. `helper` marks a walk outside any `[Fact]`/`[Theory]` body. The last column is a **triage hint only** — it says whether the enclosing method contains something floor-shaped, which is a method-level answer to a per-collection question. It found all five floors placed by hand in azure-pipeline, and that is the whole of its validation. No statement in this document rests on it.
