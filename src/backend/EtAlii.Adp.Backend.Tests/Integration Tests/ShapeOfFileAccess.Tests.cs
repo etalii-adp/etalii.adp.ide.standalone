@@ -68,21 +68,17 @@ public partial class ShapeOfFileAccessTests
     /// deleted by tasks 3.1-3.3 as intended; the whole <c>NarrowShare</c> category is empty and
     /// its heading went with its last entry, since a heading describing an empty category
     /// misleads. What remains: two core reads owned by <c>backend-consistency</c>, which this
-    /// spec does not claim, and four hand-rolled publishes owned by tasks 5.1-5.3. Those four
-    /// were found by this guard when it was first run rather than by any survey, and were
-    /// reported as a finding rather than absorbed - see the task 1.1 implementation log.
+    /// spec does not claim. The four hand-rolled publishes that stood here were converted by
+    /// tasks 5.1-5.3 and their lines deleted with the conversions; the category is empty and its
+    /// heading went with its last entry, as the read categories did before it. Those four were
+    /// found by this guard when it was first run rather than by any survey, and were reported as
+    /// a finding rather than absorbed - see the task 1.1 implementation log.
     /// </remarks>
     private static readonly (string File, string Rule, string Owner)[] Tracked =
     [
         // Core reads of a user document - owned by backend-consistency, not by this spec.
         ("Hierarchy/AddDiagramContextActionProvider.cs", RawRead, "backend-consistency AC1"),
         ("Hierarchy/RegistrationLayout.cs", RawRead, "backend-consistency AC2"),
-
-        // Hand-rolled temp-then-move publishes.
-        ("Mindmap/MindmapDocumentStore.cs", HandRolledPublish, "file-io-centralization task 5.1"),
-        ("WardleyMap/WardleyDocumentStore.cs", HandRolledPublish, "file-io-centralization task 5.2"),
-        ("C4/C4LayoutSidecar.cs", HandRolledPublish, "file-io-centralization task 5.3"),
-        ("WardleyMap/WardleyIdentities.cs", HandRolledPublish, "file-io-centralization task 5.2"),
     ];
 
     private const string RawRead = "reads a file with a raw File.ReadAllText/ReadAllLines, which opens at FileShare.Read and loses to a concurrent save";

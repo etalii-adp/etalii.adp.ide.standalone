@@ -5,11 +5,17 @@ using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would othe
 namespace EtAlii.Adp.Backend.Hierarchy;
 
 /// <summary>
-/// Writes a new file with a single line of content, so that a reader either does not see the
-/// file at all or sees it complete: the content is written to a temporary name first and the
-/// move into place is what publishes it. Nothing here knows about diagrams - it is handed a
-/// folder, a file name and a line.
+/// Publishes file content so that a reader either does not see the change at all or sees it
+/// complete: the content is written to a temporary name first and the move into place is what
+/// publishes it. Nothing here knows about diagrams - it is handed a folder, a file name and
+/// content, or a path and content.
 /// </summary>
+/// <remarks>
+/// Two publishes, and the difference is the move's <c>overwrite</c> flag rather than the
+/// algorithm. <see cref="Create" /> and <see cref="CreateAll" /> create something that was not
+/// there, so a name already taken is a failure they report. <see cref="Save" /> replaces what
+/// is there, which is what a document save is, so the same taken name is the expected case.
+/// </remarks>
 public static class AdpFileWriter
 {
     /// <summary>
@@ -42,6 +48,63 @@ public static class AdpFileWriter
 
     public static AdpFileWriteResult Create(string folder, string fileName, string firstLine) =>
         CreateAll(folder, [(fileName, firstLine + NewLine)]);
+
+    /// <summary>
+    /// Publishes <paramref name="content" /> over whatever is at <paramref name="path" />, or
+    /// leaves that file untouched: the content goes to a scratch name in the same folder and
+    /// the move into place replaces the old bytes in one step. A reader holding the file open
+    /// sees the previous version until the move lands, never a half-written one.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the overwriting half of the class, added for file-io-centralization task 5:
+    /// four modules had hand-rolled exactly this - a <c>~adp-</c> scratch file and a
+    /// <c>File.Move(overwrite: true)</c> - because <see cref="CreateAll" /> refuses to
+    /// overwrite and a save is an overwrite. They were copies of this algorithm differing in
+    /// one boolean, which is why all four convert here rather than being justified separately.
+    /// </para>
+    /// <para>
+    /// <b>It imposes no error policy, deliberately.</b> A failed publish throws, and each
+    /// caller keeps the policy it already had - the mindmap store lets it propagate, the
+    /// Wardley store and the two sidecars catch it and keep the edit in memory. Centralizing
+    /// the algorithm while quietly centralizing the error handling would have changed three
+    /// modules' behaviour under the same commit that claimed to change none.
+    /// </para>
+    /// <para>
+    /// The scratch file is removed if the write or the move fails, so a failure leaves the
+    /// folder as it found it. The original exception is what surfaces; a failure to clean up
+    /// never replaces it.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="IOException">The write or the move failed.</exception>
+    /// <exception cref="UnauthorizedAccessException">The write or the move was refused.</exception>
+    public static void Save(string path, string content)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(content);
+
+        var directory = IoPath.GetDirectoryName(path);
+        var folder = directory is { Length: > 0 } ? directory : ".";
+        var temporary = IoPath.Combine(folder, $"{TempPrefix}{Guid.NewGuid():N}{TempExtension}");
+
+        try
+        {
+            // The same no-BOM encoding CreateAll writes: the callers this replaced either said
+            // so explicitly or took File.WriteAllText's default, which is the same thing.
+            File.WriteAllText(temporary, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+
+            // The overwriting move is the whole difference from CreateAll: here the
+            // destination existing is the expected case rather than the failure.
+            File.Move(temporary, path, overwrite: true);
+        }
+        catch
+        {
+            DeleteQuietly(temporary);
+            throw;
+        }
+
+        _logger.Debug("Published {Path}", path);
+    }
 
     /// <summary>
     /// Creates every file in <paramref name="files"/> or none of them: all are written to

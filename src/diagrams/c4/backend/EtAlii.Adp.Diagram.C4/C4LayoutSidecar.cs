@@ -224,38 +224,17 @@ public sealed class C4LayoutSidecar
     private static void Persist(string bodyPath, Dictionary<string, Dictionary<string, C4SidecarPosition>> all)
     {
         var path = PathFor(bodyPath);
-        var directory = System.IO.Path.GetDirectoryName(path);
-        var folder = directory is { Length: > 0 } ? directory : ".";
-        var temporary = System.IO.Path.Combine(
-            folder,
-            $"{AdpFileWriter.TempPrefix}{Guid.NewGuid():N}{AdpFileWriter.TempExtension}");
-
         try
         {
-            File.WriteAllText(temporary, JsonSerializer.Serialize(all, Options));
-            File.Move(temporary, path, overwrite: true);
+            AdpFileWriter.Save(path, JsonSerializer.Serialize(all, Options));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             // Losing an arrangement is a nuisance; failing the edit that caused it would be
             // worse, and the computed layout still shows a correct diagram.
             _logger.Warning(exception, "Could not write the layout sidecar beside {BodyPath}", bodyPath);
-            TryDelete(temporary);
+            // AdpFileWriter.Save removes its own scratch file before the failure surfaces.
         }
     }
 
-    private static void TryDelete(string path)
-    {
-        try
-        {
-            if (File.Exists(path))
-            {
-                File.Delete(path);
-            }
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            _logger.Debug(exception, "Could not remove the scratch file {Path}", path);
-        }
-    }
 }

@@ -101,11 +101,10 @@ public sealed class WardleyIdentities
             return;
         }
 
+        // The folder is this sidecar's precondition rather than the writer's business: a
+        // scratch file has nowhere to land if the directory is not there yet.
         var folder = IoPath.GetDirectoryName(path);
         var directory = folder is { Length: > 0 } ? folder : ".";
-        var temporary = IoPath.Combine(
-            directory,
-            $"{AdpFileWriter.TempPrefix}{Guid.NewGuid():N}{AdpFileWriter.TempExtension}");
 
         try
         {
@@ -114,15 +113,14 @@ public sealed class WardleyIdentities
                 Directory.CreateDirectory(directory);
             }
 
-            File.WriteAllText(temporary, JsonSerializer.Serialize(entries, Options));
-            File.Move(temporary, path, overwrite: true);
+            AdpFileWriter.Save(path, JsonSerializer.Serialize(entries, Options));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             // Losing the sidecar costs identities on the next open, which re-derives them.
             // Failing the edit that caused this would cost the user's actual work.
             _logger.Warning(exception, "Could not write the identity sidecar beside {BodyPath}", bodyPath);
-            TryDelete(temporary);
+            // AdpFileWriter.Save removes its own scratch file before the failure surfaces.
         }
     }
 
