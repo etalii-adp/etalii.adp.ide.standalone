@@ -185,6 +185,29 @@ Each has a 10-line `LogCaptureCaptureSink.cs` beside it, so the fork is six file
 
 **The mechanism that fixed it**, which makes the future repair cheap: `src/Directory.Build.targets:9` compiles `src/TestSupport/TestFolder.cs` into every `*.Tests` project by an `EndsWith('.Tests')` condition. `TestFolder.cs` is the only file there today. Moving `LogCapture` beside it and adding one `Compile Include` line would de-fork all three copies without any project gaining a reference. Whoever takes this does not need to invent the arrangement — only to use it.
 
+## The per-site pass, in progress
+
+**51 of the 275 walks sit inside the twenty files this specification names**, at commit `e69fa531`. That is the scope the ruling set, and it is stated with its boundary because a bare count decays: azure-pipeline is not among them, having been recounted separately, and the other 224 are recorded here and left alone.
+
+**Twelve of the 51 are exempt by rule**, and three of those rules are new — the census could not have applied them, because each needs a judgement about meaning rather than structure:
+
+| Exemption | N | Sites |
+| --- | :-: | --- |
+| Literal array at the loop site | 2 | `C4LayoutCrowding.Tests.cs:107`, `MindmapLayout.Tests.cs:194` |
+| **Field-held literal array** | 2 | `DocumentationLinks.Tests.cs:58` and `:73` walk `Documents`, a `static readonly string[]` of five names |
+| `[MemberData]` provider | 1 | `ExampleCorpus.Tests.cs:54` — xUnit fails an empty provider itself |
+| **Fixture setup, not a guard** | 6 | The `Directory.GetDirectories`/`GetFiles` pairs inside `CopyTree`-style helpers: `ansible ZeroWrites:259,263`, `HelmContextPropertyProvider:150,155`, `helm ZeroWrites:200,204`. These copy files; they assert nothing, and an empty copy surfaces downstream as a failing test rather than a passing one. |
+| **Index loop, not a collection walk** | 1 | `WardleyWriter.Tests.cs:25` — `for` over `Math.Max(left, right)`, a bound rather than a collection |
+
+The field-held literal array is worth naming: the census reads it as `derived`, correctly, because at the loop site it is an identifier. Only reading the declaration shows it cannot be empty. **That is the boundary between measurement and judgement in one line** — the census could not classify it and should not have tried.
+
+**Three confirmed unfloored so far, all in the newly-visible class.** Two are the same helper in two modules:
+
+* `ansible-structure ZeroWrites.Tests.cs:179` and `helm-charts ZeroWrites.Tests.cs:183` — `AssertUnchanged`, walking `before.OrderBy(…)`. **Its two pre-loop assertions do not save it:** `Assert.True(appeared.Length == 0)` and `Assert.True(vanished.Length == 0)` are *also* vacuously true of an empty snapshot. So if the fixture copy produced nothing, all three assertions pass and the module's zero-writes promise is asserted about no files at all. The same helper, byte-identical in shape, in two modules.
+* `ansible-structure ZeroWrites.Tests.cs:154` — a filtered walk, `before.Where(pair => pair.Key != registration)`, with no floor on the filtered result. Weaker than the two above, because the test's primary assertion `Assert.Equal([registration], changed)` is sound; only the byte-comparison over the remaining files is vacuous.
+
+**The rest of the 39 are still being read.** The sites the tasks named are repaired and verified; the residue is the nested and helper walks the original survey could not see, which is exactly where the census predicted the work would be. No total is claimed until every one of the 39 has been judged.
+
 ## Every walk, by group
 
 `d` is nesting depth among walks: `d1` sits inside one other walk, `d2` inside two. `helper` marks a walk outside any `[Fact]`/`[Theory]` body. The last column is a **triage hint only** — it says whether the enclosing method contains something floor-shaped, which is a method-level answer to a per-collection question. It found all five floors placed by hand in azure-pipeline, and that is the whole of its validation. No statement in this document rests on it.
