@@ -113,7 +113,7 @@ public sealed class DependencyGraphDocumentStore : IDependencyGraphDocumentStore
             text = "";
         }
 
-        return Parse(path, DependencyGraphDocument.Parse(text));
+        return Parse(path, LineDocument.Parse(text));
     }
 
     /// <summary>
@@ -121,7 +121,7 @@ public sealed class DependencyGraphDocumentStore : IDependencyGraphDocumentStore
     /// ordinary state for a file somebody is editing, so it is carried as an entry with an error
     /// rather than thrown out of the store.
     /// </summary>
-    private static DependencyGraphDocumentEntry Parse(string path, DependencyGraphDocument document)
+    private static DependencyGraphDocumentEntry Parse(string path, LineDocument document)
     {
         try
         {

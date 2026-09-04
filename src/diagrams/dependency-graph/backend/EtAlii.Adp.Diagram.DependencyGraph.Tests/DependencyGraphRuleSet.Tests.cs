@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Hierarchy;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
@@ -9,7 +10,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
 public class DependencyGraphRuleSetTests
 {
     private static IReadOnlyList<DiagramProblem> Judge(string yaml) =>
-        DependencyGraphRuleSet.Judge(DependencyGraphParser.Parse(DependencyGraphDocument.Parse(yaml)));
+        DependencyGraphRuleSet.Judge(DependencyGraphParser.Parse(LineDocument.Parse(yaml)));
 
     private static IEnumerable<DiagramProblem> Of(string yaml, string ruleId) =>
         Judge(yaml).Where(problem => problem.RuleId == ruleId);

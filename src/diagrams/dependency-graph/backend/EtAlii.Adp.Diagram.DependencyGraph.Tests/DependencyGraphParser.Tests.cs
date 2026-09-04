@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Hierarchy;
 using Xunit;
 using YamlDotNet.Core;
 using IoPath = System.IO.Path;
@@ -17,11 +18,11 @@ public class DependencyGraphParserTests
     private static string FixturesFolder => IoPath.Combine(AppContext.BaseDirectory, "Fixtures");
 
     private static DependencyGraphModel ParseFixture(string fixture) =>
-        DependencyGraphParser.Parse(DependencyGraphDocument.Parse(
+        DependencyGraphParser.Parse(LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(FixturesFolder, fixture))));
 
     private static DependencyGraphModel Parse(string yaml) =>
-        DependencyGraphParser.Parse(DependencyGraphDocument.Parse(yaml));
+        DependencyGraphParser.Parse(LineDocument.Parse(yaml));
 
     public static TheoryData<string> EveryFixture()
     {
@@ -54,7 +55,7 @@ public class DependencyGraphParserTests
         // an uncorrected range either collapses to one line or runs into the next declaration -
         // and the writer would then edit somebody else's element.
         var text = File.ReadAllText(IoPath.Combine(FixturesFolder, fixture));
-        var document = DependencyGraphDocument.Parse(text);
+        var document = LineDocument.Parse(text);
         var model = DependencyGraphParser.Parse(document);
 
         // Each declaration is checked against a second thing it must cover besides its id. An id

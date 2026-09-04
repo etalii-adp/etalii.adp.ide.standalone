@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -15,15 +16,15 @@ public class DependencyGraphWriterTests
 {
     private static string FixturesFolder => IoPath.Combine(AppContext.BaseDirectory, "Fixtures");
 
-    private static (DependencyGraphDocument Document, DependencyGraphModel Model) Load(string fixture)
+    private static (LineDocument Document, DependencyGraphModel Model) Load(string fixture)
     {
-        var document = DependencyGraphDocument.Parse(File.ReadAllText(IoPath.Combine(FixturesFolder, fixture)));
+        var document = LineDocument.Parse(File.ReadAllText(IoPath.Combine(FixturesFolder, fixture)));
         return (document, DependencyGraphParser.Parse(document));
     }
 
-    private static (DependencyGraphDocument Document, DependencyGraphModel Model) From(string yaml)
+    private static (LineDocument Document, DependencyGraphModel Model) From(string yaml)
     {
-        var document = DependencyGraphDocument.Parse(yaml);
+        var document = LineDocument.Parse(yaml);
         return (document, DependencyGraphParser.Parse(document));
     }
 
@@ -111,7 +112,7 @@ public class DependencyGraphWriterTests
 
             // Assert.
             Assert.Contains("x: 412.5", document.Text, StringComparison.Ordinal);
-            var reparsed = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(document.Text));
+            var reparsed = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
             Assert.Equal(412.5d, reparsed.Elements[0].X);
         }
         finally
@@ -212,7 +213,7 @@ public class DependencyGraphWriterTests
         DependencyGraphWriter.SetX(document, model.Elements[0], 260);
 
         // Assert.
-        var reparsed = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(document.Text));
+        var reparsed = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
         Assert.Equal(260d, reparsed.Elements[0].X);
         Assert.Contains("    x: 260", document.Text, StringComparison.Ordinal);
     }
@@ -232,7 +233,7 @@ public class DependencyGraphWriterTests
         // All three relations in that fixture touch the element, and the count is knowable
         // before the removal runs, which is what the confirmation needs.
         Assert.Equal(3, going.Count);
-        var reparsed = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(document.Text));
+        var reparsed = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
         Assert.Empty(reparsed.Relations);
         Assert.Single(reparsed.Elements);
         Assert.Equal("dst00001", reparsed.Elements[0].Id);
@@ -265,7 +266,7 @@ public class DependencyGraphWriterTests
         DependencyGraphWriter.RemoveElement(document, model, doomed);
 
         // Assert.
-        var reparsed = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(document.Text));
+        var reparsed = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
         Assert.Single(reparsed.Elements);
         Assert.Equal("src00001", reparsed.Elements[0].Id);
         Assert.Equal("Order service", reparsed.Elements[0].Label);
@@ -283,7 +284,7 @@ public class DependencyGraphWriterTests
 
         // Assert.
         Assert.Contains("    -   id: newone01", document.Text, StringComparison.Ordinal);
-        var reparsed = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(document.Text));
+        var reparsed = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
         Assert.Equal(3, reparsed.Elements.Count);
         Assert.Equal("Added", reparsed.Elements[2].Label);
         Assert.Equal(5, reparsed.Elements[2].Row);
@@ -300,7 +301,7 @@ public class DependencyGraphWriterTests
         DependencyGraphWriter.InsertRelation(document, model, "conn0001", "a", "b", "depends on");
 
         // Assert.
-        var reparsed = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(document.Text));
+        var reparsed = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
         var relation = Assert.Single(reparsed.Relations);
         Assert.Equal("a", relation.From);
         Assert.Equal("b", relation.To);
@@ -319,10 +320,10 @@ public class DependencyGraphWriterTests
 
         // Act.
         DependencyGraphWriter.InsertRelation(document, model, "conn0001", "a", "b", "");
-        var reparsed = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(document.Text));
+        var reparsed = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
         DependencyGraphWriter.RemoveRelation(document, reparsed.Relations[0]);
         DependencyGraphWriter.RemoveRelationsSectionIfEmpty(
-            document, DependencyGraphParser.Parse(DependencyGraphDocument.Parse(document.Text)));
+            document, DependencyGraphParser.Parse(LineDocument.Parse(document.Text)));
 
         // Assert.
         Assert.Equal(original, document.Text);
@@ -338,7 +339,7 @@ public class DependencyGraphWriterTests
         DependencyGraphWriter.InsertRelation(document, model, "conn0004", "src00001", "dst00001", "and again");
 
         // Assert.
-        var reparsed = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(document.Text));
+        var reparsed = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
         Assert.Equal(4, reparsed.Relations.Count);
     }
 
@@ -355,7 +356,7 @@ public class DependencyGraphWriterTests
         // `from` depends on `to`: which way round it went in is the type's entire meaning, so the
         // written form is asserted rather than only the reparsed model.
         Assert.Contains("    from: b3Rt9wYz\r\n    to: k7Qv2mXa", document.Text, StringComparison.Ordinal);
-        var reparsed = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(document.Text));
+        var reparsed = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
         var added = reparsed.Relations.Single(relation => relation.Id == "conn0009");
         Assert.Equal("b3Rt9wYz", added.From);
         Assert.Equal("k7Qv2mXa", added.To);
@@ -386,7 +387,7 @@ public class DependencyGraphWriterTests
         DependencyGraphWriter.SetRelationLabel(document, model.Relations[0], "");
 
         // Assert.
-        var reparsed = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(document.Text));
+        var reparsed = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
         Assert.Equal("", reparsed.Relations[0].Label);
         Assert.DoesNotContain("label: authorises through", document.Text, StringComparison.Ordinal);
     }
@@ -400,7 +401,7 @@ public class DependencyGraphWriterTests
         // Act.
         DependencyGraphWriter.SetLabel(document, model.Elements[0], "Plain");
         var afterPlain = document.Text;
-        var reparsedModel = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(afterPlain));
+        var reparsedModel = DependencyGraphParser.Parse(LineDocument.Parse(afterPlain));
         DependencyGraphWriter.SetLabel(document, reparsedModel.Elements[0], "Has: a colon");
 
         // Assert.
@@ -408,7 +409,7 @@ public class DependencyGraphWriterTests
         // when the value genuinely needs them.
         Assert.Contains("label: Plain", afterPlain, StringComparison.Ordinal);
         Assert.Contains("label: \"Has: a colon\"", document.Text, StringComparison.Ordinal);
-        var final = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(document.Text));
+        var final = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
         Assert.Equal("Has: a colon", final.Elements[0].Label);
     }
 
@@ -423,7 +424,7 @@ public class DependencyGraphWriterTests
 
         // Act.
         DependencyGraphWriter.SetLabel(document, model.Elements[0], "Temporarily different");
-        var reparsed = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(document.Text));
+        var reparsed = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
         DependencyGraphWriter.SetLabel(document, reparsed.Elements[0], originalLabel);
 
         // Assert.
@@ -442,7 +443,7 @@ public class DependencyGraphWriterTests
         // Act.
         DependencyGraphWriter.SetX(document, element, 1000);
         DependencyGraphWriter.SetRow(document, element, 9);
-        var reparsed = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(document.Text));
+        var reparsed = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
         DependencyGraphWriter.SetX(document, reparsed.Elements[1], wasX);
         DependencyGraphWriter.SetRow(document, reparsed.Elements[1], wasRow);
 
@@ -459,7 +460,7 @@ public class DependencyGraphWriterTests
 
         // Act.
         DependencyGraphWriter.InsertElement(document, model, "temp0001", "Temporary", 640, 7);
-        var reparsed = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(document.Text));
+        var reparsed = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
         var added = reparsed.Elements.Single(element => element.Id == "temp0001");
         DependencyGraphWriter.RemoveElement(document, reparsed, added);
 
@@ -477,7 +478,7 @@ public class DependencyGraphWriterTests
 
         // Act.
         DependencyGraphWriter.InsertElement(document, model, "temp0002", "Temporary", 480, 3);
-        var reparsed = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(document.Text));
+        var reparsed = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
         var added = reparsed.Elements.Single(element => element.Id == "temp0002");
         DependencyGraphWriter.RemoveElement(document, reparsed, added);
 

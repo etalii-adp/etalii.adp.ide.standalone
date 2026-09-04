@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Hierarchy;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
@@ -12,4 +13,4 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 public sealed record RestoreDependencyGraphLinesCommand(
     string BodyPath,
     string ElementId,
-    IReadOnlyList<DependencyGraphLineSegment> Segments) : ICommand;
+    IReadOnlyList<LineSegment> Segments) : ICommand;

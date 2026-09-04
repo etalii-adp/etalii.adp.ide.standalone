@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -79,7 +80,7 @@ public class ExamplesTests
         var text = File.ReadAllText(IoPath.Combine(ExamplesRoot, relativePath));
 
         // Act.
-        var model = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(text));
+        var model = DependencyGraphParser.Parse(LineDocument.Parse(text));
 
         // Assert.
         // An example that parses to nothing would show an empty canvas to the first person who
@@ -96,7 +97,7 @@ public class ExamplesTests
         var original = File.ReadAllText(IoPath.Combine(ExamplesRoot, relativePath));
 
         // Act.
-        var document = DependencyGraphDocument.Parse(original);
+        var document = LineDocument.Parse(original);
 
         // Assert.
         Assert.Equal(original, document.Text);
@@ -108,7 +109,7 @@ public class ExamplesTests
     {
         // Arrange.
         var text = File.ReadAllText(IoPath.Combine(ExamplesRoot, relativePath));
-        var model = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(text));
+        var model = DependencyGraphParser.Parse(LineDocument.Parse(text));
 
         // Act.
         var problems = DependencyGraphRuleSet.Judge(model);
@@ -145,7 +146,7 @@ public class ExamplesTests
         // The no-placeholder rule, asserted rather than trusted. "New element" and "New node" are
         // what a gesture names a node before anybody renames it, so an example carrying one is an
         // example somebody built on the canvas and shipped without finishing.
-        var model = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(
+        var model = DependencyGraphParser.Parse(LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(ExamplesRoot, relativePath))));
 
         // Assert.

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Hierarchy;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
@@ -16,7 +17,7 @@ public class DependencyGraphDocumentFactoryTests
         var text = _factory.CreateEmptyDocument("services");
 
         // Assert.
-        var model = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(text));
+        var model = DependencyGraphParser.Parse(LineDocument.Parse(text));
         Assert.Empty(model.Elements);
         Assert.Empty(model.Relations);
         Assert.StartsWith("dependencies: 1", text, StringComparison.Ordinal);
@@ -40,14 +41,14 @@ public class DependencyGraphDocumentFactoryTests
         // block entry after it without opening the section leaves the key with two values and
         // the file unparseable - a bug that would surface on the very first Add of every new
         // graph.
-        var document = DependencyGraphDocument.Parse(_factory.CreateEmptyDocument("services"));
+        var document = LineDocument.Parse(_factory.CreateEmptyDocument("services"));
         var model = DependencyGraphParser.Parse(document);
 
         // Act.
         DependencyGraphWriter.InsertElement(document, model, "first001", "First", 120, 0);
 
         // Assert.
-        var reparsed = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(document.Text));
+        var reparsed = DependencyGraphParser.Parse(LineDocument.Parse(document.Text));
         var element = Assert.Single(reparsed.Elements);
         Assert.Equal("First", element.Label);
         Assert.DoesNotContain("[]", document.Text, StringComparison.Ordinal);
