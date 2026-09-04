@@ -74,7 +74,8 @@ public sealed class SparqlContextSourceResolver : IContextSourceResolver
                 SourceId: default,
                 rootPath,
                 watchId,
-                elementId),
+                elementId,
+                routed.Definition.Origin),
             new ContextLevelDetail { Element = new ElementDetail { Text = text } },
             this);
 

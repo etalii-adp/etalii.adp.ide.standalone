@@ -76,6 +76,13 @@ public sealed record SparqlQueryModel
     /// <summary>A <c>DESCRIBE</c> query's targets, as written; empty for the other forms.</summary>
     public IReadOnlyList<string> DescribeTargets { get; init; } = [];
 
+    /// <summary>
+    /// The same targets as terms, IRIs already resolved - what a <c>DESCRIBE</c> draws. A bare
+    /// <c>DESCRIBE &lt;iri&gt;</c> has no where clause at all, so without these its diagram
+    /// would be empty; <c>DESCRIBE *</c> contributes none, because the asterisk names no term.
+    /// </summary>
+    public IReadOnlyList<SparqlTerm> DescribeTerms { get; init; } = [];
+
     /// <summary>The <c>FROM</c>/<c>FROM NAMED</c> clauses, as written - frame, not structure.</summary>
     public IReadOnlyList<string> DatasetClauses { get; init; } = [];
 

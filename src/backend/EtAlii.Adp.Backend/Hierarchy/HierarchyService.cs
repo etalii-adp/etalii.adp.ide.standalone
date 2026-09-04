@@ -26,6 +26,8 @@ public sealed class HierarchyService : EtAlii.Adp.HierarchyService.HierarchyServ
         var userId = SessionContext.GetUserId(context);
         if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var rootPath, out var error))
         {
+            // The refusal reason otherwise reaches only the one client that asked.
+            _logger.Warning("Refused to list entries for {UserId} on project {ProjectId}: {Reason}", userId, request.ProjectId, error);
             return Task.FromResult(new ListEntriesResponse { Error = new ListEntriesError { Message = error } });
         }
 
@@ -51,6 +53,7 @@ public sealed class HierarchyService : EtAlii.Adp.HierarchyService.HierarchyServ
         var userId = SessionContext.GetUserId(context);
         if (!ProjectRootResolver.TryResolve(_projectStore, userId, request.ProjectId, out var rootPath, out var error))
         {
+            _logger.Warning("Refused a hierarchy watch for {UserId} on project {ProjectId}: {Reason}", userId, request.ProjectId, error);
             throw new RpcException(new Status(StatusCode.FailedPrecondition, error));
         }
 

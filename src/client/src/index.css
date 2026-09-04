@@ -1,6 +1,7 @@
 :root {
   --color-bg: #f8fafc;
   --color-surface: #ffffff;
+  --color-surface-raised: rgb(0 0 0 / 6%); /* one step above the surface. On a light ground that reads as a faint shade, because --color-surface is already white and cannot lift further */
   --color-border: #e2e8f0;
   --color-text: #0f172a;
   --color-text-muted: #64748b;
@@ -19,6 +20,7 @@
   :root {
     --color-bg: #0f172a;
     --color-surface: #1e293b;
+    --color-surface-raised: rgb(255 255 255 / 6%); /* the polarity flips: on a dark ground a raised surface lifts towards the light */
     --color-border: #334155;
     --color-text: #f1f5f9;
     --color-text-muted: #94a3b8;

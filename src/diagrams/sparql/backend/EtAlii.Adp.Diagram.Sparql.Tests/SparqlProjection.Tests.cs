@@ -215,6 +215,31 @@ public class SparqlProjectionTests
     }
 
     [Fact]
+    public void ABareDescribe_DrawsItsTarget()
+    {
+        // Arrange & act: a DESCRIBE with no where clause has nothing but its target, so if the
+        // target is not drawn the diagram is empty. Found by a vendored UniProt example, which
+        // is exactly what vendoring real queries is for.
+        var result = Project("DESCRIBE <http://purl.uniprot.org/embl-cds/AAO89367.1>");
+
+        // Assert.
+        var node = Assert.Single(result.Nodes);
+        Assert.Equal(SparqlNodeKind.Iri, node.Kind);
+        Assert.Equal("http://purl.uniprot.org/embl-cds/AAO89367.1", node.Full);
+        Assert.Equal("DESCRIBE <http://purl.uniprot.org/embl-cds/AAO89367.1>", result.HeaderForm);
+    }
+
+    [Fact]
+    public void ADescribesPrefixedTarget_ResolvesToTheSameNodeItsPatternsUse()
+    {
+        // Arrange & act: the target and the where clause name one thing, so they share a node.
+        var result = Project("PREFIX ex: <http://example.org/> DESCRIBE ex:thing WHERE { ?s ex:near ex:thing }");
+
+        // Assert.
+        Assert.Single(result.Nodes, node => node.Id == "iri:http://example.org/thing");
+    }
+
+    [Fact]
     public void AnonymousVariables_GetDocumentOrderOrdinals()
     {
         // Arrange & act.

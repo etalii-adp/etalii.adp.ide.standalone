@@ -542,15 +542,33 @@ tag, and the ZIP's name must all be the same number - a claim only a person with
 release artifact can check end to end.
 
 - **Preconditions**: a published GitHub release with its ZIP asset (or, before the first
-  release exists: a local `dotnet publish` of the service with the client's production
-  build copied into `wwwroot/`).
+  release exists: a local `dotnet publish` of the service - the project's own
+  `PublishClientApp` target builds the client and places it in `wwwroot/`, so no copy
+  step is needed and adding one nests a second bundle at `wwwroot/dist/`).
 - **Actions**: download and unzip the release; run `dotnet EtAlii.Adp.Backend.Service.dll`
   (requires the .NET 10 runtime); browse to the listening address; read the line below the
   login panel. Compare it with the release tag, the ZIP file name, and
   `[System.Diagnostics.FileVersionInfo]::GetVersionInfo("EtAlii.Adp.Backend.dll").ProductVersion`.
-- **Expected**: all four carry the same version. The login line is quiet and centered under
-  the card; killing the backend and reloading the page shows no version line at all rather
-  than a stale one.
+- **Expected**: all four carry the same version, in Nerdbank.GitVersioning's two shapes -
+  the tag and the ZIP name spell SemVer2 (`0.1.402-alpha`), while the assemblies and the
+  login line append the commit as build metadata (`0.1.402-alpha+99796ebafe`). Deliberate,
+  not drift: the release names the version, the running binary names the commit it came
+  from. Anything that disagrees on the digits before the `+` is the failure this check is
+  looking for. The login line is quiet and centered under the card; killing the backend and
+  reloading the page shows no version line at all rather than a stale one.
+- **Verified end to end 2026-09-04**, against the first release this pipeline has ever
+  produced. The run went green on the Linux runner and tagged `v0.1.402-alpha` at commit
+  `99796eba` - the commit that was pushed. The user downloaded the ZIP, ran
+  `dotnet EtAlii.Adp.Backend.Service.dll` from it, and the line below the login panel read
+  **`0.1.402-alpha+99796ebafe`**. Four places, one number. Note this could only be finished
+  by someone signed in to GitHub: the repository is private, and a development machine with
+  neither `gh` nor a token cannot fetch a release asset at all - the unauthenticated API
+  answers `Not Found`.
+- **Publish layout confirmed 2026-09-04**: `dotnet publish` alone produces `wwwroot/` holding
+  `index.html`, `favicon.svg` and `assets/`, and the published `EtAlii.Adp.Backend.dll` reads
+  ProductVersion `0.1.388-alpha+e051580749`, naming the commit it was built from. This run
+  checked the layout and the assembly stamp only - not the login line, which the entry below
+  covers - and it was a branch build rather than a release, so tag and ZIP name are untested.
 - **Partially verified 2026-09-03** against a locally running developer build: the login line
   and `EtAlii.Adp.Backend.dll`'s ProductVersion both read `0.1.80-alpha+af55382d1f` - the
   stamp's first live trip from assembly through gRPC to the login panel. The release tag and
@@ -779,6 +797,121 @@ data rather than a fixture.
   `.ttl` byte-identical throughout, the reopened tab drew the card at the stored spot, and
   one undo returned the `.adp` byte-for-byte. The validator panel showed "No problems found"
   on the real Wikidata export the whole time.
+
+## A language chip shows a translation gap, and only a gap (skos-diagram, task 5.2)
+
+The label chain is pinned exhaustively as a pure function, and the chip's condition is decided
+backend-side so the chip can never disagree with the label beside it. What no test can settle is
+whether a reader takes the point: a quiet tag beside a name is meant to read as "this vocabulary
+has not been translated here", not as decoration.
+
+- **Preconditions**: backend + client running; a project holding a multilingual vocabulary whose
+  translations are incomplete (the vendored EuroVoc extract is one), registered as `w3c/skos`
+  with a `language:` header naming a language the vocabulary does not translate everything into
+  — the header sits after `body:` and before `layout:`.
+- **Actions**: open the diagram and read a band of concepts.
+- **Expected**: concepts translated into the header's language show their translated label and
+  no chip; concepts that are not show a fallback label with a small language tag beside it. The
+  chip is legible but quiet - it should never out-shout the label. Removing the `language:`
+  header and reopening moves the chips to the concepts that lack English instead.
+
+## A misplaced language: header changes nothing, and says why (skos-diagram, task 5.2)
+
+The hazard this guards is silent: core's registration scan stops at the first line it does not
+recognise, so a `language:` line above `body:` would sever the diagram from its document with no
+error at all. The reading refuses to honour such a header and reports it instead - the panel
+message is the only place a user learns why their header did nothing.
+
+- **Preconditions**: as above.
+- **Actions**: move the `language:` line above the `body:` line, save, and reopen the diagram.
+- **Expected**: the diagram still opens on its document - the pairing is intact - and draws in
+  the default language order rather than the header's. The Errors and Warnings panel carries one
+  `skos.misplaced-header` entry naming the line and saying to move it below `body:`. Moving it
+  back and reopening restores the header's language and clears the entry.
+
+## Filing a concept under another is one gesture and one undo (skos-diagram, task 5.2)
+
+The hierarchy is the picture, so the gesture that builds it is the one to see working end to
+end: dragged from the top anchor, written as a single `skos:broader` on the narrower end - the
+direction thesauri are authored in - with no inverse invented, and reversible byte-for-byte.
+
+- **Preconditions**: a vendored SKOS example open as `w3c/skos`, in a git checkout so
+  `git diff` works; two concepts visible that are not yet related.
+- **Actions**: select a concept, drag from its **top** anchor onto another concept and release;
+  run `git diff`; press Ctrl+Z; run `git diff` again. Then repeat from the **side** anchor.
+- **Expected**: the top-anchor drag adds exactly one line, a `skos:broader` naming the target,
+  on the dragged concept - no `skos:narrower` anywhere, no re-indentation, no reordered keys, no
+  changed line endings. The canvas re-layers so the concept sits below its new parent. Ctrl+Z
+  leaves `git diff` empty. The side-anchor drag does the same with one `skos:related` line, and
+  does not change the layering.
+## A shared variable draws once, with edges crossing region borders (sparql-diagram, task 5.3)
+
+The one drawing rule the whole module is built around: every occurrence of a variable is one
+node, so its degree on the canvas is its join count in the query (Requirement 4.1), and an
+`OPTIONAL` pattern that mentions an outside variable reaches out to it rather than drawing a
+second copy inside the region (Requirement 3.2).
+
+- **Preconditions**: backend + client running; `src/examples/` added as a project.
+- **Actions**: open `diagrams/sparql/w3c-sparql/optional.adp`. Count the nodes labelled `?x`,
+  `?name` and `?mbox`. Look at where `?mbox` sits relative to the dashed `OPTIONAL` frame, and
+  follow the edge that ends at it.
+- **Expected**: exactly one node per variable name - three in total, plus no others. `?mbox` is
+  used only inside the `OPTIONAL`, so its node sits inside the dashed frame; `?x` is used both
+  inside and outside, so its node sits outside and the `OPTIONAL`'s edge crosses the frame's
+  border to reach it. The property grid on `?x` states its join count.
+
+## The projection mark matches the SELECT list (sparql-diagram, task 5.3)
+
+What leaves a query should read off the canvas without consulting the header (Requirement 4.2).
+
+- **Preconditions**: as above.
+- **Actions**: open `diagrams/sparql/w3c-sparql/optional.adp` and note which variable nodes
+  carry the projection mark; compare against the `SELECT ?name ?mbox` line in the header band.
+  Then open `diagrams/sparql/w3c-sparql/aggregate.adp` and do the same.
+- **Expected**: in the first, `?name` and `?mbox` are marked and `?x` is not. In the second,
+  `?totalPrice` is marked - the alias the query projects - and `?org`, `?auth`, `?book` and
+  `?lprice` are not, with `GROUP BY ?org` and `HAVING (SUM(?lprice) > 10)` shown in the header
+  band rather than drawn on the canvas.
+
+## A reposition leaves the query untouched in a visible diff (sparql-diagram, task 5.3)
+
+The read-only position, proven on a real vendored query rather than a fixture: the one gesture
+this diagram has writes the registration and never the `.rq` (Requirements 5.1, 6.3).
+
+- **Preconditions**: as above; a shell in `src/examples/diagrams/sparql/uniprot/`.
+- **Actions**: `git status` to confirm a clean tree. Open
+  `diagrams/sparql/uniprot/proteome-location-of-gene.adp`; drag the `?proteomeData` node to a
+  clearly different spot; close and reopen the diagram; then undo. Run `git status` and
+  `git diff` after each step.
+- **Expected**: the position lands in `proteome-location-of-gene.adp`'s `layout:` block keyed
+  `var:proteomeData`, and `git diff` never shows a single changed line in
+  `proteome-location-of-gene.rq` at any point; the reopened diagram draws the node at the
+  stored spot; one undo returns the `.adp` byte-for-byte, leaving the tree clean again.
+
+## The context menu offers no edits (sparql-diagram, task 5.3)
+
+The read-only position is meant to be visible, not merely enforced: a menu that offered an
+action the backend refuses would be worse than a menu with nothing in it (Requirement 6.1).
+
+- **Preconditions**: as above.
+- **Actions**: open `diagrams/sparql/uniprot/proteome-location-of-gene.adp`. Right-click a
+  variable node, a concrete term, an edge and a region frame in turn. Select a variable and
+  look at the property grid; try to type into a row.
+- **Expected**: no mutating action appears on any of them, and the toolbox panel offers this
+  diagram no entries. Every property row is read-only and states the same reason - that the
+  diagram reads the query and the `.rq` is edited in a text editor.
+
+**Status of the four sparql-diagram checks above (2026-09-03): specified, not yet executed.**
+The app was built and both dev servers started cleanly against this module (backend on 5090,
+client on 5194, worktree ports since reverted), but the app opens on a sign-in form, and
+entering a credential into a login field is outside what the implementing agent may do — even
+the checked-in developer placeholder. The behaviours themselves are covered automatically:
+the byte-identity of the query across every offered surface by `NoWriterSweepTests`, the
+one-node-per-variable and shallowest-scope placement rules by `SparqlProjectionTests`, the
+projection mark and the absence of any editing affordance by `SparqlCanvas.test.tsx`, and the
+read-only reason on every property row by `SparqlProvidersTests`. What these four checks add is
+the eyes-on confirmation that the drawing reads correctly to a person, which is exactly the part
+a test cannot assert - so they are left here to be run by someone who can sign in.
 
 ## An ontology draws its classes, restrictions and individuals (owl-diagram, task 4.3)
 

@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/folder-add-registration/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-04T00:02:16.640Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788480136156_vjyjakem4",
+      "approvalTitle": "folder-add-registration — Design"
+    }
+  ]
+}

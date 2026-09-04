@@ -25,7 +25,9 @@
     <ItemGroup>
       <ClientDistFile Include="$(MSBuildThisFileDirectory)..\..\client\dist\**" />
       <ResolvedFileToPublish Include="@(ClientDistFile)">
-        <RelativePath>wwwroot\%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <!-- Forward slashes: a backslash is a separator only on Windows, and this path
+             decides where the publish lands on the Linux release runner too. -->
+        <RelativePath>wwwroot/%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </ResolvedFileToPublish>
     </ItemGroup>

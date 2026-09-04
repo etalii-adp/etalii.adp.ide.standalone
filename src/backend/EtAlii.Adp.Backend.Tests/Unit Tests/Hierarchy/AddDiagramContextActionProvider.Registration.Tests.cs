@@ -185,7 +185,7 @@ public class AddDiagramContextActionProviderRegistrationTests : IDisposable
     public async Task ExecuteAsync_OnAFileWithoutTheMarker_DoesNotOfferTheMarkedReading()
     {
         // Arrange.
-        var target = FileTarget(CreateFile("plain.yml", "stages:\n"));
+        var target = FileTarget(CreateFile("plain.yml"));
 
         // Act.
         var execution = await MarkerProvider().ExecuteAsync(target, AddDiagramContextActionProvider.AddActionId, TestContext.Current.CancellationToken);

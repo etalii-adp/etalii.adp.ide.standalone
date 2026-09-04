@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { forwardBezierPath, straightPath } from "@client/canvas/connectors";
 import { BoxElement } from "@client/canvas/elements/box/BoxElement";
+import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
+import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
 import { useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
@@ -42,7 +44,7 @@ export interface AnsibleCanvasProps {
  * (Requirement 8.1).
  */
 export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) {
-  const { model, loading, failed, reportView } = useAnsibleStream(projectId, path);
+  const { model, loading, failed, reportView, moveElementTo } = useAnsibleStream(projectId, path);
 
   // This type's palette is empty by design - the module registers no toolbox provider,
   // because it edits nothing. Registering the backend's empty answer makes the panel say
@@ -55,13 +57,32 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
   const [focusedId, setFocusedId] = useState<string | undefined>(undefined);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const panRef = useRef<{ x: number; y: number; view: ViewBox } | null>(null);
+  /** The in-flight node drag, with `moved` telling a click from a reposition. */
+  const dragRef = useRef<{ id: string; clientX: number; clientY: number; x: number; y: number; moved: boolean } | null>(null);
+  const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(null);
 
   const nodes = useMemo(() => nodesOf(model), [model]);
   const edges = useMemo(() => edgesOf(model), [model]);
   const bounds = useMemo(() => boundsOf(nodes), [nodes]);
   const effective = view ?? bounds;
+  const boundsRef = useRef(bounds);
+  boundsRef.current = bounds;
 
   const selectedId = selectedElementIdOf(selection);
+
+  // What the bars describe: the view against the content's own bounds, padded the shared way,
+  // so a diagram that fits shows thumbs claiming nearly the whole track and invites no pan.
+  const horizontalExtent = scrollExtentOf(bounds.x, bounds.x + bounds.w, { factor: 0.5 });
+  const verticalExtent = scrollExtentOf(bounds.y, bounds.y + bounds.h, { factor: 0.5 });
+
+  // A thumb drag pans and never zooms: it writes a concrete box at the current size, taking
+  // over from the fitted state exactly as dragging the canvas does.
+  const onScrollPan = useCallback((horizontalStart: number, verticalStart: number) => {
+    setView((current) => {
+      const from = current ?? boundsRef.current;
+      return { x: horizontalStart, y: verticalStart, w: from.w, h: from.h };
+    });
+  }, []);
 
   // The backend culls to what a connection can see, so it has to be told - debounced, because
   // a pan produces a report per frame otherwise.
@@ -112,34 +133,74 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
     });
   };
 
+  /** Canvas units per screen pixel, for turning a pointer delta into a position. */
+  const unitsPerPixel = () => {
+    const rect = svgRef.current?.getBoundingClientRect();
+    return effective.w / Math.max(rect?.width ?? 1, 1);
+  };
+
   const onPointerDown = (event: React.PointerEvent) => {
     if (event.button !== 0 || event.target !== svgRef.current) {
       return;
     }
-    // A drag on empty canvas pans. There is nothing else a drag could mean here: no element
-    // can be moved, so the gesture is free for navigation.
+    // A drag on empty canvas pans; a drag that started on a node repositions it, and that
+    // gesture is begun by the node itself in onNodePointerDown.
     panRef.current = { x: event.clientX, y: event.clientY, view: effective };
     svgRef.current?.setPointerCapture(event.pointerId);
   };
 
+  /** Begins a reposition. The threshold below is what keeps a click from becoming one. */
+  const onNodePointerDown = (element: AnsibleElement, event: React.PointerEvent) => {
+    if (event.button !== 0) {
+      return;
+    }
+    event.stopPropagation();
+    dragRef.current = { id: element.id, clientX: event.clientX, clientY: event.clientY, x: element.x, y: element.y, moved: false };
+    svgRef.current?.setPointerCapture(event.pointerId);
+  };
+
   const onPointerMove = (event: React.PointerEvent) => {
+    const dragging = dragRef.current;
+    if (dragging) {
+      // Three pixels of slack: a hand that moves while clicking must not silently author a
+      // position, and the drop below only writes when this flag is set.
+      dragging.moved ||= Math.abs(event.clientX - dragging.clientX) + Math.abs(event.clientY - dragging.clientY) > 3;
+      const scale = unitsPerPixel();
+      setDrag({
+        id: dragging.id,
+        x: dragging.x + (event.clientX - dragging.clientX) * scale,
+        y: dragging.y + (event.clientY - dragging.clientY) * scale,
+      });
+      return;
+    }
+
     const pan = panRef.current;
     if (!pan || !svgRef.current) {
       return;
     }
     const rect = svgRef.current.getBoundingClientRect();
-    const unitsPerPixel = pan.view.w / Math.max(rect.width, 1);
+    const panScale = pan.view.w / Math.max(rect.width, 1);
     setView({
-      x: pan.view.x - (event.clientX - pan.x) * unitsPerPixel,
-      y: pan.view.y - (event.clientY - pan.y) * unitsPerPixel,
+      x: pan.view.x - (event.clientX - pan.x) * panScale,
+      y: pan.view.y - (event.clientY - pan.y) * panScale,
       w: pan.view.w,
       h: pan.view.h,
     });
   };
 
   const onPointerUp = (event: React.PointerEvent) => {
+    const dragging = dragRef.current;
+    const preview = drag;
+    dragRef.current = null;
+    setDrag(null);
     panRef.current = null;
     svgRef.current?.releasePointerCapture(event.pointerId);
+
+    if (dragging?.moved && preview) {
+      // The write goes to the .adp's layout block; the change comes back through the folder's
+      // own watcher, so nothing is echoed locally.
+      void moveElementTo(dragging.id, preview.x, preview.y);
+    }
   };
 
   const onKeyDown = (event: React.KeyboardEvent) => {
@@ -154,16 +215,16 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
   };
 
   if (failed) {
-    return <div className="ansible-canvas-message">This Ansible project structure diagram could not be opened.</div>;
+    return <div className="ansible-canvas-message canvas-host canvas-host-message">This Ansible project structure diagram could not be opened.</div>;
   }
 
   if (loading) {
-    return <div className="ansible-canvas-message">Reading the folder…</div>;
+    return <div className="ansible-canvas-message canvas-host canvas-host-message">Reading the folder…</div>;
   }
 
   if (nodes.length === 0) {
     return (
-      <div className="ansible-canvas-message">
+      <div className="ansible-canvas-message canvas-host canvas-host-message">
         Nothing here is laid out the way Ansible expects, so there is nothing to draw. Playbooks at the folder root or
         under <code>playbooks/</code>, roles under <code>roles/</code>, inventories under <code>inventories/</code>.
       </div>
@@ -171,9 +232,11 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
   }
 
   return (
+    <div className="ansible-canvas-host canvas-host">
+      <div className="ansible-canvas-viewport canvas-viewport">
     <svg
       ref={svgRef}
-      className="ansible-canvas"
+      className="ansible-canvas canvas-drawing"
       viewBox={`${effective.x} ${effective.y} ${effective.w} ${effective.h}`}
       role="application"
       aria-label="Ansible project structure"
@@ -187,7 +250,7 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
       <defs>
         {/* One arrowhead, reused: every Ansible edge points from the user of a thing to it. */}
         <marker id="ansible-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M 0 0 L 10 5 L 0 10 z" className="ansible-arrowhead" />
+          <path d="M 0 0 L 10 5 L 0 10 z" className="ansible-arrowhead canvas-arrowhead" />
         </marker>
       </defs>
       <g className="ansible-edges">
@@ -203,10 +266,19 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
             selected={node.id === selectedId}
             onSelect={onSelect}
             onActivate={onActivate}
+            onDragStart={onNodePointerDown}
+            drag={drag?.id === node.id ? drag : undefined}
           />
         ))}
       </g>
     </svg>
+      </div>
+      <CanvasScrollbars
+        horizontal={{ viewStart: effective.x, viewSpan: effective.w, ...horizontalExtent }}
+        vertical={{ viewStart: effective.y, viewSpan: effective.h, ...verticalExtent }}
+        onPan={onScrollPan}
+      />
+    </div>
   );
 }
 
@@ -220,11 +292,16 @@ function Node({
   selected,
   onSelect,
   onActivate,
+  onDragStart,
+  drag,
 }: {
   node: AnsibleElement;
   selected: boolean;
   onSelect: (element: AnsibleElement, gesture?: ContextSelectionAction) => void;
   onActivate: (element: AnsibleElement) => void;
+  onDragStart: (element: AnsibleElement, event: React.PointerEvent) => void;
+  /** Where this node is being dragged to, while that is happening. */
+  drag?: { x: number; y: number };
 }) {
   const slot = paletteSlotOf(node, PALETTE_SLOTS);
   const classes = [
@@ -242,8 +319,8 @@ function Node({
       className={classes}
       data-element-id={node.id}
       data-kind={kindClass(node.payload.kind)}
-      x={node.x}
-      y={node.y}
+      x={drag?.x ?? node.x}
+      y={drag?.y ?? node.y}
       width={node.payload.width}
       height={node.payload.height}
       label={node.payload.name}
@@ -252,6 +329,7 @@ function Node({
       role="button"
       tabIndex={0}
       aria-label={`${kindLabel(node.payload.kind)} ${node.payload.name}`}
+      onPointerDown={(event: React.PointerEvent) => onDragStart(node, event)}
       onClick={() => onSelect(node)}
       onDoubleClick={() => onActivate(node)}
       onContextMenu={(event) => {
@@ -291,7 +369,7 @@ function Edge({ edge, model }: { edge: AnsibleElement; model: AnsibleModel }) {
     return (
       <g className={`ansible-edge ansible-edge-${edgeClass(wire.kind)} ansible-edge-unresolved`} data-edge-id={edge.id}>
         <path
-          className="ansible-edge-line"
+          className="ansible-edge-line canvas-connection-line"
           d={straightPath(
             { x: source.x + source.payload.width, y: source.y + source.payload.height / 2 },
             { x: source.x + source.payload.width + 48, y: source.y + source.payload.height / 2 },
@@ -321,7 +399,7 @@ function Edge({ edge, model }: { edge: AnsibleElement; model: AnsibleModel }) {
 
   return (
     <g className={classes} data-edge-id={edge.id}>
-      <path className="ansible-edge-line" d={forwardBezierPath(from, to)} markerEnd="url(#ansible-arrow)" />
+      <path className="ansible-edge-line canvas-connection-line" d={forwardBezierPath(from, to)} markerEnd="url(#ansible-arrow)" />
       <text className="ansible-edge-label" x={(from.x + to.x) / 2} y={(from.y + to.y) / 2 - 6} textAnchor="middle">
         {wire.condition ? `${wire.directive} when ${wire.condition}` : wire.directive}
       </text>
