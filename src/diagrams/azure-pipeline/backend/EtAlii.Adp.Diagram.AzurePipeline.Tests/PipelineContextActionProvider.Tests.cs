@@ -463,7 +463,17 @@ public class PipelineContextActionProviderTests : IDisposable
         // failure that was its own: an action doing view-state work finishes in ExecuteAsync and
         // is never committed at all, so demanding a successful commit of it was asking the wrong
         // question of the right code.
-        foreach (var elementId in AllElementIds())
+        var elementIds = AllElementIds().ToArray();
+
+        // Assert, first, that the walk found the pipeline at all. The fixture yields nine ids
+        // today - stages, their jobs and their steps - so five is a floor with headroom either
+        // way. Without this the test passes loudest exactly when the model has stopped yielding
+        // anything to offer actions on.
+        Assert.True(
+            elementIds.Length >= 5,
+            $"Only {elementIds.Length} element ids came back from the fixture pipeline; this guard has stopped finding the elements it offers actions on.");
+
+        foreach (var elementId in elementIds)
         {
             foreach (var actionId in await ActionsOn(Write(), elementId))
             {
