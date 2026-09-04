@@ -10,13 +10,16 @@ The second reason is the older one: an agent who knows only the rule is the one 
 
 ## Chat naming
 
-A session's title says what it is currently doing, in the form `Agent N - <topic/specification>`.
+A session's title says **which role it holds and what it is currently doing**, in the form `<Role> N - <topic/specification>`. The team is one Scrum master, four Developers, two Testers and two Architects; [roles.md](roles.md) defines what each is responsible for.
 
-- A title that already carries an agent number keeps that number; only the topic part changes.
-- A session with no number takes the next free one — list the other sessions and take the highest existing `Agent N` plus one.
-- When the session moves to a new topic, rename again: same number, new topic.
+- A title that already carries a role and number keeps both; only the topic part changes.
+- A session with no number takes the next free one **within its role** — list the other sessions and take the highest existing number for that role plus one.
+- When the session moves to a new topic, rename again: same role, same number, new topic.
+- The Scrum master session is named `Scrum master`, without a number, and never renames — it is the single point of contact and its address must stay stable.
 
-The number is an identity other sessions address; the topic is how the board is read at a glance. A finished agent renames itself `Agent N - Idle`, which is what marks it available for new work.
+The role and number together are an identity other sessions address; the topic is how the board is read at a glance. A finished session renames itself `<Role> N - Idle`, which is what marks it available for new work.
+
+**Why the role is in the title rather than only in the assignment.** The Scrum master assigns tasks to Developers, specifications and documentation to Architects, and testing to Testers — and it reads the board from these titles. A title that says only what a session is doing hides whether the right kind of session is doing it, and the mismatch surfaces at the end rather than at the start. A session asked for work outside its role says so rather than taking it.
 
 ## Where work happens
 

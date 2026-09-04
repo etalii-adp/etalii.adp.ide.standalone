@@ -8,9 +8,13 @@ An agent that cannot reach the user directly routes the question to the scrum ma
 
 Where an option is recommended, say which and why in its own text rather than in a preamble around the list.
 
-## Chat naming
+## Roles and chat naming
 
-Rename this session to `Agent N - <topic/specification>` whenever its topic changes, keeping any number it already has and taking the next free one otherwise. A finished agent renames itself `Agent N - Idle`.
+The team is **one Scrum master, four Developers, two Testers and two Architects**. Responsibilities are defined in [roles.md](.spec-workflow/steering/roles.md) — read it; this section only says how sessions are named.
+
+Rename this session to `<Role> N - <topic/specification>` whenever its topic changes — `Developer 2 - causal-loop implementation`, `Architect 1 - diagram-layout requirements`, `Tester 1 - inline rename pass`. Keep the number you already hold and take the next free one within your role otherwise. When finished, rename to `<Role> N - Idle`. The Scrum master session is named `Scrum master` and never renames.
+
+**Your role decides what you are given, not what you fancy.** Developers implement tasks in a worktree and own a specification's tasks until it is done — no other developer works on that spec. Architects write specifications and documentation, and pursue structural improvement. Testers exercise the running application and write the procedures they follow. A session whose role does not fit the work says so rather than taking it.
 
 Full rules and reasoning: [processes.md, *Chat naming*](.spec-workflow/steering/processes.md#chat-naming).
 
