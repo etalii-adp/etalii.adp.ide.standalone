@@ -399,6 +399,8 @@ public sealed partial class ContextService
             SuggestedValue = node.SuggestedValue,
             Description = node.Description,
             Icon = node.Icon,
+            NameSuppressedReason = node.NameSuppressedReason,
+            UnavailableReason = node.UnavailableReason,
         };
         if (node.Children is { Count: > 0 } children)
         {
