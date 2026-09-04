@@ -1103,3 +1103,59 @@ failure message is the instruction. A module that needs bars imports
 them placed differently it passes a `className` and overrides only the offsets. Reaching for a
 private thumb or track is the one thing the guard will not allow, and reading its message as a
 prompt to loosen the guard is reading it backwards.
+
+## A shapes file aims at data that is elsewhere, and says so calmly (shacl-diagram, task 4.2)
+
+Requirement 4.3 is the one a SHACL canvas is most likely to get wrong. A shapes graph almost
+always targets classes it does not itself describe, so the naive drawing either dangles an edge
+into nothing or invents a placeholder node for the target — and either one turns the medium
+working as designed into something that reads like a defect.
+
+- **Preconditions**: backend + client running; `src/examples/` added as a project.
+- **Actions**: open `diagrams/shacl/fair-data-point/navigation-shapes.adp`; read the target
+  chips on the cards; select a card and read the Targets group in the property grid; then check
+  the Errors and Warnings panel.
+- **Expected**: every target appears as a chip inside its card's target band — never as an
+  arrow, and never as a node of its own; the chips for these shapes all name classes from other
+  vocabularies, and they are styled exactly like a chip whose class *is* described here, with no
+  warning colour, badge or icon; the grid lists each one under Targets, valued
+  `dcat:Catalog (not described in this file)` and kin, worded as a fact; nothing anywhere on the
+  canvas is left pointing at empty space; and the panel reports nothing at all for the file — an
+  absent target is explicitly not a finding.
+
+## A constraint written as a blank node is fully readable, and refuses edits in one sentence (shacl-diagram, task 4.2)
+
+The blank-node identity boundary as a user meets it. Both halves matter: the content has to be
+legible (Requirement 4.1) *and* the refusal has to be a sentence, identical wherever it is met,
+rather than a disabled control with nothing to say (Requirements 3.3, 6.4).
+
+- **Preconditions**: backend + client running; `src/examples/` added as a project.
+- **Actions**: open `diagrams/shacl/w3c-shacl/spec-examples.adp`; find a card with property
+  rows; select it and read the Constraints group in the grid; try to edit a row's value there;
+  then open the context menu on the card, and try to drag a card that draws as anonymous.
+- **Expected**: each property shape reads as one row — path on the left, cardinality on the
+  right, constraint summary between them — with no anonymous node drawn anywhere on the canvas;
+  the grid lists every row with its values readable; the row's box will not accept an edit, and
+  the reason shown is *"This constraint is written as a blank node, which has no identity that
+  survives a reparse, so an edit keyed to it could not be undone reliably. Open the file as text
+  to change it, or give the shape an IRI of its own."*; the same sentence, word for word, is
+  what the menu shows against an unavailable gesture and what the canvas reports when an
+  anonymous card is dragged. Three places, one sentence — if any of them paraphrases, that is
+  the bug.
+
+## A SPARQL constraint is drawn, and pointedly not run (shacl-diagram, task 4.2)
+
+Requirement 4's load-bearing statement, at the one place where the temptation is strongest: the
+natural expectation of a SHACL tool is that it executes, and a query sitting in the file is the
+most executable-looking thing in it.
+
+- **Preconditions**: backend + client running; `src/examples/` added as a project.
+- **Actions**: open `diagrams/shacl/w3c-shacl/spec-examples.adp`; find the card carrying a
+  `sh:sparql` constraint; read its row on the canvas; select the card and read the Constraints
+  group in the grid; look over the context menu; check the Errors and Warnings panel.
+- **Expected**: the constraint draws as a single opaque row badged as SPARQL — the query is not
+  parsed into parts and no part of it becomes an element; the grid shows the `sh:select` text in
+  full and readable, read-only, with the reason naming that it is never executed; no menu entry
+  anywhere offers to validate, run, check conformance or pick a data file; and the panel speaks
+  only about the shapes file itself, never about data conforming to it. Nothing in the UI should
+  leave a user thinking a validation has happened.

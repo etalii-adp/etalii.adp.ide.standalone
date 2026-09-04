@@ -37,14 +37,14 @@ public class ShaclExamplesTests
 
         // The licence file itself, not a line in a readme naming one: the terms travel with the
         // bytes, so whoever finds the folder later has them in hand.
-        var licence = IoPath.Combine(path, "LICENSE");
-        Assert.True(File.Exists(licence), $"{folder} has no vendored LICENSE file");
+        var licence = IoPath.Combine(path, "LICENSE.md");
+        Assert.True(File.Exists(licence), $"{folder} has no vendored LICENSE.md file");
         Assert.True(new FileInfo(licence).Length > 500, $"{folder}'s LICENSE looks truncated");
 
         var readme = File.ReadAllText(IoPath.Combine(path, "readme.md"));
         Assert.Contains("Source", readme, StringComparison.Ordinal);
         Assert.Contains("Retrieved", readme, StringComparison.Ordinal);
-        Assert.Contains("Licence", readme, StringComparison.Ordinal);
+        Assert.Contains("License", readme, StringComparison.Ordinal);
     }
 
     [Theory]
