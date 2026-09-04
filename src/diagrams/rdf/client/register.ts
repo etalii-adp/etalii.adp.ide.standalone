@@ -2,10 +2,12 @@ import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanv
 import { RdfCanvas } from "./RdfCanvas";
 import { OwlCanvas } from "./OwlCanvas";
 import { SkosCanvas } from "./SkosCanvas";
+import { ShaclCanvas } from "./ShaclCanvas";
 import "@client/canvas/canvas.css";
 import "./rdf.css";
 import "./owl.css";
 import "./skos.css";
+import "./shacl.css";
 
 /**
  * What this module contributes to the client: the data-graph canvas for `w3c/rdf`, the ontology
@@ -29,5 +31,9 @@ export const registrations: DiagramCanvasRegistration[] = [
   {
     matches: (mimeType) => mimeType === "w3c/skos",
     Canvas: SkosCanvas,
+  },
+  {
+    matches: (mimeType) => mimeType === "w3c/shacl",
+    Canvas: ShaclCanvas,
   },
 ];
