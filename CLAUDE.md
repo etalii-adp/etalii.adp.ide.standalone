@@ -31,6 +31,15 @@ This repo uses the `.spec-workflow/` folder (steering docs, specs, approvals, im
 - Whenever a requirements, design, or tasks document is approved through the web dashboard, commit that document (and its associated approval-lifecycle files, e.g. under `.spec-workflow/approvals/`) at that point too — this applies even though approval only changes/removes files rather than adding a fresh set.
 - Use a short, descriptive commit message in the style already used in this repo's history (e.g. "Bumped approvals.", "Added gRPC core communication specs: requirements and design documents.").
 
+## Vendored example data
+
+Diagram modules are tested against **real published example data**, not hand-written toys — the point of vendoring real documents is that they exercise input shapes the author never had in mind. Agents may download it, under two conditions that are not negotiable:
+
+- **The licence must be permissive.** CC0, CC BY (with the attribution carried), the W3C Software and Document Licence and similar are fine. Share-alike licences are not — UNESCO's thesaurus was rejected on exactly that ground.
+- **Download the licence file itself and keep it beside the data.** Not a link, not a line in a readme naming the licence: the actual file, vendored next to the documents it covers, so the terms travel with the data for anyone who finds it later.
+
+Verify the licence again at acquisition rather than trusting what the spec recorded — terms change between writing a spec and fetching the file.
+
 ## Diagram type catalog
 
 `docs/diagrams.md` catalogs every diagram type ADP could support. Whenever a new diagram type is identified, specified, implemented, or otherwise changes state, update that document — add or update its row with:
