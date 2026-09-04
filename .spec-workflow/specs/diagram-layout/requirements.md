@@ -8,6 +8,8 @@ That is two requests joined by an "i.e.", and they are genuinely two. The first 
 
 They are joined because they fail together. A layout good enough to keep is one worth storing; a layout nobody can read is one every reader will rearrange, and rearranging is worthless if it does not survive reopening.
 
+**Twelve requirements follow.** Requirements 1 to 3 are quality, 4 to 6 persistence, 7 and 11 stability, and 8, 9, 10 and 12 the surrounding obligations the two halves turned out to share.
+
 ### What the large examples actually do today
 
 Not an impression — measured, by running each module's own layout over the vendored corpus and reporting the extent of the positions it returned. An overlapping pair is two elements whose centres are closer than one card in both axes.
@@ -25,6 +27,25 @@ Not an impression — measured, by running each module's own layout over the ven
 This is a layout defect that the recently landed [view-delta-adoption](../view-delta-adoption/requirements.md) turns from ugly into expensive: now that viewports genuinely cull, an extent 98 screens wide means almost every element is culled almost always, and the loop spends its deltas shuttling a ribbon past a window.
 
 **The small examples are where overlap lives instead.** `prov-o` — the smallest measured, 42 elements — has three overlapping pairs, while the 1,000-element documents have at most one. Density is not the cause of overlap; the packing rule is. A requirement that only addressed large documents would leave the defect that is easiest to see.
+
+**These are measurements of computed positions, not of appearance.** No one has ever opened either STW document in the running app — the three skos entries in `tests.md` are written and unexecuted, confirmed by the agent who authored and implemented skos-diagram. So this document says what the layouts *compute* and deliberately claims nothing about how they *look*. Somebody rendering them may find worse; they will not find better.
+
+### What the corpus does not cover
+
+Vendored examples test input shapes their author never had in mind, which is the point of them — but a requirement written against a corpus inherits that corpus's blind spots, and these are stated so a later reader meets them before assuming otherwise. Counted from the documents by the agent who vendored them.
+
+| | geographic-names | business-economics |
+| --- | --- | --- |
+| Concepts | 435 | 1,150 |
+| `skos:broader` objects | 712 | 1,905 |
+| Concepts with more than one broader | 272 | 588 |
+| `skos:related` | 144 | 725 |
+| Top concepts | 1 | 1 |
+
+* **Both extracts are single-rooted by construction.** Neither demonstrates a forest, several top concepts, or disconnected components — and those are exactly the shapes a balancing rule has to handle. Requirement 2 is therefore evidenced on single-rooted documents and rests on fixtures for the rest.
+* **Polyhierarchy is the rule, not the exception**: 272 of 435 and 588 of 1,150 concepts have more than one broader. skos places such a concept once, below its deepest broader, so long edges spanning many layers are the expected pressure on any layering change.
+* **725 `skos:related` links on `business-economics` are non-hierarchical and no layering rule places them at all.** That is Requirement 1's case with real data rather than a fixture: cross-links a layout has nowhere to put.
+* **No `skos:Collection` anywhere in STW, and labels are completely bilingual** — so collection grouping and incomplete translation have fixture evidence only.
 
 ### Where layout is stored today: two mechanisms, and a rule that already picks one
 
@@ -151,8 +172,9 @@ The mechanism is one line, repeated at seven sites across databricks, the four r
 
 1. WHEN a projection truncates a document to its drawn-element budget THEN the reader SHALL be told, with the shown count and the total.
 2. WHERE a module has a budget THEN it SHALL surface truncation in the way the rdf family already does through its truncation payload, rather than each module inventing a presentation.
-3. WHEN the budget is reported THEN the report SHALL name the budget's owner and value — `RdfProjection.DefaultBudget`, 1,000 — rather than a number repeated at the call site.
+3. WHEN the budget is reported THEN the report SHALL name the budget's owner and value — `RdfProjection.DefaultBudget`, 1,000 — rather than a number repeated at the call site, and the **second copy of that number** in `ShaclProjection` SHALL be reconciled with it, because there are two constants for one budget today.
 4. IF a module has no budget and no truncation THEN it SHALL state that the whole document is always drawn, so a reader can tell the two situations apart.
+5. WHEN truncation is guarded by a test THEN the guard SHALL cover the skos reading — the only budget assertion in the tree, `TheLaureatesFile_ReallyExceedsTheBudget`, is pinned to `laureates.ttl` in the plain RDF reading, so **nothing currently asserts that `business-economics.ttl` exceeds the budget** even though it was extracted breadth-first to 1,150 concepts specifically to do so.
 
 ### Requirement 9 — Shared layering machinery, if the bar is met
 
@@ -166,16 +188,40 @@ The mechanism is one line, repeated at seven sites across databricks, the four r
 4. WHEN a shared piece is introduced THEN it SHALL not force a module whose notation fixes an axis to adopt it.
 5. WHEN the balancing rule of Requirement 2 is implemented THEN it SHALL be evaluated against this same bar, because it is a candidate with more consumers than the layering walk has.
 
-### Requirement 10 — The two example trees stop drifting through layout
+### Requirement 10 — The documents this specification is about can be opened in the showcase
 
-**User Story:** As someone opening the shipped examples, I want the workspace copy and the module copy to agree, so that a diagram I improve in one place is not stale in the other.
+**User Story:** As someone evaluating layout on a large document, I want that document present in the showcase project, so that the examples this specification exists to improve are ones a reader can actually open.
 
 #### Acceptance Criteria
 
-1. WHEN the two example trees are compared THEN their `.adp` files SHALL agree, or the tree that is authoritative SHALL be stated and the other SHALL be derived from it.
-2. WHEN layout is persisted through the running app THEN it SHALL not be the mechanism by which the trees diverge — of 65 paired `.adp` files, exactly two differ today, and in both the entire difference is a `layout:` block written by a drag in `src/examples` and never carried back.
-3. WHEN a large vendored example exists in a module's tree THEN its availability in the workspace tree SHALL be a decision rather than an accident — the five files missing from `src/examples` today include both STW documents, which are precisely the examples this specification is about.
-4. WHERE the trees are intended to be duplicates THEN a test or a documented procedure SHALL keep them so, because nothing does today.
+1. WHEN a module's `examples/` folder holds a document THEN whether it is also seeded into [`src/examples/`](../../../src/examples/) SHALL be a decision, and the two STW documents SHALL be seeded — they are the largest examples in the tree and neither can be opened in the showcase today.
+2. WHEN a document is seeded into the showcase THEN it SHALL open against the deployed catalog, which `ExampleRegistrationTests` already walks in both trees.
+3. WHEN a reader arranges a seeded example in the running app THEN the resulting `layout:` block in the showcase copy SHALL be understood as ordinary product use, and SHALL NOT be treated as drift from the module copy.
+4. WHERE this specification changes a module's own example documents THEN it SHALL NOT reintroduce any byte-for-byte equality between the two trees.
+
+**The two trees are deliberately not synced, and this requirement must not undo that.** The user asked for the module examples and the showcase copies to stop being held in sync, and `ExampleReplicationTests` was deleted on 2026-09-04 (commit 58677bb7) for a reason that is precisely this specification's subject: arranging a diagram against the showcase project writes a `layout:` block into the showcase copy while the module copy stays put, so a byte-comparison test was reading ordinary product use as drift and reddening the trunk — five times. A survey for this document measured that divergence independently (of 65 paired `.adp` files exactly two differ, and in both the whole difference is a `layout:` block) and it is evidence of the mechanism working, not of a defect. What survives is the narrower point in criterion 1: the showcase is seeded, and two documents were never seeded.
+
+### Requirement 11 — Lay out the whole document, then filter
+
+**User Story:** As a reader panning across a large diagram, I want the arrangement to stay still while I move, so that the content does not repack under me as I look at it.
+
+#### Acceptance Criteria
+
+1. WHEN a module computes layout THEN it SHALL position every projected element regardless of the reported viewport, and culling SHALL happen after positioning and never before it.
+2. WHEN a reader pans THEN no element's position SHALL change as a result, because a layout computed over the visible set repacks as the reader moves and is the reason an element panned to could otherwise have no position at all.
+3. WHERE a projection and its layout are expensive THEN they SHALL be cached per session and dropped when the document changes, because a pan is not a document change.
+4. WHEN this obligation is stated THEN it SHALL be the one already written in [creating-a-diagram-module.md](../../../docs/creating-a-diagram-module.md) under *"The view-delta loop"*, not a second wording of it — that document is the working rule, and this requirement makes it a layout obligation rather than a filter obligation.
+
+### Requirement 12 — A layout exposes each element's box, and downstream uses it
+
+**User Story:** As someone writing the code that decides what is on screen, I want the real size of each element, so that I do not cull something whose lower half the reader is still looking at.
+
+#### Acceptance Criteria
+
+1. WHERE a layout knows an element's measured size THEN it SHALL expose it, rather than leaving downstream code to assume a nominal cell.
+2. WHEN downstream code judges an element against a viewport THEN it SHALL use the element's box and not its corner — owl judged nodes against a nominal 240x320 cell while `OwlLayout.SizeOf` already knew each real box, which would have culled the ontology header while the reader was still looking at its lower half.
+3. WHEN an element spans a region — a frame, a band, a swimlane — THEN it SHALL be judged on the rectangle it spans.
+4. IF a module has no shared notion of element size THEN that SHALL be recorded rather than silently re-derived per canvas; `ViewBox` is currently declared identically in six module canvases, which is evidence for a canvas-level concern this specification does not itself own.
 
 ## Non-goals
 
