@@ -23,7 +23,7 @@ const VANISHED = "That element is no longer there, so the edit was abandoned. No
  */
 export function ShellPromptHost() {
   const { prompt, onPropose, onSubmit, onCancel } = useContextPrompt();
-  const placementFor = useInlineLabelPlacement();
+  const { placementFor, anyCanvasRegistered } = useInlineLabelPlacement();
   const [notice, setNotice] = useState("");
   // The interaction is over as far as this client is concerned, but the backend's own
   // acknowledgement of the cancel arrives over the stream a moment later. Without this the
@@ -33,6 +33,24 @@ export function ShellPromptHost() {
 
   const inlineElementId = inlineLabelElementIdOf(prompt);
   const placedInline = inlineElementId !== null && placementFor(inlineElementId) !== null;
+
+  /**
+   * A marked prompt while no canvas is registered at all: the answer is not in yet, not "no".
+   * Nothing is rendered for that instant, and in particular NOT the dialog.
+   *
+   * This is not tidiness, it is the fix for a defect that killed every rename outright. A canvas
+   * registers in an effect, so a prompt arriving in the same commit is unplaceable for exactly
+   * one render - the dialog would open and close again within two frames. Nobody sees the flash,
+   * but `Dialog`'s cleanup restores focus to whatever had it before, which lands *after* the
+   * inline editor has mounted and focused itself. The editor is blurred by that restore, blur
+   * commits, the value is unchanged, and an unchanged value ends the interaction - so the editor
+   * cancelled itself the instant it appeared, and the rename died with no error anywhere.
+   *
+   * A marked prompt always comes from a module whose canvas is on screen, so this state is
+   * transient by construction. An unmarked prompt - the explorer's rename, and every other input
+   * site - never reaches here and is unaffected.
+   */
+  const awaitingCanvas = inlineElementId !== null && !anyCanvasRegistered;
 
   // Whether the interaction still on screen was claimed by a canvas. Kept so that a placement
   // turning from answered to null can be told apart from a prompt that was never inline: the
@@ -46,7 +64,10 @@ export function ShellPromptHost() {
       return;
     }
 
-    if (inlineElementId !== null && claimedInline.current) {
+    // Only a canvas that is mounted and cannot find the element is evidence the element is gone.
+    // An empty registry means no canvas is mounted at all - a panel between mounts, a tab being
+    // switched - and reading that as a disappearance abandons an edit that nothing happened to.
+    if (inlineElementId !== null && claimedInline.current && anyCanvasRegistered) {
       claimedInline.current = false;
       setNotice(VANISHED);
       setAbandoned(true);
@@ -58,13 +79,13 @@ export function ShellPromptHost() {
       claimedInline.current = false;
       setAbandoned(false);
     }
-  }, [inlineElementId, onCancel, placedInline, prompt]);
+  }, [anyCanvasRegistered, inlineElementId, onCancel, placedInline, prompt]);
 
   const dismissNotice = useCallback(() => setNotice(""), []);
 
   return (
     <ContextPromptHost
-      prompt={placedInline || abandoned ? null : prompt}
+      prompt={placedInline || abandoned || awaitingCanvas ? null : prompt}
       onPropose={onPropose}
       onSubmit={onSubmit}
       onCancel={onCancel}

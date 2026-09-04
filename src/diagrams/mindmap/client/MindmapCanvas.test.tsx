@@ -7,6 +7,8 @@ import type { ContextPrompt } from "@client/generated/context_pb";
 import { MindmapNodePayloadSchema } from "@client/generated/mindmap_pb";
 import { applyDelta, emptyModel, type MindmapModel } from "./mindmapModel";
 import { DiagramViewProvider, useDiagramViewControls, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
+import { InlineLabelPlacementProvider } from "@client/shell/panels/InlineLabelPlacementContext";
+import { ShellPromptHost } from "@client/shell/context/ShellPromptHost";
 
 const select = vi.fn();
 const executeShortcut = vi.fn<(shortcut: { key: string }, source: { source: { value: { value: string } } }) => Promise<{ accepted: boolean; error: string }>>(async () => ({ accepted: true, error: "" }));
@@ -720,5 +722,77 @@ describe("MindmapCanvas", () => {
     // when renaming several things in a row - and by then it looks like the canvas misbehaving
     // rather than like the rename doing it.
     expect(select).not.toHaveBeenCalled();
+  });
+
+  // ---- the canvas and the shell together ---------------------------------------------------
+
+  /**
+   * The real placement registry, the real canvas and the real shell host in one tree - no stub
+   * resolver anywhere.
+   *
+   * This is the shape the unit tests could not express and a manual pass found the hard way:
+   * every rename was cancelled the instant it opened, while both components' own tests passed.
+   * A stubbed canvas registers once and answers for ever; a real one re-registers whenever its
+   * model changes, and the shell was reading the gap in between as the element having gone.
+   */
+  function renderCanvasAndShell(places: string[] = []) {
+    void places;
+    return render(
+      <InlineLabelPlacementProvider>
+        <MindmapCanvas {...props} />
+        <ShellPromptHost />
+      </InlineLabelPlacementProvider>,
+    );
+  }
+
+  it("opens the editor rather than cancelling, with the real registry between the canvas and the shell", async () => {
+    // Arrange.
+    currentModel = seed(node("root", "Root", 0, 0), node("a", "Alpha", 120, -20, "root", 80, 24));
+    currentPrompt = renamePromptFor("a", "Alpha");
+
+    // Act.
+    const { container } = renderCanvasAndShell();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // Assert.
+    // An editor on the node, no dialog over it, and above all no cancel: the interaction the
+    // backend just opened must still be open.
+    expect(container.querySelector("foreignObject.inline-label-editor")).not.toBeNull();
+    expect(cancelLabel).not.toHaveBeenCalled();
+  });
+
+  it("keeps the editor open when the model changes under it, which re-registers the canvas", async () => {
+    // Arrange.
+    currentModel = seed(node("root", "Root", 0, 0), node("a", "Alpha", 120, -20, "root", 80, 24));
+    currentPrompt = renamePromptFor("a", "Alpha");
+    const { container, rerender } = renderCanvasAndShell();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(container.querySelector("foreignObject.inline-label-editor")).not.toBeNull();
+
+    // Act.
+    // A delta arrives while the editor is open - a sibling appears. The canvas's resolver is
+    // memoized on the model, so this is a new identity and a re-registration.
+    currentModel = seed(
+      node("root", "Root", 0, 0),
+      node("a", "Alpha", 120, -20, "root", 80, 24),
+      node("b", "Beta", 120, 40, "root", 80, 24),
+    );
+    await act(async () => {
+      rerender(
+        <InlineLabelPlacementProvider>
+          <MindmapCanvas {...props} />
+          <ShellPromptHost />
+        </InlineLabelPlacementProvider>,
+      );
+      await Promise.resolve();
+    });
+
+    // Assert.
+    expect(cancelLabel).not.toHaveBeenCalled();
+    expect(container.querySelector("foreignObject.inline-label-editor")).not.toBeNull();
   });
 });

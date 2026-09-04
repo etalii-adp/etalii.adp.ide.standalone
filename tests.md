@@ -1242,3 +1242,64 @@ could never recover the rest however far it went.
   `PanningDoesNotMoveTheNodesItBringsIntoView`, `NoEdgeIsEverDeliveredWithOneEndMissing`,
   `ADocumentOverTheBudget_KeepsItsBannerAndItsRefusal`, and the shared hook's debounce test
   asserting exactly one call for a burst of changes.
+
+## Renaming a label in place (inline-rename, task 8)
+
+The parts that carry this feature are the parts jsdom models least faithfully. Focus, the caret,
+the selection and the blur that commits are all approximations there, and `getBBox` is not
+implemented at all — so a relationship label's *measured* width has no unit coverage by
+construction, and the unit tests exercise the per-character fallback instead. This check is where
+the measured path and the real focus behaviour are verified.
+
+- **Preconditions**: backend + client running from this worktree; sign in with the checked-in
+  developer placeholder (`admin` / `changeme`, per CLAUDE.md's sign-in ruling). Open a project
+  containing a mindmap and a C4 diagram — `src/examples/` has both.
+- **Actions**:
+  1. In the mindmap, select a node and press **F2**. Type a new name and press **Enter**.
+  2. Press **F2** on another node, type something, and press **Escape**.
+  3. Press **F2**, clear the field completely, and press **Enter**.
+  4. Press **F2**, type a few characters, and *click on the empty canvas* without pressing a key.
+  5. Press **F2**, type a few characters, then drag the empty canvas to pan.
+  6. In the C4 diagram, press **F2** on an element; then close it and press **F2** on a
+     relationship arrow that shows a technology in brackets.
+- **Expected**:
+  1. A textbox replaces the node's label in place — not a modal dialog — opening with the old
+     text **selected**, so the first keystroke replaces it. Enter commits and the node shows the
+     new name.
+  2. Escape leaves the node exactly as it was, and the keyboard returns to the canvas: the next
+     F2 opens an editor again rather than going nowhere.
+  3. The editor **stays open with the typed text intact** and shows the module's own refusal
+     underneath. It does not close and discard what was typed.
+  4. The click **commits** the edit. Losing typed text to a stray click is the failure this rule
+     exists to prevent, so a discarded edit here is a regression, not a preference.
+  5. The editor rides with its node as the canvas moves — it does not stay put on screen while
+     the node slides away — and the typed text survives. (Strictly, the pan commits first, so
+     what is verified is that the commit happens rather than the editor drifting.)
+  6. The element's editor covers its **name line only**, not the whole box with its type line and
+     description. The relationship's editor sits at the middle of the arrow, is about as wide as
+     the label drawn there, and opens on the **description alone** — the `[technology]` part is
+     not in the field. Committing leaves the technology untouched in the arrow's label.
+- **Also worth watching**: only one editor is ever open at a time, and the rest of the app's
+  input prompts are unchanged — renaming a file in the explorer still opens the ordinary dialog.
+
+- **Result 2026-09-04**: **FAILED** — run against a local developer build from the inline-rename
+  worktree, signed in with the checked-in placeholder. Steps 1's preconditions pass: F2 draws the
+  editor in place (`foreignObject.inline-label-editor` inside `svg.mindmap-canvas-surface`, at the
+  node's own canvas coordinates), it opens focused with the whole label selected, and no dialog
+  appears. **Committing does not work.** Neither Enter nor a click elsewhere commits; the editor
+  stays open and the label is unchanged, and the backend records the interaction as still open —
+  no submit, no cancel.
+
+  Diagnosed as far as this: shortly after the editor mounts and focuses itself,
+  `document.activeElement` is `BODY` while the editor is still mounted and still carries its React
+  `onKeyDown`/`onBlur` props. Typing reaches the field (its value changes), but by the time Enter
+  arrives the field no longer has focus, so the editor's own key handler never runs — and because
+  focus was lost without a blur reaching React, the blur-commit path does not run either. The
+  cause of that focus loss is not yet found; the canvas reports a valid placement on every render
+  it logs, so the editor is not being unmounted by a missing element.
+
+  Two earlier defects found by this same pass **are** fixed and guarded: the editor cancelling its
+  own interaction the instant it appeared (a one-frame dialog whose teardown restored focus, which
+  blurred the editor, which committed an unchanged value, which ended the interaction), and an
+  empty placement registry being read as "the element has gone". Both have tests that were seen to
+  fail without the fix.

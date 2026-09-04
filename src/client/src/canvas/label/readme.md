@@ -47,11 +47,27 @@ prompt whose value *is* the visible label of a named element (`InlineLabelEdit` 
 that element, and only then is an editor drawn. An unmarked prompt, or one no canvas can place,
 renders the dialog exactly as it always did.
 
+Two kinds of label are deliberately **not** markable, and a module author deciding what to mark
+should recognise them:
+
+- **A derived label.** An RDF edge shows a predicate's prefixed name computed from an IRI.
+  Changing it renames that term across the whole document, with collision and prefix rules whose
+  refusals need more room than a textbox has. That is a different act from retyping a caption,
+  and it keeps its dialog.
+- **A projection of several values.** Type badges, a row rendered from a predicate and its
+  object, a computed summary: there is no single stored value for the typed text to become.
+
+A label that *decorates* one authored value is a different case and is markable - C4 draws a
+relationship as `description [technology]`, and the editor replaces that whole string on screen
+while editing the description alone.
+
 ## Adoption
 
-None yet. The first two adopters are mindmap (node labels) and c4 (element names and
-relationship labels); this list is filled in as each lands, so it says what is true rather than
-what was planned.
+- **mindmap** - node labels. Its provider marks `Rename` and leaves add-child, add-sibling and
+  edit-notes on the dialog, which is the sharpest example in the tree of where the line falls.
+- **c4** - element names and relationship labels. The element's editor covers its name line
+  rather than its box, and a relationship's opens on the description alone, without the
+  technology drawn beside it.
 
 Every canvas without an entry above keeps its dialog **pending adoption**, which is not the same
 as being exempt:

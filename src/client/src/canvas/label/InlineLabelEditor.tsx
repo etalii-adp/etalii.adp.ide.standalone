@@ -57,7 +57,19 @@ export function InlineLabelEditor({ placement, onPropose, onSubmit, onCancel, on
     input?.select();
   }, []);
 
-  useEffect(() => () => onReturnFocus?.(), [onReturnFocus]);
+  useEffect(
+    () => () => {
+      // Marked BEFORE the focus goes back, and this order is the whole point. Handing focus to
+      // the canvas blurs this input, and a blur is a commit - so an editor being torn down would
+      // commit itself on the way out. With an unchanged value that commit ends the interaction,
+      // which is how a rename came to cancel itself the instant it appeared, silently and with
+      // nothing in any log to say why. A blur caused by this component going away is not the
+      // user clicking elsewhere, and must not be read as one.
+      closing.current = true;
+      onReturnFocus?.();
+    },
+    [onReturnFocus],
+  );
 
   const commit = async () => {
     if (closing.current) {

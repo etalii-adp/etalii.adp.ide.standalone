@@ -99,6 +99,48 @@ The client half mirrors the backend's discovery, so the shell holds no list of d
 - **The canvas** — timeline's `TimelineCanvas.tsx` with its stream hook (`useTimelineStream.ts`) subscribing to the diagram stream and unpacking the module's payloads. Before drawing anything by hand, read the shared canvas library under [`src/client/src/canvas/`](../src/client/src/canvas/): its [elements](../src/client/src/canvas/elements/readme.md) and [connections](../src/client/src/canvas/connections/readme.md) readmes catalogue the box, symbol, span, frame and connector shapes earlier modules grew and generalised — timeline draws its bars with the `span` element and its relations with the `interactive-bezier` connection rather than reinventing either.
 - **Styling** — the shared appearance lives in [`canvas.css`](../src/client/src/canvas/canvas.css): your `register.ts` imports it (`import "@client/canvas/canvas.css";`) beside your own stylesheet, and your canvas composes its `canvas-*` classes alongside your module's own names (`my-type-node canvas-node`) — the module names carry behaviour and tests, the shared ones carry the look. Your own stylesheet keeps only what is genuinely yours (a ruler, a run-state colouring), states no colour as a literal, and reaches only for theme variables that actually exist in **both** modes of [`index.css`](../src/client/src/index.css) — a `var()` against a variable the theme lacks renders its hardcoded fallback in every theme, which is how one module shipped a dark-only canvas. A colour the theme genuinely lacks is added to the theme, in both modes, never as a module literal. The scrollbars are the shared [`CanvasScrollbars`](../src/client/src/canvas/scroll/CanvasScrollbars.tsx); a module owns only their placement offsets.
 
+## Renaming in place
+
+**Optional, per module, and two lines of work.** A rename opens a modal dialog unless the module
+says the value it is asking for *is* the text the reader can see. The client cannot work that out
+for itself: fifty-odd actions answer with the same input prompt, and the same providers ask
+through it for run-if values, cluster keys, prefix declarations and predicate IRIs. Reading an
+action id for the word "rename" would put your module's vocabulary into shared code, which the
+family rulings forbid.
+
+So the backend says it. Pass `target.ElementId` as the trailing argument of
+[`ContextInputRequest`](../src/backend/EtAlii.Adp.Backend/Context/_Model/ContextDialogRequest.cs)
+on exactly the prompts whose value is the label, and leave every other prompt alone — the
+argument is defaulted, so nothing you already wrote changes.
+[`MindmapContextActionProvider`](../src/diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/MindmapContextActionProvider.cs)
+is the clearest example: four of its actions ask for text through the identical prompt and only
+`Rename` is marked, because a child's text does not exist yet and notes are not the label.
+
+The client half is a placement resolver. Call `useRegisterInlineLabelPlacement` with a function
+from element id to the label's rectangle **in your canvas's own units**, memoized on your model
+so an element removed mid-edit stops being placeable, and render
+[`InlineLabelEditor`](../src/client/src/canvas/label/InlineLabelEditor.tsx) inside your `svg` for
+the prompt it matches. Its [readme](../src/client/src/canvas/label/readme.md) is the reference,
+and a guard, [`noPrivateLabelEditors.test.ts`](../src/client/src/canvas/label/noPrivateLabelEditors.test.ts),
+fails naming any module that renders a text field of its own instead.
+
+Three things are worth knowing before you write the resolver.
+
+**Give the label's rectangle, not the element's.** A C4 box carries a name, a type line and a
+description; an editor over the whole box sits on three lines of text to edit one of them.
+
+**A derived label is not editable and should not be marked.** An RDF edge shows a predicate's
+prefixed name computed from an IRI, and changing it renames that term across the whole document —
+a different act, with collision and prefix rules whose refusals need more room than a textbox has.
+The test to write is the contrast: assert that your marked prompts carry the id *and that your
+unmarked ones do not*, in one test, because a marker on the right action proves nothing if a
+neighbouring one quietly acquired one too.
+
+**A decorated label still has one authored value underneath.** C4 draws a relationship as
+`description [technology]`, sometimes numbered; the editor replaces that whole string on screen
+while editing the description alone. Decoration around a single authored value is chrome. A label
+with no single value beneath it — type badges, a computed summary — is not markable at all.
+
 ## The view-delta loop
 
 **Every diagram module implements this, and the test is behavioural: a view *change* produces deltas.** A module that reports its viewport once when the diagram opens has implemented the first frame of the loop, not the loop; so has one whose `UpdateView` accepts a viewport and returns `[]`. Eleven modules implement it today, so a twelfth that skips it is the odd one out rather than the norm.

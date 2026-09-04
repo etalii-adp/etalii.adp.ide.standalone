@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 /** Where a label is, in the canvas's own units, and what it currently reads. */
 export interface LabelPlacement {
@@ -20,8 +20,25 @@ export type LabelPlacementResolver = (elementId: string) => LabelPlacement | nul
  * and re-registers on every change, bumping the version again. That is an infinite loop, and it
  * was written once here before being split.
  */
-const RegisterContext = createContext<((resolve: LabelPlacementResolver) => () => void) | undefined>(undefined);
-const PlacementContext = createContext<LabelPlacementResolver | undefined>(undefined);
+interface InlineLabelPlacementRegistration {
+  /** Adds a canvas's resolver and returns its withdrawal. */
+  register: (resolve: LabelPlacementResolver) => () => void;
+  /** Wakes the readers because a registered canvas's answers may have changed. */
+  touch: () => void;
+}
+
+const RegisterContext = createContext<InlineLabelPlacementRegistration | undefined>(undefined);
+interface InlineLabelPlacementLookup {
+  placementFor: LabelPlacementResolver;
+  /**
+   * Whether any canvas is registered at all. A registry with nothing in it means "no canvas is
+   * mounted", which is not the same as "that element is gone" - and a reader that confuses the
+   * two abandons an edit because a panel was between mounts.
+   */
+  anyCanvasRegistered: boolean;
+}
+
+const PlacementContext = createContext<InlineLabelPlacementLookup | undefined>(undefined);
 
 /**
  * Connects the shell's prompt host to whichever diagram canvases are mounted, exactly as
@@ -43,33 +60,43 @@ export function InlineLabelPlacementProvider({ children }: { children: ReactNode
   const [version, setVersion] = useState(0);
 
   // Stable for the provider's whole life, so a registering canvas's effect runs once.
-  const register = useCallback((resolve: LabelPlacementResolver) => {
-    resolvers.current.add(resolve);
-    setVersion((previous) => previous + 1);
-    return () => {
-      resolvers.current.delete(resolve);
-      setVersion((previous) => previous + 1);
-    };
-  }, []);
+  const registration = useMemo<InlineLabelPlacementRegistration>(
+    () => ({
+      register: (resolve) => {
+        resolvers.current.add(resolve);
+        setVersion((previous) => previous + 1);
+        return () => {
+          resolvers.current.delete(resolve);
+          setVersion((previous) => previous + 1);
+        };
+      },
+      touch: () => setVersion((previous) => previous + 1),
+    }),
+    [],
+  );
 
-  // Rebuilt per version, so a reader holding it re-reads the set after a canvas mounts or
-  // unmounts; the set itself is stable, and this identity is what wakes the readers.
-  const placementFor = useMemo<LabelPlacementResolver>(
-    () => (elementId) => {
-      for (const resolve of resolvers.current) {
-        const placement = resolve(elementId);
-        if (placement !== null) {
-          return placement;
+  // Rebuilt per version, so a reader holding it re-reads the set after a canvas mounts,
+  // unmounts, or reports that its answers changed; the set itself is stable, and this identity
+  // is what wakes the readers.
+  const lookup = useMemo<InlineLabelPlacementLookup>(
+    () => ({
+      placementFor: (elementId) => {
+        for (const resolve of resolvers.current) {
+          const placement = resolve(elementId);
+          if (placement !== null) {
+            return placement;
+          }
         }
-      }
-      return null;
-    },
+        return null;
+      },
+      anyCanvasRegistered: resolvers.current.size > 0,
+    }),
     [version],
   );
 
   return (
-    <RegisterContext.Provider value={register}>
-      <PlacementContext.Provider value={placementFor}>{children}</PlacementContext.Provider>
+    <RegisterContext.Provider value={registration}>
+      <PlacementContext.Provider value={lookup}>{children}</PlacementContext.Provider>
     </RegisterContext.Provider>
   );
 }
@@ -77,21 +104,35 @@ export function InlineLabelPlacementProvider({ children }: { children: ReactNode
 /**
  * Registers a mounted canvas's placement resolver, and withdraws it on unmount.
  *
- * Memoize the resolver on **what it reads** - a canvas's model, typically - rather than making
- * it permanently stable. A fresh identity on every render re-registers on every render, which is
- * waste; but an identity that never changes leaves the readers holding a stale answer, and the
- * one that matters is an element disappearing mid-edit. Re-registering when the model changes is
- * what wakes them.
+ * Memoize the resolver on **what it reads** - a canvas's model, typically. The registration
+ * itself is made once and never replaced: what goes into the set is a stable indirection to
+ * whatever the canvas's current resolver is, and a changed resolver only *wakes* the readers.
+ *
+ * That indirection is not a refinement, it is the fix for a real defect, found by running the app
+ * rather than by any test. Registering the resolver directly meant a changed model ran the
+ * effect's cleanup and then its body: unregister, then register. Between those two the set is
+ * EMPTY, and a reader asking in that instant is told the element cannot be placed - which the
+ * shell reads as "the thing being edited has gone" and cancels the interaction. Every mindmap
+ * rename died that way, immediately and silently, while every unit test passed: a stubbed canvas
+ * registers once and never re-registers, so the window does not exist in a test.
  */
 export function useRegisterInlineLabelPlacement(resolve: LabelPlacementResolver): void {
-  const register = useContext(RegisterContext);
+  const registration = useContext(RegisterContext);
+  const latest = useRef(resolve);
+  latest.current = resolve;
 
   useEffect(() => {
-    if (register === undefined) {
+    if (registration === undefined) {
       return;
     }
-    return register(resolve);
-  }, [register, resolve]);
+    return registration.register((elementId) => latest.current(elementId));
+  }, [registration]);
+
+  useEffect(() => {
+    // A changed resolver means this canvas's answers may have changed - so wake the readers,
+    // without the registry ever passing through empty on the way.
+    registration?.touch();
+  }, [registration, resolve]);
 }
 
 /**
@@ -99,8 +140,8 @@ export function useRegisterInlineLabelPlacement(resolve: LabelPlacementResolver)
  * can be placed, which is the right answer rather than an error: a surface with no canvas under
  * it - the explorer, a ribbon - simply keeps its dialog.
  */
-export function useInlineLabelPlacement(): LabelPlacementResolver {
-  return useContext(PlacementContext) ?? NOTHING_IS_PLACEABLE;
+export function useInlineLabelPlacement(): InlineLabelPlacementLookup {
+  return useContext(PlacementContext) ?? NO_CANVASES;
 }
 
-const NOTHING_IS_PLACEABLE: LabelPlacementResolver = () => null;
+const NO_CANVASES: InlineLabelPlacementLookup = { placementFor: () => null, anyCanvasRegistered: false };

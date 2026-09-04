@@ -147,6 +147,58 @@ describe("ShellPromptHost inline deferral", () => {
     expect(dialogTitle()).toBeNull();
   });
 
+  it("does not mistake a canvas going away for the element disappearing", () => {
+    // Arrange.
+    // The defect the manual pass found: every mindmap rename was cancelled the instant it
+    // opened. A canvas leaves the registry whenever it unmounts or re-registers, and the shell
+    // read an empty registry as "the thing being edited has gone" - so an edit was abandoned
+    // because no canvas was mounted, which says nothing at all about the element.
+    currentPrompt = renamePrompt("node-1");
+    const { rerender } = renderHost(["node-1"]);
+    expect(onCancel).not.toHaveBeenCalled();
+
+    // Act.
+    act(() => {
+      rerender(
+        <InlineLabelPlacementProvider>
+          <ShellPromptHost />
+        </InlineLabelPlacementProvider>,
+      );
+    });
+
+    // Assert.
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(screen.queryByText("Action cancelled")).toBeNull();
+  });
+
+  it("does not mistake a canvas re-registering for the element disappearing", () => {
+    // Arrange.
+    // A canvas re-registers whenever its model changes, which during an edit is often: every
+    // delta from the backend produces a new resolver. This is the defect the manual pass found
+    // and no unit test could: registering the resolver directly ran cleanup-then-body, so the
+    // registry was momentarily EMPTY, the shell read that as the element being gone, and it
+    // cancelled the interaction. Every mindmap rename died the instant it opened.
+    currentPrompt = renamePrompt("node-1");
+    const { rerender } = renderHost(["node-1"]);
+    expect(onCancel).not.toHaveBeenCalled();
+
+    // Act.
+    // A new array identity is a new resolver identity, which is exactly what a model delta does.
+    act(() => {
+      rerender(
+        <InlineLabelPlacementProvider>
+          <StubCanvas places={["node-1"]} />
+          <ShellPromptHost />
+        </InlineLabelPlacementProvider>,
+      );
+    });
+
+    // Assert.
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(screen.queryByText("Action cancelled")).toBeNull();
+    expect(dialogTitle()).toBeNull();
+  });
+
   it("cancels and explains when the element being edited disappears mid-edit", () => {
     // Arrange.
     currentPrompt = renamePrompt("node-1");
