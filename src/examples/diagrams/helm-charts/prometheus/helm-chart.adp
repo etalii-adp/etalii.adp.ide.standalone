@@ -19,9 +19,9 @@ layout:
   tpl:templates/ingress.yaml: 181.421 677.681
   tpl:templates/network-policy.yaml: 66.082 1196.621
   tpl:templates/pdb.yaml: 96.808 954.351
-  tpl:templates/pvc.yaml: 63.993 1077.596
+  tpl:templates/pvc.yaml: -169.521 1055.641
   tpl:templates/rolebinding.yaml: 71.897 1316.285
   tpl:templates/service.yaml: 41.411 1443.191
   tpl:templates/serviceaccount.yaml: 47.056 1549.774
-  tpl:templates/vpa.yaml: 28.991 1678.938
+  tpl:templates/vpa.yaml: -44.19 1790.705
   values:values.yaml: 1253.781 96.456

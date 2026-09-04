@@ -24,9 +24,11 @@
 <node TEXT="Rendering pipeline" ID="ID_atstvbrrkv6i03q4lscue6ugo">
 <node TEXT="Rasterization" ID="ID_ctln538jyv19c90ma73k8mi2d">
 <node TEXT="Culling" ID="ID_ch4kzh4cv3c453c74uefqou4d">
-<node TEXT="Frustum tests" ID="ID_ebx3qory5nercb6g9ljf4u2x3"/>
+<node TEXT="Frustum tests" ID="ID_ebx3qory5nercb6g9ljf4u2x3">
 </node>
-<node TEXT="Batching" ID="ID_a47ytjhzn52khh2mdvsl73dgv"/>
+</node>
+<node TEXT="Batching" ID="ID_a47ytjhzn52khh2mdvsl73dgv">
+</node>
 <node TEXT="Caching" ID="ID_08rl6vit3v7a8j71li73jn6sw"/>
 <node TEXT="Dirty regions" ID="ID_89va8he7cvg922e381578w2ls"/>
 <node TEXT="Antialiasing" ID="ID_ekgw89i7db808gat8wz1yzz0h"/>
