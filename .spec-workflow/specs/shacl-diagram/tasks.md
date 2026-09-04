@@ -101,7 +101,7 @@ One worktree for the whole spec (`.claude/worktrees/shacl`, per CLAUDE.md's one-
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec shacl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 3 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. Examples, catalog and manual checks
+- [x] 4. Examples, catalog and manual checks
   - _Requirements: 9.1-9.5, plus the integration halves of 3, 4 and 5_
 
 - [x] 4.1 Vendored shapes under the licensing discipline
@@ -114,7 +114,7 @@ One worktree for the whole spec (`.claude/worktrees/shacl`, per CLAUDE.md's one-
   - _Requirements: 9.4, 9.5, plus integration halves_
   - _Prompt: Implement the task for spec shacl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Replicate the shacl examples into the central showcase and verify the central guard covers them, advance the w3c/shacl catalog row in place, add the design's integration tests, and write the three tests.md manual entries with preconditions, actions and expected results | Restrictions: no local drift guard; docs/diagrams.md rows edited in place; tests.md entries name spec and task | _Leverage: the central ExampleReplication tests; the integration harness from the family's tests | Success: replicas guarded centrally, catalog current, integration facts pass, manual entries added. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4.3 Final gate, merge, retire, manual pass
+- [x] 4.3 Final gate, merge, retire, manual pass
   - The four gates with exit codes checked; merge `.claude/worktrees/shacl` into `develop`; retire the worktree per CLAUDE.md, reporting removal failures rather than forcing them; run the new tests.md entries against the running app
   - _Requirements: (gate + the manual halves of 1, 3 and 5)_
   - _Prompt: Implement the task for spec shacl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked, merge the shacl worktree into develop, retire it per CLAUDE.md, and execute the new tests.md manual pass with the app running on a worktree-safe port pair | Restrictions: do not merge on a failing gate; report worktree-removal failures rather than forcing them | Success: gates green, merged, worktree retired, manual pass recorded. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
