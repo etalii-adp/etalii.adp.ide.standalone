@@ -47,3 +47,13 @@ vendored vocabulary. Sources that would have carried them were considered and re
 acquisition: the UNESCO Thesaurus is CC BY-SA (share-alike), AGROVOC labels through SKOS-XL
 which this reading deliberately does not resolve, and EuroVoc's distribution sits behind a
 portal handler rather than a fetchable file.
+
+**Both extracts are single-rooted, which matters most for layout.** Each carries exactly one
+`skos:hasTopConcept` and one `skos:topConceptOf`: the extractor followed `skos:narrower` from a
+single top concept and narrowed the scheme block to that root. So neither file demonstrates a
+forest, several coordinate top concepts, or disconnected components — the shapes a balancing or
+centring rule has to survive. A layout requirement evidenced on this corpus is evidenced on
+single-rooted documents and rests on fixtures for the rest. The real STW carries several
+subthesauri under one scheme, so a genuinely multi-rooted extract is available from the same
+source if one is ever needed; it was not taken because the budget and polyhierarchy cases this
+pair exists for read more clearly with a single root.

@@ -8,7 +8,7 @@ That is two requests joined by an "i.e.", and they are genuinely two. The first 
 
 They are joined because they fail together. A layout good enough to keep is one worth storing; a layout nobody can read is one every reader will rearrange, and rearranging is worthless if it does not survive reopening.
 
-**Twelve requirements follow.** Requirements 1 to 3 are quality, 4 to 6 persistence, 7 and 11 stability, and 8, 9, 10 and 12 the surrounding obligations the two halves turned out to share.
+**Eleven requirements follow.** Requirements 1 to 3 are quality, 4 to 6 persistence, 7 and 10 stability, and 8, 9 and 11 the surrounding obligations the two halves turned out to share.
 
 ### What the large examples actually do today
 
@@ -188,20 +188,7 @@ The mechanism is one line, repeated at seven sites across databricks, the four r
 4. WHEN a shared piece is introduced THEN it SHALL not force a module whose notation fixes an axis to adopt it.
 5. WHEN the balancing rule of Requirement 2 is implemented THEN it SHALL be evaluated against this same bar, because it is a candidate with more consumers than the layering walk has.
 
-### Requirement 10 — The documents this specification is about can be opened in the showcase
-
-**User Story:** As someone evaluating layout on a large document, I want that document present in the showcase project, so that the examples this specification exists to improve are ones a reader can actually open.
-
-#### Acceptance Criteria
-
-1. WHEN a module's `examples/` folder holds a document THEN whether it is also seeded into [`src/examples/`](../../../src/examples/) SHALL be a decision, and the two STW documents SHALL be seeded — they are the largest examples in the tree and neither can be opened in the showcase today.
-2. WHEN a document is seeded into the showcase THEN it SHALL open against the deployed catalog, which `ExampleRegistrationTests` already walks in both trees.
-3. WHEN a reader arranges a seeded example in the running app THEN the resulting `layout:` block in the showcase copy SHALL be understood as ordinary product use, and SHALL NOT be treated as drift from the module copy.
-4. WHERE this specification changes a module's own example documents THEN it SHALL NOT reintroduce any byte-for-byte equality between the two trees.
-
-**The two trees are deliberately not synced, and this requirement must not undo that.** The user asked for the module examples and the showcase copies to stop being held in sync, and `ExampleReplicationTests` was deleted on 2026-09-04 (commit 58677bb7) for a reason that is precisely this specification's subject: arranging a diagram against the showcase project writes a `layout:` block into the showcase copy while the module copy stays put, so a byte-comparison test was reading ordinary product use as drift and reddening the trunk — five times. A survey for this document measured that divergence independently (of 65 paired `.adp` files exactly two differ, and in both the whole difference is a `layout:` block) and it is evidence of the mechanism working, not of a defect. What survives is the narrower point in criterion 1: the showcase is seeded, and two documents were never seeded.
-
-### Requirement 11 — Lay out the whole document, then filter
+### Requirement 10 — Lay out the whole document, then filter
 
 **User Story:** As a reader panning across a large diagram, I want the arrangement to stay still while I move, so that the content does not repack under me as I look at it.
 
@@ -212,7 +199,7 @@ The mechanism is one line, repeated at seven sites across databricks, the four r
 3. WHERE a projection and its layout are expensive THEN they SHALL be cached per session and dropped when the document changes, because a pan is not a document change.
 4. WHEN this obligation is stated THEN it SHALL be the one already written in [creating-a-diagram-module.md](../../../docs/creating-a-diagram-module.md) under *"The view-delta loop"*, not a second wording of it — that document is the working rule, and this requirement makes it a layout obligation rather than a filter obligation.
 
-### Requirement 12 — A layout exposes each element's box, and downstream uses it
+### Requirement 11 — A layout exposes each element's box, and downstream uses it
 
 **User Story:** As someone writing the code that decides what is on screen, I want the real size of each element, so that I do not cull something whose lower half the reader is still looking at.
 
