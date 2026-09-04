@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/view-delta-adoption/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-04T06:22:35.353Z",
       "trigger": "initial",
+      "approvalId": "approval_1788502954960_d6shmzabs",
+      "approvalTitle": "view-delta-adoption design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-04T06:24:59.142Z",
+      "trigger": "approved",
       "approvalId": "approval_1788502954960_d6shmzabs",
       "approvalTitle": "view-delta-adoption design"
     }
