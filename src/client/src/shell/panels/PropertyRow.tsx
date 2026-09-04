@@ -62,11 +62,18 @@ export function PropertyRow({ property, onCommit }: PropertyRowProps) {
     }
 
     committing.current = true;
-    const failure = await onCommit(draft);
-    committing.current = false;
-    setError(failure);
-    if (failure.length > 0) {
-      setDraft(property.value);
+    try {
+      const failure = await onCommit(draft);
+      setError(failure);
+      if (failure.length > 0) {
+        setDraft(property.value);
+      }
+    } finally {
+      // Whatever happened, this row accepts the next edit. `onCommit` is a prop: nothing
+      // here can promise it will not reject, and one that does would otherwise latch this
+      // guard for the life of the component - every later edit returning early at the top
+      // of this function, writing nothing and saying nothing.
+      committing.current = false;
     }
   }
 
