@@ -169,8 +169,8 @@ public class RdfSessionTests : IDisposable
 
         // Act.
         // Touch the document: a comment is enough - the reload re-renders and diffs.
-        var text = await File.ReadAllTextAsync(body);
-        await File.WriteAllTextAsync(body, text + Environment.NewLine + "# an edit while the reader is zoomed in" + Environment.NewLine);
+        var text = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(body, text + Environment.NewLine + "# an edit while the reader is zoomed in" + Environment.NewLine, TestContext.Current.CancellationToken);
         _provider.GetRequiredService<IRdfDocumentStore>().Reload(body);
 
         // Assert.
@@ -254,7 +254,7 @@ public class RdfSessionTests : IDisposable
         }
 
         var body = IoPath.Combine(_root, "large.ttl");
-        await File.WriteAllTextAsync(body, text.ToString());
+        await File.WriteAllTextAsync(body, text.ToString(), TestContext.Current.CancellationToken);
 
         await using var session = Open(body, WriteRegistration("large.ttl"));
         var atOpen = ElementsOf(session)
@@ -300,7 +300,7 @@ public class RdfSessionTests : IDisposable
         }
 
         var body = IoPath.Combine(_root, "large.ttl");
-        await File.WriteAllTextAsync(body, text.ToString());
+        await File.WriteAllTextAsync(body, text.ToString(), TestContext.Current.CancellationToken);
 
         await using var session = Open(body, WriteRegistration("large.ttl"));
 
