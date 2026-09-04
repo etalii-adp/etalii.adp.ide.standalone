@@ -148,6 +148,12 @@ public class BigBankPlcTests
     [Fact]
     public void EveryViewLaysOutWithoutOverlaps()
     {
+        // Arrange. The floor: a workspace that parsed to no views has nothing to overlap, so
+        // this passes exactly as loudly as a model whose every view lays out cleanly.
+        Assert.True(
+            Workspace.Views.Count >= 4,
+            $"Only {Workspace.Views.Count} views were parsed from the Big Bank workspace; this guard has stopped finding the views it lays out.");
+
         // Act and assert, step by step.
         foreach (var view in Workspace.Views)
         {

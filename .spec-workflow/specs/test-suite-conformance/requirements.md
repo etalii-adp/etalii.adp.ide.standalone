@@ -64,7 +64,7 @@ The five azure-pipeline sites share a second weakness worth fixing in the same p
 | `src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline.Tests/PipelineContextActionProvider.Tests.cs:454` | No element ids are produced |
 | `src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline.Tests/PipelineContextActionProvider.Tests.cs:496` | No writing action is offered |
 
-`WardleyToolboxProvider.Tests.cs` is the sharpest of these because the weakness is file-wide: the toolbox's size is never pinned anywhere in it. Its uniqueness check at line 80 compares an empty count against an empty count, and its loops at lines 72 and 96 do not run. An empty palette passes the whole file.
+`WardleyToolboxProvider.Tests.cs` is the sharpest of these, and the reason is worth stating precisely because an earlier draft of this document overstated it. **Three of its four tests pass vacuously on an empty palette** — the uniqueness check at line 80 compares an empty count against an empty count, and the loops at lines 72 and 96 do not run. The file is saved by a single assertion: `ItOffersWhatRequirement132Asks` at line 58 compares the labels against an exact eight-element array, which an empty palette fails. So the file's honesty rests entirely on one exact-equality check. Loosen it to a subset or a `Contains` — exactly the edit someone makes to stop a test looking brittle — and all four go vacuous at once. The floor's value here is that it makes the protection structural rather than incidental.
 
 ### Requirement 2 — `Assert.All` over a collection that may be empty carries a floor
 
