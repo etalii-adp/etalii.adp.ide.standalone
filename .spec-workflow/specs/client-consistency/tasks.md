@@ -35,7 +35,7 @@ Four defects with one cause: `ContextConnectionProvider` awaits its gRPC calls w
   - _Requirements: 1.2_
   - _Prompt: Implement task 1 for spec client-consistency. Role: React/TypeScript developer | Task: release PropertyRow's committing guard in a finally, and add the regression test for a rejecting onCommit | Restrictions: change no other behaviour in the file; do not touch the channel - that is task 2 | _Leverage: the existing commit() at PropertyRow.tsx:47 | Success: the new test fails against today's code and passes after, and all four gates pass by exit code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. The channel resolves with failure instead of rejecting
+- [x] 2. The channel resolves with failure instead of rejecting
   - Files: `src/client/src/shell/context/ContextConnectionProvider.tsx`, `src/client/src/shell/panels/PropertyGridPanel.tsx`
   - **The rule, which is read off the contract rather than invented:** a channel method that returns a value its caller acts on resolves with failure expressed in that value; one returning `void` is advisory, swallows its fault, and says so in a comment. `select` and `onCancel` already do the second — this is one convention applied twice and forgotten on the rest, not two conventions in conflict. **Write the rule into the file as a comment**, because what is missing is the sentence that tells the seventh method which kind it is.
   - `setProperty`, `executeAction`, `executeShortcut` → `{ accepted: false, error }` on a transport fault. `onPropose` → `{ revision, valid: false, reason }`, carrying the revision it was asked about so a stale reply stays recognisable. `onSubmit` → its own failure value on the same pattern.
@@ -44,7 +44,7 @@ Four defects with one cause: `ContextConnectionProvider` awaits its gRPC calls w
   - _Requirements: 1.1, 2.1, 3.1, 4.1, 4.2, 4.3_
   - _Prompt: Implement task 2 for spec client-consistency. Role: React/TypeScript developer | Task: make every value-returning context-channel method resolve with a failure value rather than rejecting, give describeProperties a result shape, and render the grid's unavailable state | Restrictions: do not add .catch at the call sites - the point is that they need none; keep select and onCancel exactly as they are; write the rule into the file as a comment | _Leverage: the existing ActionOutcome and ContextPromptVerdict shapes, and the advisory catches at :222 and :433 | Success: the four defect paths surface their failure, the three named call sites are unedited, and all four gates pass by exit code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. The guard that keeps the rule true
+- [x] 3. The guard that keeps the rule true
   - Files: `src/client/src/shell/context/ContextConnectionProvider.test.tsx` (or a new sibling test file)
   - One test asserting the property the rule states: **for every value-returning method on the context channel, a transport that rejects produces a resolved failure value rather than a rejection.**
   - **Iterate the methods rather than naming them one at a time**, so a method added later is covered by having been added. That is what makes this a guard on the class of defect rather than five more assertions to forget — the same shape as `themeTokens.test.ts`, which closed the phantom-token class.
