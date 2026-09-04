@@ -535,7 +535,7 @@ a keyboard save and the ribbon together.
   content on disk (and the editor follows once it reloads the pushed change); Redo brings
   the save back. No conflict banner should appear for the editor's own save.
 
-## One build, one number, four places (github-build-pipeline, task 3.1)
+## One build, one number, four places (github-build-pipeline task 3.1; two halves automated by contracts-and-build-hygiene task 1)
 
 The version below the login panel, the version stamped into the assemblies, the release
 tag, and the ZIP's name must all be the same number - a claim only a person with a real
@@ -545,7 +545,18 @@ release artifact can check end to end.
   release exists: a local `dotnet publish` of the service - the project's own
   `PublishClientApp` target builds the client and places it in `wwwroot/`, so no copy
   step is needed and adding one nests a second bundle at `wwwroot/dist/`).
-- **Actions**: download and unzip the release; run `dotnet EtAlii.Adp.Backend.Service.dll`
+- **What the pipeline now settles, and what it does not.** Since contracts-and-build-hygiene
+  task 1 (`a95c3b51`) the release job passes `--target ${{ github.sha }}` and then re-reads the
+  tag from the remote, failing the run when it does not point at the commit that was built. So
+  **the tag's commit is checked** on every release. Separately, **the tag name and the ZIP's file
+  name cannot disagree** - both are written from the single `steps.version.outputs.semver`, which
+  is construction rather than a check, and worth knowing because no test would catch it if the
+  two were ever computed twice.
+  **The assembly stamp is NOT checked by the pipeline.** Nothing in the job opens the artifact or
+  reads `ProductVersion`; the assembly and the tag agree because both descend from one `nbgv`
+  computation, which is an argument, not evidence. So the manual half is still two things: **the
+  login line inside the running app**, and **the assembly stamp inside the downloaded ZIP**.
+- **Actions** (the manual half): download and unzip the release; run `dotnet EtAlii.Adp.Backend.Service.dll`
   (requires the .NET 10 runtime); browse to the listening address; read the line below the
   login panel. Compare it with the release tag, the ZIP file name, and
   `[System.Diagnostics.FileVersionInfo]::GetVersionInfo("EtAlii.Adp.Backend.dll").ProductVersion`.
@@ -556,6 +567,15 @@ release artifact can check end to end.
   from. Anything that disagrees on the digits before the `+` is the failure this check is
   looking for. The login line is quiet and centered under the card; killing the backend and
   reloading the page shows no version line at all rather than a stale one.
+- **First release from the corrected job, 2026-09-04**: push `eedc8d6e` produced exactly one
+  tag, `v0.1.688-alpha`, pointing at `eedc8d6e` - the commit that was pushed. **This does not by
+  itself prove the fix**, and the entry says so deliberately: the push before it produced a
+  correct tag too, from the *broken* job, because that commit also happened to be the branch tip
+  when the API call ran. No other session pushed during this run, so the conditions that expose
+  the defect never arose. What did change is the failure mode - the tag is pinned by `--target`
+  rather than resolved from the default branch, and a mismatch now fails the run instead of
+  passing silently. The decisive observation is still owed: the first push that races another.
+  The ZIP name and login line for this release have not been checked by anyone yet.
 - **Verified end to end 2026-09-04**, against the first release this pipeline has ever
   produced. The run went green on the Linux runner and tagged `v0.1.402-alpha` at commit
   `99796eba` - the commit that was pushed. The user downloaded the ZIP, ran
