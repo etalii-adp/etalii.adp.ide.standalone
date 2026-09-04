@@ -4,7 +4,7 @@
 
 A causal loop diagram states how the parts of a system feed back on each other. It is the entry notation of system dynamics: variables joined by causal links, each link carrying a **polarity**, and the cycles those links form labelled as **reinforcing** or **balancing**. It is the one diagram in this catalog whose central claim is about *cycles* rather than about hierarchy or containment, and that shapes almost every requirement below.
 
-This specification adds it as a diagram type with extension `.cld` and meta identifier `systems/casual-loop-diagram`.
+This specification adds it as a diagram type with extension `.cld` and meta identifier `systems/causal-loop-diagram`.
 
 ### The notation, as the world draws it
 
@@ -46,14 +46,23 @@ The house vendoring rule requires a permissive licence verified from the data at
 
 Requirement 11 therefore leads with the honest-fallback path rather than treating vendoring as the expected outcome.
 
-### Two questions about the identifier, raised rather than silently resolved
+### The identifier, settled
 
-Both concern `systems/casual-loop-diagram`, which is the user's exact wording and is used verbatim throughout this document. A meta identifier is expensive to change once documents carry it, because an `.adp` registration names the origin on its first line — so both are asked now.
+`systems/causal-loop-diagram`, confirmed by the user on both points a meta identifier is expensive
+to get wrong on - an `.adp` registration names the origin on its first line, so a later change
+would have to reach every document already carrying it.
 
-1. **`casual` or `causal`?** Every source, and this document's own prose, spells the notation **causal**. `casual` may be deliberate and may be a slip.
-2. **Does the type segment want `-diagram`?** Of the catalog's existing origins, none carries a `-diagram` suffix on its type segment; the one origin whose type is literally `diagram` is `d2/diagram`, where `d2` is the vendor and `diagram` is what d2 draws. The convention would suggest `systems/causal-loop`.
-
-Neither is resolved here. If the answer to either is "change it", the change is cheap today and expensive after the first registration exists.
+1. **`causal`, not `casual`.** The identifier was first given as `casual-loop-diagram`; every
+   source and this document's own prose spell the notation **causal**, and the user confirmed the
+   correction. Recorded here because the misspelling is a plausible typo for a reader to
+   reintroduce, and because a search of the tree for the wrong spelling should find this note and
+   nothing else.
+2. **The `-diagram` suffix stays, deliberately.** It is a departure from the catalog's convention
+   and the departure is intended: no other origin carries a `-diagram` suffix on its type segment,
+   and the one origin whose type is literally `diagram` is `d2/diagram`, where `d2` is the vendor
+   and `diagram` is what it draws. `systems/causal-loop` would have matched the pattern. The user
+   chose the longer form, so it is not to be "tidied" into the short one later by someone who
+   notices the inconsistency and assumes it was an oversight.
 
 ## Alignment with Product Vision
 
@@ -69,7 +78,7 @@ Neither is resolved here. If the answer to either is "change it", the change is 
 
 #### Acceptance Criteria
 
-1. WHEN the module is registered THEN it SHALL declare the extension `.cld` and the meta identifier `systems/casual-loop-diagram`, subject to the two questions raised in the introduction.
+1. WHEN the module is registered THEN it SHALL declare the extension `.cld` and the meta identifier `systems/causal-loop-diagram`.
 2. WHEN a body format is chosen THEN an existing text-based format SHALL be adopted if one fits, per the steering rule, and the choice SHALL be recorded with its reasons — including why XMILE, the OASIS interchange standard for system dynamics, was or was not adopted, given that it carries stocks, flows and equations this diagram states none of.
 3. WHEN a body format is defined THEN it SHALL be diffable line by line, so that adding one link produces a one-line diff rather than a rewritten file.
 4. WHEN the diagram is registered THEN the `.adp` registration SHALL carry the origin on its first line and the body beside it, per the file-pair contract.
@@ -208,7 +217,7 @@ This requirement adopts Meyer's self-organizing graph method — competitive lea
 #### Acceptance Criteria
 
 1. WHEN this specification exists THEN `docs/diagrams.md` SHALL carry a row for the causal loop diagram, which it does not today.
-2. WHEN the row is written THEN it SHALL carry the state icon matching its real state and the origin tag `systems/casual-loop-diagram`, subject to the identifier questions raised above.
+2. WHEN the row is written THEN it SHALL carry the state icon matching its real state and the origin tag `systems/causal-loop-diagram`.
 3. WHEN the state changes THEN the row SHALL be updated in place, per the catalog rule.
 
 ## Non-goals
