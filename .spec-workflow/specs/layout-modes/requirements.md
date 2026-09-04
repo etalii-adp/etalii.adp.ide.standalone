@@ -27,7 +27,11 @@ The two specifications share a subject and divide cleanly:
 
 This specification **claims**: the four mode names as user vocabulary; how a module declares the modes it supports; where the chosen mode is persisted; what a mode switch does to positions authored under Manual; and the fallback when a stored mode names something a module cannot do.
 
-This specification **claims none of, and inherits all of**: the unplaced-element contract (`diagram-layout` R1), the extent ratio bound (R2), non-overlap (R3), the `.adp` `layout:` block as the one persistence mechanism (R4), end-to-end persistence of an authored position (R5), stored positions surviving re-layout (R6), determinism (R7), and lay-out-then-filter (R10). A mode is not a licence to break any of them; where a mode makes one harder to satisfy, that is a defect in the mode.
+This specification **claims none of, and inherits all of**, `diagram-layout`'s obligations: the unplaced-element contract, the extent ratio bound, the overlap requirement, the one-storage-place requirement, end-to-end persistence of an authored position, stored positions surviving re-layout, determinism, the drawn-element budget, and lay-out-then-filter. They are named rather than numbered here on purpose — that document has renumbered once already when a requirement was withdrawn, and a stale cross-reference is worse than a slightly longer phrase.
+
+> **A mode is not an exemption from anything.** Every obligation in `diagram-layout` binds every mode, and no mode relaxes one. Where a mode makes an obligation harder to satisfy, that is a defect in the mode and not a case for an exception.
+
+That rule is stated here once, generally, because the failure it guards against is not this document claiming another's requirements — it is a future reader treating "Automatic layout / Cloud" as a licence for an arrangement that would not otherwise pass. **Cloud is the case that tempts it; Manual is the case that hides it**, since a diagram a user arranged by hand is one nobody re-checks against the overlap requirement.
 
 Requirement 7 below deliberately re-opens one recorded decision, and says so in the open rather than quietly.
 
@@ -69,11 +73,12 @@ Requirement 7 below deliberately re-opens one recorded decision, and says so in 
 
 #### Acceptance Criteria
 
-1. WHEN a diagram is in Manual layout THEN the module's computed positions SHALL serve as the starting arrangement, and authored positions SHALL override them element by element, per the overlay semantics `diagram-layout` R6 already governs.
+1. WHEN a diagram is in Manual layout THEN the module's computed positions SHALL serve as the starting arrangement, and authored positions SHALL override them element by element, per the overlay semantics the stored-positions-survive-re-layout requirement already governs.
 2. WHEN a diagram is in Manual layout THEN nothing SHALL re-arrange it on its own — not opening it, not a view report, not an unrelated change elsewhere in the document.
 3. WHEN an element is added to the document while a diagram is in Manual layout THEN it SHALL be placed by the module's computed layout and SHALL NOT displace an authored position.
-4. WHEN a diagram is in Manual layout and its module has no persistence THEN the arrangement SHALL be refused with the reason rather than accepted and lost — the four modules with a canvas and no persistence (azure-pipeline, dependency-graph, mindmap, timeline) are the case this covers, and `diagram-layout` R5 owns closing it.
-5. WHEN a file is open without a registration THEN Manual SHALL be unavailable with the existing reason that there is nowhere to store a position, and registering the file SHALL lift that.
+4. WHEN a diagram is in Manual layout and its module has no persistence THEN the arrangement SHALL be refused with the reason rather than accepted and lost — the four modules with a canvas and no persistence today (azure-pipeline, dependency-graph, mindmap, timeline) are the case this covers.
+5. WHERE a module's persistence is **deliberately absent** rather than merely unbuilt THEN it SHALL declare no Manual mode at all, per Requirement 2, and the refusal in criterion 4 SHALL not arise for it. `diagram-layout` requires each of those four modules to record whether persistence is wanted or deliberately absent, so that the gap is a decision rather than an omission — this specification depends on **those four decisions being made**, not on all four being wired, and stays true whichever way each one goes. Timeline and mindmap are the two where "deliberately absent" is a live answer, and both are already modules that cannot offer all four modes.
+6. WHEN a file is open without a registration THEN Manual SHALL be unavailable with the existing reason that there is nowhere to store a position, and registering the file SHALL lift that.
 
 ### Requirement 4 — Automatic layout, and what it does to an authored arrangement
 
@@ -96,7 +101,7 @@ Requirement 7 below deliberately re-opens one recorded decision, and says so in 
 1. WHEN a module supports both Horizontal and Vertical THEN the two SHALL differ in the direction the layout's primary axis runs — left-to-right against top-to-bottom — and SHALL NOT differ in which elements are placed or how they are grouped.
 2. WHEN a document is laid out in Horizontal and then in Vertical THEN the ordering the notation asserts SHALL be preserved in both, so that a subclass depth or a broader-to-narrower relation still reads in the direction the notation means, along whichever axis is active.
 3. WHEN a module whose current layout already runs in one of the two directions adopts this requirement THEN that layout SHALL become the corresponding mode rather than being rewritten — helm-charts' five left-to-right columns are Horizontal, and skos' descending layers are Vertical.
-4. WHEN either direction is applied to the measured corpus THEN at least one of the two SHALL bring each measured document inside `diagram-layout` R2's ratio bound, because a mode that leaves a 142:1 ribbon a ribbon has not answered the problem it exists for.
+4. WHEN either direction is applied to the measured corpus THEN at least one of the two SHALL bring each measured document inside the extent ratio bound, because a mode that leaves a 142:1 ribbon a ribbon has not answered the problem it exists for.
 5. WHERE a module supports only one of the two THEN the other SHALL be unavailable with the reason, rather than offered and silently identical.
 
 ### Requirement 6 — The chosen mode is stored with the diagram
@@ -106,24 +111,29 @@ Requirement 7 below deliberately re-opens one recorded decision, and says so in 
 #### Acceptance Criteria
 
 1. WHEN a mode is chosen THEN it SHALL be persisted in the `.adp` registration file, beside the `layout:` block rather than inside it, because a mode is one value for the diagram and the block is a list of per-element positions.
-2. WHEN a mode is written THEN everything else in the `.adp` SHALL be preserved byte for byte, per the file-pair contract `diagram-layout` R4.4 states.
+2. WHEN a mode is written THEN everything else in the `.adp` SHALL be preserved byte for byte, per the file-pair contract the one-storage-place requirement states.
 3. WHEN a diagram is opened THEN the stored mode SHALL be in force, and a diagram with no stored mode SHALL open in its module's declared default.
 4. WHEN a stored mode names one the module does not support — a mode removed, or a registration copied between diagram types — THEN the module's default SHALL be used, the diagram SHALL open rather than fail, and the mismatch SHALL be reported as a finding on the file rather than silently corrected.
 5. WHEN a mode is stored THEN it SHALL be readable and editable as text by a human, since the `.adp` is a reviewable artifact like every other file in the repository.
 6. WHEN two clients have the same diagram open and one changes the mode THEN the other SHALL follow, through the same delta stream every other change travels on.
 
-### Requirement 7 — Cloud, and the force-directed ruling it must not break
+### Requirement 7 — Cloud, and the three grounds it must clear
 
 **User Story:** As a reader of a graph with no meaningful ranking, I want an arrangement that spreads it out organically rather than forcing it into rows, so that its structure is visible as structure.
 
+Cloud re-opens a recorded decision and this requirement says so in the open. `rdf-diagram` rejects whole-graph force simulation as **"non-deterministic, unreadable and memory-unbounded at scale — the surveyed tools' documented failure mode"**, the unreadability being hairballs in the thousands of nodes. That is **three** grounds, not one, and `diagram-layout`'s non-goal has been scoped to say so and to state that it binds that specification rather than settling this one. Each ground is addressed below on its own terms; a Cloud that clears only one does not ship.
+
 #### Acceptance Criteria
 
-1. WHEN Cloud is applied THEN it SHALL produce an **organic arrangement with no dominant axis** — related elements drawn near one another and unrelated ones apart, as an organic or force-directed arrangement does — for documents whose relations imply no rank that Horizontal or Vertical could express.
-2. WHEN Cloud lays out a document THEN it SHALL be a **pure, deterministic function of that document**: a fixed iteration count, any seed derived from a stable ordering the document itself supplies, no wall-clock, no random source, and no settling animation whose stopping point depends on timing.
-3. WHEN the same document is laid out in Cloud twice, in different processes THEN the positions SHALL be identical.
-4. WHEN Cloud is specified THEN it SHALL be understood to **re-open a recorded decision**, and the reasoning SHALL stand or the mode SHALL not ship: `rdf-diagram` R4.4 requires layout to be "a pure, deterministic function — no physics, no randomness", and `diagram-layout` records "no force-directed physics" as a non-goal. Both give the same reason — that non-deterministic layouts break the same-file-opens-the-same-way rule and the `.adp` position overlay. Criteria 2 and 3 are written to satisfy that reason rather than to argue with it: a deterministic Cloud opens the same way every time and overlays authored positions no differently than any other mode.
-5. IF a module's family maintains the rejection on grounds beyond determinism THEN that module SHALL simply not declare Cloud, per Requirement 2, rather than the mode being weakened for everyone.
-6. WHEN Cloud is applied THEN it SHALL satisfy the inherited obligations without exception — every element placed and distinguishable from unplaced (`diagram-layout` R1), no overlapping boxes (R3), and the extent ratio (R2) — because an organic arrangement is the mode most likely to violate all three and least likely to be noticed doing it.
+1. WHEN Cloud is applied THEN it SHALL produce an **organic arrangement with no dominant axis** — related elements drawn near one another and unrelated ones apart — for documents whose relations imply no rank that Horizontal or Vertical could express.
+2. **The determinism ground.** WHEN Cloud lays out a document THEN it SHALL be a **pure, deterministic function of that document**: a fixed iteration count, any seed derived from a stable ordering the document itself supplies, no wall-clock, no random source, and no settling animation whose stopping point depends on timing.
+3. WHEN the same document is laid out in Cloud twice, in different processes THEN the positions SHALL be identical — which is what preserves the same-file-opens-the-same-way rule and the `.adp` position overlay, the two things the determinism ground exists to protect.
+4. **The memory ground.** WHEN Cloud lays out a document THEN it SHALL run behind the drawn-element budget, so that the "exhaust memory in the millions" failure cannot arise: the budget bounds the placed set to a thousand elements before any arrangement is computed.
+5. **The unreadability ground, which is the one that decides whether Cloud is real.** WHEN Cloud lays out a document at the budget's full size THEN **no two drawn elements' bounding boxes SHALL intersect** — the overlap requirement, applied at a thousand placed nodes, is what makes a hairball impossible rather than merely discouraged, because at that density an organic arrangement is closer to a packing problem than to a simulation.
+6. WHEN the unreadability ground is guarded THEN the **extent ratio bound SHALL NOT be relied on to do it**, because a hairball is typically roughly square: it scores near 1:1 and passes the ratio bound comfortably while being exactly the failure the ruling names. The ratio bound still binds Cloud, as every inherited obligation does; it is simply not the guard for this ground.
+7. WHEN Cloud is verified THEN it SHALL be measured against the corpus's real documents at their real sizes rather than against synthetic fixtures — the STW `business-economics` thesaurus at the full budget being the case to beat, since it is the document whose shape motivated the automatic modes in the first place.
+8. IF Cloud cannot be both deterministic and overlap-free for a given document at the budget's size THEN it SHALL NOT be offered for that document, and that SHALL be recorded as a finding with the size at which it fails — an honest "not for this shape" is the correct outcome, not a failure of nerve, and not grounds for relaxing the overlap requirement.
+9. IF a module's family maintains the rejection on any ground this requirement does not answer THEN that module SHALL simply not declare Cloud, per Requirement 2, rather than the mode being weakened for everyone.
 
 ### Requirement 8 — A mode change is a layout change and nothing else
 
@@ -133,7 +143,7 @@ Requirement 7 below deliberately re-opens one recorded decision, and says so in 
 
 1. WHEN a mode is changed THEN the diagram's body file SHALL NOT be written, for any module, in any mode.
 2. WHEN a mode is changed THEN the set of elements and relations drawn SHALL be unchanged; only where they sit SHALL differ.
-3. WHEN a mode is changed THEN the whole document SHALL be laid out and the viewport SHALL filter the result, per `diagram-layout` R10 — a mode switch SHALL NOT become an occasion to lay out only what is currently visible.
+3. WHEN a mode is changed THEN the whole document SHALL be laid out and the viewport SHALL filter the result, per lay-out-then-filter — a mode switch SHALL NOT become an occasion to lay out only what is currently visible.
 4. WHEN a mode is changed THEN what the reader is looking at SHALL be preserved as far as the new arrangement allows, so that the diagram does not silently jump to a corner and leave the reader lost.
 5. WHEN a mode is changed on a truncated diagram THEN the drawn-element budget SHALL apply to the new arrangement exactly as it applied to the old, and the banner SHALL continue to state the real totals.
 
@@ -142,7 +152,7 @@ Requirement 7 below deliberately re-opens one recorded decision, and says so in 
 * **No new layout algorithms for their own sake.** This specification makes direction and arrangement selectable; the quality of what each module computes is `diagram-layout`'s subject.
 * **No per-element mode.** The mode is a property of the diagram, not of a selection within it.
 * **No user-defined modes.** The set is the four the user named, closed by Requirement 1.2.
-* **No re-litigation of where positions are stored.** The `.adp` `layout:` block is settled by tech.md and `diagram-layout` R4; this adds one sibling value to the same file and nothing else.
+* **No re-litigation of where positions are stored.** The `.adp` `layout:` block is settled by tech.md and the one-storage-place requirement; this adds one sibling value to the same file and nothing else.
 * **No animation between modes.** How a switch is presented is a client concern, and a settling animation is explicitly ruled out for Cloud by Requirement 7.2 regardless.
 * **No change to the view-delta loop.** Modes are laid out whole and filtered afterwards, exactly as today.
 * **Stub modules are out of scope.** Only modules with an implemented canvas are addressed.
