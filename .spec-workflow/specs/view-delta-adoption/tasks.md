@@ -69,7 +69,7 @@ A fifth, about how these were found rather than about the work: **this is the se
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.3, 3.4, 5.2, 5.3_
   - _Prompt: Implement the task for spec view-delta-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer, C# and TypeScript | Task: Implement the view-delta loop in timeline, both halves | Restrictions: timeline converts its own seconds and pixels-per-unit view to a rectangle at its call site; the shared code converts nothing; update both the class remarks and the stream hook comment that say there is deliberately no reportView | _Leverage: the adoptions from tasks 3 and 4; TimelineCanvas's existing scroll axes conversion | Success: client and backend tests pass, the backend test fails against a return []. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 6. dependency-graph implements the loop
+- [x] 6. dependency-graph implements the loop
   - Files: `src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx`, `useDependencyGraphStream.ts`, `src/diagrams/dependency-graph/backend/*/DependencyGraphSession.cs`, and their tests
   - The same two halves. Update the method's stated reason and the stream hook's "deliberately no `reportView`" comment.
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.3, 3.4, 5.2, 5.3_
