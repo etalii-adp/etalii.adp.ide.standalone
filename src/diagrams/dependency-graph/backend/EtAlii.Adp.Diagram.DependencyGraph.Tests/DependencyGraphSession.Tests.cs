@@ -93,16 +93,82 @@ public class DependencyGraphSessionTests : IDisposable
             two.Select(element => (element.Id, element.X, element.Y, element.Type)));
     }
 
+    /// <summary>
+    /// The behavioural half of the view-delta loop: a changed viewport produces deltas, in the
+    /// Add-then-Remove order both reference implementations use. This is the test that fails
+    /// against the `return []` this session answered with before adoption - asserting that the
+    /// client called `UpdateView` would not, because an empty answer passes that too
+    /// (view-delta-adoption Requirement 1.3).
+    /// </summary>
+    /// <remarks>
+    /// The fixture places `aaa` at x 240 row 0 and `bbb` at x 480 row 2, so with a node drawn
+    /// 160 wide and 36 tall their boxes are 240..400 by 0..36 and 480..640 by 120..156 - far
+    /// enough apart that one viewport can hold either alone.
+    /// </remarks>
     [Fact]
-    public void UpdateView_SendsNothingNew()
+    public void AChangedViewport_AddsWhatAppeared_ThenRemovesWhatLeft()
     {
-        // Arrange.
+        // Arrange: opened whole, then narrowed to the first node alone.
         var path = Write();
         using var session = Wrap(Open(path));
         session.Value.Baseline();
+        session.Value.UpdateView(new DiagramViewport(200, -10, 420, 60));
 
-        // Act & assert.
-        Assert.Empty(session.Value.UpdateView(new DiagramViewport(0, 0, 1000, 1000)));
+        // Act: move the view to the second node, which the first no longer touches.
+        var deltas = session.Value.UpdateView(new DiagramViewport(450, 100, 700, 200));
+
+        // Assert: Add first, then Remove - the order the design corrected Requirement 4.3 to.
+        Assert.Equal(2, deltas.Count);
+        var appeared = Assert.IsType<DiagramAddDelta>(deltas[0]);
+        var departed = Assert.IsType<DiagramRemoveDelta>(deltas[1]);
+        Assert.Equal(["bbb"], appeared.Elements.Select(element => element.Id));
+        Assert.Equal(["aaa"], departed.ElementIds);
+    }
+
+    /// <summary>
+    /// A relation has no box of its own: it is delivered exactly when both of its ends are, and
+    /// withdrawn as soon as either leaves - which is also what the canvas does with a curve
+    /// whose endpoint it does not hold.
+    /// </summary>
+    [Fact]
+    public void ARelation_TravelsWithBothOfItsEnds()
+    {
+        // Arrange: one node in view, so the relation is not.
+        var path = Write();
+        using var session = Wrap(Open(path));
+        session.Value.Baseline();
+        session.Value.UpdateView(new DiagramViewport(200, -10, 420, 60));
+
+        // Act: widen to hold both nodes.
+        var widened = session.Value.UpdateView(new DiagramViewport(0, -10, 900, 300));
+
+        // Assert: the second node and the relation arrive together, and nothing leaves.
+        var appeared = Assert.IsType<DiagramAddDelta>(widened[0]);
+        Assert.Equal(["bbb", "ccc"], appeared.Elements.Select(element => element.Id).Order());
+        Assert.DoesNotContain(widened, delta => delta is DiagramRemoveDelta);
+
+        // Act, continued: narrow back to the first node alone.
+        var narrowed = session.Value.UpdateView(new DiagramViewport(200, -10, 420, 60));
+
+        // Assert: the relation leaves with the end that left.
+        var departed = Assert.IsType<DiagramRemoveDelta>(narrowed.Single());
+        Assert.Equal(["bbb", "ccc"], departed.ElementIds.Order());
+    }
+
+    /// <summary>
+    /// A connection that never reports a viewport keeps the whole graph it opened with: the
+    /// session starts unbounded, so adoption changes nothing for a client that does not report.
+    /// </summary>
+    [Fact]
+    public void WithoutAReportedViewport_TheBaselineIsTheWholeGraph()
+    {
+        // Arrange & act.
+        var path = Write();
+        using var session = Wrap(Open(path));
+        var baseline = Assert.IsType<DiagramAddDelta>(session.Value.Baseline().Single());
+
+        // Assert.
+        Assert.Equal(["aaa", "bbb", "ccc"], baseline.Elements.Select(element => element.Id).Order());
     }
 
     [Fact]
