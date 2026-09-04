@@ -3,8 +3,10 @@
   "title": "folder-add-registration — Design",
   "filePath": ".spec-workflow/specs/folder-add-registration/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-04T00:02:16.156Z",
   "category": "spec",
-  "categoryName": "folder-add-registration"
+  "categoryName": "folder-add-registration",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-04T23:21:54.938Z"
 }

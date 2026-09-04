@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/folder-add-registration/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-04T23:27:04.180Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788564423584_nlo47kemq",
+      "approvalTitle": "folder-add-registration — Tasks"
+    }
+  ]
+}
