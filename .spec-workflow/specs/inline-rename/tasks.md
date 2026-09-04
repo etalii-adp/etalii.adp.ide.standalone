@@ -10,7 +10,7 @@ One worktree for the whole spec: `.claude/worktrees/rename` — deliberately sho
 - **An unmarked prompt must be byte-for-byte what it is today** (Requirements 2.2, 7.4). Every task that touches the prompt path proves this rather than assuming it: the 45-odd input sites that are not renames are the majority of the feature's blast radius, and none of them should be able to tell this specification happened.
 - **Tests are named for the defect each catches.** "Asserts the inline editor works" is the phrasing to avoid: an editor that renders, focuses and then silently drops its commit passes that test.
 
-- [ ] 1. The contract: a prompt can say it edits a visible label
+- [-] 1. The contract: a prompt can say it edits a visible label
   - Files: `src/api/context.proto`, `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextDialogRequest.cs`, `src/backend/EtAlii.Adp.Backend/Context/ContextService.Actions.cs`, `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Context/`
   - Add `message InlineLabelEdit { ElementId element_id = 1; }` and `InlineLabelEdit inline_label_edit = 6;` to `InputDialogPrompt`. Add a trailing `string InlineLabelElementId = ""` to `ContextInputRequest` and map it in `ToProto` — trailing and defaulted, so every one of the existing constructions across the modules still compiles untouched, which is what makes Requirement 2.5's per-module adoption possible at all.
   - **Regenerate both sides' stubs** and commit the regenerated `src/client/src/generated/*_pb.ts`. Note that the codegen writes LF while the house style is CRLF, so the regenerated files will show as modified with no content change until they are normalised; do not mistake that for a real diff.
