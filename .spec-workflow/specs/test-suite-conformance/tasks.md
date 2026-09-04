@@ -84,14 +84,14 @@ The design's four shapes — A (files discovered on disk), B (a collection the c
   - _Requirements: 1.1, 1.2, 2.1_
   - _Prompt: Implement task 5 for spec test-suite-conformance. Role: C# developer | Task: add floors to the two named helm-charts sites | Restrictions: change no expected value; add no helper | _Leverage: ProblemStoreIsolation.Tests.cs:62-69 | Success: both floors have been seen to fail, and all four gates pass by exit code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 6. mindmap — three floors in one file
+- [x] 6. mindmap — three floors in one file
   - Files: `src/diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap.Tests/MindmapLayout.Tests.cs` (:88, :113, :223)
   - All shape B. `:88` sweeps `document.Nodes`, `:113` the named node's `Children`, `:223` the nodes that have children with boxes — three different collections, so three floors rather than one shared.
   - `:169` in the same file loops a literal array and is correct as written. Do not touch it.
   - _Requirements: 1.1, 1.2_
   - _Prompt: Implement task 6 for spec test-suite-conformance. Role: C# developer | Task: add three floors to MindmapLayout.Tests.cs at the named sites | Restrictions: three separate floors on three different collections; leave :169 alone, it loops a literal array | _Leverage: ProblemStoreIsolation.Tests.cs:62-69 | Success: each floor has been seen to fail, and all four gates pass by exit code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7. databricks — two floors in one file
+- [x] 7. databricks — two floors in one file
   - Files: `src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks.Tests/Diagram.Tests.cs` (:25, :45)
   - Both shape C, both `Assert.All(Diagram.Definitions, …)`. `Definitions` is a static array in module source, so an empty one means the module declares nothing — a real regression, and the least likely of the 25. The smallest task; a good first pick for anyone new to the shape.
   - _Requirements: 2.1, 2.2_
@@ -106,13 +106,13 @@ The design's four shapes — A (files discovered on disk), B (a collection the c
   - _Requirements: 1.1, 3.1, 3.3, 3.4, 4.1, 4.2, 4.3_
   - _Prompt: Implement task 8 for spec test-suite-conformance. Role: C# developer | Task: add a floor to ExampleCorpus.Tests.cs:69 and replace the single-part anchor at :17 with the two-part form | Restrictions: follow RdfExamples.Tests.cs:110 and c4 Examples.Tests.cs:36 rather than inventing a spelling; do not widen what the licence guard checks | _Leverage: RdfExamples.Tests.cs:110, c4 Examples.Tests.cs:36 | Success: the floor has been seen to fail with the sweep emptied, the anchor has been seen to fail when pointed at a wrong root, and all four gates pass by exit code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 9. ansible-structure — one floor
+- [x] 9. ansible-structure — one floor
   - Files: `src/diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure.Tests/ZeroWrites.Tests.cs` (:64)
   - Shape B. The sweep is over the derived graph's node and edge ids concatenated; an empty graph exercises no read path at all, so the zero-writes promise is asserted about nothing.
   - _Requirements: 1.1, 1.2_
   - _Prompt: Implement task 9 for spec test-suite-conformance. Role: C# developer | Task: add a floor to ansible-structure ZeroWrites.Tests.cs:64 | Restrictions: change no expected value; add no helper | _Leverage: ProblemStoreIsolation.Tests.cs:62-69 | Success: the floor has been seen to fail, and all four gates pass by exit code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 10. rdf — one floor, the worst of the shape-C five
+- [x] 10. rdf — one floor, the worst of the shape-C five
   - Files: `src/diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf.Tests/RdfLayout.Tests.cs` (:61)
   - Shape C. `Assert.All(projection.Nodes, node => positions.ContainsKey(node.Id))` asserts every projected node has a layout position — which is exactly what a projection returning no nodes satisfies vacuously. Nothing in the file pins a count.
   - _Requirements: 2.1, 2.2, 2.3_
