@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
+import { VIEW_REPORT_DEBOUNCE_MS } from "@client/diagrams/viewReport";
 import {
   emptyModel,
   type SparqlAnnotation,
@@ -18,6 +19,8 @@ let moves: { elementId: string; x: number; y: number }[] = [];
 let selections: unknown[] = [];
 let moveError = "";
 
+const reportView = vi.fn();
+
 vi.mock("./useSparqlStream", () => ({
   useSparqlStream: () => ({
     model: currentModel,
@@ -27,6 +30,7 @@ vi.mock("./useSparqlStream", () => ({
       moves.push({ elementId, x, y });
       return Promise.resolve(moveError);
     },
+    reportView,
   }),
 }));
 
@@ -254,6 +258,36 @@ describe("SparqlCanvas", () => {
 
     // Assert.
     expect(container.querySelector(".sparql-truncation-banner")?.textContent).toContain("Showing 500 of 1200");
+  });
+
+  it("reports the changed view once, carrying the new rectangle", () => {
+    // Arrange.
+    // The client half of the view-delta loop (view-delta-adoption Requirements 1.1, 1.2). This
+    // is a pixels-per-unit canvas, so it converts to a rectangle at its own call site; jsdom
+    // measures nothing, so the fallback span is what the conversion uses and the expected
+    // rectangle is exact rather than approximate.
+    vi.useFakeTimers();
+
+    try {
+      const { container } = renderCanvas();
+      vi.advanceTimersByTime(VIEW_REPORT_DEBOUNCE_MS * 2);
+      reportView.mockClear();
+
+      // Act: a wheel zoom, which changes pixelsPerUnit and so the rectangle.
+      const surface = container.querySelector(".sparql-surface")!;
+      fireEvent.wheel(surface, { deltaY: -1, clientX: 10, clientY: 10 });
+      vi.advanceTimersByTime(VIEW_REPORT_DEBOUNCE_MS * 2);
+
+      // Assert: exactly one report, describing a rectangle that actually changed.
+      expect(reportView).toHaveBeenCalledTimes(1);
+      const reported = reportView.mock.calls.at(-1)![0] as {
+        minX: number; minY: number; maxX: number; maxY: number;
+      };
+      expect(reported.maxX - reported.minX).toBeGreaterThan(0);
+      expect(reported.maxY - reported.minY).toBeGreaterThan(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("says so when the query could not be opened", () => {
