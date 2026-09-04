@@ -72,10 +72,6 @@ public partial class ShapeOfFileAccessTests
     /// </remarks>
     private static readonly (string File, string Rule, string Owner)[] Tracked =
     [
-        // Reads of a user document at FileShare.Read, the original flaw.
-        ("Databricks/DatabricksDocumentStore.cs", RawRead, "unassigned - reported by task 1.1"),
-        ("Sparql/SparqlDocumentStore.cs", RawRead, "unassigned - reported by task 1.1"),
-
         // Core reads of a user document - owned by backend-consistency, not by this spec.
         ("Hierarchy/AddDiagramContextActionProvider.cs", RawRead, "backend-consistency AC1"),
         ("Hierarchy/RegistrationLayout.cs", RawRead, "backend-consistency AC2"),

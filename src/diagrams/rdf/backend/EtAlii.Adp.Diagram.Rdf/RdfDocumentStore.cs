@@ -102,7 +102,11 @@ public sealed class RdfDocumentStore : IRdfDocumentStore
         {
             // A file that does not exist yet is an empty document, not an error: it may have
             // been created a moment ago, and a diagram that cannot open at all is the worse
-            // answer.
+            // answer. The File.Exists check is what produces that, and it is load-bearing:
+            // SharedDocumentReader opens with FileMode.Open and throws on a missing file, so
+            // deleting the check would turn every open of a not-yet-created body into an
+            // exception - caught below, and so still empty, but logged as a failure to read
+            // what is an ordinary state.
             text = File.Exists(path) ? SharedDocumentReader.ReadAllText(path) : "";
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)

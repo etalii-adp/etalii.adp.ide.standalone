@@ -24,7 +24,11 @@ Full rules and reasoning, including the half-removed-worktree hazard: [processes
 
 Commit with an explicit pathspec - `git commit -F msg -- <paths>` - naming files, never folders: a bare `git commit` commits the whole shared index. Commit your own implementation log the moment the tool writes it.
 
-**Never merge while anything is staged, yours or anyone's.** A failed merge stashes the working state and does not restore it; that lost 26 paths of three sessions' work in one line of output. **Merge through a scratch worktree instead**: merge your branch there with `--no-ff`, run the four gates on that merged tree, then `git merge --ff-only` it in the main checkout - a fast-forward builds no tree from the index, so foreign staged files neither block it nor get touched. **Re-gate on the merged tree, not before it.**
+**Never merge while anything is staged, yours or anyone's.** A failed merge stashes the working state and does not restore it; that lost 26 paths of three sessions' work in one line of output. **Merge through a scratch worktree named for your own agent number — `.claude/worktrees/mrg<N>`, never a shared name.** Two agents merging at once otherwise land in one directory, and the second one's `--ff-only` carries the first one's merge into develop underneath its own — gated together, attributed to one landing, and nothing looking wrong afterwards. That has already happened once. An "already exists" worktree may be someone's live tree rather than an abandoned husk: take a different name, never reset what is there. Prefer `git -C <path>` over `cd`, so a failed `worktree add` cannot leave the next command running somewhere silently wrong.
+
+In it: merge your branch with `--no-ff`, run the four gates on that merged tree, then `git merge --ff-only` it in the main checkout - a fast-forward builds no tree from the index, so foreign staged files neither block it nor get touched. **Re-gate on the merged tree, not before it.**
+
+**Chain the whole cycle into one command** — `reset --hard develop`, merge, four gates, `--ff-only` — so the window between gating a tree and landing it is seconds. With several sessions committing minutes apart and a gate run taking about three, a `--ff-only` issued separately is routinely refused; one agent was refused four times running. Refusal is the mechanism working: twice, develop had gained code the earlier gate never saw. **Run that final `--ff-only` from the main checkout, never from inside the scratch worktree** — run in the wrong place it merges the branch into itself and prints `Already up to date`, a success message for something that did not happen.
 
 If it does happen, do not re-run anything: the stash survives as a dangling commit pair findable with `git fsck --unreachable --no-reflogs`. Never re-apply a deletion that was in flight.
 
@@ -32,14 +36,20 @@ Full rules, the incident and the recovery: [processes.md, *Committing and mergin
 
 ## Git identity
 
-Commit under a per-task identity `agent-<N>-<task>`, set two different ways depending on where you are:
+Commit under a per-task identity `agent-<N>-<task>`. **Nothing is set locally in this repository** — `.git/config` has no `[user]` section — so any tree without its own identity signs as the machine's **global** name, the user's own. Do not go looking for a local value to fix; there is none.
 
-- **In a dedicated worktree:** `git config --worktree user.name "agent-<N>-<task>"`. **Not** plain `git config user.name` — that writes to `.git/config`, which every worktree and the main checkout share, so it renames *every other agent* too.
-- **In the shared main checkout:** set nothing. Pass the identity per command: `git -c user.name="agent-<N>-<task>" commit -F msg -- <paths>`. Several sessions use that working tree at once, so any config there is shared between them — `--worktree` included. There is no per-session scope.
+- **One scratch worktree per agent, named for the agent** (`.claude/worktrees/mrg<N>`), never a shared name. Two agents merging at once otherwise land in one directory, and the second's `--ff-only` carries the first's merge into develop under its own name.
+- **Set `git config --worktree user.name "agent-<N>-<task>"` the moment you create a worktree.** Every command run there inherits it, merges included, and it cannot leak to another session. Set once, it cannot be got wrong afterwards — which beats any rule depending on vigilance at the moment nobody is looking.
+- **A `--worktree` identity binds to the directory, not to you.** Work in a tree you did not create and your commits are signed as whoever made it. **Read back with plain `git config user.name` before your first commit in any tree you did not create yourself.**
+- **In the shared main checkout only**, pass `-c user.name="agent-<N>-<task>"` on **any command that writes a commit object** — `merge`, `rebase`, `revert` and `cherry-pick` as much as `commit`. `git merge --ff-only` writes *no* object; it moves a ref. The commit that lands is the `--no-ff` merge made earlier in the scratch tree, which is exactly where **45 of 61 merges in one 18-hour stretch** lost their author while every agent believed it was complying.
+- **The two read-backs answer different questions.** Plain `git config user.name` answers *who will sign my next commit here*. `git config --local user.name` answers *did I leak a value into the shared file*. Recommending only the first makes a borrowed identity invisible; only the second makes a correct identity look like a leak. Both happened today.
 - **Never `--global`, and never touch `user.email`.**
-- **Read it back with `git config --local user.name`, not `git config user.name`.** Inside a worktree the plain form resolves through `config.worktree` and returns your own correctly-scoped identity — which looks identical to a leaked shared value and has already prompted an unset that was not needed. Only `--local` shows what is actually in the shared `.git/config`.
 
-Without an identity you inherit the machine's global name in every checkout, so your work is indistinguishable from the user's own - and a *wrong* name is worse than an ambiguous one. Full reasoning, and why an identity rather than a `Co-Authored-By` trailer: [processes.md, *Git identity*](.spec-workflow/steering/processes.md#git-identity).
+A *wrong* name is worse than an ambiguous one. Full reasoning, and why an identity rather than a `Co-Authored-By` trailer: [processes.md, *Git identity*](.spec-workflow/steering/processes.md#git-identity).
+
+## Checking that a command answered your question
+
+**Ask what the command would print if your belief were false.** If the answer is "the same thing", it is not evidence. `git log --oneline` prints an identical line whoever authored it. `git config user.name` prints the effective value without its source. `grep -c $'\r'` prints `0` for an LF file and for a shell that never expanded the pattern. `md5sum` over whole files reports drift when only a namespace line differs. `git worktree add` fails where a chained `cd` cannot see it. Five instances in one day, each caught only because somebody re-measured — this test would have caught four, and costs a sentence of thought rather than a second command. It is the exit-code rule applied to the other half of a command's output.
 
 ## spec-workflow
 
