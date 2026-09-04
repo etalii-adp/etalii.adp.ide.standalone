@@ -99,6 +99,17 @@ Assert.True(
     $"Only {checkedLinks} relative links were extracted from {Documents.Length} delivered documents; LinkExpression() has stopped matching.");
 ```
 
+### Two things the four shapes do not cover, learned after they were written
+
+**A floor on the outer collection says nothing about an inner one.** The survey behind this document enumerated `[Fact]` bodies whose assertions all sat inside a *top-level* `foreach`; an inner loop was never in scope. The confirmation pass then verified "every site the survey named carries a floor" and reported "every collection needing a floor has one" — a different claim, and false. Two cases found afterwards show why the distinction is not academic:
+
+* `PipelineWriter`'s loop takes a `continue` when a fixture has no editable stage, so **every** iteration can skip: the walk reads fourteen files, renames nothing, and completes green. A floor on the fixture count cannot see this, because the fixtures were all found.
+* `PipelineContextActionProvider`'s inner loop walks the actions offered per element. A provider offering none visits nine element ids, executes nothing, and passes.
+
+So the unit that needs a floor is **a collection walked at run time**, counted per collection and not per test, and a conditional `continue` inside a loop makes the loop's *effective* work a second collection needing its own floor — a counter incremented in the body, floored after it.
+
+**A fifth vacuous shape: the self-comparing count.** `Assert.Equal(ids.Count, ids.Distinct().Count())` reads `0 == 0` on an empty list. It looks like an assertion, it is the natural way to write "these are unique", and it floors nothing. It is not shape C — no `Assert.All` is involved — and it is common: `DiagramDiscoveryStartup.Tests.cs:104`, `DiagramOptionTree.Tests.cs:154`, `DiagramDefinitionDiscovery.Walk.Tests.cs:51`, `AnsibleGraph.Tests.cs:225` and `WardleyToolboxProvider.Tests.cs:80` all carry it. Note the near-identical form that is **not** vacuous: `Assert.Equal(["a","b"], collection.Select(...))` compares against a non-empty literal and fails on an empty collection, which is why `EditorFilePropertyProvider.Tests.cs` never needed a floor at all.
+
 ### The anchor repair
 
 One site, `src/diagrams/sparql/backend/EtAlii.Adp.Diagram.Sparql.Tests/ExampleCorpus.Tests.cs:17`. It walks up looking for a folder named `examples`, and a second `examples` directory sits further up the same walk path at `src/examples`. It is correct today only because the nearer one wins. It adopts the two-part form its own sibling already uses at `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Examples.Tests.cs:36` — `examples` and `backend` required together.
