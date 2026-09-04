@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/client-consistency/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-04T08:18:00.212Z",
       "trigger": "initial",
+      "approvalId": "approval_1788509879448_r8hqv1kal",
+      "approvalTitle": "client-consistency design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-04T09:04:07.607Z",
+      "trigger": "approved",
       "approvalId": "approval_1788509879448_r8hqv1kal",
       "approvalTitle": "client-consistency design"
     }
