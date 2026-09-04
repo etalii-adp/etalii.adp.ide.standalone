@@ -46,7 +46,7 @@ The design's four shapes — A (files discovered on disk), B (a collection the c
 
 **Do not "fix" the twelve literal-array loops.** They are named in the design's Deviations and are correct as written: a loop over an array declared in the test cannot be empty.
 
-- [-] 1. azure-pipeline — seven floors and the relative-path fix
+- [x] 1. azure-pipeline — seven floors and the relative-path fix
   - Files: `src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline.Tests/` — `PipelineElementMapper.Tests.cs` (:81, :488), `PipelineGraphBuilder.Tests.cs` (:345), `PipelineRuleSet.Tests.cs` (:46), `PipelineWriter.Tests.cs` (:444), `PipelineContextActionProvider.Tests.cs` (:454, :496)
   - Shape A for the first five, shape B for the two in `PipelineContextActionProvider`.
   - **Also the relative path.** The five shape-A sites enumerate `Directory.GetFiles("Fixtures", …)`, which resolves against the process working directory rather than the test binary's folder. Change to `AppContext.BaseDirectory`, matching their siblings elsewhere in the tree. Same one-line character of repair, same change.
