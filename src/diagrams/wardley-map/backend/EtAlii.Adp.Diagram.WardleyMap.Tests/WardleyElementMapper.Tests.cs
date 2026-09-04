@@ -214,9 +214,16 @@ public class WardleyElementMapperTests
     [Fact]
     public void Elements_CoversEveryFixtureWithoutThrowing()
     {
+        // Arrange. The floor: a corpus that is not found sweeps nothing and passes loudest,
+        // so the walk is checked before it is trusted.
+        var fixtures = Directory.EnumerateFiles(IoPath.Combine(AppContext.BaseDirectory, "Fixtures"), "*.owm").ToArray();
+        Assert.True(
+            fixtures.Length >= 5,
+            $"Only {fixtures.Length} .owm fixtures were discovered; this guard has stopped finding the corpus it sweeps.");
+
         // Act and assert. Nothing in the corpus - dangling links, unknown statements, empty
         // pipelines - may take the mapper down.
-        foreach (var path in Directory.EnumerateFiles(IoPath.Combine(AppContext.BaseDirectory, "Fixtures"), "*.owm"))
+        foreach (var path in fixtures)
         {
             var map = WardleyParser.Parse(WardleyDocument.Parse(File.ReadAllText(path)));
             Assert.NotEmpty(Map(map));

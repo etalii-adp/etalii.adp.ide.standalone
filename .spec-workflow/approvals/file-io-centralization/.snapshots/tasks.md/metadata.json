@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/file-io-centralization/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-04T08:18:05.881Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788509885472_tj29ipt5r",
+      "approvalTitle": "file-io-centralization tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-04T08:46:14.346Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788509885472_tj29ipt5r",
+      "approvalTitle": "file-io-centralization tasks"
+    }
+  ]
+}

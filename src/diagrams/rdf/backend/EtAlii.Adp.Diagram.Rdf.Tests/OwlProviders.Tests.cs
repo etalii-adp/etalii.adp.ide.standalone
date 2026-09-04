@@ -86,7 +86,7 @@ public class OwlProvidersTests : IDisposable
     {
         // Arrange: a gesture from one class to another.
         var body = WriteBody(Corpus);
-        var before = File.ReadAllBytes(body);
+        var before = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
         var gesture = RdfRelationGesture.IdFor($"res:{Ns}Topping", $"res:{Ns}Pizza");
 
         // Act & assert: between two classes the gesture offers the subclass action first.
@@ -98,7 +98,7 @@ public class OwlProvidersTests : IDisposable
         var execution = await _actions.ExecuteAsync(
             Target(body, gesture), RdfContextActionProvider.SubclassActionId, TestContext.Current.CancellationToken);
         Assert.IsType<ContextExecutionCompleted>(execution);
-        var model = RdfParser.Parse(RdfDocument.Parse(File.ReadAllText(body)));
+        var model = RdfParser.Parse(RdfDocument.Parse(await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)));
         Assert.Contains(model.Triples, t =>
             t.Subject is IriTerm { Iri: $"{Ns}Topping" }
             && t.Predicate.Iri == OwlVocabulary.SubClassOf
@@ -106,7 +106,7 @@ public class OwlProvidersTests : IDisposable
 
         // And the gesture is one undo away, byte for byte.
         await _history.UndoAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(before, File.ReadAllBytes(body));
+        Assert.Equal(before, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public class OwlProvidersTests : IDisposable
     {
         // Arrange: Vegetarian already asserts Pizza.
         var body = WriteBody(Corpus);
-        var before = File.ReadAllBytes(body);
+        var before = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
         var gesture = RdfRelationGesture.IdFor($"res:{Ns}Vegetarian", $"res:{Ns}Pizza");
 
         // Act.
@@ -124,7 +124,7 @@ public class OwlProvidersTests : IDisposable
         // Assert: refused with the sentence, the file untouched (Requirement 6.1).
         var failed = Assert.IsType<ContextExecutionFailed>(execution);
         Assert.Equal(OwlSelection.DuplicateSubclassRefusal, failed.Message);
-        Assert.Equal(before, File.ReadAllBytes(body));
+        Assert.Equal(before, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -143,17 +143,17 @@ public class OwlProvidersTests : IDisposable
         Assert.DoesNotContain(RdfContextActionProvider.AddClassActionId, unmarked);
 
         // Committing an add writes exactly one declaration triple (Requirement 6.2).
-        var before = File.ReadAllBytes(body);
+        var before = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
         var commit = await _actions.CommitAsync(
             Target(body, placement), RdfContextActionProvider.AddClassActionId, ":Dessert", "", TestContext.Current.CancellationToken);
         Assert.Equal("", commit.Error);
-        var model = RdfParser.Parse(RdfDocument.Parse(File.ReadAllText(body)));
+        var model = RdfParser.Parse(RdfDocument.Parse(await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)));
         Assert.Contains(model.Triples, t =>
             t.Subject is IriTerm { Iri: $"{Ns}Dessert" }
             && t.Predicate.Iri == RdfVocabulary.Type
             && t.Object is IriTerm { Iri: OwlVocabulary.Class });
         await _history.UndoAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(before, File.ReadAllBytes(body));
+        Assert.Equal(before, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -168,13 +168,13 @@ public class OwlProvidersTests : IDisposable
         Assert.Contains(RdfContextActionProvider.RemoveResourceActionId, offered);
 
         // A label edit through the grid lands as one triple, one undo away (Requirement 6.4).
-        var before = File.ReadAllBytes(body);
+        var before = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
         var set = await _properties.SetAsync(
             Target(body, $"ind:{Ns}Pizza"), RdfContextPropertyProvider.LabelProperty, "The pizza", TestContext.Current.CancellationToken);
         Assert.True(set.IsSuccess);
-        Assert.Contains("The pizza", File.ReadAllText(body));
+        Assert.Contains("The pizza", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
         await _history.UndoAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(before, File.ReadAllBytes(body));
+        Assert.Equal(before, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]

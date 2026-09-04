@@ -111,9 +111,9 @@ public class OwlSessionTests : IDisposable
     {
         // Arrange.
         var body = CopyFixture("owl-ontology.ttl");
-        var bodyBytes = File.ReadAllBytes(body);
+        var bodyBytes = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
         var adp = WriteRegistration("owl-ontology.ttl");
-        var adpBefore = File.ReadAllText(adp);
+        var adpBefore = await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken);
 
         // Act.
         await using var session = OpenOwl(body, adp);
@@ -122,10 +122,10 @@ public class OwlSessionTests : IDisposable
         // Assert.
         Assert.Equal("", refusal);
         Assert.Equal(new RegistrationPosition(120, 240), RegistrationLayout.Read(adp)[$"res:{Ns}Pizza"]);
-        Assert.Equal(bodyBytes, File.ReadAllBytes(body));
+        Assert.Equal(bodyBytes, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
         await _provider.GetRequiredService<IHistoryStackStore>().Get(_root)
             .UndoAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(adpBefore, File.ReadAllText(adp));
+        Assert.Equal(adpBefore, await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -180,6 +180,83 @@ public class OwlSessionTests : IDisposable
         Assert.True(rdfHeard);
         Assert.True(owlHeard);
     }
+
+    [Fact]
+    public async Task AViewportChange_AddsWhatCameIntoViewAndRemovesWhatLeft()
+    {
+        // Arrange.
+        // The behavioural definition of the mechanism (view-delta-adoption Requirement 1.3): a
+        // view CHANGE produces deltas. This is the test that fails against a session whose
+        // UpdateView returns an empty list, which no client-side assertion can catch.
+        var body = CopyFixture("owl-ontology.ttl");
+        await using var session = OpenOwl(body, WriteRegistration("owl-ontology.ttl"));
+        var drawn = ElementsOfBaseline(session);
+        var anchor = drawn.OrderBy(element => element.Y).ThenBy(element => element.X).First();
+
+        // Act.
+        var narrowed = session.UpdateView(new DiagramViewport(anchor.X, anchor.Y, anchor.X + 1, anchor.Y + 1));
+        var widened = session.UpdateView(DiagramViewport.Unbounded);
+
+        // Assert.
+        var removed = narrowed.OfType<DiagramRemoveDelta>().SelectMany(delta => delta.ElementIds).ToHashSet(StringComparer.Ordinal);
+        Assert.NotEmpty(removed);
+        Assert.DoesNotContain(anchor.Id, removed);
+
+        var restored = widened.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
+        Assert.Subset(restored, removed);
+
+        // Add before Remove - what the reference implementations emit, and what this module's
+        // own mapper already produced. Requirement 4.3 anticipated the opposite.
+        var kinds = widened.Select(delta => delta is DiagramAddDelta ? 0 : 1).ToList();
+        Assert.Equal(kinds.OrderBy(kind => kind).ToList(), kinds);
+    }
+
+    [Fact]
+    public async Task AnUnchangedViewport_SaysNothingTwice()
+    {
+        // Arrange.
+        // A settled view that has not moved is not news; without this, any re-render that
+        // re-reported the same rectangle would re-send the whole diagram.
+        var body = CopyFixture("owl-ontology.ttl");
+        await using var session = OpenOwl(body, WriteRegistration("owl-ontology.ttl"));
+        session.UpdateView(DiagramViewport.Unbounded);
+
+        // Act.
+        var again = session.UpdateView(DiagramViewport.Unbounded);
+
+        // Assert.
+        Assert.Empty(again);
+    }
+
+    [Fact]
+    public async Task PanningDoesNotMoveTheElementsItBringsIntoView()
+    {
+        // Arrange.
+        // The layout is computed over the whole document and only then filtered. Computed over
+        // the visible set instead, it would repack as the reader panned and the diagram would
+        // crawl under them.
+        var body = CopyFixture("owl-ontology.ttl");
+        await using var session = OpenOwl(body, WriteRegistration("owl-ontology.ttl"));
+        var atOpen = ElementsOfBaseline(session).ToDictionary(element => element.Id, element => (element.X, element.Y), StringComparer.Ordinal);
+
+        // Act.
+        session.UpdateView(new DiagramViewport(0, 0, 1, 1));
+        var readmitted = session.UpdateView(DiagramViewport.Unbounded)
+            .OfType<DiagramAddDelta>()
+            .SelectMany(delta => delta.Elements)
+            .ToList();
+
+        // Assert.
+        Assert.NotEmpty(readmitted);
+        foreach (var element in readmitted)
+        {
+            Assert.Equal(atOpen[element.Id], (element.X, element.Y));
+        }
+    }
+
+    /// <summary>The baseline's elements - what the connection holds before any view is reported.</summary>
+    private static IReadOnlyList<DiagramElement> ElementsOfBaseline(IDiagramSession session) =>
+        session.Baseline().OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).ToList();
 }
 
 /// <summary>

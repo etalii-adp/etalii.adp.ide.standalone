@@ -169,7 +169,7 @@ public class SkosValidatorTests : IDisposable
         // Arrange: the registration whose language: line sits above body: - ignored by the
         // session (2.1's half), and named here (this half).
         var registration = IoPath.Combine(_root, "scheme.adp");
-        File.WriteAllText(registration, "w3c/skos\nlanguage: nl\nbody: scheme.ttl\n");
+        await File.WriteAllTextAsync(registration, "w3c/skos\nlanguage: nl\nbody: scheme.ttl\n", TestContext.Current.CancellationToken);
 
         // Act.
         var problems = await Validate("""

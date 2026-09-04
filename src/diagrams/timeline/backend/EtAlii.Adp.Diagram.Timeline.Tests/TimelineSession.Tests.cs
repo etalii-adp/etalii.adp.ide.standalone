@@ -95,15 +95,109 @@ public class TimelineSessionTests : IDisposable
     }
 
     [Fact]
-    public void UpdateView_SendsNothingNew()
+    public void AChangedViewport_AddsWhatAppearedThenRemovesWhatLeft()
     {
-        // Arrange.
+        // Arrange: the fixture's period sits on row 0 in early 2026, the moment on row 2 a
+        // fortnight later, and one connection joins them. This is the test the task calls the
+        // definition of done - it fails against a UpdateView that returns [].
         var path = Write();
         using var session = Wrap(Open(path));
         session.Value.Baseline();
 
-        // Act & assert.
-        Assert.Empty(session.Value.UpdateView(new DiagramViewport(0, 0, 1000, 1000)));
+        var period = TimelineScale.ToSeconds(new DateTimeOffset(2026, 1, 5, 0, 0, 0, TimeSpan.Zero));
+        var moment = TimelineScale.ToSeconds(new DateTimeOffset(2026, 2, 16, 14, 0, 0, TimeSpan.Zero));
+
+        // Act: first a viewport holding only the period's row, then one holding only the moment's.
+        var narrowed = session.Value.UpdateView(new DiagramViewport(period - 1, 0, period + 1, TimelineRows.Height));
+        var moved = session.Value.UpdateView(new DiagramViewport(
+            moment - 1, TimelineRows.ToY(2), moment + 1, TimelineRows.ToY(2) + TimelineRows.Height));
+
+        // Assert.
+        // Narrowing drops the moment and, with it, the connection whose far end has gone -
+        // a curve to an element the client does not hold would have nothing to draw against.
+        var dropped = Assert.IsType<DiagramRemoveDelta>(Assert.Single(narrowed));
+        Assert.Equal(["bbb", "ccc"], dropped.ElementIds.Order());
+
+        // Panning to the moment's row is one delta of each, Add first.
+        Assert.Equal(2, moved.Count);
+        var appeared = Assert.IsType<DiagramAddDelta>(moved[0]);
+        var departed = Assert.IsType<DiagramRemoveDelta>(moved[1]);
+        Assert.Equal("bbb", Assert.Single(appeared.Elements).Id);
+        Assert.Equal("aaa", Assert.Single(departed.ElementIds));
+    }
+
+    [Fact]
+    public void APeriodStraddlingTheViewport_StaysVisible()
+    {
+        // Arrange: an element is a span, not a point. The fixture's period runs 5 Jan to 13 Feb,
+        // so a viewport over a day in the middle contains neither of its ends - and it is
+        // precisely the bar the reader is looking at.
+        var path = Write();
+        using var session = Wrap(Open(path));
+        session.Value.Baseline();
+
+        var middle = TimelineScale.ToSeconds(new DateTimeOffset(2026, 1, 20, 0, 0, 0, TimeSpan.Zero));
+
+        // Act.
+        var deltas = session.Value.UpdateView(new DiagramViewport(middle, 0, middle + 60, TimelineRows.Height));
+
+        // Assert: only the far-away moment and its connection leave; the period stays.
+        var dropped = Assert.IsType<DiagramRemoveDelta>(Assert.Single(deltas));
+        Assert.DoesNotContain("aaa", dropped.ElementIds);
+    }
+
+    [Fact]
+    public void AConnectionSurvivesOnlyWhileBothItsEndsDo()
+    {
+        // Arrange: connections are packed at the origin deliberately, so they cannot be tested
+        // against a viewport by position - their visibility follows their endpoints.
+        var path = Write();
+        using var session = Wrap(Open(path));
+        session.Value.Baseline();
+
+        // Act: a viewport wide enough in time for both, but only tall enough for row 0.
+        var deltas = session.Value.UpdateView(new DiagramViewport(
+            double.NegativeInfinity, 0, double.PositiveInfinity, TimelineRows.Height));
+
+        // Assert.
+        var dropped = Assert.IsType<DiagramRemoveDelta>(Assert.Single(deltas));
+        Assert.Contains("ccc", dropped.ElementIds);
+    }
+
+    [Fact]
+    public void AConnectionThatNeverReportsAViewport_KeepsTheWholeTimeline()
+    {
+        // Arrange & act: the unbounded default is what makes each module independently
+        // landable - a client that has not adopted the report sees no change at all.
+        var path = Write();
+        using var session = Wrap(Open(path));
+
+        // Assert.
+        var add = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Value.Baseline()));
+        Assert.Equal(3, add.Elements.Count);
+    }
+
+    [Fact]
+    public void ADocumentChangeUnderANarrowedViewport_DoesNotResendTheCulledElements()
+    {
+        // Arrange: the change path and the viewport path render through one place. When they did
+        // not, an ordinary edit re-sent everything the viewport had just culled.
+        var path = Write();
+        using var session = Wrap(Open(path));
+        session.Value.Baseline();
+        session.Value.UpdateView(new DiagramViewport(
+            double.NegativeInfinity, 0, double.PositiveInfinity, TimelineRows.Height));
+
+        IReadOnlyList<DiagramDelta> received = [];
+        session.Value.Changed += (_, args) => received = args.Deltas;
+
+        // Act: retitle the period, which is inside the viewport.
+        File.WriteAllText(path, Timeline.Replace("label: Period", "label: Renamed", StringComparison.Ordinal));
+        _store.Reload(path);
+
+        // Assert: the edit arrives, and nothing outside the viewport comes back with it.
+        var add = Assert.IsType<DiagramAddDelta>(received[0]);
+        Assert.Equal("aaa", Assert.Single(add.Elements).Id);
     }
 
     [Fact]

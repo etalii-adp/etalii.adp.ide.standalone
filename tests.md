@@ -1208,3 +1208,37 @@ most executable-looking thing in it.
   validate-data action id exists in `ShaclActions`, and Requirement 4.4 assigns the whole
   execution path to a future spec. The manual check remains worth running for the thing
   those cannot see - whether a user comes away thinking a validation has happened.
+
+## Panning a large ontology brings its content in (view-delta-adoption, task 11)
+
+The one thing no unit test here can hold. jsdom gives every element a zero-sized
+`getBoundingClientRect()`, so `shownRectOf`'s surface branch never runs in the suite and every
+reported rectangle is the bare box. Whether the loop actually delivers content as a person moves
+around a large document is a question only a browser answers.
+
+`rdf` is the module to check, because it is the one where the cost was visible: before this work
+it opened large documents behind a first-N banner that discarded by document order, so panning
+could never recover the rest however far it went.
+
+- **Preconditions**: backend + client running; a project containing an RDF document of more than
+  1,000 resources — `src/examples/` has the vendored ontologies, and any of the larger ones will
+  do. Sign in with the checked-in developer placeholder.
+- **Actions**: open the document; note that a truncation banner appears and that the diagram is
+  read-only; pan steadily to the far edge of the laid-out content, well past what was drawn at
+  open; then zoom out until the whole plane is in view, and zoom back in on a region that was
+  empty at open.
+- **Expected**: resources arrive as you pan into their region, rather than the canvas staying
+  empty beyond the first screenful. Nodes already on screen **do not move** as new ones arrive —
+  the layout is computed over the whole document, so panning must not repack it. No edge is ever
+  drawn with one end missing. The banner and the read-only refusal stay exactly as they were:
+  reach improves, what the document may do does not.
+- **Also worth watching**: a pan produces one report per settle, not one per frame. A backend log
+  showing a burst of `UpdateView` calls during a single drag means the debounce is not doing its
+  job.
+
+- **Result 2026-09-04**: **pending** — the app was not run for this pass. Covered meanwhile by
+  `RdfSessionTests.PanningReachesResourcesTheBudgetDiscarded` (a 1,200-resource document, a
+  viewport over the far end, resources arriving that the baseline never sent),
+  `PanningDoesNotMoveTheNodesItBringsIntoView`, `NoEdgeIsEverDeliveredWithOneEndMissing`,
+  `ADocumentOverTheBudget_KeepsItsBannerAndItsRefusal`, and the shared hook's debounce test
+  asserting exactly one call for a burst of changes.

@@ -24,7 +24,7 @@ public class ShaclExamplesTests
         }
 
         Assert.NotNull(directory);
-        return IoPath.Combine(directory!.FullName, "src", "diagrams", "rdf", "examples", "shacl");
+        return IoPath.Combine(directory.FullName, "src", "diagrams", "rdf", "examples", "shacl");
     }
 
     public static TheoryData<string> Folders() => new("w3c-shacl", "fair-data-point");
@@ -57,14 +57,14 @@ public class ShaclExamplesTests
 
         foreach (var body in bodies)
         {
-            var text = File.ReadAllText(body);
+            var text = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
             var model = RdfParser.Parse(RdfDocument.Parse(text));
             Assert.NotEmpty(model.Triples);
 
             // Every registration resolves, and the reading draws something.
             var registration = IoPath.ChangeExtension(body, ".adp");
             Assert.True(File.Exists(registration), $"{body} has no .adp registration");
-            Assert.StartsWith("w3c/shacl", File.ReadAllText(registration), StringComparison.Ordinal);
+            Assert.StartsWith("w3c/shacl", await File.ReadAllTextAsync(registration, TestContext.Current.CancellationToken), StringComparison.Ordinal);
 
             Assert.NotEmpty(ShaclProjection.Project(model).Cards);
 

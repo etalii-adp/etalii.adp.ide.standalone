@@ -71,17 +71,7 @@ There is no bidirectional streaming in this system, and no client streaming eith
 
 # Implementation order
 
-Work a feature through these layers in this order, finishing each - including its tests - before starting the next:
-
-1. **Data model.** The POCOs and records the feature is about, in the `_Model` folder of the area they belong to. They depend on nothing else and are testable on their own.
-2. **Persistence.** Reading and writing that model - text files under the opened workspace folder, per *Diagram storage*, never a database.
-3. **Wire protocol.** The `.proto` contract that carries it and the mapping between those messages and the model, per *gRPC call shapes*.
-4. **Client user interface.** Rendering it, and letting the user act on it.
-5. **Additional client and backend business logic.** Whatever the feature still needs once the layers under it hold.
-
-* **Each step carries its own tests.** Unit tests where the step is a unit - a model, a parser/serializer, a mapper, a component - and integration tests where the point is that layers meet, such as a gRPC flow against the real host or a file written and read back. A step is done when something fails without it, not when it compiles. Naming and the arrange/act/assert shape are in *Testing & quality*.
-* **A step with nothing in it is skipped, not invented.** A feature that persists nothing gets no persistence step. This is an order of what comes before what, not a checklist every feature has to fill.
-* **The order runs bottom-up because the dependencies do.** A wire contract designed before the model it carries ends up shaped by the transport rather than by the domain, and a UI built before the contract invents state the backend then has to be talked into providing. Taken in this order, each layer is written against something that already exists and already passes its tests.
+Moved to [processes.md, *Implementation order*](processes.md#implementation-order): data model, persistence, wire protocol, client UI, then remaining logic — each finished with its tests before the next, bottom-up because the dependencies are.
 
 # Specifying a diagram type
 
@@ -122,15 +112,7 @@ A module's service registration lives in **one file** - `ServiceCollection.AddX.
 
 # Checking that the conventions are actually followed
 
-Conventions that are only written down drift. Two tools check them, and they see different things - run both, because passing one says nothing about the other.
-
-* **`dotnet format style --verify-no-changes --severity info`**, from `src/backend/` against `EtAlii.Adp.slnx`, is the fast check. It runs the Roslyn analyzers and the rules in `src/.editorconfig` - formatting, naming, C# style preferences - and nothing else.
-* **JetBrains [InspectCode](https://www.jetbrains.com/help/resharper/InspectCode.html) is the thorough one, and the authoritative one for this team.** Development is mostly done in Rider (see *Development tools*), so the inspections a developer actually sees are ReSharper's - a far larger set than the Roslyn analyzers, covering the design and structure rules that `dotnet format` has no opinion about. InspectCode runs that same engine headlessly, honouring the repository's own `.DotSettings` files and `src/.editorconfig`, so its verdict is the verdict Rider gives rather than a second, different standard.
-  * Install once as a .NET tool: `dotnet tool install -g JetBrains.ReSharper.GlobalTools`. It is then invoked as `jb inspectcode`.
-  * Run it over the whole backend before a piece of work is considered finished - after the tests pass and the format check is clean, not instead of them.
-  * The solution is `src/backend/EtAlii.Adp.slnx`. InspectCode's support for the newer `.slnx` format is not confirmed; if it refuses the file, point it at the projects instead rather than adding a second solution file to the repository to keep a tool happy.
-* **Treat an InspectCode finding the way an `.editorconfig` finding is treated**: fix it, or decide deliberately that the rule does not fit this codebase and record that decision where the rule lives - in the `.DotSettings` file, with a note saying why - rather than leaving it to be re-discovered and re-argued. Silently ignoring findings turns the tool into noise, which is how a codebase ends up with a check nobody runs.
-* **Expect a backlog on the first full run, and do not treat it as a gate on unrelated work.** The rule about nested types under *Backend* holds with no exceptions - the last two offenders were lifted out under the technical-debt-cleanup spec, and the count is zero; keep it holding. Other rules will have backlogs of their own. What matters is that code *being written now* is clean and that any backlog shrinks, not that an unrelated change is blocked by something it did not cause.
+Moved to [processes.md, *Checking that the conventions are actually followed*](processes.md#checking-that-the-conventions-are-actually-followed): `dotnet format style` is the fast check and JetBrains InspectCode the thorough, authoritative one — passing either says nothing about the other.
 
 # Frontend
 

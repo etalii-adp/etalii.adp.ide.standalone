@@ -68,6 +68,66 @@ public sealed class HelmElementMapper
     }
 
     /// <summary>
+    /// The elements a viewport admits: every node whose box the rectangle touches, plus one
+    /// hop outwards so a connector always has both of its boxes to be drawn between.
+    /// </summary>
+    /// <remarks>
+    /// The one-hop rule is the Ansible module's, kept deliberately rather than reinvented: an
+    /// edge with one end in view brings the other end with it, because an edge delivered
+    /// without its far box is an edge the client cannot place. An edge whose target never
+    /// resolved still draws from its source to nothing, which is how a reader sees that
+    /// something is missing rather than seeing nothing at all.
+    /// </remarks>
+    public IReadOnlyList<DiagramElement> Visible(
+        HelmChart chart, HelmGraph graph, IReadOnlyDictionary<string, HelmBox> boxes, DiagramViewport viewport)
+    {
+        ArgumentNullException.ThrowIfNull(chart);
+        ArgumentNullException.ThrowIfNull(graph);
+        ArgumentNullException.ThrowIfNull(boxes);
+
+        var delivered = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var node in graph.Nodes.Where(node => boxes.TryGetValue(node.Id, out var box) && Intersects(box, viewport)))
+        {
+            delivered.Add(node.Id);
+        }
+
+        // One hop, exactly.
+        foreach (var edge in graph.Edges)
+        {
+            if (delivered.Contains(edge.SourceId) && edge.TargetId.Length > 0)
+            {
+                delivered.Add(edge.TargetId);
+            }
+            else if (edge.TargetId.Length > 0 && delivered.Contains(edge.TargetId))
+            {
+                delivered.Add(edge.SourceId);
+            }
+        }
+
+        var elements = new List<DiagramElement>();
+        foreach (var node in graph.Nodes.Where(node => delivered.Contains(node.Id)))
+        {
+            elements.Add(NodeElement(chart, graph, node, boxes.GetValueOrDefault(node.Id)));
+        }
+
+        foreach (var edge in graph.Edges)
+        {
+            var sourceDelivered = delivered.Contains(edge.SourceId);
+            var targetDelivered = edge.TargetId.Length == 0 || delivered.Contains(edge.TargetId);
+            if (sourceDelivered && targetDelivered)
+            {
+                elements.Add(EdgeElement(edge, boxes.GetValueOrDefault(edge.SourceId)));
+            }
+        }
+
+        return elements;
+    }
+
+    private static bool Intersects(HelmBox box, DiagramViewport viewport) =>
+        box.X <= viewport.MaxX && box.Right >= viewport.MinX &&
+        box.Y <= viewport.MaxY && box.Bottom >= viewport.MinY;
+
+    /// <summary>
     /// What to send a connection whose diagram was <paramref name="previous"/> and is now
     /// <paramref name="current"/>: the ids that went away, then everything that is there now.
     /// Add is an upsert, so re-sending an unchanged element is correct; only ids that genuinely

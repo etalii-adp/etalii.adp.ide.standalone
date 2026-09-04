@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useViewReport } from "@client/diagrams/useViewReport";
+import { shownRectOf } from "@client/diagrams/viewReport";
 import { FixedBezierConnection } from "@client/canvas/connections/fixed-bezier/FixedBezierConnection";
 import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
 import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
@@ -34,7 +36,6 @@ interface ViewBox {
 const ZOOM_STEP = 1.25;
 const MIN_VIEW_WIDTH = 40;
 const MAX_VIEW_WIDTH = 100000;
-const VIEW_REPORT_DEBOUNCE_MS = 200;
 const FIT_MARGIN = 40;
 
 export interface PipelineCanvasProps {
@@ -120,21 +121,12 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
   );
   useRegisterDiagramView(viewControls);
 
-  const reportViewRef = useRef(reportView);
-  reportViewRef.current = reportView;
-  const viewKey = `${effectiveView.x},${effectiveView.y},${effectiveView.w},${effectiveView.h}`;
-  useEffect(() => {
-    if (loading || failed) {
-      return;
-    }
-
-    const timer = setTimeout(
-      () => reportViewRef.current(shownRectOf(viewRef.current)),
-      VIEW_REPORT_DEBOUNCE_MS,
-    );
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewKey, loading, failed]);
+  useViewReport({
+    view: effectiveView,
+    report: reportView,
+    convert: () => shownRectOf(viewRef.current),
+    ready: !loading && !failed,
+  });
 
   const unitsPerPixel = (box: ViewBox): number => {
     const rect = surfaceRef.current?.getBoundingClientRect();
@@ -521,8 +513,4 @@ function fitBoxOf(model: PipelineModel): ViewBox {
   };
 }
 
-/** The viewBox as the rectangle the backend understands. */
-function shownRectOf(box: ViewBox) {
-  return { minX: box.x, minY: box.y, maxX: box.x + box.w, maxY: box.y + box.h };
-}
 

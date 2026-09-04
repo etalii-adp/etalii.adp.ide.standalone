@@ -8,6 +8,8 @@ import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction"
 import { InlineLabelEditor } from "@client/canvas/label/InlineLabelEditor";
 import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useViewReport } from "@client/diagrams/useViewReport";
+import { shownRectOf } from "@client/diagrams/viewReport";
 import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
 import { ContextSelectionAction } from "@client/generated/context_pb";
@@ -34,7 +36,6 @@ const ZOOM_STEP = 1.25;
 const MIN_VIEW_WIDTH = 40;
 const MAX_VIEW_WIDTH = 100000;
 /** How long the viewport may settle before the backend hears of it (Requirement 11.5). */
-const VIEW_REPORT_DEBOUNCE_MS = 200;
 
 /** The diagram file this canvas shows: its project id, and the project-relative path of its `.adp`. */
 export interface MindmapCanvasProps {
@@ -433,21 +434,12 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
   // What the user can see, reported once it settles, so the backend delivers what falls
   // inside it and not the whole map (Requirement 11.5). The ref keeps the report out of the
   // effect's dependencies - it is the box that matters, not the function's identity.
-  const reportViewRef = useRef(reportView);
-  reportViewRef.current = reportView;
-  const viewKey = `${effectiveView.x},${effectiveView.y},${effectiveView.w},${effectiveView.h}`;
-  useEffect(() => {
-    if (loading || failed) {
-      return;
-    }
-
-    const timer = setTimeout(
-      () => reportViewRef.current(shownRectOf(viewRef.current, surfaceRef.current)),
-      VIEW_REPORT_DEBOUNCE_MS,
-    );
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewKey, loading, failed]);
+  useViewReport({
+    view: effectiveView,
+    report: reportView,
+    convert: () => shownRectOf(viewRef.current, surfaceRef.current),
+    ready: !loading && !failed,
+  });
 
   if (failed) {
     // The backend gave a permanent answer - the file is gone, moved, or unroutable. The tab
@@ -696,36 +688,6 @@ function toCanvasPoint(clientX: number, clientY: number, box: ViewBox, surface: 
   return {
     x: shown.minX + ((clientX - rect.left) / rect.width) * (shown.maxX - shown.minX),
     y: shown.minY + ((clientY - rect.top) / rect.height) * (shown.maxY - shown.minY),
-  };
-}
-
-/**
- * What the svg actually puts on screen, in canvas units - which is not the viewBox. With the
- * default `preserveAspectRatio` ("xMidYMid meet") the browser scales the box to fit inside the
- * element and centres it, so whichever axis has room left over shows more of the map than the
- * box asked for. Reporting the bare viewBox therefore understates the visible area, and the
- * backend culls nodes sitting in that margin while the user is looking straight at them.
- *
- * Without a laid-out surface - jsdom, or before the first measure - the box is the best answer
- * available and is reported unchanged.
- */
-function shownRectOf(box: ViewBox, surface: SVGSVGElement | null): { minX: number; minY: number; maxX: number; maxY: number } {
-  const rect = surface?.getBoundingClientRect();
-  if (rect === undefined || rect.width <= 0 || rect.height <= 0 || box.w <= 0 || box.h <= 0) {
-    return { minX: box.x, minY: box.y, maxX: box.x + box.w, maxY: box.y + box.h };
-  }
-
-  // "meet" scales by whichever axis is the tighter fit; the other one then spans more units.
-  const scale = Math.min(rect.width / box.w, rect.height / box.h);
-  const shownWidth = rect.width / scale;
-  const shownHeight = rect.height / scale;
-  const centerX = box.x + box.w / 2;
-  const centerY = box.y + box.h / 2;
-  return {
-    minX: centerX - shownWidth / 2,
-    minY: centerY - shownHeight / 2,
-    maxX: centerX + shownWidth / 2,
-    maxY: centerY + shownHeight / 2,
   };
 }
 

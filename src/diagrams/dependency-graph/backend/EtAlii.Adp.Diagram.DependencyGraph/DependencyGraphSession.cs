@@ -10,11 +10,12 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// <see cref="DiagramDelta"/>.
 /// </summary>
 /// <remarks>
-/// It filters nothing: <see cref="UpdateView"/> answers with nothing new because the whole graph
-/// is delivered at open, on the same reasoning the timeline and Wardley sessions spell out - a
-/// bounded diagram of tens of nodes has nothing to virtualize, and a filter written only to
-/// satisfy a rule is code nobody needs. Panning and zooming are the client's own transform and
-/// never reach here.
+/// <see cref="UpdateView"/> answers a reported viewport with the difference it makes: the nodes
+/// it newly admits, then the ones it no longer does. The earlier reasoning here - that a bounded
+/// graph of tens of nodes has nothing to virtualize - was a fair local judgement and is
+/// superseded by view-delta-adoption, which asks the eleven modules for one loop rather than
+/// eleven answers to the same question. A graph is bounded until someone points it at a
+/// dependency tree that is not.
 /// </remarks>
 public sealed class DependencyGraphSession : IDiagramSession
 {
@@ -29,6 +30,12 @@ public sealed class DependencyGraphSession : IDiagramSession
 
     /// <summary>What this connection was last sent, so a change can be diffed against it.</summary>
     private IReadOnlyList<DiagramElement> _delivered = [];
+
+    /// <summary>
+    /// The last viewport this connection reported. Unbounded until it reports one, so a
+    /// connection that never does keeps the whole graph it opened with.
+    /// </summary>
+    private DiagramViewport _viewport = DiagramViewport.Unbounded;
 
     /// <summary>Creates the session and subscribes to the store's changes.</summary>
     public DependencyGraphSession(
@@ -62,14 +69,27 @@ public sealed class DependencyGraphSession : IDiagramSession
             : [];
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// What the reported viewport changes: an Add for the elements it newly admits, then a
+    /// Remove for the ones that left. The order is the one both reference implementations use
+    /// (view-delta-adoption Requirement 4.3, as the design corrected it).
+    /// </summary>
+    /// <remarks>
+    /// The same render and the same diff a document change goes through, so the two paths cannot
+    /// disagree about what this connection holds. Diffing against <c>_delivered</c> rather than
+    /// against a recomputation of the old viewport is what keeps them honest: an edit arriving
+    /// after a narrowing then re-sends only what actually changed, instead of a Remove for
+    /// elements the client dropped when the view narrowed.
+    /// </remarks>
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
-        _ = viewport;
+        _viewport = viewport;
 
-        // Nothing changes with the viewport: the connection already holds the whole graph, and
-        // the view transform is the client's own (see the class remarks).
-        return [];
+        var current = Render();
+        var deltas = _mapper.Diff(_delivered, current);
+        _delivered = current;
+
+        return deltas;
     }
 
     /// <summary>
@@ -126,8 +146,13 @@ public sealed class DependencyGraphSession : IDiagramSession
         return ValueTask.CompletedTask;
     }
 
+    /// <summary>
+    /// What this connection should be holding: the elements the last reported viewport admits.
+    /// Unbounded until one is reported, so an open delivers the whole graph exactly as before -
+    /// and a save after a report re-delivers what is in view rather than undoing the cull.
+    /// </summary>
     private IReadOnlyList<DiagramElement> Render() =>
-        _mapper.Elements(_documents.GetOrLoad(_bodyPath).Model);
+        _mapper.Visible(_documents.GetOrLoad(_bodyPath).Model, _viewport);
 
     /// <summary>
     /// A save from any connection, or an edit made outside ADP, arrives here and goes out as

@@ -1,5 +1,6 @@
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useDiagramStream } from "@client/diagrams/useDiagramStream";
+import { viewReportOf, type Viewport } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type WardleyModel } from "./wardleyModel";
 
 export interface WardleyStream {
@@ -20,6 +21,14 @@ export interface WardleyStream {
    * every other connection, and is one undo away (Requirement 7.2).
    */
   moveElementTo: (elementId: string, x: number, y: number) => Promise<string>;
+  /**
+   * Reports what the reader can see, in the map's own 0..1 space.
+   *
+   * The unit is the module's business and the shared library converts nothing
+   * (view-delta-adoption Requirement 3.4): this canvas draws into a fixed box of canvas units,
+   * so the conversion back to 0..1 happens at the call site in WardleyCanvas.
+   */
+  reportView: (viewport: Viewport) => void;
 }
 
 /**
@@ -27,14 +36,16 @@ export interface WardleyStream {
  * lifecycle, retry and state live in the shared `useDiagramStream`; what is this map's own
  * here is the model, its mapping, and the move call built on the returned client.
  *
- * There is deliberately **no** viewport report here. The backend answers one with the whole
- * map - a Wardley map is a bounded space of tens of elements, so there is nothing to filter -
- * and a report the backend ignores would be a round trip per pan for no result
- * (Requirement 10.5).
+ * The viewport report goes up the paired `UpdateView` leg, and the backend answers on the open
+ * stream with the deltas that bring this connection into line. This module used to decline the
+ * report because the session answered every viewport with the whole map; the session now
+ * filters, so a reader zoomed into one corner stops paying for the rest
+ * (view-delta-adoption Requirement 1).
  */
 export function useWardleyStream(projectId: Uint8Array, path: readonly string[]): WardleyStream {
   const { watchId } = useContextConnection();
   const { model, loading, failed, client } = useDiagramStream(projectId, path, emptyModel, applyDelta);
+  const reportView = viewReportOf(client, projectId, watchId, path);
 
   const moveElementTo = async (elementId: string, x: number, y: number): Promise<string> => {
     try {
@@ -53,5 +64,5 @@ export function useWardleyStream(projectId: Uint8Array, path: readonly string[])
     }
   };
 
-  return { model, loading, failed, moveElementTo };
+  return { model, loading, failed, moveElementTo, reportView };
 }

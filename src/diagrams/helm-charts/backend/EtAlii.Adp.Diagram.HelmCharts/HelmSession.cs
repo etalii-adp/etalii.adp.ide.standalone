@@ -13,9 +13,11 @@ namespace EtAlii.Adp.Diagram.HelmCharts;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The whole diagram is delivered at <see cref="Baseline"/> and <see cref="UpdateView"/>
-/// answers with nothing new: a chart is bounded, so there is nothing to virtualize (the
-/// design's recorded fork from the Ansible module's viewport filter).
+/// The whole diagram is delivered at <see cref="Baseline"/>, and <see cref="UpdateView"/>
+/// narrows it to what the reader is looking at: what newly falls inside the viewport is
+/// added, what left is removed (view-delta-adoption Requirements 1.2 and 1.3). This replaces
+/// an earlier judgement that a chart is bounded and so has nothing to virtualize - true of a
+/// small chart, and false of one with enough dependencies to be worth panning around.
 /// </para>
 /// <para>
 /// A drag never touches the chart: repositioning dispatches the core
@@ -39,6 +41,12 @@ internal sealed class HelmSession : IDiagramSession
 
     /// <summary>What this connection was last sent, so a change can be diffed against it.</summary>
     private IReadOnlyList<DiagramElement> _delivered = [];
+
+    /// <summary>
+    /// What this connection is looking at. Unbounded until the client reports, so a client
+    /// that never reports keeps seeing the whole chart it was given at baseline.
+    /// </summary>
+    private DiagramViewport _viewport = DiagramViewport.Unbounded;
 
     public HelmSession(
         string folder,
@@ -79,8 +87,36 @@ internal sealed class HelmSession : IDiagramSession
     /// <inheritdoc />
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
-        _ = viewport;
-        return [];
+        var chart = _store.GetOrLoad(_folder);
+        var graph = HelmGraph.Derive(chart);
+        var boxes = Boxes(chart, graph);
+
+        var before = _mapper.Visible(chart, graph, boxes, _viewport)
+            .Select(element => element.Id)
+            .ToHashSet(StringComparer.Ordinal);
+        _viewport = viewport;
+        var after = _mapper.Visible(chart, graph, boxes, _viewport);
+
+        // Add for what appeared, then Remove for what left - the order both reference
+        // sessions emit in, which is the opposite of what Requirement 4.3 anticipated.
+        var appeared = after.Where(element => !before.Contains(element.Id)).ToArray();
+        var departed = before.Except(after.Select(element => element.Id), StringComparer.Ordinal).ToArray();
+
+        var deltas = new List<DiagramDelta>();
+        if (appeared.Length > 0)
+        {
+            deltas.Add(new DiagramAddDelta(appeared));
+        }
+
+        if (departed.Length > 0)
+        {
+            deltas.Add(new DiagramRemoveDelta(departed));
+        }
+
+        // What this connection now holds, so a chart change diffs against the narrowed set
+        // rather than against the whole diagram it last saw at baseline.
+        _delivered = after;
+        return deltas;
     }
 
     /// <summary>Refused: nothing in this diagram nests under a parent - its place is a position.</summary>
@@ -134,24 +170,33 @@ internal sealed class HelmSession : IDiagramSession
         var chart = _store.GetOrLoad(_folder);
         var graph = HelmGraph.Derive(chart);
 
-        // Computed positions first; stored ones win element by element, sizes stay measured -
-        // a stale stored id simply has nothing to override (core's own overlay semantics).
+        return _mapper.Visible(chart, graph, Boxes(chart, graph), _viewport);
+    }
+
+    /// <summary>
+    /// Every box the chart currently has: computed positions first, stored ones winning
+    /// element by element, sizes staying measured - a stale stored id simply has nothing to
+    /// override (core's own overlay semantics). Shared by the render and the view diff so the
+    /// two can never disagree about where an element sits.
+    /// </summary>
+    private IReadOnlyDictionary<string, HelmBox> Boxes(HelmChart chart, HelmGraph graph)
+    {
         var boxes = HelmLayout.Compute(chart, graph);
         var stored = RegistrationLayout.Read(_registrationPath);
-        if (stored.Count > 0)
+        if (stored.Count == 0)
         {
-            var overlaid = new Dictionary<string, HelmBox>(boxes.Count, StringComparer.Ordinal);
-            foreach (var (id, box) in boxes)
-            {
-                overlaid[id] = stored.TryGetValue(id, out var position)
-                    ? box with { X = position.X, Y = position.Y }
-                    : box;
-            }
-
-            boxes = overlaid;
+            return boxes;
         }
 
-        return _mapper.Elements(chart, graph, boxes);
+        var overlaid = new Dictionary<string, HelmBox>(boxes.Count, StringComparer.Ordinal);
+        foreach (var (id, box) in boxes)
+        {
+            overlaid[id] = stored.TryGetValue(id, out var position)
+                ? box with { X = position.X, Y = position.Y }
+                : box;
+        }
+
+        return overlaid;
     }
 
     private void OnChartChanged(object? sender, HelmChartChangedEventArgs args)

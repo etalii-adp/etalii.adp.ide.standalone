@@ -91,11 +91,11 @@ public class RdfContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess);
-        Assert.Contains("rdfs:label \"Alicia\" .", File.ReadAllText(body));
+        Assert.Contains("rdfs:label \"Alicia\" .", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
 
         // One undo restores the bytes.
         await _history.UndoAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(Corpus, File.ReadAllText(body));
+        Assert.Equal(Corpus, await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public class RdfContextPropertyProviderTests : IDisposable
         // Assert.
         Assert.True(result.IsSuccess);
         // The rdfs prefix is declared, so the new pair reuses it rather than a full IRI.
-        Assert.Contains("rdfs:comment \"Who Bob is\" .", File.ReadAllText(body));
+        Assert.Contains("rdfs:comment \"Who Bob is\" .", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]

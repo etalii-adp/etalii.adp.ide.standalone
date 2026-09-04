@@ -121,14 +121,20 @@ describe("useWardleyStream reconnect timing", () => {
 });
 
 /**
- * The hook's surface rather than its streaming behaviour, in `useAnsibleStream.test.ts`'s
- * source-reading style: the absence is deliberate (the hook's own doc comment says a bounded
- * map has nothing to gain from viewport reporting), so it is pinned as such.
+ * The hook's surface rather than its streaming behaviour. This used to pin the *absence* of a
+ * report - the hook's doc comment argued a bounded map had nothing to gain from one - and the
+ * assertion is inverted rather than deleted, because the surface is what the canvas destructures
+ * and a silently missing `reportView` would leave the loop wired to `undefined`.
  */
 describe("useWardleyStream surface", () => {
-  it("exposes no reportView, by design", () => {
-    // Arrange, act and assert.
-    const source = useWardleyStream.toString();
-    expect(source).not.toContain("reportView");
+  it("exposes reportView, so the canvas has something to report through", () => {
+    // Arrange.
+    open.mockReturnValue(pendingStream());
+
+    // Act.
+    const { result } = renderHook(() => useWardleyStream(new Uint8Array([1]), ["map.owm"]));
+
+    // Assert.
+    expect(typeof result.current.reportView).toBe("function");
   });
 });

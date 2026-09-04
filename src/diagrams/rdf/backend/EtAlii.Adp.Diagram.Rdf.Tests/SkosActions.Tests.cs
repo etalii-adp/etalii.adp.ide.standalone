@@ -86,7 +86,7 @@ public class SkosActionsTests : IDisposable
     {
         // Arrange: drag from milk, release on tea - milk goes under tea.
         var body = WriteBody(Vocabulary);
-        var before = File.ReadAllBytes(body);
+        var before = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await _actions.ExecuteAsync(
@@ -94,14 +94,14 @@ public class SkosActionsTests : IDisposable
 
         // Assert: one skos:broader on the narrower end, no inverse co-written (Requirement 5.1).
         Assert.IsType<ContextExecutionCompleted>(result);
-        var text = File.ReadAllText(body);
+        var text = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
         Assert.Contains("ex:milk", text, StringComparison.Ordinal);
         Assert.Contains("skos:broader ex:tea", text, StringComparison.Ordinal);
         Assert.DoesNotContain("skos:narrower", text, StringComparison.Ordinal);
 
         // Act & assert, continued: one undo, bytes identical.
         Assert.True((await _history.UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
-        Assert.Equal(before, File.ReadAllBytes(body));
+        Assert.Equal(before, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -112,8 +112,8 @@ public class SkosActionsTests : IDisposable
         // that appended its own house ending here would leave the user's file mixed, and the
         // family's Requirement 1.4 says only the lines an edit concerns may change.
         var body = WriteBody(Vocabulary.Replace("\r\n", "\n", StringComparison.Ordinal));
-        var before = File.ReadAllBytes(body);
-        Assert.DoesNotContain("\r\n", File.ReadAllText(body), StringComparison.Ordinal);
+        var before = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
+        Assert.DoesNotContain("\r\n", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
 
         // Act.
         var result = await _actions.ExecuteAsync(
@@ -121,13 +121,13 @@ public class SkosActionsTests : IDisposable
 
         // Assert: the statement landed, and the file is still LF throughout - no CR anywhere.
         Assert.IsType<ContextExecutionCompleted>(result);
-        var after = File.ReadAllText(body);
+        var after = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
         Assert.Contains("skos:broader ex:tea", after, StringComparison.Ordinal);
         Assert.DoesNotContain("\r", after, StringComparison.Ordinal);
 
         // Assert, continued: and the undo returns the original bytes, endings included.
         Assert.True((await _history.UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
-        Assert.Equal(before, File.ReadAllBytes(body));
+        Assert.Equal(before, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -137,7 +137,7 @@ public class SkosActionsTests : IDisposable
         var body = WriteBody(Vocabulary
             + "ex:milk skos:broader ex:tea .\r\n"
             + "ex:tea skos:narrower ex:milk .\r\n");
-        var before = File.ReadAllBytes(body);
+        var before = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
         var edgeId = $"edge:{Milk}|{SkosVocabulary.Broader}|{Tea}";
 
         // Act: discovery names both directions; execute asks; the confirmed leg commits.
@@ -149,11 +149,11 @@ public class SkosActionsTests : IDisposable
 
         // Assert: both statements gone as one command, one undo restoring both.
         Assert.True(committed.Completed, committed.Error);
-        var text = File.ReadAllText(body);
+        var text = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
         Assert.DoesNotContain("skos:broader ex:tea", text, StringComparison.Ordinal);
         Assert.DoesNotContain("skos:narrower ex:milk", text, StringComparison.Ordinal);
         Assert.True((await _history.UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
-        Assert.Equal(before, File.ReadAllBytes(body));
+        Assert.Equal(before, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -161,7 +161,7 @@ public class SkosActionsTests : IDisposable
     {
         // Arrange.
         var body = WriteBody(Vocabulary);
-        var before = File.ReadAllBytes(body);
+        var before = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
         var placement = RdfNewPlacement.IdFor(120, 80);
 
         // Act & assert: offered where the file asserts a scheme.
@@ -175,14 +175,14 @@ public class SkosActionsTests : IDisposable
         // The commit states type, label and scheme as one command.
         var committed = await _actions.CommitAsync(Target(body, placement), SkosActions.AddConceptActionId, "Green tea", "", TestContext.Current.CancellationToken);
         Assert.True(committed.Completed, committed.Error);
-        var text = File.ReadAllText(body);
+        var text = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
         Assert.Contains("ex:Green_tea", text, StringComparison.Ordinal);
         Assert.Contains("\"Green tea\"@en", text, StringComparison.Ordinal);
         Assert.Contains("skos:inScheme ex:scheme", text, StringComparison.Ordinal);
 
         // One undo removes all three.
         Assert.True((await _history.UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
-        Assert.Equal(before, File.ReadAllBytes(body));
+        Assert.Equal(before, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -210,7 +210,7 @@ public class SkosActionsTests : IDisposable
 
         // Assert.
         Assert.True(set.IsSuccess, set.Error);
-        var text = File.ReadAllText(body);
+        var text = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
         Assert.Contains("\"Zwarte thee\"@nl", text, StringComparison.Ordinal);
         Assert.Contains("\"Tea\"@en", text, StringComparison.Ordinal);
     }

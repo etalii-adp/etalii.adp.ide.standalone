@@ -3,7 +3,10 @@ import { Code, ConnectError, createClient } from "@connectrpc/connect";
 import { useAuth } from "@client/auth/AuthContext";
 import { DiagramService } from "@client/generated/diagrams_pb";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
+import { viewReportOf, type Viewport } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type DatabricksModel } from "./databricksModel";
+
+export type { Viewport };
 
 export interface DatabricksStream {
   model: DatabricksModel;
@@ -18,6 +21,12 @@ export interface DatabricksStream {
    * (Requirement 7).
    */
   moveElementTo: (elementId: string, x: number, y: number) => Promise<string>;
+  /**
+   * Tells the backend what this connection can currently see, so it can answer on the open
+   * stream with the deltas that bring the diagram into line. Advisory: a rejected report leaves
+   * the backend on the last viewport it had.
+   */
+  reportView: (viewport: Viewport) => void;
 }
 
 /**
@@ -103,5 +112,7 @@ export function useDatabricksStream(projectId: Uint8Array, path: readonly string
     }
   };
 
-  return { model, loading, failed, moveElementTo };
+  const reportView = viewReportOf(clientRef.current, projectId, watchId, path);
+
+  return { model, loading, failed, moveElementTo, reportView };
 }

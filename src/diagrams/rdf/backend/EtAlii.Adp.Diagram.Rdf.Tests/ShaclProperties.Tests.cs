@@ -162,19 +162,19 @@ public class ShaclPropertiesTests : IDisposable
     [Fact]
     public async Task EditingTheName_LandsAsAMinimalDiffAndUndoesToTheByte()
     {
-        var before = File.ReadAllText(_body);
+        var before = await File.ReadAllTextAsync(_body, TestContext.Current.CancellationToken);
         var command = ShaclProperties.CommandFor(
             Entry(), Target(CardId, ServiceCollectionAddShaclExtension.ShaclOrigin), "shacl.name", "Human");
         Assert.NotNull(command);
 
         var history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
-        Assert.True((await history.ExecuteAsync(command!, TestContext.Current.CancellationToken)).IsSuccess);
+        Assert.True((await history.ExecuteAsync(command, TestContext.Current.CancellationToken)).IsSuccess);
 
-        var after = File.ReadAllText(_body);
+        var after = await File.ReadAllTextAsync(_body, TestContext.Current.CancellationToken);
         Assert.Equal(before.Replace("\"Person\"", "\"Human\"", StringComparison.Ordinal), after);
 
         await history.UndoAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(before, File.ReadAllText(_body));
+        Assert.Equal(before, await File.ReadAllTextAsync(_body, TestContext.Current.CancellationToken));
     }
 
     [Fact]

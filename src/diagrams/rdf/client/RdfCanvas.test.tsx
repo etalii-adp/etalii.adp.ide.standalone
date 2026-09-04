@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
+import { VIEW_REPORT_DEBOUNCE_MS } from "@client/diagrams/viewReport";
 import { emptyModel, type RdfModel, type RdfNode } from "./rdfModel";
 
 let currentModel: RdfModel = emptyModel;
@@ -10,12 +11,14 @@ let currentActions: unknown[] = [];
 let moves: { elementId: string; x: number; y: number }[] = [];
 let selections: unknown[] = [];
 let executed: { actionId: string; source: unknown }[] = [];
+const reportView = vi.fn();
 
 vi.mock("./useRdfStream", () => ({
   useRdfStream: () => ({
     model: currentModel,
     loading: currentLoading,
     failed: currentFailed,
+    reportView,
     moveElementTo: (elementId: string, x: number, y: number) => {
       moves.push({ elementId, x, y });
       return Promise.resolve("");
@@ -111,6 +114,7 @@ beforeEach(() => {
   moves = [];
   selections = [];
   executed = [];
+  reportView.mockClear();
 });
 
 describe("the rdf canvas", () => {
@@ -255,5 +259,66 @@ describe("the rdf canvas", () => {
     expect(executed).toHaveLength(1);
     expect(executed[0].actionId).toBe("rdf.add-resource");
     expect(String((executed[0].source as { case?: unknown; value?: unknown } | undefined) ?? "")).toBeDefined();
+  });
+});
+
+describe("the view report", () => {
+  it("reports the viewport once the view settles, and again when it changes", () => {
+    // Arrange.
+    // The behavioural test the whole specification turns on: a view CHANGE produces a report.
+    // A canvas that reports only at open has implemented the first frame of the loop, not the
+    // loop - so one call proves nothing and two, with different rectangles, prove it.
+    vi.useFakeTimers();
+
+    try {
+      const { container } = renderCanvas();
+      vi.advanceTimersByTime(VIEW_REPORT_DEBOUNCE_MS * 2);
+      const atOpen = reportView.mock.calls.length;
+
+      // Act.
+      // A wheel with ctrl held is this canvas's zoom; it changes pixelsPerUnit, which is the
+      // half of the view a report keyed on position alone would miss.
+      const surface = container.querySelector(".rdf-surface") ?? container.firstElementChild;
+      fireEvent.wheel(surface!, { deltaY: -100, ctrlKey: true, clientX: 100, clientY: 100 });
+      vi.advanceTimersByTime(VIEW_REPORT_DEBOUNCE_MS * 2);
+
+      // Assert.
+      // Two reports, and the second describes a different window - not merely a second call.
+      // A count alone would pass against a conversion that ignored the zoom entirely, since
+      // this canvas's zoom moves the origin as well and would re-fire the report regardless.
+      expect(atOpen).toBe(1);
+      expect(reportView.mock.calls.length).toBeGreaterThan(atOpen);
+
+      const first = reportView.mock.calls[0][0];
+      const last = reportView.mock.calls[reportView.mock.calls.length - 1][0];
+      expect(last.maxX - last.minX).not.toBeCloseTo(first.maxX - first.minX);
+      expect(last.maxY - last.minY).not.toBeCloseTo(first.maxY - first.minY);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("reports nothing while the diagram is loading or has failed", () => {
+    // Arrange.
+    // A report before the first delta describes a view of nothing; one after a permanent
+    // failure is a call to a connection the backend has just said is unroutable.
+    vi.useFakeTimers();
+
+    try {
+      for (const state of [{ loading: true, failed: false }, { loading: false, failed: true }]) {
+        reportView.mockClear();
+        currentLoading = state.loading;
+        currentFailed = state.failed;
+
+        // Act.
+        renderCanvas();
+        vi.advanceTimersByTime(VIEW_REPORT_DEBOUNCE_MS * 2);
+
+        // Assert.
+        expect(reportView, state.loading ? "reported while loading" : "reported after a failure").not.toHaveBeenCalled();
+      }
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

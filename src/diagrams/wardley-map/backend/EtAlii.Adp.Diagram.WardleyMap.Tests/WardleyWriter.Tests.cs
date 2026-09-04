@@ -301,10 +301,17 @@ public class WardleyWriterTests
     [Fact]
     public void EveryFixtureRoundTripsUnchanged_WhenNothingIsEdited()
     {
-        // Arrange, act and assert. The writer is only ever called on lines an edit touches, so
+        // Arrange. The floor: a corpus that is not found round-trips nothing and passes, which
+        // is indistinguishable from every fixture being byte-identical.
+        var fixtures = Directory.EnumerateFiles(FixturesPath, "*.owm").ToArray();
+        Assert.True(
+            fixtures.Length >= 5,
+            $"Only {fixtures.Length} .owm fixtures were discovered; this guard has stopped finding the corpus it sweeps.");
+
+        // Act and assert. The writer is only ever called on lines an edit touches, so
         // opening and closing a map without editing must still be byte-identical - the property
         // task 4 established, re-checked with the writer in the picture.
-        foreach (var path in Directory.EnumerateFiles(FixturesPath, "*.owm"))
+        foreach (var path in fixtures)
         {
             var text = File.ReadAllText(path);
             var (document, _) = Open(text);

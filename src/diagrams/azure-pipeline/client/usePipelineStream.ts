@@ -1,14 +1,10 @@
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
 import { useDiagramStream } from "@client/diagrams/useDiagramStream";
+import { viewReportOf, type Viewport } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type PipelineModel } from "./pipelineModel";
 
-/** A viewport the client reports; the backend answers with what falls inside it. */
-export interface Viewport {
-  minX: number;
-  minY: number;
-  maxX: number;
-  maxY: number;
-}
+/** Re-exported so the module's own files keep one name for it; the shape is the shared one. */
+export type { Viewport };
 
 export interface PipelineStream {
   model: PipelineModel;
@@ -33,22 +29,7 @@ export function usePipelineStream(projectId: Uint8Array, path: readonly string[]
   const { watchId } = useContextConnection();
   const { model, loading, failed, client } = useDiagramStream(projectId, path, emptyModel, applyDelta);
 
-  const reportView = (viewport: Viewport) => {
-    void client
-      .updateView({
-        projectId: { value: projectId },
-        watchId: { value: watchId },
-        path: { segments: [...path] },
-        view: {
-          center: { x: (viewport.minX + viewport.maxX) / 2, y: (viewport.minY + viewport.maxY) / 2 },
-          boundingBox: { min: { x: viewport.minX, y: viewport.minY }, max: { x: viewport.maxX, y: viewport.maxY } },
-        },
-      })
-      .catch(() => {
-        // A viewport report is advisory: the backend answers a pipeline with the whole thing
-        // anyway, so a dropped report costs nothing and must not surface as an error.
-      });
-  };
+  const reportView = viewReportOf(client, projectId, watchId, path);
 
   return { model, loading, failed, reportView };
 }

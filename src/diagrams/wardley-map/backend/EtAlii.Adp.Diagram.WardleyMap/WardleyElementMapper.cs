@@ -96,6 +96,113 @@ public sealed class WardleyElementMapper
     }
 
     /// <summary>
+    /// The elements a reported viewport can see, in the map own 0..1 space.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The viewport arrives in the map own units, which is the module business and not the
+    /// shared client code (view-delta-adoption Requirement 3.4). Nothing here converts anything:
+    /// an element X and Y already come from <see cref="WardleyAxis.ToPoint"/>, so both sides of
+    /// the comparison are 0..1 already.
+    /// </para>
+    /// <para>
+    /// <b>Two kinds carry a placeholder position and must never be judged by it.</b> A link is
+    /// emitted at (0, 0) because it has no position of its own - it is drawn between its
+    /// endpoints - and the evolution axis is emitted at (0, 0) because it is the map frame
+    /// rather than a thing on the map. A plain "is the point inside the rectangle" filter would
+    /// therefore keep every link and the axis only while the reader happens to be looking at the
+    /// top-left corner, and cull them everywhere else. The axis is always kept; a link is kept
+    /// when an endpoint is kept.
+    /// </para>
+    /// <para>
+    /// A visible component pulls in the components it links to, the way the mindmap mapper pulls
+    /// in a visible node parent and children: without that a link would be delivered with one end
+    /// attached to an element this connection was never sent.
+    /// </para>
+    /// <para>
+    /// An attitude spans from one coordinate to another, so it is judged on that rectangle rather
+    /// than on its corner - a reader inside a large attitude box would otherwise lose it.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyList<DiagramElement> Visible(
+        WardleyMap map,
+        IReadOnlyList<WardleyIdentityEntry> identities,
+        DiagramViewport viewport)
+    {
+        ArgumentNullException.ThrowIfNull(map);
+        ArgumentNullException.ThrowIfNull(identities);
+
+        var all = Elements(map, identities);
+        if (IsUnbounded(viewport))
+        {
+            // The viewport every connection has before it reports one. Short-circuited so the
+            // baseline costs no filtering at all rather than a comparison against infinity.
+            return all;
+        }
+
+        var ids = Index(identities);
+        var kept = new HashSet<string>(StringComparer.Ordinal) { WardleyElementTypes.EvolutionAxisId };
+
+        // The components in view, and then the ones they link to, so no link dangles.
+        var inView = map.Components
+            .Where(component => Contains(viewport, WardleyAxis.ToPoint(component.Position)))
+            .Select(component => component.Name)
+            .ToHashSet(StringComparer.Ordinal);
+
+        var partners = map.Links
+            .Where(link => inView.Contains(link.Source) || inView.Contains(link.Target))
+            .SelectMany(link => new[] { link.Source, link.Target });
+        var reachable = inView.Concat(partners).ToHashSet(StringComparer.Ordinal);
+
+        foreach (var component in map.Components.Where(component => reachable.Contains(component.Name)))
+        {
+            kept.Add(Id(ids, WardleyIdentityKind.Component, WardleyIdentityKeys.Of(component)));
+        }
+
+        foreach (var link in map.Links.Where(link => reachable.Contains(link.Source) && reachable.Contains(link.Target)))
+        {
+            kept.Add(Id(ids, WardleyIdentityKind.Link, WardleyIdentityKeys.Of(link)));
+        }
+
+        foreach (var attitude in map.Attitudes.Where(attitude => Overlaps(viewport, attitude)))
+        {
+            kept.Add(Id(ids, WardleyIdentityKind.Attitude, WardleyIdentityKeys.Of(attitude)));
+        }
+
+        // The remaining kinds are single points and are judged as such. Filtered back over the
+        // full rendering rather than rebuilt, so the order the document has is the order this
+        // returns and one viewport always yields one sequence.
+        return all
+            .Where(element => kept.Contains(element.Id) || IsPointInView(element, viewport))
+            .ToArray();
+    }
+
+    private static bool IsUnbounded(DiagramViewport viewport) =>
+        double.IsInfinity(viewport.MinX) || double.IsInfinity(viewport.MinY)
+        || double.IsInfinity(viewport.MaxX) || double.IsInfinity(viewport.MaxY);
+
+    /// <summary>Whether an element judged by its own point falls inside the viewport.</summary>
+    /// <remarks>
+    /// The two placeholder-position kinds are excluded here rather than at the call site, so a
+    /// kind added later at (0, 0) cannot slip into being filtered by a position it does not have.
+    /// </remarks>
+    private static bool IsPointInView(DiagramElement element, DiagramViewport viewport) =>
+        element.Type is not (WardleyElementTypes.Link or WardleyElementTypes.EvolutionAxis)
+        && Contains(viewport, (element.X, element.Y));
+
+    private static bool Contains(DiagramViewport viewport, (double X, double Y) point) =>
+        point.X >= viewport.MinX && point.X <= viewport.MaxX
+        && point.Y >= viewport.MinY && point.Y <= viewport.MaxY;
+
+    private static bool Overlaps(DiagramViewport viewport, WardleyAttitude attitude)
+    {
+        var (x1, y1) = WardleyAxis.ToPoint(attitude.From);
+        var (x2, y2) = WardleyAxis.ToPoint(attitude.To);
+        return Math.Max(x1, x2) >= viewport.MinX && Math.Min(x1, x2) <= viewport.MaxX
+            && Math.Max(y1, y2) >= viewport.MinY && Math.Min(y1, y2) <= viewport.MaxY;
+    }
+
+    /// <summary>
     /// The difference between two renderings of a map, as adds and removes. An edit is an add
     /// carrying the element in its new state, which is what makes the contract's four actions
     /// enough (Requirement 10.3).

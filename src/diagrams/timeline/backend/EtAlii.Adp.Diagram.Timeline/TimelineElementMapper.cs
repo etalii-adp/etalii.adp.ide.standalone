@@ -33,6 +33,82 @@ public sealed class TimelineElementMapper
     public const string ConnectionType = "generic/timeline+connection";
 
     /// <summary>
+    /// What of <paramref name="model"/> falls inside <paramref name="viewport"/>, in the
+    /// module's own units - seconds across, row-derived y down (view-delta-adoption
+    /// Requirement 1.2).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Two decisions here are this module's rather than the mechanism's, which is why they live
+    /// with the mapper and not in anything shared (Requirement 4).
+    /// </para>
+    /// <para>
+    /// <b>An element is a span, not a point.</b> Its packed <c>x</c> is where it begins, but a
+    /// period runs to its end, and one that starts before the view and finishes inside it is
+    /// exactly the element a reader is looking at. Culling on the begin instant alone would drop
+    /// the long bars first - the ones a timeline exists to show.
+    /// </para>
+    /// <para>
+    /// <b>A connection is visible when both its endpoints are.</b> Connections are packed at the
+    /// origin deliberately: the canvas recomputes the curve from its endpoints' boxes, so their
+    /// coordinates mean nothing and testing them against a viewport would be testing a
+    /// placeholder. Sending a connection whose endpoint the connection does not hold would have
+    /// the canvas draw a curve to an element that is not there.
+    /// </para>
+    /// <para>
+    /// An element whose begin could not be read is packed at the epoch so it stays selectable
+    /// while the panel names the problem; it is treated as a moment there rather than being
+    /// hidden, so the same reasoning survives virtualization.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyList<DiagramElement> Visible(TimelineModel model, DiagramViewport viewport)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        var visible = new List<DiagramElement>();
+        var shown = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var element in model.Elements)
+        {
+            if (!Intersects(element, viewport))
+            {
+                continue;
+            }
+
+            visible.Add(Element(element));
+            shown.Add(element.Id);
+        }
+
+        foreach (var connection in model.Connections)
+        {
+            if (shown.Contains(connection.From) && shown.Contains(connection.To))
+            {
+                visible.Add(Connection(connection));
+            }
+        }
+
+        return visible;
+    }
+
+    /// <summary>Whether an element's span and row meet the viewport.</summary>
+    private static bool Intersects(TimelineElement element, DiagramViewport viewport)
+    {
+        var begin = element.Begin.IsReadable ? TimelineScale.ToSeconds(element.Begin.Value!.Value) : 0d;
+        var end = element.End is { IsReadable: true, Value: not null } finish
+            ? TimelineScale.ToSeconds(finish.Value.Value)
+            : begin;
+
+        // A row occupies its full height, so an element half-scrolled off the top is still in view.
+        var top = TimelineRows.ToY(element.Row);
+        var bottom = top + TimelineRows.Height;
+
+        return end >= viewport.MinX
+            && begin <= viewport.MaxX
+            && bottom >= viewport.MinY
+            && top <= viewport.MaxY;
+    }
+
+    /// <summary>
     /// Every element and connection of <paramref name="model"/>, positioned in the module's own
     /// coordinate space - the baseline a connection opens with.
     /// </summary>
