@@ -75,30 +75,19 @@ public sealed class DependencyGraphSession : IDiagramSession
     /// (view-delta-adoption Requirement 4.3, as the design corrected it).
     /// </summary>
     /// <remarks>
-    /// The previously visible set is recomputed from the viewport this session last held rather
-    /// than remembered as a field: the document can have changed underneath, and a remembered
-    /// set would then diff against elements that no longer exist.
+    /// The same render and the same diff a document change goes through, so the two paths cannot
+    /// disagree about what this connection holds. Diffing against <c>_delivered</c> rather than
+    /// against a recomputation of the old viewport is what keeps them honest: an edit arriving
+    /// after a narrowing then re-sends only what actually changed, instead of a Remove for
+    /// elements the client dropped when the view narrowed.
     /// </remarks>
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
-        var model = _documents.GetOrLoad(_bodyPath).Model;
-        var before = _mapper.Visible(model, _viewport).Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
         _viewport = viewport;
-        var after = _mapper.Visible(model, _viewport);
 
-        var appeared = after.Where(element => !before.Contains(element.Id)).ToArray();
-        var departed = before.Except(after.Select(element => element.Id), StringComparer.Ordinal).ToArray();
-
-        var deltas = new List<DiagramDelta>();
-        if (appeared.Length > 0)
-        {
-            deltas.Add(new DiagramAddDelta(appeared));
-        }
-
-        if (departed.Length > 0)
-        {
-            deltas.Add(new DiagramRemoveDelta(departed));
-        }
+        var current = Render();
+        var deltas = _mapper.Diff(_delivered, current);
+        _delivered = current;
 
         return deltas;
     }
