@@ -8,7 +8,7 @@ A note on guards, since the question will come up: this specification has **no l
 
 ## Group 1 — The model, and the loop arithmetic
 
-- [ ] 1. A module that computes loop polarity before it draws anything
+- [x] 1. A module that computes loop polarity before it draws anything
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 5.1, 5.2_
 
 - [x] 1.1 The module skeleton, its registration and its document factory
@@ -40,7 +40,7 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 3.3, 3.4, 3.5_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement the validator's four findings over the computed polarity | Restrictions: never rewrite a stated label to match the computed one; both must reach the caller; an unlabelled cycle is a finding, not a silence | _Leverage: the family validators for the finding shape and severities | Success: a document whose R2 is arithmetically balancing produces a finding naming both labels and changes no bytes. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 1.5 Gate and merge group 1
+- [x] 1.5 Gate and merge group 1
   - The four gates with exit codes captured before any pipe; merge through a fresh scratch worktree with `--no-ff` there and `--ff-only` into the main checkout; never merge in place while anything is staged
   - _Requirements: (gate)_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates, merge group 1 through a scratch worktree | Restrictions: do not merge on a failing gate; pick a worktree name not already spent | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
