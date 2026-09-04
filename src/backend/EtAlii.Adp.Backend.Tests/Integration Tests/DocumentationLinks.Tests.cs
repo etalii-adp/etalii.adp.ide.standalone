@@ -68,6 +68,7 @@ public partial class DocumentationLinksTests
     {
         // Arrange.
         var dead = new List<string>();
+        var checkedLinks = 0;
 
         foreach (var document in Documents)
         {
@@ -97,6 +98,7 @@ public partial class DocumentationLinksTests
                     continue;
                 }
 
+                checkedLinks++;
                 var resolved = IoPath.GetFullPath(IoPath.Combine(folder, file.Replace('/', IoPath.DirectorySeparatorChar)));
                 if (!File.Exists(resolved) && !Directory.Exists(resolved))
                 {
@@ -107,6 +109,15 @@ public partial class DocumentationLinksTests
 
         // Assert. Every dead link at once, each naming its source, so one run gives the whole
         // repair list.
+        // Assert, first, that the pattern found links at all. A target this misses goes
+        // unchecked rather than failing wrongly, which is deliberate and documented on
+        // LinkExpression() below. Total extraction failure is the different thing guarded
+        // here: a regex that matched nothing would leave dead empty and pass loudest
+        // exactly when it had stopped checking anything.
+        Assert.True(
+            checkedLinks >= 40,
+            $"Only {checkedLinks} relative links were extracted from {Documents.Length} delivered documents; LinkExpression() has stopped matching.");
+
         Assert.True(dead.Count == 0, "Dead documentation links:" + Environment.NewLine + string.Join(Environment.NewLine, dead));
     }
 

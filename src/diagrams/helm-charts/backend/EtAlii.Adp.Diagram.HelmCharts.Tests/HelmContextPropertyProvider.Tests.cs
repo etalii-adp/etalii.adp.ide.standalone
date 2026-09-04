@@ -35,14 +35,25 @@ public class HelmContextPropertyProviderTests : IDisposable
         // Arrange.
         var chart = _store.GetOrLoad(_root);
         var graph = HelmGraph.Derive(chart);
-        var everything = graph.Nodes.Select(node => node.Id).Concat(graph.Edges.Select(edge => edge.Id));
+        var everything = graph.Nodes.Select(node => node.Id).Concat(graph.Edges.Select(edge => edge.Id)).ToArray();
+
+        // Assert, first, that the graph was derived at all. Without this the foreach below
+        // skips silently on an empty graph and the test passes loudest exactly when it has
+        // stopped looking at anything.
+        Assert.True(
+            everything.Length >= 6,
+            $"The derived graph produced {everything.Length} elements; this test cannot check rows for elements that do not exist.");
 
         foreach (var elementId in everything)
         {
             // Act.
             var rows = await _provider.DescribeAsync(Target(elementId), TestContext.Current.CancellationToken);
 
-            // Assert.
+            // Assert. The floor on rows is the second one this test needs, and it guards a
+            // different failure from the one above: a provider that returned no rows for
+            // every element would run the whole loop and pass, because Assert.All is
+            // vacuous on an empty collection. The graph floor cannot catch that.
+            Assert.NotEmpty(rows);
             Assert.All(rows, row =>
             {
                 if (row == null!)
