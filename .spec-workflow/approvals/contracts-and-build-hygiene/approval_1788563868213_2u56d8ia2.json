@@ -1,0 +1,10 @@
+{
+  "id": "approval_1788563868213_2u56d8ia2",
+  "title": "contracts-and-build-hygiene — Requirements amendment: tags stay; releases decouple from pushes",
+  "filePath": ".spec-workflow/specs/contracts-and-build-hygiene/requirements.md",
+  "type": "document",
+  "status": "pending",
+  "createdAt": "2026-09-04T23:17:48.213Z",
+  "category": "spec",
+  "categoryName": "contracts-and-build-hygiene"
+}

@@ -3,8 +3,10 @@
   "title": "contracts-and-build-hygiene — Requirements (rev 3: wire-data naming criterion)",
   "filePath": ".spec-workflow/specs/contracts-and-build-hygiene/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-04T08:57:34.394Z",
   "category": "spec",
-  "categoryName": "contracts-and-build-hygiene"
+  "categoryName": "contracts-and-build-hygiene",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-04T09:05:42.985Z"
 }
