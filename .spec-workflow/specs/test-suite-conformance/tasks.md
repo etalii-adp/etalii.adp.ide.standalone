@@ -92,7 +92,7 @@ The design's four shapes — A (files discovered on disk), B (a collection the c
   - _Requirements: 2.1, 2.2_
   - _Prompt: Implement task 7 for spec test-suite-conformance. Role: C# developer | Task: add a non-empty floor before each of the two Assert.All calls in databricks Diagram.Tests.cs | Restrictions: change no expected value; add no helper | _Leverage: ProblemStoreIsolation.Tests.cs:62-69 | Success: both floors have been seen to fail, and all four gates pass by exit code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 8. sparql — the licence floor and the only anchor repair
+- [x] 8. sparql — the licence floor and the only anchor repair
   - Files: `src/diagrams/sparql/backend/EtAlii.Adp.Diagram.Sparql.Tests/ExampleCorpus.Tests.cs` (:69 floor, :17 anchor)
   - **Give this to whoever reads Requirement 4 closely.** It is the only group carrying two kinds of repair, and its guard is the one this specification most wants sound: `:69` is the guard for the house vendoring rule — every vendored folder carries its `readme.md` and `LICENSE.md` — and it currently has no floor at all, so an empty sweep asserts nothing about any corpus's licence.
   - **The anchor at `:17`** walks up looking for a bare folder named `examples`, and a second `examples` directory sits further up the same walk path at `src/examples`. It is correct today only because the nearer one wins. Adopt the two-part form its own sibling uses at `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Examples.Tests.cs:36`, which requires `examples` and `backend` together.
