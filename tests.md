@@ -1123,6 +1123,25 @@ working as designed into something that reads like a defect.
   canvas is left pointing at empty space; and the panel reports nothing at all for the file — an
   absent target is explicitly not a finding.
 
+- **Result 2026-09-04**: **pending** - the app renders `LoginPage` unless authenticated
+  (`src/client/src/App.tsx:12`), so reaching any diagram means typing a password into a form,
+  which is outside what an agent does here - the checked-in developer placeholder included.
+  Verified in the code rather than assumed from the earlier owl-diagram entries, and recorded
+  rather than skipped. What stands in meanwhile:
+  `ShaclTargetChipsTests` is the structural half - `AnAbsentTargetTerm_YieldsAChipAndNothingElse`
+  and `ATargetNamingAnotherDrawnShape_StillDrawsNoEdge` run through
+  `AssertElementUniverseIsShapesOnly`, which asserts the drawn universe holds shapes and
+  nothing else, so neither a placeholder node nor a dangling edge can exist to be seen.
+  `ShaclExamplesTests.TheDeployedShapes_DrawTheirOutwardTargetsAsChips_AndTheirCyclesAsEdges`
+  says the same of the real FAIR Data Point file: every chip comes back `DescribedInFile:
+  false`, and every drawn edge has both endpoints among the cards. The visual half -
+  absence styled exactly like presence - is `ShaclCanvas.test.tsx`'s "renders an absent
+  target exactly like a present one", which compares the rendered class lists rather than
+  trusting the eye. The grid wording is `ShaclPropertiesTests.AnAbsentTarget_ReadsAsAFact
+  RatherThanAFinding`, and "not a finding" is
+  `EveryVendoredShapesGraph_ParsesAndValidatesClean`, which admits nothing above Info on
+  either vendored file.
+
 ## A constraint written as a blank node is fully readable, and refuses edits in one sentence (shacl-diagram, task 4.2)
 
 The blank-node identity boundary as a user meets it. Both halves matter: the content has to be
@@ -1143,6 +1162,22 @@ rather than a disabled control with nothing to say (Requirements 3.3, 6.4).
   anonymous card is dragged. Three places, one sentence — if any of them paraphrases, that is
   the bug.
 
+- **Result 2026-09-04**: **pending** - the app renders `LoginPage` unless authenticated
+  (`src/client/src/App.tsx:12`), so reaching any diagram means typing a password into a form,
+  which is outside what an agent does here - the checked-in developer placeholder included.
+  Verified in the code rather than assumed from the earlier owl-diagram entries, and recorded
+  rather than skipped. What stands in meanwhile:
+  The one thing this entry exists to catch - three places drifting to three wordings - is
+  pinned by string equality against the single `ShaclRefusals.BlankRooted` constant in each
+  of them: `ShaclDoubleRefusalTests.BothLayersSayTheIdenticalSentence` for writer and gate,
+  `ShaclSessionTests.TheSession_RefusesToMoveAnAnonymousShape_WithTheBoundarySentence` for
+  the drag, and `ShaclPropertiesTests.ABlankRootedRow_IsFullyReadableAndRefusedWithTheOne
+  Sentence` for the grid - that last one also reading the row's path, datatype and
+  cardinality back, which is the readable half. That the canvas shows the backend's refusal
+  rather than deciding one of its own is `ShaclCanvas.test.tsx`'s "sends a drag as a layout
+  edit, and shows the backend's refusal rather than deciding it". What no test replaces is
+  whether the sentence reads well in place, which is why the entry stays.
+
 ## A SPARQL constraint is drawn, and pointedly not run (shacl-diagram, task 4.2)
 
 Requirement 4's load-bearing statement, at the one place where the temptation is strongest: the
@@ -1159,3 +1194,17 @@ most executable-looking thing in it.
   anywhere offers to validate, run, check conformance or pick a data file; and the panel speaks
   only about the shapes file itself, never about data conforming to it. Nothing in the UI should
   leave a user thinking a validation has happened.
+
+- **Result 2026-09-04**: **pending** - the app renders `LoginPage` unless authenticated
+  (`src/client/src/App.tsx:12`), so reaching any diagram means typing a password into a form,
+  which is outside what an agent does here - the checked-in developer placeholder included.
+  Verified in the code rather than assumed from the earlier owl-diagram entries, and recorded
+  rather than skipped. What stands in meanwhile:
+  `ShaclProjectionTests.SparqlConstraints_AreOpaqueRows` pins the row as one opaque line
+  with nothing of the query parsed into elements, and
+  `ShaclPropertiesTests.ASparqlConstraint_ShowsItsQueryTextAndSaysItIsNotRun` pins the query
+  text readable in the grid, read-only, with a reason naming that it is never executed.
+  That no menu anywhere offers to run anything is structural rather than asserted: no
+  validate-data action id exists in `ShaclActions`, and Requirement 4.4 assigns the whole
+  execution path to a future spec. The manual check remains worth running for the thing
+  those cannot see - whether a user comes away thinking a validation has happened.
