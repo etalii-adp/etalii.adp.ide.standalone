@@ -87,11 +87,11 @@
   - As 1.2. If 3.1-3.3 landed in separate worktrees, this gates the combined result.
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run both backend gates by captured exit code over the combined result of tasks 3.1 to 3.6 and merge via the main checkout by explicit pathspec | Restrictions: as in task 1.2 | Success: gates exit zero, the merge lands, and the allow-list has lost exactly six tracked lines. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. The whole-line splice fork becomes one implementation
+- [-] 4. The whole-line splice fork becomes one implementation
   - Requires group 2 to have landed. The evidence for treating these as *the same* rather than *alike*: 266 of about 410 lines textually identical ignoring whitespace, eleven identically-named static helpers, and two document types exposing the same six public members at the same six line numbers.
   - _Requirements: 1.2, 3.1, 3.3, 4.1, 4.2, 2.3_
 
-- [ ] 4.1 `Line` and `LineDocument` move to core
+- [-] 4.1 `Line` and `LineDocument` move to core
   - Files: new `src/backend/EtAlii.Adp.Backend/Hierarchy/LineDocument.cs` (with the `Line(string Text, string Ending)` record and a `LoadResult`); nothing deleted yet
   - The surface is exactly what both documents already expose: `Lines`, `DominantEnding`, `Text`, `Replace(LineRange, …)`, `Insert(int, …)`, `Remove(LineRange)`. Loading goes through `SharedDocumentReader`; publishing through `AdpFileWriter`.
   - **Requirement 2.3 is met by shape, not by discipline:** a line carries its own `Ending`, so a rewritten line keeps its terminator by construction, while new content takes `AdpFileWriter.NewLine`. A splice never consults the constant and a create never consults a line, so a caller cannot choose wrongly.
