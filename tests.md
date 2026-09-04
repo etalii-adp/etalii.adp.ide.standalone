@@ -991,3 +991,38 @@ The routing arrangement: a reading is chosen, never assumed, and the anchor keep
   (a bare marked file opens as the data graph over the real host), by
   `DiagramFileRouterSharedExtensionTests.AFamilysSharedReadings_NeverWinTheBareBodyFromTheAnchor`
   and by the two marker facts in `AddDiagramContextActionProviderRegistrationTests`.
+
+## The scrollbars describe a real viewport, not a jsdom one (canvas-scrollbars, task 6)
+
+Everything about the bars that a unit test can hold was pinned per canvas: a thumb drag pans the
+view, panning by other means moves the thumb, and zoom changes the thumb's size rather than only
+its offset. One thing it cannot hold. jsdom gives every element a zero-sized
+`getBoundingClientRect()`, so a track has no length, a thumb has no pixels, and the tests reason
+entirely in the fractions the geometry returns. Whether those fractions land as a bar a person
+can see and grab is a question only a browser answers.
+
+- **Preconditions**: backend + client running; open one canvas of each shape, because they
+  compute the same fractions from different inputs - `diagrams/c4/**` (an SVG view box) and
+  `diagrams/timeline/**` (pixels per unit).
+- **Actions**: on each, drag the horizontal thumb from one end of its track to the other, then
+  the vertical; wheel-zoom in a long way and drag again; wheel-zoom out until the whole diagram
+  fits and try to drag once more.
+- **Expected**: the thumb stays under the pointer through the drag rather than lagging, leading
+  or jumping when the drag starts; the canvas moves with it and lands where the thumb was
+  released. Zoomed in, the thumb is smaller and the same drag covers more content. Zoomed out to
+  the fitted view, the thumb fills its track and dragging moves nothing - correct, not stuck:
+  there is nothing outside the view to pan to. Nothing about the canvas jumps when the drag ends.
+
+- **Result 2026-09-04**: **pending** - the app was not run for this pass. Covered meanwhile by
+  the per-canvas drag, pan and zoom tests in each `*Canvas.test.tsx`, each verified by sabotage:
+  unwiring `onPan`, feeding the fitted box instead of the live view, and hard-coding the view
+  span each fail their named test and nothing else.
+
+## No canvas grows a scrollbar of its own (canvas-scrollbars, task 6)
+
+This one is automated - `noPrivateScrollbars.test.ts` - and is noted here only because its
+failure message is the instruction. A module that needs bars imports
+`@client/canvas/scroll/CanvasScrollbars` and converts its view at its own call site; if it needs
+them placed differently it passes a `className` and overrides only the offsets. Reaching for a
+private thumb or track is the one thing the guard will not allow, and reading its message as a
+prompt to loosen the guard is reading it backwards.
