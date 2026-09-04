@@ -219,6 +219,71 @@ describe("HelmCanvas", () => {
     expect(moveElementTo).not.toHaveBeenCalled();
   });
 
+  // ---- scrollbars: each test is named for the defect it catches -------------------------
+
+  const viewBoxOf = (container: HTMLElement) =>
+    (container.querySelector("svg.helm-canvas")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
+
+  const thumbOf = (container: HTMLElement, axis: "horizontal" | "vertical") =>
+    container.querySelector(`.canvas-scrollbar-${axis} .canvas-scrollbar-thumb`) as HTMLElement;
+
+  it("pans the view when a thumb is dragged - catches an unwired onPan", () => {
+    // Arrange.
+    const { container } = renderCanvas();
+    const [xBefore] = viewBoxOf(container);
+
+    // Act.
+    fireEvent.mouseDown(thumbOf(container, "horizontal"), { button: 0, clientX: 10, clientY: 0 });
+    fireEvent.mouseMove(window, { clientX: 40, clientY: 0 });
+    fireEvent.mouseUp(window);
+
+    // Assert.
+    expect(viewBoxOf(container)[0]).toBeGreaterThan(xBefore);
+  });
+
+  it("moves the thumb when the view is panned by other means - catches a stale copy of the view", () => {
+    // Arrange.
+    const { container } = renderCanvas();
+    const svg = container.querySelector("svg.helm-canvas")!;
+    const before = thumbOf(container, "horizontal").style.left;
+
+    // Act.
+    fireEvent.mouseDown(svg, { button: 0, clientX: 200, clientY: 100 });
+    fireEvent.mouseMove(svg, { clientX: 60, clientY: 100 });
+    fireEvent.mouseUp(svg);
+
+    // Assert.
+    expect(thumbOf(container, "horizontal").style.left).not.toBe(before);
+  });
+
+  it("resizes the thumb when the view is zoomed - catches a hard-coded viewSpan", () => {
+    // Arrange.
+    const { container } = renderCanvas();
+    const svg = container.querySelector("svg.helm-canvas")!;
+    const before = thumbOf(container, "horizontal").style.width;
+
+    // Act.
+    fireEvent.wheel(svg, { deltaY: -100 });
+
+    // Assert.
+    expect(thumbOf(container, "horizontal").style.width).not.toBe(before);
+  });
+
+  it("does not take a thumb drag for an element reposition - this canvas has both", () => {
+    // Arrange.
+    // The only canvas in scope with an element drag of its own: dragging a thumb must pan the
+    // view and must never write an authored position into the .adp layout block.
+    const { container } = renderCanvas();
+
+    // Act.
+    fireEvent.mouseDown(thumbOf(container, "horizontal"), { button: 0, clientX: 10, clientY: 0 });
+    fireEvent.mouseMove(window, { clientX: 40, clientY: 0 });
+    fireEvent.mouseUp(window);
+
+    // Assert.
+    expect(moveElementTo).not.toHaveBeenCalled();
+  });
+
   it("shows the not-a-chart message for an empty model", () => {
     // Arrange.
     currentModel = emptyModel;

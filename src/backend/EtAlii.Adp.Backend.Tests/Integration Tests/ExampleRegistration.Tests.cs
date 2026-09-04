@@ -3,6 +3,7 @@ using EtAlii.Adp.Diagram;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -20,13 +21,40 @@ namespace EtAlii.Adp.Backend.Tests;
 /// change what these files mean. The walk is live rather than a hard-coded list, so an example
 /// set a later spec adds is covered on arrival.
 /// </remarks>
-public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Program>>
+public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
     private readonly WebApplicationFactory<Program> _factory;
+    private readonly string _appDataRoot;
 
     public ExampleRegistrationTests(WebApplicationFactory<Program> factory)
     {
-        _factory = factory.WithWebHostBuilder(builder => builder.UseEnvironment("developer"));
+        _appDataRoot = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.IntegrationTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(_appDataRoot);
+
+        _factory = factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("developer");
+            builder.ConfigureServices(services =>
+            {
+                // The problem cache must live and die with this test, not in the real user
+                // profile the host's AddProblems registration points at. A host booted without
+                // this override leaves a cache file behind naming a temp folder that is deleted
+                // moments later, and every later run then walks that dead root at startup: 605
+                // such files had accumulated, costing the suite 22,591 warnings and an apparent
+                // hang. DiagramToolboxFlowTests fixed this for itself; it never generalised.
+                services.RemoveAll<Problems.IProblemStore>();
+                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
+                    _appDataRoot,
+                    provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
+                    provider.GetRequiredService<Diagram.DiagramValidators>()));
+            });
+        });
+    }
+
+    public void Dispose()
+    {
+        _factory.Dispose();
+        TestFolder.TryDelete(_appDataRoot);
     }
 
     /// <summary>

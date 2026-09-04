@@ -321,6 +321,59 @@ describe("PipelineCanvas", () => {
     expect(selection.detail.value.id.source.value.value).toBe("Build");
   });
 
+  // ---- scrollbars: each test is named for the defect it catches -------------------------
+
+  const viewBoxOf = (container: HTMLElement) =>
+    (container.querySelector(".pipeline-canvas-surface")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
+
+  const thumbOf = (container: HTMLElement, axis: "horizontal" | "vertical") =>
+    container.querySelector(`.canvas-scrollbar-${axis} .canvas-scrollbar-thumb`) as HTMLElement;
+
+  it("pans the view when a thumb is dragged - catches an unwired onPan", () => {
+    // Arrange.
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build")));
+    const { container } = draw();
+    const [xBefore] = viewBoxOf(container);
+
+    // Act.
+    fireEvent.mouseDown(thumbOf(container, "horizontal"), { button: 0, clientX: 10, clientY: 0 });
+    fireEvent.mouseMove(window, { clientX: 40, clientY: 0 });
+    fireEvent.mouseUp(window);
+
+    // Assert.
+    expect(viewBoxOf(container)[0]).toBeGreaterThan(xBefore);
+  });
+
+  it("moves the thumb when the view is panned by other means - catches a stale copy of the view", () => {
+    // Arrange.
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build")));
+    const { container } = draw();
+    const surface = container.querySelector(".pipeline-canvas-surface")!;
+    const before = thumbOf(container, "horizontal").style.left;
+
+    // Act.
+    fireEvent.mouseDown(surface, { clientX: 200, clientY: 100 });
+    fireEvent.mouseMove(surface, { clientX: 60, clientY: 100 });
+    fireEvent.mouseUp(surface);
+
+    // Assert.
+    expect(thumbOf(container, "horizontal").style.left).not.toBe(before);
+  });
+
+  it("resizes the thumb when the view is zoomed - catches a hard-coded viewSpan", () => {
+    // Arrange.
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build")));
+    const { container } = draw();
+    const surface = container.querySelector(".pipeline-canvas-surface")!;
+    const before = thumbOf(container, "horizontal").style.width;
+
+    // Act.
+    fireEvent.wheel(surface, { deltaY: -100 });
+
+    // Assert.
+    expect(thumbOf(container, "horizontal").style.width).not.toBe(before);
+  });
+
   it("clears the selection when the background is clicked", () => {
     // Arrange.
     currentModel = applyDelta(emptyModel, add(stage("Build", "Build")));

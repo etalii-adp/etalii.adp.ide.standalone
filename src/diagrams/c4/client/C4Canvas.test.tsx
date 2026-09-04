@@ -334,6 +334,66 @@ describe("C4Canvas", () => {
     expect(viewBoxOf(container)[2]).toBeCloseTo(wBefore, 5);
   });
 
+  // ---- scrollbars: each test is named for the defect it catches -------------------------
+
+  const thumbOf = (container: HTMLElement, axis: "horizontal" | "vertical") =>
+    container.querySelector(`.canvas-scrollbar-${axis} .canvas-scrollbar-thumb`) as HTMLElement;
+
+  it("pans the view when a thumb is dragged - catches an unwired onPan", () => {
+    // Arrange.
+    const { container } = render(<C4Canvas {...props} />);
+    const [xBefore, yBefore] = viewBoxOf(container);
+
+    // Act.
+    fireEvent.mouseDown(thumbOf(container, "horizontal"), { button: 0, clientX: 10, clientY: 0 });
+    fireEvent.mouseMove(window, { clientX: 40, clientY: 0 });
+    fireEvent.mouseUp(window);
+
+    // Assert.
+    // Dragging the thumb to the right moves the view to the right; the magnitude is the
+    // component's business, the direction is the wiring's.
+    expect(viewBoxOf(container)[0]).toBeGreaterThan(xBefore);
+
+    // Act, vertically.
+    fireEvent.mouseDown(thumbOf(container, "vertical"), { button: 0, clientX: 0, clientY: 10 });
+    fireEvent.mouseMove(window, { clientX: 0, clientY: 40 });
+    fireEvent.mouseUp(window);
+
+    // Assert.
+    expect(viewBoxOf(container)[1]).toBeGreaterThan(yBefore);
+  });
+
+  it("moves the thumb when the view is panned by other means - catches a stale copy of the view", () => {
+    // Arrange.
+    // The bars must read the same view state the canvas pans, not a private copy taken once.
+    const { container } = render(<C4Canvas {...props} />);
+    const surface = container.querySelector(".c4-canvas-surface")!;
+    const before = thumbOf(container, "horizontal").style.left;
+
+    // Act.
+    fireEvent.mouseDown(surface, { clientX: 200, clientY: 100 });
+    fireEvent.mouseMove(surface, { clientX: 60, clientY: 100 });
+    fireEvent.mouseUp(surface);
+
+    // Assert.
+    expect(thumbOf(container, "horizontal").style.left).not.toBe(before);
+  });
+
+  it("resizes the thumb when the view is zoomed - catches a hard-coded viewSpan", () => {
+    // Arrange.
+    // A thumb that only moves reports position while hiding magnification, which is what a
+    // hard-coded span produces.
+    const { container } = render(<C4Canvas {...props} />);
+    const surface = container.querySelector(".c4-canvas-surface")!;
+    const before = thumbOf(container, "horizontal").style.width;
+
+    // Act.
+    fireEvent.wheel(surface, { deltaY: -100 });
+
+    // Assert.
+    expect(thumbOf(container, "horizontal").style.width).not.toBe(before);
+  });
+
   it("pans with a background drag, and the trailing click does not deselect", () => {
     // Arrange.
     const { container } = render(<C4Canvas {...props} />);
