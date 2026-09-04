@@ -50,14 +50,14 @@ The design's four shapes — A (files discovered on disk), B (a collection the c
   - _Requirements: 1.1, 1.2, 1.3_
   - _Prompt: Implement task 1 for spec test-suite-conformance. Role: C# developer | Task: add a floor assertion to each of the seven named sites and move the five relative "Fixtures" enumerations onto AppContext.BaseDirectory | Restrictions: change no expected value; add no helper, base class or shared file; do not touch other modules | _Leverage: ProblemStoreIsolation.Tests.cs:62-69 | Success: each floor has been seen to fail with its collection emptied, and all four gates pass by exit code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. wardley-map — three floors, one of which is file-wide
+- [-] 2. wardley-map — three floors, one of which is file-wide
   - Files: `src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap.Tests/` — `WardleyElementMapper.Tests.cs` (:214), `WardleyWriter.Tests.cs` (:301), `WardleyToolboxProvider.Tests.cs` (:83)
   - Shapes A, A, B.
   - **`WardleyToolboxProvider.Tests.cs` gets one floor, not two.** Nothing in that file pins the toolbox's size, so an empty palette passes all of it: the uniqueness check at `:80` compares an empty count against an empty count and both loops skip. A single floor asserting the palette is non-empty, placed in the file's first test, covers both. Do not duplicate it.
   - _Requirements: 1.1, 1.2, 1.3_
   - _Prompt: Implement task 2 for spec test-suite-conformance. Role: C# developer | Task: add floors to the three named sites, with one palette floor covering the whole toolbox file | Restrictions: change no expected value; add no helper or shared file; one floor in WardleyToolboxProvider.Tests.cs, not two | _Leverage: ProblemStoreIsolation.Tests.cs:62-69 | Success: each floor has been seen to fail, and all four gates pass by exit code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. c4 — three floors
+- [-] 3. c4 — three floors
   - Files: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/` — `BigBankPlc.Tests.cs` (:148), `C4LayoutCrowding.Tests.cs` (:161), `C4Export.Tests.cs` (:40)
   - Shape B for the first two (both sweep `Workspace.Views`), shape C for `C4Export`.
   - `Examples.Tests.cs` in the same project is **already sound** — a two-part anchor at `:36` and a floor at `:93`. Leave it alone; it is a useful thing to read first.
