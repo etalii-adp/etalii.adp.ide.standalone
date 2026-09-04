@@ -1,7 +1,6 @@
+using EtAlii.Adp.Backend.Hierarchy;
 using Serilog;
-
 using YamlDotNet.RepresentationModel;
-
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.HelmCharts;
@@ -196,9 +195,9 @@ public sealed class HelmChartReader
     {
         try
         {
-            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using var reader = new StreamReader(stream);
-            return TemplateScan.Scan(reader.ReadToEnd());
+            // The central reader also shares Delete, which this hand-rolled open did not -
+            // without it a temp-then-move publish fails while this scan is in flight.
+            return TemplateScan.Scan(SharedDocumentReader.ReadAllText(path));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

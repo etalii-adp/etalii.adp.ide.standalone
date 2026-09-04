@@ -1,5 +1,5 @@
+using EtAlii.Adp.Backend.Hierarchy;
 using Serilog;
-
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
@@ -38,11 +38,12 @@ public static class AnsibleYaml
         string text;
         try
         {
-            // Read-only and shared: reading a project must never contend with the editor the
-            // user is fixing it in, and this module has no business locking anything.
-            using var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using var reader = new StreamReader(stream);
-            text = reader.ReadToEnd();
+            // Read-only and shared, through the one place that owns that decision:
+            // reading a project must never contend with the editor the user is fixing it in,
+            // and this module has no business locking anything. The central reader also
+            // shares Delete, which this hand-rolled open did not - without it a
+            // temp-then-move publish fails while this read is in flight.
+            text = SharedDocumentReader.ReadAllText(fullPath);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
