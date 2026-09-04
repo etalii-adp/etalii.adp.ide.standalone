@@ -37,6 +37,9 @@ public static class ServiceCollectionAddShaclExtension
         // The starter document a new shapes registration is created with.
         services.AddSingleton<IDiagramDocumentFactory>(_ => new ShaclDocumentFactory(ShaclOrigin));
 
+        // The palette; origin-scoped by construction, unlike the context menu.
+        services.AddSingleton<IDiagramToolboxProvider>(_ => new ShaclToolboxProvider(ShaclOrigin));
+
         services.AddSingleton<IDiagramSessionFactory>(provider => new ShaclSessionFactory(
             ShaclOrigin,
             provider.GetRequiredService<IRdfDocumentStore>(),
