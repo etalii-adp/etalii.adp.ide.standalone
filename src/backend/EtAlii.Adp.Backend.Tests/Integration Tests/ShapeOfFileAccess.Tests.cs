@@ -114,12 +114,28 @@ public partial class ShapeOfFileAccessTests
         throw new InvalidOperationException("The repository root (src/diagrams beside src/backend) was not found above the test binary.");
     }
 
-    /// <summary>Production C# only: generated output, build artifacts and test projects are not the subject.</summary>
+    /// <summary>Production C# only: generated output, build artifacts and test code are not the subject.</summary>
+    /// <remarks>
+    /// <b>These disciplines are the application's, not the test suite's.</b> A test opens files it
+    /// created moments earlier in a folder nobody else can see; nothing contends for them, no user
+    /// is editing them, and a torn read is not a risk that exists. Holding test code to a rule
+    /// written for a user's document costs work and buys nothing.
+    /// <para>
+    /// Two exclusions are needed rather than one, and the second is not obvious. A test project is
+    /// named <c>*.Tests</c> and its path says so - but <c>src/TestSupport/</c> holds the shared
+    /// <c>LogCapture</c> and <c>TestFolder</c> helpers, which are compiled INTO each test project
+    /// as source and never ship. Nothing in that path contains <c>.Tests</c>, so it was being
+    /// walked as though it were the application. It is green today only because those two files
+    /// happen not to touch a file API; the first test helper that needs to read a fixture would
+    /// have been told to use <c>SharedDocumentReader</c> for no reason at all.
+    /// </para>
+    /// </remarks>
     private static IEnumerable<string> ProductionSources() =>
         Directory.EnumerateFiles(IoPath.Combine(RepositoryRoot, "src"), "*.cs", SearchOption.AllDirectories)
             .Where(path => !path.Contains($"{IoPath.DirectorySeparatorChar}bin{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(path => !path.Contains($"{IoPath.DirectorySeparatorChar}obj{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(path => !path.Contains(".Tests", StringComparison.Ordinal))
+            .Where(path => !path.Contains($"{IoPath.DirectorySeparatorChar}TestSupport{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(path => !path.EndsWith(".g.cs", StringComparison.Ordinal));
 
     /// <summary>
@@ -337,6 +353,30 @@ public partial class ShapeOfFileAccessTests
 
         // A permanent all-rules entry does excuse the file, which is exactly why so few exist.
         Assert.Empty(Unexcused(found, [("Fake/Store.cs", AllRules, "it is the implementation")], trackedNone));
+    }
+
+    [Fact]
+    public void TheseRulesAreTheApplicationsAndNotTheTestSuites()
+    {
+        // These disciplines exist because a USER may be editing the file while ADP reads it, and
+        // because ADP's own publish must be able to replace it mid-read. Neither is true of a
+        // scratch file a test just made in its own temp folder, so test code is not the subject.
+        var scanned = ProductionSources().ToList();
+
+        Assert.DoesNotContain(scanned, path => path.Contains(".Tests", StringComparison.Ordinal));
+
+        // src/TestSupport holds LogCapture and TestFolder, compiled into every test project as
+        // source and shipped nowhere. Its path carries no ".Tests", so the first filter misses it
+        // entirely - which is why it needs its own, and why this asserts on the real enumeration
+        // rather than on the predicate. It passed for months only because those two files happen
+        // not to touch a file API.
+        Assert.DoesNotContain(
+            scanned,
+            path => path.Contains($"{IoPath.DirectorySeparatorChar}TestSupport{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal));
+
+        // And the exclusions have not swallowed the subject: the application is still walked.
+        Assert.Contains(scanned, path => path.EndsWith("SharedDocumentReader.cs", StringComparison.Ordinal));
+        Assert.Contains(scanned, path => path.EndsWith("TimelineDocumentStore.cs", StringComparison.Ordinal));
     }
 
     [Fact]
