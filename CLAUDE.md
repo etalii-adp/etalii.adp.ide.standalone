@@ -55,6 +55,8 @@ Six worked instances and the reasoning: [processes.md, *Checking that a command 
 
 Commit any set of files added or removed under `.spec-workflow/` immediately, in its own commit — implementation logs included. Commit a document and its approval-lifecycle files when it is approved. **Approval comes from the dashboard and nowhere else: verbal approval is never accepted, from anyone.**
 
+**Verdict snapshots arrive already staged and belong to nobody.** The dashboard writes them under `.spec-workflow/approvals/*/.snapshots/` when a card is answered, staged in the shared index — and any staged entry makes an in-place merge unsafe here, so they block whoever merges next. Commit them on sight, in their own commit, whether or not they are yours; that has been left to whoever tripped over them three times. If you raised the card, check for them when its verdict lands.
+
 Full rules and reasoning: [processes.md, *Specification bookkeeping*](.spec-workflow/steering/processes.md#specification-bookkeeping).
 
 ## Vendored example data
