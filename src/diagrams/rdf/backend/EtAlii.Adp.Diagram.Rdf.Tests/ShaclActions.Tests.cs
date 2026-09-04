@@ -1,6 +1,5 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
-using EtAlii.Adp.Backend.Diagrams;
 using EtAlii.Adp.Diagram.Rdf.Shacl;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;

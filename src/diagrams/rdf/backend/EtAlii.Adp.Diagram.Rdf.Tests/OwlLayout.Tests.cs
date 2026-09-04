@@ -221,7 +221,7 @@ public class OwlLayoutTests
         }
 
         Assert.NotNull(directory);
-        var path = IoPath.Combine(directory!.FullName, "src", "diagrams", "rdf", "examples", "owl-time", "owl-time.ttl");
+        var path = IoPath.Combine(directory.FullName, "src", "diagrams", "rdf", "examples", "owl-time", "owl-time.ttl");
         return RdfParser.Parse(RdfDocument.Parse(File.ReadAllText(path)));
     }
 }
