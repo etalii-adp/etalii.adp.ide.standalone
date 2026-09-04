@@ -112,13 +112,13 @@ public class RdfContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(commit.Completed);
-        var text = File.ReadAllText(body);
+        var text = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
         Assert.Contains("ex:robert ex:name", text);
         Assert.DoesNotContain("ex:bob", text);
 
         // One undo restores the bytes.
         await _history.UndoAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(Corpus, File.ReadAllText(body));
+        Assert.Equal(Corpus, await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -138,10 +138,10 @@ public class RdfContextActionProviderTests : IDisposable
         // Act: confirming commits, as one undo.
         var commit = await _actions.CommitAsync(target, RdfContextActionProvider.RemoveResourceActionId, "", "", TestContext.Current.CancellationToken);
         Assert.True(commit.Completed);
-        Assert.DoesNotContain("alice", File.ReadAllText(body), StringComparison.Ordinal);
+        Assert.DoesNotContain("alice", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
 
         await _history.UndoAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(Corpus, File.ReadAllText(body));
+        Assert.Equal(Corpus, await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -158,7 +158,7 @@ public class RdfContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(commit.Completed);
-        Assert.Contains("ex:knows ex:alice", File.ReadAllText(body));
+        Assert.Contains("ex:knows ex:alice", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -174,7 +174,7 @@ public class RdfContextActionProviderTests : IDisposable
         // Assert.
         Assert.True(commit.Completed);
         // The rdfs namespace is undeclared, so the type is written in full - never invented.
-        Assert.Contains("ex:carol a <http://www.w3.org/2000/01/rdf-schema#Resource> .", File.ReadAllText(body));
+        Assert.Contains("ex:carol a <http://www.w3.org/2000/01/rdf-schema#Resource> .", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -190,7 +190,7 @@ public class RdfContextActionProviderTests : IDisposable
 
         var commit = await _actions.CommitAsync(target, RdfContextActionProvider.AddPrefixActionId, "foaf: <http://xmlns.com/foaf/0.1/>", "", TestContext.Current.CancellationToken);
         Assert.True(commit.Completed);
-        Assert.Contains("@prefix foaf: <http://xmlns.com/foaf/0.1/> .", File.ReadAllText(body));
+        Assert.Contains("@prefix foaf: <http://xmlns.com/foaf/0.1/> .", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]

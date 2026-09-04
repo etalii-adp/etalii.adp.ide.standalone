@@ -41,7 +41,7 @@ public class RdfCommandsTests : IDisposable
 
         // Assert: it ran and the file changed.
         Assert.True(result.IsSuccess, result.Error);
-        var edited = File.ReadAllText(_path);
+        var edited = await File.ReadAllTextAsync(_path);
         Assert.NotEqual(Corpus, edited);
 
         // Act: undo through the reported inverse.
@@ -51,7 +51,7 @@ public class RdfCommandsTests : IDisposable
         // Assert: bytes restored exactly - comments, formatting and abbreviations included -
         // and the undo's own inverse is the original command, so redo re-runs the same edit.
         Assert.True(undone.IsSuccess, undone.Error);
-        Assert.Equal(Corpus, File.ReadAllText(_path));
+        Assert.Equal(Corpus, await File.ReadAllTextAsync(_path));
         Assert.Same(command, undone.Inverse);
 
         // Act: redo.
@@ -59,7 +59,7 @@ public class RdfCommandsTests : IDisposable
 
         // Assert: the same edit landed again.
         Assert.True(redone.IsSuccess, redone.Error);
-        Assert.Equal(edited, File.ReadAllText(_path));
+        Assert.Equal(edited, await File.ReadAllTextAsync(_path));
     }
 
     [Fact]
@@ -133,14 +133,14 @@ public class RdfCommandsTests : IDisposable
         Assert.False(result.IsSuccess);
         Assert.Contains("nothing to remove", result.Error);
         Assert.Null(result.Inverse);
-        Assert.Equal(Corpus, File.ReadAllText(_path));
+        Assert.Equal(Corpus, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task AnUnparseableFile_RefusesEveryEdit_NamingTheState()
     {
         // Arrange.
-        File.WriteAllText(_path, "this is ; not turtle @@@\r\n");
+        await File.WriteAllTextAsync(_path, "this is ; not turtle @@@\r\n", TestContext.Current.CancellationToken);
         var handler = new AddRdfPrefixCommandHandler(_store);
 
         // Act.

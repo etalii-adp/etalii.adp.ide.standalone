@@ -144,7 +144,7 @@ public class SkosSessionTests : IDisposable
             _provider.GetRequiredService<IRdfDocumentStore>(), _provider.GetRequiredService<SkosElementMapper>());
         var unregistered = Open(body, registrationPath: null);
         var registration = IoPath.Combine(_root, "drinks.adp");
-        File.WriteAllText(registration, "w3c/skos\r\nbody: drinks.ttl\r\n");
+        await File.WriteAllTextAsync(registration, "w3c/skos\r\nbody: drinks.ttl\r\n", TestContext.Current.CancellationToken);
         var registered = Open(body, registration);
 
         // Act & assert.

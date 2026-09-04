@@ -171,3 +171,19 @@ referenced.
 The `file-io-centralization` spec already exists and appears to cover the same discipline
 Requirement 1 describes. If its scope includes these three call sites, Requirements 1 and 5
 should be folded into it rather than implemented twice.
+
+### The client half of Requirement 2
+
+The parallel client survey found the same failure on the other side of the wire: async
+methods in `ContextConnectionProvider` that await without a `try`/`catch`, and five call
+sites consuming them as though they cannot reject — one of which latches a guard permanently,
+so a property row becomes silently unwritable after a single transient fault.
+
+That is not a coincidence of style; the two halves can be one incident. The backend half
+fails **silently**: when `RediscoverAndPushAsync` faults in the region outside its `try`
+(Requirement 2.2), no push is written and nothing is logged. The client half then latches on
+the resulting absence. So a single transient fault in `ContextSelectionStore` is a sufficient
+upstream cause of a permanently unwritable property row, with no client-side defect required.
+
+Whoever schedules these should treat the backend fix as the first half of the client one, and
+neither spec should be read as a complete account on its own.

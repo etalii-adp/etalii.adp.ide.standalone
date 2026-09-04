@@ -46,13 +46,13 @@ public class ShaclCommandsTests : IDisposable
         var result = await execute(command);
 
         Assert.True(result.IsSuccess, result.Error);
-        Assert.NotEqual(Corpus, File.ReadAllText(_path));
+        Assert.NotEqual(Corpus, await File.ReadAllTextAsync(_path));
 
         var restore = Assert.IsType<RestoreRdfDocumentCommand>(result.Inverse);
         var undone = await new RestoreRdfDocumentCommandHandler(_store).ExecuteAsync(restore, TestContext.Current.CancellationToken);
 
         Assert.True(undone.IsSuccess, undone.Error);
-        Assert.Equal(Corpus, File.ReadAllText(_path));
+        Assert.Equal(Corpus, await File.ReadAllTextAsync(_path));
         Assert.Same(command, undone.Inverse);
     }
 
@@ -109,7 +109,7 @@ public class ShaclCommandsTests : IDisposable
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ShaclRefusals.NoSuchShape, result.Error);
-        Assert.Equal(Corpus, File.ReadAllText(_path));
+        Assert.Equal(Corpus, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     /// <summary>
@@ -149,7 +149,7 @@ public class ShaclCommandsTests : IDisposable
         var result = await execution;
         Assert.True(result.IsSuccess, result.Error);
 
-        var text = File.ReadAllText(_path);
+        var text = await File.ReadAllTextAsync(_path);
         var before = Corpus.Split("\r\n");
         var after = text.Split("\r\n");
 

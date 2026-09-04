@@ -111,7 +111,7 @@ public class ShaclActionsTests : IDisposable
     public async Task ABlankRootedSelection_IsMarkedUnavailable_AndRefusedOnExecute()
     {
         var body = IoPath.Combine(_root, "anon.ttl");
-        File.WriteAllText(body, "@prefix sh: <http://www.w3.org/ns/shacl#> .\r\n@prefix ex: <http://example.org/> .\r\n\r\nex:S a sh:NodeShape ; sh:node [ sh:closed true ] .\r\n");
+        await File.WriteAllTextAsync(body, "@prefix sh: <http://www.w3.org/ns/shacl#> .\r\n@prefix ex: <http://example.org/> .\r\n\r\nex:S a sh:NodeShape ; sh:node [ sh:closed true ] .\r\n", TestContext.Current.CancellationToken);
         var entry = _provider.GetRequiredService<IRdfDocumentStore>().GetOrLoad(body);
         var blankId = ShaclProjection.Project(entry.Model).Cards.Single(card => card.Blank).Id;
         var target = new ContextTarget(ContextScope.DiagramElement, body, false, ShortGuid.NewShortGuid(), _root, default, blankId)
@@ -154,7 +154,7 @@ public class ShaclActionsTests : IDisposable
         var result = await history.Get(_root).ExecuteAsync(add, TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Contains("sh:targetClass ex:Employee", File.ReadAllText(_body), StringComparison.Ordinal);
+        Assert.Contains("sh:targetClass ex:Employee", await File.ReadAllTextAsync(_body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -169,7 +169,7 @@ public class ShaclActionsTests : IDisposable
             TestContext.Current.CancellationToken);
 
         Assert.IsType<ContextExecutionCompleted>(result);
-        var text = File.ReadAllText(_body);
+        var text = await File.ReadAllTextAsync(_body, TestContext.Current.CancellationToken);
         Assert.DoesNotContain("sh:targetClass", text, StringComparison.Ordinal);
         Assert.Contains("sh:property [ sh:path ex:name", text, StringComparison.Ordinal); // untouched
     }
