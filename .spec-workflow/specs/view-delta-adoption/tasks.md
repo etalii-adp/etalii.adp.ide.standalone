@@ -81,7 +81,7 @@ A fifth, about how these were found rather than about the work: **this is the se
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.3, 3.4, 5.2, 5.3_
   - _Prompt: Implement the task for spec view-delta-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer, C# and TypeScript | Task: Implement the view-delta loop in databricks, both halves | Restrictions: shared client library only, no shared backend helper; the declining reason is in the class remarks here, not at the method - update it there | _Leverage: the adoptions from tasks 3-6 | Success: client and backend tests pass, the backend test fails against a return []. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 8. sparql implements the loop
+- [x] 8. sparql implements the loop
   - Files: `src/diagrams/sparql/client/SparqlCanvas.tsx`, its stream hook, `src/diagrams/sparql/backend/*/SparqlSession.cs`, and their tests
   - The same two halves. **Requirement 1.5's condition has fired**: it made sparql's participation conditional on it gaining a canvas, and it has one — `SparqlCanvas.tsx`, with the shared scrollbars already wired. It joins here rather than in a catch-up.
   - Its `UpdateView` returns `[]` with **no stated reason**, one of two such modules alongside rdf. Nothing has to be written retrospectively; it is simply implemented.
