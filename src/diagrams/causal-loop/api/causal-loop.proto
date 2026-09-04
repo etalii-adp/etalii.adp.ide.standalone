@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package etalii.adp.causalloop;
+
+option csharp_namespace = "EtAlii.Adp.Diagram.CausalLoop.Wire";
+
+// The payloads of the causal loop diagram's elements, packed into the core Element's Any.
+// Defined in the module's own api folder; no core proto is edited, and there are no new services
+// or streams - the elements ride the existing Element/Delta shapes.
+//
+// Three element kinds, and only one of them has a position of its own. A variable is placed; a
+// link is drawn between its endpoints; a loop label is drawn at the centroid of its members. The
+// two that have no position are filtered structurally by the viewport rather than by coordinates
+// they do not carry.
+
+// What a causal link asserts about the direction of its effect. Unstated is a real case rather
+// than a default: the loop check counts negatives, and "unknown" is not "none".
+enum CausalLoopPolarityProto {
+  CAUSAL_LOOP_POLARITY_PROTO_UNSTATED = 0;
+  CAUSAL_LOOP_POLARITY_PROTO_POSITIVE = 1;
+  CAUSAL_LOOP_POLARITY_PROTO_NEGATIVE = 2;
+}
+
+// What the arrows say a loop is, as opposed to what the document calls it.
+enum LoopPolarityProto {
+  LOOP_POLARITY_PROTO_UNDECIDABLE = 0;
+  LOOP_POLARITY_PROTO_REINFORCING = 1;
+  LOOP_POLARITY_PROTO_BALANCING = 2;
+}
+
+// One named quantity in the system.
+message CausalLoopVariablePayload {
+  // What the canvas draws: the label where the document gives one, the id otherwise.
+  string display = 1;
+
+  // The identifier links and loops refer to it by, for the property grid's identity row.
+  string id = 2;
+
+  // The measured size the backend computed, so the canvas draws the box the layout reserved
+  // rather than measuring the text a second time and disagreeing with it.
+  double width = 3;
+  double height = 4;
+}
+
+// One causal link, drawn between its endpoints.
+message CausalLoopLinkPayload {
+  // The element ids of the two ends, so the canvas can find the boxes to draw between and the
+  // viewport can decide the link structurally.
+  string from_element_id = 1;
+  string to_element_id = 2;
+
+  // What the link asserts, drawn at the arrowhead end as + or -.
+  CausalLoopPolarityProto polarity = 3;
+
+  // Whether the effect is delayed, drawn as the conventional strokes across the arrow.
+  bool delayed = 4;
+
+  // The author's annotation of strength. Recorded and drawn, never evaluated: this diagram
+  // states structure and simulates nothing.
+  double weight = 5;
+
+  // Whether a weight was written at all - proto3 cannot tell an absent double from zero, and a
+  // weight of zero is a thing an author may deliberately write.
+  bool has_weight = 6;
+
+  // An optional note on the link.
+  string label = 7;
+}
+
+// One feedback loop, drawn at the centroid of the variables it runs through.
+message CausalLoopLoopPayload {
+  // As the document writes it: R1, B2. A claim, not a finding.
+  string identifier = 1;
+
+  // The descriptive name drawn beside the identifier.
+  string name = 2;
+
+  // What the arrows compute to. Sent beside the identifier rather than instead of it, so the
+  // canvas and the grid can show a disagreement rather than silently resolving one.
+  LoopPolarityProto computed = 3;
+
+  // Whether the identifier and the computed polarity disagree - the one fact this diagram type
+  // knows that a drawing tool does not.
+  bool disagrees = 4;
+
+  // The element ids of the variables the loop runs through, in order, so the canvas can place
+  // the label among them and the viewport can decide the label structurally.
+  repeated string member_element_ids = 5;
+}

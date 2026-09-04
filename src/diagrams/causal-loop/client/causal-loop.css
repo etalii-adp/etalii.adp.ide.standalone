@@ -1,0 +1,85 @@
+/*
+ * What this notation needs that the shared appearance has no opinion about: the polarity mark
+ * beside an arrowhead, the strokes that mark a delay, and the loop badge.
+ *
+ * Everything else - the host, the drawing, nodes, labels, connections, arrowheads, the selected
+ * state, the rejection banner and the scrollbars - comes from canvas.css and is composed rather
+ * than restated. This file is deliberately short, and it is meant to stay that way: five modules
+ * carry 104 to 261 lines of private appearance and that is the drift this one does not join.
+ */
+
+.causal-loop-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.causal-loop-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.causal-loop-message {
+  padding: 16px;
+  color: var(--vscode-descriptionForeground, #888);
+}
+
+/* A variable is a rounded pill: the notation draws bare text, but a shape makes it a target. */
+.causal-loop-variable .canvas-node {
+  fill: var(--vscode-editorWidget-background, #252526);
+}
+
+/*
+ * Link weight, as a short ladder rather than a continuous width. A weight is an author's
+ * annotation and not a measurement, so a coarse scale is honest about what it is.
+ */
+.causal-loop-weight-light .canvas-connection-line {
+  stroke-width: 1;
+}
+
+.causal-loop-weight-heavy .canvas-connection-line {
+  stroke-width: 2.5;
+}
+
+/* The polarity mark, drawn at the arrowhead end where the notation puts it. */
+.causal-loop-polarity {
+  font-size: 15px;
+  font-weight: 600;
+  text-anchor: middle;
+  fill: var(--vscode-editor-foreground, #ccc);
+  pointer-events: none;
+}
+
+/* The delay mark: two short strokes across the link. */
+.causal-loop-delay line {
+  stroke: var(--vscode-editor-foreground, #ccc);
+  stroke-width: 1.5;
+}
+
+/* The loop badge, among the variables it runs through. */
+.causal-loop-badge {
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.causal-loop-reinforcing {
+  fill: var(--vscode-charts-blue, #4daafc);
+}
+
+.causal-loop-balancing {
+  fill: var(--vscode-charts-orange, #d18616);
+}
+
+.causal-loop-undecidable {
+  fill: var(--vscode-descriptionForeground, #888);
+}
+
+/*
+ * A loop whose label disagrees with its arrows. Marked rather than corrected: the reading does
+ * not know whether the label or an arrow is the mistake, so it shows that there is one.
+ */
+.causal-loop-disagrees .causal-loop-badge {
+  text-decoration: underline wavy;
+}
