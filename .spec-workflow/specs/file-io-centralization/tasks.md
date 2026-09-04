@@ -70,7 +70,7 @@
   - _Requirements: 2.1, 2.5_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Convert DatabricksDocumentStore's document read to SharedDocumentReader per requirements 2.1 and 2.5, deleting its tracked allow-list entry | Restrictions: preserve the missing-file-is-an-empty-document behaviour and the unreadable-versus-unparseable distinction; do not touch the rdf or sparql stores, which are tasks 3.5 and 3.6 | _Leverage: SharedDocumentReader.OpenText; the already-converted RdfRegistrationHeaders and DatabricksHeaders as the shape | Success: the site reads shared, its allow-list line is gone, module tests pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.5 RDF: convert `RdfDocumentStore` to the central shared read
+- [x] 3.5 RDF: convert `RdfDocumentStore` to the central shared read
   - Files: `src/diagrams/rdf/backend/EtAlii.Adp.Diagram.Rdf/RdfDocumentStore.cs` (line 105); delete its tracked allow-list entry
   - As 3.4. Independently landable alongside it.
   - _Requirements: 2.1, 2.5_
