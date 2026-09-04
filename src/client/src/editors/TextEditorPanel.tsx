@@ -34,7 +34,7 @@ export interface TextEditorPanelProps extends DiagramCanvasProps {
  * editor's normal form throughout; the save-side `TextFileBuffer` re-applies each line's own
  * terminator, so nothing is lost by normalising here.
  */
-export function normalizeLineEndings(text: string): string {
+function normalizeLineEndings(text: string): string {
   return text.replace(/\r\n|\r/g, "\n");
 }
 
