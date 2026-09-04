@@ -10,6 +10,16 @@ on:
   pull_request:
     branches: [develop]
 
+# Release runs serialise rather than overlap (contracts-and-build-hygiene Requirement 3). Two
+# runs publishing at once is how one commit came to carry two version numbers.
+#
+# cancel-in-progress is false ON PURPOSE: a run cancelled between `gh release create` and its
+# asset upload leaves a tag with no ZIP behind it, which is worse than a queued run. The group
+# is keyed on the ref, so pull-request checks are untouched.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   gates:
     runs-on: ubuntu-latest
@@ -100,18 +110,56 @@ jobs:
 
       # A published asset is never overwritten (Requirement 4.5): a re-run of an
       # already-published commit fails here, loudly, and the gate job's result stands.
-      - name: Refuse to republish an existing version
+      #
+      # TWO questions, because the first one alone let f5a755c1 publish three times under three
+      # names and 8dfb7f64 twice under two. A version string that is already taken is one way to
+      # republish; the same commit under a fresh number is the other, and only the second check
+      # sees it.
+      #
+      # The commit check matches the sha anywhere in the tag listing rather than dereferencing a
+      # named ref. `git ls-remote --tags` prints the peeled `refs/tags/x^{}` entry beside an
+      # annotated tag, so this covers annotated and lightweight alike. Every tag on origin today
+      # is lightweight - confirmed with `git cat-file -t`, all seven resolving straight to
+      # `commit` - but a guard that only works for one tag shape would pass on precisely the case
+      # it exists to catch, and would do it silently.
+      - name: Refuse to republish
         run: |
-          if git ls-remote --tags origin "refs/tags/v${{ steps.version.outputs.semver }}" | grep -q .; then
-            echo "::error::v${{ steps.version.outputs.semver }} is already published - not overwriting a released asset."
+          semver="${{ steps.version.outputs.semver }}"
+          if git ls-remote --tags origin "refs/tags/v$semver" | grep -q .; then
+            echo "::error::v$semver is already published - not overwriting a released asset."
+            exit 1
+          fi
+          already=$(git ls-remote --tags origin | grep "^${{ github.sha }}" || true)
+          if [ -n "$already" ]; then
+            echo "::error::${{ github.sha }} is already released as: $already"
             exit 1
           fi
 
+      # A queued run whose commit is no longer the tip does not publish (Requirement 3.2). The
+      # run stays GREEN: being overtaken is not a failure, and a red run here would teach
+      # everyone to ignore red runs.
+      #
+      # A behaviour change, stated rather than smuggled: a burst of five pushes now produces one
+      # release rather than five. An intermediate commit gets no release of its own; pushing it
+      # alone is how to give it one.
+      - name: Skip a superseded commit
+        id: tip
+        run: |
+          tip=$(git ls-remote origin refs/heads/develop | cut -f1)
+          if [ "$tip" != "${{ github.sha }}" ]; then
+            echo "::notice::${{ github.sha }} is no longer the tip of develop ($tip); not publishing."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install client dependencies
+        if: steps.tip.outputs.publish == 'true'
         working-directory: src
         run: npm ci
 
       - name: Build the client
+        if: steps.tip.outputs.publish == 'true'
         working-directory: src/client
         run: npm run build
 
@@ -127,9 +175,11 @@ jobs:
       # parent. Verified against a real publish: wwwroot/ comes out with index.html,
       # favicon.svg and assets/ before anything is copied.
       - name: Publish the service
+        if: steps.tip.outputs.publish == 'true'
         run: dotnet publish src/backend/EtAlii.Adp.Backend.Service -c Release -o publish
 
       - name: Write the release readme
+        if: steps.tip.outputs.publish == 'true'
         run: |
           cat > publish/readme.md <<EOF
           # EtAlii.Adp ${{ steps.version.outputs.semver }}
@@ -146,6 +196,7 @@ jobs:
           EOF
 
       - name: Zip
+        if: steps.tip.outputs.publish == 'true'
         run: |
           cd publish
           zip -qr "../EtAlii.Adp-${{ steps.version.outputs.semver }}.zip" .
@@ -153,10 +204,28 @@ jobs:
       # gh is preinstalled on the runner; no third-party release action, no extra supply
       # chain, only the built-in token (Requirement 4.4).
       - name: Publish the release
+        if: steps.tip.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # --target, so the tag is created ON the commit that was built. Without it gh
+          # resolves the tag against the repository's DEFAULT BRANCH at API time, which is
+          # how three tags landed on f5a755c1 and two on 8dfb7f64.
           gh release create "v${{ steps.version.outputs.semver }}" \
             "EtAlii.Adp-${{ steps.version.outputs.semver }}.zip" \
+            --target "${{ github.sha }}" \
             --title "EtAlii.Adp ${{ steps.version.outputs.semver }}" \
             --generate-notes
+
+      # What the fix claims, checked against the remote rather than assumed. Two of the four
+      # places in tests.md's "one build, one number, four places" are enforced here - the tag's
+      # commit and the version the assemblies carry; the ZIP's file name and the login line
+      # inside the running app still need a person.
+      - name: The tag names the commit it was built from
+        if: steps.tip.outputs.publish == 'true'
+        run: |
+          tagged=$(git ls-remote origin "refs/tags/v${{ steps.version.outputs.semver }}" | cut -f1)
+          if [ "$tagged" != "${{ github.sha }}" ]; then
+            echo "::error::v${{ steps.version.outputs.semver }} points at $tagged, not at ${{ github.sha }}."
+            exit 1
+          fi
