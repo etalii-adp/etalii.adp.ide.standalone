@@ -108,7 +108,7 @@ The client's conventions live in the same `src/.editorconfig` (see *Backend code
 ## Worktrees
 
 - When changing files in the `.spec-workflow/` folder, always change these on the development branch.
-- When working on tasks from `.spec-workflow/` specifications, always do so in one single worktree for the specification.
+- When working on tasks from `.spec-workflow/` specifications, always do so in one single worktree for the specification — **unless the specification's tasks are independently landable and are being worked in parallel by several agents, in which case each agent takes its own worktree.** Never share one worktree between sessions: a shared working tree means a shared index, which is the cross-contamination the rule above exists to prevent, and it is a worse failure than several worktrees for one spec. A tasks document that claims its tasks are independently landable is claiming exactly this, and should say so where a reader will meet it.
 - When manually running the app (backend `dotnet run` + client `npm run dev`) for verification from inside a git worktree (not the main checkout), change both the client's dev server port (`src/client/vite.config.ts`'s `server.port`) and the backend's `Client:DevServerUrl` (`src/backend/EtAlii.Adp.Backend.Service/appsettings.developer.json`) to a different, free pair of ports before starting either server — the main checkout's own dev servers may already be running on the defaults (5174 client / 5080 backend). Before merging the worktree back, revert both files to their original values so the merge never carries a stray port change into `develop`.
 
 ## Bugs found during implementation or verification

@@ -10,7 +10,7 @@ One worktree for the whole spec: `.claude/worktrees/rename` — deliberately sho
 - **An unmarked prompt must be byte-for-byte what it is today** (Requirements 2.2, 7.4). Every task that touches the prompt path proves this rather than assuming it: the 45-odd input sites that are not renames are the majority of the feature's blast radius, and none of them should be able to tell this specification happened.
 - **Tests are named for the defect each catches.** "Asserts the inline editor works" is the phrasing to avoid: an editor that renders, focuses and then silently drops its commit passes that test.
 
-- [-] 1. The contract: a prompt can say it edits a visible label
+- [x] 1. The contract: a prompt can say it edits a visible label
   - Files: `src/api/context.proto`, `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextDialogRequest.cs`, `src/backend/EtAlii.Adp.Backend/Context/ContextService.Actions.cs`, `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Context/`
   - Add `message InlineLabelEdit { ElementId element_id = 1; }` and `InlineLabelEdit inline_label_edit = 6;` to `InputDialogPrompt`. Add a trailing `string InlineLabelElementId = ""` to `ContextInputRequest` and map it in `ToProto` — trailing and defaulted, so every one of the existing constructions across the modules still compiles untouched, which is what makes Requirement 2.5's per-module adoption possible at all.
   - **Regenerate both sides' stubs** and commit the regenerated `src/client/src/generated/*_pb.ts`. Note that the codegen writes LF while the house style is CRLF, so the regenerated files will show as modified with no content change until they are normalised; do not mistake that for a real diff.
@@ -18,7 +18,7 @@ One worktree for the whole spec: `.claude/worktrees/rename` — deliberately sho
   - _Requirements: 2.1, 2.2, 2.5_
   - _Prompt: Implement the task for spec inline-rename, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Backend developer working on the gRPC contract | Task: Add the InlineLabelEdit message and field to InputDialogPrompt, the trailing InlineLabelElementId on ContextInputRequest, and the ToProto mapping, with the two named tests | Restrictions: the new parameter must be trailing and defaulted so no existing ContextInputRequest construction changes; do not touch any module; do not add a second prompt kind | _Leverage: the existing ToProto methods beside it; the ConfirmDialogPrompt mapping for shape | Success: both tests pass, the whole backend suite is green, and no module source was edited. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. One entry discipline, two presentations — extracted before there is a second caller
+- [x] 2. One entry discipline, two presentations — extracted before there is a second caller
   - Files: `src/client/src/shell/context/useContextPromptEntry.ts` (new), `src/client/src/shell/context/ContextPromptHost.tsx`
   - Lift the revision/debounce/verdict machinery out of `InputPromptDialog` into `useContextPromptEntry`: it owns `{ revision, value }`, the 200 ms debounce, the "revision 0 is not validated" rule, the abandoned-reply guard, and `verdictIsCurrent`. `InputPromptDialog` then consumes it and renders only the dialog.
   - **This is a refactor with no behaviour change, and its proof is that `ContextPromptHost.test.tsx` passes unmodified.** If a test needs editing to keep passing, the refactor changed behaviour and should be reconsidered rather than the test adjusted.
@@ -26,7 +26,7 @@ One worktree for the whole spec: `.claude/worktrees/rename` — deliberately sho
   - _Requirements: 1.4_
   - _Prompt: Implement the task for spec inline-rename, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior React/TypeScript developer | Task: Extract the revision, debounce and verdict discipline from InputPromptDialog into a useContextPromptEntry hook, leaving the dialog rendering only the dialog | Restrictions: no behaviour change - ContextPromptHost.test.tsx must pass with zero edits; keep the stale-verdict and revision-0 rules exactly as they are | _Leverage: the existing InputPromptDialog body; useDebouncedValue | Success: the hook exists, the dialog uses it, and the existing prompt-host tests pass unmodified. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. Placement: who can put a label editor on screen
+- [x] 3. Placement: who can put a label editor on screen
   - Files: `src/client/src/shell/panels/InlineLabelPlacementContext.tsx` (new) and its test, `src/client/src/shell/context/ShellPromptHost.tsx`
   - A context in the shape `DiagramToolboxContext` already uses: a mounted canvas registers `(elementId: string) => LabelPlacement | null` and withdraws it on unmount. `LabelPlacement` is `{ x, y, width, height }` in canvas units plus the text being replaced.
   - `ShellPromptHost` renders nothing when the prompt is an `inputDialog` carrying a marker **and** a registered resolver answers non-null; otherwise it renders the dialog exactly as today.
@@ -37,7 +37,7 @@ One worktree for the whole spec: `.claude/worktrees/rename` — deliberately sho
   - _Requirements: 2.3, 2.4, 5.4, 7.3, 8.3, 9.2_
   - _Prompt: Implement the task for spec inline-rename, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior React/TypeScript developer | Task: Add the InlineLabelPlacementContext registry and make ShellPromptHost stand down for a marked prompt some canvas can place, with the three named tests plus the first-render one | Restrictions: the fallback must be silent - never an error or a notice; do not let the host inspect action ids or any module vocabulary; register at mount rather than per prompt | _Leverage: DiagramToolboxContext for the registry idiom; ShellPromptHost's current body | Success: four tests pass, an unmarked prompt is provably unchanged, and no first-render dialog flash. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. The editor itself
+- [-] 4. The editor itself
   - Files: `src/client/src/canvas/label/InlineLabelEditor.tsx` (new), `src/client/src/canvas/label/InlineLabelEditor.test.tsx` (new), `src/client/src/canvas/label/readme.md` (new), `src/client/src/canvas/canvas.css`
   - A `foreignObject` at the placement rectangle holding one `input`, driven by `useContextPromptEntry`. On mount: focus and select all. On unmount: focus returns to the canvas. Enter commits; Escape abandons; blur commits; a refusal keeps it open with the text intact; a value equal to the original cancels without dispatching. Typing is local state — no element re-renders per keystroke.
   - Text longer than the label must stay usable and must not resize the element behind it (Requirement 4.7): the `foreignObject` keeps the placement's width and the `input` scrolls within it.

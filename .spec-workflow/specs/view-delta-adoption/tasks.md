@@ -46,7 +46,7 @@ A fifth, about how these were found rather than about the work: **this is the se
   - _Requirements: 3.1, 3.2, 3.3, 5.1_
   - _Prompt: Implement the task for spec view-delta-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior TypeScript/React developer | Task: Migrate mindmap, c4, azure-pipeline and ansible-structure to the shared view-report code, deleting all four private copies including the duplicated Viewport interface, and fix ansible-structure's missing loading/failed guard | Restrictions: mindmap, c4 and azure-pipeline must not change behaviour and their tests must pass unchanged; ansible-structure's change is the one exception and must carry the named regression test written to fail before the fix | _Leverage: the shared library from task 1 | Success: no module retains reportView, VIEW_REPORT_DEBOUNCE_MS, a private shownRectOf or a private Viewport; aDiagramThatIsLoadingOrFailed_ReportsNoViewport fails before the fix and passes after; the client suite is green. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. helm-charts implements the loop — the pattern the next five follow
+- [-] 3. helm-charts implements the loop — the pattern the next five follow
   - Files: `src/diagrams/helm-charts/client/HelmCanvas.tsx`, `useHelmStream.ts`, `src/diagrams/helm-charts/backend/EtAlii.Adp.Diagram.HelmCharts/HelmSession.cs`, and their tests
   - Client: add `reportView` through the shared library and wire `useViewReport` to the canvas's existing view state. This canvas drives a `viewBox`, so it passes its box and its surface ref and needs no measurement of its own.
   - Backend: replace the `[]` with a real visibility decision — which nodes the viewport intersects — diffing the previously visible set against the newly visible one and emitting **Add for what appeared, then Remove for what left**. That order is what the two reference implementations do; the design records it because Requirement 4.3 guessed the opposite.
@@ -62,7 +62,7 @@ A fifth, about how these were found rather than about the work: **this is the se
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.3, 3.4, 5.2, 5.3_
   - _Prompt: Implement the task for spec view-delta-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer, C# and TypeScript | Task: Implement the view-delta loop in wardley-map, both halves, following the pattern task 3 established | Restrictions: the 0..1 map space is the module's own unit and the shared code must not learn about it; no shared backend helper; update the method's stated reason for declining | _Leverage: the helm-charts adoption from task 3 | Success: client and backend tests pass, the backend test fails against a return []. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5. timeline implements the loop
+- [-] 5. timeline implements the loop
   - Files: `src/diagrams/timeline/client/TimelineCanvas.tsx`, `useTimelineStream.ts`, `src/diagrams/timeline/backend/*/TimelineSession.cs`, and their tests
   - The same two halves. This canvas drives **pixels-per-unit and seconds**, not a `viewBox`, so it converts to a rectangle at its own call site exactly as it already does for its scrollbars — the second of the two caller shapes recorded in `src/client/src/canvas/scroll/readme.md`.
   - Update the class remarks, and the `useTimelineStream` comment that states there is deliberately no `reportView`.
@@ -75,7 +75,7 @@ A fifth, about how these were found rather than about the work: **this is the se
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.3, 3.4, 5.2, 5.3_
   - _Prompt: Implement the task for spec view-delta-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer, C# and TypeScript | Task: Implement the view-delta loop in dependency-graph, both halves | Restrictions: shared client library only, no shared backend helper, update both stale comments | _Leverage: the adoptions from tasks 3-5 | Success: client and backend tests pass, the backend test fails against a return []. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7. databricks implements the loop
+- [-] 7. databricks implements the loop
   - Files: `src/diagrams/databricks/client/DatabricksCanvas.tsx`, its stream hook, `src/diagrams/databricks/backend/*/DatabricksSession.cs`, and their tests
   - The same two halves. Pixels-per-unit canvas, so it converts at its own call site. Update the class remarks, which document the declining reason there rather than at the method.
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.3, 3.4, 5.2, 5.3_
@@ -88,7 +88,7 @@ A fifth, about how these were found rather than about the work: **this is the se
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.3, 3.4, 5.2, 5.3_
   - _Prompt: Implement the task for spec view-delta-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer, C# and TypeScript | Task: Implement the view-delta loop in sparql, both halves | Restrictions: shared client library only, no shared backend helper | _Leverage: the adoptions from tasks 3-7; SparqlCanvas already wires the shared scrollbars and shows the call-site shape | Success: client and backend tests pass, the backend test fails against a return []. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 9. rdf implements the loop — and its truncation is re-evaluated
+- [-] 9. rdf implements the loop — and its truncation is re-evaluated
   - Files: `src/diagrams/rdf/client/{RdfCanvas,OwlCanvas,SkosCanvas,ShaclCanvas}.tsx`, their stream hooks, and all four sessions - `RdfSession.cs`, `Owl/OwlSession.cs`, `Skos/SkosSession.cs`, `Shacl/ShaclSession.cs` - and their tests. **Four readings, not three**: `shacl-diagram` merged at `c2445e06` after this document was approved, and the RDF family grew a fourth canvas and session. The module count of seven is unchanged - rdf is one module - but a reading missed here is a reading that never reports.
   - The same two halves, **last and deliberately so**: this is the module where the loop pays for itself and the only one carrying a mechanism that overlaps it.
   - **Requirement 5.4 applies here specifically.** rdf opens documents of more than 1,600 resources behind a first-N truncation banner, which is a strictly worse answer to the same problem — it discards by document order rather than by what the reader is looking at, so panning never recovers the rest. Once `UpdateView` is viewport-aware, the truncation **stays as a floor against a pathological view** but must no longer be the primary means of keeping a large document drawable.
