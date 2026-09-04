@@ -65,7 +65,7 @@
   - _Requirements: 2.1, 2.5_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Convert HelmChartReader's file read to SharedDocumentReader per requirements 2.1 and 2.5, deleting its tracked allow-list entry | Restrictions: preserve the never-throws contract; the chart reader must still skip reparse points and never write | _Leverage: SharedDocumentReader.OpenText; tasks 3.1 and 3.2 as the shape | Success: the site reads with ReadWrite plus Delete, the allow-list line is gone, helm tests pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.4 Databricks: convert `DatabricksDocumentStore` to the central shared read
+- [x] 3.4 Databricks: convert `DatabricksDocumentStore` to the central shared read
   - Files: `src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks/DatabricksDocumentStore.cs` (line 106); delete this file's tracked allow-list entry
   - **Found by task 1.1's guard, not by the survey.** This is a raw `File.ReadAllText` on a user document, which opens at `FileShare.Read` — the original flaw this spec is named after, still live. Same conversion as 3.1-3.3, different symptom of one defect.
   - _Requirements: 2.1, 2.5_
