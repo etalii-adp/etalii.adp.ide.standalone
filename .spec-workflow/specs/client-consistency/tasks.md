@@ -82,7 +82,7 @@ Four defects with one cause: `ContextConnectionProvider` awaits its gRPC calls w
   - _Requirements: 8.1_
   - _Prompt: Implement task 7 for spec client-consistency. Role: React/TypeScript developer | Task: key each property-grid level by its own identity rather than its array index | Restrictions: one-line change in character; do not restructure the component or touch the row keys, which are already correct | _Leverage: the row keying at PropertyGridPanel.tsx:164 | Success: levels are keyed by identity, and all four gates pass by exit code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 8. Documentation and the closing gate run
+- [x] 8. Documentation and the closing gate run
   - Files: `docs/creating-a-diagram-module.md` or its client sibling, whichever documents the context channel
   - Record the rule where a module author will meet it: **a channel method that returns a value resolves with failure in that value; one returning `void` is advisory and swallows.** One paragraph, naming the guard that keeps it true.
   - Then the four gates on a tree with every task landed, exit codes captured before any pipe.
