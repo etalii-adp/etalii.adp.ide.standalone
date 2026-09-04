@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Hierarchy;
 using Xunit;
 using YamlDotNet.Core;
 using IoPath = System.IO.Path;
@@ -17,11 +18,11 @@ public class TimelineParserTests
     private static string FixturesFolder => IoPath.Combine(AppContext.BaseDirectory, "Fixtures");
 
     private static TimelineModel ParseFixture(string fixture) =>
-        TimelineParser.Parse(TimelineDocument.Parse(
+        TimelineParser.Parse(LineDocument.Parse(
             File.ReadAllText(IoPath.Combine(FixturesFolder, fixture))));
 
     private static TimelineModel Parse(string yaml) =>
-        TimelineParser.Parse(TimelineDocument.Parse(yaml));
+        TimelineParser.Parse(LineDocument.Parse(yaml));
 
     public static TheoryData<string> EveryFixture()
     {
@@ -54,7 +55,7 @@ public class TimelineParserTests
         // an uncorrected range either collapses to one line or runs into the next declaration -
         // and the writer would then edit somebody else's element.
         var text = File.ReadAllText(IoPath.Combine(FixturesFolder, fixture));
-        var document = TimelineDocument.Parse(text);
+        var document = LineDocument.Parse(text);
         var model = TimelineParser.Parse(document);
 
         // Each declaration is checked against a second thing it must cover besides its id. An id

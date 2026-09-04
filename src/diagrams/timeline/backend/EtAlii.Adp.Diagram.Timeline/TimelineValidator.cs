@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Hierarchy;
 using Serilog;
 using YamlDotNet.Core;
 
@@ -34,7 +35,7 @@ public sealed class TimelineValidator : IDiagramValidator
         TimelineModel model;
         try
         {
-            model = TimelineParser.Parse(TimelineDocument.Parse(request.Document));
+            model = TimelineParser.Parse(LineDocument.Parse(request.Document));
         }
         catch (YamlException exception)
         {

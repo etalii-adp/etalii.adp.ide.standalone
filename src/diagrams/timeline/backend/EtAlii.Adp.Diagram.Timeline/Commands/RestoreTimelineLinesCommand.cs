@@ -1,5 +1,7 @@
 using EtAlii.Adp.Backend;
 
+using EtAlii.Adp.Backend.Hierarchy;
+
 namespace EtAlii.Adp.Diagram.Timeline;
 
 /// <summary>
@@ -12,4 +14,4 @@ namespace EtAlii.Adp.Diagram.Timeline;
 public sealed record RestoreTimelineLinesCommand(
     string BodyPath,
     string ElementId,
-    IReadOnlyList<TimelineLineSegment> Segments) : ICommand;
+    IReadOnlyList<LineSegment> Segments) : ICommand;

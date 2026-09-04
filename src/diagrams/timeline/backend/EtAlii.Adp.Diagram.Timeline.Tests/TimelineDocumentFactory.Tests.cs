@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Hierarchy;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.Timeline.Tests;
@@ -16,7 +17,7 @@ public class TimelineDocumentFactoryTests
         var text = _factory.CreateEmptyDocument("plan");
 
         // Assert.
-        var model = TimelineParser.Parse(TimelineDocument.Parse(text));
+        var model = TimelineParser.Parse(LineDocument.Parse(text));
         Assert.Empty(model.Elements);
         Assert.Empty(model.Connections);
         Assert.StartsWith("timeline: 1", text, StringComparison.Ordinal);
@@ -40,14 +41,14 @@ public class TimelineDocumentFactoryTests
         // block entry after it without opening the section leaves the key with two values and
         // the file unparseable - a bug that would surface on the very first Add of every new
         // timeline.
-        var document = TimelineDocument.Parse(_factory.CreateEmptyDocument("plan"));
+        var document = LineDocument.Parse(_factory.CreateEmptyDocument("plan"));
         var model = TimelineParser.Parse(document);
 
         // Act.
         TimelineWriter.InsertElement(document, model, "first001", "First", "2026-01-01", "2026-01-31", 0);
 
         // Assert.
-        var reparsed = TimelineParser.Parse(TimelineDocument.Parse(document.Text));
+        var reparsed = TimelineParser.Parse(LineDocument.Parse(document.Text));
         var element = Assert.Single(reparsed.Elements);
         Assert.Equal("First", element.Label);
         Assert.DoesNotContain("[]", document.Text, StringComparison.Ordinal);

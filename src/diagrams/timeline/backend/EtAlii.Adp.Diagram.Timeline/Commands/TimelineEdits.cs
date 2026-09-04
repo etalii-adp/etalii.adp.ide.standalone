@@ -19,7 +19,7 @@ internal static class TimelineEdits
             string.Equals(candidate.Id, connectionId, StringComparison.Ordinal));
 
     /// <summary>The lines a range covers, captured for a byte-exact restore.</summary>
-    public static TimelineLineSegment Capture(TimelineDocument document, LineRange range) =>
+    public static LineSegment Capture(LineDocument document, LineRange range) =>
         new(
             range.Start,
             Enumerable.Range(range.Start, range.Length).Select(i => document.Lines[i].Text).ToList());
