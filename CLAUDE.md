@@ -1,5 +1,13 @@
 # EtAlii.Adp
 
+## Asking the user something
+
+**Every question to the user is a selection, never open prose.** Offer the concrete options with enough of each to choose on — what it means, what it costs — and end with an "other" so an answer nobody listed is still available. This holds for agents and for the scrum master alike, and it holds for the small ones: a question worth interrupting someone for is worth the minute it takes to enumerate the answers.
+
+An agent that cannot reach the user directly routes the question to the scrum master **already in that shape**, options and all, rather than as a paragraph for someone else to convert. Whoever writes the question knows the options; whoever relays it is guessing.
+
+Where an option is recommended, say which and why in its own text rather than in a preamble around the list.
+
 ## Chat naming
 
 Rename this session to `Agent N - <topic/specification>` whenever its topic changes, keeping any number it already has and taking the next free one otherwise. A finished agent renames itself `Agent N - Idle`.
