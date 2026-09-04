@@ -912,3 +912,67 @@ projection mark and the absence of any editing affordance by `SparqlCanvas.test.
 read-only reason on every property row by `SparqlProvidersTests`. What these four checks add is
 the eyes-on confirmation that the drawing reads correctly to a person, which is exactly the part
 a test cannot assert - so they are left here to be run by someone who can sign in.
+
+## Dragging an Ansible node stores the position, and reopening keeps it (ansible-refinements, task 4.2)
+
+Guarded end to end by `AnsibleStructureFlowTests.ARepositionOverTheWire_LandsInTheRegistration_ReopensThere_UndoesBack_AndNeverTouchesAnsiblesFiles`;
+kept here because only the running client proves the gesture itself - that a drag feels like a
+drag, that the node follows the pointer, and that a click still selects rather than moving.
+
+- **Preconditions**: backend + client running; a project containing an Ansible folder with an
+  `.adp` registration open in a diagram tab, showing at least one role and one playbook.
+- **Actions**: drag a role node a visible distance and release. Note where it lands. Close the
+  diagram tab and reopen the same diagram. Then press Ctrl+Z.
+- **Expected**: the node follows the pointer while dragging and stays where it was dropped;
+  the reopened diagram draws it in the same place, not back at its computed position; Ctrl+Z
+  returns it to where it was. Open the `.adp` in a text editor: it has a `layout:` block naming
+  the element and its position, and every playbook, role and inventory file is untouched.
+
+## An Ansible click still selects, and an edge cannot be dragged (ansible-refinements, task 4.2)
+
+- **Preconditions**: as above.
+- **Actions**: single-click a node. Then press and drag on an edge between two nodes.
+- **Expected**: the click selects the node - its border takes the accent colour - and does not
+  move it by even a pixel. The edge does not move and nothing is written to the `.adp`; edges
+  follow their endpoints, so only the nodes are arrangeable.
+
+## The Ansible canvas scrolls like its siblings (ansible-refinements, task 4.2)
+
+- **Preconditions**: an Ansible project large enough that its diagram exceeds the viewport -
+  the `lamp_haproxy` or `wordpress-nginx` showcase folders are big enough.
+- **Actions**: observe the scrollbars at the canvas edges; drag the horizontal thumb, then the
+  vertical one. Then open a small project whose diagram fits entirely.
+- **Expected**: two thin bars appear, their thumbs describing where the view sits in the
+  content; dragging a thumb pans the canvas without zooming it; the thumbs track the view when
+  panning by dragging the canvas itself. On the diagram that fits, the thumbs claim nearly the
+  whole track and invite no pan.
+
+## Both themes render the Ansible canvas deliberately (ansible-refinements, task 4.2)
+
+Three tokens this canvas used were referenced but never defined - `--color-surface-raised`,
+`--color-warning` and `--color-accent` - so parts of it rendered from fallbacks, inherited
+values, or nothing. A screenshot proves what a unit test cannot here.
+
+- **Preconditions**: an Ansible diagram open with several plays, at least one unresolved edge,
+  and one node selected.
+- **Actions**: view it in light mode, then switch the OS/browser to dark mode and view it again.
+- **Expected**: in both themes the node fills are visibly tinted per play and legible against
+  the canvas; the selected node's border is clearly the accent colour and unmistakably
+  different from unselected nodes; an unresolved edge is drawn in the warning colour; nothing
+  is black-on-black, white-on-white, or invisible.
+
+## Reordering plays moves stored positions with the index (ansible-refinements, task 4.2)
+
+The accepted consequence of a play's id being positional (`play:<relative-path>#<index>`),
+recorded in the design so it is expected rather than discovered: a play's identity in Ansible
+genuinely is its order, so a name-keyed id would break the ordinary unnamed or duplicate-named
+case.
+
+- **Preconditions**: an Ansible diagram whose playbook has at least two plays, both dragged to
+  distinctive positions and both visible.
+- **Actions**: in a text editor, swap the order of the two plays inside the playbook `.yml`
+  and save. Watch the open diagram.
+- **Expected**: the diagram updates, and the two play nodes keep their authored places while
+  their contents swap - the play now first sits where the previously-first play was put.
+  Nothing overlaps, disappears, or lands at a phantom position, and one drag per play
+  re-authors them. No warning is shown, deliberately.
