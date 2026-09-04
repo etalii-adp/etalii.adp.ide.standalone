@@ -50,21 +50,21 @@ A note on guards, since the question will come up: this specification has **no l
 - [ ] 2. The computed layout, the mapper, the session and the canvas
   - _Requirements: 2.1, 2.3, 2.4, 2.5, 2.6, 7.1, 7.2, 7.3, 7.4, 9.1, 9.2, 9.3, 9.4, 10.1, 10.2, 10.3, 10.4_
 
-- [-] 2.1 The computed layout, and the unplaced-element contract
+- [x] 2.1 The computed layout, and the unplaced-element contract
   - Files: `CausalLoopLayout.cs`
   - The ordinary layout a document opens with — not the self-organizing one, which is group 4 and is invoked
   - **An element the layout could not place must be distinguishable from one placed at `(0, 0)`.** Four modules shipped the origin as a fallback and a viewport then culled those elements everywhere except the top-left corner. Either place deliberately at a stated fallback documented as one, or exclude from the drawn set, and make the choice visible in code rather than emergent from `default`
   - _Requirements: 7.1, 7.2_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Compute the default layout and make an unplaced element distinguishable from one at the origin | Restrictions: no `? position : default` returning the origin as a silent fallback | _Leverage: diagram-layout's unplaced-element contract | Success: a test asserts every drawn element has a position, and asserts the drawn set is non-empty first. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.2 The mapper, and the two things that have no position
+- [x] 2.2 The mapper, and the two things that have no position
   - Files: `CausalLoopElementMapper.cs`
   - Variables carry positions; **links and loop labels do not**. A link is drawn between its endpoints, a loop label at the centroid of its members. Both are therefore filtered **structurally** — a link when both endpoints survive, a loop label when enough members do — and never by testing a position they do not have
   - Every sweep this task adds asserts its collection is non-empty before walking it, per the floor discipline, so no guard here can pass vacuously
   - _Requirements: 7.3, 7.4_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Map variables, links and loop labels to core elements, filtering links and loop labels structurally | Restrictions: never give a link or a loop label a position of its own; no vacuous Assert.All without a non-empty floor before it | _Leverage: helm-charts filters edges on both endpoints surviving | Success: a viewport that admits one endpoint drops the link, and the loop label follows its members. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.3 The session and the view-delta loop, backend half
+- [-] 2.3 The session and the view-delta loop, backend half
   - Files: `CausalLoopSession.cs`, `CausalLoopSessionFactory.cs`
   - `UpdateView` answers a changed viewport with what came into view and what left it — **Add for what appeared, then Remove for what left**, the order both reference sessions emit in
   - **Lay out the whole document, then filter.** Laying out only the visible set makes the diagram crawl under the reader as they pan
