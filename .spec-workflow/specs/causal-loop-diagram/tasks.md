@@ -33,14 +33,14 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 3.1, 3.2, 3.6_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer implementing a graph algorithm | Task: Enumerate the document's elementary cycles with Johnson's algorithm under a stated bound, and derive each cycle's polarity by the even/odd rule | Restrictions: zero negative links is even and therefore reinforcing; a cycle containing an Unstated link is undecidable, never assumed positive; the bound carries the examined count outward | _Leverage: AutoCLD uses Johnson's for this same purpose, cited in the design | Success: nested, overlapping, empty and zero-negative cases all correct; the bound reports rather than truncates silently. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 1.4 The validator: report the disagreement, never correct it
+- [x] 1.4 The validator: report the disagreement, never correct it
   - Files: `CausalLoopValidator.cs`
   - Four findings: a stated label disagreeing with the computed polarity, naming the loop and **both** labels; a cycle the document labels not at all, which is the finding this notation most exists to produce; a loop made undecidable by an unstated link; the cycle bound reached, with the count examined
   - **The stated label and the computed one stay separate all the way out.** Requirement 3.3 forbids silent correction because the author's label may be the intent and the arrows the mistake; a model that overwrote one with the other would make the finding impossible to express
   - _Requirements: 3.3, 3.4, 3.5_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement the validator's four findings over the computed polarity | Restrictions: never rewrite a stated label to match the computed one; both must reach the caller; an unlabelled cycle is a finding, not a silence | _Leverage: the family validators for the finding shape and severities | Success: a document whose R2 is arithmetically balancing produces a finding naming both labels and changes no bytes. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 1.5 Gate and merge group 1
+- [-] 1.5 Gate and merge group 1
   - The four gates with exit codes captured before any pipe; merge through a fresh scratch worktree with `--no-ff` there and `--ff-only` into the main checkout; never merge in place while anything is staged
   - _Requirements: (gate)_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates, merge group 1 through a scratch worktree | Restrictions: do not merge on a failing gate; pick a worktree name not already spent | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
