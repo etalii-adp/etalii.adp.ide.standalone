@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/backend-consistency/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-04T06:56:41.924Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788505001833_4kcfz5dry",
+      "approvalTitle": "backend-consistency requirements: the src/backend survey — 3 reads bypassing SharedDocumentReader, 4 unguarded fire-and-forget tasks, and 5 verified non-findings"
+    }
+  ]
+}
