@@ -84,6 +84,7 @@ public class OwlValidatorTests
         // Assert: named once, not once per axiom.
         var problem = Assert.Single(problems);
         Assert.Equal(OwlValidator.UndeclaredPropertyRuleId, problem.RuleId);
+        Assert.Equal(DiagramProblemSeverity.Info, problem.Severity);
         Assert.Contains(":p", problem.Message);
         Assert.Contains("not fetched", problem.Message);
     }
@@ -100,6 +101,7 @@ public class OwlValidatorTests
         // Assert.
         var problem = Assert.Single(problems);
         Assert.Equal(OwlValidator.DeprecatedReferenceRuleId, problem.RuleId);
+        Assert.Equal(DiagramProblemSeverity.Info, problem.Severity);
         Assert.Contains(":Old", problem.Message);
     }
 
@@ -115,6 +117,7 @@ public class OwlValidatorTests
         // Assert.
         var problem = Assert.Single(problems);
         Assert.Equal(OwlValidator.ImportsNotFetchedRuleId, problem.RuleId);
+        Assert.Equal(DiagramProblemSeverity.Info, problem.Severity);
         Assert.Contains("http://example.org/base", problem.Message);
         Assert.Contains("not fetched", problem.Message);
     }
