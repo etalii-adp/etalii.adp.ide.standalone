@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FixedBezierConnection } from "@client/canvas/connections/fixed-bezier/FixedBezierConnection";
+import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
+import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import { BoxElement } from "@client/canvas/elements/box/BoxElement";
 import { elementSelectionOf } from "@client/canvas/selection";
 import { useContextConnection, useContextProblems } from "@client/shell/context/ContextConnectionProvider";
@@ -213,6 +215,7 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
           Loading…
         </div>
       ) : (
+        <>
         <svg
           ref={surfaceRef}
           className="pipeline-canvas-surface"
@@ -263,6 +266,12 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
             />
           ))}
         </svg>
+        <CanvasScrollbars
+          {...scrollAxesOf(effectiveView, model)}
+          className="pipeline-scrollbars"
+          onPan={(x, y) => setView({ ...effectiveView, x, y })}
+        />
+        </>
       )}
     </div>
   );
@@ -468,6 +477,28 @@ function PipelineEdgeShape({ edge, model }: { edge: PipelineEdgeLine; model: Pip
       markerEnd="url(#pipeline-arrow)"
     />
   );
+}
+
+/**
+ * Where the view sits inside the content, as the two axes the shared scrollbars take.
+ *
+ * A ViewBox canvas needs no DOM measurement: the view's span in content units IS `w` and `h`.
+ * The extent is the drawn stages and jobs plus a proportional margin, floored at the widest
+ * and tallest box so a one-stage pipeline still has room either side.
+ */
+function scrollAxesOf(view: ViewBox, model: PipelineModel) {
+  const boxes = boxesOf(model);
+  const widest = boxes.length > 0 ? Math.max(...boxes.map((box) => box.width)) : view.w;
+  const tallest = boxes.length > 0 ? Math.max(...boxes.map((box) => box.height)) : view.h;
+  const minX = boxes.length > 0 ? Math.min(...boxes.map((box) => box.x)) : view.x;
+  const maxX = boxes.length > 0 ? Math.max(...boxes.map((box) => box.x + box.width)) : view.x + view.w;
+  const minY = boxes.length > 0 ? Math.min(...boxes.map((box) => box.y)) : view.y;
+  const maxY = boxes.length > 0 ? Math.max(...boxes.map((box) => box.y + box.height)) : view.y + view.h;
+
+  return {
+    horizontal: { viewStart: view.x, viewSpan: view.w, ...scrollExtentOf(minX, maxX, { factor: 0.5, minimumSpan: widest }) },
+    vertical: { viewStart: view.y, viewSpan: view.h, ...scrollExtentOf(minY, maxY, { factor: 0.5, minimumSpan: tallest }) },
+  };
 }
 
 /** The whole pipeline with a margin, which is what fit-to-view starts from. */
