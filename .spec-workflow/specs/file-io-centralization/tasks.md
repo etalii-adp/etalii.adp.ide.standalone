@@ -25,10 +25,10 @@
   - Backend tests and `dotnet format style --verify-no-changes --severity info` from `src/backend`, judged by captured exit codes
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Set the two MSBuild variables, run the backend gates capturing each exit code before any pipe, then merge via the main checkout committing by explicit pathspec | Restrictions: never judge a gate by piped output; a zero-test run is a broken build; read git status for files you did not touch before merging, and never stash or checkout another session's work | Success: both gates exit zero by captured code and the merge lands. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. `LineRange`: four identical copies become one
+- [-] 2. `LineRange`: four identical copies become one
   - _Requirements: 1.1, 1.2, 4.1, 4.2_
 
-- [ ] 2.1 Move `LineRange` to core and delete the four copies
+- [-] 2.1 Move `LineRange` to core and delete the four copies
   - Files: new `src/backend/EtAlii.Adp.Backend/Hierarchy/LineRange.cs`; delete `_Model/LineRange.cs` from databricks, dependency-graph, rdf and timeline; add the `using` to each namespace that referenced it
   - The clean rule-of-three case: four consumers of `public readonly record struct LineRange(int Start, int End)`, each at line 13 of its own file, identical once namespace and comments are set aside. No behaviour changes; this is deletion plus a `using`.
   - Carry the best of the four doc comments onto the core type rather than writing a new one — one of them already explains the inclusive-End convention, and that reasoning should survive the move.
