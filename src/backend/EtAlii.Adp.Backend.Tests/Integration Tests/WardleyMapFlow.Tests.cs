@@ -71,6 +71,17 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
             {
                 services.RemoveAll<IProjectStore>();
                 services.AddSingleton<IProjectStore>(new FileProjectStore(_appDataRoot));
+                // The problem cache must live and die with this test, not in the real user
+                // profile the host's AddProblems registration points at. A host booted without
+                // this override leaves a cache file behind naming a temp folder that is deleted
+                // moments later, and every later run then walks that dead root at startup: 605
+                // such files had accumulated, costing the suite 22,591 warnings and an apparent
+                // hang. DiagramToolboxFlowTests fixed this for itself; it never generalised.
+                services.RemoveAll<Problems.IProblemStore>();
+                services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
+                    _appDataRoot,
+                    provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
+                    provider.GetRequiredService<Diagram.DiagramValidators>()));
             });
         });
     }
