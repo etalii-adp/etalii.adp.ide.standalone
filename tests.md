@@ -928,6 +928,15 @@ reading: shapes carry kind, and the axioms are visible without opening the Turtl
   deprecated OWL-Time classes are visibly dimmed; and the Errors and Warnings panel reports
   nothing for either file.
 
+- **Result 2026-09-04**: **pending** - the app opens on a sign-in form, and entering a
+  credential is outside what an agent does here, the checked-in developer placeholder included.
+  Recorded rather than skipped, and the drawing itself is covered meanwhile: `OwlCanvasTests`
+  asserts each kind's shape, the badges and rows on a card, and the dimming classes; and the
+  layout was measured on this very file by `OwlLayoutTests.NoTwoElementsOverlap_OnARealOntology`
+  and `ASubclassEdge_RunsBetweenNeighbouringColumns_RatherThanAcrossTheCanvas`, which is what
+  turned an unreadable first drawing into the current one. That the file reports nothing is
+  covered by `OwlValidatorTests` plus the probe recorded in the examples readme (0 findings).
+
 ## An expression node refuses to be dragged, and says why (owl-diagram, task 4.3)
 
 The blank-node identity boundary as the user meets it — the refusal has to be readable, not a
@@ -941,6 +950,12 @@ silent no-op.
   byte; the restriction node does not move, and the canvas shows the sentence saying its
   identity does not survive an edit to the file, so a stored position could not be trusted.
 
+- **Result 2026-09-04**: **pending**, same reason - sign-in. Covered meanwhile end to end by
+  `OwlFlowTests.AnExpressionNode_RefusesTheReposition_WithTheBoundarysSentence` (over the real
+  host, asserting the sentence and that nothing is stored for the id) and
+  `AClassReposition_LandsInTheAdp_SurvivesReopen_AndTheOntologyNeverChanges`; the canvas half is
+  `OwlCanvasTests`' reposition case, which asserts the refusal reaches the user.
+
 ## The full class expression is one selection away (owl-diagram, task 4.3)
 
 Requirement 3.4's answer to nesting: the canvas label is capped, the property grid is not.
@@ -952,6 +967,11 @@ Requirement 3.4's answer to nesting: the canvas label is capped, the property gr
   whose reason names the identity boundary; the owning class lists the same expression among
   its "Subclass of" rows. Where a label on the canvas ends in `…`, the panel's text is longer
   than the label — the elision is real and recoverable.
+
+- **Result 2026-09-04**: **pending**, same reason - sign-in. Covered meanwhile by
+  `OwlProvidersTests.AnExpressionSelection_ShowsTheUncappedForm_ReadOnlyWithTheBoundarySentence`
+  and `AClassSelection_CarriesItsAxiomRows`, and by `ExpressionRendererTests`' depth-cap case,
+  which asserts the capped label against the uncapped form the grid shows.
 
 ## An ontology is offered for a marked file, and a bare one still opens as a graph (owl-diagram, task 4.3)
 
@@ -965,3 +985,9 @@ The routing arrangement: a reading is chosen, never assumed, and the anchor keep
   rows), not as an ontology; the Add dialog offers both "RDF Graph" and "OWL Ontology" because
   the file carries an `owl:Ontology` marker; choosing the ontology writes an `.adp` naming
   `w3c/owl` and the file reopens in the ontology reading.
+
+- **Result 2026-09-04**: **pending**, same reason - sign-in. Covered meanwhile by
+  `OwlFlowTests.ARegisteredOntology_StreamsItsShapesAndAxioms_AndABareBodyStaysTheGraphReadings`
+  (a bare marked file opens as the data graph over the real host), by
+  `DiagramFileRouterSharedExtensionTests.AFamilysSharedReadings_NeverWinTheBareBodyFromTheAnchor`
+  and by the two marker facts in `AddDiagramContextActionProviderRegistrationTests`.
