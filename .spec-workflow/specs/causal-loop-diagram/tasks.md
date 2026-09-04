@@ -11,13 +11,13 @@ A note on guards, since the question will come up: this specification has **no l
 - [ ] 1. A module that computes loop polarity before it draws anything
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 5.1, 5.2_
 
-- [-] 1.1 The module skeleton, its registration and its document factory
+- [x] 1.1 The module skeleton, its registration and its document factory
   - Files: `src/diagrams/causal-loop/backend/EtAlii.Adp.Diagram.CausalLoop/` — `Diagram.cs` (the definition: extension `.cld`, origin `systems/causal-loop-diagram`, `HasDocumentSibling`), `CausalLoopDocumentFactory.cs`, `ServiceCollection.AddCausalLoop.cs`; plus the `.Tests` project
   - **Register the `IDiagramDocumentFactory` in this task and not later.** A module declaring `HasDocumentSibling` without one ships unable to create a diagram at all — core refuses the creation path, and the startup check cannot see a module still under construction. sparql was corrected for exactly this and plantuml carries it as an open task. The factory's output must open and draw, not be an empty file the canvas then reports as unreadable
   - _Requirements: 1.1, 1.4, 5.1, 5.2_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer building a diagram module | Task: Create the module skeleton with its definition, service registration and document factory, and a test that the factory's document opens and draws | Restrictions: do not skip the document factory; the origin is `systems/causal-loop-diagram` exactly, `causal` not `casual` and the `-diagram` suffix is deliberate | _Leverage: any recent module's skeleton, and sparql's document-factory correction | Success: a new .cld can be created from the UI path and opens. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 1.2 The body format, the parser and the document
+- [-] 1.2 The body format, the parser and the document
   - Files: `CausalLoopDocument.cs`, `CausalLoopParser.cs`, `_Model/` — `CausalLoopModel`, `CausalLoopVariable`, `CausalLoopLink` (`From`, `To`, `Polarity`, `Delayed`, `Weight`, `Label`), `CausalLoopLoop` (`Identifier`, `Name`, member links, and no position)
   - The design records XMILE as considered and rejected with three reasons; the format is this module's own, line-oriented, one statement per line so a new link is a one-line diff. Preserve line positions in the document so writers splice rather than reserialize
   - `Polarity` has three cases and `Unstated` is a real one — never default an unmarked link to positive, because Requirement 3.6 turns on telling "unknown" from "positive". Read `s` and `o` as the same two meanings as `+` and `-`
