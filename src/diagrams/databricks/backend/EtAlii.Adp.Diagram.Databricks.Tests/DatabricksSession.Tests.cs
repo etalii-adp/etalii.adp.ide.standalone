@@ -290,4 +290,41 @@ public class DatabricksSessionTests : IDisposable
         Assert.Contains("task:ingest", elements);
         Assert.Contains("cluster:ingest_cluster", elements);
     }
+
+    [Fact]
+    public async Task AnEditOutsideTheViewport_IsNotPushedToAConnectionThatCannotSeeIt()
+    {
+        // Arrange.
+        // Two tasks and no dependency between them, so the one-hop edge rule is not what this
+        // test is measuring: `far` is out of view on its own account.
+        var body = IoPath.Combine(_root, "edit.yml");
+        File.WriteAllText(body,
+            "resources:\r\n  jobs:\r\n    j:\r\n      name: J\r\n      tasks:\r\n"
+            + "        - task_key: near\r\n          notebook_task:\r\n            notebook_path: notebooks/near\r\n"
+            + "        - task_key: far\r\n          notebook_task:\r\n            notebook_path: notebooks/far\r\n");
+        var adp = WriteRegistration("databricks/job", "edit.yml", "layout:\r\n  task:near: 0 0\r\n  task:far: 0 5000\r\n");
+
+        await using var session = Open("databricks/job", body, adp);
+        _ = session.Baseline();
+        _ = session.UpdateView(Around(0));
+
+        var pushed = new List<DiagramDelta>();
+        session.Changed += (_, args) => pushed.AddRange(args.Deltas);
+
+        // Act: somebody edits the task the reader has panned away from.
+        File.WriteAllText(body,
+            "resources:\r\n  jobs:\r\n    j:\r\n      name: J\r\n      tasks:\r\n"
+            + "        - task_key: near\r\n          notebook_task:\r\n            notebook_path: notebooks/near\r\n"
+            + "        - task_key: far\r\n          notebook_task:\r\n            notebook_path: notebooks/far-edited\r\n");
+        _provider.GetRequiredService<IDatabricksDocumentStore>().Reload(body);
+
+        // Assert.
+        // The change path and the viewport path have to agree about what this connection holds.
+        // They are written as two methods and were never exercised together, so nothing else in
+        // this suite would notice them disagreeing: a change path that re-rendered unfiltered
+        // would push `far` as an add to a client that was told to remove it moments earlier, and
+        // the diagram would grow back the elements the viewport culled on the next save. Found on
+        // timeline first (Agent 2), and the same shape here.
+        Assert.DoesNotContain("task:far", AddedBy(pushed));
+    }
 }

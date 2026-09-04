@@ -169,6 +169,58 @@ public class HelmElementMapperTests
         // Never a group or ungroup: nothing here folds, nothing here is edited.
     }
 
+    /// <summary>
+    /// <see cref="HelmElementMapper.Elements"/> is now reachable only from tests - the session
+    /// goes through <see cref="HelmElementMapper.Visible"/> for its baseline as well as its view
+    /// updates - and its body is very nearly the unbounded case of that method written a second
+    /// time. Two bodies with no stated relationship drift, and the one nothing exercises drifts
+    /// first, so the relationship is stated here instead.
+    /// </summary>
+    [Fact]
+    public void TheUnfilteredMapping_MatchesTheUnboundedViewport_OnARealChart()
+    {
+        // Arrange: computed boxes rather than the hand-built ones, because what makes the two
+        // agree is a property of the layout - it places every node - and hand-built boxes would
+        // assume the very thing worth checking.
+        var (chart, graph) = WellFormed();
+        var boxes = HelmLayout.Compute(chart, graph);
+        var mapper = new HelmElementMapper();
+
+        // Act & assert: the same elements, in the same order.
+        Assert.Equal(
+            mapper.Elements(chart, graph, boxes).Select(element => element.Id),
+            mapper.Visible(chart, graph, boxes, DiagramViewport.Unbounded).Select(element => element.Id));
+    }
+
+    /// <summary>
+    /// And where they part, which is why the two are not simply collapsed into one.
+    /// </summary>
+    /// <remarks>
+    /// An unbounded viewport is not quite "everything": <see cref="HelmElementMapper.Visible"/>
+    /// admits a node only if the layout gave it a box, and an edge only if both its ends were
+    /// admitted. On a well-formed chart neither exclusion bites - the test above is the proof -
+    /// but they are real, so replacing <c>Elements</c> with a call to <c>Visible</c> would
+    /// quietly change what a malformed graph maps to rather than being the pure refactor it
+    /// looks like.
+    /// </remarks>
+    [Fact]
+    public void TheTwoPartCompany_WhenTheLayoutPlacedNothing()
+    {
+        // Arrange: the same graph, with every box withheld.
+        var (chart, graph) = WellFormed();
+        var none = new Dictionary<string, HelmBox>(StringComparer.Ordinal);
+        var mapper = new HelmElementMapper();
+
+        // Act.
+        var unfiltered = mapper.Elements(chart, graph, none);
+        var unbounded = mapper.Visible(chart, graph, none, DiagramViewport.Unbounded);
+
+        // Assert: the unfiltered mapping still draws the chart; the viewport one has nothing it
+        // can place.
+        Assert.NotEmpty(unfiltered);
+        Assert.Empty(unbounded);
+    }
+
     private static Wire.HelmElementPayload Payload(DiagramElement element) =>
         Wire.HelmElementPayload.Parser.ParseFrom(element.Payload.Span);
 }

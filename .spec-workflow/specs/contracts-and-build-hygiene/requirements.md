@@ -2,7 +2,7 @@
 
 ## Introduction
 
-A read of the contracts, the build configuration and the documentation that describes them, at develop `469b1fbd`. Nine findings: **five defects** — something is wrong now — and **four items of drift**, where a document was true when written and misleads a reader today.
+A read of the contracts, the build configuration and the documentation that describes them, at develop `469b1fbd`, with the naming survey added on review at `fb971f94`. Ten findings: **six defects** — something is wrong now — and **four items of drift**, where a document was true when written and misleads a reader today.
 
 The build configuration itself came out clean, and that is worth recording as loudly as the defects, because it is what makes the defects legible: one `TargetFramework` (`net10.0`) in `src/Directory.Build.props:5` with no project overriding it, `Nullable` and `ImplicitUsings` enabled centrally, **zero** floated package versions (every `PackageReference` version lives in `src/Directory.Packages.props`), and **every** `*.Tests.csproj` declaring `<OutputType>Exe</OutputType>` — the omission that would report as `Zero tests ran` rather than as a broken build. All four gates pass locally on `469b1fbd`: `dotnet test` **0** (4,399 tests, 0 failed), `dotnet format style` **0**, `npm test` **0** (82 files, 809 tests), `npm run typecheck` **0**.
 
@@ -74,7 +74,50 @@ Measured across all 22 `.proto` files: 122 enum values, of which **12** are refe
 3. WHEN a value is removed from a contract THEN its field number SHALL be `reserved`, because a number reused later is a wire-compatibility break that no test would catch.
 4. WHERE a value is a proto3 zero default THEN it SHALL be left alone.
 
-### Requirement 5 — CLAUDE.md and `docs/diagrams.md` agree on the state vocabulary
+### Requirement 5 — A contract type and its hand-written counterparts carry the same name
+
+**User Story:** As someone moving between a `.proto`, the backend model and the client model for one concept, I want the three to be called the same thing, so I can tell at a glance that they *are* one concept.
+
+**The contract is the source of truth**, per the user's instruction on review, and the survey below was run to answer it rather than reasoned about.
+
+Measured across all 22 contracts and 1,160 hand-written C# types: **175 messages and enums, 8 matched exactly by a same-named hand-written type, 40 whose counterpart differs, and 127 with no counterpart at all** — the last group being request and response messages, which correctly have none. The 40 are not one problem. They are three, and only one of them is a defect.
+
+**Family A — `…Payload` on the wire, the bare name in code (26 of the 40).** `WardleyLinkPayload` / `WardleyLink`, `TimelineElementPayload` / `TimelineElement`, `MindmapNodePayload` / `MindmapNode`, `C4ElementPayload` / `C4Element`, and so on through every diagram module. **This is a convention and it says something true**: the proto message is the packed `Any` payload carried inside a `DiagramElement`, while the C# and TypeScript types are the parsed domain object. The client uses the bare name too, so both implementations agree with each other and differ from the wire in the same direction. Renaming 26 domain types to `…Payload` to satisfy a rule would make every one of them claim to be a wire packet. This family should be **written down as a convention, not aligned away**.
+
+**Family B — `…Proto` on the wire, the bare name in code (4).** `C4ElementKindProto` / `C4ElementKind`, `PipelineEdgeConditionProto` / `PipelineEdgeCondition`, `ShaclTargetKindProto` / `ShaclTargetKind`, `ShaclTargetChipProto` / `ShaclTargetChip`. Here the **contract carries a suffix that exists only to avoid colliding with the C# type** — the implementation naming the contract rather than the other way round, which is exactly the inversion the user's rule forbids. One of these resolves itself: `C4ElementKindProto` is the dead enum in Requirement 4, so it is deleted rather than renamed.
+
+**Family C — genuinely different words for one thing (8), and this is the defect.** Eight core-contract messages whose backend counterpart is named by a different noun, with **three different suffixes doing one job**:
+
+| contract | backend | suffix |
+|---|---|---|
+| `ContextShortcut` (`context.proto:280`) | `ContextShortcutDefinition` | Definition |
+| `ContextAction` (`context.proto:288`) | `ContextActionDefinition` | Definition |
+| `ContextActionGroup` (`context.proto:300`) | `ContextActionGroupDefinition` | Definition |
+| `ContextProperty` (`context.proto:397`) | `ContextPropertyDefinition` | Definition |
+| `ToolboxItem` (`diagrams.proto:124`) | `ToolboxItemDefinition` | Definition |
+| `ContextOption` (`context.proto:329`) | `ContextOptionNode` | Node |
+| `ContextTextField` (`context.proto:348`) | `ContextTextFieldRequest` | Request |
+| `Entry` (`hierarchy.proto:29`) | `EntryNode` | Node |
+
+`Definition`, `Node` and `Request` all mean "the backend's own version of this message", and nothing says which to use. That is how a fourth appears.
+
+**The good news, which bounds the work: the fields already agree.** Checked field by field across six of these pairs — 33 proto fields, **32** with a same-named member on the C# side. So this is a type-name problem, not a property-name problem, and the correction is mechanical rather than sweeping.
+
+**The exception is the one that matters.** `Entry.kind` is an `EntryKind` **enum** on the wire; `EntryNode` carries **`bool IsFolder`**. That is not a naming difference, it is a narrower model: a third entry kind added to the contract cannot be represented in the backend's own type, and nothing would fail — the boolean would simply answer false. This is the single semantic divergence the survey found.
+
+One more worth recording because it is the same disease across three names rather than two: the wire says `ViewUpdate` (`connection.proto:24`), the backend says `DiagramViewport`, and the client says `Viewport` and `ViewBox`. Four names, one idea.
+
+#### Acceptance Criteria
+
+1. WHEN a contract message has a hand-written counterpart on either side THEN they SHALL share a name, with the contract's name deciding.
+2. WHERE a suffix distinguishes the wire type from the domain type THEN **one** suffix SHALL be chosen and written down as a convention; the three now in use for one meaning (`Definition`, `Node`, `Request`) SHALL become one.
+3. WHEN a contract name carries a `…Proto` suffix that exists only to avoid colliding with a C# type THEN the contract SHALL be renamed and the implementation SHALL adapt, because the contract is the source of truth — except where the type is dead, which Requirement 4 removes instead.
+4. WHERE the `…Payload` family marks a packed `Any` payload THEN it SHALL be recorded as a deliberate convention with its reason, and SHALL NOT be renamed.
+5. WHEN `EntryNode` is corrected THEN the `bool IsFolder` / `EntryKind kind` divergence SHALL be resolved in favour of the contract's enum, so a new entry kind is representable rather than silently false.
+6. WHEN a rename lands THEN it SHALL be a rename only — no field, wire number or behaviour changes with it — and the four gates SHALL stay green.
+7. WHERE renaming a message changes generated code on both sides THEN the change SHALL be sequenced as its own commit, because a rename mixed with behaviour is a diff nobody can review.
+
+### Requirement 6 — CLAUDE.md and `docs/diagrams.md` agree on the state vocabulary
 
 **User Story:** As an agent about to update the catalog, I want one list of states, so I do not "correct" fifteen rows into being wrong.
 
@@ -86,7 +129,7 @@ Measured across all 22 `.proto` files: 122 enum values, of which **12** are refe
 2. WHEN a state is added or removed THEN both SHALL change in the same commit.
 3. This spec SHALL NOT edit CLAUDE.md as part of the scan that found this; the change belongs to whoever owns that document, with the contradiction stated.
 
-### Requirement 6 — The catalog can be read as what ADP actually offers
+### Requirement 7 — The catalog can be read as what ADP actually offers
 
 **User Story:** As a reader of `docs/diagrams.md`, I want a row's state to tell me what the app does with that type, because that is the only reason to consult it.
 
@@ -100,7 +143,7 @@ Roughly fifty definitions are name-and-icon-only placeholders of this kind. That
 2. WHEN a row states a state THEN it SHALL be derivable from the tree, and a test SHOULD derive it — a catalog checked by hand drifts again the week after it is corrected.
 3. WHERE placeholders are offered in the Add dialog THEN this spec SHALL record whether that is intended, because a user choosing one of ~50 unimplemented types is a separate question this scan does not answer.
 
-### Requirement 7 — Publish paths do not depend on one platform's separator
+### Requirement 8 — Publish paths do not depend on one platform's separator
 
 **User Story:** As a maintainer, I want the build to describe paths the same way everywhere, because the exception is what hides.
 
@@ -111,7 +154,7 @@ Roughly fifty definitions are name-and-icon-only placeholders of this kind. That
 1. WHEN a path appears in a project file THEN it SHALL use forward slashes, which both platforms accept.
 2. WHEN this is changed THEN a publish SHALL be run and its output directory inspected, not merely built — that is how the `wwwroot/dist/` duplication was found rather than reasoned about.
 
-### Requirement 8 — Compiler warnings are not invisible
+### Requirement 9 — Compiler warnings are not invisible
 
 **User Story:** As a maintainer, I want to know whether a warning-free build is a fact or an assumption.
 
@@ -122,7 +165,7 @@ No `TreatWarningsAsErrors`, `WarningsAsErrors` or `AnalysisLevel` is set anywher
 1. WHEN this is decided THEN the decision SHALL be recorded either way — warnings promoted to errors, or explicitly tolerated with the reason.
 2. IF warnings are promoted THEN the existing warning count SHALL be measured first, because promoting an unknown number of warnings turns one decision into an unbounded task.
 
-### Requirement 9 — Screenshots match the UI they claim to show
+### Requirement 10 — Screenshots match the UI they claim to show
 
 **User Story:** As a reader of the docs, I want a screenshot to be current, or to know that it is not.
 
@@ -141,7 +184,8 @@ All seven images under `docs/screenshots/` were last written 2026-09-03; `src/cl
 
 ### Code Architecture and Modularity
 
-- One concept, one definition. The `C4ElementKindProto` / `C4ElementKind` pair is the instance found; the requirement is the rule.
+- One concept, one definition, **and one name**. The `C4ElementKindProto` / `C4ElementKind` pair is both at once: two definitions of one vocabulary, under two names, of which the contract's carries a suffix that exists only to avoid the collision. A concept named differently in the contract and in the code is a concept two readers will believe are two.
+- The contract is the source of truth for names. Where the implementation and the wire disagree, the wire wins - and where a deliberate difference is worth keeping, such as the `…Payload` marker, it is written down as a convention rather than left for each reader to infer.
 
 ### Documentation
 
@@ -149,6 +193,6 @@ All seven images under `docs/screenshots/` were last written 2026-09-03; `src/cl
 
 ## Out of Scope
 
-- Backend source, client source, `src/diagrams/**` implementation and the test projects — other agents' lanes. Where this scan touched them it was to read, not to judge.
+- Backend source, client source, `src/diagrams/**` implementation and the test projects — other agents' lanes. Where this scan touched them it was to read, not to judge. **Requirement 5 is the exception the review asked for**: its survey reads the backend and client models by name, because a contract's alignment cannot be judged from one side of it.
 - `docs/dependencies.md`, which has its own guard.
 - Editing CLAUDE.md. The contradiction in Requirement 5 is reported, not resolved.

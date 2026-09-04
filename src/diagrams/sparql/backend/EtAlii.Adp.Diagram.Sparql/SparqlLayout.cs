@@ -34,8 +34,15 @@ public sealed record SparqlLayoutResult(
 /// </summary>
 public static class SparqlLayout
 {
-    private const double NodeWidth = 170;
-    private const double NodeHeight = 64;
+    /// <summary>
+    /// A node's drawn size. Public because the viewport filter tests a node's BOX against the
+    /// rectangle, not its anchor point - a node whose anchor sits just outside a viewport is
+    /// still half on screen (view-delta-adoption Requirement 1.2).
+    /// </summary>
+    public const double NodeWidth = 170;
+
+    /// <inheritdoc cref="NodeWidth"/>
+    public const double NodeHeight = 64;
     private const double GapX = 60;
     private const double GapY = 48;
     private const double RegionPadding = 36;

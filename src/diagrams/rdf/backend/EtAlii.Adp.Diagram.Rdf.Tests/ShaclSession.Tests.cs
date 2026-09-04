@@ -45,6 +45,30 @@ public class ShaclSessionTests : IDisposable
             sh:property [ sh:path ex:name ; sh:datatype xsd:string ; sh:minCount 1 ] .
         """;
 
+
+    /// <summary>
+    /// Two shapes rather than the stock one. A viewport test needs something to leave the view:
+    /// against a single-card document every viewport admits the whole diagram and the test
+    /// passes vacuously.
+    /// </summary>
+    private const string TwoShapes = """
+        @prefix sh: <http://www.w3.org/ns/shacl#> .
+        @prefix ex: <http://example.org/> .
+        @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+        ex:PersonShape a sh:NodeShape ;
+            sh:targetClass ex:Person ;
+            sh:property [ sh:path ex:name ; sh:datatype xsd:string ; sh:minCount 1 ] .
+
+        ex:OrganisationShape a sh:NodeShape ;
+            sh:targetClass ex:Organisation ;
+            sh:property [ sh:path ex:label ; sh:datatype xsd:string ; sh:minCount 1 ] .
+
+        ex:PlaceShape a sh:NodeShape ;
+            sh:targetClass ex:Place ;
+            sh:property [ sh:path ex:located ; sh:datatype xsd:string ] .
+        """;
+
     private string WriteBody(string name = "shapes.ttl", string text = Shapes)
     {
         var path = IoPath.Combine(_root, name);
@@ -255,4 +279,81 @@ public class ShaclSessionTests : IDisposable
         Assert.Single(card.Targets);
         Assert.Single(card.Rows);
     }
+
+    [Fact]
+    public async Task AViewportChange_AddsWhatCameIntoViewAndRemovesWhatLeft()
+    {
+        // Arrange.
+        // The behavioural definition of the mechanism (view-delta-adoption Requirement 1.3): a
+        // view CHANGE produces deltas. This is the test that fails against a session whose
+        // UpdateView returns an empty list, which no client-side assertion can catch.
+        var body = WriteBody(text: TwoShapes);
+        await using var session = Open(body, null);
+        var drawn = ElementsOfBaseline(session);
+        var anchor = drawn.OrderBy(element => element.Y).ThenBy(element => element.X).First();
+
+        // Act.
+        var narrowed = session.UpdateView(new DiagramViewport(anchor.X, anchor.Y, anchor.X + 1, anchor.Y + 1));
+        var widened = session.UpdateView(DiagramViewport.Unbounded);
+
+        // Assert.
+        var removed = narrowed.OfType<DiagramRemoveDelta>().SelectMany(delta => delta.ElementIds).ToHashSet(StringComparer.Ordinal);
+        Assert.NotEmpty(removed);
+        Assert.DoesNotContain(anchor.Id, removed);
+
+        var restored = widened.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
+        Assert.Subset(restored, removed);
+
+        // Add before Remove - what the reference implementations emit, and what this module's
+        // own mapper already produced. Requirement 4.3 anticipated the opposite.
+        var kinds = widened.Select(delta => delta is DiagramAddDelta ? 0 : 1).ToList();
+        Assert.Equal(kinds.OrderBy(kind => kind).ToList(), kinds);
+    }
+
+    [Fact]
+    public async Task AnUnchangedViewport_SaysNothingTwice()
+    {
+        // Arrange.
+        // A settled view that has not moved is not news; without this, any re-render that
+        // re-reported the same rectangle would re-send the whole diagram.
+        var body = WriteBody(text: TwoShapes);
+        await using var session = Open(body, null);
+        session.UpdateView(DiagramViewport.Unbounded);
+
+        // Act.
+        var again = session.UpdateView(DiagramViewport.Unbounded);
+
+        // Assert.
+        Assert.Empty(again);
+    }
+
+    [Fact]
+    public async Task PanningDoesNotMoveTheElementsItBringsIntoView()
+    {
+        // Arrange.
+        // The layout is computed over the whole document and only then filtered. Computed over
+        // the visible set instead, it would repack as the reader panned and the diagram would
+        // crawl under them.
+        var body = WriteBody(text: TwoShapes);
+        await using var session = Open(body, null);
+        var atOpen = ElementsOfBaseline(session).ToDictionary(element => element.Id, element => (element.X, element.Y), StringComparer.Ordinal);
+
+        // Act.
+        session.UpdateView(new DiagramViewport(0, 0, 1, 1));
+        var readmitted = session.UpdateView(DiagramViewport.Unbounded)
+            .OfType<DiagramAddDelta>()
+            .SelectMany(delta => delta.Elements)
+            .ToList();
+
+        // Assert.
+        Assert.NotEmpty(readmitted);
+        foreach (var element in readmitted)
+        {
+            Assert.Equal(atOpen[element.Id], (element.X, element.Y));
+        }
+    }
+
+    /// <summary>The baseline's elements - what the connection holds before any view is reported.</summary>
+    private static IReadOnlyList<DiagramElement> ElementsOfBaseline(IDiagramSession session) =>
+        session.Baseline().OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).ToList();
 }

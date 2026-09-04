@@ -3,6 +3,7 @@ import { Code, ConnectError, createClient } from "@connectrpc/connect";
 import { useAuth } from "@client/auth/AuthContext";
 import { DiagramService } from "@client/generated/diagrams_pb";
 import { useContextConnection } from "@client/shell/context/ContextConnectionProvider";
+import { viewReportOf, type Viewport } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type SparqlModel } from "./sparqlModel";
 
 export interface SparqlStream {
@@ -18,6 +19,11 @@ export interface SparqlStream {
    * the query - and the change is one undo away (Requirement 5.1).
    */
   moveElementTo: (elementId: string, x: number, y: number) => Promise<string>;
+  /**
+   * Reports what the reader can see, so the session answers with the elements that newly fall
+   * inside the viewport and removes the ones that left (view-delta-adoption Requirement 1.2).
+   */
+  reportView: (viewport: Viewport) => void;
 }
 
 /**
@@ -31,6 +37,8 @@ export function useSparqlStream(projectId: Uint8Array, path: readonly string[]):
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const clientRef = useRef(createClient(DiagramService, transport));
+
+  const reportView = viewReportOf(clientRef.current, projectId, watchId, path);
 
   const pathKey = path.join("/");
 
@@ -101,5 +109,5 @@ export function useSparqlStream(projectId: Uint8Array, path: readonly string[]):
     }
   };
 
-  return { model, loading, failed, moveElementTo };
+  return { model, loading, failed, moveElementTo, reportView };
 }

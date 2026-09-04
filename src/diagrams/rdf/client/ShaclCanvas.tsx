@@ -16,6 +16,8 @@ import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { ContextSelectionAction } from "@client/generated/context_pb";
 import { useShaclStream } from "./useShaclStream";
+import { useViewReport } from "@client/diagrams/useViewReport";
+import { viewportOf } from "./rdfViewport";
 import { shapeHeight, targetWords, type ShaclEdge, type ShaclModel } from "./shaclModel";
 
 /** A card's drawn width, in the module's own canvas units - matching the layout's column pitch. */
@@ -70,7 +72,7 @@ interface DragPreview {
  * are how one is added.
  */
 export function ShaclCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
-  const { model, loading, failed, moveElementTo } = useShaclStream(projectId, path);
+  const { model, loading, failed, reportView, moveElementTo } = useShaclStream(projectId, path);
   const { select, executeAction, executeShortcut } = useContextConnection();
   const { selection, actions } = useContextSelection();
   const surfaceRef = useRef<HTMLDivElement | null>(null);
@@ -78,6 +80,19 @@ export function ShaclCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   useRegisterDiagramToolbox(useToolboxItems(projectId, path));
 
   const [view, setView] = useState<ShaclView>(() => ({ startX: -60, startY: -60, pixelsPerUnit: 1 }));
+
+  const viewRef = useRef(view);
+  viewRef.current = view;
+
+  // What the reader can see, reported once it settles and on every later change. The report
+  // observes the view rather than being wired to any one gesture, so a pan, a scrollbar thumb,
+  // a zoom and a programmatic reveal all reach the backend by the same path.
+  useViewReport({
+    view: { x: view.startX, y: view.startY, w: view.pixelsPerUnit, h: view.pixelsPerUnit },
+    report: reportView,
+    convert: () => viewportOf(viewRef.current, surfaceRef.current?.getBoundingClientRect() ?? null),
+    ready: !loading && !failed,
+  });
   const fittedRef = useRef(false);
 
   const panRef = useRef<{ clientX: number; clientY: number; view: ShaclView; moved: boolean } | null>(null);

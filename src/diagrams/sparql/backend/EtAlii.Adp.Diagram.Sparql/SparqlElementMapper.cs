@@ -141,6 +141,81 @@ public sealed class SparqlElementMapper
         return elements;
     }
 
+    /// <summary>
+    /// The elements a viewport admits: every region whose frame the rectangle touches, every
+    /// node whose box it touches, and one hop outwards along the edges so a connector always
+    /// has both of its ends to be drawn between.
+    /// </summary>
+    /// <remarks>
+    /// The one-hop rule is the Ansible module's, kept rather than reinvented. A region needs no
+    /// hop of its own: layout guarantees a region's bounds contain its contents, so a visible
+    /// node's region is intersecting the viewport by construction.
+    /// </remarks>
+    public IReadOnlyList<DiagramElement> Visible(
+        SparqlProjectionResult projection, SparqlLayoutResult layout, DiagramViewport viewport)
+    {
+        ArgumentNullException.ThrowIfNull(projection);
+        ArgumentNullException.ThrowIfNull(layout);
+
+        var delivered = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var region in projection.Regions)
+        {
+            if (layout.RegionBounds.TryGetValue(region.Id, out var frame) && Intersects(frame, viewport))
+            {
+                delivered.Add(region.Id);
+            }
+        }
+
+        foreach (var node in projection.Nodes)
+        {
+            var at = layout.NodePositions.TryGetValue(node.Id, out var position) ? position : default;
+            if (Intersects(new SparqlRect(at.X, at.Y, SparqlLayout.NodeWidth, SparqlLayout.NodeHeight), viewport))
+            {
+                delivered.Add(node.Id);
+            }
+        }
+
+        // One hop, exactly: an edge with one end in view brings the other end with it.
+        foreach (var edge in projection.Edges)
+        {
+            if (delivered.Contains(edge.FromId) && edge.ToId.Length > 0)
+            {
+                delivered.Add(edge.ToId);
+            }
+            else if (edge.ToId.Length > 0 && delivered.Contains(edge.ToId))
+            {
+                delivered.Add(edge.FromId);
+            }
+        }
+
+        // An edge travels when both of its ends do; one with no target travels with its source.
+        var edgesById = projection.Edges.ToDictionary(edge => edge.Id, StringComparer.Ordinal);
+        foreach (var (id, edge) in edgesById)
+        {
+            if (delivered.Contains(edge.FromId) && (edge.ToId.Length == 0 || delivered.Contains(edge.ToId)))
+            {
+                delivered.Add(id);
+            }
+        }
+
+        // Anything that is neither region, node nor edge has no position to test - the header
+        // band is the case that matters - and travels always. Dropping it was the first thing
+        // this filter got wrong, and two existing tests caught it immediately.
+        var positioned = new HashSet<string>(StringComparer.Ordinal);
+        positioned.UnionWith(projection.Regions.Select(region => region.Id));
+        positioned.UnionWith(projection.Nodes.Select(node => node.Id));
+        positioned.UnionWith(edgesById.Keys);
+
+        // Rendered once and filtered, rather than re-packed here: the packing lives in one
+        // place, so a payload can never differ between the whole render and the narrowed one.
+        return [.. Elements(projection, layout)
+            .Where(element => !positioned.Contains(element.Id) || delivered.Contains(element.Id))];
+    }
+
+    private static bool Intersects(SparqlRect box, DiagramViewport viewport) =>
+        box.X <= viewport.MaxX && box.X + box.Width >= viewport.MinX &&
+        box.Y <= viewport.MaxY && box.Y + box.Height >= viewport.MinY;
+
     /// <summary>The difference between two renderings, as adds and removes - a change is an add carrying the element in its new state.</summary>
     public IReadOnlyList<DiagramDelta> Diff(
         IReadOnlyList<DiagramElement> before,

@@ -17,6 +17,7 @@ vi.mock("./useOwlStream", () => ({
     model: currentModel,
     loading: currentLoading,
     failed: currentFailed,
+    reportView: () => {},
     moveElementTo: (elementId: string, x: number, y: number) => {
       moves.push({ elementId, x, y });
       return Promise.resolve(moveError);

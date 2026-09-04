@@ -18,8 +18,16 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// contain spaces (Requirement 4).
 /// </para>
 /// <para>
-/// <see cref="UpdateView"/> answers with nothing new because the whole diagram is delivered at
-/// open: the budget bounds what is drawn, so there is nothing left to virtualize.
+/// <see cref="UpdateView"/> answers with what has come into view and takes back what has left.
+/// This is the module where viewport filtering pays for itself: the drawn-node budget alone
+/// discards by document order, so a reader of a large ontology could never reach past the first
+/// thousand resources however far they panned. The budget survives as a floor against a
+/// pathological view (Requirement 5.4), not as the means of keeping the document drawable.
+/// </para>
+/// <para>
+/// The whole document is projected and laid out whatever the viewport says, and only then
+/// filtered. A layout computed over the visible set would move every node as the reader panned,
+/// because the bands pack by what is in them.
 /// </para>
 /// </remarks>
 public sealed class RdfSession : IDiagramSession
@@ -36,6 +44,17 @@ public sealed class RdfSession : IDiagramSession
 
     /// <summary>What this connection was last sent, so a change can be diffed against it.</summary>
     private IReadOnlyList<DiagramElement> _delivered = [];
+
+    /// <summary>What this connection last said it can see. Everything, until it says otherwise.</summary>
+    private DiagramViewport _viewport = DiagramViewport.Unbounded;
+
+    /// <summary>
+    /// The whole document's projection and layout, kept between reports. A pan is a viewport
+    /// change and not a document change, so re-projecting and re-laying out an ontology of
+    /// thousands of resources on every settled pan would be work with no new answer. Dropped
+    /// whenever the document changes, which is the only thing that can invalidate it.
+    /// </summary>
+    private (RdfProjectionResult Projection, IReadOnlyDictionary<string, RegistrationPosition> Positions)? _laidOut;
 
     public RdfSession(
         string bodyPath,
@@ -73,8 +92,13 @@ public sealed class RdfSession : IDiagramSession
     /// <inheritdoc />
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
-        _ = viewport;
-        return [];
+        _viewport = viewport;
+
+        var current = Render();
+        var deltas = _mapper.Diff(_delivered, current);
+        _delivered = current;
+
+        return deltas;
     }
 
     /// <summary>Refused: nothing in this diagram nests under a parent - a resource's place is a position.</summary>
@@ -136,15 +160,74 @@ public sealed class RdfSession : IDiagramSession
 
     private IReadOnlyList<DiagramElement> Render()
     {
+        var (projection, positions) = LaidOut();
+        return _mapper.Elements(InView(projection, positions), positions);
+    }
+
+    /// <summary>
+    /// The whole document, projected and positioned, cached until the document changes.
+    /// Projected without a budget on purpose: a resource the reader can pan to needs a
+    /// position, and it can only have a stable one in a layout of everything.
+    /// </summary>
+    private (RdfProjectionResult Projection, IReadOnlyDictionary<string, RegistrationPosition> Positions) LaidOut()
+    {
+        if (_laidOut is { } cached)
+        {
+            return cached;
+        }
+
         var entry = _documents.GetOrLoad(_bodyPath);
-        var projection = RdfProjection.Project(entry.Model);
+        var projection = RdfProjection.Project(entry.Model, int.MaxValue);
         var stored = _registrationPath is { Length: > 0 }
             ? RegistrationLayout.Read(_registrationPath)
             : new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
 
         var positions = RegistrationLayout.Apply(RdfLayout.Positions(projection), stored);
-        return _mapper.Elements(projection, positions);
+        var result = (projection, positions);
+        _laidOut = result;
+
+        return result;
     }
+
+    /// <summary>
+    /// What the reported viewport admits: the nodes whose reserved cell it intersects, the edges
+    /// both of whose endpoints survived, and the budget applied to that set rather than to the
+    /// document.
+    /// </summary>
+    /// <remarks>
+    /// The counts handed on are the <em>document's</em>, not this view's, and that is deliberate.
+    /// <see cref="RdfSelection.IsTruncated" /> decides read-only from the document alone, with no
+    /// viewport to consult, so a banner derived from the view would contradict it - a file could
+    /// be read-only with nothing on screen saying why, or say it is truncated while every edit
+    /// was allowed. Reach improves; what a document may do does not change.
+    /// </remarks>
+    private RdfProjectionResult InView(
+        RdfProjectionResult projection, IReadOnlyDictionary<string, RegistrationPosition> positions)
+    {
+        var visible = projection.Nodes
+            .Where(node => RdfViewport.Admits(_viewport, positions, node.Id, RdfLayout.CellWidth, RdfLayout.CellHeight))
+            .ToList();
+
+        // The floor: only a view holding more than the whole budget is cut, and then in document
+        // order, so the same view always yields the same nodes.
+        var truncated = projection.Total > RdfProjection.DefaultBudget;
+        var kept = visible.Count > RdfProjection.DefaultBudget
+            ? visible.Take(RdfProjection.DefaultBudget).ToList()
+            : visible;
+
+        var keptIds = kept.Select(node => node.Id).ToHashSet(StringComparer.Ordinal);
+        var edges = projection.Edges
+            .Where(edge => keptIds.Contains(edge.FromId) && keptIds.Contains(edge.ToId))
+            .ToList();
+
+        return new RdfProjectionResult(
+            kept,
+            edges,
+            truncated ? RdfProjection.DefaultBudget : kept.Count,
+            truncated ? projection.Total : kept.Count);
+    }
+
+
 
     private void OnDocumentChanged(object? sender, RdfDocumentChangedEventArgs args)
     {
@@ -155,6 +238,7 @@ public sealed class RdfSession : IDiagramSession
 
         try
         {
+            _laidOut = null;
             var current = Render();
             var deltas = _mapper.Diff(_delivered, current);
             _delivered = current;

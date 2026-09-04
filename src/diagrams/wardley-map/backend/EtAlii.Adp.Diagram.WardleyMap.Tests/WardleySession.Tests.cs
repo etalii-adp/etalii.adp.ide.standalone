@@ -144,6 +144,33 @@ public sealed class WardleySessionTests : IDisposable
     }
 
     [Fact]
+    public void ADocumentChangeUnderANarrowedViewport_DoesNotResendTheCulledElements()
+    {
+        // Arrange. The interaction rather than the method: the change path and the viewport path
+        // both render through one viewport-aware place, and when they do not, an ordinary edit
+        // silently re-sends everything the viewport has just culled. Nothing catches that until
+        // somebody edits while zoomed in, which is why this test is named for the two paths
+        // meeting rather than for either of them.
+        var path = Write("component Alpha [0.9, 0.1]\ncomponent Beta [0.1, 0.9]\n");
+        var session = Editable(path);
+        session.Baseline();
+        session.UpdateView(new DiagramViewport(0d, 0d, 0.4d, 0.4d));
+
+        IReadOnlyList<DiagramDelta> received = [];
+        session.Changed += (_, args) => received = args.Deltas;
+
+        // Act. Move Alpha, which is the component inside the viewport, and leave Beta where it is.
+        File.WriteAllText(path, "component Alpha [0.85, 0.15]\ncomponent Beta [0.1, 0.9]\n");
+        _documents.Reload(path);
+
+        // Assert. The edit arrives, and Beta - culled by the viewport a moment ago - does not come
+        // back with it.
+        var added = AddedBy(received);
+        Assert.NotEmpty(added);
+        Assert.DoesNotContain(added, element => element.X > 0.5d);
+    }
+
+    [Fact]
     public void UpdateView_KeepsTheAxisAndALinkWhoseEndpointIsInView()
     {
         // Arrange. Both carry a placeholder position: a link is emitted at (0, 0) because it is

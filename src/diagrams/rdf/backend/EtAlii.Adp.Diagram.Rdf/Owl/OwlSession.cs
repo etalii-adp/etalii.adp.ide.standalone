@@ -20,6 +20,17 @@ public sealed class OwlSession : IDiagramSession
 {
     private static readonly ILogger _logger = Log.ForContext<OwlSession>();
 
+    /// <summary>
+    /// The cell a node occupies for the purpose of deciding whether it is on screen. The
+    /// reading draws both small shapes and tall class cards, so this is the generous case:
+    /// over-inclusion costs one extra element on the wire, while under-inclusion is a hole the
+    /// reader looks straight at.
+    /// </summary>
+    private const double CellWidth = 240;
+
+    /// <inheritdoc cref="CellWidth" />
+    private const double CellHeight = 320;
+
     private readonly string _bodyPath;
     private readonly string? _registrationPath;
     private readonly IRdfDocumentStore _documents;
@@ -28,6 +39,16 @@ public sealed class OwlSession : IDiagramSession
     private readonly IHistoryStack? _history;
 
     private IReadOnlyList<DiagramElement> _delivered = [];
+
+    /// <summary>What this connection last said it can see. Everything, until it says otherwise.</summary>
+    private DiagramViewport _viewport = DiagramViewport.Unbounded;
+
+    /// <summary>
+    /// The whole ontology, projected and positioned, kept between reports: a pan changes the
+    /// viewport and not the document. Dropped when the document changes, which is the only
+    /// thing that can invalidate it.
+    /// </summary>
+    private (OwlGraphResult Graph, IReadOnlyDictionary<string, RegistrationPosition> Positions)? _laidOut;
 
     public OwlSession(
         string bodyPath,
@@ -68,8 +89,13 @@ public sealed class OwlSession : IDiagramSession
     /// <inheritdoc />
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
-        _ = viewport;
-        return [];
+        _viewport = viewport;
+
+        var current = Render();
+        var deltas = _differ.Diff(_delivered, current);
+        _delivered = current;
+
+        return deltas;
     }
 
     /// <summary>Refused: nothing in this diagram nests under a parent - an element's place is a position.</summary>
@@ -134,14 +160,68 @@ public sealed class OwlSession : IDiagramSession
 
     private IReadOnlyList<DiagramElement> Render()
     {
+        var (graph, positions) = LaidOut();
+        return _mapper.Elements(InView(graph, positions), positions);
+    }
+
+    /// <summary>
+    /// The whole ontology, projected and positioned, cached until it changes. Projected without
+    /// a budget on purpose: a class the reader can pan to needs a position, and it can only
+    /// have a stable one in a layout of everything.
+    /// </summary>
+    private (OwlGraphResult Graph, IReadOnlyDictionary<string, RegistrationPosition> Positions) LaidOut()
+    {
+        if (_laidOut is { } cached)
+        {
+            return cached;
+        }
+
         var entry = _documents.GetOrLoad(_bodyPath);
-        var graph = OwlProjection.Project(entry.Model);
+        var graph = OwlProjection.Project(entry.Model, int.MaxValue);
         var stored = _registrationPath is { Length: > 0 }
             ? RegistrationLayout.Read(_registrationPath)
             : new Dictionary<string, RegistrationPosition>(StringComparer.Ordinal);
 
-        var positions = OwlLayout.Apply(OwlLayout.Positions(graph), stored);
-        return _mapper.Elements(graph, positions);
+        var result = (graph, OwlLayout.Apply(OwlLayout.Positions(graph), stored));
+        _laidOut = result;
+
+        return result;
+    }
+
+    /// <summary>
+    /// What the reported viewport admits: the nodes it intersects, the edges both of whose
+    /// endpoints survived, and the budget applied to that set rather than to the document.
+    /// </summary>
+    /// <remarks>
+    /// This is the reading the whole specification was argued from. An ontology of more than
+    /// 1,600 resources opened behind a first-N banner that discarded by document order, so
+    /// panning could never recover the rest - a strictly worse answer to the same problem than
+    /// asking what the reader is looking at. The counts handed on are still the document's,
+    /// because <see cref="OwlGraphResult.Truncated" /> drives the banner and the read-only
+    /// refusal and both are decided from the document with no viewport to consult.
+    /// </remarks>
+    private OwlGraphResult InView(
+        OwlGraphResult graph, IReadOnlyDictionary<string, RegistrationPosition> positions)
+    {
+        var visible = graph.Nodes
+            .Where(node => RdfViewport.Admits(_viewport, positions, node.Id, CellWidth, CellHeight))
+            .ToList();
+
+        var truncated = graph.Total > RdfProjection.DefaultBudget;
+        var kept = visible.Count > RdfProjection.DefaultBudget
+            ? visible.Take(RdfProjection.DefaultBudget).ToList()
+            : visible;
+
+        var keptIds = kept.Select(node => node.Id).ToHashSet(StringComparer.Ordinal);
+        var edges = graph.Edges
+            .Where(edge => keptIds.Contains(edge.FromId) && keptIds.Contains(edge.ToId))
+            .ToList();
+
+        return new OwlGraphResult(
+            kept,
+            edges,
+            truncated ? RdfProjection.DefaultBudget : kept.Count,
+            truncated ? graph.Total : kept.Count);
     }
 
     private void OnDocumentChanged(object? sender, RdfDocumentChangedEventArgs args)
@@ -153,6 +233,7 @@ public sealed class OwlSession : IDiagramSession
 
         try
         {
+            _laidOut = null;
             var current = Render();
             var deltas = _differ.Diff(_delivered, current);
             _delivered = current;
