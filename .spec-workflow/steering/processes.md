@@ -154,6 +154,22 @@ CI runs the same four on every push and pull request, but that is the net under 
 
 **Running the client suite in a fresh worktree:** `src/client/src/generated/` is both gitignored and tracked, so a fresh worktree holds only the tracked stubs until codegen runs. `npx vitest` bypasses the `pretest` hook that runs it, and the suite then fails with dozens of `Failed to resolve import "../generated/..."` — which looks exactly like a broken build and is not. Run `npm run generate` once, or `npm test`, which runs it for you. Re-running `npx vitest` alone never helps.
 
+## Vendored example data
+
+**Diagram modules are tested against real published example data, not hand-written toys.** The point of vendoring real documents is that they exercise input shapes the author never had in mind - a fixture tests what its writer thought of, which is the half already covered by the code.
+
+Agents may download it, under conditions that are not negotiable.
+
+- **The licence must be permissive.** CC0, CC BY with the attribution carried, the W3C Software and Document Licence and similar. **Share-alike licences are not** - UNESCO's thesaurus was rejected on exactly that ground.
+- **Download the licence file itself and keep it beside the data.** Not a link, not a line in a readme naming the licence: the actual file, vendored next to the documents it covers, so the terms travel with the data for whoever finds it later. Name it `LICENSE.md` whatever extension the server serves it under - the family's own provenance guard requires that name - and keep the text verbatim; only the filename follows the house convention.
+- **Verify the licence again at acquisition**, rather than trusting what a specification recorded. Terms change between writing a spec and fetching the file.
+
+**Verify from the data, not from the page.** Read the dataset's own licence statement - the `cc:license` triple, or whatever the format's equivalent is - rather than the download page around it. The STW thesaurus was vendored after its page turned out to carry **three conflicting signals at once**: prose saying CC BY 4.0, a `rel="license"` link pointing at ODbL, and a by-nc-sa badge. Two of the three are share-alike and would have disqualified the source. An agent reading the badge, or the link, would have reached a confidently wrong answer in either direction. The data's own statement settles it.
+
+That is the same trap as *Provenance is never in the name*, one level up: the page around a file records how somebody described it, not what it is. A licence question, like a provenance question, is answered by the artefact rather than by its packaging.
+
+**Say what the examples do not demonstrate.** A vendored corpus rarely covers every shape a requirement asks for. Record the gaps in the folder's readme, with the reason each candidate source was rejected, so the next reader meets the omission before wondering about it.
+
 ## Keeping documentation true
 
 A change that makes a document untrue fixes it in the same change. Four artefacts carry that duty explicitly.
@@ -162,6 +178,7 @@ A change that makes a document untrue fixes it in the same change. Four artefact
 - **`docs/creating-a-diagram-module.md` and `docs/creating-an-editor-module.md`** — a change that moves a touch point either names (a renamed seam, a moved file, a changed registration shape) updates that document in the same change.
 - **`docs/screenshots/`** — a UI change that makes an image misleading means retaking it, following the procedure in that folder's readme.
 - **`.proto` files** are the primary API documentation for the public gRPC contracts and must stay self-explanatory: clear message and field naming, comments for non-obvious constraints.
+- **Non-obvious architectural decisions belong in `tech.md`'s decision log**, not scattered through the code as comments. A decision recorded where it was implemented is findable only by whoever already knows where that is.
 
 (`docs/dependencies.md` needs no rule here — its guard is a test.)
 
@@ -190,8 +207,8 @@ Conventions that are only written down drift. Two tools check them and they see 
 
 ## Still to move
 
-This document is a first pass and deliberately does not yet carry everything that belongs in it. Left where it is, for a later pass, with the reason:
+Two of the three items this document deferred on its first pass have now moved: vendored example data, and structure.md's documentation standards.
 
-- **Vendored example data** (`CLAUDE.md`) — genuinely mixed. The licence policy is a rule about what may enter the repository; the acquisition steps are process. Splitting it needs care that a first pass should not spend.
-- **Testing & quality** (`tech.md`) — overlaps both this document's *Running the backend tests* and `CLAUDE.md`'s code conventions, and reconciling the three is its own piece of work.
-- **Documentation standards** (`structure.md`) — its `.proto` clause has moved to *Keeping documentation true*; what remains should be reviewed against that section rather than moved blind.
+**One is deliberately not moving.** `tech.md`'s *Testing & quality* was surveyed as a candidate and does not belong here on this document's own boundary - it is about the artefact rather than about how work moves. Two of its clauses are technical standards (a suite runnable inside the local F5 experience, fast local tests preferred over hosted end-to-end ones) and two are code conventions (`<Classname>.Tests` for the file and `<Classname>Tests` for the class - mind the dot; and the arrange/act/assert shape). Neither kind is process, and moving them would make this document the place things go when nobody is sure, which is how a steering document stops being read.
+
+**One finding raised rather than fixed**, because correcting it is a content change to an approved steering document rather than a move: that section still says *"to test the implementation of the modular diagrams use the following diagram visualizations: Mindmap (file extension .mm)"*. Eleven diagram modules ship today. The line was true when there was one.

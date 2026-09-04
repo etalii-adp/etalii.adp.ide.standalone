@@ -51,5 +51,4 @@
 
 # Documentation standards
 
-* Public gRPC contracts (`.proto` files) are the primary API documentation and must stay self-explanatory (clear message/field naming, comments for non-obvious constraints) — restated with the repository's other keep-it-true duties in [processes.md, *Keeping documentation true*](processes.md#keeping-documentation-true).
-* Non-obvious architectural decisions belong in `tech.md`'s decision log, not scattered as code comments.
+Moved to [processes.md, *Keeping documentation true*](processes.md#keeping-documentation-true): `.proto` files are the primary API documentation for the public gRPC contracts, and non-obvious architectural decisions belong in `tech.md`'s decision log rather than scattered through the code.

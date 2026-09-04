@@ -49,18 +49,9 @@ Full rules and reasoning: [processes.md, *Specification bookkeeping*](.spec-work
 
 ## Vendored example data
 
-Diagram modules are tested against **real published example data**, not hand-written toys — the point of vendoring real documents is that they exercise input shapes the author never had in mind. Agents may download it, under two conditions that are not negotiable:
+Test diagram modules against **real published example data**, not hand-written toys. Permissive licences only - **share-alike is refused**. Vendor the licence file itself beside the data as `LICENSE.md`, verbatim; a link or a readme line is not enough. **Read the licence from the dataset's own statement, not from the page around it**, and re-verify at acquisition rather than trusting what a spec recorded. Record in the folder's readme what the corpus does *not* demonstrate.
 
-- **The licence must be permissive.** CC0, CC BY (with the attribution carried), the W3C Software and Document Licence and similar are fine. Share-alike licences are not — UNESCO's thesaurus was rejected on exactly that ground.
-- **Download the licence file itself and keep it beside the data.** Not a link, not a line in a readme naming the licence: the actual file, vendored next to the documents it covers, so the terms travel with the data for anyone who finds it later.
-
-Verify the licence again at acquisition rather than trusting what the spec recorded — terms change between writing a spec and fetching the file.
-
-**Verify from the data, not from the page.** Read the dataset's own licence statement — the `cc:license` triple, or whatever the format's equivalent is — rather than the download page around it. The STW thesaurus was vendored after its page turned out to carry *three* conflicting signals at once: prose saying CC BY 4.0, a `rel="license"` link pointing at ODbL, and a by-nc-sa badge. Two of those three are share-alike and would have disqualified the source. An agent reading the badge, or the link, would have reached a confidently wrong answer in either direction. The data's own statement settles it.
-
-Name the vendored licence file `LICENSE.md`, whatever extension the upstream server serves it under — the family's own provenance guard requires that name. Keep the text verbatim; only the filename follows the house convention.
-
-**Say what the examples do not demonstrate.** A vendored corpus rarely covers every shape a requirement asks for. Record the gaps in the folder's readme, with the reason each candidate source was rejected, so the next reader meets the omission before wondering about it.
+Full rules and reasoning, including the source that carried three conflicting licence signals at once: [processes.md, *Vendored example data*](.spec-workflow/steering/processes.md#vendored-example-data).
 
 ## Diagram type catalog
 
