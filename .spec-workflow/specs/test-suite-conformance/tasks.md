@@ -118,7 +118,7 @@ The design's four shapes — A (files discovered on disk), B (a collection the c
   - _Requirements: 2.1, 2.2, 2.3_
   - _Prompt: Implement task 10 for spec test-suite-conformance. Role: C# developer | Task: add a non-empty floor on projection.Nodes before the Assert.All in RdfLayout.Tests.cs:61 | Restrictions: change no expected value; add no helper | _Leverage: ProblemStoreIsolation.Tests.cs:62-69 | Success: the floor has been seen to fail, and all four gates pass by exit code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 11. Confirm the count, once, by hand
+- [-] 11. Confirm the count, once, by hand
   - Files: none changed unless a site was missed
   - After tasks 1-10 have merged, walk the 25 sites named in the requirements and confirm each carries a floor, and that `ExampleCorpus.Tests.cs:17` carries the two-part anchor. Record the result in the implementation log.
   - **This is a one-off confirmation, not a new guard.** The design rejected a permanent meta-guard on measured evidence — the scan behind the requirements was run three times and wrong twice, in opposite directions, and a guard that cannot reliably find its own subject is the defect this specification is about. Do not leave a scanner behind.
