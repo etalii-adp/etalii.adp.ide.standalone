@@ -10,8 +10,18 @@ namespace EtAlii.Adp.Diagram.Rdf;
 /// </summary>
 internal static class RdfLayout
 {
-    private const double ColumnWidth = 280;
-    private const double RowHeight = 160;
+    /// <summary>
+    /// The cell the layout reserves for one node, and therefore the box a viewport intersects
+    /// it by. The client draws a narrower card inside it; the reserved cell is the honest box
+    /// here, because a node whose cell is on screen is a node the reader can see.
+    /// </summary>
+    public const double CellWidth = 280;
+
+    /// <inheritdoc cref="CellWidth" />
+    public const double CellHeight = 160;
+
+    private const double ColumnWidth = CellWidth;
+    private const double RowHeight = CellHeight;
     private const double BandGap = 80;
     private const int Columns = 4;
 
