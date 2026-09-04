@@ -38,8 +38,13 @@ export interface DiagramStreamResult<TModel> {
  * protocol of its own.
  *
  * What stays per module, deliberately (technical-debt-cleanup R3.2): the model type, its empty
- * value, the response-to-model mapping, and any `reportView`/move call - built by the module's
- * own wrapper on the returned {@link DiagramStreamResult.client}.
+ * value, the response-to-model mapping, and the module's move call - built by its own wrapper on
+ * the returned {@link DiagramStreamResult.client}.
+ *
+ * The view report is no longer among them: it is shared, in `viewReport.ts` beside this file, and
+ * a module builds it with `viewReportOf` on that same client. Adopting the report deliberately
+ * does not require adopting this hook - three modules hand-roll their open loop and report
+ * perfectly well.
  *
  * The reconnect shape is `usePipelineStream`'s pre-extraction one, chosen per R3.3's recorded
  * comparison: `loading` returns to `true` before the retry delay (the canvas shows
