@@ -77,7 +77,7 @@
   - _Requirements: 2.1, 2.5_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Convert RdfDocumentStore's document read to SharedDocumentReader per requirements 2.1 and 2.5, deleting its tracked allow-list entry | Restrictions: preserve today's read semantics exactly; the rdf family has four readings over one store, so verify all four still open | _Leverage: SharedDocumentReader.OpenText; task 3.4 as the shape | Success: the site reads shared, its allow-list line is gone, the rdf tests pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3.6 SPARQL: convert `SparqlDocumentStore` to the central shared read
+- [x] 3.6 SPARQL: convert `SparqlDocumentStore` to the central shared read - merged as eedc8d6e
   - Files: `src/diagrams/sparql/backend/EtAlii.Adp.Diagram.Sparql/SparqlDocumentStore.cs` (line 59); delete its tracked allow-list entry
   - As 3.4. Note sparql ships no writer by design, so this module reads only — the conversion cannot disturb a write path because there is none.
   - _Requirements: 2.1, 2.5_
