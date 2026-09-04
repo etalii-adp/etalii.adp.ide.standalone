@@ -9,12 +9,21 @@ import {
   C4ViewPayloadSchema,
 } from "@client/generated/c4_pb";
 import { applyDelta, emptyModel, BOUNDARY_TYPE, NODE_TYPE, RELATIONSHIP_TYPE, VIEW_TYPE, type C4Model } from "./c4Model";
+import { ContextPromptSchema } from "@client/generated/context_pb";
+import type { ContextPrompt } from "@client/generated/context_pb";
+import { act } from "@testing-library/react";
 
 const select = vi.fn();
 let currentModel: C4Model = emptyModel;
 let currentLoading = false;
 let currentFailed = false;
 let currentReportView: ((viewport: unknown) => void) | null = null;
+
+// The prompt the shell is holding, and the calls the inline editor makes back through it.
+let currentPrompt: ContextPrompt | null = null;
+const proposeLabel = vi.fn(async (revision: number) => ({ revision, valid: true, reason: "" }));
+const submitLabel = vi.fn(async () => ({ completed: true, error: "" }));
+const cancelLabel = vi.fn();
 
 vi.mock("./useC4Stream", () => ({
   useC4Stream: () => ({
@@ -43,6 +52,7 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
       executeShortcut: () => Promise.resolve({ accepted: true, error: "" }),
     }),
     useContextSelection: () => ({ selection: null, actions: [] }),
+    useContextPrompt: () => ({ prompt: currentPrompt, onPropose: proposeLabel, onSubmit: submitLabel, onCancel: cancelLabel }),
   };
 });
 
@@ -102,6 +112,10 @@ describe("C4Canvas", () => {
     moves.length = 0;
     currentLoading = false;
     currentFailed = false;
+    currentPrompt = null;
+    proposeLabel.mockClear();
+    submitLabel.mockClear();
+    cancelLabel.mockClear();
     currentModel = seed(
       node("a", "Alpha", 0, 0),
       node("b", "Beta", 0, 200),
@@ -625,4 +639,88 @@ describe("C4Canvas", () => {
     expect(select).not.toHaveBeenCalled();
   });
 
+  // ---- inline renaming ---------------------------------------------------------------------
+
+  /** A marked prompt for one element or relationship - the shape the backend now sends. */
+  function labelPromptFor(elementId: string, initialValue: string): ContextPrompt {
+    return create(ContextPromptSchema, {
+      interactionId: { value: new Uint8Array(16).fill(9) },
+      prompt: {
+        case: "inputDialog",
+        value: {
+          title: "Rename element",
+          icon: "mdi-pencil-outline",
+          fieldLabel: "Name",
+          initialValue,
+          confirmLabel: "Rename",
+          inlineLabelEdit: { elementId: { value: elementId } },
+        },
+      },
+    });
+  }
+
+  function labelField(container: HTMLElement): HTMLInputElement {
+    return container.querySelector("input.inline-label-editor-field") as HTMLInputElement;
+  }
+
+  function editorBox(container: HTMLElement): SVGForeignObjectElement {
+    return container.querySelector("foreignObject.inline-label-editor") as SVGForeignObjectElement;
+  }
+
+  it("renames an element in place, over its name line rather than over its whole box", async () => {
+    // Arrange.
+    currentPrompt = labelPromptFor("a", "Alpha");
+    const { container } = render(<C4Canvas {...props} />);
+
+    // Assert, first: the editor covers the name, not the type line and description under it.
+    // A box-sized editor would sit over three lines of text to edit one of them.
+    const box = editorBox(container);
+    expect(box).not.toBeNull();
+    expect(Number(box.getAttribute("y"))).toBeCloseTo(0 - 80 / 2 + 6, 5);
+    expect(Number(box.getAttribute("height"))).toBeCloseTo(20, 5);
+
+    // Act.
+    fireEvent.change(labelField(container), { target: { value: "Alpha Prime" } });
+    await act(async () => {
+      fireEvent.keyDown(labelField(container), { key: "Enter" });
+    });
+
+    // Assert.
+    expect(submitLabel).toHaveBeenCalledWith("Alpha Prime");
+  });
+
+  it("places a relationship's editor at the line's midpoint, where its label is drawn", () => {
+    // Arrange.
+    // The fixture's two boxes are centred at (0, 0) and (0, 200) and are 80 tall, so the line
+    // runs from (0, 40) to (0, 160) and its midpoint is (0, 100). The label sits six above it.
+    currentPrompt = labelPromptFor("a->b", "Uses");
+
+    // Act.
+    const { container } = render(<C4Canvas {...props} />);
+
+    // Assert.
+    // Centred on the midpoint, using the per-character fallback width - jsdom implements no
+    // getBBox, so this is the estimate path, which is exactly the one that runs in a test.
+    const box = editorBox(container);
+    expect(box).not.toBeNull();
+    const x = Number(box.getAttribute("x"));
+    const width = Number(box.getAttribute("width"));
+    expect(x + width / 2).toBeCloseTo(0, 5);
+    expect(Number(box.getAttribute("y"))).toBeCloseTo(100 - 6 - 16, 5);
+  });
+
+  it("opens a relationship's editor on the description alone, not on the label drawn with its technology", () => {
+    // Arrange.
+    // The arrow reads "Uses [HTTPS]". The technology is decoration around one authored value
+    // and has an action of its own; typing over the rendered string would put the technology
+    // into the description, after which it appears twice.
+    currentPrompt = labelPromptFor("a->b", "Uses");
+
+    // Act.
+    const { container } = render(<C4Canvas {...props} />);
+
+    // Assert.
+    expect(labelField(container).value).toBe("Uses");
+    expect(labelField(container).value).not.toContain("HTTPS");
+  });
 });
