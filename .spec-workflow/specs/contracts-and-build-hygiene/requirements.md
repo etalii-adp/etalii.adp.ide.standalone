@@ -82,7 +82,13 @@ Measured across all 22 `.proto` files: 122 enum values, of which **12** are refe
 
 Measured across all 22 contracts and 1,160 hand-written C# types: **175 messages and enums, 8 matched exactly by a same-named hand-written type, 40 whose counterpart differs, and 127 with no counterpart at all** — the last group being request and response messages, which correctly have none. The 40 are not one problem. They are three, and only one of them is a defect.
 
-**Family A — `…Payload` on the wire, the bare name in code (26 of the 40).** `WardleyLinkPayload` / `WardleyLink`, `TimelineElementPayload` / `TimelineElement`, `MindmapNodePayload` / `MindmapNode`, `C4ElementPayload` / `C4Element`, and so on through every diagram module. **This is a convention and it says something true**: the proto message is the packed `Any` payload carried inside a `DiagramElement`, while the C# and TypeScript types are the parsed domain object. The client uses the bare name too, so both implementations agree with each other and differ from the wire in the same direction. Renaming 26 domain types to `…Payload` to satisfy a rule would make every one of them claim to be a wire packet. This family should be **written down as a convention, not aligned away**.
+**Family A — `…Payload` on the wire, the bare name in code (26 of the 40) — and the second review sharpened this one.** The first revision exempted the whole family: the proto message is the packed `Any` payload, the C# and TypeScript types are the parsed domain object, and *both* implementations drop the suffix. The review supplied the criterion that makes that only half right — **the contract's name applies to any type that represents the wire data**, whichever side it sits on. Measured against it the family splits, and "both implementations agree with each other" turns out to argue against the exemption rather than for it: two sides can agree and one still be wrong.
+
+**A1 — backend document models, exempt, and now for a stated reason rather than an assertion.** `WardleyLink` is built by the parser from the `.owm` text (`WardleyParser.cs:520`); it is not decoded from a payload. It says what the *document* says, and the wire message is a projection of it, so naming it `WardleyLinkPayload` would make a document model claim to be a wire packet. The backend hardly ever reads a payload back at all — one place does, `DatabricksElementMapper.cs:291` via `DatabricksEdgePayload.Parser.ParseFrom`, and it uses the generated type directly, which is already right.
+
+**A2 — client module models, not exempt, and this is what the review found (26 interfaces across 12 modules).** These are produced by `fromBinary(<Name>PayloadSchema, …)`: they *are* the decoded wire payload, restructured for rendering. Measured: 14 client model files decode payloads and declare 58 interfaces, of which **26 are named after a payload schema with the suffix dropped** — `WardleyElement`, `WardleyLink`, `WardleyNote`, `WardleyAnnotation`, `WardleyAccelerator`, `WardleyAttitude`; `TimelineElement`, `TimelineConnection`; `SkosConcept`, `SkosScheme`, `SkosCollection`, `SkosEdge`; `SparqlAnnotation`, `SparqlRegion`, `SparqlHeader`, `SparqlTruncation`; `ShaclShape`, `ShaclEdge`; `DependencyGraphElement`, `DependencyGraphRelation`; `OwlNode`, `RdfTruncation`, `C4Relationship`, `AnsibleElement`, `DatabricksEdge`, `HelmElement`. Each takes the contract's name.
+
+**What this yields is a question rather than a list**: *does this type represent the wire data?* Decoded from a payload, or built in order to become one — yes, and the contract names it. Parsed from a document the module owns — no, and the module names it. A list of exemptions has to be maintained; a question does not.
 
 **Family B — `…Proto` on the wire, the bare name in code (4).** `C4ElementKindProto` / `C4ElementKind`, `PipelineEdgeConditionProto` / `PipelineEdgeCondition`, `ShaclTargetKindProto` / `ShaclTargetKind`, `ShaclTargetChipProto` / `ShaclTargetChip`. Here the **contract carries a suffix that exists only to avoid colliding with the C# type** — the implementation naming the contract rather than the other way round, which is exactly the inversion the user's rule forbids. One of these resolves itself: `C4ElementKindProto` is the dead enum in Requirement 4, so it is deleted rather than renamed.
 
@@ -99,7 +105,7 @@ Measured across all 22 contracts and 1,160 hand-written C# types: **175 messages
 | `ContextTextField` (`context.proto:348`) | `ContextTextFieldRequest` | Request |
 | `Entry` (`hierarchy.proto:29`) | `EntryNode` | Node |
 
-`Definition`, `Node` and `Request` all mean "the backend's own version of this message", and nothing says which to use. That is how a fourth appears.
+`Definition`, `Node` and `Request` all mean "the backend's own version of this message", and nothing says which to use. That is how a fourth appears. Under the criterion above these are the plainest case in the survey: every one exists **only** to be turned into the wire message it is named after — none is parsed from a document, none is owned by a module — so the contract names all eight.
 
 **The good news, which bounds the work: the fields already agree.** Checked field by field across six of these pairs — 33 proto fields, **32** with a same-named member on the C# side. So this is a type-name problem, not a property-name problem, and the correction is mechanical rather than sweeping.
 
@@ -109,13 +115,14 @@ One more worth recording because it is the same disease across three names rathe
 
 #### Acceptance Criteria
 
-1. WHEN a contract message has a hand-written counterpart on either side THEN they SHALL share a name, with the contract's name deciding.
+1. WHEN a hand-written type **represents the wire data** — decoded from a payload, or built in order to become one — THEN it SHALL carry the contract's name, on the backend and on the client alike.
 2. WHERE a suffix distinguishes the wire type from the domain type THEN **one** suffix SHALL be chosen and written down as a convention; the three now in use for one meaning (`Definition`, `Node`, `Request`) SHALL become one.
 3. WHEN a contract name carries a `…Proto` suffix that exists only to avoid colliding with a C# type THEN the contract SHALL be renamed and the implementation SHALL adapt, because the contract is the source of truth — except where the type is dead, which Requirement 4 removes instead.
-4. WHERE the `…Payload` family marks a packed `Any` payload THEN it SHALL be recorded as a deliberate convention with its reason, and SHALL NOT be renamed.
-5. WHEN `EntryNode` is corrected THEN the `bool IsFolder` / `EntryKind kind` divergence SHALL be resolved in favour of the contract's enum, so a new entry kind is representable rather than silently false.
-6. WHEN a rename lands THEN it SHALL be a rename only — no field, wire number or behaviour changes with it — and the four gates SHALL stay green.
-7. WHERE renaming a message changes generated code on both sides THEN the change SHALL be sequenced as its own commit, because a rename mixed with behaviour is a diff nobody can review.
+4. WHERE a type is parsed from a document its module owns rather than from the wire THEN it SHALL keep the module's own name, and what SHALL be written down is the question that decides it, not a list of exempt types.
+5. WHEN the 26 client module interfaces named after a payload schema are corrected THEN they SHALL take the contract's name, since `fromBinary(<Name>PayloadSchema, …)` is what produces them.
+6. WHEN `EntryNode` is corrected THEN the `bool IsFolder` / `EntryKind kind` divergence SHALL be resolved in favour of the contract's enum, so a new entry kind is representable rather than silently false.
+7. WHEN a rename lands THEN it SHALL be a rename only — no field, wire number or behaviour changes with it — and the four gates SHALL stay green.
+8. WHERE renaming a message changes generated code on both sides THEN the change SHALL be sequenced as its own commit, because a rename mixed with behaviour is a diff nobody can review.
 
 ### Requirement 6 — CLAUDE.md and `docs/diagrams.md` agree on the state vocabulary
 
