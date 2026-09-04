@@ -109,7 +109,7 @@
   - _Requirements: 1.2, 3.1, 4.2_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Move the eleven identically-named static helpers into a core LineSplice over LineDocument, per requirements 1.2, 3.1 and 4.2 | Restrictions: only the line-finding and line-replacing mechanics move; key names and element shapes stay in the modules; if any helper differs between the two modules beyond its document type, stop and report it rather than reconciling | _Leverage: TimelineWriter and DependencyGraphWriter, which share these eleven names | Success: LineSplice exists with tests exercising each helper against fixtures from BOTH modules, so the shared code is proven on both formats. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.3 Gate and merge the core moves
+- [x] 4.3 Gate and merge the core moves - merged as c3f5382b
   - As 1.2, over 4.1 and 4.2. Landing this before the conversions lets 4.4 and 4.5 proceed in parallel worktrees.
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Gate and merge tasks 4.1 and 4.2 by captured exit code, committing by explicit pathspec | Restrictions: as in task 1.2 | Success: gates exit zero and the merge lands, unblocking 4.4 and 4.5. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
