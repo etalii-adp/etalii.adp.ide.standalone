@@ -71,7 +71,7 @@ One worktree for the whole spec (`.claude/worktrees/shacl`, per CLAUDE.md's one-
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec shacl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 2 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. Wire, definition, session, providers, canvas
+- [x] 3. Wire, definition, session, providers, canvas
   - _Requirements: 2.1-2.3, 3.2, 3.4, 4.1-4.5, 6.1-6.4, 8.1_
 
 - [x] 3.1 Wire payloads
@@ -91,20 +91,20 @@ One worktree for the whole spec (`.claude/worktrees/shacl`, per CLAUDE.md's one-
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 3.4, 8.1_
   - _Prompt: Implement the task for spec shacl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer familiar with the family providers | Task: Implement the three providers and the toolbox per Requirement 6 over the family selection vocabulary extended with shacl-edge:, with discovery, execute/undo/redo and refusal tests per selection kind, the per-chip remove-target entries addressed by shape IRI + predicate + term, and grid rows stating absent target terms as facts | Restrictions: selection parsing extends rdf-diagram task 3.3's vocabulary rather than forking it; every mutating entry is one undo; no validate-data action exists | _Leverage: the provider trio from rdf-diagram task 3.3; commands from 2.4; the chip addresses from 1.3 | Success: provider tests pass per menu, property and gesture; chip removal round-trips with undo; refusal sentences verbatim. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3.4 ShaclCanvas from the central library
+- [x] 3.4 ShaclCanvas from the central library
   - Files: `src/diagrams/rdf/client/` — `ShaclCanvas.tsx`, model/stream hooks, the `w3c/shacl` claim in the family `register.ts`, shacl-own rules in the module css, tests
   - Cards with title, chip band (absent styled exactly like present), rows (path left, cardinality right, summary muted, SPARQL badged), severity/deactivated badges and dimming; operator-labeled edges; drags gated client-side by the `blank` flag with the backend as authority; truncation banner per precedent; toolbox registration through the shell path like every canvas
   - _Requirements: 1.2, 1.3, 1.8, 3.2, 4.1, 4.2, 8.1_
   - _Prompt: Implement the task for spec shacl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/SVG developer familiar with the central canvas library | Task: Implement ShaclCanvas per design composed from the central components - cards with chip bands and constraint rows, labeled edges, badges and dimming, blank-gated drags, the truncation banner, and the shell toolbox registration - with jsdom tests over mocked streams covering chips rendering identically for present and absent terms, rows, edges, badges and gestures | Restrictions: draw through central components and shared classes; chips are card content, never elements; repositioning never writes the RDF file | _Leverage: the family canvas from rdf-diagram task 4.1 as the composition reference; payloads from 3.1 | Success: canvas tests pass; the absent-target rendering is asserted identical to the present case. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.5 Gate and merge group 3
+- [x] 3.5 Gate and merge group 3
   - The four gates, exit codes checked; merge into `develop`
   - _Prompt: Implement the task for spec shacl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 3 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 - [ ] 4. Examples, catalog and manual checks
   - _Requirements: 9.1-9.5, plus the integration halves of 3, 4 and 5_
 
-- [ ] 4.1 Vendored shapes under the licensing discipline
+- [-] 4.1 Vendored shapes under the licensing discipline
   - Files: `src/diagrams/rdf/examples/shacl/` — the approved Requirement 9 candidates, each license individually verified at acquisition before anything is copied: the W3C SHACL recommendation's example shapes and its shapes-for-shapes appendix (W3C Software and Document License), the FAIR Data Point metadata shapes (MIT per repository, re-verified); the recorded rejections stand (DCAT-AP's ISA licence, share-alike sources); the Requirement 9.3 honest-fallback clause applies if verification fails — a labeled authored file, never a misattribution; each file beside its registering `.adp`; provenance readmes per the **example vendoring rule**; at least one file exercising blank property shapes, two target kinds, a combinator and a complex path
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
   - _Prompt: Implement the task for spec shacl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer executing the family vendoring discipline | Task: Acquire and vendor the approved candidate shapes, verifying each license independently before copying, carrying upstream license text, writing per-source provenance readmes, registering each with its .adp, and exercising Requirement 9.4's construct list; apply Requirement 9.3's fallback honestly if a candidate fails verification | Restrictions: nothing copied before its license is verified; the rejections recorded in Requirement 9.2 are not revisited for convenience; unmodified content stays unmodified | _Leverage: the vendoring discipline as executed by rdf-diagram task 5.1; the validator from 2.4 as the cleanliness check | Success: examples open from the explorer with no setup, provenance complete, licenses recorded, Requirement 9.4's constructs covered. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._

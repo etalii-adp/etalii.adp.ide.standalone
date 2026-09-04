@@ -28,6 +28,10 @@ bodies, both copied byte for byte, and both opening with no validation findings:
 - **`prov-o/`** — the W3C provenance ontology (W3C document and software terms): 39 classes with
   their hierarchy, properties with domains and ranges, unions and disjointness — a mid-size real
   standard that fits one screen.
+- **`stw/`** — the STW Thesaurus for Economics (ZBW), read as `w3c/skos`: two subthesaurus
+  extracts, one under the drawn-element budget and drawn whole, one deliberately past it so the
+  truncated view has a real vocabulary to be honest about. Bilingual, notated and deeply
+  polyhierarchical. CC BY 4.0, attribution carried in the folder's readme.
 
 Two things the ontology set deliberately does *not* carry, recorded so the absence is not read
 as an oversight. The **pizza ontology**, named as a candidate while this spec was written, is

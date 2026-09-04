@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/view-delta-adoption/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-04T06:27:45.350Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788503265003_4qhais904",
+      "approvalTitle": "view-delta-adoption tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-04T06:27:52.801Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788503265003_4qhais904",
+      "approvalTitle": "view-delta-adoption tasks"
+    }
+  ]
+}
