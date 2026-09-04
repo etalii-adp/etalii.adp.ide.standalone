@@ -129,7 +129,7 @@ public class ShaclSessionTests : IDisposable
             ex:S a sh:NodeShape ; sh:node [ sh:closed true ] .
             """);
         var registration = IoPath.Combine(_root, "anon.adp");
-        File.WriteAllText(registration, "w3c/shacl\r\nbody: anon.ttl\r\n");
+        await File.WriteAllTextAsync(registration, "w3c/shacl\r\nbody: anon.ttl\r\n", TestContext.Current.CancellationToken);
 
         await using var session = Open(body, registration);
         var added = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline()));
@@ -145,9 +145,9 @@ public class ShaclSessionTests : IDisposable
     public async Task TheSession_StoresAnIriCardsPosition_LeavingTheShapesFileUntouched()
     {
         var body = WriteBody();
-        var before = File.ReadAllText(body);
+        var before = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
         var registration = IoPath.Combine(_root, "shapes.adp");
-        File.WriteAllText(registration, "w3c/shacl\r\nbody: shapes.ttl\r\n");
+        await File.WriteAllTextAsync(registration, "w3c/shacl\r\nbody: shapes.ttl\r\n", TestContext.Current.CancellationToken);
 
         await using var session = Open(body, registration);
         session.Baseline();
@@ -155,8 +155,8 @@ public class ShaclSessionTests : IDisposable
         var refusal = await session.MoveElementToAsync("res:http://example.org/PersonShape", 120, 240, TestContext.Current.CancellationToken);
 
         Assert.Equal("", refusal);
-        Assert.Contains("layout:", File.ReadAllText(registration), StringComparison.Ordinal);
-        Assert.Equal(before, File.ReadAllText(body)); // the RDF never moves
+        Assert.Contains("layout:", await File.ReadAllTextAsync(registration, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.Equal(before, await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)); // the RDF never moves
     }
 
     [Fact]
@@ -164,22 +164,22 @@ public class ShaclSessionTests : IDisposable
     {
         var body = WriteBody();
         var registration = IoPath.Combine(_root, "shapes.adp");
-        File.WriteAllText(registration, "w3c/shacl\r\nbody: shapes.ttl\r\n");
-        var before = File.ReadAllText(registration);
+        await File.WriteAllTextAsync(registration, "w3c/shacl\r\nbody: shapes.ttl\r\n", TestContext.Current.CancellationToken);
+        var before = await File.ReadAllTextAsync(registration, TestContext.Current.CancellationToken);
 
         await using var session = Open(body, registration);
         session.Baseline();
 
         Assert.Equal("", await session.MoveElementToAsync(
             "res:http://example.org/PersonShape", 120, 240, TestContext.Current.CancellationToken));
-        Assert.NotEqual(before, File.ReadAllText(registration));
+        Assert.NotEqual(before, await File.ReadAllTextAsync(registration, TestContext.Current.CancellationToken));
 
         // A layout edit rides the same history the triple writers do, so undoing it restores the
         // registration exactly - no residual `layout:` block, no trailing blank line left behind.
         var history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
         Assert.True((await history.UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
 
-        Assert.Equal(before, File.ReadAllText(registration));
+        Assert.Equal(before, await File.ReadAllTextAsync(registration, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -190,7 +190,7 @@ public class ShaclSessionTests : IDisposable
         // document and the project's history, so a write through either is the other's next read
         // - and one undo puts both back.
         var body = WriteBody();
-        var before = File.ReadAllText(body);
+        var before = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
 
         await using var shapes = Open(body, null);
         var rdfFactory = _provider.GetServices<IDiagramSessionFactory>()
@@ -215,7 +215,7 @@ public class ShaclSessionTests : IDisposable
             triple.Subject is IriTerm subject && subject.Iri == "http://example.org/AddressShape");
 
         Assert.True((await history.UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
-        Assert.Equal(before, File.ReadAllText(body));
+        Assert.Equal(before, await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
         Assert.Single(ShaclProjection.Project(store.GetOrLoad(body).Model).Cards);
     }
 

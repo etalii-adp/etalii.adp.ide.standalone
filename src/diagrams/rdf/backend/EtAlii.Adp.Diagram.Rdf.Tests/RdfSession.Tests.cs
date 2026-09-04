@@ -100,9 +100,9 @@ public class RdfSessionTests : IDisposable
     {
         // Arrange.
         var body = CopyFixture("crlf-line-endings.ttl");
-        var bodyBytes = File.ReadAllBytes(body);
+        var bodyBytes = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
         var adp = WriteRegistration("crlf-line-endings.ttl");
-        var adpBefore = File.ReadAllText(adp);
+        var adpBefore = await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken);
 
         // Act.
         await using var session = Open(body, adp);
@@ -112,11 +112,11 @@ public class RdfSessionTests : IDisposable
         Assert.Equal("", refusal);
         Assert.Equal(new RegistrationPosition(120, 240), RegistrationLayout.Read(adp)["res:http://example.org/a"]);
         // The RDF file never changes by a byte (Requirement 4.1).
-        Assert.Equal(bodyBytes, File.ReadAllBytes(body));
+        Assert.Equal(bodyBytes, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
         // And the drag is one undo away, returning the .adp byte for byte (Requirement 4.2).
         await _provider.GetRequiredService<IHistoryStackStore>().Get(_root)
             .UndoAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(adpBefore, File.ReadAllText(adp));
+        Assert.Equal(adpBefore, await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken));
     }
 
     [Fact]

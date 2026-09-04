@@ -111,9 +111,9 @@ public class OwlSessionTests : IDisposable
     {
         // Arrange.
         var body = CopyFixture("owl-ontology.ttl");
-        var bodyBytes = File.ReadAllBytes(body);
+        var bodyBytes = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
         var adp = WriteRegistration("owl-ontology.ttl");
-        var adpBefore = File.ReadAllText(adp);
+        var adpBefore = await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken);
 
         // Act.
         await using var session = OpenOwl(body, adp);
@@ -122,10 +122,10 @@ public class OwlSessionTests : IDisposable
         // Assert.
         Assert.Equal("", refusal);
         Assert.Equal(new RegistrationPosition(120, 240), RegistrationLayout.Read(adp)[$"res:{Ns}Pizza"]);
-        Assert.Equal(bodyBytes, File.ReadAllBytes(body));
+        Assert.Equal(bodyBytes, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
         await _provider.GetRequiredService<IHistoryStackStore>().Get(_root)
             .UndoAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(adpBefore, File.ReadAllText(adp));
+        Assert.Equal(adpBefore, await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken));
     }
 
     [Fact]
