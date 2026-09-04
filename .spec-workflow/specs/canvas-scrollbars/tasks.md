@@ -49,7 +49,7 @@ This is a four-canvas change with no backend and no protocol work. Each canvas i
   - _Requirements: 6.1, 6.5_
   - _Prompt: Implement the task for spec canvas-scrollbars, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior TypeScript developer writing a convention guard | Task: Add a test that fails when any module client defines its own scrollbar, naming every offender in one failure | Restrictions: the guard must not fire on a module importing the shared component; keep it to the tell-tales named in the task rather than a broad text match that would catch unrelated code | _Leverage: the walk-and-collect shape of the existing convention guards | Success: the guard passes on the tree as it stands and fails, naming the file, when a private bar is introduced experimentally. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 6. Documentation, gates and merge
+- [x] 6. Documentation, gates and merge
   - Files: `src/client/src/canvas/scroll/readme.md`, `tests.md`
   - Record in the scroll readme which canvases now consume the component, and that **sparql is the only drawing canvas without bars, pending its canvas being built** — as pending, not as an exemption (Requirement 7.3). If any canvas was documented as unable under Requirement 6.3, its reason belongs here too.
   - Add one `tests.md` manual check for what only a running app shows: open one of the four, drag each thumb, confirm the view follows and the thumb tracks a wheel-zoom and an empty-canvas pan.
