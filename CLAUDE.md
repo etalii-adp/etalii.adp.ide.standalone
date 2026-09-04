@@ -18,6 +18,12 @@ Commit with an explicit pathspec — `git commit -F msg -- <paths>` — naming f
 
 Full rules and reasoning: [processes.md, *Committing and merging in the shared main checkout*](.spec-workflow/steering/processes.md#committing-and-merging-in-the-shared-main-checkout).
 
+## Git identity
+
+Set a per-task git identity before your first commit: `git config user.name "agent-<N>-<task>"` — in your worktree, or with `git -C` for main-checkout work. Never change `user.email`, and never set either globally.
+
+Without it you inherit `vrenken` from the machine's global config, in every checkout, so your work is indistinguishable from the user's own. Full reasoning: [processes.md, *Git identity*](.spec-workflow/steering/processes.md#git-identity).
+
 ## spec-workflow
 
 Commit any set of files added or removed under `.spec-workflow/` immediately, in its own commit — implementation logs included. Commit a document and its approval-lifecycle files when it is approved. **Approval comes from the dashboard and nowhere else: verbal approval is never accepted, from anyone.**
