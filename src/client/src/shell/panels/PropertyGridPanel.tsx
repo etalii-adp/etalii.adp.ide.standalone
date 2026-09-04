@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { base64Encode } from "@bufbuild/protobuf/wire";
 import { EntryKind } from "../../generated/hierarchy_pb";
 import { ContextSelectionSource, type ContextLevelDetail, type ContextProperty, type ContextSelection } from "../../generated/context_pb";
 import { useContextConnection, useContextSelection } from "../context/ContextConnectionProvider";
 import { PropertyRow } from "./PropertyRow";
+import { PanelEmptyState } from "./PanelEmptyState";
 
 const SOURCE_LABELS: Record<number, string> = {
   [ContextSelectionSource.EXPLORER]: "Explorer",
@@ -48,6 +50,29 @@ export function levelsOf(selection: ContextSelection, details: ContextLevelDetai
   return levels;
 }
 
+/**
+ * A level's own identity, for keying the rendered levels.
+ *
+ * The alternative is its position in `chain`, which is the selection path: it changes length
+ * and contents whenever the selection does, so position identifies a level only until the next
+ * click. The rows inside are keyed by `property.id` and would remount anyway, which is why this
+ * was recorded as drift rather than a defect - but a key should say which thing this is, and an
+ * index says where it happened to sit.
+ */
+export function keyOfLevel(level: ContextSelection): string {
+  const source = level.id?.source;
+  switch (source?.case) {
+    case "entryId":
+      return `entry:${base64Encode(source.value.value)}`;
+    case "elementId":
+      return `element:${source.value.value}`;
+    case "problems":
+      return "problems";
+    default:
+      return `path:${(level.path?.segments ?? []).join("/")}`;
+  }
+}
+
 /** Ungrouped rows first, then each group in the order its first property arrived. */
 export function groupsOf(properties: ContextProperty[]): Array<{ name: string; properties: ContextProperty[] }> {
   const groups: Array<{ name: string; properties: ContextProperty[] }> = [];
@@ -79,6 +104,8 @@ export function PropertyGridPanel() {
   const { selection, levels } = useContextSelection();
   const { describeProperties, setProperty } = useContextConnection();
   const [properties, setProperties] = useState<ContextProperty[]>([]);
+  // Kept apart from an empty `properties`, which is the ordinary "nothing to edit here" state.
+  const [describeError, setDescribeError] = useState("");
 
   // Held in a ref rather than depended on. What should re-ask for properties is the selection
   // changing, not the identity of the function that asks - and a caller that hands us a fresh
@@ -96,12 +123,14 @@ export function PropertyGridPanel() {
     let cancelled = false;
     if (!selection) {
       setProperties([]);
+      setDescribeError("");
       return;
     }
 
     void describeRef.current().then((described) => {
       if (!cancelled) {
-        setProperties(described);
+        setProperties(described.properties);
+        setDescribeError(described.error);
       }
     });
 
@@ -128,10 +157,10 @@ export function PropertyGridPanel() {
 
   if (!selection) {
     return (
-      <div className="panel-placeholder">
-        <p className="panel-placeholder-title">Nothing selected</p>
-        <p className="panel-placeholder-description">Select a file or folder in the explorer to see its properties here.</p>
-      </div>
+      <PanelEmptyState
+        title="Nothing selected"
+        description="Select a file or folder in the explorer to see its properties here."
+      />
     );
   }
 
@@ -140,7 +169,7 @@ export function PropertyGridPanel() {
 
   return (
     <div className="property-grid">
-      {chain.map(({ level, detail }, index) => {
+      {chain.map(({ level, detail }) => {
         const segments = level.path?.segments ?? [];
         const element = detail?.detail.case === "element" ? detail.detail.value : undefined;
         const name = element?.text ?? segments[segments.length - 1] ?? "";
@@ -148,13 +177,26 @@ export function PropertyGridPanel() {
         const isInnermost = level === innermostLevel?.level;
 
         return (
-          <section className="property-grid-level" key={index}>
+          <section className="property-grid-level" key={keyOfLevel(level)}>
             <h3 className="property-grid-level-title">{name}</h3>
             <dl className="property-grid-rows">
               {/* Only the innermost level is editable. The outer levels are the path that led
                   here - a folder above a diagram is context, not a second thing to edit, and
                   offering two editable Names at once would be a good way to change the wrong
                   one. */}
+              {/* A describe that failed says so, rather than showing the empty grid a selection
+                  with no properties shows. The two look identical from an array alone, and a
+                  user told nothing would reasonably conclude this thing has no properties. */}
+              {isInnermost && describeError.length > 0 && (
+                <div className="property-grid-row property-grid-row-readonly property-grid-row-unavailable">
+                  <dt>Properties</dt>
+                  <dd>
+                    <span className="property-grid-value">Unavailable</span>
+                    <span className="property-grid-readonly-reason">{describeError}</span>
+                  </dd>
+                </div>
+              )}
+
               {isInnermost &&
                 groupsOf(properties).map((group) => (
                   <div className="property-grid-group" key={group.name}>

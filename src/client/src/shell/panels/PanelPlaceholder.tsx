@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PanelEmptyState } from "./PanelEmptyState";
 
 export interface PanelPlaceholderProps {
   title: string;
@@ -28,10 +29,8 @@ export function PanelPlaceholder({ title, description, futureSpec }: PanelPlaceh
 
   // TODO(diagram-ide-mockup): replace this branch with the real panel content
   // identified by the futureSpec prop (e.g. "project-root-folder-explorer").
-  return (
-    <div className="panel-placeholder" data-future-spec={futureSpec}>
-      <p className="panel-placeholder-title">{title}</p>
-      <p className="panel-placeholder-description">{description}</p>
-    </div>
-  );
+  //
+  // The markup itself is PanelEmptyState's, and the marker below is what makes this one the
+  // mockup: a real panel shows the same empty state without claiming to be scaffolding.
+  return <PanelEmptyState title={title} description={description} rootAttributes={{ "data-future-spec": futureSpec }} />;
 }

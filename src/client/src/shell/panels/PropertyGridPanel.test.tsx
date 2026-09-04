@@ -27,7 +27,8 @@ const backend: {
   properties: ContextProperty[];
   writes: Array<{ propertyId: string; value: string }>;
   reject: string;
-} = { properties: [], writes: [], reject: "" };
+  describeError: string;
+} = { properties: [], writes: [], reject: "", describeError: "" };
 
 vi.mock("../context/ContextConnectionProvider", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../context/ContextConnectionProvider")>();
@@ -41,7 +42,7 @@ vi.mock("../context/ContextConnectionProvider", async (importOriginal) => {
       executeShortcut: async () => ({ accepted: true, error: "" }),
       clearReveal: () => {},
       revealPath: () => {},
-      describeProperties: async () => backend.properties,
+      describeProperties: async () => ({ properties: backend.properties, error: backend.describeError }),
       setProperty: async (propertyId: string, value: string) => {
         backend.writes.push({ propertyId, value });
         return backend.reject.length > 0
@@ -87,6 +88,7 @@ describe("PropertyGridPanel", () => {
     backend.properties = [];
     backend.writes = [];
     backend.reject = "";
+    backend.describeError = "";
     contextState.selection = null;
     contextState.levels = [];
   });
@@ -480,6 +482,41 @@ describe("PropertyGridPanel", () => {
     expect(await screen.findByText("build, test")).toBeTruthy();
     expect(screen.queryByLabelText("Depends on")).toBeNull();
     expect(document.querySelector(".property-grid input, .property-grid textarea")).toBeNull();
+  });
+
+  it("says the properties could not be read, rather than showing the empty grid of a thing with none", async () => {
+    // Arrange.
+    // The two states are indistinguishable from an array alone, which is why describeProperties
+    // returns a result shape at all: a user shown an empty grid concludes this thing has no
+    // properties, and goes looking for the wrong explanation.
+    contextState.selection = selectionFor(ContextSelectionSource.EXPLORER, new Uint8Array(16), ["docs", "design.mm"], NONE_DETAIL);
+    contextState.levels = [entryDetail(EntryKind.FILE)];
+    backend.properties = [];
+    backend.describeError = "The connection to the project was lost.";
+
+    // Act.
+    render(<PropertyGridPanel />);
+
+    // Assert.
+    expect(await screen.findByText("Unavailable")).toBeTruthy();
+    expect(screen.getByText("The connection to the project was lost.")).toBeTruthy();
+  });
+
+  it("shows no unavailable row for a selection that simply has no properties", async () => {
+    // Arrange.
+    contextState.selection = selectionFor(ContextSelectionSource.EXPLORER, new Uint8Array(16), ["docs", "design.mm"], NONE_DETAIL);
+    contextState.levels = [entryDetail(EntryKind.FILE)];
+    backend.properties = [];
+    backend.describeError = "";
+
+    // Act.
+    render(<PropertyGridPanel />);
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // Assert.
+    expect(screen.queryByText("Unavailable")).toBeNull();
   });
 
   it("puts the old value back and says why when a write is refused", async () => {
