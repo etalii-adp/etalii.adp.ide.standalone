@@ -121,7 +121,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
         {
             // A hierarchy or related pair is the scheme reading's edge: its disconnect takes
             // every asserted direction as one undo, which the generic remove-statement cannot.
-            return Result(SkosActions.Discover(entry, target));
+            return Result([.. Shacl.ShaclActions.Discover(entry, target), .. SkosActions.Discover(entry, target)]);
         }
 
         if (RdfSelection.EdgeOf(entry, target.ElementId) is not null)
@@ -132,6 +132,7 @@ public sealed class RdfContextActionProvider : IContextActionProvider
             // beneath it for the reader who means exactly that statement.
             return Result(
             [
+                .. Shacl.ShaclActions.Discover(entry, target),
                 .. SkosActions.Discover(entry, target),
                 new ContextActionGroupDefinition(
                 [
@@ -160,7 +161,8 @@ public sealed class RdfContextActionProvider : IContextActionProvider
             // Each reading's entries lead where the file's own assertions say that reading
             // applies - a thesaurus for skos, an ontology marker for owl; the family's generic
             // pair stays beneath both.
-            return Result([.. SkosActions.Discover(entry, target), new ContextActionGroupDefinition(placementActions)]);
+            return Result([.. Shacl.ShaclActions.Discover(entry, target),
+                .. SkosActions.Discover(entry, target), new ContextActionGroupDefinition(placementActions)]);
         }
 
         if (RdfRelationGesture.TryParse(target.ElementId, out var gestureFrom, out var gestureTo))
@@ -181,12 +183,13 @@ public sealed class RdfContextActionProvider : IContextActionProvider
 
             // The scheme reading's file-under and relate lead between two asserted concepts;
             // the ontology's subclass and the family's dialog stay beneath.
-            return Result([.. SkosActions.Discover(entry, target), new ContextActionGroupDefinition(relationActions)]);
+            return Result([.. Shacl.ShaclActions.Discover(entry, target),
+                .. SkosActions.Discover(entry, target), new ContextActionGroupDefinition(relationActions)]);
         }
 
         // A skos edge id (the canonical broader-direction shape) is the scheme reading's alone;
         // blank nodes and the banner stay describable, never editable.
-        return Result(SkosActions.Discover(entry, target));
+        return Result([.. Shacl.ShaclActions.Discover(entry, target), .. SkosActions.Discover(entry, target)]);
     }
 
     /// <inheritdoc />
@@ -199,6 +202,11 @@ public sealed class RdfContextActionProvider : IContextActionProvider
         if (RdfSelection.IsTruncated(entry))
         {
             return new ContextExecutionFailed(RdfSelection.TruncatedRefusal);
+        }
+
+        if (await Shacl.ShaclActions.ExecuteAsync(_historyStacks, entry, target, actionId, cancellationToken) is { } shaclResult)
+        {
+            return shaclResult;
         }
 
         if (await SkosActions.ExecuteAsync(_historyStacks, entry, target, actionId, cancellationToken) is { } skosResult)
@@ -306,6 +314,11 @@ public sealed class RdfContextActionProvider : IContextActionProvider
 
         // The writers refuse on exactly these terms at commit; validating here lets the dialog
         // refuse first - an undeclared prefix by name, never silently invented (Requirement 5.7).
+        if (Shacl.ShaclActions.Validate(_documents.GetOrLoad(target.ResolvedFullPath), actionId, value) is { } shaclValidation)
+        {
+            return ValueTask.FromResult(shaclValidation);
+        }
+
         if (SkosActions.Validate(_documents.GetOrLoad(target.ResolvedFullPath), actionId, value) is { } skosValidation)
         {
             return ValueTask.FromResult(skosValidation);
@@ -368,6 +381,11 @@ public sealed class RdfContextActionProvider : IContextActionProvider
 
     private static ICommand? CommandFor(RdfDocumentEntry entry, ContextTarget target, string actionId, string value)
     {
+        if (Shacl.ShaclActions.CommandFor(entry, target, actionId, value) is { } shaclCommand)
+        {
+            return shaclCommand;
+        }
+
         if (SkosActions.CommandFor(entry, target, actionId, value) is { } skosCommand)
         {
             return skosCommand;
