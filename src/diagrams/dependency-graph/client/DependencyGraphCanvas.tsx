@@ -14,6 +14,8 @@ import { useRegisterDiagramView } from "@client/shell/panels/DiagramViewContext"
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
 import { ContextSelectionAction } from "@client/generated/context_pb";
+import { useViewReport } from "@client/diagrams/useViewReport";
+import type { Viewport } from "@client/diagrams/viewReport";
 import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
 import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import { useDependencyGraphStream } from "./useDependencyGraphStream";
@@ -54,6 +56,15 @@ const ZOOM_STEP = 1.25;
  */
 const MIN_VERTICAL_SCALE = 0.25;
 const MAX_VERTICAL_SCALE = 4;
+
+/**
+ * What a surface is assumed to span before it has been measured - in jsdom, and for the render
+ * that happens before the first layout. Only the reported rectangle uses these: the drawing
+ * itself always measures. A guess is better than a zero here, because a zero-sized rectangle
+ * would report a viewport that admits nothing and the backend would cull the whole graph.
+ */
+const DEFAULT_SURFACE_WIDTH = 1200;
+const DEFAULT_SURFACE_HEIGHT = 600;
 
 interface DependencyGraphView {
   /** The canvas coordinate at the view's left edge. */
@@ -112,7 +123,7 @@ interface ConnectDrag {
  * edge carries an arrowhead at its dependency end.
  */
 export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
-  const { model, loading, failed, moveElementTo } = useDependencyGraphStream(projectId, path);
+  const { model, loading, failed, moveElementTo, reportView } = useDependencyGraphStream(projectId, path);
   const { select, executeAction, executeShortcut } = useContextConnection();
   const { selection, actions } = useContextSelection();
   const surfaceRef = useRef<HTMLDivElement | null>(null);
@@ -126,6 +137,42 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
     verticalScale: 1,
   }));
   const fittedRef = useRef(false);
+
+  // This canvas draws in pixels-per-unit rather than through a viewBox, so it converts at its
+  // own call site: the shared library is given a rectangle already in this module's units and
+  // converts nothing (view-delta-adoption Requirement 3.4). Kept in a ref because the report
+  // fires when the debounce settles, by which time `view` may have moved on again.
+  const viewRef = useRef(view);
+  viewRef.current = view;
+
+  const visibleRect = (current: DependencyGraphView): Viewport => {
+    const rect = surfaceRef.current?.getBoundingClientRect();
+    // Before the first measure - and in jsdom, which lays nothing out - the view's own origin is
+    // the only honest answer; a zero-sized rectangle would report a viewport admitting nothing.
+    const width = rect && rect.width > 0 ? rect.width : DEFAULT_SURFACE_WIDTH;
+    const height = rect && rect.height > 0 ? rect.height : DEFAULT_SURFACE_HEIGHT;
+    return {
+      minX: current.startX,
+      minY: current.panY,
+      maxX: current.startX + width / current.pixelsPerUnit,
+      maxY: current.panY + height / current.verticalScale,
+    };
+  };
+
+  // Keyed on the four numbers the rectangle is derived from, so a pan, a zoom, a scrollbar drag
+  // and a programmatic fit all reach the report the same way - by having changed the view.
+  const reportedBox = visibleRect(view);
+  useViewReport({
+    view: {
+      x: reportedBox.minX,
+      y: reportedBox.minY,
+      w: reportedBox.maxX - reportedBox.minX,
+      h: reportedBox.maxY - reportedBox.minY,
+    },
+    report: reportView,
+    convert: () => visibleRect(viewRef.current),
+    ready: !loading && !failed,
+  });
 
   const panRef = useRef<{ clientX: number; clientY: number; view: DependencyGraphView; moved: boolean } | null>(null);
   const dragRef = useRef<DragState | null>(null);

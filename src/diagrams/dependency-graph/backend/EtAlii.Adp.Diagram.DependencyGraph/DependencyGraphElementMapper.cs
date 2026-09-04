@@ -55,6 +55,48 @@ public sealed class DependencyGraphElementMapper
         return elements;
     }
 
+    /// <summary>The drawn width of a node, in the module's own x units - what the canvas gives it.</summary>
+    public const double NodeWidth = 160d;
+
+    /// <summary>The drawn height of a node, in the module's own y units.</summary>
+    public const double NodeHeight = 36d;
+
+    /// <summary>
+    /// The elements of <paramref name="model"/> a viewport can see: every node whose box it
+    /// intersects, and every relation both of whose ends are among them
+    /// (view-delta-adoption Requirement 1.2).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A relation follows its endpoints and has no box of its own, so it is delivered exactly
+    /// when both ends are - which is also what the canvas already does with one, drawing nothing
+    /// for a curve whose endpoint it does not hold.
+    /// </para>
+    /// <para>
+    /// The rectangle arrives in this module's own units, x as authored and y as
+    /// <c>row × <see cref="DependencyGraphRows.Height"/></c>; nothing converts it on the way in,
+    /// because the units are this module's business (Requirement 3.4).
+    /// </para>
+    /// </remarks>
+    public IReadOnlyList<DiagramElement> Visible(DependencyGraphModel model, DiagramViewport viewport)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        var shown = model.Elements
+            .Where(element => Intersects(element, viewport))
+            .ToArray();
+        var shownIds = shown.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
+
+        // Document order is preserved on both passes, so one viewport always yields one sequence.
+        return
+        [
+            .. shown.Select(Element),
+            .. model.Relations
+                .Where(relation => shownIds.Contains(relation.From) && shownIds.Contains(relation.To))
+                .Select(Relation),
+        ];
+    }
+
     /// <summary>
     /// The difference between two renderings, as adds and removes. An edit is an add carrying
     /// the element in its new state, which is what makes the contract's four actions enough.
@@ -107,6 +149,16 @@ public sealed class DependencyGraphElementMapper
     /// identical payloads serialized into different arrays would count as a change and every
     /// re-render would re-deliver the whole diagram.
     /// </summary>
+    /// <summary>Whether a node's box overlaps the viewport at all - touching edges count as seen.</summary>
+    private static bool Intersects(DependencyGraphElement element, DiagramViewport viewport)
+    {
+        var top = DependencyGraphRows.ToY(element.Row);
+        return element.X + NodeWidth >= viewport.MinX
+            && element.X <= viewport.MaxX
+            && top + NodeHeight >= viewport.MinY
+            && top <= viewport.MaxY;
+    }
+
     private static bool Same(DiagramElement left, DiagramElement right) =>
         left.X.Equals(right.X)
         && left.Y.Equals(right.Y)

@@ -13,12 +13,17 @@ namespace EtAlii.Adp.Diagram.WardleyMap;
 /// <em>is</em> and expresses every change as a <see cref="DiagramDelta"/>.
 /// </para>
 /// <para>
-/// <b>It filters nothing.</b> <see cref="UpdateView"/> answers with the whole map and is the
-/// shortest correct implementation of that method in the repository, deliberately: a Wardley
-/// map is a bounded space holding tens of elements, so viewport filtering has nothing to do
-/// here. `adp-diagram-ide` Requirement 4.3's virtualization is a capability core offers, not an
-/// obligation every module owes, and a filter written only to satisfy a rule would be code
-/// nobody needs and everybody has to read (Requirement 10.5).
+/// <b>It filters by viewport</b> (view-delta-adoption Requirement 1). This used to answer
+/// <see cref="UpdateView"/> with nothing, on the judgement that a bounded space of tens of
+/// elements has nothing to virtualize - reasonable locally, and superseded: the loop is what
+/// lets a reader zoomed into one corner of a large map stop paying for the rest, and a module
+/// that declines it is a module whose readers cannot.
+/// </para>
+/// <para>
+/// The viewport arrives in the map own 0..1 space, which is this module unit and stays its
+/// business; the shared client code converts nothing (Requirement 3.4). What is visible is
+/// <see cref="WardleyElementMapper.Visible"/>'s decision, and this class only diffs one answer
+/// against the last.
 /// </para>
 /// </remarks>
 public sealed class WardleySession : IDiagramSession
@@ -34,6 +39,13 @@ public sealed class WardleySession : IDiagramSession
 
     /// <summary>What this connection was last sent, so a change can be diffed against it.</summary>
     private IReadOnlyList<DiagramElement> _delivered = [];
+
+    /// <summary>
+    /// The rectangle this connection last reported, in the map own 0..1 space. Unbounded until a
+    /// report arrives, so a baseline delivers the whole map exactly as it did before this filter
+    /// existed - a connection that never reports one is never worse off.
+    /// </summary>
+    private DiagramViewport _viewport = DiagramViewport.Unbounded;
 
     public WardleySession(
         string bodyPath,
@@ -56,7 +68,7 @@ public sealed class WardleySession : IDiagramSession
 
     public IReadOnlyList<DiagramDelta> Baseline()
     {
-        var elements = Render();
+        var elements = Visible();
         _delivered = elements;
 
         // One message rather than a stream of per-element ones: the whole map is delivered
@@ -72,16 +84,52 @@ public sealed class WardleySession : IDiagramSession
     }
 
     /// <summary>
-    /// Answers with the whole map, whatever the viewport says. See the class remarks: this is
-    /// short on purpose.
+    /// The reader moved: answer with what appeared and what left.
     /// </summary>
+    /// <remarks>
+    /// Diffed against <see cref="_delivered"/> rather than against a re-rendering under the old
+    /// viewport. Both give the same answer while the two agree, and only this one stays right when
+    /// they do not - a document change between two reports goes out through
+    /// <see cref="OnDocumentChanged"/> and moves what this connection holds, which a recomputation
+    /// from the previous rectangle would not know about.
+    /// </remarks>
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
-        //ArgumentNullException.ThrowIfNull(viewport);
+        var before = _delivered.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
+        _viewport = viewport;
 
-        // Nothing changes with the viewport, so there is nothing to send. A connection that has
-        // already been given the map does not need it again for panning.
-        return [];
+        IReadOnlyList<DiagramElement> after;
+        try
+        {
+            after = Visible();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // A file that vanished or locked between two pans costs this answer, never the
+            // session; the reported viewport is kept, so the next report or change catches up.
+            _logger.Warning(exception, "Could not re-read {BodyPath} for a view report", _bodyPath);
+            return [];
+        }
+
+        _delivered = after;
+
+        // Add for what appeared, then Remove for what left. That order is the one the reference
+        // implementations use; the requirements anticipated the opposite and the code wins.
+        var appeared = after.Where(element => !before.Contains(element.Id)).ToArray();
+        var departed = before.Except(after.Select(element => element.Id), StringComparer.Ordinal).ToArray();
+
+        var deltas = new List<DiagramDelta>();
+        if (appeared.Length > 0)
+        {
+            deltas.Add(new DiagramAddDelta(appeared));
+        }
+
+        if (departed.Length > 0)
+        {
+            deltas.Add(new DiagramRemoveDelta(departed));
+        }
+
+        return deltas;
     }
 
     /// <summary>
@@ -127,11 +175,14 @@ public sealed class WardleySession : IDiagramSession
         return ValueTask.CompletedTask;
     }
 
-    /// <summary>The map as elements, with identities reconciled against what the sidecar records.</summary>
-    private IReadOnlyList<DiagramElement> Render()
+    /// <summary>
+    /// The map as the elements this connection reported viewport can see. Used by every path that
+    /// decides what to send, so a document change cannot re-deliver what a viewport culled.
+    /// </summary>
+    private IReadOnlyList<DiagramElement> Visible()
     {
         var map = WardleyParser.Parse(_documents.GetOrLoad(_bodyPath));
-        return _mapper.Elements(map, _documents.Identities(_bodyPath));
+        return _mapper.Visible(map, _documents.Identities(_bodyPath), _viewport);
     }
 
     private IReadOnlyList<DiagramDelta> Groups()
@@ -153,7 +204,7 @@ public sealed class WardleySession : IDiagramSession
 
         try
         {
-            var current = Render();
+            var current = Visible();
             var deltas = _mapper.Diff(_delivered, current);
             _delivered = current;
 

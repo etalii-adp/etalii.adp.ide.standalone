@@ -12,6 +12,7 @@ let selections: unknown[] = [];
 let executed: { actionId: string; source: unknown }[] = [];
 let properties: { propertyId: string; value: string }[] = [];
 let shortcuts: { key: string; source: unknown }[] = [];
+let currentReportView: ((viewport: unknown) => void) | null = null;
 
 vi.mock("./useDependencyGraphStream", () => ({
   useDependencyGraphStream: () => ({
@@ -22,6 +23,7 @@ vi.mock("./useDependencyGraphStream", () => ({
       moves.push({ elementId, x, y });
       return Promise.resolve("");
     },
+    reportView: (viewport: unknown) => currentReportView?.(viewport),
   }),
 }));
 
@@ -624,5 +626,70 @@ describe("the dependency graph canvas", () => {
 
     // Assert.
     expect(container.querySelector(".dependency-graph-node")!.getAttribute("x")).not.toBe(before);
+  });
+
+  it("reports the rectangle it can see, in the module's own units", async () => {
+    // The client half of the view-delta loop. This canvas draws in pixels-per-unit rather than
+    // through a viewBox, so it converts at its own call site and the shared library converts
+    // nothing (view-delta-adoption Requirement 3.4).
+    const reportView = vi.fn();
+    currentReportView = reportView;
+    const width = 900;
+    const height = 400;
+    const measure = vi
+      .spyOn(Element.prototype, "getBoundingClientRect")
+      .mockReturnValue({ x: 0, y: 0, width, height, top: 0, left: 0, right: width, bottom: height, toJSON: () => ({}) } as DOMRect);
+    try {
+      // Act.
+      renderCanvas();
+
+      // Assert: the rectangle is in module units and holds what the canvas is showing. The
+      // nodes sit at x 0 row 0 and x 400 row 2, and the canvas has just fitted them, so a
+      // report that did not contain both would be culling elements the reader is looking at -
+      // which is the failure the shared library's surface handling exists to prevent.
+      await vi.waitFor(() => expect(reportView).toHaveBeenCalled(), { timeout: 2000 });
+      const viewport = reportView.mock.calls.at(-1)![0] as { minX: number; minY: number; maxX: number; maxY: number };
+      expect(viewport.minX).toBeLessThanOrEqual(0);
+      expect(viewport.maxX).toBeGreaterThanOrEqual(400);
+      expect(viewport.minY).toBeLessThanOrEqual(0);
+      expect(viewport.maxY).toBeGreaterThanOrEqual(2 * ROW_HEIGHT);
+
+      // And it is a rectangle in units, not the pixel rect: the canvas fitted the content, so
+      // its horizontal span is the surface divided by a zoom that is no longer 1.
+      expect(viewport.maxX - viewport.minX).not.toBeCloseTo(width, 5);
+      expect(viewport.maxY - viewport.minY).toBeGreaterThan(0);
+    } finally {
+      measure.mockRestore();
+      currentReportView = null;
+    }
+  });
+
+  it("reports again when the view moves, and only once for a settled view", async () => {
+    // A pan is one report, not one per frame: the shared hook debounces, and what it observes is
+    // the canvas's view state rather than the gesture that moved it.
+    const reportView = vi.fn();
+    currentReportView = reportView;
+    try {
+      const { container } = renderCanvas();
+      await vi.waitFor(() => expect(reportView).toHaveBeenCalled(), { timeout: 2000 });
+      const first = reportView.mock.calls.at(-1)![0] as { minX: number };
+      const before = reportView.mock.calls.length;
+
+      // Act: drag the surface, which moves the view several times.
+      const surface = container.querySelector(".dependency-graph-surface")!;
+      fireEvent.mouseDown(surface, { clientX: 300, clientY: 200 });
+      fireEvent.mouseMove(surface, { clientX: 260, clientY: 200 });
+      fireEvent.mouseMove(surface, { clientX: 220, clientY: 200 });
+      fireEvent.mouseMove(surface, { clientX: 180, clientY: 200 });
+      fireEvent.mouseUp(surface);
+
+      // Assert: one further report, carrying the moved rectangle.
+      await vi.waitFor(() => expect(reportView.mock.calls.length).toBeGreaterThan(before), { timeout: 2000 });
+      const moved = reportView.mock.calls.at(-1)![0] as { minX: number };
+      expect(moved.minX).not.toBeCloseTo(first.minX, 5);
+      expect(reportView.mock.calls.length).toBe(before + 1);
+    } finally {
+      currentReportView = null;
+    }
   });
 });

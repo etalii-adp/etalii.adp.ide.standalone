@@ -97,10 +97,11 @@ public sealed class WardleySessionTests : IDisposable
     }
 
     [Fact]
-    public void UpdateView_SendsNothing_BecauseTheWholeMapIsAlreadyThere()
+    public void UpdateView_WithAnUnboundedViewport_SendsNothing()
     {
-        // Arrange. Requirement 10.5 - a bounded space of tens of elements has nothing to
-        // filter, and a filter written only to satisfy a rule is code nobody needs.
+        // Arrange. The baseline is already the whole map and an unbounded report admits the whole
+        // map, so nothing appeared and nothing left. This used to be the module's entire answer to
+        // every viewport; it is now the one case where that answer is still the right one.
         var path = Write("component Alpha [0.5, 0.5]\n");
         var session = Editable(path);
         session.Baseline();
@@ -111,6 +112,77 @@ public sealed class WardleySessionTests : IDisposable
         // Assert.
         Assert.Empty(deltas);
     }
+
+    [Fact]
+    public void UpdateView_AnsweringAViewportChange_AddsWhatAppearedThenRemovesWhatLeft()
+    {
+        // Arrange. Two components at opposite corners of the map's own 0..1 space. The document
+        // writes [visibility, maturity] and the canvas draws (maturity, 1 - visibility), so Alpha
+        // sits near (0.1, 0.1) and Beta near (0.9, 0.9) - the axis inversion is why these two
+        // literals do not read like the corners they are.
+        var path = Write("component Alpha [0.9, 0.1]\ncomponent Beta [0.1, 0.9]\n");
+        var session = Editable(path);
+        session.Baseline();
+        var beta = IdOfFarCorner(path);
+
+        // Act. First look at the corner Alpha is in, then at the corner Beta is in.
+        var narrowed = session.UpdateView(new DiagramViewport(0d, 0d, 0.4d, 0.4d));
+        var moved = session.UpdateView(new DiagramViewport(0.6d, 0.6d, 1d, 1d));
+
+        // Assert. Narrowing keeps Alpha and drops Beta; moving across adds Beta and drops Alpha.
+        // These are the assertions that fail against a return of nothing, which is what makes this
+        // the test that establishes adoption rather than one proving a call was made.
+        Assert.Empty(AddedBy(narrowed));
+        Assert.Equal(beta, Assert.Single(RemovedBy(narrowed)));
+
+        Assert.Equal(beta, Assert.Single(AddedBy(moved)).Id);
+        Assert.Single(RemovedBy(moved));
+
+        // And Add comes before Remove, which is the order the reference implementations use.
+        Assert.IsType<DiagramAddDelta>(moved[0]);
+        Assert.IsType<DiagramRemoveDelta>(moved[1]);
+    }
+
+    [Fact]
+    public void UpdateView_KeepsTheAxisAndALinkWhoseEndpointIsInView()
+    {
+        // Arrange. Both carry a placeholder position: a link is emitted at (0, 0) because it is
+        // drawn between its endpoints, and the evolution axis at (0, 0) because it is the map's
+        // frame rather than a thing on the map. A filter judging either by that point would keep
+        // them only while the reader happened to be looking at the top-left corner, and cull every
+        // relationship everywhere else.
+        var path = Write("component Alpha [0.9, 0.1]\ncomponent Beta [0.1, 0.9]\nAlpha->Beta\n");
+        var session = Editable(path);
+        session.Baseline();
+        var corner = new DiagramViewport(0.6d, 0.6d, 1d, 1d);
+
+        // Act. Look only at Beta's corner - the far one from that placeholder position.
+        var deltas = session.UpdateView(corner);
+        var held = Visible(path, corner);
+
+        // Assert. Nothing was culled: the axis and the link are still held, and so is Alpha, pulled
+        // in as the link's other endpoint - a link delivered with one end missing draws to nothing.
+        Assert.Empty(deltas.OfType<DiagramRemoveDelta>());
+        Assert.Contains(held, element => element.Type == WardleyElementTypes.EvolutionAxis);
+        Assert.Contains(held, element => element.Type == WardleyElementTypes.Link);
+        Assert.Equal(2, held.Count(element => element.Type == WardleyElementTypes.Element));
+    }
+
+    /// <summary>What a viewport admits, asked of the mapper directly.</summary>
+    private IReadOnlyList<DiagramElement> Visible(string path, DiagramViewport viewport)
+    {
+        var map = WardleyParser.Parse(_documents.GetOrLoad(path));
+        return _mapper.Visible(map, _documents.Identities(path), viewport);
+    }
+
+    /// <summary>The id of the component in the bottom-right of the map, found by its position.</summary>
+    private string IdOfFarCorner(string path) =>
+        Visible(path, DiagramViewport.Unbounded)
+            .Single(element => element.Type == WardleyElementTypes.Element && element.X > 0.5d)
+            .Id;
+
+    private static IReadOnlyList<string> RemovedBy(IReadOnlyList<DiagramDelta> deltas) =>
+        deltas.OfType<DiagramRemoveDelta>().SelectMany(remove => remove.ElementIds).ToArray();
 
     [Fact]
     public async Task MoveElementAsync_IsRefused_BecauseDraggingIsNotReparenting()
