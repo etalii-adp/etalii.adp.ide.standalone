@@ -912,3 +912,117 @@ projection mark and the absence of any editing affordance by `SparqlCanvas.test.
 read-only reason on every property row by `SparqlProvidersTests`. What these four checks add is
 the eyes-on confirmation that the drawing reads correctly to a person, which is exactly the part
 a test cannot assert - so they are left here to be run by someone who can sign in.
+
+## An ontology draws its classes, restrictions and individuals (owl-diagram, task 4.3)
+
+The adopted VOWL vocabulary on a real published ontology, which is the whole point of the
+reading: shapes carry kind, and the axioms are visible without opening the Turtle.
+
+- **Preconditions**: backend + client running; `src/examples/` added as a project.
+- **Actions**: open `diagrams/rdf/owl-time/owl-time.adp`; look at the drawn ontology; then open
+  `diagrams/rdf/prov-o/prov-o.adp` beside it.
+- **Expected**: classes draw as ellipses and datatypes as rectangles; the days of the week and
+  the temporal units draw as cards with their type badges; restriction nodes sit beside the
+  classes whose axioms attach them, labelled in Manchester style (`∀ :hasBeginning.:Instant`
+  and kin); subclass edges are dotted while property edges carry their names; the two
+  deprecated OWL-Time classes are visibly dimmed; and the Errors and Warnings panel reports
+  nothing for either file.
+
+- **Result 2026-09-04**: **pending** - the app opens on a sign-in form, and entering a
+  credential is outside what an agent does here, the checked-in developer placeholder included.
+  Recorded rather than skipped, and the drawing itself is covered meanwhile: `OwlCanvasTests`
+  asserts each kind's shape, the badges and rows on a card, and the dimming classes; and the
+  layout was measured on this very file by `OwlLayoutTests.NoTwoElementsOverlap_OnARealOntology`
+  and `ASubclassEdge_RunsBetweenNeighbouringColumns_RatherThanAcrossTheCanvas`, which is what
+  turned an unreadable first drawing into the current one. That the file reports nothing is
+  covered by `OwlValidatorTests` plus the probe recorded in the examples readme (0 findings).
+
+## An expression node refuses to be dragged, and says why (owl-diagram, task 4.3)
+
+The blank-node identity boundary as the user meets it — the refusal has to be readable, not a
+silent no-op.
+
+- **Preconditions**: backend + client running; `src/examples/` added as a project.
+- **Actions**: open `diagrams/rdf/owl-time/owl-time.adp`; drag a class (say `:Interval`) to a
+  clearly different spot; then drag one of the restriction nodes beside a class.
+- **Expected**: the class moves and its position lands in `owl-time.adp`'s `layout:` block
+  keyed `res:http://www.w3.org/2006/time#Interval`, while `owl-time.ttl` never changes by a
+  byte; the restriction node does not move, and the canvas shows the sentence saying its
+  identity does not survive an edit to the file, so a stored position could not be trusted.
+
+- **Result 2026-09-04**: **pending**, same reason - sign-in. Covered meanwhile end to end by
+  `OwlFlowTests.AnExpressionNode_RefusesTheReposition_WithTheBoundarysSentence` (over the real
+  host, asserting the sentence and that nothing is stored for the id) and
+  `AClassReposition_LandsInTheAdp_SurvivesReopen_AndTheOntologyNeverChanges`; the canvas half is
+  `OwlCanvasTests`' reposition case, which asserts the refusal reaches the user.
+
+## The full class expression is one selection away (owl-diagram, task 4.3)
+
+Requirement 3.4's answer to nesting: the canvas label is capped, the property grid is not.
+
+- **Preconditions**: backend + client running; `src/examples/` added as a project.
+- **Actions**: open `diagrams/rdf/owl-time/owl-time.adp`; select a restriction node; read the
+  Properties panel; then select the class that owns it and read its axiom rows.
+- **Expected**: the panel shows the expression's full Manchester rendering as a read-only row
+  whose reason names the identity boundary; the owning class lists the same expression among
+  its "Subclass of" rows. Where a label on the canvas ends in `…`, the panel's text is longer
+  than the label — the elision is real and recoverable.
+
+- **Result 2026-09-04**: **pending**, same reason - sign-in. Covered meanwhile by
+  `OwlProvidersTests.AnExpressionSelection_ShowsTheUncappedForm_ReadOnlyWithTheBoundarySentence`
+  and `AClassSelection_CarriesItsAxiomRows`, and by `ExpressionRendererTests`' depth-cap case,
+  which asserts the capped label against the uncapped form the grid shows.
+
+## An ontology is offered for a marked file, and a bare one still opens as a graph (owl-diagram, task 4.3)
+
+The routing arrangement: a reading is chosen, never assumed, and the anchor keeps the bare body.
+
+- **Preconditions**: backend + client running; a project folder containing a copy of
+  `owl-time.ttl` with **no** `.adp` beside it.
+- **Actions**: double-click the unregistered `.ttl`; close it; then right-click it and choose
+  "Add as diagram…".
+- **Expected**: the unregistered file opens as the RDF data graph (resource cards with literal
+  rows), not as an ontology; the Add dialog offers both "RDF Graph" and "OWL Ontology" because
+  the file carries an `owl:Ontology` marker; choosing the ontology writes an `.adp` naming
+  `w3c/owl` and the file reopens in the ontology reading.
+
+- **Result 2026-09-04**: **pending**, same reason - sign-in. Covered meanwhile by
+  `OwlFlowTests.ARegisteredOntology_StreamsItsShapesAndAxioms_AndABareBodyStaysTheGraphReadings`
+  (a bare marked file opens as the data graph over the real host), by
+  `DiagramFileRouterSharedExtensionTests.AFamilysSharedReadings_NeverWinTheBareBodyFromTheAnchor`
+  and by the two marker facts in `AddDiagramContextActionProviderRegistrationTests`.
+
+## The scrollbars describe a real viewport, not a jsdom one (canvas-scrollbars, task 6)
+
+Everything about the bars that a unit test can hold was pinned per canvas: a thumb drag pans the
+view, panning by other means moves the thumb, and zoom changes the thumb's size rather than only
+its offset. One thing it cannot hold. jsdom gives every element a zero-sized
+`getBoundingClientRect()`, so a track has no length, a thumb has no pixels, and the tests reason
+entirely in the fractions the geometry returns. Whether those fractions land as a bar a person
+can see and grab is a question only a browser answers.
+
+- **Preconditions**: backend + client running; open one canvas of each shape, because they
+  compute the same fractions from different inputs - `diagrams/c4/**` (an SVG view box) and
+  `diagrams/timeline/**` (pixels per unit).
+- **Actions**: on each, drag the horizontal thumb from one end of its track to the other, then
+  the vertical; wheel-zoom in a long way and drag again; wheel-zoom out until the whole diagram
+  fits and try to drag once more.
+- **Expected**: the thumb stays under the pointer through the drag rather than lagging, leading
+  or jumping when the drag starts; the canvas moves with it and lands where the thumb was
+  released. Zoomed in, the thumb is smaller and the same drag covers more content. Zoomed out to
+  the fitted view, the thumb fills its track and dragging moves nothing - correct, not stuck:
+  there is nothing outside the view to pan to. Nothing about the canvas jumps when the drag ends.
+
+- **Result 2026-09-04**: **pending** - the app was not run for this pass. Covered meanwhile by
+  the per-canvas drag, pan and zoom tests in each `*Canvas.test.tsx`, each verified by sabotage:
+  unwiring `onPan`, feeding the fitted box instead of the live view, and hard-coding the view
+  span each fail their named test and nothing else.
+
+## No canvas grows a scrollbar of its own (canvas-scrollbars, task 6)
+
+This one is automated - `noPrivateScrollbars.test.ts` - and is noted here only because its
+failure message is the instruction. A module that needs bars imports
+`@client/canvas/scroll/CanvasScrollbars` and converts its view at its own call site; if it needs
+them placed differently it passes a `className` and overrides only the offsets. Reaching for a
+private thumb or track is the one thing the guard will not allow, and reading its message as a
+prompt to loosen the guard is reading it backwards.

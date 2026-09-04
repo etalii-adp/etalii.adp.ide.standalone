@@ -65,9 +65,6 @@ public sealed class OwlValidator(DiagramOrigin origin) : IDiagramValidator
     /// <summary>The Requirement 5 findings over a parsed model - a pure function, tested as one.</summary>
     internal static IReadOnlyList<DiagramProblem> Judge(RdfModel model)
     {
-        // NOTE: three of these findings are specified as INFO-level (undeclared property,
-        // deprecated reference, imports not fetched), but the problems pipeline currently knows
-        // only Error and Warning; they ship as warnings until an Info severity exists end to end.
         var problems = new List<DiagramProblem>();
         var index = OwlModelIndex.Build(model);
 
@@ -134,7 +131,7 @@ public sealed class OwlValidator(DiagramOrigin origin) : IDiagramValidator
             }
 
             problems.Add(new DiagramProblem(
-                DiagramProblemSeverity.Warning,
+                DiagramProblemSeverity.Info,
                 $"{RdfProjection.Display(model, new IriTerm(candidate, ""))} is used as a property but declared nowhere in this file - it may live in an import, which is deliberately not fetched.",
                 UndeclaredPropertyRuleId,
                 new DiagramProblemLineLocation((uint)(triple.Span.StartLine + 1))));
@@ -155,7 +152,7 @@ public sealed class OwlValidator(DiagramOrigin origin) : IDiagramValidator
                 && deprecatedReported.Add(target.Iri))
             {
                 problems.Add(new DiagramProblem(
-                    DiagramProblemSeverity.Warning,
+                    DiagramProblemSeverity.Info,
                     $"{RdfProjection.Display(model, new IriTerm(target.Iri, ""))} is deprecated, and something not deprecated still references it.",
                     DeprecatedReferenceRuleId,
                     new DiagramProblemLineLocation((uint)(triple.Span.StartLine + 1))));
@@ -169,7 +166,7 @@ public sealed class OwlValidator(DiagramOrigin origin) : IDiagramValidator
             if (triple.Object is IriTerm import)
             {
                 problems.Add(new DiagramProblem(
-                    DiagramProblemSeverity.Warning,
+                    DiagramProblemSeverity.Info,
                     $"This ontology imports {import.Iri}, which is not fetched: the diagram shows what this file asserts, not the import closure a reasoner would load.",
                     ImportsNotFetchedRuleId,
                     new DiagramProblemLineLocation((uint)(triple.Span.StartLine + 1))));

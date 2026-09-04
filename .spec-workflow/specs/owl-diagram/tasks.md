@@ -15,7 +15,7 @@ One worktree for the whole spec (`.claude/worktrees/owl`, short per the MAX_PATH
 
 **Dependencies on the anchor's seams.** This reading implements over `rdf-diagram`'s approved tasks and duplicates none of them: **anchor task 1.1** (the triplestore document store and `RdfModel` — this spec's projection consumes that model, never a parser), **anchor task 2.1** (the family triple writer, including `ReplaceObjectLiteral` for this reading's label and annotation edits, family-level per the writer boundary rule), **anchor task 3.2** (definition/session/routing shapes and the registration header helper — unused here, as this spec claims no header), and **anchor task 3.3** (the selection vocabulary this reading's provider cases extend). A task below that builds on a seam names it, and cannot start before that anchor task has merged into `develop`.
 
-- [ ] 1. The reading, pure: projection, expressions, layout, validation
+- [x] 1. The reading, pure: projection, expressions, layout, validation
   - _Requirements: 1.1-1.6, 2.1-2.4, 3.1-3.5, 4.1-4.2, 5.1-5.5_
 
 - [x] 1.1 OwlProjection: three sweeps, structural ids
@@ -41,7 +41,7 @@ One worktree for the whole spec (`.claude/worktrees/owl`, short per the MAX_PATH
   - All four gates (backend test + format from `src/backend`, npm test + typecheck from `src/client`), exit codes captured before any pipe; merge `.claude/worktrees/owl` into `develop`
   - _Prompt: Implement the task for spec owl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge the owl worktree's group-1 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. Wire, definition, session and providers
+- [x] 2. Wire, definition, session and providers
   - _Requirements: 1.1-1.6, 6.1-6.5, 7.1-7.3, 8.1-8.4_
 
 - [x] 2.1 Wire payloads
@@ -64,7 +64,7 @@ One worktree for the whole spec (`.claude/worktrees/owl`, short per the MAX_PATH
   - The four gates, exit codes captured before any pipe; merge into `develop`
   - _Prompt: Implement the task for spec owl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 2 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. Client: the ellipse and the canvas
+- [x] 3. Client: the ellipse and the canvas
   - _Requirements: 1.1-1.6, 2.1-2.4, 3.1-3.4, 4.1, 8.3_
 
 - [x] 3.1 The ellipse element, in the central canvas library
@@ -83,7 +83,7 @@ One worktree for the whole spec (`.claude/worktrees/owl`, short per the MAX_PATH
   - The four gates, exit codes captured before any pipe; merge into `develop`
   - _Prompt: Implement the task for spec owl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked and merge group 3 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. Examples, catalog and manual checks
+- [x] 4. Examples, catalog and manual checks
   - _Requirements: 9.1-9.3, plus the integration halves of 3, 4 and 8_
 
 - [x] 4.1 Vendored ontologies under the licensing discipline
@@ -101,7 +101,7 @@ One worktree for the whole spec (`.claude/worktrees/owl`, short per the MAX_PATH
   - _Requirements: integration halves of 3, 4, 8; the catalog rule_
   - _Prompt: Implement the task for spec owl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Add the design's integration tests, advance the w3c/owl catalog row in place to Implemented, and add the four tests.md manual entries with preconditions, actions and expected results naming this spec | Restrictions: docs/diagrams.md is an HTML table - edit the existing row in place; tests.md entries name spec and task | _Leverage: the anchor's integration tests as the harness reference | Success: integration facts pass, catalog row current, manual entries added. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4.4 Final gate, merge, retire, manual pass
+- [x] 4.4 Final gate, merge, retire, manual pass
   - The four gates with exit codes captured before any pipe; merge `.claude/worktrees/owl` into `develop`; retire the worktree per CLAUDE.md; run the new tests.md entries against the running app as a manual verification pass
   - _Requirements: (gate + the manual halves of 3 and 8)_
   - _Prompt: Implement the task for spec owl-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes checked, merge the owl worktree into develop, retire it per CLAUDE.md's worktree rules, and execute the new tests.md manual pass with the app running | Restrictions: do not merge on a failing gate; report worktree-removal failures rather than forcing them | Success: gates green, merged, worktree retired, manual pass recorded. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._

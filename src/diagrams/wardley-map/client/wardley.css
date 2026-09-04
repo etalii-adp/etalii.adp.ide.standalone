@@ -35,6 +35,21 @@
   cursor: grabbing;
 }
 
+/*
+ * The scrollbars are inset past the map's own chrome. The axes and their labels are drawn
+ * inside the svg along the left and bottom edges, so bars at the default offsets would sit on
+ * top of the very labels that tell a reader what the axes mean. This is placement only - the
+ * bars' appearance stays in the shared stylesheet, per the centralised-styling rule, and the
+ * component's className prop exists for exactly this.
+ */
+.wardley-scrollbars.canvas-scrollbar-horizontal {
+  left: 56px;
+}
+
+.wardley-scrollbars.canvas-scrollbar-vertical {
+  bottom: 44px;
+}
+
 /* ---- The chrome: bands, axes and their labels --------------------------------------- */
 
 /*
@@ -181,14 +196,21 @@
  */
 .wardley-evolve {
   fill: none;
-  stroke: var(--color-accent, var(--color-text));
+  /*
+   * Deliberately --color-text rather than --color-primary, which is where the other phantom
+   * --color-accent uses went: on every canvas --color-primary means "selected", and an evolve
+   * arrow is a permanent feature of the map rather than a selection state. This is what the
+   * rule already rendered - the phantom's fallback was --color-text - so the picture is
+   * unchanged and only the undefined token is gone.
+   */
+  stroke: var(--color-text);
   stroke-width: 2;
   stroke-dasharray: 8 6;
 }
 
 .wardley-evolve-target {
   fill: none;
-  stroke: var(--color-accent, var(--color-text));
+  stroke: var(--color-text);
   stroke-width: 2;
   stroke-dasharray: 4 3;
 }
