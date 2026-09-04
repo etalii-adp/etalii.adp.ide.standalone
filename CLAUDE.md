@@ -16,6 +16,10 @@ Full rules and reasoning, including the half-removed-worktree hazard: [processes
 
 Commit with an explicit pathspec — `git commit -F msg -- <paths>` — naming files, never folders: a bare `git commit` commits the whole shared index. Commit your own implementation log the moment the tool writes it. Before merging here, read `git status` for files you did not touch, and never stash or `git checkout --` them.
 
+**Never merge while anything is staged — yours or anyone's.** `git merge` requires the index to match HEAD; when it does not, git stashes the working state and, on the failure path, does not restore it. On 2026-09-04 that silently reverted or deleted **26 paths of three other sessions' work**, reporting only `Index was not unstashed. Merge with strategy ort failed.` Wait for a clean index — `git status --porcelain | grep -cE '^[^ ?]'` equal to zero — and pass `--no-autostash`. Reading `git status` first is necessary and not sufficient: it tells you what would be *written*, not that the merge is unsafe to attempt at all.
+
+**If it happens, the work is recoverable — do not re-run anything.** The stash survives as a dangling commit pair: `git fsck --unreachable --no-reflogs`, find `WIP on develop` and `index on develop` at the failed merge's timestamp, then `git checkout <wip-commit> -- <path>` per file. Restore only what was present; **never re-apply a deletion that was in flight**, because re-applying someone's half-done delete is the one direction that destroys rather than restores.
+
 Full rules and reasoning: [processes.md, *Committing and merging in the shared main checkout*](.spec-workflow/steering/processes.md#committing-and-merging-in-the-shared-main-checkout).
 
 ## Git identity
