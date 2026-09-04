@@ -35,6 +35,21 @@
   cursor: grabbing;
 }
 
+/*
+ * The scrollbars are inset past the map's own chrome. The axes and their labels are drawn
+ * inside the svg along the left and bottom edges, so bars at the default offsets would sit on
+ * top of the very labels that tell a reader what the axes mean. This is placement only - the
+ * bars' appearance stays in the shared stylesheet, per the centralised-styling rule, and the
+ * component's className prop exists for exactly this.
+ */
+.wardley-scrollbars.canvas-scrollbar-horizontal {
+  left: 56px;
+}
+
+.wardley-scrollbars.canvas-scrollbar-vertical {
+  bottom: 44px;
+}
+
 /* ---- The chrome: bands, axes and their labels --------------------------------------- */
 
 /*

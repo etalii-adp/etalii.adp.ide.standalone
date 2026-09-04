@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { straightPath, type ConnectorBox } from "@client/canvas/connectors";
+import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
+import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import { StraightConnection } from "@client/canvas/connections/straight/StraightConnection";
 import { SymbolElement } from "@client/canvas/elements/symbol/SymbolElement";
 import { useRegisterDiagramView } from "@client/shell/panels/DiagramViewContext";
@@ -232,9 +234,34 @@ export function WardleyCanvas({ projectId, path }: WardleyCanvasProps) {
           <WardleyContents model={model} drag={drag} onElementPointerDown={onElementPointerDown} />
         )}
       </svg>
+      <CanvasScrollbars
+        {...scrollAxesOf(view)}
+        className="wardley-scrollbars"
+        onPan={(x, y) => setView({ ...view, x, y })}
+      />
       {rejection ? <p className="wardley-rejection">{rejection}</p> : null}
     </div>
   );
+}
+
+/**
+ * Where the view sits inside the map, as the two axes the shared scrollbars take.
+ *
+ * The one canvas here whose extent is NOT its content: a Wardley map's plane is the 0..1 space
+ * itself, so a map carrying two components still has the whole space to show, and deriving the
+ * extent from content would let a reader pan into emptiness while half the map went missing.
+ * `fullView` already expresses that space, so the extent is simply it - passed through the
+ * shared helper with no margin, because the map's own MARGIN is already part of it.
+ *
+ * This is a call-site decision and stays one: the component takes four plain numbers and does
+ * not care where they came from, so nothing here justifies widening it or teaching the shared
+ * geometry about map space.
+ */
+function scrollAxesOf(view: ViewBox) {
+  return {
+    horizontal: { viewStart: view.x, viewSpan: view.w, ...scrollExtentOf(fullView.x, fullView.x + fullView.w) },
+    vertical: { viewStart: view.y, viewSpan: view.h, ...scrollExtentOf(fullView.y, fullView.y + fullView.h) },
+  };
 }
 
 function clamp01(value: number): number {
