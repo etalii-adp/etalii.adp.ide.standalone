@@ -5,6 +5,8 @@ import { FixedBezierConnection } from "@client/canvas/connections/fixed-bezier/F
 import { StraightConnection } from "@client/canvas/connections/straight/StraightConnection";
 import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
 import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
+import { useViewReport } from "@client/diagrams/useViewReport";
+import type { ViewBox, Viewport } from "@client/diagrams/viewReport";
 import type { ConnectorBox, Point } from "@client/canvas/connectors";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
@@ -28,6 +30,14 @@ export const NODE_HEIGHT = 56;
 /** A target frame's drawn size; the frame is an enclosure, so it is larger than a node. */
 const FRAME_WIDTH = 220;
 const FRAME_HEIGHT = 120;
+
+/**
+ * The surface size assumed before the first measure - in jsdom, and in the frame between mount
+ * and layout. Both the scrollbars and the view report need a span in canvas units, and a span of
+ * zero would report an empty viewport and have the backend cull the whole diagram.
+ */
+const DEFAULT_SURFACE_WIDTH = 1200;
+const DEFAULT_SURFACE_HEIGHT = 600;
 
 /** The id of the arrowhead marker this family defines and its edge stylesheet points at. */
 const ARROWHEAD_ID = "databricks-arrowhead";
@@ -98,7 +108,7 @@ export function DatabricksCanvas({
   connectable,
   interceptAction,
 }: DiagramCanvasProps & DatabricksCanvasConfig) {
-  const { model, loading, failed, moveElementTo } = useDatabricksStream(projectId, path);
+  const { model, loading, failed, moveElementTo, reportView } = useDatabricksStream(projectId, path);
   const simulation = useSimulatedRun(model);
   const { select, executeAction, executeShortcut } = useContextConnection();
   const { selection, actions } = useContextSelection();
@@ -108,6 +118,41 @@ export function DatabricksCanvas({
 
   const [view, setView] = useState<DatabricksView>(() => ({ startX: -60, startY: -60, pixelsPerUnit: 1 }));
   const fittedRef = useRef(false);
+
+  // The report fires after the view settles, so it must read the live view rather than the one
+  // captured when the effect was scheduled.
+  const viewRef = useRef(view);
+  viewRef.current = view;
+
+  // What this canvas can see, in its own units. It draws pixel-mapped into a div rather than
+  // through an svg viewBox, so the shared `shownRectOf` has nothing to convert here and is not
+  // used: the span is the surface's pixels divided by the zoom, which is the same arithmetic
+  // `scrollAxesOf` below does for the bars (view-delta-adoption Requirement 3.4 - the module
+  // converts, the shared code does not).
+  const shownRect = useCallback((): Viewport => {
+    const current = viewRef.current;
+    const rect = surfaceRef.current?.getBoundingClientRect();
+    const widthPx = rect?.width || DEFAULT_SURFACE_WIDTH;
+    const heightPx = rect?.height || DEFAULT_SURFACE_HEIGHT;
+
+    return {
+      minX: current.startX,
+      minY: current.startY,
+      maxX: current.startX + widthPx / current.pixelsPerUnit,
+      maxY: current.startY + heightPx / current.pixelsPerUnit,
+    };
+  }, []);
+
+  // The backend culls to what a connection can see, so it has to be told - on every settled
+  // view change, which is what makes a pan bring content in rather than merely move over it.
+  // Keyed on the four numbers of the rectangle, so a zoom counts as a change as much as a pan
+  // does, and so does the surface being resized.
+  useViewReport({
+    view: viewBoxOf(view, surfaceRef.current?.getBoundingClientRect() ?? null),
+    report: reportView,
+    convert: shownRect,
+    ready: !loading && !failed,
+  });
 
   const panRef = useRef<{ clientX: number; clientY: number; view: DatabricksView; moved: boolean } | null>(null);
   const dragRef = useRef<DragState | null>(null);
@@ -154,8 +199,8 @@ export function DatabricksCanvas({
   const zoomBy = useCallback((factor: number) => {
     setView((current) => {
       const rect = surfaceRef.current?.getBoundingClientRect();
-      const width = rect?.width || 1200;
-      const height = rect?.height || 600;
+      const width = rect?.width || DEFAULT_SURFACE_WIDTH;
+      const height = rect?.height || DEFAULT_SURFACE_HEIGHT;
       const next = clampZoom(current.pixelsPerUnit * factor);
       // About the centre, so the thing being looked at stays where it is.
       const centreX = current.startX + (width / 2) / current.pixelsPerUnit;
@@ -605,9 +650,26 @@ function movable(id: string): boolean {
  * bounds - nodes and frames alike - padded so a drag can go a little past the content, or the
  * plane stops feeling unbounded. Everything in the module's own canvas units.
  */
+/**
+ * The view as the shared report hook keys on it: the origin it starts at and the span it covers,
+ * both in canvas units. The span moves with the zoom and with the surface's size, so keying on
+ * these four numbers makes a zoom and a resize each count as a view change - which they are.
+ */
+function viewBoxOf(view: DatabricksView, surface: DOMRect | null): ViewBox {
+  const widthPx = surface?.width || DEFAULT_SURFACE_WIDTH;
+  const heightPx = surface?.height || DEFAULT_SURFACE_HEIGHT;
+
+  return {
+    x: view.startX,
+    y: view.startY,
+    w: widthPx / view.pixelsPerUnit,
+    h: heightPx / view.pixelsPerUnit,
+  };
+}
+
 function scrollAxesOf(model: DatabricksModel, view: DatabricksView, surface: DOMRect | null) {
-  const widthPx = surface?.width || 1200;
-  const heightPx = surface?.height || 600;
+  const widthPx = surface?.width || DEFAULT_SURFACE_WIDTH;
+  const heightPx = surface?.height || DEFAULT_SURFACE_HEIGHT;
   const boxes = [
     ...[...model.nodes.values()].map((node) => ({ x: node.x, y: node.y, width: NODE_WIDTH, height: NODE_HEIGHT })),
     ...[...model.frames.values()].map((frame) => ({ x: frame.x, y: frame.y, width: FRAME_WIDTH, height: FRAME_HEIGHT })),

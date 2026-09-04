@@ -44,6 +44,24 @@ public sealed class DatabricksElementMapper
     /// <inheritdoc cref="TaskType" />
     public const string FlowEdgeType = "databricks/pipeline+edge";
 
+    /// <summary>
+    /// The sizes the canvas draws a box at, in the module's own units, mirroring
+    /// <c>NODE_WIDTH</c>/<c>NODE_HEIGHT</c> and <c>FRAME_WIDTH</c>/<c>FRAME_HEIGHT</c> in
+    /// <c>DatabricksCanvas.tsx</c>. Culling needs a box rather than the point an element carries,
+    /// and these four numbers are the only thing the backend needs to know about how the canvas
+    /// draws - which is why they are copied rather than a new leg of the protocol.
+    /// </summary>
+    private const double NodeWidth = 200;
+
+    /// <inheritdoc cref="NodeWidth" />
+    private const double NodeHeight = 56;
+
+    /// <inheritdoc cref="NodeWidth" />
+    private const double FrameWidth = 220;
+
+    /// <inheritdoc cref="NodeWidth" />
+    private const double FrameHeight = 120;
+
     /// <summary>The job reading: the DAG's tasks, stubs, clusters and edges.</summary>
     public IReadOnlyList<DiagramElement> JobElements(
         JobModel job, IReadOnlyDictionary<string, RegistrationPosition> positions)
@@ -215,6 +233,81 @@ public sealed class DatabricksElementMapper
         }
 
         return elements;
+    }
+
+    /// <summary>
+    /// The elements a reported viewport can see: every box that intersects it, and - one hop
+    /// exactly - the far end of any edge with one end already in view, so a connector is never
+    /// drawn to a box that was culled (view-delta-adoption Requirements 1.1, 1.2).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// An edge carries no position of its own - all three readings pack one at the origin - so it
+    /// cannot be tested against the rectangle. Its endpoints decide it, read back from the
+    /// payload this class wrote; every edge type in the family carries
+    /// <see cref="DatabricksEdgePayload"/>, which is what makes one rule enough for three
+    /// readings.
+    /// </para>
+    /// <para>
+    /// The hop is taken against a snapshot of the boxes in view rather than against the growing
+    /// set, so the answer does not depend on the order the edges happen to arrive in. A chain of
+    /// tasks leading away from the viewport therefore contributes its first link and stops,
+    /// which is what "one hop" means; walking the growing set would drag in the whole connected
+    /// component for a diagram of any depth.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyList<DiagramElement> Visible(IReadOnlyList<DiagramElement> elements, DiagramViewport viewport)
+    {
+        ArgumentNullException.ThrowIfNull(elements);
+
+        var inView = elements
+            .Where(element => !IsEdge(element.Type) && Intersects(element, viewport))
+            .Select(element => element.Id)
+            .ToHashSet(StringComparer.Ordinal);
+
+        var reached = new HashSet<string>(inView, StringComparer.Ordinal);
+        foreach (var edge in elements.Where(element => IsEdge(element.Type)))
+        {
+            var (from, to) = EndsOf(edge);
+            if (inView.Contains(from))
+            {
+                reached.Add(to);
+            }
+            else if (inView.Contains(to))
+            {
+                reached.Add(from);
+            }
+        }
+
+        return elements
+            .Where(element => IsEdge(element.Type)
+                ? reached.Contains(EndsOf(element).From) && reached.Contains(EndsOf(element).To)
+                : reached.Contains(element.Id))
+            .ToArray();
+    }
+
+    private static (string From, string To) EndsOf(DiagramElement edge)
+    {
+        var payload = DatabricksEdgePayload.Parser.ParseFrom(edge.Payload.Span);
+        return (payload.FromElementId, payload.ToElementId);
+    }
+
+    private static bool IsEdge(string type) =>
+        type is EdgeType or OverrideEdgeType or FlowEdgeType;
+
+    /// <summary>
+    /// Whether a box overlaps the viewport. The drawn sizes are the canvas's own
+    /// (<c>NODE_WIDTH</c>/<c>NODE_HEIGHT</c> and the target frame's, in
+    /// <c>DatabricksCanvas.tsx</c>): an element's position is its top-left corner, and culling on
+    /// the point alone would drop a box the reader can see three quarters of.
+    /// </summary>
+    private static bool Intersects(DiagramElement element, DiagramViewport viewport)
+    {
+        var width = element.Type == TargetType ? FrameWidth : NodeWidth;
+        var height = element.Type == TargetType ? FrameHeight : NodeHeight;
+
+        return element.X <= viewport.MaxX && element.X + width >= viewport.MinX &&
+            element.Y <= viewport.MaxY && element.Y + height >= viewport.MinY;
     }
 
     /// <summary>

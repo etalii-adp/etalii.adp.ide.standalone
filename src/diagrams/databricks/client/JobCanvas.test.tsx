@@ -20,6 +20,7 @@ vi.mock("./useDatabricksStream", () => ({
       moves.push({ elementId, x, y });
       return Promise.resolve("");
     },
+    reportView: () => undefined,
   }),
 }));
 
