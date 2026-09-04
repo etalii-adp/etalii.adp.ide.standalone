@@ -7,6 +7,7 @@ import {
   AnsibleElementKind,
   AnsibleElementPayloadSchema,
 } from "@client/generated/ansible-structure_pb";
+import { VIEW_REPORT_DEBOUNCE_MS } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type AnsibleModel } from "./ansibleModel";
 import { DiagramToolboxProvider, useDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 
@@ -14,6 +15,7 @@ const select = vi.fn();
 const revealPath = vi.fn();
 // Typed with the real signature, so the call assertions below can read the arguments.
 const moveElementTo = vi.fn(async (_elementId: string, _x: number, _y: number) => "");
+const reportView = vi.fn();
 let currentModel: AnsibleModel = emptyModel;
 let currentLoading = false;
 let currentFailed = false;
@@ -24,7 +26,7 @@ vi.mock("./useAnsibleStream", () => ({
     model: currentModel,
     loading: currentLoading,
     failed: currentFailed,
-    reportView: () => {},
+    reportView,
     moveElementTo,
   }),
 }));
@@ -110,6 +112,7 @@ beforeEach(() => {
   SVGElement.prototype.releasePointerCapture ??= () => {};
   select.mockClear();
   revealPath.mockClear();
+  reportView.mockClear();
   currentLoading = false;
   currentFailed = false;
   currentSelection = null;
@@ -513,5 +516,55 @@ describe("AnsibleCanvas toolbox", () => {
     // Assert: registered-and-empty, not unregistered.
     expect(getByTestId("toolbox-probe").textContent).toBe("palette:");
     expect(toolboxRequests[0]).toEqual(path);
+  });
+});
+
+describe("the view report", () => {
+  it("aDiagramThatIsLoadingOrFailed_ReportsNoViewport", () => {
+    // Arrange.
+    // The report effect is declared before this component's `if (failed)` and `if (loading)`
+    // early returns, and hooks run regardless of a later return - so nothing about those
+    // returns keeps a report from being sent. The guard has to be in the effect.
+    vi.useFakeTimers();
+
+    try {
+      for (const state of [{ loading: true, failed: false }, { loading: false, failed: true }]) {
+        reportView.mockClear();
+        currentLoading = state.loading;
+        currentFailed = state.failed;
+
+        // Act.
+        renderCanvas();
+        vi.advanceTimersByTime(VIEW_REPORT_DEBOUNCE_MS * 2);
+
+        // Assert.
+        // Loading: the report would describe a view of nothing, before the first delta has
+        // said what there is. Failed: it is a call to a connection the backend has just told
+        // us is unroutable - the path is gone, moved or has no session.
+        expect(reportView, state.loading ? "reported while loading" : "reported after a permanent failure").not.toHaveBeenCalled();
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("reports the viewport once the diagram is ready", () => {
+    // Arrange.
+    // The other half of the guard: it must suppress the two states above and nothing else, or
+    // it would be indistinguishable from never reporting at all.
+    vi.useFakeTimers();
+
+    try {
+      reportView.mockClear();
+
+      // Act.
+      renderCanvas();
+      vi.advanceTimersByTime(VIEW_REPORT_DEBOUNCE_MS * 2);
+
+      // Assert.
+      expect(reportView).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

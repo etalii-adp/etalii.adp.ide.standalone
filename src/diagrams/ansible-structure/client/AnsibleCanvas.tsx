@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useViewReport } from "@client/diagrams/useViewReport";
+import { shownRectOf } from "@client/diagrams/viewReport";
 import { forwardBezierPath, straightPath } from "@client/canvas/connectors";
 import { BoxElement } from "@client/canvas/elements/box/BoxElement";
 import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
@@ -23,7 +25,6 @@ interface ViewBox {
 const ZOOM_STEP = 1.25;
 const MIN_VIEW_WIDTH = 40;
 const MAX_VIEW_WIDTH = 100000;
-const VIEW_REPORT_DEBOUNCE_MS = 200;
 const PADDING = 60;
 
 /** How many play colours the stylesheet defines. The palette itself is CSS's; this is its size. */
@@ -77,6 +78,8 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
   const effective = view ?? bounds;
   const boundsRef = useRef(bounds);
   boundsRef.current = bounds;
+  const effectiveRef = useRef(effective);
+  effectiveRef.current = effective;
 
   const selectedId = selectedElementIdOf(selection);
 
@@ -94,17 +97,15 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
     });
   }, []);
 
-  // The backend culls to what a connection can see, so it has to be told - debounced, because
-  // a pan produces a report per frame otherwise.
-  useEffect(() => {
-    const handle = setTimeout(
-      () => reportView({ minX: effective.x, minY: effective.y, maxX: effective.x + effective.w, maxY: effective.y + effective.h }),
-      VIEW_REPORT_DEBOUNCE_MS,
-    );
-    return () => clearTimeout(handle);
-    // reportView is recreated per render; the view is what actually changed.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effective.x, effective.y, effective.w, effective.h]);
+  // The backend culls to what a connection can see, so it has to be told. This canvas draws a
+  // bare viewBox and measures nothing, so it passes no surface - the shared conversion's
+  // no-surface branch is exactly the rectangle this built inline before.
+  useViewReport({
+    view: effective,
+    report: reportView,
+    convert: () => shownRectOf(effectiveRef.current),
+    ready: !loading && !failed,
+  });
 
   const onSelect = useCallback(
     (element: AnsibleElement, gesture?: ContextSelectionAction) => {

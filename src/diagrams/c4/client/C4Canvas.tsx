@@ -8,6 +8,8 @@ import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
 import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
 import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useViewReport } from "@client/diagrams/useViewReport";
+import { shownRectOf } from "@client/diagrams/viewReport";
 import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { ContextSelectionAction } from "@client/generated/context_pb";
 import { ContextMenu } from "@client/shell/context/ContextMenu";
@@ -30,7 +32,6 @@ interface ViewBox {
 const ZOOM_STEP = 1.25;
 const MIN_VIEW_WIDTH = 40;
 const MAX_VIEW_WIDTH = 100000;
-const VIEW_REPORT_DEBOUNCE_MS = 200;
 
 export interface C4CanvasProps {
   projectId: Uint8Array;
@@ -127,21 +128,12 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
   );
   useRegisterDiagramView(viewControls);
 
-  const reportViewRef = useRef(reportView);
-  reportViewRef.current = reportView;
-  const viewKey = `${effectiveView.x},${effectiveView.y},${effectiveView.w},${effectiveView.h}`;
-  useEffect(() => {
-    if (loading || failed) {
-      return;
-    }
-
-    const timer = setTimeout(
-      () => reportViewRef.current(shownRectOf(viewRef.current, surfaceRef.current)),
-      VIEW_REPORT_DEBOUNCE_MS,
-    );
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewKey, loading, failed]);
+  useViewReport({
+    view: effectiveView,
+    report: reportView,
+    convert: () => shownRectOf(viewRef.current, surfaceRef.current),
+    ready: !loading && !failed,
+  });
 
   const unitsPerPixel = (box: ViewBox): number => {
     const rect = surfaceRef.current?.getBoundingClientRect();
@@ -548,31 +540,6 @@ function sourceBoxOf(p: C4RelationshipPayload): ConnectorBox {
 
 function destinationBoxOf(p: C4RelationshipPayload): ConnectorBox {
   return { x: p.destinationX, y: p.destinationY, width: p.destinationWidth, height: p.destinationHeight };
-}
-
-/**
- * What the svg actually puts on screen, in canvas units - which is not the viewBox. With the
- * default `preserveAspectRatio` the browser fits the box inside the element and centres it, so
- * the axis with room to spare shows more of the model than the box asked for. Reporting the
- * bare viewBox would have the backend cull elements the user is looking straight at.
- */
-export function shownRectOf(box: ViewBox, surface: SVGSVGElement | null) {
-  const rect = surface?.getBoundingClientRect();
-  if (rect === undefined || rect.width <= 0 || rect.height <= 0 || box.w <= 0 || box.h <= 0) {
-    return { minX: box.x, minY: box.y, maxX: box.x + box.w, maxY: box.y + box.h };
-  }
-
-  const scale = Math.min(rect.width / box.w, rect.height / box.h);
-  const shownWidth = rect.width / scale;
-  const shownHeight = rect.height / scale;
-  const centerX = box.x + box.w / 2;
-  const centerY = box.y + box.h / 2;
-  return {
-    minX: centerX - shownWidth / 2,
-    minY: centerY - shownHeight / 2,
-    maxX: centerX + shownWidth / 2,
-    maxY: centerY + shownHeight / 2,
-  };
 }
 
 /**
