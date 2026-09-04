@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Threading;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -171,7 +172,24 @@ public partial class ShapeOfFileAccessTests
             relativePath.EndsWith(entry.File.Replace('/', IoPath.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase) &&
             entry.Rule == rule);
 
-    private static IReadOnlyList<(string RelativePath, string Offence, string Rule)> Survey()
+    /// <summary>
+    /// The whole survey, walked once per test run rather than once per call.
+    /// </summary>
+    /// <remarks>
+    /// Memoised because the first version was not, and one test called it inside a LINQ
+    /// predicate - so the tree was walked once per tracked entry, roughly fourteen full
+    /// walks of four thousand files. That did not fail this guard; it destabilised the
+    /// integration tests sharing the assembly, surfacing a real race between a watcher-driven
+    /// read of an .adp and the layout write that undo performs. The race is genuine and is
+    /// backend-consistency AC2 to fix. Making this guard cheap is what stops it acting as a
+    /// load generator that decides when that race is lost.
+    /// </remarks>
+    private static readonly Lazy<IReadOnlyList<(string RelativePath, string Offence, string Rule)>> Surveyed =
+        new(WalkTheTree, LazyThreadSafetyMode.ExecutionAndPublication);
+
+    private static IReadOnlyList<(string RelativePath, string Offence, string Rule)> Survey() => Surveyed.Value;
+
+    private static IReadOnlyList<(string RelativePath, string Offence, string Rule)> WalkTheTree()
     {
         var all = new List<(string, string, string)>();
         foreach (var file in ProductionSources())
@@ -233,6 +251,8 @@ public partial class ShapeOfFileAccessTests
     [Fact]
     public void ThePermanentAndTrackedListsStaySeparate()
     {
+        var live = Survey();
+
         // A file may appear in both only where the two entries are about different rules -
         // C4LayoutSidecar reads ADP's own JSON (permanently fine) and publishes by hand
         // (tracked debt). Same file, same rule, both lists would mean the debt was quietly
@@ -241,7 +261,7 @@ public partial class ShapeOfFileAccessTests
             .Where(tracked => Permanent.Any(permanent =>
                 permanent.File.Equals(tracked.File, StringComparison.OrdinalIgnoreCase) &&
                 (permanent.Rule == AllRules || permanent.Rule == tracked.Rule)))
-            .Where(tracked => Survey().Any(found =>
+                        .Where(tracked => live.Any(found =>
                 found.RelativePath.EndsWith(tracked.File.Replace('/', IoPath.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase) &&
                 found.Rule == tracked.Rule))
             .Select(tracked => $"{tracked.File} is tracked for a rule its permanent entry already excuses")
