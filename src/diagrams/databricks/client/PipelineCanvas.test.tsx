@@ -10,6 +10,7 @@ vi.mock("./useDatabricksStream", () => ({
     loading: false,
     failed: false,
     moveElementTo: () => Promise.resolve(""),
+    reportView: () => undefined,
   }),
 }));
 

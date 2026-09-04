@@ -189,4 +189,105 @@ public class DatabricksSessionTests : IDisposable
         // Assert.
         Assert.Contains("not something this diagram can move", refusal, StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// The DAG laid out in one column, far enough apart that a viewport can hold exactly one
+    /// task. Authored positions rather than the computed layout, so these tests describe the
+    /// viewport rule and do not quietly also test <see cref="DatabricksJobLayout"/>.
+    /// </summary>
+    private const string SpreadOut = """
+        layout:
+          task:ingest: 0 0
+          task:quality_gate: 0 5000
+          task:publish: 0 10000
+          task:alert: 0 15000
+          task:refresh_dashboard: 0 20000
+          cluster:ingest_cluster: 0 25000
+
+        """;
+
+    /// <summary>A window around one row of the column above, in the module's own units.</summary>
+    private static DiagramViewport Around(double y) => new(-100, y - 100, 300, y + 100);
+
+    private static IReadOnlyList<string> RemovedBy(IReadOnlyList<DiagramDelta> deltas) =>
+        deltas.OfType<DiagramRemoveDelta>().SelectMany(delta => delta.ElementIds).ToList();
+
+    private static IReadOnlyList<string> AddedBy(IReadOnlyList<DiagramDelta> deltas) =>
+        deltas.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).Select(element => element.Id).ToList();
+
+    [Fact]
+    public async Task AViewChange_BringsInWhatCameIntoView_AndTakesOutWhatLeft()
+    {
+        // Arrange: the reader opens the whole job, then settles on the first task.
+        var body = CopyFixture("job.yml");
+        await using var session = Open("databricks/job", body, WriteRegistration("databricks/job", "job.yml", SpreadOut));
+        _ = session.Baseline();
+        _ = session.UpdateView(Around(0));
+
+        // Act: and then pans down to the third.
+        var deltas = session.UpdateView(Around(10000));
+
+        // Assert. This is the behavioural test Requirement 1.3 asks for, and the reason it is
+        // written against the session rather than the client: it fails against a session that
+        // answers `[]`, which is what this module did before it adopted the loop, and no
+        // assertion that the client called UpdateView would have noticed.
+        Assert.Contains("task:publish", AddedBy(deltas));
+        Assert.Contains("task:ingest", RemovedBy(deltas));
+
+        // Add before Remove, which is what this module's Diff emits - Requirement 4.3 guesses
+        // the opposite order and the code is what counts.
+        Assert.IsType<DiagramAddDelta>(deltas[0]);
+        Assert.IsType<DiagramRemoveDelta>(deltas[1]);
+    }
+
+    [Fact]
+    public async Task AnEdgeWithOneEndInView_BringsItsFarEndWithIt()
+    {
+        // Arrange.
+        var body = CopyFixture("job.yml");
+        await using var session = Open("databricks/job", body, WriteRegistration("databricks/job", "job.yml", SpreadOut));
+        _ = session.Baseline();
+
+        // Act: a window holding only `ingest` - `quality_gate` is 5000 units below it.
+        var removed = RemovedBy(session.UpdateView(Around(0)));
+
+        // Assert: the far end of `ingest -> quality_gate` stays, because a connector with
+        // nothing to land on is worse than one element too many. One hop and no further, so the
+        // task beyond it goes.
+        Assert.DoesNotContain("task:quality_gate", removed);
+        Assert.DoesNotContain("edge:ingest->quality_gate", removed);
+        Assert.Contains("task:publish", removed);
+    }
+
+    [Fact]
+    public async Task AViewportThatBringsNothingNew_AnswersWithNothing()
+    {
+        // Arrange.
+        var body = CopyFixture("job.yml");
+        await using var session = Open("databricks/job", body, WriteRegistration("databricks/job", "job.yml", SpreadOut));
+        _ = session.Baseline();
+        _ = session.UpdateView(Around(0));
+
+        // Act: the reader nudges the view without uncovering anything.
+        var deltas = session.UpdateView(Around(10));
+
+        // Assert: a reader who is not going anywhere costs the connection nothing. This one
+        // passes against a session returning `[]` too - it is the companion to the test above,
+        // not the guard.
+        Assert.Empty(deltas);
+    }
+
+    [Fact]
+    public async Task AConnectionThatNeverReportsAViewport_StillHoldsTheWholeDiagram()
+    {
+        // Arrange & act.
+        var body = CopyFixture("job.yml");
+        await using var session = Open("databricks/job", body, WriteRegistration("databricks/job", "job.yml", SpreadOut));
+
+        // Assert: the viewport starts unbounded, so adopting the loop changed nothing for a
+        // client that has not reported yet - including the far end of the column.
+        var elements = ElementsOf(session).Select(element => element.Id).ToList();
+        Assert.Contains("task:ingest", elements);
+        Assert.Contains("cluster:ingest_cluster", elements);
+    }
 }
