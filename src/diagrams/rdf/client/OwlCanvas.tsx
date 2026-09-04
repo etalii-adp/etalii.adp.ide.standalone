@@ -23,7 +23,7 @@ import { isCard, isExpression, type OwlDiagramEdge, type OwlModel, type OwlNode 
 export const CARD_WIDTH = 220;
 
 /** A class or datatype's drawn size. `owl:Thing` anchors draw smaller, as the notation asks. */
-export const SHAPE_WIDTH = 150;
+export const SHAPE_WIDTH = 190;
 export const SHAPE_HEIGHT = 70;
 const THING_SCALE = 0.55;
 
@@ -492,7 +492,7 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
                 >
                   {node.badges.length > 0 ? (
                     <text className="owl-badges" x={8 * view.pixelsPerUnit} y={badgesY * view.pixelsPerUnit}>
-                      {node.badges.join(" · ")}
+                      {fit(node.badges.join(" · "), box.width)}
                     </text>
                   ) : null}
                   {node.rows.map((row, index) => (
@@ -502,9 +502,10 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
                       x={8 * view.pixelsPerUnit}
                       y={(rowsStart + (index + 1) * ROW_HEIGHT - 4) * view.pixelsPerUnit}
                     >
-                      {`${row.predicate}: ${row.value}${row.annotation ? ` ${row.annotation}` : ""}`}
+                      {fit(`${row.predicate}: ${row.value}${row.annotation ? ` ${row.annotation}` : ""}`, box.width)}
                     </text>
                   ))}
+                  <title>{node.display}</title>
                   {anchorsFor(node, box, selectedId, onAnchorPointerDown)}
                 </BoxElement>
               );
@@ -537,12 +538,13 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
                 y={box.y}
                 radiusX={box.width / 2}
                 radiusY={box.height / 2}
-                text={isExpression(node) && node.elided ? `${node.display} …` : node.display}
+                text={labelFor(node, box.width)}
                 doubled={hasEquivalence(model, node.id)}
                 ellipseClassName="owl-shape canvas-node"
                 innerClassName="owl-shape-inner"
                 labelClassName="owl-label canvas-node-label"
               >
+                <title>{node.display}</title>
                 {anchorsFor(node, box, selectedId, onAnchorPointerDown)}
               </EllipseElement>
             );
@@ -572,6 +574,27 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
       {rejection ? <p className="owl-rejection canvas-rejection">{rejection}</p> : null}
     </div>
   );
+}
+
+/**
+ * A label that stays inside its shape. The drawn names are IRIs' local names and Manchester
+ * expressions, both of which run long; left whole they smear across their neighbours and turn a
+ * real ontology into a thicket. The full name is one hover or one selection away - the shape
+ * carries it as a title, and the property grid shows it in full.
+ */
+export function labelFor(node: OwlNode, widthPx: number): string {
+  return fit(isExpression(node) && node.elided ? `${node.display} …` : node.display, widthPx);
+}
+
+/**
+ * One line of text, cut to what its element can hold. Rows carry annotation values - a comment,
+ * a contributor's address - that are sentences rather than names, and drawn whole they run
+ * across half the canvas.
+ */
+export function fit(text: string, widthPx: number): string {
+  // ~0.55em per character at the label's size, with a little padding inside the outline.
+  const budget = Math.max(6, Math.floor((widthPx - 16) / 6.2));
+  return text.length <= budget ? text : `${text.slice(0, budget - 1).trimEnd()}…`;
 }
 
 /** The classes a node wears: its kind, its dimming, and whatever state it is in. */

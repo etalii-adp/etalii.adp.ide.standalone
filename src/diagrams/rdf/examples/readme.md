@@ -18,3 +18,22 @@ unmodified.
   Stockholm), and `laureates.ttl` is the whole dataset — 1,657 resources, deliberately past the
   drawn-element budget, so the truncated first-N view has a real file to be honest about
   (Requirement 8).
+
+The ontology reading (`w3c/owl`) has two of its own, both published in Turtle by their standards
+bodies, both copied byte for byte, and both opening with no validation findings:
+
+- **`owl-time/`** — the W3C/OGC Time ontology (CC BY 4.0, attribution carried): 54 restrictions,
+  a union, two enumerations, disjointness, deprecated classes still referenced, and the days,
+  months and units as named individuals, so one file shows the schema and its instances at once.
+- **`prov-o/`** — the W3C provenance ontology (W3C document and software terms): 39 classes with
+  their hierarchy, properties with domains and ranges, unions and disjointness — a mid-size real
+  standard that fits one screen.
+
+Two things the ontology set deliberately does *not* carry, recorded so the absence is not read
+as an oversight. The **pizza ontology**, named as a candidate while this spec was written, is
+published upstream only as RDF/XML; converting it would have to be a declared local change, and
+no converter is installed in this repository's toolchain, so it was left out rather than
+converted by hand into a provenance nobody could check. And there is no **over-budget ontology**
+here: the permissive, Turtle-native ontologies large enough to pass the drawn-element budget are
+the OBO releases, which have the same RDF/XML problem. The budget's neighborhood-whole cut is
+covered by unit tests instead (`OwlProjectionTests`).
