@@ -103,7 +103,23 @@ public sealed class TextFileBuffer
         byte[] bytes;
         try
         {
-            bytes = File.ReadAllBytes(path);
+            // Shared exactly as SharedDocumentReader shares, and for its reason: a save landing
+            // while this read is in flight must not fail, and ADP's own temp-then-move publish
+            // must be able to replace the file underneath it. Sharing and decoding strictness
+            // are orthogonal - what arrives is still decoded strictly below, and a torn read is
+            // still refused rather than saved back (Requirement 2.4).
+            //
+            // It opens its own stream rather than calling SharedDocumentReader because that type
+            // lives in EtAlii.Adp.Backend, which REFERENCES this project: the helper sits above
+            // its caller, so the call cannot be made without inverting that dependency. These
+            // flags are not an unguarded second copy of the rule - ShapeOfFileAccess asserts
+            // this exact combination on every production file, including this one.
+            using var stream = new FileStream(
+                path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete,
+                bufferSize: 4096, FileOptions.SequentialScan);
+            using var buffer = new MemoryStream();
+            stream.CopyTo(buffer);
+            bytes = buffer.ToArray();
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

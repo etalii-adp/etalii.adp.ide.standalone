@@ -43,7 +43,18 @@ public partial class ShapeOfFileAccessTests
     [
         ("Hierarchy/SharedDocumentReader.cs", AllRules, "it is the shared-read implementation"),
         ("Hierarchy/AdpFileWriter.cs", AllRules, "it is the temp-then-move implementation"),
-        ("EtAlii.Adp.Editor/TextFileBuffer.cs", AllRules, "a deliberately strict decode that must refuse a torn read rather than save it back (Requirement 2.4); its FileStream is a write, and a write does not share"),
+        // TextFileBuffer.cs had an all-rules entry here until task 6.2, and it is deliberately
+        // gone rather than narrowed. The reason it carried - a strict decode that must refuse a
+        // torn read rather than save it back (Requirement 2.4) - never justified its SHARING,
+        // because strictness and sharing are orthogonal: the decode happens after the bytes
+        // arrive and says nothing about who may hold the file meanwhile. Its read now opens at
+        // FileShare.ReadWrite | Delete and its decode is as strict as it ever was, so no rule
+        // fires and no exemption is owed. Its write was never caught either way: the narrow-share
+        // rule matches FileAccess.Read, and a write is FileAccess.Write.
+        //
+        // That file was the guard's blind spot twice over - the only File.ReadAllBytes in the
+        // backend, which the rule did not match until 6.1, inside the only file exempted from
+        // every rule. Neither exemption survives.
         ("Problems/ProblemStore.cs", RawRead, "ADP's own problem cache, not a user document - no user-driven writer contends for it"),
         ("Projects/FileProjectStore.cs", RawRead, "ADP's own projects file, not a user document"),
         ("C4/C4LayoutSidecar.cs", RawRead, "reads ADP's own layout sidecar JSON, not the user's .dsl"),
@@ -85,7 +96,7 @@ public partial class ShapeOfFileAccessTests
         ("WardleyMap/WardleyIdentities.cs", HandRolledPublish, "file-io-centralization task 5.2"),
     ];
 
-    private const string RawRead = "reads a file with a raw File.ReadAllText/ReadAllLines, which opens at FileShare.Read and loses to a concurrent save";
+    private const string RawRead = "reads a file with a raw File.ReadAllText/ReadAllLines/ReadAllBytes, which opens at FileShare.Read and loses to a concurrent save";
     private const string NarrowShare = "opens a read stream without FileShare.Delete, so ADP's own temp-then-move publish cannot replace the file mid-read";
     private const string HandRolledPublish = "publishes with a hand-rolled temporary and File.Move instead of the central atomic writer";
 
@@ -272,6 +283,17 @@ public partial class ShapeOfFileAccessTests
         Assert.Contains("Fake/Store.cs:1", rawRead[0], StringComparison.Ordinal);
         Assert.Contains("SharedDocumentReader", rawRead[0], StringComparison.Ordinal);
 
+        // Each ReadAll shape separately, because the rule is an alternation and an alternation
+        // is exactly where one branch can be dropped without the others noticing (task 6.1).
+        var rawLines = Offences("Fake/Lines.cs", ["        var lines = File.ReadAllLines(path);"]);
+        Assert.Single(rawLines);
+        Assert.Contains("SharedDocumentReader", rawLines[0], StringComparison.Ordinal);
+
+        var rawBytes = Offences("Fake/Bytes.cs", ["            bytes = File.ReadAllBytes(path);"]);
+        Assert.Single(rawBytes);
+        Assert.Contains("Fake/Bytes.cs:1", rawBytes[0], StringComparison.Ordinal);
+        Assert.Contains("SharedDocumentReader", rawBytes[0], StringComparison.Ordinal);
+
         var narrow = Offences("Fake/Reader.cs", ["        using var s = new FileStream(p, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);"]);
         Assert.Single(narrow);
         Assert.Contains("FileShare.Delete", narrow[0], StringComparison.Ordinal);
@@ -290,10 +312,25 @@ public partial class ShapeOfFileAccessTests
         Assert.Empty(Offences("Fake/Rename.cs", ["                File.Move(sourcePath, targetPath);"]));
         Assert.Empty(Offences("Fake/Prose.cs", ["        /// File.ReadAllText and friends open with FileShare.Read, which is why this exists."]));
         Assert.Empty(Offences("Fake/Write.cs", ["            await using var stream = new FileStream(_path, FileMode.Create, FileAccess.Write, FileShare.Read);"]));
+        Assert.Empty(Offences("Fake/Bytes.cs", ["        var bytes = SharedDocumentReader.ReadAllBytes(path);"]));
+        // A memory stream's ToArray is not a file read, and neither is anything else whose name
+        // merely ends the same way - the rule is anchored on File. for that reason.
+        Assert.Empty(Offences("Fake/Memory.cs", ["        var bytes = buffer.ReadAllBytes();"]));
     }
 
-    /// <summary>A raw whole-file read: <c>File.ReadAllText</c> or <c>File.ReadAllLines</c>.</summary>
-    [GeneratedRegex(@"\bFile\.ReadAll(Text|Lines)\s*\(")]
+    /// <summary>
+    /// A raw whole-file read: <c>File.ReadAllText</c>, <c>File.ReadAllLines</c> or
+    /// <c>File.ReadAllBytes</c>.
+    /// </summary>
+    /// <remarks>
+    /// <c>ReadAllBytes</c> was missing until task 6.1 and the omission is instructive: it is the
+    /// only one of the three that reads a file without deciding an encoding, so it reads as a
+    /// lower-level primitive rather than a convenience - but it opens at <c>FileShare.Read</c>
+    /// exactly like its two siblings, which is the entire property this rule is about. The one
+    /// site it missed was also the one file exempted from every rule, so the blind spot was
+    /// invisible twice over and for two unrelated reasons.
+    /// </remarks>
+    [GeneratedRegex(@"\bFile\.ReadAll(Text|Lines|Bytes)\s*\(")]
     private static partial Regex RawReadExpression();
 
     /// <summary>A stream opened for reading; the sharing flags are checked separately.</summary>
