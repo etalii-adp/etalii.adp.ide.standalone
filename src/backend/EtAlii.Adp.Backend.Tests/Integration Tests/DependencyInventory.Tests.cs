@@ -31,8 +31,7 @@ namespace EtAlii.Adp.Backend.Tests;
 public class DependencyInventoryTests
 {
     /// <summary>
-    /// The repository root, found by walking up from the test binary - the same shape
-    /// <see cref="ExampleReplicationTests"/> established, anchored on the two folders this
+    /// The repository root, found by walking up from the test binary - the same shape established, anchored on the two folders this
     /// guard needs.
     /// </summary>
     private static string RepositoryRoot { get; } = Locate();

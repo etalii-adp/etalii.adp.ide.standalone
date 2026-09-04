@@ -46,7 +46,7 @@ A fifth, about how these were found rather than about the work: **this is the se
   - _Requirements: 3.1, 3.2, 3.3, 5.1_
   - _Prompt: Implement the task for spec view-delta-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior TypeScript/React developer | Task: Migrate mindmap, c4, azure-pipeline and ansible-structure to the shared view-report code, deleting all four private copies including the duplicated Viewport interface, and fix ansible-structure's missing loading/failed guard | Restrictions: mindmap, c4 and azure-pipeline must not change behaviour and their tests must pass unchanged; ansible-structure's change is the one exception and must carry the named regression test written to fail before the fix | _Leverage: the shared library from task 1 | Success: no module retains reportView, VIEW_REPORT_DEBOUNCE_MS, a private shownRectOf or a private Viewport; aDiagramThatIsLoadingOrFailed_ReportsNoViewport fails before the fix and passes after; the client suite is green. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. helm-charts implements the loop — the pattern the next five follow
+- [x] 3. helm-charts implements the loop — the pattern the next five follow
   - Files: `src/diagrams/helm-charts/client/HelmCanvas.tsx`, `useHelmStream.ts`, `src/diagrams/helm-charts/backend/EtAlii.Adp.Diagram.HelmCharts/HelmSession.cs`, and their tests
   - Client: add `reportView` through the shared library and wire `useViewReport` to the canvas's existing view state. This canvas drives a `viewBox`, so it passes its box and its surface ref and needs no measurement of its own.
   - Backend: replace the `[]` with a real visibility decision — which nodes the viewport intersects — diffing the previously visible set against the newly visible one and emitting **Add for what appeared, then Remove for what left**. That order is what the two reference implementations do; the design records it because Requirement 4.3 guessed the opposite.
@@ -62,7 +62,7 @@ A fifth, about how these were found rather than about the work: **this is the se
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.3, 3.4, 5.2, 5.3_
   - _Prompt: Implement the task for spec view-delta-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer, C# and TypeScript | Task: Implement the view-delta loop in wardley-map, both halves, following the pattern task 3 established | Restrictions: the 0..1 map space is the module's own unit and the shared code must not learn about it; no shared backend helper; update the method's stated reason for declining | _Leverage: the helm-charts adoption from task 3 | Success: client and backend tests pass, the backend test fails against a return []. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 5. timeline implements the loop
+- [x] 5. timeline implements the loop
   - Files: `src/diagrams/timeline/client/TimelineCanvas.tsx`, `useTimelineStream.ts`, `src/diagrams/timeline/backend/*/TimelineSession.cs`, and their tests
   - The same two halves. This canvas drives **pixels-per-unit and seconds**, not a `viewBox`, so it converts to a rectangle at its own call site exactly as it already does for its scrollbars — the second of the two caller shapes recorded in `src/client/src/canvas/scroll/readme.md`.
   - Update the class remarks, and the `useTimelineStream` comment that states there is deliberately no `reportView`.
@@ -75,7 +75,7 @@ A fifth, about how these were found rather than about the work: **this is the se
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.3, 3.4, 5.2, 5.3_
   - _Prompt: Implement the task for spec view-delta-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer, C# and TypeScript | Task: Implement the view-delta loop in dependency-graph, both halves | Restrictions: shared client library only, no shared backend helper, update both stale comments | _Leverage: the adoptions from tasks 3-5 | Success: client and backend tests pass, the backend test fails against a return []. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7. databricks implements the loop
+- [-] 7. databricks implements the loop
   - Files: `src/diagrams/databricks/client/DatabricksCanvas.tsx`, its stream hook, `src/diagrams/databricks/backend/*/DatabricksSession.cs`, and their tests
   - The same two halves. Pixels-per-unit canvas, so it converts at its own call site. Update the class remarks, which document the declining reason there rather than at the method.
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.3, 3.4, 5.2, 5.3_
@@ -96,7 +96,7 @@ A fifth, about how these were found rather than about the work: **this is the se
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.3, 3.4, 5.2, 5.3, 5.4_
   - _Prompt: Implement the task for spec view-delta-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer, C# and TypeScript | Task: Implement the view-delta loop across rdf's canvases and sessions, and re-evaluate the first-N truncation against it per Requirement 5.4 | Restrictions: the truncation stays as a floor against a pathological view but must not remain the primary means of keeping a large document drawable; shared client library only; no shared backend helper | _Leverage: the adoptions from tasks 3-8 | Success: a viewport over a previously truncated region produces Add deltas for it; existing rdf tests stay green. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 10. The guard against a module building its own view report
+- [-] 10. The guard against a module building its own view report
   - Files: `src/client/src/diagrams/noPrivateViewReports.test.ts` (new)
   - Fail, naming the file, when a module client builds an `UpdateView` request itself: a `client.updateView(` call outside `src/client/src/diagrams/`, or a module-local re-declaration of `VIEW_REPORT_DEBOUNCE_MS`, `shownRectOf` or `Viewport`. Collect every offender and fail once naming all of them, following `DependencyInventoryTests`, `DocumentationLinksTests` and `WorkspaceLockTests`.
   - **An import-presence check is forbidden here and the reason is specific.** Every adopting module legitimately imports from `src/client/src/diagrams/`, so "imports the shared module" is true of both a correct module and a module that imports it and then hand-rolls a request anyway. The guard tests for the offending construct itself. This exact trap was live in the `canvas-scrollbars` guard, whose first draft — "mentions a scrollbar without importing the shared module" — was satisfied by any file importing that module for an unrelated reason, and a hand-rolled thumb beside a legitimate geometry import passed a green run.

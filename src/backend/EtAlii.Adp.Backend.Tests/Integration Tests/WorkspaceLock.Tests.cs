@@ -24,8 +24,7 @@ namespace EtAlii.Adp.Backend.Tests;
 public class WorkspaceLockTests
 {
     /// <summary>
-    /// The repository root, found by walking up from the test binary - the shape
-    /// <see cref="ExampleReplicationTests"/> established and <see cref="DependencyInventoryTests"/>
+    /// The repository root, found by walking up from the test binary - the shape established and <see cref="DependencyInventoryTests"/>
     /// reuses, anchored on the folders this guard needs.
     /// </summary>
     private static string RepositoryRoot { get; } = Locate();
