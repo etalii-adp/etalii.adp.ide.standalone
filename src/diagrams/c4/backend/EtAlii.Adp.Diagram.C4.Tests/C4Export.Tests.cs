@@ -34,7 +34,12 @@ public class C4ExportTests
         // Act.
         var diagrams = C4Export.Read(fixture);
 
-        // Assert.
+        // Assert, first, that there was anything to read. Assert.All over an empty sequence
+        // passes without running its body, so an export file that yielded no diagrams at all -
+        // renamed, unparseable, or a reader that stopped finding it - reports success here.
+        Assert.True(
+            diagrams.Count >= 1,
+            $"'{fixture}' yielded no diagrams to check; this guard has stopped finding the export it inspects.");
         // Not one of them may be an empty frame. `graph LR` plus a title is a diagram file that
         // exports, commits and diffs perfectly while showing a reader nothing at all.
         Assert.All(diagrams, diagram => Assert.True(

@@ -47,7 +47,18 @@ public class PipelineRuleSetTests
     public void EveryFixtureThatIsMeantToBeValid_ReportsNothing()
     {
         // Arrange: the corpus is real pipelines. Only edge-broken-graph.yml is deliberately wrong.
-        foreach (var path in Directory.GetFiles("Fixtures", "*.yml", SearchOption.AllDirectories))
+        var fixtures = Directory.GetFiles(
+            IoPath.Combine(AppContext.BaseDirectory, "Fixtures"), "*.yml", SearchOption.AllDirectories);
+
+        // Assert, first, that the walk found the corpus at all: 14 fixtures ship today, so
+        // ten is a floor with headroom. Without this the test passes loudest exactly when it
+        // has stopped looking at anything - and it used to enumerate a relative "Fixtures",
+        // which resolves against the working directory rather than the test binary.
+        Assert.True(
+            fixtures.Length >= 10,
+            $"Only {fixtures.Length} pipeline fixtures were found; this guard has stopped finding the corpus it judges.");
+
+        foreach (var path in fixtures)
         {
             if (IoPath.GetFileName(path) == "edge-broken-graph.yml")
             {

@@ -164,6 +164,13 @@ public class C4LayoutCrowdingTests
         // Arrange.
         var workspace = TheModelThatBrokeIt();
 
+        // The floor: this test is named for the one model that produced the bug, so a fixture
+        // that stopped parsing - or stopped being found - would take the regression's only
+        // witness with it and report success.
+        Assert.True(
+            workspace.Views.Count >= 1,
+            $"Only {workspace.Views.Count} views were parsed from crowded-component-view.dsl; this guard has stopped finding the model it was written for.");
+
         // Act and assert, view by view.
         // Before the sweep this reported five overlapping pairs on one view, three of them
         // mutually coincident - the lockstep case, where identical geometry means both boxes

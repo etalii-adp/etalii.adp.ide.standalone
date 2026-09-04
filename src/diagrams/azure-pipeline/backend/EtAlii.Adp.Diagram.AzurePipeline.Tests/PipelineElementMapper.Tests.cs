@@ -82,7 +82,18 @@ public class PipelineElementMapperTests
     public void EveryElementId_IsUnique()
     {
         // Arrange: an id addresses a delta, so a collision would move the wrong element.
-        foreach (var path in Directory.GetFiles("Fixtures", "*.yml", SearchOption.AllDirectories))
+        var fixtures = Directory.GetFiles(
+            IoPath.Combine(AppContext.BaseDirectory, "Fixtures"), "*.yml", SearchOption.AllDirectories);
+
+        // Assert, first, that the walk found the corpus at all: 14 fixtures ship today, so
+        // ten is a floor with headroom. Without this the test passes loudest exactly when it
+        // has stopped looking at anything - and it used to enumerate a relative "Fixtures",
+        // which resolves against the working directory rather than the test binary.
+        Assert.True(
+            fixtures.Length >= 10,
+            $"Only {fixtures.Length} pipeline fixtures were found; this guard has stopped finding the corpus it maps.");
+
+        foreach (var path in fixtures)
         {
             var model = PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(path)));
             var expanded = model.Stages.Select(stage => stage.Id).ToArray();
@@ -489,7 +500,18 @@ public class PipelineElementMapperTests
     public void EveryFixture_MapsWithoutThrowing()
     {
         // Arrange: including the deliberately broken one and the one that is mostly a template.
-        foreach (var path in Directory.GetFiles("Fixtures", "*.yml", SearchOption.AllDirectories))
+        var fixtures = Directory.GetFiles(
+            IoPath.Combine(AppContext.BaseDirectory, "Fixtures"), "*.yml", SearchOption.AllDirectories);
+
+        // Assert, first, that the walk found the corpus at all: 14 fixtures ship today, so
+        // ten is a floor with headroom. Without this the test passes loudest exactly when it
+        // has stopped looking at anything - and it used to enumerate a relative "Fixtures",
+        // which resolves against the working directory rather than the test binary.
+        Assert.True(
+            fixtures.Length >= 10,
+            $"Only {fixtures.Length} pipeline fixtures were found; this guard has stopped finding the corpus it maps.");
+
+        foreach (var path in fixtures)
         {
             var model = PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(path)));
 
