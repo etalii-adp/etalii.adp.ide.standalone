@@ -18,7 +18,7 @@ One worktree for the whole spec: `.claude/worktrees/rename` — deliberately sho
   - _Requirements: 2.1, 2.2, 2.5_
   - _Prompt: Implement the task for spec inline-rename, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Backend developer working on the gRPC contract | Task: Add the InlineLabelEdit message and field to InputDialogPrompt, the trailing InlineLabelElementId on ContextInputRequest, and the ToProto mapping, with the two named tests | Restrictions: the new parameter must be trailing and defaulted so no existing ContextInputRequest construction changes; do not touch any module; do not add a second prompt kind | _Leverage: the existing ToProto methods beside it; the ConfirmDialogPrompt mapping for shape | Success: both tests pass, the whole backend suite is green, and no module source was edited. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2. One entry discipline, two presentations — extracted before there is a second caller
+- [x] 2. One entry discipline, two presentations — extracted before there is a second caller
   - Files: `src/client/src/shell/context/useContextPromptEntry.ts` (new), `src/client/src/shell/context/ContextPromptHost.tsx`
   - Lift the revision/debounce/verdict machinery out of `InputPromptDialog` into `useContextPromptEntry`: it owns `{ revision, value }`, the 200 ms debounce, the "revision 0 is not validated" rule, the abandoned-reply guard, and `verdictIsCurrent`. `InputPromptDialog` then consumes it and renders only the dialog.
   - **This is a refactor with no behaviour change, and its proof is that `ContextPromptHost.test.tsx` passes unmodified.** If a test needs editing to keep passing, the refactor changed behaviour and should be reconsidered rather than the test adjusted.
@@ -26,7 +26,7 @@ One worktree for the whole spec: `.claude/worktrees/rename` — deliberately sho
   - _Requirements: 1.4_
   - _Prompt: Implement the task for spec inline-rename, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior React/TypeScript developer | Task: Extract the revision, debounce and verdict discipline from InputPromptDialog into a useContextPromptEntry hook, leaving the dialog rendering only the dialog | Restrictions: no behaviour change - ContextPromptHost.test.tsx must pass with zero edits; keep the stale-verdict and revision-0 rules exactly as they are | _Leverage: the existing InputPromptDialog body; useDebouncedValue | Success: the hook exists, the dialog uses it, and the existing prompt-host tests pass unmodified. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. Placement: who can put a label editor on screen
+- [-] 3. Placement: who can put a label editor on screen
   - Files: `src/client/src/shell/panels/InlineLabelPlacementContext.tsx` (new) and its test, `src/client/src/shell/context/ShellPromptHost.tsx`
   - A context in the shape `DiagramToolboxContext` already uses: a mounted canvas registers `(elementId: string) => LabelPlacement | null` and withdraws it on unmount. `LabelPlacement` is `{ x, y, width, height }` in canvas units plus the text being replaced.
   - `ShellPromptHost` renders nothing when the prompt is an `inputDialog` carrying a marker **and** a registered resolver answers non-null; otherwise it renders the dialog exactly as today.
