@@ -24,6 +24,13 @@ export interface ContextPromptHostProps {
   onPropose: (revision: number, value: string) => Promise<ContextPromptVerdict>;
   onSubmit: (value: string, text?: string) => Promise<ContextPromptSubmission>;
   onCancel: () => void;
+  /**
+   * Why an interaction ended without the user ending it - shown when there is nothing else to
+   * show. Today that is an in-place edit whose element went away mid-edit; the host owns the
+   * message either way, so every "your interaction ended and here is why" looks the same.
+   */
+  notice?: string;
+  onDismissNotice?: () => void;
 }
 
 /** The prompt kinds this host knows how to put on screen. */
@@ -40,7 +47,7 @@ const RENDERABLE_PROMPTS = new Set(["inputDialog", "confirmDialog", "choiceDialo
  * the backend holding an interaction that is never answered; instead the interaction is
  * cancelled and the user is told, so the action visibly ends rather than vanishing.
  */
-export function ContextPromptHost({ prompt, onPropose, onSubmit, onCancel }: ContextPromptHostProps) {
+export function ContextPromptHost({ prompt, onPropose, onSubmit, onCancel, notice = "", onDismissNotice = () => {} }: ContextPromptHostProps) {
   const promptCase = prompt?.prompt.case;
   const unsupported = prompt !== null && !RENDERABLE_PROMPTS.has(promptCase ?? "");
   const [unsupportedNotice, setUnsupportedNotice] = useState(false);
@@ -67,17 +74,31 @@ export function ContextPromptHost({ prompt, onPropose, onSubmit, onCancel }: Con
   if (prompt === null || unsupported) {
     // Either there is nothing to show, or there was something this build could not show -
     // whose interaction the effect above has already cancelled.
-    return unsupportedNotice ? (
+    if (unsupportedNotice) {
+      return (
+        <Dialog compact
+          open
+          icon="mdi-alert-circle-outline"
+          title="Action not supported"
+          buttons={[{ key: "close", label: "Close", color: "neutral", autoFocus: true, onClick: () => setUnsupportedNotice(false) }]}
+          onClose={() => setUnsupportedNotice(false)}
+        >
+          <p className="dialog-message">
+            This action needs a newer version of the app than the one you are running. Nothing was changed.
+          </p>
+        </Dialog>
+      );
+    }
+
+    return notice ? (
       <Dialog compact
         open
         icon="mdi-alert-circle-outline"
-        title="Action not supported"
-        buttons={[{ key: "close", label: "Close", color: "neutral", autoFocus: true, onClick: () => setUnsupportedNotice(false) }]}
-        onClose={() => setUnsupportedNotice(false)}
+        title="Action cancelled"
+        buttons={[{ key: "close", label: "Close", color: "neutral", autoFocus: true, onClick: onDismissNotice }]}
+        onClose={onDismissNotice}
       >
-        <p className="dialog-message">
-          This action needs a newer version of the app than the one you are running. Nothing was changed.
-        </p>
+        <p className="dialog-message">{notice}</p>
       </Dialog>
     ) : null;
   }

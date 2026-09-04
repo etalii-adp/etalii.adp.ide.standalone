@@ -7,6 +7,7 @@ import { TabbedPane } from "./panes/TabbedPane";
 import { DiagramTabsPanel } from "./panels/DiagramTabsPanel";
 import { DiagramViewProvider } from "./panels/DiagramViewContext";
 import { DiagramToolboxProvider } from "./panels/DiagramToolboxContext";
+import { InlineLabelPlacementProvider } from "./panels/InlineLabelPlacementContext";
 import { ErrorsWarningsPanel } from "./panels/ErrorsWarningsPanel";
 import { HierarchyPanel } from "./panels/HierarchyPanel";
 import { PropertyGridPanel } from "./panels/PropertyGridPanel";
@@ -26,6 +27,7 @@ export function WorkspaceShell({ projectId, projectName, onBack }: WorkspaceShel
     <ContextConnectionProvider projectId={projectId}>
       <DiagramViewProvider>
       <DiagramToolboxProvider>
+      <InlineLabelPlacementProvider>
       <div className="shell">
         <div className="shell-header">
           <button type="button" className="shell-header-back" onClick={onBack}>
@@ -92,6 +94,7 @@ export function WorkspaceShell({ projectId, projectName, onBack }: WorkspaceShel
         </div>
         <ShellPromptHost />
       </div>
+      </InlineLabelPlacementProvider>
       </DiagramToolboxProvider>
       </DiagramViewProvider>
     </ContextConnectionProvider>
