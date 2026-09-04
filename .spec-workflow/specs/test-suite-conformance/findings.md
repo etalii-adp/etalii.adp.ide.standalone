@@ -231,7 +231,37 @@ The field-held literal array is worth naming: the census reads it as `derived`, 
 
 **One is contract-dependent and is not yet judged.** `BigBankPlc:210` asserts every problem the ruleset reports is a Warning. Zero problems may be the promise (a clean reference model) or a defect (validation stopped running), and that is the sparql discriminator applied to a different module — it needs the owner's intent, not a reading of the shape.
 
-**The rest are still being read.** The sites the tasks named are repaired and verified; the residue is the nested and helper walks the original survey could not see, which is exactly where the census predicted the work would be. No total is claimed until every one of the 39 has been judged.
+## The per-site pass: the result
+
+**Eleven collections need a floor and lack one, across the twenty files this specification names, at commit `9053522e`.** One further site is deliberately unjudged. All 51 in-scope walks are accounted for:
+
+| Verdict | N |
+| --- | :-: |
+| Floored, verified by reading | 21 |
+| **Unfloored — the answer** | **11** |
+| Exempt by rule | 17 |
+| Not a site: is itself a floor (`MindmapLayout:99`) | 1 |
+| Unjudged, contract-dependent (`BigBankPlc:210`) | 1 |
+
+Both halves of the number move, so both are named: the file set and the commit. A count against a relative window decays.
+
+**Seven exemption rules, of which six the census could not have applied** — each needs a judgement about meaning rather than structure:
+
+| Rule | N |
+| --- | :-: |
+| Literal array at the loop site | 2 |
+| Field-held literal array (`static readonly string[]`) | 2 |
+| `[MemberData]` provider — xUnit fails it itself | 1 |
+| Fixture setup (`CopyTree`), which asserts nothing | 6 |
+| Index loop over a bound, not a collection | 1 |
+| Inner loop of a pairwise comparison | 4 |
+| **Recursion base case** | 1 |
+
+The last is `ExampleCorpus.Tests.cs:153`: `Scopes` is a recursive generator, and `foreach (var nested in scope.Children.SelectMany(Scopes))` walking nothing *is* the termination condition. A floor there would demand every scope have children, which no tree can satisfy.
+
+**Where the eleven are tells the story better than the count.** None is a plain top-level walk in a test body — the shape the original survey enumerated and the ten tasks repaired. Every one is nested, in a helper, filtered, or the outer half of a pairwise loop. The repairs did what they were asked; the survey asked for too little, and the census is what made the rest visible.
+
+ The sites the tasks named are repaired and verified; the residue is the nested and helper walks the original survey could not see, which is exactly where the census predicted the work would be. No total is claimed until every one of the 39 has been judged.
 
 ## Every walk, by group
 

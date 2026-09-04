@@ -145,7 +145,7 @@ It is not repaired here because it is not one of the sites the requirements name
 
 When the per-collection recount returns, its number is stated **with its boundary in the same sentence** — "N collections across the twenty files this specification names", never "N collections". The first confirmation pass failed by reporting a narrower measurement as a broader claim; a total without its scope invites exactly that misreading from the reader's side instead.
 
-- [-] 11. Confirm the count, once, by hand — **reopened; the first pass answered a narrower question than it claimed**
+- [x] 11. Confirm the count, once, by hand — **reopened, and answered: 11 unfloored collections across the twenty named files at commit `9053522e`; see findings.md**
 
   **The 24 below does not hold, and the reason matters more than the number.** The first pass verified that every *site the survey named* carries a floor. It reported that as "every collection needing a floor has one". Those are different claims: the survey enumerated `[Fact]` bodies whose assertions all sat inside a top-level `foreach`, and it never enumerated every collection walked at run time. Agent 1's per-collection recount of azure-pipeline found **five more collections** with no floor, proved by control run — emptied with floors in place exactly those five fail, each naming its own guard; emptied with the floors removed the suite is green. They passed with their collections empty. Eleven floors now stand in that group where six did.
 
