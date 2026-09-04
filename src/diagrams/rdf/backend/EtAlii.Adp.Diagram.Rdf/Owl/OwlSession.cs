@@ -20,17 +20,6 @@ public sealed class OwlSession : IDiagramSession
 {
     private static readonly ILogger _logger = Log.ForContext<OwlSession>();
 
-    /// <summary>
-    /// The cell a node occupies for the purpose of deciding whether it is on screen. The
-    /// reading draws both small shapes and tall class cards, so this is the generous case:
-    /// over-inclusion costs one extra element on the wire, while under-inclusion is a hole the
-    /// reader looks straight at.
-    /// </summary>
-    private const double CellWidth = 240;
-
-    /// <inheritdoc cref="CellWidth" />
-    private const double CellHeight = 320;
-
     private readonly string _bodyPath;
     private readonly string? _registrationPath;
     private readonly IRdfDocumentStore _documents;
@@ -203,8 +192,17 @@ public sealed class OwlSession : IDiagramSession
     private OwlGraphResult InView(
         OwlGraphResult graph, IReadOnlyDictionary<string, RegistrationPosition> positions)
     {
+        // Each node is judged on the box it actually occupies, not on a nominal cell. This
+        // reading draws small shapes beside class cards whose height grows with their rows, and
+        // the ontology header - which genuinely sits at the origin - is the tallest of all when
+        // it carries a dozen annotations. A fixed cell would cull it while the reader was still
+        // looking at its lower half.
         var visible = graph.Nodes
-            .Where(node => RdfViewport.Admits(_viewport, positions, node.Id, CellWidth, CellHeight))
+            .Where(node =>
+            {
+                var (width, height) = OwlLayout.SizeOf(node);
+                return RdfViewport.Admits(_viewport, positions, node.Id, width, height);
+            })
             .ToList();
 
         var truncated = graph.Total > RdfProjection.DefaultBudget;

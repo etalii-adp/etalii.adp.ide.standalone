@@ -146,6 +146,97 @@ public class RdfSessionTests : IDisposable
     }
 
 
+
+    [Fact]
+    public async Task ADocumentEditWhileNarrowed_NeverResendsWhatTheViewportCulled()
+    {
+        // Arrange.
+        // Found by Agent 2 on timeline and checked here: if the document-changed path renders
+        // unfiltered while UpdateView renders filtered, the two disagree about what the client
+        // holds, and an ordinary edit silently re-delivers everything the viewport just culled.
+        // It is invisible until somebody edits a document while zoomed in.
+        var body = CopyFixture("constructs.ttl");
+        await using var session = Open(body, WriteRegistration("constructs.ttl"));
+        var all = ElementsOf(session).Where(element => element.Type == RdfElementMapper.ResourceType).ToList();
+        var first = all.OrderBy(element => element.Y).ThenBy(element => element.X).First();
+
+        var narrowed = session.UpdateView(new DiagramViewport(first.X, first.Y, first.X + 1, first.Y + 1));
+        var culled = narrowed.OfType<DiagramRemoveDelta>().SelectMany(delta => delta.ElementIds).ToHashSet(StringComparer.Ordinal);
+        Assert.NotEmpty(culled);
+
+        var seen = new List<DiagramDelta>();
+        session.Changed += (_, args) => seen.AddRange(args.Deltas);
+
+        // Act.
+        // Touch the document: a comment is enough - the reload re-renders and diffs.
+        var text = await File.ReadAllTextAsync(body);
+        await File.WriteAllTextAsync(body, text + Environment.NewLine + "# an edit while the reader is zoomed in" + Environment.NewLine);
+        _provider.GetRequiredService<IRdfDocumentStore>().Reload(body);
+
+        // Assert.
+        var resent = seen.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements).Select(element => element.Id);
+        Assert.DoesNotContain(resent, id => culled.Contains(id));
+    }
+
+    [Fact]
+    public async Task NoEdgeIsEverDeliveredWithOneEndMissing()
+    {
+        // Arrange.
+        // Every mapper in this family packs an edge at the default position - (0, 0) - because
+        // an edge has no position of its own. A viewport filter that judged edges by position
+        // would therefore keep them all while the reader looked at the origin and cull them all
+        // on the first pan. Edges are filtered structurally instead: an edge survives only when
+        // both of its endpoints did, so a dangling edge cannot be produced.
+        var body = CopyFixture("constructs.ttl");
+        await using var session = Open(body, WriteRegistration("constructs.ttl"));
+        var drawn = ElementsOf(session);
+        var anchor = drawn.Where(element => element.Type == RdfElementMapper.ResourceType)
+            .OrderBy(element => element.Y).ThenBy(element => element.X).First();
+
+        var held = drawn.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
+
+        // Act.
+        foreach (var viewport in new[]
+        {
+            new DiagramViewport(anchor.X, anchor.Y, anchor.X + 1, anchor.Y + 1),
+            new DiagramViewport(-10_000, -10_000, -9_000, -9_000),
+            DiagramViewport.Unbounded,
+        })
+        {
+            foreach (var delta in session.UpdateView(viewport))
+            {
+                switch (delta)
+                {
+                    case DiagramAddDelta add:
+                        foreach (var element in add.Elements)
+                        {
+                            held.Add(element.Id);
+                        }
+
+                        break;
+                    case DiagramRemoveDelta remove:
+                        foreach (var id in remove.ElementIds)
+                        {
+                            held.Remove(id);
+                        }
+
+                        break;
+                }
+            }
+
+            // Assert.
+            // An edge id is "res:from|predicate|res:to"; whatever the shape, both endpoints of
+            // every edge the connection holds must also be held.
+            var edges = held.Where(id => id.StartsWith("edge:", StringComparison.Ordinal)).ToList();
+            foreach (var edge in edges)
+            {
+                var parts = edge["edge:".Length..].Split('|');
+                Assert.Contains(parts[0], held);
+                Assert.Contains(parts[2], held);
+            }
+        }
+    }
+
     [Fact]
     public async Task PanningReachesResourcesTheBudgetDiscarded()
     {
