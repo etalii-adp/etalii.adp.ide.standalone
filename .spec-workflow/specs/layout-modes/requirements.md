@@ -146,6 +146,7 @@ Cloud re-opens a recorded decision and this requirement says so in the open. `rd
 3. WHEN a mode is changed THEN the whole document SHALL be laid out and the viewport SHALL filter the result, per lay-out-then-filter — a mode switch SHALL NOT become an occasion to lay out only what is currently visible.
 4. WHEN a mode is changed THEN what the reader is looking at SHALL be preserved as far as the new arrangement allows, so that the diagram does not silently jump to a corner and leave the reader lost.
 5. WHEN a mode is changed on a truncated diagram THEN the drawn-element budget SHALL apply to the new arrangement exactly as it applied to the old, and the banner SHALL continue to state the real totals.
+6. WHEN this specification is complete THEN the mode SHALL NOT have become a second reason a diagram is truncated - the budget remains the one cause of a shown count differing from a total. This is stated because the existing truncation report says *how much* is missing and never *why*, which is adequate only while exactly one mechanism can decide the shown count: a mode that introduced a second would make "Showing 400 of 1,150" unreadable, and repairing that belongs to the drawn-element budget's owner rather than here.
 
 ## Non-goals
 
@@ -153,6 +154,8 @@ Cloud re-opens a recorded decision and this requirement says so in the open. `rd
 * **No per-element mode.** The mode is a property of the diagram, not of a selection within it.
 * **No user-defined modes.** The set is the four the user named, closed by Requirement 1.2.
 * **No re-litigation of where positions are stored.** The `.adp` `layout:` block is settled by tech.md and the one-storage-place requirement; this adds one sibling value to the same file and nothing else.
+* **No per-mode drawn-element budget, deliberately and not by oversight.** If Cloud turns out to be unable to satisfy the overlap requirement at the budget's full size, the obvious remedy is a smaller budget for that mode - and this document does not write one. Nobody has built Cloud, so the size at which it fails is unmeasured, and choosing a remedy for a hypothesis is the wrong order: measure, then remedy. The specific hazard is that "smaller budget" would become the default by being the only remedy written down, while being the one a reader is least able to notice - they get less of their document and nothing says the mode is why. At least three alternatives are no worse: Cloud declines above a size and says so, Cloud coarsens by arranging groups rather than nodes, or the mode is unavailable for that document with a stated reason, which Requirement 7 already adopts as the honest outcome. Any per-mode budget belongs to the drawn-element budget's owner, and would have to reconcile with the standing request to collapse the two budget constants that exist today rather than add a dimension to them.
+
 * **No animation between modes.** How a switch is presented is a client concern, and a settling animation is explicitly ruled out for Cloud by Requirement 7.2 regardless.
 * **No change to the view-delta loop.** Modes are laid out whole and filtered afterwards, exactly as today.
 * **Stub modules are out of scope.** Only modules with an implemented canvas are addressed.
