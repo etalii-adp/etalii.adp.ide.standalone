@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+    <!--
+      Core abstractions only. The dependency runs module -> core and never back, and never
+      sideways: a causal loop diagram states feedback structure and shares no engine with any
+      other module. What it consumes from the family - the canvas conventions and the .adp
+      layout block - arrives through core alone.
+    -->
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="EtAlii.Adp.Diagram.CausalLoop.Tests" />
+  </ItemGroup>
+
+</Project>
