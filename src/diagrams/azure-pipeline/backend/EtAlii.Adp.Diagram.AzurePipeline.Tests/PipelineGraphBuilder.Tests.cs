@@ -357,6 +357,7 @@ public class PipelineGraphBuilderTests
             fixtures.Length >= 10,
             $"Only {fixtures.Length} pipeline fixtures were found; this guard has stopped finding the corpus it builds graphs from.");
 
+        var staged = 0;
         foreach (var path in fixtures)
         {
             var model = PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(path)));
@@ -370,6 +371,18 @@ public class PipelineGraphBuilderTests
             {
                 Assert.NotNull(PipelineGraphBuilder.OfJobs(stage));
             }
+
+            staged += model.Stages.Count;
         }
+
+        // And a floor on the second collection, which is the one carrying the inner assertion:
+        // the equality above reads 0 == 0 on a stage-less model and the inner loop then walks
+        // nothing, so a parser that stopped producing stages passes this test. Six of the
+        // fourteen fixtures declare no stage line of their own, which is why this is a floor on
+        // the corpus total rather than on any single file. The corpus yields 25 stages today,
+        // so fifteen is a floor with real headroom on it.
+        Assert.True(
+            staged >= 15,
+            $"Only {staged} stages were parsed across the whole corpus; this guard has stopped finding the stages it builds job graphs from.");
     }
 }

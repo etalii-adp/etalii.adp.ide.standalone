@@ -93,6 +93,7 @@ public class PipelineElementMapperTests
             fixtures.Length >= 10,
             $"Only {fixtures.Length} pipeline fixtures were found; this guard has stopped finding the corpus it maps.");
 
+        var mapped = 0;
         foreach (var path in fixtures)
         {
             var model = PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(path)));
@@ -103,7 +104,16 @@ public class PipelineElementMapperTests
 
             // Assert.
             Assert.Equal(ids.Count, ids.Distinct(StringComparer.Ordinal).Count());
+            mapped += ids.Count;
         }
+
+        // And a floor on the second collection, because the assertion above reads 0 == 0 on a
+        // fixture that mapped nothing: a mapper returning an empty list for every file passes
+        // this test as loudly as a correct one does. The corpus maps 64 elements today, so
+        // forty is a floor with real headroom on it.
+        Assert.True(
+            mapped >= 40,
+            $"Only {mapped} elements were mapped across the whole corpus; this guard has stopped finding the elements whose ids it compares.");
     }
 
     [Fact]
@@ -511,6 +521,7 @@ public class PipelineElementMapperTests
             fixtures.Length >= 10,
             $"Only {fixtures.Length} pipeline fixtures were found; this guard has stopped finding the corpus it maps.");
 
+        var inspected = 0;
         foreach (var path in fixtures)
         {
             var model = PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(path)));
@@ -527,6 +538,15 @@ public class PipelineElementMapperTests
                 Assert.NotEmpty(element.Type);
                 Assert.False(element.Payload.IsEmpty, $"{element.Id} carries no payload");
             });
+            inspected += elements.Count;
         }
+
+        // And a floor on the second collection: Assert.All over an empty list passes, so
+        // finding the corpus is not enough - the mapper has to have produced something out of
+        // it before any of those three checks means anything. The corpus maps 64 elements
+        // today, so forty is a floor with real headroom on it.
+        Assert.True(
+            inspected >= 40,
+            $"Only {inspected} elements were mapped across the whole corpus; this guard has stopped finding the elements it inspects.");
     }
 }
