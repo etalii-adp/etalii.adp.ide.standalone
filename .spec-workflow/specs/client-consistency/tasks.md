@@ -54,28 +54,28 @@ Four defects with one cause: `ContextConnectionProvider` awaits its gRPC calls w
   - _Requirements: 4.1, 4.2, 4.3_
   - _Prompt: Implement task 3 for spec client-consistency, together with task 2. Role: React/TypeScript developer | Task: write the guard asserting every value-returning channel method resolves rather than rejects under a rejecting transport, iterating the methods rather than listing them | Restrictions: no lint rule - the client has no ESLint, and after task 2 the void-then call sites are correct, so no-floating-promises would demand churn where the code is right; do not widen the guard beyond the channel | _Leverage: themeTokens.test.ts as the shape | Success: the guard has been seen to fail with one method reverted to a bare await, naming that method, and all four gates pass by exit code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. One shape for acquiring a service client
+- [x] 4. One shape for acquiring a service client
   - Files: `src/client/src/diagrams/useDiagramStream.ts`, `src/client/src/shell/panels/useToolboxItems.ts`, `src/client/src/pages/LoginPage.tsx`
   - Three shapes are in use for one job: `useMemo(() => createClient(S, transport), [transport])` at four sites, `useRef(createClient(S, transport))` at two, and an inline construction per call at one. Settle on the `useMemo` form, which is the majority and the only one that would survive a changing transport.
   - **Record why the `useRef` form was safe**, in a comment where the choice now lives: `transport` is memoised on a `[]`-stable callback and reads its token through a ref, so it never changes identity. That is the reason nobody noticed, and the next reader should not have to re-derive it. The cost being removed is small and real — `createClient` is evaluated on every render and discarded, and `useDiagramStream` backs every open diagram tab.
   - _Requirements: 5.1, 5.2_
   - _Prompt: Implement task 4 for spec client-consistency. Role: React/TypeScript developer | Task: move the two useRef and one inline client constructions onto the useMemo shape, with a comment recording that transport is identity-stable | Restrictions: change no behaviour; do not touch the four sites that already use useMemo | _Leverage: AuthContext.tsx:49 as the reference shape | Success: one shape remains, and all four gates pass by exit code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5. One empty-state component that is not the mockup scaffolding
+- [x] 5. One empty-state component that is not the mockup scaffolding
   - Files: `src/client/src/shell/panels/PropertyGridPanel.tsx`, `src/client/src/shell/panels/DiagramTabsPanel.tsx`, and whichever component the shared markup ends up in
   - `div.panel-placeholder > p.panel-placeholder-title + p.panel-placeholder-description` is rebuilt by hand in two real panels while `PanelPlaceholder` renders it.
   - **The nuance that makes this not a one-line import:** `PanelPlaceholder` carries a `data-future-spec` attribute and a `TODO(diagram-ide-mockup)` saying the branch is scaffolding to be replaced. A real panel reusing it as-is would inherit mockup semantics. Separate the markup contract from the mockup component rather than importing the mockup.
   - _Requirements: 6.1_
   - _Prompt: Implement task 5 for spec client-consistency. Role: React/TypeScript developer | Task: give the empty-state markup one home that is not the mockup placeholder, and use it from the two panels that hand-roll it | Restrictions: do not make real panels import the mockup component or inherit data-future-spec; change no rendered output | _Leverage: PanelPlaceholder.tsx:32 for the markup, and its TODO for what not to inherit | Success: the markup has one definition, the rendered DOM is unchanged, and all four gates pass by exit code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 6. Stop exporting three symbols nothing outside their file uses
+- [x] 6. Stop exporting three symbols nothing outside their file uses
   - Files: `src/client/src/editors/TextEditorPanel.tsx` (`normalizeLineEndings`), `src/client/src/shell/context/ChoicePromptDialog.tsx` (`descriptionFor`, `suggestionFor`)
   - **Check repository-wide before removing each `export`, not within `src/client/src`.** A lane-scoped search lies about this: `isTextTarget` and `structuralShortcutFor` in `canvas/interaction.ts` look unused inside the client and are imported by ten files under `src/diagrams/*/client/`. The three above were confirmed the wide way; confirm again rather than trusting this list, since the tree moves.
   - If a test imports one, keep the `export` and add a comment saying so. That is a reason, not an oversight.
   - _Requirements: 7.1_
   - _Prompt: Implement task 6 for spec client-consistency. Role: TypeScript developer | Task: drop the export keyword from the three named file-local symbols | Restrictions: search the whole repository, not just src/client/src, before removing each one; keep any export a test depends on and say why in a comment | _Leverage: the caution recorded in Requirement 7 | Success: each removal verified repository-wide, and all four gates pass by exit code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7. Key the property grid's levels by identity, not position
+- [x] 7. Key the property grid's levels by identity, not position
   - Files: `src/client/src/shell/panels/PropertyGridPanel.tsx`
   - `key={index}` at `:151` over `chain`, which is the selection path and changes length and contents whenever the selection does.
   - **Recorded as drift rather than a defect, and the mitigation is worth knowing before you touch it:** the rows inside are keyed by `property.id`, so a changed property set remounts them. The residual risk is narrow — two selections producing the same property id at the same depth while a row is mid-edit, where `PropertyRow`'s sync effect is guarded by `if (!editing)` and would not overwrite the draft. Derive the key from the level's own identity; do not restructure the component.
