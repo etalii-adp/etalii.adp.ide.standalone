@@ -26,7 +26,7 @@ One worktree for the whole spec: `.claude/worktrees/rename` — deliberately sho
   - _Requirements: 1.4_
   - _Prompt: Implement the task for spec inline-rename, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior React/TypeScript developer | Task: Extract the revision, debounce and verdict discipline from InputPromptDialog into a useContextPromptEntry hook, leaving the dialog rendering only the dialog | Restrictions: no behaviour change - ContextPromptHost.test.tsx must pass with zero edits; keep the stale-verdict and revision-0 rules exactly as they are | _Leverage: the existing InputPromptDialog body; useDebouncedValue | Success: the hook exists, the dialog uses it, and the existing prompt-host tests pass unmodified. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3. Placement: who can put a label editor on screen
+- [x] 3. Placement: who can put a label editor on screen
   - Files: `src/client/src/shell/panels/InlineLabelPlacementContext.tsx` (new) and its test, `src/client/src/shell/context/ShellPromptHost.tsx`
   - A context in the shape `DiagramToolboxContext` already uses: a mounted canvas registers `(elementId: string) => LabelPlacement | null` and withdraws it on unmount. `LabelPlacement` is `{ x, y, width, height }` in canvas units plus the text being replaced.
   - `ShellPromptHost` renders nothing when the prompt is an `inputDialog` carrying a marker **and** a registered resolver answers non-null; otherwise it renders the dialog exactly as today.
@@ -37,7 +37,7 @@ One worktree for the whole spec: `.claude/worktrees/rename` — deliberately sho
   - _Requirements: 2.3, 2.4, 5.4, 7.3, 8.3, 9.2_
   - _Prompt: Implement the task for spec inline-rename, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior React/TypeScript developer | Task: Add the InlineLabelPlacementContext registry and make ShellPromptHost stand down for a marked prompt some canvas can place, with the three named tests plus the first-render one | Restrictions: the fallback must be silent - never an error or a notice; do not let the host inspect action ids or any module vocabulary; register at mount rather than per prompt | _Leverage: DiagramToolboxContext for the registry idiom; ShellPromptHost's current body | Success: four tests pass, an unmarked prompt is provably unchanged, and no first-render dialog flash. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. The editor itself
+- [-] 4. The editor itself
   - Files: `src/client/src/canvas/label/InlineLabelEditor.tsx` (new), `src/client/src/canvas/label/InlineLabelEditor.test.tsx` (new), `src/client/src/canvas/label/readme.md` (new), `src/client/src/canvas/canvas.css`
   - A `foreignObject` at the placement rectangle holding one `input`, driven by `useContextPromptEntry`. On mount: focus and select all. On unmount: focus returns to the canvas. Enter commits; Escape abandons; blur commits; a refusal keeps it open with the text intact; a value equal to the original cancels without dispatching. Typing is local state — no element re-renders per keystroke.
   - Text longer than the label must stay usable and must not resize the element behind it (Requirement 4.7): the `foreignObject` keeps the placement's width and the `input` scrolls within it.
