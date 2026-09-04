@@ -25,7 +25,7 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 1.2, 1.3, 1.5, 2.2_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer designing a small text format | Task: Define the line-oriented .cld body format, write its parser and model, preserving line positions for later splicing | Restrictions: no XMILE, per the design's recorded reasons; an unmarked polarity is Unstated and never Positive; one statement per line | _Leverage: any module whose writer splices rather than reserializes | Success: a document round-trips, an unmarked link reads as Unstated, and s/o read as +/-. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 1.3 Cycle enumeration and computed polarity — the reason this module exists
+- [x] 1.3 Cycle enumeration and computed polarity — the reason this module exists
   - Files: `CycleFinder.cs` (Johnson's elementary cycles over the link graph, bounded), `LoopPolarity.cs`
   - Reinforcing where the count of `Negative` member links is **even** — zero is even, and it is the case readers most often get wrong — balancing where odd, undecidable where any member link is `Unstated`
   - The bound is part of the contract, not a safety valve: when it is reached the count examined is carried out so the reader can be told, rather than the check silently doing less than it claims
@@ -33,7 +33,7 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 3.1, 3.2, 3.6_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer implementing a graph algorithm | Task: Enumerate the document's elementary cycles with Johnson's algorithm under a stated bound, and derive each cycle's polarity by the even/odd rule | Restrictions: zero negative links is even and therefore reinforcing; a cycle containing an Unstated link is undecidable, never assumed positive; the bound carries the examined count outward | _Leverage: AutoCLD uses Johnson's for this same purpose, cited in the design | Success: nested, overlapping, empty and zero-negative cases all correct; the bound reports rather than truncates silently. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 1.4 The validator: report the disagreement, never correct it
+- [-] 1.4 The validator: report the disagreement, never correct it
   - Files: `CausalLoopValidator.cs`
   - Four findings: a stated label disagreeing with the computed polarity, naming the loop and **both** labels; a cycle the document labels not at all, which is the finding this notation most exists to produce; a loop made undecidable by an unstated link; the cycle bound reached, with the count examined
   - **The stated label and the computed one stay separate all the way out.** Requirement 3.3 forbids silent correction because the author's label may be the intent and the arrows the mistake; a model that overwrote one with the other would make the finding impossible to express
