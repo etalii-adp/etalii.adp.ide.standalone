@@ -93,6 +93,13 @@ public class MindmapLayoutTests
 
         var boxes = Layout(document);
 
+        // Assert, first, that the corpus parsed into something. Every claim below is made
+        // inside the loop, so an empty document would satisfy this test without comparing a
+        // single pair of boxes.
+        Assert.True(
+            document.Nodes.Any(),
+            "The corpus document parsed to no nodes, so this guard compared nothing.");
+
         // Act and assert, step by step.
         foreach (var node in document.Nodes)
         {
@@ -120,12 +127,18 @@ public class MindmapLayoutTests
 
         // Act and assert, step by step.
         var backend = boxes["ID_411002937"];
+        Assert.True(
+            document.Find("ID_411002937")!.Children.Count > 0,
+            "The right-side parent has no children in the corpus, so this half of the guard checked nothing.");
         foreach (var child in document.Find("ID_411002937")!.Children)
         {
             Assert.True(boxes[child.Id].X >= backend.Right + Metrics.HorizontalGap - 0.01, "a right-side child is not to the right of its parent");
         }
 
         var diagramTypes = boxes["ID_411002941"];
+        Assert.True(
+            document.Find("ID_411002941")!.Children.Count > 0,
+            "The left-side parent has no children in the corpus, so this half of the guard checked nothing.");
         foreach (var child in document.Find("ID_411002941")!.Children)
         {
             Assert.True(boxes[child.Id].Right <= diagramTypes.X - Metrics.HorizontalGap + 0.01, "a left-side child is not to the left of its parent");
@@ -229,8 +242,16 @@ public class MindmapLayoutTests
         var document = Corpus();
         var boxes = Layout(document);
 
+        // Assert, first, that the filter left anything behind. This sweep narrows twice - to
+        // nodes with children, then to nodes the layout placed - and either narrowing could
+        // empty it while the document itself is perfectly healthy.
+        var parents = document.Nodes.Where(node => node.HasChildren && boxes.ContainsKey(node.Id)).ToArray();
+        Assert.True(
+            parents.Length > 0,
+            "No node has both children and a computed box, so this guard checked no parent at all.");
+
         // Arrange, continued.
-        foreach (var parent in document.Nodes.Where(node => node.HasChildren && boxes.ContainsKey(node.Id)))
+        foreach (var parent in parents)
         {
             var childBoxes = parent.Children.Where(child => boxes.ContainsKey(child.Id)).Select(child => boxes[child.Id]).ToArray();
             if (childBoxes.Length < 2)

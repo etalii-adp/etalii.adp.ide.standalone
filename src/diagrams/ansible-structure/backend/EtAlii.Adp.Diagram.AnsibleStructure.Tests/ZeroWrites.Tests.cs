@@ -86,7 +86,16 @@ public class ZeroWritesTests : IDisposable
 
             // Select and describe every node and every edge there is.
             var properties = new AnsibleContextPropertyProvider(_store);
-            foreach (var id in graph.Nodes.Select(node => node.Id).Concat(graph.Edges.Select(edge => edge.Id)))
+            var ids = graph.Nodes.Select(node => node.Id).Concat(graph.Edges.Select(edge => edge.Id)).ToArray();
+
+            // Assert, before walking them, that there are any. The promise this test makes is
+            // that reading writes nothing - and a graph that derived nothing reads nothing, so
+            // the promise would hold over an empty fixture while exercising no read path at all.
+            Assert.True(
+                ids.Length > 0,
+                "The derived graph has no nodes and no edges, so no read path was exercised and this guard proved nothing about writes.");
+
+            foreach (var id in ids)
             {
                 var target = new ContextTarget(ContextScope.DiagramElement, _root, false, default, _root, default, id);
                 await properties.DescribeAsync(target, TestContext.Current.CancellationToken);

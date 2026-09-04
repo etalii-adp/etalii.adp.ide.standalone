@@ -57,7 +57,13 @@ public class RdfLayoutTests
         // Act.
         var positions = RdfLayout.Positions(projection);
 
-        // Assert.
+        // Assert, first, that there is anything to assert about. "Every drawn node has a
+        // position" is perfectly true of a projection that drew no nodes, so without this the
+        // test reports success loudest at the moment it has stopped testing anything.
+        Assert.True(
+            projection.Nodes.Count > 0,
+            "The projection drew no nodes, so this guard checked nothing; the four subjects the fixture states should each have produced one.");
+
         Assert.All(projection.Nodes, node => Assert.True(positions.ContainsKey(node.Id)));
     }
 }
