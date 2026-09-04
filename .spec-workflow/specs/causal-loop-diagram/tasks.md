@@ -47,7 +47,7 @@ A note on guards, since the question will come up: this specification has **no l
 
 ## Group 2 — Drawing it
 
-- [ ] 2. The computed layout, the mapper, the session and the canvas
+- [x] 2. The computed layout, the mapper, the session and the canvas
   - _Requirements: 2.1, 2.3, 2.4, 2.5, 2.6, 7.1, 7.2, 7.3, 7.4, 9.1, 9.2, 9.3, 9.4, 10.1, 10.2, 10.3, 10.4_
 
 - [x] 2.1 The computed layout, and the unplaced-element contract
@@ -87,7 +87,7 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 10.1_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Expose reportView from the stream hook using the shared library and wire useViewReport to the canvas view state | Restrictions: use the shared library, declare none of its names locally | _Leverage: @client/diagrams/viewReport and useViewReport | Success: the no-private-view-reports guard passes. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2.6 Gate and merge group 2
+- [x] 2.6 Gate and merge group 2
   - _Requirements: (gate)_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates and merge group 2 through a scratch worktree | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
