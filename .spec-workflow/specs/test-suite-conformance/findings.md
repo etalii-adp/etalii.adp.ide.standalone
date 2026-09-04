@@ -153,6 +153,36 @@ A filtered walk empties without its source being empty, so a floor on the source
 | sparql | `SparqlLayout.Tests.cs:34` | `projection.Nodes.Where(node => node.ScopePath == region.ScopePat` |
 | sparql | `SparqlLayout.Tests.cs:46` | `projection.Regions.Where(nested => nested.ScopePath.StartsWith(p` |
 
+## Two rulings from the specification lane
+
+Both were referred here because they are judgement rather than measurement. Recorded, not repaired — the same treatment as the c4 anchor.
+
+### The nine walks over an awaited call are exempt, and exemption is not soundness
+
+**A floor there would assert the opposite of the module's contract.** `NoWriterSweep.Tests.cs:84` is the clearest case, and the code says so itself at the site: *"Every action the provider offers, executed - expected: there are none, so this loop is empty, which is the finding rather than a gap in the test."* sparql is a read-only reading. Demanding that this walk find something would require the module to offer context actions, which is precisely what it promises not to do.
+
+So the discriminator is not the shape but the contract: **if an empty result would be a defect, the walk needs a floor; if an empty result is the promise, it must not have one.** The nine are the second kind.
+
+**But none of them actually asserts the absence it relies on.** The loop at `:84` executes whatever it finds; find nothing and it passes, find something and it also passes, provided nothing throws. The sound form is the *inverse* of a floor — `Assert.Empty(await actions.DiscoverAsync(target, …))` — which would make the promise explicit and fail the day the module grew a writer.
+
+That is not repaired here, and the reason is a rule this specification set for itself: *no change shall alter what a test asserts about its subject.* Adding `Assert.Empty` gives the test a new assertion it never made. It is a real gap, it is the right fix, and it belongs to whoever owns the no-writer promise — not to a pass whose entire discipline is one added assertion that changes no subject.
+
+### The forked `LogCapture` is out of scope, and the reason it still matters
+
+Three copies, differing by exactly one line each — the namespace — verified by diff rather than assumed from the line count:
+
+* `src/backend/EtAlii.Adp.Backend.Tests/Support/LogCapture.cs` (118 lines)
+* `src/backend/EtAlii.Adp.Diagram.Tests/Support/LogCapture.cs` (118 lines)
+* `src/backend/EtAlii.Adp.Editor.Tests/Support/LogCapture.cs` (118 lines)
+
+Each has a 10-line `LogCaptureCaptureSink.cs` beside it, so the fork is six files, not three.
+
+**Out of scope**, because this specification is about guards that exist and cannot fail. A guard that was never written is a coverage gap, which the requirements put out of scope in as many words. Repairing it also breaks the design's one invariant — every repair is a single added assertion — since de-forking is a structural change, not an assertion.
+
+**The consequence is recorded because it is the part that will matter later:** the fork has already cost a guard. A missing-file assertion was declined because writing it would have meant three more copies. That is duplication acting as a tax on new guards, which is a slower and less visible failure than a vacuous one, and worth someone's specification rather than a footnote in this one.
+
+**And the mechanism to fix it already exists**, which makes the future repair cheap: `src/Directory.Build.targets:9` compiles `src/TestSupport/TestFolder.cs` into every `*.Tests` project by an `EndsWith('.Tests')` condition. `TestFolder.cs` is the only file there today. Moving `LogCapture` beside it and adding one `Compile Include` line would de-fork all three copies without any project gaining a reference. Whoever takes this does not need to invent the arrangement — only to use it.
+
 ## Every walk, by group
 
 `d` is nesting depth among walks: `d1` sits inside one other walk, `d2` inside two. `helper` marks a walk outside any `[Fact]`/`[Theory]` body. The last column is a **triage hint only** — it says whether the enclosing method contains something floor-shaped, which is a method-level answer to a per-collection question. It found all five floors placed by hand in azure-pipeline, and that is the whole of its validation. No statement in this document rests on it.
