@@ -62,7 +62,7 @@ A fifth, about how these were found rather than about the work: **this is the se
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.3, 3.4, 5.2, 5.3_
   - _Prompt: Implement the task for spec view-delta-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer, C# and TypeScript | Task: Implement the view-delta loop in wardley-map, both halves, following the pattern task 3 established | Restrictions: the 0..1 map space is the module's own unit and the shared code must not learn about it; no shared backend helper; update the method's stated reason for declining | _Leverage: the helm-charts adoption from task 3 | Success: client and backend tests pass, the backend test fails against a return []. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5. timeline implements the loop
+- [-] 5. timeline implements the loop
   - Files: `src/diagrams/timeline/client/TimelineCanvas.tsx`, `useTimelineStream.ts`, `src/diagrams/timeline/backend/*/TimelineSession.cs`, and their tests
   - The same two halves. This canvas drives **pixels-per-unit and seconds**, not a `viewBox`, so it converts to a rectangle at its own call site exactly as it already does for its scrollbars — the second of the two caller shapes recorded in `src/client/src/canvas/scroll/readme.md`.
   - Update the class remarks, and the `useTimelineStream` comment that states there is deliberately no `reportView`.
