@@ -115,7 +115,9 @@ Seventeen `*Canvas.tsx` files, but **fourteen real canvases across ten modules**
 
 ### Requirement 8 — One adopter per module, independently landable
 
-**User Story:** As a team running several agents, I want each module's adoption to land on its own, so that adopters can go in parallel and one blocked module blocks nothing else.
+**User Story:** As the one developer who owns this specification, I want each module's adoption to land on its own, so that I can take them in whatever order the work suggests and let each pattern harden before copying it.
+
+**Amended 2026-09-05, after approval.** This story originally read *"As a team running several agents … so that adopters can go in parallel"*. The user has since settled ownership: one developer works a specification through every task, and no other developer works on it until it is done (`3a8df481`). **Independently landable therefore buys ordering freedom and clean merges, not extra hands** — which is a smaller claim than the original and a truer one. The acceptance criteria below are unchanged and were already right; only the reason for wanting them was wrong.
 
 #### Acceptance Criteria
 
