@@ -28,7 +28,7 @@ A fifth, about how these were found rather than about the work: **this is the se
 - **`diagrams.proto` does not change** (Requirement 5.5), and neither does `IDiagramSession`. Every session already implements `UpdateView(DiagramViewport)`; adoption fills in a body.
 - **Each module is independently landable.** Delivering everything at baseline and answering `[]` is internally consistent, so a half-migrated tree never shows a broken diagram. Land tasks 3–9 in any order after task 2 if that suits; do not batch them into one commit.
 
-- [-] 1. The shared client half, lifted from the reference
+- [x] 1. The shared client half, lifted from the reference
   - Files: `src/client/src/diagrams/viewReport.ts` (new), `src/client/src/diagrams/useViewReport.ts` (new), `src/client/src/diagrams/viewReport.test.ts` (new), `src/client/src/diagrams/useViewReport.test.tsx` (new)
   - Create `Viewport`, `shownRectOf(box, surface?)`, `viewReportOf(...)` and `useViewReport(...)` per the design's Components 1 and 2, and `VIEW_REPORT_DEBOUNCE_MS = 200` defined once here.
   - **Lift, do not rewrite.** Take `reportView`'s body and the debounced effect from `MindmapCanvas`/`useMindmapStream` character for character, including the `viewKey` template string, the ref indirection and the swallowed `.catch`. Task 2 has to reproduce four working modules exactly; a tidy-up here is what would make that impossible to prove.
