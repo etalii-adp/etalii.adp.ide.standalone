@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Code, ConnectError, createClient, type Client } from "@connectrpc/connect";
 import { useAuth } from "@client/auth/AuthContext";
 import type { Delta } from "@client/generated/deltas_pb";
@@ -65,12 +65,17 @@ export function useDiagramStream<TModel>(
   const [model, setModel] = useState<TModel>(emptyModel);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
-  const clientRef = useRef(createClient(DiagramService, transport));
+  // One shape for acquiring a service client, `useMemo` on the transport - the same at every
+  // site that needs one. The `useRef` this replaced was safe, and it is worth saying why so
+  // the next reader does not have to re-derive it: `transport` is memoised on a `[]`-stable
+  // callback and reads its token through a ref, so it never changes identity. What it cost was
+  // small and real - `createClient` ran on every render and the result was thrown away, and
+  // this hook backs every open diagram tab.
+  const client = useMemo(() => createClient(DiagramService, transport), [transport]);
 
   const pathKey = path.join("/");
 
   useEffect(() => {
-    const client = clientRef.current;
     const controller = new AbortController();
     let active = true;
     setModel(emptyModel);
@@ -131,7 +136,7 @@ export function useDiagramStream<TModel>(
     // path is compared by value through pathKey, not by array identity; emptyModel and
     // applyDelta are a module's own constants, stable by construction.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, watchId, pathKey, editorId]);
+  }, [client, projectId, watchId, pathKey, editorId]);
 
-  return { model, loading, failed, client: clientRef.current };
+  return { model, loading, failed, client };
 }

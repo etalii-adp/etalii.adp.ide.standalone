@@ -44,9 +44,14 @@ vi.mock("@connectrpc/connect", () => ({
     ),
 }));
 
-vi.mock("../../auth/AuthContext", () => ({
-  useAuth: () => ({ transport: {} }),
-}));
+vi.mock("../../auth/AuthContext", () => {
+  // One identity for the transport, which is what AuthContext actually guarantees: it memoises
+  // the transport on a `[]`-stable callback and reads the token through a ref, so it is built
+  // once. A fresh object per call would be a mock making a promise the real thing does not,
+  // and a client memoised on it would then be rebuilt - churning the effect it keys.
+  const transport = {};
+  return { useAuth: () => ({ transport }) };
+});
 
 let connection: ReturnType<typeof useContextConnection> | undefined;
 let promptValue: ReturnType<typeof useContextPrompt> | undefined;
