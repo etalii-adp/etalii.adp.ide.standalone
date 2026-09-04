@@ -91,12 +91,23 @@ export function InlineLabelEditor({ placement, onPropose, onSubmit, onCancel, on
       return;
     }
 
-    // Committed whatever the verdict situation is, unlike the dialog, which disables its confirm
-    // button until a verdict has judged the exact text in the box. An inline editor has no button
-    // to disable, and a keystroke that silently does nothing - which is what waiting looks like
-    // inside the 200ms debounce - is worse than a refusal the user can read. Nothing is bypassed:
-    // the handler validates its own preconditions on the way through, and a refusal comes back
-    // through the same submission result the dialog reads.
+    // A value the module has ALREADY judged and refused is never sent. The refusal is on screen
+    // beside the field, so the edit stays open for the user to fix (Requirement 4.5).
+    //
+    // This was not the first shape, and the first shape was wrong. The editor used to submit
+    // whatever was typed, reasoning that nothing could be bypassed because the handler validates
+    // its own preconditions. It does not: a module's ValidateAsync runs on propose, and
+    // SubmitInteraction does not run it again. So typing an empty name into a C4 element showed
+    // "Every C4 element needs a name." and then wrote `container ""` to the document anyway - the
+    // dialog never allowed that only because its confirm button is disabled while a verdict is
+    // invalid. Found by running the app; the document was restored afterwards.
+    if (entry.refused) {
+      return;
+    }
+
+    // With no current verdict - inside the 200ms debounce - the value IS sent. An inline editor
+    // has no button to disable, and a keystroke that silently does nothing is worse than a
+    // refusal that comes back through the submission result.
     const result = await entry.submit();
     if (result?.completed === true) {
       closing.current = true;

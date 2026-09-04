@@ -15,6 +15,11 @@ function accepts() {
   return vi.fn(async () => ({ completed: true, error: "" }));
 }
 
+/** A verdict source that refuses everything, echoing the revision it judged. */
+function refuseEverything(reason: string) {
+  return vi.fn(async (revision: number, _value: string) => ({ revision, valid: false, reason }));
+}
+
 function refuses(reason: string) {
   return vi.fn(async () => ({ completed: false, error: reason }));
 }
@@ -157,6 +162,39 @@ describe("InlineLabelEditor", () => {
     await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("already there"));
     expect(field().value).toBe("after");
     expect(props.onCancel).not.toHaveBeenCalled();
+  });
+
+  it("never sends a value the module has already refused", async () => {
+    // Arrange.
+    // The dialog cannot send one, because its confirm button is disabled while a verdict is
+    // invalid. The editor has no button, and its first version sent anyway - on the reasoning
+    // that the handler would validate its own preconditions. It does not: a module's
+    // ValidateAsync runs on propose and SubmitInteraction does not run it again. Typing an empty
+    // name into a C4 element therefore showed "Every C4 element needs a name." and then wrote
+    // `container ""` into the document. Found by running the app, not by any test.
+    const props = {
+      placement,
+      onPropose: refuseEverything("Every C4 element needs a name."),
+      onSubmit: accepts(),
+      onCancel: vi.fn(),
+    };
+    render(
+      <svg>
+        <InlineLabelEditor {...props} />
+      </svg>,
+    );
+
+    // Act.
+    type("");
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("needs a name"));
+    await act(async () => {
+      fireEvent.keyDown(field(), { key: "Enter" });
+    });
+
+    // Assert.
+    expect(props.onSubmit).not.toHaveBeenCalled();
+    expect(props.onCancel).not.toHaveBeenCalled();
+    expect(field().value).toBe("");
   });
 
   it("dispatches nothing when the value is unchanged", async () => {

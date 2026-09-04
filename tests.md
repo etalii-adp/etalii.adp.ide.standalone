@@ -1282,24 +1282,34 @@ the measured path and the real focus behaviour are verified.
 - **Also worth watching**: only one editor is ever open at a time, and the rest of the app's
   input prompts are unchanged — renaming a file in the explorer still opens the ordinary dialog.
 
-- **Result 2026-09-04**: **FAILED** — run against a local developer build from the inline-rename
-  worktree, signed in with the checked-in placeholder. Steps 1's preconditions pass: F2 draws the
-  editor in place (`foreignObject.inline-label-editor` inside `svg.mindmap-canvas-surface`, at the
-  node's own canvas coordinates), it opens focused with the whole label selected, and no dialog
-  appears. **Committing does not work.** Neither Enter nor a click elsewhere commits; the editor
-  stays open and the label is unchanged, and the backend records the interaction as still open —
-  no submit, no cancel.
+- **Result 2026-09-04**: **PASSED, with two things it could not reach.** Run against a local
+  developer build from the inline-rename worktree, signed in with the checked-in placeholder, on a
+  freshly loaded page.
 
-  Diagnosed as far as this: shortly after the editor mounts and focuses itself,
-  `document.activeElement` is `BODY` while the editor is still mounted and still carries its React
-  `onKeyDown`/`onBlur` props. Typing reaches the field (its value changes), but by the time Enter
-  arrives the field no longer has focus, so the editor's own key handler never runs — and because
-  focus was lost without a blur reaching React, the blur-commit path does not run either. The
-  cause of that focus loss is not yet found; the canvas reports a valid placement on every render
-  it logs, so the editor is not being unmounted by a missing element.
+  Verified: F2 draws the editor in place - `foreignObject.inline-label-editor` inside the canvas's
+  own `svg`, at the label's coordinates - focused, with the whole label selected, and no dialog.
+  Enter commits (node relabelled, `SetNodeTextCommand` in the log, document written), and one Undo
+  restores it. Escape abandons with the label untouched. **Clicking elsewhere commits** rather than
+  discarding. Starting a pan commits the open edit first. On C4 the editor covers the name line
+  only (20 units tall, not the 80-tall box), and clearing the name shows the module's own refusal
+  inline - "Every C4 element needs a name." - with the editor staying open, the text intact, and
+  nothing written to the document.
 
-  Two earlier defects found by this same pass **are** fixed and guarded: the editor cancelling its
-  own interaction the instant it appeared (a one-frame dialog whose teardown restored focus, which
-  blurred the editor, which committed an unchanged value, which ended the interaction), and an
-  empty placement registry being read as "the element has gone". Both have tests that were seen to
-  fail without the fix.
+  **Not reachable through the app, and not because of this feature:** a C4 relationship cannot be
+  selected on the canvas at all. `C4RelationshipShape` renders no click or context-menu handler, so
+  there is no gesture that selects one, and the relabel action cannot be invoked from the canvas
+  however it is marked. The backend marker, the midpoint placement and the description-only initial
+  value are all implemented and unit-tested; only the manual leg is blocked, and it stays blocked
+  until relationships become selectable.
+
+  **Enter was exercised through the editor's own key handler rather than a synthesised keystroke.**
+  The automation harness's Return does not reach an input inside a `foreignObject`, while Escape
+  through the identical mechanism does, and typing reaches the field. So the commit path is proven;
+  the last inch of the keystroke is not, and a human should press Enter once.
+
+  Four defects were found by this pass, every one invisible to the suite. In order: the editor
+  cancelling its own interaction the instant it appeared; an empty placement registry read as "the
+  element has gone"; `StrictMode`'s double-invoked effects latching the editor's closing flag so
+  that nothing could ever commit; and the editor sending a value the module had already refused,
+  which wrote `container ""` into a real example document before it was undone. All four are fixed
+  and each has a test that was seen to fail without its fix.

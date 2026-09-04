@@ -21,6 +21,8 @@ export interface ContextPromptEntry {
   verdictIsCurrent: boolean;
   /** The refusal to show, from the backend's verdict or from a submit that did not complete. */
   message: string;
+  /** The module has judged exactly this text and refused it. */
+  refused: boolean;
   canSubmit: boolean;
   submitting: boolean;
   /** Submits the current value; a refusal is reported through `message` and nothing closes. */
@@ -103,6 +105,7 @@ export function useContextPromptEntry({ initialValue, onPropose, onSubmit }: Con
     setValue,
     verdictIsCurrent,
     message: submitError || (verdictIsCurrent && !verdict.valid ? verdict.reason : ""),
+    refused: verdictIsCurrent && !verdict.valid,
     canSubmit,
     submitting,
     submit,
