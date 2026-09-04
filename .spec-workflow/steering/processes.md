@@ -205,10 +205,39 @@ Conventions that are only written down drift. Two tools check them and they see 
 - **Treat an InspectCode finding as an `.editorconfig` finding is treated**: fix it, or decide deliberately that the rule does not fit and record that decision where the rule lives — in the `.DotSettings` file, with a note saying why. Silently ignoring findings turns the tool into noise, which is how a codebase ends up with a check nobody runs. **A finding left reported is the one option that is not available**, because a gate that always prints something is a gate nobody reads.
 - **Expect a backlog on the first full run, and do not treat it as a gate on unrelated work.** What matters is that code being written now is clean and that any backlog shrinks, not that an unrelated change is blocked by something it did not cause.
 
-## Still to move
+## Merges made before the identity rule
 
-Two of the three items this document deferred on its first pass have now moved: vendored example data, and structure.md's documentation standards.
+**Merges made before 2026-09-04 carry the machine owner's name, `vrenken`, and were made by agents.** They are deliberately not being rewritten. Anyone auditing later should read them as agent work with a known mechanical cause, not as the user's.
 
-**One is deliberately not moving.** `tech.md`'s *Testing & quality* was surveyed as a candidate and does not belong here on this document's own boundary - it is about the artefact rather than about how work moves. Two of its clauses are technical standards (a suite runnable inside the local F5 experience, fast local tests preferred over hosted end-to-end ones) and two are code conventions (`<Classname>.Tests` for the file and `<Classname>Tests` for the class - mind the dot; and the arrange/act/assert shape). Neither kind is process, and moving them would make this document the place things go when nobody is sure, which is how a steering document stops being read.
+Measured on 2026-09-04: of the 61 merge commits in the preceding 18 hours, **44 were authored `vrenken`** and 17 carried an agent identity.
 
-**One finding raised rather than fixed**, because correcting it is a content change to an approved steering document rather than a move: that section still says *"to test the implementation of the modular diagrams use the following diagram visualizations: Mindmap (file extension .mm)"*. Eleven diagram modules ship today. The line was true when there was one.
+**Record a measurement with the window it was taken in, or do not record it.** That count is a *sliding* window and decays: the same command over 17, 18, 19 and 20 hours returns 39, 44, 51 and 66 `vrenken` merges. Two agents measuring the same fact half an hour apart got 45 and 44 and both were right. A number like this belongs in a durable document only with a fixed date or commit range attached, and the shape - most merges, not a few - is what actually survives.
+
+**Two mechanisms compounded, and neither is the one first assumed.** Nothing was ever set locally: `.git/config` has no `[user]` section, so the name comes from **global**, and any tree without its own identity signs as the machine's owner. Saying that imprecisely cost real time - an earlier account described the shared value as wrong, and an agent went looking for a local value to fix and found none.
+
+- **A `--worktree` identity binds to the directory, not to the agent.** Working in a tree somebody else created signs your commits as whoever made it.
+- **The rule guarded `git commit` and nothing else.** `merge`, `rebase`, `revert` and `cherry-pick` all write commit objects and all take the ambient identity - and the landing step this document prescribes, `merge --ff-only`, **writes no object at all**. The commit that lands is the `--no-ff` merge made minutes earlier in a scratch worktree, where it feels like scratch work rather than like history. That is precisely where the names were lost.
+
+**The rule is therefore written around writing a commit object, and the per-worktree identity comes first.** The agent whose merges were correctly attributed did not remember to pass an identity at merge time; it never had to remember, having set `--worktree` once when it created the tree. **A rule that cannot be got wrong beats one that depends on vigilance at the moment nobody is looking.**
+
+Rewriting the 45-odd commits was considered and rejected: history surgery in a checkout that nine sessions are committing into is a worse incident than a wrong name.
+
+## Ask what a command would print if your belief were false
+
+Before reporting a fact about the repository, name the output that would appear **if you were wrong**, then run the command and look for it. A check that cannot distinguish the two answers is not a check, and its green tells you nothing.
+
+Every provenance mistake collected in this document has this shape, and so do several that are not about provenance:
+
+- A `grep -c $'\r'` used to test for CRLF returns 0 whether or not the file has any, because the bashism is not expanded. It reported a correctly-CRLF file as LF. `git ls-files --eol` answers the question the tool's own way.
+- A sabotage whose replacement pattern never matched leaves the suite green, which reads as robust code rather than as a test that never ran.
+- `vrenken` in an author field was read as "the user made this", then as "made in the main checkout". Asking what `git config --show-origin user.name` would print if either belief were false answers it in one command: a global origin means neither.
+
+It is a sharper instrument than "verify before believing", which everybody agrees with and nobody applies under pressure, because it converts a vague duty into a specific question with an answer.
+
+## A settled boundary
+
+Everything this document deferred on its first pass has moved: vendored example data, and structure.md's documentation standards.
+
+**One thing was surveyed as a candidate and stays where it is.** `tech.md`'s *Testing & quality* is about the artefact rather than about how work moves. Two of its clauses are technical standards (a suite runnable inside the local F5 experience, fast local tests preferred over hosted end-to-end ones) and two are code conventions (`<Classname>.Tests` for the file and `<Classname>Tests` for the class - mind the dot; and the arrange/act/assert shape). Neither kind is process.
+
+That is recorded as settled rather than as pending, because the reason is the boundary itself: **moving them would make this document the place things go when nobody is sure, which is how a steering document stops being read.**
