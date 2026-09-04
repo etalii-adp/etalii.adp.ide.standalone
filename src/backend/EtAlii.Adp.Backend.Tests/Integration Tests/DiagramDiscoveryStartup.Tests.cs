@@ -194,15 +194,25 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public void AfterStartup_EveryStubDefinitionsOriginMatchesItsCatalogedTag()
+    public void AfterStartup_EveryDefinitionWithoutItsOwnRegistrationIsCataloged()
     {
         // Arrange.
-        // The stub modules' origin tags used to be asserted in 48 per-module test files, all
-        // structurally identical; this is their one home now, against the live deployed
-        // catalog, beside the description checks that made the same move earlier. Stubs are
-        // selected structurally - no Build delegate - so the population needs no hand-kept
-        // list, and implemented modules (whose docs row may legitimately annotate further)
-        // stay out of it.
+        // These origin tags used to be asserted in 48 per-module test files, all structurally
+        // identical; this is their one home now, against the live deployed catalog, beside the
+        // description checks that made the same move earlier. The population is selected
+        // structurally - no Build delegate of its own - so it needs no hand-kept list, and the
+        // definitions that do register services (whose docs row may legitimately annotate
+        // further) stay out of it.
+        //
+        // "No Build delegate" is NOT the same as "a stub", and the difference matters to anyone
+        // extending this. A family registers its engine once and loops over its origins, so
+        // c4's Container, Component, Deployment, Dynamic and SystemLandscape and databricks'
+        // Job and Pipeline all carry no Build of their own and are all fully served - a session
+        // factory, document factory and toolbox provider are registered per origin inside
+        // AddC4() and AddDatabricks(). They belong in this population for the same reason real
+        // stubs do (their catalog row carries the plain title), but calling them stubs is
+        // wrong, and a reader who trusts that name concludes seven shipped diagram types are
+        // unimplemented.
         using var _ = _factory.CreateClient();
 
         // Act.
@@ -219,7 +229,7 @@ public class DiagramDiscoveryStartupTests : IClassFixture<WebApplicationFactory<
     }
 
     [Fact]
-    public void AfterStartup_EveryStubDefinitionsTitleMatchesItsCatalogedName()
+    public void AfterStartup_EveryDefinitionWithoutItsOwnRegistrationMatchesItsCatalogedName()
     {
         // Arrange.
         using var _ = _factory.CreateClient();
