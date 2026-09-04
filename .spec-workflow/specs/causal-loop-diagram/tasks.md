@@ -50,7 +50,7 @@ A note on guards, since the question will come up: this specification has **no l
 - [ ] 2. The computed layout, the mapper, the session and the canvas
   - _Requirements: 2.1, 2.3, 2.4, 2.5, 2.6, 7.1, 7.2, 7.3, 7.4, 9.1, 9.2, 9.3, 9.4, 10.1, 10.2, 10.3, 10.4_
 
-- [ ] 2.1 The computed layout, and the unplaced-element contract
+- [-] 2.1 The computed layout, and the unplaced-element contract
   - Files: `CausalLoopLayout.cs`
   - The ordinary layout a document opens with — not the self-organizing one, which is group 4 and is invoked
   - **An element the layout could not place must be distinguishable from one placed at `(0, 0)`.** Four modules shipped the origin as a fallback and a viewport then culled those elements everywhere except the top-left corner. Either place deliberately at a stated fallback documented as one, or exclude from the drawn set, and make the choice visible in code rather than emergent from `default`
