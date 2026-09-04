@@ -346,7 +346,18 @@ public class PipelineGraphBuilderTests
     public void EveryFixture_BuildsAGraphWithoutThrowing()
     {
         // Arrange: including the deliberately broken one, which is the point.
-        foreach (var path in Directory.GetFiles("Fixtures", "*.yml", SearchOption.AllDirectories))
+        var fixtures = Directory.GetFiles(
+            IoPath.Combine(AppContext.BaseDirectory, "Fixtures"), "*.yml", SearchOption.AllDirectories);
+
+        // Assert, first, that the walk found the corpus at all: 14 fixtures ship today, so
+        // ten is a floor with headroom. Without this the test passes loudest exactly when it
+        // has stopped looking at anything - and it used to enumerate a relative "Fixtures",
+        // which resolves against the working directory rather than the test binary.
+        Assert.True(
+            fixtures.Length >= 10,
+            $"Only {fixtures.Length} pipeline fixtures were found; this guard has stopped finding the corpus it builds graphs from.");
+
+        foreach (var path in fixtures)
         {
             var model = PipelineParser.Parse(PipelineDocument.Parse(File.ReadAllText(path)));
 
