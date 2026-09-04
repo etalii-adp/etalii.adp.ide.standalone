@@ -23,6 +23,17 @@
 
     These types are `internal`, so each test project gets its own copy of them rather than
     sharing one instance - which is what the per-project source compile already implied.
+
+    DO NOT turn this into a referenced TestSupport assembly. It reads as tidying, it compiles,
+    and it leaves every existing test green - but LogCapture installs its pipeline from a
+    [ModuleInitializer], which runs once per ASSEMBLY. Compiled in, it runs for the test project
+    and beats that project's static loggers to their binding. Referenced, it would run for the
+    support assembly instead, and the code under test would bind to the default Log.Logger and
+    capture nothing.
+
+    That failure is silent, so it has a guard rather than only this comment:
+    LogCaptureReachesModuleTestProjects.Tests.cs, in the timeline module's test project. It is
+    in a MODULE test project deliberately - a core one cannot tell the two arrangements apart.
   -->
   <ItemGroup Condition="'$(MSBuildProjectName.EndsWith(`.Tests`))' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)TestSupport\LogCapture.cs" Link="TestSupport\LogCapture.cs" />
