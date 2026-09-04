@@ -2,7 +2,8 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { ElementSchema } from "@client/generated/elements_pb";
-import { ContextSelectionAction } from "@client/generated/context_pb";
+import { ContextPromptSchema, ContextSelectionAction } from "@client/generated/context_pb";
+import type { ContextPrompt } from "@client/generated/context_pb";
 import { MindmapNodePayloadSchema } from "@client/generated/mindmap_pb";
 import { applyDelta, emptyModel, type MindmapModel } from "./mindmapModel";
 import { DiagramViewProvider, useDiagramViewControls, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
@@ -16,6 +17,12 @@ let currentModel: MindmapModel = emptyModel;
 let currentFailed = false;
 let currentSelection: unknown = null;
 let currentActions: unknown[] = [];
+
+// The prompt the shell is holding, and the three calls the inline editor makes back through it.
+let currentPrompt: ContextPrompt | null = null;
+const proposeLabel = vi.fn(async (revision: number) => ({ revision, valid: true, reason: "" }));
+const submitLabel = vi.fn(async () => ({ completed: true, error: "" }));
+const cancelLabel = vi.fn();
 
 vi.mock("./useMindmapStream", () => ({
   useMindmapStream: () => ({ model: currentModel, loading: false, failed: currentFailed, reportView: (v: unknown) => currentReportView?.(v), moveElement }),
@@ -33,6 +40,7 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
     ...actual,
     useContextConnection: () => ({ watchId: new Uint8Array(16), select, executeAction, executeShortcut }),
     useContextSelection: () => ({ selection: currentSelection, actions: currentActions }),
+    useContextPrompt: () => ({ prompt: currentPrompt, onPropose: proposeLabel, onSubmit: submitLabel, onCancel: cancelLabel }),
   };
 });
 
@@ -67,6 +75,10 @@ describe("MindmapCanvas", () => {
     currentSelection = null;
     currentActions = [];
     currentFailed = false;
+    currentPrompt = null;
+    proposeLabel.mockClear();
+    submitLabel.mockClear();
+    cancelLabel.mockClear();
   });
 
   it("renders a node per streamed element", () => {
@@ -593,5 +605,120 @@ describe("MindmapCanvas", () => {
       measure.mockRestore();
       currentReportView = null;
     }
+  });
+
+  // ---- inline renaming ---------------------------------------------------------------------
+
+  /** A rename prompt for one node - the shape the backend sends once the module marks it. */
+  function renamePromptFor(nodeId: string, text: string): ContextPrompt {
+    return create(ContextPromptSchema, {
+      interactionId: { value: new Uint8Array(16).fill(7) },
+      prompt: {
+        case: "inputDialog",
+        value: {
+          title: "Rename node",
+          icon: "mdi-pencil-outline",
+          fieldLabel: "Text",
+          initialValue: text,
+          confirmLabel: "Rename",
+          inlineLabelEdit: { elementId: { value: nodeId } },
+        },
+      },
+    });
+  }
+
+  function labelField(container: HTMLElement): HTMLInputElement {
+    return container.querySelector("input.inline-label-editor-field") as HTMLInputElement;
+  }
+
+  function editorBox(container: HTMLElement): SVGForeignObjectElement {
+    return container.querySelector("foreignObject.inline-label-editor") as SVGForeignObjectElement;
+  }
+
+  it("draws an editor over the node a marked rename prompt names, and submits what is typed", async () => {
+    // Arrange.
+    currentModel = seed(node("root", "Root", 0, 0), node("a", "Alpha", 120, -20, "root", 80, 24));
+    currentPrompt = renamePromptFor("a", "Alpha");
+    const { container } = render(<MindmapCanvas {...props} />);
+
+    // Assert, first: the box is over that node, in canvas units, positioned by its corner.
+    const box = editorBox(container);
+    expect(box).not.toBeNull();
+    expect(Number(box.getAttribute("x"))).toBeCloseTo(120 - 40, 5);
+    expect(Number(box.getAttribute("y"))).toBeCloseTo(-20 - 12, 5);
+
+    // Act.
+    fireEvent.change(labelField(container), { target: { value: "Beta" } });
+    await act(async () => {
+      fireEvent.keyDown(labelField(container), { key: "Enter" });
+    });
+
+    // Assert.
+    expect(submitLabel).toHaveBeenCalledWith("Beta");
+  });
+
+  it("keeps the editor on its node, with the typing intact, when the canvas is panned mid-edit", () => {
+    // Arrange.
+    currentModel = seed(node("root", "Root", 0, 0), node("a", "Alpha", 120, -20, "root", 80, 24));
+    currentPrompt = renamePromptFor("a", "Alpha");
+    const { container } = render(<MindmapCanvas {...props} />);
+    fireEvent.change(labelField(container), { target: { value: "Half typed" } });
+    const surface = container.querySelector("svg.mindmap-canvas-surface") as SVGSVGElement;
+    const viewBoxBefore = surface.getAttribute("viewBox");
+
+    // Act.
+    // A pan of the view, by the canvas's own empty-surface drag.
+    fireEvent.mouseDown(surface, { clientX: 200, clientY: 200 });
+    fireEvent.mouseMove(surface, { clientX: 260, clientY: 240 });
+    fireEvent.mouseUp(surface, { clientX: 260, clientY: 240 });
+
+    // Assert.
+    // The editor is mounted in canvas units, so the view moving underneath it does not move it
+    // off its node: the box's own coordinates are unchanged while the viewBox is not. An editor
+    // positioned in screen pixels would have drifted here, which is the defect this catches.
+    expect(surface.getAttribute("viewBox")).not.toBe(viewBoxBefore);
+    const box = editorBox(container);
+    expect(Number(box.getAttribute("x"))).toBeCloseTo(120 - 40, 5);
+    expect(Number(box.getAttribute("y"))).toBeCloseTo(-20 - 12, 5);
+    expect(labelField(container).value).toBe("Half typed");
+  });
+
+  it("commits an open editor before a gesture that moves the canvas begins", async () => {
+    // Arrange.
+    currentModel = seed(node("root", "Root", 0, 0), node("a", "Alpha", 120, -20, "root", 80, 24));
+    currentPrompt = renamePromptFor("a", "Alpha");
+    const { container } = render(<MindmapCanvas {...props} />);
+    fireEvent.change(labelField(container), { target: { value: "Beta" } });
+    const surface = container.querySelector("svg.mindmap-canvas-surface") as SVGSVGElement;
+
+    // Act.
+    // Pressing on the empty canvas starts a pan; pressing a node starts a drag. Either way the
+    // gesture must not begin over an editor still holding unsaved text.
+    await act(async () => {
+      fireEvent.mouseDown(surface, { clientX: 200, clientY: 200 });
+    });
+
+    // Assert.
+    expect(submitLabel).toHaveBeenCalledWith("Beta");
+  });
+
+  it("leaves the selection exactly as it was when an inline edit commits", async () => {
+    // Arrange.
+    currentModel = seed(node("root", "Root", 0, 0), node("a", "Alpha", 120, -20, "root", 80, 24));
+    currentPrompt = renamePromptFor("a", "Alpha");
+    const { container } = render(<MindmapCanvas {...props} />);
+    select.mockClear();
+
+    // Act.
+    fireEvent.change(labelField(container), { target: { value: "Beta" } });
+    await act(async () => {
+      fireEvent.keyDown(labelField(container), { key: "Enter" });
+    });
+
+    // Assert.
+    // A commit that re-selects would quietly lose the user's place, which is only noticeable
+    // when renaming several things in a row - and by then it looks like the canvas misbehaving
+    // rather than like the rename doing it.
+    expect(select).not.toHaveBeenCalled();
   });
 });

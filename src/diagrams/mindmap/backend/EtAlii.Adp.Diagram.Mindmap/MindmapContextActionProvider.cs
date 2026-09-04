@@ -118,8 +118,13 @@ public sealed class MindmapContextActionProvider : IContextActionProvider
                     new ContextInputRequest("Add sibling", "mdi-plus", "Text", "", "Add")));
 
             case RenameActionId:
+                // The one prompt here whose value IS the text on screen, so it carries the
+                // element id and the canvas may render it in place of the node's label. The
+                // three input prompts around it deliberately do not: a child's text does not
+                // exist yet, a sibling's neither, and notes are not the label
+                // (inline-rename Requirement 3.1).
                 return Result(new ContextExecutionRequiresInput(
-                    new ContextInputRequest("Rename node", "mdi-pencil-outline", "Text", node.Text, "Rename")));
+                    new ContextInputRequest("Rename node", "mdi-pencil-outline", "Text", node.Text, "Rename", node.Id)));
 
             case DeleteActionId when !node.IsRoot:
                 // A leaf goes without asking; a branch is confirmed, since it takes its

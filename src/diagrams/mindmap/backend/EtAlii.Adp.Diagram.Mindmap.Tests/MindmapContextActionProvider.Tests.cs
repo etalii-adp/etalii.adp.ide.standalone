@@ -122,6 +122,30 @@ public class MindmapContextActionProviderTests : IDisposable
     }
 
     [Fact]
+    public async Task Execute_OnlyRenameMarksItsPromptAsEditingTheLabelOnScreen()
+    {
+        // Arrange.
+        // The contrast is the point, and this provider is where it is sharpest: four actions
+        // ask for text through the identical prompt, and exactly one of them is asking for the
+        // words the user can see. Add child and add sibling ask for text that does not exist
+        // yet - there is no label to replace, because there is no node - and notes are a value
+        // about the node rather than its label (inline-rename Requirements 3.1, 2.5).
+        const string nodeId = "ID_88117422";
+
+        // Act.
+        var rename = Assert.IsType<ContextExecutionRequiresInput>(await Execute(nodeId, MindmapContextActionProvider.RenameActionId));
+        var addChild = Assert.IsType<ContextExecutionRequiresInput>(await Execute(nodeId, MindmapContextActionProvider.AddChildActionId));
+        var addSibling = Assert.IsType<ContextExecutionRequiresInput>(await Execute(nodeId, MindmapContextActionProvider.AddSiblingActionId));
+        var editNotes = Assert.IsType<ContextExecutionRequiresInput>(await Execute(nodeId, MindmapContextActionProvider.EditNotesActionId));
+
+        // Assert.
+        Assert.Equal(nodeId, rename.Request.InlineLabelElementId);
+        Assert.Equal("", addChild.Request.InlineLabelElementId);
+        Assert.Equal("", addSibling.Request.InlineLabelElementId);
+        Assert.Equal("", editNotes.Request.InlineLabelElementId);
+    }
+
+    [Fact]
     public async Task Execute_DeleteOnALeaf_RemovesItAtOnce_AndItIsUndoable()
     {
         // Act.

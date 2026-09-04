@@ -5,14 +5,17 @@ import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
 import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import { elementSelectionOf, elementSourceOf, selectedElementIdOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
+import { InlineLabelEditor } from "@client/canvas/label/InlineLabelEditor";
 import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
 import { ContextSelectionAction } from "@client/generated/context_pb";
 import { ContextMenu } from "@client/shell/context/ContextMenu";
 import { toMenuGroups } from "@client/shell/context/toMenuGroups";
 import { useRegisterDiagramView, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
 import { TOOLBOX_DRAG_TYPE, useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
+import { useRegisterInlineLabelPlacement, type LabelPlacement } from "@client/shell/panels/InlineLabelPlacementContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { isFolded, type MindmapElement, type MindmapModel } from "./mindmapModel";
 import { useMindmapStream } from "./useMindmapStream";
@@ -101,6 +104,57 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
 
   const surfaceRef = useRef<SVGSVGElement>(null);
 
+  // Where a node's label is, for the shell's inline editor. Memoized on the model rather than
+  // made permanently stable: re-registering when the model changes is what lets the shell notice
+  // that the node being edited has gone, which is otherwise a silent abandon.
+  //
+  // The spec also has this answer null while a selection holds several members, since there is
+  // then no single label to replace (Requirement 6.3). There is nothing to check yet: this
+  // canvas has one focused node and the backend's selection carries one element. When the
+  // multi-select specification lands, the guard belongs here, in this one function, rather than
+  // in the editor or the shell - both of which would then need to learn what a selection is.
+  const placementOfNode = useCallback(
+    (elementId: string): LabelPlacement | null => {
+      const element = model.elements.get(elementId);
+      if (element === undefined) {
+        return null;
+      }
+
+      // A node box is positioned by its centre; the editor wants the rectangle's corner.
+      const box = boxOf(element);
+      return {
+        x: box.x - box.width / 2,
+        y: box.y - box.height / 2,
+        width: box.width,
+        height: box.height,
+        text: element.payload.text,
+      };
+    },
+    [model],
+  );
+  useRegisterInlineLabelPlacement(placementOfNode);
+
+  // The prompt the shell is holding. This canvas draws the editor for it only when the backend
+  // marked it as editing a visible label and the node is one this canvas has - the same question
+  // the shell asks before standing down, through the same function, so they cannot disagree.
+  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
+  const editingNodeId = inlineLabelElementIdOf(prompt);
+  const editingPlacement = editingNodeId === null ? null : placementOfNode(editingNodeId);
+
+  const returnFocusToSurface = useCallback(() => surfaceRef.current?.focus(), []);
+
+  /**
+   * Ends an open inline edit before a gesture that moves the canvas begins, so a drag or a pan
+   * never lands on an ambiguous editing state (Requirement 5.5). Taking the focus is the whole
+   * mechanism: the editor commits on blur, so moving focus to the surface commits it, and the
+   * commit rule stays in one place instead of being reimplemented per gesture.
+   */
+  const endInlineEditBeforeGesture = () => {
+    if (editingPlacement !== null) {
+      surfaceRef.current?.focus();
+    }
+  };
+
   const reportSelection = (element: MindmapElement) => {
     if (dragJustEndedRef.current) {
       // The click that trails a completed drag is the same gesture, not a new selection.
@@ -135,6 +189,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
   };
 
   const onNodePointerDown = (element: MindmapElement, event: React.MouseEvent) => {
+    endInlineEditBeforeGesture();
     dragRef.current = { id: element.id, x: event.clientX, y: event.clientY, moved: false };
   };
 
@@ -167,6 +222,7 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
       return; // a node's own press; its drag handler answers
     }
 
+    endInlineEditBeforeGesture();
     panRef.current = { clientX: event.clientX, clientY: event.clientY, view: viewRef.current, moved: false };
   };
 
@@ -456,6 +512,17 @@ export function MindmapCanvas({ projectId, entryId, path }: MindmapCanvasProps) 
               from the candidate parent to a ghost of the dragged node at the pointer. The new
               location is on screen during the drag, not only once the drop lands. */}
           {dragPreviewOf(model, dragRef.current?.id, dropTargetId, dragPosition)}
+          {/* Last of all, so the editor is above every node and connector it overlaps. It is
+              placed in canvas units, so panning and zooming carry it with its node. */}
+          {editingPlacement !== null && (
+            <InlineLabelEditor
+              placement={editingPlacement}
+              onPropose={onProposeLabel}
+              onSubmit={onSubmitLabel}
+              onCancel={onCancelLabel}
+              onReturnFocus={returnFocusToSurface}
+            />
+          )}
         </svg>
       )}
       {!loading && (

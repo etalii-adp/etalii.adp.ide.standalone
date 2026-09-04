@@ -75,8 +75,13 @@ export function InlineLabelPlacementProvider({ children }: { children: ReactNode
 }
 
 /**
- * Registers a mounted canvas's placement resolver, and withdraws it on unmount. Pass a stable
- * function (memoized): a fresh identity per render re-registers on every one.
+ * Registers a mounted canvas's placement resolver, and withdraws it on unmount.
+ *
+ * Memoize the resolver on **what it reads** - a canvas's model, typically - rather than making
+ * it permanently stable. A fresh identity on every render re-registers on every render, which is
+ * waste; but an identity that never changes leaves the readers holding a stale answer, and the
+ * one that matters is an element disappearing mid-edit. Re-registering when the model changes is
+ * what wakes them.
  */
 export function useRegisterInlineLabelPlacement(resolve: LabelPlacementResolver): void {
   const register = useContext(RegisterContext);
