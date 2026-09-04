@@ -124,6 +124,27 @@ The design's four shapes — A (files discovered on disk), B (a collection the c
 
 It is not repaired here because it is not one of the sites the requirements name, and Requirement 3.2 says the seventeen sound walks are left alone. Widening this specification's reach to a guard it did not survey is exactly the scope creep the design argues against. Recorded so the next reader meets it as a known thing rather than discovering it, and so that anyone copying that form knows it is the weaker of the two the requirements permit.
 
+### Four self-comparing counts outside the twenty files
+
+`Assert.Equal(x.Count, x.Distinct().Count())` compares a collection against itself and reads `0 == 0` on an empty one. Five files carry it; **one is inside this specification's twenty** (`WardleyToolboxProvider.Tests.cs:80`, covered by task 2's floor). The other four are recorded here with their paths so the next reader inherits located sites rather than a technique:
+
+| Site | What it guards |
+| --- | --- |
+| `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/DiagramDiscoveryStartup.Tests.cs:104` | Catalog ordering and duplicate-freedom |
+| `src/backend/EtAlii.Adp.Backend.Tests/Unit Tests/Hierarchy/DiagramOptionTree.Tests.cs:154` | Option-tree id uniqueness |
+| `src/backend/EtAlii.Adp.Diagram.Tests/DiagramDefinitionDiscovery.Walk.Tests.cs:51` | Discovery-walk name uniqueness |
+| `src/diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure.Tests/AnsibleGraph.Tests.cs:225` | Play-index uniqueness |
+
+**The first is the consequential one, verified rather than suspected.** `AfterStartup_AllIsOrderedByOriginAndFreeOfDuplicates` has exactly two assertions and both are vacuous on an empty catalog: the ordering check at `:95` compares two sequences *derived from the same empty list*, and the uniqueness check at `:104` compares a count against itself. **That test passes entirely on an empty catalog.**
+
+**And the distinction this specification's own rule 2 demands, applied to that claim:** the *test* is vacuous, the *file* is not. `Assert.NotEmpty(catalog.All)` at `:67` and `Assert.NotEmpty(declared)` at `:135` sit in sibling tests, so an empty catalog does fail this file loudly. The guard that would tell you no module registered at all is `:67`, and it is sound. So the accurate statement is that one test of a core discovery guard is vacuous, not that discovery is unguarded — a difference worth keeping, because the second would send someone to fix a hole that is not there.
+
+**Not repaired**, under the same ruling as the c4 anchor: these are outside the twenty files this specification names, and Requirement 3.2 and the design's scope section both say no guard's reach widens. Recorded so they are inherited, not rediscovered.
+
+### Stating the count
+
+When the per-collection recount returns, its number is stated **with its boundary in the same sentence** — "N collections across the twenty files this specification names", never "N collections". The first confirmation pass failed by reporting a narrower measurement as a broader claim; a total without its scope invites exactly that misreading from the reader's side instead.
+
 - [-] 11. Confirm the count, once, by hand — **reopened; the first pass answered a narrower question than it claimed**
 
   **The 24 below does not hold, and the reason matters more than the number.** The first pass verified that every *site the survey named* carries a floor. It reported that as "every collection needing a floor has one". Those are different claims: the survey enumerated `[Fact]` bodies whose assertions all sat inside a top-level `foreach`, and it never enumerated every collection walked at run time. Agent 1's per-collection recount of azure-pipeline found **five more collections** with no floor, proved by control run — emptied with floors in place exactly those five fail, each naming its own guard; emptied with the floors removed the suite is green. They passed with their collections empty. Eleven floors now stand in that group where six did.
