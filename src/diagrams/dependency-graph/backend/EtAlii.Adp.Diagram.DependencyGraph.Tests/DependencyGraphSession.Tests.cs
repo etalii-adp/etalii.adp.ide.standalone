@@ -249,6 +249,35 @@ public class DependencyGraphSessionTests : IDisposable
         Assert.Equal("This graph is read-only.", answer);
     }
 
+    /// <summary>
+    /// The two paths agree about what this connection holds. The viewport path culls, and the
+    /// change path has to render through the same decision - otherwise an ordinary edit re-sends
+    /// every element the viewport just removed, and the client silently regains what it was told
+    /// to drop. Invisible until someone edits while zoomed in, which is why it is asserted here
+    /// as an interaction rather than left to the two methods' own tests.
+    /// </summary>
+    [Fact]
+    public async Task ADocumentChangeUnderANarrowedViewport_DoesNotResendTheCulledElements()
+    {
+        // Arrange: narrowed to the first node alone, so the second and the relation are culled.
+        var path = Write();
+        await using var session = Open(path);
+        session.Baseline();
+        session.UpdateView(new DiagramViewport(200, -10, 420, 60));
+
+        IReadOnlyList<DiagramDelta>? received = null;
+        session.Changed += (_, args) => received = args.Deltas;
+
+        // Act: rename the node that is inside the viewport.
+        File.WriteAllText(path, Graph.Replace("label: API gateway", "label: Renamed", StringComparison.Ordinal));
+        _store.Reload(path);
+
+        // Assert: the edit arrives, and nothing the viewport had culled comes back with it.
+        Assert.NotNull(received);
+        var add = Assert.IsType<DiagramAddDelta>(Assert.Single(received));
+        Assert.Equal("aaa", Assert.Single(add.Elements).Id);
+    }
+
     [Fact]
     public async Task AChangeFromAnywhere_ReachesTheSessionAsADiff()
     {
