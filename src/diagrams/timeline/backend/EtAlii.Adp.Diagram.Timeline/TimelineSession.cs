@@ -10,11 +10,21 @@ namespace EtAlii.Adp.Diagram.Timeline;
 /// <see cref="DiagramDelta"/>.
 /// </summary>
 /// <remarks>
-/// It filters nothing: <see cref="UpdateView"/> answers with nothing new because the whole
-/// timeline is delivered at open, on the same reasoning the Wardley session spells out - a
-/// bounded diagram of tens of elements has nothing to virtualize, and a filter written only to
-/// satisfy a rule is code nobody needs. Panning and zooming are the client's own transform and
-/// never reach here (Requirement 5).
+/// <see cref="UpdateView"/> answers a reported viewport with the difference: what has come into
+/// view is added, what has left is removed. A connection opens with everything and narrows from
+/// there, so a client that never reports a view keeps exactly the behaviour this session had
+/// before it filtered anything (view-delta-adoption Requirements 1.1-1.4).
+/// <para>
+/// This used to say the timeline had nothing to virtualize, and for a bounded diagram of tens of
+/// elements that was a fair local judgement. It stopped being the code's reason when the loop
+/// was adopted family-wide: the zoom range here spans seconds to years, so a reader zoomed into
+/// an afternoon of a decade-long timeline is holding almost all of it off-screen.
+/// </para>
+/// <para>
+/// What a viewport <em>means</em> stays this module's business - seconds across and rows down,
+/// decided in <see cref="TimelineElementMapper.Visible"/>. Nothing about timeline units reaches
+/// the shared client code, which speaks only of rectangles (Requirement 3.4).
+/// </para>
 /// </remarks>
 public sealed class TimelineSession : IDiagramSession
 {
@@ -29,6 +39,12 @@ public sealed class TimelineSession : IDiagramSession
 
     /// <summary>What this connection was last sent, so a change can be diffed against it.</summary>
     private IReadOnlyList<DiagramElement> _delivered = [];
+
+    /// <summary>
+    /// The last viewport this connection reported. Unbounded until it reports one, so a client
+    /// that never reports keeps receiving the whole timeline.
+    /// </summary>
+    private DiagramViewport _viewport = DiagramViewport.Unbounded;
 
     /// <summary>Creates the session and subscribes to the store's changes.</summary>
     public TimelineSession(
@@ -65,11 +81,17 @@ public sealed class TimelineSession : IDiagramSession
     /// <inheritdoc />
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
-        _ = viewport;
+        _viewport = viewport;
 
-        // Nothing changes with the viewport: the connection already holds the whole timeline,
-        // and the view transform is the client's own (see the class remarks).
-        return [];
+        // The same render and the same diff a document change goes through, so the two paths
+        // cannot disagree about what this connection holds. Diff emits Add for what appeared and
+        // then Remove for what left - the order both reference sessions use, and the safe one: a
+        // client applying Add first is never briefly missing an element it is about to be sent.
+        var current = Render();
+        var deltas = _mapper.Diff(_delivered, current);
+        _delivered = current;
+
+        return deltas;
     }
 
     /// <summary>
@@ -126,8 +148,19 @@ public sealed class TimelineSession : IDiagramSession
         return ValueTask.CompletedTask;
     }
 
+    /// <summary>
+    /// What this connection should be holding: the model, narrowed to the viewport it last
+    /// reported. Unbounded until it reports one, so a baseline is the whole timeline and a
+    /// client that never reports keeps receiving all of it.
+    /// </summary>
+    /// <remarks>
+    /// Both the viewport path and the document-change path render through here, deliberately.
+    /// When they did not - when a change re-rendered everything while the viewport had narrowed
+    /// the view - an ordinary edit would have quietly re-sent the elements the viewport had just
+    /// culled, and the two paths would have disagreed about what the client held.
+    /// </remarks>
     private IReadOnlyList<DiagramElement> Render() =>
-        _mapper.Elements(_documents.GetOrLoad(_bodyPath).Model);
+        _mapper.Visible(_documents.GetOrLoad(_bodyPath).Model, _viewport);
 
     /// <summary>
     /// A save from any connection, or an edit made outside ADP, arrives here and goes out as

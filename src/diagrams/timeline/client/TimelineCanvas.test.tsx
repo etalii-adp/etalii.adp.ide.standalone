@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent, render, waitFor } from "@testing-library/react";
 import { emptyModel, type TimelineModel } from "./timelineModel";
 
 let currentModel: TimelineModel = emptyModel;
@@ -12,6 +12,7 @@ let selections: unknown[] = [];
 let executed: { actionId: string; source: unknown }[] = [];
 let properties: { propertyId: string; value: string }[] = [];
 let shortcuts: { key: string; source: unknown }[] = [];
+let currentReportView: ((viewport: unknown) => void) | null = null;
 
 vi.mock("./useTimelineStream", () => ({
   useTimelineStream: () => ({
@@ -22,6 +23,7 @@ vi.mock("./useTimelineStream", () => ({
       moves.push({ elementId, x, y });
       return Promise.resolve("");
     },
+    reportView: (viewport: unknown) => currentReportView?.(viewport),
   }),
 }));
 
@@ -108,6 +110,7 @@ beforeEach(() => {
   executed = [];
   properties = [];
   shortcuts = [];
+  currentReportView = null;
 });
 
 describe("the timeline canvas", () => {
@@ -565,5 +568,74 @@ describe("the timeline canvas", () => {
     // stretch time only, leaving the rows pinned at their fixed spacing.
     const after = Number(container.querySelector(".timeline-period")!.getAttribute("height"));
     expect(after).toBeCloseTo(before * 1.25, 5);
+  });
+
+  it("reports the settled viewport in seconds and row units", async () => {
+    // Arrange.
+    const reportView = vi.fn();
+    currentReportView = reportView;
+
+    // Act.
+    renderCanvas();
+
+    // Assert: the rectangle is in the module's own units - seconds across, row-derived y down -
+    // because the shared code converts nothing and this canvas converts at its own call site.
+    await waitFor(() => expect(reportView).toHaveBeenCalled(), { timeout: 2000 });
+    const viewport = reportView.mock.calls.at(-1)![0];
+    expect(viewport.maxX).toBeGreaterThan(viewport.minX);
+    expect(viewport.maxY).toBeGreaterThan(viewport.minY);
+
+    // The unit claim, asserted rather than assumed: x is seconds since the epoch, so the left
+    // edge is a number in the billions and the span is measured in days. A canvas reporting
+    // pixels, or a 0..1 space like wardley's, fails both of these.
+    expect(viewport.minX).toBeGreaterThan(1_000_000_000);
+    const spanDays = (viewport.maxX - viewport.minX) / 86400;
+    expect(spanDays).toBeGreaterThan(1);
+    expect(spanDays).toBeLessThan(365 * 100);
+  });
+
+  it("reports again when the view changes, carrying the new rectangle", async () => {
+    // Arrange.
+    const reportView = vi.fn();
+    currentReportView = reportView;
+    const { container } = renderCanvas();
+    await waitFor(() => expect(reportView).toHaveBeenCalled(), { timeout: 2000 });
+    const first = reportView.mock.calls.at(-1)![0];
+
+    // Act: a zoom out, which widens the span in seconds without moving the left edge much.
+    fireEvent.wheel(container.querySelector(".timeline-surface")!, { deltaY: 120 });
+
+    // Assert: a *changed* view produces a further report, and it carries the new rectangle -
+    // not merely that reportView was called, which would pass against a canvas that reported
+    // the same thing twice.
+    await waitFor(
+      () => {
+        const latest = reportView.mock.calls.at(-1)![0];
+        expect(latest.maxX - latest.minX).not.toBeCloseTo(first.maxX - first.minX, 0);
+      },
+      { timeout: 2000 },
+    );
+  });
+
+  it("reports nothing while the timeline is loading or has failed", async () => {
+    // Arrange: a report before the first delta describes a view of nothing, and one after a
+    // permanent failure is a call to a connection that has just been told its path is gone.
+    const reportView = vi.fn();
+    currentReportView = reportView;
+    currentLoading = true;
+
+    // Act.
+    const { unmount } = renderCanvas();
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    // Assert.
+    expect(reportView).not.toHaveBeenCalled();
+    unmount();
+
+    currentLoading = false;
+    currentFailed = true;
+    renderCanvas();
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(reportView).not.toHaveBeenCalled();
   });
 });
