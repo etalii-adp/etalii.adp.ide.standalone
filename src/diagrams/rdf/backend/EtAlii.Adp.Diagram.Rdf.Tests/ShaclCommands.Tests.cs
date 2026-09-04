@@ -111,4 +111,65 @@ public class ShaclCommandsTests : IDisposable
         Assert.Equal(ShaclRefusals.NoSuchShape, result.Error);
         Assert.Equal(Corpus, File.ReadAllText(_path));
     }
+
+    /// <summary>
+    /// The other half of the splice discipline, which the round-trip above does not test: an
+    /// undo that restores the bytes proves the edit is reversible, not that it was *small*. A
+    /// writer that reserialized the whole document from the model would pass every round-trip
+    /// here and still destroy the file's formatting, its comment and its author's line breaks.
+    /// So each edit is checked line by line: every line the file had, it still has - bar the one
+    /// the splice legitimately extends - and the count grows by what was actually added.
+    /// </summary>
+    [Fact]
+    public Task AddingATarget_TouchesOnlyTheLinesItMust() =>
+        AssertMinimalDiff(
+            new AddShaclTargetCommandHandler(_store).ExecuteAsync(
+                new AddShaclTargetCommand(_path, Ex + "PersonShape", ShaclVocabulary.TargetNode, Ex + "alice"),
+                TestContext.Current.CancellationToken),
+            "sh:targetNode");
+
+    [Fact]
+    public Task AddingAPropertyRow_TouchesOnlyTheLinesItMust() =>
+        AssertMinimalDiff(
+            new AddShaclPropertyRowCommandHandler(_store).ExecuteAsync(
+                new AddShaclPropertyRowCommand(_path, Ex + "PersonShape", Ex + "age", MinCount: 0, MaxCount: 1),
+                TestContext.Current.CancellationToken),
+            "sh:path ex:age");
+
+    [Fact]
+    public Task Deactivating_TouchesOnlyTheLinesItMust() =>
+        AssertMinimalDiff(
+            new SetShaclDeactivatedCommandHandler(_store).ExecuteAsync(
+                new SetShaclDeactivatedCommand(_path, Ex + "PersonShape", Deactivated: true),
+                TestContext.Current.CancellationToken),
+            "sh:deactivated");
+
+    private async Task AssertMinimalDiff(Task<CommandResult> execution, string expected)
+    {
+        var result = await execution;
+        Assert.True(result.IsSuccess, result.Error);
+
+        var text = File.ReadAllText(_path);
+        var before = Corpus.Split("\r\n");
+        var after = text.Split("\r\n");
+
+        // Exactly one line more than the file had: each of these edits states one new triple.
+        Assert.Equal(before.Length + 1, after.Length);
+        Assert.Contains(expected, text, StringComparison.Ordinal);
+
+        // The comment is the canary. Nothing about these edits concerns it, so a writer that
+        // moved or dropped it is reserializing the document rather than splicing into it.
+        Assert.Contains(after, line => line.Contains("# the one that matters", StringComparison.Ordinal));
+
+        // Exactly one of the file's own lines may change, and only past its terminator: a new
+        // pair is appended to the end of the statement, which turns that line's '.' into a ';'.
+        // Everything else - prefixes, indentation, the blank line, the trailing comment - has to
+        // come through untouched, which is what separates a splice from a reserialization.
+        var missing = before.Except(after, StringComparer.Ordinal).ToArray();
+        var changed = Assert.Single(missing);
+
+        var terminator = changed.LastIndexOf(" .", StringComparison.Ordinal);
+        Assert.True(terminator > 0, $"the changed line is not a statement end: {changed}");
+        Assert.Contains(after, line => line.StartsWith(changed[..terminator], StringComparison.Ordinal));
+    }
 }

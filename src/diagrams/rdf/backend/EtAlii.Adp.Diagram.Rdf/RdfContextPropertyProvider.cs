@@ -1,5 +1,6 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
+using EtAlii.Adp.Diagram.Rdf.Shacl;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
@@ -67,6 +68,14 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
         if (SkosProperties.Describe(entry, target) is { } skosRows)
         {
             return Rows(skosRows);
+        }
+
+        // The shapes reading answers only for its own origin, so this cannot hijack the grid of
+        // another reading over the same file - and it comes before the resource fallback because
+        // a shape card's element id is an ordinary `res:` id that the fallback would also claim.
+        if (ShaclProperties.Describe(entry, target) is { } shaclRows)
+        {
+            return Rows(shaclRows);
         }
 
         if ((RdfSelection.ResourceOf(entry, target.ElementId) ?? OwlSelection.IndividualIriOf(entry, target.ElementId)) is { } iri)
@@ -163,6 +172,11 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
         if (SkosProperties.CommandFor(entry, target, propertyId, value) is { } skosCommand)
         {
             return skosCommand;
+        }
+
+        if (ShaclProperties.CommandFor(entry, target, propertyId, value) is { } shaclCommand)
+        {
+            return shaclCommand;
         }
 
         var predicateIri = propertyId switch
