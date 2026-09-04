@@ -14,7 +14,7 @@ Two phases, and the split is not cosmetic: **phase 1 touches no example file and
 
 ## Phase 1 — the dialog
 
-- [ ] 1. `ContextOption` learns to be offered without being choosable, and to want no name
+- [-] 1. `ContextOption` learns to be offered without being choosable, and to want no name
   - Files: `src/api/context.proto`, `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextOptionNode.cs`, generated code on both sides
   - Add `string name_suppressed_reason = 8` and `string unavailable_reason = 9` to `ContextOption` (fields 1-7 are taken; 8 and 9 are the next free). Mirror both on `ContextOptionNode` at the end of its optional tail.
   - **Each field carries the condition and its explanation in one value.** Non-empty means "this applies", and the string is what the user reads. That is deliberate: it makes it impossible to suppress the name field or grey out an option without saying why, so Requirement 1.3 holds by construction rather than by review.
