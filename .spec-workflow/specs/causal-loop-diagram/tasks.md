@@ -11,7 +11,7 @@ A note on guards, since the question will come up: this specification has **no l
 - [ ] 1. A module that computes loop polarity before it draws anything
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 5.1, 5.2_
 
-- [ ] 1.1 The module skeleton, its registration and its document factory
+- [-] 1.1 The module skeleton, its registration and its document factory
   - Files: `src/diagrams/causal-loop/backend/EtAlii.Adp.Diagram.CausalLoop/` — `Diagram.cs` (the definition: extension `.cld`, origin `systems/causal-loop-diagram`, `HasDocumentSibling`), `CausalLoopDocumentFactory.cs`, `ServiceCollection.AddCausalLoop.cs`; plus the `.Tests` project
   - **Register the `IDiagramDocumentFactory` in this task and not later.** A module declaring `HasDocumentSibling` without one ships unable to create a diagram at all — core refuses the creation path, and the startup check cannot see a module still under construction. sparql was corrected for exactly this and plantuml carries it as an open task. The factory's output must open and draw, not be an empty file the canvas then reports as unreadable
   - _Requirements: 1.1, 1.4, 5.1, 5.2_
