@@ -31,6 +31,8 @@ public sealed class SparqlValidator(DiagramOrigin origin) : IDiagramValidator
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
+        // ReSharper disable once NullCoalescingConditionIsAlwaysNotNullAccordingToAPIContract
+        // Reason: Can still be null if the document is empty.
         var text = request.Document ?? "";
         SparqlQueryModel model;
         try

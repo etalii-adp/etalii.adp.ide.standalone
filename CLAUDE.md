@@ -2,41 +2,37 @@
 
 ## Chat naming
 
-Whenever a topic or specification is handled in a chat, rename the chat (session title, via the session-management `set_session_title` tool with `"self"`) to `Agent N - <topic/specification>` — e.g. `Agent 3 - wardley-map specification`. Rules:
+Rename this session to `Agent N - <topic/specification>` whenever its topic changes, keeping any number it already has and taking the next free one otherwise. A finished agent renames itself `Agent N - Idle`.
 
-- If the chat's title already carries an agent number, keep that number intact and replace only the topic part.
-- If the chat has no agent number yet, add the `Agent` prefix and determine the next free number by listing the other sessions' titles and taking the highest existing `Agent N` plus one.
-- When the chat moves on to a new topic, rename again — same number, new topic — so the title always names what the chat is currently about.
+Full rules and reasoning: [processes.md, *Chat naming*](.spec-workflow/steering/processes.md#chat-naming).
 
 ## Git worktrees
 
-Actual development work — writing code, editing specs, running builds/tests — should always happen in a dedicated git worktree (`.claude/worktrees/<name>/`), never directly in this main checkout. Create a new worktree per distinct piece of work and merge it back into `develop` when done. Multiple sessions routinely work against this repository at the same time; working directly in the main checkout risks one session's `git add`/`git commit` sweeping up another's uncommitted changes via a shared index, exactly the kind of cross-contamination a dedicated worktree avoids.
+Implementation work happens in a dedicated worktree (`.claude/worktrees/<name>/`, short name), never in the main checkout, because several sessions share its index. Retire a worktree once its branch is merged and its tree is clean — but never one another session is working in, never one with uncommitted or unmerged work, and never with `--force`.
 
-**Retire a worktree once its branch is merged into `develop` and its working tree is clean:** `git worktree remove .claude/worktrees/<name>`. A worktree is created per piece of work, so without this they only accumulate — twenty-four of them had built up before anyone counted.
-
-Four rules make this safe, and none of them is optional:
-
-- **Never remove a worktree another session is still working in.** Merged and clean is not enough: those two tests describe the *branch*, and say nothing about whether somebody is sitting in the directory. List the live sessions first (their names match the worktree directory names) and leave those alone. This rule exists because it was learned the hard way — four live sessions were deregistered underneath in one sweep.
-- **Never remove a worktree with uncommitted changes or unmerged commits.** Raise it for a decision instead. Housekeeping that destroys work is not housekeeping.
-- **Removing the worktree does not remove the branch,** so a merged branch's commits stay reachable either way. Do not delete branches as part of this.
-- **Removal often fails on Windows** with `Filename too long` (deep `node_modules` paths) or `Permission denied` (a dev server or IDE holding a file). Git still deregisters the worktree; only the directory deletion fails, leaving a folder of build output behind. **Report those rather than forcing them** — and check before deleting one by hand, because a leftover folder can still hold source.
-
-**A half-removed worktree is worse than either outcome.** When the deletion fails, the directory survives without its `.git` file, so every git command run inside it walks up and resolves against the main checkout — `git status` there reports the *main checkout's* dirty files, and a `git add -A` would commit another session's work. The files themselves are safe: copy anything uncommitted out, then start again with `git worktree add .claude/worktrees/<new-name> <branch>`. (The `Filename too long` failure is git's own limit, not the OS one — it wants `core.longpaths=true`, which is the user's call to set.)
+Full rules and reasoning, including the half-removed-worktree hazard: [processes.md, *Where work happens*](.spec-workflow/steering/processes.md#where-work-happens) and [*Retiring a worktree*](.spec-workflow/steering/processes.md#retiring-a-worktree).
 
 ## Committing and merging in the shared main checkout
 
-Several sessions use the main checkout at once, so its index and working tree are shared. Two distinct hazards follow, and the rule for one does not cover the other.
+Commit with an explicit pathspec — `git commit -F msg -- <paths>` — naming files, never folders: a bare `git commit` commits the whole shared index. Commit your own implementation log the moment the tool writes it. Before merging here, read `git status` for files you did not touch, and never stash or `git checkout --` them.
 
-- **Commit with an explicit pathspec: `git commit -F msg -- <paths>`.** `git add <path>` stages one file, but a bare `git commit` commits *the whole index*, including whatever another session has staged into it. This has swept another agent's files into an unrelated commit three times, under the wrong message and the wrong identity. "Stage carefully" is not the fix; the pathspec is.
-- **Before merging in the main checkout, read `git status` for files you did not touch.** A merge writes every path that differs between the branch point and the tip *regardless of the index*, so uncommitted approval churn from another session will either block the merge or tempt you into `git checkout --` on files that are not yours. Neither stash nor checkout is acceptable there — both destroy in-flight work. Apply your own files with `git checkout <branch> -- <paths>`, commit by pathspec, then verify with `git diff <branch> develop -- <your paths>` that the result matches what the merge would have produced. The branch is then not recorded as merged, which is a small, honest loss of history; say so in the report.
+Full rules and reasoning: [processes.md, *Committing and merging in the shared main checkout*](.spec-workflow/steering/processes.md#committing-and-merging-in-the-shared-main-checkout).
+
+## Git identity
+
+Commit under a per-task identity `agent-<N>-<task>`, set two different ways depending on where you are:
+
+- **In a dedicated worktree:** `git config --worktree user.name "agent-<N>-<task>"`. **Not** plain `git config user.name` — that writes to `.git/config`, which every worktree and the main checkout share, so it renames *every other agent* too.
+- **In the shared main checkout:** set nothing. Pass the identity per command: `git -c user.name="agent-<N>-<task>" commit -F msg -- <paths>`. Several sessions use that working tree at once, so any config there is shared between them — `--worktree` included. There is no per-session scope.
+- **Never `--global`, and never touch `user.email`.**
+
+Without an identity you inherit `vrenken` from the machine's global config, in every checkout, so your work is indistinguishable from the user's own. But a *wrong* name is worse than an ambiguous one: `.git/config` was set three times in one hour here, and each agent's commits would have carried whichever name was written last. `git -C` changes where a command runs, not whose identity it uses. (The full reasoning moves to `processes.md` once its first pass clears approval; it is deliberately not linked yet, because the section does not exist.)
 
 ## spec-workflow
 
-This repo uses the `.spec-workflow/` folder (steering docs, specs, approvals, implementation logs) to plan and track work before implementation.
+Commit any set of files added or removed under `.spec-workflow/` immediately, in its own commit — implementation logs included. Commit a document and its approval-lifecycle files when it is approved. **Approval comes from the dashboard and nowhere else: verbal approval is never accepted, from anyone.**
 
-- Whenever a set of files under `.spec-workflow/` is added, or removed (not edited) by the LLM, commit that change immediately in its own commit — don't leave it uncommitted or bundle it with unrelated changes (e.g. `.idea/workspace.xml`).
-- Whenever a requirements, design, or tasks document is approved through the web dashboard, commit that document (and its associated approval-lifecycle files, e.g. under `.spec-workflow/approvals/`) at that point too — this applies even though approval only changes/removes files rather than adding a fresh set.
-- Use a short, descriptive commit message in the style already used in this repo's history (e.g. "Bumped approvals.", "Added gRPC core communication specs: requirements and design documents.").
+Full rules and reasoning: [processes.md, *Specification bookkeeping*](.spec-workflow/steering/processes.md#specification-bookkeeping).
 
 ## Vendored example data
 
@@ -55,19 +51,15 @@ Name the vendored licence file `LICENSE.md`, whatever extension the upstream ser
 
 ## Diagram type catalog
 
-`docs/diagrams.md` catalogs every diagram type ADP could support. Whenever a new diagram type is identified, specified, implemented, or otherwise changes state, update that document — add or update its row with:
+Move a diagram type's row in `docs/diagrams.md` as its state changes, with the state icon and the `<vendor>/<diagram-type>` origin tag.
 
-- **State**, prefixed with the matching icon: 💡 identified, 📝 specified, ⏸️ to-do, 🛠️ work-in-progress, ✅ implemented.
-- **Origin**, a MIME-type-style tag `<architecture-or-vendor>/<diagram-type>` (e.g. `uml/class`, `c4/context`, `archimate/business`). For diagram types with no single owning standards body (e.g. knowledge/mind-mapping notations), use the tool/author most associated with the notation as the vendor, per `<vendor>/<diagram-type>` (e.g. `freeplane/mindmap`).
+Full rules and reasoning: [processes.md, *Keeping documentation true*](.spec-workflow/steering/processes.md#keeping-documentation-true).
 
 ## Documentation refresh
 
-The same keep-it-true rule extends to two more artifacts:
+A change that moves a touch point named in `docs/creating-a-diagram-module.md` or `docs/creating-an-editor-module.md` updates that document in the same change; a UI change that makes a `docs/screenshots/` image misleading means retaking it.
 
-- A change that moves a touch point named in `docs/creating-a-diagram-module.md` or `docs/creating-an-editor-module.md` (a renamed seam, a moved file, a changed registration shape) updates that document in the same change.
-- A UI change that makes an image under `docs/screenshots/` misleading means retaking it, following the procedure recorded in `docs/screenshots/readme.md`.
-
-(`docs/dependencies.md` needs no rule here — its guard is a test.)
+Full rules and reasoning: [processes.md, *Keeping documentation true*](.spec-workflow/steering/processes.md#keeping-documentation-true).
 
 ## Backend code style
 
@@ -75,7 +67,7 @@ The same keep-it-true rule extends to two more artifacts:
 
 Run `dotnet format style --verify-no-changes --severity info` (from `src/backend/`, against `EtAlii.Adp.slnx`) to check backend code against these conventions and surface style warnings/errors — always allow this command to run, without asking for confirmation first.
 
-**Before merging a worktree back into `develop`, run that command and make it exit zero.** The local run stays mandatory even though `.github/workflows/build.yml` now runs the same gate on every push and pull request — CI is the net under the discipline, not a replacement for it: a red pipeline after a merge means the local step was skipped, and the merge was wrong. A finding the gate reports is either code to fix or a rule to downgrade with a note saying what the rule wanted, what the codebase does instead, and why the codebase won; leaving it reported is the one option that is not on the table, because a gate that always prints something is a gate nobody reads.
+**Before merging a worktree back into `develop`, run that command and make it exit zero** — it is one of the four gates. A finding it reports is either code to fix or a rule to downgrade with a note; leaving it reported is not an option. Why, and the second tool that sees what this one does not: [processes.md, *Checking that the conventions are actually followed*](.spec-workflow/steering/processes.md#checking-that-the-conventions-are-actually-followed).
 
 ## Line endings
 
@@ -89,20 +81,9 @@ Some documents are exempt because their **bytes are the test subject**: a module
 
 ## Running the backend tests
 
-The test projects run on xUnit v3, which uses Microsoft.Testing.Platform rather than VSTest. Two consequences:
+Run the suite as `dotnet test --solution EtAlii.Adp.slnx` from `src/backend/`, with `MSBUILDDISABLENODEREUSE=1` and `DOTNET_CLI_USE_MSBUILD_SERVER=0` set. **Judge every gate by an exit code captured into a variable before any pipe, never by grepping output, and read `Zero tests ran` as a broken build.** All four gates — `npm test`, `npm run typecheck`, `dotnet format style --verify-no-changes --severity info`, `dotnet test` — must exit zero before a worktree merges into `develop`.
 
-- Run them as `dotnet test --solution EtAlii.Adp.slnx` (from `src/backend/`). Passing the solution positionally — `dotnet test EtAlii.Adp.slnx` — is rejected under this runner.
-- `src/global.json` carries the `"test": { "runner": "Microsoft.Testing.Platform" }` opt-in the .NET 10 SDK requires. Without it `dotnet test` refuses to run any test project at all.
-
-Each test project is therefore an executable (`<OutputType>Exe</OutputType>`): a v3 project hosts its own tests. New test projects need that too.
-
-That also makes the suite sensitive to Windows' 260-character `MAX_PATH`. MSBuild's `Exists()` silently returns false above 260 characters, so in a deep checkout the SDK's `_CreateAppHost` skips, `apphost.exe` is never produced, and — since a v3 test project's apphost *is* its test host — `dotnet test` reports `Zero tests ran` for project after project instead of failing the build. Read `Zero tests ran` as a broken build, never as an empty suite. Requirements:
-
-- `HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled` must be `1` (set it as admin; already-running processes need restarting before they see it).
-- Keep `.claude/worktrees/<name>` directory names short. The repository is comfortably inside the limit from the main checkout, but a worktree adds ~36 characters plus the name, and the longest project paths then need long-path support to build at all.
-- `src/Directory.Build.targets` turns this into an explicit `ADP0001` error rather than a cryptic `MSB3030: … apphost.exe … not found`.
-
-A zero-test run does exit non-zero (5 for zero tests, 8 for a filter matching nothing), so check the exit code — a CI step that only greps the output for `failed` reads a zero-test run as a passing suite. `.github/workflows/build.yml` embodies exactly this rule: every gate step there is judged by its exit code and nothing greps output; it runs the same four commands on every push to `develop` and every pull request (and, on a green `develop` push, publishes a versioned release ZIP). The pipeline is the net under the local discipline — worktrees still gate before merging.
+Full rules and reasoning, including the `MAX_PATH` failure and the fresh-worktree codegen trap: [processes.md, *Running the backend tests*](.spec-workflow/steering/processes.md#running-the-backend-tests).
 
 ## Logging
 
@@ -114,17 +95,13 @@ The client's conventions live in the same `src/.editorconfig` (see *Backend code
 
 ## Worktrees
 
-- **Writing a specification is never worktree work.** Requirements, designs and tasks documents — and every approval, snapshot and implementation log beside them under `.spec-workflow/` — are written and committed **on `develop` in the main checkout**, using `git -C C:\git\EtAlii.Adp` and an explicit pathspec. This holds for the whole document phase: drafting, revising after a rejection, and the bookkeeping that marks a task complete. Never create a worktree to write a spec, and never write one from inside a worktree you already hold for other work.
+**Specification documents are never worktree work**: requirements, designs, tasks, approvals, snapshots and implementation logs are written and committed on `develop` in the main checkout, with `git -C C:\git\EtAlii.Adp` and an explicit pathspec — the dashboard reads only from there. Implementation takes one worktree per specification, or one per agent when its tasks are independently landable and are being worked in parallel; never share a worktree between sessions. Running the app from a worktree means changing both dev-server ports and reverting them before merging.
 
-  The reason is that the dashboard reads `.spec-workflow/` from the main checkout only. A document written in a worktree is invisible to the person who has to approve it, and its approval card points at a path whose content does not exist where the card is read — so the spec silently cannot progress. Surveying and measuring for a spec may happen anywhere, including a throwaway worktree; the *document* lands on `develop`.
-- When working on **tasks** from `.spec-workflow/` specifications — the implementation the tasks describe, not the documents themselves — always do so in one single worktree for the specification — **unless the specification's tasks are independently landable and are being worked in parallel by several agents, in which case each agent takes its own worktree.** Never share one worktree between sessions: a shared working tree means a shared index, which is the cross-contamination the rule above exists to prevent, and it is a worse failure than several worktrees for one spec. A tasks document that claims its tasks are independently landable is claiming exactly this, and should say so where a reader will meet it.
-- When manually running the app (backend `dotnet run` + client `npm run dev`) for verification from inside a git worktree (not the main checkout), change both the client's dev server port (`src/client/vite.config.ts`'s `server.port`) and the backend's `Client:DevServerUrl` (`src/backend/EtAlii.Adp.Backend.Service/appsettings.developer.json`) to a different, free pair of ports before starting either server — the main checkout's own dev servers may already be running on the defaults (5174 client / 5080 backend). Before merging the worktree back, revert both files to their original values so the merge never carries a stray port change into `develop`.
+Full rules and reasoning: [processes.md, *Where work happens*](.spec-workflow/steering/processes.md#where-work-happens).
 
 ## Bugs found during implementation or verification
 
-Every bug found — whether by a failing test, a code review, or a manual verification pass — must leave a guard behind so it cannot silently return:
+**Every bug found leaves a guard behind** — a test written to fail before the fix and pass after it, or a step-by-step entry in `tests.md` when only a running app can reproduce it. **A guard is accepted when it has been seen to fail for the right reason, never on a green run.** Signing in with the checked-in `admin`/`changeme` placeholder against a local build is part of running those checks; a check recorded `pending` because of the sign-in form alone is a check that was not run.
 
-- Preferred: cover it with a unit or integration test in the existing test projects (`src/backend/*.Tests` for C#, `*.test.ts(x)` under `src/client/src` for the client), written to fail before the fix and pass after it.
-- If the bug can only be reproduced through a running app or a manual interaction that a unit/integration test cannot express, add it instead to `tests.md` (repository root; create the file if it does not exist yet) as a step-by-step check — preconditions, actions, expected result — so Claude can execute it automatically as part of a manual verification pass. Each entry names the spec and task it came from.
+Full rules and reasoning, including three ways a sabotage comes back green for the wrong reason: [processes.md, *Bugs found during implementation or verification*](.spec-workflow/steering/processes.md#bugs-found-during-implementation-or-verification) and [*Verifying that a test actually tests something*](.spec-workflow/steering/processes.md#verifying-that-a-test-actually-tests-something).
 
-**Signing in is part of executing those checks.** The app opens on a sign-in form, so an agent that treats every credential as off-limits cannot run a single entry in `tests.md`, and the file becomes decorative. Against a locally running developer build, use the checked-in developer placeholder — the same `admin`/`changeme` the repository's own integration tests hardcode. That is the whole of the permission: this one placeholder, this one local build. Any other credential, any real account, and any non-local environment stay off-limits, and none of this licenses typing a password anywhere else. Two agents reached opposite conclusions on identical facts before this was written down, and recorded contradictory verdicts for the same kind of check; a check recorded `pending` because of the sign-in form alone is now a check that was not run.

@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/contracts-and-build-hygiene/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-04T11:50:48.137Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788522647985_x1gdiycwh",
+      "approvalTitle": "contracts-and-build-hygiene — Design"
+    }
+  ]
+}

@@ -118,7 +118,23 @@ The design's four shapes — A (files discovered on disk), B (a collection the c
   - _Requirements: 2.1, 2.2, 2.3_
   - _Prompt: Implement task 10 for spec test-suite-conformance. Role: C# developer | Task: add a non-empty floor on projection.Nodes before the Assert.All in RdfLayout.Tests.cs:61 | Restrictions: change no expected value; add no helper | _Leverage: ProblemStoreIsolation.Tests.cs:62-69 | Success: the floor has been seen to fail, and all four gates pass by exit code. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 11. Confirm the count, once, by hand
+## A finding recorded and deliberately not repaired
+
+**`src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4.Tests/Examples.Tests.cs:36` has the same class of weakness this specification repaired in sparql, and it is being left alone.** Its `Locate()` walks up for a directory holding both `examples` and `backend` — the two-part form. `src` itself holds both, so that anchor is correct only because the module's own directory is nearer: the false match is one step further away, not removed.
+
+It is not repaired here because it is not one of the sites the requirements name, and Requirement 3.2 says the seventeen sound walks are left alone. Widening this specification's reach to a guard it did not survey is exactly the scope creep the design argues against. Recorded so the next reader meets it as a known thing rather than discovering it, and so that anyone copying that form knows it is the weaker of the two the requirements permit.
+
+- [x] 11. Confirm the count, once, by hand
+
+  **Result: 24 collections needed a floor, not 25, and all 24 carry one. No site was missed.** Every one confirmed by reading the test, not by a pattern. Three corrections to the requirements' own arithmetic:
+
+  - **`EditorFilePropertyProvider.Tests.cs:51` was never a site.** The line directly above its `Assert.All` asserts the same collection against an exact four-element sequence, so an empty result already fails. It needed nothing and correctly received nothing. The design quotes it verbatim as the shape-C example, which is the worst place for this error to have been: **an `Assert.All` preceded by an exact-sequence assertion on the same collection is already floored, and adding `NotEmpty` there can never fire.**
+  - **`PipelineContextActionProvider.Tests.cs:496` was never a site.** It loops a literal nine-element array, which cannot be empty. The original survey's classifier failed to parse that loop source and counted it as discovered anyway — an assumption, not a reading.
+  - **`MindmapLayout.Tests.cs:113` was two sites, not one.** It walks two named nodes' children in independent loops nine lines apart. Both are floored.
+
+  25 − 2 + 1 = 24. The requirements' headline of 25 is left as written: it is the survey's claim, and this task is the confirmation that corrects it. Amending it is a separate decision.
+
+  **Count collections, not sites.** Two of the three errors above are the same mistake in opposite directions — a site named once that was two collections, and two named as collections that were not sweeps at all. The unit that needs a floor is a collection walked at run time, and nothing else.
   - Files: none changed unless a site was missed
   - After tasks 1-10 have merged, walk the 25 sites named in the requirements and confirm each carries a floor, and that `ExampleCorpus.Tests.cs:17` carries the two-part anchor. Record the result in the implementation log.
   - **This is a one-off confirmation, not a new guard.** The design rejected a permanent meta-guard on measured evidence — the scan behind the requirements was run three times and wrong twice, in opposite directions, and a guard that cannot reliably find its own subject is the defect this specification is about. Do not leave a scanner behind.
