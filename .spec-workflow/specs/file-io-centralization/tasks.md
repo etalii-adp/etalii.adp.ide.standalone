@@ -192,7 +192,7 @@
   - As 1.2. Both tasks landed in one merge, gated on the merged tree: `dotnet test --solution EtAlii.Adp.slnx` exit 0 at 4636 tests, `dotnet format style --verify-no-changes --severity info` exit 0.
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Gate and merge tasks 6.1 and 6.2 by captured exit code, committing by explicit pathspec with a per-task git identity | Restrictions: as in task 1.2 | Success: gates exit zero and the merge lands. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7. Close the loop
+- [x] 7. Close the loop
   - _Requirements: 4.2, 5.1, 5.2, 5.3_
 
 - [x] 7.1 Tighten the guard and prove one home per rule — merged as e6961d19; the one-home claim is measured, and does NOT come back clean
@@ -220,7 +220,9 @@
   - _Requirements: 4.2, 5.1, 5.2_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Assert the tracked allow-list is empty, keep the five permanent entries with their reasons, and re-measure the tree for any second implementation of the four disciplines this spec touched, per requirements 4.2, 5.1 and 5.2 | Restrictions: if a second home is found, report it as a finding rather than quietly fixing it - it may belong to another spec; record the searches performed in the implementation log so the claim is auditable | Success: the tracked section is empty and asserted so, and the one-home claim is backed by a recorded measurement. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7.2 Final gates and merge
-  - All four gates by captured exit code: backend tests, `dotnet format style --verify-no-changes --severity info`, client `npm test` and `npm run typecheck`. Both converted modules' round-trip corpora pass unedited (Requirement 5.3). Retire the worktrees; move the shell out first, and on a `Filename too long` failure delete the leftover directory yourself rather than forcing.
-  - _Requirements: 5.3_
+- [x] 7.2 Final gates and merge — merged as c9cf1525
+  - **Scope ruling from the user, applied here:** the centralization is the *application's*, not the test suite's. `*.Tests` projects were already excluded, but **`src/TestSupport/`** — the shared `LogCapture` and `TestFolder` helpers, compiled into every test project as source and shipped nowhere — carries no `.Tests` in its path and was being walked as though it were the application.
+  - It was green only by luck: those two files happen not to touch a file API, so the first test helper needing to read a fixture would have been told to use `SharedDocumentReader` for no reason at all. Now excluded, and **verified end to end rather than reasoned about** — a raw read planted in `TestFolder.cs` is correctly ignored, where before it would have been reported.
+  - The exclusion carries its own guard, which asserts on the real enumeration rather than on the predicate, and also asserts the exclusions have not swallowed the subject: the application is still walked.
+  - Final gates on the merged tree, by captured exit code: `dotnet test --solution EtAlii.Adp.slnx` exit 0 at 4687 tests with 0 failed, and `dotnet format style --verify-no-changes --severity info` exit 0.
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates by captured exit code, confirm both round-trip corpora pass unedited, merge via the main checkout by explicit pathspec, and retire the worktrees | Restrictions: never judge a gate by piped output; read git status for files you did not touch before merging and never stash or checkout another session's work; move the shell out of a worktree before removing it, and never use worktree remove --force | Success: four gates exit zero, the merge lands, and the worktrees are retired cleanly. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
