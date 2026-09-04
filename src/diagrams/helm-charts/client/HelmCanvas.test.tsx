@@ -7,11 +7,13 @@ import {
   HelmElementKind,
   HelmElementPayloadSchema,
 } from "@client/generated/helm-charts_pb";
+import { VIEW_REPORT_DEBOUNCE_MS } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type HelmModel } from "./helmModel";
 
 const select = vi.fn();
 const revealPath = vi.fn();
 const moveElementTo = vi.fn(() => Promise.resolve(""));
+const reportView = vi.fn();
 let currentModel: HelmModel = emptyModel;
 let currentLoading = false;
 let currentFailed = false;
@@ -23,6 +25,7 @@ vi.mock("./useHelmStream", () => ({
     loading: currentLoading,
     failed: currentFailed,
     moveElementTo,
+    reportView,
   }),
 }));
 
@@ -226,6 +229,35 @@ describe("HelmCanvas", () => {
 
   const thumbOf = (container: HTMLElement, axis: "horizontal" | "vertical") =>
     container.querySelector(`.canvas-scrollbar-${axis} .canvas-scrollbar-thumb`) as HTMLElement;
+
+  it("reports the changed view once, carrying the new rectangle", () => {
+    // Arrange.
+    // The client half of the view-delta loop (view-delta-adoption Requirements 1.1, 1.2): a
+    // view CHANGE must reach the backend. jsdom lays nothing out, so shownRectOf takes its
+    // no-surface branch and the reported rectangle is the viewBox itself - which is what
+    // makes this assertable rather than approximate.
+    vi.useFakeTimers();
+
+    try {
+      const { container } = renderCanvas();
+      vi.advanceTimersByTime(VIEW_REPORT_DEBOUNCE_MS * 2);
+      reportView.mockClear();
+
+      // Act: pan by dragging a scrollbar thumb - one of several ways the view moves, none of
+      // which the report is wired to individually.
+      fireEvent.mouseDown(thumbOf(container, "horizontal"), { button: 0, clientX: 10, clientY: 0 });
+      fireEvent.mouseMove(window, { clientX: 40, clientY: 0 });
+      fireEvent.mouseUp(window);
+      vi.advanceTimersByTime(VIEW_REPORT_DEBOUNCE_MS * 2);
+
+      // Assert: exactly one report, and it describes where the view actually ended up.
+      expect(reportView).toHaveBeenCalledTimes(1);
+      const [x, y, w, h] = viewBoxOf(container);
+      expect(reportView).toHaveBeenCalledWith({ minX: x, minY: y, maxX: x + w, maxY: y + h });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 
   it("pans the view when a thumb is dragged - catches an unwired onPan", () => {
     // Arrange.
