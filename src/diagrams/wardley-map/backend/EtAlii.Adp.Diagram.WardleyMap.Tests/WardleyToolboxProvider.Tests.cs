@@ -27,6 +27,17 @@ public sealed class WardleyToolboxProviderTests : IDisposable
         _actions = _services.GetServices<IContextActionProvider>().OfType<WardleyContextActionProvider>().Single();
         _path = IoPath.Combine(_root, "map.owm");
         File.WriteAllText(_path, "title Empty\n");
+
+        // The floor, and it sits in the constructor rather than in one test because that is the
+        // only place a single assertion reaches every test in the class. Two of the tests below
+        // walk the palette with a foreach and one checks uniqueness by comparing a count against
+        // a distinct count; on an empty palette all three pass without examining anything, and
+        // the file's honesty would then rest entirely on the exact-label assertion in
+        // ItOffersWhatRequirement132Asks - incidental cover that a natural loosening of that
+        // assertion to a subset check would remove without anyone noticing.
+        Assert.True(
+            _toolbox.Items.Count >= 8,
+            $"Only {_toolbox.Items.Count} toolbox entries were discovered; this guard has stopped finding the palette it guards.");
     }
 
     public void Dispose()
