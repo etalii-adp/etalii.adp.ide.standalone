@@ -91,7 +91,7 @@
   - Requires group 2 to have landed. The evidence for treating these as *the same* rather than *alike*: 266 of about 410 lines textually identical ignoring whitespace, eleven identically-named static helpers, and two document types exposing the same six public members at the same six line numbers.
   - _Requirements: 1.2, 3.1, 3.3, 4.1, 4.2, 2.3_
 
-- [-] 4.1 `Line` and `LineDocument` move to core
+- [x] 4.1 `Line` and `LineDocument` move to core
   - Files: new `src/backend/EtAlii.Adp.Backend/Hierarchy/LineDocument.cs` (with the `Line(string Text, string Ending)` record and a `LoadResult`); nothing deleted yet
   - The surface is exactly what both documents already expose: `Lines`, `DominantEnding`, `Text`, `Replace(LineRange, …)`, `Insert(int, …)`, `Remove(LineRange)`. Loading goes through `SharedDocumentReader`; publishing through `AdpFileWriter`.
   - **Requirement 2.3 is met by shape, not by discipline:** a line carries its own `Ending`, so a rewritten line keeps its terminator by construction, while new content takes `AdpFileWriter.NewLine`. A splice never consults the constant and a create never consults a line, so a caller cannot choose wrongly.
@@ -99,7 +99,7 @@
   - _Requirements: 3.1, 2.3, 2.5_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Create LineDocument, Line and LoadResult in core with the six-member surface both existing documents share, loading through SharedDocumentReader and publishing through AdpFileWriter, per requirements 3.1, 2.3 and 2.5 | Restrictions: no module is converted in this task - this is the move only; per-line terminators are preserved by construction; out-of-range ranges are refused rather than clamped; add no third way to open or publish a file | _Leverage: TimelineDocument and DependencyGraphDocument as the two identical sources; SharedDocumentReader and AdpFileWriter as the only I/O | Success: the core type exists with unit tests covering replace, insert, remove, mixed terminators, DominantEnding on insert, and refusal of an out-of-range span. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.2 The eleven shared helpers move to core as `LineSplice`
+- [-] 4.2 The eleven shared helpers move to core as `LineSplice`
   - Files: new `src/backend/EtAlii.Adp.Backend/Hierarchy/LineSplice.cs`
   - `FindKey`, `FindSection`, `InsertElement`, `InsertionPointFor`, `KeyIndentWithin`, `Quote`, `RemoveElement`, `RemoveKey`, `SetKey`, `SetLabel`, `SetRow`, taking a `LineDocument`.
   - **What stays in each module:** the key names, the element shapes, and every decision about *what* to write. Only *how* a line is found and replaced moves. If a helper turns out to differ between the two modules in more than its document type, that is a finding to report — it would mean the fork had diverged, and the merge for that helper needs re-arguing rather than forcing.
