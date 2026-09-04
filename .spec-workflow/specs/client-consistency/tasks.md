@@ -27,7 +27,7 @@ Four defects with one cause: `ContextConnectionProvider` awaits its gRPC calls w
 - **Tasks 2 and 3 must land together.** The guard *is* the statement of the rule; landing the rule without it leaves the next method to guess, which is how four instances arrived in four files at different times.
 - **Tasks 4, 5, 6, 7 and 8 are independent of everything, including each other.**
 
-- [ ] 1. PropertyRow releases its in-flight guard whatever happens
+- [x] 1. PropertyRow releases its in-flight guard whatever happens
   - Files: `src/client/src/shell/panels/PropertyRow.tsx`, `src/client/src/shell/panels/PropertyRow.test.tsx`
   - Wrap the body of `commit()` so `committing.current = false` runs in a `finally`. Two lines.
   - **Do this even though task 2 removes the defect**, and the reason is the point: with a non-rejecting channel this code is correct *because of an invariant enforced in another file*, which a reader of `PropertyRow` cannot see. `onCommit` is a prop; nothing stops a later caller passing something that rejects. A component whose correctness depends on an unstated property of its props is one refactor from the bug returning.
