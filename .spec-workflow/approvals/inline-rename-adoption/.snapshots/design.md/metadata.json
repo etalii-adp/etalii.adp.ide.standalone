@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/inline-rename-adoption/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-04T23:28:39.914Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788564519805_q1sv0do76",
+      "approvalTitle": "inline-rename-adoption design"
+    }
+  ]
+}
