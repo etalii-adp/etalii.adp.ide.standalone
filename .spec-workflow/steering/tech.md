@@ -105,9 +105,8 @@ A module's service registration lives in **one file** - `ServiceCollection.AddX.
 
 * Tests should be runnable as part of the same local "F5 experience" - no separate environment or manual setup required to run the test suite.
 * Prefer fast, local unit/integration tests over end-to-end tests that depend on hosted infrastructure, given the local-first runtime model.
-* To test the implementation of the modular diagrams use the following diagram visualizations:&#x20;
-  * Mindmap (file extension \= .mm)&#x20;
-* Test classes in C# should follow the filename '\<Classname>.Tests' and the class name \<Classname>Tests. Mind the dot.
+* To test the modular diagram implementation, use the diagram types that are actually implemented, not a fixed list here: `docs/diagrams.md` is the catalog of record and marks each type's state, and `src/examples/` holds a document of each in one explorer tree. This bullet named Mindmap alone until 2026-09-04, which was true when Mindmap was the only module and quietly false for every module added after it - an enumeration in a document that is not the catalog goes stale the moment the catalog moves.
+* Test classes in C# should follow the filename `<Classname>.Tests` and the class name `<Classname>Tests`. Mind the dot.
 * Tests should follow the tripple a pattern: arrange, act, assert.
 
 # Checking that the conventions are actually followed
