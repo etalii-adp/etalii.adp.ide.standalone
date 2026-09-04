@@ -26,6 +26,8 @@ Commit with an explicit pathspec - `git commit -F msg -- <paths>` - naming files
 
 **Never merge while anything is staged, yours or anyone's.** A failed merge stashes the working state and does not restore it; that lost 26 paths of three sessions' work in one line of output. **Merge through a scratch worktree instead**: merge your branch there with `--no-ff`, run the four gates on that merged tree, then `git merge --ff-only` it in the main checkout - a fast-forward builds no tree from the index, so foreign staged files neither block it nor get touched. **Re-gate on the merged tree, not before it.**
 
+**Chain the whole cycle into one command** — `reset --hard develop`, merge, four gates, `--ff-only` — so the window between gating a tree and landing it is seconds. With several sessions committing minutes apart and a gate run taking about three, a `--ff-only` issued separately is routinely refused; one agent was refused four times running. Refusal is the mechanism working: twice, develop had gained code the earlier gate never saw. **Run that final `--ff-only` from the main checkout, never from inside the scratch worktree** — run in the wrong place it merges the branch into itself and prints `Already up to date`, a success message for something that did not happen.
+
 If it does happen, do not re-run anything: the stash survives as a dangling commit pair findable with `git fsck --unreachable --no-reflogs`. Never re-apply a deletion that was in flight.
 
 Full rules, the incident and the recovery: [processes.md, *Committing and merging in the shared main checkout*](.spec-workflow/steering/processes.md#committing-and-merging-in-the-shared-main-checkout).
