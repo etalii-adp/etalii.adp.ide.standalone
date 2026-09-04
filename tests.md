@@ -1262,3 +1262,74 @@ could never recover the rest however far it went.
   `PanningDoesNotMoveTheNodesItBringsIntoView`, `NoEdgeIsEverDeliveredWithOneEndMissing`,
   `ADocumentOverTheBudget_KeepsItsBannerAndItsRefusal`, and the shared hook's debounce test
   asserting exactly one call for a burst of changes.
+
+## Renaming a label in place (inline-rename, task 8)
+
+The parts that carry this feature are the parts jsdom models least faithfully. Focus, the caret,
+the selection and the blur that commits are all approximations there, and `getBBox` is not
+implemented at all — so a relationship label's *measured* width has no unit coverage by
+construction, and the unit tests exercise the per-character fallback instead. This check is where
+the measured path and the real focus behaviour are verified.
+
+- **Preconditions**: backend + client running from this worktree; sign in with the checked-in
+  developer placeholder (`admin` / `changeme`, per CLAUDE.md's sign-in ruling). Open a project
+  containing a mindmap and a C4 diagram — `src/examples/` has both.
+- **Actions**:
+  1. In the mindmap, select a node and press **F2**. Type a new name and press **Enter**.
+  2. Press **F2** on another node, type something, and press **Escape**.
+  3. Press **F2**, clear the field completely, and press **Enter**.
+  4. Press **F2**, type a few characters, and *click on the empty canvas* without pressing a key.
+  5. Press **F2**, type a few characters, then drag the empty canvas to pan.
+  6. In the C4 diagram, press **F2** on an element; then close it and press **F2** on a
+     relationship arrow that shows a technology in brackets.
+- **Expected**:
+  1. A textbox replaces the node's label in place — not a modal dialog — opening with the old
+     text **selected**, so the first keystroke replaces it. Enter commits and the node shows the
+     new name.
+  2. Escape leaves the node exactly as it was, and the keyboard returns to the canvas: the next
+     F2 opens an editor again rather than going nowhere.
+  3. The editor **stays open with the typed text intact** and shows the module's own refusal
+     underneath. It does not close and discard what was typed.
+  4. The click **commits** the edit. Losing typed text to a stray click is the failure this rule
+     exists to prevent, so a discarded edit here is a regression, not a preference.
+  5. The editor rides with its node as the canvas moves — it does not stay put on screen while
+     the node slides away — and the typed text survives. (Strictly, the pan commits first, so
+     what is verified is that the commit happens rather than the editor drifting.)
+  6. The element's editor covers its **name line only**, not the whole box with its type line and
+     description. The relationship's editor sits at the middle of the arrow, is about as wide as
+     the label drawn there, and opens on the **description alone** — the `[technology]` part is
+     not in the field. Committing leaves the technology untouched in the arrow's label.
+- **Also worth watching**: only one editor is ever open at a time, and the rest of the app's
+  input prompts are unchanged — renaming a file in the explorer still opens the ordinary dialog.
+
+- **Result 2026-09-04**: **PASSED, with two things it could not reach.** Run against a local
+  developer build from the inline-rename worktree, signed in with the checked-in placeholder, on a
+  freshly loaded page.
+
+  Verified: F2 draws the editor in place - `foreignObject.inline-label-editor` inside the canvas's
+  own `svg`, at the label's coordinates - focused, with the whole label selected, and no dialog.
+  Enter commits (node relabelled, `SetNodeTextCommand` in the log, document written), and one Undo
+  restores it. Escape abandons with the label untouched. **Clicking elsewhere commits** rather than
+  discarding. Starting a pan commits the open edit first. On C4 the editor covers the name line
+  only (20 units tall, not the 80-tall box), and clearing the name shows the module's own refusal
+  inline - "Every C4 element needs a name." - with the editor staying open, the text intact, and
+  nothing written to the document.
+
+  **Not reachable through the app, and not because of this feature:** a C4 relationship cannot be
+  selected on the canvas at all. `C4RelationshipShape` renders no click or context-menu handler, so
+  there is no gesture that selects one, and the relabel action cannot be invoked from the canvas
+  however it is marked. The backend marker, the midpoint placement and the description-only initial
+  value are all implemented and unit-tested; only the manual leg is blocked, and it stays blocked
+  until relationships become selectable.
+
+  **Enter was exercised through the editor's own key handler rather than a synthesised keystroke.**
+  The automation harness's Return does not reach an input inside a `foreignObject`, while Escape
+  through the identical mechanism does, and typing reaches the field. So the commit path is proven;
+  the last inch of the keystroke is not, and a human should press Enter once.
+
+  Four defects were found by this pass, every one invisible to the suite. In order: the editor
+  cancelling its own interaction the instant it appeared; an empty placement registry read as "the
+  element has gone"; `StrictMode`'s double-invoked effects latching the editor's closing flag so
+  that nothing could ever commit; and the editor sending a value the module had already refused,
+  which wrote `container ""` into a real example document before it was undone. All four are fixed
+  and each has a test that was seen to fail without its fix.

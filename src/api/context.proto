@@ -301,12 +301,27 @@ message ContextActionGroup {
   repeated ContextAction actions = 1;
 }
 
+// Set when the value this prompt asks for IS the text the user can see on `element_id` -
+// so a canvas may render the prompt as an editor in place of that label rather than as a
+// dialog. Only the module answering the action knows this: an action id says nothing about
+// it (a provider asks for run-if values, cluster keys and prefix declarations through the
+// same prompt), and shared client code never interprets module vocabulary. It names the
+// element rather than saying merely "yes" because the prompt reaches a shell-level host with
+// no memory of what the action targeted, and an action invoked on one thing may prompt about
+// another.
+message InlineLabelEdit {
+  ElementId element_id = 1;
+}
+
 message InputDialogPrompt {
   string title = 1;
   string icon = 2;
   string field_label = 3;
   string initial_value = 4;
   string confirm_label = 5;
+  // Unset on every prompt that is not a label edit, which is most of them; an unset field
+  // renders exactly the dialog it renders today.
+  InlineLabelEdit inline_label_edit = 6;
 }
 
 message ConfirmDialogPrompt {

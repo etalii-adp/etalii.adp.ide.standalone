@@ -1,12 +1,9 @@
-import { useCallback, useEffect, useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Dialog } from "../../components/Dialog";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { ChoicePromptDialog } from "./ChoicePromptDialog";
-import { useDebouncedValue } from "./../useDebouncedValue";
+import { useContextPromptEntry } from "./useContextPromptEntry";
 import type { ContextPrompt } from "../../generated/context_pb";
-
-/** How long the input must sit still before its validation round trip is worth making. */
-const VALIDATION_DEBOUNCE_MS = 200;
 
 export interface ContextPromptVerdict {
   /** The revision the backend judged; a reply for older text is recognisable as stale. */
@@ -27,6 +24,13 @@ export interface ContextPromptHostProps {
   onPropose: (revision: number, value: string) => Promise<ContextPromptVerdict>;
   onSubmit: (value: string, text?: string) => Promise<ContextPromptSubmission>;
   onCancel: () => void;
+  /**
+   * Why an interaction ended without the user ending it - shown when there is nothing else to
+   * show. Today that is an in-place edit whose element went away mid-edit; the host owns the
+   * message either way, so every "your interaction ended and here is why" looks the same.
+   */
+  notice?: string;
+  onDismissNotice?: () => void;
 }
 
 /** The prompt kinds this host knows how to put on screen. */
@@ -43,7 +47,7 @@ const RENDERABLE_PROMPTS = new Set(["inputDialog", "confirmDialog", "choiceDialo
  * the backend holding an interaction that is never answered; instead the interaction is
  * cancelled and the user is told, so the action visibly ends rather than vanishing.
  */
-export function ContextPromptHost({ prompt, onPropose, onSubmit, onCancel }: ContextPromptHostProps) {
+export function ContextPromptHost({ prompt, onPropose, onSubmit, onCancel, notice = "", onDismissNotice = () => {} }: ContextPromptHostProps) {
   const promptCase = prompt?.prompt.case;
   const unsupported = prompt !== null && !RENDERABLE_PROMPTS.has(promptCase ?? "");
   const [unsupportedNotice, setUnsupportedNotice] = useState(false);
@@ -70,17 +74,31 @@ export function ContextPromptHost({ prompt, onPropose, onSubmit, onCancel }: Con
   if (prompt === null || unsupported) {
     // Either there is nothing to show, or there was something this build could not show -
     // whose interaction the effect above has already cancelled.
-    return unsupportedNotice ? (
+    if (unsupportedNotice) {
+      return (
+        <Dialog compact
+          open
+          icon="mdi-alert-circle-outline"
+          title="Action not supported"
+          buttons={[{ key: "close", label: "Close", color: "neutral", autoFocus: true, onClick: () => setUnsupportedNotice(false) }]}
+          onClose={() => setUnsupportedNotice(false)}
+        >
+          <p className="dialog-message">
+            This action needs a newer version of the app than the one you are running. Nothing was changed.
+          </p>
+        </Dialog>
+      );
+    }
+
+    return notice ? (
       <Dialog compact
         open
         icon="mdi-alert-circle-outline"
-        title="Action not supported"
-        buttons={[{ key: "close", label: "Close", color: "neutral", autoFocus: true, onClick: () => setUnsupportedNotice(false) }]}
-        onClose={() => setUnsupportedNotice(false)}
+        title="Action cancelled"
+        buttons={[{ key: "close", label: "Close", color: "neutral", autoFocus: true, onClick: onDismissNotice }]}
+        onClose={onDismissNotice}
       >
-        <p className="dialog-message">
-          This action needs a newer version of the app than the one you are running. Nothing was changed.
-        </p>
+        <p className="dialog-message">{notice}</p>
       </Dialog>
     ) : null;
   }
@@ -159,57 +177,10 @@ interface InputPromptDialogProps {
 }
 
 function InputPromptDialog({ prompt, onPropose, onSubmit, onCancel }: InputPromptDialogProps) {
-  // Revision and text move together so a verdict can always be tied back to the exact text
-  // it judged; keeping them in one object also keeps the debounce from restarting on
-  // re-renders that changed nothing.
-  const [entry, setEntry] = useState({ revision: 0, value: prompt.initialValue });
-  const [verdict, setVerdict] = useState<ContextPromptVerdict | null>(null);
-  const [submitError, setSubmitError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const debounced = useDebouncedValue(entry, VALIDATION_DEBOUNCE_MS);
+  // The revision, the debounce and the verdict live in the shared hook, so this component and
+  // the in-place editor ask the backend the same way and cannot drift apart.
+  const entry = useContextPromptEntry({ initialValue: prompt.initialValue, onPropose, onSubmit });
   const fieldId = useId();
-
-  useEffect(() => {
-    // Revision 0 is the value the dialog opened with, which the user has not chosen yet -
-    // validating it would greet them with a complaint about text they never typed.
-    if (debounced.revision === 0) {
-      return;
-    }
-
-    let abandoned = false;
-    void onPropose(debounced.revision, debounced.value).then((next) => {
-      if (!abandoned) {
-        setVerdict(next);
-      }
-    });
-
-    return () => {
-      abandoned = true;
-    };
-  }, [debounced, onPropose]);
-
-  // Enabled only for a verdict that judged exactly the text now in the box: through the
-  // debounce window and while a call is in flight the revisions differ, so a "valid"
-  // verdict for text the user has since edited can never be submitted.
-  const verdictIsCurrent = verdict !== null && verdict.revision === entry.revision;
-  const canSubmit = verdictIsCurrent && verdict.valid && !submitting;
-
-  const handleSubmit = useCallback(async () => {
-    setSubmitting(true);
-    setSubmitError("");
-    try {
-      const result = await onSubmit(entry.value);
-      if (!result.completed) {
-        // Left open on purpose, with what the user typed intact, so they can adjust the
-        // value or cancel rather than losing it.
-        setSubmitError(result.error);
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  }, [entry.value, onSubmit]);
-
-  const message = submitError || (verdictIsCurrent && !verdict.valid ? verdict.reason : "");
 
   return (
     <Dialog compact
@@ -219,7 +190,7 @@ function InputPromptDialog({ prompt, onPropose, onSubmit, onCancel }: InputPromp
       onClose={onCancel}
       buttons={[
         { key: "cancel", label: "Cancel", color: "neutral", onClick: onCancel },
-        { key: "confirm", label: prompt.confirmLabel, color: "primary", disabled: !canSubmit, onClick: () => void handleSubmit() },
+        { key: "confirm", label: prompt.confirmLabel, color: "primary", disabled: !entry.canSubmit, onClick: () => void entry.submit() },
       ]}
     >
       <label className="context-prompt-field-label" htmlFor={fieldId}>
@@ -231,17 +202,17 @@ function InputPromptDialog({ prompt, onPropose, onSubmit, onCancel }: InputPromp
         type="text"
         value={entry.value}
         data-dialog-autofocus=""
-        onChange={(event) => setEntry((previous) => ({ revision: previous.revision + 1, value: event.target.value }))}
+        onChange={(event) => entry.setValue(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === "Enter" && canSubmit) {
+          if (event.key === "Enter" && entry.canSubmit) {
             event.preventDefault();
-            void handleSubmit();
+            void entry.submit();
           }
         }}
       />
-      {message && (
+      {entry.message && (
         <p className="context-prompt-error" role="alert">
-          {message}
+          {entry.message}
         </p>
       )}
     </Dialog>

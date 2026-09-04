@@ -336,14 +336,31 @@ public sealed partial class ContextService
     private static ContextShortcutDefinition FromProto(ContextShortcut shortcut) =>
         new(shortcut.Key, shortcut.Ctrl, shortcut.Shift, shortcut.Alt, shortcut.Meta);
 
-    private static InputDialogPrompt ToProto(ContextInputRequest request) => new()
+    /// <summary>
+    /// Internal rather than private so the marker's two cases can be pinned without booting a
+    /// host - the same reason <see cref="RootTarget"/> below is internal.
+    /// </summary>
+    internal static InputDialogPrompt ToProto(ContextInputRequest request)
     {
-        Title = request.Title,
-        Icon = request.Icon,
-        FieldLabel = request.FieldLabel,
-        InitialValue = request.InitialValue,
-        ConfirmLabel = request.ConfirmLabel,
-    };
+        var prompt = new InputDialogPrompt
+        {
+            Title = request.Title,
+            Icon = request.Icon,
+            FieldLabel = request.FieldLabel,
+            InitialValue = request.InitialValue,
+            ConfirmLabel = request.ConfirmLabel,
+        };
+
+        // Left unset for an empty id rather than set to an empty marker: an unset field is what
+        // tells the client to render the dialog exactly as it does today, and a marker carrying
+        // no element would be a claim the canvas cannot check.
+        if (request.InlineLabelElementId.Length > 0)
+        {
+            prompt.InlineLabelEdit = new InlineLabelEdit { ElementId = new ElementId { Value = request.InlineLabelElementId } };
+        }
+
+        return prompt;
+    }
 
     private static ConfirmDialogPrompt ToProto(ContextConfirmationRequest request) => new()
     {

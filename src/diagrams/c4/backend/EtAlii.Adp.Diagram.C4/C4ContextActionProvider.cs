@@ -127,8 +127,10 @@ public sealed class C4ContextActionProvider : IContextActionProvider
         // command. The current value is the initial one, so an edit starts from what is there.
         return actionId switch
         {
+            // The element's name is the text drawn on its box, so this prompt carries the
+            // element id and may be rendered in place of that name.
             RenameActionId when element is not null => Result(new ContextExecutionRequiresInput(
-                new ContextInputRequest("Rename element", "mdi-pencil-outline", "Name", element.Name, "Rename"))),
+                new ContextInputRequest("Rename element", "mdi-pencil-outline", "Name", element.Name, "Rename", target.ElementId))),
 
             EditDescriptionActionId when element is not null => Result(new ContextExecutionRequiresInput(
                 new ContextInputRequest("Describe element", "mdi-text-box-outline", "Description", element.Description, "Save"))),
@@ -136,8 +138,12 @@ public sealed class C4ContextActionProvider : IContextActionProvider
             SetTechnologyActionId when element is not null => Result(new ContextExecutionRequiresInput(
                 new ContextInputRequest("Set technology", "mdi-tools", "Technology", element.Technology, "Save"))),
 
+            // A relationship's description is the authored half of what is drawn on the arrow.
+            // The canvas renders it as "description [technology]", sometimes numbered, and the
+            // editor replaces that whole rendered label while editing this one value - the
+            // decoration around it is chrome, and the technology has its own action below.
             RelabelActionId when relationship is not null => Result(new ContextExecutionRequiresInput(
-                new ContextInputRequest("Relabel relationship", "mdi-pencil-outline", "Description", relationship.Description, "Save"))),
+                new ContextInputRequest("Relabel relationship", "mdi-pencil-outline", "Description", relationship.Description, "Save", target.ElementId))),
 
             SetProtocolActionId when relationship is not null => Result(new ContextExecutionRequiresInput(
                 new ContextInputRequest("Set technology", "mdi-transit-connection-variant", "Technology", relationship.Technology, "Save"))),

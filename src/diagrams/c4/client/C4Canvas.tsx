@@ -10,7 +10,7 @@ import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { shownRectOf } from "@client/diagrams/viewReport";
-import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { ContextSelectionAction } from "@client/generated/context_pb";
 import { ContextMenu } from "@client/shell/context/ContextMenu";
 import { toMenuGroups } from "@client/shell/context/toMenuGroups";
@@ -18,8 +18,29 @@ import { TOOLBOX_DRAG_TYPE, useRegisterDiagramToolbox } from "@client/shell/pane
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useRegisterDiagramView, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
 import { boxesOf, type C4BoundaryBox, type C4Model, type C4Node, type C4Relationship } from "./c4Model";
+import { InlineLabelEditor } from "@client/canvas/label/InlineLabelEditor";
+import { anchorsBetween, midpointOf } from "@client/canvas/connectors";
+import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
+import { useRegisterInlineLabelPlacement, type LabelPlacement } from "@client/shell/panels/InlineLabelPlacementContext";
 import type { C4RelationshipPayload } from "@client/generated/c4_pb";
 import { useC4Stream } from "./useC4Stream";
+
+/**
+ * Where an element's name sits inside its box, in canvas units: `StyledBoxElement` draws the
+ * name's baseline 22 below the box's top, so a 20-tall editor starting 6 below the top covers
+ * that line and nothing else.
+ */
+const NAME_TOP = 6;
+const NAME_HEIGHT = 20;
+const NAME_INSET = 4;
+
+/** `StraightConnection`'s own default label offset, above the line's midpoint. */
+const LABEL_DY = -6;
+const LABEL_HEIGHT = 16;
+/** The per-character width estimate the shared element components use to fit a label. */
+const LABEL_CHAR_WIDTH = 7;
+/** An empty description still needs somewhere to type. */
+const LABEL_MIN_WIDTH = 80;
 
 /** The visible rectangle, in canvas units - the svg viewBox as data. */
 interface ViewBox {
@@ -79,6 +100,40 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
   const panRef = useRef<{ clientX: number; clientY: number; view: ViewBox; moved: boolean } | null>(null);
   const panJustEndedRef = useRef(false);
   const surfaceRef = useRef<SVGSVGElement>(null);
+
+  // Where an element's name, or a relationship's label, is drawn - for the shell's inline
+  // editor. Memoized on the model rather than made permanently stable, so that an element
+  // removed mid-edit stops being placeable and the shell hears about it.
+  const placementOfLabel = useCallback(
+    (elementId: string): LabelPlacement | null => {
+      const node = model.nodes.get(elementId);
+      if (node !== undefined) {
+        return nodeNamePlacement(node);
+      }
+
+      const relationship = model.relationships.get(elementId);
+      return relationship === undefined ? null : relationshipLabelPlacement(relationship, surfaceRef.current);
+    },
+    [model],
+  );
+  useRegisterInlineLabelPlacement(placementOfLabel);
+
+  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
+  const editingId = inlineLabelElementIdOf(prompt);
+  const editingPlacement = editingId === null ? null : placementOfLabel(editingId);
+
+  const returnFocusToSurface = useCallback(() => surfaceRef.current?.focus(), []);
+
+  /**
+   * Ends an open inline edit before a gesture that moves the canvas begins (Requirement 5.5).
+   * Taking the focus is the whole mechanism: the editor commits on blur, so the commit rule
+   * stays in one place rather than being reimplemented per gesture.
+   */
+  const endInlineEditBeforeGesture = () => {
+    if (editingPlacement !== null) {
+      surfaceRef.current?.focus();
+    }
+  };
 
   const fitBox = useMemo(() => fitBoxOf(model), [model]);
   const effectiveView = view ?? fitBox;
@@ -144,6 +199,7 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
     if (event.target !== event.currentTarget) {
       return;
     }
+    endInlineEditBeforeGesture();
     panRef.current = { clientX: event.clientX, clientY: event.clientY, view: viewRef.current, moved: false };
   };
 
@@ -235,6 +291,7 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
       return; // a right-click is the menu's gesture, not a drag
     }
 
+    endInlineEditBeforeGesture();
     dragRef.current = { id: node.id, clientX: event.clientX, clientY: event.clientY, x: node.x, y: node.y, moved: false, dx: 0, dy: 0 };
   };
 
@@ -397,6 +454,17 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
                 onDrop={(event) => onNodeDrop(node, event)}
               />
             ))}
+            {/* Last, so the editor is above every box and arrow it overlaps. Placed in canvas
+                units, so panning and zooming carry it with what it is editing. */}
+            {editingPlacement !== null && (
+              <InlineLabelEditor
+                placement={editingPlacement}
+                onPropose={onProposeLabel}
+                onSubmit={onSubmitLabel}
+                onCancel={onCancelLabel}
+                onReturnFocus={returnFocusToSurface}
+              />
+            )}
           </svg>
           <CanvasScrollbars
             {...scrollAxesOf(effectiveView, model)}
@@ -502,6 +570,10 @@ function C4RelationshipShape({ relationship }: { relationship: C4Relationship })
   // there is no corridor for a curve to stay inside, and Structurizr and the C4 notation
   // both draw these straight.
   return (
+    // The wrapping group carries the id so the label's rendered text node can be measured for
+    // the inline editor; the shared connection component takes no id of its own, and giving it
+    // one would be a change to every canvas that draws a line.
+    <g data-c4-relationship={relationship.id}>
     <StraightConnection
       from={sourceBoxOf(p)}
       to={destinationBoxOf(p)}
@@ -511,6 +583,7 @@ function C4RelationshipShape({ relationship }: { relationship: C4Relationship })
       labelClassName="c4-relationship-label"
       labelTextAnchor="middle"
     />
+    </g>
   );
 }
 
@@ -534,6 +607,68 @@ function C4BoundaryShape({ boundary }: { boundary: C4BoundaryBox }) {
  * The two ends of a relationship as boxes, which is what the shared connector geometry wants.
  * The payload carries each end's measured size precisely so an arrow can land on an edge.
  */
+/**
+ * Where an element's NAME is drawn inside its box - not the box itself. `StyledBoxElement` puts
+ * the name's baseline 22 units below the box's top, with the type line and description under it,
+ * so an editor covering the whole box would sit over three lines of text to edit one of them.
+ */
+function nodeNamePlacement(node: C4Node): LabelPlacement {
+  const { width, height, name } = node.payload;
+  return {
+    x: node.x - width / 2 + NAME_INSET,
+    y: node.y - height / 2 + NAME_TOP,
+    width: width - NAME_INSET * 2,
+    height: NAME_HEIGHT,
+    text: name,
+  };
+}
+
+/**
+ * Where a relationship's label is drawn: at the midpoint of the anchored line, offset above it,
+ * exactly as `StraightConnection` places it - computed from the same helpers rather than from a
+ * copy of the arithmetic.
+ *
+ * The width is MEASURED where the browser can measure it, because a relationship label has no
+ * box of its own - it is a bare text node, and its width is whatever the font made it. Where
+ * `getBBox` is unavailable it falls back to the per-character estimate the shared element
+ * components use for the same purpose. jsdom implements no `getBBox` at all, so unit tests
+ * exercise the fallback by construction and the measured path is verified by the manual check
+ * in `tests.md`.
+ *
+ * The text it opens with is the relationship's DESCRIPTION, not the rendered label. The canvas
+ * draws "description [technology]", sometimes numbered; the editor replaces that whole string on
+ * screen while editing the one authored value beneath it. The decoration is chrome, and the
+ * technology has an action of its own.
+ */
+function relationshipLabelPlacement(relationship: C4Relationship, surface: SVGSVGElement | null): LabelPlacement {
+  const p = relationship.payload;
+  const [start, end] = anchorsBetween(sourceBoxOf(p), destinationBoxOf(p));
+  const middle = midpointOf(start, end);
+
+  const text = p.description;
+  const measured = measuredLabelWidth(surface, relationship.id);
+  const width = measured ?? Math.max(text.length * LABEL_CHAR_WIDTH, LABEL_MIN_WIDTH);
+
+  return {
+    x: middle.x - width / 2,
+    y: middle.y + LABEL_DY - LABEL_HEIGHT,
+    width,
+    height: LABEL_HEIGHT,
+    text,
+  };
+}
+
+/** The rendered label's own width, or null where the browser cannot measure one. */
+function measuredLabelWidth(surface: SVGSVGElement | null, relationshipId: string): number | null {
+  const label = surface?.querySelector(`[data-c4-relationship="${CSS.escape(relationshipId)}"] text`);
+  if (label === null || label === undefined || typeof (label as SVGGraphicsElement).getBBox !== "function") {
+    return null;
+  }
+
+  const measured = (label as SVGGraphicsElement).getBBox().width;
+  return measured > 0 ? measured : null;
+}
+
 function sourceBoxOf(p: C4RelationshipPayload): ConnectorBox {
   return { x: p.sourceX, y: p.sourceY, width: p.sourceWidth, height: p.sourceHeight };
 }
