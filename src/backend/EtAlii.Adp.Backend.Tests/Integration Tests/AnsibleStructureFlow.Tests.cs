@@ -175,6 +175,78 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
         }
     }
 
+
+    [Fact]
+    public async Task ARepositionOverTheWire_LandsInTheRegistration_ReopensThere_UndoesBack_AndNeverTouchesAnsiblesFiles()
+    {
+        // Arrange.
+        // The whole cycle helm proved for a chart, for a folder of Ansible: the drag goes over
+        // gRPC, the position lands in the .adp, the reopened diagram shows it, undo puts the
+        // registration's bytes back, and nothing Ansible owns is written at any point
+        // (Requirements 2.2, 2.3, 2.4, 2.5).
+        using var channel = CreateChannel();
+        var headers = await LoginAsync(channel);
+        var projectId = await AddProjectAsync(channel, headers);
+        var client = new DiagramService.DiagramServiceClient(channel);
+
+        var registration = IoPath.Combine(_infrastructure, "infrastructure.adp");
+        var registrationBefore = await File.ReadAllBytesAsync(registration, TestContext.Current.CancellationToken);
+        var ansibleFilesBefore = Snapshot()
+            .Where(entry => !string.Equals(entry.Key, registration, StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.OrdinalIgnoreCase);
+
+        var path = new Path();
+        path.Segments.Add("infrastructure");
+        path.Segments.Add("infrastructure.adp");
+        var watchId = ShortGuid.NewShortGuid();
+
+        // The diagram must be open for the move to reach a session: the unary leg finds it
+        // through the viewport registry the stream registered.
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cts.CancelAfter(MessageTimeout);
+        using var call = client.Open(
+            new OpenDiagramRequest { ProjectId = projectId, WatchId = watchId, Path = path },
+            headers, cancellationToken: cts.Token);
+        Assert.True(await call.ResponseStream.MoveNext(cts.Token));
+
+        // Act.
+        var moved = await client.MoveElementAsync(
+            new MoveElementRequest
+            {
+                ProjectId = projectId,
+                WatchId = watchId,
+                Path = path,
+                ElementId = "role:nginx",
+                Position = new Point2D { X = 321, Y = 123 },
+            },
+            headers,
+            cancellationToken: cts.Token);
+
+        // Assert 1: the write landed where the layout rule says it must, and nowhere else.
+        Assert.Equal(string.Empty, moved.Error);
+        Assert.Equal(
+            new RegistrationPosition(321, 123),
+            RegistrationLayout.Read(registration)["role:nginx"]);
+
+        foreach (var (file, bytes) in ansibleFilesBefore)
+        {
+            var now = await File.ReadAllBytesAsync(file, TestContext.Current.CancellationToken);
+            Assert.True(bytes.SequenceEqual(now), $"The reposition wrote {file}, which Ansible owns.");
+        }
+
+        // Assert 2: a diagram opened afresh draws the node where the user put it - the overlay
+        // outlives the session, which is what makes the position authored rather than local.
+        var reopened = await BaselineAsync(client, headers, projectId);
+        var nginx = reopened.Single(element => element.Id.Value == "role:nginx");
+        Assert.Equal(321, nginx.Position.X);
+        Assert.Equal(123, nginx.Position.Y);
+
+        // Assert 3: one undo, and the registration is byte-for-byte what it was.
+        var history = _factory.Services.GetRequiredService<IHistoryStackStore>().Get(_projectFolder);
+        await history.UndoAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(registrationBefore, await File.ReadAllBytesAsync(registration, TestContext.Current.CancellationToken));
+    }
+
     // ---- helpers -------------------------------------------------------------------------
 
     private Dictionary<string, byte[]> Snapshot() =>

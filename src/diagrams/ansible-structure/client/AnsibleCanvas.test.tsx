@@ -232,6 +232,33 @@ describe("AnsibleCanvas", () => {
     expect(moveElementTo).not.toHaveBeenCalled();
   });
 
+
+  it("captures the pointer on the node, never on the svg", () => {
+    // The regression this pins, found in the manual verification pass: a pointer capture
+    // retargets the pointerup, and the browser fires `click` on the common ancestor of the
+    // down and up targets. Capturing to the svg therefore delivered the click to the svg
+    // instead of the node, and click-to-select silently stopped working while every test
+    // here still passed - jsdom implements no pointer capture, so the stub above hides the
+    // consequence entirely. What CAN be asserted is which element was asked to capture.
+    const captured: string[] = [];
+    const original = SVGElement.prototype.setPointerCapture;
+    SVGElement.prototype.setPointerCapture = function (this: SVGElement) {
+      captured.push(this.getAttribute("data-element-id") ?? this.getAttribute("class") ?? "unknown");
+    };
+
+    try {
+      // Act.
+      const { container } = renderCanvas();
+      const role = container.querySelector('[data-element-id="role:nginx"]')!;
+      fireEvent(role, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+
+      // Assert.
+      expect(captured).toEqual(["role:nginx"]);
+    } finally {
+      SVGElement.prototype.setPointerCapture = original;
+    }
+  });
+
   it("marks a hollow role so it looks unfinished", () => {
     // Arrange.
     currentModel = modelOf(

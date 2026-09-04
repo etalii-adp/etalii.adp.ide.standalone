@@ -58,7 +58,17 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
   const svgRef = useRef<SVGSVGElement | null>(null);
   const panRef = useRef<{ x: number; y: number; view: ViewBox } | null>(null);
   /** The in-flight node drag, with `moved` telling a click from a reposition. */
-  const dragRef = useRef<{ id: string; clientX: number; clientY: number; x: number; y: number; moved: boolean } | null>(null);
+  const dragRef = useRef<{
+    id: string;
+    clientX: number;
+    clientY: number;
+    x: number;
+    y: number;
+    moved: boolean;
+    /** Which element holds the pointer capture, so the right one releases it. */
+    capture: Element;
+    pointerId: number;
+  } | null>(null);
   const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(null);
 
   const nodes = useMemo(() => nodesOf(model), [model]);
@@ -149,14 +159,33 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
     svgRef.current?.setPointerCapture(event.pointerId);
   };
 
-  /** Begins a reposition. The threshold below is what keeps a click from becoming one. */
+  /**
+   * Begins a reposition. The threshold below is what keeps a click from becoming one.
+   *
+   * The capture goes on the NODE, never on the svg, and that is not a detail: a capture
+   * retargets the pointerup, and the browser fires `click` on the common ancestor of the
+   * down and up targets. Capturing to the svg therefore delivered the click to the svg
+   * instead of the node, which silently broke click-to-select while every unit test passed -
+   * jsdom implements no pointer capture at all, so it cannot see this. Found in the manual
+   * verification pass; `tests.md` carries the check that finds it again.
+   */
   const onNodePointerDown = (element: AnsibleElement, event: React.PointerEvent) => {
     if (event.button !== 0) {
       return;
     }
     event.stopPropagation();
-    dragRef.current = { id: element.id, clientX: event.clientX, clientY: event.clientY, x: element.x, y: element.y, moved: false };
-    svgRef.current?.setPointerCapture(event.pointerId);
+    const capture = event.currentTarget as Element;
+    dragRef.current = {
+      id: element.id,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      x: element.x,
+      y: element.y,
+      moved: false,
+      capture,
+      pointerId: event.pointerId,
+    };
+    capture.setPointerCapture?.(event.pointerId);
   };
 
   const onPointerMove = (event: React.PointerEvent) => {
@@ -194,7 +223,14 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
     dragRef.current = null;
     setDrag(null);
     panRef.current = null;
-    svgRef.current?.releasePointerCapture(event.pointerId);
+
+    // Released from whichever element took it: a node drag captures on the node, a pan on
+    // the svg, and releasing from the wrong one leaves the pointer captured.
+    if (dragging) {
+      dragging.capture.releasePointerCapture?.(dragging.pointerId);
+    } else {
+      svgRef.current?.releasePointerCapture?.(event.pointerId);
+    }
 
     if (dragging?.moved && preview) {
       // The write goes to the .adp's layout block; the change comes back through the folder's
