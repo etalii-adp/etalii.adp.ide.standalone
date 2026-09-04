@@ -174,11 +174,11 @@ public class OwlLayoutTests
         {
             for (var j = i + 1; j < boxes.Count; j++)
             {
-                var a = boxes[i];
-                var b = boxes[j];
-                if (a.Left < b.Right && b.Left < a.Right && a.Top < b.Bottom && b.Top < a.Bottom)
+                var (aId, aLeft, aTop, aRight, aBottom) = boxes[i];
+                var (bId, bLeft, bTop, bRight, bBottom) = boxes[j];
+                if (aLeft < bRight && bLeft < aRight && aTop < bBottom && bTop < aBottom)
                 {
-                    collisions.Add($"{a.Id} overlaps {b.Id}");
+                    collisions.Add($"{aId} overlaps {bId}");
                 }
             }
         }
