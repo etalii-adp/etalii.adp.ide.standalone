@@ -206,7 +206,32 @@ The field-held literal array is worth naming: the census reads it as `derived`, 
 * `ansible-structure ZeroWrites.Tests.cs:179` and `helm-charts ZeroWrites.Tests.cs:183` — `AssertUnchanged`, walking `before.OrderBy(…)`. **Its two pre-loop assertions do not save it:** `Assert.True(appeared.Length == 0)` and `Assert.True(vanished.Length == 0)` are *also* vacuously true of an empty snapshot. So if the fixture copy produced nothing, all three assertions pass and the module's zero-writes promise is asserted about no files at all. The same helper, byte-identical in shape, in two modules.
 * `ansible-structure ZeroWrites.Tests.cs:154` — a filtered walk, `before.Where(pair => pair.Key != registration)`, with no floor on the filtered result. Weaker than the two above, because the test's primary assertion `Assert.Equal([registration], changed)` is sound; only the byte-comparison over the remaining files is vacuous.
 
-**The rest of the 39 are still being read.** The sites the tasks named are repaired and verified; the residue is the nested and helper walks the original survey could not see, which is exactly where the census predicted the work would be. No total is claimed until every one of the 39 has been judged.
+**Two more distinctions the census could not make, both found while reading.**
+
+**`Assert.True(x.Any())` is a floor; `Assert.True(x.All(…))` is a site.** The census puts both under one kind, `Assert.True(.All/.Any)`, which is structurally correct and semantically backwards: `.Any()` asserts the collection is *not* empty — it is exactly the floor this specification asks for — while `.All(…)` is vacuously true of nothing. `MindmapLayout.Tests.cs:99` is counted as a walk and is in fact task 6's floor. **One census entry in this subset is the opposite of a defect.**
+
+**The inner loop of a pairwise comparison needs no floor; the collection it indexes does.** `for (i = 0; …) / for (j = i + 1; …)` and `for (i = 1; …)` over adjacent items are the "compare every pair" and "compare each with its predecessor" idioms. Zero iterations there means *fewer than two items, so there is no pair* — legitimately nothing to do. Floor the array once; the index arithmetic is not a second collection. Four sites in this subset are inner loops of that shape and are exempt: `MindmapLayout:110` and `:293`, `BigBankPlc:164`, `C4LayoutCrowding:62`.
+
+**Ten confirmed unfloored so far**, every one in the class the original survey could not see — nested, helper, or filtered:
+
+| Site | Shape | Why it passes on empty |
+| --- | --- | --- |
+| `ansible ZeroWrites:179` | helper | `AssertUnchanged`: its two pre-loop `== 0` assertions are equally vacuous |
+| `helm ZeroWrites:183` | helper | The same helper, byte-identical in shape, in a second module |
+| `ansible ZeroWrites:154` | filtered | Byte comparison over `before.Where(… != registration)` |
+| `MindmapLayout:29` | helper | Determinism check: `Assert.Equal(first.Count, second.Count)` is `0 == 0`, then `Assert.All` over nothing |
+| `MindmapLayout:107` | nested | `node.Children.GroupBy(…)` — a childless node yields no groups |
+| `MindmapLayout:270` | nested | `childBoxes.GroupBy(…)` inside the parent walk |
+| `MindmapLayout:291` | pairwise outer | `boxes` never floored, so no pair is ever compared |
+| `BigBankPlc:162` | pairwise outer, nested | Per-view `boxes`, floored for views but not for boxes |
+| `C4LayoutCrowding:60` | helper, pairwise outer | `FirstOverlap` returns null on an empty box set — which reads as "no overlap" |
+| `C4LayoutCrowding:126` | filtered | `Boxes.Where(key.StartsWith("outside"))` — no such box, nothing asserted |
+
+`MindmapLayout:29` deserves its own note: `Assert.Equal(first.Count, second.Count)` is **the self-comparing count in its two-collection form** — two empty layouts agree perfectly. The pattern named earlier in this document as `Assert.Equal(x.Count, x.Distinct().Count())` has a sibling that compares two *different* derived collections and is equally hollow.
+
+**One is contract-dependent and is not yet judged.** `BigBankPlc:210` asserts every problem the ruleset reports is a Warning. Zero problems may be the promise (a clean reference model) or a defect (validation stopped running), and that is the sparql discriminator applied to a different module — it needs the owner's intent, not a reading of the shape.
+
+**The rest are still being read.** The sites the tasks named are repaired and verified; the residue is the nested and helper walks the original survey could not see, which is exactly where the census predicted the work would be. No total is claimed until every one of the 39 has been judged.
 
 ## Every walk, by group
 
