@@ -18,8 +18,10 @@ namespace EtAlii.Adp.Diagram.Sparql;
 /// so its byte-identical round trip holds by construction rather than by care.
 /// </para>
 /// <para>
-/// <see cref="UpdateView"/> answers with nothing new because the whole query is delivered at
-/// open: the sanity bound bounds what is drawn, so there is nothing left to virtualize.
+/// <see cref="UpdateView"/> narrows what this connection holds to what its viewport admits:
+/// what newly falls inside is added, what left is removed (view-delta-adoption Requirements
+/// 1.2 and 1.3). The change path renders through the same viewport, so an ordinary edit never
+/// re-sends the elements the viewport just culled.
 /// </para>
 /// </remarks>
 public sealed class SparqlSession : IDiagramSession
@@ -36,6 +38,12 @@ public sealed class SparqlSession : IDiagramSession
 
     /// <summary>What this connection was last sent, so a change can be diffed against it.</summary>
     private IReadOnlyList<DiagramElement> _delivered = [];
+
+    /// <summary>
+    /// What this connection is looking at. Unbounded until the client reports, so a connection
+    /// that never reports keeps the whole query it was given at baseline.
+    /// </summary>
+    private DiagramViewport _viewport = DiagramViewport.Unbounded;
 
     public SparqlSession(
         string bodyPath,
@@ -73,8 +81,28 @@ public sealed class SparqlSession : IDiagramSession
     /// <inheritdoc />
     public IReadOnlyList<DiagramDelta> UpdateView(DiagramViewport viewport)
     {
-        _ = viewport;
-        return [];
+        var before = Render().Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
+        _viewport = viewport;
+        var after = Render();
+
+        // Add for what appeared, then Remove for what left - the order every adopting session
+        // emits in, and the opposite of what Requirement 4.3 anticipated.
+        var appeared = after.Where(element => !before.Contains(element.Id)).ToArray();
+        var departed = before.Except(after.Select(element => element.Id), StringComparer.Ordinal).ToArray();
+
+        var deltas = new List<DiagramDelta>();
+        if (appeared.Length > 0)
+        {
+            deltas.Add(new DiagramAddDelta(appeared));
+        }
+
+        if (departed.Length > 0)
+        {
+            deltas.Add(new DiagramRemoveDelta(departed));
+        }
+
+        _delivered = after;
+        return deltas;
     }
 
     /// <summary>Refused: a query's structure comes from its text, so nothing here is re-parented by dragging.</summary>
@@ -172,7 +200,11 @@ public sealed class SparqlSession : IDiagramSession
         // Layout applies the stored positions itself, because a region anchor moves its whole
         // frame rather than one element - which the element-by-element overlay could not express.
         var layout = SparqlLayout.Compute(projection, stored);
-        return _mapper.Elements(projection, layout);
+
+        // Through the viewport, always. When this rendered unfiltered while UpdateView
+        // filtered, an ordinary edit re-sent every element the viewport had just culled and
+        // the two paths disagreed about what the client held.
+        return _mapper.Visible(projection, layout, _viewport);
     }
 
     private void OnDocumentChanged(object? sender, SparqlDocumentChangedEventArgs args)
