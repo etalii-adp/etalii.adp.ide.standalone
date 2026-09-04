@@ -70,7 +70,16 @@ public class ZeroWritesTests : IDisposable
 
             // Select and describe every node and every edge there is.
             var properties = new HelmContextPropertyProvider(_store);
-            foreach (var id in graph.Nodes.Select(node => node.Id).Concat(graph.Edges.Select(edge => edge.Id)))
+            var everything = graph.Nodes.Select(node => node.Id).Concat(graph.Edges.Select(edge => edge.Id)).ToArray();
+
+            // The walk has to find the graph, or the read paths below are never exercised
+            // and the chart is trivially unchanged - this test would report zero writes
+            // loudest exactly when it had stopped reading anything.
+            Assert.True(
+                everything.Length >= 6,
+                $"The derived graph produced {everything.Length} elements; this test cannot exercise read paths for elements that do not exist.");
+
+            foreach (var id in everything)
             {
                 var target = new ContextTarget(ContextScope.DiagramElement, _root, false, default, _root, default, id);
                 await properties.DescribeAsync(target, TestContext.Current.CancellationToken);
