@@ -64,10 +64,12 @@ public partial class ShapeOfFileAccessTests
     /// so a tracked exemption cannot quietly become a permanent one.
     /// </summary>
     /// <remarks>
-    /// The three <c>FileShare</c> entries are the ones file-io-centralization's design named
-    /// (F2), and they are the module counterparts to the core sites
-    /// <c>backend-consistency</c> owns; neither spec claims the other's. The rest were found
-    /// by this guard when it was first run, are named in no spec's task list yet, and are
+    /// The three <c>FileShare</c> entries file-io-centralization's design named (F2) are gone,
+    /// deleted by tasks 3.1-3.3 as intended; the whole <c>NarrowShare</c> category is empty and
+    /// its heading went with its last entry, since a heading describing an empty category
+    /// misleads. What remains: two core reads owned by <c>backend-consistency</c>, which this
+    /// spec does not claim, and four hand-rolled publishes owned by tasks 5.1-5.3. Those four
+    /// were found by this guard when it was first run rather than by any survey, and were
     /// reported as a finding rather than absorbed - see the task 1.1 implementation log.
     /// </remarks>
     private static readonly (string File, string Rule, string Owner)[] Tracked =
@@ -75,11 +77,6 @@ public partial class ShapeOfFileAccessTests
         // Core reads of a user document - owned by backend-consistency, not by this spec.
         ("Hierarchy/AddDiagramContextActionProvider.cs", RawRead, "backend-consistency AC1"),
         ("Hierarchy/RegistrationLayout.cs", RawRead, "backend-consistency AC2"),
-
-        // Shared reads that omit FileShare.Delete - file-io-centralization tasks 3.1-3.3.
-        ("AnsibleStructure/AnsibleYaml.cs", NarrowShare, "file-io-centralization task 3.1"),
-        ("HelmCharts/HelmYaml.cs", NarrowShare, "file-io-centralization task 3.2"),
-        ("HelmCharts/HelmChartReader.cs", NarrowShare, "file-io-centralization task 3.3"),
 
         // Hand-rolled temp-then-move publishes.
         ("Mindmap/MindmapDocumentStore.cs", HandRolledPublish, "file-io-centralization task 5.1"),
