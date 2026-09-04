@@ -17,10 +17,10 @@
   the specification except the one assigned.
 
 # Architect
-- Is responsible for finding out how to improve the architecture and structure of the application.
-- Will aim on reducing complexity, making the application more lean, and increase maintainability.
-- Will keep the documentation up to date and find and fix inconsistencies.
-- Will write down specifications for the functionalities.
+- Is responsible for finding out how to improve the architecture and structure of the application (will do so on a worktree).
+- Will aim on reducing complexity, making the application more lean, and increase maintainability (will do so on a worktree).
+- Will keep the documentation up to date and find and fix inconsistencies (will do so on a worktree).
+- Will write down specifications for the functionalities (will do so on development).
 
 # Tester
 - Will when asked test the application functionally, and track if it is sound, and not throwing exceptions,  
