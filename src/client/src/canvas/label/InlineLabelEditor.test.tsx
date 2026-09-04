@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { InlineLabelEditor } from "./InlineLabelEditor";
@@ -56,6 +57,39 @@ describe("InlineLabelEditor", () => {
     expect(field().value).toBe("before");
     expect(field().selectionStart).toBe(0);
     expect(field().selectionEnd).toBe("before".length);
+  });
+
+  it("still commits under StrictMode, whose double-invoked effects run the teardown once while alive", async () => {
+    // Arrange.
+    // The app renders inside StrictMode, so in development React runs every effect as
+    // mount-cleanup-mount. The editor's cleanup marks it as closing, to stop the blur that its
+    // own teardown causes being read as a user commit - and that mark used to latch on the first
+    // paint and never clear. The box then appeared, took focus and accepted typing, and Enter,
+    // blur and every other route to committing did nothing at all, in complete silence. This
+    // renders the way the app does rather than the way a unit test finds convenient, because
+    // outside StrictMode the bug does not exist.
+    const props = {
+      placement,
+      onPropose: acceptEverything(),
+      onSubmit: accepts(),
+      onCancel: vi.fn(),
+    };
+    render(
+      <StrictMode>
+        <svg>
+          <InlineLabelEditor {...props} />
+        </svg>
+      </StrictMode>,
+    );
+
+    // Act.
+    type("after");
+    await act(async () => {
+      fireEvent.keyDown(field(), { key: "Enter" });
+    });
+
+    // Assert.
+    expect(props.onSubmit).toHaveBeenCalledWith("after");
   });
 
   it("commits the typed value on Enter", async () => {

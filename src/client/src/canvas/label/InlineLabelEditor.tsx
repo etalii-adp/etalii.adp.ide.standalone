@@ -57,8 +57,17 @@ export function InlineLabelEditor({ placement, onPropose, onSubmit, onCancel, on
     input?.select();
   }, []);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    // Reset on every run, and this line is load-bearing. React's StrictMode double-invokes
+    // effects in development - mount, clean up, mount again - so the cleanup below fires once
+    // while the editor is very much alive. Without this the flag latched true at first paint and
+    // `commit` returned immediately for the rest of the editor's life: the box appeared, took
+    // focus, accepted typing, and then Enter, blur and every other route to committing did
+    // nothing at all, silently. A real unmount leaves it true, which is harmless - the component
+    // is gone.
+    closing.current = false;
+
+    return () => {
       // Marked BEFORE the focus goes back, and this order is the whole point. Handing focus to
       // the canvas blurs this input, and a blur is a commit - so an editor being torn down would
       // commit itself on the way out. With an unchanged value that commit ends the interaction,
@@ -67,9 +76,8 @@ export function InlineLabelEditor({ placement, onPropose, onSubmit, onCancel, on
       // user clicking elsewhere, and must not be read as one.
       closing.current = true;
       onReturnFocus?.();
-    },
-    [onReturnFocus],
-  );
+    };
+  }, [onReturnFocus]);
 
   const commit = async () => {
     if (closing.current) {
