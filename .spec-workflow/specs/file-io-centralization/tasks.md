@@ -143,27 +143,27 @@
   - Tasks 5.1 to 5.3 touch three modules, share no file, and may be worked in parallel, one worktree per agent.
   - _Requirements: 2.2_
 
-- [-] 5.1 Mindmap: publish through the central atomic writer
+- [x] 5.1 Mindmap: publish through the central atomic writer
   - Files: `src/diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/MindmapDocumentStore.cs` (line 67); delete its tracked allow-list entry
   - This one publishes a **user document** by hand — a `~adp-<guid>.tmp` and a `File.Move`, which is `AdpFileWriter`'s job. It already borrows the temp-name convention, so it is the clearest convert-rather-than-justify case of the four.
   - The mindmap round-trip tests must pass unedited: a `.mm` a user saved unchanged must come back byte-identical.
   - _Requirements: 2.2_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Convert MindmapDocumentStore's hand-rolled temp-then-move publish to AdpFileWriter per requirement 2.2, deleting its tracked allow-list entry | Restrictions: the byte-identical round-trip tests are not edited; the UTF-8-without-BOM encoding this store writes must be preserved exactly - if AdpFileWriter cannot express it, that is a finding to report rather than an encoding to change | _Leverage: AdpFileWriter's temp-then-move; the store's existing use of the ~adp- convention | Success: the publish goes through the central writer, the allow-list line is gone, and the mindmap round-trip corpus passes unedited. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.2 Wardley: the document store and the identities sidecar
+- [x] 5.2 Wardley: the document store and the identities sidecar
   - Files: `WardleyDocumentStore.cs` (line 176) and `WardleyIdentities.cs` (line 118); delete or reclassify both tracked allow-list entries
   - Two publishes in one module, so one task. The document store publishes a **user document** (`.owm`) and should convert. The identities file is an **ADP-owned sidecar**: converting it is preferable, but justifying it is permitted by 2.2 — and if it is justified, move its entry from tracked to permanent with the reason rather than simply deleting the line.
   - `WardleyDocumentStore.WriteAtomically` already borrows `AdpFileWriter.TempPrefix` while hand-rolling the move. That half-adoption is what makes this worth doing: the constant is shared and the discipline is not.
   - _Requirements: 2.2_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Convert WardleyDocumentStore's publish to AdpFileWriter per requirement 2.2, and either convert the WardleyIdentities sidecar publish or justify it by moving its allow-list entry from tracked to permanent with a reason | Restrictions: the wardley byte-identical round-trip tests are not edited; a failed write must still keep the edit in memory rather than discarding it; if you justify rather than convert, the reason goes in the allow-list where a reader meets it | _Leverage: AdpFileWriter; the store's existing TempPrefix borrowing | Success: both entries are resolved - converted, or justified in writing - and the wardley round-trip corpus passes unedited. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.3 C4: the layout sidecar
+- [x] 5.3 C4: the layout sidecar
   - Files: `src/diagrams/c4/backend/EtAlii.Adp.Diagram.C4/C4LayoutSidecar.cs` (line 236); delete or reclassify its tracked allow-list entry
   - An ADP-owned sidecar, so convert-or-justify applies as in 5.2. Note this file already carries a *permanent* entry for the raw-read rule, correctly — it reads its own JSON. That is the concrete case behind rule-scoped allow-list entries: one file can be right to read directly and wrong to publish by hand, and a file-scoped exemption hid exactly this until task 1.1's third test caught it.
   - _Requirements: 2.2_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Convert C4LayoutSidecar's hand-rolled publish to AdpFileWriter per requirement 2.2, or justify it by reclassifying the tracked entry as permanent with a reason | Restrictions: do not touch its raw-read permanent entry, which is correct; the sidecar's contents and format do not change | _Leverage: AdpFileWriter; tasks 5.1 and 5.2 as the shape | Success: the publish entry is resolved either way, the read entry is untouched, and the c4 tests pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.4 Gate and merge group 5
+- [-] 5.4 Gate and merge group 5
   - As 1.2, over the combined result of 5.1 to 5.3.
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Gate and merge tasks 5.1 to 5.3 by captured exit code, committing by explicit pathspec with a per-task git identity | Restrictions: as in task 1.2; every converted module round-trip corpus must pass unedited | Success: gates exit zero, the merge lands, and no hand-rolled publish remains untracked or unjustified. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
