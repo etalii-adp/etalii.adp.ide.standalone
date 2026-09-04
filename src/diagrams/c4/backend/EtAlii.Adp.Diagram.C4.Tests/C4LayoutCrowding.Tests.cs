@@ -54,6 +54,14 @@ public class C4LayoutCrowdingTests
         return C4Parser.Parse(C4Document.Parse(dsl.ToString()));
     }
 
+    /// <summary>
+    /// Whether this layout held a pair to compare at all. A null from <see cref="FirstOverlap"/>
+    /// means "nothing overlaps", and an empty layout returns null having compared nothing - so a
+    /// caller walking several layouts floors the number that were comparable rather than
+    /// demanding each one be, which is untrue of a model holding a view that draws no boxes.
+    /// </summary>
+    private static bool IsComparable(C4Layout layout) => layout.Boxes.Count >= 2;
+
     private static (string First, string Second)? FirstOverlap(C4Layout layout)
     {
         var boxes = layout.Boxes.ToArray();
@@ -123,7 +131,18 @@ public class C4LayoutCrowdingTests
 
         // Assert.
         var boundary = Assert.Single(layout.Boundaries).Box;
-        foreach (var (id, box) in layout.Boxes.Where(entry => entry.Key.StartsWith("outside", StringComparison.Ordinal)))
+        var outside = layout.Boxes
+            .Where(entry => entry.Key.StartsWith("outside", StringComparison.Ordinal))
+            .ToArray();
+
+        // The filter is what empties here, not the layout: rename the fixture's elements and no
+        // key starts with "outside" any more, leaving this test asserting that none of no boxes
+        // sits on the boundary. The whole point is the elements pushed out of it.
+        Assert.True(
+            outside.Length > 0,
+            "No box has an 'outside' key, so this guard checked no element against the boundary it was pushed out of.");
+
+        foreach (var (id, box) in outside)
         {
             Assert.False(box.Overlaps(boundary), $"'{id}' is drawn on top of the boundary it was pushed out of.");
         }
@@ -175,13 +194,26 @@ public class C4LayoutCrowdingTests
         // Before the sweep this reported five overlapping pairs on one view, three of them
         // mutually coincident - the lockstep case, where identical geometry means both boxes
         // compute the same escape and travel together however many passes they are given.
+        var comparable = 0;
         foreach (var view in workspace.Views)
         {
             var layout = C4LayoutEngine.Compute(workspace, view, C4Metrics.Default);
             var overlap = FirstOverlap(layout);
+            if (IsComparable(layout))
+            {
+                comparable++;
+            }
 
             Assert.True(overlap is null, $"'{view.Key}': '{overlap?.First}' overlaps '{overlap?.Second}'.");
         }
+
+        // `FirstOverlap` returns null both when nothing overlaps and when there was no pair to
+        // compare, and the assertion above cannot tell those apart. Floored on the aggregate
+        // rather than per view, because a view that draws no boxes is legitimate and this model
+        // is kept precisely for the one view that draws too many.
+        Assert.True(
+            comparable > 0,
+            "No view laid out two or more boxes, so every null above means 'nothing was compared' rather than 'nothing overlaps'.");
     }
 
     [Fact]

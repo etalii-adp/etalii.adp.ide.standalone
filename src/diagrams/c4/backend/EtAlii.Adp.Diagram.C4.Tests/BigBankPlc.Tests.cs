@@ -155,10 +155,16 @@ public class BigBankPlcTests
             $"Only {Workspace.Views.Count} views were parsed from the Big Bank workspace; this guard has stopped finding the views it lays out.");
 
         // Act and assert, step by step.
+        var comparableViews = 0;
         foreach (var view in Workspace.Views)
         {
             var layout = C4LayoutEngine.Compute(Workspace, view, C4Metrics.Default);
             var boxes = layout.Boxes.ToArray();
+            if (boxes.Length >= 2)
+            {
+                comparableViews++;
+            }
+
             for (var i = 0; i < boxes.Length; i++)
             {
                 for (var j = i + 1; j < boxes.Length; j++)
@@ -169,6 +175,14 @@ public class BigBankPlcTests
                 }
             }
         }
+
+        // The floor belongs on the aggregate, not on each view. `SignIn` is a dynamic view and
+        // lays out to no boxes at all, which is legitimate - so requiring every view to yield a
+        // comparable pair asserts something untrue of this model. What must not happen is that
+        // *no* view yields one, which is the state in which "no view overlaps" means nothing.
+        Assert.True(
+            comparableViews > 0,
+            "No view laid out two or more boxes, so no pair was compared and nothing could have overlapped.");
     }
 
     [Fact]

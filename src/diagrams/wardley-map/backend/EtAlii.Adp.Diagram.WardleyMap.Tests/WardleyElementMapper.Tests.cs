@@ -321,6 +321,13 @@ public class WardleyElementMapperTests
         // Act.
         var elements = Map(Fixture("strategy-vocabulary.owm"));
 
+        // Assert, first, that the fixture mapped to something. `Assert.All` passes over an empty
+        // sequence without running its body, so a mapper that returned nothing would satisfy
+        // "every element has an id" most convincingly at the moment it stopped producing any.
+        Assert.True(
+            elements.Count > 0,
+            "The fixture mapped to no elements, so this guard checked no id at all.");
+
         // Assert. An element with no id cannot be selected, moved or reported against.
         Assert.All(elements, element => Assert.NotEmpty(element.Id));
     }

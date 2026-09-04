@@ -24,6 +24,14 @@ public class MindmapLayoutTests
         var first = Layout(document);
         var second = Layout(document);
 
+        // Assert, first, that the corpus laid out to something. Both checks below are satisfied
+        // by two empty layouts: `Assert.Equal(first.Count, second.Count)` is the self-comparing
+        // count in its two-collection form - 0 == 0 - and `Assert.All` over nothing passes
+        // without running its body. Determinism over an empty result is not determinism.
+        Assert.True(
+            first.Count > 0,
+            "The corpus laid out to no boxes, so this guard compared two empty layouts and proved nothing about determinism.");
+
         // Assert.
         Assert.Equal(first.Count, second.Count);
         Assert.All(first, entry => Assert.Equal(entry.Value, second[entry.Key]));
@@ -101,6 +109,7 @@ public class MindmapLayoutTests
             "The corpus document parsed to no nodes, so this guard compared nothing.");
 
         // Act and assert, step by step.
+        var compared = 0;
         foreach (var node in document.Nodes)
         {
             // The root's children split across two sides; only siblings on one side share a column.
@@ -112,9 +121,20 @@ public class MindmapLayoutTests
                     var above = boxes[children[i - 1].Id];
                     var below = boxes[children[i].Id];
                     Assert.True(below.Y >= above.Bottom, $"'{children[i].Text}' overlaps '{children[i - 1].Text}'");
+                    compared++;
                 }
             }
         }
+
+        // The floor belongs on the work done, not on any one collection walked. A childless node
+        // legitimately yields no column, and a single-child column legitimately yields no pair,
+        // so demanding either be non-empty would assert something untrue of a valid document.
+        // What must not be empty is the set of sibling pairs actually compared: without this, a
+        // corpus that parsed to a flat list of nodes satisfies "siblings do not overlap" without
+        // ever placing two siblings side by side.
+        Assert.True(
+            compared > 0,
+            "No sibling pair was compared, so this guard is satisfied by a document with no siblings to overlap.");
     }
 
     [Fact]
@@ -251,6 +271,7 @@ public class MindmapLayoutTests
             "No node has both children and a computed box, so this guard checked no parent at all.");
 
         // Arrange, continued.
+        var checkedParents = 0;
         foreach (var parent in parents)
         {
             var childBoxes = parent.Children.Where(child => boxes.ContainsKey(child.Id)).Select(child => boxes[child.Id]).ToArray();
@@ -258,6 +279,8 @@ public class MindmapLayoutTests
             {
                 continue;
             }
+
+            checkedParents++;
 
         // Arrange, continued.
             // Rounded before comparing: box.Right sums two independently rounded doubles, so
@@ -279,6 +302,15 @@ public class MindmapLayoutTests
         // Assert.
             Assert.Single(nearEdges);
         }
+
+        // The parents collection is floored above, but every parent can take the `continue` on
+        // its way past: a corpus in which no parent has two placed children satisfies this test
+        // without comparing a single pair of edges. The floor therefore belongs on the parents
+        // actually examined, which is the loop's effective work rather than the collection it
+        // walks.
+        Assert.True(
+            checkedParents > 0,
+            "No parent had two placed children, so this guard compared no sibling edges at all.");
     }
 
     [Fact]
@@ -286,6 +318,14 @@ public class MindmapLayoutTests
     {
         // Arrange.
         var boxes = Layout(Corpus()).Values.ToArray();
+
+        // Assert, first, that there are boxes to compare. The pair loop below is the "every pair"
+        // idiom, and its inner `j = i + 1` correctly does nothing when there is no pair - but
+        // that makes the whole test vacuous on an empty layout, which is the state it would most
+        // need to report. Two is the floor because overlap is a property of pairs.
+        Assert.True(
+            boxes.Length >= 2,
+            $"The corpus laid out to {boxes.Length} boxes, so no pair was compared and nothing could have overlapped.");
 
         // Act and assert, step by step.
         for (var i = 0; i < boxes.Length; i++)

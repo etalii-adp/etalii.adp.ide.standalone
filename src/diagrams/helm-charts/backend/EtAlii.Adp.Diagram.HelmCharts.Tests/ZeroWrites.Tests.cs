@@ -175,6 +175,14 @@ public class ZeroWritesTests : IDisposable
         Dictionary<string, (byte[] Bytes, DateTime Written)> before,
         Dictionary<string, (byte[] Bytes, DateTime Written)> after)
     {
+        // Assert, first, that there was a chart to leave alone. Every check below is either a
+        // `== 0` comparison or sits inside the loop, and an empty snapshot satisfies all three -
+        // so a fixture that failed to copy would let this helper certify that the module wrote
+        // nothing, having watched nothing.
+        Assert.True(
+            before.Count > 0,
+            "The before-snapshot holds no files, so this helper compared nothing and proved nothing about writes.");
+
         var appeared = after.Keys.Except(before.Keys, StringComparer.OrdinalIgnoreCase).Order(StringComparer.Ordinal).ToArray();
         var vanished = before.Keys.Except(after.Keys, StringComparer.OrdinalIgnoreCase).Order(StringComparer.Ordinal).ToArray();
         Assert.True(appeared.Length == 0, $"The module created: {string.Join(", ", appeared)}");
