@@ -14,19 +14,13 @@ Full rules and reasoning, including the half-removed-worktree hazard: [processes
 
 ## Committing and merging in the shared main checkout
 
-Commit with an explicit pathspec — `git commit -F msg -- <paths>` — naming files, never folders: a bare `git commit` commits the whole shared index. Commit your own implementation log the moment the tool writes it. Before merging here, read `git status` for files you did not touch, and never stash or `git checkout --` them.
+Commit with an explicit pathspec - `git commit -F msg -- <paths>` - naming files, never folders: a bare `git commit` commits the whole shared index. Commit your own implementation log the moment the tool writes it.
 
-**Never merge while anything is staged — yours or anyone's.** `git merge` requires the index to match HEAD; when it does not, git stashes the working state and, on the failure path, does not restore it. On 2026-09-04 that silently reverted or deleted **26 paths of three other sessions' work**, reporting only `Index was not unstashed. Merge with strategy ort failed.` Wait for a clean index — `git status --porcelain | grep -cE '^[^ ?]'` equal to zero — and pass `--no-autostash`. Reading `git status` first is necessary and not sufficient: it tells you what would be *written*, not that the merge is unsafe to attempt at all.
+**Never merge while anything is staged, yours or anyone's.** A failed merge stashes the working state and does not restore it; that lost 26 paths of three sessions' work in one line of output. **Merge through a scratch worktree instead**: merge your branch there with `--no-ff`, run the four gates on that merged tree, then `git merge --ff-only` it in the main checkout - a fast-forward builds no tree from the index, so foreign staged files neither block it nor get touched. **Re-gate on the merged tree, not before it.**
 
-**Merge through a scratch worktree instead of waiting for a clean index.** `git merge` builds the merge commit's tree *from the index*, which is why a foreign staged file blocks it and why its failure path is what dangles other sessions' work. A fast-forward builds no tree from the index and does not care. So: `git worktree add .claude/worktrees/mrg -b claude/mrg <develop-tip>`; in it, `git merge --no-ff claude/<branch>`; run the four gates **there**, on the actually-merged tree; then in the main checkout `git merge --ff-only claude/mrg`. That last step succeeds with foreign files staged and leaves them staged and untouched. The history is identical to merging in place, and it never puts the main checkout in a state where git must save and restore anyone's work — so it *cannot* reproduce the incident rather than merely avoiding it. Waiting for a clean index is not a reliable alternative: one staged file has sat there for over an hour.
+If it does happen, do not re-run anything: the stash survives as a dangling commit pair findable with `git fsck --unreachable --no-reflogs`. Never re-apply a deletion that was in flight.
 
-**Re-gate on the merged tree, not before it.** An hour-long wait is long enough for develop to gain code your earlier run never saw — in one case a 311-line integration test and three validator changes.
-
-**If it happens, the work is recoverable — do not re-run anything.** The stash survives as a dangling commit pair: `git fsck --unreachable --no-reflogs`, find `WIP on develop` and `index on develop` at the failed merge's timestamp, then `git checkout <wip-commit> -- <path>` per file. Restore only what was present; **never re-apply a deletion that was in flight**, because re-applying someone's half-done delete is the one direction that destroys rather than restores. And check first whether it *was* a deletion: a file missing from the stash may simply never have been deleted, and both of the two treated that way here turned out to be live merged work that nothing had removed.
-
-**A staged file left behind by a failed restore may be OLDER than HEAD.** "Commit it or unstage it" is unsafe until someone compares the two sides: after this incident a staged `tasks.md` held a stale copy that reverted two completion markers, so committing it would have un-marked finished work and told the next reader a merged guard was still in flight. A staged file is not evidence of work in flight — it is equally evidence of a failed restore, and the two want opposite actions.
-
-Full rules and reasoning: [processes.md, *Committing and merging in the shared main checkout*](.spec-workflow/steering/processes.md#committing-and-merging-in-the-shared-main-checkout).
+Full rules, the incident and the recovery: [processes.md, *Committing and merging in the shared main checkout*](.spec-workflow/steering/processes.md#committing-and-merging-in-the-shared-main-checkout).
 
 ## Git identity
 
@@ -37,7 +31,7 @@ Commit under a per-task identity `agent-<N>-<task>`, set two different ways depe
 - **Never `--global`, and never touch `user.email`.**
 - **Read it back with `git config --local user.name`, not `git config user.name`.** Inside a worktree the plain form resolves through `config.worktree` and returns your own correctly-scoped identity — which looks identical to a leaked shared value and has already prompted an unset that was not needed. Only `--local` shows what is actually in the shared `.git/config`.
 
-Without an identity you inherit `vrenken` from the machine's global config, in every checkout, so your work is indistinguishable from the user's own. But a *wrong* name is worse than an ambiguous one: `.git/config` was set three times in one hour here, and each agent's commits would have carried whichever name was written last. `git -C` changes where a command runs, not whose identity it uses. (The full reasoning moves to `processes.md` once its first pass clears approval; it is deliberately not linked yet, because the section does not exist.)
+Without an identity you inherit the machine's global name in every checkout, so your work is indistinguishable from the user's own - and a *wrong* name is worse than an ambiguous one. Full reasoning, and why an identity rather than a `Co-Authored-By` trailer: [processes.md, *Git identity*](.spec-workflow/steering/processes.md#git-identity).
 
 ## spec-workflow
 
