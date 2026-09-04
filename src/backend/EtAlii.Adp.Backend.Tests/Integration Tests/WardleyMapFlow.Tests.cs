@@ -80,7 +80,7 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
                 services.RemoveAll<Problems.IProblemStore>();
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
-                    provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
+                    provider.GetRequiredService<DiagramFileRouter>(),
                     provider.GetRequiredService<Diagram.DiagramValidators>()));
             });
         });

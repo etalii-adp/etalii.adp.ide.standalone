@@ -45,8 +45,8 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
                 services.RemoveAll<Problems.IProblemStore>();
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
-                    provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
+                    provider.GetRequiredService<DiagramFileRouter>(),
+                    provider.GetRequiredService<DiagramValidators>()));
             });
         });
     }
