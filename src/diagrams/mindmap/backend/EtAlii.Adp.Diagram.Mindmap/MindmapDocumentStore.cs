@@ -55,16 +55,18 @@ public sealed class MindmapDocumentStore : IMindmapDocumentStore
             throw new InvalidOperationException($"No document is loaded for {bodyPath}.");
         }
 
-        // Temp-then-move in the same folder, as every other write in ADP: a reader sees the
-        // old map or the new one, never a partial file (Requirement 3.7). The scratch name
-        // matches the pattern the hierarchy watcher already ignores.
-        var folder = IoPath.GetDirectoryName(bodyPath) ?? ".";
-        var temporary = IoPath.Combine(folder, $"~adp-{Guid.NewGuid():N}.tmp");
+        // Temp-then-move in the same folder, so a reader sees the old map or the new one and
+        // never a partial file (Requirement 3.7). That algorithm is AdpFileWriter's, including
+        // the scratch-name pattern the hierarchy watcher ignores and the UTF-8-without-BOM
+        // encoding this store has always written; it was hand-rolled here only because the
+        // writer could not overwrite, which it now can.
+        //
+        // The self-write guard stays here rather than moving: it is this store's own
+        // arrangement with its file watcher, not part of publishing a file.
         _selfWrites[bodyPath] = 1;
         try
         {
-            File.WriteAllText(temporary, document.ToText(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-            File.Move(temporary, bodyPath, overwrite: true);
+            AdpFileWriter.Save(bodyPath, document.ToText());
         }
         finally
         {

@@ -146,10 +146,11 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The temporary uses <see cref="AdpFileWriter.TempPrefix"/>, which <c>HierarchyModel</c>
-    /// already ignores - so ADP's own scratch file never surfaces in the explorer, and the
-    /// watcher does not report it as a new entry. It cannot use <c>AdpFileWriter</c> itself:
-    /// that creates files and refuses to overwrite, and a save is an overwrite.
+    /// The publish is <see cref="AdpFileWriter.Save" />'s, so the scratch file uses the
+    /// <c>~adp-</c> pattern <c>HierarchyModel</c> already ignores and never surfaces in the
+    /// explorer. This method hand-rolled that move until file-io-centralization task 5.2,
+    /// because the writer could only create and a save is an overwrite; <c>Save</c> is that
+    /// missing half, and the borrowed scratch-name constant is no longer the only thing shared.
     /// </para>
     /// <para>
     /// A failed write keeps the edit in memory rather than discarding it. Losing an edit
@@ -161,37 +162,27 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
     {
         var directory = IoPath.GetDirectoryName(path);
         var folder = directory is { Length: > 0 } ? directory : ".";
-        var temporary = IoPath.Combine(
-            folder,
-            $"{AdpFileWriter.TempPrefix}{Guid.NewGuid():N}{AdpFileWriter.TempExtension}");
 
         try
         {
+            // The folder is this store's precondition rather than the writer's business: a
+            // scratch file has nowhere to land if the directory is not there yet.
             if (!Directory.Exists(folder))
             {
                 Directory.CreateDirectory(folder);
             }
 
-            File.WriteAllText(temporary, text);
-            File.Move(temporary, path, overwrite: true);
+            // This borrowed AdpFileWriter's scratch-name constants while hand-rolling the move
+            // around them. The constant was shared and the discipline was not; now both are.
+            AdpFileWriter.Save(path, text);
             return true;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
+            // The scratch file no longer needs removing here: AdpFileWriter.Save cleans up its
+            // own temporary before letting the failure out, so this catch keeps only the part
+            // that is this store's business - telling the user and keeping the edit in memory.
             _logger.Warning(exception, "Could not write {Path}; the change is kept in memory", path);
-
-            try
-            {
-                if (File.Exists(temporary))
-                {
-                    File.Delete(temporary);
-                }
-            }
-            catch (Exception cleanup) when (cleanup is IOException or UnauthorizedAccessException)
-            {
-                _logger.Warning(cleanup, "Could not remove the temporary file {Temporary}", temporary);
-            }
-
             return false;
         }
     }
