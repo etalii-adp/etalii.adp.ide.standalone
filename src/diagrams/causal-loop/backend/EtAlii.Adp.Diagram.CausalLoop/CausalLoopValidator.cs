@@ -1,5 +1,3 @@
-using EtAlii.Adp.Backend.Diagrams;
-
 namespace EtAlii.Adp.Diagram.CausalLoop;
 
 /// <summary>
