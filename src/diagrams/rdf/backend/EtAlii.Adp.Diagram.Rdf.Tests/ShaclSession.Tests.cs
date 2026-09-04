@@ -160,6 +160,66 @@ public class ShaclSessionTests : IDisposable
     }
 
     [Fact]
+    public async Task StoringAPosition_UndoesToTheByte()
+    {
+        var body = WriteBody();
+        var registration = IoPath.Combine(_root, "shapes.adp");
+        File.WriteAllText(registration, "w3c/shacl\r\nbody: shapes.ttl\r\n");
+        var before = File.ReadAllText(registration);
+
+        await using var session = Open(body, registration);
+        session.Baseline();
+
+        Assert.Equal("", await session.MoveElementToAsync(
+            "res:http://example.org/PersonShape", 120, 240, TestContext.Current.CancellationToken));
+        Assert.NotEqual(before, File.ReadAllText(registration));
+
+        // A layout edit rides the same history the triple writers do, so undoing it restores the
+        // registration exactly - no residual `layout:` block, no trailing blank line left behind.
+        var history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
+        Assert.True((await history.UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
+
+        Assert.Equal(before, File.ReadAllText(registration));
+    }
+
+    [Fact]
+    public async Task AnEditThroughOneReading_IsVisibleInTheOther_OnOneHistory()
+    {
+        // The half of coexistence that the drawing test cannot show: the two sessions are not
+        // two copies of the file that happen to agree at open time. They share the parsed
+        // document and the project's history, so a write through either is the other's next read
+        // - and one undo puts both back.
+        var body = WriteBody();
+        var before = File.ReadAllText(body);
+
+        await using var shapes = Open(body, null);
+        var rdfFactory = _provider.GetServices<IDiagramSessionFactory>()
+            .Single(candidate => candidate.Origin == ServiceCollectionAddRdfExtension.RdfOrigin);
+        await using var graph = rdfFactory.Open(ShortGuid.NewShortGuid(), _root, body, null);
+
+        shapes.Baseline();
+        graph.Baseline();
+
+        var history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
+        var added = await history.ExecuteAsync(
+            new CreateShaclNodeShapeCommand(body, "http://example.org/AddressShape"),
+            TestContext.Current.CancellationToken);
+        Assert.True(added.IsSuccess, added.Error);
+
+        // Both readings see it, each in its own vocabulary: a second card here, a further
+        // subject there.
+        var store = _provider.GetRequiredService<IRdfDocumentStore>();
+        var model = store.GetOrLoad(body).Model;
+        Assert.Equal(2, ShaclProjection.Project(model).Cards.Count);
+        Assert.Contains(model.Triples, triple =>
+            triple.Subject is IriTerm subject && subject.Iri == "http://example.org/AddressShape");
+
+        Assert.True((await history.UndoAsync(TestContext.Current.CancellationToken)).IsSuccess);
+        Assert.Equal(before, File.ReadAllText(body));
+        Assert.Single(ShaclProjection.Project(store.GetOrLoad(body).Model).Cards);
+    }
+
+    [Fact]
     public async Task OneFileUnderTwoReadings_IsServedByOneStore()
     {
         // The coexistence rule: the anchor and this reading open the same bytes, each drawing

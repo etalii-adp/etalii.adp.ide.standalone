@@ -1,0 +1,10 @@
+{
+  "id": "approval_1788505001833_4kcfz5dry",
+  "title": "backend-consistency requirements: the src/backend survey — 3 reads bypassing SharedDocumentReader, 4 unguarded fire-and-forget tasks, and 5 verified non-findings",
+  "filePath": ".spec-workflow/specs/backend-consistency/requirements.md",
+  "type": "document",
+  "status": "pending",
+  "createdAt": "2026-09-04T06:56:41.834Z",
+  "category": "spec",
+  "categoryName": "backend-consistency"
+}

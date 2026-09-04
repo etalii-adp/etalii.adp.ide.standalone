@@ -15,7 +15,7 @@ One worktree for the whole spec (`.claude/worktrees/skos`, per CLAUDE.md's one-w
 
 **Anchor dependencies, named rather than restated.** This reading implements over `rdf-diagram`'s approved tasks and adds no engine of its own: anchor task 1.1 (**the triplestore document store** and **`RdfModel`** — this spec's group 1 projects over that model and cannot start before it merges), anchor task 2.1 (**the triple writer**, whose operation list includes `ReplaceObjectLiteral` — adopted from this spec's review — so the label and documentation edits below cite that seam instead of specifying a splice), anchor task 3.2 (**the registration header helper**, which the `language:` header parsing reuses), and anchor task 3.3 (**the selection vocabulary**, which the provider delegation extends). Groups below name the anchor tasks they wait on.
 
-- [ ] 1. The projection layer: pure functions over the anchor's model — after anchor task 1.1
+- [x] 1. The projection layer: pure functions over the anchor's model — after anchor task 1.1
   - _Requirements: 1.1-1.6, 3.1-3.6, 4.1-4.2, 8.1-8.2_
 
 - [x] 1.1 SkosProjection: the vocabulary out of the triples
@@ -40,7 +40,7 @@ One worktree for the whole spec (`.claude/worktrees/skos`, per CLAUDE.md's one-w
   - All four gates (backend test + format from `src/backend`, npm test + typecheck from `src/client`), exit codes checked before any pipe; merge `.claude/worktrees/skos` into `develop`
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes captured before any pipe and merge the skos worktree's group-1 work into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. Definition, session, header and validation — after anchor tasks 3.2 and 1.1
+- [x] 2. Definition, session, header and validation — after anchor tasks 3.2 and 1.1
   - _Requirements: 2.1-2.5, 3.2, 4.3-4.4, 7.1-7.7_
 
 - [x] 2.1 The w3c/skos definition, session factory and the language: header
@@ -59,7 +59,7 @@ One worktree for the whole spec (`.claude/worktrees/skos`, per CLAUDE.md's one-w
   - The four gates, exit codes checked before any pipe; merge into `develop`
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes captured before any pipe and merge group 2 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. Edits, providers and the wire — after anchor tasks 2.1 and 3.3
+- [x] 3. Edits, providers and the wire — after anchor tasks 2.1 and 3.3
   - _Requirements: 5.1-5.6, 6.1-6.4, 1.3_
 
 - [x] 3.1 SkosEdits: thesaurus gestures over the anchor's writer
@@ -84,7 +84,7 @@ One worktree for the whole spec (`.claude/worktrees/skos`, per CLAUDE.md's one-w
   - The four gates, exit codes checked before any pipe; merge into `develop`
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes captured before any pipe and merge group 3 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. The canvas
+- [x] 4. The canvas
   - _Requirements: 1.1-1.6, 3.1, 3.3, 3.4, 4.1, 5.1-5.3, 8.1_
 
 - [x] 4.1 SkosCanvas: boxes, three edge styles, regions, the chip
@@ -97,10 +97,10 @@ One worktree for the whole spec (`.claude/worktrees/skos`, per CLAUDE.md's one-w
   - The four gates, exit codes checked before any pipe; merge into `develop`
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes captured before any pipe and merge group 4 into develop | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5. Examples, manual checks and closure
+- [x] 5. Examples, manual checks and closure
   - _Requirements: 9.1-9.5_
 
-- [-] 5.1 Vendored vocabularies: licenses verified, provenance carried
+- [x] 5.1 Vendored vocabularies: licenses verified, provenance carried
   - Files: `src/diagrams/rdf/examples/skos/` + replicas at `src/examples/diagrams/skos/` + registration
   - Under the **example vendoring rule**, each license re-verified at acquisition: a NALT extract (CC0 1.0), a EuroVoc extract (CC0 per the EU portal — re-verify; the multilingual and many-schemes demonstration, including an incomplete translation so the chip shows on real data), the W3C SKOS reference examples (W3C Software and Document License; collections, notations, documentation, mappings), optionally STW (CC BY 4.0, attribution carried); one file exceeding the drawn-element budget; upstream license text and provenance readme per folder; rejects (UNESCO share-alike, AGROVOC SKOS-XL) recorded in the examples readme so the verification survives
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
@@ -112,6 +112,6 @@ One worktree for the whole spec (`.claude/worktrees/skos`, per CLAUDE.md's one-w
   - _Requirements: 9.3_
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer closing out a spec | Task: Add the three manual checks to tests.md in its existing idiom, each naming spec skos-diagram and its task, and advance the w3c/skos catalog row per CLAUDE.md | Restrictions: dashboard-safe markdown; the catalog uses its legend's own states | _Leverage: tests.md's existing entries as the idiom; docs/diagrams.md's legend | Success: three executable checks recorded; the catalog row states the truth. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.3 Final gate, merge and worktree retirement
+- [x] 5.3 Final gate, merge and worktree retirement
   - The four gates, exit codes checked before any pipe; merge into `develop`; retire `.claude/worktrees/skos`, reporting a Windows removal failure rather than forcing it
   - _Prompt: Implement the task for spec skos-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates with exit codes captured before any pipe, merge the final group into develop, and retire the skos worktree - reporting a failed directory deletion rather than forcing it | Restrictions: never force a worktree removal; a leftover directory is reported, not deleted | Success: gates green, merged, worktree deregistered and any leftover reported. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._

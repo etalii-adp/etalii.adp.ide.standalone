@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/inline-rename/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-04T06:46:57.054Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788504416635_ddclpcwkg",
+      "approvalTitle": "inline-rename tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-04T06:47:15.876Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788504416635_ddclpcwkg",
+      "approvalTitle": "inline-rename tasks"
+    }
+  ]
+}

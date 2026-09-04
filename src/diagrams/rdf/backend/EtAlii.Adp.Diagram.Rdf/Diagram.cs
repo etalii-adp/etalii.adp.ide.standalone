@@ -89,7 +89,9 @@ public static class Diagram
         // sh:property catches a shapes file whose shapes are all shapes by use.
         SuggestsBody: text => text.Contains("sh:NodeShape", StringComparison.Ordinal)
             || text.Contains("sh:property", StringComparison.Ordinal)
-            || text.Contains(ShaclVocabulary.NodeShape, StringComparison.Ordinal));
+            || text.Contains(ShaclVocabulary.NodeShape, StringComparison.Ordinal),
+        // The same family Build as the anchor's; AddRdf registers once and no-ops after.
+        Build: builder => builder.Services.AddRdf());
 
     /// <summary>What discovery reads: the anchor and its readings, the family as it grows.</summary>
     public static DiagramDefinition[] Definitions { get; } =

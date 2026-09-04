@@ -28,6 +28,7 @@ public static class ServiceCollectionAddShaclExtension
         services.AddSingleton<ICommandHandler<RemoveShaclTargetCommand>, RemoveShaclTargetCommandHandler>();
         services.AddSingleton<ICommandHandler<CreateShaclNodeShapeCommand>, CreateShaclNodeShapeCommandHandler>();
         services.AddSingleton<ICommandHandler<SetShaclDeactivatedCommand>, SetShaclDeactivatedCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetShaclLiteralCommand>, SetShaclLiteralCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveShaclShapeCommand>, RemoveShaclShapeCommandHandler>();
 
         // Composition, not a second registration: core allows exactly one validator per origin,

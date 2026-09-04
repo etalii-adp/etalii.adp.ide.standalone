@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/rdf-diagram/requirements.md",
-  "currentVersion": 3,
+  "currentVersion": 4,
   "snapshots": [
     {
       "version": 1,
@@ -25,6 +25,14 @@
       "trigger": "approved",
       "approvalId": "approval_1788434036420_cn5blbbsh",
       "approvalTitle": "rdf-diagram requirements amendment: registration header facility"
+    },
+    {
+      "version": 4,
+      "filename": "snapshot-004.json",
+      "timestamp": "2026-09-04T06:20:46.747Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788476752784_r5539zht9",
+      "approvalTitle": "rdf-diagram requirements amendment: the round-trip promise on mixed-ending documents"
     }
   ]
 }
