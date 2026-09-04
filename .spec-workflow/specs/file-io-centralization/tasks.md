@@ -143,7 +143,7 @@
   - Tasks 5.1 to 5.3 touch three modules, share no file, and may be worked in parallel, one worktree per agent.
   - _Requirements: 2.2_
 
-- [ ] 5.1 Mindmap: publish through the central atomic writer
+- [-] 5.1 Mindmap: publish through the central atomic writer
   - Files: `src/diagrams/mindmap/backend/EtAlii.Adp.Diagram.Mindmap/MindmapDocumentStore.cs` (line 67); delete its tracked allow-list entry
   - This one publishes a **user document** by hand — a `~adp-<guid>.tmp` and a `File.Move`, which is `AdpFileWriter`'s job. It already borrows the temp-name convention, so it is the clearest convert-rather-than-justify case of the four.
   - The mindmap round-trip tests must pass unedited: a `.mm` a user saved unchanged must come back byte-identical.
@@ -172,13 +172,13 @@
   - **The blind spot deserves stating plainly, because it is a guard that cannot see part of its own class.** `TextFileBuffer.cs:106` reads with `File.ReadAllBytes`, and that is the **only** `File.ReadAllBytes` in the backend outside tests. Task 1.1's rule matches `File.ReadAll(Text|Lines)` and misses it — and the same file carries an all-rules permanent entry, so the site is invisible twice over, for two independent reasons. A guard blind to exactly one site, which is also the one site exempted wholesale, is the strongest argument available for widening the rule.
   - _Requirements: 5.1, 5.2, 2.4_
 
-- [ ] 6.1 Widen the raw-read rule to `ReadAllBytes`
+- [-] 6.1 Widen the raw-read rule to `ReadAllBytes`
   - Files: `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/ShapeOfFileAccess.Tests.cs`
   - Extend the rule to `File.ReadAll(Text|Lines|Bytes)` and extend the sabotage test so the new shape is proven to fire. Expect exactly one new site to surface — `TextFileBuffer.cs:106` — which task 6.2 then classifies.
   - _Requirements: 5.1_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Test engineer | Task: Widen the guard raw-read rule to cover File.ReadAllBytes per requirement 5.1, adding a sabotage case proving the new shape fires and a correct-code case proving it does not over-fire | Restrictions: the guard must still land green - if widening surfaces a site other than TextFileBuffer.cs:106, that is a finding to report rather than an allow-list line to add quietly | _Leverage: the existing TheGuardCatchesEachShapeItClaimsTo and TheGuardDoesNotFireOnWhatIsGenuinelyFine tests | Success: the rule covers all three ReadAll shapes, both bracket tests still pass, and the suite is green. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 6.2 Narrow `TextFileBuffer`'s permanent entry from all-rules to what it deserves
+- [-] 6.2 Narrow `TextFileBuffer`'s permanent entry from all-rules to what it deserves
   - Files: `ShapeOfFileAccess.Tests.cs`; `src/backend/EtAlii.Adp.Editor/TextFileBuffer.cs`
   - Today the entry excuses every rule for that file, which is broader than its reason supports. Split it: the **strict decode** is genuinely permanent (Requirement 2.4 — a buffer that loaded a torn read would save the damage back), and the `FileStream` at :153 is a **write**, which does not share. What neither reason excuses is the sharing mode of the read at :106, which `backend-consistency` AC3 wants changed and which Requirement 2.4 does not protect: sharing and strictness are orthogonal, exactly as the design states.
   - Outcome: either the read adopts `FileShare.ReadWrite | Delete` while keeping `throwOnInvalidBytes` — satisfying both specs at once — or, if that proves impossible, the entry says so with the reason. It does not stay all-rules.
