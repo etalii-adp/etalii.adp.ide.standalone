@@ -87,7 +87,7 @@
   - As 1.2. If 3.1-3.3 landed in separate worktrees, this gates the combined result.
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run both backend gates by captured exit code over the combined result of tasks 3.1 to 3.6 and merge via the main checkout by explicit pathspec | Restrictions: as in task 1.2 | Success: gates exit zero, the merge lands, and the allow-list has lost exactly six tracked lines. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4. The whole-line splice fork becomes one implementation
+- [x] 4. The whole-line splice fork becomes one implementation
   - Requires group 2 to have landed. The evidence for treating these as *the same* rather than *alike*: 266 of about 410 lines textually identical ignoring whitespace, eleven identically-named static helpers, and two document types exposing the same six public members at the same six line numbers.
   - _Requirements: 1.2, 3.1, 3.3, 4.1, 4.2, 2.3_
 
@@ -124,14 +124,16 @@
   - _Requirements: 3.1, 4.2_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer who also maintains the module-authoring docs | Task: Convert TimelineDocument and TimelineWriter onto the core LineDocument and LineSplice per requirements 3.1 and 4.2, and update docs/creating-a-diagram-module.md where it names TimelineWriter.cs as the splicing-writer example | Restrictions: do not edit the byte-identical round-trip tests - they are the acceptance criterion; keep timeline key names and element shapes in the module; the doc update happens in this change, not later | _Leverage: core LineDocument and LineSplice from 4.1 and 4.2 | Success: timeline builds on the shared types, its round-trip corpus passes unedited, and the authoring doc describes the shared seam accurately. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.5 Convert dependency-graph onto the shared document
+- [x] 4.5 Convert dependency-graph onto the shared document — merged as e6b54040
+  - **The null-guard drift reported in 4.2 was kept, and the check that kept it is itself the finding.** I first asserted the writer's `ArgumentNullException.ThrowIfNull` count was unchanged; it went 18 to 16 and the assertion stopped the conversion. The two that went were the `ThrowIfNull(document)` inside `SetKey` and `RemoveKey`, which `LineSplice` now performs identically — a legitimate removal. But **a total is the wrong thing to assert**, because it cannot tell a legitimate removal from a swap. The check now asserts per argument kind: four guards on `element`, four on `model`, two on `relation` — all this module's own, and none of them covered by `LineSplice`, which guards only the document.
   - Files: `DependencyGraphDocument.cs`, `DependencyGraphWriter.cs`, `_Model/DependencyGraphLine.cs`, `_Model/DependencyGraphLineSegment.cs`
   - As 4.4, without the doc obligation — the authoring doc names timeline, not this module. Independently landable alongside 4.4.
   - _Requirements: 3.1, 4.2_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Convert DependencyGraphDocument and DependencyGraphWriter onto the core LineDocument and LineSplice per requirements 3.1 and 4.2 | Restrictions: do not edit the byte-identical round-trip tests; keep this module's key names and element shapes local; this task may run in parallel with 4.4 in its own worktree | _Leverage: core LineDocument and LineSplice; task 4.4 if it has landed | Success: dependency-graph builds on the shared types and its round-trip corpus passes unedited. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.6 Gate and merge group 4
+- [x] 4.6 Gate and merge group 4 — satisfied by the 4.5 landing at e6b54040
   - As 1.2, over the combined conversions.
+  - **Not skipped — satisfied by fact.** `develop` already carried 4.4 when 4.5 was merged into the scratch worktree, so the tree gated at e6b54040 *was* the combined result of both conversions: `dotnet test --solution EtAlii.Adp.slnx` exit 0 at 4575 tests and `dotnet format style --verify-no-changes --severity info` exit 0, with both modules' round-trip corpora passing unedited — `git log` over the two `Fixtures/` folders shows no commit since they were first assembled (`8b1fb066`, `5825f28a`).
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Gate and merge the combined result of 4.4 and 4.5 by captured exit code, committing by explicit pathspec | Restrictions: as in task 1.2; both modules' round-trip corpora must pass unedited | Success: gates exit zero and the merge lands. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 - [ ] 5. Atomic writes — the requirement that had no task
