@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Hierarchy;
 using Serilog;
 using YamlDotNet.Core;
 
@@ -34,7 +35,7 @@ public sealed class DependencyGraphValidator : IDiagramValidator
         DependencyGraphModel model;
         try
         {
-            model = DependencyGraphParser.Parse(DependencyGraphDocument.Parse(request.Document));
+            model = DependencyGraphParser.Parse(LineDocument.Parse(request.Document));
         }
         catch (YamlException exception)
         {

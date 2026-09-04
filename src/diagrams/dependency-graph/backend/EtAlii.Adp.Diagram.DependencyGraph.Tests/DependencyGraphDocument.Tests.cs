@@ -51,7 +51,7 @@ public class DependencyGraphDocumentTests
         var original = Read(fixture);
 
         // Act.
-        var document = DependencyGraphDocument.Parse(original);
+        var document = LineDocument.Parse(original);
 
         // Assert.
         Assert.Equal(original, document.Text);
@@ -93,7 +93,7 @@ public class DependencyGraphDocumentTests
     {
         // Arrange & act.
         var original = Read("no-trailing-newline.dgr");
-        var document = DependencyGraphDocument.Parse(original);
+        var document = LineDocument.Parse(original);
 
         // Assert.
         Assert.False(original.EndsWith('\n'), "the fixture is meant to end without a newline");
@@ -107,7 +107,7 @@ public class DependencyGraphDocumentTests
         // Arrange.
         // The guard under test: the previously-last line gains a terminator and the *new* last
         // line inherits the missing one, rather than the file simply gaining a newline.
-        var document = DependencyGraphDocument.Parse("first\r\nlast-without-newline");
+        var document = LineDocument.Parse("first\r\nlast-without-newline");
 
         // Act.
         document.Insert(document.Lines.Count, ["appended"]);
@@ -123,7 +123,7 @@ public class DependencyGraphDocumentTests
         // The reason the guard exists at all: an edit and its inverse must cancel exactly, or
         // undo returns a file one byte different from the one the user had.
         const string original = "first\r\nlast-without-newline";
-        var document = DependencyGraphDocument.Parse(original);
+        var document = LineDocument.Parse(original);
 
         // Act.
         document.Insert(document.Lines.Count, ["appended"]);
@@ -137,7 +137,7 @@ public class DependencyGraphDocumentTests
     public void RemovingTheLastLine_PassesItsEndingToTheLineThatTakesItsPlace()
     {
         // Arrange.
-        var document = DependencyGraphDocument.Parse("alpha\r\nbeta\r\ngamma");
+        var document = LineDocument.Parse("alpha\r\nbeta\r\ngamma");
 
         // Act.
         document.Remove(new LineRange(2, 2));
@@ -152,7 +152,7 @@ public class DependencyGraphDocumentTests
     public void RemovingTheLastLineOfATerminatedFile_LeavesItTerminated()
     {
         // Arrange.
-        var document = DependencyGraphDocument.Parse("alpha\r\nbeta\r\ngamma\r\n");
+        var document = LineDocument.Parse("alpha\r\nbeta\r\ngamma\r\n");
 
         // Act.
         document.Remove(new LineRange(2, 2));
@@ -165,7 +165,7 @@ public class DependencyGraphDocumentTests
     public void ReplacingAMiddleLine_TouchesNothingElse()
     {
         // Arrange.
-        var document = DependencyGraphDocument.Parse("alpha\r\nbeta\r\ngamma\r\n");
+        var document = LineDocument.Parse("alpha\r\nbeta\r\ngamma\r\n");
 
         // Act.
         document.Replace(new LineRange(1, 1), ["BETA"]);
@@ -178,7 +178,7 @@ public class DependencyGraphDocumentTests
     public void ReplacingTheUnterminatedLastLine_DoesNotTerminateIt()
     {
         // Arrange.
-        var document = DependencyGraphDocument.Parse("alpha\r\nomega");
+        var document = LineDocument.Parse("alpha\r\nomega");
 
         // Act.
         document.Replace(new LineRange(1, 1), ["OMEGA"]);
@@ -191,7 +191,7 @@ public class DependencyGraphDocumentTests
     public void ReplacingOneLineWithSeveral_UsesTheDominantEndingForTheNewOnes()
     {
         // Arrange.
-        var document = DependencyGraphDocument.Parse("alpha\r\nbeta\r\n");
+        var document = LineDocument.Parse("alpha\r\nbeta\r\n");
 
         // Act.
         document.Replace(new LineRange(1, 1), ["one", "two", "three"]);
@@ -206,7 +206,7 @@ public class DependencyGraphDocumentTests
         // Arrange.
         // The dominant ending is measured, not assumed: an edit must not smuggle the house style
         // into a file that consistently uses the other one.
-        var document = DependencyGraphDocument.Parse("alpha\nbeta\ngamma\n");
+        var document = LineDocument.Parse("alpha\nbeta\ngamma\n");
 
         // Act.
         document.Insert(1, ["inserted"]);
@@ -220,7 +220,7 @@ public class DependencyGraphDocumentTests
     public void AMixedDocument_TakesTheMajorityEnding()
     {
         // Arrange & act.
-        var document = DependencyGraphDocument.Parse("a\r\nb\r\nc\nd\r\n");
+        var document = LineDocument.Parse("a\r\nb\r\nc\nd\r\n");
 
         // Assert.
         Assert.Equal("\r\n", document.DominantEnding);
@@ -230,7 +230,7 @@ public class DependencyGraphDocumentTests
     public void AnEmptyDocument_RoundTripsAndDoesNotInventALine()
     {
         // Arrange & act.
-        var document = DependencyGraphDocument.Parse("");
+        var document = LineDocument.Parse("");
 
         // Assert.
         Assert.Empty(document.Lines);
@@ -243,8 +243,8 @@ public class DependencyGraphDocumentTests
         // Arrange & act.
         // Parsing then re-parsing its own output is where an off-by-one shows up as a document
         // that gains a blank line every time it is opened.
-        var once = DependencyGraphDocument.Parse("alpha\r\n");
-        var twice = DependencyGraphDocument.Parse(once.Text);
+        var once = LineDocument.Parse("alpha\r\n");
+        var twice = LineDocument.Parse(once.Text);
 
         // Assert.
         Assert.Single(once.Lines);
@@ -255,7 +255,7 @@ public class DependencyGraphDocumentTests
     public void ARangeOutsideTheDocument_IsRefusedRatherThanClamped()
     {
         // Arrange.
-        var document = DependencyGraphDocument.Parse("alpha\r\n");
+        var document = LineDocument.Parse("alpha\r\n");
 
         // Act & assert.
         Assert.Throws<ArgumentOutOfRangeException>(() => document.Remove(new LineRange(0, 5)));
@@ -265,7 +265,7 @@ public class DependencyGraphDocumentTests
     public void AnInvertedRange_IsRefused()
     {
         // Arrange.
-        var document = DependencyGraphDocument.Parse("alpha\r\nbeta\r\n");
+        var document = LineDocument.Parse("alpha\r\nbeta\r\n");
 
         // Act & assert.
         // Length would be zero or negative, and RemoveRange would either do nothing or throw

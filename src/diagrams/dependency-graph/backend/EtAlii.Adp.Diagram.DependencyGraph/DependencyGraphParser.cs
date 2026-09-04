@@ -5,7 +5,7 @@ using YamlDotNet.RepresentationModel;
 namespace EtAlii.Adp.Diagram.DependencyGraph;
 
 /// <summary>
-/// Reads a <see cref="DependencyGraphDocument"/> into a <see cref="DependencyGraphModel"/>,
+/// Reads a <see cref="LineDocument"/> into a <see cref="DependencyGraphModel"/>,
 /// recording which lines declare what.
 /// </summary>
 /// <remarks>
@@ -14,7 +14,7 @@ namespace EtAlii.Adp.Diagram.DependencyGraph;
 /// block scalars correctly, and gives a line number for every node, which is what lets an element
 /// know its own lines and a diagnostic point at the one that caused it. Nothing is ever
 /// serialised back through it: every write is a splice through
-/// <see cref="DependencyGraphDocument"/>.
+/// <see cref="LineDocument"/>.
 /// </para>
 /// <para>
 /// The parser is forgiving on purpose. A coordinate it cannot read, a row it cannot read, a
@@ -34,7 +34,7 @@ public static class DependencyGraphParser
 
     /// <summary>Reads the document. Throws only when the text is not YAML.</summary>
     /// <exception cref="YamlDotNet.Core.YamlException">The document is not well-formed YAML.</exception>
-    public static DependencyGraphModel Parse(DependencyGraphDocument document)
+    public static DependencyGraphModel Parse(LineDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
 
@@ -57,7 +57,7 @@ public static class DependencyGraphParser
             ReadRelations(root, document));
     }
 
-    private static List<DependencyGraphElement> ReadElements(YamlMappingNode root, DependencyGraphDocument document)
+    private static List<DependencyGraphElement> ReadElements(YamlMappingNode root, LineDocument document)
     {
         var elements = new List<DependencyGraphElement>();
         foreach (var node in Sequence(root, ElementsKey))
@@ -78,7 +78,7 @@ public static class DependencyGraphParser
         return elements;
     }
 
-    private static List<DependencyGraphRelation> ReadRelations(YamlMappingNode root, DependencyGraphDocument document)
+    private static List<DependencyGraphRelation> ReadRelations(YamlMappingNode root, LineDocument document)
     {
         var relations = new List<DependencyGraphRelation>();
         foreach (var node in Sequence(root, RelationsKey))
@@ -136,7 +136,7 @@ public static class DependencyGraphParser
     /// Trailing blank and comment lines are then trimmed, because an edit has no business
     /// rewriting a comment that merely happens to follow an element.
     /// </remarks>
-    private static LineRange Range(YamlNode node, DependencyGraphDocument document)
+    private static LineRange Range(YamlNode node, LineDocument document)
     {
         var last = document.Lines.Count - 1;
         var extent = EndMark(node);

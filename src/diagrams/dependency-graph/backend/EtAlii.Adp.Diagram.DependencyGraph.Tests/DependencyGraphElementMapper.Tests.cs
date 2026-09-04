@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend.Diagrams;
+using EtAlii.Adp.Backend.Hierarchy;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.DependencyGraph.Tests;
@@ -11,7 +12,7 @@ public class DependencyGraphElementMapperTests
     private readonly DependencyGraphElementMapper _mapper = new();
 
     private static DependencyGraphModel Parse(string yaml) =>
-        DependencyGraphParser.Parse(DependencyGraphDocument.Parse(yaml));
+        DependencyGraphParser.Parse(LineDocument.Parse(yaml));
 
     private const string TwoNodesAndARelation = """
         dependencies: 1
