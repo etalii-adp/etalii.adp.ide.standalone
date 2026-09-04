@@ -22,7 +22,9 @@ Commit with an explicit pathspec — `git commit -F msg -- <paths>` — naming f
 
 **Re-gate on the merged tree, not before it.** An hour-long wait is long enough for develop to gain code your earlier run never saw — in one case a 311-line integration test and three validator changes.
 
-**If it happens, the work is recoverable — do not re-run anything.** The stash survives as a dangling commit pair: `git fsck --unreachable --no-reflogs`, find `WIP on develop` and `index on develop` at the failed merge's timestamp, then `git checkout <wip-commit> -- <path>` per file. Restore only what was present; **never re-apply a deletion that was in flight**, because re-applying someone's half-done delete is the one direction that destroys rather than restores.
+**If it happens, the work is recoverable — do not re-run anything.** The stash survives as a dangling commit pair: `git fsck --unreachable --no-reflogs`, find `WIP on develop` and `index on develop` at the failed merge's timestamp, then `git checkout <wip-commit> -- <path>` per file. Restore only what was present; **never re-apply a deletion that was in flight**, because re-applying someone's half-done delete is the one direction that destroys rather than restores. And check first whether it *was* a deletion: a file missing from the stash may simply never have been deleted, and both of the two treated that way here turned out to be live merged work that nothing had removed.
+
+**A staged file left behind by a failed restore may be OLDER than HEAD.** "Commit it or unstage it" is unsafe until someone compares the two sides: after this incident a staged `tasks.md` held a stale copy that reverted two completion markers, so committing it would have un-marked finished work and told the next reader a merged guard was still in flight. A staged file is not evidence of work in flight — it is equally evidence of a failed restore, and the two want opposite actions.
 
 Full rules and reasoning: [processes.md, *Committing and merging in the shared main checkout*](.spec-workflow/steering/processes.md#committing-and-merging-in-the-shared-main-checkout).
 
