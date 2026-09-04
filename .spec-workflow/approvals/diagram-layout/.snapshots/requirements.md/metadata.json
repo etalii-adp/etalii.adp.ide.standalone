@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/diagram-layout/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-04T08:37:39.097Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788511058710_y9fl7hack",
+      "approvalTitle": "diagram-layout — Requirements"
+    }
+  ]
+}
