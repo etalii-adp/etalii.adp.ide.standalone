@@ -64,7 +64,7 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 7.3, 7.4_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Map variables, links and loop labels to core elements, filtering links and loop labels structurally | Restrictions: never give a link or a loop label a position of its own; no vacuous Assert.All without a non-empty floor before it | _Leverage: helm-charts filters edges on both endpoints surviving | Success: a viewport that admits one endpoint drops the link, and the loop label follows its members. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2.3 The session and the view-delta loop, backend half
+- [x] 2.3 The session and the view-delta loop, backend half
   - Files: `CausalLoopSession.cs`, `CausalLoopSessionFactory.cs`
   - `UpdateView` answers a changed viewport with what came into view and what left it — **Add for what appeared, then Remove for what left**, the order both reference sessions emit in
   - **Lay out the whole document, then filter.** Laying out only the visible set makes the diagram crawl under the reader as they pan
@@ -72,7 +72,7 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 10.2, 10.3, 10.4_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement the session's baseline and UpdateView, laying out the whole document and filtering the result | Restrictions: Add then Remove; never lay out only the visible set; the completion test is behavioural and in the backend | _Leverage: the view-delta-adoption reference sessions | Success: a backend test proves a viewport change produces deltas, and fails against a `return []`. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.4 The canvas, on the shared appearance
+- [x] 2.4 The canvas, on the shared appearance
   - Files: `src/diagrams/causal-loop/client/` — `CausalLoopCanvas.tsx`, `causal-loop.css`, `causalLoopModel.ts`, `register.ts`
   - Compose the shared `canvas-*` classes and import `canvas.css`; use the shared bezier connections, `.canvas-arrowhead` and the shared `CanvasScrollbars`. Be the sixth module that composes rather than the sixth that carries a private stylesheet
   - The notation, drawn as the world draws it: polarity at the arrowhead end; a delay as the conventional strokes across the link; a loop's `R`/`B` identifier and name at its centroid, not in a legend; a reinforcing loop distinguishable from a balancing one without selecting anything
@@ -81,13 +81,13 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 2.1, 2.3, 2.4, 2.5, 2.6, 9.1, 9.2, 9.3, 9.4_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript/React developer | Task: Build the canvas on the shared classes, drawing polarity, delays and loop identifiers in the established notation | Restrictions: no private scrollbars, no private appearance stylesheet; a needed thickness step goes into the shared stylesheet | _Leverage: the six modules that compose canvas.css | Success: the private-scrollbar guard passes, and the notation matches the sources. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.5 The stream hook and the view report, client half
+- [x] 2.5 The stream hook and the view report, client half
   - Files: `useCausalLoopStream.ts`
   - Build `reportView` with the shared `viewReportOf` on the client the hook already holds, and wire `useViewReport` to the canvas's own view state. Add no module-local copy of `Viewport`, `shownRectOf` or the debounce constant — a guard fails a module that declares its own
   - _Requirements: 10.1_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Expose reportView from the stream hook using the shared library and wire useViewReport to the canvas view state | Restrictions: use the shared library, declare none of its names locally | _Leverage: @client/diagrams/viewReport and useViewReport | Success: the no-private-view-reports guard passes. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2.6 Gate and merge group 2
+- [-] 2.6 Gate and merge group 2
   - _Requirements: (gate)_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates and merge group 2 through a scratch worktree | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
