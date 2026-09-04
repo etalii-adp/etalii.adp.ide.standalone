@@ -723,4 +723,70 @@ describe("C4Canvas", () => {
     expect(labelField(container).value).toBe("Uses");
     expect(labelField(container).value).not.toContain("HTTPS");
   });
+
+  // ---- selecting a relationship --------------------------------------------------------------
+
+  function relationshipGroup(container: HTMLElement, id: string): SVGGElement {
+    return container.querySelector(`[data-c4-relationship="${id}"]`) as SVGGElement;
+  }
+
+  it("selects a relationship when its line is clicked", () => {
+    // Arrange.
+    // Until this worked, nothing on this canvas could select a relationship at all: the backend
+    // offered relabel and set-technology on one, and no gesture could reach either.
+    const { container } = render(<C4Canvas {...props} />);
+
+    // Act.
+    fireEvent.click(relationshipGroup(container, "a->b"));
+
+    // Assert.
+    // A nested selection, the same shape an element reports: the .adp file, then the
+    // relationship as its child.
+    expect(select).toHaveBeenCalled();
+    const selection = select.mock.calls.at(-1)![0] as { detail: { value: { id: { source: { value: { value: string } } } } } };
+    expect(selection.detail.value.id.source.value.value).toBe("a->b");
+  });
+
+  it("gives a relationship an invisible hit path, because a dashed line is not a target", () => {
+    // Arrange, act.
+    const { container } = render(<C4Canvas {...props} />);
+
+    // Assert.
+    // The shared class, so the grab width is the same on every canvas that draws a line. Its
+    // absence is the defect: a 1.5px dashed stroke is unhittable in practice, and a test that
+    // clicks the group programmatically would never notice.
+    const hit = relationshipGroup(container, "a->b").querySelector("path.canvas-connection-hit");
+    expect(hit).not.toBeNull();
+    expect(hit!.getAttribute("d")).toMatch(/^M /);
+  });
+
+  it("does not let a press on a relationship start a background pan", () => {
+    // Arrange.
+    const { container } = render(<C4Canvas {...props} />);
+    const surface = container.querySelector("svg.c4-canvas-surface") as SVGSVGElement;
+    const viewBoxBefore = surface.getAttribute("viewBox");
+
+    // Act.
+    fireEvent.mouseDown(relationshipGroup(container, "a->b"), { clientX: 200, clientY: 200 });
+    fireEvent.mouseMove(surface, { clientX: 320, clientY: 260 });
+    fireEvent.mouseUp(surface, { clientX: 320, clientY: 260 });
+
+    // Assert.
+    // A user-facing property rather than a guard over one line: clicking a relationship must not
+    // also drag the view away from it. Two things hold it today - the surface declining a press
+    // whose target is not itself, and the group's stopPropagation - and removing either alone
+    // leaves this green, which was checked rather than assumed. It fails if both ever go.
+    expect(surface.getAttribute("viewBox")).toBe(viewBoxBefore);
+  });
+
+  it("marks the selected relationship, so which one is selected is visible", () => {
+    // Arrange.
+    const { container } = render(<C4Canvas {...props} />);
+
+    // Act.
+    fireEvent.click(relationshipGroup(container, "a->b"));
+
+    // Assert.
+    expect(relationshipGroup(container, "a->b").getAttribute("class")).toContain("canvas-selected");
+  });
 });

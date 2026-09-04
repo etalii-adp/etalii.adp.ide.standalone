@@ -102,6 +102,27 @@
   fill: var(--color-border);
 }
 
+/* A relationship the user can point at. The pointer target is the shared invisible fat twin
+   (`canvas-connection-hit`); this only says the cursor means something over it. */
+.c4-relationship-group {
+  cursor: pointer;
+}
+
+/* Selected: the line and its arrowhead take the accent, and the line stops being dashed so the
+   selection reads at a glance rather than as a slightly different grey. Scoped under the group
+   rather than stated on `.c4-relationship` itself, because the selection belongs to the whole
+   relationship - line, arrowhead and label - not to the path. */
+.c4-relationship-group.canvas-selected .c4-relationship path {
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  stroke-dasharray: none;
+}
+
+.c4-relationship-group.canvas-selected .c4-arrowhead,
+.c4-relationship-group.canvas-selected .c4-relationship-label {
+  fill: var(--color-primary);
+}
+
 .c4-relationship-label {
   font-size: 10px;
   fill: var(--color-text-muted);
