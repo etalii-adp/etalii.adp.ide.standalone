@@ -108,8 +108,26 @@ function selectorsIn(css: string): string[] {
     .filter((selector) => selector.length > 0);
 }
 
+/**
+ * The file with its comments removed, because prose about a rule is not a breach of it -
+ * the phrasing and the fix are `ShapeOfFileAccessTests` (`ShapeOfFileAccess.Tests.cs:167`),
+ * which had this same problem and solved it by skipping comment lines before scanning.
+ *
+ * Without this the guard fires on any file whose doc comment merely mentions scrollbars,
+ * including one explaining what stays shared - and the only way to quieten it is to reword
+ * the prose, which makes the comment a second copy of the rule rather than a description
+ * of it. CLAUDE.md names that mistake by exactly that shape.
+ */
+function withoutComments(content: string): string {
+  return content
+    .split(/\r?\n/)
+    .filter((line) => !/^\s*(\/\/|\/\*|\*)/.test(line))
+    .join("\n");
+}
+
 /** What is wrong with this file, or null when it is behaving. */
 function offenceIn(path: string, content: string): string | null {
+  content = withoutComments(content);
   if (path.endsWith(".css")) {
     const own = selectorsIn(content).filter((selector) => SCROLLBAR.test(selector) && !PLACEMENT_SELECTOR.test(selector));
     return own.length > 0 ? `defines scrollbar styling of its own (${own.join(", ")})` : null;
@@ -174,5 +192,17 @@ describe("no private scrollbars", () => {
     expect(offenceIn("a.tsx", shared)).toBeNull();
     expect(offenceIn("a.tsx", handRolled)).not.toBeNull();
     expect(offenceIn("a.tsx", importedButHandRolled)).not.toBeNull();
+
+    // Prose about the rule is not a breach of it. Before this, a file whose only mention of a
+    // scrollbar was a doc comment - including one explaining what stays shared - was reported
+    // as an offender, and the only way to quieten the guard was to reword the comment.
+    const proseOnly = [
+      "/**",
+      " * The shared scrollbars live in @client/canvas/scroll; this canvas positions them and",
+      " * builds no scrollbar-thumb of its own.",
+      " */",
+      "export const Canvas = () => null;",
+    ].join("\n");
+    expect(offenceIn("a.tsx", proseOnly)).toBeNull();
   });
 });
