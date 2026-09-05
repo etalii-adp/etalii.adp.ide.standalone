@@ -83,3 +83,12 @@
 .causal-loop-disagrees .causal-loop-badge {
   text-decoration: underline wavy;
 }
+
+/* The loop marker: a curved arrow encircling the identifier at the loop's centre. */
+.causal-loop-marker {
+  fill: none;
+  stroke: var(--vscode-editor-foreground, #ccc);
+  stroke-width: 1.5;
+  opacity: 0.55;
+  pointer-events: none;
+}

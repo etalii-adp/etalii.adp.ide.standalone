@@ -219,7 +219,7 @@ public class AdpFileWriterTests : IDisposable
         var thrown = Record.Exception(() => AdpFileWriter.Save(path, "content"));
         Assert.True(
             thrown is IOException or UnauthorizedAccessException,
-            $"expected an IO or access failure, got {thrown?.GetType().Name ?? "no exception"}");
+            $"expected an IO or access failure, got {thrown.GetType().Name}");
         Assert.True(Directory.Exists(path), "the existing folder was removed");
         Assert.Empty(TempFiles());
     }

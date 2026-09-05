@@ -129,6 +129,72 @@ describe("CausalLoopCanvas", () => {
     expect(container.textContent).toContain("R1");
   });
 
+  /**
+   * The defect this section was written for: a two-variable feedback loop drew no loop.
+   *
+   * Both links took the shared tree connector, which anchors on the sides facing each other, so
+   * `a -> b` and `b -> a` produced the same path and rendered as one line with an arrowhead at
+   * each end. Every test above still passed while it did - two link elements existed, they had
+   * their classes and their polarity marks - because nothing asserted anything about the shape.
+   */
+  it("draws the two directions of a loop as two different paths", () => {
+    const { container } = renderCanvas();
+
+    const paths = [...container.querySelectorAll('[data-element-id^="link:"] .canvas-connection-line')]
+      .map((path) => path.getAttribute("d"));
+
+    expect(paths).toHaveLength(2);
+    expect(paths[0]).not.toEqual(paths[1]);
+  });
+
+  it("curves every link with a single control point, as the notation does", () => {
+    const { container } = renderCanvas();
+
+    for (const path of container.querySelectorAll('[data-element-id^="link:"] .canvas-connection-line')) {
+      const d = path.getAttribute("d") ?? "";
+
+      // One quadratic segment. A cubic would be the shared tree connector back again, which
+      // draws an S rather than an arc and makes a ring read as a concertina.
+      expect(d).toContain("Q");
+      expect(d).not.toContain("C");
+      expect(d).not.toContain("NaN");
+    }
+  });
+
+  it("bows the two directions to opposite sides, which is what encloses the loop", () => {
+    const { container } = renderCanvas();
+
+    // The y of each path's control point - the number after the Q.
+    const bows = [...container.querySelectorAll('[data-element-id^="link:"] .canvas-connection-line')]
+      .map((path) => {
+        const control = /Q\s+(-?[\d.]+)\s+(-?[\d.]+)/.exec(path.getAttribute("d") ?? "");
+        return Number(control?.[2] ?? 0);
+      });
+
+    expect(bows).toHaveLength(2);
+    expect(Math.sign(bows[0]!)).not.toBe(Math.sign(bows[1]!));
+    expect(Math.abs(bows[0]!)).toBeGreaterThan(10);
+  });
+
+  it("draws the conventional loop marker, and turns it the way the loop turns", () => {
+    const { container } = renderCanvas();
+
+    // An identifier alone says a loop exists; the marker shows one. Reinforcing turns one way
+    // and balancing the other, which is how the reference tools distinguish them at a glance.
+    const reinforcing = container.querySelector(".causal-loop-marker")?.getAttribute("d") ?? "";
+    expect(reinforcing).toContain("A");
+    expect(reinforcing).not.toContain("NaN");
+
+    currentModel = modelOf(
+      variable("a", 0, 0),
+      variable("b", 200, 0),
+      loop("B1", ["a", "b"], { computed: LoopPolarityProto.BALANCING }),
+    );
+
+    const balancing = renderCanvas().container.querySelector(".causal-loop-marker")?.getAttribute("d") ?? "";
+    expect(sweepOf(balancing)).not.toEqual(sweepOf(reinforcing));
+  });
+
   it("composes the shared canvas classes rather than private ones", () => {
     const { container } = renderCanvas();
 
@@ -280,3 +346,8 @@ describe("CausalLoopCanvas", () => {
 
 const viewBoxOf = (container: HTMLElement) =>
   (container.querySelector("svg.causal-loop-canvas")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
+
+/** The sweep flag of the first elliptical arc in a path - which way it turns. */
+function sweepOf(path: string): string {
+  return /A\s+[\d.]+\s+[\d.]+\s+\d+\s+\d+\s+(\d)/.exec(path)?.[1] ?? "";
+}

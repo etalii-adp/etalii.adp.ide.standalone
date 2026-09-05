@@ -150,7 +150,37 @@ internal sealed class CausalLoopSession : IDiagramSession
         return result.IsSuccess ? "" : result.Error;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Arranges the whole diagram with the self-organizing layout and stores the result as
+    /// authored positions (causal-loop-diagram Requirement 6.1 and 6.8).
+    /// </summary>
+    /// <remarks>
+    /// A user invokes this; nothing calls it when a document opens. The refusals are the two the
+    /// requirement names - a diagram past the drawn-element budget, and one the separation pass
+    /// could not resolve - and both arrive as the layout's own sentence rather than reworded
+    /// here, so the same failure reads the same way wherever a user meets it.
+    /// </remarks>
+    public async Task<string> ArrangeAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (_history is null)
+        {
+            return "This diagram is read-only.";
+        }
+
+        if (_registrationPath is not { Length: > 0 })
+        {
+            return "This diagram was opened without a registration, so there is nowhere to store an arrangement. Register the file to arrange it.";
+        }
+
+        var result = await _history.ExecuteAsync(
+            new ArrangeCausalLoopCommand(_registrationPath, _bodyPath), cancellationToken);
+
+        return result.IsSuccess ? "" : result.Error;
+    }
+
+    /// <inheritdoc />
     public ValueTask DisposeAsync()
     {
         _documents.Changed -= OnDocumentChanged;

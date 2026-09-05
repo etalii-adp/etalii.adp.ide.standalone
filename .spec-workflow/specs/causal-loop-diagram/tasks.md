@@ -93,10 +93,10 @@ A note on guards, since the question will come up: this specification has **no l
 
 ## Group 3 — Editing it
 
-- [ ] 3. Commands, context actions and the property grid
+- [x] 3. Commands, context actions and the property grid
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 5.3, 5.4, 5.5, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6_
 
-- [-] 3.1 The writers and their commands
+- [x] 3.1 The writers and their commands
   - Files: `CausalLoopWriter.cs`, `Commands/` — add/rename/remove variable; add/remove link and set its polarity, delay and weight; add/remove loop and set its name and membership
   - Each is an `ICommand` with an inverse restoring the document byte for byte, spliced rather than reserialized
   - **Removing a loop removes the loop statement and not its links.** A link belongs to the diagram; a loop is a claim about a path through it. The inverse restores the loop statement alone
@@ -104,13 +104,13 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Write the edit commands with byte-restoring inverses, splicing into the document | Restrictions: removing a loop must not remove its links; one shared refusal sentence; no reserialization | _Leverage: the family writers' splice discipline | Success: every command round-trips byte for byte, and a minimal-diff test proves the splice touched only the lines it must. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.2 Context actions and the toolbox
+- [x] 3.2 Context actions and the toolbox
   - Files: `CausalLoopContextActionProvider.cs`, `CausalLoopToolboxProvider.cs`
   - Every gesture from 3.1 discovered through the standard provider path; an action that cannot apply is discovered **unavailable with its reason** rather than silently absent; the toolbox is described by the backend as data and rendered by a palette that does not understand it
   - _Requirements: 5.3, 5.4, 5.5_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Offer the edit gestures through the context provider and the toolbox | Restrictions: unavailable-with-reason, never silently absent; the toolbox is data from the backend | Success: every command is reachable from the menu and each refusal states why. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.3 The property grid
+- [x] 3.3 The property grid
   - Files: `CausalLoopContextPropertyProvider.cs`
   - A variable's label; a link's weight, with its polarity and delay readable; a loop's identifier, name, **computed** polarity and the stated one where they differ — which is where a reader meets Requirement 3.3's disagreement without opening the problems panel
   - A weight is an annotation this module records and never evaluates; this diagram type states structure and simulates nothing
@@ -118,16 +118,16 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement the property grid for variables, links and loops, dispatching edits as commands | Restrictions: a weight is never evaluated; every read-only row carries a reason; show both polarities on a loop where they disagree | _Leverage: the family property providers | Success: setting a label or a weight lands as an undoable command and the loop rows show both labels. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.4 Gate and merge group 3
+- [x] 3.4 Gate and merge group 3
   - _Requirements: (gate)_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates and merge group 3 through a scratch worktree | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 ## Group 4 — The self-organizing layout
 
-- [ ] 4. Meyer's method, with the randomness removed
+- [x] 4. Meyer's method, with the randomness removed
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8_
 
-- [ ] 4.1 The self-organizing pass, made deterministic
+- [x] 4.1 The self-organizing pass, made deterministic
   - Files: `SelfOrganizingLayout.cs`
   - Meyer's self-organizing graphs — competitive learning from Kohonen's map with the neighbourhood measured in **graph** distance, which is what makes it a graph layout rather than a clustering
   - The three sources of randomness are replaced one for one: initial positions from a phyllotaxis spiral in the document's stable order; stimuli from a fixed-length low-discrepancy sequence computed from the iteration index; tie-breaking by the stable document order. A fixed iteration count, and a learning-rate and radius schedule that is a function of the iteration index alone. No wall-clock, no random source, no settling animation
@@ -137,7 +137,7 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer implementing a neural layout | Task: Implement Meyer's self-organizing graph layout with every source of randomness replaced by a function of the document and the iteration index | Restrictions: no RNG, no wall-clock, no animation-to-rest; invoked as an action, never on open; behind the drawn-element budget | _Leverage: layout-modes' Cloud requirement, which answers the same three grounds | Success: the same document laid out in two different processes gives identical positions. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.2 The separation pass, and the honest refusal
+- [x] 4.2 The separation pass, and the honest refusal
   - Files: `SelfOrganizingLayout.cs` (second phase)
   - **A converged self-organizing map does not guarantee non-overlap and the requirement does.** A bounded deterministic separation pass pushes overlapping boxes apart in stable order for a fixed number of rounds
   - If overlaps survive the rounds, the action **refuses for that document and reports the size at which it failed**. That is the correct outcome, not a failure of nerve, and not grounds for relaxing the overlap rule
@@ -146,22 +146,22 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 6.5, 6.6, 6.7_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add the deterministic separation pass and the refusal path when it cannot converge | Restrictions: do not relax the overlap rule to make a document pass; do not use the extent ratio as the unreadability guard; measure on real documents | Success: no two boxes intersect at budget size, or the action refuses naming the size. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.3 Persisting the arrangement
+- [x] 4.3 Persisting the arrangement
   - Files: the action's command path
   - The result is written through `SetRegistrationLayoutCommand` into the `.adp`'s `layout:` block, so the arrangement is **one undo away** like every other edit, and everything above the block survives byte for byte
   - _Requirements: 6.8_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Persist the computed arrangement as authored positions through the existing layout command | Restrictions: no new persistence mechanism; preserve everything above the layout block byte for byte | Success: running the action then undoing restores the registration byte for byte. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.4 Gate and merge group 4
+- [x] 4.4 Gate and merge group 4
   - _Requirements: (gate)_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates and merge group 4 through a scratch worktree | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 ## Group 5 — Examples, catalog and the manual pass
 
-- [ ] 5. What a reader opens, and where the type is listed
+- [x] 5. What a reader opens, and where the type is listed
   - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 12.1, 12.2, 12.3_
 
-- [ ] 5.1 Examples
+- [x] 5.1 Examples
   - Files: `src/diagrams/causal-loop/examples/`, replicated into `src/examples/diagrams/causal-loop/`
   - **Four candidate sources were checked and all four rejected**, recorded in the requirements so the search is not repeated: nocomplexity/causalloopdiagram is GPL-3.0, AutoCLD carries no licence file at all, Wikipedia's figures are CC BY-SA, and MetaSD offers only per-model author permission on Vensim stock-and-flow models. A permissive source is still preferred **if one can be verified from the data at acquisition**; otherwise the examples are authored for this repository and **labelled as authored**, with no attribution to a source that did not license them
   - At least one example exercises the hard cases together: a reinforcing loop, a balancing loop, a delayed link, a variable in more than one loop, and **a loop whose stated label disagrees with its computed polarity**, so the group 1 finding is demonstrable from a shipped file
@@ -169,13 +169,13 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer executing the vendoring discipline | Task: Ship examples, preferring a verifiable permissive source and otherwise authoring them under the honest-fallback rule | Restrictions: the four recorded rejections are not revisited for convenience; an authored example is labelled as authored and never attributed to an unlicensed source | Success: examples open with no setup and one demonstrates the label disagreement. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.2 The catalog row
+- [x] 5.2 The catalog row
   - Files: `docs/diagrams.md`
   - A row for the causal loop diagram, which the catalog has none of today, with the state icon matching its real state and the origin tag `systems/causal-loop-diagram`
   - _Requirements: 12.1, 12.2, 12.3_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer | Task: Add the catalog row with its state icon and origin tag | Restrictions: edit in place; the origin is `systems/causal-loop-diagram` exactly | Success: the row is present and the catalog coherence test passes. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.3 Final gate, merge, retire, manual pass
+- [x] 5.3 Final gate, merge, retire, manual pass
   - The four gates with exit codes checked; merge through a scratch worktree; retire it, reporting a removal failure rather than forcing it; add the design's three `tests.md` entries and run them against the running app
   - _Requirements: (gate + the manual halves of 2, 3 and 6)_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates, merge, retire the worktree, and execute the manual pass | Restrictions: do not merge on a failing gate; report worktree-removal failures rather than forcing them | Success: gates green, merged, worktree retired, manual pass recorded. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._

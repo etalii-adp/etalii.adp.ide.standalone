@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Diagrams;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -46,6 +47,39 @@ public static class ServiceCollectionAddCausalLoopExtension
         // The starter body a new .cld is created with. Registered because core refuses to start
         // a host whose type declares an extension without one.
         services.AddSingleton<IDiagramDocumentFactory>(_ => new CausalLoopDocumentFactory(CausalLoopOrigin));
+
+        // The edit commands, each with a byte-restoring inverse.
+        services.AddSingleton<ICommandHandler<RestoreCausalLoopDocumentCommand>, RestoreCausalLoopDocumentCommandHandler>();
+        services.AddSingleton<ICommandHandler<AddVariableCommand>, AddVariableCommandHandler>();
+        services.AddSingleton<ICommandHandler<RenameVariableCommand>, RenameVariableCommandHandler>();
+        services.AddSingleton<ICommandHandler<RemoveVariableCommand>, RemoveVariableCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetVariableLabelCommand>, SetVariableLabelCommandHandler>();
+        services.AddSingleton<ICommandHandler<AddLinkCommand>, AddLinkCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetLinkPolarityCommand>, SetLinkPolarityCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetLinkDelayCommand>, SetLinkDelayCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetLinkWeightCommand>, SetLinkWeightCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetLinkLabelCommand>, SetLinkLabelCommandHandler>();
+        services.AddSingleton<ICommandHandler<RemoveLinkCommand>, RemoveLinkCommandHandler>();
+        services.AddSingleton<ICommandHandler<AddLoopCommand>, AddLoopCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetLoopNameCommand>, SetLoopNameCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetLoopIdentifierCommand>, SetLoopIdentifierCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetLoopMembershipCommand>, SetLoopMembershipCommandHandler>();
+        services.AddSingleton<ICommandHandler<RemoveLoopCommand>, RemoveLoopCommandHandler>();
+
+        // The arrangement: one command for the whole diagram, so one undo puts the registration
+        // back rather than one undo per variable.
+        services.AddSingleton<ICommandHandler<ArrangeCausalLoopCommand>, ArrangeCausalLoopCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreCausalLoopRegistrationCommand>, RestoreCausalLoopRegistrationCommandHandler>();
+
+        // The context seams: one registration each, resolved by scope and origin.
+        services.AddSingleton<IContextActionProvider>(provider => new CausalLoopContextActionProvider(
+            provider.GetRequiredService<ICausalLoopDocumentStore>(),
+            provider.GetRequiredService<IHistoryStackStore>(),
+            provider.GetRequiredService<IDiagramViewportRegistry>()));
+        services.AddSingleton<IDiagramToolboxProvider, CausalLoopToolboxProvider>();
+        services.AddSingleton<IContextPropertyProvider>(provider => new CausalLoopContextPropertyProvider(
+            provider.GetRequiredService<IHistoryStackStore>(),
+            provider.GetRequiredService<ICausalLoopDocumentStore>()));
 
         // The rules, resolved by origin through core's validator registry. This reading only
         // ever reports: the disagreement between a stated label and the arithmetic is a finding,

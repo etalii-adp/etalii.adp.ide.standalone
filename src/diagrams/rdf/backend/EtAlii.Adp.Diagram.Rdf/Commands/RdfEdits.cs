@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Hierarchy;
 
 namespace EtAlii.Adp.Diagram.Rdf;
 
@@ -82,7 +83,7 @@ public sealed class RestoreRdfDocumentCommandHandler(IRdfDocumentStore documents
 
         try
         {
-            File.WriteAllText(command.BodyPath, command.Text);
+            AdpFileWriter.Save(command.BodyPath, command.Text);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

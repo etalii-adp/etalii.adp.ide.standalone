@@ -1,4 +1,5 @@
 using System.Text.Json;
+using EtAlii.Adp.Backend.Hierarchy;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
@@ -79,7 +80,7 @@ public sealed class FileProjectStore : IProjectStore
         Directory.CreateDirectory(IoPath.GetDirectoryName(filePath)!);
 
         var json = JsonSerializer.Serialize(projects, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(filePath, json);
+        AdpFileWriter.Save(filePath, json);
         _logger.Debug("Wrote {Count} projects for {UserId} to {StorePath}", projects.Count, userId, filePath);
     }
 }

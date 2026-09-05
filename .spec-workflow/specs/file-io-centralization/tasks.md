@@ -192,7 +192,7 @@
   - As 1.2. Both tasks landed in one merge, gated on the merged tree: `dotnet test --solution EtAlii.Adp.slnx` exit 0 at 4636 tests, `dotnet format style --verify-no-changes --severity info` exit 0.
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Gate and merge tasks 6.1 and 6.2 by captured exit code, committing by explicit pathspec with a per-task git identity | Restrictions: as in task 1.2 | Success: gates exit zero and the merge lands. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7. Close the loop
+- [x] 7. Close the loop
   - _Requirements: 4.2, 5.1, 5.2, 5.3_
 
 - [x] 7.1 Tighten the guard and prove one home per rule — merged as e6961d19; the one-home claim is measured, and does NOT come back clean
@@ -220,7 +220,41 @@
   - _Requirements: 4.2, 5.1, 5.2_
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior C# developer | Task: Assert the tracked allow-list is empty, keep the five permanent entries with their reasons, and re-measure the tree for any second implementation of the four disciplines this spec touched, per requirements 4.2, 5.1 and 5.2 | Restrictions: if a second home is found, report it as a finding rather than quietly fixing it - it may belong to another spec; record the searches performed in the implementation log so the claim is auditable | Success: the tracked section is empty and asserted so, and the one-home claim is backed by a recorded measurement. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7.2 Final gates and merge
-  - All four gates by captured exit code: backend tests, `dotnet format style --verify-no-changes --severity info`, client `npm test` and `npm run typecheck`. Both converted modules' round-trip corpora pass unedited (Requirement 5.3). Retire the worktrees; move the shell out first, and on a `Filename too long` failure delete the leftover directory yourself rather than forcing.
-  - _Requirements: 5.3_
+- [x] 7.2 Final gates and merge — merged as c9cf1525
+  - **Scope ruling from the user, applied here:** the centralization is the *application's*, not the test suite's. `*.Tests` projects were already excluded, but **`src/TestSupport/`** — the shared `LogCapture` and `TestFolder` helpers, compiled into every test project as source and shipped nowhere — carries no `.Tests` in its path and was being walked as though it were the application.
+  - It was green only by luck: those two files happen not to touch a file API, so the first test helper needing to read a fixture would have been told to use `SharedDocumentReader` for no reason at all. Now excluded, and **verified end to end rather than reasoned about** — a raw read planted in `TestFolder.cs` is correctly ignored, where before it would have been reported.
+  - The exclusion carries its own guard, which asserts on the real enumeration rather than on the predicate, and also asserts the exclusions have not swallowed the subject: the application is still walked.
+  - Final gates on the merged tree, by captured exit code: `dotnet test --solution EtAlii.Adp.slnx` exit 0 at 4687 tests with 0 failed, and `dotnet format style --verify-no-changes --severity info` exit 0.
   - _Prompt: Implement the task for spec file-io-centralization, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates by captured exit code, confirm both round-trip corpora pass unedited, merge via the main checkout by explicit pathspec, and retire the worktrees | Restrictions: never judge a gate by piped output; read git status for files you did not touch before merging and never stash or checkout another session's work; move the shell out of a worktree before removing it, and never use worktree remove --force | Success: four gates exit zero, the merge lands, and the worktrees are retired cleanly. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
+- [x] 8. Atomic writes, the rest of them - the shape no rule matched - merged as 84c548d8
+  - **Why this group exists, and why it is not a repeat of group 5.** Group 5 converted four *hand-rolled temp-then-move* publishes, because that is the shape `HandRolledPublish` flagged. A plain `File.WriteAllText` matched no rule at all, so the guard never saw it - and **every module document store still saves that way**. A save that fails midway truncates the user's file; the temp-then-move discipline exists precisely so that cannot happen, and these sites simply never adopted it.
+  - **The census, re-measured on `develop` rather than carried over.** 15 `File.WriteAll*` calls in application code. Two are `AdpFileWriter`'s own and are the implementation. One is `ProblemStore.cs:299`, a regenerable problem cache - permanent, with that reason. **That leaves twelve to convert.** (An earlier report of this finding said fourteen; it had counted the writer's own two lines. Twelve is the measured number.)
+  - **`AdpFileWriter.Save(path, content)` is a drop-in for all twelve**: the same no-BOM encoding, and it throws the same `IOException`/`UnauthorizedAccessException` pair every one of these call sites already catches. Added by group 5, so nothing new is needed to make the conversions possible.
+  - **The error policy does not move.** `Save` throws and each caller keeps what it had - some propagate, most catch and keep the edit in memory. Centralizing the algorithm while quietly centralizing the error handling would change behaviour under a commit claiming to change none, which is the ruling group 5 already made and this group inherits.
+  - _Requirements: 2.2, 4.2, 5.1, 5.2_
+
+- [x] 8.1 The rule, first - and green, with the twelve tracked
+  - Files: `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/ShapeOfFileAccess.Tests.cs`
+  - Add an `UnguardedWrite` rule matching `File.WriteAll(Text|Lines|Bytes)`, with a message naming `AdpFileWriter.Save` as the replacement. Land it **green**, exactly as task 1.1 did: `AdpFileWriter` is permanent (it is the implementation), `ProblemStore` is permanent (a regenerable cache), and the twelve sites go in `Tracked` naming task 8.2, 8.3 or 8.4.
+  - **Prove the rule fires and does not over-fire**, in the two bracket tests that already exist for the other three rules - each `WriteAll` shape separately, since an alternation is where a branch gets dropped unnoticed, and a correct-code case showing `AdpFileWriter.Save` and a non-`File.` method of the same name are both left alone.
+  - _Requirements: 5.1, 5.2_
+
+- [x] 8.2 Core: the three application writes
+  - Files: `Hierarchy/RegistrationLayout.cs:178`, `Hierarchy/Commands/RenameEntryCommandHandler.cs:367`, `Projects/FileProjectStore.cs:82`
+  - **`RegistrationLayout.cs:178` is the one with an observed failure behind it rather than a predicted one.** Agent 5 reproduced it: it is reached from `RemovePosition` at :110 via `WriteBlock` and surfaces at `SetRegistrationLayoutCommandHandler.cs:74-76` as *"Could not remove the position: The process cannot access the file ..."* during concurrent gate runs. Note the ownership nuance: that file's *read* is tracked as `backend-consistency` AC2 and stays theirs; this task takes only the write.
+  - `FileProjectStore` is ADP-owned rather than a user document, but a truncated projects file loses the user's project list and cannot be regenerated - which is what separates it from `ProblemStore`'s cache.
+  - _Requirements: 2.2_
+
+- [x] 8.3 The six module document stores
+  - Files: `TimelineDocumentStore.cs:53`, `RdfDocumentStore.cs:52`, `DatabricksDocumentStore.cs:53`, `DependencyGraphDocumentStore.cs:54`, `PipelineDocumentStore.cs:59`, `C4DocumentStore.cs:47`
+  - All six are the same one-line change inside an existing try/catch that already handles both exception types. Their round-trip corpora are the acceptance criterion and are **not** edited.
+  - _Requirements: 2.2, 4.2_
+
+- [x] 8.4 The three command and edit sites
+  - Files: `Commands/RdfEdits.cs:85`, `Commands/DatabricksEdits.cs:79`, `Commands/AddC4ViewCommand.cs:64`
+  - `AddC4ViewCommand` is a multi-line call rather than a one-liner, so it is the one to read before editing.
+  - _Requirements: 2.2_
+
+- [x] 8.5 Gate and merge group 8
+  - As 1.2, over the combined result. **Success also means the `Tracked` list has lost exactly twelve lines** and the `UnguardedWrite` category is empty, its heading deleted with its last entry as the read and publish categories were before it.
+  - _Requirements: 2.2, 5.1, 5.2_

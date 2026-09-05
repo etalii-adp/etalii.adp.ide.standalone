@@ -28,13 +28,21 @@ namespace EtAlii.Adp.Diagram.CausalLoop;
 /// </remarks>
 public static class Diagram
 {
+    /// <summary>The body extension, in one place so nothing has to spell it twice.</summary>
+    public const string DocumentExtension = ".cld";
+
+    /// <summary>Whether a path is one of this module's bodies.</summary>
+    public static bool IsBody(string path) =>
+        path is { Length: > 0 } &&
+        path.EndsWith(DocumentExtension, StringComparison.OrdinalIgnoreCase);
+
     /// <summary>The causal loop diagram: what feeds back on what, and which cycles that makes.</summary>
     public static DiagramDefinition CausalLoop { get; } = new(
         ServiceCollectionAddCausalLoopExtension.CausalLoopOrigin,
         "Causal Loop Diagram",
         "How the parts of a system feed back on each other: variables joined by polarised causal links, with the loops they form identified as reinforcing or balancing.",
         Icon: "mdi-sync-circle",
-        Extension: ".cld",
+        Extension: DocumentExtension,
         Build: builder => builder.Services.AddCausalLoop());
 
     /// <summary>What discovery reads.</summary>

@@ -56,6 +56,7 @@ public partial class ShapeOfFileAccessTests
         // backend, which the rule did not match until 6.1, inside the only file exempted from
         // every rule. Neither exemption survives.
         ("Problems/ProblemStore.cs", RawRead, "ADP's own problem cache, not a user document - no user-driven writer contends for it"),
+        ("Problems/ProblemStore.cs", UnguardedWrite, "the same cache on the way out: a truncated one is rebuilt on the next scan, which is what separates it from FileProjectStore's projects list"),
         ("Projects/FileProjectStore.cs", RawRead, "ADP's own projects file, not a user document"),
         ("C4/C4LayoutSidecar.cs", RawRead, "reads ADP's own layout sidecar JSON, not the user's .dsl"),
         ("WardleyMap/WardleyIdentities.cs", RawRead, "reads ADP's own identities sidecar JSON, not the user's .owm"),
@@ -84,6 +85,14 @@ public partial class ShapeOfFileAccessTests
     /// heading went with its last entry, as the read categories did before it. Those four were
     /// found by this guard when it was first run rather than by any survey, and were reported as
     /// a finding rather than absorbed - see the task 1.1 implementation log.
+    /// <para>
+    /// A fourth category lived here for the length of group 8 and is gone the same way. Twelve
+    /// in-place writes went in when task 8.1 added <see cref="UnguardedWrite"/>, and out again as
+    /// tasks 8.2 to 8.4 converted them onto <c>AdpFileWriter.Save</c>. That category existed at
+    /// all because the guard had never had a rule for a write that simply did not attempt
+    /// atomicity - group 5 had converted only the ones that reimplemented the writer, which is
+    /// the shape <see cref="HandRolledPublish"/> matches.
+    /// </para>
     /// </remarks>
     private static readonly (string File, string Rule, string Owner)[] Tracked =
     [
@@ -96,7 +105,16 @@ public partial class ShapeOfFileAccessTests
     private const string NarrowShare = "opens a read stream without FileShare.Delete, so ADP's own temp-then-move publish cannot replace the file mid-read";
     private const string HandRolledPublish = "publishes with a hand-rolled temporary and File.Move instead of the central atomic writer";
 
-    private static readonly string Replacement = "SharedDocumentReader (reads) or AdpFileWriter (publishes)";
+    /// <remarks>
+    /// The shape group 5 could not see. <see cref="HandRolledPublish"/> matches a temp-then-move
+    /// that reimplements the writer; this matches a write that never attempted atomicity at all,
+    /// and nothing matched that until task 8.1 - which is how every module document store came to
+    /// save straight over the user's file. A write that fails midway truncates it, which is the
+    /// whole reason the temp-then-move discipline exists.
+    /// </remarks>
+    private const string UnguardedWrite = "writes a file in place with a raw File.WriteAll*, so a failure midway truncates it instead of leaving the original intact";
+
+    private static readonly string Replacement = "SharedDocumentReader (reads), AdpFileWriter.Save (overwrites) or AdpFileWriter.Create/CreateAll (new files)";
 
     private static string RepositoryRoot { get; } = Locate();
 
@@ -114,12 +132,28 @@ public partial class ShapeOfFileAccessTests
         throw new InvalidOperationException("The repository root (src/diagrams beside src/backend) was not found above the test binary.");
     }
 
-    /// <summary>Production C# only: generated output, build artifacts and test projects are not the subject.</summary>
+    /// <summary>Production C# only: generated output, build artifacts and test code are not the subject.</summary>
+    /// <remarks>
+    /// <b>These disciplines are the application's, not the test suite's.</b> A test opens files it
+    /// created moments earlier in a folder nobody else can see; nothing contends for them, no user
+    /// is editing them, and a torn read is not a risk that exists. Holding test code to a rule
+    /// written for a user's document costs work and buys nothing.
+    /// <para>
+    /// Two exclusions are needed rather than one, and the second is not obvious. A test project is
+    /// named <c>*.Tests</c> and its path says so - but <c>src/TestSupport/</c> holds the shared
+    /// <c>LogCapture</c> and <c>TestFolder</c> helpers, which are compiled INTO each test project
+    /// as source and never ship. Nothing in that path contains <c>.Tests</c>, so it was being
+    /// walked as though it were the application. It is green today only because those two files
+    /// happen not to touch a file API; the first test helper that needs to read a fixture would
+    /// have been told to use <c>SharedDocumentReader</c> for no reason at all.
+    /// </para>
+    /// </remarks>
     private static IEnumerable<string> ProductionSources() =>
         Directory.EnumerateFiles(IoPath.Combine(RepositoryRoot, "src"), "*.cs", SearchOption.AllDirectories)
             .Where(path => !path.Contains($"{IoPath.DirectorySeparatorChar}bin{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(path => !path.Contains($"{IoPath.DirectorySeparatorChar}obj{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(path => !path.Contains(".Tests", StringComparison.Ordinal))
+            .Where(path => !path.Contains($"{IoPath.DirectorySeparatorChar}TestSupport{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(path => !path.EndsWith(".g.cs", StringComparison.Ordinal));
 
     /// <summary>
@@ -157,6 +191,11 @@ public partial class ShapeOfFileAccessTests
             {
                 found.Add(new Violation(relativePath, i + 1, HandRolledPublish, Replacement).ToString());
             }
+
+            if (UnguardedWriteExpression().IsMatch(line))
+            {
+                found.Add(new Violation(relativePath, i + 1, UnguardedWrite, Replacement).ToString());
+            }
         }
 
         return found;
@@ -188,8 +227,15 @@ public partial class ShapeOfFileAccessTests
             var lines = File.ReadAllLines(file);
             foreach (var offence in Offences(relative, lines))
             {
+                // Every rule must appear here, not only in Offences. A rule added to the detector
+                // and forgotten here is classified as whatever the final fallback is, so its
+                // allow-list entries never match and every one of its sites is reported as
+                // unexcused - which is exactly what task 8.1 saw on its first run, thirteen
+                // sites at once. The chain is an alternation, and an alternation is where a
+                // branch gets dropped unnoticed.
                 var rule = offence.Contains(RawRead, StringComparison.Ordinal) ? RawRead
                     : offence.Contains(NarrowShare, StringComparison.Ordinal) ? NarrowShare
+                    : offence.Contains(UnguardedWrite, StringComparison.Ordinal) ? UnguardedWrite
                     : HandRolledPublish;
                 all.Add((relative, offence, rule));
             }
@@ -340,18 +386,45 @@ public partial class ShapeOfFileAccessTests
     }
 
     [Fact]
+    public void TheseRulesAreTheApplicationsAndNotTheTestSuites()
+    {
+        // These disciplines exist because a USER may be editing the file while ADP reads it, and
+        // because ADP's own publish must be able to replace it mid-read. Neither is true of a
+        // scratch file a test just made in its own temp folder, so test code is not the subject.
+        var scanned = ProductionSources().ToList();
+
+        Assert.DoesNotContain(scanned, path => path.Contains(".Tests", StringComparison.Ordinal));
+
+        // src/TestSupport holds LogCapture and TestFolder, compiled into every test project as
+        // source and shipped nowhere. Its path carries no ".Tests", so the first filter misses it
+        // entirely - which is why it needs its own, and why this asserts on the real enumeration
+        // rather than on the predicate. It passed for months only because those two files happen
+        // not to touch a file API.
+        Assert.DoesNotContain(
+            scanned,
+            path => path.Contains($"{IoPath.DirectorySeparatorChar}TestSupport{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal));
+
+        // And the exclusions have not swallowed the subject: the application is still walked.
+        Assert.Contains(scanned, path => path.EndsWith("SharedDocumentReader.cs", StringComparison.Ordinal));
+        Assert.Contains(scanned, path => path.EndsWith("TimelineDocumentStore.cs", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void TheTrackedListHoldsNothingThisSpecStillOwes()
     {
-        // file-io-centralization's own debt is discharged: groups 3 and 5 deleted every line
-        // that named one of its tasks. What may remain is another spec's, and saying so here
-        // means a new tracked entry cannot be added under this spec's name and forgotten -
-        // the failure mode task 1.1 named when it created the list.
-        var mine = Tracked
-            .Where(entry => entry.Owner.Contains("file-io-centralization", StringComparison.OrdinalIgnoreCase))
-            .Select(entry => $"{entry.File} still names this spec ({entry.Owner})")
+        // This asserted "no entry names file-io-centralization at all" when task 7.1 wrote it,
+        // which was true then and is not the property it meant. Group 8 opened a new category of
+        // debt under this same spec, legitimately - so the assertion is narrowed to what it was
+        // always for: a **finished** group's debt cannot linger under its name. Groups 3 and 5
+        // are closed and deleted their own lines; an entry naming one of them again would be a
+        // task marked complete while its site still offends.
+        var finished = new[] { "task 3.", "task 5." };
+        var reopened = Tracked
+            .Where(entry => finished.Any(task => entry.Owner.Contains(task, StringComparison.OrdinalIgnoreCase)))
+            .Select(entry => $"{entry.File} names {entry.Owner}, a completed task - either the task is not done or the entry is wrong")
             .ToArray();
 
-        Assert.True(mine.Length == 0, string.Join(Environment.NewLine, mine));
+        Assert.True(reopened.Length == 0, string.Join(Environment.NewLine, reopened));
 
         // And every survivor carries an owner that is somebody, not a shrug.
         var ownerless = Tracked
@@ -392,6 +465,20 @@ public partial class ShapeOfFileAccessTests
         var publish = Offences("Fake/Writer.cs", ["            File.Move(temporary, path, overwrite: true);"]);
         Assert.Single(publish);
         Assert.Contains("AdpFileWriter", publish[0], StringComparison.Ordinal);
+
+        // The in-place write, each shape separately - same reason as the read rule above.
+        var writeText = Offences("Fake/Save.cs", ["            File.WriteAllText(path, text);"]);
+        Assert.Single(writeText);
+        Assert.Contains("Fake/Save.cs:1", writeText[0], StringComparison.Ordinal);
+        Assert.Contains("AdpFileWriter.Save", writeText[0], StringComparison.Ordinal);
+
+        var writeLines = Offences("Fake/Lines.cs", ["        File.WriteAllLines(path, lines);"]);
+        Assert.Single(writeLines);
+        Assert.Contains("AdpFileWriter.Save", writeLines[0], StringComparison.Ordinal);
+
+        var writeBytes = Offences("Fake/Bytes.cs", ["        File.WriteAllBytes(path, bytes);"]);
+        Assert.Single(writeBytes);
+        Assert.Contains("AdpFileWriter.Save", writeBytes[0], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -407,6 +494,9 @@ public partial class ShapeOfFileAccessTests
         // A memory stream's ToArray is not a file read, and neither is anything else whose name
         // merely ends the same way - the rule is anchored on File. for that reason.
         Assert.Empty(Offences("Fake/Memory.cs", ["        var bytes = buffer.ReadAllBytes();"]));
+        Assert.Empty(Offences("Fake/Saved.cs", ["            AdpFileWriter.Save(path, entry.Document.Text);"]));
+        // Same anchoring point on the write side: a WriteAllText that is not the filesystem's.
+        Assert.Empty(Offences("Fake/Buffer.cs", ["        sink.WriteAllText(text);"]));
     }
 
     /// <summary>
@@ -425,6 +515,17 @@ public partial class ShapeOfFileAccessTests
     private static partial Regex RawReadExpression();
 
     /// <summary>A stream opened for reading; the sharing flags are checked separately.</summary>
+    /// <summary>
+    /// A raw in-place write: <c>File.WriteAllText</c>, <c>File.WriteAllLines</c> or
+    /// <c>File.WriteAllBytes</c>.
+    /// </summary>
+    /// <remarks>
+    /// Anchored on <c>File.</c> like the read rule, so a method of the same name on something
+    /// that is not the filesystem is not the subject.
+    /// </remarks>
+    [GeneratedRegex(@"\bFile\.WriteAll(Text|Lines|Bytes)\s*\(")]
+    private static partial Regex UnguardedWriteExpression();
+
     [GeneratedRegex(@"new FileStream\([^)]*FileAccess\.Read\b")]
     private static partial Regex ReadStreamExpression();
 }

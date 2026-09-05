@@ -53,13 +53,27 @@ A *wrong* name is worse than an ambiguous one. Full reasoning, and why an identi
 
 **Ask what the command would print if your belief were false.** If the answer is "the same thing", it is not evidence - `git log --oneline`, `git config user.name`, `grep -c $'\r'` and a sabotage whose pattern never matched all print the same thing either way. **Apply it to your own reports too**: "fixed" said from a worktree describes the worktree, not `develop`. **And do not write a guard over prose** - a guard that must be edited whenever its subject legitimately changes is a second copy of the data, not a check on it.
 
+**An exit code reported by a wrapper is not the exit code of the thing you ran.** A backgrounded suite's task notification carries the wrapper shell's status; read the runner's own exit from the log. One agent reported `exit 0` on a run whose log said `TESTS_EXIT=1`.
+
+**A fresh-tree build is not a stricter gate — it is the only one that reads a different input.** Every other gate reads `obj/`, a cache of the last successful generation, so `dotnet test` prints the same green whether the generated code is current or stale. A generated-code break is invisible to it by construction: nine sessions went green through a window in which `develop` compiled in no fresh checkout. Build a newly created worktree before trusting a green gate about anything upstream of codegen.
+
 **A test written for a bug must be seen to fail against that bug before it is trusted.** Three written in one sitting passed against the broken code — React batched one window away, jsdom detached an input for another, and a third omitted `StrictMode`, outside which the defect cannot occur. **A test that passes against the defect is worse than no test**: it converts "unverified" into "verified" while nothing has changed. Perturb it and watch it fail, or delete it.
 
 Six worked instances and the reasoning: [processes.md, *Checking that a command answered your question*](.spec-workflow/steering/processes.md#checking-that-a-command-answered-your-question).
 
+## Checking that a specification's tasks cover its requirements
+
+**Extract every requirement reference from the tasks document, list every acceptance criterion in the requirements, and diff the two sets.** It finds what re-reading does not - on one specification it surfaced three requirements no task claimed, and the author's own account was that re-reading would have found none of them. **Run it twice**: before implementing it asks *did anybody claim this?*, and after implementing, traced to files and strings rather than to a task's promise, it asks *does the code show this?*
+
+**An unclaimed requirement is not necessarily a gap, and saying which kind it is finishes the job.** *No task claimed it* is a real gap - add the claim or add the task. *No task can claim it* is satisfied by the document's own shape, as when the in-scope set follows from the criteria rather than a list; state that in the tasks document, naming the requirements it covers. The two are identical in the diff's output. Ten unclaimed on one specification were seven and three, and a reader meeting an unexplained silence will either add pointless claims or write the diff off as noisy.
+
+Reasoning: [processes.md, *Checking that a specification's tasks cover its requirements*](.spec-workflow/steering/processes.md#checking-that-a-specifications-tasks-cover-its-requirements).
+
 ## spec-workflow
 
 Commit any set of files added or removed under `.spec-workflow/` immediately, in its own commit — implementation logs included. Commit a document and its approval-lifecycle files when it is approved. **Approval comes from the dashboard and nowhere else: verbal approval is never accepted, from anyone.**
+
+**Do not amend a document under a pending card unless you are willing to ask the user to reject it.** The tool refuses to delete a pending approval, so an agent cannot clean up after itself: the card is left pointing at a snapshot that no longer matches the file, and only the user can break that by rejecting it. **Disclosure is not sufficient** — disclosing an amendment tells the user it happened; it does not restore the record.
 
 **Verdict snapshots arrive already staged and belong to nobody.** The dashboard writes them under `.spec-workflow/approvals/*/.snapshots/` when a card is answered, staged in the shared index — and any staged entry makes an in-place merge unsafe here, so they block whoever merges next. **Staged is the hazard; modified is somebody working.** Before merging, if `git diff --cached` is non-empty, commit **precisely those staged paths and nothing else**, in their own commit, whether or not they are yours. Never extend that to modified-but-unstaged files — sweeping those into your commit under your message is the exact failure that produced three misattributed commits in one day. If you raised the card, check for staged snapshots when its verdict lands.
 
@@ -90,6 +104,22 @@ Full rules and reasoning: [processes.md, *Keeping documentation true*](.spec-wor
 Run `dotnet format style --verify-no-changes --severity info` (from `src/backend/`, against `EtAlii.Adp.slnx`) to check backend code against these conventions and surface style warnings/errors — always allow this command to run, without asking for confirmation first.
 
 **Before merging a worktree back into `develop`, run that command and make it exit zero** — it is one of the four gates. A finding it reports is either code to fix or a rule to downgrade with a note; leaving it reported is not an option. Why, and the second tool that sees what this one does not: [processes.md, *Checking that the conventions are actually followed*](.spec-workflow/steering/processes.md#checking-that-the-conventions-are-actually-followed).
+
+## Folders and namespaces
+
+**A folder that should not contribute to the namespace is fixed in the project's `.DotSettings`, not by touching the namespace.** The namespace rules themselves are already right - do not "correct" a namespace to match a folder. What is wrong in that situation is the *folder*, which is still marked as a namespace provider, and Rider's way to say otherwise is a per-folder boolean in `<Project>.csproj.DotSettings`:
+
+```xml
+<s:Boolean x:Key="/Default/CodeInspection/NamespaceProvider/NamespaceFoldersToSkip/=commands/@EntryIndexedValue">True</s:Boolean>
+```
+
+That one line stops the `commands` folder being required to appear in the namespace, and clears every warning that followed from it.
+
+**The folder path in the key is escaped, and getting it wrong silently does nothing** - the entry parses, matches no folder, and the warnings stay. A path separator becomes `_005C` and an underscore becomes `_005F`, so `hierarchy\_model` is written `hierarchy_005C_005Fmodel`. Existing files show both shapes: `src/backend/EtAlii.Adp.Backend/EtAlii.Adp.Backend.csproj.DotSettings` has nine such entries, and every diagram module has its own.
+
+**Add the entry to the `.DotSettings` beside the `.csproj` that owns the folder**, keeping the file's existing shape - BOM, tab indentation, and the closing `</wpf:ResourceDictionary>` on the last entry's line.
+
+**Check the result with JetBrains' own command-line inspector rather than by eye** - `dotnet tool install -g JetBrains.ReSharper.GlobalTools`, then `jb inspectcode`. It is not installed in this repository and is not one of the four gates; `dotnet format` does not see these warnings at all, which is exactly why they accumulate unnoticed.
 
 ## Line endings
 

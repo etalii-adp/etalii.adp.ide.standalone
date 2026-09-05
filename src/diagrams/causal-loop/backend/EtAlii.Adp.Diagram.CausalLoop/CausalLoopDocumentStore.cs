@@ -20,6 +20,33 @@ public sealed class CausalLoopDocumentStore : ICausalLoopDocumentStore
     }
 
     /// <inheritdoc />
+    public string Save(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        if (!_entries.TryGetValue(path, out var entry))
+        {
+            return "This causal loop diagram is not loaded, so there is nothing to save.";
+        }
+
+        try
+        {
+            // The central writer rather than a raw write: it publishes through a scratch file so
+            // a reader never sees a half-written document, which a guard enforces tree-wide.
+            AdpFileWriter.Save(path, entry.Document.Text);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return $"This causal loop diagram could not be saved: {exception.Message}";
+        }
+
+        // Re-parsed from the document just written, so the model and the bytes cannot disagree.
+        var parsed = CausalLoopParser.Parse(entry.Document);
+        _entries[path] = entry with { Model = parsed.Model, Problems = parsed.Problems };
+        return "";
+    }
+
+    /// <inheritdoc />
     public void Forget(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
