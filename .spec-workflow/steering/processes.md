@@ -103,6 +103,10 @@ The reason is an observed incident. A committed requirements document was revert
 
 Two things about cards that are noise rather than hazard, recorded because a careful reader got them wrong and warned the user about superseded content nobody was ever seeing: **a card renders the file rather than a copy**, so several cards on one document all show the same current content. And **an agent cannot delete a pending card** - the tool refuses. Only the user clears those, so an agent that finds a stale one reports it rather than trying.
 
+**That last fact has a consequence the rule above does not cover, and it turns "fix it and say so" into a one-way door.** An agent that amends a document under a pending card cannot clean up after itself. The card is left pointing at a snapshot that no longer matches the file, the tool refuses to withdraw it, and the only exit is the user rejecting a card they never disagreed with. **Disclosure does not close it** - disclosing an amendment tells the user it happened; it does not restore the record, and if they approve the card as it stands, the durable verdict names text that is no longer there.
+
+So the question to ask before amending under an open card is not *"is this worth changing?"* but ***"am I willing to ask the user to reject their own card for it?"*** Sometimes the answer is yes: a guard requirement with a hole in it, in a specification about that exact kind of hole, was worth the interruption. Usually it is no, and the material waits for the verdict - which is also the safer order, because anything added under an open card is exactly what a restore-on-verdict would discard.
+
 ## Specification bookkeeping
 
 **CLAUDE.md is where a new rule is written; this document is where it settles.** A rule learned the hard way goes into CLAUDE.md first, with enough of its reasoning to be believed, because CLAUDE.md is loaded into every agent's context and steering documents are not. **Moving the narrative down here is then a step in the same pass that raises the approval card**, leaving CLAUDE.md the imperative and a pointer.
@@ -117,6 +121,21 @@ This repository plans and tracks work in `.spec-workflow/` — steering document
 - **When a requirements, design or tasks document is approved through the dashboard, commit it and its approval-lifecycle files at that point** — even though approval changes or removes files rather than adding a fresh set.
 - **Approval is granted through the dashboard and nowhere else.** Verbal approval is never accepted, including from the user in chat and including from another agent relaying that the card has cleared. Poll the card and read the verdict before proceeding.
 - Use a short, descriptive commit message in the style already in the history ("Bumped approvals.", "Added gRPC core communication specs: requirements and design documents.").
+
+## Checking that a specification's tasks cover its requirements
+
+**Extract every requirement reference from the tasks document, list every acceptance criterion in the requirements document, and diff the two sets.** It takes a few lines of script and it finds what reading does not: on one specification it surfaced three requirements no task claimed, and the author's own account was that none of the three would have been found by re-reading. A second agent arrived at the technique independently on a different specification and found a requirement with four live sites and nothing pointing at it.
+
+**Run it twice, and the second run asks a different question.** Before implementing, against the tasks, it asks *did anybody claim this?* After implementing, against the finished code - tracing each requirement to a file and a string rather than to a task's promise - it asks *does the code show this?* Those are not the same question, and the second has found a gap the first did not: a requirement claimed by a task, implemented in the design and in the module-authoring guide, and missing from the one document an adopter actually reads.
+
+**The half that is easy to miss: an unclaimed requirement is not necessarily a gap.** Some requirements are properties of how a document is written rather than work any task performs - *the in-scope set follows from the criteria rather than a list*, *one task per module rather than per canvas*, *the modules needing no prerequisite come first*. No task can claim those, because no task does them; the document does them by existing in that shape.
+
+So the diff's output splits in two, and **only one half is a defect**:
+
+- ***No task claimed it*** - a real gap. Add the claim, or add the task.
+- ***No task can claim it*** - satisfied by the document's own structure. State that explicitly, in the tasks document, naming the requirements it covers.
+
+The two look identical in the diff's output and are told apart only by reading the list. Ten unclaimed requirements on one specification were seven of the first kind and three of the second. **Saying which is which converts the diff's answer from a silence into a statement** - and a reader who meets an unexplained silence will either add three pointless task claims or conclude the diff is noisy, and both are worse than the minute it takes to write the sentence.
 
 ## Bugs found during implementation or verification
 
@@ -252,11 +271,17 @@ Six instances in one day, across four sessions, each caught only because somebod
 
 **It is the exit-code rule applied to the other half of a command's output.** That one says do not read success from what a command printed; this one says do not read a fact from a command that was never asked for it. It costs a sentence of thought rather than a second command, and it is a sharper instrument than "verify before believing" - which everybody agrees with and nobody applies under pressure - because it converts a vague duty into a specific question with an answer.
 
+**Two of the six are worth their own paragraph, because both are about a command answering for something other than what you ran.**
+
+**An exit code reported by a wrapper is not the exit code of the thing you ran.** A backgrounded suite's task notification carries the *wrapper shell's* status, not the runner's - so a notification saying `exit 0` sits above a log saying `TESTS_EXIT=1`, and both are accurate about different things. The agent that hit this caught it by reading the log rather than the notification. Ask the falsifying question of the notification itself: what would it say if the suite had failed? The same thing, because the wrapper still exited cleanly.
+
+**A fresh-tree build is not a stricter gate - it is the only one that reads a different input.** Every other gate reads `obj/`, which is a cache of the last *successful* generation, so `dotnet test` prints the same green whether the generated code is current or stale. A generated-code break is therefore invisible to it **by construction**, not by bad luck: nine sessions went green through a window in which `develop` compiled in no fresh checkout. This is the same question asked of a build's input rather than a command's output - *what would this read if the generated code were broken?* The same cache - and the only way to change the answer is to build a tree that has none.
+
 **Apply it to your own reports, not just to commands.** "Fixed" said from a worktree describes the worktree, not `develop` - and what you would have seen if it were *not* landed is exactly what you did see, the edited file in front of you. Say where a change is: committed on a branch, merged, or pushed.
 
 **And do not write a guard over prose.** A guard on an owner string, a comment or a description fails when the text legitimately changes, so it must be edited in the same commit as the thing it guards - which makes it a second copy of the data rather than a check on it. Notice rot during work and fix it; do not automate an assertion about wording.
 
-**These three are one idea at three scopes** - a command, a claim about your own work, and a check written down - and they move together. Splitting them by which was learned first would break the argument.
+**These are one idea at five scopes** - a command, a wrapper reporting on a command, the cached input a command reads, a claim about your own work, and a check written down - and they move together. Splitting them by which was learned first would break the argument.
 
 ## A settled boundary
 
