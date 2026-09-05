@@ -75,23 +75,6 @@ public sealed class HierarchyService : EtAlii.Adp.HierarchyService.HierarchyServ
         // second outage announces again.
         var rootLost = 0;
 
-        void HandleRootLost(string message)
-        {
-            if (Interlocked.Exchange(ref rootLost, 1) == 1)
-            {
-                return;
-            }
-
-            model.NotifyRootUnavailable(message);
-            _ = RecoverAsync();
-        }
-
-        async Task RecoverAsync()
-        {
-            await WaitForRootRecoveryAsync(rootPath, model, recoveryCts.Token);
-            Interlocked.Exchange(ref rootLost, 0);
-        }
-
         var watcher = CreateWatcher(rootPath, model, HandleRootLost);
         _hierarchyModelStore.AttachWatcher(watchId, watcher);
         _ = WatchRootPresenceAsync(rootPath, HandleRootLost, recoveryCts.Token);
@@ -122,6 +105,25 @@ public sealed class HierarchyService : EtAlii.Adp.HierarchyService.HierarchyServ
             await recoveryCts.CancelAsync();
             _hierarchyModelStore.Remove(watchId);
             _logger.Information("Stopped watching {RootPath} on watch {WatchId}", rootPath, watchId);
+        }
+
+        return;
+
+        async Task RecoverAsync()
+        {
+            await WaitForRootRecoveryAsync(rootPath, model, recoveryCts.Token);
+            Interlocked.Exchange(ref rootLost, 0);
+        }
+
+        void HandleRootLost(string message)
+        {
+            if (Interlocked.Exchange(ref rootLost, 1) == 1)
+            {
+                return;
+            }
+
+            model.NotifyRootUnavailable(message);
+            _ = RecoverAsync();
         }
     }
 
