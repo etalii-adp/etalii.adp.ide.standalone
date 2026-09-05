@@ -62,7 +62,7 @@ than missed.
   - _Requirements: 2.2, 2.3, 3.1, 3.2, 3.3_
   - _Prompt: Implement the task for spec selection-after-drag, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript/React developer | Task: Build the gesture arbiter in src/client/src/canvas/gesture/ per the approved design — verdicts at gesture end from the gesture's own record, pointer capture, one threshold constant, no click subscription — with jsdom unit tests for every transition and every design Error Scenario | Restrictions: no canvas is converted yet; targets stay opaque; dx/dy stay client pixels; the readme records why click is deliberately absent | _Leverage: selection.ts's header as the mechanics-versus-meaning precedent; interaction.ts as the keyboard half of the same idea; AnsibleCanvas.test.tsx for capture under jsdom | Success: the arbiter's tests pass, at least one was seen to fail during authoring for the right reason, and npm test plus typecheck stay green. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2. C4: the latch reproduction, then the conversion that deletes it
+- [x] 2. C4: the latch reproduction, then the conversion that deletes it
   - Files: `src/diagrams/c4/client/C4Canvas.tsx`, `src/diagrams/c4/client/C4Canvas.test.tsx`
   - **Reproduction first, seen to fail**: press node A, move beyond threshold, fire the
     surface's mouse-leave, release, click node B — assert B is selected. Today the latch
@@ -81,7 +81,7 @@ than missed.
   - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 4.1, 4.2, 5.1, 5.2_
   - _Prompt: Implement the task for spec selection-after-drag, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Write the C4 latch reproduction, see it fail against today's code and record the failure, then convert C4Canvas onto the arbiter deleting the flag machinery per the design's deletion table | Restrictions: reproduction before conversion, never after; no behaviour change outside the defective boundary — thresholds, Escape, context menu and inline-edit-before-gesture as today; net line count goes down | _Leverage: the arbiter from task 1; the design's deletion table for the exact sites | Success: the reproduction failed before and passes after, the sabotage reddens exactly it, no JustEndedRef remains in the file, and the c4 client tests pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. Mindmap: both latch faces reproduced, then the conversion
+- [-] 3. Mindmap: both latch faces reproduced, then the conversion
   - Files: `src/diagrams/mindmap/client/MindmapCanvas.tsx`, `src/diagrams/mindmap/client/MindmapCanvas.test.tsx`
   - **Two reproductions first, both seen to fail**: (a) drag node A onto parent P — the
     reparent's layout moves A from under the pointer — then click node B; today the trailing
