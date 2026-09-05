@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/fit-to-view-extent/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-05T16:06:43.831Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788624402609_15i6076m0",
+      "approvalTitle": "fit-to-view-extent — Design"
+    }
+  ]
+}
