@@ -75,13 +75,13 @@ Two phases, and the split is not cosmetic: **phase 1 touches no example file and
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 6.1, 6.2_
   - _Prompt: Implement the task for spec folder-add-registration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer | Task: Rename the thirteen named folder-subject registrations to a bare .adp in both the module and showcase copies | Restrictions: git mv only, content byte-identical; leave the already-bare one alone; confirm the two example trees are free before starting and re-measure the survey against the current tip | Success: every folder-subject registration in the tree is bare, ExampleRegistrationTests still walks both trees green, and the diagrams still open. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 8. The shipped-examples guard
+- [x] 8. The shipped-examples guard
   - Files: a test beside `ExampleRegistrationTests`
   - Fail, naming the file, if any folder-subject registration under `src/diagrams/*/examples/` or `src/examples/` carries a name. **Derive folder-subject-ness from the deployed catalog**, never from a hard-coded module list, so a third such module is covered the day it arrives rather than the day someone remembers.
   - _Requirements: 5.1_
   - _Prompt: Implement the task for spec folder-add-registration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Write the guard that fails on a named folder-subject registration in either example tree | Restrictions: derive the folder-subject set from the deployed catalog rather than a module list; the failure message names the offending file and the bare name it should have | _Leverage: ExampleRegistrationTests' existing walk of both trees | Success: reintroducing a named registration fails the suite with its own path in the message. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 9. Gate and merge phase 2
+- [-] 9. Gate and merge phase 2
   - Four gates, then merge as before. Confirm in the running app that a renamed example still opens — routing finds the registration inside the folder either way, and this is the cheap check that says so.
   - _Requirements: 3.4, 5.3_
   - _Prompt: Implement the task for spec folder-add-registration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer | Task: Gate, merge phase 2, and confirm a renamed example still opens in the running app | Restrictions: exit codes captured before any pipe; sign in with the checked-in developer placeholder if the app is needed, and record the check rather than leaving it pending | Success: four gates zero, phase 2 on develop, and one renamed example observed opening. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
