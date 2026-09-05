@@ -1,6 +1,7 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Diagrams;
+using EtAlii.Adp.Backend.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -158,6 +159,69 @@ public class CausalLoopContextActionsTests : IDisposable
         // Assert.
         var failed = Assert.IsType<ContextExecutionFailed>(result);
         Assert.Contains("not open on this connection", failed.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The arrangement runs, end to end, through the path a user's right-click actually takes.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The gap this closes.</b> The command had ten tests and the provider had sixteen, and
+    /// between them sat the one step neither exercised: the provider reaching the open session
+    /// through the viewport registry and calling it. The only test of that seam asserted the
+    /// <i>negative</i> case - that a diagram not open on the connection says so - which passes
+    /// whether or not the positive case works at all.
+    /// </para>
+    /// <para>
+    /// So this registers a real session the way the diagram service does, executes the action the
+    /// way the context service does, and asserts on the file. No target is built by hand.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public async Task TheArrangement_RunsThroughTheActionPath_AndIsOneUndoAway()
+    {
+        // Arrange.
+        var adpPath = IoPath.Combine(_root, "feedback.adp");
+        File.WriteAllText(adpPath, "systems/causal-loop-diagram\r\n");
+        var before = File.ReadAllText(adpPath);
+
+        var watchId = ShortGuid.NewShortGuid();
+        var history = _provider.GetRequiredService<IHistoryStackStore>();
+        var session = new CausalLoopSessionFactory(
+                ServiceCollectionAddCausalLoopExtension.CausalLoopOrigin,
+                _store,
+                new CausalLoopElementMapper(),
+                history)
+            .Open(watchId, _root, _path, adpPath);
+
+        // Registered exactly as the diagram service registers an open stream - which is what
+        // lets a unary action reach the session behind it.
+        _sessions.Register(watchId, _path, session, _ => { });
+
+        var target = new ContextTarget(
+            ContextScope.DiagramElement, _path, false, ShortGuid.NewShortGuid(), _root, watchId,
+            CausalLoopSelection.PlacementFor(0, 0));
+
+        // Act.
+        var result = await _actions.ExecuteAsync(
+            target, CausalLoopContextActionProvider.ArrangeActionId, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(result);
+
+        // The arrangement landed in the registration, and every variable took a position.
+        var stored = RegistrationLayout.Read(adpPath);
+        Assert.Equal(2, stored.Count);
+        Assert.Contains("variable:population", stored.Keys);
+        Assert.Contains("variable:births", stored.Keys);
+
+        // The body is untouched: an arrangement is an opinion about where things are drawn.
+        Assert.Equal(Corpus, File.ReadAllText(_path));
+
+        // And it is ONE undo away, not one per variable (Requirement 6.8).
+        var undone = await history.Get(_root).UndoAsync(TestContext.Current.CancellationToken);
+        Assert.True(undone.IsSuccess, undone.Error);
+        Assert.Equal(before, File.ReadAllText(adpPath));
     }
 
     // ---- unavailable with a reason, never silently absent -----------------------------------
