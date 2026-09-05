@@ -6,10 +6,24 @@ came from. (See CLAUDE.md, "Bugs found during implementation or verification".)
 
 ## Two things every entry below assumes
 
-**Signing in.** The app opens on a sign-in form and nothing below is reachable until somebody is
-through it. An agent cannot type the credential, so **a person signs the tester in once and the
-pass runs from there** — and note that reloading the page ends the session, because it is held in
-memory only. A reload therefore costs a person's attention, not just a moment.
+**Signing in — a developer build does not ask.** Since `developer-sign-in-bypass`, a locally
+running developer build opens **already authenticated** and the sign-in form is never rendered:
+`AuthProvider` asks the backend for a session on mount and only then decides what to show.
+Nothing below needs a person any more, and a reload no longer costs anyone's attention — the
+session is obtained again on the next mount.
+
+Two things follow that a reader of an outcome needs. **The header carries a "developer session"
+marker** whenever the session was handed over this way, so every screenshot taken under it says
+so; if that marker is absent, the pass was run some other way and the outcome means something
+different. And **the bypass exists only in a Debug build running in a development environment**
+— it is compiled out of a release entirely, and the release job refuses to publish a build that
+still carries it. An outcome recorded below is therefore evidence about a developer build, which
+is why each one names the build it was seen on.
+
+If a sign-in form does appear, the bypass is off rather than broken: check that the build is
+Debug, that `ASPNETCORE_ENVIRONMENT` is `developer` (or `Development`), and that
+`LocalAuthenticator:DeveloperSessionDisabled` is not set. The real credential path still works
+and is still tested; it is no longer the only way in.
 
 **Finding the Properties panel.** Thirteen entries below say "read the Properties panel" or "the
 property grid" as though it were on screen. It often is not. `Properties` shares a tabbed pane
@@ -1620,7 +1634,7 @@ could never recover the rest however far it went.
 
 - **Preconditions**: backend + client running; a project containing an RDF document of more than
   1,000 resources — `src/examples/` has the vendored ontologies, and any of the larger ones will
-  do. Sign in with the checked-in developer placeholder.
+  do. The build opens already authenticated; no sign-in is needed.
 - **Actions**: open the document; note that a truncation banner appears and that the diagram is
   read-only; pan steadily to the far edge of the laid-out content, well past what was drawn at
   open; then zoom out until the whole plane is in view, and zoom back in on a region that was
