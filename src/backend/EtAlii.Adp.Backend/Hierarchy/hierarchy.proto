@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package etalii.adp;
+
+import "shared.proto"; // ShortGuid
+
+option csharp_namespace = "EtAlii.Adp";
+
+service HierarchyService {
+  rpc ListEntries(ListEntriesRequest) returns (ListEntriesResponse);
+  rpc WatchHierarchy(WatchHierarchyRequest) returns (stream HierarchyMessage);
+}
+
+enum EntryKind {
+  ENTRY_KIND_UNSPECIFIED = 0;
+  FILE = 1;
+  FOLDER = 2;
+}
+
+// What ADP's own routing says about an entry (small-refinements Requirement 3): a
+// registration governs it, something merely claims it, or neither. Zero is neutral on
+// purpose - an older peer's silence and "nothing to say" must read identically.
+enum EntryDiagramState {
+  ENTRY_DIAGRAM_STATE_UNSPECIFIED = 0; // neutral
+  REGISTERED = 1;
+  POTENTIAL = 2;
+}
+
+message Entry {
+  ShortGuid id = 1;
+  ShortGuid parent_id = 2; // unset for a root-level entry
+  string name = 3;
+  EntryKind kind = 4;
+  bool available = 5; // false when a listed folder becomes inaccessible (permissions, deletion)
+  bool has_children = 6; // whether the entry currently has children: a folder's entries, or a file's nested diagram registrations (adp-file-nesting Requirement 3.1)
+  EntryDiagramState diagram_state = 7;
+}
+
+message ListEntriesRequest {
+  ShortGuid project_id = 1;
+  ShortGuid folder_id = 2; // unset = list the root folder's direct children
+  ShortGuid watch_id = 3;  // client-generated; scopes this call to one connection's HierarchyModel (never shared across connections)
+}
+
+message ListEntriesError {
+  string message = 1;
+}
+
+message Entries {
+  repeated Entry entries = 1;
+}
+
+message ListEntriesResponse {
+  oneof result {
+    Entries entries = 1;
+    ListEntriesError error = 2;
+  }
+}
+
+message WatchHierarchyRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2; // same client-generated id used on this connection's ListEntries calls
+}
+
+message EntryCreated {
+  Entry entry = 1; // parent_id/name/kind resolved from the model
+}
+
+message EntryRemoved {
+  ShortGuid entry_id = 1;
+}
+
+message EntryRenamed {
+  ShortGuid entry_id = 1;
+  string new_name = 2;
+}
+
+message EntryUpdated {
+  ShortGuid entry_id = 1;
+  bool has_children = 2; // pushed when an existing, already-known entry's has_children changes
+  ShortGuid parent_id = 3; // set only for a re-parent (an orphan whose subject appeared, or a subject vanishing under its registrations); unset means the parent is unchanged, and a set-but-empty id means the root. A re-parent is an update rather than remove-then-create so the entry keeps its id and any selection a client holds on it (adp-file-nesting Requirement 10.3)
+  EntryDiagramState diagram_state = 4; // always the entry's full current state, never a delta - like has_children, because an unset enum is indistinguishable from a genuine neutral
+}
+
+message RootUnavailable {
+  string message = 1;
+}
+
+message HierarchyChange {
+  oneof change {
+    EntryCreated created = 1;
+    EntryRemoved removed = 2;
+    EntryRenamed renamed = 3;
+    RootUnavailable root_unavailable = 4;
+    EntryUpdated updated = 5;
+  }
+}
+
+// Wraps HierarchyChange so the stream's element type can grow without the RPC
+// signature changing again. Prompts used to ride here as field 2; they now travel
+// on ContextService.Watch (context.proto).
+message HierarchyMessage {
+  oneof message {
+    HierarchyChange change = 1;
+  }
+  reserved 2;
+}
