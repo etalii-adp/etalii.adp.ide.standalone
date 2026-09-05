@@ -151,7 +151,7 @@ existed and carried their classes and marks. Nothing asserted anything about the
 links drawing the identical path was invisible. The tests added with this fix compare the two
 paths and the sign of each curve's control point, and were seen to fail against the old geometry.
 
-- **Result**: **not run.** No agent on this specification can sign in — see the preamble.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session), worktree `claude/run` on develop)**: **passed.** Ran in the app now that a developer build opens already authenticated. `on-call.cld` and `reference.cld` both open. Every causal link is a single quadratic arc (one control point) — not a straight line, not an S-curve — and all ten of on-call's control-point offsets share one sign, so the arcs bow consistently to one side of travel and read as a ring. In `reference`, the mutual Population↔Births pair draws two arcs bowing to **opposite** sides — an ellipse, the case that was broken. Each loop identifier sits in a circular-arrow badge: R1 sweeps clockwise (SVG sweep-flag 1), B2 anticlockwise (0), and R3's badge — labelled reinforcing but computed balancing — is drawn anticlockwise with a `causal-loop-balancing` glyph. Polarity marks (+/−) sit beside each arc, and the delayed link's two strokes cross the arc at 90° (measured).
 
 ## A loop labelled R is arithmetically balancing, and the tool says so without changing the file (causal-loop-diagram, task 5.3)
 
@@ -176,7 +176,7 @@ without the document changing under them.
 - **Also worth seeing while here**: loop `B4` reads **undecidable** rather than reinforcing or
   balancing, because the link into it states no polarity. Unknown is not none.
 
-- **Result**: **not run.** No agent on this specification can sign in — see the preamble. Needs a
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session), worktree `claude/run` on develop)**: **passed.** After **Validate**, the problems panel carries, verbatim: *"Loop R3 is labelled reinforcing but its links make it balancing: it runs through 3 negative links, and a loop reinforces on an even count and balances on an odd one…"* — R3, both polarities, the negative count. Selecting R3 on the canvas fills the property grid with **Computed polarity: balancing** (*"Counted from the polarity of the links around the cycle"*) and **Stated polarity: reinforcing** (*"'R3' claims this, and the arrows say balancing. Neither is corrected for you…"*), plus its cycle `population → crowding → sanitation → deaths`. `reference.cld` stayed byte-for-byte unchanged throughout (`git status` clean) — reporting is not correcting — and the finding is re-derived on Validate rather than stored. **B4** reads undecidable: *"…no stated polarity, so whether it reinforces or balances cannot be counted."* One incidental finding: the R3/B4 diagnostics point at `reference.adp:59`/`:64`, but the loops live in `reference.cld` and `reference.adp` is an 8-line registration/layout file — activating the problem opens it as text with *"Line 59 is not in this file any more."* A stale file:line on the loop diagnostics, unrelated to sign-in; flagged for a separate pass.
   person, or a session permitted to enter the placeholder credential.
 - **Text reviewed 2026-09-05 (Tester 2)**: **accurate against the implementation**, checked without running the app. Every named document, variable, loop, property row, action label and reason string exists and matches. `reference.cld` carries `loop R3` and `loop B4`; `Computed polarity` and `Stated polarity` are in `CausalLoopContextPropertyProvider.cs`.
 
@@ -200,7 +200,7 @@ nothing in the backend suite can see whether it was painted.
 - **Then**: toggle the delay off from the menu and confirm the strokes disappear; one Undo brings
   them back and the `.cld` returns byte-for-byte.
 
-- **Result**: **not run.** Same reason as above.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session), worktree `claude/run` on develop)**: **passed.** The `crowding → sanitation` link is the only delayed one: two strokes across it, its polarity mark reads `−`, no other link carries strokes, and the strokes cross the arc at 90°. Its grid shows **Delayed: true**, **Polarity: negative**, and a **Weight** row that is empty rather than `0`. The context menu offers **Not delayed**, **Same direction (+)** as available, and **Opposite direction (−)** as unavailable with the reason *"This link already states −."* Choosing **Not delayed** removed exactly the `delayed` keyword from that one line (polarity preserved) and the strokes vanished; **one** Undo returned `reference.cld` byte-for-byte (`git status` clean) and a fresh reopen drew the strokes again.
 - **Text reviewed 2026-09-05 (Tester 2)**: **accurate against the implementation**, checked without running the app. Every named document, variable, loop, property row, action label and reason string exists and matches. `link crowding -> sanitation - delayed` is in `reference.cld` and carries no weight, while its sibling `population -> crowding` carries `weight=0.8` - so the empty-not-zero Weight row is genuinely testable. `"This link already states −."` is verbatim at `CausalLoopContextActionProvider.cs:338`.
 
 ## The self-organizing layout rearranges a diagram, and one undo puts it back exactly (causal-loop-diagram, task 5.3)
@@ -229,7 +229,7 @@ can feel.
   that is the specified behaviour (Requirement 6.7) and should be recorded as such rather than
   retried until it succeeds.
 
-- **Result**: **not run.** Same reason as above.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session), worktree `claude/run` on develop)**: **passed.** Right-clicking a variable offers Add link / Claim a loop / Rename / Remove — **not** Arrange; right-clicking the background offers **Add variable…** and **Arrange diagram**. After dragging a variable into a mess (which wrote a position to `on-call.adp` alone, `on-call.cld` untouched), **Arrange diagram** re-laid all eight variables with **zero** overlapping pairs and wrote a `layout:` block to `on-call.adp` while leaving `on-call.cld` byte-identical. **One** Undo moved all eight back together — a single step, not one per variable — and undoing the drag too returned the worktree byte-for-byte clean. The determinism-across-restart sub-check is left to the two-process backend unit test rather than re-run here.
 - **Text reviewed 2026-09-05 (Tester 2)**: **accurate against the implementation**, checked without running the app. Every named document, variable, loop, property row, action label and reason string exists and matches. `Arrange diagram` is at `CausalLoopContextActionProvider.cs:104` and `on-call` is present. Requirement 6.7 is conditional - a refusal only if determinism and overlap-freedom cannot both hold - so no refusal path in code is not a gap, and the entry is right to call a refusal a pass.
 
 ## Drop-target highlight actually paints (mindmap-diagram, bezier-connector pass)
@@ -246,7 +246,7 @@ applied and the test passed while the node looked unchanged.
 - **Expected**: the hovered node's border changes to the accent color (`--color-primary`,
   limegreen), thicker (2.5px) and dashed - visibly different from both the normal border and
   the focused node's solid accent border. Releasing the button clears it again.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Verified in the real browser, which is what the check needs — jsdom cannot see the paint. With the `mindmap-node-drop-target` class on a node, its rect computes to stroke `rgb(50,205,50)` (limegreen, the `--color-primary` token), width **2.5px**, dash-array **6 3** — versus a normal node's slate `rgb(51,65,85)`, 1.5px, solid. So the highlight paints and no equal-specificity rule overrides it (the exact defect this guards). The pointer plumbing that applies the class on a live drag could not be driven through React's synthetic-event capture and is covered instead by `MindmapCanvas.test.tsx`'s `dragOver` tests; the paint — the part only a browser can answer — is confirmed.
 - **Text reviewed 2026-09-05 (Tester 2)**: **accurate**, checked without running the app. `.mindmap-node-drop-target rect` is at `mindmap.css:79` with `stroke: var(--color-primary)`, `stroke-width: 2.5` and `stroke-dasharray: 6 3`; `--color-primary` is `limegreen` in both themes (`index.css:8`, `:27`). The entry's contrast claim is exact: focused (`:71`) is the same colour and width but **solid**, so the dasharray is the only difference. The overriding rule it warns about, `.mindmap-node rect`, sits at `:54` — *before* the highlight, so that hazard is currently not present; the entry describes how the bug shipped, not a live defect.
 
 ## Collapse in the node's context menu offers Expand afterwards (mindmap-diagram, bezier-connector pass)
@@ -258,7 +258,7 @@ kept here because the stale label was found through the menu and is quickest to 
 - **Actions**: right-click the branch node, choose **Collapse**; right-click the same node again.
 - **Expected**: the branch's descendants disappear on the first click, and the re-opened menu
   reads **Expand** (not Collapse). Choosing Expand restores the branch.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** On a 37-node mindmap, right-clicking a branch node ("Layout") offered **Collapse**; choosing it hid that branch's descendants (37 → 27 nodes). Right-clicking the same node again the menu read **Expand**, not Collapse, and choosing it restored the branch (27 → 37). The mindmap files stayed git-clean (collapse/expand net-zero).
 - **Text reviewed 2026-09-05 (Tester 2)**: **accurate**, checked without running the app. The named guard `ACompletedAction_RepushesTheSelectionsActions_SoACollapseOffersExpand` exists at `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/DiagramElementActionFlow.Tests.cs:264`, and the `Collapse`/`Expand` labels are in `MindmapContextActionProvider.cs:95`.
 
 ## C4 relationships are elevated to the level the view shows (c4-diagrams, manual pass)
@@ -273,7 +273,7 @@ view drew the systems it depends on and *no lines to them*, which reads as "no d
 - **Expected**: the system in scope has a labelled arrow to each external system its containers
   talk to, and no arrow to itself. Two containers talking to one external system draw one line,
   not two.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Opened the `c4/context` view (`courier.adp`). Mapping every rendered relationship's endpoints back to its node: the system in scope, **Courier Tracking**, carries one labelled arrow to **each** external system its containers talk to — Routing Optimiser (*Requests routes*), E-mail System (*Sends mail*), Mapping Provider (*Geocodes addresses*) — with **no** arrow to itself, and exactly one line per external (the dedup holds). The "systems drawn but no lines to them" symptom is absent.
 
 ## A C4 boundary contains only what is inside it (c4-diagrams, manual pass)
 
@@ -286,7 +286,7 @@ the same reason: the containers looked right, and only the boundary's geometry g
 - **Expected**: the system in scope is drawn as the dashed boundary and **not** also as a box;
   every container sits inside it; the person and the external system sit outside it; and nothing
   overlaps anything else.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Opened the `c4/container` view (`courier.containers.adp`). Courier Tracking is drawn as a **dashed** boundary (stroke-dasharray 8 6) and **not** also as a box. All six containers (Web Application, Single-Page Application, Courier App, API Application, Event Broker, Delivery Database) sit inside the boundary's box; all three people and all three external systems sit outside it; and no two nodes overlap.
 
 ## A C4 document ADP wrote opens in Structurizr Lite (c4-diagrams, task 39)
 
@@ -348,7 +348,7 @@ look at. Three things, and only these:
 - **Expected**: the styles resolve, the auto-layout is readable, and the `.layout.json` sidecar
   causes no complaint. That every view is present and every element is on it is no longer part
   of this pass - the export checks own that, and they run on every `dotnet test`.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05**: **not blocked on sign-in — re-classified, not run here.** This entry's Actions run Structurizr Lite (Docker/JRE, `localhost:8080`) and its residual manual part is explicitly a subjective aesthetic judgment — styles resolve, the auto-layout is *readable*, the sidecar draws no complaint — against an external tool. None of that uses ADP's sign-in, so the developer-sign-in bypass does not unblock it; the earlier "needs a person to sign in" was a uniform-sweep mis-attribution. The objective halves it once covered are now automated and green on every `dotnet test`: `C4InteropTests` parses ADP's output through the real Structurizr CLI, and `C4ExportTests` asserts every element ADP believes is on a view is drawn (both passed in this branch's full-suite gate). What remains — the aesthetic judgment in Lite — is left for a person with Structurizr Lite; this specification does not claim it.
 
 ## The property grid's keyboard cadence, in a real browser (property-grid, task 6)
 
@@ -369,7 +369,7 @@ displays, or in an ordinary browser against the dev servers.
      last described and nothing is written.
   4. Click into **Text**, change nothing, click elsewhere. → Nothing is written, and Undo does
      not become available for it.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **partially run — the bypass unblocked the panel; Enter/Ctrl+Enter still need an ordinary browser.** With a mindmap node selected, the Properties panel shows the editable Text, Notes and Link rows, and the developer build reaches them with no sign-in. Live: typing reaches the field, **Escape** returns Text to the backend's value and writes nothing (step 3), and a commit produced **exactly one** `Set mindmap.text` write with the canvas updating and one Undo restoring it — the commit-once-and-reach-the-backend heart of step 1. What the in-app browser pane still would not deliver is **Enter** and **Ctrl+Enter** (repeated Enter left the canvas unchanged and wrote nothing while typing and Escape worked) — the exact non-compositing-pane limitation this entry names. So the Enter/Ctrl+Enter cadence needs an ordinary browser against the dev servers; it is not an app defect, and the cadence stays pinned by unit tests.
 
 ## A property edit reaches a second connection (property-grid, task 6)
 
@@ -384,7 +384,7 @@ non-compositing pane.
 - **Expected**: tab B's canvas shows the new text without any interaction, and tab B's
   Properties panel shows the new value in its Text row - it re-describes from the push. Then
   press **Undo** in tab A: both tabs return to the old value, canvas and grid alike.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not run here — needs two real browser tabs, as this entry already notes.** The developer build removes the sign-in blocker, but the check verifies a commit in one tab reaching a *second* connection's canvas and grid, and the in-app browser pane cannot drive a second tab's canvas selection — the very limitation recorded in this entry. That an edit commits as one write and would be pushed is confirmed by the property-grid cadence entry above (a single `Set mindmap.text` reached the backend); the cross-connection delivery wants an ordinary browser with two tabs and is left unclaimed rather than faked.
 
 ## The Ansible diagram opens from Add and draws its folder (ansible-structure-diagram, task 26)
 
