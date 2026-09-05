@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/selection-after-drag/design.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
@@ -9,6 +9,14 @@
       "trigger": "initial",
       "approvalId": "approval_1788637155321_wzly04es7",
       "approvalTitle": "selection-after-drag design: one gesture arbiter that never subscribes to click — pointer capture, one threshold, net deletion"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-05T19:50:43.547Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788637744619_j4cwjmwuz",
+      "approvalTitle": "selection-after-drag design (redone, house shape): one gesture arbiter, no trailing-click, pointer capture, net deletion"
     }
   ]
 }

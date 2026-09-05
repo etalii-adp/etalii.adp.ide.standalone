@@ -3,8 +3,10 @@
   "title": "selection-after-drag design (redone, house shape): one gesture arbiter, no trailing-click, pointer capture, net deletion",
   "filePath": ".spec-workflow/specs/selection-after-drag/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-05T19:49:04.619Z",
   "category": "spec",
-  "categoryName": "selection-after-drag"
+  "categoryName": "selection-after-drag",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-05T19:50:43.556Z"
 }
