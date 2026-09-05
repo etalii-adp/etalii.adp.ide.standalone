@@ -127,7 +127,7 @@ A note on guards, since the question will come up: this specification has **no l
 - [ ] 4. Meyer's method, with the randomness removed
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8_
 
-- [ ] 4.1 The self-organizing pass, made deterministic
+- [-] 4.1 The self-organizing pass, made deterministic
   - Files: `SelfOrganizingLayout.cs`
   - Meyer's self-organizing graphs — competitive learning from Kohonen's map with the neighbourhood measured in **graph** distance, which is what makes it a graph layout rather than a clustering
   - The three sources of randomness are replaced one for one: initial positions from a phyllotaxis spiral in the document's stable order; stimuli from a fixed-length low-discrepancy sequence computed from the iteration index; tie-breaking by the stable document order. A fixed iteration count, and a learning-rate and radius schedule that is a function of the iteration index alone. No wall-clock, no random source, no settling animation
