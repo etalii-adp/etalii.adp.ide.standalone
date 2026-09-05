@@ -1200,10 +1200,28 @@ Requirement 3.4's answer to nesting: the canvas label is capped, the property gr
   its "Subclass of" rows. Where a label on the canvas ends in `…`, the panel's text is longer
   than the label — the elision is real and recoverable.
 
-- **Result 2026-09-04**: **pending**, same reason - sign-in. Covered meanwhile by
-  `OwlProvidersTests.AnExpressionSelection_ShowsTheUncappedForm_ReadOnlyWithTheBoundarySentence`
-  and `AClassSelection_CarriesItsAxiomRows`, and by `ExpressionRendererTests`' depth-cap case,
-  which asserts the capped label against the uncapped form the grid shows.
+- **Result 2026-09-05**: **passes.** Run against a worktree build with `src/examples` open; the
+  user signed in.
+
+  **The elision is real and recoverable.** The canvas label reads `∀ day…`; selecting that node
+  puts `Expression: ∀ day.xsd:gDay` in the Properties panel - longer than the label, and the
+  full Manchester rendering. It is a read-only row whose reason names the boundary: *"That is an
+  anonymous class expression, whose identity does not survive an edit to the file, so nothing
+  about it can be edited from the diagram. Edit the expression as text."*
+
+  **The owning class lists the same expression.** Selecting `:DateTimeDescription` shows an
+  AXIOMS section whose `Subclass of` rows are `:GeneralDateTimeDescription`, `∀ day.xsd:gDay`,
+  `∀ month.xsd:gMonth`, `∀ year.xsd:gYear` and `∋ Temporal reference system used.Gregorian` -
+  the first row a named class, the rest the expressions, each carrying the same read-only reason.
+  So the expression a reader meets on the canvas and the one listed against its class are the
+  same string.
+
+  **One thing a tester should know before following this check: the Properties panel is not
+  visible by default.** At 1440x900 the right-hand pane is 253px wide, which fits one tab, so
+  `TabbedPane` collapses `Properties` behind a "1 more tabs" overflow button beside `Toolbox`.
+  That is the pane working as designed rather than a defect, but the check says "read the
+  Properties panel" as though it were on screen, and it takes a click to find. Widening the pane
+  or using the overflow both work.
 
 ## An ontology is offered for a marked file, and a bare one still opens as a graph (owl-diagram, task 4.3)
 
