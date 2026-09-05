@@ -3,8 +3,10 @@
   "title": "folder-add-registration — Tasks",
   "filePath": ".spec-workflow/specs/folder-add-registration/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-04T23:27:03.584Z",
   "category": "spec",
-  "categoryName": "folder-add-registration"
+  "categoryName": "folder-add-registration",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-04T23:27:47.245Z"
 }
