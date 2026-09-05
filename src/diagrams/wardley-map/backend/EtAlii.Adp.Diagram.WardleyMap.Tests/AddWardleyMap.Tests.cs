@@ -63,8 +63,10 @@ public sealed class AddWardleyMapTests : IDisposable
         // the extension was declared a task before the factory existed.
         var factories = new DiagramDocumentFactories(_services.GetServices<IDiagramDocumentFactory>());
 
-        // Assert.
-        factories.Verify(Diagram.Definitions);
+        // Assert. Verify RETURNS the offenders and throws nothing but ArgumentNullException,
+        // so calling it and dropping the answer asserted precisely nothing - while the comment
+        // above said it fails startup, which is how it read as a check to anyone skimming.
+        Assert.Empty(factories.Verify(Diagram.Definitions));
     }
 
     [Fact]
