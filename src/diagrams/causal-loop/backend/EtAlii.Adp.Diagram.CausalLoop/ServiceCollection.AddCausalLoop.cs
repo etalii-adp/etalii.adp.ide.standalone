@@ -1,6 +1,7 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Diagrams;
+using EtAlii.Adp.Backend.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -77,6 +78,12 @@ public static class ServiceCollectionAddCausalLoopExtension
             provider.GetRequiredService<IHistoryStackStore>(),
             provider.GetRequiredService<IDiagramViewportRegistry>()));
         services.AddSingleton<IDiagramToolboxProvider, CausalLoopToolboxProvider>();
+
+        // What makes a canvas selection resolve into a target at all. Without it the element
+        // level never resolves, so neither provider above is ever consulted and the whole
+        // context surface is silently unreachable in the application - which is exactly how
+        // this module shipped.
+        services.AddSingleton<IContextSourceResolver, CausalLoopContextSourceResolver>();
         services.AddSingleton<IContextPropertyProvider>(provider => new CausalLoopContextPropertyProvider(
             provider.GetRequiredService<IHistoryStackStore>(),
             provider.GetRequiredService<ICausalLoopDocumentStore>()));

@@ -70,12 +70,18 @@ public static class CausalLoopLayout
         var slot = widths.Values.Max() + metrics.Separation;
         var radius = Math.Max(slot, model.Variables.Count * slot / (2 * Math.PI));
 
-        for (var index = 0; index < model.Variables.Count; index++)
+        // Around the ring in the order the links run, not the order the document declares.
+        // Declaration order is the author's writing order and says nothing about structure, so a
+        // ring built from it puts linked variables opposite each other and every link becomes a
+        // chord across the middle. Following the links instead puts most of them along the rim.
+        var order = RingOrder(model);
+
+        for (var index = 0; index < order.Count; index++)
         {
-            var variable = model.Variables[index];
+            var variable = order[index];
 
             // Starting at the top and running clockwise, which is how a reader traces a loop.
-            var angle = (2 * Math.PI * index / model.Variables.Count) - (Math.PI / 2);
+            var angle = (2 * Math.PI * index / order.Count) - (Math.PI / 2);
             var centerX = radius * Math.Cos(angle);
             var centerY = radius * Math.Sin(angle);
 
@@ -87,5 +93,104 @@ public static class CausalLoopLayout
         }
 
         return boxes;
+    }
+
+    /// <summary>
+    /// The order variables are placed around the ring: a walk of the link graph rather than the
+    /// order the document declares them in.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Why this is not cosmetic.</b> A causal loop diagram's subject is its cycles, and a
+    /// cycle is legible only when its variables are adjacent. Placed in declaration order, a
+    /// four-variable loop written as <c>a, b, c, d</c> but linked <c>a to c to b to d</c> draws
+    /// two chords straight through the middle of the ring. Following the links puts those same
+    /// four in sequence, and the loop becomes the rim.
+    /// </para>
+    /// <para>
+    /// <b>Deterministic, like everything else that decides a position here.</b> The walk starts
+    /// at the first declared variable and, at every step, prefers the earliest-declared neighbour
+    /// not yet placed; when a component is exhausted it continues from the earliest-declared
+    /// variable still left. No random source, no wall-clock, and the same document always gives
+    /// the same ring.
+    /// </para>
+    /// <para>
+    /// It reads links as undirected for the same reason the self-organizing layout does: two
+    /// variables joined by an arrow belong beside each other whichever way it points.
+    /// </para>
+    /// </remarks>
+    internal static IReadOnlyList<CausalLoopVariable> RingOrder(CausalLoopModel model)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        var position = new Dictionary<string, int>(model.Variables.Count, StringComparer.Ordinal);
+        for (var index = 0; index < model.Variables.Count; index++)
+        {
+            position[model.Variables[index].Id] = index;
+        }
+
+        var neighbours = new List<int>[model.Variables.Count];
+        for (var index = 0; index < neighbours.Length; index++)
+        {
+            neighbours[index] = [];
+        }
+
+        foreach (var link in model.Links)
+        {
+            if (!position.TryGetValue(link.From, out var from)
+                || !position.TryGetValue(link.To, out var to)
+                || from == to)
+            {
+                continue;
+            }
+
+            neighbours[from].Add(to);
+            neighbours[to].Add(from);
+        }
+
+        // Earliest-declared first at every branch, so the walk is a pure function of the document.
+        foreach (var list in neighbours)
+        {
+            list.Sort();
+        }
+
+        var placed = new bool[model.Variables.Count];
+        var order = new List<CausalLoopVariable>(model.Variables.Count);
+
+        for (var seed = 0; seed < model.Variables.Count; seed++)
+        {
+            if (placed[seed])
+            {
+                continue;
+            }
+
+            // A depth-first walk keeps a cycle contiguous, where a breadth-first one would
+            // interleave the branches hanging off it and break the rim apart again.
+            var stack = new Stack<int>();
+            stack.Push(seed);
+
+            while (stack.Count > 0)
+            {
+                var current = stack.Pop();
+                if (placed[current])
+                {
+                    continue;
+                }
+
+                placed[current] = true;
+                order.Add(model.Variables[current]);
+
+                // Pushed in reverse so the earliest-declared neighbour is popped first.
+                for (var index = neighbours[current].Count - 1; index >= 0; index--)
+                {
+                    if (!placed[neighbours[current][index]])
+                    {
+                        stack.Push(neighbours[current][index]);
+                    }
+                }
+            }
+        }
+
+        return order;
     }
 }

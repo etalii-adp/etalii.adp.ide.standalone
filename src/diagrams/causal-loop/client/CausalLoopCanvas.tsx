@@ -6,7 +6,10 @@ import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { shownRectOf, type ViewBox } from "@client/diagrams/viewReport";
-import { useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
+import { ContextMenu } from "@client/shell/context/ContextMenu";
+import { toMenuGroups } from "@client/shell/context/toMenuGroups";
+import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { ContextSelectionAction } from "@client/generated/context_pb";
@@ -49,8 +52,8 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
   // The palette is empty until group 3 registers a toolbox provider; registering the backend's
   // answer makes the panel say exactly that rather than showing nothing without explanation.
   useRegisterDiagramToolbox(useToolboxItems(projectId, path));
-  const { select } = useContextConnection();
-  const { selection } = useContextSelection();
+  const { select, executeAction } = useContextConnection();
+  const { selection, actions } = useContextSelection();
 
   const [view, setView] = useState<ViewBox | null>(null);
   const [rejection, setRejection] = useState<string | null>(null);
@@ -82,6 +85,44 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
   const onSelect = useCallback(
     (id: string, gesture?: ContextSelectionAction) => select(elementSelectionOf(entryId, path, id, gesture)),
     [entryId, path, select],
+  );
+
+  /**
+   * A right-click's menu, opened once the pushed selection for that element arrives with its
+   * actions - the same discipline every other canvas follows, so the menu shows the backend's
+   * answer rather than a guess.
+   *
+   * This canvas shipped without it, which is worth a sentence because the failure was silent:
+   * the backend offered eleven actions, the provider had sixteen tests proving it offered them,
+   * and not one of them was reachable, because nothing here ever asked. A provider test cannot
+   * see that; only opening the diagram can.
+   */
+  const selectionKey = innermostKey(selection);
+  const { menuPosition, openMenuAt, closeMenu } = useElementContextMenu(selectionKey, actions.length > 0, (id) =>
+    select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
+  );
+
+  /**
+   * The menu for the diagram itself, opened on empty canvas.
+   *
+   * With nothing selected the diagram is the subject, which is where the diagram-wide actions
+   * live - Arrange diagram among them. The point is carried as a placement id so the backend can
+   * put a new variable where the user actually right-clicked.
+   */
+  const onSurfaceContextMenu = useCallback(
+    (event: React.MouseEvent) => {
+      if (event.target !== svgRef.current && (event.target as Element).closest("[data-element-id]") !== null) {
+        return;
+      }
+
+      const rect = svgRef.current?.getBoundingClientRect();
+      const scale = effectiveRef.current.w / Math.max(rect?.width ?? 1, 1);
+      const x = effectiveRef.current.x + (event.clientX - (rect?.left ?? 0)) * scale;
+      const y = effectiveRef.current.y + (event.clientY - (rect?.top ?? 0)) * scale;
+
+      openMenuAt(event, placementIdOf(x, y));
+    },
+    [openMenuAt],
   );
 
   const unitsPerPixel = () => {
@@ -207,6 +248,7 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
         className="canvas-host causal-loop-canvas"
         viewBox={`${effective.x} ${effective.y} ${effective.w} ${effective.h}`}
         onWheel={onWheel}
+        onContextMenu={onSurfaceContextMenu}
         onMouseDown={onSurfaceMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
@@ -254,6 +296,7 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
                 }`}
                 data-element-id={link.id}
                 onClick={() => onSelect(link.id)}
+                onContextMenu={(event) => openMenuAt(event, link.id)}
               >
                 <path
                   className="canvas-connection-line"
@@ -302,6 +345,7 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
               }`}
               data-element-id={loop.id}
               onClick={() => onSelect(loop.id)}
+              onContextMenu={(event) => openMenuAt(event, loop.id)}
             >
               {/*
                 The conventional loop marker: a curved arrow encircling the identifier, drawn at
@@ -350,6 +394,7 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
                 onMouseDown={(event: React.MouseEvent) => onVariableMouseDown(variable, event)}
                 onClick={() => onSelect(variable.id)}
                 onDoubleClick={() => onSelect(variable.id, ContextSelectionAction.ACTIVATE)}
+                onContextMenu={(event: React.MouseEvent) => openMenuAt(event, variable.id)}
               />
             );
           })}
@@ -359,6 +404,16 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
       <CanvasScrollbars
         {...scrollAxesOf(effective, variables)}
         onPan={(x, y) => setView({ ...effective, x, y })}
+      />
+
+      <ContextMenu
+        open={menuPosition !== null}
+        groups={toMenuGroups(actions, (action) => {
+          closeMenu();
+          void executeAction(action.id);
+        })}
+        position={menuPosition ?? { x: 0, y: 0 }}
+        onClose={closeMenu}
       />
     </div>
   );
@@ -444,4 +499,12 @@ function loopMarkerPath(centreX: number, centreY: number, radius: number, clockw
   const at = (angle: number) => `${(centreX + radius * Math.cos(angle)).toFixed(2)} ${(centreY + radius * Math.sin(angle)).toFixed(2)}`;
 
   return `M ${at(start)} A ${radius} ${radius} 0 0 ${sweep} ${at(middle)} A ${radius} ${radius} 0 0 ${sweep} ${at(end)}`;
+}
+
+/**
+ * The element id the backend reads as "the user asked for something here rather than on
+ * something" - CausalLoopSelection.PlacementFor's counterpart on this side of the wire.
+ */
+function placementIdOf(x: number, y: number): string {
+  return `new:${x},${y}`;
 }

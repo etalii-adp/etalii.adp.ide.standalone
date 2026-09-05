@@ -15,6 +15,8 @@ import { applyDelta, emptyModel, type CausalLoopModel } from "./causalLoopModel"
 const select = vi.fn();
 const moveElementTo = vi.fn(() => Promise.resolve(""));
 const reportView = vi.fn();
+const executeAction = vi.fn(() => Promise.resolve());
+let currentActions: unknown[] = [];
 let currentModel: CausalLoopModel = emptyModel;
 let currentLoading = false;
 let currentFailed = false;
@@ -34,8 +36,11 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
   const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
   return {
     ...actual,
-    useContextConnection: () => ({ watchId: new Uint8Array(16), select }),
-    useContextSelection: () => ({ selection: currentSelection }),
+    useContextConnection: () => ({ watchId: new Uint8Array(16), select, executeAction }),
+    // The canvas reads `actions` to decide whether a context menu has anything to show, so the
+    // mock has to carry them: a shape that is missing here is a crash there, which is what this
+    // suite caught the moment the menu was wired.
+    useContextSelection: () => ({ selection: currentSelection, actions: currentActions }),
   };
 });
 
@@ -110,6 +115,8 @@ beforeEach(() => {
   currentLoading = false;
   currentFailed = false;
   currentSelection = null;
+  currentActions = [];
+  executeAction.mockClear();
   currentModel = modelOf(
     variable("a", 0, 0, "Alpha"),
     variable("b", 200, 0, "Beta"),

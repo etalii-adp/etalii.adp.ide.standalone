@@ -161,4 +161,223 @@ public class CausalLoopLayoutTests
         // Assert.
         Assert.True(boxes["population"].Width > boxes["b"].Width);
     }
+
+    // ---- the ring follows the links, not the declaration order --------------------------------
+
+    /// <summary>
+    /// The defect this section was written for: a diagram opened as a tangle.
+    /// </summary>
+    /// <remarks>
+    /// The ring placed variables in the order the document declared them, which says nothing
+    /// about structure. A loop written as a, b, c, d but linked a-c-b-d ended up with its links
+    /// crossing the middle of the ring instead of running around the rim, and the shape the
+    /// notation exists to show was the one thing a reader could not see. Every layout test passed
+    /// while that was true, because they asserted where boxes were and never how the links between
+    /// them would run.
+    /// </remarks>
+    [Fact]
+    public void TheRing_FollowsTheLinks_RatherThanTheOrderTheyWereDeclaredIn()
+    {
+        // Arrange.
+        // Declared a, b, c, d; linked so the cycle runs a, c, b, d.
+        var model = Model(
+            "causal-loop 1",
+            "variable a \"A\"", "variable b \"B\"", "variable c \"C\"", "variable d \"D\"",
+            "link a -> c +", "link c -> b +", "link b -> d +", "link d -> a +");
+
+        // Act.
+        var order = CausalLoopLayout.RingOrder(model).Select(variable => variable.Id).ToArray();
+
+        // Assert.
+        Assert.Equal(["a", "c", "b", "d"], order);
+    }
+
+    /// <summary>
+    /// The ordering reaches the drawn positions, not just the helper that computes it.
+    /// </summary>
+    /// <remarks>
+    /// <b>Found by sabotage, and it is the whole point of this test.</b> The first version of
+    /// these tests called <c>RingOrder</c> directly. Reverting <c>Compute</c> to declaration
+    /// order - which is exactly the defect - passed every one of them, because nothing asserted
+    /// that <c>Compute</c> used the order at all. The unit was right and the wiring was untested,
+    /// which is the same gap that let the dead context menu and the flat arcs ship. So this reads
+    /// the boxes.
+    /// </remarks>
+    [Fact]
+    public void TheComputedPositions_FollowTheRingOrder_AndNotTheDeclarationOrder()
+    {
+        // Arrange.
+        // Declared a, b, c, d; linked so the cycle runs a, c, b, d.
+        var model = Model(
+            "causal-loop 1",
+            "variable a \"A\"", "variable b \"B\"", "variable c \"C\"", "variable d \"D\"",
+            "link a -> c +", "link c -> b +", "link b -> d +", "link d -> a +");
+
+        // Act.
+        var boxes = CausalLoopLayout.Compute(model);
+
+        // Assert.
+        Assert.Equal(4, boxes.Count);
+
+        // Recover the seating from the drawing itself: the angle of each box about the ring's
+        // centre, clockwise from the top, which is how Compute lays them out.
+        var seated = boxes
+            .OrderBy(entry => Math.Atan2(entry.Value.CenterY, entry.Value.CenterX))
+            .Select(entry => entry.Key)
+            .ToArray();
+
+        // Rotation-independent: the ring has no first seat, only an order.
+        var start = Array.IndexOf(seated, "a");
+        var order = Enumerable.Range(0, seated.Length).Select(offset => seated[(start + offset) % seated.Length]).ToArray();
+
+        Assert.Equal(["a", "c", "b", "d"], order);
+    }
+
+    /// <summary>
+    /// A link is read undirected, so a variable everything points at still seats beside them.
+    /// </summary>
+    /// <remarks>
+    /// Declared a, b, c and linked only <c>c -> a</c> and <c>c -> b</c>. Read undirected, the walk
+    /// leaves a for c and then reaches b, giving a, c, b. Read directionally, a and b are dead
+    /// ends and c is never reached from either, so the walk falls back to declaration order and
+    /// gives a, b, c - the shape the ordering exists to avoid.
+    /// </remarks>
+    [Fact]
+    public void ALink_SeatsItsEndsTogether_WhicheverWayItPoints()
+    {
+        // Arrange.
+        var model = Model(
+            "causal-loop 1",
+            "variable a \"A\"", "variable b \"B\"", "variable c \"C\"",
+            "link c -> a +", "link c -> b +");
+
+        // Act.
+        var order = CausalLoopLayout.RingOrder(model).Select(variable => variable.Id).ToArray();
+
+        // Assert.
+        Assert.Equal(["a", "c", "b"], order);
+    }
+
+    /// <summary>
+    /// Where a variable has several neighbours, the earliest-declared is taken first - so the
+    /// ring is a function of the document rather than of the order the links happen to be written.
+    /// </summary>
+    [Fact]
+    public void ABranch_TakesItsEarliestDeclaredNeighbourFirst()
+    {
+        // Arrange.
+        // The links name c before b, so an unsorted walk would seat c first.
+        var model = Model(
+            "causal-loop 1",
+            "variable a \"A\"", "variable b \"B\"", "variable c \"C\"",
+            "link a -> c +", "link a -> b +");
+
+        // Act.
+        var order = CausalLoopLayout.RingOrder(model).Select(variable => variable.Id).ToArray();
+
+        // Assert.
+        Assert.Equal(["a", "b", "c"], order);
+    }
+
+    /// <summary>
+    /// What the ordering is actually for, measured on the arrangement rather than on the order:
+    /// consecutive ring positions should be linked, so the links run around the rim.
+    /// </summary>
+    [Fact]
+    public void MostLinks_JoinNeighboursOnTheRing()
+    {
+        // Arrange.
+        // The on-call example's shape: three loops sharing variables, declared in reading order
+        // rather than in link order - which is how anybody actually writes one.
+        var model = Model(
+            "causal-loop 1",
+            "variable incidents \"Incidents\"", "variable onCallLoad \"Load\"",
+            "variable fatigue \"Fatigue\"", "variable mistakes \"Mistakes\"",
+            "variable attrition \"Attrition\"", "variable teamSize \"Team\"",
+            "link incidents -> onCallLoad +", "link onCallLoad -> fatigue +",
+            "link fatigue -> mistakes +", "link mistakes -> incidents +",
+            "link fatigue -> attrition +", "link attrition -> teamSize -",
+            "link teamSize -> onCallLoad -");
+
+        // Act.
+        var order = CausalLoopLayout.RingOrder(model).Select(variable => variable.Id).ToArray();
+        var seat = order.Select((id, index) => (id, index)).ToDictionary(entry => entry.id, entry => entry.index, StringComparer.Ordinal);
+
+        // How many ring seats apart the two ends of each link sit, the short way round.
+        int Apart(CausalLoopLink link)
+        {
+            var gap = Math.Abs(seat[link.From] - seat[link.To]);
+            return Math.Min(gap, order.Length - gap);
+        }
+
+        // Assert.
+        Assert.NotEmpty(model.Links);
+
+        var adjacent = model.Links.Count(link => Apart(link) == 1);
+        Assert.True(
+            adjacent * 2 >= model.Links.Count,
+            $"Only {adjacent} of {model.Links.Count} links join ring neighbours; the rest cut across.");
+    }
+
+    /// <summary>
+    /// Deterministic, like everything else that decides a position: the same document gives the
+    /// same ring, and the ring is a function of the document rather than of the walk's own order.
+    /// </summary>
+    [Fact]
+    public void TheRingOrder_IsAFunctionOfTheDocument()
+    {
+        // Arrange.
+        var text = new[]
+        {
+            "causal-loop 1",
+            "variable a \"A\"", "variable b \"B\"", "variable c \"C\"",
+            "link a -> b +", "link b -> c +", "link c -> a +",
+        };
+
+        // Act.
+        var first = CausalLoopLayout.RingOrder(Model(text)).Select(variable => variable.Id);
+        var second = CausalLoopLayout.RingOrder(Model(text)).Select(variable => variable.Id);
+
+        // Assert.
+        Assert.Equal(first, second);
+    }
+
+    [Fact]
+    public void EveryVariable_TakesASeat_EvenWithNoLinksAtAll()
+    {
+        // Arrange.
+        // Nothing to follow, so the walk falls back to declaration order - and places all of them.
+        var model = Model(
+            "causal-loop 1",
+            "variable a \"A\"", "variable b \"B\"", "variable c \"C\"");
+
+        // Act.
+        var order = CausalLoopLayout.RingOrder(model).Select(variable => variable.Id).ToArray();
+
+        // Assert.
+        Assert.Equal(["a", "b", "c"], order);
+    }
+
+    /// <summary>
+    /// Two disconnected loops do not interleave: each is walked out before the other begins, so
+    /// each keeps its own arc of the rim.
+    /// </summary>
+    [Fact]
+    public void DisconnectedComponents_KeepTheirOwnStretchOfTheRing()
+    {
+        // Arrange.
+        var model = Model(
+            "causal-loop 1",
+            "variable a \"A\"", "variable x \"X\"", "variable b \"B\"", "variable y \"Y\"",
+            "link a -> b +", "link b -> a +",
+            "link x -> y +", "link y -> x +");
+
+        // Act.
+        var order = CausalLoopLayout.RingOrder(model).Select(variable => variable.Id).ToArray();
+
+        // Assert.
+        // a and b together, x and y together - not a, x, b, y.
+        Assert.Equal(["a", "b", "x", "y"], order);
+    }
+
 }
