@@ -96,7 +96,7 @@ than missed.
   - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 4.1, 4.2, 5.1, 5.2_
   - _Prompt: Implement the task for spec selection-after-drag, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Write both mindmap reproductions, see both fail and record the failures, then convert MindmapCanvas onto the arbiter deleting its flag machinery and leave-handler flush | Restrictions: reproductions before conversion; the reparent's semantics and its backend refusals unchanged; a completed drag over empty canvas neither selects nor deselects | _Leverage: the arbiter from task 1; task 2's conversion as the shape | Success: both reproductions failed before and pass after, the sabotage reddens them, no JustEndedRef remains, mindmap tests pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4. Relations everywhere: raw click becomes a press, with the theft reproduced
+- [x] 4. Relations everywhere: raw click becomes a press, with the theft reproduced
   - Files: `src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx` and its test;
     every other canvas whose relations are selected through a raw `onClick` — **enumerate by
     measurement, not from memory**: grep the canvases for relation/connection click handlers
@@ -112,7 +112,7 @@ than missed.
   - _Requirements: 1.1, 2.1, 2.2, 3.4, 4.2, 4.3, 5.1, 5.2_
   - _Prompt: Implement the task for spec selection-after-drag, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Reproduce the relation-steals-selection defect on dependency-graph, see it fail and record it, then move every raw relation click in the pointer-up canvases onto gesture.press, enumerating the affected canvases by grep rather than assumption | Restrictions: element selection paths in these canvases untouched; no new guards or flags anywhere; the enumeration and its misses go in the log | _Leverage: the arbiter from task 1 | Success: the reproduction failed before and passes after, every relation-selecting canvas found by the grep is converted or explicitly recorded as out of scope with the reason, and the client suite passes. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5. Azure-pipeline: the pan flag goes the same way
+- [-] 5. Azure-pipeline: the pan flag goes the same way
   - Files: `src/diagrams/azure-pipeline/client/PipelineCanvas.tsx` and its test
   - The same latch shape, pan-flavoured: `panJustEndedRef` (`PipelineCanvas.tsx:84`) armed at
     pan end, consumed only by a background click that may never come. Convert pan and
