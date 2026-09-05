@@ -202,6 +202,7 @@ applied and the test passed while the node looked unchanged.
   limegreen), thicker (2.5px) and dashed - visibly different from both the normal border and
   the focused node's solid accent border. Releasing the button clears it again.
 - **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Text reviewed 2026-09-05 (Tester 2)**: **accurate**, checked without running the app. `.mindmap-node-drop-target rect` is at `mindmap.css:79` with `stroke: var(--color-primary)`, `stroke-width: 2.5` and `stroke-dasharray: 6 3`; `--color-primary` is `limegreen` in both themes (`index.css:8`, `:27`). The entry's contrast claim is exact: focused (`:71`) is the same colour and width but **solid**, so the dasharray is the only difference. The overriding rule it warns about, `.mindmap-node rect`, sits at `:54` — *before* the highlight, so that hazard is currently not present; the entry describes how the bug shipped, not a live defect.
 
 ## Collapse in the node's context menu offers Expand afterwards (mindmap-diagram, bezier-connector pass)
 
@@ -213,6 +214,7 @@ kept here because the stale label was found through the menu and is quickest to 
 - **Expected**: the branch's descendants disappear on the first click, and the re-opened menu
   reads **Expand** (not Collapse). Choosing Expand restores the branch.
 - **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Text reviewed 2026-09-05 (Tester 2)**: **accurate**, checked without running the app. The named guard `ACompletedAction_RepushesTheSelectionsActions_SoACollapseOffersExpand` exists at `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/DiagramElementActionFlow.Tests.cs:264`, and the `Collapse`/`Expand` labels are in `MindmapContextActionProvider.cs:95`.
 
 ## C4 relationships are elevated to the level the view shows (c4-diagrams, manual pass)
 
