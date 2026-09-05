@@ -1,0 +1,503 @@
+﻿syntax = "proto3";
+
+package etalii.adp;
+
+import "shared.proto";     // ShortGuid
+import "connection.proto"; // Path
+import "hierarchy.proto";  // EntryKind (hierarchy.proto does not import this file back)
+import "elements.proto";   // ElementId
+import "google/protobuf/any.proto";
+import "google/protobuf/empty.proto";
+
+option csharp_namespace = "EtAlii.Adp";
+
+// The scope-agnostic vocabulary behind the context: what the user currently has
+// selected (and how), what actions a selected thing currently offers, how each can be
+// triggered, and which dialog a running action wants shown. Nothing here mentions
+// files, folders, rename, or delete - a resolver and a provider on the backend supply
+// all of that as data, so a new kind of selectable thing or a new action needs no
+// change to this contract, the context menu, the ribbon, or the prompt host.
+
+// One backend service owns the per-connection context. gRPC-Web offers no
+// client-streaming or bidi from a browser, so the client->backend leg is unary
+// (Select, ExecuteAction, ...) correlated by watch_id, while the backend->client leg
+// (selection changes, prompts) rides the one server stream Watch opens.
+service ContextService {
+  // Reports what a surface selected, or - with no selection - that nothing is.
+  rpc Select(SelectRequest) returns (SelectResponse);
+  // The connection's context as it changes; the first message is the current state.
+  rpc Watch(WatchContextRequest) returns (stream ContextMessage);
+
+  // Context actions. An explicit source names the target; without one the action
+  // applies to the connection's current selection.
+  rpc DiscoverActions(DiscoverActionsRequest) returns (DiscoverActionsResponse);
+  rpc ExecuteAction(ExecuteActionRequest) returns (ExecuteActionResponse);
+  rpc ProposeInput(ProposeInputRequest) returns (ProposeInputResponse);
+  rpc SubmitInteraction(SubmitInteractionRequest) returns (SubmitInteractionResponse);
+  rpc CancelInteraction(CancelInteractionRequest) returns (CancelInteractionResponse);
+
+  // Properties of whatever is selected, and changing one. Described as data so the property
+  // grid renders rows it does not understand, exactly as the context menu renders actions.
+  rpc DescribeProperties(DescribePropertiesRequest) returns (DescribePropertiesResponse);
+  rpc SetProperty(SetPropertyRequest) returns (SetPropertyResponse);
+}
+
+// Routes context actions to the providers that serve a kind of thing. Never sent by
+// a client: the backend derives it from the ContextSource member an id uses.
+enum ContextScope {
+  CONTEXT_SCOPE_UNSPECIFIED = 0;
+  HIERARCHY = 1;
+  // The project itself: actions that belong to it rather than to a selection - undo and redo
+  // (diagram-undo-redo Requirement 5.1).
+  PROJECT = 2;
+  // An element inside an open diagram - a mindmap node, later a class or a box - served by
+  // the diagram type's own providers (mindmap-diagram Requirement 10.3).
+  DIAGRAM_ELEMENT = 3;
+  // The errors-and-warnings panel itself: actions that belong to the problem list rather
+  // than to anything in it - Validate all (errors-and-warnings-panel Requirement 7.4).
+  // Not plain PROBLEMS: proto3 enum values are siblings of their package, and
+  // ContextSelectionSource already claimed that name.
+  PROBLEMS_PANEL = 4;
+}
+
+// What a selection or an action refers to. For the hierarchy this is an entry id,
+// which the backend resolves to an absolute path before handing it to a provider -
+// the client is never given, and never supplies, a filesystem path (tech.md: the
+// client never touches the filesystem; an absolute path would also leak the user's
+// directory layout). A new kind of thing (a diagram element, a location in a file)
+// is one more member here, served by its own resolver on the backend.
+message ContextSource {
+  oneof source {
+    ShortGuid entry_id = 1;
+    // An element inside the diagram the enclosing selection level names; the same id the
+    // delta stream carries for it, so a selection and an element are one identity
+    // (mindmap-diagram Requirement 10.2). Only meaningful as a child of a diagram file.
+    ElementId element_id = 2;
+    // The project this call is already scoped to. Empty rather than a project id: the request
+    // already carries project_id and the backend already resolved it, so a second copy would
+    // be a second thing to authorize and to disagree with (diagram-undo-redo).
+    google.protobuf.Empty project = 3;
+    // The errors-and-warnings panel, as a place rather than a thing in it - what the panel
+    // selects when it takes focus, routed to ContextScope.PROBLEMS. Empty for the same
+    // reason as `project`: the request already says which project's problems these are.
+    google.protobuf.Empty problems = 4;
+  }
+}
+
+// Which surface produced a selection, so a consumer can tell "the explorer selected
+// X" from "the canvas selected X" - e.g. so a surface does not re-react to its own.
+enum ContextSelectionSource {
+  CONTEXT_SELECTION_SOURCE_UNSPECIFIED = 0;
+  EXPLORER = 1;
+  DIAGRAM_CANVAS = 2;
+  SEARCH = 3;
+  PROBLEMS = 4;
+  TOOLBOX = 5;
+  RIBBON = 6;
+  PROPERTY_GRID = 7;
+}
+
+// The gesture behind a selection. A plain selection carries no action at all (see
+// ContextSelection.none). Values from 10 up are reserved for later surfaces so the
+// numbering stays stable; no consumer is required to handle them yet.
+enum ContextSelectionAction {
+  CONTEXT_SELECTION_ACTION_UNSPECIFIED = 0;
+  ACTIVATE = 1;       // open it / perform its primary action (double-click, Enter)
+  CONTEXT_MENU = 2;   // show what can be done with it (right-click, Shift+F10)
+  PREVIEW = 3;        // show it without committing to it (transient)
+  DRAG_START = 10;
+  DROP = 11;
+  RENAME_REQUEST = 12;
+  FOCUS_ONLY = 13;
+}
+
+// One level of a selection. `path` is the hierarchical locator: project-relative at
+// the outermost level, and relative to the parent on a child whose parent kind nests
+// by containment - so a chain's segments concatenate into one Path. The backend
+// verifies the path against (or fills it in from) `id`; it is never trusted alone.
+message ContextSelection {
+  ContextSelectionSource source = 1;
+  Path path = 2;
+  ContextSource id = 3;
+  oneof detail {
+    google.protobuf.Empty none = 4;        // a plain selection, nothing more
+    ContextSelectionAction action = 5;     // what the user did to it
+    ContextSelection child = 6;            // what is selected inside it
+  }
+}
+
+message SelectRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2; // same client-generated id the hierarchy calls on this connection use
+  ContextSelection selection = 3; // absent = nothing is selected
+}
+
+message SelectResponse {
+  string error = 1; // empty when accepted; deliberately generic otherwise
+}
+
+message WatchContextRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;
+}
+
+// Backend-resolved detail for one level of a selection, which a client cannot and
+// must not supply itself. One member per kind of thing.
+message ContextLevelDetail {
+  oneof detail {
+    EntryDetail entry = 1;
+    ElementDetail element = 2;
+  }
+}
+
+// What the backend resolved about a selected diagram element, so a consumer can show what
+// is selected without a lookup of its own (mindmap-diagram Requirement 10.6).
+message ElementDetail {
+  string text = 1;
+  bool has_children = 2;
+  bool folded = 3;
+  bool linked = 4;
+  // The element as its own module describes it - the same mime-style type and type-specific
+  // payload `Element` carries on the diagram stream, so a consumer that already holds the
+  // module has everything it shows without a second call of its own (wardley-map
+  // Requirement 11.3). Both are empty for a resolver that offers nothing beyond the four
+  // fields above, which is every resolver written before this one. Nothing here names a
+  // diagram type: what a payload means is the module's business, exactly as it already is
+  // for `Element.payload`.
+  string element_type = 5;         // mime-style, e.g. "wardley/map+element"
+  google.protobuf.Any payload = 6; // type-specific message, defined per diagram module
+}
+
+message EntryDetail {
+  EntryKind kind = 1;
+  bool available = 2;
+  // The diagram type of this entry, resolved by the backend through the same routing that
+  // opens it - the .adp first line, or a declared body extension for a bare body. Empty for
+  // anything that is not an openable diagram, including a body whose extension more than one
+  // type claims: a file the backend refuses to route is not presented as openable
+  // (diagram-workspace-tabs Requirement 1). The client keeps no file-type table of its own.
+  string diagram_mime_type = 3;
+}
+
+message ContextSelectionChanged {
+  ContextSelection selection = 1;          // absent = nothing selected
+  repeated ContextLevelDetail levels = 2;  // outermost first; one per level of `selection`
+  repeated ContextActionGroup actions = 3; // the innermost level's actions
+  bool transient = 4;                      // true for a PREVIEW: the current selection is unchanged
+}
+
+// Actions that belong to the project rather than to what is selected, so they stay correct
+// while the selection changes underneath them. Pushed when the connection registers and
+// whenever they change - today, whenever the project's history changes (diagram-undo-redo
+// Requirement 5.3, Deviation 1).
+message ContextProjectActions {
+  repeated ContextActionGroup actions = 1;
+}
+
+// Where in a document a problem sits, when its rule can say. Unset on the Problem means
+// the file itself is the subject.
+message ProblemLocation {
+  oneof location {
+    // The diagram element the problem sits on - the same id the delta stream carries for
+    // it, so activating the problem can select the element.
+    ElementId element_id = 1;
+    // The 1-based line of the document text, for a rule that judged the text.
+    uint32 line = 2;
+    // Another file entirely, for a diagram whose subject is a folder of them: the mistake is
+    // in the file that declared it, not in the .adp that marks the folder. Activating such a
+    // problem reveals that file rather than the diagram.
+    ProblemFileLocation file = 3;
+  }
+}
+
+// A file inside a folder-subject diagram, and optionally a line in it.
+message ProblemFileLocation {
+  // Project-relative, never absolute - the same rule Problem.path obeys.
+  Path path = 1;
+  uint32 line = 2;  // 1-based; 0 when the rule can only name the file
+}
+
+enum ProblemSeverity {
+  PROBLEM_SEVERITY_UNSPECIFIED = 0;
+  WARNING = 1;
+  ERROR = 2;
+  // Informational: worth saying, nothing wrong. Numbered 3 rather than inserted below
+  // WARNING because proto enum values are append-only - renumbering WARNING and ERROR would
+  // reinterpret every message already on a wire or in a client's hands. The severity ORDER
+  // lives in the domain enum (DiagramProblemSeverity), never in these numbers.
+  INFO = 3;
+}
+
+// One thing wrong with one file, as validation found it.
+message Problem {
+  ProblemSeverity severity = 1;
+  string message = 2;              // meant for the user
+  // Project-relative, never absolute: the client never sees a filesystem path, and two
+  // viewers of the same project must read the same locator (tech.md).
+  Path path = 3;
+  ProblemLocation location = 4;    // unset: the file itself
+  string rule_id = 5;              // "core.unknown-type", "mindmap.empty-root", ...
+  bool stale = 6;                  // the file (or its rules) changed since this was found
+}
+
+// Whether the problem list can be believed. NEVER_VALIDATED is not the same as "clean":
+// an empty list that was never checked says nothing (Requirement 1.7).
+enum ProblemSetState {
+  PROBLEM_SET_STATE_UNSPECIFIED = 0;
+  NEVER_VALIDATED = 1;
+  VALIDATING = 2;
+  VALIDATED = 3;
+}
+
+// Everything currently known to be wrong in the project - pushed on register and on every
+// change, to every connection in the project, so two viewers cannot disagree.
+message ProjectProblems {
+  ProblemSetState state = 1;
+  repeated Problem problems = 2;
+  // Counts are of the whole set, not of what was sent: a truncated list still says how
+  // bad things really are (Requirement 5.6).
+  uint32 error_count = 3;
+  uint32 warning_count = 4;
+  uint32 truncated_at = 5;         // 0 when the whole set was sent
+  // Informational findings are counted separately and never folded into warning_count: a
+  // panel that adds them together would report a clean file as having something wrong.
+  uint32 info_count = 6;
+}
+
+// Everything the Watch stream carries: selection changes, prompts an action started on this
+// very connection wants shown, the project's own actions, and the project's problems.
+message ContextMessage {
+  oneof message {
+    ContextSelectionChanged selection = 1;
+    ContextPrompt prompt = 2;
+    ContextProjectActions project_actions = 3;
+    ProjectProblems problems = 4;
+  }
+}
+
+// A keypress, expressed so the client can match it directly against a KeyboardEvent
+// without a client-side table of which key means which action.
+message ContextShortcut {
+  string key = 1; // DOM KeyboardEvent.key, e.g. "F2", "Delete"
+  bool ctrl = 2;
+  bool shift = 3;
+  bool alt = 4;
+  bool meta = 5;
+}
+
+message ContextAction {
+  string id = 1;
+  string label = 2;
+  string icon = 3;                       // @mdi/font class, e.g. "mdi-pencil-outline"
+  ContextShortcut shortcut = 4;          // unset when the action has none
+  bool available = 5;                    // false -> rendered disabled, shortcut inert
+  string unavailable_reason = 6;         // surfaced as the disabled item's tooltip
+  repeated ContextActionGroup items = 7; // non-empty -> a submenu instead of an action
+}
+
+// One provider's contribution; the client renders each as one ContextMenuGroup (and
+// one ribbon group).
+message ContextActionGroup {
+  repeated ContextAction actions = 1;
+}
+
+// Set when the value this prompt asks for IS the text the user can see on `element_id` -
+// so a canvas may render the prompt as an editor in place of that label rather than as a
+// dialog. Only the module answering the action knows this: an action id says nothing about
+// it (a provider asks for run-if values, cluster keys and prefix declarations through the
+// same prompt), and shared client code never interprets module vocabulary. It names the
+// element rather than saying merely "yes" because the prompt reaches a shell-level host with
+// no memory of what the action targeted, and an action invoked on one thing may prompt about
+// another.
+message InlineLabelEdit {
+  ElementId element_id = 1;
+}
+
+message InputDialogPrompt {
+  string title = 1;
+  string icon = 2;
+  string field_label = 3;
+  string initial_value = 4;
+  string confirm_label = 5;
+  // Unset on every prompt that is not a label edit, which is most of them; an unset field
+  // renders exactly the dialog it renders today.
+  InlineLabelEdit inline_label_edit = 6;
+}
+
+message ConfirmDialogPrompt {
+  string title = 1;
+  string icon = 2;
+  string message = 3;
+  string confirm_label = 4;
+  bool danger = 5;
+}
+
+message ContextInteractionClosed {
+  string message = 1;
+}
+
+// One node of a choice dialog's option tree. A node with `selectable` false is a group:
+// shown, labelled and expandable, but never the dialog's answer. A group's `id` is
+// informational; a selectable node's `id` is exactly what SubmitInteraction sends back
+// as the value. Nothing here says what the options are - a provider supplies the tree,
+// so the same dialog can offer diagram types today and something else tomorrow.
+message ContextOption {
+  string id = 1;
+  string label = 2;
+  bool selectable = 3;
+  repeated ContextOption children = 4;
+  // What a text field alongside this choice should take when this option is picked, as
+  // long as the user has not typed a value of their own. Computed when the prompt is
+  // built, so picking an option costs no round trip. Empty for a group.
+  string suggested_value = 5;
+  // The @mdi/font class marking this option - the diagram type's own icon. Empty for
+  // a group, and for an option whose definition declares none.
+  string icon = 7;
+  // One sentence on what the diagram type is for, shown when this option is selected.
+  // Empty for a group, which is a heading rather than a thing that can be created.
+  string description = 6;
+}
+
+// A text field a dialog carries beside its primary answer, described as data like every
+// other part of a prompt - the client renders a labelled field and knows nothing more.
+message ContextTextField {
+  string label = 1;
+  string initial_value = 2;
+}
+
+// A dialog asking the user to pick one option out of a (possibly grouped) tree, and
+// optionally to name the result.
+message ChoiceDialogPrompt {
+  string title = 1;
+  string icon = 2;
+  string confirm_label = 3;
+  repeated ContextOption options = 4; // the top level of the tree
+  string empty_message = 5;           // shown instead of the tree when options is empty
+  ContextTextField name_field = 6;    // unset: the dialog is a pure choice
+}
+
+// Backend-initiated: pushed down the connection's already-open Watch stream.
+message ContextPrompt {
+  ShortGuid interaction_id = 1;
+  oneof prompt {
+    InputDialogPrompt input_dialog = 2;
+    ConfirmDialogPrompt confirm_dialog = 3;
+    ContextInteractionClosed closed = 4; // backend-initiated dismissal
+    ChoiceDialogPrompt choice_dialog = 5;
+  }
+}
+
+message DiscoverActionsRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;
+  reserved 3; // was the client-stated scope; now derived from the source
+  ContextSource source = 4; // unset = the connection's current selection
+}
+
+message DiscoverActionsResponse {
+  repeated ContextActionGroup groups = 1;
+}
+
+// How a property is edited, which is all the grid knows about its type.
+enum ContextPropertyEditor {
+  CONTEXT_PROPERTY_EDITOR_LINE = 0;   // a single line: a name, a technology
+  CONTEXT_PROPERTY_EDITOR_TEXT = 1;   // several lines: a description, a note
+  CONTEXT_PROPERTY_EDITOR_TOGGLE = 2; // yes or no; value carries "true" or "false"
+  // One of a known set, offered as a list: a pipeline stage's dependsOn, whose valid values
+  // are the other stages. `candidates` carries them and `value` is whichever is current, so
+  // this stays a single-valued editor like the three above.
+  CONTEXT_PROPERTY_EDITOR_CHOICE = 3;
+}
+
+message ContextProperty {
+  string id = 1;                    // stable within its provider, prefixed like an action id
+  string label = 2;
+  string value = 3;                 // always text, whatever the editor
+  ContextPropertyEditor editor = 4;
+  // Empty when the property can be edited. Otherwise a sentence saying why it cannot be,
+  // shown beside the value: a property whose source is elsewhere is worth showing, and a
+  // reader who cannot change it deserves to know what would have to change instead. This
+  // mirrors how an unavailable action carries a reason rather than being omitted.
+  string read_only_reason = 5;
+  string group = 6;                 // optional heading; empty means ungrouped
+  // What a CHOICE property may be set to, in the order the list should show them. Supplied by
+  // the provider and rendered by the panel without understanding any of it, exactly as the
+  // toolbox renders entries and the context menu renders actions.
+  //
+  // Empty for every other editor. A CHOICE whose candidates are empty has nothing to pick, and
+  // the provider should have marked it read-only with a reason instead.
+  repeated string candidates = 7;
+}
+message DescribePropertiesRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;
+  ContextSource source = 3; // unset = the current selection of the connection
+}
+message DescribePropertiesResponse {
+  repeated ContextProperty properties = 1;
+}
+message SetPropertyRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;
+  ContextSource source = 3; // unset = the current selection of the connection
+  string property_id = 4;
+  string value = 5;
+}
+message SetPropertyResponse {
+  bool accepted = 1;
+  string error = 2;
+}
+
+message ExecuteActionRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;
+  reserved 3; // was the client-stated scope; now derived from the source
+  ContextSource source = 4;      // unset = the connection's current selection
+  ShortGuid interaction_id = 5;  // client-generated; correlates the pushed prompt back to this call
+  oneof trigger {
+    string action_id = 6;
+    ContextShortcut shortcut = 7;
+  }
+}
+
+message ExecuteActionResponse {
+  bool accepted = 1;
+  string error = 2;
+}
+
+message ProposeInputRequest {
+  ShortGuid interaction_id = 1;
+  uint32 revision = 2;
+  string value = 3;
+}
+
+message ProposeInputResponse {
+  uint32 revision = 1; // echoed, so the client can discard a verdict for text it has moved past
+  bool valid = 2;
+  string reason = 3;
+}
+
+message SubmitInteractionRequest {
+  ShortGuid interaction_id = 1;
+  string value = 2;
+  // The dialog's text field, when it has one; empty otherwise. Judged by the same
+  // ProposeInput verdicts the dialog used, and re-checked before anything is committed -
+  // a second answer rather than something encoded inside `value`, so an option id stays
+  // opaque and no provider has to know an encoding.
+  string text = 3;
+}
+
+message SubmitInteractionResponse {
+  bool completed = 1;
+  string error = 2;
+  // Set when the interaction created something the client may want to reveal. Project-
+  // relative, like every other path on this contract - absolute paths never leave the
+  // backend.
+  Path created_path = 3;
+}
+
+message CancelInteractionRequest {
+  ShortGuid interaction_id = 1;
+}
+
+message CancelInteractionResponse {}

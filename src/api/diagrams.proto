@@ -1,0 +1,134 @@
+﻿syntax = "proto3";
+
+package etalii.adp;
+
+import "shared.proto";      // ShortGuid
+import "connection.proto";  // Path, ViewUpdate
+import "deltas.proto";
+
+option csharp_namespace = "EtAlii.Adp";
+
+// One open diagram, as two correlated one-way legs (tech.md's "gRPC call shapes"): a browser
+// on grpc-web cannot stream a request body, so the bidirectional Connect this service was
+// first declared with could never have been called from the client. Open returns the delta
+// stream for a diagram; UpdateView is the unary call that tells the backend what the client
+// can see, correlated to the stream by the connection's watch_id and the diagram's path.
+service DiagramService {
+  // Streams the baseline - an Add for everything in view - then every later change, until
+  // the client ends the call. The first message always reflects the current document, which
+  // is what lets a reconnect re-baseline without a reconciliation protocol of its own.
+  rpc Open(OpenDiagramRequest) returns (stream Delta);
+
+  // The client's viewport, so the backend delivers what falls inside it and not the whole
+  // map. Never recorded on the history and never written to a file.
+  rpc UpdateView(UpdateViewRequest) returns (UpdateViewResponse);
+
+  // Moves an element under a new parent - a drag on the canvas. What "parent" means is the
+  // module's own business; the module dispatches the move as a command, so it lands on the
+  // project's history and is one undo away, and the resulting document change reaches every
+  // open view as ordinary deltas.
+  rpc MoveElement(MoveElementRequest) returns (MoveElementResponse);
+
+  // The toolbox entries the open diagram's type contributes, described as data - the client
+  // renders a palette it does not understand, exactly as it renders context actions
+  // (tech.md's "Specifying a diagram type"). Static per type, so one ask per opened diagram;
+  // a type that contributes nothing answers with an empty list, and the panel says so.
+  rpc DescribeToolbox(DescribeToolboxRequest) returns (DescribeToolboxResponse);
+
+  // Saves a text-editor tab's content. The write goes through a command on the project's
+  // history, so a save is one undo away like every other change (modular-text-editors
+  // Requirement 6.2), and the shared buffer preserves the file's encoding and each line's own
+  // terminator (Requirement 6.1). A unary call, within the Non-Functional "no new stream"
+  // rule's own wording: editor content rides "the existing per-connection Watch push and
+  // unary calls". Every open view of the file - diagram and text alike - learns of the write
+  // through the watcher as an ordinary pushed change, which is Requirement 5.3's whole
+  // both-views-stay-true guarantee.
+  rpc SaveText(SaveTextRequest) returns (SaveTextResponse);
+}
+
+message OpenDiagramRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;  // the connection this stream belongs to - the same id the hierarchy and context calls carry
+  Path path = 3;           // project-relative path of the diagram's .adp file, never a filesystem path
+  // Empty opens the file as it resolves today: the diagram family first, the editor family
+  // for what it declines. Non-empty forces the editor family for a path the diagram family
+  // would otherwise claim - the "Open as text" gesture (modular-text-editors Requirement
+  // 5.2), and the one thing that lets a diagram stream and a text stream of the same file
+  // coexist on one connection (Requirement 5.3). "*" means "whichever editor the resolver
+  // answers" (its declared default on a legitimately shared extension); anything else names
+  // the editor definition id the user chose through "Open with..." (Requirement 4.4).
+  string editor_id = 4;
+}
+
+message SaveTextRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;
+  Path path = 3;           // project-relative path of the open text file
+  string content = 4;      // the full text; the buffer re-applies the file's own terminators
+}
+
+message SaveTextResponse {
+  // Empty on success; otherwise the module's own sentence - a refusal, a vanished file, a
+  // failed write - shown beside the editor's dirty indicator rather than swallowed.
+  string error = 1;
+}
+
+message UpdateViewRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;
+  Path path = 3;
+  ViewUpdate view = 4;
+}
+
+message UpdateViewResponse {
+  // Empty on success; a diagram that is not open on this connection answers with an error.
+  string error = 1;
+}
+
+message MoveElementRequest {
+  ShortGuid project_id = 1;
+  ShortGuid watch_id = 2;
+  Path path = 3;            // project-relative path of the diagram's .adp file
+  string element_id = 4;    // the element being moved
+  string new_parent_id = 5; // the element it lands under
+  int32 index = 6;          // position among the new parent's children; -1 appends last
+  // Where it lands, for a diagram that is arranged rather than nested. Unset means the move is
+  // a re-parenting, described by the two fields above.
+  //
+  // The two gestures are genuinely different and a type usually supports one of them. Dragging
+  // a mindmap node re-parents it: the tree *is* the layout, and there are no free coordinates
+  // to land on. Dragging a C4 element moves it on the canvas and changes nothing about the
+  // model, because a container belongs to the software system that declares it and no drag
+  // should say otherwise.
+  //
+  // Before this field existed, a type that needed a position encoded "x,y" into new_parent_id
+  // and split it on the comma. That worked and was tested, but the field's documented meaning
+  // and its use had parted company, and the encoding had no schema for the next reader to
+  // find - so a re-parent attempt came back reported as a malformed coordinate pair.
+  Point2D position = 7;
+}
+
+message MoveElementResponse {
+  // Empty on success; the module's own reason otherwise - a move into its own branch, say.
+  string error = 1;
+}
+
+message DescribeToolboxRequest {
+  ShortGuid project_id = 1;
+  Path path = 2; // project-relative path of the diagram's .adp file
+}
+
+// One draggable entry in the Toolbox panel. Dropping it on an element executes
+// `drop_action_id` against that element through the existing context-action path, so the
+// drop shares one implementation - command, prompt, undo - with the menu and the keyboard.
+message ToolboxItem {
+  string id = 1;
+  string label = 2;
+  string icon = 3;        // @mdi/font class, e.g. "mdi-card-plus-outline"
+  string description = 4; // shown as the entry's tooltip/hint
+  string drop_action_id = 5;
+}
+
+message DescribeToolboxResponse {
+  repeated ToolboxItem items = 1;
+}
