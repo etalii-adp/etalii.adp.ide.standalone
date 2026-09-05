@@ -66,7 +66,7 @@ Two phases, and the split is not cosmetic: **phase 1 touches no example file and
 
 ## Phase 2 — the thirteen renames, after the example trees are free
 
-- [-] 7. Rename the thirteen named folder-subject registrations
+- [x] 7. Rename the thirteen named folder-subject registrations
   - Files: seven under `ansible-structure` (six to correct plus `example 1` in both copies), six under `helm-charts` — the exact list is in the requirements' survey
   - `git mv` only: **content byte-identical**, MIME first line and terminator untouched. This is a rename, not a rewrite.
   - **Both copies**, module and showcase. The example-replication guard is gone so they need not move in one commit, but neither copy may be left in the old shape — both are material a reader opens, and a wrong one ships a counter-example.
@@ -75,7 +75,7 @@ Two phases, and the split is not cosmetic: **phase 1 touches no example file and
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 6.1, 6.2_
   - _Prompt: Implement the task for spec folder-add-registration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer | Task: Rename the thirteen named folder-subject registrations to a bare .adp in both the module and showcase copies | Restrictions: git mv only, content byte-identical; leave the already-bare one alone; confirm the two example trees are free before starting and re-measure the survey against the current tip | Success: every folder-subject registration in the tree is bare, ExampleRegistrationTests still walks both trees green, and the diagrams still open. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 8. The shipped-examples guard
+- [-] 8. The shipped-examples guard
   - Files: a test beside `ExampleRegistrationTests`
   - Fail, naming the file, if any folder-subject registration under `src/diagrams/*/examples/` or `src/examples/` carries a name. **Derive folder-subject-ness from the deployed catalog**, never from a hard-coded module list, so a third such module is covered the day it arrives rather than the day someone remembers.
   - _Requirements: 5.1_
