@@ -3,8 +3,10 @@
   "title": "fit-to-view-extent — Tasks",
   "filePath": ".spec-workflow/specs/fit-to-view-extent/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "rejected",
   "createdAt": "2026-09-05T16:08:16.490Z",
   "category": "spec",
-  "categoryName": "fit-to-view-extent"
+  "categoryName": "fit-to-view-extent",
+  "response": "design is not even finished.",
+  "respondedAt": "2026-09-05T16:45:44.535Z"
 }
