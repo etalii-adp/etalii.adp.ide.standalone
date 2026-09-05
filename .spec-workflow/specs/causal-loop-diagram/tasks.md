@@ -161,7 +161,7 @@ A note on guards, since the question will come up: this specification has **no l
 - [ ] 5. What a reader opens, and where the type is listed
   - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 12.1, 12.2, 12.3_
 
-- [-] 5.1 Examples
+- [x] 5.1 Examples
   - Files: `src/diagrams/causal-loop/examples/`, replicated into `src/examples/diagrams/causal-loop/`
   - **Four candidate sources were checked and all four rejected**, recorded in the requirements so the search is not repeated: nocomplexity/causalloopdiagram is GPL-3.0, AutoCLD carries no licence file at all, Wikipedia's figures are CC BY-SA, and MetaSD offers only per-model author permission on Vensim stock-and-flow models. A permissive source is still preferred **if one can be verified from the data at acquisition**; otherwise the examples are authored for this repository and **labelled as authored**, with no attribution to a source that did not license them
   - At least one example exercises the hard cases together: a reinforcing loop, a balancing loop, a delayed link, a variable in more than one loop, and **a loop whose stated label disagrees with its computed polarity**, so the group 1 finding is demonstrable from a shipped file
@@ -169,7 +169,7 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer executing the vendoring discipline | Task: Ship examples, preferring a verifiable permissive source and otherwise authoring them under the honest-fallback rule | Restrictions: the four recorded rejections are not revisited for convenience; an authored example is labelled as authored and never attributed to an unlicensed source | Success: examples open with no setup and one demonstrates the label disagreement. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.2 The catalog row
+- [-] 5.2 The catalog row
   - Files: `docs/diagrams.md`
   - A row for the causal loop diagram, which the catalog has none of today, with the state icon matching its real state and the origin tag `systems/causal-loop-diagram`
   - _Requirements: 12.1, 12.2, 12.3_
