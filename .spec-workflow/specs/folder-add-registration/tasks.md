@@ -51,14 +51,14 @@ Two phases, and the split is not cosmetic: **phase 1 touches no example file and
   - _Requirements: 1.2, 1.3, 1.5, 2.1_
   - _Prompt: Implement the task for spec folder-add-registration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/TypeScript developer | Task: Render the suppression sentence in place of the name field and make an unavailable option unchoosable | Restrictions: no round trip on a selection change; canSubmit must not require a name while the field is suppressed; the double-click submit path must respect unavailability | _Leverage: descriptionFor and suggestionFor as the per-option precedent, and the touched logic that already restores suggestions | Success: three client tests pass and the field never vanishes without a sentence in its place. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 5. The creation guard, and the read path pinned as tolerant
+- [x] 5. The creation guard, and the read path pinned as tolerant
   - Files: a test beside `AddDiagramContextActionProvider.Tests.cs`, and `EntryDiagramStates.Tests.cs`
   - Assert the Add commit creates exactly `.adp` for a folder-subject type (Requirement 5.2) — the guard against this regressing through the dialog.
   - **Keep** the legacy named shape as coverage of the read path and **add** a bare-`.adp` case beside it. `EntryDiagramStates.Tests.cs:105` reads `DeclaresFolderSubject(registration) => registration == "structure.adp"`, which is a test's stand-in for routing; production routes on the MIME line and the file name never enters the decision. Both shapes must resolve, because **creation is constrained by this spec and reading is not** — a user's existing `infrastructure/structure.adp` keeps opening.
   - _Requirements: 4.1, 4.3, 5.2_
   - _Prompt: Implement the task for spec folder-add-registration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Guard that Add creates a bare .adp, and pin that both the legacy named and the bare registration shapes still resolve | Restrictions: do not tighten the read path; the legacy test case is kept rather than replaced | Success: a regression to a named creation fails the suite, and both read shapes are covered. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 6. Gate and merge phase 1
+- [-] 6. Gate and merge phase 1
   - Four gates, exit codes captured before any pipe, then merge through a per-agent scratch worktree as the preamble describes.
   - **Tell `contracts-and-build-hygiene`'s owner when this lands**, because its catalog group consumes `ContextOption.unavailable_reason` and can start the moment the field exists.
   - _Requirements: 5.3_
