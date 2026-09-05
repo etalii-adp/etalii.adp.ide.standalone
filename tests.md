@@ -549,7 +549,7 @@ unit test in the module would still pass.
   Cup of Tea below it, Kettle and Power towards the bottom left; every link joins the same pair.
   A component that is high in one and low in the other means the visibility axis is inverted;
   one that is left in one and right in the other means maturity is.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed (the drawn-right check; the side-by-side is external).** Opened `tea.adp` and checked the rendered positions against the `.owm`'s `[visibility, maturity]` numbers: the anchors sit at the top, Cup of Tea below them, Kettle and Power toward the bottom, maturity increases left→right (Kettle in the Custom-Built band, Water in Commodity) and visibility bottom→top. Neither axis is inverted and no band is misplaced — which is the failure this guards. The onlinewardleymaps.com side-by-side itself is an external tool and is not needed to answer the axis-inversion question, which the coordinates settle.
 
 ## The four evolution stage labels are legible at the default zoom (wardley-map, task 26)
 
@@ -563,7 +563,7 @@ forms are a different claim, which only helps if the long forms fit.
 - **Expected**: four labels - Genesis, Custom Built, Product (+rental), Commodity (+utility) -
   each fully readable, none clipped at the edge of the canvas, none overlapping its neighbour,
   and each sitting under the band it names.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** With `tea.owm` open at the tab's default zoom, the four band labels render along the bottom with their full parentheticals — **Genesis**, **Custom Built**, **Product (+rental)**, **Commodity (+utility)** — each under its band. Measured: no label overlaps its neighbour (each one's right edge is left of the next one's start) and none is clipped (all fall within the canvas, the rightmost ending well inside the right edge).
 
 ## Dragging a component and reopening the file elsewhere shows it moved (wardley-map, task 26)
 
@@ -578,7 +578,7 @@ be a map onlinewardleymaps.com can open, with the drag visible in it.
   before and the same first number; the rest of the file - comments, blank lines, the order of
   the statements, the line endings - is untouched; and the map in the browser draws Kettle in
   its new place with everything else where it was.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed for the move, with two byte-level findings; the browser render is external.** Dragging `Kettle` clearly to the right wrote `tea.owm` as `component Kettle [0.43, 0.35]` → `[0.43, 0.5046]` — a larger second number (more evolved), the same first number, and the Kettle line otherwise identical, with every other component, comment, blank line and statement order untouched. Two deviations from *“the rest of the file is untouched”*, both worth a fix: **(a)** the write **stripped the file's leading UTF-8 BOM** (`-﻿title` / `+title`), and Undo reverted the position but not the BOM (it is a write-side normalization); **(b)** the drag left an untracked `tea.identities.json` sidecar beside the `.owm`. Opening the result in onlinewardleymaps.com to confirm the drawn move is an external step, not run here.
 
 ## An element selected on the canvas fills the property grid (wardley-map, task 26)
 
@@ -594,7 +594,7 @@ clipping, and that is only visible on screen.
   and Strategy; Visibility and Maturity show the file's own numbers; Evolution stage shows
   `Custom Built` and cannot be typed into, with a sentence beside it saying to change Maturity
   instead - one or two lines, not a paragraph that pushes the rest of the panel down.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **FAILED — a real defect found by running the app.** Clicking `Kettle` on the canvas (tried repeatedly, including a precise click on the zoomed-in dot) does **not** fill the Property Grid: the backend logs *Selected …/tea.adp … as Activate* and *Described 0 properties for …/tea.adp* — the innermost selection resolves to the `.adp` **file**, never the element, so the heading stays the file and Kettle's Identity/Position/Strategy rows never appear. Root cause, confirmed in source: **`WardleyCanvas.tsx` reports no element context-selection.** The working modules do — e.g. causal-loop wires `onSelect → select(elementSelectionOf(entryId, path, id, gesture))` to each element's `onClick` and imports `useContextSelection`/`useElementContextMenu`; `WardleyCanvas` has none of these, its element `<g>` carries only an `onMouseDown` drag handler, and a comment in it admits the `.adp` entry *“a selection reports as its outer level … task 19's context resolver needs and nothing here does.”* The backend `WardleyContextSourceResolver` and `WardleyContextPropertyProvider` exist and are unit-tested, but the client never hands them an element. This is the same class of bug as the already-fixed causal-loop *“context surface is reachable”* entry, and it wants the same fix — wire element-selection reporting into `WardleyCanvas`, with a guard. Flagged to the Scrum master.
 
 ## The ruler stays fixed to the view while its labels slide with the content (timeline-diagram, task 31)
 
