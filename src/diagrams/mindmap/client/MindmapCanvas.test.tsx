@@ -67,6 +67,27 @@ function seed(...elements: ReturnType<typeof node>[]): MindmapModel {
 
 const props = { projectId: new Uint8Array(16), entryId: new Uint8Array(16).fill(3), path: ["docs", "map.adp"] };
 
+/**
+ * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
+ * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined. A MouseEvent typed
+ * "pointerdown" bubbles the same way and carries the button - usePointerGesture.test.tsx's
+ * idiom, for the same reason.
+ */
+function pointer(type: string, init: MouseEventInit) {
+  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
+}
+
+/** A click in the pointer vocabulary the canvas listens to: press and release, unmoved. */
+function press(target: Element, init: MouseEventInit = {}) {
+  fireEvent(target, pointer("pointerdown", { button: 0, ...init }));
+  fireEvent(target, pointer("pointerup", { ...init }));
+}
+
+// jsdom implements no pointer capture on SVG elements; the arbiter uses it so a release
+// outside the surface still ends the gesture.
+SVGElement.prototype.setPointerCapture ??= () => {};
+SVGElement.prototype.releasePointerCapture ??= () => {};
+
 describe("MindmapCanvas", () => {
   beforeEach(() => {
     select.mockClear();
@@ -137,7 +158,7 @@ describe("MindmapCanvas", () => {
     const { container } = render(<MindmapCanvas {...props} />);
 
     // Act.
-    fireEvent.click(container.querySelectorAll(".mindmap-node")[1]);
+    press(container.querySelectorAll(".mindmap-node")[1]);
 
     // Assert.
     expect(document.activeElement).toBe(container.querySelector(".mindmap-canvas-surface"));
@@ -162,7 +183,7 @@ describe("MindmapCanvas", () => {
     const { container } = render(<MindmapCanvas {...props} />);
 
     // Act.
-    fireEvent.click(container.querySelectorAll(".mindmap-node")[1]);
+    press(container.querySelectorAll(".mindmap-node")[1]);
 
     // Assert.
     expect(select).toHaveBeenCalledTimes(1);
@@ -178,7 +199,7 @@ describe("MindmapCanvas", () => {
   it("forwards a structural key against the focused node as a shortcut", () => {
     // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
-    fireEvent.click(container.querySelectorAll(".mindmap-node")[0]); // focus Root
+    press(container.querySelectorAll(".mindmap-node")[0]); // focus Root
 
     // Act.
     fireEvent.keyDown(container.querySelector(".mindmap-canvas-surface")!, { key: "Insert" });
@@ -193,7 +214,7 @@ describe("MindmapCanvas", () => {
   it("maps Tab to the child action's Insert key, not to an action", () => {
     // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
-    fireEvent.click(container.querySelectorAll(".mindmap-node")[0]);
+    press(container.querySelectorAll(".mindmap-node")[0]);
 
     // Act.
     fireEvent.keyDown(container.querySelector(".mindmap-canvas-surface")!, { key: "Tab" });
@@ -205,7 +226,7 @@ describe("MindmapCanvas", () => {
   it("ignores a key that carries no structural meaning", () => {
     // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
-    fireEvent.click(container.querySelectorAll(".mindmap-node")[0]);
+    press(container.querySelectorAll(".mindmap-node")[0]);
 
     // Act.
     fireEvent.keyDown(container.querySelector(".mindmap-canvas-surface")!, { key: "x" });
@@ -279,12 +300,12 @@ describe("MindmapCanvas", () => {
   it("clicking the empty canvas deselects", () => {
     // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
-    fireEvent.click(container.querySelectorAll(".mindmap-node")[1]); // select Alpha first
+    press(container.querySelectorAll(".mindmap-node")[1]); // select Alpha first
     select.mockClear();
     moveElement.mockClear();
 
     // Act.
-    fireEvent.click(container.querySelector(".mindmap-canvas-surface")!);
+    press(container.querySelector(".mindmap-canvas-surface")!);
 
     // Assert.
     expect(select).toHaveBeenCalledWith(null);
@@ -294,28 +315,67 @@ describe("MindmapCanvas", () => {
   it("dragging one node onto another moves it there, and does not also select", () => {
     // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
-    const [root, alpha] = [...container.querySelectorAll(".mindmap-node")];
+    const [, alpha] = [...container.querySelectorAll(".mindmap-node")];
 
     // Act.
-    fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
-    fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 40, clientY: 0 });
-    fireEvent.mouseUp(root);
-    fireEvent.click(alpha); // the click that trails the gesture
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 120, clientY: -20 }));
+    fireEvent(alpha, pointer("pointermove", { clientX: 40, clientY: 0 }));
+    fireEvent(alpha, pointer("pointerup", { clientX: 40, clientY: 0 })); // released over Root's box
+    fireEvent.click(alpha); // the click that trails the gesture - inert, nothing listens
 
     // Assert.
     expect(moveElement).toHaveBeenCalledWith("a", "root");
     expect(select).not.toHaveBeenCalled();
   });
 
-  it("a wobbly click stays a click: no move below the drag threshold", () => {
-    // Arrange.
+  it("selecting after a reparenting drag still selects the next node clicked", () => {
+    // Arrange: the reported defect, face (a). A drag of Alpha dropped on Root reparents it;
+    // the reparent's layout moves Alpha out from under the pointer, so the trailing click
+    // never consumes the armed flag - and the next legitimate click is swallowed by it.
     const { container } = render(<MindmapCanvas {...props} />);
     const [root, alpha] = [...container.querySelectorAll(".mindmap-node")];
 
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 120, clientY: -20 }));
+    fireEvent(alpha, pointer("pointermove", { clientX: 40, clientY: 0 }));
+    fireEvent(alpha, pointer("pointerup", { clientX: 40, clientY: 0 })); // dropped on Root
+    // No trailing click arrives: the drop's layout moved Alpha away from the pointer.
+
+    // Act: the next gesture is a plain press on Root.
+    press(root);
+
+    // Assert: Root is selected - one selection, naming "root".
+    expect(select).toHaveBeenCalledTimes(1);
+    expect(select.mock.calls[0][0].detail.value.id.source.value.value).toBe("root");
+  });
+
+  it("a drag released over empty canvas leaves the selection alone", () => {
+    // Arrange: face (b). Alpha is selected; dragging it and releasing over empty canvas ends
+    // the drag, and the trailing background click must not throw the selection away.
+    const { container } = render(<MindmapCanvas {...props} />);
+    const surface = container.querySelector(".mindmap-canvas-surface")!;
+    const alpha = container.querySelectorAll(".mindmap-node")[1];
+    press(alpha); // select Alpha first
+    select.mockClear();
+
     // Act.
-    fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
-    fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 121, clientY: -19 });
-    fireEvent.mouseUp(root);
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 120, clientY: -20 }));
+    fireEvent(alpha, pointer("pointermove", { clientX: 400, clientY: 300 })); // over empty canvas
+    fireEvent(alpha, pointer("pointerup", { clientX: 400, clientY: 300 }));
+    fireEvent.click(surface); // the click that trails the drag - inert, nothing listens
+
+    // Assert: a completed drag over empty canvas neither selects nor deselects.
+    expect(select).not.toHaveBeenCalled();
+  });
+
+  it("a wobbly click stays a click: no move below the drag threshold", () => {
+    // Arrange.
+    const { container } = render(<MindmapCanvas {...props} />);
+    const [, alpha] = [...container.querySelectorAll(".mindmap-node")];
+
+    // Act.
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 120, clientY: -20 }));
+    fireEvent(alpha, pointer("pointermove", { clientX: 121, clientY: -19 }));
+    fireEvent(alpha, pointer("pointerup", { clientX: 121, clientY: -19 }));
 
     // Assert.
     expect(moveElement).not.toHaveBeenCalled();
@@ -327,9 +387,9 @@ describe("MindmapCanvas", () => {
     const alpha = container.querySelectorAll(".mindmap-node")[1];
 
     // Act.
-    fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
-    fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 10, clientY: 10 });
-    fireEvent.mouseUp(container.querySelector(".mindmap-canvas-surface")!);
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 120, clientY: -20 }));
+    fireEvent(alpha, pointer("pointermove", { clientX: 400, clientY: 300 })); // off every node's box
+    fireEvent(alpha, pointer("pointerup", { clientX: 400, clientY: 300 }));
 
     // Assert.
     expect(moveElement).not.toHaveBeenCalled();
@@ -340,13 +400,13 @@ describe("MindmapCanvas", () => {
     const { container } = render(<MindmapCanvas {...props} />);
     const [root, alpha] = [...container.querySelectorAll(".mindmap-node")];
 
-    // Act and assert, step by step.
-    fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
-    fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 40, clientY: 0 });
-    fireEvent.mouseOver(root);
+    // Act and assert, step by step. The highlight rides the drag's own movement: holding
+    // the ghost over Root's box is what marks Root, no hover event needed.
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 120, clientY: -20 }));
+    fireEvent(alpha, pointer("pointermove", { clientX: 40, clientY: 0 }));
     expect(root.classList.contains("mindmap-node-drop-target")).toBe(true);
 
-    fireEvent.mouseUp(root);
+    fireEvent(alpha, pointer("pointerup", { clientX: 40, clientY: 0 }));
     expect(root.classList.contains("mindmap-node-drop-target")).toBe(false);
     expect(moveElement).toHaveBeenCalledWith("a", "root");
   });
@@ -357,36 +417,36 @@ describe("MindmapCanvas", () => {
     const [root, alpha] = [...container.querySelectorAll(".mindmap-node")];
 
     // Act and assert, step by step.
-    fireEvent.mouseOver(root); // no drag in flight
+    fireEvent(root, pointer("pointermove", { clientX: 0, clientY: 0 })); // no gesture in flight
     expect(root.classList.contains("mindmap-node-drop-target")).toBe(false);
 
-    fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
-    fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 40, clientY: 0 });
-    fireEvent.mouseOver(alpha); // held back over itself
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 120, clientY: -20 }));
+    fireEvent(alpha, pointer("pointermove", { clientX: 100, clientY: -10 })); // held back over itself
     expect(alpha.classList.contains("mindmap-node-drop-target")).toBe(false);
   });
 
   it("shows the drag's outcome mid-drag: a ghost at the pointer, a preview connector to the candidate parent", () => {
     // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
-    const [root, alpha] = [...container.querySelectorAll(".mindmap-node")];
+    const [, alpha] = [...container.querySelectorAll(".mindmap-node")];
 
     // Act and assert, step by step.
-    fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 120, clientY: -20 }));
     expect(container.querySelector("[data-testid=mindmap-drag-preview]")).toBeNull(); // nothing until it moves
 
-    fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 40, clientY: 0 });
-    // Moved: the ghost travels, the original dims, but with no candidate parent no connector yet.
+    fireEvent(alpha, pointer("pointermove", { clientX: 400, clientY: 300 }));
+    // Moved over empty canvas: the ghost travels, the original dims, but with no candidate
+    // parent no connector yet.
     expect(container.querySelector("[data-testid=mindmap-drag-preview]")).not.toBeNull();
     expect(container.querySelector(".mindmap-node-ghost")?.textContent).toContain("Alpha");
     expect(alpha.classList.contains("mindmap-node-dragging")).toBe(true);
     expect(container.querySelector(".mindmap-edge-preview")).toBeNull();
 
-    fireEvent.mouseOver(root);
+    fireEvent(alpha, pointer("pointermove", { clientX: 40, clientY: 0 }));
     // Held over the root: the connector the drop would create is on screen before the release.
     expect(container.querySelector(".mindmap-edge-preview")).not.toBeNull();
 
-    fireEvent.mouseUp(root);
+    fireEvent(alpha, pointer("pointerup", { clientX: 40, clientY: 0 }));
     expect(container.querySelector("[data-testid=mindmap-drag-preview]")).toBeNull();
     expect(alpha.classList.contains("mindmap-node-dragging")).toBe(false);
   });
@@ -398,9 +458,10 @@ describe("MindmapCanvas", () => {
     const beta = [...container.querySelectorAll(".mindmap-node")][2];
 
     // Act and assert, step by step.
-    fireEvent.mouseDown(container.querySelectorAll(".mindmap-node")[1], { clientX: 120, clientY: -20 });
-    fireEvent.mouseMove(container.querySelector(".mindmap-canvas-surface")!, { clientX: 40, clientY: 0 });
-    fireEvent.mouseOver(beta); // Beta sits inside Alpha's branch: the move would be refused
+    const alpha = container.querySelectorAll(".mindmap-node")[1];
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 120, clientY: -20 }));
+    // Held over Beta's box - but Beta sits inside Alpha's branch: the move would be refused.
+    fireEvent(alpha, pointer("pointermove", { clientX: 240, clientY: -20 }));
     expect(beta.classList.contains("mindmap-node-drop-target")).toBe(false);
     expect(container.querySelector(".mindmap-edge-preview")).toBeNull();
   });
@@ -503,10 +564,10 @@ describe("MindmapCanvas", () => {
     const surface = container.querySelector(".mindmap-canvas-surface")!;
     const [xBefore, yBefore] = viewBoxOf(container);
 
-    fireEvent.mouseDown(surface, { clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(surface, { clientX: 60, clientY: 130 });
-    fireEvent.mouseUp(surface);
-    fireEvent.click(surface); // the click that trails the pan
+    fireEvent(surface, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(surface, pointer("pointermove", { clientX: 60, clientY: 130 }));
+    fireEvent(surface, pointer("pointerup", { clientX: 60, clientY: 130 }));
+    fireEvent.click(surface); // the click that trails the pan - inert, nothing listens
 
     // Act and assert, step by step.
     const [xAfter, yAfter] = viewBoxOf(container);
@@ -525,9 +586,9 @@ describe("MindmapCanvas", () => {
     const before = viewBoxOf(container);
 
     // Act.
-    fireEvent.mouseDown(alpha, { clientX: 120, clientY: -20 });
-    fireEvent.mouseMove(surface, { clientX: 60, clientY: 40 });
-    fireEvent.mouseUp(surface);
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 120, clientY: -20 }));
+    fireEvent(surface, pointer("pointermove", { clientX: 60, clientY: 40 }));
+    fireEvent(surface, pointer("pointerup", { clientX: 60, clientY: 40 }));
 
     // Assert.
     expect(viewBoxOf(container)).toEqual(before);
@@ -670,9 +731,9 @@ describe("MindmapCanvas", () => {
 
     // Act.
     // A pan of the view, by the canvas's own empty-surface drag.
-    fireEvent.mouseDown(surface, { clientX: 200, clientY: 200 });
-    fireEvent.mouseMove(surface, { clientX: 260, clientY: 240 });
-    fireEvent.mouseUp(surface, { clientX: 260, clientY: 240 });
+    fireEvent(surface, pointer("pointerdown", { button: 0, clientX: 200, clientY: 200 }));
+    fireEvent(surface, pointer("pointermove", { clientX: 260, clientY: 240 }));
+    fireEvent(surface, pointer("pointerup", { clientX: 260, clientY: 240 }));
 
     // Assert.
     // The editor is mounted in canvas units, so the view moving underneath it does not move it
@@ -697,7 +758,7 @@ describe("MindmapCanvas", () => {
     // Pressing on the empty canvas starts a pan; pressing a node starts a drag. Either way the
     // gesture must not begin over an editor still holding unsaved text.
     await act(async () => {
-      fireEvent.mouseDown(surface, { clientX: 200, clientY: 200 });
+      fireEvent(surface, pointer("pointerdown", { button: 0, clientX: 200, clientY: 200 }));
     });
 
     // Assert.

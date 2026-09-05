@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { facingAnchorsBetween, horizontalBezierPath, sideAnchorOf, type ConnectorBox } from "@client/canvas/connectors";
 import { InteractiveBezierConnection } from "@client/canvas/connections/interactive-bezier/InteractiveBezierConnection";
+import { usePointerGesture } from "@client/canvas/gesture/usePointerGesture";
 import { InlineLabelEditor } from "@client/canvas/label/InlineLabelEditor";
 import { asideLabelPlacement, centredLabelPlacement, midpointLabelPlacement } from "@client/canvas/label/labelPlacement";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
@@ -598,12 +599,12 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
     openTargetMenuAt(event, element.id);
   };
 
-  const onConnectionClick = (event: React.MouseEvent, connectionId: string) => {
-    // A left-click on a relation selects it, exactly as it does an element (the resolver
-    // answers for both). stopPropagation keeps the surface from reading it as background.
-    event.stopPropagation();
-    select(elementSelectionOf(entryId, path, connectionId));
-  };
+  // A press on a relation selects it, exactly as it does an element (the resolver answers
+  // for both) - decided by the shared arbiter at the gesture's end, never by the trailing
+  // click, which lands wherever a drag's drop left the geometry.
+  const connectionGesture = usePointerGesture<string>({
+    onPress: (connectionId) => select(elementSelectionOf(entryId, path, connectionId)),
+  });
 
   /**
    * A toolbox entry dropped anywhere on the canvas: the drop names a placement - the time and
@@ -721,7 +722,7 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
                 selectedClassName="timeline-selected canvas-selected"
                 hitClassName="timeline-connection-hit canvas-connection-hit"
                 lineClassName="timeline-connection-line canvas-connection-line"
-                onSelect={(event) => onConnectionClick(event, connection.id)}
+                press={connectionGesture.press(connection.id)}
                 onOpenMenu={(event) => openTargetMenuAt(event, connection.id)}
               />
             );

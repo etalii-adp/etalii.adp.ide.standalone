@@ -12,6 +12,19 @@ import {
 import { VIEW_REPORT_DEBOUNCE_MS } from "@client/diagrams/viewReport";
 import { applyDelta, emptyModel, type CausalLoopModel } from "./causalLoopModel";
 
+/**
+ * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
+ * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined -
+ * usePointerGesture.test.tsx's idiom, for the same reason.
+ */
+function pointer(type: string, init: MouseEventInit) {
+  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
+}
+
+// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
+SVGElement.prototype.setPointerCapture ??= () => {};
+SVGElement.prototype.releasePointerCapture ??= () => {};
+
 const select = vi.fn();
 const moveElementTo = vi.fn(() => Promise.resolve(""));
 const reportView = vi.fn();
@@ -303,6 +316,18 @@ describe("CausalLoopCanvas", () => {
     fireEvent.click(container.querySelector('[data-element-id="variable:a"]')!);
 
     expect(select).toHaveBeenCalled();
+  });
+
+  it("selects a link on a press, decided at the gesture's end rather than by a click", () => {
+    // A link is a relation: its selection goes through the shared arbiter, so a press that
+    // turns into a drag is just not a click and a trailing click event selects nothing.
+    const { container } = renderCanvas();
+    const hit = container.querySelector(".causal-loop-link .canvas-connection-hit")!;
+
+    fireEvent(hit, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(hit, pointer("pointerup", { clientX: 10, clientY: 10 }));
+
+    expect(select).toHaveBeenCalledTimes(1);
   });
 
   it("dispatches a move when a variable is dragged, and only then", () => {

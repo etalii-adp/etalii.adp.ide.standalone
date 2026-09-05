@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { shownRectOf } from "@client/diagrams/viewReport";
 import { FixedBezierConnection } from "@client/canvas/connections/fixed-bezier/FixedBezierConnection";
+import { usePointerGesture, type PointerPressWiring } from "@client/canvas/gesture/usePointerGesture";
 import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
 import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import { BoxElement } from "@client/canvas/elements/box/BoxElement";
@@ -80,8 +81,6 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
 
   const [focusedId, setFocusedId] = useState<string | undefined>(undefined);
   const [view, setView] = useState<ViewBox | null>(null);
-  const panRef = useRef<{ clientX: number; clientY: number; view: ViewBox; moved: boolean } | null>(null);
-  const panJustEndedRef = useRef(false);
   const surfaceRef = useRef<SVGSVGElement>(null);
 
   const fitBox = useMemo(() => fitBoxOf(model), [model]);
@@ -199,50 +198,42 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
     return rect !== undefined && rect.width > 0 ? box.w / rect.width : 1;
   };
 
-  const onSurfacePointerDown = (event: React.MouseEvent) => {
-    endInlineEditBeforeGesture();
-    if (event.target !== event.currentTarget) {
-      return;
-    }
-    panRef.current = { clientX: event.clientX, clientY: event.clientY, view: viewRef.current, moved: false };
-  };
+  /**
+   * One arbiter decides click-or-pan for the surface at the gesture's end, from what the
+   * gesture itself recorded. Nothing here listens to `click`: the trailing event was the
+   * wrong witness, and the one-shot flag that suppressed it was a latch armed with no
+   * guaranteed consumer (the selection-after-drag specification traces the defect).
+   */
+  const gesture = usePointerGesture<ViewBox>({
+    onPress: () => {
+      // An unmoved background press deselects: focus clears and the backend hears it.
+      setFocusedId(undefined);
+      select(null);
+    },
+    onDragMove: (pressView, dx, dy) => {
+      // Panning measures against the view captured at press: the view moves under this very
+      // gesture, and measuring against the moving thing would compound each step.
+      const scale = unitsPerPixel(pressView);
+      setView({ ...pressView, x: pressView.x - dx * scale, y: pressView.y - dy * scale });
+    },
+  });
 
-  const onSurfacePointerMove = (event: React.MouseEvent) => {
-    const pan = panRef.current;
-    if (!pan) {
-      return;
-    }
-    if (!pan.moved && Math.hypot(event.clientX - pan.clientX, event.clientY - pan.clientY) <= 4) {
-      return;
-    }
-    pan.moved = true;
-    const scale = unitsPerPixel(pan.view);
-    setView({
-      ...pan.view,
-      x: pan.view.x - (event.clientX - pan.clientX) * scale,
-      y: pan.view.y - (event.clientY - pan.clientY) * scale,
-    });
-  };
-
-  const onSurfacePointerUp = () => {
-    const pan = panRef.current;
-    panRef.current = null;
-    if (pan?.moved) {
-      panJustEndedRef.current = true;
-    }
-  };
-
-  const onBackgroundClick = (event: React.MouseEvent) => {
-    if (event.target !== event.currentTarget) {
-      return;
-    }
-    if (panJustEndedRef.current) {
-      // The click that trails a pan is the same gesture: letting go must not also deselect.
-      panJustEndedRef.current = false;
-      return;
-    }
-    setFocusedId(undefined);
-    select(null);
+  /**
+   * The surface's wiring. The inline edit is committed only when the press is really the
+   * surface's own: the editor is a child of the svg, and ending the edit on a press that
+   * merely bubbled up through it would commit the very edit being clicked into.
+   */
+  const backgroundWiring = (): PointerPressWiring => {
+    const wiring = gesture.background(effectiveView);
+    return {
+      ...wiring,
+      onPointerDown: (event: React.PointerEvent) => {
+        if (event.target === event.currentTarget) {
+          endInlineEditBeforeGesture();
+        }
+        wiring.onPointerDown(event);
+      },
+    };
   };
 
   const onNodeClick = (node: PipelineNode) => {
@@ -282,12 +273,8 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
           tabIndex={0}
           role="img"
           aria-label={`Pipeline ${path.join("/")}`}
-          onClick={onBackgroundClick}
-          onMouseDown={onSurfacePointerDown}
+          {...backgroundWiring()}
           onKeyDown={onKeyDown}
-          onMouseMove={onSurfacePointerMove}
-          onMouseUp={onSurfacePointerUp}
-          onMouseLeave={onSurfacePointerUp}
         >
           <defs>
             <marker

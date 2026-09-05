@@ -4,6 +4,7 @@ import { BoxElement } from "@client/canvas/elements/box/BoxElement";
 import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
 import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
+import { usePointerGesture } from "@client/canvas/gesture/usePointerGesture";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { shownRectOf, type ViewBox } from "@client/diagrams/viewReport";
 import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
@@ -86,6 +87,11 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
     (id: string, gesture?: ContextSelectionAction) => select(elementSelectionOf(entryId, path, id, gesture)),
     [entryId, path, select],
   );
+
+  // A press on a link selects it - decided by the shared arbiter at the gesture's end, never
+  // by the trailing click, which lands wherever a drag's drop left the geometry. Variables
+  // and loop markers keep their element paths; only the relation goes through the arbiter.
+  const linkGesture = usePointerGesture<string>({ onPress: (id) => onSelect(id) });
 
   /**
    * A right-click's menu, opened once the pushed selection for that element arrives with its
@@ -295,7 +301,7 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
                   selectedId === link.id ? " canvas-selected" : ""
                 }`}
                 data-element-id={link.id}
-                onClick={() => onSelect(link.id)}
+                {...linkGesture.press(link.id)}
                 onContextMenu={(event) => openMenuAt(event, link.id)}
               >
                 <path

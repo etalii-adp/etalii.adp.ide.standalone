@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { facingAnchorsBetween, horizontalBezierPath, sideAnchorOf, type ConnectorBox } from "@client/canvas/connectors";
 import { InteractiveBezierConnection } from "@client/canvas/connections/interactive-bezier/InteractiveBezierConnection";
+import { usePointerGesture } from "@client/canvas/gesture/usePointerGesture";
 import { SpanElement, type SpanElementClasses } from "@client/canvas/elements/span/SpanElement";
 import { InlineLabelEditor } from "@client/canvas/label/InlineLabelEditor";
 import { centredLabelPlacement, midpointLabelPlacement } from "@client/canvas/label/labelPlacement";
@@ -537,12 +538,12 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
     openTargetMenuAt(event, element.id);
   };
 
-  const onRelationClick = (event: React.MouseEvent, relationId: string) => {
-    // A left-click on a dependency selects it, exactly as it does a node (the resolver answers
-    // for both). stopPropagation keeps the surface from reading it as background.
-    event.stopPropagation();
-    select(elementSelectionOf(entryId, path, relationId));
-  };
+  // A press on a dependency selects it, exactly as it does a node (the resolver answers for
+  // both) - decided by the shared arbiter at the gesture's end, never by the trailing click,
+  // which lands wherever a drag's drop left the geometry.
+  const relationGesture = usePointerGesture<string>({
+    onPress: (relationId) => select(elementSelectionOf(entryId, path, relationId)),
+  });
 
   /**
    * A toolbox entry dropped anywhere on the canvas: the drop names a placement - the coordinate
@@ -681,7 +682,7 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
                 selectedClassName="dependency-graph-selected canvas-selected"
                 hitClassName="dependency-graph-relation-hit canvas-connection-hit"
                 lineClassName="dependency-graph-relation-line canvas-connection-line"
-                onSelect={(event) => onRelationClick(event, relation.id)}
+                press={relationGesture.press(relation.id)}
                 onOpenMenu={(event) => openTargetMenuAt(event, relation.id)}
               />
             );

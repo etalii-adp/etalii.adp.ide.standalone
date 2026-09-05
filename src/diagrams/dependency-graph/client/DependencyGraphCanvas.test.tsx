@@ -109,6 +109,19 @@ beforeEach(() => {
   shortcuts = [];
 });
 
+/**
+ * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
+ * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined -
+ * usePointerGesture.test.tsx's idiom, for the same reason.
+ */
+function pointer(type: string, init: MouseEventInit) {
+  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
+}
+
+// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
+SVGElement.prototype.setPointerCapture ??= () => {};
+SVGElement.prototype.releasePointerCapture ??= () => {};
+
 describe("the dependency graph canvas", () => {
   it("wears the shared canvas classes, so the central stylesheet is what dresses it", () => {
     // Arrange & act.
@@ -472,20 +485,42 @@ describe("the dependency graph canvas", () => {
     expect(executed).toHaveLength(0);
   });
 
-  it("selects a dependency on a left click, through its fat hit path", () => {
+  it("selects a dependency on a press, through its fat hit path", () => {
     // Arrange.
     const { container } = renderCanvas();
     const hit = container.querySelector(".dependency-graph-relation-hit")!;
 
     // Act.
-    fireEvent.click(hit);
+    fireEvent(hit, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(hit, pointer("pointerup", { clientX: 10, clientY: 10 }));
 
     // Assert.
-    // The click selects the dependency by its id - the same channel a node selection uses, and
-    // the resolver answers for both.
+    // The press selects the dependency by its id - the same channel a node selection uses, and
+    // the resolver answers for both - decided at the gesture's end, never by a click event.
     expect(selections).toHaveLength(1);
     const child = (selections[0] as { detail: { value: { id: { source: { value: { value: string } } } } } }).detail.value;
     expect(child.id.source.value.value).toBe("ccc");
+  });
+
+  it("a node drag whose trailing click lands on a dependency does not steal the selection", () => {
+    // Arrange: the reported defect. Dragging a node and releasing over a dependency's line
+    // makes the browser's trailing click land on the dependency's fat hit path - and a raw
+    // click handler there steals a selection the gesture never meant to change.
+    const { container } = renderCanvas();
+    const surface = container.querySelector(".dependency-graph-surface")!;
+    const element = container.querySelector(".dependency-graph-element")!;
+    const hit = container.querySelector(".dependency-graph-relation-hit")!;
+
+    // Act: a real drag of the node, then the trailing click as the browser delivers it -
+    // targeting whatever now sits under the release point, here the dependency.
+    fireEvent.mouseDown(element, { clientX: 100, clientY: 100 });
+    fireEvent.mouseMove(surface, { clientX: 150, clientY: 120 });
+    fireEvent.mouseUp(surface);
+    fireEvent.click(hit);
+
+    // Assert: the drag moved its node, and neither it nor its trailing click selected anything.
+    expect(moves).toHaveLength(1);
+    expect(selections).toHaveLength(0);
   });
 
   it("marks the selected dependency, so the selection is visible", () => {

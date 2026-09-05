@@ -123,6 +123,19 @@ beforeEach(() => {
   currentReportView = null;
 });
 
+/**
+ * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
+ * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined -
+ * usePointerGesture.test.tsx's idiom, for the same reason.
+ */
+function pointer(type: string, init: MouseEventInit) {
+  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
+}
+
+// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
+SVGElement.prototype.setPointerCapture ??= () => {};
+SVGElement.prototype.releasePointerCapture ??= () => {};
+
 describe("the timeline canvas", () => {
   it("wears the shared canvas classes, so the central stylesheet is what dresses it", () => {
     // Arrange & act.
@@ -441,17 +454,18 @@ describe("the timeline canvas", () => {
     expect(container.querySelector(".timeline-period")!.getAttribute("x")).not.toBe(before);
   });
 
-  it("selects a relation on a left click, through its fat hit path", () => {
+  it("selects a relation on a press, through its fat hit path", () => {
     // Arrange.
     const { container } = renderCanvas();
     const hit = container.querySelector(".timeline-connection-hit")!;
 
     // Act.
-    fireEvent.click(hit);
+    fireEvent(hit, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(hit, pointer("pointerup", { clientX: 10, clientY: 10 }));
 
     // Assert.
-    // The click selects the connection by its id - the same channel an element selection uses,
-    // and the resolver answers for both. Before this, a relation could not be selected at all.
+    // The press selects the connection by its id - the same channel an element selection uses,
+    // and the resolver answers for both - decided at the gesture's end, never by a click event.
     expect(selections).toHaveLength(1);
     const child = (selections[0] as { detail: { value: { id: { source: { value: { value: string } } } } } }).detail.value;
     expect(child.id.source.value.value).toBe("ccc");
