@@ -85,33 +85,20 @@ public partial class ShapeOfFileAccessTests
     /// heading went with its last entry, as the read categories did before it. Those four were
     /// found by this guard when it was first run rather than by any survey, and were reported as
     /// a finding rather than absorbed - see the task 1.1 implementation log.
+    /// <para>
+    /// A fourth category lived here for the length of group 8 and is gone the same way. Twelve
+    /// in-place writes went in when task 8.1 added <see cref="UnguardedWrite"/>, and out again as
+    /// tasks 8.2 to 8.4 converted them onto <c>AdpFileWriter.Save</c>. That category existed at
+    /// all because the guard had never had a rule for a write that simply did not attempt
+    /// atomicity - group 5 had converted only the ones that reimplemented the writer, which is
+    /// the shape <see cref="HandRolledPublish"/> matches.
+    /// </para>
     /// </remarks>
     private static readonly (string File, string Rule, string Owner)[] Tracked =
     [
         // Core reads of a user document - owned by backend-consistency, not by this spec.
         ("Hierarchy/AddDiagramContextActionProvider.cs", RawRead, "backend-consistency AC1"),
         ("Hierarchy/RegistrationLayout.cs", RawRead, "backend-consistency AC2"),
-
-        // In-place writes that never attempted atomicity - file-io-centralization tasks 8.2-8.4.
-        // Twelve of them, and the reason there are so many is that no rule matched this shape
-        // until task 8.1: group 5 converted the four publishes that REIMPLEMENTED the writer and
-        // could not see the ones that simply did not try.
-        //
-        // RegistrationLayout appears here for its WRITE while its read above stays
-        // backend-consistency's. Same file, two rules, two owners - which is the arrangement
-        // ThePermanentAndTrackedListsStaySeparate exists to keep honest.
-        ("Hierarchy/RegistrationLayout.cs", UnguardedWrite, "file-io-centralization task 8.2"),
-        ("Hierarchy/Commands/RenameEntryCommandHandler.cs", UnguardedWrite, "file-io-centralization task 8.2"),
-        ("Projects/FileProjectStore.cs", UnguardedWrite, "file-io-centralization task 8.2"),
-        ("Timeline/TimelineDocumentStore.cs", UnguardedWrite, "file-io-centralization task 8.3"),
-        ("Rdf/RdfDocumentStore.cs", UnguardedWrite, "file-io-centralization task 8.3"),
-        ("Databricks/DatabricksDocumentStore.cs", UnguardedWrite, "file-io-centralization task 8.3"),
-        ("DependencyGraph/DependencyGraphDocumentStore.cs", UnguardedWrite, "file-io-centralization task 8.3"),
-        ("AzurePipeline/PipelineDocumentStore.cs", UnguardedWrite, "file-io-centralization task 8.3"),
-        ("C4/C4DocumentStore.cs", UnguardedWrite, "file-io-centralization task 8.3"),
-        ("Rdf/Commands/RdfEdits.cs", UnguardedWrite, "file-io-centralization task 8.4"),
-        ("Databricks/Commands/DatabricksEdits.cs", UnguardedWrite, "file-io-centralization task 8.4"),
-        ("C4/Commands/AddC4ViewCommand.cs", UnguardedWrite, "file-io-centralization task 8.4"),
     ];
 
     private const string RawRead = "reads a file with a raw File.ReadAllText/ReadAllLines/ReadAllBytes, which opens at FileShare.Read and loses to a concurrent save";

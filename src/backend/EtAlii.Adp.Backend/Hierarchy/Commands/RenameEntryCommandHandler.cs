@@ -1,3 +1,4 @@
+using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Diagram;
 using Serilog;
 using IoPath = System.IO.Path;
@@ -364,7 +365,7 @@ public sealed class RenameEntryCommandHandler : ICommandHandler<RenameEntryComma
 
             foreach (var (path, _, newContent) in rewrites)
             {
-                File.WriteAllText(finalPathOf.GetValueOrDefault(path, path), newContent);
+                AdpFileWriter.Save(finalPathOf.GetValueOrDefault(path, path), newContent);
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
