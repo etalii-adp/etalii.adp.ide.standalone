@@ -310,10 +310,12 @@ describe("CausalLoopCanvas", () => {
     expect(container.querySelectorAll(".canvas-connection-line")).toHaveLength(0);
   });
 
-  it("selects on click", () => {
+  it("selects a variable on a press", () => {
     const { container } = renderCanvas();
+    const target = container.querySelector('[data-element-id="variable:a"]')!;
 
-    fireEvent.click(container.querySelector('[data-element-id="variable:a"]')!);
+    fireEvent(target, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(target, pointer("pointerup", { clientX: 10, clientY: 10 }));
 
     expect(select).toHaveBeenCalled();
   });
@@ -334,9 +336,9 @@ describe("CausalLoopCanvas", () => {
     const { container } = renderCanvas();
     const target = container.querySelector('[data-element-id="variable:a"]')!;
 
-    fireEvent.mouseDown(target, { button: 0, clientX: 10, clientY: 10 });
-    fireEvent.mouseMove(container.querySelector("svg")!, { clientX: 80, clientY: 60 });
-    fireEvent.mouseUp(container.querySelector("svg")!);
+    fireEvent(target, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(target, pointer("pointermove", { clientX: 80, clientY: 60 }));
+    fireEvent(target, pointer("pointerup", { clientX: 80, clientY: 60 }));
 
     expect(moveElementTo).toHaveBeenCalledTimes(1);
     expect((moveElementTo.mock.calls[0] as unknown as [string])[0]).toBe("variable:a");
@@ -356,6 +358,92 @@ describe("CausalLoopCanvas", () => {
     const [zx, zy, zw, zh] = viewBoxOf(container);
     expect(zw).toBeLessThan(w);
     expect(reportView.mock.calls.at(-1)![0]).toEqual({ minX: zx, minY: zy, maxX: zx + zw, maxY: zy + zh });
+  });
+
+  // ---- selection after a variable drag --------------------------------------------------
+
+  /** Every real mouse click fires pointer events, compatibility mouse events AND a click. */
+  function realPress(target: Element, x: number, y: number) {
+    fireEvent(target, pointer("pointerdown", { button: 0, clientX: x, clientY: y }));
+    fireEvent.mouseDown(target, { button: 0, clientX: x, clientY: y });
+    fireEvent(target, pointer("pointerup", { clientX: x, clientY: y }));
+    fireEvent.mouseUp(target, { clientX: x, clientY: y });
+    fireEvent.click(target, { clientX: x, clientY: y });
+  }
+
+  /** A real drag: press, move past the threshold, release - and the trailing click the browser
+   * then fires on whatever the drop's geometry left under the pointer. */
+  function realDrag(pressTarget: Element, surface: Element, fromX: number, fromY: number, toX: number, toY: number, clickTarget: Element) {
+    fireEvent(pressTarget, pointer("pointerdown", { button: 0, clientX: fromX, clientY: fromY }));
+    fireEvent.mouseDown(pressTarget, { button: 0, clientX: fromX, clientY: fromY });
+    fireEvent(pressTarget, pointer("pointermove", { clientX: toX, clientY: toY }));
+    fireEvent.mouseMove(surface, { clientX: toX, clientY: toY });
+    fireEvent(pressTarget, pointer("pointerup", { clientX: toX, clientY: toY }));
+    fireEvent.mouseUp(surface, { clientX: toX, clientY: toY });
+    fireEvent.click(clickTarget, { clientX: toX, clientY: toY });
+  }
+
+  function lastSelectedId(): string {
+    const sel = select.mock.calls.at(-1)?.[0] as { detail?: { value?: { id?: { source?: { value?: { value?: string } } } } } } | null;
+    return sel?.detail?.value?.id?.source?.value?.value ?? "(none)";
+  }
+
+  it("a completed drag leaves the selection alone - the trailing click selects nothing", () => {
+    // The user-reported defect's first face: dropping a variable made the browser's trailing
+    // click land on it, and its raw onClick then selected the very thing that was dragged.
+    currentModel = modelOf(variable("a", 0, 0), variable("b", 300, 0), link("a", "b"));
+    const { container } = renderCanvas();
+    const a = container.querySelector('[data-element-id="variable:a"]')!;
+    const surface = container.querySelector("svg")!;
+    select.mockClear();
+
+    realDrag(a, surface, 0, 0, 80, 60, a);
+
+    expect(select).not.toHaveBeenCalled();
+    expect(moveElementTo).toHaveBeenCalledTimes(1);
+  });
+
+  it("a drop landing on the loop badge does not select the loop", () => {
+    // The second face: the R/B badge sits at the centre of its loop's variables - exactly
+    // where drops land - and its raw onClick made the trailing click select the loop.
+    currentModel = modelOf(variable("a", 0, 0), variable("b", 300, 0), link("a", "b"), loop("R1", ["a", "b"]));
+    const { container } = renderCanvas();
+    const a = container.querySelector('[data-element-id="variable:a"]')!;
+    const badge = container.querySelector('[data-element-id="loop:R1"]')!;
+    const surface = container.querySelector("svg")!;
+    select.mockClear();
+
+    realDrag(a, surface, 0, 0, 50, 50, badge);
+
+    expect(select).not.toHaveBeenCalled();
+  });
+
+  it("selecting after a drag still selects the next variable pressed", () => {
+    currentModel = modelOf(variable("a", 0, 0), variable("b", 300, 0), link("a", "b"));
+    const { container } = renderCanvas();
+    const a = container.querySelector('[data-element-id="variable:a"]')!;
+    const b = container.querySelector('[data-element-id="variable:b"]')!;
+    const surface = container.querySelector("svg")!;
+
+    realPress(a, 0, 0);
+    realDrag(a, surface, 0, 0, 80, 60, a);
+    select.mockClear();
+
+    realPress(b, 300, 0);
+
+    expect(select).toHaveBeenCalledTimes(1);
+    expect(lastSelectedId()).toBe("variable:b");
+  });
+
+  it("selects a loop on a press of its badge", () => {
+    currentModel = modelOf(variable("a", 0, 0), variable("b", 300, 0), link("a", "b"), loop("R1", ["a", "b"]));
+    const { container } = renderCanvas();
+    const badge = container.querySelector('[data-element-id="loop:R1"]')!;
+    select.mockClear();
+
+    realPress(badge, 50, 50);
+
+    expect(lastSelectedId()).toBe("loop:R1");
   });
 
   it("stays quiet while the diagram is still loading", async () => {
