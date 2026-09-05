@@ -90,13 +90,29 @@ while editing the description alone.
   are not renamed. **Its edges are pending, not exempt**: this canvas has no edge selection, so
   a relabelled edge could not be reached by any gesture. When edge selection arrives, the
   relabel prompt qualifies and should be marked.
+- **azure-pipeline** - display names, on stages, jobs, steps and templates. A stage's editor
+  covers its name line above the job count; a single-line box's covers it whole. The drawn
+  label falls back from the display name to the element's own identifying name, which is a
+  placeholder for an empty authored value rather than a second value - and clearing the
+  display name inline is a real instruction, per the provider's own remark. Adoption also gave
+  this canvas its first keyboard path: F2 is forwarded, and the provider's other declared
+  shortcuts (Space, Delete, Alt+Up, Alt+Down) remain unreachable - pending, not exempt.
+- **wardley-map** - component names. Adoption came with the canvas's whole context channel:
+  it had no selection, menu or keyboard at all, so every wardley action was unreachable until
+  the selectability task landed. The editor honours the document's own label offset, left of
+  the mark included, through `asideLabelPlacement`'s signed gap. Evolve is deliberately not
+  marked: it asks for a maturity number, which is emphatically not a label.
 - **c4** - element names and relationship labels. The element's editor covers its name line
   rather than its box, and a relationship's opens on the description alone, without the
   technology drawn beside it. Relationships became selectable to make that reachable: they had
   no click or context-menu handler at all, so the backend offered relabel on them and no gesture
   could invoke it.
 
-Every canvas without an entry above keeps its dialog **pending adoption**, which is not the same
-as being exempt:
+Every implemented module now has either an entry above or a recorded reason in its own
+client readme. The reasons divide in two, and the difference matters: **exempt** means the
+module has nothing this feature could attach to - the four RDF readings, whose drawn labels
+are prefixed names computed from IRIs, and ansible-structure, helm-charts and sparql, which
+offer no rename at all - while **pending** means a gesture is missing, not a reason:
+databricks' edges await edge selection. A module that later gains a rename adopts as ever:
 a module adopts by setting the marker on the prompts whose value is the label, and its canvas by
 registering a placement resolver. Nothing else is needed and no other canvas has to change.
