@@ -3,8 +3,10 @@
   "title": "fit-to-view-extent — Design",
   "filePath": ".spec-workflow/specs/fit-to-view-extent/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "rejected",
   "createdAt": "2026-09-05T16:06:42.609Z",
   "category": "spec",
-  "categoryName": "fit-to-view-extent"
+  "categoryName": "fit-to-view-extent",
+  "response": "Stopping all progress for a stability re-alignment.",
+  "respondedAt": "2026-09-05T16:46:25.297Z"
 }
