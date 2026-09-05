@@ -25,6 +25,7 @@ import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt"
 import { useRegisterInlineLabelPlacement, type LabelPlacement } from "@client/shell/panels/InlineLabelPlacementContext";
 import type { C4RelationshipPayload } from "@client/generated/c4_pb";
 import { useC4Stream } from "./useC4Stream";
+import { usePointerGesture, type PointerPressWiring } from "@client/canvas/gesture/usePointerGesture";
 
 /**
  * Where an element's name sits inside its box, in canvas units: `StyledBoxElement` draws the
@@ -45,6 +46,16 @@ interface ViewBox {
   w: number;
   h: number;
 }
+
+/**
+ * What a press lands on. Threaded through the shared arbiter untouched: the arbiter decides
+ * click-or-drag at the gesture's end, and this type is how its verdict comes back knowing
+ * what the gesture was about.
+ */
+type C4PressTarget =
+  | { kind: "node"; node: C4Node }
+  | { kind: "relationship"; relationship: C4Relationship }
+  | { kind: "background"; view: ViewBox };
 
 const ZOOM_STEP = 1.25;
 const MIN_VIEW_WIDTH = 40;
@@ -83,18 +94,12 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
   // before the button is released.
   const [dropTargetId, setDropTargetId] = useState<string | undefined>(undefined);
 
-  // A drag of an element in flight: which one, where the pointer started, where the element
-  // started, and whether it has moved far enough to be a drag rather than a wobbly click. A
-  // ref for the parts nothing renders from; the live offset is state, because it is exactly
-  // what renders differently while the button is down.
-  const dragRef = useRef<{ id: string; clientX: number; clientY: number; x: number; y: number; moved: boolean; dx: number; dy: number } | null>(null);
+  // How far the drag in flight has carried its element - state, because it is exactly what
+  // renders differently while the button is down. The gesture itself lives in the arbiter.
   const [dragOffset, setDragOffset] = useState<{ id: string; dx: number; dy: number } | null>(null);
-  const dragJustEndedRef = useRef(false);
 
   const [focusedId, setFocusedId] = useState<string | undefined>(undefined);
   const [view, setView] = useState<ViewBox | null>(null);
-  const panRef = useRef<{ clientX: number; clientY: number; view: ViewBox; moved: boolean } | null>(null);
-  const panJustEndedRef = useRef(false);
   const surfaceRef = useRef<SVGSVGElement>(null);
 
   // Where an element's name, or a relationship's label, is drawn - for the shell's inline
@@ -191,104 +196,86 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
     return rect !== undefined && rect.width > 0 ? box.w / rect.width : 1;
   };
 
-  const onSurfacePointerDown = (event: React.MouseEvent) => {
-    if (event.target !== event.currentTarget) {
-      return;
-    }
-    endInlineEditBeforeGesture();
-    panRef.current = { clientX: event.clientX, clientY: event.clientY, view: viewRef.current, moved: false };
-  };
-
-  const onSurfacePointerMove = (event: React.MouseEvent) => {
-    const drag = dragRef.current;
-    if (drag) {
-      // A few pixels of wobble while clicking is not a drag, and treating it as one would put
-      // an entry on the history for having clicked something.
-      if (!drag.moved && Math.hypot(event.clientX - drag.clientX, event.clientY - drag.clientY) <= 4) {
+  /**
+   * One arbiter decides click-or-drag for every press - node, relationship and background
+   * alike - at the gesture's end, from what the gesture itself recorded. Nothing here
+   * listens to `click`: that trailing event was the wrong witness, and the one-shot flags
+   * that suppressed it were the latch that silently swallowed the next legitimate selection
+   * (the selection-after-drag specification traces the defect in full).
+   */
+  const gesture = usePointerGesture<C4PressTarget>({
+    onPress: (target) => {
+      if (target.kind === "background") {
+        setFocusedId(undefined);
+        select(null);
         return;
       }
 
-      drag.moved = true;
-      const scale = unitsPerPixel(viewRef.current);
-      drag.dx = (event.clientX - drag.clientX) * scale;
-      drag.dy = (event.clientY - drag.clientY) * scale;
-      setDragOffset({ id: drag.id, dx: drag.dx, dy: drag.dy });
-      return;
-    }
+      // A relationship selects exactly as an element does. Until it did, relabel and
+      // set-technology were offered by the backend and reachable by nothing.
+      const id = target.kind === "node" ? target.node.id : target.relationship.id;
+      setFocusedId(id);
+      surfaceRef.current?.focus();
+      select(elementSelectionOf(entryId, path, id));
+    },
+    onDragMove: (target, dx, dy) => {
+      if (target.kind === "node") {
+        const scale = unitsPerPixel(viewRef.current);
+        setDragOffset({ id: target.node.id, dx: dx * scale, dy: dy * scale });
+      } else if (target.kind === "background") {
+        // Panning measures against the view captured at press: the view moves under this
+        // very gesture, and measuring against the moving thing would compound each step.
+        const scale = unitsPerPixel(target.view);
+        setView({ ...target.view, x: target.view.x - dx * scale, y: target.view.y - dy * scale });
+      }
+      // A relationship has no position of its own; dragging one moves nothing.
+    },
+    onDragEnd: (target, dx, dy) => {
+      if (target.kind !== "node") {
+        return;
+      }
 
-    const pan = panRef.current;
-    if (!pan) {
-      return;
-    }
-    if (!pan.moved && Math.hypot(event.clientX - pan.clientX, event.clientY - pan.clientY) <= 4) {
-      return;
-    }
-    pan.moved = true;
-    const scale = unitsPerPixel(pan.view);
-    setView({
-      ...pan.view,
-      x: pan.view.x - (event.clientX - pan.clientX) * scale,
-      y: pan.view.y - (event.clientY - pan.clientY) * scale,
-    });
-  };
-
-  const onSurfacePointerUp = () => {
-    const drag = dragRef.current;
-    dragRef.current = null;
-    if (drag?.moved) {
+      // Nothing optimistic: the element stays where it was until the backend's delta says
+      // otherwise, so what is drawn is always what was recorded.
       setDragOffset(null);
-      // The click that trails a completed drag is the same gesture, not a new selection.
-      dragJustEndedRef.current = true;
-      // Read from the ref rather than from state: the last mousemove and this mouseup can
-      // land in one batch, and then the state this handler closed over is a frame behind -
-      // which would write a stale position, or none at all.
-      //
-      // Nothing optimistic either way: the element stays where it was until the backend's
-      // delta says otherwise, so what is drawn is always what was recorded.
-      void moveElementTo(drag.id, drag.x + drag.dx, drag.y + drag.dy);
-      return;
-    }
+      const scale = unitsPerPixel(viewRef.current);
+      void moveElementTo(target.node.id, target.node.x + dx * scale, target.node.y + dy * scale);
+    },
+    onDragAbandon: (target) => {
+      if (target.kind === "node") {
+        setDragOffset(null);
+      }
+    },
+  });
 
-    setDragOffset(null);
-    const pan = panRef.current;
-    panRef.current = null;
-    if (pan?.moved) {
-      panJustEndedRef.current = true;
-    }
+  /** A pressable's wiring, with the open inline edit committed first (Requirement 5.5). */
+  const pressWiring = (target: C4PressTarget): PointerPressWiring => {
+    const wiring = gesture.press(target);
+    return {
+      ...wiring,
+      onPointerDown: (event: React.PointerEvent) => {
+        endInlineEditBeforeGesture();
+        wiring.onPointerDown(event);
+      },
+    };
   };
 
-  const onBackgroundClick = (event: React.MouseEvent) => {
-    if (event.target !== event.currentTarget) {
-      return;
-    }
-    if (panJustEndedRef.current) {
-      // The click that trails a pan is the same gesture: letting go must not also deselect.
-      panJustEndedRef.current = false;
-      return;
-    }
-    setFocusedId(undefined);
-    select(null);
-  };
-
-  const onNodeClick = (node: C4Node) => {
-    if (dragJustEndedRef.current) {
-      // The click a completed drag fires is the same gesture, not a new selection.
-      dragJustEndedRef.current = false;
-      return;
-    }
-
-    setFocusedId(node.id);
-    surfaceRef.current?.focus();
-    select(elementSelectionOf(entryId, path, node.id));
-  };
-
-  const onNodePointerDown = (node: C4Node, event: React.MouseEvent) => {
-    if (event.button !== 0) {
-      return; // a right-click is the menu's gesture, not a drag
-    }
-
-    endInlineEditBeforeGesture();
-    dragRef.current = { id: node.id, clientX: event.clientX, clientY: event.clientY, x: node.x, y: node.y, moved: false, dx: 0, dy: 0 };
+  /**
+   * The surface's wiring. The inline edit is committed only when the press is really the
+   * surface's own: the editor is a child of the svg, and ending the edit on a press that
+   * merely bubbled up through it would commit the very edit being clicked into.
+   */
+  const backgroundWiring = (target: C4PressTarget): PointerPressWiring => {
+    const wiring = gesture.background(target);
+    return {
+      ...wiring,
+      onPointerDown: (event: React.PointerEvent) => {
+        if (event.target === event.currentTarget) {
+          endInlineEditBeforeGesture();
+        }
+        wiring.onPointerDown(event);
+      },
+    };
   };
 
   /** Right-click an element: select it with the menu gesture, open the menu on the push. */
@@ -296,18 +283,6 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
     setFocusedId(node.id);
     surfaceRef.current?.focus();
     openMenuAt(event, node.id);
-  };
-
-  /**
-   * Click a relationship: select it, exactly as clicking an element does. Until this existed no
-   * gesture on this canvas selected a relationship at all, so relabel and set-technology were
-   * offered by the backend and reachable by nothing - and inline relabel, which needs the
-   * selection to run the action, could never be invoked.
-   */
-  const onRelationshipClick = (relationship: C4Relationship) => {
-    setFocusedId(relationship.id);
-    surfaceRef.current?.focus();
-    select(elementSelectionOf(entryId, path, relationship.id));
   };
 
   /** Right-click a relationship: the same menu gesture an element uses. */
@@ -432,11 +407,7 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
             tabIndex={0}
             role="img"
             aria-label={model.view?.title ?? "C4 diagram"}
-            onClick={onBackgroundClick}
-            onMouseDown={onSurfacePointerDown}
-            onMouseMove={onSurfacePointerMove}
-            onMouseUp={onSurfacePointerUp}
-            onMouseLeave={onSurfacePointerUp}
+            {...backgroundWiring({ kind: "background", view: effectiveView })}
             onKeyDown={onKeyDown}
             onDragOver={onSurfaceDragOver}
             onDrop={onSurfaceDrop}
@@ -457,7 +428,7 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
                 key={relationship.id}
                 relationship={relationship}
                 selected={relationship.id === focusedId}
-                onSelect={() => onRelationshipClick(relationship)}
+                press={pressWiring({ kind: "relationship", relationship })}
                 onOpenMenu={(event) => onRelationshipContextMenu(relationship, event)}
               />
             ))}
@@ -468,8 +439,7 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
                 focused={node.id === focusedId}
                 dropTarget={node.id === dropTargetId}
                 offset={dragOffset?.id === node.id ? dragOffset : undefined}
-                onSelect={() => onNodeClick(node)}
-                onPointerDown={(event) => onNodePointerDown(node, event)}
+                press={pressWiring({ kind: "node", node })}
                 onContextMenu={(event) => onNodeContextMenu(node, event)}
                 onDragOver={(event) => onNodeDragOver(node, event)}
                 onDrop={(event) => onNodeDrop(node, event)}
@@ -532,8 +502,7 @@ function C4NodeShape({
   focused,
   dropTarget,
   offset,
-  onSelect,
-  onPointerDown,
+  press,
   onContextMenu,
   onDragOver,
   onDrop,
@@ -543,8 +512,8 @@ function C4NodeShape({
   dropTarget: boolean;
   /** How far the pointer has carried this element in the drag currently in flight. */
   offset?: { dx: number; dy: number };
-  onSelect: () => void;
-  onPointerDown: (event: React.MouseEvent) => void;
+  /** The arbiter's wiring - one spread carries both what selects and what drags this box. */
+  press: PointerPressWiring;
   onContextMenu: (event: React.MouseEvent) => void;
   onDragOver: (event: React.DragEvent) => void;
   onDrop: (event: React.DragEvent) => void;
@@ -567,8 +536,7 @@ function C4NodeShape({
       nameClassName="c4-node-name"
       typeClassName="c4-node-type"
       descriptionClassName="c4-node-description"
-      onClick={onSelect}
-      onMouseDown={onPointerDown}
+      {...press}
       onContextMenu={onContextMenu}
       onDragOver={onDragOver}
       onDrop={onDrop}
@@ -585,12 +553,13 @@ function C4NodeShape({
 function C4RelationshipShape({
   relationship,
   selected,
-  onSelect,
+  press,
   onOpenMenu,
 }: {
   relationship: C4Relationship;
   selected: boolean;
-  onSelect: () => void;
+  /** The arbiter's wiring: an unmoved press selects; a moved one is just not a click. */
+  press: PointerPressWiring;
   onOpenMenu: (event: React.MouseEvent) => void;
 }) {
   const p = relationship.payload;
@@ -609,13 +578,10 @@ function C4RelationshipShape({
       data-c4-relationship={relationship.id}
       data-element-id={relationship.id}
       className={`c4-relationship-group${selected ? " canvas-selected" : ""}`}
-      onClick={onSelect}
+      // The arbiter's begin() stops the press's propagation itself, which is what keeps a
+      // press on a relationship from also starting a background pan.
+      {...press}
       onContextMenu={onOpenMenu}
-      // Belt and braces, and known to be so: `onSurfacePointerDown` already declines a press
-      // whose target is not the surface itself, so removing this line changes nothing today -
-      // measured, not assumed. Kept because it is the shape the shared interactive connection
-      // uses, and because the surface's own check is the kind that gets relaxed later.
-      onMouseDown={(event) => event.stopPropagation()}
     >
       {/* The invisible fat twin that actually takes the pointer: a dashed one-pixel stroke is
           not a target anyone can hit. The class is the shared one every canvas uses for this,

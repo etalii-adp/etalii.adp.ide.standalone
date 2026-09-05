@@ -105,6 +105,27 @@ function seed(...elements: ReturnType<typeof element>[]): C4Model {
 
 const props = { projectId: new Uint8Array(16), entryId: new Uint8Array(16).fill(3), path: ["docs", "model.adp"] };
 
+/**
+ * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
+ * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined. A MouseEvent typed
+ * "pointerdown" bubbles the same way and carries the button - usePointerGesture.test.tsx's
+ * idiom, for the same reason.
+ */
+function pointer(type: string, init: MouseEventInit) {
+  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
+}
+
+/** A click in the pointer vocabulary the canvas listens to: press and release, unmoved. */
+function press(target: Element, init: MouseEventInit = {}) {
+  fireEvent(target, pointer("pointerdown", { button: 0, ...init }));
+  fireEvent(target, pointer("pointerup", { ...init }));
+}
+
+// jsdom implements no pointer capture on SVG elements; the arbiter uses it so a release
+// outside the surface still ends the gesture.
+SVGElement.prototype.setPointerCapture ??= () => {};
+SVGElement.prototype.releasePointerCapture ??= () => {};
+
 describe("C4Canvas", () => {
   beforeEach(() => {
     select.mockClear();
@@ -282,7 +303,7 @@ describe("C4Canvas", () => {
     const { container } = render(<C4Canvas {...props} />);
 
     // Act.
-    fireEvent.click(container.querySelectorAll(".c4-node")[0]);
+    press(container.querySelectorAll(".c4-node")[0]);
 
     // Assert.
     expect(select).toHaveBeenCalledTimes(1);
@@ -296,11 +317,11 @@ describe("C4Canvas", () => {
   it("clicking the empty canvas deselects", () => {
     // Arrange.
     const { container } = render(<C4Canvas {...props} />);
-    fireEvent.click(container.querySelectorAll(".c4-node")[0]);
+    press(container.querySelectorAll(".c4-node")[0]);
     select.mockClear();
 
     // Act.
-    fireEvent.click(container.querySelector(".c4-canvas-surface")!);
+    press(container.querySelector(".c4-canvas-surface")!);
 
     // Assert.
     expect(select).toHaveBeenCalledWith(null);
@@ -385,9 +406,9 @@ describe("C4Canvas", () => {
     const before = thumbOf(container, "horizontal").style.left;
 
     // Act.
-    fireEvent.mouseDown(surface, { clientX: 200, clientY: 100 });
-    fireEvent.mouseMove(surface, { clientX: 60, clientY: 100 });
-    fireEvent.mouseUp(surface);
+    fireEvent(surface, pointer("pointerdown", { button: 0, clientX: 200, clientY: 100 }));
+    fireEvent(surface, pointer("pointermove", { clientX: 60, clientY: 100 }));
+    fireEvent(surface, pointer("pointerup", { clientX: 60, clientY: 100 }));
 
     // Assert.
     expect(thumbOf(container, "horizontal").style.left).not.toBe(before);
@@ -408,6 +429,30 @@ describe("C4Canvas", () => {
     expect(thumbOf(container, "horizontal").style.width).not.toBe(before);
   });
 
+  it("selecting after a drag whose pointer left the surface still selects the next element clicked", () => {
+    // Arrange: the reported defect. A drag of Alpha released away from where it began used to
+    // arm a suppress-the-next-click flag with no consumer, which then swallowed the next
+    // legitimate selection. Seen to fail against that flag before the arbiter replaced it.
+    const { container } = render(<C4Canvas {...props} />);
+    const [alpha, beta] = Array.from(container.querySelectorAll(".c4-node"));
+
+    // Act: press Alpha, drag well past the threshold, release far outside the surface - the
+    // capture delivers the off-surface release to Alpha, exactly as a browser would.
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(alpha, pointer("pointermove", { clientX: 60, clientY: 60 }));
+    fireEvent(alpha, pointer("pointerup", { clientX: 500, clientY: 500 }));
+
+    // Act, continued: the browser's trailing click, wherever it happens to land, is inert -
+    // nothing on this canvas listens to click - and the next press on Beta selects Beta.
+    fireEvent.click(beta);
+    press(beta, { clientX: 500, clientY: 500 });
+
+    // Assert: one selection, naming "b" - the drag selected nothing, the click undid nothing.
+    expect(select).toHaveBeenCalledTimes(1);
+    const chain = select.mock.calls[0][0];
+    expect(chain.detail.value.id.source.value.value).toBe("b");
+  });
+
   it("pans with a background drag, and the trailing click does not deselect", () => {
     // Arrange.
     const { container } = render(<C4Canvas {...props} />);
@@ -415,9 +460,9 @@ describe("C4Canvas", () => {
     const [xBefore] = viewBoxOf(container);
 
     // Act.
-    fireEvent.mouseDown(surface, { clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(surface, { clientX: 60, clientY: 100 });
-    fireEvent.mouseUp(surface);
+    fireEvent(surface, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(surface, pointer("pointermove", { clientX: 60, clientY: 100 }));
+    fireEvent(surface, pointer("pointerup", { clientX: 60, clientY: 100 }));
     fireEvent.click(surface);
 
     // Assert.
@@ -553,13 +598,13 @@ describe("C4Canvas", () => {
     // Alpha starts at (0,0). The view is 1000 units wide over 500 pixels, so one pixel is two
     // canvas units and a 50-pixel drag is a 100-unit move.
     const { container } = render(<C4Canvas {...props} />);
-    const surface = withSurfaceWidth(container, 500);
+    withSurfaceWidth(container, 500);
     const alpha = container.querySelectorAll(".c4-node")[0];
 
     // Act.
-    fireEvent.mouseDown(alpha, { button: 0, clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(surface, { clientX: 150, clientY: 100 });
-    fireEvent.mouseUp(surface);
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(alpha, pointer("pointermove", { clientX: 150, clientY: 100 }));
+    fireEvent(alpha, pointer("pointerup", { clientX: 150, clientY: 100 }));
 
     // Assert.
     const move = moves[0];
@@ -573,13 +618,13 @@ describe("C4Canvas", () => {
     // A few pixels of movement while clicking is a click. Sending it would put an entry on the
     // project history for having pressed the mouse.
     const { container } = render(<C4Canvas {...props} />);
-    const surface = withSurfaceWidth(container, 500);
+    withSurfaceWidth(container, 500);
     const alpha = container.querySelectorAll(".c4-node")[0];
 
     // Act.
-    fireEvent.mouseDown(alpha, { button: 0, clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(surface, { clientX: 102, clientY: 101 });
-    fireEvent.mouseUp(surface);
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(alpha, pointer("pointermove", { clientX: 102, clientY: 101 }));
+    fireEvent(alpha, pointer("pointerup", { clientX: 102, clientY: 101 }));
 
     // Assert.
     expect(moves).toEqual([]);
@@ -589,13 +634,13 @@ describe("C4Canvas", () => {
     // Arrange.
     // The drop's outcome should be visible during the drag, not only after the backend answers.
     const { container } = render(<C4Canvas {...props} />);
-    const surface = withSurfaceWidth(container, 500);
+    withSurfaceWidth(container, 500);
     const alpha = container.querySelectorAll(".c4-node")[0];
     const before = alpha.getAttribute("transform");
 
     // Act.
-    fireEvent.mouseDown(alpha, { button: 0, clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(surface, { clientX: 200, clientY: 160 });
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(alpha, pointer("pointermove", { clientX: 200, clientY: 160 }));
 
     // Assert.
     const during = container.querySelectorAll(".c4-node")[0].getAttribute("transform");
@@ -608,13 +653,13 @@ describe("C4Canvas", () => {
     // Right-click is the menu's gesture. Starting a drag on it would make every context menu
     // a potential accidental move.
     const { container } = render(<C4Canvas {...props} />);
-    const surface = withSurfaceWidth(container, 500);
+    withSurfaceWidth(container, 500);
     const alpha = container.querySelectorAll(".c4-node")[0];
 
     // Act.
-    fireEvent.mouseDown(alpha, { button: 2, clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(surface, { clientX: 200, clientY: 200 });
-    fireEvent.mouseUp(surface);
+    fireEvent(alpha, pointer("pointerdown", { button: 2, clientX: 100, clientY: 100 }));
+    fireEvent(alpha, pointer("pointermove", { clientX: 200, clientY: 200 }));
+    fireEvent(alpha, pointer("pointerup", { clientX: 200, clientY: 200 }));
 
     // Assert.
     expect(moves).toEqual([]);
@@ -623,19 +668,19 @@ describe("C4Canvas", () => {
   it("does not re-select the element on the click that trails a drag", () => {
     // Arrange.
     const { container } = render(<C4Canvas {...props} />);
-    const surface = withSurfaceWidth(container, 500);
+    withSurfaceWidth(container, 500);
     const alpha = container.querySelectorAll(".c4-node")[0];
 
     // Act.
-    fireEvent.mouseDown(alpha, { button: 0, clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(surface, { clientX: 200, clientY: 200 });
-    fireEvent.mouseUp(surface);
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(alpha, pointer("pointermove", { clientX: 200, clientY: 200 }));
+    fireEvent(alpha, pointer("pointerup", { clientX: 200, clientY: 200 }));
     select.mockClear();
     fireEvent.click(alpha);
 
     // Assert.
-    // A drag ends with a click event; taking it as a selection would fight whatever the drag
-    // just did.
+    // The browser fires a click when a drag ends; it is inert here because nothing on this
+    // canvas listens to click - there is no flag to arm, and none to leak.
     expect(select).not.toHaveBeenCalled();
   });
 
@@ -737,7 +782,7 @@ describe("C4Canvas", () => {
     const { container } = render(<C4Canvas {...props} />);
 
     // Act.
-    fireEvent.click(relationshipGroup(container, "a->b"));
+    press(relationshipGroup(container, "a->b"));
 
     // Assert.
     // A nested selection, the same shape an element reports: the .adp file, then the
@@ -767,15 +812,15 @@ describe("C4Canvas", () => {
     const viewBoxBefore = surface.getAttribute("viewBox");
 
     // Act.
-    fireEvent.mouseDown(relationshipGroup(container, "a->b"), { clientX: 200, clientY: 200 });
-    fireEvent.mouseMove(surface, { clientX: 320, clientY: 260 });
-    fireEvent.mouseUp(surface, { clientX: 320, clientY: 260 });
+    fireEvent(relationshipGroup(container, "a->b"), pointer("pointerdown", { button: 0, clientX: 200, clientY: 200 }));
+    fireEvent(surface, pointer("pointermove", { clientX: 320, clientY: 260 }));
+    fireEvent(surface, pointer("pointerup", { clientX: 320, clientY: 260 }));
 
     // Assert.
-    // A user-facing property rather than a guard over one line: clicking a relationship must not
-    // also drag the view away from it. Two things hold it today - the surface declining a press
-    // whose target is not itself, and the group's stopPropagation - and removing either alone
-    // leaves this green, which was checked rather than assumed. It fails if both ever go.
+    // A user-facing property rather than a guard over one line: pressing a relationship must
+    // not also drag the view away from it. What holds it is the arbiter running one gesture
+    // at a time - the press's own stopPropagation hands the gesture to the relationship,
+    // whose drag deliberately moves nothing - even with the moves bubbling via the surface.
     expect(surface.getAttribute("viewBox")).toBe(viewBoxBefore);
   });
 
@@ -784,7 +829,7 @@ describe("C4Canvas", () => {
     const { container } = render(<C4Canvas {...props} />);
 
     // Act.
-    fireEvent.click(relationshipGroup(container, "a->b"));
+    press(relationshipGroup(container, "a->b"));
 
     // Assert.
     expect(relationshipGroup(container, "a->b").getAttribute("class")).toContain("canvas-selected");
