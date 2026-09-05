@@ -3,8 +3,10 @@
   "title": "selection-after-drag design: one gesture arbiter that never subscribes to click — pointer capture, one threshold, net deletion",
   "filePath": ".spec-workflow/specs/selection-after-drag/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "rejected",
   "createdAt": "2026-09-05T19:39:15.321Z",
   "category": "spec",
-  "categoryName": "selection-after-drag"
+  "categoryName": "selection-after-drag",
+  "response": "First the design needs to be done, only then can the tasks be created.",
+  "respondedAt": "2026-09-05T19:43:20.737Z"
 }
