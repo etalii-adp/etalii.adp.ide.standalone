@@ -4,6 +4,13 @@ import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
 import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import { StraightConnection } from "@client/canvas/connections/straight/StraightConnection";
 import { SymbolElement } from "@client/canvas/elements/symbol/SymbolElement";
+import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
+import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
+import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
+import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { ContextMenu } from "@client/shell/context/ContextMenu";
+import { toMenuGroups } from "@client/shell/context/toMenuGroups";
+import { ContextSelectionAction } from "@client/generated/context_pb";
 import { useRegisterDiagramView } from "@client/shell/panels/DiagramViewContext";
 import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
@@ -73,8 +80,19 @@ function scale(value: number): number {
 // `entryId` is part of every canvas's props and is not destructured yet: it names the `.adp`
 // entry a selection reports as its outer level, which task 19's context resolver needs and
 // nothing here does.
-export function WardleyCanvas({ projectId, path }: WardleyCanvasProps) {
+export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) {
   const { model, loading, failed, moveElementTo, reportView } = useWardleyStream(projectId, path);
+
+  // The context channel this canvas never had: every wardley action the backend has offered
+  // all along becomes reachable the moment an element can be selected. Renaming is one of
+  // them, but the seam is general on purpose.
+  const { select, executeAction, executeShortcut } = useContextConnection();
+  const { selection, actions } = useContextSelection();
+  const selectionKey = innermostKey(selection);
+  const selectedId = elementIdOfKey(selectionKey);
+  const { menuPosition, openMenuAt, closeMenu } = useElementContextMenu(selectionKey, actions.length > 0, (id) =>
+    select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
+  );
 
   // The palette the Toolbox panel shows while this map is open - described by the backend
   // (Requirement 13), registered here and withdrawn on unmount.
@@ -86,6 +104,7 @@ export function WardleyCanvas({ projectId, path }: WardleyCanvasProps) {
   viewRef.current = view;
   const surfaceRef = useRef<SVGSVGElement | null>(null);
   const panRef = useRef<{ clientX: number; clientY: number; view: ViewBox } | null>(null);
+  const panMovedRef = useRef(false);
 
   // A drag in flight: which element, where the pointer started, where the element started, and
   // whether it has moved far enough to be a drag rather than a wobbly click. A ref for what
@@ -133,6 +152,30 @@ export function WardleyCanvas({ projectId, path }: WardleyCanvasProps) {
     return () => surface.removeEventListener("wheel", onWheel);
   }, [zoomBy]);
 
+  /** Right-click on an element: select it with the menu gesture and open the menu on the push. */
+  const onElementContextMenu = (event: React.MouseEvent, element: WardleyElement) => {
+    surfaceRef.current?.focus();
+    openMenuAt(event, element.id);
+  };
+
+  /**
+   * F2 on the selected element, forwarded as data: the backend owns the key-to-action map,
+   * so no table of keys lives on this canvas.
+   */
+  const onKeyDown = (event: React.KeyboardEvent) => {
+    if (!selectedId || isTextTarget(event.target)) {
+      return;
+    }
+
+    const shortcut = structuralShortcutFor(event, ["F2"]);
+    if (!shortcut) {
+      return;
+    }
+
+    event.preventDefault();
+    void executeShortcut(shortcut, elementSourceOf(selectedId));
+  };
+
   /** Canvas units per screen pixel, for turning a pointer delta into a map delta. */
   const unitsPerPixel = useCallback(() => {
     const surface = surfaceRef.current;
@@ -141,6 +184,7 @@ export function WardleyCanvas({ projectId, path }: WardleyCanvasProps) {
 
   const onPointerDown = (event: React.MouseEvent) => {
     panRef.current = { clientX: event.clientX, clientY: event.clientY, view };
+    panMovedRef.current = false;
   };
 
   const onElementPointerDown = (event: React.MouseEvent, element: WardleyElement) => {
@@ -179,6 +223,9 @@ export function WardleyCanvas({ projectId, path }: WardleyCanvasProps) {
 
     const rect = surface.getBoundingClientRect();
     const perPixel = pan.view.w / rect.width;
+    if (event.clientX !== pan.clientX || event.clientY !== pan.clientY) {
+      panMovedRef.current = true;
+    }
     setView({
       ...pan.view,
       x: pan.view.x - (event.clientX - pan.clientX) * perPixel,
@@ -194,7 +241,16 @@ export function WardleyCanvas({ projectId, path }: WardleyCanvasProps) {
 
     if (!dragging || !landed) {
       // A press with no movement is a click, not a drag, and must not write to the document.
+      // On an element it is the selection gesture - a nested selection, the .adp then the
+      // element - and the surface takes the keyboard so F2 lands here rather than wherever
+      // focus last was. On the background it clears, unless the press was really a pan.
       setDrag(null);
+      if (dragging) {
+        surfaceRef.current?.focus();
+        select(elementSelectionOf(entryId, path, dragging.id));
+      } else if (!panMovedRef.current) {
+        select(null);
+      }
       return;
     }
 
@@ -238,6 +294,8 @@ export function WardleyCanvas({ projectId, path }: WardleyCanvasProps) {
         ref={surfaceRef}
         className="wardley-surface"
         viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
+        tabIndex={0}
+        onKeyDown={onKeyDown}
         onMouseDown={onPointerDown}
         onMouseMove={onPointerMove}
         onMouseUp={onPointerUp}
@@ -248,7 +306,7 @@ export function WardleyCanvas({ projectId, path }: WardleyCanvasProps) {
         {/* Drawn first, so everything else sits on top of it (Requirement 8.4). */}
         <WardleyChrome axis={model.axis} scaleFactor={view.w / (SPACE + MARGIN * 2)} />
         {loading ? null : (
-          <WardleyContents model={model} drag={drag} onElementPointerDown={onElementPointerDown} />
+          <WardleyContents model={model} drag={drag} selectedId={selectedId} onElementPointerDown={onElementPointerDown} onElementContextMenu={onElementContextMenu} />
         )}
       </svg>
       <CanvasScrollbars
@@ -257,6 +315,17 @@ export function WardleyCanvas({ projectId, path }: WardleyCanvasProps) {
         onPan={(x, y) => setView({ ...view, x, y })}
       />
       {rejection ? <p className="wardley-rejection">{rejection}</p> : null}
+      {/* The element's right-click menu: the shared menu, filled with the actions the backend
+          pushed for this very selection - never a client-side guess. */}
+      <ContextMenu
+        open={menuPosition !== null}
+        groups={toMenuGroups(actions, (action) => {
+          closeMenu();
+          void executeAction(action.id);
+        })}
+        position={menuPosition ?? { x: 0, y: 0 }}
+        onClose={closeMenu}
+      />
     </div>
   );
 }
@@ -410,11 +479,15 @@ function boxOf(element: { x: number; y: number }): ConnectorBox {
 function WardleyContents({
   model,
   drag,
+  selectedId,
   onElementPointerDown,
+  onElementContextMenu,
 }: {
   model: WardleyModel;
   drag: { id: string; x: number; y: number } | null;
+  selectedId: string | null;
   onElementPointerDown: (event: React.MouseEvent, element: WardleyElement) => void;
+  onElementContextMenu: (event: React.MouseEvent, element: WardleyElement) => void;
 }) {
   // The element being dragged is shown where the pointer is, so the gesture is visible before
   // the round trip answers. Everything else - the links that reach it, its evolve indicator -
@@ -507,7 +580,9 @@ function WardleyContents({
           key={element.id}
           element={element}
           dragging={drag?.id === element.id}
+          selected={element.id === selectedId}
           onPointerDown={onElementPointerDown}
+          onContextMenu={onElementContextMenu}
         />
       ))}
 
@@ -558,11 +633,15 @@ function WardleyContents({
 function WardleyElementShape({
   element,
   dragging,
+  selected,
   onPointerDown,
+  onContextMenu,
 }: {
   element: WardleyElement;
   dragging: boolean;
+  selected: boolean;
   onPointerDown: (event: React.MouseEvent, element: WardleyElement) => void;
+  onContextMenu: (event: React.MouseEvent, element: WardleyElement) => void;
 }) {
   const x = scale(element.x);
   const y = scale(element.y);
@@ -586,7 +665,7 @@ function WardleyElementShape({
 
   return (
     <SymbolElement
-      className={`wardley-element-group wardley-kind-${kindName(element.kind)}${dragging ? " wardley-dragging" : ""}`}
+      className={`wardley-element-group wardley-kind-${kindName(element.kind)}${dragging ? " wardley-dragging" : ""}${selected ? " wardley-selected canvas-selected" : ""}`}
       x={x}
       y={y}
       radius={DOT}
@@ -602,6 +681,7 @@ function WardleyElementShape({
       badgesClassName="wardley-element-badges"
       inertiaClassName="wardley-inertia"
       onMouseDown={(event) => onPointerDown(event, element)}
+      onContextMenu={(event) => onContextMenu(event, element)}
       data-element-id={element.id}
     />
   );

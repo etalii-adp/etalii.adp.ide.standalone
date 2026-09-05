@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, waitFor } from "@testing-library/react";
+import { selectedElementIdOf } from "@client/canvas/selection";
+import type { ContextSelection } from "@client/generated/context_pb";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { DeltaSchema } from "@client/generated/deltas_pb";
 import { ElementSchema } from "@client/generated/elements_pb";
@@ -44,6 +46,18 @@ vi.mock("./useWardleyStream", () => ({
 // The registered controls are captured rather than discarded, so a test can zoom the canvas
 // the way the ribbon does. Nothing else changes: every existing test ignores them.
 let viewControls: { zoomIn: () => void; zoomOut: () => void; fitToView: () => void } | null = null;
+
+const select = vi.fn();
+const executeAction = vi.fn(async () => ({ accepted: true, error: "" }));
+const executeShortcut = vi.fn(async () => ({ accepted: true, error: "" }));
+let currentSelectionKey: string | null = null;
+let currentActions: unknown[] = [];
+
+vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
+  innermostKey: () => currentSelectionKey,
+  useContextConnection: () => ({ select, executeAction, executeShortcut }),
+  useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: currentActions }),
+}));
 
 vi.mock("@client/shell/panels/DiagramViewContext", () => ({
   useRegisterDiagramView: (controls: typeof viewControls) => {
@@ -104,6 +118,9 @@ function renderCanvas(model: WardleyModel, options?: { loading?: boolean; failed
   currentFailed = options?.failed ?? false;
   moves = [];
   moveAnswer = "";
+  select.mockClear();
+  executeAction.mockClear();
+  executeShortcut.mockClear();
   return render(
     <WardleyCanvas projectId={new Uint8Array([1])} entryId={new Uint8Array([2])} path={["map.adp"]} />,
   );
@@ -680,5 +697,91 @@ describe("WardleyCanvas toolbox", () => {
     // Assert: the shell sees this canvas's palette, asked for this diagram's own path.
     expect(getByTestId("toolbox-probe").textContent).toBe("palette:Component,Anchor");
     expect(toolboxRequests[0]).toEqual(path);
+  });
+});
+
+describe("WardleyCanvas selection", () => {
+  // The prerequisite task: this canvas had no context channel at all, so every wardley
+  // action the backend has offered all along was unreachable by any gesture.
+
+  beforeEach(() => {
+    currentSelectionKey = null;
+    currentActions = [];
+  });
+
+  function withOneComponent() {
+    return withElement(withAxis(), "aaa", "wardley/map+element", element({ name: "Kettle" }), 0.4, 0.4);
+  }
+
+  function shapeOf(container: HTMLElement, id: string): SVGGElement {
+    return container.querySelector(`[data-element-id="${id}"]`) as SVGGElement;
+  }
+
+  it("reports a clicked element as a nested selection, and a background click clears it", () => {
+    // Arrange.
+    const { container } = renderCanvas(withOneComponent());
+    const shape = shapeOf(container, "aaa");
+    expect(shape).not.toBeNull();
+
+    // Act: a press with no movement is a click, which is the selection gesture.
+    fireEvent.mouseDown(shape, { clientX: 100, clientY: 100 });
+    fireEvent.mouseUp(container.querySelector(".wardley-surface") as SVGSVGElement);
+
+    // Assert: the backend hears a nested selection whose innermost element is this one.
+    expect(select).toHaveBeenCalledTimes(1);
+    expect(selectedElementIdOf(select.mock.calls[0][0] as ContextSelection)).toBe("aaa");
+
+    // Act, continued: a click on empty canvas deselects.
+    const surface = container.querySelector(".wardley-surface") as SVGSVGElement;
+    fireEvent.mouseDown(surface, { clientX: 300, clientY: 300 });
+    fireEvent.mouseUp(surface);
+    expect(select).toHaveBeenLastCalledWith(null);
+  });
+
+  it("opens the pushed actions on right-click, and runs the chosen one", async () => {
+    // Arrange. The actions are the backend's push for this selection - never a client guess.
+    currentActions = [
+      { actions: [{ id: "wardley.rename", label: "Rename\u2026", icon: "", available: true, unavailableReason: "", items: [] }] },
+    ];
+    currentSelectionKey = "element:aaa";
+    const { container } = renderCanvas(withOneComponent());
+
+    // Act.
+    fireEvent.contextMenu(shapeOf(container, "aaa"), { clientX: 120, clientY: 120 });
+    const item = await waitFor(() => {
+      const found = [...document.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Rename"));
+      expect(found).toBeDefined();
+      return found!;
+    });
+    fireEvent.click(item);
+
+    // Assert.
+    expect(executeAction).toHaveBeenCalledWith("wardley.rename");
+  });
+
+  it("forwards F2 on the selected element as data, leaving the key-to-action map to the backend", () => {
+    // Arrange.
+    currentSelectionKey = "element:aaa";
+    const { container } = renderCanvas(withOneComponent());
+
+    // Act.
+    fireEvent.keyDown(container.querySelector(".wardley-surface") as SVGSVGElement, { key: "F2" });
+
+    // Assert.
+    expect(executeShortcut).toHaveBeenCalledTimes(1);
+    const [shortcut, source] = executeShortcut.mock.calls[0] as unknown as [{ key: string }, { source: { value: { value: string } } }];
+    expect(shortcut.key).toBe("F2");
+    expect(source.source.value.value).toBe("aaa");
+  });
+
+  it("forwards nothing while no element is selected", () => {
+    // Arrange.
+    const { container } = renderCanvas(withOneComponent());
+
+    // Act.
+    fireEvent.keyDown(container.querySelector(".wardley-surface") as SVGSVGElement, { key: "F2" });
+
+    // Assert.
+    expect(executeShortcut).not.toHaveBeenCalled();
   });
 });
