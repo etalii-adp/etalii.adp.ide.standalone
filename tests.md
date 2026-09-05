@@ -246,7 +246,7 @@ applied and the test passed while the node looked unchanged.
 - **Expected**: the hovered node's border changes to the accent color (`--color-primary`,
   limegreen), thicker (2.5px) and dashed - visibly different from both the normal border and
   the focused node's solid accent border. Releasing the button clears it again.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Verified in the real browser, which is what the check needs — jsdom cannot see the paint. With the `mindmap-node-drop-target` class on a node, its rect computes to stroke `rgb(50,205,50)` (limegreen, the `--color-primary` token), width **2.5px**, dash-array **6 3** — versus a normal node's slate `rgb(51,65,85)`, 1.5px, solid. So the highlight paints and no equal-specificity rule overrides it (the exact defect this guards). The pointer plumbing that applies the class on a live drag could not be driven through React's synthetic-event capture and is covered instead by `MindmapCanvas.test.tsx`'s `dragOver` tests; the paint — the part only a browser can answer — is confirmed.
 - **Text reviewed 2026-09-05 (Tester 2)**: **accurate**, checked without running the app. `.mindmap-node-drop-target rect` is at `mindmap.css:79` with `stroke: var(--color-primary)`, `stroke-width: 2.5` and `stroke-dasharray: 6 3`; `--color-primary` is `limegreen` in both themes (`index.css:8`, `:27`). The entry's contrast claim is exact: focused (`:71`) is the same colour and width but **solid**, so the dasharray is the only difference. The overriding rule it warns about, `.mindmap-node rect`, sits at `:54` — *before* the highlight, so that hazard is currently not present; the entry describes how the bug shipped, not a live defect.
 
 ## Collapse in the node's context menu offers Expand afterwards (mindmap-diagram, bezier-connector pass)
@@ -258,7 +258,7 @@ kept here because the stale label was found through the menu and is quickest to 
 - **Actions**: right-click the branch node, choose **Collapse**; right-click the same node again.
 - **Expected**: the branch's descendants disappear on the first click, and the re-opened menu
   reads **Expand** (not Collapse). Choosing Expand restores the branch.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** On a 37-node mindmap, right-clicking a branch node ("Layout") offered **Collapse**; choosing it hid that branch's descendants (37 → 27 nodes). Right-clicking the same node again the menu read **Expand**, not Collapse, and choosing it restored the branch (27 → 37). The mindmap files stayed git-clean (collapse/expand net-zero).
 - **Text reviewed 2026-09-05 (Tester 2)**: **accurate**, checked without running the app. The named guard `ACompletedAction_RepushesTheSelectionsActions_SoACollapseOffersExpand` exists at `src/backend/EtAlii.Adp.Backend.Tests/Integration Tests/DiagramElementActionFlow.Tests.cs:264`, and the `Collapse`/`Expand` labels are in `MindmapContextActionProvider.cs:95`.
 
 ## C4 relationships are elevated to the level the view shows (c4-diagrams, manual pass)
@@ -273,7 +273,7 @@ view drew the systems it depends on and *no lines to them*, which reads as "no d
 - **Expected**: the system in scope has a labelled arrow to each external system its containers
   talk to, and no arrow to itself. Two containers talking to one external system draw one line,
   not two.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Opened the `c4/context` view (`courier.adp`). Mapping every rendered relationship's endpoints back to its node: the system in scope, **Courier Tracking**, carries one labelled arrow to **each** external system its containers talk to — Routing Optimiser (*Requests routes*), E-mail System (*Sends mail*), Mapping Provider (*Geocodes addresses*) — with **no** arrow to itself, and exactly one line per external (the dedup holds). The "systems drawn but no lines to them" symptom is absent.
 
 ## A C4 boundary contains only what is inside it (c4-diagrams, manual pass)
 
@@ -286,7 +286,7 @@ the same reason: the containers looked right, and only the boundary's geometry g
 - **Expected**: the system in scope is drawn as the dashed boundary and **not** also as a box;
   every container sits inside it; the person and the external system sit outside it; and nothing
   overlaps anything else.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Opened the `c4/container` view (`courier.containers.adp`). Courier Tracking is drawn as a **dashed** boundary (stroke-dasharray 8 6) and **not** also as a box. All six containers (Web Application, Single-Page Application, Courier App, API Application, Event Broker, Delivery Database) sit inside the boundary's box; all three people and all three external systems sit outside it; and no two nodes overlap.
 
 ## A C4 document ADP wrote opens in Structurizr Lite (c4-diagrams, task 39)
 
@@ -348,7 +348,7 @@ look at. Three things, and only these:
 - **Expected**: the styles resolve, the auto-layout is readable, and the `.layout.json` sidecar
   causes no complaint. That every view is present and every element is on it is no longer part
   of this pass - the export checks own that, and they run on every `dotnet test`.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05**: **not blocked on sign-in — re-classified, not run here.** This entry's Actions run Structurizr Lite (Docker/JRE, `localhost:8080`) and its residual manual part is explicitly a subjective aesthetic judgment — styles resolve, the auto-layout is *readable*, the sidecar draws no complaint — against an external tool. None of that uses ADP's sign-in, so the developer-sign-in bypass does not unblock it; the earlier "needs a person to sign in" was a uniform-sweep mis-attribution. The objective halves it once covered are now automated and green on every `dotnet test`: `C4InteropTests` parses ADP's output through the real Structurizr CLI, and `C4ExportTests` asserts every element ADP believes is on a view is drawn (both passed in this branch's full-suite gate). What remains — the aesthetic judgment in Lite — is left for a person with Structurizr Lite; this specification does not claim it.
 
 ## The property grid's keyboard cadence, in a real browser (property-grid, task 6)
 
