@@ -3,8 +3,10 @@
   "title": "developer-sign-in-bypass — Design",
   "filePath": ".spec-workflow/specs/developer-sign-in-bypass/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-05T12:12:00.658Z",
   "category": "spec",
-  "categoryName": "developer-sign-in-bypass"
+  "categoryName": "developer-sign-in-bypass",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-05T12:22:32.042Z"
 }

@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/developer-sign-in-bypass/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-05T12:17:36.948Z",
       "trigger": "initial",
+      "approvalId": "approval_1788610655676_1gc4oyqaj",
+      "approvalTitle": "developer-sign-in-bypass — Tasks"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-05T12:22:38.084Z",
+      "trigger": "approved",
       "approvalId": "approval_1788610655676_1gc4oyqaj",
       "approvalTitle": "developer-sign-in-bypass — Tasks"
     }

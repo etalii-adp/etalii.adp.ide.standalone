@@ -3,8 +3,10 @@
   "title": "developer-sign-in-bypass — Requirements amendment: Requirement 3 becomes a rule, not a count",
   "filePath": ".spec-workflow/specs/developer-sign-in-bypass/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-05T12:16:10.803Z",
   "category": "spec",
-  "categoryName": "developer-sign-in-bypass"
+  "categoryName": "developer-sign-in-bypass",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-05T12:22:44.161Z"
 }

@@ -3,8 +3,10 @@
   "title": "developer-sign-in-bypass — Tasks",
   "filePath": ".spec-workflow/specs/developer-sign-in-bypass/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-05T12:17:35.676Z",
   "category": "spec",
-  "categoryName": "developer-sign-in-bypass"
+  "categoryName": "developer-sign-in-bypass",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-05T12:22:38.098Z"
 }
