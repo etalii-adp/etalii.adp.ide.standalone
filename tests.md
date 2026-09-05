@@ -4,6 +4,21 @@ Step-by-step checks for bugs that only reproduce through the running app, so the
 re-executed as part of a manual verification pass. Each entry names the spec and task it
 came from. (See CLAUDE.md, "Bugs found during implementation or verification".)
 
+## Two things every entry below assumes
+
+**Signing in.** The app opens on a sign-in form and nothing below is reachable until somebody is
+through it. An agent cannot type the credential, so **a person signs the tester in once and the
+pass runs from there** — and note that reloading the page ends the session, because it is held in
+memory only. A reload therefore costs a person's attention, not just a moment.
+
+**Finding the Properties panel.** Thirteen entries below say "read the Properties panel" or "the
+property grid" as though it were on screen. It often is not. `Properties` shares a tabbed pane
+with `Toolbox` on the right, and `TabbedPane` measures the available width and collapses what does
+not fit — at 1440x900 that pane is 253px, which fits one tab, so `Properties` sits behind a
+**"1 more tabs" overflow button** beside `Toolbox`. That is the pane working as designed rather
+than a defect. Widening the pane or clicking the overflow both reach it; hunting for it is what
+costs the time, and it is written here once rather than in each of the thirteen.
+
 ## Drop-target highlight actually paints (mindmap-diagram, bezier-connector pass)
 
 The unit test can only assert the `mindmap-node-drop-target` class - jsdom does not load
@@ -916,6 +931,24 @@ second copy inside the region (Requirement 3.2).
   inside and outside, so its node sits outside and the `OPTIONAL`'s edge crosses the frame's
   border to reach it. The property grid on `?x` states its join count.
 
+- **Result 2026-09-05**: **passes, every clause.** Run against a worktree build with
+  `src/examples` open; the user signed in. `diagrams/sparql/w3c-sparql/optional.adp`.
+
+  **One node per variable, three in total, no others.** The canvas holds exactly three
+  `sparql-node-variable` elements - `?name`, `?x` and `?mbox` - so no occurrence is drawn twice.
+
+  **`?mbox` sits inside the dashed `OPTIONAL` frame and `?x` outside it.** Measured rather than
+  eyeballed: the region's box is x 844-1116, `?mbox`'s centre falls inside it, `?x`'s and
+  `?name`'s fall outside, and the region's stroke is dashed `4px, 4px`.
+
+  **The edge crosses the border rather than a second `?x` being drawn.** The `foaf:mbox` edge
+  spans x 794 to 896 while the frame's left border is at 844, so it starts outside the region at
+  `?x` and ends inside it at `?mbox` - which is Requirement 3.2 exactly.
+
+  **The property grid on `?x` states its join count**: `STRUCTURE / Joins: 2`, matching its two
+  triple patterns. Every row carries the read-only reason *"This diagram reads the query; edit
+  the .rq file in a text editor and the diagram follows."*
+
 ## The projection mark matches the SELECT list (sparql-diagram, task 5.3)
 
 What leaves a query should read off the canvas without consulting the header (Requirement 4.2).
@@ -928,6 +961,17 @@ What leaves a query should read off the canvas without consulting the header (Re
   `?totalPrice` is marked - the alias the query projects - and `?org`, `?auth`, `?book` and
   `?lprice` are not, with `GROUP BY ?org` and `HAVING (SUM(?lprice) > 10)` shown in the header
   band rather than drawn on the canvas.
+
+- **Result 2026-09-05**: **passes, both files.** Same session and build as the check above.
+
+  **`optional.adp`**: `?name` and `?mbox` carry `sparql-node-projected` and `?x` does not, which
+  is `SELECT ?name ?mbox`. Two projection marks are drawn, one per projected variable. `?x`'s
+  property grid independently reports `Projected: No`, so the mark and the grid agree.
+
+  **`aggregate.adp`**: `?totalPrice` is the only projected node - the alias the query projects -
+  while `?org`, `?auth`, `?book` and `?lprice` are not. The header band reads
+  `SELECT … GROUP BY ?org HAVING (SUM(?lprice) > 10)`, so the modifiers are stated in the band
+  and not drawn on the canvas, which is what Requirement 4.2 asks for.
 
 ## A reposition leaves the query untouched in a visible diff (sparql-diagram, task 5.3)
 
@@ -943,6 +987,41 @@ this diagram has writes the registration and never the `.rq` (Requirements 5.1, 
   `var:proteomeData`, and `git diff` never shows a single changed line in
   `proteome-location-of-gene.rq` at any point; the reopened diagram draws the node at the
   stored spot; one undo returns the `.adp` byte-for-byte, leaving the tree clean again.
+
+- **Result 2026-09-05**: **half verified, half inconclusive — and the inconclusive half looks like
+  a defect.** Run against a worktree build with `src/examples` open; the user signed in.
+
+  **The half that passes, and it is the promise the check exists for**: `git status` was clean
+  before, `proteome-location-of-gene.rq`'s checksum was `d8e37162c7480bb8f6326b470af8b3a3` before
+  and after every attempt, and `git diff` on it showed **not one changed line** at any point.
+  Nothing this pass did touched the query.
+
+  **The half that did not happen: the node would not move.** Two drags of `?proteomeData`, and it
+  stayed at exactly the same position both times — `dx: 0, dy: 0` — with **no message of any
+  kind**, and nothing written to `proteome-location-of-gene.adp`, which still has no `layout:`
+  block. So the position could not be observed landing in it.
+
+  **This is not the harness.** The obvious explanation is that a browser-driven drag does not
+  reach the canvas, so it was tested against a canvas known to accept one: in the same session, at
+  the same viewport, by the same method, an **owl class moved by `dx: -59, dy: -87`** while the
+  sparql variable moved by nothing. A click at the identical coordinates *does* select
+  `?proteomeData` and populates its property grid, so the coordinates were over the node.
+
+  **What makes it look like a defect rather than a refusal**: `SparqlSession.MoveElementToAsync`
+  exists and is implemented, `SparqlCanvas` carries the drag machinery (`dragRef`, a drag preview,
+  `moveElementTo`), and the module's own doc comment says *"Refusals come back from the backend
+  with their own sentences."* Nothing was refused out loud. A gesture that neither works nor says
+  why is the shape this module was specifically written to avoid.
+
+  **Not concluded, and here is the honest reason.** Mid-session I restored `owl-time.adp` from a
+  copy while the app held it open, and a later owl drag then moved on canvas without persisting —
+  so my own action may have disturbed the backend's view of that file, and I will not build a
+  verdict on a session I disturbed. Re-running this check from a fresh sign-in, touching no file
+  underneath the app, is what would settle it. **Do that before anyone changes code.**
+
+  Reloading the page to get that clean state **signed the session out**, which is worth knowing:
+  the session is in memory only, so a tester gets one run per sign-in and a reload costs a person's
+  attention.
 
 ## The context menu offers no edits (sparql-diagram, task 5.3)
 
@@ -1126,6 +1205,36 @@ which is true here - the culling is the loop working exactly as specified. Nothi
 - **Result 2026-09-05**: **open**, reported to the scrum master. Not fixed here: the Tester found
   it, and the canvases belong to whoever holds their specification.
 
+## The whole View group is dead on a causal loop diagram (causal-loop-diagram, found 2026-09-05)
+
+**Found while reading the fit-to-view report against my own module, not by using the app.** The
+adjacent failure to the entry above, and the opposite one: on `owl` the View group works and shows
+too little, and on `causal-loop` it does not work at all.
+
+`CausalLoopCanvas` never calls `useRegisterDiagramView`, so with a `.cld` open the shell's
+registry still holds `null`. The ribbon disables **all three** buttons — Zoom In, Zoom Out and Fit
+to View — and titles them *"Open a diagram to use this."*, which is wrong twice over: a diagram is
+open, and opening one is not what would help.
+
+- **Preconditions**: backend + client running; a project containing a `.cld` document.
+- **Actions**: open the `.cld`; look at the ribbon's View group; hover one of its buttons.
+- **Expected**: the three buttons enabled and acting on the canvas, as on every other diagram
+  type (causal-loop-diagram Requirement 9.1 — behave like the others).
+- **Observed**: all three greyed out, tooltip *"Open a diagram to use this."*
+
+**Why no unit test caught it**: nothing asserts that a canvas registers its view controls. Each
+canvas that does has tests for what its own zoom and fit compute; a canvas that registers nothing
+has nothing to test, so its absence is invisible. The guard worth having is a shared one — every
+registered canvas module supplies view controls — rather than a twelfth per-canvas test.
+
+**Deliberately not fixed on sight.** The correct `fitToView` for a viewport-filtered canvas needs
+the document's own extent, the client is not sent one today, and `fit-to-view-extent` is the spec
+being written for exactly that. Wiring `setView(null)` now would buy an enabled button by
+importing the defect in the entry above, so this waits on that spec rather than racing it.
+
+- **Result 2026-09-05**: **open**, reported to the scrum master. Blocked on `fit-to-view-extent`
+  by choice, not by permission.
+
 ## An expression node refuses to be dragged, and says why (owl-diagram, task 4.3)
 
 The blank-node identity boundary as the user meets it — the refusal has to be readable, not a
@@ -1170,10 +1279,28 @@ Requirement 3.4's answer to nesting: the canvas label is capped, the property gr
   its "Subclass of" rows. Where a label on the canvas ends in `…`, the panel's text is longer
   than the label — the elision is real and recoverable.
 
-- **Result 2026-09-04**: **pending**, same reason - sign-in. Covered meanwhile by
-  `OwlProvidersTests.AnExpressionSelection_ShowsTheUncappedForm_ReadOnlyWithTheBoundarySentence`
-  and `AClassSelection_CarriesItsAxiomRows`, and by `ExpressionRendererTests`' depth-cap case,
-  which asserts the capped label against the uncapped form the grid shows.
+- **Result 2026-09-05**: **passes.** Run against a worktree build with `src/examples` open; the
+  user signed in.
+
+  **The elision is real and recoverable.** The canvas label reads `∀ day…`; selecting that node
+  puts `Expression: ∀ day.xsd:gDay` in the Properties panel - longer than the label, and the
+  full Manchester rendering. It is a read-only row whose reason names the boundary: *"That is an
+  anonymous class expression, whose identity does not survive an edit to the file, so nothing
+  about it can be edited from the diagram. Edit the expression as text."*
+
+  **The owning class lists the same expression.** Selecting `:DateTimeDescription` shows an
+  AXIOMS section whose `Subclass of` rows are `:GeneralDateTimeDescription`, `∀ day.xsd:gDay`,
+  `∀ month.xsd:gMonth`, `∀ year.xsd:gYear` and `∋ Temporal reference system used.Gregorian` -
+  the first row a named class, the rest the expressions, each carrying the same read-only reason.
+  So the expression a reader meets on the canvas and the one listed against its class are the
+  same string.
+
+  **One thing a tester should know before following this check: the Properties panel is not
+  visible by default.** At 1440x900 the right-hand pane is 253px wide, which fits one tab, so
+  `TabbedPane` collapses `Properties` behind a "1 more tabs" overflow button beside `Toolbox`.
+  That is the pane working as designed rather than a defect, but the check says "read the
+  Properties panel" as though it were on screen, and it takes a click to find. Widening the pane
+  or using the overflow both work.
 
 ## An ontology is offered for a marked file, and a bare one still opens as a graph (owl-diagram, task 4.3)
 

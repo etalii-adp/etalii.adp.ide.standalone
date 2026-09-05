@@ -53,6 +53,10 @@ A *wrong* name is worse than an ambiguous one. Full reasoning, and why an identi
 
 **Ask what the command would print if your belief were false.** If the answer is "the same thing", it is not evidence - `git log --oneline`, `git config user.name`, `grep -c $'\r'` and a sabotage whose pattern never matched all print the same thing either way. **Apply it to your own reports too**: "fixed" said from a worktree describes the worktree, not `develop`. **And do not write a guard over prose** - a guard that must be edited whenever its subject legitimately changes is a second copy of the data, not a check on it.
 
+**An exit code reported by a wrapper is not the exit code of the thing you ran.** A backgrounded suite's task notification carries the wrapper shell's status; read the runner's own exit from the log. One agent reported `exit 0` on a run whose log said `TESTS_EXIT=1`.
+
+**A fresh-tree build is not a stricter gate — it is the only one that reads a different input.** Every other gate reads `obj/`, a cache of the last successful generation, so `dotnet test` prints the same green whether the generated code is current or stale. A generated-code break is invisible to it by construction: nine sessions went green through a window in which `develop` compiled in no fresh checkout. Build a newly created worktree before trusting a green gate about anything upstream of codegen.
+
 **A test written for a bug must be seen to fail against that bug before it is trusted.** Three written in one sitting passed against the broken code — React batched one window away, jsdom detached an input for another, and a third omitted `StrictMode`, outside which the defect cannot occur. **A test that passes against the defect is worse than no test**: it converts "unverified" into "verified" while nothing has changed. Perturb it and watch it fail, or delete it.
 
 Six worked instances and the reasoning: [processes.md, *Checking that a command answered your question*](.spec-workflow/steering/processes.md#checking-that-a-command-answered-your-question).
@@ -60,6 +64,8 @@ Six worked instances and the reasoning: [processes.md, *Checking that a command 
 ## spec-workflow
 
 Commit any set of files added or removed under `.spec-workflow/` immediately, in its own commit — implementation logs included. Commit a document and its approval-lifecycle files when it is approved. **Approval comes from the dashboard and nowhere else: verbal approval is never accepted, from anyone.**
+
+**Do not amend a document under a pending card unless you are willing to ask the user to reject it.** The tool refuses to delete a pending approval, so an agent cannot clean up after itself: the card is left pointing at a snapshot that no longer matches the file, and only the user can break that by rejecting it. **Disclosure is not sufficient** — disclosing an amendment tells the user it happened; it does not restore the record.
 
 **Verdict snapshots arrive already staged and belong to nobody.** The dashboard writes them under `.spec-workflow/approvals/*/.snapshots/` when a card is answered, staged in the shared index — and any staged entry makes an in-place merge unsafe here, so they block whoever merges next. **Staged is the hazard; modified is somebody working.** Before merging, if `git diff --cached` is non-empty, commit **precisely those staged paths and nothing else**, in their own commit, whether or not they are yours. Never extend that to modified-but-unstaged files — sweeping those into your commit under your message is the exact failure that produced three misattributed commits in one day. If you raised the card, check for staged snapshots when its verdict lands.
 

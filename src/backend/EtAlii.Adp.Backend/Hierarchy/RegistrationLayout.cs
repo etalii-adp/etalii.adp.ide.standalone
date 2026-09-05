@@ -175,7 +175,7 @@ public static class RegistrationLayout
             AppendBlock(rebuilt, positions);
         }
 
-        File.WriteAllText(adpPath, rebuilt.ToString());
+        AdpFileWriter.Save(adpPath, rebuilt.ToString());
     }
 
     private static void AppendBlock(StringBuilder builder, IReadOnlyDictionary<string, RegistrationPosition> positions)
