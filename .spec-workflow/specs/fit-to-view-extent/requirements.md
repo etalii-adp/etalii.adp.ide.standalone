@@ -71,6 +71,8 @@ Twelve canvases call `fitToView`, and that number is not the blast radius.
 3. WHEN the backend half is tested THEN it SHALL assert that the reported extent covers elements the viewport **excluded**, since an extent that happens to equal the delivered set's proves nothing on a document small enough not to be filtered.
 4. WHEN the client half is tested THEN it SHALL assert the fit derives from the reported extent and not from the model, by fitting a canvas whose delivered model is deliberately smaller than the reported extent.
 5. WHEN a canvas is fixed THEN a manual check SHALL be added to `tests.md` reproducing the Tester's sequence — zoom out repeatedly, note the count climbing, press Fit to View, and confirm the count does not fall — because the fixed point was found by a human doing exactly that and no unit test would have looked.
+6. WHEN the guard is designed THEN it SHALL be **one shared guard over the registered canvas modules**, not a twelfth per-canvas test, and it SHALL also catch a canvas that supplies **no** view controls at all. A per-canvas test catches a canvas that fits *wrongly*; **a canvas that registers nothing has nothing to test, so its absence cannot fail anything.** That is this specification's own shape appearing a third time — a correct guard, a satisfied specification, and the defect living in the gap between them.
+7. WHEN that shared guard is written THEN `causal-loop` SHALL be the case it is proven against: `CausalLoopCanvas` never calls `useRegisterDiagramView`, so with a `.cld` open the shell registry holds `null` and the ribbon disables Zoom In, Zoom Out and Fit to View under the title *"Open a diagram to use this."* — wrong twice over, since a diagram **is** open and opening one would not help. Twelve canvases register; that one does not, and no test in the tree notices.
 
 ### Requirement 4 — One answer for twelve canvases, or a stated reason why not
 
@@ -83,6 +85,7 @@ Twelve canvases call `fitToView`, and that number is not the blast radius.
 3. WHEN a canvas genuinely cannot use the shared mechanism THEN its reason SHALL be recorded in that canvas's own module, and it SHALL NOT be worked around locally.
 4. WHEN the fix lands THEN **both** consumers SHALL be corrected — the fit and the scroll extent — because they read the same wrong bounds and fixing one leaves the other quietly false.
 5. WHEN this specification is implemented THEN it SHALL be by one developer through every canvas in series, per the ownership rule; the canvases are independently landable for ordering and clean merges, not for extra hands.
+6. WHEN `causal-loop` is wired to the view controls it lacks THEN it SHALL happen **after** this specification, not before. Developer 4 declined to fix it for the right reason: the only `fitToView` writable today is `setView(null)`, which **is** this defect, so wiring one now buys an enabled button by importing a known bug. Its own SOM layout computes over the whole model and can supply the extent when the contract exists.
 
 ### Requirement 5 — Nothing that works today stops working
 
