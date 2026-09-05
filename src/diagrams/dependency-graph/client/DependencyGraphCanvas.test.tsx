@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent, render, waitFor } from "@testing-library/react";
 import { emptyModel, type DependencyGraphModel } from "./dependencyGraphModel";
 
 let currentModel: DependencyGraphModel = emptyModel;
@@ -9,6 +9,10 @@ let currentSelectionKey: string | null = null;
 let currentActions: unknown[] = [];
 let moves: { elementId: string; x: number; y: number }[] = [];
 let selections: unknown[] = [];
+let currentPrompt: unknown = null;
+const proposeLabel = vi.fn(async () => ({ accepted: true, error: "" }));
+const submitLabel = vi.fn(async () => ({ accepted: true, error: "" }));
+const cancelLabel = vi.fn();
 let executed: { actionId: string; source: unknown }[] = [];
 let properties: { propertyId: string; value: string }[] = [];
 let shortcuts: { key: string; source: unknown }[] = [];
@@ -29,6 +33,7 @@ vi.mock("./useDependencyGraphStream", () => ({
 
 vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   innermostKey: () => currentSelectionKey,
+  useContextPrompt: () => ({ prompt: currentPrompt, onPropose: proposeLabel, onSubmit: submitLabel, onCancel: cancelLabel }),
   useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: currentActions }),
   useContextConnection: () => ({
     select: (selection: unknown) => selections.push(selection),
@@ -49,6 +54,10 @@ vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
 
 vi.mock("@client/shell/panels/DiagramViewContext", () => ({
   useRegisterDiagramView: () => undefined,
+}));
+
+vi.mock("@client/shell/panels/InlineLabelPlacementContext", () => ({
+  useRegisterInlineLabelPlacement: () => undefined,
 }));
 
 vi.mock("@client/shell/panels/DiagramToolboxContext", () => ({
@@ -88,6 +97,7 @@ function renderCanvas() {
 
 beforeEach(() => {
   currentModel = modelWith();
+  currentPrompt = null;
   currentLoading = false;
   currentFailed = false;
   currentSelectionKey = null;
@@ -691,5 +701,94 @@ describe("the dependency graph canvas", () => {
     } finally {
       currentReportView = null;
     }
+  });
+
+  // ---- inline renaming -----------------------------------------------------------------
+
+  function labelPromptFor(elementId: string, text: string): unknown {
+    return {
+      prompt: {
+        case: "inputDialog",
+        value: {
+          title: "Rename",
+          icon: "mdi-pencil-outline",
+          fieldLabel: "Label",
+          initialValue: text,
+          confirmLabel: "Rename",
+          inlineLabelEdit: { elementId: { value: elementId } },
+        },
+      },
+    };
+  }
+
+  function editorBox(container: HTMLElement): SVGForeignObjectElement {
+    return container.querySelector("foreignObject.inline-label-editor") as SVGForeignObjectElement;
+  }
+
+  function labelField(container: HTMLElement): HTMLInputElement {
+    return container.querySelector("input.inline-label-editor-field") as HTMLInputElement;
+  }
+
+  it("opens an editor over a node, and submits what is typed into it", async () => {
+    // Arrange. Every node is drawn as a span, so its label is centred in its box.
+    currentPrompt = labelPromptFor("aaa", "API gateway");
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    expect(editorBox(container)).not.toBeNull();
+    expect(labelField(container).value).toBe("API gateway");
+
+    fireEvent.change(labelField(container), { target: { value: "Renamed" } });
+    fireEvent.keyDown(labelField(container), { key: "Enter" });
+    await waitFor(() => expect(submitLabel).toHaveBeenCalledWith("Renamed"));
+  });
+
+  it("covers the node's own box, so the editor is where the label is drawn", () => {
+    // Arrange.
+    currentPrompt = labelPromptFor("aaa", "API gateway");
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert: the editor's rectangle is the node's rectangle.
+    const rect = container.querySelector('[data-element-id="aaa"] rect') as SVGRectElement;
+    expect(rect).not.toBeNull();
+    const box = editorBox(container);
+    expect(Number(box.getAttribute("x"))).toBeCloseTo(Number(rect.getAttribute("x")), 5);
+    expect(Number(box.getAttribute("width"))).toBeCloseTo(Number(rect.getAttribute("width")), 5);
+  });
+
+  it("places a relation's editor at the midpoint of the line, where its label is drawn", () => {
+    // Arrange.
+    currentPrompt = labelPromptFor("ccc", "verifies tokens with");
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert: centred on the same midpoint InteractiveBezierConnection draws its text at.
+    const drawn = container.querySelector('[data-connection-id="ccc"] text') as SVGTextElement;
+    expect(drawn).not.toBeNull();
+    const box = editorBox(container);
+    expect(box).not.toBeNull();
+    const centre = Number(box.getAttribute("x")) + Number(box.getAttribute("width")) / 2;
+    expect(centre).toBeCloseTo(Number(drawn.getAttribute("x")), 5);
+  });
+
+  it("leaves the selection alone when an inline edit commits", async () => {
+    // Arrange.
+    currentSelectionKey = "aaa";
+    currentPrompt = labelPromptFor("aaa", "API gateway");
+    const { container } = renderCanvas();
+    selections = [];
+
+    // Act.
+    fireEvent.change(labelField(container), { target: { value: "Renamed" } });
+    fireEvent.keyDown(labelField(container), { key: "Enter" });
+
+    // Assert.
+    await waitFor(() => expect(submitLabel).toHaveBeenCalled());
+    expect(selections).toEqual([]);
   });
 });

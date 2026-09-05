@@ -229,7 +229,7 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
 
             case RenameActionId when element is not null:
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Rename", "mdi-pencil-outline", "Label", element.Label, "Rename"));
+                    "Rename", "mdi-pencil-outline", "Label", element.Label, "Rename", target.ElementId));
 
             case RelabelActionId:
             {
@@ -237,7 +237,7 @@ public sealed class DependencyGraphContextActionProvider : IContextActionProvide
                 return relation is null
                     ? new ContextExecutionFailed(Gone)
                     : new ContextExecutionRequiresInput(new ContextInputRequest(
-                        "Relabel", "mdi-pencil-outline", "Label", relation.Label, "Relabel"));
+                        "Relabel", "mdi-pencil-outline", "Label", relation.Label, "Relabel", target.ElementId));
             }
 
             case RemoveActionId when element is not null:
