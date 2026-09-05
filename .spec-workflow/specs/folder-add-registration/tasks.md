@@ -58,7 +58,7 @@ Two phases, and the split is not cosmetic: **phase 1 touches no example file and
   - _Requirements: 4.1, 4.3, 5.2_
   - _Prompt: Implement the task for spec folder-add-registration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Guard that Add creates a bare .adp, and pin that both the legacy named and the bare registration shapes still resolve | Restrictions: do not tighten the read path; the legacy test case is kept rather than replaced | Success: a regression to a named creation fails the suite, and both read shapes are covered. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 6. Gate and merge phase 1
+- [x] 6. Gate and merge phase 1 - merged as 99e7b3a2
   - Four gates, exit codes captured before any pipe, then merge through a per-agent scratch worktree as the preamble describes.
   - **Tell `contracts-and-build-hygiene`'s owner when this lands**, because its catalog group consumes `ContextOption.unavailable_reason` and can start the moment the field exists.
   - _Requirements: 5.3_
@@ -66,7 +66,7 @@ Two phases, and the split is not cosmetic: **phase 1 touches no example file and
 
 ## Phase 2 — the thirteen renames, after the example trees are free
 
-- [ ] 7. Rename the thirteen named folder-subject registrations
+- [-] 7. Rename the thirteen named folder-subject registrations
   - Files: seven under `ansible-structure` (six to correct plus `example 1` in both copies), six under `helm-charts` — the exact list is in the requirements' survey
   - `git mv` only: **content byte-identical**, MIME first line and terminator untouched. This is a rename, not a rewrite.
   - **Both copies**, module and showcase. The example-replication guard is gone so they need not move in one commit, but neither copy may be left in the old shape — both are material a reader opens, and a wrong one ships a counter-example.
