@@ -139,6 +139,25 @@ function draw() {
   );
 }
 
+/**
+ * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
+ * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined -
+ * usePointerGesture.test.tsx's idiom, for the same reason.
+ */
+function pointer(type: string, init: MouseEventInit) {
+  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
+}
+
+/** A click in the pointer vocabulary the surface listens to: press and release, unmoved. */
+function press(target: Element, init: MouseEventInit = {}) {
+  fireEvent(target, pointer("pointerdown", { button: 0, ...init }));
+  fireEvent(target, pointer("pointerup", { ...init }));
+}
+
+// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
+SVGElement.prototype.setPointerCapture ??= () => {};
+SVGElement.prototype.releasePointerCapture ??= () => {};
+
 describe("PipelineCanvas", () => {
   beforeEach(() => {
     currentModel = emptyModel;
@@ -365,12 +384,28 @@ describe("PipelineCanvas", () => {
     const before = thumbOf(container, "horizontal").style.left;
 
     // Act.
-    fireEvent.mouseDown(surface, { clientX: 200, clientY: 100 });
-    fireEvent.mouseMove(surface, { clientX: 60, clientY: 100 });
-    fireEvent.mouseUp(surface);
+    fireEvent(surface, pointer("pointerdown", { button: 0, clientX: 200, clientY: 100 }));
+    fireEvent(surface, pointer("pointermove", { clientX: 60, clientY: 100 }));
+    fireEvent(surface, pointer("pointerup", { clientX: 60, clientY: 100 }));
 
     // Assert.
     expect(thumbOf(container, "horizontal").style.left).not.toBe(before);
+  });
+
+  it("pans with a background drag, and the trailing click does not deselect", () => {
+    // Arrange.
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build")));
+    const { container } = draw();
+    const surface = container.querySelector(".pipeline-canvas-surface")!;
+
+    // Act.
+    fireEvent(surface, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(surface, pointer("pointermove", { clientX: 60, clientY: 100 }));
+    fireEvent(surface, pointer("pointerup", { clientX: 60, clientY: 100 }));
+    fireEvent.click(surface); // the click that trails the pan - inert, nothing listens
+
+    // Assert: letting go of a pan neither selects nor deselects.
+    expect(select).not.toHaveBeenCalled();
   });
 
   it("resizes the thumb when the view is zoomed - catches a hard-coded viewSpan", () => {
@@ -393,7 +428,7 @@ describe("PipelineCanvas", () => {
     const view = draw();
 
     // Act.
-    fireEvent.click(view.container.querySelector(".pipeline-canvas-surface")!);
+    press(view.container.querySelector(".pipeline-canvas-surface")!);
 
     // Assert.
     expect(select).toHaveBeenCalledWith(null);
