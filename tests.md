@@ -52,15 +52,26 @@ a check standing in meanwhile, `Covered meanwhile by X` and `What stands in mean
 is why that population has been reported as three when it is six. **Read the verdicts; do not
 match them.**
 
-**A "task complete" commit on `develop` does not mean the code is on `develop`.** Specification
-bookkeeping is committed to `develop` in the main checkout while the implementation stays in a
-worktree until it is gated and merged — both rules are right, and their intersection produces a
-log that truthfully describes work this build does not contain. On 2026-09-05 `develop` carried
-*"Marked developer-sign-in-bypass tasks 1 to 3 complete… the client opens already authenticated"*
-while the commits implementing it were on a branch, so the app still opened on the sign-in form.
-Anyone reading the log would conclude the blocked checks below had become runnable. **Check the
-implementation commit, not the bookkeeping one**: `git merge-base --is-ancestor <commit> develop`,
-or look for the type it introduces in `develop`'s sources.
+**A "task complete" commit on `develop` does not mean the code is on `develop`.** Bookkeeping
+reaches `develop` instantly from the main checkout; the code behind it waits on four gates and on
+winning a merge race, so the two can be hours apart. On 2026-09-05 `develop` carried *"Marked
+developer-sign-in-bypass tasks 1 to 3 complete… the client opens already authenticated"* from
+16:12, while the commits implementing it landed at 18:44. In that window the app still opened on
+the sign-in form, and a Tester loaded it on the strength of the log and lost the time.
+
+**The first version of this paragraph blamed the wrong thing, which is worth keeping visible.** It
+said this was two correct rules intersecting — bookkeeping on `develop`, implementation in a
+worktree — and therefore unavoidable. It was not: Developer 2, whose commits these were,
+identified it as marking tasks complete before their code had merged, and now holds the rule
+**do not mark a task complete until `git merge-base --is-ancestor` says its code is on
+`develop`**. A hazard called structural gets designed around; a hazard called a slip gets fixed at
+its source, and this one was. **That bypass is fully merged as of 2026-09-05 and this instance is
+closed.**
+
+The check outlives the instance, because the window recurs whenever anything is marked complete:
+**verify the implementation commit, not the bookkeeping one** —
+`git merge-base --is-ancestor <commit> develop`, or look for the type it introduces in `develop`'s
+sources.
 
 ## The context surface is reachable on a causal loop diagram (causal-loop-diagram, resolver fix)
 
