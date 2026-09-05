@@ -1,4 +1,5 @@
 import { facingAnchorsBetween, forwardBezierPath, horizontalBezierPath, sideAnchorOf, type ConnectorBox } from "../../connectors";
+import type { PointerPressWiring } from "../../gesture/usePointerGesture";
 
 export interface InteractiveBezierConnectionProps {
   /** The box the connection leaves. */
@@ -21,17 +22,21 @@ export interface InteractiveBezierConnectionProps {
   lineClassName?: string;
   /** Written as `data-connection-id` so release-point hit tests can find the connection. */
   id?: string;
-  onSelect?: (event: React.MouseEvent) => void;
+  /** The arbiter's wiring from `usePointerGesture`: an unmoved press selects; a moved one is not a click. */
+  press?: PointerPressWiring;
   onOpenMenu?: (event: React.MouseEvent) => void;
 }
 
 /**
  * A selectable, right-clickable connection drawn as a facing-sides bezier.
  *
- * This is the interactive case the timeline grew: a relation the user can left-click to
- * select and right-click for its menu, clickable along its whole length through an invisible
- * fat hit path painted under the visible line. Mousedown stops propagating so the surface
- * never reads the press as background panning.
+ * This is the interactive case the timeline grew: a relation the user can press to select
+ * and right-click for its menu, pressable along its whole length through an invisible fat
+ * hit path painted under the visible line. Selection goes through the shared gesture
+ * arbiter's wiring, never a raw `click` - the trailing click after a drag lands wherever
+ * the drop left the geometry, and a raw handler there steals selections
+ * (selection-after-drag Requirement 3.4). Mousedown still stops propagating so a surface on
+ * the mouse-event model never reads the press as background panning.
  */
 export function InteractiveBezierConnection({
   from,
@@ -44,7 +49,7 @@ export function InteractiveBezierConnection({
   hitClassName,
   lineClassName,
   id,
-  onSelect,
+  press,
   onOpenMenu,
 }: InteractiveBezierConnectionProps) {
   const [a, b] = loopsBack
@@ -57,7 +62,7 @@ export function InteractiveBezierConnection({
     <g
       className={classes}
       data-connection-id={id}
-      onClick={onSelect}
+      {...press}
       onMouseDown={(event) => event.stopPropagation()}
       onContextMenu={onOpenMenu}
     >
