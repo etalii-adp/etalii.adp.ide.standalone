@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace EtAlii.Adp.Backend.Context;
 
 /// <summary>A dialog asking the user to pick one option out of a grouped tree, described entirely as data.</summary>
