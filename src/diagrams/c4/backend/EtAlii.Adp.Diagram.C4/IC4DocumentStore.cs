@@ -24,7 +24,13 @@ public interface IC4DocumentStore
     /// Writes the document back and tells every session on it. Refuses while the document on
     /// disk is unparseable, so a broken file is never made worse (Requirement 3.4).
     /// </summary>
-    void Save(string path);
+    /// <returns>
+    /// <c>""</c> when the document reached the disk, and a sentence the user can read when
+    /// it did not. **A caller must surface it rather than drop it.** The edit survives in
+    /// memory either way, so a caller that ignores this answers the user with a save that
+    /// never happened - which is exactly what returning nothing at all allowed.
+    /// </returns>
+    string Save(string path);
 
     /// <summary>
     /// Tells every session on this document to re-deliver, without changing the document.

@@ -219,4 +219,23 @@ public class C4CommandsTests : IDisposable
         // Assert.
         Assert.Equal(1, raised);
     }
+
+    [Fact]
+    public async Task AWriteThatCannotLand_IsReportedRatherThanAnsweredWithSuccess()
+    {
+        // Arrange: a holder sharing Read only, which denies the replace a publish performs -
+        // what an external editor with the file open looks like from here.
+        using var holder = new FileStream(_bodyPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+        // Act.
+        var result = await _history.ExecuteAsync(
+            new SetElementNameCommand(_bodyPath, "web", "Web Application"),
+            TestContext.Current.CancellationToken);
+
+        // Assert: the caller is told. Answering success while the file still holds the old name
+        // is worse than failing - the user believes the rename landed and it did not. This is
+        // the WardleyDocumentStore defect, which C4 carried identically.
+        Assert.False(result.IsSuccess);
+        Assert.Contains("could not be written", result.Error, StringComparison.Ordinal);
+    }
 }

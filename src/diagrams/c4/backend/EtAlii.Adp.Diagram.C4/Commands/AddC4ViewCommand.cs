@@ -58,7 +58,13 @@ internal sealed class AddC4ViewCommandHandler(IC4DocumentStore documents) : ICom
             document.InsertLine(insertAt.Value + (uint)index, lines[index]);
         }
 
-        documents.Save(command.BodyPath);
+        var error = documents.Save(command.BodyPath);
+        if (error.Length != 0)
+        {
+            // The body never reached the disk, so writing a registration pointing at a view
+            // it does not contain would be worse than stopping here.
+            return Task.FromResult(CommandResult.Failure(error));
+        }
 
         try
         {
@@ -213,7 +219,12 @@ internal static class C4ViewBlock
         }
 
         document.RemoveLines(first, last);
-        documents.Save(bodyPath);
+
+        // Discarded deliberately, and this is the one place that is right: this undoes a
+        // view whose registration could not be written, and the caller is already returning
+        // that failure. A second sentence about the undo would replace the one that says
+        // what actually went wrong.
+        _ = documents.Save(bodyPath);
     }
 
     /// <summary>A component view is scoped to a container, so it needs one rather than a system.</summary>
