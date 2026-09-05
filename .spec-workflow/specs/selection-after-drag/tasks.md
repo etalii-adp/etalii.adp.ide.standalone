@@ -112,7 +112,7 @@ than missed.
   - _Requirements: 1.1, 2.1, 2.2, 3.4, 4.2, 4.3, 5.1, 5.2_
   - _Prompt: Implement the task for spec selection-after-drag, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Reproduce the relation-steals-selection defect on dependency-graph, see it fail and record it, then move every raw relation click in the pointer-up canvases onto gesture.press, enumerating the affected canvases by grep rather than assumption | Restrictions: element selection paths in these canvases untouched; no new guards or flags anywhere; the enumeration and its misses go in the log | _Leverage: the arbiter from task 1 | Success: the reproduction failed before and passes after, every relation-selecting canvas found by the grep is converted or explicitly recorded as out of scope with the reason, and the client suite passes. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 5. Azure-pipeline: the pan flag goes the same way
+- [x] 5. Azure-pipeline: the pan flag goes the same way
   - Files: `src/diagrams/azure-pipeline/client/PipelineCanvas.tsx` and its test
   - The same latch shape, pan-flavoured: `panJustEndedRef` (`PipelineCanvas.tsx:84`) armed at
     pan end, consumed only by a background click that may never come. Convert pan and
@@ -122,7 +122,7 @@ than missed.
   - _Requirements: 1.2, 1.3, 4.1, 4.2_
   - _Prompt: Implement the task for spec selection-after-drag, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Convert PipelineCanvas's pan and background press onto the arbiter and delete panJustEndedRef with its arming and guard | Restrictions: pan behaviour unchanged - a moved pan neither selects nor deselects; an unmoved background press still deselects | _Leverage: the arbiter from task 1 | Success: no JustEndedRef remains in the file and the pipeline client tests pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 6. Gate and merge, and the two completion checks
+- [-] 6. Gate and merge, and the two completion checks
   - Four gates on the merged tree, exit codes captured before any pipe, then the scratch-
     worktree merge as the preamble describes.
   - **Completion checks, both recorded in the log**: `grep -rn JustEndedRef src/` returns
