@@ -124,7 +124,7 @@ public class HierarchyModelPublishSurvivesNestingTests : IDisposable
         ShortGuid? replayedParent;
         lock (_events)
         {
-            KeyValuePair<ShortGuid, string> registrationPair = replayedNames.Single(pair => pair.Value == "plan.adp");
+            var registrationPair = replayedNames.Single(pair => pair.Value == "plan.adp");
             replayedParent = replayedParents[registrationPair.Key];
         }
 

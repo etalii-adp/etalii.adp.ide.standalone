@@ -82,7 +82,7 @@ public sealed class TextFileBuffer
 
         try
         {
-            FileInfo info = new(path);
+            var info = new FileInfo(path);
             if (!info.Exists)
             {
                 return TextFileBufferOpenResult.Refused($"'{Path.GetFileName(path)}' does not exist.");
