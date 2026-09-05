@@ -238,4 +238,29 @@ public class C4CommandsTests : IDisposable
         Assert.False(result.IsSuccess);
         Assert.Contains("could not be written", result.Error, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task ADragWhoseLayoutCannotBeSaved_SucceedsButSaysSo()
+    {
+        // Arrange: the sidecar exists and is held so it cannot be replaced. A missing sidecar is
+        // an empty layout and succeeds, so it has to exist for this to be the case under test.
+        await _history.ExecuteAsync(
+            new MoveC4ElementCommand(_bodyPath, "SystemContext", "web", 10d, 20d),
+            TestContext.Current.CancellationToken);
+        var sidecarPath = IoPath.Combine(_root, IoPath.GetFileNameWithoutExtension(_bodyPath) + ".layout.json");
+        Assert.True(File.Exists(sidecarPath), $"expected a sidecar at {sidecarPath}");
+        using var holder = new FileStream(sidecarPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+        // Act.
+        var result = await _history.ExecuteAsync(
+            new MoveC4ElementCommand(_bodyPath, "SystemContext", "web", 30d, 40d),
+            TestContext.Current.CancellationToken);
+
+        // Assert: the element DID move, so the command succeeds - refusing it would lose work the
+        // user can see. But the position was not recorded, and the user is told rather than
+        // finding out by reopening.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.NotEqual("", result.Warning);
+        Assert.Contains("reopened", result.Warning, StringComparison.Ordinal);
+    }
 }

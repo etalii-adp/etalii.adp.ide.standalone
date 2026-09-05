@@ -49,7 +49,7 @@ public interface IWardleyDocumentStore
     /// either way, so a caller that ignores this answers the user with a save that never
     /// happened - which is what this returned nothing at all in order to do.
     /// </returns>
-    string Save(string path);
+    WardleyPublishResult Save(string path);
 
     /// <summary>
     /// Tells every session on this document to re-deliver, without changing the document.

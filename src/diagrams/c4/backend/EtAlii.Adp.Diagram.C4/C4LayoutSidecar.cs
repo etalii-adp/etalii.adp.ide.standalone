@@ -58,7 +58,7 @@ public sealed class C4LayoutSidecar
     }
 
     /// <summary>Records one element's position on one view, leaving every other view's alone.</summary>
-    public void Write(string bodyPath, string viewKey, string elementId, C4SidecarPosition position)
+    public string Write(string bodyPath, string viewKey, string elementId, C4SidecarPosition position)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(viewKey);
@@ -67,7 +67,9 @@ public sealed class C4LayoutSidecar
 
         if (!TryReadAllForModify(bodyPath, out var all))
         {
-            return;
+            // False here means the sidecar exists and could not be read - a missing one
+            // reads as an empty layout and succeeds - so the change is not going to land.
+            return Unreadable(bodyPath);
         }
 
         if (!all.TryGetValue(viewKey, out var view))
@@ -77,11 +79,11 @@ public sealed class C4LayoutSidecar
         }
 
         view[elementId] = position;
-        Persist(bodyPath, all);
+        return Persist(bodyPath, all);
     }
 
     /// <summary>Forgets one element's authored position, handing it back to the layout.</summary>
-    public void Remove(string bodyPath, string viewKey, string elementId)
+    public string Remove(string bodyPath, string viewKey, string elementId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(viewKey);
@@ -89,7 +91,9 @@ public sealed class C4LayoutSidecar
 
         if (!TryReadAllForModify(bodyPath, out var all))
         {
-            return;
+            // False here means the sidecar exists and could not be read - a missing one
+            // reads as an empty layout and succeeds - so the change is not going to land.
+            return Unreadable(bodyPath);
         }
 
         foreach (var view in all.Values)
@@ -97,18 +101,20 @@ public sealed class C4LayoutSidecar
             view.Remove(elementId);
         }
 
-        Persist(bodyPath, all);
+        return Persist(bodyPath, all);
     }
 
     /// <summary>Forgets every authored position for one view - what "reset layout" would do.</summary>
-    public void Clear(string bodyPath, string viewKey)
+    public string Clear(string bodyPath, string viewKey)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(viewKey);
 
         if (!TryReadAllForModify(bodyPath, out var all))
         {
-            return;
+            // False here means the sidecar exists and could not be read - a missing one
+            // reads as an empty layout and succeeds - so the change is not going to land.
+            return Unreadable(bodyPath);
         }
 
         all.Remove(viewKey);
@@ -125,12 +131,13 @@ public sealed class C4LayoutSidecar
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
                 _logger.Warning(exception, "Could not clear the layout sidecar beside {BodyPath}", bodyPath);
+                return Unreadable(bodyPath);
             }
 
-            return;
+            return "";
         }
 
-        Persist(bodyPath, all);
+        return Persist(bodyPath, all);
     }
 
     /// <summary>
@@ -221,19 +228,33 @@ public sealed class C4LayoutSidecar
     /// arrangement or the new one, never a half-written file. The scratch name matches the
     /// pattern the hierarchy watcher already ignores.
     /// </summary>
-    private static void Persist(string bodyPath, Dictionary<string, Dictionary<string, C4SidecarPosition>> all)
+    /// <summary>
+    /// Writes the sidecar, answering <c>""</c> when it landed and a sentence when it did not.
+    /// </summary>
+    /// <remarks>
+    /// Reported rather than swallowed. Losing an arrangement is a nuisance and failing the
+    /// edit that caused it would be worse - the document is written and the computed layout
+    /// still draws a correct diagram - but saying nothing meant a drag silently did not
+    /// persist, and the user found out by reopening. The caller succeeds AND passes this on.
+    /// </remarks>
+    /// <summary>What the caller says when the layout could not be updated at all.</summary>
+    private static string Unreadable(string bodyPath) =>
+        $"The layout beside {System.IO.Path.GetFileName(bodyPath)} could not be updated, so positions may not be as expected when the diagram is reopened.";
+
+    private static string Persist(string bodyPath, Dictionary<string, Dictionary<string, C4SidecarPosition>> all)
     {
         var path = PathFor(bodyPath);
         try
         {
             AdpFileWriter.Save(path, JsonSerializer.Serialize(all, Options));
+            return "";
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            // Losing an arrangement is a nuisance; failing the edit that caused it would be
-            // worse, and the computed layout still shows a correct diagram.
             _logger.Warning(exception, "Could not write the layout sidecar beside {BodyPath}", bodyPath);
+
             // AdpFileWriter.Save removes its own scratch file before the failure surfaces.
+            return $"The new position could not be saved beside {System.IO.Path.GetFileName(bodyPath)}, so it will not be there when the diagram is reopened.";
         }
     }
 

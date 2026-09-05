@@ -89,7 +89,7 @@ public sealed class WardleyIdentities
     /// elements has no identities to keep, and a stray file would only invite the question of
     /// what it is for.
     /// </remarks>
-    public void Write(string bodyPath, IReadOnlyList<WardleyIdentityEntry> entries)
+    public string Write(string bodyPath, IReadOnlyList<WardleyIdentityEntry> entries)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bodyPath);
         ArgumentNullException.ThrowIfNull(entries);
@@ -98,7 +98,7 @@ public sealed class WardleyIdentities
         if (entries.Count == 0)
         {
             Remove(bodyPath);
-            return;
+            return "";
         }
 
         // The folder is this sidecar's precondition rather than the writer's business: a
@@ -114,13 +114,20 @@ public sealed class WardleyIdentities
             }
 
             AdpFileWriter.Save(path, JsonSerializer.Serialize(entries, Options));
+            return "";
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            // Losing the sidecar costs identities on the next open, which re-derives them.
-            // Failing the edit that caused this would cost the user's actual work.
+            // Reported rather than swallowed, though the edit still succeeds: failing it
+            // would cost the user work they can see, while saying nothing let the loss pass
+            // unnoticed. What is lost is recoverable but not free - Read answers an empty
+            // list when the sidecar is gone and Reconcile mints fresh ids for anything it
+            // does not recognise, so the map is intact and its elements are renamed
+            // underneath any selection still pointing at the old ones.
             _logger.Warning(exception, "Could not write the identity sidecar beside {BodyPath}", bodyPath);
+
             // AdpFileWriter.Save removes its own scratch file before the failure surfaces.
+            return $"The element identities beside {IoPath.GetFileName(bodyPath)} could not be saved, so this map's elements may be given new ids the next time it is opened.";
         }
     }
 
