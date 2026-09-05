@@ -56,7 +56,7 @@ public sealed class PipelineDocumentStore : IPipelineDocumentStore
                 Directory.CreateDirectory(directory);
             }
 
-            File.WriteAllText(path, entry.Document.Text);
+            AdpFileWriter.Save(path, entry.Document.Text);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

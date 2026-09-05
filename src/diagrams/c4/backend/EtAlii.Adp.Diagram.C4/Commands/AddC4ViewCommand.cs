@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Hierarchy;
 
 namespace EtAlii.Adp.Diagram.C4;
 
@@ -61,7 +62,7 @@ internal sealed class AddC4ViewCommandHandler(IC4DocumentStore documents) : ICom
 
         try
         {
-            File.WriteAllText(
+            AdpFileWriter.Save(
                 command.RegistrationPath,
                 command.MimeType + "\n" + "body: " + command.BodyRelativePath + "\n" + "view: " + command.ViewKey + "\n");
         }

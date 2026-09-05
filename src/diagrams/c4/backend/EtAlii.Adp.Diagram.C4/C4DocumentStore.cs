@@ -44,7 +44,7 @@ public sealed class C4DocumentStore : IC4DocumentStore
                 Directory.CreateDirectory(directory);
             }
 
-            File.WriteAllText(path, text);
+            AdpFileWriter.Save(path, text);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
