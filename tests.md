@@ -421,7 +421,7 @@ take. These are the checks that needs a real pair of eyes.
      diagram loses the `common` node without being reopened, and the problems panel gains
      `ansible.role-missing` entries pointing at `webservers.yml` and `dbservers.yml`.
  10. Put `roles/common/` back. → Both the diagram and the panel return to their earlier state.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **largely passed — the visual and interaction core verified live; three sub-steps noted.** Opened `example 1/infrastructure` (the registered fixture tree). **Layout** (3): by measured positions, `site.yml` is leftmost, `webservers.yml`/`dbservers.yml` to its right, the three roles right of those, `tls.yml` right of `nginx`, and the inventories with their `group_vars`/`host_vars` in a band below the flow. **Edge styles** (4): three distinct dash patterns — solid for `roles:`/`import_playbook`, one dash for the `include_tasks` `nginx → tls`, a third for the two `dependencies` into `common` — each labelled with its directive, and the `postgres` edge shows its `when:` (`roles: when postgres_enabled | default(true)`). **Reveal** (5): double-clicking the `nginx` role selects `roles/nginx` in the explorer. **Properties** (7): every row greyed and non-editable with a reason, and the **Depends on** (and Meta) reason names `roles/nginx/meta/main.yml`. **Toolbox** (8): *“This diagram type offers no toolbox elements.”* **Live edit** (9–10): moving `roles/common` aside dropped the `common` node from the diagram with no reopen, and restoring it brought the node back — worktree byte-clean after. Noted, not app defects: the keyboard reveal (6) is not deliverable through the in-app pane (as with the property-grid entry); the `ansible.role-missing` diagnostics on removal (9) did not populate in this freshly-opened project (the diagram updated live but validation was not re-run there); and the Add-flow creation of `infrastructure.adp` (1–2) was not re-tested here because this folder is already registered (folder-add-registration covers it).
 
 ## An Ansible diagram in a subfolder reveals the right file (ansible-structure-diagram, task 26)
 
@@ -435,7 +435,7 @@ to a path that did not exist. Automated now, but the panel's reveal is the part 
   `The role 'absent-role' has no folder under roles/.` row.
 - **Expected**: the explorer reveals `<subfolder>/playbooks/deploy.yml` - the playbook that
   named the role - and not the `.adp`, and not a path that fails to resolve.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Registered the module's `Fixtures/broken` tree as a **subfolder** diagram (`diagrams/ansible-structure/broken-demo/broken/`, `.adp` = `ansible/structure`). After Validate the panel carries *“The role 'absent-role' has no folder under roles/.”* pointing at `diagrams/ansible-structure/broken-demo/broken/playbooks/deploy.yml:6` — a subfolder-relative path that **resolves**, which is the bug this guards (a non-root diagram once named a path that did not exist). Double-clicking it revealed `deploy.yml` — selected in the explorer and opened in the editor — the playbook that named the role, not the `.adp` and not a failing path. Scaffold removed afterwards; worktree clean.
 
 ## `dotnet test` discovers tests in a long worktree path (build tooling)
 
@@ -496,7 +496,7 @@ actually depend on.
   - Step 6: exactly one changed line, the `displayName` you set. No re-indentation, no reordered
     keys, no quoting changes, no lost comments, no changed line endings.
   - Step 7: `git diff` is empty. Byte for byte, not merely equivalent.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Opened `multi-stage.adp`. All five stages are present and every arrow matches the file's `dependsOn`: Build → Test, Test → DeployStaging, Test → DeployProduction, and DeployStaging/DeployProduction → Notify (this pipeline declares `dependsOn` on every non-first stage, so the implicit consecutive-stage arrow is not exercised here — that styling is unit-tested). Right-clicking Test → **Show jobs** brought Unit and Integration inside it and **Hide jobs** removed them, with `git diff` empty after — no write. Editing a stage's **Display name** and committing produced a `git diff` of **exactly one line** (the `displayName`), with the `# Fan-in:` comment, indentation, key order, quoting and line endings all untouched; one **Undo** returned `git status` to empty, byte for byte. (The commit was made by blurring the field rather than pressing Enter, since the in-app pane does not deliver Enter; the write and the byte-level round trip are identical.)
 
 ## An edited pipeline still validates against Azure DevOps (azure-pipeline-diagram, task 29)
 
@@ -516,7 +516,7 @@ this check is the only thing that closes that gap.
 - **Expected**: no schema errors, and the pipeline queues. Specifically the added stage has a job
   and the job has a step — an empty stage or job is a schema error, and this module writes the
   smallest runnable block for exactly that reason.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not fully runnable here — the validator is external, and it is not a sign-in blocker.** The developer build unblocks the on-canvas edits, but the check's expectation — *no schema errors, and the pipeline queues* — is answered only by the Azure Pipelines VS Code schema extension or by queuing a run in an Azure DevOps project, neither of which exists in this environment and neither of which sign-in gates. The objective ADP-side invariant this rests on — that adding a stage writes the smallest runnable block, a stage with a job and the job with a step, never an empty stage or job — is covered by the azure-pipeline writer unit tests. The schema/queue confirmation is left for a person with the extension or an Azure DevOps project; the earlier sign-in stamp was a partial mis-attribution.
 
 ## A pipeline shows what it cannot do rather than doing it wrongly (azure-pipeline-diagram, task 29)
 
@@ -530,7 +530,7 @@ refuses something. Worth a look because a refusal that is silent reads as a bug.
 - **Expected**: the context menu offers nothing at all for that job. The Property Grid shows its
   properties with a reason beside each naming the template file the value lives in — not a greyed
   box with no explanation.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Opened `templates.adp`, whose `Build` stage draws its jobs from the local template `templates/build-jobs.yml`. **Show jobs** surfaced the job *“Compile from the template”*, annotated *“From diagrams/azure-pipeline/example 1/templates/build-jobs.yml: edit it there.”* Right-clicking that job the context menu offered **nothing at all**. Selecting it, the Property Grid showed its Name, Display name, Kind and Depends-on rows, each non-editable with the reason *“This comes from diagrams/azure-pipeline/example 1/templates/build-jobs.yml…”* — naming the template file, not a bare greyed box. (The repository-resource template `deploy-stages.yml@shared` also renders as a dashed indeterminate box saying how many stages run is decided when the pipeline runs — the same refuse-rather-than-guess principle.)
 
 ## A map authored in onlinewardleymaps.com opens looking like the same map (wardley-map, task 26)
 
@@ -549,7 +549,7 @@ unit test in the module would still pass.
   Cup of Tea below it, Kettle and Power towards the bottom left; every link joins the same pair.
   A component that is high in one and low in the other means the visibility axis is inverted;
   one that is left in one and right in the other means maturity is.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed (the drawn-right check; the side-by-side is external).** Opened `tea.adp` and checked the rendered positions against the `.owm`'s `[visibility, maturity]` numbers: the anchors sit at the top, Cup of Tea below them, Kettle and Power toward the bottom, maturity increases left→right (Kettle in the Custom-Built band, Water in Commodity) and visibility bottom→top. Neither axis is inverted and no band is misplaced — which is the failure this guards. The onlinewardleymaps.com side-by-side itself is an external tool and is not needed to answer the axis-inversion question, which the coordinates settle.
 
 ## The four evolution stage labels are legible at the default zoom (wardley-map, task 26)
 
@@ -563,7 +563,7 @@ forms are a different claim, which only helps if the long forms fit.
 - **Expected**: four labels - Genesis, Custom Built, Product (+rental), Commodity (+utility) -
   each fully readable, none clipped at the edge of the canvas, none overlapping its neighbour,
   and each sitting under the band it names.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** With `tea.owm` open at the tab's default zoom, the four band labels render along the bottom with their full parentheticals — **Genesis**, **Custom Built**, **Product (+rental)**, **Commodity (+utility)** — each under its band. Measured: no label overlaps its neighbour (each one's right edge is left of the next one's start) and none is clipped (all fall within the canvas, the rightmost ending well inside the right edge).
 
 ## Dragging a component and reopening the file elsewhere shows it moved (wardley-map, task 26)
 
@@ -578,7 +578,7 @@ be a map onlinewardleymaps.com can open, with the drag visible in it.
   before and the same first number; the rest of the file - comments, blank lines, the order of
   the statements, the line endings - is untouched; and the map in the browser draws Kettle in
   its new place with everything else where it was.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed for the move, with two byte-level findings; the browser render is external.** Dragging `Kettle` clearly to the right wrote `tea.owm` as `component Kettle [0.43, 0.35]` → `[0.43, 0.5046]` — a larger second number (more evolved), the same first number, and the Kettle line otherwise identical, with every other component, comment, blank line and statement order untouched. Two deviations from *“the rest of the file is untouched”*, both worth a fix: **(a)** the write **stripped the file's leading UTF-8 BOM** (`-﻿title` / `+title`), and Undo reverted the position but not the BOM (it is a write-side normalization); **(b)** the drag left an untracked `tea.identities.json` sidecar beside the `.owm`. Opening the result in onlinewardleymaps.com to confirm the drawn move is an external step, not run here.
 
 ## An element selected on the canvas fills the property grid (wardley-map, task 26)
 
@@ -594,7 +594,7 @@ clipping, and that is only visible on screen.
   and Strategy; Visibility and Maturity show the file's own numbers; Evolution stage shows
   `Custom Built` and cannot be typed into, with a sentence beside it saying to change Maturity
   instead - one or two lines, not a paragraph that pushes the rest of the panel down.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **FAILED — a real defect found by running the app.** Clicking `Kettle` on the canvas (tried repeatedly, including a precise click on the zoomed-in dot) does **not** fill the Property Grid: the backend logs *Selected …/tea.adp … as Activate* and *Described 0 properties for …/tea.adp* — the innermost selection resolves to the `.adp` **file**, never the element, so the heading stays the file and Kettle's Identity/Position/Strategy rows never appear. Root cause, confirmed in source: **`WardleyCanvas.tsx` reports no element context-selection.** The working modules do — e.g. causal-loop wires `onSelect → select(elementSelectionOf(entryId, path, id, gesture))` to each element's `onClick` and imports `useContextSelection`/`useElementContextMenu`; `WardleyCanvas` has none of these, its element `<g>` carries only an `onMouseDown` drag handler, and a comment in it admits the `.adp` entry *“a selection reports as its outer level … task 19's context resolver needs and nothing here does.”* The backend `WardleyContextSourceResolver` and `WardleyContextPropertyProvider` exist and are unit-tested, but the client never hands them an element. This is the same class of bug as the already-fixed causal-loop *“context surface is reachable”* entry, and it wants the same fix — wire element-selection reporting into `WardleyCanvas`, with a guard. Flagged to the Scrum master.
 
 ## The ruler stays fixed to the view while its labels slide with the content (timeline-diagram, task 31)
 
