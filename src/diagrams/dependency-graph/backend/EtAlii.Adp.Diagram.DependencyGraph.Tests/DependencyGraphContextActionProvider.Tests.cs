@@ -182,6 +182,31 @@ public class DependencyGraphContextActionProviderTests : IDisposable
     }
 
     [Fact]
+    public async Task OnlyTheTwoLabelPrompts_AreMarkedForInlineEditing()
+    {
+        // Arrange.
+        // All three prompts asked together on purpose: a marker on the right action proves
+        // nothing if a neighbour has quietly acquired one. Rename and relabel ask for text that
+        // IS on screen; add-node asks for the label of an element that does not exist yet, so an
+        // editor drawn in place of it would have nothing to sit on.
+        //
+        // Add-after and add-below are absent because they ask for nothing at all - they dispatch
+        // directly, inventing the coordinate rather than asking for it, so there is no prompt on
+        // which a marker could appear.
+        var path = Write();
+
+        // Act.
+        var rename = await _actions.ExecuteAsync(Target(path, "aaa"), DependencyGraphContextActionProvider.RenameActionId, CancellationToken.None);
+        var relabel = await _actions.ExecuteAsync(Target(path, "ccc"), DependencyGraphContextActionProvider.RelabelActionId, CancellationToken.None);
+        var addNode = await _actions.ExecuteAsync(Target(path, ""), DependencyGraphContextActionProvider.AddElementActionId, CancellationToken.None);
+
+        // Assert.
+        Assert.Equal("aaa", Assert.IsType<ContextExecutionRequiresInput>(rename).Request.InlineLabelElementId);
+        Assert.Equal("ccc", Assert.IsType<ContextExecutionRequiresInput>(relabel).Request.InlineLabelElementId);
+        Assert.Equal("", Assert.IsType<ContextExecutionRequiresInput>(addNode).Request.InlineLabelElementId);
+    }
+
+    [Fact]
     public async Task Tab_AddsANodeAStepToTheRight_ThatTheSelectedOneDependsOn()
     {
         // Arrange.

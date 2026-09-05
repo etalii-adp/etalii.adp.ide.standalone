@@ -2,10 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { facingAnchorsBetween, horizontalBezierPath, sideAnchorOf, type ConnectorBox } from "@client/canvas/connectors";
 import { InteractiveBezierConnection } from "@client/canvas/connections/interactive-bezier/InteractiveBezierConnection";
 import { SpanElement, type SpanElementClasses } from "@client/canvas/elements/span/SpanElement";
+import { InlineLabelEditor } from "@client/canvas/label/InlineLabelEditor";
+import { centredLabelPlacement, midpointLabelPlacement } from "@client/canvas/label/labelPlacement";
+import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
+import { useRegisterInlineLabelPlacement, type LabelPlacement } from "@client/shell/panels/InlineLabelPlacementContext";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
 import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
-import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { ContextMenu } from "@client/shell/context/ContextMenu";
 import { toMenuGroups } from "@client/shell/context/toMenuGroups";
 import { TOOLBOX_DRAG_TYPE } from "@client/shell/panels/DiagramToolboxContext";
@@ -41,6 +45,8 @@ const NODE_HEIGHT = 36;
  * with the zoom exactly as a period's did.
  */
 const NODE_WIDTH = 160;
+/** InteractiveBezierConnection's own label offset, above the curve's midpoint. */
+const RELATION_LABEL_DY = -6;
 
 /** The id of the arrowhead marker this canvas defines and its edge stylesheet points at. */
 const ARROWHEAD_ID = "dependency-graph-arrowhead";
@@ -302,7 +308,62 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
   const xToPx = (x: number): number => (x - view.startX) * view.pixelsPerUnit;
   const yToPx = (y: number): number => (y - view.panY) * view.verticalScale;
 
+  // Where a node's label, or a relation's, is drawn - for the shell's inline editor.
+  //
+  // Memoized on the model AND the view, for the reason timeline's is: this canvas draws in
+  // pixels-per-unit rather than through a viewBox, so a pan moves every label without touching
+  // the model, and a resolver keyed on the model alone would answer with a stale view's pixels.
+  //
+  // Every node is drawn as a span - `moment` is never passed - so unlike timeline there is no
+  // instant whose label sits beside a marker, and centred placement is the whole answer.
+  const placementOfLabel = useCallback(
+    (elementId: string): LabelPlacement | null => {
+      const element = model.elements.get(elementId);
+      if (element !== undefined) {
+        return centredLabelPlacement(boxFor(element, null, xToPx, yToPx, view.pixelsPerUnit, view.verticalScale), element.label);
+      }
+
+      const relation = model.relations.get(elementId);
+      if (relation === undefined) {
+        return null;
+      }
+
+      const fromElement = model.elements.get(relation.fromElementId);
+      const toElement = model.elements.get(relation.toElementId);
+      if (fromElement === undefined || toElement === undefined) {
+        return null; // a dangling relation is drawn nowhere, so it can be placed nowhere
+      }
+
+      const from = boxFor(fromElement, null, xToPx, yToPx, view.pixelsPerUnit, view.verticalScale);
+      const to = boxFor(toElement, null, xToPx, yToPx, view.pixelsPerUnit, view.verticalScale);
+
+      // The same two anchors InteractiveBezierConnection picks, loop and all: it draws the label
+      // at their midpoint, so a different pair would place the editor where the text is not.
+      const [start, end] = toElement.x < fromElement.x + NODE_WIDTH
+        ? [sideAnchorOf(from, "right"), sideAnchorOf(to, "left")]
+        : facingAnchorsBetween(from, to);
+      return midpointLabelPlacement(start, end, RELATION_LABEL_DY, relation.label);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- xToPx and yToPx are recreated
+    // every render and are pure functions of view, which is in the list.
+    [model, view],
+  );
+  useRegisterInlineLabelPlacement(placementOfLabel);
+
+  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
+  const editingId = inlineLabelElementIdOf(prompt);
+  const editingPlacement = editingId === null ? null : placementOfLabel(editingId);
+  const returnFocusToSurface = useCallback(() => surfaceRef.current?.focus(), []);
+
+  /** Ends an open inline edit before a gesture begins; the editor commits on blur. */
+  const endInlineEditBeforeGesture = () => {
+    if (editingPlacement !== null) {
+      surfaceRef.current?.focus();
+    }
+  };
+
   const onSurfacePointerDown = (event: React.MouseEvent) => {
+    endInlineEditBeforeGesture();
     // "Empty space" is the surface div OR the bare svg that fills it. A real click never lands
     // on the div itself - the svg covers it - so a target===currentTarget check silently
     // disabled panning for every real mouse, while the synthetic events that verified it
@@ -326,6 +387,7 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
 
   const onElementPointerDown = (event: React.MouseEvent, element: DependencyGraphElement) => {
     event.stopPropagation();
+    endInlineEditBeforeGesture();
     setRejection("");
     dragRef.current = {
       id: element.id,
@@ -642,6 +704,18 @@ export function DependencyGraphCanvas({ projectId, entryId, path }: DiagramCanva
               onElementContextMenu={onElementContextMenu}
             />
           ))}
+
+          {/* Last of all, so the editor is above every node and relation it overlaps. This
+              canvas carries no viewBox, so its placements are pixels rather than module units. */}
+          {editingPlacement !== null && (
+            <InlineLabelEditor
+              placement={editingPlacement}
+              onPropose={onProposeLabel}
+              onSubmit={onSubmitLabel}
+              onCancel={onCancelLabel}
+              onReturnFocus={returnFocusToSurface}
+            />
+          )}
         </svg>
         <CanvasScrollbars
           {...scrollAxesOf(model, view, width)}
