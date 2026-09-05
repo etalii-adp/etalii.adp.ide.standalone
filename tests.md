@@ -916,6 +916,24 @@ second copy inside the region (Requirement 3.2).
   inside and outside, so its node sits outside and the `OPTIONAL`'s edge crosses the frame's
   border to reach it. The property grid on `?x` states its join count.
 
+- **Result 2026-09-05**: **passes, every clause.** Run against a worktree build with
+  `src/examples` open; the user signed in. `diagrams/sparql/w3c-sparql/optional.adp`.
+
+  **One node per variable, three in total, no others.** The canvas holds exactly three
+  `sparql-node-variable` elements - `?name`, `?x` and `?mbox` - so no occurrence is drawn twice.
+
+  **`?mbox` sits inside the dashed `OPTIONAL` frame and `?x` outside it.** Measured rather than
+  eyeballed: the region's box is x 844-1116, `?mbox`'s centre falls inside it, `?x`'s and
+  `?name`'s fall outside, and the region's stroke is dashed `4px, 4px`.
+
+  **The edge crosses the border rather than a second `?x` being drawn.** The `foaf:mbox` edge
+  spans x 794 to 896 while the frame's left border is at 844, so it starts outside the region at
+  `?x` and ends inside it at `?mbox` - which is Requirement 3.2 exactly.
+
+  **The property grid on `?x` states its join count**: `STRUCTURE / Joins: 2`, matching its two
+  triple patterns. Every row carries the read-only reason *"This diagram reads the query; edit
+  the .rq file in a text editor and the diagram follows."*
+
 ## The projection mark matches the SELECT list (sparql-diagram, task 5.3)
 
 What leaves a query should read off the canvas without consulting the header (Requirement 4.2).
@@ -928,6 +946,17 @@ What leaves a query should read off the canvas without consulting the header (Re
   `?totalPrice` is marked - the alias the query projects - and `?org`, `?auth`, `?book` and
   `?lprice` are not, with `GROUP BY ?org` and `HAVING (SUM(?lprice) > 10)` shown in the header
   band rather than drawn on the canvas.
+
+- **Result 2026-09-05**: **passes, both files.** Same session and build as the check above.
+
+  **`optional.adp`**: `?name` and `?mbox` carry `sparql-node-projected` and `?x` does not, which
+  is `SELECT ?name ?mbox`. Two projection marks are drawn, one per projected variable. `?x`'s
+  property grid independently reports `Projected: No`, so the mark and the grid agree.
+
+  **`aggregate.adp`**: `?totalPrice` is the only projected node - the alias the query projects -
+  while `?org`, `?auth`, `?book` and `?lprice` are not. The header band reads
+  `SELECT … GROUP BY ?org HAVING (SUM(?lprice) > 10)`, so the modifiers are stated in the band
+  and not drawn on the canvas, which is what Requirement 4.2 asks for.
 
 ## A reposition leaves the query untouched in a visible diff (sparql-diagram, task 5.3)
 
