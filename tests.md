@@ -19,6 +19,39 @@ not fit — at 1440x900 that pane is 253px, which fits one tab, so `Properties` 
 than a defect. Widening the pane or clicking the overflow both reach it; hunting for it is what
 costs the time, and it is written here once rather than in each of the thirteen.
 
+## The context surface is reachable on a causal loop diagram (causal-loop-diagram, resolver fix)
+
+**Found by opening the app, and invisible to every test until then.** The module shipped without
+an element source resolver — the `*ContextSourceResolver.cs` every other diagram module has. A
+canvas selection resolves level by level (project, folders, the `.adp`, then the element inside
+it) and that last step is each diagram type's own. With none, no `ContextTarget` was ever built,
+so neither the action provider nor the property provider was ever consulted.
+
+Sixteen provider tests passed throughout, because they build a target by hand and ask the
+provider directly — skipping exactly the step that did not exist.
+
+- **Preconditions**: backend + client running; `src/examples` open as a project.
+- **Actions**: open `diagrams/causal-loop/on-call/on-call.adp`. Right-click a variable. Press
+  Escape, then right-click empty canvas. Then choose **Arrange diagram**.
+- **Expected**:
+  - Right-click on a variable opens a menu with **Add link from here…**, **Claim a loop from
+    here…**, **Rename…** and **Remove variable (with N references)** — the count read from the
+    model, not a guess.
+  - The variable shows as selected on the canvas.
+  - Right-click on empty canvas offers **Add variable…** and **Arrange diagram**.
+  - The ribbon offers the same actions as the menu (Requirement 5.3).
+  - **Arrange diagram** rearranges the variables with no two boxes overlapping, writes a
+    `layout:` block into the `.adp`, leaves the `.cld` untouched, and **one** Undo restores the
+    registration.
+
+**Verified on 2026-09-05** up to and including the menus, the selection and the ribbon — the
+backend log shows `Selected …/on-call.cld … as ContextMenu, with 1 action groups`. **Arrange
+itself was NOT executed** in that pass: no `ExecuteAction` ever reached the backend, so the
+undo half of this entry is still unverified.
+
+- **Result 2026-09-05**: **partly verified.** Menus, selection and ribbon confirmed in the running
+  app. Arrange and its undo remain to be run.
+
 ## A feedback loop is drawn as a loop (causal-loop-diagram, arcs fix)
 
 **A defect found by looking at the running app.** The diagram type is named after loops and drew
