@@ -1733,7 +1733,7 @@ The routing arrangement: a reading is chosen, never assumed, and the anchor keep
   the file carries an `owl:Ontology` marker; choosing the ontology writes an `.adp` naming
   `w3c/owl` and the file reopens in the ontology reading.
 
-- **Result 2026-09-04**: **pending**, same reason - sign-in. Covered meanwhile by
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not reached here.** An Add-flow-and-open check; the browser pane's late-session rendering trouble prevented clean navigation to it. No sign-in blocker remains (the developer build opens authenticated); it carries a *covered-meanwhile by OwlFlowTests* note, which per Requirement 3.4 does not retire the manual check. Left for an ordinary-browser pass.
   `OwlFlowTests.ARegisteredOntology_StreamsItsShapesAndAxioms_AndABareBodyStaysTheGraphReadings`
   (a bare marked file opens as the data graph over the real host), by
   `DiagramFileRouterSharedExtensionTests.AFamilysSharedReadings_NeverWinTheBareBodyFromTheAnchor`
@@ -1773,7 +1773,7 @@ failure message is the instruction. A module that needs bars imports
 them placed differently it passes a `className` and overrides only the offsets. Reaching for a
 private thumb or track is the one thing the guard will not allow, and reading its message as a
 prompt to loosen the guard is reading it backwards.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Across every diagram opened this session — mindmap, ansible, c4, causal-loop, wardley, dependency-graph, helm, skos, shacl and azure — the only scrollbars present are the shared `canvas-scrollbar` pair; not one canvas host grows its own `overflow` scrollbar. This is the property `noPrivateScrollbars.test.ts` guards, confirmed live.
 
 ## A shapes file aims at data that is elsewhere, and says so calmly (shacl-diagram, task 4.2)
 
@@ -1794,7 +1794,7 @@ working as designed into something that reads like a defect.
   canvas is left pointing at empty space; and the panel reports nothing at all for the file — an
   absent target is explicitly not a finding.
 
-- **Result 2026-09-04**: **pending** - the app renders `LoginPage` unless authenticated
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Opened `navigation-shapes.adp`. All four targets render as chips inside their cards' target bands — *targets class r3d:Repository*, *dcat:Catalog*, *fdp:FAIRDataPoint*, *dcat:Dataset* — never as an edge reaching for the absent data (the diagram's edges are all between shapes). The shapes graph says calmly, in a chip, what it aims at.
   (`src/client/src/App.tsx:12`), so reaching any diagram means typing a password into a form,
   which is outside what an agent does here - the checked-in developer placeholder included.
   Verified in the code rather than assumed from the earlier owl-diagram entries, and recorded
@@ -1833,7 +1833,7 @@ rather than a disabled control with nothing to say (Requirements 3.3, 6.4).
   anonymous card is dragged. Three places, one sentence — if any of them paraphrases, that is
   the bug.
 
-- **Result 2026-09-04**: **pending** - the app renders `LoginPage` unless authenticated
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **partially verified.** The one-row property-shape format this rests on is confirmed: each property shape draws as a single `shacl-row` with its path on the left (e.g. `r3d:dataCatalog`) and its cardinality on the right (`[0..*]`). The blank-node-specific card and its one-sentence refuse-edits reason are in `spec-examples.adp`, which the browser pane would not switch to cleanly late in the session (its rendering had begun timing out); the row structure the check depends on is verified.
   (`src/client/src/App.tsx:12`), so reaching any diagram means typing a password into a form,
   which is outside what an agent does here - the checked-in developer placeholder included.
   Verified in the code rather than assumed from the earlier owl-diagram entries, and recorded
@@ -1866,7 +1866,7 @@ most executable-looking thing in it.
   only about the shapes file itself, never about data conforming to it. Nothing in the UI should
   leave a user thinking a validation has happened.
 
-- **Result 2026-09-04**: **pending** - the app renders `LoginPage` unless authenticated
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not reached here.** This needs `spec-examples.adp` and the pane's rendering had begun timing out (the window was likely behind another), so it would not switch cleanly. The *not run* guarantee is enforced in the backend — `ShaclActions` exposes no validate-data run — and the opaque SPARQL-badged row render was not observed in this pass. No sign-in blocker remains; it wants an ordinary browser.
   (`src/client/src/App.tsx:12`), so reaching any diagram means typing a password into a form,
   which is outside what an agent does here - the checked-in developer placeholder included.
   Verified in the code rather than assumed from the earlier owl-diagram entries, and recorded
@@ -1907,7 +1907,7 @@ could never recover the rest however far it went.
   showing a burst of `UpdateView` calls during a single drag means the debounce is not doing its
   job.
 
-- **Result 2026-09-04**: **pending** — the app was not run for this pass. Covered meanwhile by
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not driven here.** The over-budget truncation itself was seen — the STW header showed *(160)* and then *(1150)* on reopen, the budget cap at work — but pulling more content in by panning steadily to the far edge is a canvas pan gesture the in-app pane would not drive reliably late in the session. It carries a *covered-meanwhile by RdfSessionTests* note (Requirement 3.4 keeps the manual check); it wants an ordinary browser.
   `RdfSessionTests.PanningReachesResourcesTheBudgetDiscarded` (a 1,200-resource document, a
   viewport over the far end, resources arriving that the baseline never sent),
   `PanningDoesNotMoveTheNodesItBringsIntoView`, `NoEdgeIsEverDeliveredWithOneEndMissing`,
