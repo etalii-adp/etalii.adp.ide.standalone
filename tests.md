@@ -1193,6 +1193,26 @@ read-only reason on every property row by `SparqlProvidersTests`. What these fou
 the eyes-on confirmation that the drawing reads correctly to a person, which is exactly the part
 a test cannot assert - so they are left here to be run by someone who can sign in.
 
+- **Result 2026-09-05**: **text reviewed against the implementation, not executed** — the client
+  dev server is down and the pass is waiting on `developer-sign-in-bypass` rather than on another
+  of the user's sign-ins.
+
+  **Two of its three clauses are sound.** `SparqlContextActionProvider.DiscoverAsync` returns an
+  empty list for every target, so no mutating action can appear on a node, a term, an edge or a
+  region; and it holds a `NoActionsReason` sentence for an action that arrives anyway. The
+  property rows were seen read-only during the reposition check, each carrying *"This diagram
+  reads the query; edit the .rq file in a text editor and the diagram follows."*
+
+  **The third clause will fail, and the entry is right while the application is wrong.** It
+  expects *"the toolbox panel offers this diagram no entries"*. `ToolboxPanel` has two empty
+  states: `items === null` renders **"Open a diagram to see the elements its type offers"**, and
+  `items.length === 0` renders **"This diagram type offers no toolbox elements."** `SparqlCanvas`
+  never calls `useRegisterDiagramToolbox`, so `items` stays `null` and an **open** sparql diagram
+  is told to open a diagram. Observed in the running app earlier in this pass, with
+  `proteome-location-of-gene` open, before the server went down.
+
+  See the entry below — it is not only sparql.
+
 ## Dragging an Ansible node stores the position, and reopening keeps it (ansible-refinements, task 4.2)
 
 Guarded end to end by `AnsibleStructureFlowTests.ARepositionOverTheWire_LandsInTheRegistration_ReopensThere_UndoesBack_AndNeverTouchesAnsiblesFiles`;
@@ -1317,6 +1337,46 @@ reading: shapes carry kind, and the axioms are visible without opening the Turtl
   at `diagrams/owl/owl-time/owl-time.adp`, not `diagrams/rdf/owl-time/` - the OWL examples moved
   to their own folder. And the `.adp` is nested **under** `owl-time.ttl` in the explorer rather
   than beside it, so it takes two expands to reach.
+
+## Four diagram types tell you to open a diagram while one is open (found 2026-09-05, by text review)
+
+**A defect found without running the application**, by checking an entry's text against the
+implementation rather than against a recorded result.
+
+`ToolboxPanel` distinguishes two empty states deliberately: `items === null` means *nothing is
+open* and renders "Open a diagram to see the elements its type offers", while `items.length === 0`
+means *this type offers nothing* and renders "This diagram type offers no toolbox elements." A
+canvas that never registers an answer leaves `items` at `null`, so an open diagram wears the
+placeholder that says nothing is open.
+
+**Four mounted canvases never register**, so four diagram types show it:
+
+- `SparqlCanvas` — `w3c/sparql`
+- `BundleCanvas` — `databricks/bundle`
+- `JobCanvas` — `databricks/job`
+- `PipelineCanvas` — `databricks/pipeline`
+
+All four are live: each is the `Canvas` its module's `register.ts` mounts. Fourteen other canvases
+call `useRegisterDiagramToolbox` and are correct. (`DatabricksCanvas.tsx` registers but is not the
+component `register.ts` mounts, which is worth a look when this is fixed.)
+
+**This is a known shape, already fixed once.** The ansible entry above records it in its own
+words: *"Unregistered, an open structure diagram wears the misleading 'Open a diagram' placeholder
+— the same defect the wardley and pipeline canvases had."* Three canvases were fixed then; four
+were missed, and nothing guards the rule.
+
+- **Preconditions**: backend + client running; a project containing a `.rq` and a databricks
+  bundle.
+- **Actions**: open a sparql query diagram and look at the Toolbox panel. Repeat for a databricks
+  bundle, job and pipeline.
+- **Expected**: "This diagram type offers no toolbox elements", the state that describes what is
+  true. **Observed**: "Open a diagram to see the elements its type offers", while one is open.
+
+- **Result 2026-09-05**: **open.** Confirmed in the running app for sparql; established from the
+  source for the other three. Not fixed here — the Tester found it, and the canvases belong to
+  whoever holds their specifications. **Worth a guard rather than four fixes**: a test asserting
+  every mounted canvas registers a toolbox answer would have caught all four, and would catch the
+  fifth.
 
 ## Fit to View shows less of a viewport-filtered diagram than the reader already had (view-delta-adoption, found 2026-09-05)
 
