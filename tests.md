@@ -4,6 +4,21 @@ Step-by-step checks for bugs that only reproduce through the running app, so the
 re-executed as part of a manual verification pass. Each entry names the spec and task it
 came from. (See CLAUDE.md, "Bugs found during implementation or verification".)
 
+## Two things every entry below assumes
+
+**Signing in.** The app opens on a sign-in form and nothing below is reachable until somebody is
+through it. An agent cannot type the credential, so **a person signs the tester in once and the
+pass runs from there** — and note that reloading the page ends the session, because it is held in
+memory only. A reload therefore costs a person's attention, not just a moment.
+
+**Finding the Properties panel.** Thirteen entries below say "read the Properties panel" or "the
+property grid" as though it were on screen. It often is not. `Properties` shares a tabbed pane
+with `Toolbox` on the right, and `TabbedPane` measures the available width and collapses what does
+not fit — at 1440x900 that pane is 253px, which fits one tab, so `Properties` sits behind a
+**"1 more tabs" overflow button** beside `Toolbox`. That is the pane working as designed rather
+than a defect. Widening the pane or clicking the overflow both reach it; hunting for it is what
+costs the time, and it is written here once rather than in each of the thirteen.
+
 ## Drop-target highlight actually paints (mindmap-diagram, bezier-connector pass)
 
 The unit test can only assert the `mindmap-node-drop-target` class - jsdom does not load
