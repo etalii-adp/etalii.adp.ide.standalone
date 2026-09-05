@@ -130,12 +130,22 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         throw new InvalidOperationException($"The stream ended before a {wanted} change arrived.");
     }
 
-    /// <summary>The first selectable leaf in the tree, depth first - a real diagram type to choose.</summary>
+    /// <summary>
+    /// The first selectable leaf that takes a name, depth first - a real diagram type to choose
+    /// and then name.
+    /// </summary>
+    /// <remarks>
+    /// The name-suppressed check is what keeps this pointing at the right kind of type. A
+    /// folder-subject type is selectable and sorts first (ansible), but its registration is
+    /// named for it and its dialog offers no name field - so every assertion in this file about
+    /// naming, validation and collisions is meaningless against one. Before folder-subject
+    /// types behaved differently these tests were already choosing one and nothing said so.
+    /// </remarks>
     private static ContextOption? FirstLeaf(IEnumerable<ContextOption> options)
     {
         foreach (var option in options)
         {
-            if (option.Selectable)
+            if (option.Selectable && option.NameSuppressedReason.Length == 0)
             {
                 return option;
             }

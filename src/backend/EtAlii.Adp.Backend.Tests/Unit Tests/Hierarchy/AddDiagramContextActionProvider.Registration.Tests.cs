@@ -35,7 +35,7 @@ public class AddDiagramContextActionProviderRegistrationTests : IDisposable
         Directory.CreateDirectory(_root);
         _ = TestHistory.Create(_root, out _historyStacks);
         var catalog = new DiagramDefinitionCatalog { All = [Pipeline, Mindmap, ClassDiagram] };
-        _provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog);
+        _provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog, new DiagramFileRouter(catalog));
     }
 
     public void Dispose()
@@ -176,10 +176,15 @@ public class AddDiagramContextActionProviderRegistrationTests : IDisposable
         SharedExtension: true,
         SuggestsBody: text => text.Contains("marker!", StringComparison.Ordinal));
 
-    private AddDiagramContextActionProvider MarkerProvider() => new(
-        _historyStacks,
-        NoFactories,
-        new DiagramDefinitionCatalog { All = [Pipeline, MarkedReading] });
+    private AddDiagramContextActionProvider MarkerProvider()
+    {
+        var catalog = new DiagramDefinitionCatalog { All = [Pipeline, MarkedReading] };
+        return new AddDiagramContextActionProvider(
+            _historyStacks,
+            NoFactories,
+            catalog,
+            new DiagramFileRouter(catalog));
+    }
 
     [Fact]
     public async Task ExecuteAsync_OnAFileWithoutTheMarker_DoesNotOfferTheMarkedReading()

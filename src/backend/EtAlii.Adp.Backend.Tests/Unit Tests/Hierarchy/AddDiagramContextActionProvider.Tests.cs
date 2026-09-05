@@ -23,7 +23,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
         Directory.CreateDirectory(_root);
         _history = TestHistory.Create(_root, out _historyStacks);
         var catalog = new DiagramDefinitionCatalog { All = [SystemContext, ClassDiagram] };
-        _provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog);
+        _provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog, new DiagramFileRouter(catalog));
     }
 
     public void Dispose()
@@ -106,7 +106,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
     {
         // Arrange.
         var catalog = new DiagramDefinitionCatalog { All = [] };
-        var provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog);
+        var provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog, new DiagramFileRouter(catalog));
 
         var groups = await provider.DiscoverAsync(FolderTarget(_root), TestContext.Current.CancellationToken);
 
@@ -125,7 +125,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
         // cache at call time. Checked through the public seam: a list that changes after
         // construction is reflected.
         var catalog = new DiagramDefinitionCatalog { All = [] };
-        var provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog);
+        var provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog, new DiagramFileRouter(catalog));
         var before = await provider.DiscoverAsync(FolderTarget(_root), TestContext.Current.CancellationToken);
 
         // Act.
@@ -182,7 +182,7 @@ public class AddDiagramContextActionProviderTests : IDisposable
         // Arrange.
         // The dialog's own empty state is what the user sees; the menu normally prevents this.
         var catalog = new DiagramDefinitionCatalog { All = [] };
-        var provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog);
+        var provider = new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog, new DiagramFileRouter(catalog));
 
         var result = await provider.ExecuteAsync(FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
 
@@ -417,5 +417,136 @@ public class AddDiagramContextActionProviderTests : IDisposable
         Assert.False(commit.Completed);
         Assert.False(_history.CanUndo);
         Assert.Equal("someone else's diagram", await File.ReadAllTextAsync(IoPath.Combine(_root, "domain.adp"), TestContext.Current.CancellationToken));
+    }
+
+    // ---- folder-subject types --------------------------------------------------------
+    //
+    // A type whose diagram IS the folder takes no name: its registration is created as a bare
+    // ".adp" inside the folder. The dialog says so where the name field would be, and a folder
+    // that already holds one offers the type greyed rather than hiding it.
+
+    private static readonly DiagramDefinition AnsibleStructure = new(
+        new DiagramOrigin("ansible", "structure"),
+        "Ansible structure",
+        Subject: DiagramSubject.Folder);
+
+    /// <summary>A catalog holding both kinds, because serving both from one dialog is the point.</summary>
+    private AddDiagramContextActionProvider FolderSubjectProvider()
+    {
+        var catalog = new DiagramDefinitionCatalog { All = [SystemContext, AnsibleStructure] };
+        return new AddDiagramContextActionProvider(_historyStacks, NoFactories, catalog, new DiagramFileRouter(catalog));
+    }
+
+    private static ContextOptionNode OptionFor(ContextChoiceRequest request, string originKey) =>
+        Assert.Single(request.Options.SelectMany(vendor => vendor.Children ?? []), option => option.Id == originKey);
+
+    private async Task<ContextChoiceRequest> PromptFor(AddDiagramContextActionProvider provider)
+    {
+        var result = await provider.ExecuteAsync(
+            FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, TestContext.Current.CancellationToken);
+        return Assert.IsType<ContextExecutionRequiresChoice>(result).Request;
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_OffersAFolderSubjectTypeWithTheSentenceAndAFileSubjectTypeWithItsSuggestion()
+    {
+        // Act.
+        var request = await PromptFor(FolderSubjectProvider());
+
+        // Assert: the folder-subject option says what will happen instead of taking a name.
+        var folderSubject = OptionFor(request, "ansible/structure");
+        Assert.Equal(
+            "This type registers the folder itself, so the registration is created as `.adp` inside it.",
+            folderSubject.NameSuppressedReason);
+        Assert.Equal("", folderSubject.SuggestedValue);
+        Assert.Equal("", folderSubject.UnavailableReason);
+
+        // And the file-subject path is untouched, suggestion included - the whole reason the
+        // name field stays on the prompt.
+        var fileSubject = OptionFor(request, "c4/context");
+        Assert.Equal("", fileSubject.NameSuppressedReason);
+        Assert.NotEqual("", fileSubject.SuggestedValue);
+        Assert.NotNull(request.NameField);
+    }
+
+    [Theory]
+    [InlineData(".adp")]
+    [InlineData("structure.adp")]
+    public async Task ExecuteAsync_WhenTheFolderIsAlreadyRegistered_OffersTheTypeGreyedNamingTheFile(string registration)
+    {
+        // Arrange: both shapes count. What makes a folder registered is the type its
+        // registration routes to, never the file's name.
+        await File.WriteAllTextAsync(
+            IoPath.Combine(_root, registration), AnsibleStructure.Origin.MimeType + "\n", TestContext.Current.CancellationToken);
+
+        // Act.
+        var request = await PromptFor(FolderSubjectProvider());
+
+        // Assert: named, so the user can go and look at the file rather than wonder.
+        var folderSubject = OptionFor(request, "ansible/structure");
+        Assert.Equal($"This folder is already registered by `{registration}`", folderSubject.UnavailableReason);
+
+        // Still offered rather than hidden - a type that vanishes leaves the user wondering
+        // where it went, which is what the reason exists to answer.
+        Assert.True(folderSubject.Selectable);
+    }
+
+    [Fact]
+    public async Task CommitAsync_ForAFolderSubjectType_CreatesExactlyTheBareAdp()
+    {
+        // Act.
+        var commit = await FolderSubjectProvider().CommitAsync(
+            FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "ansible/structure", "", TestContext.Current.CancellationToken);
+
+        // Assert: exactly ".adp", not "structure.adp" and not "ansible.structure.adp".
+        Assert.True(commit.Completed, commit.Error);
+        Assert.Equal([IoPath.Combine(_root, ".adp")], Listing());
+        Assert.Equal(
+            AnsibleStructure.Origin.MimeType,
+            (await File.ReadAllTextAsync(IoPath.Combine(_root, ".adp"), TestContext.Current.CancellationToken)).Trim());
+    }
+
+    [Fact]
+    public async Task CommitAsync_ForAFolderSubjectType_IgnoresASubmittedNameRatherThanHonouringIt()
+    {
+        // Arrange: what a stale client would send - a name for a type that takes none.
+
+        // Act.
+        var commit = await FolderSubjectProvider().CommitAsync(
+            FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "ansible/structure", "infrastructure", TestContext.Current.CancellationToken);
+
+        // Assert: ignored, not obeyed and not refused. Refusing would fail a user who did
+        // nothing wrong; obeying would create the named file this spec exists to stop.
+        Assert.True(commit.Completed, commit.Error);
+        Assert.Equal([IoPath.Combine(_root, ".adp")], Listing());
+    }
+
+    [Theory]
+    [InlineData(".adp")]
+    [InlineData("structure.adp")]
+    public async Task CommitAsync_WhenTheFolderIsAlreadyRegistered_RefusesAndLeavesItAlone(string registration)
+    {
+        // Arrange.
+        var existing = IoPath.Combine(_root, registration);
+        await File.WriteAllTextAsync(existing, AnsibleStructure.Origin.MimeType + "\n", TestContext.Current.CancellationToken);
+
+        // Act.
+        var commit = await FolderSubjectProvider().CommitAsync(
+            FolderTarget(_root), AddDiagramContextActionProvider.AddActionId, "ansible/structure", "", TestContext.Current.CancellationToken);
+
+        // Assert: refused, and the registration already there is untouched - overwriting one
+        // is the outcome the re-consultation exists to prevent.
+        Assert.False(commit.Completed);
+
+        // The EXACT sentence, not merely one mentioning the file. Creating ".adp" where ".adp"
+        // already sits is refused by the generic already-exists check too, so a looser
+        // assertion passes with the folder check removed entirely - which is what happened
+        // here before this line was tightened.
+        Assert.Equal($"This folder is already registered by '{registration}'.", commit.Error);
+        Assert.Equal([existing], Listing());
+        Assert.Equal(
+            AnsibleStructure.Origin.MimeType,
+            (await File.ReadAllTextAsync(existing, TestContext.Current.CancellationToken)).Trim());
+        Assert.False(_history.CanUndo);
     }
 }

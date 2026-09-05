@@ -115,23 +115,39 @@ public class AddDiagramFlowTests : IClassFixture<WebApplicationFactory<Program>>
 
     //private string[] ProjectListing() => Directory.GetFileSystemEntries(_projectFolder, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal).ToArray();
 
-    /// <summary>The first selectable leaf in the tree, depth first - a real diagram type to choose.</summary>
+    /// <summary>
+    /// The first selectable leaf that takes a name, depth first - a real diagram type to choose
+    /// and then name.
+    /// </summary>
+    /// <remarks>
+    /// The name-suppressed check is what keeps this pointing at the right kind of type. A
+    /// folder-subject type is selectable and sorts first (ansible), but its registration is
+    /// named for it and its dialog offers no name field - so every assertion in this file about
+    /// naming, validation and collisions is meaningless against one. Before folder-subject
+    /// types behaved differently these tests were already choosing one and nothing said so.
+    /// </remarks>
     private static ContextOption FirstLeaf(IEnumerable<ContextOption> options)
     {
         foreach (var option in options)
         {
-            if (option.Selectable)
+            if (option.Selectable && option.NameSuppressedReason.Length == 0)
             {
                 return option;
             }
 
-            if (option.Children.Count > 0)
+            // Keep looking rather than returning whatever the first group yields. This used to
+            // return unconditionally, so it only ever searched the first vendor - which went
+            // unnoticed while that vendor's first leaf was always the answer.
+            foreach (var leaf in option.Children)
             {
-                return FirstLeaf(option.Children);
+                if (leaf.Selectable && leaf.NameSuppressedReason.Length == 0)
+                {
+                    return leaf;
+                }
             }
         }
 
-        throw new InvalidOperationException("No selectable option in the tree.");
+        throw new InvalidOperationException("No selectable option that takes a name is in the tree.");
     }
 
     [Fact]

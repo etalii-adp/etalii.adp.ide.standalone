@@ -25,12 +25,23 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
     public const string AddActionId = "hierarchy.add";
     private const string NoDiagramTypes = "No diagram types are available.";
     private const string NotRegistrable = "No diagram type reads this kind of file.";
+
+    /// <summary>
+    /// Shown where the name field would be, for a type whose diagram is the folder. It says
+    /// what will happen rather than that something is unavailable: the user is not being
+    /// refused a name, they are being told the registration is named for them and where it
+    /// lands. A blank space where a field was is the thing this exists to prevent.
+    /// </summary>
+    private const string FolderSubjectSuppression =
+        "This type registers the folder itself, so the registration is created as `.adp` inside it.";
+
     private static readonly ContextShortcutDefinition AddShortcut = new("Insert");
     private static readonly ILogger _logger = Log.ForContext<AddDiagramContextActionProvider>();
 
     private readonly IReadOnlyList<DiagramDefinition> _definitions;
     private readonly IHistoryStackStore _historyStacks;
     private readonly DiagramDocumentFactories _documentFactories;
+    private readonly DiagramFileRouter _router;
 
     /// <param name="historyStacks">The history stacks where the create is sent; this provider writes nothing itself.</param>
     /// <param name="documentFactories">Where a type that keeps a body sibling gets that body's initial content.</param>
@@ -38,16 +49,29 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
     /// The diagram types to offer, read at call time; Read lazily rather than captured, because the
     /// host fills the cache after the container is built.
     /// </param>
+    /// <param name="router">
+    /// How a registration already in a folder is recognised, for the one question this provider
+    /// cannot answer from a name: whether a folder is already registered.
+    /// <para>
+    /// Required rather than optional deliberately. An optional router would have to degrade to
+    /// "no folder is ever registered", which is not a safe default but a silent one - it turns
+    /// the collision check into a check that always passes, and the second registration
+    /// overwrites the first exactly where nobody is looking.
+    /// </para>
+    /// </param>
     public AddDiagramContextActionProvider(
         IHistoryStackStore historyStacks,
         DiagramDocumentFactories documentFactories,
-        IDiagramDefinitionCatalog catalog)
+        IDiagramDefinitionCatalog catalog,
+        DiagramFileRouter router)
     {
         ArgumentNullException.ThrowIfNull(historyStacks);
         ArgumentNullException.ThrowIfNull(documentFactories);
+        ArgumentNullException.ThrowIfNull(router);
         _historyStacks = historyStacks;
         _documentFactories = documentFactories;
         _definitions = catalog.All;
+        _router = router;
     }
 
     public ContextScope Scope => ContextScope.Hierarchy;
@@ -169,6 +193,11 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
                     NameField: null)));
         }
 
+        // Read once for the whole tree rather than per option: every folder-subject type asks
+        // the same question of the same folder, and the answer cannot change while one prompt
+        // is being built.
+        var registeredBy = ExistingFolderRegistration(target);
+
         return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionRequiresChoice(
             new ContextChoiceRequest(
                 Title: "Add diagram",
@@ -176,9 +205,11 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
                 ConfirmLabel: "Add",
                 Options: DiagramOptionTree.Build(
                     _definitions,
-                    definition => new ContextOptionAnnotations(
-                        SuggestedValue: DiagramFileName.Suggest(definition.Origin, target.ResolvedFullPath))),
+                    definition => Annotate(definition, target, registeredBy)),
                 EmptyMessage: NoDiagramTypes,
+                // The name field stays: a file-subject type still needs one, and serving both
+                // kinds from one dialog is the point. A folder-subject option replaces the
+                // field with its sentence rather than the dialog dropping it.
                 NameField: new ContextTextFieldRequest(Label: "Name"))));
     }
 
@@ -190,6 +221,55 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
     /// </summary>
     public ValueTask<ContextValidationResult> ValidateAsync(ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
         => ValueTask.FromResult(ValidateName(target, value));
+
+    /// <summary>
+    /// What this provider has to say about one diagram type, offered for one folder. A
+    /// folder-subject type wants no name and says why; if the folder already holds a
+    /// registration it is also shown greyed, naming the file so the user can go and look at it.
+    /// </summary>
+    private static ContextOptionAnnotations Annotate(
+        DiagramDefinition definition,
+        ContextTarget target,
+        string? registeredBy)
+    {
+        if (!definition.HasFolderSubject)
+        {
+            return new ContextOptionAnnotations(
+                SuggestedValue: DiagramFileName.Suggest(definition.Origin, target.ResolvedFullPath));
+        }
+
+        return new ContextOptionAnnotations(
+            NameSuppressedReason: FolderSubjectSuppression,
+            UnavailableReason: registeredBy is null ? "" : $"This folder is already registered by `{registeredBy}`");
+    }
+
+    /// <summary>
+    /// The name of the registration this folder is already registered by, or null. Both shapes
+    /// count - a bare <c>.adp</c> and a legacy named one alike - because what makes a folder
+    /// registered is the type its registration routes to, never the file's name.
+    /// </summary>
+    /// <remarks>
+    /// The catalog probe comes first so a deployment with no folder-subject type pays no disk
+    /// read at all: with none deployed there is nothing a registration could route to.
+    /// </remarks>
+    private string? ExistingFolderRegistration(ContextTarget target)
+    {
+        if (!_router.HasFolderSubjectTypes)
+        {
+            return null;
+        }
+
+        foreach (var path in Directory.EnumerateFiles(target.ResolvedFullPath))
+        {
+            if (DiagramFilePair.IsRegistrationFile(path)
+                && _router.Route(path, target.RootPath) is DiagramRouted { Definition.HasFolderSubject: true })
+            {
+                return IoPath.GetFileName(path);
+            }
+        }
+
+        return null;
+    }
 
     private static ContextValidationResult ValidateName(ContextTarget target, string name)
     {
@@ -236,14 +316,51 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
             return ContextCommitResult.Failed("That diagram type is not available.");
         }
 
-        var validation = ValidateName(target, text);
-        if (!validation.Valid)
+        string fileName;
+        if (definition.HasFolderSubject)
         {
-            _logger.Debug("Rejecting the name {Name} for a new {Origin}: {Reason}", text, definition.Origin.Key, validation.Reason);
-            return ContextCommitResult.Failed(validation.Reason);
-        }
+            // The folder is the diagram, so there is no name to take. A submitted one means a
+            // stale client rather than a user's intent: ignored rather than obeyed, and logged
+            // so that a client still sending one is visible rather than silently tolerated.
+            if (text.Trim().Length > 0)
+            {
+                _logger.Warning(
+                    "Ignoring the name {Name} submitted for {Origin}, which registers the folder itself",
+                    text,
+                    definition.Origin.Key);
+            }
 
-        var fileName = DiagramFileName.WithExtension(text);
+            // ValidateName is skipped rather than called with an empty string. It rejects an
+            // empty base name precisely so that nothing creates a file called ".adp" - which is
+            // the file this path creates on purpose, so the guard would refuse the one case it
+            // was written to prevent everywhere else.
+            var registeredBy = ExistingFolderRegistration(target);
+            if (registeredBy is not null)
+            {
+                // Re-consulted here rather than trusted from the prompt: the dialog may have
+                // been open while another registration landed, and overwriting one is the
+                // outcome worth spending a second read to avoid.
+                _logger.Debug(
+                    "Refusing a {Origin} registration for {Folder}, already registered by {Existing}",
+                    definition.Origin.Key,
+                    target.ResolvedFullPath,
+                    registeredBy);
+                return ContextCommitResult.Failed($"This folder is already registered by '{registeredBy}'.");
+            }
+
+            fileName = DiagramFileName.Extension;
+        }
+        else
+        {
+            var validation = ValidateName(target, text);
+            if (!validation.Valid)
+            {
+                _logger.Debug("Rejecting the name {Name} for a new {Origin}: {Reason}", text, definition.Origin.Key, validation.Reason);
+                return ContextCommitResult.Failed(validation.Reason);
+            }
+
+            fileName = DiagramFileName.WithExtension(text);
+        }
         _logger.Debug("Creating a {Origin} diagram named {FileName} in {Folder}", definition.Origin.Key, fileName, target.ResolvedFullPath);
 
         // A type that keeps its body in a sibling file gets that body from its own factory,
