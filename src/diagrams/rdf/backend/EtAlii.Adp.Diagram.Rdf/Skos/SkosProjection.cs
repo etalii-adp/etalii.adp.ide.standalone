@@ -283,7 +283,10 @@ public static class SkosProjection
 
     private static string IriOf(string id) => id.StartsWith("res:", StringComparison.Ordinal) ? id["res:".Length..] : "";
 
-    private static HashSet<string> TypedIds(RdfModel model, string typeIri) =>
+    // Internal for the validator: its typing check has to read what the FILE asserts, and the
+    // projection's concept list is cut to the drawing budget - a concept past the cut is still
+    // typed, and judging typing off the drawn subset reported 1,517 typed STW concepts untyped.
+    internal static HashSet<string> TypedIds(RdfModel model, string typeIri) =>
         model.Triples
             .Where(triple => triple.Predicate.Iri == RdfVocabulary.Type
                 && triple.Object is IriTerm type && type.Iri == typeIri)

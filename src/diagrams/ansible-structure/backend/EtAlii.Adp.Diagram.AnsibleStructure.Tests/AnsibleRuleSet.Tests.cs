@@ -254,6 +254,28 @@ public class AnsibleRuleSetTests
         }
     }
 
+    [Fact]
+    public void AGroupAnIniInventoryDefines_IsNotWarnedAbout()
+    {
+        // Arrange.
+        // The claim "no inventory defines it" has to survive the inventory being INI - the
+        // format the vendored tomcat-memcached-failover corpus uses, where the groups are
+        // plainly defined and the warning was simply wrong.
+        var scratch = Tree(
+            ("site.yml", "---\n- name: A play\n  hosts: web\n"),
+            ("hosts", "[web]\na.example.com\nb.example.com\n"));
+
+        try
+        {
+            // Act and assert.
+            Assert.DoesNotContain(AnsibleRuleSet.Judge(Reader.Read(scratch)), p => p.RuleId == AnsibleRules.UnmatchedHosts);
+        }
+        finally
+        {
+            TestFolder.TryDelete(scratch);
+        }
+    }
+
     private static string Tree(params (string Path, string Content)[] files)
     {
         var root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));

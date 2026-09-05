@@ -355,9 +355,10 @@ public sealed class AnsibleProjectReader
         if (result is not AnsibleYamlDocument { Root: YamlMappingNode mapping })
         {
             // An INI-format inventory is not YAML and will not parse. That is not the user's
-            // mistake, so it is not recorded as a failure - the inventory is simply drawn
-            // without its groups.
-            return [];
+            // mistake, so it is not recorded as a failure - it is read as the INI it is,
+            // because a rule that answers "no inventory defines it" over groups the file
+            // plainly defines is a well-formed wrong answer.
+            return IniGroupsOf(path);
         }
 
         var groups = new List<AnsibleInventoryGroup>();
@@ -477,6 +478,80 @@ public sealed class AnsibleProjectReader
     private static uint Line(YamlNode node) => (uint)Math.Max(node.Start.Line, 0);
 
     private static string Relative(string root, string path) => IoPath.GetRelativePath(root, path).Replace('\\', '/');
+
+    /// <summary>
+    /// The classic INI inventory: <c>[group]</c> sections holding one host per line,
+    /// <c>[group:children]</c> gathering other groups, <c>[group:vars]</c> holding
+    /// configuration rather than membership. A range line (<c>web[01:50].example.com</c>)
+    /// counts as one entry - the group's existence is what the rules need, the count is a
+    /// summary.
+    /// </summary>
+    private static IReadOnlyList<AnsibleInventoryGroup> IniGroupsOf(string path)
+    {
+        var hostCounts = new Dictionary<string, int>(StringComparer.Ordinal);
+        var childrenOf = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        var order = new List<string>();
+        string? section = null;
+        var sectionIsChildren = false;
+
+        foreach (var raw in File.ReadLines(path))
+        {
+            var line = raw.Trim();
+            if (line.Length == 0 || line[0] is '#' or ';')
+            {
+                continue;
+            }
+
+            if (line[0] == '[' && line[^1] == ']')
+            {
+                var name = line[1..^1];
+                var colon = name.IndexOf(':');
+                var suffix = colon < 0 ? "" : name[(colon + 1)..];
+                name = colon < 0 ? name : name[..colon];
+                if (suffix == "vars")
+                {
+                    section = null;
+                    continue;
+                }
+
+                sectionIsChildren = suffix == "children";
+                section = name;
+                if (!hostCounts.ContainsKey(name))
+                {
+                    hostCounts[name] = 0;
+                    order.Add(name);
+                }
+                continue;
+            }
+
+            if (section is null)
+            {
+                continue; // An ungrouped host above the first section belongs to no group.
+            }
+
+            var entry = line.Split((char[]?)null, 2, StringSplitOptions.RemoveEmptyEntries)[0];
+            if (sectionIsChildren)
+            {
+                (childrenOf.TryGetValue(section, out var children)
+                    ? children
+                    : childrenOf[section] = []).Add(entry);
+            }
+            else
+            {
+                hostCounts[section]++;
+            }
+        }
+
+        // A :children group holds what its members hold. One level of gathering is resolved
+        // here; a child that is itself a :children group contributes its own direct hosts only,
+        // which keeps this a summary rather than a graph traversal.
+        foreach (var (group, children) in childrenOf)
+        {
+            hostCounts[group] += children.Sum(child => hostCounts.GetValueOrDefault(child));
+        }
+
+        return order.Select(name => new AnsibleInventoryGroup(name, hostCounts[name])).ToArray();
+    }
 
     private static bool IsInventoryFile(string path) =>
         IoPath.GetExtension(path) is ".yml" or ".yaml" or "" ||
