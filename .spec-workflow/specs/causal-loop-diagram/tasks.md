@@ -104,13 +104,13 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Write the edit commands with byte-restoring inverses, splicing into the document | Restrictions: removing a loop must not remove its links; one shared refusal sentence; no reserialization | _Leverage: the family writers' splice discipline | Success: every command round-trips byte for byte, and a minimal-diff test proves the splice touched only the lines it must. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3.2 Context actions and the toolbox
+- [x] 3.2 Context actions and the toolbox
   - Files: `CausalLoopContextActionProvider.cs`, `CausalLoopToolboxProvider.cs`
   - Every gesture from 3.1 discovered through the standard provider path; an action that cannot apply is discovered **unavailable with its reason** rather than silently absent; the toolbox is described by the backend as data and rendered by a palette that does not understand it
   - _Requirements: 5.3, 5.4, 5.5_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Offer the edit gestures through the context provider and the toolbox | Restrictions: unavailable-with-reason, never silently absent; the toolbox is data from the backend | Success: every command is reachable from the menu and each refusal states why. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3.3 The property grid
+- [-] 3.3 The property grid
   - Files: `CausalLoopContextPropertyProvider.cs`
   - A variable's label; a link's weight, with its polarity and delay readable; a loop's identifier, name, **computed** polarity and the stated one where they differ — which is where a reader meets Requirement 3.3's disagreement without opening the problems panel
   - A weight is an annotation this module records and never evaluates; this diagram type states structure and simulates nothing
