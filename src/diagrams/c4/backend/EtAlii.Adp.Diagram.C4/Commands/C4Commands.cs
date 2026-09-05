@@ -55,8 +55,10 @@ public abstract class C4CommandHandler(IC4DocumentStore documents)
 
         var was = previous(element);
         document.ReplaceLine(element.Line, C4Tokens.ReplaceArgument(line, keyword, argumentIndex(element), value));
-        Documents.Save(bodyPath);
-        return CommandResult.Success(inverse(was));
+        var error = Documents.Save(bodyPath);
+        return error.Length == 0
+            ? CommandResult.Success(inverse(was))
+            : CommandResult.Failure(error);
     }
 
     /// <summary>The same, for a relationship, whose arguments follow the destination.</summary>
@@ -97,8 +99,10 @@ public abstract class C4CommandHandler(IC4DocumentStore documents)
 
         var was = previous(relationship);
         document.ReplaceLine(relationship.Line, C4Tokens.ReplaceArgument(line, arrow + 1, argumentIndex, value));
-        Documents.Save(bodyPath);
-        return CommandResult.Success(inverse(was));
+        var error = Documents.Save(bodyPath);
+        return error.Length == 0
+            ? CommandResult.Success(inverse(was))
+            : CommandResult.Failure(error);
     }
 
     /// <summary>

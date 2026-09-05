@@ -43,7 +43,13 @@ public interface IWardleyDocumentStore
     /// <summary>
     /// Writes the document back atomically and tells every session on it (Requirement 3.6).
     /// </summary>
-    void Save(string path);
+    /// <returns>
+    /// <c>""</c> when the document reached the disk, and a sentence the user can read when it
+    /// did not. **A caller must surface it rather than drop it.** The edit survives in memory
+    /// either way, so a caller that ignores this answers the user with a save that never
+    /// happened - which is what this returned nothing at all in order to do.
+    /// </returns>
+    string Save(string path);
 
     /// <summary>
     /// Tells every session on this document to re-deliver, without changing the document.

@@ -78,8 +78,10 @@ public sealed class AddWardleyElementCommandHandler : ICommandHandler<AddWardley
             document,
             $"{command.Kind.ToLowerInvariant()} {command.Name} [{WardleyEdit.Number(position.Visibility)}, {WardleyEdit.Number(position.Maturity)}]{decorator}");
 
-        _documents.Save(command.BodyPath);
-        return Task.FromResult(CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before)));
+        var error = _documents.Save(command.BodyPath);
+        return Task.FromResult(error.Length == 0
+            ? CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before))
+            : CommandResult.Failure(error));
     }
 }
 
@@ -121,8 +123,10 @@ public sealed class RemoveWardleyElementCommandHandler : ICommandHandler<RemoveW
             WardleyWriter.RemoveLine(document, line);
         }
 
-        _documents.Save(command.BodyPath);
-        return Task.FromResult(CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before)));
+        var error = _documents.Save(command.BodyPath);
+        return Task.FromResult(error.Length == 0
+            ? CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before))
+            : CommandResult.Failure(error));
     }
 }
 
@@ -174,8 +178,10 @@ public sealed class RenameWardleyElementCommandHandler : ICommandHandler<RenameW
         // that names it (Requirement 4.4).
         _documents.Rekey(command.BodyPath, WardleyIdentityKind.Component, component.Name, command.NewName);
 
-        _documents.Save(command.BodyPath);
-        return Task.FromResult(CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before)));
+        var error = _documents.Save(command.BodyPath);
+        return Task.FromResult(error.Length == 0
+            ? CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before))
+            : CommandResult.Failure(error));
     }
 }
 
@@ -208,9 +214,10 @@ public sealed class SetWardleyInertiaCommandHandler : ICommandHandler<SetWardley
             return Task.FromResult(CommandResult.Failure("That element's inertia could not be changed."));
         }
 
-        _documents.Save(command.BodyPath);
-        return Task.FromResult(CommandResult.Success(
-            new RestoreWardleyLineCommand(command.BodyPath, component.Line, before)));
+        var error = _documents.Save(command.BodyPath);
+        return Task.FromResult(error.Length == 0
+            ? CommandResult.Success( new RestoreWardleyLineCommand(command.BodyPath, component.Line, before))
+            : CommandResult.Failure(error));
     }
 }
 
@@ -261,9 +268,10 @@ public sealed class SetWardleyDecoratorsCommandHandler : ICommandHandler<SetWard
             }
         }
 
-        _documents.Save(command.BodyPath);
-        return Task.FromResult(CommandResult.Success(
-            new RestoreWardleyLineCommand(command.BodyPath, component.Line, before)));
+        var error = _documents.Save(command.BodyPath);
+        return Task.FromResult(error.Length == 0
+            ? CommandResult.Success( new RestoreWardleyLineCommand(command.BodyPath, component.Line, before))
+            : CommandResult.Failure(error));
     }
 }
 
@@ -297,9 +305,10 @@ public sealed class SetWardleyDecoratorCommandHandler : ICommandHandler<SetWardl
             return Task.FromResult(CommandResult.Failure($"That element's '{word}' could not be changed."));
         }
 
-        _documents.Save(command.BodyPath);
-        return Task.FromResult(CommandResult.Success(
-            new RestoreWardleyLineCommand(command.BodyPath, component.Line, before)));
+        var error = _documents.Save(command.BodyPath);
+        return Task.FromResult(error.Length == 0
+            ? CommandResult.Success( new RestoreWardleyLineCommand(command.BodyPath, component.Line, before))
+            : CommandResult.Failure(error));
     }
 }
 
@@ -333,8 +342,10 @@ public sealed class AddWardleyNoteCommandHandler : ICommandHandler<AddWardleyNot
             document,
             $"note {command.Text.Trim()} [{WardleyEdit.Number(position.Visibility)}, {WardleyEdit.Number(position.Maturity)}]");
 
-        _documents.Save(command.BodyPath);
-        return Task.FromResult(CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before)));
+        var error = _documents.Save(command.BodyPath);
+        return Task.FromResult(error.Length == 0
+            ? CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before))
+            : CommandResult.Failure(error));
     }
 }
 
@@ -371,8 +382,10 @@ public sealed class AddWardleyAnnotationCommandHandler : ICommandHandler<AddWard
             document,
             $"annotation {number} [{WardleyEdit.Number(position.Visibility)}, {WardleyEdit.Number(position.Maturity)}] {command.Text.Trim()}");
 
-        _documents.Save(command.BodyPath);
-        return Task.FromResult(CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before)));
+        var error = _documents.Save(command.BodyPath);
+        return Task.FromResult(error.Length == 0
+            ? CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before))
+            : CommandResult.Failure(error));
     }
 }
 
@@ -441,8 +454,10 @@ public sealed class SetWardleyLinkCommandHandler : ICommandHandler<SetWardleyLin
             }
         }
 
-        _documents.Save(command.BodyPath);
-        return Task.FromResult(CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before)));
+        var error = _documents.Save(command.BodyPath);
+        return Task.FromResult(error.Length == 0
+            ? CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before))
+            : CommandResult.Failure(error));
     }
 }
 
@@ -501,8 +516,10 @@ public sealed class SetWardleyEvolveCommandHandler : ICommandHandler<SetWardleyE
             }
         }
 
-        _documents.Save(command.BodyPath);
-        return Task.FromResult(CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before)));
+        var error = _documents.Save(command.BodyPath);
+        return Task.FromResult(error.Length == 0
+            ? CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before))
+            : CommandResult.Failure(error));
     }
 }
 
@@ -552,8 +569,10 @@ public sealed class SetWardleyPipelineMembershipCommandHandler : ICommandHandler
 
             var removing = document.ToText();
             WardleyWriter.RemoveLine(document, child.Line);
-            _documents.Save(command.BodyPath);
-            return Task.FromResult(CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, removing)));
+            var writeError = _documents.Save(command.BodyPath);
+            return Task.FromResult(writeError.Length == 0
+                ? CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, removing))
+                : CommandResult.Failure(writeError));
         }
 
         if (child is not null)
@@ -594,8 +613,10 @@ public sealed class SetWardleyPipelineMembershipCommandHandler : ICommandHandler
             return Task.FromResult(CommandResult.Failure($"'{parent.Name}' has a pipeline that is missing its closing brace."));
         }
 
-        _documents.Save(command.BodyPath);
-        return Task.FromResult(CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before)));
+        var error = _documents.Save(command.BodyPath);
+        return Task.FromResult(error.Length == 0
+            ? CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, before))
+            : CommandResult.Failure(error));
     }
 
     /// <summary>
@@ -652,7 +673,9 @@ public sealed class RestoreWardleyDocumentCommandHandler : ICommandHandler<Resto
             document.InsertLine((uint)index + 1, restored.Lines[index]);
         }
 
-        _documents.Save(command.BodyPath);
-        return Task.FromResult(CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, replaced)));
+        var error = _documents.Save(command.BodyPath);
+        return Task.FromResult(error.Length == 0
+            ? CommandResult.Success(new RestoreWardleyDocumentCommand(command.BodyPath, replaced))
+            : CommandResult.Failure(error));
     }
 }

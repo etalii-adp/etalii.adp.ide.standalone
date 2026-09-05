@@ -595,4 +595,23 @@ public sealed class WardleyCommandsTests : IDisposable
             Assert.Equal(before, Read());
         }
     }
+
+    [Fact]
+    public async Task AWriteThatCannotLand_IsReportedRatherThanAnsweredWithSuccess()
+    {
+        // Arrange: a holder that shares Read only, which denies the replace a publish performs.
+        // An external editor with the file open looks exactly like this to us.
+        Write("component Alpha [0.5, 0.5]\n");
+        var id = IdOf("Alpha");
+        using var holder = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+        // Act.
+        var result = await Execute(new MoveWardleyElementCommand(_path, id, 0.8d, 0.2d));
+
+        // Assert: the caller is TOLD. Answering success while the file still holds the old
+        // position is worse than failing - the user believes the move landed and it did not.
+        Assert.False(result.IsSuccess);
+        Assert.Contains("could not be written", result.Error, StringComparison.Ordinal);
+        Assert.Equal("component Alpha [0.5, 0.5]\n", Read());
+    }
 }

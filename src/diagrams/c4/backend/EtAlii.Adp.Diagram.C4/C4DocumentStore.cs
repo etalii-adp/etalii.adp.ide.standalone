@@ -29,7 +29,7 @@ public sealed class C4DocumentStore : IC4DocumentStore
         return Loaded(path).Workspace;
     }
 
-    public void Save(string path)
+    public string Save(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
@@ -51,7 +51,11 @@ public sealed class C4DocumentStore : IC4DocumentStore
             // The edit stays in memory: losing it because the disk refused would be worse than
             // a save the user can retry once the file is writable again.
             _logger.Warning(exception, "Could not write {Path}; the change is kept in memory", path);
-            return;
+
+            // Reported rather than swallowed. A bare return out of a void Save left the
+            // caller answering success while the file still held the old content - the
+            // defect found in WardleyDocumentStore and identical here.
+            return $"{System.IO.Path.GetFileName(path)} could not be written. The change is still here to try again.";
         }
         finally
         {
@@ -61,6 +65,7 @@ public sealed class C4DocumentStore : IC4DocumentStore
         var workspace = C4Parser.Parse(entry.Document);
         _entries[path] = new C4DocumentEntry(entry.Document, workspace);
         Changed?.Invoke(this, new C4DocumentChangedEventArgs(path, workspace));
+        return "";
     }
 
     public void Touch(string path)
