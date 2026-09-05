@@ -16,6 +16,7 @@ vi.mock("./useDatabricksStream", () => ({
 
 vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   innermostKey: () => null,
+  useContextPrompt: () => ({ prompt: null, onPropose: vi.fn(), onSubmit: vi.fn(), onCancel: vi.fn() }),
   useContextSelection: () => ({ selection: null, levels: [], actions: [] }),
   useContextConnection: () => ({
     select: () => undefined,
@@ -23,6 +24,10 @@ vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
     executeShortcut: () => Promise.resolve({ accepted: true, error: "" }),
     setProperty: () => Promise.resolve({ accepted: true, error: "" }),
   }),
+}));
+
+vi.mock("@client/shell/panels/InlineLabelPlacementContext", () => ({
+  useRegisterInlineLabelPlacement: () => undefined,
 }));
 
 vi.mock("@client/shell/panels/DiagramViewContext", () => ({

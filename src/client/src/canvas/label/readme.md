@@ -78,6 +78,18 @@ while editing the description alone.
 
 - **mindmap** - node labels. Its provider marks `Rename` and leaves add-child, add-sibling and
   edit-notes on the dialog, which is the sharpest example in the tree of where the line falls.
+- **timeline** - element labels and connection labels. A span's editor covers its box; an
+  instant's sits beside its diamond, which is why `asideLabelPlacement` exists.
+- **dependency-graph** - node labels and relation labels. Every node is a span, so centred
+  placement is the whole answer here.
+- **databricks** - task keys and the bundle name, across all three readings, since `JobCanvas`,
+  `BundleCanvas` and `PipelineCanvas` are wrappers around one canvas. A task's key **is** its
+  drawn label, and the bundle element is packed with `Key = bundle.Name`, so what looks like a
+  two-value fallback (`payload.key || payload.kind`) renders the very value being renamed - the
+  `|| kind` is an empty-state placeholder, not a second value. Deployment targets are frames and
+  are not renamed. **Its edges are pending, not exempt**: this canvas has no edge selection, so
+  a relabelled edge could not be reached by any gesture. When edge selection arrives, the
+  relabel prompt qualifies and should be marked.
 - **c4** - element names and relationship labels. The element's editor covers its name line
   rather than its box, and a relationship's opens on the description alone, without the
   technology drawn beside it. Relationships became selectable to make that reachable: they had

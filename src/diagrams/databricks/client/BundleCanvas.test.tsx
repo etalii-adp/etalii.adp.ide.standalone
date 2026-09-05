@@ -1,9 +1,12 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent, render, waitFor } from "@testing-library/react";
 import { emptyModel, type DatabricksModel } from "./databricksModel";
 
 let currentModel: DatabricksModel = emptyModel;
 let moves: { elementId: string; x: number; y: number }[] = [];
+
+let currentPrompt: unknown = null;
+const submitLabel = vi.fn(async () => ({ accepted: true, error: "" }));
 
 vi.mock("./useDatabricksStream", () => ({
   useDatabricksStream: () => ({
@@ -20,6 +23,7 @@ vi.mock("./useDatabricksStream", () => ({
 
 vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   innermostKey: () => null,
+  useContextPrompt: () => ({ prompt: currentPrompt, onPropose: vi.fn(), onSubmit: submitLabel, onCancel: vi.fn() }),
   useContextSelection: () => ({ selection: null, levels: [], actions: [] }),
   useContextConnection: () => ({
     select: () => undefined,
@@ -27,6 +31,10 @@ vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
     executeShortcut: () => Promise.resolve({ accepted: true, error: "" }),
     setProperty: () => Promise.resolve({ accepted: true, error: "" }),
   }),
+}));
+
+vi.mock("@client/shell/panels/InlineLabelPlacementContext", () => ({
+  useRegisterInlineLabelPlacement: () => undefined,
 }));
 
 vi.mock("@client/shell/panels/DiagramViewContext", () => ({
@@ -66,6 +74,7 @@ function renderCanvas() {
 }
 
 beforeEach(() => {
+  currentPrompt = null;
   currentModel = modelWith();
   moves = [];
 });
@@ -134,5 +143,60 @@ describe("the bundle canvas", () => {
     expect(container.querySelector(".databricks-override-line")!.classList.contains("canvas-connection-line")).toBe(true);
     expect(container.querySelector(".databricks-scrollbars.canvas-scrollbar-horizontal")).not.toBeNull();
     expect(container.querySelector(".databricks-scrollbars.canvas-scrollbar-vertical")).not.toBeNull();
+  });
+
+  // ---- inline renaming -----------------------------------------------------------------
+
+  it("opens an editor over the bundle, whose drawn key IS the name being renamed", async () => {
+    // Arrange.
+    // This is the case task 4 said to verify rather than assume. The bundle element is packed
+    // by the mapper with Key = bundle.Name, so `payload.key || payload.kind` renders the very
+    // value rename-bundle asks for; the fallback is an empty-state placeholder, not a second
+    // value. Had the name been drawn on a frame, or been a projection, this would not qualify.
+    currentPrompt = {
+      prompt: {
+        case: "inputDialog",
+        value: {
+          title: "Rename bundle",
+          icon: "mdi-pencil-outline",
+          fieldLabel: "Name",
+          initialValue: "lakehouse-nightly",
+          confirmLabel: "Rename",
+          inlineLabelEdit: { elementId: { value: "bundle" } },
+        },
+      },
+    };
+
+    // Act.
+    const { container } = render(<BundleCanvas projectId={new Uint8Array([1])} entryId={new Uint8Array([2])} path={["bundle.adp"]} />);
+
+    // Assert: the editor is drawn, opens on the drawn name, and covers the bundle's own box.
+    const field = container.querySelector("input.inline-label-editor-field") as HTMLInputElement;
+    expect(field).not.toBeNull();
+    expect(field.value).toBe("lakehouse-nightly");
+
+    const rect = container.querySelector('[data-element-id="bundle"] rect') as SVGRectElement;
+    const box = container.querySelector("foreignObject.inline-label-editor") as SVGForeignObjectElement;
+    expect(Number(box.getAttribute("width"))).toBeCloseTo(Number(rect.getAttribute("width")), 5);
+
+    fireEvent.change(field, { target: { value: "lakehouse-daily" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    await waitFor(() => expect(submitLabel).toHaveBeenCalledWith("lakehouse-daily"));
+  });
+
+  it("places no editor over a deployment target, which is a frame and not renamed", () => {
+    // Arrange.
+    currentPrompt = {
+      prompt: {
+        case: "inputDialog",
+        value: { title: "x", icon: "x", fieldLabel: "x", initialValue: "prod", confirmLabel: "x", inlineLabelEdit: { elementId: { value: "target:prod" } } },
+      },
+    };
+
+    // Act.
+    const { container } = render(<BundleCanvas projectId={new Uint8Array([1])} entryId={new Uint8Array([2])} path={["bundle.adp"]} />);
+
+    // Assert.
+    expect(container.querySelector("foreignObject.inline-label-editor")).toBeNull();
   });
 });

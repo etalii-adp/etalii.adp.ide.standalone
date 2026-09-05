@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent, render, waitFor } from "@testing-library/react";
 import { emptyModel, type DatabricksModel } from "./databricksModel";
 
 let currentModel: DatabricksModel = emptyModel;
@@ -9,6 +9,10 @@ let currentSelectionKey: string | null = null;
 let currentActions: unknown[] = [];
 let moves: { elementId: string; x: number; y: number }[] = [];
 let selections: unknown[] = [];
+let currentPrompt: unknown = null;
+const proposeLabel = vi.fn(async () => ({ accepted: true, error: "" }));
+const submitLabel = vi.fn(async () => ({ accepted: true, error: "" }));
+const cancelLabel = vi.fn();
 let executed: { actionId: string; source: unknown }[] = [];
 
 vi.mock("./useDatabricksStream", () => ({
@@ -26,6 +30,7 @@ vi.mock("./useDatabricksStream", () => ({
 
 vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   innermostKey: () => currentSelectionKey,
+  useContextPrompt: () => ({ prompt: currentPrompt, onPropose: proposeLabel, onSubmit: submitLabel, onCancel: cancelLabel }),
   useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: currentActions }),
   useContextConnection: () => ({
     select: (selection: unknown) => selections.push(selection),
@@ -36,6 +41,10 @@ vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
     executeShortcut: () => Promise.resolve({ accepted: true, error: "" }),
     setProperty: () => Promise.resolve({ accepted: true, error: "" }),
   }),
+}));
+
+vi.mock("@client/shell/panels/InlineLabelPlacementContext", () => ({
+  useRegisterInlineLabelPlacement: () => undefined,
 }));
 
 vi.mock("@client/shell/panels/DiagramViewContext", () => ({
@@ -78,6 +87,7 @@ function renderCanvas() {
 
 beforeEach(() => {
   currentModel = modelWith();
+  currentPrompt = null;
   currentLoading = false;
   currentFailed = false;
   currentSelectionKey = null;
@@ -282,5 +292,90 @@ describe("the job canvas", () => {
     expect(container.querySelector(".databricks-simulation-banner")!.textContent).toContain("Simulated");
     // The show marks the tasks; the unmarked drop test above proves ordinary ids still travel.
     expect(container.querySelector('[class*="databricks-sim-"]')).not.toBeNull();
+  });
+
+  // ---- inline renaming -----------------------------------------------------------------
+
+  function labelPromptFor(elementId: string, text: string): unknown {
+    return {
+      prompt: {
+        case: "inputDialog",
+        value: {
+          title: "Rename task",
+          icon: "mdi-pencil-outline",
+          fieldLabel: "Key",
+          initialValue: text,
+          confirmLabel: "Rename",
+          inlineLabelEdit: { elementId: { value: elementId } },
+        },
+      },
+    };
+  }
+
+  function editorBox(container: HTMLElement): SVGForeignObjectElement {
+    return container.querySelector("foreignObject.inline-label-editor") as SVGForeignObjectElement;
+  }
+
+  function labelField(container: HTMLElement): HTMLInputElement {
+    return container.querySelector("input.inline-label-editor-field") as HTMLInputElement;
+  }
+
+  it("opens an editor over a task, and submits what is typed into it", async () => {
+    // Arrange. The task's key IS its drawn label, which is why renaming it qualifies.
+    currentPrompt = labelPromptFor("task:publish", "publish");
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    expect(editorBox(container)).not.toBeNull();
+    expect(labelField(container).value).toBe("publish");
+
+    fireEvent.change(labelField(container), { target: { value: "published" } });
+    fireEvent.keyDown(labelField(container), { key: "Enter" });
+    await waitFor(() => expect(submitLabel).toHaveBeenCalledWith("published"));
+  });
+
+  it("covers the task's own box, so the editor is where the label is drawn", () => {
+    // Arrange.
+    currentPrompt = labelPromptFor("task:publish", "publish");
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    const rect = container.querySelector('[data-element-id="task:publish"] rect') as SVGRectElement;
+    expect(rect).not.toBeNull();
+    const box = editorBox(container);
+    expect(Number(box.getAttribute("width"))).toBeCloseTo(Number(rect.getAttribute("width")), 5);
+    expect(Number(box.getAttribute("height"))).toBeCloseTo(Number(rect.getAttribute("height")), 5);
+  });
+
+  it("places no editor for an element the canvas cannot draw", () => {
+    // Arrange. An edge cannot be selected on this canvas, so nothing can reach one - and a
+    // resolver that answered for one would put an editor where there is no label.
+    currentPrompt = labelPromptFor("edge:ingest->publish", "depends");
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    expect(editorBox(container)).toBeNull();
+  });
+
+  it("leaves the selection alone when an inline edit commits", async () => {
+    // Arrange.
+    currentSelectionKey = "task:publish";
+    currentPrompt = labelPromptFor("task:publish", "publish");
+    const { container } = renderCanvas();
+    selections = [];
+
+    // Act.
+    fireEvent.change(labelField(container), { target: { value: "published" } });
+    fireEvent.keyDown(labelField(container), { key: "Enter" });
+
+    // Assert.
+    await waitFor(() => expect(submitLabel).toHaveBeenCalled());
+    expect(selections).toEqual([]);
   });
 });

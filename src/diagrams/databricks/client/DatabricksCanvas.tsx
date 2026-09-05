@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BoxElement } from "@client/canvas/elements/box/BoxElement";
+import { InlineLabelEditor } from "@client/canvas/label/InlineLabelEditor";
+import { centredLabelPlacement } from "@client/canvas/label/labelPlacement";
+import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
+import { useRegisterInlineLabelPlacement, type LabelPlacement } from "@client/shell/panels/InlineLabelPlacementContext";
 import { FrameElement } from "@client/canvas/elements/frame/FrameElement";
 import { FixedBezierConnection } from "@client/canvas/connections/fixed-bezier/FixedBezierConnection";
 import { StraightConnection } from "@client/canvas/connections/straight/StraightConnection";
@@ -11,7 +15,7 @@ import type { ConnectorBox, Point } from "@client/canvas/connectors";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
 import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
-import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { ContextMenu } from "@client/shell/context/ContextMenu";
 import { toMenuGroups } from "@client/shell/context/toMenuGroups";
 import { TOOLBOX_DRAG_TYPE, useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
@@ -271,6 +275,41 @@ export function DatabricksCanvas({
   const xToPx = (x: number): number => (x - view.startX) * view.pixelsPerUnit;
   const yToPx = (y: number): number => (y - view.startY) * view.pixelsPerUnit;
 
+  // Where a node's label is drawn - for the shell's inline editor. Nodes only: this canvas
+  // has no edge selection, so a relabelled edge could not be reached even if one were marked.
+  //
+  // Memoized on the model AND the view, as the other pixel-positioned canvases are: there is
+  // no viewBox here, so a pan moves every label without touching the model.
+  const placementOfLabel = useCallback(
+    (elementId: string): LabelPlacement | null => {
+      const node = model.nodes.get(elementId);
+      if (node === undefined) {
+        return null; // frames are not renamed, and edges cannot be selected
+      }
+
+      return centredLabelPlacement(
+        boxFor(at(node, null), NODE_WIDTH, NODE_HEIGHT, xToPx, yToPx, view.pixelsPerUnit),
+        node.label,
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- xToPx and yToPx are recreated
+    // every render and are pure functions of view, which is in the list.
+    [model, view],
+  );
+  useRegisterInlineLabelPlacement(placementOfLabel);
+
+  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
+  const editingId = inlineLabelElementIdOf(prompt);
+  const editingPlacement = editingId === null ? null : placementOfLabel(editingId);
+  const returnFocusToSurface = useCallback(() => surfaceRef.current?.focus(), []);
+
+  /** Ends an open inline edit before a gesture begins; the editor commits on blur. */
+  const endInlineEditBeforeGesture = () => {
+    if (editingPlacement !== null) {
+      surfaceRef.current?.focus();
+    }
+  };
+
   /**
    * Runs an action, letting the interception seam play it locally first (Requirement 8.6): a
    * simulated id starts the client-side show and never reaches executeAction, the history or
@@ -290,6 +329,7 @@ export function DatabricksCanvas({
   };
 
   const onSurfacePointerDown = (event: React.MouseEvent) => {
+    endInlineEditBeforeGesture();
     const target = event.target as Element;
     if (target !== event.currentTarget && !target.classList?.contains("databricks-content")) {
       return;
@@ -305,6 +345,7 @@ export function DatabricksCanvas({
 
   const onBoxPointerDown = (event: React.MouseEvent, id: string, x: number, y: number) => {
     event.stopPropagation();
+    endInlineEditBeforeGesture();
     setRejection("");
     dragRef.current = { id, clientX: event.clientX, clientY: event.clientY, x, y, moved: false };
   };
@@ -613,6 +654,18 @@ export function DatabricksCanvas({
               </BoxElement>
             );
           })}
+
+          {/* Last of all, so the editor is above every node it overlaps. This canvas carries
+              no viewBox, so its placements are pixels rather than module units. */}
+          {editingPlacement !== null && (
+            <InlineLabelEditor
+              placement={editingPlacement}
+              onPropose={onProposeLabel}
+              onSubmit={onSubmitLabel}
+              onCancel={onCancelLabel}
+              onReturnFocus={returnFocusToSurface}
+            />
+          )}
         </svg>
         <CanvasScrollbars
           {...scrollAxesOf(model, view, surfaceRef.current?.getBoundingClientRect() ?? null)}
