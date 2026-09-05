@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/selection-after-drag/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-05T19:36:33.301Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788636992631_fp4xzuif5",
+      "approvalTitle": "selection-after-drag requirements: the trailing-click model is the root cause — one gesture arbiter, no suppression flags, less code"
+    }
+  ]
+}

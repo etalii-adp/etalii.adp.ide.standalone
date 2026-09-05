@@ -1,0 +1,10 @@
+{
+  "id": "approval_1788636992631_fp4xzuif5",
+  "title": "selection-after-drag requirements: the trailing-click model is the root cause — one gesture arbiter, no suppression flags, less code",
+  "filePath": ".spec-workflow/specs/selection-after-drag/requirements.md",
+  "type": "document",
+  "status": "pending",
+  "createdAt": "2026-09-05T19:36:32.632Z",
+  "category": "spec",
+  "categoryName": "selection-after-drag"
+}
