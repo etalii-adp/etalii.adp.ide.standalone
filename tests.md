@@ -1139,11 +1139,24 @@ silent no-op.
   byte; the restriction node does not move, and the canvas shows the sentence saying its
   identity does not survive an edit to the file, so a stored position could not be trusted.
 
-- **Result 2026-09-04**: **pending**, same reason - sign-in. Covered meanwhile end to end by
-  `OwlFlowTests.AnExpressionNode_RefusesTheReposition_WithTheBoundarysSentence` (over the real
-  host, asserting the sentence and that nothing is stored for the id) and
-  `AClassReposition_LandsInTheAdp_SurvivesReopen_AndTheOntologyNeverChanges`; the canvas half is
-  `OwlCanvasTests`' reposition case, which asserts the refusal reaches the user.
+- **Result 2026-09-05**: **passes, both halves.** Run against a worktree build with `src/examples`
+  open as a project; the user signed in.
+
+  **The class moves and lands in the registration.** Dragging a class wrote
+  `res:http://www.w3.org/2006/time#DateTimeDescription: 432.945 1049.833` into a `layout:` block
+  that `owl-time.adp` did not have before, and `owl-time.ttl`'s checksum was identical before and
+  after - `f5316ced41b4ac0e37e86705b1c2fb9a` either side, so the ontology never changed by a byte.
+  (The check suggests `:Interval`; any class exercises the same path, and this is the one the
+  viewport had delivered.)
+
+  **The restriction node refuses, and says why in a sentence a reader can act on.** Dragging one
+  moved it by `dx: 0, dy: 0`, and the canvas showed: *"That is an anonymous class expression, whose
+  identity does not survive an edit to the file, so a stored position could not be trusted. It takes
+  its place beside the class that uses it; edit the expression as text."* The `layout:` block still
+  held exactly one entry afterwards - the class's - so nothing was written for the expression.
+
+  The example file was restored to its committed state after the check, so the pass leaves no stray
+  `layout:` block in the shared checkout for another session to sweep up.
 
 ## The full class expression is one selection away (owl-diagram, task 4.3)
 
