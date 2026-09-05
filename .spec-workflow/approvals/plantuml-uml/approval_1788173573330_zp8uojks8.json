@@ -3,8 +3,10 @@
   "title": "plantuml-uml — design document",
   "filePath": ".spec-workflow/specs/plantuml-uml/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "rejected",
   "createdAt": "2026-08-31T10:52:53.330Z",
   "category": "spec",
-  "categoryName": "plantuml-uml"
+  "categoryName": "plantuml-uml",
+  "response": "Stopping all progress for a stability re-alignment.",
+  "respondedAt": "2026-09-05T16:30:12.254Z"
 }

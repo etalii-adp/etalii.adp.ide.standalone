@@ -3,8 +3,10 @@
   "title": "layout-modes requirements",
   "filePath": ".spec-workflow/specs/layout-modes/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "rejected",
   "createdAt": "2026-09-04T09:14:58.790Z",
   "category": "spec",
-  "categoryName": "layout-modes"
+  "categoryName": "layout-modes",
+  "response": "Stopping all progress for a stability re-alignment.",
+  "respondedAt": "2026-09-05T16:30:30.095Z"
 }

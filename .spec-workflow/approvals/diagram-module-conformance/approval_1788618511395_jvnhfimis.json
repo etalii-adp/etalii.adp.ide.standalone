@@ -3,8 +3,10 @@
   "title": "diagram-module-conformance design",
   "filePath": ".spec-workflow/specs/diagram-module-conformance/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "rejected",
   "createdAt": "2026-09-05T14:28:31.395Z",
   "category": "spec",
-  "categoryName": "diagram-module-conformance"
+  "categoryName": "diagram-module-conformance",
+  "response": "Stopping all progress for a stability re-alignment.",
+  "respondedAt": "2026-09-05T16:30:51.755Z"
 }

@@ -3,8 +3,10 @@
   "title": "diagram-layout — Requirements",
   "filePath": ".spec-workflow/specs/diagram-layout/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "rejected",
   "createdAt": "2026-09-04T08:37:38.710Z",
   "category": "spec",
-  "categoryName": "diagram-layout"
+  "categoryName": "diagram-layout",
+  "response": "Stopping all progress for a stability re-alignment.",
+  "respondedAt": "2026-09-05T16:30:23.203Z"
 }
