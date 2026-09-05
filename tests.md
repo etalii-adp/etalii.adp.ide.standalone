@@ -1126,6 +1126,36 @@ which is true here - the culling is the loop working exactly as specified. Nothi
 - **Result 2026-09-05**: **open**, reported to the scrum master. Not fixed here: the Tester found
   it, and the canvases belong to whoever holds their specification.
 
+## The whole View group is dead on a causal loop diagram (causal-loop-diagram, found 2026-09-05)
+
+**Found while reading the fit-to-view report against my own module, not by using the app.** The
+adjacent failure to the entry above, and the opposite one: on `owl` the View group works and shows
+too little, and on `causal-loop` it does not work at all.
+
+`CausalLoopCanvas` never calls `useRegisterDiagramView`, so with a `.cld` open the shell's
+registry still holds `null`. The ribbon disables **all three** buttons — Zoom In, Zoom Out and Fit
+to View — and titles them *"Open a diagram to use this."*, which is wrong twice over: a diagram is
+open, and opening one is not what would help.
+
+- **Preconditions**: backend + client running; a project containing a `.cld` document.
+- **Actions**: open the `.cld`; look at the ribbon's View group; hover one of its buttons.
+- **Expected**: the three buttons enabled and acting on the canvas, as on every other diagram
+  type (causal-loop-diagram Requirement 9.1 — behave like the others).
+- **Observed**: all three greyed out, tooltip *"Open a diagram to use this."*
+
+**Why no unit test caught it**: nothing asserts that a canvas registers its view controls. Each
+canvas that does has tests for what its own zoom and fit compute; a canvas that registers nothing
+has nothing to test, so its absence is invisible. The guard worth having is a shared one — every
+registered canvas module supplies view controls — rather than a twelfth per-canvas test.
+
+**Deliberately not fixed on sight.** The correct `fitToView` for a viewport-filtered canvas needs
+the document's own extent, the client is not sent one today, and `fit-to-view-extent` is the spec
+being written for exactly that. Wiring `setView(null)` now would buy an enabled button by
+importing the defect in the entry above, so this waits on that spec rather than racing it.
+
+- **Result 2026-09-05**: **open**, reported to the scrum master. Blocked on `fit-to-view-extent`
+  by choice, not by permission.
+
 ## An expression node refuses to be dragged, and says why (owl-diagram, task 4.3)
 
 The blank-node identity boundary as the user meets it — the refusal has to be readable, not a
