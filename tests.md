@@ -554,6 +554,19 @@ clipping, and that is only visible on screen.
   with a 100px vertical component; "Mar 2026" slid exactly +80px for an 80px pan; "2026"
   disappeared once panned off-view.
 
+- **Result 2026-09-05**: **text reviewed against the implementation, no drift.** Not re-executed
+  - the client dev server is down and the pass waits on `developer-sign-in-bypass`.
+  Reviewed in a sweep of the seven timeline entries, all of which carry a **Verified 2026-09-01**
+  outcome rather than a `Result` line - see the preamble.
+
+  `TimelineRuler.tsx` has not changed since `a68d0701` (2026-08-31), before the verification. The
+  clause that could have drifted is *"a label panned out of the view disappears"*: the timeline
+  now filters its **content** to the reported viewport (`337938aa`, view-delta-adoption task 5),
+  so it was worth checking whether labels are filtered too. They are not - ruler ticks are
+  computed from the view's own `startSeconds` and `secondsPerPixel`, never from delivered
+  elements, so the ruler describes time the reader can see whether or not any element there has
+  arrived yet. The entry still describes the application.
+
 ## The ruler's labels change their unit with the zoom (timeline-diagram, task 31)
 
 - **Preconditions**: as above.
@@ -564,6 +577,15 @@ clipping, and that is only visible on screen.
   multi-year steps ("2020", "2022", "2024") when zoomed far out. At no zoom level do labels
   overlap or disappear entirely.
 - **Verified 2026-09-01** against the running app across that whole range.
+
+- **Result 2026-09-05**: **text reviewed against the implementation, no drift.** Not re-executed.
+  Reviewed in a sweep of the seven timeline entries, all of which carry a **Verified 2026-09-01**
+  outcome rather than a `Result` line - see the preamble.
+
+  `timelineTicks.ts` unchanged since `a68d0701` (2026-08-31). Same reasoning as the entry above:
+  unit selection is a function of the visible span alone, so view filtering cannot empty the
+  ruler. *"At no zoom level do labels overlap or disappear entirely"* is a claim about the tick
+  generator, which is untouched.
 
 ## Connections follow a drag while it is in progress, and Escape abandons it (timeline-diagram, task 31)
 
@@ -578,6 +600,23 @@ clipping, and that is only visible on screen.
   hint read "2026-01-31 · row 1", Escape restored the original path, and the file still read
   `begin: 2026-01-05`.
 
+- **Result 2026-09-05**: **text reviewed against the implementation, no drift.** Not re-executed.
+  Reviewed in a sweep of the seven timeline entries, all of which carry a **Verified 2026-09-01**
+  outcome rather than a `Result` line - see the preamble.
+
+  `TimelineCanvas.tsx` **did** change after the verification - twice - so this one needed reading
+  rather than assuming. `3bc98214` migrated it onto the shared scroll view and `58934ae1`
+  (2026-09-05) added inline renaming. Neither touched the drag: `dragRef` still carries the
+  in-flight gesture, the preview still overrides positions while it runs, the hint is still
+  rendered, and Escape is still handled with Requirement 6.6 named at the call site. The entry
+  still describes the application.
+
+  **One thing the entry does not cover, a gap rather than drift**: `58934ae1` added `F2` to this
+  canvas's structural shortcuts, so an element's label can now be renamed in place. No entry here
+  mentions it. It arrived with four client tests each seen to fail against its own defect, so it
+  is not unguarded - but a reader using this file as the inventory of timeline gestures will not
+  learn that F2 exists.
+
 ## A toolbox drop lands an Element where it was dropped (timeline-diagram, tview pass)
 
 - **Preconditions**: a `.tml` timeline open on the canvas; the Toolbox showing Element and Moment.
@@ -588,6 +627,16 @@ clipping, and that is only visible on screen.
   (the placement target must discover the add actions, or executing by id resolves nothing).
 - **Verified 2026-09-01** against the running app after fixing exactly that: a placement target
   that discovered no actions made every drop a no-op with that message.
+
+- **Result 2026-09-05**: **text reviewed against the implementation, no drift.** Not re-executed.
+  Reviewed in a sweep of the seven timeline entries, all of which carry a **Verified 2026-09-01**
+  outcome rather than a `Result` line - see the preamble.
+
+  Checked specifically because `58934ae1` altered the timeline's context actions the same day. It
+  did not touch this path, and said so in terms: rename and relabel gained a target `ElementId`
+  while *"give-an-end and add-element deliberately do not - one asks for a date and the other for
+  text that does not exist yet."* So a drop still places a "New element" with no dialog. The
+  entry's warning about a placement target that discovers no actions still names a real trap.
 
 ## The context menu removes elements and relations (timeline-diagram, tview pass)
 
@@ -601,6 +650,15 @@ clipping, and that is only visible on screen.
 - **Verified 2026-09-01** against the running app after fixing exactly that: menu-Remove on a
   relation-free element silently did nothing until the execute leg dispatched the command.
 
+- **Result 2026-09-05**: **text reviewed against the implementation, no drift.** Not re-executed.
+  Reviewed in a sweep of the seven timeline entries, all of which carry a **Verified 2026-09-01**
+  outcome rather than a `Result` line - see the preamble.
+
+  `TimelineContextActionProvider.cs` changed on 2026-09-05 (`58934ae1`), by four lines, all of
+  them adding `target.ElementId` to rename and relabel. Removal is untouched, so the entry's
+  sharpest clause - *"an execute that answers Completed without dispatching has done nothing,
+  because the commit leg only runs after a dialog"* - still describes the live hazard.
+
 ## A relation dragged onto empty space creates the element it reaches (timeline-diagram, tview pass)
 
 - **Preconditions**: as above; an element selected so its anchors show.
@@ -609,6 +667,25 @@ clipping, and that is only visible on screen.
   it - one history entry, one undo removing both. Releasing back on the source cancels quietly.
 - **Verified 2026-09-01** against the running app: elements 4→5 and relations 2→3 from one
   gesture.
+
+- **Result 2026-09-05**: **drifted, mildly: the entry describes one of two anchors as though it
+  were both.** Not re-executed.
+  Reviewed in a sweep of the seven timeline entries, all of which carry a **Verified 2026-09-01**
+  outcome rather than a `Result` line - see the preamble.
+
+  The entry says *"drag from a side anchor and release over empty canvas"* and expects *"a
+  relation from the source to it"*. Since `1c92704c` that holds for one side only: a relation
+  dragged from the **BEGIN** anchor *"now arrives reversed - the landing (element or fresh
+  placement) becomes the relation's source pointing into the dragged element's start"*. From the
+  begin anchor the new element is therefore the **source**, not the target, and the check as
+  written would read a correct reversal as a wrong direction.
+
+  `1c92704c` is dated **2026-09-01**, the same day as the verification, so whether this is drift
+  or an imprecision present at the time cannot be settled from the dates - and it does not
+  matter, because the amendment is the same either way. **Suggested amendment**: name which
+  anchor is dragged and state both directions. The 4-to-5 element and 2-to-3 relation counts in
+  the recorded result hold for either direction, which is why the original pass did not catch
+  it.
 
 ## Right-drag pans; Tab and Enter add; scrollbars pan (timeline-diagram, tview pass)
 
@@ -620,6 +697,38 @@ clipping, and that is only visible on screen.
   the thumbs pan the view within the content's extent.
 - **Verified 2026-09-01** against the running app (Tab and right-drag live; Enter and the
   thumbs through the same handlers in the test suite).
+
+- **Result 2026-09-05**: **drifted twice, and the second one changes what the check means.** Not
+  re-executed.
+  Reviewed in a sweep of the seven timeline entries, all of which carry a **Verified 2026-09-01**
+  outcome rather than a `Result` line - see the preamble.
+
+  **First: the component it was verified against no longer exists.** On 2026-09-03 `3bc98214`
+  migrated the timeline onto the shared scroll view - `TimelineScrollbars` was **removed** and
+  `CanvasScrollbars` renders in its place. The recorded pass says the thumbs were covered
+  *"through the same handlers in the test suite"*; those handlers are now shared with three other
+  canvases. The behaviour is pinned by `scrollGeometry.test.ts`, which the migration says
+  reproduces the old parameterisation term for term, so this is drift in what the entry *points
+  at* rather than in what it claims.
+
+  **Second, and more important: "the content's extent" no longer means what it meant.** When this
+  was verified the whole timeline arrived at open, so the content was the document and the thumbs
+  described it. Since `337938aa` (view-delta-adoption task 5) the session filters to the reported
+  viewport, and `scrollAxesOf` measures `model.elements` - **the delivered subset**. The thumb now
+  describes what has arrived, not what exists, so its size cannot be used to judge how much
+  timeline there is.
+
+  **It is not a hard stop, and I checked that rather than assuming it.** Both axes keep a margin
+  past the content - horizontally half the span, vertically a fixed two rows - so there is always
+  somewhere to drag to; dragging there reports a new view, the deltas arrive, and the extent
+  grows. The loop is self-extending, which is the opposite of the `Fit to View` defect recorded
+  below, where the delivered set collapsed inward to a fixed point. Worth saying plainly because
+  the two look alike from the outside.
+
+  **Suggested amendment**: replace *"within the content's extent"* with a sentence saying the
+  extent covers what has been delivered plus a margin, and that panning into the margin brings
+  more. As written, a tester who pans to the end of the thumb and finds more timeline appearing
+  cannot tell whether that is the design or a bug.
 
 ## A dependency graph shows no ruler, no dates and no moments (dependency-graph, task 4.1)
 
