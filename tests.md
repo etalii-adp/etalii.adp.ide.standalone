@@ -1231,7 +1231,7 @@ has not been translated here", not as decoration.
   no chip; concepts that are not show a fallback label with a small language tag beside it. The
   chip is legible but quiet - it should never out-shout the label. Removing the `language:`
   header and reopening moves the chips to the concepts that lack English instead.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed for the render; the gap chip is not in the data.** Opened both vendored STW vocabularies (business-economics, 160 concepts, and geographic-names, 245). Each concept draws its preferred label and a notation badge, and across all 405 concepts there is **not one spurious language chip** — the *“and only a gap”* half. The gap chip (`.skos-language-chip`) renders only where the backend finds a genuine translation gap, and neither vendored vocabulary has one in its header language, so the positive gap-chip render could not be exercised with the available example data — not a defect, just fully-translated corpora.
 
 ## A misplaced language: header changes nothing, and says why (skos-diagram, task 5.2)
 
@@ -1246,7 +1246,7 @@ message is the only place a user learns why their header did nothing.
   the default language order rather than the header's. The Errors and Warnings panel carries one
   `skos.misplaced-header` entry naming the line and saying to move it below `body:`. Moving it
   back and reopening restores the header's language and clears the entry.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed (behaviour); one part beyond the panel's cap.** Moving `language: de` above `body:` and reopening, the diagram still opened on its document — the pairing held — and drew in the **default** language order rather than the header's: the title flipped from the German *Standard-Thesaurus Wirtschaft* to the English *STW Thesaurus for Economics*, showing the misplaced header was refused. Moving it back and reopening restored the German title. The one thing I could not confirm is the `skos.misplaced-header` panel entry: this vocabulary carries over a thousand problems and the panel caps at 1000, so that entry (if emitted) sits beyond the visible list. The refuse-and-draw-default behaviour is verified; the panel message needs a smaller vocabulary or an uncapped view.
 
 ## Filing a concept under another is one gesture and one undo (skos-diagram, task 5.2)
 
@@ -1263,7 +1263,7 @@ direction thesauri are authored in - with no inverse invented, and reversible by
   changed line endings. The canvas re-layers so the concept sits below its new parent. Ctrl+Z
   leaves `git diff` empty. The side-anchor drag does the same with one `skos:related` line, and
   does not change the layering.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not driven here — canvas anchor-drag gesture.** Filing a concept is a drag from its top anchor onto another concept, the same class of canvas drag the in-app browser pane's atomic drag does not reliably trigger (as with the dependency-graph and helm drags). The developer build reaches the diagram; the one-`skos:broader`-line write and its single undo are the same command mechanism verified on other modules, but the gesture itself needs an ordinary browser. Not an app defect.
 
 ## A shared variable draws once, with edges crossing region borders (sparql-diagram, task 5.3)
 
