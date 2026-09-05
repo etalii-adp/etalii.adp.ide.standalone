@@ -1,4 +1,6 @@
-﻿namespace EtAlii.Adp.Backend.Diagrams;
+﻿using System;
+
+namespace EtAlii.Adp.Backend.Diagrams;
 
 /// <summary>
 /// Carries a <c>UpdateView</c> call, which arrives on its own unary request, to the
