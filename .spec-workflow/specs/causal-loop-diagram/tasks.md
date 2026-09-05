@@ -137,7 +137,7 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer implementing a neural layout | Task: Implement Meyer's self-organizing graph layout with every source of randomness replaced by a function of the document and the iteration index | Restrictions: no RNG, no wall-clock, no animation-to-rest; invoked as an action, never on open; behind the drawn-element budget | _Leverage: layout-modes' Cloud requirement, which answers the same three grounds | Success: the same document laid out in two different processes gives identical positions. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4.2 The separation pass, and the honest refusal
+- [x] 4.2 The separation pass, and the honest refusal
   - Files: `SelfOrganizingLayout.cs` (second phase)
   - **A converged self-organizing map does not guarantee non-overlap and the requirement does.** A bounded deterministic separation pass pushes overlapping boxes apart in stable order for a fixed number of rounds
   - If overlaps survive the rounds, the action **refuses for that document and reports the size at which it failed**. That is the correct outcome, not a failure of nerve, and not grounds for relaxing the overlap rule
@@ -146,7 +146,7 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 6.5, 6.6, 6.7_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add the deterministic separation pass and the refusal path when it cannot converge | Restrictions: do not relax the overlap rule to make a document pass; do not use the extent ratio as the unreadability guard; measure on real documents | Success: no two boxes intersect at budget size, or the action refuses naming the size. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.3 Persisting the arrangement
+- [-] 4.3 Persisting the arrangement
   - Files: the action's command path
   - The result is written through `SetRegistrationLayoutCommand` into the `.adp`'s `layout:` block, so the arrangement is **one undo away** like every other edit, and everything above the block survives byte for byte
   - _Requirements: 6.8_
