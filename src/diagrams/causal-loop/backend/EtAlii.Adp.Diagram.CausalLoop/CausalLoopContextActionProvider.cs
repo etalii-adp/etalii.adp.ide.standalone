@@ -1,0 +1,348 @@
+using System.Globalization;
+using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Context;
+
+namespace EtAlii.Adp.Diagram.CausalLoop;
+
+/// <summary>
+/// What a user can do to a causal loop diagram, offered through the standard provider path so the
+/// ribbon, the right-click menu, the keyboard and a toolbox drop all reach the same command
+/// (causal-loop-diagram Requirements 5.3, 5.4).
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>Every gesture is discovered unavailable with its reason rather than silently absent.</b> A
+/// missing menu entry tells a user nothing; an entry greyed out with a sentence tells them what
+/// to change. The one exception is a gesture that makes no sense for the selection at all - there
+/// is no "set polarity" on a variable, because polarity is not a thing a variable has.
+/// </para>
+/// <para>
+/// <b>What is offered depends only on what is selected.</b> A variable offers rename, remove and
+/// a new link from it; a link offers its polarity, its delay and removal; a loop offers rename
+/// and removal; and a placement offers a new variable. The provider reads the document to fill in
+/// the counts and the current values, and never to decide whether the user is allowed.
+/// </para>
+/// </remarks>
+public sealed class CausalLoopContextActionProvider(
+    ICausalLoopDocumentStore documents, IHistoryStackStore historyStacks) : IContextActionProvider
+{
+    /// <summary>Declare a new variable at the point the user asked for one.</summary>
+    public const string AddVariableActionId = "causal-loop.add-variable";
+
+    /// <summary>Rename a variable, carrying every link and loop that names it.</summary>
+    public const string RenameVariableActionId = "causal-loop.rename-variable";
+
+    /// <summary>Remove a variable, and the links and loops that named it.</summary>
+    public const string RemoveVariableActionId = "causal-loop.remove-variable";
+
+    /// <summary>State a link from the selected variable to another.</summary>
+    public const string AddLinkActionId = "causal-loop.add-link";
+
+    /// <summary>Say the effect runs the same way.</summary>
+    public const string MakePositiveActionId = "causal-loop.make-positive";
+
+    /// <summary>Say the effect runs the opposite way.</summary>
+    public const string MakeNegativeActionId = "causal-loop.make-negative";
+
+    /// <summary>Mark or unmark a link's effect as delayed.</summary>
+    public const string ToggleDelayActionId = "causal-loop.toggle-delay";
+
+    /// <summary>Withdraw a link. Loops through it survive.</summary>
+    public const string RemoveLinkActionId = "causal-loop.remove-link";
+
+    /// <summary>Claim a loop through the selected variable and another.</summary>
+    public const string AddLoopActionId = "causal-loop.add-loop";
+
+    /// <summary>Rename a loop, without touching what it runs through.</summary>
+    public const string RenameLoopActionId = "causal-loop.rename-loop";
+
+    /// <summary>Withdraw a loop's claim. Its links survive.</summary>
+    public const string RemoveLoopActionId = "causal-loop.remove-loop";
+
+    /// <inheritdoc />
+    public ContextScope Scope => ContextScope.DiagramElement;
+
+    /// <inheritdoc />
+    public ValueTask<IReadOnlyList<ContextActionGroupDefinition>> DiscoverAsync(
+        ContextTarget target, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!AnswersFor(target))
+        {
+            return Groups([]);
+        }
+
+        var entry = documents.GetOrLoad(target.ResolvedFullPath);
+        if (!entry.IsUsable)
+        {
+            return Groups([]);
+        }
+
+        if (CausalLoopSelection.IsPlacement(target.ElementId))
+        {
+            return Groups([new ContextActionGroupDefinition(
+                [new ContextActionDefinition(AddVariableActionId, "Add variable…", "mdi-plus-circle-outline")])]);
+        }
+
+        if (CausalLoopSelection.VariableOf(target.ElementId) is { } variable)
+        {
+            return Groups(VariableActions(entry.Model, variable));
+        }
+
+        if (CausalLoopSelection.LinkOf(target.ElementId) is { } ends)
+        {
+            return Groups(LinkActions(entry.Model, ends.From, ends.To));
+        }
+
+        if (CausalLoopSelection.LoopOf(target.ElementId) is { } loop)
+        {
+            return Groups(LoopActions(entry.Model, loop));
+        }
+
+        return Groups([]);
+    }
+
+    /// <inheritdoc />
+    public ValueTask<ContextExecutionResult> ExecuteAsync(
+        ContextTarget target, string actionId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!AnswersFor(target) || !actionId.StartsWith("causal-loop.", StringComparison.Ordinal))
+        {
+            return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionFailed("That action is not this diagram's."));
+        }
+
+        var entry = documents.GetOrLoad(target.ResolvedFullPath);
+
+        // The gestures that need a word from the user ask for one; the rest run.
+        return actionId switch
+        {
+            AddVariableActionId => Ask("Add variable", "mdi-plus-circle-outline", "Name", ""),
+            RenameVariableActionId => Ask(
+                "Rename variable", "mdi-rename-outline", "Name",
+                CausalLoopSelection.VariableOf(target.ElementId) ?? ""),
+            AddLinkActionId => Ask("Add link", "mdi-arrow-right-thin", "To variable", ""),
+            AddLoopActionId => Ask("Claim a loop", "mdi-sync", "Identifier", NextLoopIdentifier(entry.Model)),
+            RenameLoopActionId => Ask(
+                "Rename loop", "mdi-rename-outline", "Name",
+                entry.Model.Loops.FirstOrDefault(loop => loop.Id == target.ElementId)?.Name ?? ""),
+            RemoveVariableActionId => Confirm(entry.Model, target),
+            _ => RunAsync(target, actionId, "", cancellationToken),
+        };
+    }
+
+    /// <inheritdoc />
+    public ValueTask<ContextValidationResult> ValidateAsync(
+        ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!AnswersFor(target))
+        {
+            return ValueTask.FromResult(ContextValidationResult.Accepted);
+        }
+
+        var entry = documents.GetOrLoad(target.ResolvedFullPath);
+
+        return ValueTask.FromResult(actionId switch
+        {
+            AddVariableActionId or RenameVariableActionId when value.Any(char.IsWhiteSpace) || value.Length == 0 =>
+                ContextValidationResult.Rejected(CausalLoopWriter.UnusableName),
+            AddVariableActionId when entry.Model.Declares(value) =>
+                ContextValidationResult.Rejected(CausalLoopWriter.AlreadyDeclared),
+            AddLinkActionId when !entry.Model.Declares(value) =>
+                ContextValidationResult.Rejected($"'{value}' is not a variable in this diagram."),
+            AddLoopActionId when entry.Model.Loops.Any(loop => loop.Identifier == value) =>
+                ContextValidationResult.Rejected("A loop of that identifier is already stated in this diagram."),
+            _ => ContextValidationResult.Accepted,
+        });
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<ContextCommitResult> CommitAsync(
+        ContextTarget target, string actionId, string value, string text, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        _ = text;
+
+        var result = await RunAsync(target, actionId, value, cancellationToken);
+        return result is ContextExecutionFailed failed
+            ? ContextCommitResult.Failed(failed.Message)
+            : ContextCommitResult.Succeeded;
+    }
+
+    /// <summary>The command one action-and-value pair dispatches, or null when it is not ours.</summary>
+    internal ICommand? CommandFor(ContextTarget target, string actionId, string value)
+    {
+        var body = target.ResolvedFullPath;
+        var entry = documents.GetOrLoad(body);
+        var variable = CausalLoopSelection.VariableOf(target.ElementId);
+        var link = CausalLoopSelection.LinkOf(target.ElementId);
+        var loop = CausalLoopSelection.LoopOf(target.ElementId);
+
+        return actionId switch
+        {
+            AddVariableActionId => new AddVariableCommand(body, value, value),
+            RenameVariableActionId when variable is not null => new RenameVariableCommand(body, variable, value),
+            RemoveVariableActionId when variable is not null => new RemoveVariableCommand(body, variable),
+            AddLinkActionId when variable is not null =>
+                new AddLinkCommand(body, variable, value, CausalLoopPolarity.Positive),
+            AddLoopActionId when variable is not null =>
+                new AddLoopCommand(body, value, value, LoopThrough(entry.Model, variable)),
+            MakePositiveActionId when link is not null =>
+                new SetLinkPolarityCommand(body, link.Value.From, link.Value.To, CausalLoopPolarity.Positive),
+            MakeNegativeActionId when link is not null =>
+                new SetLinkPolarityCommand(body, link.Value.From, link.Value.To, CausalLoopPolarity.Negative),
+            ToggleDelayActionId when link is not null =>
+                new SetLinkDelayCommand(body, link.Value.From, link.Value.To, !IsDelayed(entry.Model, link.Value)),
+            RemoveLinkActionId when link is not null =>
+                new RemoveLinkCommand(body, link.Value.From, link.Value.To),
+            RenameLoopActionId when loop is not null => new SetLoopNameCommand(body, loop, value),
+            RemoveLoopActionId when loop is not null => new RemoveLoopCommand(body, loop),
+            _ => null,
+        };
+    }
+
+    private static bool AnswersFor(ContextTarget target) =>
+        target.ResolvedFullPath.EndsWith(".cld", StringComparison.OrdinalIgnoreCase);
+
+    private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Groups(
+        IReadOnlyList<ContextActionGroupDefinition> groups) =>
+        ValueTask.FromResult(groups);
+
+    private static ValueTask<ContextExecutionResult> Ask(string title, string icon, string field, string initial) =>
+        ValueTask.FromResult<ContextExecutionResult>(
+            new ContextExecutionRequiresInput(new ContextInputRequest(title, icon, field, initial, "Apply")));
+
+    /// <summary>
+    /// Removing a variable takes the links and loops that named it, so the count is stated before
+    /// anything runs rather than discovered afterwards.
+    /// </summary>
+    private static ValueTask<ContextExecutionResult> Confirm(CausalLoopModel model, ContextTarget target)
+    {
+        var variable = CausalLoopSelection.VariableOf(target.ElementId) ?? "";
+        var count = CausalLoopWriter.CountVariableRemoval(model, variable);
+
+        return ValueTask.FromResult<ContextExecutionResult>(new ContextExecutionRequiresConfirmation(
+            new ContextConfirmationRequest(
+                "Remove variable",
+                "mdi-delete-outline",
+                count > 1
+                    ? $"Removing '{variable}' also removes the {count - 1} links and loops that name it."
+                    : $"Remove '{variable}'?",
+                "Remove",
+                Danger: true)));
+    }
+
+    private async ValueTask<ContextExecutionResult> RunAsync(
+        ContextTarget target, string actionId, string value, CancellationToken cancellationToken)
+    {
+        if (CommandFor(target, actionId, value) is not { } command)
+        {
+            return new ContextExecutionFailed("That action does not apply to this selection.");
+        }
+
+        var result = await historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
+        return result.IsSuccess ? new ContextExecutionCompleted() : new ContextExecutionFailed(result.Error);
+    }
+
+    private static IReadOnlyList<ContextActionGroupDefinition> VariableActions(CausalLoopModel model, string variable)
+    {
+        var known = model.Declares(variable);
+        var reason = known ? "" : CausalLoopWriter.NoSuchVariable;
+        var count = CausalLoopWriter.CountVariableRemoval(model, variable);
+
+        return
+        [
+            new ContextActionGroupDefinition(
+            [
+                new ContextActionDefinition(AddLinkActionId, "Add link from here…", "mdi-arrow-right-thin", null, known, reason),
+                new ContextActionDefinition(AddLoopActionId, "Claim a loop from here…", "mdi-sync", null, known, reason),
+                new ContextActionDefinition(RenameVariableActionId, "Rename…", "mdi-rename-outline", null, known, reason),
+                new ContextActionDefinition(
+                    RemoveVariableActionId,
+                    count > 1 ? $"Remove variable (with {count - 1} references)" : "Remove variable",
+                    "mdi-delete-outline",
+                    new ContextShortcutDefinition("Delete"),
+                    known,
+                    reason),
+            ]),
+        ];
+    }
+
+    private static IReadOnlyList<ContextActionGroupDefinition> LinkActions(CausalLoopModel model, string from, string to)
+    {
+        var link = model.Links.FirstOrDefault(candidate => candidate.From == from && candidate.To == to);
+        var known = link is not null;
+        var reason = known ? "" : CausalLoopWriter.NoSuchLink;
+
+        return
+        [
+            new ContextActionGroupDefinition(
+            [
+                new ContextActionDefinition(
+                    MakePositiveActionId, "Same direction (+)", "mdi-plus", null,
+                    known && link!.Polarity != CausalLoopPolarity.Positive,
+                    known ? "This link already states +." : reason),
+                new ContextActionDefinition(
+                    MakeNegativeActionId, "Opposite direction (−)", "mdi-minus", null,
+                    known && link!.Polarity != CausalLoopPolarity.Negative,
+                    known ? "This link already states −." : reason),
+                new ContextActionDefinition(
+                    ToggleDelayActionId,
+                    known && link!.Delayed ? "Not delayed" : "Delayed",
+                    "mdi-timer-sand", null, known, reason),
+                new ContextActionDefinition(
+                    RemoveLinkActionId, "Remove link", "mdi-delete-outline",
+                    new ContextShortcutDefinition("Delete"), known, reason),
+            ]),
+        ];
+    }
+
+    private static IReadOnlyList<ContextActionGroupDefinition> LoopActions(CausalLoopModel model, string identifier)
+    {
+        var known = model.Loops.Any(loop => loop.Identifier == identifier);
+        var reason = known ? "" : CausalLoopWriter.NoSuchLoop;
+
+        return
+        [
+            new ContextActionGroupDefinition(
+            [
+                new ContextActionDefinition(RenameLoopActionId, "Rename loop…", "mdi-rename-outline", null, known, reason),
+                new ContextActionDefinition(
+                    RemoveLoopActionId, "Remove loop", "mdi-delete-outline",
+                    new ContextShortcutDefinition("Delete"), known, reason),
+            ]),
+        ];
+    }
+
+    private static bool IsDelayed(CausalLoopModel model, (string From, string To) link) =>
+        model.Links.FirstOrDefault(candidate => candidate.From == link.From && candidate.To == link.To)?.Delayed == true;
+
+    /// <summary>The shortest cycle through a variable, so a claimed loop starts from something real.</summary>
+    private static IReadOnlyList<string> LoopThrough(CausalLoopModel model, string variable) =>
+        CycleFinder.Find(model).Cycles
+            .Where(cycle => cycle.Contains(variable, StringComparer.Ordinal))
+            .OrderBy(cycle => cycle.Count)
+            .FirstOrDefault() ?? [variable];
+
+    /// <summary>The next free loop identifier, so a new claim does not collide with an existing one.</summary>
+    private static string NextLoopIdentifier(CausalLoopModel model)
+    {
+        for (var number = 1; number < 1000; number++)
+        {
+            var candidate = string.Create(CultureInfo.InvariantCulture, $"R{number}");
+            if (!model.Loops.Any(loop => loop.Identifier == candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return "R";
+    }
+}

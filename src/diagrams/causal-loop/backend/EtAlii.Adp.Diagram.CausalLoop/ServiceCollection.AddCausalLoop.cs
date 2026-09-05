@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend;
+using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Diagrams;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -62,6 +63,12 @@ public static class ServiceCollectionAddCausalLoopExtension
         services.AddSingleton<ICommandHandler<SetLoopNameCommand>, SetLoopNameCommandHandler>();
         services.AddSingleton<ICommandHandler<SetLoopMembershipCommand>, SetLoopMembershipCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveLoopCommand>, RemoveLoopCommandHandler>();
+
+        // The context seams: one registration each, resolved by scope and origin.
+        services.AddSingleton<IContextActionProvider>(provider => new CausalLoopContextActionProvider(
+            provider.GetRequiredService<ICausalLoopDocumentStore>(),
+            provider.GetRequiredService<IHistoryStackStore>()));
+        services.AddSingleton<IDiagramToolboxProvider, CausalLoopToolboxProvider>();
 
         // The rules, resolved by origin through core's validator registry. This reading only
         // ever reports: the disagreement between a stated label and the arithmetic is a finding,
