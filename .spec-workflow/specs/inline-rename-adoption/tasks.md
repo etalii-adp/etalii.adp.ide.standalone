@@ -58,7 +58,7 @@ One worktree for the whole spec: `.claude/worktrees/adopt` — short, because th
   - _Requirements: 1.1, 3.1, 4.2, 6.1, 8.2, 9.2_
   - _Prompt: Implement the task for spec inline-rename-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer | Task: Forward F2 in PipelineCanvas and adopt inline rename for its elements | Restrictions: F2 goes through structuralShortcutFor as data, never a client-side key-to-action table; mark only the rename | _Leverage: the F2 forwarding in MindmapCanvas or TimelineCanvas | Success: F2 reaches the backend, the rename opens in place, gates green. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 6. wardley-map becomes selectable — a prerequisite, not an adoption
+- [x] 6. wardley-map becomes selectable — a prerequisite, not an adoption
   - Files: `src/diagrams/wardley-map/client/WardleyCanvas.tsx` and its test
   - **`WardleyCanvas` imports nothing from the context channel** — no `useContextConnection`, no `useContextSelection`, no `elementSelectionOf`. It has no selection, no menu and no keyboard shortcut, so `wardley.rename` has been offered by the backend all along with no gesture on that canvas able to reach it.
   - This is the C4 relationship defect one size larger, and it is **its own task deliberately**. Folded into an adoption it produces an adopter that renders correctly in tests and does nothing in the product, which is exactly what happened with C4.
