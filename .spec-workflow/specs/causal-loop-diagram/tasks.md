@@ -93,7 +93,7 @@ A note on guards, since the question will come up: this specification has **no l
 
 ## Group 3 — Editing it
 
-- [ ] 3. Commands, context actions and the property grid
+- [x] 3. Commands, context actions and the property grid
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 5.3, 5.4, 5.5, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6_
 
 - [x] 3.1 The writers and their commands
@@ -118,13 +118,13 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Implement the property grid for variables, links and loops, dispatching edits as commands | Restrictions: a weight is never evaluated; every read-only row carries a reason; show both polarities on a loop where they disagree | _Leverage: the family property providers | Success: setting a label or a weight lands as an undoable command and the loop rows show both labels. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3.4 Gate and merge group 3
+- [x] 3.4 Gate and merge group 3
   - _Requirements: (gate)_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates and merge group 3 through a scratch worktree | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 ## Group 4 — The self-organizing layout
 
-- [ ] 4. Meyer's method, with the randomness removed
+- [x] 4. Meyer's method, with the randomness removed
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8_
 
 - [x] 4.1 The self-organizing pass, made deterministic
@@ -152,13 +152,13 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 6.8_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Persist the computed arrangement as authored positions through the existing layout command | Restrictions: no new persistence mechanism; preserve everything above the layout block byte for byte | Success: running the action then undoing restores the registration byte for byte. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4.4 Gate and merge group 4
+- [x] 4.4 Gate and merge group 4
   - _Requirements: (gate)_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates and merge group 4 through a scratch worktree | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
 ## Group 5 — Examples, catalog and the manual pass
 
-- [ ] 5. What a reader opens, and where the type is listed
+- [x] 5. What a reader opens, and where the type is listed
   - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 12.1, 12.2, 12.3_
 
 - [x] 5.1 Examples
@@ -175,7 +175,7 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 12.1, 12.2, 12.3_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer | Task: Add the catalog row with its state icon and origin tag | Restrictions: edit in place; the origin is `systems/causal-loop-diagram` exactly | Success: the row is present and the catalog coherence test passes. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 5.3 Final gate, merge, retire, manual pass
+- [x] 5.3 Final gate, merge, retire, manual pass
   - The four gates with exit codes checked; merge through a scratch worktree; retire it, reporting a removal failure rather than forcing it; add the design's three `tests.md` entries and run them against the running app
   - _Requirements: (gate + the manual halves of 2, 3 and 6)_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates, merge, retire the worktree, and execute the manual pass | Restrictions: do not merge on a failing gate; report worktree-removal failures rather than forcing them | Success: gates green, merged, worktree retired, manual pass recorded. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
