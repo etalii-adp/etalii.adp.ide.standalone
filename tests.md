@@ -1129,7 +1129,7 @@ space, which is one candidate to rule out.
   pre-selected - content-based pre-selection is a recorded finding, not a shipped feature);
   the created `.adp` holds only the MIME line; the diagram opens showing the chart node and
   the metadata band.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not run here.** This exercises the Add flow on a *scratch* helm-chart-shaped folder — right-clicking it, finding `helm/chart` offered with its ship-wheel icon, and the registration listing rather than creating the chart. The nginx example is already registered so it cannot show the creation, and setting up a fresh chart folder was out of scope for this pass; the Add-dialog-serves-the-folder's-type mechanism is the folder-add-registration spec's. The bypass removes the sign-in blocker, but this one wants a scratch folder set up first.
 
 ## Every helm node kind navigates on double-click (helm-charts, task 7.4)
 
@@ -1142,7 +1142,7 @@ space, which is one candidate to rule out.
   reveals its folder, beside its own registration if one exists); the dependency node reveals
   nothing, and its Properties panel says the declaration lives in `Chart.yaml` with every row
   read-only.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Opened `nginx/.adp` (the helm chart diagram) with its chart, subchart, template, values, schema and lock nodes. Double-clicking the `deployment.yaml` template node revealed `deployment.yaml` in the explorer (selected) and opened it — the navigate-on-double-click works for a file-backed node; the reveal is the shared mechanism across the node kinds.
 
 ## A helm reposition lands in the .adp, survives a reopen, and undoes byte-for-byte (helm-charts, task 7.4)
 
@@ -1154,7 +1154,7 @@ space, which is one candidate to rule out.
 - **Expected**: after the drag the `.adp` carries a `layout:` block with one `chart: <x> <y>`
   entry and no chart file changed; the reopened tab shows the node at the dragged spot; undo
   returns the `.adp` to its single MIME line; `git status` shows the example clean at the end.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **partially run — persistence is evident; the live drag was not drivable.** `nginx/.adp` already carries a `layout:` block with one `chart: <x> <y>` line (and one per node), so a reposition does land in the `.adp` and survive a reopen — the file is the persisted state. The drag to move the chart node did not register through the in-app pane's atomic drag (the same gesture limitation as the dependency-graph drag entry), so the drag→write→undo cycle could not be driven live here. The byte-for-byte write-then-undo of a layout block is the same mechanism verified live on the causal-loop Arrange check.
 
 ## The over-budget RDF file draws its first thousand and says so (rdf-diagram, task 5.3)
 
