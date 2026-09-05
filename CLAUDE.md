@@ -61,6 +61,14 @@ A *wrong* name is worse than an ambiguous one. Full reasoning, and why an identi
 
 Six worked instances and the reasoning: [processes.md, *Checking that a command answered your question*](.spec-workflow/steering/processes.md#checking-that-a-command-answered-your-question).
 
+## Checking that a specification's tasks cover its requirements
+
+**Extract every requirement reference from the tasks document, list every acceptance criterion in the requirements, and diff the two sets.** It finds what re-reading does not - on one specification it surfaced three requirements no task claimed, and the author's own account was that re-reading would have found none of them. **Run it twice**: before implementing it asks *did anybody claim this?*, and after implementing, traced to files and strings rather than to a task's promise, it asks *does the code show this?*
+
+**An unclaimed requirement is not necessarily a gap, and saying which kind it is finishes the job.** *No task claimed it* is a real gap - add the claim or add the task. *No task can claim it* is satisfied by the document's own shape, as when the in-scope set follows from the criteria rather than a list; state that in the tasks document, naming the requirements it covers. The two are identical in the diff's output. Ten unclaimed on one specification were seven and three, and a reader meeting an unexplained silence will either add pointless claims or write the diff off as noisy.
+
+Reasoning: [processes.md, *Checking that a specification's tasks cover its requirements*](.spec-workflow/steering/processes.md#checking-that-a-specifications-tasks-cover-its-requirements).
+
 ## spec-workflow
 
 Commit any set of files added or removed under `.spec-workflow/` immediately, in its own commit — implementation logs included. Commit a document and its approval-lifecycle files when it is approved. **Approval comes from the dashboard and nowhere else: verbal approval is never accepted, from anyone.**

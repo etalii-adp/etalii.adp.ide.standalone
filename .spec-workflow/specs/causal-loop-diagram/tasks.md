@@ -146,13 +146,13 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 6.5, 6.6, 6.7_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Add the deterministic separation pass and the refusal path when it cannot converge | Restrictions: do not relax the overlap rule to make a document pass; do not use the extent ratio as the unreadability guard; measure on real documents | Success: no two boxes intersect at budget size, or the action refuses naming the size. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4.3 Persisting the arrangement
+- [x] 4.3 Persisting the arrangement
   - Files: the action's command path
   - The result is written through `SetRegistrationLayoutCommand` into the `.adp`'s `layout:` block, so the arrangement is **one undo away** like every other edit, and everything above the block survives byte for byte
   - _Requirements: 6.8_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Persist the computed arrangement as authored positions through the existing layout command | Restrictions: no new persistence mechanism; preserve everything above the layout block byte for byte | Success: running the action then undoing restores the registration byte for byte. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.4 Gate and merge group 4
+- [-] 4.4 Gate and merge group 4
   - _Requirements: (gate)_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates and merge group 4 through a scratch worktree | Restrictions: do not merge on a failing gate | Success: gates green, merged. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
