@@ -122,7 +122,7 @@ than missed.
   - _Requirements: 1.2, 1.3, 4.1, 4.2_
   - _Prompt: Implement the task for spec selection-after-drag, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Convert PipelineCanvas's pan and background press onto the arbiter and delete panJustEndedRef with its arming and guard | Restrictions: pan behaviour unchanged - a moved pan neither selects nor deselects; an unmoved background press still deselects | _Leverage: the arbiter from task 1 | Success: no JustEndedRef remains in the file and the pipeline client tests pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 6. Gate and merge, and the two completion checks
+- [x] 6. Gate and merge, and the two completion checks
   - Four gates on the merged tree, exit codes captured before any pipe, then the scratch-
     worktree merge as the preamble describes.
   - **Completion checks, both recorded in the log**: `grep -rn JustEndedRef src/` returns
