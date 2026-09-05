@@ -37,7 +37,7 @@ public class ShapeOfSourcesTests
             }
 
             Assert.SkipWhen(directory is null, "The module root was not found from the test output.");
-            return directory!.FullName;
+            return directory.FullName;
         }
     }
 

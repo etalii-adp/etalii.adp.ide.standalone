@@ -84,7 +84,7 @@ public class SelfOrganizingLayoutTests
         var host = Environment.ProcessPath;
         Assert.SkipWhen(host is null, "The test host's own path is unknown, so no child can be started.");
 
-        var start = new ProcessStartInfo(host!)
+        var start = new ProcessStartInfo(host)
         {
             UseShellExecute = false,
             RedirectStandardOutput = true,
@@ -132,7 +132,7 @@ public class SelfOrganizingLayoutTests
             "Only the two-process determinism test asks for this; nothing did.");
 
         // Act & assert.
-        File.WriteAllText(output!, Serialize(SelfOrganizingLayout.Compute(Fixture())));
+        File.WriteAllText(output, Serialize(SelfOrganizingLayout.Compute(Fixture())));
     }
 
     /// <summary>Positions as text, round-trippable so the comparison is exact rather than near.</summary>

@@ -33,7 +33,7 @@ public class CatalogTests
             }
 
             Assert.SkipWhen(directory is null, "The repository's docs/diagrams.md was not found from the test output.");
-            return IoPath.Combine(directory!.FullName, "docs", "diagrams.md");
+            return IoPath.Combine(directory.FullName, "docs", "diagrams.md");
         }
     }
 
@@ -43,7 +43,7 @@ public class CatalogTests
             .FirstOrDefault(line => line.Contains("systems/causal-loop-diagram", StringComparison.Ordinal));
 
         Assert.NotNull(row);
-        return row!;
+        return row;
     }
 
     /// <summary>

@@ -1,4 +1,3 @@
-using EtAlii.Adp.Backend.Diagrams;
 using Xunit;
 using IoPath = System.IO.Path;
 
@@ -39,7 +38,7 @@ public class ExamplesTests
             }
 
             Assert.SkipWhen(directory is null, "The module's examples folder was not found from the test output.");
-            return IoPath.Combine(directory!.FullName, "examples");
+            return IoPath.Combine(directory.FullName, "examples");
         }
     }
 
