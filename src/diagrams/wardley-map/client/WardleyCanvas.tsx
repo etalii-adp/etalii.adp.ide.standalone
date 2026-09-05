@@ -7,10 +7,14 @@ import { SymbolElement } from "@client/canvas/elements/symbol/SymbolElement";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
 import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
-import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { ContextMenu } from "@client/shell/context/ContextMenu";
 import { toMenuGroups } from "@client/shell/context/toMenuGroups";
 import { ContextSelectionAction } from "@client/generated/context_pb";
+import { InlineLabelEditor } from "@client/canvas/label/InlineLabelEditor";
+import { asideLabelPlacement } from "@client/canvas/label/labelPlacement";
+import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
+import { useRegisterInlineLabelPlacement, type LabelPlacement } from "@client/shell/panels/InlineLabelPlacementContext";
 import { useRegisterDiagramView } from "@client/shell/panels/DiagramViewContext";
 import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
@@ -93,6 +97,45 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
   const { menuPosition, openMenuAt, closeMenu } = useElementContextMenu(selectionKey, actions.length > 0, (id) =>
     select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
   );
+
+  // Where an element's label is drawn - for the shell's inline editor. The map's own 0..1
+  // space is not a special case: scale() puts elements into canvas units independent of the
+  // view, so the resolver keys on the model alone, like every viewBox canvas.
+  //
+  // A wardley label is a bare start-anchored text at a document-carried pixel offset from the
+  // mark - to its right by default, and wherever the author put it otherwise, left included.
+  // That is asideLabelPlacement's shape exactly, with the offset as the (possibly negative)
+  // gap, and the vertical anchored to the label's own baseline rather than the mark's centre.
+  const placementOfLabel = useCallback(
+    (elementId: string): LabelPlacement | null => {
+      const element = model.elements.get(elementId);
+      if (element === undefined) {
+        return null;
+      }
+
+      const offsetX = element.labelOffset?.x ?? DOT + 6;
+      const offsetY = element.labelOffset?.y ?? 4;
+      return asideLabelPlacement(
+        { x: scale(element.x), y: scale(element.y) + offsetY - 4 },
+        offsetX,
+        element.name,
+      );
+    },
+    [model],
+  );
+  useRegisterInlineLabelPlacement(placementOfLabel);
+
+  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
+  const editingId = inlineLabelElementIdOf(prompt);
+  const editingPlacement = editingId === null ? null : placementOfLabel(editingId);
+  const returnFocusToSurface = useCallback(() => surfaceRef.current?.focus(), []);
+
+  /** Ends an open inline edit before a gesture begins; the editor commits on blur. */
+  const endInlineEditBeforeGesture = () => {
+    if (editingPlacement !== null) {
+      surfaceRef.current?.focus();
+    }
+  };
 
   // The palette the Toolbox panel shows while this map is open - described by the backend
   // (Requirement 13), registered here and withdrawn on unmount.
@@ -183,6 +226,7 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
   }, [view.w]);
 
   const onPointerDown = (event: React.MouseEvent) => {
+    endInlineEditBeforeGesture();
     panRef.current = { clientX: event.clientX, clientY: event.clientY, view };
     panMovedRef.current = false;
   };
@@ -190,6 +234,7 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
   const onElementPointerDown = (event: React.MouseEvent, element: WardleyElement) => {
     // The element takes the gesture; the surface must not also pan under it.
     event.stopPropagation();
+    endInlineEditBeforeGesture();
     setRejection("");
     dragRef.current = {
       id: element.id,
@@ -307,6 +352,18 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
         <WardleyChrome axis={model.axis} scaleFactor={view.w / (SPACE + MARGIN * 2)} />
         {loading ? null : (
           <WardleyContents model={model} drag={drag} selectedId={selectedId} onElementPointerDown={onElementPointerDown} onElementContextMenu={onElementContextMenu} />
+        )}
+
+        {/* Last of all, so the editor is above every mark and link it overlaps. Placed in
+            canvas units; the viewBox carries it through pans and zooms like everything else. */}
+        {editingPlacement !== null && (
+          <InlineLabelEditor
+            placement={editingPlacement}
+            onPropose={onProposeLabel}
+            onSubmit={onSubmitLabel}
+            onCancel={onCancelLabel}
+            onReturnFocus={returnFocusToSurface}
+          />
         )}
       </svg>
       <CanvasScrollbars
