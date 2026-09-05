@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/developer-sign-in-bypass/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-05T00:00:01.586Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788566401426_u0yv3aqy2",
+      "approvalTitle": "developer-sign-in-bypass — Requirements"
+    }
+  ]
+}
