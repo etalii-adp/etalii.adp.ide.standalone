@@ -973,6 +973,41 @@ this diagram has writes the registration and never the `.rq` (Requirements 5.1, 
   `proteome-location-of-gene.rq` at any point; the reopened diagram draws the node at the
   stored spot; one undo returns the `.adp` byte-for-byte, leaving the tree clean again.
 
+- **Result 2026-09-05**: **half verified, half inconclusive — and the inconclusive half looks like
+  a defect.** Run against a worktree build with `src/examples` open; the user signed in.
+
+  **The half that passes, and it is the promise the check exists for**: `git status` was clean
+  before, `proteome-location-of-gene.rq`'s checksum was `d8e37162c7480bb8f6326b470af8b3a3` before
+  and after every attempt, and `git diff` on it showed **not one changed line** at any point.
+  Nothing this pass did touched the query.
+
+  **The half that did not happen: the node would not move.** Two drags of `?proteomeData`, and it
+  stayed at exactly the same position both times — `dx: 0, dy: 0` — with **no message of any
+  kind**, and nothing written to `proteome-location-of-gene.adp`, which still has no `layout:`
+  block. So the position could not be observed landing in it.
+
+  **This is not the harness.** The obvious explanation is that a browser-driven drag does not
+  reach the canvas, so it was tested against a canvas known to accept one: in the same session, at
+  the same viewport, by the same method, an **owl class moved by `dx: -59, dy: -87`** while the
+  sparql variable moved by nothing. A click at the identical coordinates *does* select
+  `?proteomeData` and populates its property grid, so the coordinates were over the node.
+
+  **What makes it look like a defect rather than a refusal**: `SparqlSession.MoveElementToAsync`
+  exists and is implemented, `SparqlCanvas` carries the drag machinery (`dragRef`, a drag preview,
+  `moveElementTo`), and the module's own doc comment says *"Refusals come back from the backend
+  with their own sentences."* Nothing was refused out loud. A gesture that neither works nor says
+  why is the shape this module was specifically written to avoid.
+
+  **Not concluded, and here is the honest reason.** Mid-session I restored `owl-time.adp` from a
+  copy while the app held it open, and a later owl drag then moved on canvas without persisting —
+  so my own action may have disturbed the backend's view of that file, and I will not build a
+  verdict on a session I disturbed. Re-running this check from a fresh sign-in, touching no file
+  underneath the app, is what would settle it. **Do that before anyone changes code.**
+
+  Reloading the page to get that clean state **signed the session out**, which is worth knowing:
+  the session is in memory only, so a tester gets one run per sign-in and a reload costs a person's
+  attention.
+
 ## The context menu offers no edits (sparql-diagram, task 5.3)
 
 The read-only position is meant to be visible, not merely enforced: a menu that offered an
