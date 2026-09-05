@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { facingAnchorsBetween, forwardBezierPath, midpointOf } from "@client/canvas/connectors";
+import { arcBetween, normalAlong, pointAlong } from "./causalLoopArc";
 import { BoxElement } from "@client/canvas/elements/box/BoxElement";
 import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
 import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
@@ -235,9 +235,16 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
               return null;
             }
 
-            const [start, finish] = facingAnchorsBetween(boxOf(ends.from), boxOf(ends.to));
-            const mid = midpointOf(start, finish);
+            // One control point, bowed perpendicular to the chord and always to the same side
+            // of travel - which is what makes A -> B and B -> A draw an ellipse between them
+            // rather than two lines on top of each other. See causalLoopArc.ts.
+            const arc = arcBetween(boxOf(ends.from), boxOf(ends.to));
             const mark = polarityMark(link.payload.polarity);
+
+            // The polarity sits just short of the arrowhead and off to one side, so it is beside
+            // the line it describes rather than under the arrow or on top of the target.
+            const markAt = pointAlong(arc, 0.86);
+            const markNormal = normalAlong(arc, 0.86);
 
             return (
               <g
@@ -250,19 +257,36 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
               >
                 <path
                   className="canvas-connection-line"
-                  d={forwardBezierPath(start, finish)}
+                  d={arc.path}
                   markerEnd="url(#causal-loop-arrow)"
                 />
-                <path className="canvas-connection-hit" d={forwardBezierPath(start, finish)} />
+                <path className="canvas-connection-hit" d={arc.path} />
                 {link.payload.delayed && (
-                  // The conventional delay mark: two short strokes across the link.
+                  // The conventional delay mark: two short strokes ACROSS the link. Across means
+                  // along the curve's own normal - drawn vertically they would lie along a
+                  // near-vertical arc rather than crossing it, and read as nothing at all.
                   <g className="causal-loop-delay">
-                    <line x1={mid.x - 5} y1={mid.y - 8} x2={mid.x + 1} y2={mid.y + 8} />
-                    <line x1={mid.x + 3} y1={mid.y - 8} x2={mid.x + 9} y2={mid.y + 8} />
+                    <line
+                      x1={pointAlong(arc, 0.44).x - arc.apexNormal.x * 8}
+                      y1={pointAlong(arc, 0.44).y - arc.apexNormal.y * 8}
+                      x2={pointAlong(arc, 0.44).x + arc.apexNormal.x * 8}
+                      y2={pointAlong(arc, 0.44).y + arc.apexNormal.y * 8}
+                    />
+                    <line
+                      x1={pointAlong(arc, 0.56).x - arc.apexNormal.x * 8}
+                      y1={pointAlong(arc, 0.56).y - arc.apexNormal.y * 8}
+                      x2={pointAlong(arc, 0.56).x + arc.apexNormal.x * 8}
+                      y2={pointAlong(arc, 0.56).y + arc.apexNormal.y * 8}
+                    />
                   </g>
                 )}
                 {mark !== "" && (
-                  <text className="causal-loop-polarity" x={finish.x} y={finish.y - 8}>
+                  <text
+                    className="causal-loop-polarity"
+                    x={markAt.x + markNormal.x * 11}
+                    y={markAt.y + markNormal.y * 11}
+                    textAnchor="middle"
+                  >
                     {mark}
                   </text>
                 )}
@@ -279,6 +303,21 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
               data-element-id={loop.id}
               onClick={() => onSelect(loop.id)}
             >
+              {/*
+                The conventional loop marker: a curved arrow encircling the identifier, drawn at
+                the centre of the variables the loop runs through. The notation draws this because
+                the identifier alone says a loop exists while the marker shows one - which is the
+                whole complaint the arcs above also answer.
+
+                The sweep follows the polarity: a reinforcing loop is drawn clockwise and a
+                balancing one anticlockwise, which is how the reference tools distinguish them at
+                a glance before anyone reads the letter.
+              */}
+              <path
+                className="causal-loop-marker"
+                d={loopMarkerPath(loop.x, loop.y - 15, 13, loop.payload.computed === LoopPolarityProto.REINFORCING)}
+                markerEnd="url(#causal-loop-arrow)"
+              />
               <text
                 className={`causal-loop-badge causal-loop-${polarityWord(loop.payload.computed)}`}
                 x={loop.x}
@@ -388,3 +427,21 @@ function boundsOf(variables: readonly CausalLoopVariable[]): ViewBox {
 
 /** Unused in this file, but the link type is part of the drawn vocabulary. */
 export type { CausalLoopLink };
+
+/**
+ * A near-complete circle with a gap for its arrowhead - the loop marker the notation draws at the
+ * centre of a feedback loop.
+ *
+ * Two arcs rather than one, because a single SVG elliptical arc cannot exceed a half turn without
+ * the large-arc flag, and using it would leave the arrowhead pointing the wrong way at the seam.
+ */
+function loopMarkerPath(centreX: number, centreY: number, radius: number, clockwise: boolean): string {
+  const sweep = clockwise ? 1 : 0;
+  const start = -Math.PI / 2;
+  const end = start + (clockwise ? 1 : -1) * Math.PI * 1.7;
+  const middle = (start + end) / 2;
+
+  const at = (angle: number) => `${(centreX + radius * Math.cos(angle)).toFixed(2)} ${(centreY + radius * Math.sin(angle)).toFixed(2)}`;
+
+  return `M ${at(start)} A ${radius} ${radius} 0 0 ${sweep} ${at(middle)} A ${radius} ${radius} 0 0 ${sweep} ${at(end)}`;
+}
