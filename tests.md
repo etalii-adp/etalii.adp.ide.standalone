@@ -496,7 +496,7 @@ actually depend on.
   - Step 6: exactly one changed line, the `displayName` you set. No re-indentation, no reordered
     keys, no quoting changes, no lost comments, no changed line endings.
   - Step 7: `git diff` is empty. Byte for byte, not merely equivalent.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Opened `multi-stage.adp`. All five stages are present and every arrow matches the file's `dependsOn`: Build → Test, Test → DeployStaging, Test → DeployProduction, and DeployStaging/DeployProduction → Notify (this pipeline declares `dependsOn` on every non-first stage, so the implicit consecutive-stage arrow is not exercised here — that styling is unit-tested). Right-clicking Test → **Show jobs** brought Unit and Integration inside it and **Hide jobs** removed them, with `git diff` empty after — no write. Editing a stage's **Display name** and committing produced a `git diff` of **exactly one line** (the `displayName`), with the `# Fan-in:` comment, indentation, key order, quoting and line endings all untouched; one **Undo** returned `git status` to empty, byte for byte. (The commit was made by blurring the field rather than pressing Enter, since the in-app pane does not deliver Enter; the write and the byte-level round trip are identical.)
 
 ## An edited pipeline still validates against Azure DevOps (azure-pipeline-diagram, task 29)
 
@@ -516,7 +516,7 @@ this check is the only thing that closes that gap.
 - **Expected**: no schema errors, and the pipeline queues. Specifically the added stage has a job
   and the job has a step — an empty stage or job is a schema error, and this module writes the
   smallest runnable block for exactly that reason.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not fully runnable here — the validator is external, and it is not a sign-in blocker.** The developer build unblocks the on-canvas edits, but the check's expectation — *no schema errors, and the pipeline queues* — is answered only by the Azure Pipelines VS Code schema extension or by queuing a run in an Azure DevOps project, neither of which exists in this environment and neither of which sign-in gates. The objective ADP-side invariant this rests on — that adding a stage writes the smallest runnable block, a stage with a job and the job with a step, never an empty stage or job — is covered by the azure-pipeline writer unit tests. The schema/queue confirmation is left for a person with the extension or an Azure DevOps project; the earlier sign-in stamp was a partial mis-attribution.
 
 ## A pipeline shows what it cannot do rather than doing it wrongly (azure-pipeline-diagram, task 29)
 
@@ -530,7 +530,7 @@ refuses something. Worth a look because a refusal that is silent reads as a bug.
 - **Expected**: the context menu offers nothing at all for that job. The Property Grid shows its
   properties with a reason beside each naming the template file the value lives in — not a greyed
   box with no explanation.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Opened `templates.adp`, whose `Build` stage draws its jobs from the local template `templates/build-jobs.yml`. **Show jobs** surfaced the job *“Compile from the template”*, annotated *“From diagrams/azure-pipeline/example 1/templates/build-jobs.yml: edit it there.”* Right-clicking that job the context menu offered **nothing at all**. Selecting it, the Property Grid showed its Name, Display name, Kind and Depends-on rows, each non-editable with the reason *“This comes from diagrams/azure-pipeline/example 1/templates/build-jobs.yml…”* — naming the template file, not a bare greyed box. (The repository-resource template `deploy-stages.yml@shared` also renders as a dashed indeterminate box saying how many stages run is decided when the pipeline runs — the same refuse-rather-than-guess principle.)
 
 ## A map authored in onlinewardleymaps.com opens looking like the same map (wardley-map, task 26)
 
