@@ -233,7 +233,8 @@ public class AdpFileWriterTests : IDisposable
         // during the write rather than by reading the constant back.
         var path = IoPath.Combine(_folder, "map.owm");
         var seen = new List<string>();
-        using var watcher = new FileSystemWatcher(_folder) { EnableRaisingEvents = true };
+        using var watcher = new FileSystemWatcher(_folder);
+        watcher.EnableRaisingEvents = true;
         watcher.Created += (_, args) => seen.Add(IoPath.GetFileName(args.FullPath));
 
         // Act.
