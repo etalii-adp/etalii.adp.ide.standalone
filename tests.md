@@ -151,7 +151,7 @@ existed and carried their classes and marks. Nothing asserted anything about the
 links drawing the identical path was invisible. The tests added with this fix compare the two
 paths and the sign of each curve's control point, and were seen to fail against the old geometry.
 
-- **Result**: **not run.** No agent on this specification can sign in — see the preamble.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session), worktree `claude/run` on develop)**: **passed.** Ran in the app now that a developer build opens already authenticated. `on-call.cld` and `reference.cld` both open. Every causal link is a single quadratic arc (one control point) — not a straight line, not an S-curve — and all ten of on-call's control-point offsets share one sign, so the arcs bow consistently to one side of travel and read as a ring. In `reference`, the mutual Population↔Births pair draws two arcs bowing to **opposite** sides — an ellipse, the case that was broken. Each loop identifier sits in a circular-arrow badge: R1 sweeps clockwise (SVG sweep-flag 1), B2 anticlockwise (0), and R3's badge — labelled reinforcing but computed balancing — is drawn anticlockwise with a `causal-loop-balancing` glyph. Polarity marks (+/−) sit beside each arc, and the delayed link's two strokes cross the arc at 90° (measured).
 
 ## A loop labelled R is arithmetically balancing, and the tool says so without changing the file (causal-loop-diagram, task 5.3)
 
@@ -176,7 +176,7 @@ without the document changing under them.
 - **Also worth seeing while here**: loop `B4` reads **undecidable** rather than reinforcing or
   balancing, because the link into it states no polarity. Unknown is not none.
 
-- **Result**: **not run.** No agent on this specification can sign in — see the preamble. Needs a
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session), worktree `claude/run` on develop)**: **passed.** After **Validate**, the problems panel carries, verbatim: *"Loop R3 is labelled reinforcing but its links make it balancing: it runs through 3 negative links, and a loop reinforces on an even count and balances on an odd one…"* — R3, both polarities, the negative count. Selecting R3 on the canvas fills the property grid with **Computed polarity: balancing** (*"Counted from the polarity of the links around the cycle"*) and **Stated polarity: reinforcing** (*"'R3' claims this, and the arrows say balancing. Neither is corrected for you…"*), plus its cycle `population → crowding → sanitation → deaths`. `reference.cld` stayed byte-for-byte unchanged throughout (`git status` clean) — reporting is not correcting — and the finding is re-derived on Validate rather than stored. **B4** reads undecidable: *"…no stated polarity, so whether it reinforces or balances cannot be counted."* One incidental finding: the R3/B4 diagnostics point at `reference.adp:59`/`:64`, but the loops live in `reference.cld` and `reference.adp` is an 8-line registration/layout file — activating the problem opens it as text with *"Line 59 is not in this file any more."* A stale file:line on the loop diagnostics, unrelated to sign-in; flagged for a separate pass.
   person, or a session permitted to enter the placeholder credential.
 - **Text reviewed 2026-09-05 (Tester 2)**: **accurate against the implementation**, checked without running the app. Every named document, variable, loop, property row, action label and reason string exists and matches. `reference.cld` carries `loop R3` and `loop B4`; `Computed polarity` and `Stated polarity` are in `CausalLoopContextPropertyProvider.cs`.
 
@@ -200,7 +200,7 @@ nothing in the backend suite can see whether it was painted.
 - **Then**: toggle the delay off from the menu and confirm the strokes disappear; one Undo brings
   them back and the `.cld` returns byte-for-byte.
 
-- **Result**: **not run.** Same reason as above.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session), worktree `claude/run` on develop)**: **passed.** The `crowding → sanitation` link is the only delayed one: two strokes across it, its polarity mark reads `−`, no other link carries strokes, and the strokes cross the arc at 90°. Its grid shows **Delayed: true**, **Polarity: negative**, and a **Weight** row that is empty rather than `0`. The context menu offers **Not delayed**, **Same direction (+)** as available, and **Opposite direction (−)** as unavailable with the reason *"This link already states −."* Choosing **Not delayed** removed exactly the `delayed` keyword from that one line (polarity preserved) and the strokes vanished; **one** Undo returned `reference.cld` byte-for-byte (`git status` clean) and a fresh reopen drew the strokes again.
 - **Text reviewed 2026-09-05 (Tester 2)**: **accurate against the implementation**, checked without running the app. Every named document, variable, loop, property row, action label and reason string exists and matches. `link crowding -> sanitation - delayed` is in `reference.cld` and carries no weight, while its sibling `population -> crowding` carries `weight=0.8` - so the empty-not-zero Weight row is genuinely testable. `"This link already states −."` is verbatim at `CausalLoopContextActionProvider.cs:338`.
 
 ## The self-organizing layout rearranges a diagram, and one undo puts it back exactly (causal-loop-diagram, task 5.3)
@@ -229,7 +229,7 @@ can feel.
   that is the specified behaviour (Requirement 6.7) and should be recorded as such rather than
   retried until it succeeds.
 
-- **Result**: **not run.** Same reason as above.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session), worktree `claude/run` on develop)**: **passed.** Right-clicking a variable offers Add link / Claim a loop / Rename / Remove — **not** Arrange; right-clicking the background offers **Add variable…** and **Arrange diagram**. After dragging a variable into a mess (which wrote a position to `on-call.adp` alone, `on-call.cld` untouched), **Arrange diagram** re-laid all eight variables with **zero** overlapping pairs and wrote a `layout:` block to `on-call.adp` while leaving `on-call.cld` byte-identical. **One** Undo moved all eight back together — a single step, not one per variable — and undoing the drag too returned the worktree byte-for-byte clean. The determinism-across-restart sub-check is left to the two-process backend unit test rather than re-run here.
 - **Text reviewed 2026-09-05 (Tester 2)**: **accurate against the implementation**, checked without running the app. Every named document, variable, loop, property row, action label and reason string exists and matches. `Arrange diagram` is at `CausalLoopContextActionProvider.cs:104` and `on-call` is present. Requirement 6.7 is conditional - a refusal only if determinism and overlap-freedom cannot both hold - so no refusal path in code is not a gap, and the entry is right to call a refusal a pass.
 
 ## Drop-target highlight actually paints (mindmap-diagram, bezier-connector pass)
