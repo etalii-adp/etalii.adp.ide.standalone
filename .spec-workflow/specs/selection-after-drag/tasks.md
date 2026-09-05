@@ -39,7 +39,7 @@ claim — it is the mutual-scope statement between this specification and
 work. This note is the record of that, so the diff's one silence reads as checked rather
 than missed.
 
-- [ ] 1. The gesture arbiter, alone and unit-tested
+- [-] 1. The gesture arbiter, alone and unit-tested
   - Files: `src/client/src/canvas/gesture/` (new) — the state machine, the `usePointerGesture`
     hook adapter, the single movement-threshold constant, and a readme in the style
     `connections/readme.md` set
