@@ -1,6 +1,7 @@
 import { AppHeader } from "../components/AppHeader";
 import { ContextConnectionProvider } from "./context/ContextConnectionProvider";
 import { ShellPromptHost } from "./context/ShellPromptHost";
+import { NoticeHost } from "./context/NoticeHost";
 import { RibbonBar } from "./ribbon/RibbonBar";
 import { SplitPane } from "./panes/SplitPane";
 import { TabbedPane } from "./panes/TabbedPane";
@@ -93,6 +94,7 @@ export function WorkspaceShell({ projectId, projectName, onBack }: WorkspaceShel
           />
         </div>
         <ShellPromptHost />
+        <NoticeHost />
       </div>
       </InlineLabelPlacementProvider>
       </DiagramToolboxProvider>

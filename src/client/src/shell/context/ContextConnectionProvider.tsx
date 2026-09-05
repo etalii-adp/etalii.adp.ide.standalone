@@ -166,6 +166,23 @@ const ProjectActionsContext = createContext<ContextActionGroup[]>([]);
 // through the message's own NEVER_VALIDATED state, not through this null.
 const ProblemsContext = createContext<ProjectProblems | null>(null);
 
+/** One thing worth telling the user, alongside an edit that succeeded. */
+export interface ContextNotice {
+  /** Distinguishes two notices carrying the same sentence. */
+  readonly id: number;
+  readonly text: string;
+}
+
+let noticeSequence = 0;
+const nextNoticeId = (): number => (noticeSequence += 1);
+
+interface NoticeState {
+  readonly notices: readonly ContextNotice[];
+  readonly dismiss: (id: number) => void;
+}
+
+const NoticesContext = createContext<NoticeState>({ notices: [], dismiss: () => {} });
+
 const EMPTY_SELECTION: ContextSelectionValue = {
   selection: null,
   levels: [],
@@ -247,6 +264,9 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
   const pendingOpenWithRef = useRef<string[] | null>(null);
   const [projectActions, setProjectActions] = useState<ContextActionGroup[]>([]);
   const [problems, setProblems] = useState<ProjectProblems | null>(null);
+  // Notices are a queue rather than one value: two edits can each lose something, and the
+  // second must not silently replace the first before anyone has read it.
+  const [notices, setNotices] = useState<ContextNotice[]>([]);
 
   const setPendingReveal = useCallback(
     (segments: string[] | null) => setSelectionValue((previous) => ({ ...previous, pendingReveal: segments })),
@@ -305,6 +325,13 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
               // Its own state, so undo/redo availability updates the History group and the
               // shortcuts without disturbing the selection (diagram-undo-redo Deviation 1).
               setProjectActions(message.message.value.actions);
+              continue;
+            }
+            if (message.message.case === "notice") {
+              // Appended with an id of its own, because the same sentence can arrive twice -
+              // two drags that both failed to record - and both are worth showing.
+              const text = message.message.value.message;
+              setNotices((previous) => [...previous, { id: nextNoticeId(), text }]);
               continue;
             }
             if (message.message.case === "problems") {
@@ -506,6 +533,11 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
     });
   }, [client, promptInteractionId]);
 
+  const dismissNotice = useCallback((id: number) => {
+    setNotices((previous) => previous.filter((notice) => notice.id !== id));
+  }, []);
+  const noticesValue = useMemo<NoticeState>(() => ({ notices, dismiss: dismissNotice }), [notices, dismissNotice]);
+
   const promptValue = useMemo<ContextPromptValue>(
     () => ({ prompt, onPropose, onSubmit, onCancel }),
     [prompt, onPropose, onSubmit, onCancel],
@@ -515,9 +547,11 @@ export function ContextConnectionProvider({ projectId, children }: ContextConnec
     <ConnectionContext.Provider value={connectionValue}>
       <ProjectActionsContext.Provider value={projectActions}>
         <ProblemsContext.Provider value={problems}>
+        <NoticesContext.Provider value={noticesValue}>
           <SelectionContext.Provider value={selectionValue}>
             <PromptContext.Provider value={promptValue}>{children}</PromptContext.Provider>
           </SelectionContext.Provider>
+        </NoticesContext.Provider>
         </ProblemsContext.Provider>
       </ProjectActionsContext.Provider>
     </ConnectionContext.Provider>
@@ -565,6 +599,14 @@ export function useProjectActions(): ContextActionGroup[] {
  */
 export function useContextProblems(): ProjectProblems | null {
   return useContext(ProblemsContext);
+}
+
+/**
+ * Things that happened alongside edits that SUCCEEDED, oldest first, with the means to
+ * dismiss one. Empty most of the time.
+ */
+export function useContextNotices(): NoticeState {
+  return useContext(NoticesContext);
 }
 
 /** Builds a one-level selection message; the explorer's helper for its own entries. */

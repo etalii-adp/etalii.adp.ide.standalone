@@ -81,6 +81,26 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         }
     }
 
+    public void PushNotice(string rootPath, string message)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+
+        var notice = new ContextMessage { Notice = new ContextNotice { Message = message } };
+        foreach (var entry in _entries.Values)
+        {
+            lock (entry.Gate)
+            {
+                if (entry.Writer is null || !string.Equals(entry.RootPath, rootPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                entry.Writer.TryWrite(notice);
+            }
+        }
+    }
+
     public void Remove(ShortGuid watchId)
     {
         if (!_entries.TryRemove(watchId, out var entry))

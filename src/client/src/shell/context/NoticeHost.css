@@ -1,0 +1,56 @@
+/*
+  Bottom-right, above the canvas but out of the way of the panels on the left and the ribbon at
+  the top. Fixed rather than in flow: a notice must not reflow the diagram the user is looking
+  at, which would move the very element they just dragged.
+*/
+.notice-host {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: min(28rem, calc(100vw - 2rem));
+}
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 18%);
+}
+
+/*
+  A left edge in the danger colour rather than a danger background: the edit SUCCEEDED, and
+  colouring the whole message as a failure would say the opposite of what it means.
+*/
+.notice {
+  border-left: 3px solid var(--color-danger);
+}
+
+.notice-text {
+  flex: 1;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+.notice-dismiss {
+  flex: none;
+  padding: 0 0.25rem;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.notice-dismiss:hover {
+  color: var(--color-text);
+}

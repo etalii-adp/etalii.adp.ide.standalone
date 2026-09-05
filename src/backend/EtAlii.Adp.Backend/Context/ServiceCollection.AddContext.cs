@@ -22,6 +22,11 @@ public static class ServiceCollectionAddContextExtension
         services.AddSingleton<IContextActionResolver, ContextActionResolver>();
         services.AddSingleton<IContextPropertyResolver, ContextPropertyResolver>();
         services.AddSingleton<IContextSelectionStore, ContextSelectionStore>();
+
+        // The seam the history stack uses to tell a project that a command succeeded with
+        // something worth saying. Registered here because this is where the stream it writes to
+        // lives; History depends on the interface only.
+        services.AddSingleton<IContextNoticeSink, ContextNoticeSink>();
         services.AddSingleton<ContextSelectionResolver>();
 
         return services;

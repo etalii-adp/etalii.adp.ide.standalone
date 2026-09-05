@@ -34,7 +34,10 @@ public static class ServiceCollectionAddCommandsExtension
         // One history per project, keyed by root path. A provider reaches its project's stack
         // through Get(target.RootPath); a connection's Watch lifetime retains and releases it.
         services.AddSingleton<IHistoryStackStore>(provider =>
-            new HistoryStackStore(provider.GetRequiredService<ICommandDispatcher>()));
+            new HistoryStackStore(
+                provider.GetRequiredService<ICommandDispatcher>(),
+                grace: null,
+                notices: provider.GetService<IContextNoticeSink>()));
 
         services.AddSingleton<ICommandHandler<RenameEntryCommand>, RenameEntryCommandHandler>();
         services.AddSingleton<ICommandHandler<DeleteEntryCommand>, DeleteEntryCommandHandler>();
