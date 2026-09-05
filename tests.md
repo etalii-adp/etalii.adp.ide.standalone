@@ -78,6 +78,7 @@ without the document changing under them.
 
 - **Result**: **not run.** No agent on this specification can sign in — see the preamble. Needs a
   person, or a session permitted to enter the placeholder credential.
+- **Text reviewed 2026-09-05 (Tester 2)**: **accurate against the implementation**, checked without running the app. Every named document, variable, loop, property row, action label and reason string exists and matches. `reference.cld` carries `loop R3` and `loop B4`; `Computed polarity` and `Stated polarity` are in `CausalLoopContextPropertyProvider.cs`.
 
 ## A delayed link draws its strokes, and the grid agrees with the drawing (causal-loop-diagram, task 5.3)
 
@@ -100,6 +101,7 @@ nothing in the backend suite can see whether it was painted.
   them back and the `.cld` returns byte-for-byte.
 
 - **Result**: **not run.** Same reason as above.
+- **Text reviewed 2026-09-05 (Tester 2)**: **accurate against the implementation**, checked without running the app. Every named document, variable, loop, property row, action label and reason string exists and matches. `link crowding -> sanitation - delayed` is in `reference.cld` and carries no weight, while its sibling `population -> crowding` carries `weight=0.8` - so the empty-not-zero Weight row is genuinely testable. `"This link already states −."` is verbatim at `CausalLoopContextActionProvider.cs:338`.
 
 ## The self-organizing layout rearranges a diagram, and one undo puts it back exactly (causal-loop-diagram, task 5.3)
 
@@ -128,6 +130,7 @@ can feel.
   retried until it succeeds.
 
 - **Result**: **not run.** Same reason as above.
+- **Text reviewed 2026-09-05 (Tester 2)**: **accurate against the implementation**, checked without running the app. Every named document, variable, loop, property row, action label and reason string exists and matches. `Arrange diagram` is at `CausalLoopContextActionProvider.cs:104` and `on-call` is present. Requirement 6.7 is conditional - a refusal only if determinism and overlap-freedom cannot both hold - so no refusal path in code is not a gap, and the entry is right to call a refusal a pass.
 
 ## Drop-target highlight actually paints (mindmap-diagram, bezier-connector pass)
 
@@ -144,9 +147,6 @@ applied and the test passed while the node looked unchanged.
   limegreen), thicker (2.5px) and dashed - visibly different from both the normal border and
   the focused node's solid accent border. Releasing the button clears it again.
 - **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
-- **Text reviewed 2026-09-05 (Tester 2)**: **accurate against the implementation**, checked without running the app. Every named document, variable, loop, property row, action label and reason string exists and matches. `reference.cld` carries `loop R3` and `loop B4`; `Computed polarity` and `Stated polarity` are in `CausalLoopContextPropertyProvider.cs`.
-- **Text reviewed 2026-09-05 (Tester 2)**: **accurate against the implementation**, checked without running the app. Every named document, variable, loop, property row, action label and reason string exists and matches. `link crowding -> sanitation - delayed` is in `reference.cld` and carries no weight, while its sibling `population -> crowding` carries `weight=0.8` - so the empty-not-zero Weight row is genuinely testable. `"This link already states −."` is verbatim at `CausalLoopContextActionProvider.cs:338`.
-- **Text reviewed 2026-09-05 (Tester 2)**: **accurate against the implementation**, checked without running the app. Every named document, variable, loop, property row, action label and reason string exists and matches. `Arrange diagram` is at `CausalLoopContextActionProvider.cs:104` and `on-call` is present. Requirement 6.7 is conditional - a refusal only if determinism and overlap-freedom cannot both hold - so no refusal path in code is not a gap, and the entry is right to call a refusal a pass.
 
 ## Collapse in the node's context menu offers Expand afterwards (mindmap-diagram, bezier-connector pass)
 
