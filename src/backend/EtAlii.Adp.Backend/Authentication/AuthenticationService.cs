@@ -120,14 +120,29 @@ public sealed class AuthenticationService : EtAlii.Adp.AuthenticationService.Aut
     /// a check run under it evidence about the product (Requirement 1.3).
     /// </para>
     /// </remarks>
+    /// <summary>Whether this host is running as somebody's development machine.</summary>
+    /// <remarks>
+    /// <b>Not <c>IsDevelopment()</c> alone, and that is not a preference.</b> That helper matches
+    /// the single literal <c>Development</c>, while this repository's only non-default
+    /// environment is named <c>developer</c> - it is what <c>launchSettings.json</c> sets and
+    /// what <c>appsettings.developer.json</c> is named for. Checking <c>IsDevelopment()</c> by
+    /// itself would refuse the bypass in the one environment it exists for, and refuse it
+    /// silently: the handler would answer nothing, the client would fall through to the sign-in
+    /// form, and it would all look exactly as it does when the bypass is not compiled in at all.
+    /// </remarks>
+    private static bool IsADevelopmentEnvironment(IHostEnvironment environment) =>
+        environment.IsDevelopment()
+        || environment.IsEnvironment("developer");
+
     public override Task<DeveloperSessionResponse> DeveloperSession(DeveloperSessionRequest request, ServerCallContext context)
     {
-        if (_environment is null || !_environment.IsDevelopment())
+        if (_environment is null || !IsADevelopmentEnvironment(_environment))
         {
-            // Worth a Warning rather than silence: a Debug build running outside Development is
-            // itself the thing somebody should know about, whether or not the bypass was wanted.
+            // Worth a Warning rather than silence: a Debug build running outside a development
+            // environment is itself the thing somebody should know about, whether or not the
+            // bypass was wanted.
             _logger.Warning(
-                "Refusing a developer session: this is a Debug build but the environment is {Environment}, not Development",
+                "Refusing a developer session: this is a Debug build but the environment is {Environment}, which is not a development one",
                 _environment?.EnvironmentName ?? "unknown");
             return Task.FromResult(new DeveloperSessionResponse());
         }

@@ -161,6 +161,29 @@ public class DeveloperSessionTests
         Assert.False(response.Bypassed);
     }
 
+    [Theory]
+    [InlineData("Development")]
+    [InlineData("developer")]
+    public async Task TheBypass_Works_InEveryEnvironmentThisRepositoryCallsDevelopment(string environmentName)
+    {
+        // Arrange.
+        // The second case is the one that matters and it is not hypothetical: launchSettings.json
+        // sets ASPNETCORE_ENVIRONMENT to "developer", and appsettings.developer.json is named for
+        // it. IsDevelopment() matches only the literal "Development", so checking it alone
+        // refused the bypass in the single environment the bypass exists for - and refused it
+        // silently, because a handler that answers nothing is indistinguishable from a build
+        // where the bypass was never compiled in. This test fails against that.
+        var store = new InMemorySessionStore();
+        var service = Service(store, Options(), environmentName);
+
+        // Act.
+        var response = await service.DeveloperSession(new DeveloperSessionRequest(), CreateContext(DeveloperSessionMethod));
+
+        // Assert.
+        Assert.Equal(DeveloperSessionResponse.ResultOneofCase.Session, response.ResultCase);
+        Assert.True(response.Bypassed);
+    }
+
     [Fact]
     public async Task TheBypass_MintsNothing_OutsideDevelopment()
     {
