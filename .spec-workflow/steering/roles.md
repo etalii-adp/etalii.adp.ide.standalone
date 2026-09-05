@@ -5,6 +5,9 @@
 - 2x Architect
 - 2x Tester
 
+# Rules
+- Do not use any agents that have been tagged as disabled in their name.  
+
 # Roles
 ## Scrum master
 - Provides user with single point of contact for the team. 
