@@ -180,7 +180,7 @@ internal sealed class CausalLoopSession : IDiagramSession
         return result.IsSuccess ? "" : result.Error;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc />
     public ValueTask DisposeAsync()
     {
         _documents.Changed -= OnDocumentChanged;
