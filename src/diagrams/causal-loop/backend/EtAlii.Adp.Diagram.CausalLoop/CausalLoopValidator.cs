@@ -190,6 +190,6 @@ public sealed class CausalLoopValidator(DiagramOrigin origin) : IDiagramValidato
             }
         }
 
-        return string.Join(" ", Enumerable.Range(0, cycle.Count).Select(offset => cycle[(start + offset) % cycle.Count]));
+        return string.Join("\0", Enumerable.Range(0, cycle.Count).Select(offset => cycle[(start + offset) % cycle.Count]));
     }
 }
