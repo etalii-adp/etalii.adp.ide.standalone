@@ -44,13 +44,26 @@ provider directly — skipping exactly the step that did not exist.
     `layout:` block into the `.adp`, leaves the `.cld` untouched, and **one** Undo restores the
     registration.
 
-**Verified on 2026-09-05** up to and including the menus, the selection and the ribbon — the
-backend log shows `Selected …/on-call.cld … as ContextMenu, with 1 action groups`. **Arrange
-itself was NOT executed** in that pass: no `ExecuteAction` ever reached the backend, so the
-undo half of this entry is still unverified.
+**Verified in full on 2026-09-05**, against a running build. The menus, the selection and the
+ribbon first (`Selected .../on-call.cld ... as ContextMenu, with 1 action groups`), then the
+arrangement itself:
 
-- **Result 2026-09-05**: **partly verified.** Menus, selection and ribbon confirmed in the running
-  app. Arrange and its undo remain to be run.
+```
+ArrangeCausalLoopCommand executed; 1 changes can now be undone
+Action causal-loop.arrange completed on .../on-call.cld
+Undid ArrangeCausalLoopCommand; 0 left to undo, 1 to redo
+```
+
+All eight variables moved, **zero** overlapping pairs measured on the rendered boxes, only the
+`.adp` modified with the `.cld` untouched, and **one** undo restoring the registration
+byte-for-byte - `git status` on the examples came back empty afterwards.
+
+**Undo it in the app, not with `git checkout`.** Reverting the file underneath a running session
+deletes and recreates it, so the hierarchy entry id the open tab is bound to no longer exists and
+every later selection is rejected with "This item is no longer available." That looks exactly
+like the context surface being broken again, and it is not.
+
+- **Result 2026-09-05**: **passed**, all six claims of Requirement 6 confirmed in the running app.
 
 ## A feedback loop is drawn as a loop (causal-loop-diagram, arcs fix)
 
