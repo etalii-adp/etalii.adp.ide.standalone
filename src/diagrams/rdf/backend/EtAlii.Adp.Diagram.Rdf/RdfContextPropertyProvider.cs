@@ -102,7 +102,7 @@ public sealed class RdfContextPropertyProvider : IContextPropertyProvider
 
         // An expression node: the full, uncapped Manchester rendering, read-only with the
         // boundary's sentence as the stated reason (owl-diagram Requirements 3.2, 7.2).
-        if (OwlSelection.ExpressionOf(entry, target.ElementId) is { ExpressionRoot: { } root } expression)
+        if (OwlSelection.ExpressionOf(entry, target.ElementId) is { ExpressionRoot: { } root })
         {
             var uncapped = ExpressionRenderer.Render(root, entry.Model);
             return Rows(
