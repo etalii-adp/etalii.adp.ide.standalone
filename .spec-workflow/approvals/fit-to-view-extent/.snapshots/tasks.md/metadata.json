@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/fit-to-view-extent/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-05T16:08:19.945Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788624496490_6i3qo6otq",
+      "approvalTitle": "fit-to-view-extent — Tasks"
+    }
+  ]
+}
