@@ -14,6 +14,19 @@ hand-rolled across ten canvases, each copied from whichever came before.
   already speaks, and reports intent. It does not know what a rename is and cannot decide what
   is renameable.
 - `inlineLabelEditor.css` — the look, on the theme variables.
+- `labelPlacement.ts` — three pure functions answering *where the editor goes*, for the three
+  shapes a canvas draws: `centredLabelPlacement` for a label filling its element's box,
+  `insetLabelPlacement` for one named line inside a composite box, and `midpointLabelPlacement`
+  for a bare text on a connection. No React, no DOM, no module vocabulary. They were C4's
+  private helpers first and were extracted rather than written, so the fourth canvas to adopt
+  does not copy them a fourth time.
+
+  **A connection label's width is the caller's measured width where it has one**, because such a
+  label has no box — it is a text node whose width is whatever the font made it. Measuring needs
+  the DOM, which does not belong in a pure function, so the caller measures and passes it.
+  **jsdom implements no `getBBox`, so every unit test takes the estimate branch by
+  construction**; the measured branch cannot be unit-tested and is covered by the manual check
+  in `tests.md`. A green suite is not evidence that measuring works.
 
 ## Why it is mounted in canvas units
 

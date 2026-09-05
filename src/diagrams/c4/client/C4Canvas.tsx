@@ -19,7 +19,8 @@ import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useRegisterDiagramView, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
 import { boxesOf, type C4BoundaryBox, type C4Model, type C4Node, type C4Relationship } from "./c4Model";
 import { InlineLabelEditor } from "@client/canvas/label/InlineLabelEditor";
-import { anchorsBetween, midpointOf } from "@client/canvas/connectors";
+import { anchorsBetween } from "@client/canvas/connectors";
+import { insetLabelPlacement, midpointLabelPlacement } from "@client/canvas/label/labelPlacement";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
 import { useRegisterInlineLabelPlacement, type LabelPlacement } from "@client/shell/panels/InlineLabelPlacementContext";
 import type { C4RelationshipPayload } from "@client/generated/c4_pb";
@@ -36,11 +37,6 @@ const NAME_INSET = 4;
 
 /** `StraightConnection`'s own default label offset, above the line's midpoint. */
 const LABEL_DY = -6;
-const LABEL_HEIGHT = 16;
-/** The per-character width estimate the shared element components use to fit a label. */
-const LABEL_CHAR_WIDTH = 7;
-/** An empty description still needs somewhere to type. */
-const LABEL_MIN_WIDTH = 80;
 
 /** The visible rectangle, in canvas units - the svg viewBox as data. */
 interface ViewBox {
@@ -665,13 +661,16 @@ function C4BoundaryShape({ boundary }: { boundary: C4BoundaryBox }) {
  */
 function nodeNamePlacement(node: C4Node): LabelPlacement {
   const { width, height, name } = node.payload;
-  return {
-    x: node.x - width / 2 + NAME_INSET,
-    y: node.y - height / 2 + NAME_TOP,
-    width: width - NAME_INSET * 2,
-    height: NAME_HEIGHT,
-    text: name,
-  };
+
+  // The box is narrowed by the inset on both sides before it is handed over: it is centred,
+  // so a narrower width insets evenly and NAME_INSET stays this module's constant rather than
+  // becoming an argument the shared helper has to carry for everyone.
+  return insetLabelPlacement(
+    { x: node.x, y: node.y, width: width - NAME_INSET * 2, height },
+    NAME_TOP,
+    NAME_HEIGHT,
+    name,
+  );
 }
 
 /**
@@ -694,19 +693,7 @@ function nodeNamePlacement(node: C4Node): LabelPlacement {
 function relationshipLabelPlacement(relationship: C4Relationship, surface: SVGSVGElement | null): LabelPlacement {
   const p = relationship.payload;
   const [start, end] = anchorsBetween(sourceBoxOf(p), destinationBoxOf(p));
-  const middle = midpointOf(start, end);
-
-  const text = p.description;
-  const measured = measuredLabelWidth(surface, relationship.id);
-  const width = measured ?? Math.max(text.length * LABEL_CHAR_WIDTH, LABEL_MIN_WIDTH);
-
-  return {
-    x: middle.x - width / 2,
-    y: middle.y + LABEL_DY - LABEL_HEIGHT,
-    width,
-    height: LABEL_HEIGHT,
-    text,
-  };
+  return midpointLabelPlacement(start, end, LABEL_DY, p.description, measuredLabelWidth(surface, relationship.id));
 }
 
 /** The rendered label's own width, or null where the browser cannot measure one. */
