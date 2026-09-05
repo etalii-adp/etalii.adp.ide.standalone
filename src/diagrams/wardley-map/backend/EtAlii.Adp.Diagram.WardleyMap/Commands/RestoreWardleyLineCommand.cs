@@ -50,8 +50,10 @@ public sealed class RestoreWardleyLineCommandHandler : ICommandHandler<RestoreWa
 
         var replaced = document.Lines[(int)command.Line - 1];
         document.ReplaceLine(command.Line, command.Text);
-        _documents.Save(command.BodyPath);
+        var error = _documents.Save(command.BodyPath);
 
-        return Task.FromResult(CommandResult.Success(command with { Text = replaced }));
+        return Task.FromResult(error.Length == 0
+            ? CommandResult.Success(command with { Text = replaced })
+            : CommandResult.Failure(error));
     }
 }
