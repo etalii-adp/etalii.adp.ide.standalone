@@ -39,7 +39,7 @@ claim — it is the mutual-scope statement between this specification and
 work. This note is the record of that, so the diff's one silence reads as checked rather
 than missed.
 
-- [-] 1. The gesture arbiter, alone and unit-tested
+- [x] 1. The gesture arbiter, alone and unit-tested
   - Files: `src/client/src/canvas/gesture/` (new) — the state machine, the `usePointerGesture`
     hook adapter, the single movement-threshold constant, and a readme in the style
     `connections/readme.md` set
@@ -62,7 +62,7 @@ than missed.
   - _Requirements: 2.2, 2.3, 3.1, 3.2, 3.3_
   - _Prompt: Implement the task for spec selection-after-drag, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript/React developer | Task: Build the gesture arbiter in src/client/src/canvas/gesture/ per the approved design — verdicts at gesture end from the gesture's own record, pointer capture, one threshold constant, no click subscription — with jsdom unit tests for every transition and every design Error Scenario | Restrictions: no canvas is converted yet; targets stay opaque; dx/dy stay client pixels; the readme records why click is deliberately absent | _Leverage: selection.ts's header as the mechanics-versus-meaning precedent; interaction.ts as the keyboard half of the same idea; AnsibleCanvas.test.tsx for capture under jsdom | Success: the arbiter's tests pass, at least one was seen to fail during authoring for the right reason, and npm test plus typecheck stay green. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. C4: the latch reproduction, then the conversion that deletes it
+- [-] 2. C4: the latch reproduction, then the conversion that deletes it
   - Files: `src/diagrams/c4/client/C4Canvas.tsx`, `src/diagrams/c4/client/C4Canvas.test.tsx`
   - **Reproduction first, seen to fail**: press node A, move beyond threshold, fire the
     surface's mouse-leave, release, click node B — assert B is selected. Today the latch
