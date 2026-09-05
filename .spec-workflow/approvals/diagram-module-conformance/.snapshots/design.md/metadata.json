@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/diagram-module-conformance/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-05T12:26:20.897Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788611179218_0dr84cc7d",
+      "approvalTitle": "diagram-module-conformance design"
+    }
+  ]
+}
