@@ -208,8 +208,7 @@ public sealed class CausalLoopContextActionProvider(
         };
     }
 
-    private static bool AnswersFor(ContextTarget target) =>
-        target.ResolvedFullPath.EndsWith(".cld", StringComparison.OrdinalIgnoreCase);
+    private static bool AnswersFor(ContextTarget target) => Diagram.IsBody(target.ResolvedFullPath);
 
     private static ValueTask<IReadOnlyList<ContextActionGroupDefinition>> Groups(
         IReadOnlyList<ContextActionGroupDefinition> groups) =>

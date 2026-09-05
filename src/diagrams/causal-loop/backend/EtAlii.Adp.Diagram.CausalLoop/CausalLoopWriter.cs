@@ -116,6 +116,29 @@ public static class CausalLoopWriter
         return "";
     }
 
+    /// <summary>Sets what a reader sees on a variable, leaving the identifier alone.</summary>
+    /// <remarks>
+    /// The label and the identifier are edited separately on purpose. The identifier is what
+    /// links and loops refer to, so changing it moves references (see
+    /// <see cref="RenameVariable"/>); the label is prose nothing refers to, so changing it is a
+    /// one-line edit that can hold spaces and punctuation a name cannot.
+    /// </remarks>
+    public static string SetVariableLabel(
+        CausalLoopDocument document, CausalLoopModel model, string id, string label)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(model);
+
+        var variable = model.Variables.FirstOrDefault(candidate => candidate.Id == id);
+        if (variable is null)
+        {
+            return NoSuchVariable;
+        }
+
+        document.Replace(variable.Lines, [VariableStatement(id, label)]);
+        return "";
+    }
+
     /// <summary>Removes a variable and everything that refers to it.</summary>
     public static string RemoveVariable(CausalLoopDocument document, CausalLoopModel model, string id)
     {
@@ -255,6 +278,30 @@ public static class CausalLoopWriter
     /// <summary>Renames a loop, without touching what it runs through.</summary>
     public static string SetLoopName(CausalLoopDocument document, CausalLoopModel model, string identifier, string name) =>
         RewriteLoop(document, model, identifier, loop => loop with { Name = name });
+
+    /// <summary>Restates a loop's identifier, without touching what it runs through.</summary>
+    /// <remarks>
+    /// The identifier is the author's claim about the loop's polarity, so this is how an author
+    /// accepts the arithmetic when the two disagree - or insists on their own reading. The
+    /// disagreement is never resolved for them (Requirement 3.3); this only lets them resolve it.
+    /// </remarks>
+    public static string SetLoopIdentifier(
+        CausalLoopDocument document, CausalLoopModel model, string identifier, string replacement)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        if (!IsUsableName(replacement))
+        {
+            return UnusableName;
+        }
+
+        if (replacement != identifier && model.Loops.Any(loop => loop.Identifier == replacement))
+        {
+            return "A loop of that identifier is already stated in this diagram.";
+        }
+
+        return RewriteLoop(document, model, identifier, loop => loop with { Identifier = replacement });
+    }
 
     /// <summary>Changes the cycle a loop claims.</summary>
     public static string SetLoopMembership(

@@ -53,6 +53,7 @@ public static class ServiceCollectionAddCausalLoopExtension
         services.AddSingleton<ICommandHandler<AddVariableCommand>, AddVariableCommandHandler>();
         services.AddSingleton<ICommandHandler<RenameVariableCommand>, RenameVariableCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveVariableCommand>, RemoveVariableCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetVariableLabelCommand>, SetVariableLabelCommandHandler>();
         services.AddSingleton<ICommandHandler<AddLinkCommand>, AddLinkCommandHandler>();
         services.AddSingleton<ICommandHandler<SetLinkPolarityCommand>, SetLinkPolarityCommandHandler>();
         services.AddSingleton<ICommandHandler<SetLinkDelayCommand>, SetLinkDelayCommandHandler>();
@@ -61,6 +62,7 @@ public static class ServiceCollectionAddCausalLoopExtension
         services.AddSingleton<ICommandHandler<RemoveLinkCommand>, RemoveLinkCommandHandler>();
         services.AddSingleton<ICommandHandler<AddLoopCommand>, AddLoopCommandHandler>();
         services.AddSingleton<ICommandHandler<SetLoopNameCommand>, SetLoopNameCommandHandler>();
+        services.AddSingleton<ICommandHandler<SetLoopIdentifierCommand>, SetLoopIdentifierCommandHandler>();
         services.AddSingleton<ICommandHandler<SetLoopMembershipCommand>, SetLoopMembershipCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveLoopCommand>, RemoveLoopCommandHandler>();
 
@@ -69,6 +71,9 @@ public static class ServiceCollectionAddCausalLoopExtension
             provider.GetRequiredService<ICausalLoopDocumentStore>(),
             provider.GetRequiredService<IHistoryStackStore>()));
         services.AddSingleton<IDiagramToolboxProvider, CausalLoopToolboxProvider>();
+        services.AddSingleton<IContextPropertyProvider>(provider => new CausalLoopContextPropertyProvider(
+            provider.GetRequiredService<IHistoryStackStore>(),
+            provider.GetRequiredService<ICausalLoopDocumentStore>()));
 
         // The rules, resolved by origin through core's validator registry. This reading only
         // ever reports: the disagreement between a stated label and the arithmetic is a finding,

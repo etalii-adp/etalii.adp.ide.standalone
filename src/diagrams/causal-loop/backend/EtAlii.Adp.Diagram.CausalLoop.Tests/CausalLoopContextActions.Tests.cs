@@ -262,6 +262,28 @@ public class CausalLoopContextActionsTests : IDisposable
         Assert.Contains("link population -> deaths +", File.ReadAllText(_path), StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// The fixture is deliberately a file whose <i>content</i> this module could parse. A foreign
+    /// document full of unreadable text would leave this passing for the wrong reason: nothing
+    /// would be found whether or not the extension was checked at all.
+    /// </summary>
+    [Fact]
+    public async Task ADocumentOfAnotherType_IsNotAnswered_EvenWhenItsContentWouldParse()
+    {
+        // Arrange.
+        var other = IoPath.Combine(_root, "notes.md");
+        File.WriteAllText(other, Corpus);
+
+        // Act.
+        var groups = await _actions.DiscoverAsync(
+            new ContextTarget(
+                ContextScope.DiagramElement, other, false, ShortGuid.NewShortGuid(), _root, default, "variable:population"),
+            TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Empty(groups);
+    }
+
     [Fact]
     public async Task AnActionThatIsNotOurs_IsNotClaimed()
     {
