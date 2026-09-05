@@ -40,7 +40,7 @@ One worktree for the whole spec: `.claude/worktrees/adopt` — short, because th
   - _Requirements: 1.1, 1.2, 3.1, 4.1, 5.1, 6.1, 8.2, 8.4, 9.2, 9.3_
   - _Prompt: Implement the task for spec inline-rename-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer | Task: Adopt inline rename in dependency-graph for elements and relations, following the pattern task 2 landed | Restrictions: as task 2; do not diverge from the timeline shape without a stated reason, since the two canvases draw with the same components | _Leverage: the timeline adopter from task 2 | Success: the four tests pass, unmarked actions still open dialogs, gates green. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. databricks adopts — elements only, and one label that looks markable and is not
+- [-] 4. databricks adopts — elements only, and one label that looks markable and is not
   - Files: `src/diagrams/databricks/backend/EtAlii.Adp.Diagram.Databricks/DatabricksContextActionProvider.cs` and its test, `src/diagrams/databricks/client/DatabricksCanvas.tsx` and its test
   - **One canvas, three readings.** `JobCanvas`, `BundleCanvas` and `PipelineCanvas` are four-line wrappers around `DatabricksCanvas`, so this task covers all three.
   - `databricks.rename-task` asks for the task's `Key`, and the canvas draws exactly that (`label: payload.taskKey`), so it qualifies — an identifier that happens to be the drawn text is still the drawn text.
