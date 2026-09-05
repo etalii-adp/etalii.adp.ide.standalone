@@ -369,7 +369,7 @@ displays, or in an ordinary browser against the dev servers.
      last described and nothing is written.
   4. Click into **Text**, change nothing, click elsewhere. → Nothing is written, and Undo does
      not become available for it.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **partially run — the bypass unblocked the panel; Enter/Ctrl+Enter still need an ordinary browser.** With a mindmap node selected, the Properties panel shows the editable Text, Notes and Link rows, and the developer build reaches them with no sign-in. Live: typing reaches the field, **Escape** returns Text to the backend's value and writes nothing (step 3), and a commit produced **exactly one** `Set mindmap.text` write with the canvas updating and one Undo restoring it — the commit-once-and-reach-the-backend heart of step 1. What the in-app browser pane still would not deliver is **Enter** and **Ctrl+Enter** (repeated Enter left the canvas unchanged and wrote nothing while typing and Escape worked) — the exact non-compositing-pane limitation this entry names. So the Enter/Ctrl+Enter cadence needs an ordinary browser against the dev servers; it is not an app defect, and the cadence stays pinned by unit tests.
 
 ## A property edit reaches a second connection (property-grid, task 6)
 
@@ -384,7 +384,7 @@ non-compositing pane.
 - **Expected**: tab B's canvas shows the new text without any interaction, and tab B's
   Properties panel shows the new value in its Text row - it re-describes from the push. Then
   press **Undo** in tab A: both tabs return to the old value, canvas and grid alike.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not run here — needs two real browser tabs, as this entry already notes.** The developer build removes the sign-in blocker, but the check verifies a commit in one tab reaching a *second* connection's canvas and grid, and the in-app browser pane cannot drive a second tab's canvas selection — the very limitation recorded in this entry. That an edit commits as one write and would be pushed is confirmed by the property-grid cadence entry above (a single `Set mindmap.text` reached the backend); the cross-connection delivery wants an ordinary browser with two tabs and is left unclaimed rather than faked.
 
 ## The Ansible diagram opens from Add and draws its folder (ansible-structure-diagram, task 26)
 
