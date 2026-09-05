@@ -377,4 +377,50 @@ public class ExampleRegistrationTests : IClassFixture<WebApplicationFactory<Prog
 
         throw new InvalidOperationException($"{adpPath} does not sit under an examples/ set.");
     }
+
+    [Fact]
+    public void NoShippedFolderSubjectRegistrationCarriesAName()
+    {
+        // Arrange: folder-subject-ness comes from the DEPLOYED catalog, per file, never from a
+        // module list - so a third folder-subject module is covered the day it ships rather
+        // than the day someone remembers this test exists (Requirement 5.1).
+        using var _ = _factory.CreateClient();
+        var catalog = _factory.Services.GetRequiredService<IDiagramDefinitionCatalog>();
+
+        // Act.
+        var inspected = 0;
+        var offending = new List<string>();
+        foreach (var examples in ExampleRoots())
+        {
+            foreach (var adp in Directory.EnumerateFiles(examples, "*.adp", SearchOption.AllDirectories))
+            {
+                if (DiagramFilePair.DefinitionOf(adp, catalog) is not { HasFolderSubject: true })
+                {
+                    continue;
+                }
+
+                inspected++;
+                if (!string.Equals(IoPath.GetFileName(adp), DiagramFileName.Extension, StringComparison.OrdinalIgnoreCase))
+                {
+                    offending.Add(
+                        $"{IoPath.GetRelativePath(IoPath.GetDirectoryName(DiagramsRoot)!, adp)} should be '{DiagramFileName.Extension}' in the same folder");
+                }
+            }
+        }
+
+        // Assert, first, that the sweep found its corpus: every registration here passes a
+        // catalog filter, so a catalog that stopped resolving them would empty this loop and
+        // the guard below would pass having policed nothing. Fourteen folder-subject
+        // registrations ship today, so ten is a floor with headroom.
+        Assert.True(
+            inspected >= 10,
+            $"Only {inspected} folder-subject registrations were found; this guard has stopped finding the corpus it polices.");
+
+        // Assert: a named one is a counter-example to the product's own behaviour - Add
+        // creates the bare form, so a shipped example carrying a name teaches the old shape.
+        Assert.True(
+            offending.Count == 0,
+            "A shipped folder-subject registration carries a name, which Add no longer creates:\n  "
+                + string.Join("\n  ", offending));
+    }
 }
