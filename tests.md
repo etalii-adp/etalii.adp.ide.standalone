@@ -18,6 +18,7 @@ applied and the test passed while the node looked unchanged.
 - **Expected**: the hovered node's border changes to the accent color (`--color-primary`,
   limegreen), thicker (2.5px) and dashed - visibly different from both the normal border and
   the focused node's solid accent border. Releasing the button clears it again.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## Collapse in the node's context menu offers Expand afterwards (mindmap-diagram, bezier-connector pass)
 
@@ -28,6 +29,7 @@ kept here because the stale label was found through the menu and is quickest to 
 - **Actions**: right-click the branch node, choose **Collapse**; right-click the same node again.
 - **Expected**: the branch's descendants disappear on the first click, and the re-opened menu
   reads **Expand** (not Collapse). Choosing Expand restores the branch.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## C4 relationships are elevated to the level the view shows (c4-diagrams, manual pass)
 
@@ -41,6 +43,7 @@ view drew the systems it depends on and *no lines to them*, which reads as "no d
 - **Expected**: the system in scope has a labelled arrow to each external system its containers
   talk to, and no arrow to itself. Two containers talking to one external system draw one line,
   not two.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## A C4 boundary contains only what is inside it (c4-diagrams, manual pass)
 
@@ -53,6 +56,7 @@ the same reason: the containers looked right, and only the boundary's geometry g
 - **Expected**: the system in scope is drawn as the dashed boundary and **not** also as a box;
   every container sits inside it; the person and the external system sit outside it; and nothing
   overlaps anything else.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## A C4 document ADP wrote opens in Structurizr Lite (c4-diagrams, task 39)
 
@@ -114,6 +118,8 @@ look at. Three things, and only these:
 - **Expected**: the styles resolve, the auto-layout is readable, and the `.layout.json` sidecar
   causes no complaint. That every view is present and every element is on it is no longer part
   of this pass - the export checks own that, and they run on every `dotnet test`.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+
 ## The property grid's keyboard cadence, in a real browser (property-grid, task 6)
 
 The commit cadence is pinned by unit tests, but no manual pass has ever seen it in a real
@@ -133,6 +139,7 @@ displays, or in an ordinary browser against the dev servers.
      last described and nothing is written.
   4. Click into **Text**, change nothing, click elsewhere. → Nothing is written, and Undo does
      not become available for it.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## A property edit reaches a second connection (property-grid, task 6)
 
@@ -147,6 +154,7 @@ non-compositing pane.
 - **Expected**: tab B's canvas shows the new text without any interaction, and tab B's
   Properties panel shows the new value in its Text row - it re-describes from the push. Then
   press **Undo** in tab A: both tabs return to the old value, canvas and grid alike.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## The Ansible diagram opens from Add and draws its folder (ansible-structure-diagram, task 26)
 
@@ -183,6 +191,7 @@ take. These are the checks that needs a real pair of eyes.
      diagram loses the `common` node without being reopened, and the problems panel gains
      `ansible.role-missing` entries pointing at `webservers.yml` and `dbservers.yml`.
  10. Put `roles/common/` back. → Both the diagram and the panel return to their earlier state.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## An Ansible diagram in a subfolder reveals the right file (ansible-structure-diagram, task 26)
 
@@ -196,6 +205,8 @@ to a path that did not exist. Automated now, but the panel's reveal is the part 
   `The role 'absent-role' has no folder under roles/.` row.
 - **Expected**: the explorer reveals `<subfolder>/playbooks/deploy.yml` - the playbook that
   named the role - and not the `.adp`, and not a path that fails to resolve.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+
 ## `dotnet test` discovers tests in a long worktree path (build tooling)
 
 Windows' 260-character `MAX_PATH` silently breaks the backend build in deep checkouts. MSBuild's
@@ -254,6 +265,7 @@ actually depend on.
   - Step 6: exactly one changed line, the `displayName` you set. No re-indentation, no reordered
     keys, no quoting changes, no lost comments, no changed line endings.
   - Step 7: `git diff` is empty. Byte for byte, not merely equivalent.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## An edited pipeline still validates against Azure DevOps (azure-pipeline-diagram, task 29)
 
@@ -273,6 +285,7 @@ this check is the only thing that closes that gap.
 - **Expected**: no schema errors, and the pipeline queues. Specifically the added stage has a job
   and the job has a step — an empty stage or job is a schema error, and this module writes the
   smallest runnable block for exactly that reason.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## A pipeline shows what it cannot do rather than doing it wrongly (azure-pipeline-diagram, task 29)
 
@@ -286,6 +299,7 @@ refuses something. Worth a look because a refusal that is silent reads as a bug.
 - **Expected**: the context menu offers nothing at all for that job. The Property Grid shows its
   properties with a reason beside each naming the template file the value lives in — not a greyed
   box with no explanation.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## A map authored in onlinewardleymaps.com opens looking like the same map (wardley-map, task 26)
 
@@ -304,6 +318,7 @@ unit test in the module would still pass.
   Cup of Tea below it, Kettle and Power towards the bottom left; every link joins the same pair.
   A component that is high in one and low in the other means the visibility axis is inverted;
   one that is left in one and right in the other means maturity is.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## The four evolution stage labels are legible at the default zoom (wardley-map, task 26)
 
@@ -317,6 +332,7 @@ forms are a different claim, which only helps if the long forms fit.
 - **Expected**: four labels - Genesis, Custom Built, Product (+rental), Commodity (+utility) -
   each fully readable, none clipped at the edge of the canvas, none overlapping its neighbour,
   and each sitting under the band it names.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## Dragging a component and reopening the file elsewhere shows it moved (wardley-map, task 26)
 
@@ -331,6 +347,7 @@ be a map onlinewardleymaps.com can open, with the drag visible in it.
   before and the same first number; the rest of the file - comments, blank lines, the order of
   the statements, the line endings - is untouched; and the map in the browser draws Kettle in
   its new place with everything else where it was.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## An element selected on the canvas fills the property grid (wardley-map, task 26)
 
@@ -346,6 +363,7 @@ clipping, and that is only visible on screen.
   and Strategy; Visibility and Maturity show the file's own numbers; Evolution stage shows
   `Custom Built` and cannot be typed into, with a sentence beside it saying to change Maturity
   instead - one or two lines, not a paragraph that pushes the rest of the panel down.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## The ruler stays fixed to the view while its labels slide with the content (timeline-diagram, task 31)
 
@@ -442,6 +460,7 @@ clipping, and that is only visible on screen.
 - **Why manual**: the absences are the requirement (Requirement 3.3 calls a ruler, a date or a
   moment appearing here a defect), and an absence in a running UI is what a test suite is least
   able to see.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## Every edge visibly points at its dependency (dependency-graph, task 4.1)
 
@@ -454,6 +473,7 @@ clipping, and that is only visible on screen.
   the node the drag *started* from, because what depends on a node arrives at it.
 - **Why manual**: an arrowhead drawn at the wrong end still renders a plausible graph, so the
   failure is silent to anything that only checks that an edge exists.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## Edges follow a drag while it is in progress, and Escape abandons it (dependency-graph, task 4.1)
 
@@ -464,6 +484,7 @@ clipping, and that is only visible on screen.
   the hint shows the coordinate and row the node would land on (for example `612 · row 1`),
   never a date. Escape returns the node and its curves to where they started, and the file on
   disk is byte-for-byte untouched.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## A toolbox drop lands a Node where it was dropped (dependency-graph, task 4.1)
 
@@ -473,6 +494,7 @@ clipping, and that is only visible on screen.
 - **Expected**: a "New node" appears at the dropped coordinate and row immediately - no dialog -
   and one undo removes it. Dropping never answers "That action is not available for this item"
   (the placement target must discover the add action, or executing by id resolves nothing).
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## The context menu removes nodes and dependencies (dependency-graph, task 4.1)
 
@@ -484,6 +506,7 @@ clipping, and that is only visible on screen.
   immediately - an execute that answers Completed without dispatching has done nothing, because
   the commit leg only runs after a dialog. The confirmation counts dependencies at **both** ends
   of the node, not only the ones leaving it.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## A dependency dragged onto empty space creates the node it reaches (dependency-graph, task 4.1)
 
@@ -494,6 +517,7 @@ clipping, and that is only visible on screen.
   - one history entry, one undo removing both. From the right anchor the source depends on the
   new node; from the left anchor the new node depends on the source. Releasing back on the
   source cancels quietly.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## Right-drag pans; Tab and Enter add; scrollbars pan (dependency-graph, task 4.1)
 
@@ -504,6 +528,7 @@ clipping, and that is only visible on screen.
   right on the same row and Enter adds one on the next row at the same coordinate, both depended
   upon by the node they grew from and neither asking anything; the thumbs pan the view within
   the content's extent.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## The text editor is drawn in the application's colors, caret included (modular-text-editors, manual pass)
 
@@ -520,6 +545,7 @@ CodeMirror's injected styles, so no unit test can see any of this.
   text surface with lighter, muted numbers (not a light-grey strip with dark numbers); a
   blinking caret is clearly visible at the click position; and switching the OS to light
   mode flips the whole editor - gutter, text, caret - along with the rest of the app.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## An editor save is one undo away on the ribbon (editor/undo batch)
 
@@ -534,6 +560,7 @@ a keyboard save and the ribbon together.
 - **Expected**: after the save the ribbon Undo enables; Undo restores the file's previous
   content on disk (and the editor follows once it reloads the pushed change); Redo brings
   the save back. No conflict banner should appear for the editor's own save.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## One build, one number, four places (github-build-pipeline task 3.1; two halves automated by contracts-and-build-hygiene task 1)
 
@@ -609,6 +636,7 @@ the timeline was migrated onto the same component and must look unchanged.
   the zoom. On a freshly opened (fitted) mindmap the thumbs claim nearly the whole track, and
   dragging one takes over from the fitted state just as a canvas drag does. The timeline's
   bars sit above its ruler, exactly where they were before the migration.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## Rewritten examples look presentable in the running app (small-refinements, task 2.5)
 
@@ -736,6 +764,7 @@ space, which is one candidate to rule out.
   pre-selected - content-based pre-selection is a recorded finding, not a shipped feature);
   the created `.adp` holds only the MIME line; the diagram opens showing the chart node and
   the metadata band.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## Every helm node kind navigates on double-click (helm-charts, task 7.4)
 
@@ -748,6 +777,7 @@ space, which is one candidate to rule out.
   reveals its folder, beside its own registration if one exists); the dependency node reveals
   nothing, and its Properties panel says the declaration lives in `Chart.yaml` with every row
   read-only.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## A helm reposition lands in the .adp, survives a reopen, and undoes byte-for-byte (helm-charts, task 7.4)
 
@@ -759,6 +789,8 @@ space, which is one candidate to rule out.
 - **Expected**: after the drag the `.adp` carries a `layout:` block with one `chart: <x> <y>`
   entry and no chart file changed; the reopened tab shows the node at the dragged spot; undo
   returns the `.adp` to its single MIME line; `git status` shows the example clean at the end.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+
 ## The over-budget RDF file draws its first thousand and says so (rdf-diagram, task 5.3)
 
 The drawn-element budget's honest degradation (Requirement 8): the whole Nobel laureates
@@ -834,6 +866,7 @@ has not been translated here", not as decoration.
   no chip; concepts that are not show a fallback label with a small language tag beside it. The
   chip is legible but quiet - it should never out-shout the label. Removing the `language:`
   header and reopening moves the chips to the concepts that lack English instead.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## A misplaced language: header changes nothing, and says why (skos-diagram, task 5.2)
 
@@ -848,6 +881,7 @@ message is the only place a user learns why their header did nothing.
   the default language order rather than the header's. The Errors and Warnings panel carries one
   `skos.misplaced-header` entry naming the line and saying to move it below `body:`. Moving it
   back and reopening restores the header's language and clears the entry.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## Filing a concept under another is one gesture and one undo (skos-diagram, task 5.2)
 
@@ -864,6 +898,8 @@ direction thesauri are authored in - with no inverse invented, and reversible by
   changed line endings. The canvas re-layers so the concept sits below its new parent. Ctrl+Z
   leaves `git diff` empty. The side-anchor drag does the same with one `skos:related` line, and
   does not change the layering.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+
 ## A shared variable draws once, with edges crossing region borders (sparql-diagram, task 5.3)
 
 The one drawing rule the whole module is built around: every occurrence of a variable is one
@@ -947,6 +983,7 @@ drag, that the node follows the pointer, and that a click still selects rather t
   the reopened diagram draws it in the same place, not back at its computed position; Ctrl+Z
   returns it to where it was. Open the `.adp` in a text editor: it has a `layout:` block naming
   the element and its position, and every playbook, role and inventory file is untouched.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## An Ansible click still selects, and an edge cannot be dragged (ansible-refinements, task 4.2)
 
@@ -955,6 +992,7 @@ drag, that the node follows the pointer, and that a click still selects rather t
 - **Expected**: the click selects the node - its border takes the accent colour - and does not
   move it by even a pixel. The edge does not move and nothing is written to the `.adp`; edges
   follow their endpoints, so only the nodes are arrangeable.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## The Ansible canvas scrolls like its siblings (ansible-refinements, task 4.2)
 
@@ -966,6 +1004,7 @@ drag, that the node follows the pointer, and that a click still selects rather t
   content; dragging a thumb pans the canvas without zooming it; the thumbs track the view when
   panning by dragging the canvas itself. On the diagram that fits, the thumbs claim nearly the
   whole track and invite no pan.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## Both themes render the Ansible canvas deliberately (ansible-refinements, task 4.2)
 
@@ -980,6 +1019,7 @@ values, or nothing. A screenshot proves what a unit test cannot here.
   the canvas; the selected node's border is clearly the accent colour and unmistakably
   different from unselected nodes; an unresolved edge is drawn in the warning colour; nothing
   is black-on-black, white-on-white, or invisible.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## Reordering plays moves stored positions with the index (ansible-refinements, task 4.2)
 
@@ -996,6 +1036,7 @@ case.
   their contents swap - the play now first sits where the previously-first play was put.
   Nothing overlaps, disappears, or lands at a phantom position, and one drag per play
   re-authors them. No warning is shown, deliberately.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## A click on an Ansible node still selects it after the drag feature (ansible-refinements, task 4.3)
 
@@ -1010,6 +1051,8 @@ check is what catches the behaviour itself.
 - **Actions**: single-click a role node, without moving the mouse.
 - **Expected**: the node becomes selected - its border turns the accent colour (limegreen) -
   and the Properties panel fills with that node's details. The node does not move.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+
 ## An ontology draws its classes, restrictions and individuals (owl-diagram, task 4.3)
 
 The adopted VOWL vocabulary on a real published ontology, which is the whole point of the
@@ -1172,6 +1215,7 @@ failure message is the instruction. A module that needs bars imports
 them placed differently it passes a `className` and overrides only the offsets. Reaching for a
 private thumb or track is the one thing the guard will not allow, and reading its message as a
 prompt to loosen the guard is reading it backwards.
+- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
 
 ## A shapes file aims at data that is elsewhere, and says so calmly (shacl-diagram, task 4.2)
 
