@@ -15,13 +15,13 @@ public sealed class HistoryStackStore : IHistoryStackStore, IDisposable
     private static readonly ILogger _logger = Log.ForContext<HistoryStackStore>();
 
     private readonly TimeSpan _grace;
-    private readonly Func<IHistoryStack> _create;
+    private readonly Func<string, IHistoryStack> _create;
     private readonly ConcurrentDictionary<string, RetainedHistoryStack> _entries = new(StringComparer.OrdinalIgnoreCase);
 
-    public HistoryStackStore(ICommandDispatcher dispatcher, TimeSpan? grace = null)
+    public HistoryStackStore(ICommandDispatcher dispatcher, TimeSpan? grace = null, IContextNoticeSink? notices = null)
     {
         ArgumentNullException.ThrowIfNull(dispatcher);
-        _create = () => new HistoryStack(dispatcher);
+        _create = rootPath => new HistoryStack(dispatcher, HistoryStack.DefaultCapacity, rootPath, notices);
         _grace = grace ?? DefaultGrace;
     }
 
@@ -81,7 +81,7 @@ public sealed class HistoryStackStore : IHistoryStackStore, IDisposable
     private RetainedHistoryStack EntryFor(string rootPath) =>
         _entries.GetOrAdd(Key(rootPath), key =>
         {
-            var stack = _create();
+            var stack = _create(key);
             var entry = new RetainedHistoryStack(key, stack);
             // Aggregate every stack's Changed into the store's own event, tagged with the project.
             entry.Handler = (_, _) => Changed?.Invoke(this, new HistoryChangedEventArgs(entry.RootPath));

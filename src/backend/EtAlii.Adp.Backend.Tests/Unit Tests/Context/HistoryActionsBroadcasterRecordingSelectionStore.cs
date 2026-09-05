@@ -32,6 +32,8 @@ internal sealed class HistoryActionsBroadcasterRecordingSelectionStore : IContex
 
     public void PushProblems(string rootPath, ProjectProblems problems) => throw new NotSupportedException();
 
+    public void PushNotice(string rootPath, string message) => throw new NotSupportedException();
+
     public void Remove(ShortGuid watchId) => throw new NotSupportedException();
 
     public ContextSelectionRecord Get(ShortGuid watchId) => throw new NotSupportedException();

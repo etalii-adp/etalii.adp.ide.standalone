@@ -37,13 +37,22 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
 
     private bool _isDisposed;
 
-    public HistoryStack(ICommandDispatcher dispatcher, int capacity = DefaultCapacity)
+    private readonly string _rootPath;
+    private readonly IContextNoticeSink? _notices;
+
+    public HistoryStack(
+        ICommandDispatcher dispatcher,
+        int capacity = DefaultCapacity,
+        string rootPath = "",
+        IContextNoticeSink? notices = null)
     {
         ArgumentNullException.ThrowIfNull(dispatcher);
         ArgumentOutOfRangeException.ThrowIfLessThan(capacity, 1);
 
         _dispatcher = dispatcher;
         Capacity = capacity;
+        _rootPath = rootPath;
+        _notices = notices;
     }
 
     /// <summary>The most changes the undo side will hold before the oldest starts falling off.</summary>
@@ -105,6 +114,19 @@ public sealed class HistoryStack : IHistoryStack, IDisposable
             if (!result.IsSuccess)
             {
                 _logger.Warning("{Command} was rejected: {Reason}", command.GetType().Name, result.Error);
+            }
+            else if (result.Warning.Length > 0)
+            {
+                // Succeeded, and something the user should know happened anyway - a layout
+                // that could not be recorded, identities that could not be saved. Told to
+                // everyone watching the project rather than answered to the one caller,
+                // because the loss belongs to the document: the position is missing for
+                // whoever opens it next, not only for whoever dragged it.
+                _logger.Warning("{Command} succeeded with a warning: {Warning}", command.GetType().Name, result.Warning);
+                if (_rootPath.Length > 0)
+                {
+                    _notices?.Notify(_rootPath, result.Warning);
+                }
             }
             else if (result.Inverse is null)
             {

@@ -12,6 +12,8 @@ internal sealed class ProblemBroadcasterRecordingSelectionStore : IContextSelect
 
     public void PushProblems(string rootPath, ProjectProblems problems) => _pushes.Add((rootPath, problems));
 
+    public void PushNotice(string rootPath, string message) => throw new NotSupportedException();
+
     public void Register(ShortGuid watchId, string rootPath, ChannelWriter<ContextMessage> writer, IReadOnlyList<ContextActionGroupDefinition> rootActions, IReadOnlyList<ContextActionGroupDefinition> projectActions, ProjectProblems problems) => throw new NotSupportedException();
 
     public void PushProjectActions(string rootPath, IReadOnlyList<ContextActionGroupDefinition> actions) => throw new NotSupportedException();

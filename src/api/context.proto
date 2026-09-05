@@ -272,7 +272,20 @@ message ContextMessage {
     ContextPrompt prompt = 2;
     ContextProjectActions project_actions = 3;
     ProjectProblems problems = 4;
+    ContextNotice notice = 5;
   }
+}
+
+// Something that happened alongside a command that SUCCEEDED, and that the user would
+// otherwise only discover later. A drag whose new position could not be recorded is the
+// case this exists for: refusing the drag would lose work the user can see, and saying
+// nothing meant the position was quietly missing on the next open.
+//
+// Deliberately not a problem: ProjectProblems is owned by validation, keyed by file and
+// replaced wholesale on the next pass, so a transient notice put there would be wiped by
+// the validator that owns those entries.
+message ContextNotice {
+  string message = 1;
 }
 
 // A keypress, expressed so the client can match it directly against a KeyboardEvent

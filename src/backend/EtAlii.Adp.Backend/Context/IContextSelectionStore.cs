@@ -56,6 +56,19 @@ public interface IContextSelectionStore
     /// </summary>
     void PushProblems(string rootPath, ProjectProblems problems);
 
+    /// <summary>
+    /// Writes one notice to every connection in <paramref name="rootPath"/>'s project: a
+    /// thing that happened alongside a command that SUCCEEDED and that the user would
+    /// otherwise discover only later.
+    /// </summary>
+    /// <remarks>
+    /// Broadcast to the project rather than answered to the caller, because the outcome
+    /// belongs to the document rather than to the connection that happened to cause it: a
+    /// position that was not recorded is missing for whoever opens the diagram next, not
+    /// only for whoever dragged it.
+    /// </remarks>
+    void PushNotice(string rootPath, string message);
+
     /// <summary>Drops a connection's stream, selection and observations.</summary>
     void Remove(ShortGuid watchId);
 
