@@ -53,6 +53,10 @@ A *wrong* name is worse than an ambiguous one. Full reasoning, and why an identi
 
 **Ask what the command would print if your belief were false.** If the answer is "the same thing", it is not evidence - `git log --oneline`, `git config user.name`, `grep -c $'\r'` and a sabotage whose pattern never matched all print the same thing either way. **Apply it to your own reports too**: "fixed" said from a worktree describes the worktree, not `develop`. **And do not write a guard over prose** - a guard that must be edited whenever its subject legitimately changes is a second copy of the data, not a check on it.
 
+**An exit code reported by a wrapper is not the exit code of the thing you ran.** A backgrounded suite's task notification carries the wrapper shell's status; read the runner's own exit from the log. One agent reported `exit 0` on a run whose log said `TESTS_EXIT=1`.
+
+**A fresh-tree build is not a stricter gate — it is the only one that reads a different input.** Every other gate reads `obj/`, a cache of the last successful generation, so `dotnet test` prints the same green whether the generated code is current or stale. A generated-code break is invisible to it by construction: nine sessions went green through a window in which `develop` compiled in no fresh checkout. Build a newly created worktree before trusting a green gate about anything upstream of codegen.
+
 **A test written for a bug must be seen to fail against that bug before it is trusted.** Three written in one sitting passed against the broken code — React batched one window away, jsdom detached an input for another, and a third omitted `StrictMode`, outside which the defect cannot occur. **A test that passes against the defect is worse than no test**: it converts "unverified" into "verified" while nothing has changed. Perturb it and watch it fail, or delete it.
 
 Six worked instances and the reasoning: [processes.md, *Checking that a command answered your question*](.spec-workflow/steering/processes.md#checking-that-a-command-answered-your-question).
