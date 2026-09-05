@@ -45,4 +45,11 @@ describe("file URL to path conversion", () => {
       "convert a file URL with fileURLToPath from node:url - slicing the pathname drops the root on Linux",
     ).toEqual([]);
   });
+
+  it("still sees the client sources, so a passing result means something", () => {
+    // A guard that silently walks nothing passes for ever - and this one filters its own
+    // file out of the list, so an empty walk is one rename away rather than hypothetical.
+    // Pinning the population is what makes the assertion above evidence.
+    expect(roots.flatMap(sources).length).toBeGreaterThan(20);
+  });
 });
