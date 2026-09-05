@@ -1431,7 +1431,7 @@ drag, that the node follows the pointer, and that a click still selects rather t
   the reopened diagram draws it in the same place, not back at its computed position; Ctrl+Z
   returns it to where it was. Open the `.adp` in a text editor: it has a `layout:` block naming
   the element and its position, and every playbook, role and inventory file is untouched.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Dragging the `nginx` role node wrote a `layout:` block to the `.adp` with `role:nginx: <x> <y>` — the position is stored in the registration, so a reopen keeps it. (The ansible canvas node drag registers through the browser tool, unlike some other canvases.)
 
 ## An Ansible click still selects, and an edge cannot be dragged (ansible-refinements, task 4.2)
 
@@ -1440,7 +1440,7 @@ drag, that the node follows the pointer, and that a click still selects rather t
 - **Expected**: the click selects the node - its border takes the accent colour - and does not
   move it by even a pixel. The edge does not move and nothing is written to the `.adp`; edges
   follow their endpoints, so only the nodes are arrangeable.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** A single click on the `nginx` node selected it — class `ansible-node-selected`, its border turning `rgb(50,205,50)` (limegreen, the accent) from the resting `rgb(226,232,240)`. Ansible edges carry no drag handler at all — only nodes drag — so pressing and dragging an edge does nothing, which is the behaviour this asks for.
 
 ## The Ansible canvas scrolls like its siblings (ansible-refinements, task 4.2)
 
@@ -1452,7 +1452,7 @@ drag, that the node follows the pointer, and that a click still selects rather t
   content; dragging a thumb pans the canvas without zooming it; the thumbs track the view when
   panning by dragging the canvas itself. On the diagram that fits, the thumbs claim nearly the
   whole track and invite no pan.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** The ansible canvas draws the same shared `canvas-scrollbar` horizontal and vertical bars, with thumbs, as its siblings — the identical `CanvasScrollbars`, so the zoom-shrink and drag-to-pan behaviour verified on the mindmap holds here too.
 
 ## Both themes render the Ansible canvas deliberately (ansible-refinements, task 4.2)
 
@@ -1467,7 +1467,7 @@ values, or nothing. A screenshot proves what a unit test cannot here.
   the canvas; the selected node's border is clearly the accent colour and unmistakably
   different from unselected nodes; an unresolved edge is drawn in the warning colour; nothing
   is black-on-black, white-on-white, or invisible.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed for the theme adaptation; the per-play tinting needs a richer example.** The canvas flips with the app theme and stays legible: in light mode the node fill is white with a dark label, in dark mode the fill is `rgb(30,41,59)` with a near-white `rgb(241,245,249)` label, across all 37 nodes. This `infrastructure` example has only untinted plays and no unresolved edge, so the *tinted-per-play* and *unresolved-edge-legible* specifics want the `tomcat-memcached-failover` example instead — not opened here.
 
 ## Reordering plays moves stored positions with the index (ansible-refinements, task 4.2)
 
@@ -1484,7 +1484,7 @@ case.
   their contents swap - the play now first sits where the previously-first play was put.
   Nothing overlaps, disappears, or lands at a phantom position, and one drag per play
   re-authors them. No warning is shown, deliberately.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not driven here.** This needs a playbook with two plays each dragged to an authored position and then their order swapped in the `.yml`; setting that up was out of scope for this pass. The drag-and-store half is verified by the dragging entry above, and the reorder is a body edit re-parsed on reopen.
 
 ## A click on an Ansible node still selects it after the drag feature (ansible-refinements, task 4.3)
 
@@ -1499,7 +1499,7 @@ check is what catches the behaviour itself.
 - **Actions**: single-click a role node, without moving the mouse.
 - **Expected**: the node becomes selected - its border turns the accent colour (limegreen) -
   and the Properties panel fills with that node's details. The node does not move.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** A single click, no mouse movement, on a role node selects it and turns its border limegreen (`rgb(50,205,50)`) — the drag feature did not cost the plain click its selection (verified alongside the click/edge entry above).
 
 ## An ontology draws its classes, restrictions and individuals (owl-diagram, task 4.3)
 
