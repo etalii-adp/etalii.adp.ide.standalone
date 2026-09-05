@@ -68,7 +68,7 @@ One worktree for the whole spec: `.claude/worktrees/adopt` — short, because th
   - _Requirements: 3.1, 3.2, 3.3, 3.5, 4.2, 9.1_
   - _Prompt: Implement the task for spec inline-rename-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Senior React/TypeScript developer | Task: Give WardleyCanvas context-channel selection - click, context menu and F2 - so its backend actions become reachable | Restrictions: use the patterns already in the tree, not new ones; no editor work in this task; the acceptance is that a selected element's actions run | _Leverage: MindmapCanvas or C4Canvas's selection and menu wiring | Success: an element can be selected, its actions appear and run, F2 forwards, gates green. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 7. wardley-map adopts
+- [-] 7. wardley-map adopts
   - Files: `src/diagrams/wardley-map/backend/EtAlii.Adp.Diagram.WardleyMap/WardleyContextActionProvider.cs` and its test, `src/diagrams/wardley-map/client/WardleyCanvas.tsx` and its test
   - Mark `wardley.rename`, which asks for `component.Name`. The add actions ask for names that do not exist yet; `EvolveActionId` asks for a maturity number and is emphatically not a label.
   - Client: a placement resolver over the element's drawn label. Wardley draws with `SymbolElement` in its own 0..1 space scaled into a fixed box — **the resolver works in the canvas's units like every other, and the map's coordinate space is not a special case for this feature**.
