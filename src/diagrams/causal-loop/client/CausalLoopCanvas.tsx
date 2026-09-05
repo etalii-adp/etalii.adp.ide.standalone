@@ -29,7 +29,16 @@ const ZOOM_STEP = 1.25;
 const MIN_VIEW_WIDTH = 40;
 const MAX_VIEW_WIDTH = 100000;
 const PADDING = 60;
-const DRAG_THRESHOLD_PX = 3;
+
+/**
+ * What a press lands on. Threaded through the shared arbiter untouched: the arbiter decides
+ * click-or-drag at the gesture's end, and this type is how its verdict comes back knowing
+ * what the gesture was about.
+ */
+type CausalLoopPressTarget =
+  | { kind: "variable"; variable: CausalLoopVariable }
+  | { kind: "link"; id: string }
+  | { kind: "loop"; id: string };
 
 export interface CausalLoopCanvasProps {
   projectId: Uint8Array;
@@ -61,7 +70,6 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
   const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const panRef = useRef<{ x: number; y: number; view: ViewBox } | null>(null);
-  const dragRef = useRef<{ id: string; x: number; y: number; clientX: number; clientY: number; moved: boolean } | null>(null);
 
   const variables = useMemo(() => [...model.variables.values()], [model.variables]);
   const links = useMemo(() => [...model.links.values()], [model.links]);
@@ -88,10 +96,40 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
     [entryId, path, select],
   );
 
-  // A press on a link selects it - decided by the shared arbiter at the gesture's end, never
-  // by the trailing click, which lands wherever a drag's drop left the geometry. Variables
-  // and loop markers keep their element paths; only the relation goes through the arbiter.
-  const linkGesture = usePointerGesture<string>({ onPress: (id) => onSelect(id) });
+  // A press selects - variable, link and loop badge alike - decided by the shared arbiter at
+  // the gesture's end, never by the trailing click: the click after a drop lands on whatever
+  // the geometry left under the pointer (the dragged variable itself, or the loop badge at
+  // the loop's centre), and a raw handler there changed a selection nobody asked to change.
+  const gesture = usePointerGesture<CausalLoopPressTarget>({
+    onPress: (target) => onSelect(target.kind === "variable" ? target.variable.id : target.id),
+    onDragMove: (target, dx, dy) => {
+      if (target.kind !== "variable") {
+        return; // a link or a loop badge has no position of its own; dragging one moves nothing
+      }
+
+      const scale = unitsPerPixel();
+      setDrag({ id: target.variable.id, x: target.variable.x + dx * scale, y: target.variable.y + dy * scale });
+    },
+    onDragEnd: (target, dx, dy) => {
+      if (target.kind !== "variable") {
+        return;
+      }
+
+      setDrag(null);
+      const scale = unitsPerPixel();
+      void (async () => {
+        const error = await moveElementTo(target.variable.id, target.variable.x + dx * scale, target.variable.y + dy * scale);
+        if (error) {
+          setRejection(error);
+        }
+      })();
+    },
+    onDragAbandon: (target) => {
+      if (target.kind === "variable") {
+        setDrag(null);
+      }
+    },
+  });
 
   /**
    * A right-click's menu, opened once the pushed selection for that element arrives with its
@@ -156,37 +194,7 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
     panRef.current = { x: event.clientX, y: event.clientY, view: effective };
   };
 
-  const onVariableMouseDown = (variable: CausalLoopVariable, event: React.MouseEvent) => {
-    if (event.button !== 0) {
-      return;
-    }
-    event.stopPropagation();
-    dragRef.current = {
-      id: variable.id,
-      x: variable.x,
-      y: variable.y,
-      clientX: event.clientX,
-      clientY: event.clientY,
-      moved: false,
-    };
-  };
-
   const onMouseMove = (event: React.MouseEvent) => {
-    const dragging = dragRef.current;
-    if (dragging) {
-      dragging.moved ||=
-        Math.abs(event.clientX - dragging.clientX) + Math.abs(event.clientY - dragging.clientY) > DRAG_THRESHOLD_PX;
-      if (dragging.moved) {
-        const scale = unitsPerPixel();
-        setDrag({
-          id: dragging.id,
-          x: dragging.x + (event.clientX - dragging.clientX) * scale,
-          y: dragging.y + (event.clientY - dragging.clientY) * scale,
-        });
-      }
-      return;
-    }
-
     const pan = panRef.current;
     if (pan && svgRef.current) {
       const scale = pan.view.w / Math.max(svgRef.current.getBoundingClientRect().width, 1);
@@ -201,19 +209,6 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
 
   const onMouseUp = () => {
     panRef.current = null;
-
-    const dragging = dragRef.current;
-    const landed = drag;
-    dragRef.current = null;
-    setDrag(null);
-    if (dragging && landed && dragging.moved) {
-      void (async () => {
-        const error = await moveElementTo(landed.id, landed.x, landed.y);
-        if (error) {
-          setRejection(error);
-        }
-      })();
-    }
   };
 
   if (failed) {
@@ -301,7 +296,7 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
                   selectedId === link.id ? " canvas-selected" : ""
                 }`}
                 data-element-id={link.id}
-                {...linkGesture.press(link.id)}
+                {...gesture.press({ kind: "link", id: link.id })}
                 onContextMenu={(event) => openMenuAt(event, link.id)}
               >
                 <path
@@ -350,7 +345,7 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
                 selectedId === loop.id ? " canvas-selected" : ""
               }`}
               data-element-id={loop.id}
-              onClick={() => onSelect(loop.id)}
+              {...gesture.press({ kind: "loop", id: loop.id })}
               onContextMenu={(event) => openMenuAt(event, loop.id)}
             >
               {/*
@@ -397,8 +392,7 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
                 boxClassName="canvas-node"
                 labelClassName="canvas-node-label"
                 labelX={box.width / 2}
-                onMouseDown={(event: React.MouseEvent) => onVariableMouseDown(variable, event)}
-                onClick={() => onSelect(variable.id)}
+                {...gesture.press({ kind: "variable", variable })}
                 onDoubleClick={() => onSelect(variable.id, ContextSelectionAction.ACTIVATE)}
                 onContextMenu={(event: React.MouseEvent) => openMenuAt(event, variable.id)}
               />
