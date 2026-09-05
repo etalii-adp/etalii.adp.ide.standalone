@@ -116,10 +116,10 @@ public class SparqlSessionTests : IDisposable
         // the assertion below would pass vacuously because the culled id no longer exists at
         // all. Adding a triple leaves every existing id in place, so a viewport-blind change
         // path really does re-send the culled element and really is caught.
-        File.WriteAllText(body, File.ReadAllText(body).Replace(
+        await File.WriteAllTextAsync(body, (await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)).Replace(
             "  ?s ex:p ?x .",
             "  ?s ex:p ?x .\n  ?s ex:fresh ?fresh .",
-            StringComparison.Ordinal));
+            StringComparison.Ordinal), TestContext.Current.CancellationToken);
         _provider.GetServices<IDiagramDocumentReloader>()
             .Single(candidate => candidate.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin)
             .Reload(_root, body);
@@ -166,7 +166,7 @@ public class SparqlSessionTests : IDisposable
         // Arrange.
         var body = CopyFixture("groups.rq");
         var registration = WriteRegistration("groups.rq");
-        File.AppendAllText(registration, "layout:\r\n  var:x: 640 480\r\n");
+        await File.AppendAllTextAsync(registration, "layout:\r\n  var:x: 640 480\r\n", TestContext.Current.CancellationToken);
 
         // Act.
         await using var session = Open(body, registration);
@@ -183,7 +183,7 @@ public class SparqlSessionTests : IDisposable
     {
         // Arrange.
         var body = CopyFixture("groups.rq");
-        var original = File.ReadAllBytes(body);
+        var original = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
         await using var session = Open(body, WriteRegistration("groups.rq"));
 
         // Act.
@@ -191,8 +191,8 @@ public class SparqlSessionTests : IDisposable
 
         // Assert.
         Assert.Equal("", refusal);
-        Assert.Equal(original, File.ReadAllBytes(body));
-        Assert.Contains("var:x: 320 200", File.ReadAllText(IoPath.Combine(_root, "query.adp")));
+        Assert.Equal(original, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
+        Assert.Contains("var:x: 320 200", await File.ReadAllTextAsync(IoPath.Combine(_root, "query.adp"), TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -200,9 +200,9 @@ public class SparqlSessionTests : IDisposable
     {
         // Arrange.
         var body = CopyFixture("groups.rq");
-        var original = File.ReadAllBytes(body);
+        var original = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
         var registration = WriteRegistration("groups.rq");
-        var before = File.ReadAllText(registration);
+        var before = await File.ReadAllTextAsync(registration, TestContext.Current.CancellationToken);
         await using var session = Open(body, registration);
         await session.MoveElementToAsync("var:x", 320, 200, CancellationToken.None);
 
@@ -211,8 +211,8 @@ public class SparqlSessionTests : IDisposable
         await history.UndoAsync(CancellationToken.None);
 
         // Assert.
-        Assert.Equal(before, File.ReadAllText(registration));
-        Assert.Equal(original, File.ReadAllBytes(body));
+        Assert.Equal(before, await File.ReadAllTextAsync(registration, TestContext.Current.CancellationToken));
+        Assert.Equal(original, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Theory]
@@ -275,7 +275,7 @@ public class SparqlSessionTests : IDisposable
         session.Changed += (_, args) => received = args.Deltas;
 
         // Act: the text editor is where these files are edited, so this is the normal path.
-        File.WriteAllText(body, "PREFIX ex: <http://example.org/>\nSELECT ?s ?extra\nWHERE { ?s ex:p ?o . ?s ex:q ?extra }\n");
+        await File.WriteAllTextAsync(body, "PREFIX ex: <http://example.org/>\nSELECT ?s ?extra\nWHERE { ?s ex:p ?o . ?s ex:q ?extra }\n", TestContext.Current.CancellationToken);
         _provider.GetServices<IDiagramDocumentReloader>()
             .Single(candidate => candidate.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin)
             .Reload(_root, body);

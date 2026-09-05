@@ -196,7 +196,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
         Assert.Contains("Change Maturity instead", Row(rows, WardleyContextPropertyProvider.StagePropertyId).ReadOnlyReason, StringComparison.Ordinal);
         Assert.False(result.IsSuccess);
         Assert.Contains("Maturity", result.Error, StringComparison.Ordinal);
-        Assert.Equal(Map, File.ReadAllText(_path));
+        Assert.Equal(Map, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -275,9 +275,9 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
 
         // Act.
         var typed = await Set(IdOf("Kettle"), WardleyContextPropertyProvider.MaturityPropertyId, "0.42");
-        var afterTyping = File.ReadAllText(_path);
+        var afterTyping = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
         await history.UndoAsync(TestContext.Current.CancellationToken);
-        var afterUndo = File.ReadAllText(_path);
+        var afterUndo = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
 
         await history.ExecuteAsync(
             new MoveWardleyElementCommand(_path, IdOf("Kettle"), 0.43d, 0.42d), TestContext.Current.CancellationToken);
@@ -285,7 +285,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
         // Assert.
         Assert.True(typed.IsSuccess, typed.Error);
         Assert.Equal(Map, afterUndo);
-        Assert.Equal(afterTyping, File.ReadAllText(_path));
+        Assert.Equal(afterTyping, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -297,7 +297,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Contains("component Kettle [0.5, 0.35] (buy) inertia", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("component Kettle [0.5, 0.35] (buy) inertia", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -311,7 +311,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
         Assert.False(offScale.IsSuccess);
         Assert.Contains("off the map", offScale.Error, StringComparison.Ordinal);
         Assert.False(notANumber.IsSuccess);
-        Assert.Equal(Map, File.ReadAllText(_path));
+        Assert.Equal(Map, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -322,7 +322,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
 
         // Assert. The same command the menu's Rename uses, so the references travel with it.
         Assert.True(result.IsSuccess, result.Error);
-        var text = File.ReadAllText(_path);
+        var text = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
         Assert.Contains("component Boiler [0.43, 0.35]", text, StringComparison.Ordinal);
         Assert.Contains("Cup of Tea->Boiler", text, StringComparison.Ordinal);
         Assert.Contains("evolve Boiler->Electric Kettle", text, StringComparison.Ordinal);
@@ -337,7 +337,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
         // Assert.
         Assert.False(result.IsSuccess);
         Assert.Contains("already has an element", result.Error, StringComparison.Ordinal);
-        Assert.Equal(Map, File.ReadAllText(_path));
+        Assert.Equal(Map, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -349,7 +349,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
 
         // Act.
         var result = await Set(IdOf("Kettle"), WardleyContextPropertyProvider.DecoratorsPropertyId, "market, outsource");
-        var after = File.ReadAllText(_path);
+        var after = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
         await history.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
@@ -357,7 +357,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
         Assert.Contains("(market)", after, StringComparison.Ordinal);
         Assert.Contains("(outsource)", after, StringComparison.Ordinal);
         Assert.DoesNotContain("(buy)", after, StringComparison.Ordinal);
-        Assert.Equal(Map, File.ReadAllText(_path));
+        Assert.Equal(Map, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -371,7 +371,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
         Assert.False(result.IsSuccess);
         Assert.Contains("outsorce", result.Error, StringComparison.Ordinal);
         Assert.Contains("market", result.Error, StringComparison.Ordinal);
-        Assert.Equal(Map, File.ReadAllText(_path));
+        Assert.Equal(Map, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -382,7 +382,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.DoesNotContain("(buy)", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.DoesNotContain("(buy)", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -390,12 +390,12 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     {
         // Act.
         await Set(IdOf("Kettle"), WardleyContextPropertyProvider.InertiaPropertyId, "false");
-        var off = File.ReadAllText(_path);
+        var off = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
         await Set(IdOf("Kettle"), WardleyContextPropertyProvider.InertiaPropertyId, "true");
 
         // Assert.
         Assert.DoesNotContain("inertia", off, StringComparison.Ordinal);
-        Assert.Contains("inertia", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("inertia", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -406,7 +406,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.DoesNotContain("evolve Kettle", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.DoesNotContain("evolve Kettle", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -417,7 +417,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Contains("evolve Kettle->Electric Kettle 0.8", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("evolve Kettle->Electric Kettle 0.8", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -428,7 +428,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Contains("Kettle+>Power; money", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("Kettle+>Power; money", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -439,7 +439,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Contains("  component Electric Kettle [0.71]", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("  component Electric Kettle [0.71]", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -461,7 +461,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.False(result.IsSuccess);
-        Assert.Equal(Map, File.ReadAllText(_path));
+        Assert.Equal(Map, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     // ---- plumbing -----------------------------------------------------------------------------

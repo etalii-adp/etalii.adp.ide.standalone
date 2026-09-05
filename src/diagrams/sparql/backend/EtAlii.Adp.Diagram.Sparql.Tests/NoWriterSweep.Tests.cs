@@ -61,8 +61,8 @@ public class NoWriterSweepTests : IDisposable
         // Arrange: the bytes as vendored, and the registration as Add would have written it.
         var body = CopyVendoredExample();
         var registration = IoPath.Combine(_root, "query.adp");
-        var queryBefore = File.ReadAllBytes(body);
-        var registrationBefore = File.ReadAllText(registration);
+        var queryBefore = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
+        var registrationBefore = await File.ReadAllTextAsync(registration, TestContext.Current.CancellationToken);
 
         var factory = _provider.GetServices<IDiagramSessionFactory>()
             .Single(candidate => candidate.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin);
@@ -106,7 +106,7 @@ public class NoWriterSweepTests : IDisposable
             await _provider.GetRequiredService<IHistoryStackStore>().Get(_root).UndoAsync(CancellationToken.None);
 
             // 6. An external edit, picked up through the reload seam.
-            File.WriteAllText(body, File.ReadAllText(body).Replace("?mbox", "?mailbox", StringComparison.Ordinal));
+            await File.WriteAllTextAsync(body, (await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)).Replace("?mbox", "?mailbox", StringComparison.Ordinal), TestContext.Current.CancellationToken);
             _provider.GetServices<IDiagramDocumentReloader>()
                 .Single(candidate => candidate.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin)
                 .Reload(_root, body);
@@ -117,10 +117,10 @@ public class NoWriterSweepTests : IDisposable
         // reformatting, no reserialization, nothing the module added on its way past.
         var expected = System.Text.Encoding.UTF8.GetBytes(
             System.Text.Encoding.UTF8.GetString(queryBefore).Replace("?mbox", "?mailbox", StringComparison.Ordinal));
-        Assert.Equal(expected, File.ReadAllBytes(body));
+        Assert.Equal(expected, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
 
         // And the registration came back to exactly what it was, because undo restores bytes.
-        Assert.Equal(registrationBefore, File.ReadAllText(registration));
+        Assert.Equal(registrationBefore, await File.ReadAllTextAsync(registration, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public class NoWriterSweepTests : IDisposable
         // Arrange.
         var body = CopyVendoredExample();
         var registration = IoPath.Combine(_root, "query.adp");
-        var queryBefore = File.ReadAllBytes(body);
+        var queryBefore = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
 
         var factory = _provider.GetServices<IDiagramSessionFactory>()
             .Single(candidate => candidate.Origin == ServiceCollectionAddSparqlExtension.SparqlOrigin);
@@ -140,8 +140,8 @@ public class NoWriterSweepTests : IDisposable
         await session.MoveElementToAsync("var:name", 120, 80, CancellationToken.None);
 
         // Assert: the query is untouched to the byte, and the position landed in the .adp.
-        Assert.Equal(queryBefore, File.ReadAllBytes(body));
-        Assert.Contains("var:name: 120 80", File.ReadAllText(registration));
+        Assert.Equal(queryBefore, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
+        Assert.Contains("var:name: 120 80", await File.ReadAllTextAsync(registration, TestContext.Current.CancellationToken));
     }
 
     [Fact]

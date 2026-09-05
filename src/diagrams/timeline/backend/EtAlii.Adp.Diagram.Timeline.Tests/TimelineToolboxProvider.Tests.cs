@@ -85,7 +85,7 @@ public class TimelineToolboxProviderTests : IDisposable
         // The whole reason the entry names an action: the drop reuses the add command, carrying
         // its position, so there is no second implementation to disagree with the menu.
         var path = IoPath.Combine(_workspace, "plan.tml");
-        File.WriteAllText(path, "timeline: 1\r\nelements: []\r\n");
+        await File.WriteAllTextAsync(path, "timeline: 1\r\nelements: []\r\n", TestContext.Current.CancellationToken);
         _store.Forget(path);
         var item = _toolbox.Items.Single(candidate => candidate.Id == "timeline.toolbox.element");
         var seconds = TimelineScale.ToSeconds(new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero));

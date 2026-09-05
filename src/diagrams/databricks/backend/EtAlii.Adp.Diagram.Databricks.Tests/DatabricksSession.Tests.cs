@@ -119,9 +119,9 @@ public class DatabricksSessionTests : IDisposable
     {
         // Arrange.
         var body = CopyFixture("job.yml");
-        var bodyBytes = File.ReadAllBytes(body);
+        var bodyBytes = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
         var adp = WriteRegistration("databricks/job", "job.yml");
-        var adpBefore = File.ReadAllText(adp);
+        var adpBefore = await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken);
 
         // Act.
         await using var session = Open("databricks/job", body, adp);
@@ -131,11 +131,11 @@ public class DatabricksSessionTests : IDisposable
         Assert.Equal("", refusal);
         Assert.Equal(new RegistrationPosition(120, 240), RegistrationLayout.Read(adp)["task:ingest"]);
         // The body file never changes by a byte (Requirement 7.7).
-        Assert.Equal(bodyBytes, File.ReadAllBytes(body));
+        Assert.Equal(bodyBytes, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
         // And the drag is one undo away, returning the .adp byte for byte (Requirement 7.6).
         await _provider.GetRequiredService<IHistoryStackStore>().Get(_root)
             .UndoAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(adpBefore, File.ReadAllText(adp));
+        Assert.Equal(adpBefore, await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -144,10 +144,9 @@ public class DatabricksSessionTests : IDisposable
         // Arrange.
         // A file declaring two jobs: the resource: header names the second.
         var path = IoPath.Combine(_root, "jobs.yml");
-        File.WriteAllText(path,
-            "resources:\r\n  jobs:\r\n"
+        await File.WriteAllTextAsync(path, "resources:\r\n  jobs:\r\n"
             + "    first:\r\n      name: First\r\n      tasks:\r\n        - task_key: a\r\n"
-            + "    second:\r\n      name: Second\r\n      tasks:\r\n        - task_key: b\r\n");
+            + "    second:\r\n      name: Second\r\n      tasks:\r\n        - task_key: b\r\n", TestContext.Current.CancellationToken);
         var adp = WriteRegistration("databricks/job", "jobs.yml", "resource: second\r\n");
 
         // Act.
@@ -298,10 +297,9 @@ public class DatabricksSessionTests : IDisposable
         // Two tasks and no dependency between them, so the one-hop edge rule is not what this
         // test is measuring: `far` is out of view on its own account.
         var body = IoPath.Combine(_root, "edit.yml");
-        File.WriteAllText(body,
-            "resources:\r\n  jobs:\r\n    j:\r\n      name: J\r\n      tasks:\r\n"
+        await File.WriteAllTextAsync(body, "resources:\r\n  jobs:\r\n    j:\r\n      name: J\r\n      tasks:\r\n"
             + "        - task_key: near\r\n          notebook_task:\r\n            notebook_path: notebooks/near\r\n"
-            + "        - task_key: far\r\n          notebook_task:\r\n            notebook_path: notebooks/far\r\n");
+            + "        - task_key: far\r\n          notebook_task:\r\n            notebook_path: notebooks/far\r\n", TestContext.Current.CancellationToken);
         var adp = WriteRegistration("databricks/job", "edit.yml", "layout:\r\n  task:near: 0 0\r\n  task:far: 0 5000\r\n");
 
         await using var session = Open("databricks/job", body, adp);
@@ -312,10 +310,9 @@ public class DatabricksSessionTests : IDisposable
         session.Changed += (_, args) => pushed.AddRange(args.Deltas);
 
         // Act: somebody edits the task the reader has panned away from.
-        File.WriteAllText(body,
-            "resources:\r\n  jobs:\r\n    j:\r\n      name: J\r\n      tasks:\r\n"
+        await File.WriteAllTextAsync(body, "resources:\r\n  jobs:\r\n    j:\r\n      name: J\r\n      tasks:\r\n"
             + "        - task_key: near\r\n          notebook_task:\r\n            notebook_path: notebooks/near\r\n"
-            + "        - task_key: far\r\n          notebook_task:\r\n            notebook_path: notebooks/far-edited\r\n");
+            + "        - task_key: far\r\n          notebook_task:\r\n            notebook_path: notebooks/far-edited\r\n", TestContext.Current.CancellationToken);
         _provider.GetRequiredService<IDatabricksDocumentStore>().Reload(body);
 
         // Assert.

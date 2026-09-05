@@ -66,7 +66,7 @@ public class TimelineCommandsTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await History.ExecuteAsync(new AddTimelineElementCommand(path, "new00001", "Added", "2026-03-01", "2026-03-15", 4), TestContext.Current.CancellationToken);
@@ -74,7 +74,7 @@ public class TimelineCommandsTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public class TimelineCommandsTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await History.ExecuteAsync(new RemoveTimelineElementCommand(path, "aaa"), TestContext.Current.CancellationToken);
@@ -134,7 +134,7 @@ public class TimelineCommandsTests : IDisposable
         Assert.True(result.IsSuccess, result.Error);
         Assert.Empty(afterRemove.Connections);
         Assert.Single(afterRemove.Elements);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -166,7 +166,7 @@ public class TimelineCommandsTests : IDisposable
         await History.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal(unterminated, File.ReadAllText(path));
+        Assert.Equal(unterminated, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -174,7 +174,7 @@ public class TimelineCommandsTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         await History.ExecuteAsync(new RenameTimelineElementCommand(path, "aaa", "Renamed"), TestContext.Current.CancellationToken);
@@ -183,7 +183,7 @@ public class TimelineCommandsTests : IDisposable
 
         // Assert.
         Assert.Equal("Renamed", renamed.Label);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -200,7 +200,7 @@ public class TimelineCommandsTests : IDisposable
         // Assert.
         Assert.False(result.IsSuccess);
         Assert.Contains("cannot end before it begins", result.Error, StringComparison.Ordinal);
-        Assert.Contains("begin: 2026-01-05", File.ReadAllText(path), StringComparison.Ordinal);
+        Assert.Contains("begin: 2026-01-05", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -224,7 +224,7 @@ public class TimelineCommandsTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await History.ExecuteAsync(new ConnectTimelineElementsCommand(path, "ddd", "bbb", "aaa", "back"), TestContext.Current.CancellationToken);
@@ -232,7 +232,7 @@ public class TimelineCommandsTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -299,14 +299,14 @@ public class TimelineCommandsTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         await History.ExecuteAsync(new RelabelTimelineConnectionCommand(path, "ccc", "renamed"), TestContext.Current.CancellationToken);
         await History.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -322,7 +322,7 @@ public class TimelineCommandsTests : IDisposable
         await History.ExecuteAsync(new RemoveTimelineElementCommand(path, "new00001"), TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Contains("# A comment the commands must never disturb.", File.ReadAllText(path), StringComparison.Ordinal);
+        Assert.Contains("# A comment the commands must never disturb.", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -338,6 +338,6 @@ public class TimelineCommandsTests : IDisposable
 
         // Assert.
         Assert.False(result.IsSuccess);
-        Assert.Equal(broken, File.ReadAllText(path));
+        Assert.Equal(broken, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 }

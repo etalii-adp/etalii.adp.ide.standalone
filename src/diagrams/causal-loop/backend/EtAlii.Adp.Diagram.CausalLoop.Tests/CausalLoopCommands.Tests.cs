@@ -46,14 +46,14 @@ public class CausalLoopCommandsTests : IDisposable
         var result = await execute(command);
 
         Assert.True(result.IsSuccess, result.Error);
-        Assert.NotEqual(Corpus, File.ReadAllText(_path));
+        Assert.NotEqual(Corpus, await File.ReadAllTextAsync(_path));
 
         var restore = Assert.IsType<RestoreCausalLoopDocumentCommand>(result.Inverse);
         var undone = await new RestoreCausalLoopDocumentCommandHandler(_store)
             .ExecuteAsync(restore, TestContext.Current.CancellationToken);
 
         Assert.True(undone.IsSuccess, undone.Error);
-        Assert.Equal(Corpus, File.ReadAllText(_path));
+        Assert.Equal(Corpus, await File.ReadAllTextAsync(_path));
         Assert.Same(command, undone.Inverse);
     }
 
@@ -119,7 +119,7 @@ public class CausalLoopCommandsTests : IDisposable
 
         // Assert.
         var before = Corpus.Split("\r\n");
-        var after = File.ReadAllText(_path).Split("\r\n");
+        var after = (await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken)).Split("\r\n");
 
         Assert.Equal(before.Length, after.Length);
         Assert.Contains("link population -> births -", after);
@@ -139,7 +139,7 @@ public class CausalLoopCommandsTests : IDisposable
             new AddVariableCommand(_path, "deaths", "Deaths"), TestContext.Current.CancellationToken);
 
         // Assert.
-        var after = File.ReadAllText(_path).Split("\r\n");
+        var after = (await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken)).Split("\r\n");
         Assert.Equal(Corpus.Split("\r\n").Length + 1, after.Length);
 
         // Beside the other variables rather than at the end of the file: a new statement joins
@@ -168,7 +168,7 @@ public class CausalLoopCommandsTests : IDisposable
             new RemoveLoopCommand(_path, "R1"), TestContext.Current.CancellationToken);
 
         // Assert.
-        var text = File.ReadAllText(_path);
+        var text = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
         Assert.DoesNotContain("loop R1", text, StringComparison.Ordinal);
         Assert.Contains("link population -> births +", text, StringComparison.Ordinal);
         Assert.Contains("link births -> population +", text, StringComparison.Ordinal);
@@ -186,7 +186,7 @@ public class CausalLoopCommandsTests : IDisposable
             new RenameVariableCommand(_path, "births", "birthRate"), TestContext.Current.CancellationToken);
 
         // Assert.
-        var text = File.ReadAllText(_path);
+        var text = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
         Assert.Contains("variable birthRate \"Births\"", text, StringComparison.Ordinal);
         Assert.Contains("link population -> birthRate +", text, StringComparison.Ordinal);
         Assert.Contains("link birthRate -> population +", text, StringComparison.Ordinal);
@@ -220,7 +220,7 @@ public class CausalLoopCommandsTests : IDisposable
         // can say what it is about to take.
         Assert.Equal(4, count);
 
-        var text = File.ReadAllText(_path);
+        var text = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
         Assert.DoesNotContain("births", text, StringComparison.Ordinal);
         Assert.Contains("variable population", text, StringComparison.Ordinal);
     }
@@ -238,7 +238,7 @@ public class CausalLoopCommandsTests : IDisposable
         // Assert.
         Assert.False(result.IsSuccess);
         Assert.Equal(CausalLoopWriter.NoSuchLink, result.Error);
-        Assert.Equal(Corpus, File.ReadAllText(_path));
+        Assert.Equal(Corpus, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -252,7 +252,7 @@ public class CausalLoopCommandsTests : IDisposable
         // Assert.
         Assert.False(result.IsSuccess);
         Assert.Equal(CausalLoopWriter.NoSuchVariable, result.Error);
-        Assert.Equal(Corpus, File.ReadAllText(_path));
+        Assert.Equal(Corpus, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -267,7 +267,7 @@ public class CausalLoopCommandsTests : IDisposable
         // Assert.
         Assert.False(result.IsSuccess);
         Assert.Equal(CausalLoopWriter.UnusableName, result.Error);
-        Assert.Equal(Corpus, File.ReadAllText(_path));
+        Assert.Equal(Corpus, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -281,6 +281,6 @@ public class CausalLoopCommandsTests : IDisposable
         // Assert.
         Assert.False(result.IsSuccess);
         Assert.Contains("'nowhere'", result.Error, StringComparison.Ordinal);
-        Assert.Equal(Corpus, File.ReadAllText(_path));
+        Assert.Equal(Corpus, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 }

@@ -56,7 +56,7 @@ public class RenameEntryNestingTests : IDisposable
 
         // The headers moved with their files and now name the renamed subject (Requirement 5.6's
         // failure mode designed out rather than surfaced).
-        Assert.Contains("body: prod.mm", File.ReadAllText(IoPath.Combine(_root, "prod.first.adp")));
+        Assert.Contains("body: prod.mm", await File.ReadAllTextAsync(IoPath.Combine(_root, "prod.first.adp"), TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class RenameEntryNestingTests : IDisposable
         // Assert.
         Assert.True(undone.IsSuccess, undone.Error);
         Assert.Equal(new[] { "test.first.adp", "test.mm" }, Names());
-        Assert.Contains("body: test.mm", File.ReadAllText(IoPath.Combine(_root, "test.first.adp")));
+        Assert.Contains("body: test.mm", await File.ReadAllTextAsync(IoPath.Combine(_root, "test.first.adp"), TestContext.Current.CancellationToken));
     }
 
     [Fact]

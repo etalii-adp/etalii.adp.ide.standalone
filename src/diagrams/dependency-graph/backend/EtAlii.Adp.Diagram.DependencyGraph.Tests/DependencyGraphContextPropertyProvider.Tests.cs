@@ -134,7 +134,7 @@ public class DependencyGraphContextPropertyProviderTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await _properties.SetAsync(
@@ -143,7 +143,7 @@ public class DependencyGraphContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -170,7 +170,7 @@ public class DependencyGraphContextPropertyProviderTests : IDisposable
         // Assert.
         Assert.False(result.IsSuccess);
         Assert.Contains("sideways", result.Error, StringComparison.Ordinal);
-        Assert.Contains("x: 240", File.ReadAllText(path), StringComparison.Ordinal);
+        Assert.Contains("x: 240", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -253,7 +253,7 @@ public class DependencyGraphContextPropertyProviderTests : IDisposable
     {
         // Arrange.
         var foreign = IoPath.Combine(_workspace, "plan.tml");
-        File.WriteAllText(foreign, "timeline: 1\nelements: []\n");
+        await File.WriteAllTextAsync(foreign, "timeline: 1\nelements: []\n", TestContext.Current.CancellationToken);
 
         // Act.
         var rows = await _properties.DescribeAsync(Target(foreign, "x"), CancellationToken.None);

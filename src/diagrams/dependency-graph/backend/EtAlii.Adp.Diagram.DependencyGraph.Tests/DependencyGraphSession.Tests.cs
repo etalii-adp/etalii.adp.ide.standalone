@@ -199,7 +199,7 @@ public class DependencyGraphSessionTests : IDisposable
 
         // Assert.
         Assert.Equal("", answer);
-        var text = File.ReadAllText(path);
+        var text = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         Assert.Contains("x: 812.5", text, StringComparison.Ordinal);
         Assert.Contains("row: 4", text, StringComparison.Ordinal);
     }
@@ -209,7 +209,7 @@ public class DependencyGraphSessionTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         await using var session = Open(path);
 
         // Act.
@@ -217,7 +217,7 @@ public class DependencyGraphSessionTests : IDisposable
         await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
 
         // Assert.
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -269,7 +269,7 @@ public class DependencyGraphSessionTests : IDisposable
         session.Changed += (_, args) => received = args.Deltas;
 
         // Act: rename the node that is inside the viewport.
-        File.WriteAllText(path, Graph.Replace("label: API gateway", "label: Renamed", StringComparison.Ordinal));
+        await File.WriteAllTextAsync(path, Graph.Replace("label: API gateway", "label: Renamed", StringComparison.Ordinal), TestContext.Current.CancellationToken);
         _store.Reload(path);
 
         // Assert: the edit arrives, and nothing the viewport had culled comes back with it.
@@ -292,7 +292,7 @@ public class DependencyGraphSessionTests : IDisposable
         session.Changed += (_, args) => received = args.Deltas;
 
         // Act.
-        File.WriteAllText(path, Graph.Replace("label: API gateway", "label: Renamed", StringComparison.Ordinal));
+        await File.WriteAllTextAsync(path, Graph.Replace("label: API gateway", "label: Renamed", StringComparison.Ordinal), TestContext.Current.CancellationToken);
         _store.Reload(path);
 
         // Assert.
@@ -315,7 +315,7 @@ public class DependencyGraphSessionTests : IDisposable
         session.Changed += (_, _) => disturbed = true;
 
         // Act.
-        File.WriteAllText(path, Graph.Replace("x: 240", "x: 999", StringComparison.Ordinal));
+        await File.WriteAllTextAsync(path, Graph.Replace("x: 240", "x: 999", StringComparison.Ordinal), TestContext.Current.CancellationToken);
         reloader.Reload(_workspace, path);
 
         // Assert.
@@ -330,7 +330,7 @@ public class DependencyGraphSessionTests : IDisposable
         // Arrange.
         var path = Write();
         var otherPath = IoPath.Combine(_workspace, "other.dgr");
-        File.WriteAllText(otherPath, Graph);
+        await File.WriteAllTextAsync(otherPath, Graph, TestContext.Current.CancellationToken);
         await using var session = Open(path);
         session.Baseline();
         var disturbed = false;

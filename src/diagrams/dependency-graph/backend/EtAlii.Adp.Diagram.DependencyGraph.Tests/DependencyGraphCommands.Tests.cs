@@ -65,7 +65,7 @@ public class DependencyGraphCommandsTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await History.ExecuteAsync(
@@ -74,7 +74,7 @@ public class DependencyGraphCommandsTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public class DependencyGraphCommandsTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await History.ExecuteAsync(
@@ -146,7 +146,7 @@ public class DependencyGraphCommandsTests : IDisposable
         Assert.True(result.IsSuccess, result.Error);
         Assert.Empty(afterRemove.Relations);
         Assert.Single(afterRemove.Elements);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -178,7 +178,7 @@ public class DependencyGraphCommandsTests : IDisposable
         await History.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal(unterminated, File.ReadAllText(path));
+        Assert.Equal(unterminated, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -186,7 +186,7 @@ public class DependencyGraphCommandsTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         await History.ExecuteAsync(new RenameDependencyGraphElementCommand(path, "aaa", "Renamed"), TestContext.Current.CancellationToken);
@@ -195,7 +195,7 @@ public class DependencyGraphCommandsTests : IDisposable
 
         // Assert.
         Assert.Equal("Renamed", renamed.Label);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -203,7 +203,7 @@ public class DependencyGraphCommandsTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await History.ExecuteAsync(
@@ -215,7 +215,7 @@ public class DependencyGraphCommandsTests : IDisposable
         Assert.True(result.IsSuccess, result.Error);
         Assert.Equal(812.5d, moved.X);
         Assert.Equal(6, moved.Row);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -225,7 +225,7 @@ public class DependencyGraphCommandsTests : IDisposable
         // Undo and redo dispatch the same instance again later, so preconditions are checked
         // against the document as it is now.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await History.ExecuteAsync(
@@ -233,7 +233,7 @@ public class DependencyGraphCommandsTests : IDisposable
 
         // Assert.
         Assert.False(result.IsSuccess);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -241,7 +241,7 @@ public class DependencyGraphCommandsTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await History.ExecuteAsync(
@@ -250,7 +250,7 @@ public class DependencyGraphCommandsTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -340,14 +340,14 @@ public class DependencyGraphCommandsTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         await History.ExecuteAsync(new RelabelDependencyGraphRelationCommand(path, "ccc", "renamed"), TestContext.Current.CancellationToken);
         await History.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -356,7 +356,7 @@ public class DependencyGraphCommandsTests : IDisposable
         // Arrange.
         // A relation dragged onto empty canvas: one gesture, one undo, both things gone.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await History.ExecuteAsync(
@@ -371,7 +371,7 @@ public class DependencyGraphCommandsTests : IDisposable
         var relation = created.Relations.Single(candidate => candidate.Id == "rel00001");
         Assert.Equal("aaa", relation.From);
         Assert.Equal("new00001", relation.To);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -411,7 +411,7 @@ public class DependencyGraphCommandsTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal(bare, File.ReadAllText(path));
+        Assert.Equal(bare, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -427,7 +427,7 @@ public class DependencyGraphCommandsTests : IDisposable
         await History.ExecuteAsync(new RemoveDependencyGraphElementCommand(path, "new00001"), TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Contains("# A comment the commands must never disturb.", File.ReadAllText(path), StringComparison.Ordinal);
+        Assert.Contains("# A comment the commands must never disturb.", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -444,7 +444,7 @@ public class DependencyGraphCommandsTests : IDisposable
 
         // Assert.
         Assert.False(result.IsSuccess);
-        Assert.Equal(broken, File.ReadAllText(path));
+        Assert.Equal(broken, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]

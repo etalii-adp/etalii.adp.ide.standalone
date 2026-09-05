@@ -131,7 +131,7 @@ public class DatabricksContextActionProviderTests : IDisposable
     {
         // Arrange.
         var body = CopyFixture("job.yml");
-        var before = File.ReadAllBytes(body);
+        var before = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
         var target = Target(body, "task:quality_gate");
 
         // Act.
@@ -142,10 +142,10 @@ public class DatabricksContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(commit.Completed);
-        Assert.DoesNotContain("quality_gate", File.ReadAllText(body), StringComparison.Ordinal);
+        Assert.DoesNotContain("quality_gate", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
         // One undo brings back the task AND its edges, byte for byte (Requirement 11.5).
         await _history.UndoAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(before, File.ReadAllBytes(body));
+        Assert.Equal(before, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -153,7 +153,7 @@ public class DatabricksContextActionProviderTests : IDisposable
     {
         // Arrange.
         var body = CopyFixture("job.yml");
-        var before = File.ReadAllText(body);
+        var before = await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken);
         var target = Target(body, "task:quality_gate");
 
         // Act.
@@ -161,11 +161,11 @@ public class DatabricksContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(commit.Completed);
-        Assert.DoesNotContain("quality_gate", File.ReadAllText(body), StringComparison.Ordinal);
+        Assert.DoesNotContain("quality_gate", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
         await _history.UndoAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(before, File.ReadAllText(body));
+        Assert.Equal(before, await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken));
         await _history.RedoAsync(TestContext.Current.CancellationToken);
-        Assert.DoesNotContain("quality_gate", File.ReadAllText(body), StringComparison.Ordinal);
+        Assert.DoesNotContain("quality_gate", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -173,7 +173,7 @@ public class DatabricksContextActionProviderTests : IDisposable
     {
         // Arrange.
         var body = CopyFixture("job.yml");
-        var before = File.ReadAllBytes(body);
+        var before = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
         var gesture = Target(body, "rel:task:ingest->task:refresh_dashboard");
 
         // Act.
@@ -181,9 +181,9 @@ public class DatabricksContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(execution);
-        Assert.Contains("- task_key: ingest", File.ReadAllText(body).Split("refresh_dashboard")[^1], StringComparison.Ordinal);
+        Assert.Contains("- task_key: ingest", (await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken)).Split("refresh_dashboard")[^1], StringComparison.Ordinal);
         await _history.UndoAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(before, File.ReadAllBytes(body));
+        Assert.Equal(before, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -199,7 +199,7 @@ public class DatabricksContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(execution);
-        Assert.Contains("task_key: notebook_1", File.ReadAllText(body), StringComparison.Ordinal);
+        Assert.Contains("task_key: notebook_1", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -207,7 +207,7 @@ public class DatabricksContextActionProviderTests : IDisposable
     {
         // Arrange.
         var body = CopyFixture("job.yml");
-        var bytes = File.ReadAllBytes(body);
+        var bytes = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
 
         // Act.
         var execution = await _actions.ExecuteAsync(
@@ -217,7 +217,7 @@ public class DatabricksContextActionProviderTests : IDisposable
         // Requirement 11.6: nothing lands on the history, nothing touches the file.
         Assert.IsType<ContextExecutionCompleted>(execution);
         Assert.False(_history.CanUndo);
-        Assert.Equal(bytes, File.ReadAllBytes(body));
+        Assert.Equal(bytes, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]

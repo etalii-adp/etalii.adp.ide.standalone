@@ -76,7 +76,7 @@ public class DatabricksContextPropertyProviderTests : IDisposable
     {
         // Arrange.
         var body = CopyFixture("job.yml");
-        var before = File.ReadAllBytes(body);
+        var before = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await _properties.SetAsync(
@@ -84,9 +84,9 @@ public class DatabricksContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess);
-        Assert.Contains("run_if: ALL_DONE", File.ReadAllText(body), StringComparison.Ordinal);
+        Assert.Contains("run_if: ALL_DONE", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
         await _history.UndoAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(before, File.ReadAllBytes(body));
+        Assert.Equal(before, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public class DatabricksContextPropertyProviderTests : IDisposable
         // Assert.
         Assert.Contains(rows, row => row.Id == $"{DatabricksContextPropertyProvider.PipelineScalarPrefix}catalog");
         Assert.True(result.IsSuccess);
-        Assert.Contains("\"catalog\": \"lakehouse_prod\",", File.ReadAllText(body), StringComparison.Ordinal);
+        Assert.Contains("\"catalog\": \"lakehouse_prod\",", await File.ReadAllTextAsync(body, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]

@@ -146,7 +146,7 @@ public class TimelineContextSourceResolverTests : IDisposable
         // module that owns it - the collision the selection resolver's first-claimant fix exists
         // to survive.
         var foreign = IoPath.Combine(_workspace, "map.owm");
-        File.WriteAllText(foreign, "title something\n");
+        await File.WriteAllTextAsync(foreign, "title something\n", TestContext.Current.CancellationToken);
 
         // Act.
         var resolution = await ResolveAsync(FileLevel(foreign), "aaa");
@@ -190,12 +190,12 @@ public class TimelineContextSourceResolverTests : IDisposable
         using var tracking = resolver.Track(ShortGuid.NewShortGuid(), _workspace, level, changed => latest = changed);
 
         // Act: a rename keeps the id while changing everything shown.
-        File.WriteAllText(path, Timeline.Replace("label: Discovery", "label: Renamed", StringComparison.Ordinal));
+        await File.WriteAllTextAsync(path, Timeline.Replace("label: Discovery", "label: Renamed", StringComparison.Ordinal), TestContext.Current.CancellationToken);
         _store.Reload(path);
         var afterRename = latest;
 
         // Act: a removal clears the selection.
-        File.WriteAllText(path, "timeline: 1\nelements:\n  - id: bbb\n    begin: 2026-02-16\n    row: 1\n");
+        await File.WriteAllTextAsync(path, "timeline: 1\nelements:\n  - id: bbb\n    begin: 2026-02-16\n    row: 1\n", TestContext.Current.CancellationToken);
         _store.Reload(path);
 
         // Assert.
@@ -229,7 +229,7 @@ public class TimelineContextSourceResolverTests : IDisposable
         // The file check comes before the placement check: a placement in somebody else's
         // diagram is not this module's to resolve.
         var foreign = IoPath.Combine(_workspace, "map.owm");
-        File.WriteAllText(foreign, "title something\n");
+        await File.WriteAllTextAsync(foreign, "title something\n", TestContext.Current.CancellationToken);
 
         // Act.
         var resolution = await ResolveAsync(FileLevel(foreign), TimelineNewPlacement.IdFor(0, 0));

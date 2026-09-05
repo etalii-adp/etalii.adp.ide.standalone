@@ -273,7 +273,7 @@ public class CausalLoopContextSourceResolverTests : IDisposable
     {
         // Arrange.
         var other = IoPath.Combine(_workspace, "notes.md");
-        File.WriteAllText(other, Body);
+        await File.WriteAllTextAsync(other, Body, TestContext.Current.CancellationToken);
 
         // Act.
         var resolution = await ResolveAsync(FileLevel(other), "variable:population");
@@ -296,7 +296,7 @@ public class CausalLoopContextSourceResolverTests : IDisposable
     {
         // Arrange.
         var other = IoPath.Combine(_workspace, "elsewhere" + TwoTypeCatalog.Other.Extension);
-        File.WriteAllText(other, Body);
+        await File.WriteAllTextAsync(other, Body, TestContext.Current.CancellationToken);
 
         var resolver = new CausalLoopContextSourceResolver(
             new DiagramFileRouter(new TwoTypeCatalog()), _store, _mapper);

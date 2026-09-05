@@ -98,7 +98,7 @@ public class MindmapContextActionProviderTests : IDisposable
         // one used to parse the foreign file as XML and throw MindmapFormatException on every
         // action lookup over a .tml timeline.
         var foreignPath = IoPath.Combine(_project.Root, "docs", "roadmap.tml");
-        File.WriteAllText(foreignPath, "timeline: 1\r\nelements:\r\n  - id: aaa\r\n    label: First\r\n    begin: 2026-01-01\r\n    row: 0\r\n");
+        await File.WriteAllTextAsync(foreignPath, "timeline: 1\r\nelements:\r\n  - id: aaa\r\n    label: First\r\n    begin: 2026-01-01\r\n    row: 0\r\n", TestContext.Current.CancellationToken);
         var target = new ContextTarget(
             ContextScope.DiagramElement, foreignPath, IsContainer: false, SourceId: default, _project.Root, _project.WatchId, "aaa");
 

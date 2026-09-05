@@ -120,7 +120,7 @@ public class ArrangeCausalLoopCommandTests : IDisposable
         await Arrange();
 
         // Assert.
-        Assert.Equal(Body, File.ReadAllText(_bodyPath));
+        Assert.Equal(Body, await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -130,7 +130,7 @@ public class ArrangeCausalLoopCommandTests : IDisposable
         await Arrange();
 
         // Assert.
-        var text = File.ReadAllText(_adpPath);
+        var text = await File.ReadAllTextAsync(_adpPath, TestContext.Current.CancellationToken);
         Assert.Contains("# an author's note that must survive", text, StringComparison.Ordinal);
         Assert.Contains("title: Population feedback", text, StringComparison.Ordinal);
         Assert.Contains("origin: systems/causal-loop-diagram", text, StringComparison.Ordinal);
@@ -149,7 +149,7 @@ public class ArrangeCausalLoopCommandTests : IDisposable
         // Act.
         var result = await Arrange();
         Assert.True(result.IsSuccess, result.Error);
-        Assert.NotEqual(Registration, File.ReadAllText(_adpPath));
+        Assert.NotEqual(Registration, await File.ReadAllTextAsync(_adpPath, TestContext.Current.CancellationToken));
 
         var restore = Assert.IsType<RestoreCausalLoopRegistrationCommand>(result.Inverse);
         var undone = await new RestoreCausalLoopRegistrationCommandHandler()
@@ -157,7 +157,7 @@ public class ArrangeCausalLoopCommandTests : IDisposable
 
         // Assert.
         Assert.True(undone.IsSuccess, undone.Error);
-        Assert.Equal(Registration, File.ReadAllText(_adpPath));
+        Assert.Equal(Registration, await File.ReadAllTextAsync(_adpPath, TestContext.Current.CancellationToken));
 
         // Including the position that was already authored: an undo that dropped it would be
         // losing an edit the arrangement never made.
@@ -176,13 +176,13 @@ public class ArrangeCausalLoopCommandTests : IDisposable
     {
         // Act.
         await Arrange();
-        var first = File.ReadAllText(_adpPath);
+        var first = await File.ReadAllTextAsync(_adpPath, TestContext.Current.CancellationToken);
 
-        File.WriteAllText(_adpPath, Registration);
+        await File.WriteAllTextAsync(_adpPath, Registration, TestContext.Current.CancellationToken);
         await Arrange();
 
         // Assert.
-        Assert.Equal(first, File.ReadAllText(_adpPath));
+        Assert.Equal(first, await File.ReadAllTextAsync(_adpPath, TestContext.Current.CancellationToken));
     }
 
     // ---- refusals ------------------------------------------------------------------------------
@@ -204,7 +204,7 @@ public class ArrangeCausalLoopCommandTests : IDisposable
             text.Append(System.Globalization.CultureInfo.InvariantCulture, $"variable v{index} \"V{index}\"\r\n");
         }
 
-        File.WriteAllText(_bodyPath, text.ToString());
+        await File.WriteAllTextAsync(_bodyPath, text.ToString(), TestContext.Current.CancellationToken);
         _store.Reload(_bodyPath);
 
         var expected = SelfOrganizingLayout.Compute(_store.GetOrLoad(_bodyPath).Model);
@@ -218,14 +218,14 @@ public class ArrangeCausalLoopCommandTests : IDisposable
         Assert.Contains("1200 variables", result.Error, StringComparison.Ordinal);
 
         // Nothing written: the diagram is left as it was rather than half-arranged.
-        Assert.Equal(Registration, File.ReadAllText(_adpPath));
+        Assert.Equal(Registration, await File.ReadAllTextAsync(_adpPath, TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task ADiagramWithNoVariables_IsRefusedRatherThanArrangedToNothing()
     {
         // Arrange.
-        File.WriteAllText(_bodyPath, "causal-loop 1\r\n");
+        await File.WriteAllTextAsync(_bodyPath, "causal-loop 1\r\n", TestContext.Current.CancellationToken);
         _store.Reload(_bodyPath);
 
         // Act.
@@ -234,7 +234,7 @@ public class ArrangeCausalLoopCommandTests : IDisposable
         // Assert.
         Assert.False(result.IsSuccess);
         Assert.Contains("no variables", result.Error, StringComparison.Ordinal);
-        Assert.Equal(Registration, File.ReadAllText(_adpPath));
+        Assert.Equal(Registration, await File.ReadAllTextAsync(_adpPath, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -256,7 +256,7 @@ public class ArrangeCausalLoopCommandTests : IDisposable
     public async Task AnUnreadableBody_IsRefusedWithoutTouchingTheRegistration()
     {
         // Arrange.
-        File.WriteAllText(_bodyPath, "this is not a causal loop diagram at all\r\n");
+        await File.WriteAllTextAsync(_bodyPath, "this is not a causal loop diagram at all\r\n", TestContext.Current.CancellationToken);
         _store.Reload(_bodyPath);
 
         // Act.
@@ -264,6 +264,6 @@ public class ArrangeCausalLoopCommandTests : IDisposable
 
         // Assert.
         Assert.False(result.IsSuccess);
-        Assert.Equal(Registration, File.ReadAllText(_adpPath));
+        Assert.Equal(Registration, await File.ReadAllTextAsync(_adpPath, TestContext.Current.CancellationToken));
     }
 }

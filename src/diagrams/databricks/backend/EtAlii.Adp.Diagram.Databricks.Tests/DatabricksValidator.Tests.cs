@@ -12,7 +12,7 @@ public class DatabricksValidatorTests
 {
     private static async Task<IReadOnlyList<DiagramProblem>> Judge(string fixture)
     {
-        var text = File.ReadAllText(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", fixture));
+        var text = await File.ReadAllTextAsync(IoPath.Combine(AppContext.BaseDirectory, "Fixtures", fixture));
         return await JudgeText(text);
     }
 

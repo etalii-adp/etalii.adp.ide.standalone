@@ -42,14 +42,14 @@ public class SetRegistrationLayoutCommandTests : IDisposable
         // Act.
         var result = await _history.ExecuteAsync(
             new SetRegistrationLayoutCommand(adp, "ingest", 120, 240), TestContext.Current.CancellationToken);
-        var afterMove = File.ReadAllText(adp);
+        var afterMove = await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken);
         await _history.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(result.IsSuccess);
         Assert.Contains("layout:\r\n  ingest: 120 240\r\n", afterMove, StringComparison.Ordinal);
         // The element had no entry before, so undo removes entry AND block: bytes identical.
-        Assert.Equal(before, File.ReadAllText(adp));
+        Assert.Equal(before, await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class SetRegistrationLayoutCommandTests : IDisposable
         // Arrange.
         var adp = WriteAdp("databricks/job\r\nbody: job.yml\r\n");
         await _history.ExecuteAsync(new SetRegistrationLayoutCommand(adp, "ingest", 10, 20), TestContext.Current.CancellationToken);
-        var afterFirst = File.ReadAllText(adp);
+        var afterFirst = await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken);
 
         // Act.
         await _history.ExecuteAsync(new SetRegistrationLayoutCommand(adp, "ingest", 300, 400), TestContext.Current.CancellationToken);
@@ -66,7 +66,7 @@ public class SetRegistrationLayoutCommandTests : IDisposable
 
         // Assert.
         // The inverse restores the PRIOR entry, not the entry's absence.
-        Assert.Equal(afterFirst, File.ReadAllText(adp));
+        Assert.Equal(afterFirst, await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken));
         Assert.Equal(new RegistrationPosition(10, 20), RegistrationLayout.Read(adp)["ingest"]);
     }
 
@@ -76,14 +76,14 @@ public class SetRegistrationLayoutCommandTests : IDisposable
         // Arrange.
         var adp = WriteAdp("databricks/job\r\nbody: job.yml\r\n");
         await _history.ExecuteAsync(new SetRegistrationLayoutCommand(adp, "ingest", 5, 6), TestContext.Current.CancellationToken);
-        var afterMove = File.ReadAllText(adp);
+        var afterMove = await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken);
 
         // Act.
         await _history.UndoAsync(TestContext.Current.CancellationToken);
         await _history.RedoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal(afterMove, File.ReadAllText(adp));
+        Assert.Equal(afterMove, await File.ReadAllTextAsync(adp, TestContext.Current.CancellationToken));
     }
 
     [Fact]

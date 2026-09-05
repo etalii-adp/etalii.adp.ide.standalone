@@ -47,7 +47,7 @@ public class LakehouseExampleTests
     public async Task EveryConfig_ValidatesClean(string relativePath)
     {
         // Arrange.
-        var text = File.ReadAllText(IoPath.Combine(Lakehouse, relativePath));
+        var text = await File.ReadAllTextAsync(IoPath.Combine(Lakehouse, relativePath), TestContext.Current.CancellationToken);
         var validator = new DatabricksValidator(ServiceCollectionAddDatabricksExtension.BundleOrigin);
 
         // Act.

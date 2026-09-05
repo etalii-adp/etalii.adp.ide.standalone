@@ -104,7 +104,7 @@ public class DependencyGraphToolboxProviderTests : IDisposable
         // The whole reason the entry names an action: the drop reuses the add command, carrying
         // its position, so there is no second implementation to disagree with the menu.
         var path = IoPath.Combine(_workspace, "services.dgr");
-        File.WriteAllText(path, "dependencies: 1\r\nelements: []\r\n");
+        await File.WriteAllTextAsync(path, "dependencies: 1\r\nelements: []\r\n", TestContext.Current.CancellationToken);
         _store.Forget(path);
         var item = _toolbox.Items.Single(candidate => candidate.Id == "dependencies.toolbox.node");
         var target = new ContextTarget(

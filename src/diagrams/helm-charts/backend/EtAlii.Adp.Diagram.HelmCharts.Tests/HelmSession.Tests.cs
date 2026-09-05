@@ -156,8 +156,8 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
     public async Task AReposition_IsOneUndoAway_AndTheChartNeverChanges()
     {
         // Arrange.
-        var chartBytes = File.ReadAllBytes(IoPath.Combine(_root, "Chart.yaml"));
-        var valuesBytes = File.ReadAllBytes(IoPath.Combine(_root, "values.yaml"));
+        var chartBytes = await File.ReadAllBytesAsync(IoPath.Combine(_root, "Chart.yaml"), TestContext.Current.CancellationToken);
+        var valuesBytes = await File.ReadAllBytesAsync(IoPath.Combine(_root, "values.yaml"), TestContext.Current.CancellationToken);
         await using var session = Session();
         session.Baseline();
         var history = _provider.GetRequiredService<IHistoryStackStore>().Get(_root);
@@ -178,8 +178,8 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
         Assert.Empty(RegistrationLayout.Read(_adpPath));
 
         // And the chart's own files did not change by a byte, either way (Requirement 7.1).
-        Assert.Equal(chartBytes, File.ReadAllBytes(IoPath.Combine(_root, "Chart.yaml")));
-        Assert.Equal(valuesBytes, File.ReadAllBytes(IoPath.Combine(_root, "values.yaml")));
+        Assert.Equal(chartBytes, await File.ReadAllBytesAsync(IoPath.Combine(_root, "Chart.yaml"), TestContext.Current.CancellationToken));
+        Assert.Equal(valuesBytes, await File.ReadAllBytesAsync(IoPath.Combine(_root, "values.yaml"), TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -216,7 +216,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
         };
 
         // Act.
-        File.WriteAllText(IoPath.Combine(_root, "values-prod.yaml"), "replicaCount: 3\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "values-prod.yaml"), "replicaCount: 3\n", TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.True(pushed.Wait(WaitLimit, TestContext.Current.CancellationToken), "The session never pushed the change.");

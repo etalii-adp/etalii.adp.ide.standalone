@@ -38,7 +38,7 @@ public class MindmapContextPropertyProviderTests
         // throwing MindmapFormatException on every property lookup over a timeline element.
         using var project = new MindmapTestProject();
         var foreignPath = System.IO.Path.Combine(project.Root, "docs", "roadmap.tml");
-        File.WriteAllText(foreignPath, "timeline: 1\r\nelements:\r\n  - id: aaa\r\n    label: First\r\n    begin: 2026-01-01\r\n    row: 0\r\n");
+        await File.WriteAllTextAsync(foreignPath, "timeline: 1\r\nelements:\r\n  - id: aaa\r\n    label: First\r\n    begin: 2026-01-01\r\n    row: 0\r\n", TestContext.Current.CancellationToken);
         var target = new ContextTarget(
             ContextScope.DiagramElement, foreignPath, IsContainer: false, SourceId: default, project.Root, project.WatchId, "aaa");
 

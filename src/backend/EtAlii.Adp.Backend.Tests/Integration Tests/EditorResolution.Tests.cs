@@ -110,7 +110,7 @@ public class EditorResolutionTests : IClassFixture<WebApplicationFactory<Program
         // reads and writes the same path, so the file on disk is the tie-breaker by
         // construction, and this test is the proof that construction suffices.
         var originalText = "workspace \"W\" {\n  model {\n    p = person \"Postman\"\n  }\n  views {\n    systemLandscape \"sl\" {\n      include *\n    }\n  }\n}\n";
-        File.WriteAllText(IoPath.Combine(_projectFolder, "both.dsl"), originalText);
+        await File.WriteAllTextAsync(IoPath.Combine(_projectFolder, "both.dsl"), originalText, TestContext.Current.CancellationToken);
 
         using var channel = CreateChannel();
         var headers = await LoginAsync(channel);

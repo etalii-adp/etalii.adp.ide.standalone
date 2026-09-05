@@ -80,10 +80,9 @@ public sealed class TextFileBuffer
     {
         ArgumentNullException.ThrowIfNull(path);
 
-        FileInfo info;
         try
         {
-            info = new FileInfo(path);
+            FileInfo info = new(path);
             if (!info.Exists)
             {
                 return TextFileBufferOpenResult.Refused($"'{Path.GetFileName(path)}' does not exist.");

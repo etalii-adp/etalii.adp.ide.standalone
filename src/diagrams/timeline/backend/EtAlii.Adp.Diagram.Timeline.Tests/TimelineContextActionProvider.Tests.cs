@@ -126,7 +126,7 @@ public class TimelineContextActionProviderTests : IDisposable
         // A provider is consulted for every element in its scope, including other types'. One
         // that parses a foreign file to answer has already gone wrong.
         var foreign = IoPath.Combine(_workspace, "map.owm");
-        File.WriteAllText(foreign, "title something\n");
+        await File.WriteAllTextAsync(foreign, "title something\n", TestContext.Current.CancellationToken);
 
         // Act.
         var groups = await _actions.DiscoverAsync(Target(foreign, "x"), CancellationToken.None);
@@ -153,7 +153,7 @@ public class TimelineContextActionProviderTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var commit = await _actions.CommitAsync(Target(path, "aaa"), TimelineContextActionProvider.RemoveActionId, "", "", CancellationToken.None);
@@ -161,7 +161,7 @@ public class TimelineContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(commit.Completed, commit.Error);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -246,14 +246,14 @@ public class TimelineContextActionProviderTests : IDisposable
         // Connecting is a canvas gesture; the menu action only puts the canvas into its connect
         // state, and the backend cannot click the second element for you.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await _actions.ExecuteAsync(Target(path, "aaa"), TimelineContextActionProvider.ConnectActionId, CancellationToken.None);
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -477,7 +477,7 @@ public class TimelineRelationGestureTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         var seconds = TimelineScale.ToSeconds(new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero));
 
         // Act.
@@ -494,7 +494,7 @@ public class TimelineRelationGestureTests : IDisposable
         Assert.Equal("2026-03-01", added.Begin.Text);
         Assert.Equal(3, added.Row);
         Assert.Equal("aaa", model.Connections.Single(candidate => candidate.To == added.Id).From);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -505,7 +505,7 @@ public class TimelineRelationGestureTests : IDisposable
         // because what precedes an element points into it. The new element is the relation's
         // source, not its target.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         var seconds = TimelineScale.ToSeconds(new DateTimeOffset(2025, 12, 1, 0, 0, 0, TimeSpan.Zero));
 
         // Act.
@@ -522,7 +522,7 @@ public class TimelineRelationGestureTests : IDisposable
         Assert.Equal("2025-12-01", added.Begin.Text);
         Assert.Equal(2, added.Row);
         Assert.Equal("aaa", model.Connections.Single(candidate => candidate.From == added.Id).To);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -548,7 +548,7 @@ public class TimelineRelationGestureTests : IDisposable
         // The fixture has no connections: key; the connect creates it on demand, so the undo
         // must remove it again - or every undone first relation leaves a stray line behind.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await _actions.ExecuteAsync(
@@ -559,7 +559,7 @@ public class TimelineRelationGestureTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]

@@ -116,7 +116,7 @@ public class SparqlProvidersTests : IDisposable
         // Arrange.
         var body = CopyFixture("groups.rq");
         var provider = new SparqlContextPropertyProvider(_documents);
-        var original = File.ReadAllBytes(body);
+        var original = await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await provider.SetAsync(
@@ -125,7 +125,7 @@ public class SparqlProvidersTests : IDisposable
         // Assert.
         Assert.False(result.IsSuccess);
         Assert.Equal(SparqlContextPropertyProvider.ReadOnlyReason, result.Error);
-        Assert.Equal(original, File.ReadAllBytes(body));
+        Assert.Equal(original, await File.ReadAllBytesAsync(body, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public class SparqlProvidersTests : IDisposable
         // Arrange: the provider is consulted for every element in its scope, so it answers with
         // nothing rather than parsing another notation's file.
         var path = IoPath.Combine(_root, "graph.ttl");
-        File.WriteAllText(path, "<a> <b> <c> .");
+        await File.WriteAllTextAsync(path, "<a> <b> <c> .", TestContext.Current.CancellationToken);
         var provider = new SparqlContextPropertyProvider(_documents);
 
         // Act & assert.

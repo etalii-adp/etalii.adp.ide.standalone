@@ -42,7 +42,7 @@ public class HelmValidatorTests : IDisposable
         // deploy/my-chart/Chart.yaml, not Chart.yaml - the exact bug class the sibling
         // module's unit tests missed.
         var chartFolder = IoPath.Combine(_root, "deploy", "my-chart");
-        File.WriteAllText(IoPath.Combine(chartFolder, "Chart.yaml"), "apiVersion: v2\nname: nested\n");
+        await File.WriteAllTextAsync(IoPath.Combine(chartFolder, "Chart.yaml"), "apiVersion: v2\nname: nested\n", TestContext.Current.CancellationToken);
 
         // Act.
         var problems = await new HelmValidator().ValidateAsync(Request(chartFolder), CancellationToken.None);
@@ -77,7 +77,7 @@ public class HelmValidatorTests : IDisposable
     public async Task AChartAtTheProjectRoot_KeepsItsPathsAsTheyAre()
     {
         // Arrange.
-        File.WriteAllText(IoPath.Combine(_root, "Chart.yaml"), "apiVersion: v2\nname: rooted\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "Chart.yaml"), "apiVersion: v2\nname: rooted\n", TestContext.Current.CancellationToken);
 
         // Act.
         var problems = await new HelmValidator().ValidateAsync(Request(_root), CancellationToken.None);

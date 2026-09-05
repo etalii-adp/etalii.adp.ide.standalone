@@ -59,7 +59,7 @@ public class ExamplesTests
 
         return await validator.ValidateAsync(
             new DiagramValidationRequest(
-                File.ReadAllText(path),
+                await File.ReadAllTextAsync(path),
                 name,
                 ExamplesRoot,
                 path,

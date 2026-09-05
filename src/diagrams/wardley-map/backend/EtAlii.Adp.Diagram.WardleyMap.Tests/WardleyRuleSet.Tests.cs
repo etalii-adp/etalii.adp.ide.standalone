@@ -299,7 +299,7 @@ public sealed class WardleyValidatorTests : IDisposable
     public async Task ASubmapNamingAMapThatIsThere_IsSilent()
     {
         // Arrange.
-        File.WriteAllText(IoPath.Combine(_root, "supply.owm"), "title Supply\n");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "supply.owm"), "title Supply\n", TestContext.Current.CancellationToken);
 
         // Act.
         var problems = await Validate("""
@@ -359,7 +359,7 @@ public sealed class WardleyValidatorTests : IDisposable
     private async Task<IReadOnlyList<DiagramProblem>> Validate(string text)
     {
         var body = IoPath.Combine(_root, "map.owm");
-        File.WriteAllText(body, text);
+        await File.WriteAllTextAsync(body, text);
         var request = new DiagramValidationRequest(text, "map", _root, body, null);
         return await _validator.ValidateAsync(request, TestContext.Current.CancellationToken);
     }

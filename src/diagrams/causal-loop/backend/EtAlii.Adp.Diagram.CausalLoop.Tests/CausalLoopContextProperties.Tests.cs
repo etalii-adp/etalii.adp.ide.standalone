@@ -99,7 +99,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
 
-        var text = File.ReadAllText(_path);
+        var text = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
         Assert.Contains("variable population \"People, total\"", text, StringComparison.Ordinal);
         Assert.Contains("link births -> population +", text, StringComparison.Ordinal);
         Assert.Contains("loop R1 \"Births beget births\" population births", text, StringComparison.Ordinal);
@@ -162,7 +162,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Contains("weight=0.25", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("weight=0.25", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -178,7 +178,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
 
-        var text = File.ReadAllText(_path);
+        var text = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
         Assert.DoesNotContain("weight=", text, StringComparison.Ordinal);
         Assert.DoesNotContain("weight=0", text, StringComparison.Ordinal);
     }
@@ -200,7 +200,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
         // Assert.
         Assert.False(result.IsSuccess);
         Assert.Contains("never evaluates", result.Error, StringComparison.Ordinal);
-        Assert.Equal(Corpus, File.ReadAllText(_path));
+        Assert.Equal(Corpus, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -215,7 +215,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Contains("link population -> births -", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("link population -> births -", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     // ---- a loop, and the disagreement ---------------------------------------------------------
@@ -240,7 +240,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
         Assert.Contains("Neither is corrected for you", stated.ReadOnlyReason, StringComparison.Ordinal);
 
         // The document still says B2: reporting is not correcting.
-        Assert.Contains("loop B2", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("loop B2", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -275,7 +275,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
         Assert.False(computed.IsEditable);
         Assert.Contains("Change an arrow", computed.ReadOnlyReason, StringComparison.Ordinal);
         Assert.False(result.IsSuccess);
-        Assert.Equal(Corpus, File.ReadAllText(_path));
+        Assert.Equal(Corpus, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     /// <summary>
@@ -295,7 +295,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
 
-        var text = File.ReadAllText(_path);
+        var text = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
         Assert.Contains("loop R2 \"Crowding checks growth\" population crowding", text, StringComparison.Ordinal);
 
         // And the disagreement is gone, because the arrows now agree with the claim.
@@ -308,8 +308,8 @@ public class CausalLoopContextPropertiesTests : IDisposable
     public async Task ALoopWhoseCycleHasAnUnstatedLink_ReadsAsUndecidableRatherThanGuessed()
     {
         // Arrange.
-        File.WriteAllText(_path, Corpus.Replace(
-            "link births -> population +", "link births -> population", StringComparison.Ordinal));
+        await File.WriteAllTextAsync(_path, Corpus.Replace(
+            "link births -> population +", "link births -> population", StringComparison.Ordinal), TestContext.Current.CancellationToken);
         _store.Reload(_path);
 
         // Act.
@@ -334,7 +334,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
     {
         // Arrange.
         var other = IoPath.Combine(_root, "notes.md");
-        File.WriteAllText(other, Corpus);
+        await File.WriteAllTextAsync(other, Corpus, TestContext.Current.CancellationToken);
 
         // Act.
         var rows = await _properties.DescribeAsync(

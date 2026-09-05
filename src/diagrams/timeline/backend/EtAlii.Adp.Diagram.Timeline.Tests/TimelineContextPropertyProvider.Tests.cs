@@ -116,7 +116,7 @@ public class TimelineContextPropertyProviderTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await _properties.SetAsync(Target(path, "aaa"), TimelineContextPropertyProvider.BeginProperty, "2026-01-10", CancellationToken.None);
@@ -124,7 +124,7 @@ public class TimelineContextPropertyProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.IsSuccess, result.Error);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public class TimelineContextPropertyProviderTests : IDisposable
         // Assert.
         Assert.False(result.IsSuccess);
         Assert.Contains("cannot end before it begins", result.Error, StringComparison.Ordinal);
-        Assert.Contains("begin: 2026-01-05", File.ReadAllText(path), StringComparison.Ordinal);
+        Assert.Contains("begin: 2026-01-05", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -196,7 +196,7 @@ public class TimelineContextPropertyProviderTests : IDisposable
     {
         // Arrange.
         var foreign = IoPath.Combine(_workspace, "map.owm");
-        File.WriteAllText(foreign, "title something\n");
+        await File.WriteAllTextAsync(foreign, "title something\n", TestContext.Current.CancellationToken);
 
         // Act.
         var rows = await _properties.DescribeAsync(Target(foreign, "x"), CancellationToken.None);

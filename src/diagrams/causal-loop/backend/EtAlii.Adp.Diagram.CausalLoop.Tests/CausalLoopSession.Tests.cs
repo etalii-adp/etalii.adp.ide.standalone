@@ -166,7 +166,7 @@ public class CausalLoopSessionTests : IDisposable
     public async Task ARepositionStoresInTheRegistration_AndNeverTouchesTheBody()
     {
         // Arrange.
-        var before = File.ReadAllText(_bodyPath);
+        var before = await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken);
         await using var session = Session();
         session.Baseline();
 
@@ -175,8 +175,8 @@ public class CausalLoopSessionTests : IDisposable
 
         // Assert.
         Assert.Equal("", refusal);
-        Assert.Contains("layout:", File.ReadAllText(_registrationPath), StringComparison.Ordinal);
-        Assert.Equal(before, File.ReadAllText(_bodyPath));
+        Assert.Contains("layout:", await File.ReadAllTextAsync(_registrationPath, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.Equal(before, await File.ReadAllTextAsync(_bodyPath, TestContext.Current.CancellationToken));
     }
 
     [Fact]

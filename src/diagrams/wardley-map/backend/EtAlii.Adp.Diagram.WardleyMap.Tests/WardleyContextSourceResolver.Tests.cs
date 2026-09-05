@@ -242,8 +242,8 @@ public sealed class WardleyContextSourceResolverTests : IDisposable
         // alone whose element it is, so saying "not ours" plainly is how they coexist: the
         // selection resolver then asks the next one.
         var other = IoPath.Combine(_root, "notes.adp");
-        File.WriteAllText(other, "freeplane/mindmap\n");
-        File.WriteAllText(IoPath.Combine(_root, "notes.mm"), "<map><node TEXT=\"a\"/></map>");
+        await File.WriteAllTextAsync(other, "freeplane/mindmap\n", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "notes.mm"), "<map><node TEXT=\"a\"/></map>", TestContext.Current.CancellationToken);
 
         // Act.
         var resolution = await Resolve(IdOf(WardleyIdentityKind.Component, "Kettle"), registration: other);

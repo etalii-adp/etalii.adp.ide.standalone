@@ -101,9 +101,9 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     public async Task AnUnlinkIsNotOfferedOnAnElementWithNoLink()
     {
         // Arrange. Requirement 11.6's own example.
-        File.WriteAllText(_path, "component Alone [0.5, 0.5]\ncomponent Other [0.2, 0.2]\nOther->Alone\n");
+        await File.WriteAllTextAsync(_path, "component Alone [0.5, 0.5]\ncomponent Other [0.2, 0.2]\nOther->Alone\n", TestContext.Current.CancellationToken);
         _documents.Forget(_path);
-        File.WriteAllText(_path, "component Alone [0.5, 0.5]\n");
+        await File.WriteAllTextAsync(_path, "component Alone [0.5, 0.5]\n", TestContext.Current.CancellationToken);
         _documents.Forget(_path);
 
         // Act.
@@ -117,7 +117,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     public async Task StopEvolvingIsOnlyOfferedOnSomethingThatIsEvolving()
     {
         // Arrange.
-        File.WriteAllText(_path, "component Kettle [0.4, 0.3]\ncomponent Power [0.1, 0.7]\nevolve Kettle 0.7\n");
+        await File.WriteAllTextAsync(_path, "component Kettle [0.4, 0.3]\ncomponent Power [0.1, 0.7]\nevolve Kettle 0.7\n", TestContext.Current.CancellationToken);
         _documents.Forget(_path);
 
         // Act.
@@ -134,7 +134,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     {
         // Arrange. Requirement 3.2 forbids rewriting the legacy form into the nested one, so
         // there is nothing that could be added to it.
-        File.WriteAllText(_path, "component Power [0.1, 0.7]\npipeline Power [0.30, 0.85]\n");
+        await File.WriteAllTextAsync(_path, "component Power [0.1, 0.7]\npipeline Power [0.30, 0.85]\n", TestContext.Current.CancellationToken);
         _documents.Forget(_path);
 
         // Act.
@@ -189,7 +189,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     public async Task ANoteIsOfferedNothing_BecauseNoCommandEditsOneYet()
     {
         // Arrange.
-        File.WriteAllText(_path, "component Alpha [0.5, 0.5]\nnote Mind the gap [0.2, 0.2]\n");
+        await File.WriteAllTextAsync(_path, "component Alpha [0.5, 0.5]\nnote Mind the gap [0.2, 0.2]\n", TestContext.Current.CancellationToken);
         _documents.Forget(_path);
         var note = _documents.Identities(_path).Single(entry => entry.Kind == WardleyIdentityKind.Note);
 
@@ -212,7 +212,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
 
         // Assert. Immediate: there is nothing to ask about a toggle.
         Assert.IsType<ContextExecutionCompleted>(result);
-        Assert.Contains("component Power [0.1, 0.7] inertia", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("component Power [0.1, 0.7] inertia", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -220,7 +220,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     {
         // Arrange. Requirement 9.8 - one command behind every route means undo works whichever
         // route was taken.
-        var before = File.ReadAllText(_path);
+        var before = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
 
         // Act.
         await _provider.ExecuteAsync(
@@ -228,7 +228,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         await _services.GetRequiredService<IHistoryStackStore>().Get(_root).UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal(before, File.ReadAllText(_path));
+        Assert.Equal(before, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -239,13 +239,13 @@ public sealed class WardleyContextActionProviderTests : IDisposable
 
         // Act.
         await _provider.ExecuteAsync(Target(IdOf("Kettle")), id, TestContext.Current.CancellationToken);
-        var cleared = File.ReadAllText(_path);
+        var cleared = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
         await _provider.ExecuteAsync(Target(IdOf("Kettle")), id, TestContext.Current.CancellationToken);
 
         // Assert. The label said "Clear buy" because it was there; after clearing it, setting it
         // again puts the same word back.
         Assert.DoesNotContain("(buy)", cleared, StringComparison.Ordinal);
-        Assert.Contains("(buy)", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("(buy)", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -261,8 +261,8 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         var request = Assert.IsType<ContextExecutionRequiresInput>(asked).Request;
         Assert.Equal("Kettle", request.InitialValue);
         Assert.True(committed.Completed, committed.Error);
-        Assert.Contains("component Boiler [0.43, 0.35]", File.ReadAllText(_path), StringComparison.Ordinal);
-        Assert.Contains("Cup of Tea->Boiler", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("component Boiler [0.43, 0.35]", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
+        Assert.Contains("Cup of Tea->Boiler", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -293,7 +293,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         // already what gets dispatched.
         Assert.Equal(["Kettle", "Power"], request.Options.Select(option => option.Label));
         Assert.True(committed.Completed, committed.Error);
-        Assert.Contains("Cup of Tea->Power", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("Cup of Tea->Power", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -311,14 +311,14 @@ public sealed class WardleyContextActionProviderTests : IDisposable
             TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Contains("Cup of Tea+>Power", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("Cup of Tea+>Power", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task Unlink_WithOneLink_DoesNotAskWhichOne()
     {
         // Arrange. A dialog offering a choice of one exists only to be dismissed.
-        File.WriteAllText(_path, "component Alpha [0.5, 0.5]\ncomponent Beta [0.2, 0.2]\nAlpha->Beta\n");
+        await File.WriteAllTextAsync(_path, "component Alpha [0.5, 0.5]\ncomponent Beta [0.2, 0.2]\nAlpha->Beta\n", TestContext.Current.CancellationToken);
         _documents.Forget(_path);
 
         // Act.
@@ -327,7 +327,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
-        Assert.Equal("component Alpha [0.5, 0.5]\ncomponent Beta [0.2, 0.2]\n", File.ReadAllText(_path));
+        Assert.Equal("component Alpha [0.5, 0.5]\ncomponent Beta [0.2, 0.2]\n", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -344,7 +344,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         // Assert. The label says which arrow it is, because the two claims are different.
         Assert.Equal(["Cup of Tea -> Kettle", "Kettle +> Power"], request.Options.Select(option => option.Label));
         Assert.True(committed.Completed, committed.Error);
-        var text = File.ReadAllText(_path);
+        var text = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
         Assert.Contains("Cup of Tea->Kettle", text, StringComparison.Ordinal);
         Assert.DoesNotContain("Kettle+>Power", text, StringComparison.Ordinal);
     }
@@ -363,7 +363,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         // Assert.
         Assert.Equal([WardleyContextActionProvider.UnlinkActionId], offered);
         Assert.IsType<ContextExecutionCompleted>(result);
-        Assert.DoesNotContain("Cup of Tea->Kettle", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.DoesNotContain("Cup of Tea->Kettle", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -406,14 +406,14 @@ public sealed class WardleyContextActionProviderTests : IDisposable
 
         // Assert.
         Assert.True(committed.Completed, committed.Error);
-        Assert.Contains("  component Electric Kettle [0.5]", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("  component Electric Kettle [0.5]", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task APipelineChild_IsOfferedOnlyItsRemoval()
     {
         // Arrange.
-        File.WriteAllText(_path, "component Kettle [0.4, 0.3]\npipeline Kettle\n{\n  component Electric Kettle [0.63]\n}\n");
+        await File.WriteAllTextAsync(_path, "component Kettle [0.4, 0.3]\npipeline Kettle\n{\n  component Electric Kettle [0.63]\n}\n", TestContext.Current.CancellationToken);
         _documents.Forget(_path);
         var child = _documents.Identities(_path).Single(entry => entry.Kind == WardleyIdentityKind.PipelineChild);
 
@@ -425,7 +425,7 @@ public sealed class WardleyContextActionProviderTests : IDisposable
         // Assert.
         Assert.Equal([WardleyContextActionProvider.RemoveFromPipelineActionId], ids);
         Assert.IsType<ContextExecutionCompleted>(result);
-        Assert.Equal("component Kettle [0.4, 0.3]\npipeline Kettle\n{\n}\n", File.ReadAllText(_path));
+        Assert.Equal("component Kettle [0.4, 0.3]\npipeline Kettle\n{\n}\n", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]

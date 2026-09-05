@@ -229,7 +229,7 @@ public class TimelineSessionTests : IDisposable
 
         // Assert.
         Assert.Equal("", answer);
-        var text = File.ReadAllText(path);
+        var text = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         Assert.Contains("begin: 2026-03-01", text, StringComparison.Ordinal);
         Assert.Contains("end: 2026-04-09", text, StringComparison.Ordinal); // 39 days later, as before
         Assert.Contains("row: 4", text, StringComparison.Ordinal);
@@ -240,7 +240,7 @@ public class TimelineSessionTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         await using var session = Open(path);
         var landing = TimelineScale.ToSeconds(new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero));
 
@@ -249,7 +249,7 @@ public class TimelineSessionTests : IDisposable
         await _historyStacks.Get(_workspace).UndoAsync(CancellationToken.None);
 
         // Assert.
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -294,7 +294,7 @@ public class TimelineSessionTests : IDisposable
         session.Changed += (_, args) => received = args.Deltas;
 
         // Act.
-        File.WriteAllText(path, Timeline.Replace("label: Period", "label: Renamed", StringComparison.Ordinal));
+        await File.WriteAllTextAsync(path, Timeline.Replace("label: Period", "label: Renamed", StringComparison.Ordinal), TestContext.Current.CancellationToken);
         _store.Reload(path);
 
         // Assert.
@@ -309,7 +309,7 @@ public class TimelineSessionTests : IDisposable
         // Arrange.
         var path = Write();
         var otherPath = IoPath.Combine(_workspace, "other.tml");
-        File.WriteAllText(otherPath, Timeline);
+        await File.WriteAllTextAsync(otherPath, Timeline, TestContext.Current.CancellationToken);
         await using var session = Open(path);
         session.Baseline();
         var disturbed = false;

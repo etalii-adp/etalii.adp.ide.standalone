@@ -251,7 +251,7 @@ public sealed class WardleySessionTests : IDisposable
 
         // Assert.
         Assert.Equal("", error);
-        Assert.Equal("component Alpha [0.6, 0.8]\n", File.ReadAllText(path));
+        Assert.Equal("component Alpha [0.6, 0.8]\n", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -276,7 +276,7 @@ public sealed class WardleySessionTests : IDisposable
         await session.MoveElementToAsync(elementId, 0.2d, 0.7d, TestContext.Current.CancellationToken);
 
         // Assert. The comment, the title, the other component and the link are untouched.
-        var after = File.ReadAllText(path);
+        var after = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         Assert.Contains("// A map with things worth keeping.", after, StringComparison.Ordinal);
         Assert.Contains("component Alpha [0.3, 0.2] // why it sits here", after, StringComparison.Ordinal);
         Assert.Contains("component Beta [0.50, 0.50]", after, StringComparison.Ordinal);
@@ -295,7 +295,7 @@ public sealed class WardleySessionTests : IDisposable
         await session.MoveElementToAsync(elementId, 1.7d, -0.4d, TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal("component Alpha [1, 1]\n", File.ReadAllText(path));
+        Assert.Equal("component Alpha [1, 1]\n", await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -309,12 +309,12 @@ public sealed class WardleySessionTests : IDisposable
 
         // Act.
         await session.MoveElementToAsync(elementId, 0.8d, 0.4d, TestContext.Current.CancellationToken);
-        var moved = File.ReadAllText(path);
+        var moved = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         await _history.UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert. Byte-identical to before the drag, comment included.
         Assert.NotEqual(text, moved);
-        Assert.Equal(text, File.ReadAllText(path));
+        Assert.Equal(text, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -348,7 +348,7 @@ public sealed class WardleySessionTests : IDisposable
         await session.MoveElementToAsync(childId, 0.9d, 0.9d, TestContext.Current.CancellationToken);
 
         // Assert. One number moved; the parent's line is untouched.
-        var after = File.ReadAllText(path);
+        var after = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         Assert.Contains("component Electric [0.9]", after, StringComparison.Ordinal);
         Assert.Contains("component Kettle [0.43, 0.35]", after, StringComparison.Ordinal);
     }
@@ -407,7 +407,7 @@ public sealed class WardleySessionTests : IDisposable
 
         // Act.
         await session.DisposeAsync();
-        File.WriteAllText(path, "component Alpha [0.2, 0.8]\n");
+        await File.WriteAllTextAsync(path, "component Alpha [0.2, 0.8]\n", TestContext.Current.CancellationToken);
         _documents.Reload(path);
 
         // Assert. A disposed session must not keep receiving, or a closed tab holds the

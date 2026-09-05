@@ -72,9 +72,9 @@ public class C4SharedReadTests : IDisposable
         // session open and that write can genuinely overlap. A refused header read would fall
         // back to the document's first view - silently the wrong diagram.
         var body = IoPath.Combine(_root, "model.dsl");
-        File.WriteAllText(body, Model);
+        await File.WriteAllTextAsync(body, Model, TestContext.Current.CancellationToken);
         var adp = IoPath.Combine(_root, "containers.adp");
-        File.WriteAllText(adp, "c4/container\nbody: model.dsl\nview: containers\n");
+        await File.WriteAllTextAsync(adp, "c4/container\nbody: model.dsl\nview: containers\n", TestContext.Current.CancellationToken);
         using var editor = new FileStream(adp, FileMode.Open, FileAccess.Write, FileShare.Read);
 
         // Act.

@@ -129,7 +129,7 @@ public class CausalLoopContextActionsTests : IDisposable
     public async Task TheArrangement_IsUnavailableWithItsReason_OnADiagramWithNothingToArrange()
     {
         // Arrange.
-        File.WriteAllText(_path, "causal-loop 1\r\nvariable alone \"Alone\"\r\n");
+        await File.WriteAllTextAsync(_path, "causal-loop 1\r\nvariable alone \"Alone\"\r\n", TestContext.Current.CancellationToken);
         _store.Reload(_path);
 
         // Act.
@@ -182,8 +182,8 @@ public class CausalLoopContextActionsTests : IDisposable
     {
         // Arrange.
         var adpPath = IoPath.Combine(_root, "feedback.adp");
-        File.WriteAllText(adpPath, "systems/causal-loop-diagram\r\n");
-        var before = File.ReadAllText(adpPath);
+        await File.WriteAllTextAsync(adpPath, "systems/causal-loop-diagram\r\n", TestContext.Current.CancellationToken);
+        var before = await File.ReadAllTextAsync(adpPath, TestContext.Current.CancellationToken);
 
         var watchId = ShortGuid.NewShortGuid();
         var history = _provider.GetRequiredService<IHistoryStackStore>();
@@ -216,12 +216,12 @@ public class CausalLoopContextActionsTests : IDisposable
         Assert.Contains("variable:births", stored.Keys);
 
         // The body is untouched: an arrangement is an opinion about where things are drawn.
-        Assert.Equal(Corpus, File.ReadAllText(_path));
+        Assert.Equal(Corpus, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
 
         // And it is ONE undo away, not one per variable (Requirement 6.8).
         var undone = await history.Get(_root).UndoAsync(TestContext.Current.CancellationToken);
         Assert.True(undone.IsSuccess, undone.Error);
-        Assert.Equal(before, File.ReadAllText(adpPath));
+        Assert.Equal(before, await File.ReadAllTextAsync(adpPath, TestContext.Current.CancellationToken));
     }
 
     // ---- unavailable with a reason, never silently absent -----------------------------------
@@ -271,7 +271,7 @@ public class CausalLoopContextActionsTests : IDisposable
             await Discover("link:population|births"),
             action => action.Id == CausalLoopContextActionProvider.ToggleDelayActionId);
 
-        File.WriteAllText(_path, Corpus.Replace("link population -> births +", "link population -> births + delayed", StringComparison.Ordinal));
+        await File.WriteAllTextAsync(_path, Corpus.Replace("link population -> births +", "link population -> births + delayed", StringComparison.Ordinal), TestContext.Current.CancellationToken);
         _store.Reload(_path);
 
         var after = Assert.Single(
@@ -354,14 +354,14 @@ public class CausalLoopContextActionsTests : IDisposable
 
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
-        Assert.Contains("link population -> births -", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("link population -> births -", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task AddingALink_AsksForTheOtherEnd_ThenWritesIt()
     {
         // Arrange.
-        File.WriteAllText(_path, Corpus + "variable deaths \"Deaths\"\r\n");
+        await File.WriteAllTextAsync(_path, Corpus + "variable deaths \"Deaths\"\r\n", TestContext.Current.CancellationToken);
         _store.Reload(_path);
 
         // Act.
@@ -380,7 +380,7 @@ public class CausalLoopContextActionsTests : IDisposable
         // Assert.
         Assert.IsType<ContextExecutionRequiresInput>(asked);
         Assert.True(committed.Completed, committed.Error);
-        Assert.Contains("link population -> deaths +", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("link population -> deaths +", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -393,7 +393,7 @@ public class CausalLoopContextActionsTests : IDisposable
     {
         // Arrange.
         var other = IoPath.Combine(_root, "notes.md");
-        File.WriteAllText(other, Corpus);
+        await File.WriteAllTextAsync(other, Corpus, TestContext.Current.CancellationToken);
 
         // Act.
         var groups = await _actions.DiscoverAsync(

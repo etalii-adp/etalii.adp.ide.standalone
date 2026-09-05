@@ -130,7 +130,7 @@ public class DependencyGraphContextSourceResolverTests : IDisposable
     {
         // Arrange.
         var path = IoPath.Combine(_workspace, "bare" + Diagram.DocumentExtension);
-        File.WriteAllText(path, "dependencies: 1\nelements:\n  - id: aaa\n    x: 0\n  - id: bbb\n    x: 100\nrelations:\n  - id: ccc\n    from: aaa\n    to: bbb\n");
+        await File.WriteAllTextAsync(path, "dependencies: 1\nelements:\n  - id: aaa\n    x: 0\n  - id: bbb\n    x: 100\nrelations:\n  - id: ccc\n    from: aaa\n    to: bbb\n", TestContext.Current.CancellationToken);
         _store.Forget(path);
 
         // Act.
@@ -163,7 +163,7 @@ public class DependencyGraphContextSourceResolverTests : IDisposable
         // module that owns it - and a timeline sitting beside a graph is the likeliest such file,
         // since the two share every id shape this module uses.
         var foreign = IoPath.Combine(_workspace, "plan.tml");
-        File.WriteAllText(foreign, "timeline: 1\nelements: []\n");
+        await File.WriteAllTextAsync(foreign, "timeline: 1\nelements: []\n", TestContext.Current.CancellationToken);
 
         // Act.
         var resolution = await ResolveAsync(FileLevel(foreign), "aaa");
@@ -207,12 +207,12 @@ public class DependencyGraphContextSourceResolverTests : IDisposable
         using var tracking = resolver.Track(ShortGuid.NewShortGuid(), _workspace, level, changed => latest = changed);
 
         // Act: a rename keeps the id while changing everything shown.
-        File.WriteAllText(path, Graph.Replace("label: API gateway", "label: Renamed", StringComparison.Ordinal));
+        await File.WriteAllTextAsync(path, Graph.Replace("label: API gateway", "label: Renamed", StringComparison.Ordinal), TestContext.Current.CancellationToken);
         _store.Reload(path);
         var afterRename = latest;
 
         // Act: a removal clears the selection.
-        File.WriteAllText(path, "dependencies: 1\nelements:\n  - id: bbb\n    x: 480\n    row: 1\n");
+        await File.WriteAllTextAsync(path, "dependencies: 1\nelements:\n  - id: bbb\n    x: 480\n    row: 1\n", TestContext.Current.CancellationToken);
         _store.Reload(path);
 
         // Assert.
@@ -246,7 +246,7 @@ public class DependencyGraphContextSourceResolverTests : IDisposable
         // The file check comes before the placement check: a placement in somebody else's
         // diagram is not this module's to resolve.
         var foreign = IoPath.Combine(_workspace, "plan.tml");
-        File.WriteAllText(foreign, "timeline: 1\nelements: []\n");
+        await File.WriteAllTextAsync(foreign, "timeline: 1\nelements: []\n", TestContext.Current.CancellationToken);
 
         // Act.
         var resolution = await ResolveAsync(FileLevel(foreign), DependencyGraphNewPlacement.IdFor(0, 0));

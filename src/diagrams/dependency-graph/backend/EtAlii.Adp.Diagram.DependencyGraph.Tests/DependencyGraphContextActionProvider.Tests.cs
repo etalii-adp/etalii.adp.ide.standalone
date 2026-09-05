@@ -123,7 +123,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
         // A provider consulted for every element in its scope answers with nothing rather than
         // parsing another notation's file.
         var foreign = IoPath.Combine(_workspace, "plan.tml");
-        File.WriteAllText(foreign, "timeline: 1\nelements: []\n");
+        await File.WriteAllTextAsync(foreign, "timeline: 1\nelements: []\n", TestContext.Current.CancellationToken);
 
         // Act & assert.
         Assert.Empty(await ActionIdsFor(foreign, "aaa"));
@@ -270,7 +270,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         var gesture = DependencyGraphRelationGesture.IdFor("aaa", DependencyGraphNewPlacement.IdFor(900, 5));
 
         // Act.
@@ -285,7 +285,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
         Assert.Equal(900d, created.X);
         Assert.Equal(5, created.Row);
         Assert.Contains(model.Relations, relation => relation.From == "aaa" && relation.To == created.Id);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -360,7 +360,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var asked = await _actions.ExecuteAsync(
@@ -374,7 +374,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
         Assert.IsType<ContextExecutionRequiresInput>(asked);
         Assert.True(committed.Completed, committed.Error);
         Assert.Equal("Edge router", renamed);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -382,7 +382,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
     {
         // Arrange.
         var path = Write();
-        var before = File.ReadAllText(path);
+        var before = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
 
         // Act.
         var result = await _actions.ExecuteAsync(
@@ -393,7 +393,7 @@ public class DependencyGraphContextActionProviderTests : IDisposable
         // Assert.
         Assert.IsType<ContextExecutionCompleted>(result);
         Assert.Equal(0, afterDisconnect);
-        Assert.Equal(before, File.ReadAllText(path));
+        Assert.Equal(before, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
     }
 
     [Fact]

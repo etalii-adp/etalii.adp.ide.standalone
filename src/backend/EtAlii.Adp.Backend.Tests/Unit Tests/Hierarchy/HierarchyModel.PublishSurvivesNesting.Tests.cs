@@ -35,8 +35,8 @@ public class HierarchyModelPublishSurvivesNestingTests : IDisposable
     {
         // Arrange: a subject with one nested registration, exactly as the explorer shows them.
         var subjectPath = IoPath.Combine(_root, "plan.mm");
-        File.WriteAllText(subjectPath, "<map/>");
-        File.WriteAllText(IoPath.Combine(_root, "plan.adp"), Mindmap.Origin.MimeType + "\n");
+        await File.WriteAllTextAsync(subjectPath, "<map/>", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "plan.adp"), Mindmap.Origin.MimeType + "\n", TestContext.Current.CancellationToken);
 
         var model = new HierarchyModel(_root, _catalog);
         var subject = Assert.Single(model.ListChildren(null));
@@ -109,7 +109,7 @@ public class HierarchyModelPublishSurvivesNestingTests : IDisposable
             raw = string.Join(" | ", _events);
         }
 
-        File.WriteAllText(IoPath.Combine(IoPath.GetTempPath(), "adp-nest-events.txt"), raw);
+        await File.WriteAllTextAsync(IoPath.Combine(IoPath.GetTempPath(), "adp-nest-events.txt"), raw, TestContext.Current.CancellationToken);
 
         var rootChildren = model.ListChildren(null);
         var flattened = rootChildren.Where(entry => entry.Name == "plan.adp").ToList();
@@ -117,15 +117,14 @@ public class HierarchyModelPublishSurvivesNestingTests : IDisposable
 
         var stillKnown = rootChildren.SingleOrDefault(entry => entry.Name == "plan.mm");
         Assert.True(stillKnown is not null, $"plan.mm vanished from the root. Watcher saw: {raw}");
-        var nested = model.ListChildren(stillKnown!.Id);
+        var nested = model.ListChildren(stillKnown.Id);
         Assert.True(nested.Any(entry => entry.Name == "plan.adp"), $"plan.adp is no longer under plan.mm. Watcher saw: {raw}");
 
         // And the replayed client tree agrees: plan.adp's parent is an entry named plan.mm.
-        KeyValuePair<ShortGuid, string> registrationPair;
         ShortGuid? replayedParent;
         lock (_events)
         {
-            registrationPair = replayedNames.Single(pair => pair.Value == "plan.adp");
+            KeyValuePair<ShortGuid, string> registrationPair = replayedNames.Single(pair => pair.Value == "plan.adp");
             replayedParent = replayedParents[registrationPair.Key];
         }
 

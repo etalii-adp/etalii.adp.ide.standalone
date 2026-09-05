@@ -118,7 +118,7 @@ public sealed class WardleyToolboxProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Equal("title Empty\ncomponent Kettle [0.5, 0.5]\n", File.ReadAllText(_path));
+        Assert.Equal("title Empty\ncomponent Kettle [0.5, 0.5]\n", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public sealed class WardleyToolboxProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Equal("title Empty\ncomponent Tea Buyers [0.5, 0.5] (market)\n", File.ReadAllText(_path));
+        Assert.Equal("title Empty\ncomponent Tea Buyers [0.5, 0.5] (market)\n", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -137,14 +137,14 @@ public sealed class WardleyToolboxProviderTests : IDisposable
     {
         // Arrange. Written in one command precisely so that the decorator does not arrive as a
         // second history entry the user has to undo twice.
-        var before = File.ReadAllText(_path);
+        var before = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
 
         // Act.
         await Execute(WardleyContextActionProvider.AddMarketActionId, "Tea Buyers");
         await _services.GetRequiredService<IHistoryStackStore>().Get(_root).UndoAsync(TestContext.Current.CancellationToken);
 
         // Assert.
-        Assert.Equal(before, File.ReadAllText(_path));
+        Assert.Equal(before, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -154,7 +154,7 @@ public sealed class WardleyToolboxProviderTests : IDisposable
         await Execute(WardleyContextActionProvider.AddEcosystemActionId, "Plugins");
 
         // Assert.
-        Assert.Contains("(ecosystem)", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("(ecosystem)", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -164,7 +164,7 @@ public sealed class WardleyToolboxProviderTests : IDisposable
         await Execute(WardleyContextActionProvider.AddAnchorActionId, "Business");
 
         // Assert.
-        Assert.Contains("anchor Business [0.5, 0.5]", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("anchor Business [0.5, 0.5]", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -175,7 +175,7 @@ public sealed class WardleyToolboxProviderTests : IDisposable
 
         // Assert.
         Assert.True(result.Completed, result.Error);
-        Assert.Equal("title Empty\nnote Mind the gap [0.5, 0.5]\n", File.ReadAllText(_path));
+        Assert.Equal("title Empty\nnote Mind the gap [0.5, 0.5]\n", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -183,14 +183,14 @@ public sealed class WardleyToolboxProviderTests : IDisposable
     {
         // Arrange. A map whose annotation 2 was deleted still has a 3, and reusing that number
         // would put two of them on the map.
-        File.WriteAllText(_path, "annotation 1 [0.2, 0.2] first\nannotation 3 [0.3, 0.3] third\n");
+        await File.WriteAllTextAsync(_path, "annotation 1 [0.2, 0.2] first\nannotation 3 [0.3, 0.3] third\n", TestContext.Current.CancellationToken);
         _documents.Forget(_path);
 
         // Act.
         await Execute(WardleyContextActionProvider.AddAnnotationActionId, "fourth");
 
         // Assert.
-        Assert.Contains("annotation 4 [0.5, 0.5] fourth", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("annotation 4 [0.5, 0.5] fourth", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -200,7 +200,7 @@ public sealed class WardleyToolboxProviderTests : IDisposable
         await Execute(WardleyContextActionProvider.AddAnnotationActionId, "the first thing to say");
 
         // Assert.
-        Assert.Contains("annotation 1 [0.5, 0.5] the first thing to say", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("annotation 1 [0.5, 0.5] the first thing to say", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -215,7 +215,7 @@ public sealed class WardleyToolboxProviderTests : IDisposable
         Assert.False(note.Valid);
         Assert.Contains("something to say", note.Reason, StringComparison.Ordinal);
         Assert.False(committed.Completed);
-        Assert.Equal("title Empty\n", File.ReadAllText(_path));
+        Assert.Equal("title Empty\n", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -237,7 +237,7 @@ public sealed class WardleyToolboxProviderTests : IDisposable
         // Assert.
         Assert.IsType<ContextExecutionRequiresInput>(asked);
         Assert.True(committed.Completed, committed.Error);
-        Assert.Contains("pipeline Kettle", File.ReadAllText(_path), StringComparison.Ordinal);
+        Assert.Contains("pipeline Kettle", await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     // ---- plumbing -----------------------------------------------------------------------------

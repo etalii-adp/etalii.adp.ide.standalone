@@ -143,7 +143,7 @@ public class HierarchyContextActionProviderTests : IDisposable
         var target = FolderTarget(CreateFolder("sub"));
         await _provider.CommitAsync(
             target, HierarchyContextActionProvider.AddFolderActionId, "child", "", TestContext.Current.CancellationToken);
-        File.WriteAllText(IoPath.Combine(_root, "sub", "child", "kept.txt"), "work");
+        await File.WriteAllTextAsync(IoPath.Combine(_root, "sub", "child", "kept.txt"), "work", TestContext.Current.CancellationToken);
 
         // Act.
         var undone = await _history.UndoAsync(TestContext.Current.CancellationToken);
