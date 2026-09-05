@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Deliberately outside src/, and deliberately not in EtAlii.Adp.slnx.
+
+    It is a build-time check rather than part of the product, and keeping it out of the solution
+    means it cannot be published into a release, cannot be picked up by the four gates, and does
+    not inherit src/Directory.Packages.props. It references no package at all: everything it
+    needs (System.Reflection.Metadata, System.Reflection.PortableExecutable) is in the shared
+    framework.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>EtAlii.Adp.Tools.DeveloperSessionGuard</RootNamespace>
+    <AssemblyName>DeveloperSessionGuard</AssemblyName>
+  </PropertyGroup>
+
+</Project>

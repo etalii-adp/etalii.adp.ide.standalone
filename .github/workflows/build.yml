@@ -178,6 +178,31 @@ jobs:
         if: steps.tip.outputs.publish == 'true'
         run: dotnet publish src/backend/EtAlii.Adp.Backend.Service -c Release -o publish
 
+      # Refuses to release a build carrying the developer sign-in bypass
+      # (developer-sign-in-bypass Requirement 2.3). It runs before the ZIP, so a build that
+      # fails here is never packaged, let alone published.
+      #
+      # This is deliberately not a unit test, and that is the whole point of it. The test
+      # assembly compiles Debug, where the bypass exists by design, so a test asserting its
+      # absence would assert either the wrong thing or a configuration default and would pass
+      # whether or not a release were safe. This step reads a different input - the
+      # Release-compiled artifact a user actually runs.
+      #
+      # It also does not grep for "DeveloperSession", because that string is in every build
+      # including correct ones: the RPC is declared unconditionally in authentication.proto,
+      # so the serialized descriptor carries the name and the generated service base carries a
+      # virtual that answers Unimplemented. Measured on a real publish - the bare name is
+      # present in Debug AND Release, while the exemption literal is present only in Debug. A
+      # text search would therefore fail on a correct release, and the usual way to quiet a
+      # guard that cries wolf is to loosen it until it never fires again.
+      #
+      # Seen to fail before being trusted: run against a deliberately Debug-published output it
+      # exits 1 and names both the handler and the exemption; against the Release output it
+      # exits 0.
+      - name: Refuse to release a build carrying the developer sign-in bypass
+        if: steps.tip.outputs.publish == 'true'
+        run: dotnet run --project .github/tools/developer-session-guard -c Release -- publish/EtAlii.Adp.Backend.dll
+
       - name: Write the release readme
         if: steps.tip.outputs.publish == 'true'
         run: |

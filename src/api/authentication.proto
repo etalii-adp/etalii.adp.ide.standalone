@@ -14,6 +14,19 @@ service AuthenticationService {
   // backend's own Nerdbank.GitVersioning-stamped assembly, so the login panel, the
   // assemblies, and the release ZIP can never disagree about the version.
   rpc DescribeProduct(DescribeProductRequest) returns (DescribeProductResponse);
+
+  // A session for a locally running developer build, obtained without a credential
+  // (developer-sign-in-bypass Requirement 1.1). Asked once by the client on mount, before it
+  // decides whether to render the sign-in form.
+  //
+  // **The implementation of this method is compiled only into a Debug build**, together with
+  // its entry in SessionInterceptor.IsExempt. This declaration is the contract and is
+  // generated into every build, because a service's methods cannot be split across proto
+  // files - but a released build has no override for it and no exemption, so the call is
+  // refused for want of a session before it could reach the unimplemented base. That is two
+  // independent reasons it cannot mint anything, and it is what the release job's guard
+  // checks: the absence of the *implementation*, not of this line.
+  rpc DeveloperSession(DeveloperSessionRequest) returns (DeveloperSessionResponse);
 }
 
 message DescribeProductRequest {}
@@ -48,3 +61,18 @@ message LogoutRequest {
 }
 
 message LogoutResponse {}
+
+message DeveloperSessionRequest {}
+
+// A token, or nothing at all. Nothing is the ordinary answer everywhere the bypass is not
+// compiled in, is not running under Development, or has been turned off locally - and the
+// client treats all three the same way, by falling through to the sign-in form.
+message DeveloperSessionResponse {
+  oneof result {
+    SessionToken session = 1;
+  }
+  // True only alongside a session issued by the bypass. The client shows its marker from
+  // this - from the session rather than from a build constant - so a released build cannot
+  // render the marker and a bypassed session cannot fail to (Requirement 5.1).
+  bool bypassed = 2;
+}

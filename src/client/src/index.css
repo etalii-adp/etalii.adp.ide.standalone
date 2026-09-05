@@ -91,6 +91,20 @@ button {
   text-align: right;
 }
 
+/* A session nobody signed in for (developer-sign-in-bypass Requirement 5.1). Deliberately in
+   the same quiet register as the credit line it sits beside and the version line under the
+   login card: it has to be legible in a screenshot without competing with the surface the
+   screenshot was taken of. */
+.app-header-developer-session {
+  margin-left: 0.5rem;
+  padding: 0.0625rem 0.375rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.625rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
 /* The mark inherits the header's muted colour through currentColor, so it stays a
    quiet credit line while the diagram node keeps the highlight. */
 .app-header-mark {
