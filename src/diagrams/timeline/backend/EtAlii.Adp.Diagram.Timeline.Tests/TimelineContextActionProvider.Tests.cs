@@ -182,6 +182,29 @@ public class TimelineContextActionProviderTests : IDisposable
     }
 
     [Fact]
+    public async Task OnlyTheTwoLabelPrompts_AreMarkedForInlineEditing()
+    {
+        // Arrange.
+        // All four asked together on purpose: a marker on the right action proves nothing if a
+        // neighbour has quietly acquired one. Rename and relabel ask for text that IS on screen;
+        // give-an-end asks for a date and add-element for text that does not exist yet, so an
+        // editor drawn in place of either would have no label to sit on.
+        var path = Write();
+
+        // Act.
+        var rename = await _actions.ExecuteAsync(Target(path, "aaa"), TimelineContextActionProvider.RenameActionId, CancellationToken.None);
+        var relabel = await _actions.ExecuteAsync(Target(path, "ccc"), TimelineContextActionProvider.RelabelActionId, CancellationToken.None);
+        var giveEnd = await _actions.ExecuteAsync(Target(path, "bbb"), TimelineContextActionProvider.GiveEndActionId, CancellationToken.None);
+        var addElement = await _actions.ExecuteAsync(Target(path, ""), TimelineContextActionProvider.AddElementActionId, CancellationToken.None);
+
+        // Assert.
+        Assert.Equal("aaa", Assert.IsType<ContextExecutionRequiresInput>(rename).Request.InlineLabelElementId);
+        Assert.Equal("ccc", Assert.IsType<ContextExecutionRequiresInput>(relabel).Request.InlineLabelElementId);
+        Assert.Equal("", Assert.IsType<ContextExecutionRequiresInput>(giveEnd).Request.InlineLabelElementId);
+        Assert.Equal("", Assert.IsType<ContextExecutionRequiresInput>(addElement).Request.InlineLabelElementId);
+    }
+
+    [Fact]
     public async Task GiveEnd_ValidatesAsTyped_OnTheHandlersOwnTerms()
     {
         // Arrange.

@@ -13,6 +13,10 @@ let executed: { actionId: string; source: unknown }[] = [];
 let properties: { propertyId: string; value: string }[] = [];
 let shortcuts: { key: string; source: unknown }[] = [];
 let currentReportView: ((viewport: unknown) => void) | null = null;
+let currentPrompt: unknown = null;
+const proposeLabel = vi.fn(async () => ({ accepted: true, error: "" }));
+const submitLabel = vi.fn(async () => ({ accepted: true, error: "" }));
+const cancelLabel = vi.fn();
 
 vi.mock("./useTimelineStream", () => ({
   useTimelineStream: () => ({
@@ -29,6 +33,7 @@ vi.mock("./useTimelineStream", () => ({
 
 vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   innermostKey: () => currentSelectionKey,
+  useContextPrompt: () => ({ prompt: currentPrompt, onPropose: proposeLabel, onSubmit: submitLabel, onCancel: cancelLabel }),
   useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: currentActions }),
   useContextConnection: () => ({
     select: (selection: unknown) => selections.push(selection),
@@ -49,6 +54,10 @@ vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
 
 vi.mock("@client/shell/panels/DiagramViewContext", () => ({
   useRegisterDiagramView: () => undefined,
+}));
+
+vi.mock("@client/shell/panels/InlineLabelPlacementContext", () => ({
+  useRegisterInlineLabelPlacement: () => undefined,
 }));
 
 vi.mock("@client/shell/panels/DiagramToolboxContext", () => ({
@@ -101,6 +110,7 @@ function renderCanvas() {
 
 beforeEach(() => {
   currentModel = modelWith();
+  currentPrompt = null;
   currentLoading = false;
   currentFailed = false;
   currentSelectionKey = null;
@@ -637,5 +647,98 @@ describe("the timeline canvas", () => {
     renderCanvas();
     await new Promise((resolve) => setTimeout(resolve, 400));
     expect(reportView).not.toHaveBeenCalled();
+  });
+
+  // ---- inline renaming -----------------------------------------------------------------
+
+  function labelPromptFor(elementId: string, text: string): unknown {
+    return {
+      prompt: {
+        case: "inputDialog",
+        value: {
+          title: "Rename",
+          icon: "mdi-pencil-outline",
+          fieldLabel: "Label",
+          initialValue: text,
+          confirmLabel: "Rename",
+          inlineLabelEdit: { elementId: { value: elementId } },
+        },
+      },
+    };
+  }
+
+  function editorBox(container: HTMLElement): SVGForeignObjectElement {
+    return container.querySelector("foreignObject.inline-label-editor") as SVGForeignObjectElement;
+  }
+
+  function labelField(container: HTMLElement): HTMLInputElement {
+    return container.querySelector("input.inline-label-editor-field") as HTMLInputElement;
+  }
+
+  it("opens an editor over a span, and submits what is typed into it", async () => {
+    // Arrange. 'aaa' is a period, whose label SpanElement centres in its box.
+    currentPrompt = labelPromptFor("aaa", "Discovery");
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert.
+    expect(editorBox(container)).not.toBeNull();
+    expect(labelField(container).value).toBe("Discovery");
+
+    fireEvent.change(labelField(container), { target: { value: "Renamed" } });
+    fireEvent.keyDown(labelField(container), { key: "Enter" });
+    await waitFor(() => expect(submitLabel).toHaveBeenCalledWith("Renamed"));
+  });
+
+  it("opens an instant's editor beside its diamond, not over it", () => {
+    // Arrange. 'bbb' is a moment. SpanElement draws a moment's label start-anchored past the
+    // diamond, because there is no box to centre it in - so an editor centred on the marker
+    // would sit over the marker rather than over the text it replaces.
+    currentPrompt = labelPromptFor("bbb", "Go");
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert: the editor starts to the RIGHT of the diamond's centre by at least its radius.
+    const diamond = container.querySelector("path.timeline-moment") as SVGPathElement;
+    expect(diamond).not.toBeNull();
+    const box = editorBox(container);
+    expect(box).not.toBeNull();
+    const centre = Number(diamond.getAttribute("d")?.match(/M\s*(-?[\d.]+)/)?.[1] ?? "0");
+    expect(Number(box.getAttribute("x"))).toBeGreaterThan(centre);
+  });
+
+  it("places a connection's editor at the midpoint of the line, where its label is drawn", () => {
+    // Arrange.
+    currentPrompt = labelPromptFor("ccc", "gates");
+
+    // Act.
+    const { container } = renderCanvas();
+
+    // Assert: centred on the same midpoint InteractiveBezierConnection draws its text at.
+    const drawn = container.querySelector('[data-connection-id="ccc"] text') as SVGTextElement;
+    expect(drawn).not.toBeNull();
+    const box = editorBox(container);
+    expect(box).not.toBeNull();
+    const centreOfEditor = Number(box.getAttribute("x")) + Number(box.getAttribute("width")) / 2;
+    expect(centreOfEditor).toBeCloseTo(Number(drawn.getAttribute("x")), 5);
+  });
+
+  it("leaves the selection alone when an inline edit commits", async () => {
+    // Arrange. Committing a rename must not re-select or clear: the reader's selection is
+    // theirs, and an editor that moved it would undo a selection they made deliberately.
+    currentSelectionKey = "aaa";
+    currentPrompt = labelPromptFor("aaa", "Discovery");
+    const { container } = renderCanvas();
+    selections = [];
+
+    // Act.
+    fireEvent.change(labelField(container), { target: { value: "Renamed" } });
+    fireEvent.keyDown(labelField(container), { key: "Enter" });
+
+    // Assert.
+    await waitFor(() => expect(submitLabel).toHaveBeenCalled());
+    expect(selections).toEqual([]);
   });
 });
