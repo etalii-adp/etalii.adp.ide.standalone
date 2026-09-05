@@ -30,6 +30,45 @@ namespace EtAlii.Adp.Backend.Tests;
 /// reproduces roughly once in twenty concurrent runs — a rate at which a green suite says
 /// nothing. Here the same mechanism is deterministic in both directions.
 /// </para>
+/// <para>
+/// <b>The mechanism map lives with the decision, not here.</b> Three write primitives against two
+/// sharing modes are tabulated in <c>AdpFileWriter.Save</c>, beside the line that chooses between
+/// them — which is where anyone reaching for <c>File.Move(overwrite: true)</c> is standing. It is
+/// not repeated in this file, because one measured fact with two homes is one fact that can drift.
+/// </para>
+/// <para>
+/// <b>What the investigation eliminated, so nobody pays for it twice.</b> The symptom was
+/// <c>OwlFlowTests.AClassReposition…</c> failing about one concurrent run in twenty. Two
+/// plausible suspects were tested and cleared, and both cost more to re-derive than to record:
+/// </para>
+/// <list type="bullet">
+/// <item><description>
+/// <b>The tests' own read sharing.</b> A test reading a document with <c>File.ReadAllText</c>
+/// holds it sharing <c>Read</c>, which does deny a replace — a real mechanism. Converting 48 such
+/// reads across 11 flow-test files changed nothing measurable, so the change was reverted rather
+/// than kept on the strength of a plausible story. It was not the cause.
+/// </description></item>
+/// <item><description>
+/// <b>The environment.</b> Antivirus or the search indexer transiently holding files under
+/// <c>%TEMP%</c> fitted the wandering pattern and was the leading theory for a while. It was
+/// wrong: the holder was ADP itself — <c>RegistrationLayout</c>'s registration read, which shared
+/// <c>Read</c> only and so denied the registration write that followed it.
+/// </description></item>
+/// </list>
+/// <para>
+/// <b>And a caveat about how any of this was reproduced.</b> The harness was four test hosts
+/// running the integration assembly concurrently against one <c>%TEMP%</c> root. That is harsher
+/// than the real gate, which runs one host, so a failure it produces is not automatically a defect
+/// — teardown races on the problem cache showed up there and are artefacts of the harness. It is
+/// a way to make a rare race appear, not a measure of how often anyone will meet it.
+/// </para>
+/// <para>
+/// <b>The lesson worth more than the fix.</b> The companion race in <c>TimelineFlow</c> — an
+/// action executed against a context watch the server had not registered yet — was visible as a
+/// three-in-four failure when that class ran <em>alone</em>, and was filed for hours as
+/// "isolation is not neutral for this class". Isolation was the instrument, not the interference.
+/// A test that behaves differently by itself is reporting something.
+/// </para>
 /// </remarks>
 public class AdpFileWriterSharingContractTests : IDisposable
 {
