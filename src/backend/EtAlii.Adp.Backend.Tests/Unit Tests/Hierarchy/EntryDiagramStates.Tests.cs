@@ -96,18 +96,29 @@ public class EntryDiagramStatesTests
         Assert.Equal(Hierarchy.EntryDiagramState.Unspecified, Decide("notes.txt", isFolder: false, ["notes.txt"]));
     }
 
-    [Fact]
-    public void AFolderContainingAFolderSubjectRegistration_IsRegistered()
+    [Theory]
+    [InlineData("structure.adp")]
+    [InlineData(".adp")]
+    public void AFolderContainingAFolderSubjectRegistration_IsRegistered(string registration)
     {
         // Arrange.
         // The registration lives INSIDE the folder it registers (infrastructure/structure.adp),
         // per the design's correction of Requirement 3.1's parenthetical.
-        static bool DeclaresFolderSubject(string registration) => registration == "structure.adp";
+        //
+        // Both shapes resolve, and keeping the named one is the point rather than tidiness:
+        // creation is constrained by folder-add-registration and reading is not. Add writes a
+        // bare ".adp" from now on, but a user's existing infrastructure/structure.adp has to
+        // keep opening, and so does anything a previous version of ADP wrote.
+        //
+        // The predicate is this test's stand-in for routing. Production reads the MIME line
+        // inside the file and the name never enters the decision - which is exactly why the
+        // name may vary without the read path caring.
+        bool DeclaresFolderSubject(string candidate) => candidate == registration;
 
         // Act and assert.
         Assert.Equal(
             Hierarchy.EntryDiagramState.Registered,
-            Decide("infrastructure", isFolder: true, ["structure.adp", "site.yml"], declaresFolderSubject: DeclaresFolderSubject));
+            Decide("infrastructure", isFolder: true, [registration, "site.yml"], declaresFolderSubject: DeclaresFolderSubject));
     }
 
     [Fact]

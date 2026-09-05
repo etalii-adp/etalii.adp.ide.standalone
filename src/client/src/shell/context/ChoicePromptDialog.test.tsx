@@ -542,3 +542,101 @@ describe("ChoicePromptDialog description", () => {
     expect(screen.getByTestId("choice-description").textContent).toBe("The applications that make it up.");
   });
 });
+
+/**
+ * A prompt offering both kinds at once, which is the case the dialog has to serve: a type that
+ * takes a name, and a type whose diagram is the folder and therefore takes none.
+ */
+function folderSubjectPrompt(unavailableReason = ""): ChoiceDialogPrompt {
+  return create(ChoiceDialogPromptSchema, {
+    title: "Add diagram",
+    icon: "mdi-plus",
+    confirmLabel: "Add",
+    emptyMessage: "No diagram types are available.",
+    nameField: { label: "Name", initialValue: "" },
+    options: [
+      option("ansible", "ansible", false, [
+        {
+          ...option("ansible/structure", "Ansible structure", true),
+          nameSuppressedReason: "This type registers the folder itself, so the registration is created as `.adp` inside it.",
+          unavailableReason,
+        },
+      ]),
+      option("c4", "c4", false, [{ ...option("c4/context", "System Context", true), suggestedValue: "context" }]),
+    ] as ContextOption[],
+  });
+}
+
+const suppressionSentence = () => screen.queryByTestId("choice-name-suppressed");
+
+/**
+ * Both vendor groups open. With more than one top-level group none starts expanded, so the
+ * leaves are not in the DOM until they do - which is the dialog behaving as designed rather
+ * than something to work around.
+ */
+function expandBothVendors() {
+  fireEvent.click(row("ansible"));
+  fireEvent.click(row("c4"));
+}
+
+describe("ChoicePromptDialog, a type whose diagram is the folder", () => {
+  it("puts the sentence where the name field was, and submits no name", async () => {
+    // Arrange.
+    const { onSubmit } = renderDialog(folderSubjectPrompt());
+    expandBothVendors();
+
+    // Act.
+    fireEvent.click(row("Ansible structure"));
+
+    // Assert: the field is gone and the sentence stands in its place - not simply gone, which
+    // is the outcome the requirement was written to prevent.
+    expect(screen.queryByLabelText("Name")).toBeNull();
+    expect(suppressionSentence()?.textContent).toBe(
+      "This type registers the folder itself, so the registration is created as `.adp` inside it.",
+    );
+
+    // And submit is offered rather than blocked on a name the dialog is not asking for.
+    expect(confirmButton()).toHaveProperty("disabled", false);
+    await act(async () => {
+      fireEvent.click(confirmButton());
+    });
+    expect(onSubmit).toHaveBeenCalledWith("ansible/structure");
+  });
+
+  it("restores the field and its suggestion when a naming type is chosen again", async () => {
+    // Arrange: away from the naming type and back, with no round trip in between.
+    renderDialog(folderSubjectPrompt());
+    expandBothVendors();
+    fireEvent.click(row("Ansible structure"));
+    expect(screen.queryByLabelText("Name")).toBeNull();
+
+    // Act.
+    fireEvent.click(row("System Context"));
+
+    // Assert.
+    expect(suppressionSentence()).toBeNull();
+    expect(nameInput().value).toBe("context");
+  });
+
+  it("offers an already-registered folder greyed, and resists both click and double click", async () => {
+    // Arrange.
+    const { onSubmit } = renderDialog(folderSubjectPrompt("This folder is already registered by `structure.adp`"));
+    expandBothVendors();
+
+    // Assert: shown with its reason rather than hidden.
+    expect(screen.getByTestId("choice-unavailable-ansible/structure").textContent).toBe(
+      "This folder is already registered by `structure.adp`",
+    );
+
+    // Act and assert: a click does not select it, so the confirm button stays disabled.
+    fireEvent.click(row("Ansible structure"));
+    expect(confirmButton()).toHaveProperty("disabled", true);
+
+    // Act and assert: and neither does a double click, which does not go through the confirm
+    // button at all and is the path easiest to leave unguarded.
+    await act(async () => {
+      fireEvent.doubleClick(row("Ansible structure"));
+    });
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+});

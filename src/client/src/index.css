@@ -1123,6 +1123,35 @@ button {
   letter-spacing: 0.04em;
 }
 
+/* Offered but not choosable: dimmed, with its reason beside the label. Shown rather than
+   hidden, because a type that vanishes leaves the user looking for it. The cursor says so
+   too - a pointer over something that does nothing is its own small lie. */
+.choice-tree-row-unavailable,
+.choice-tree-row-unavailable:hover {
+  background: none;
+  cursor: default;
+}
+
+.choice-tree-row-unavailable .choice-tree-label-text,
+.choice-tree-row-unavailable .choice-tree-icon {
+  opacity: 0.5;
+}
+
+.choice-tree-row-reason {
+  margin-left: 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+/* The sentence standing where the name field would be. It reads as explanation rather than
+   as a disabled input, which is what it is: nothing was taken away from the user. */
+.choice-name-suppressed {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
 .choice-tree-chevron-button,
 .choice-tree-label {
   display: flex;

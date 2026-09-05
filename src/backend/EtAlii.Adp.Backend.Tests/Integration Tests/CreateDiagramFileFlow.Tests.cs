@@ -130,12 +130,22 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         throw new InvalidOperationException($"The stream ended before a {wanted} change arrived.");
     }
 
-    /// <summary>The first selectable leaf in the tree, depth first - a real diagram type to choose.</summary>
+    /// <summary>
+    /// The first selectable leaf that takes a name, depth first - a real diagram type to choose
+    /// and then name.
+    /// </summary>
+    /// <remarks>
+    /// The name-suppressed check is what keeps this pointing at the right kind of type. A
+    /// folder-subject type is selectable and sorts first (ansible), but its registration is
+    /// named for it and its dialog offers no name field - so every assertion in this file about
+    /// naming, validation and collisions is meaningless against one. Before folder-subject
+    /// types behaved differently these tests were already choosing one and nothing said so.
+    /// </remarks>
     private static ContextOption? FirstLeaf(IEnumerable<ContextOption> options)
     {
         foreach (var option in options)
         {
-            if (option.Selectable)
+            if (option.Selectable && option.NameSuppressedReason.Length == 0)
             {
                 return option;
             }
@@ -406,5 +416,62 @@ public class CreateDiagramFileFlowTests : IClassFixture<WebApplicationFactory<Pr
         Assert.True(secondSubmit.Completed, secondSubmit.Error);
         Assert.True(File.Exists(IoPath.Combine(_projectFolder, $"{firstName}.adp")));
         Assert.True(File.Exists(IoPath.Combine(_projectFolder, $"{firstName}-2.adp")));
+    }
+
+    /// <summary>
+    /// The first leaf whose name is suppressed - a type whose diagram is the folder, which
+    /// <see cref="FirstLeaf"/> deliberately skips because it takes no name.
+    /// </summary>
+    private static ContextOption? FirstNameSuppressedLeaf(IEnumerable<ContextOption> options)
+    {
+        foreach (var option in options)
+        {
+            if (option.Selectable && option.NameSuppressedReason.Length > 0)
+            {
+                return option;
+            }
+
+            var leaf = FirstNameSuppressedLeaf(option.Children);
+            if (leaf is not null)
+            {
+                return leaf;
+            }
+        }
+
+        return null;
+    }
+
+    [Fact]
+    public async Task AFolderSubjectType_CreatesExactlyTheBareAdp_ThroughTheWholeDialog()
+    {
+        // Arrange: Requirement 5.2, guarded end to end rather than at the provider alone. The
+        // provider's own test pins CommitAsync; this one pins the path a user actually takes,
+        // which is where a regression would reappear - a name field creeping back, a client
+        // sending a name, a suggestion returning.
+        using var session = await OpenSessionAsync();
+        using var cts = CreateMessageTimeout();
+        using var contextCall = session.Context.Watch(
+            new WatchContextRequest { ProjectId = session.ProjectId, WatchId = session.WatchId }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+        await TestBaselineAsync(contextCall.ResponseStream, cts.Token);
+        var (prompt, interactionId) = await OpenAddDialogAsync(session, contextCall.ResponseStream, cts.Token);
+
+        // Arrange, continued: the option that registers the folder itself arrives carrying a
+        // sentence and no suggestion. Both halves matter - a suggestion surviving here would be
+        // offered for a field that is not on screen.
+        var folderSubject = FirstNameSuppressedLeaf(prompt.ChoiceDialog.Options);
+        Assert.NotNull(folderSubject);
+        Assert.NotEqual("", folderSubject.NameSuppressedReason);
+        Assert.Equal("", folderSubject.SuggestedValue);
+        Assert.Equal("", folderSubject.UnavailableReason);
+
+        // Act: submitted with no name, which is what the dialog sends once the field is gone.
+        var submitted = await session.Context.SubmitInteractionAsync(
+            new SubmitInteractionRequest { InteractionId = interactionId, Value = folderSubject.Id, Text = "" }, session.Headers, cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert: exactly ".adp", and nothing else in the folder. Naming the whole listing
+        // rather than only the expected file is what catches a second file arriving beside it.
+        Assert.True(submitted.Completed, submitted.Error);
+        Assert.Equal([".adp"], submitted.CreatedPath.Segments);
+        Assert.Equal([IoPath.Combine(_projectFolder, ".adp")], Directory.GetFiles(_projectFolder));
     }
 }

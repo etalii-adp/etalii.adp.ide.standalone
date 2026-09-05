@@ -37,7 +37,8 @@ public static class ServiceCollectionAddHierarchyExtension
             new AddDiagramContextActionProvider(
                 provider.GetRequiredService<IHistoryStackStore>(),
                 provider.GetRequiredService<DiagramDocumentFactories>(),
-                provider.GetRequiredService<IDiagramDefinitionCatalog>())
+                provider.GetRequiredService<IDiagramDefinitionCatalog>(),
+                provider.GetRequiredService<DiagramFileRouter>())
         );
 
         // The editor family's contributions to the hierarchy scope: "Open as text"/"Open

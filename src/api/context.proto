@@ -356,6 +356,28 @@ message ContextOption {
   // One sentence on what the diagram type is for, shown when this option is selected.
   // Empty for a group, which is a heading rather than a thing that can be created.
   string description = 6;
+  // Non-empty -> this option wants no name, and the dialog renders this sentence where the
+  // name field would be. The submitted value carries no name at all.
+  //
+  // The condition and its explanation are one value on purpose. A separate boolean could be
+  // set without a sentence, which would take the field away and leave nothing in its place -
+  // the one outcome this field exists to prevent.
+  string name_suppressed_reason = 8;
+  // Non-empty -> the option is shown but cannot be chosen, and this is the reason the user
+  // reads. The same name and meaning ContextAction.unavailable_reason carries above, where it
+  // is the disabled item's tooltip: one idiom for one thing, rather than two a few messages
+  // apart.
+  //
+  // This is the general "offered but not choosable" idiom and not a folder-specific one. It
+  // applies wherever hiding an option would leave the user wondering where it went, and
+  // showing it greyed with a reason answers the question instead. Two consumers today: a
+  // folder that already holds its registration (folder-add-registration), and the registered
+  // placeholder diagram types a catalog offers as visible-but-not-choosable
+  // (contracts-and-build-hygiene). Neither needs a contract change for the other.
+  //
+  // selectable = false is not this and cannot be reused for it: it already means "group
+  // heading", so overloading it would make a greyed leaf indistinguishable from a category.
+  string unavailable_reason = 9;
 }
 
 // A text field a dialog carries beside its primary answer, described as data like every
