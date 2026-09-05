@@ -3,8 +3,10 @@
   "title": "selection-after-drag tasks: six tasks against the approved design, every reproduction seen to fail before its fix",
   "filePath": ".spec-workflow/specs/selection-after-drag/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-05T19:52:26.028Z",
   "category": "spec",
-  "categoryName": "selection-after-drag"
+  "categoryName": "selection-after-drag",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-05T19:53:13.633Z"
 }

@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/selection-after-drag/tasks.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-05T19:52:27.552Z",
       "trigger": "initial",
+      "approvalId": "approval_1788637946028_jdfue39ix",
+      "approvalTitle": "selection-after-drag tasks: six tasks against the approved design, every reproduction seen to fail before its fix"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-05T19:53:13.619Z",
+      "trigger": "approved",
       "approvalId": "approval_1788637946028_jdfue39ix",
       "approvalTitle": "selection-after-drag tasks: six tasks against the approved design, every reproduction seen to fail before its fix"
     }
