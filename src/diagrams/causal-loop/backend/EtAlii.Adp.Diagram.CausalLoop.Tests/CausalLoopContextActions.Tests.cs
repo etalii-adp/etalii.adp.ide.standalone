@@ -1,5 +1,6 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
+using EtAlii.Adp.Backend.Diagrams;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -25,6 +26,7 @@ public class CausalLoopContextActionsTests : IDisposable
     private readonly string _path;
     private readonly ServiceProvider _provider;
     private readonly CausalLoopDocumentStore _store = new();
+    private readonly IDiagramViewportRegistry _sessions = new DiagramViewportRegistry();
     private readonly CausalLoopContextActionProvider _actions;
 
     public CausalLoopContextActionsTests()
@@ -34,8 +36,15 @@ public class CausalLoopContextActionsTests : IDisposable
         _path = IoPath.Combine(_root, "feedback.cld");
         File.WriteAllText(_path, Corpus);
 
-        _provider = new ServiceCollection().AddCommands().AddCausalLoop().BuildServiceProvider();
-        _actions = new CausalLoopContextActionProvider(_store, _provider.GetRequiredService<IHistoryStackStore>());
+        _provider = new ServiceCollection()
+            .AddSingleton(_sessions)
+            .AddCommands()
+            .AddCausalLoop()
+            .BuildServiceProvider();
+        // The registry is the host's, registered by AddDiagrams rather than by this module, so
+        // these tests supply one directly rather than pulling in the whole diagram stack.
+        _actions = new CausalLoopContextActionProvider(
+            _store, _provider.GetRequiredService<IHistoryStackStore>(), _sessions);
     }
 
     public void Dispose()
@@ -94,15 +103,61 @@ public class CausalLoopContextActionsTests : IDisposable
     }
 
     [Fact]
-    public async Task APlacement_OffersANewVariable()
+    public async Task APlacement_OffersANewVariable_AndTheDiagramWideArrangement()
     {
         // Act.
         var actions = await Discover(CausalLoopSelection.PlacementFor(120, 240));
 
         // Assert.
-        Assert.Equal(
-            CausalLoopContextActionProvider.AddVariableActionId,
-            Assert.Single(actions).Id);
+        // With nothing selected the diagram itself is the subject, which is where a diagram-wide
+        // action belongs (Requirement 6.1). It is offered here and nowhere else.
+        Assert.Contains(actions, action => action.Id == CausalLoopContextActionProvider.AddVariableActionId);
+        Assert.True(
+            Assert.Single(actions, action => action.Id == CausalLoopContextActionProvider.ArrangeActionId).Available);
+
+        Assert.DoesNotContain(
+            await Discover("variable:population"),
+            action => action.Id == CausalLoopContextActionProvider.ArrangeActionId);
+    }
+
+    /// <summary>
+    /// Requirement 6.1 again, from the other side: the arrangement is something a user invokes,
+    /// so it is discovered as an action rather than happening when a document opens.
+    /// </summary>
+    [Fact]
+    public async Task TheArrangement_IsUnavailableWithItsReason_OnADiagramWithNothingToArrange()
+    {
+        // Arrange.
+        File.WriteAllText(_path, "causal-loop 1\r\nvariable alone \"Alone\"\r\n");
+        _store.Reload(_path);
+
+        // Act.
+        var arrange = Assert.Single(
+            await Discover(CausalLoopSelection.PlacementFor(0, 0)),
+            action => action.Id == CausalLoopContextActionProvider.ArrangeActionId);
+
+        // Assert.
+        Assert.False(arrange.Available);
+        Assert.Contains("two variables", arrange.UnavailableReason, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The arrangement needs the registration, which only the open session knows: a context
+    /// target carries the body it was opened for, and a body does not know which .adp registered
+    /// it. With no session on this connection the action says so rather than failing obscurely.
+    /// </summary>
+    [Fact]
+    public async Task TheArrangement_SaysSo_WhenTheDiagramIsNotOpenOnThisConnection()
+    {
+        // Act.
+        var result = await _actions.ExecuteAsync(
+            Target(CausalLoopSelection.PlacementFor(0, 0)),
+            CausalLoopContextActionProvider.ArrangeActionId,
+            TestContext.Current.CancellationToken);
+
+        // Assert.
+        var failed = Assert.IsType<ContextExecutionFailed>(result);
+        Assert.Contains("not open on this connection", failed.Message, StringComparison.Ordinal);
     }
 
     // ---- unavailable with a reason, never silently absent -----------------------------------

@@ -1,6 +1,7 @@
 using System.Globalization;
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
+using EtAlii.Adp.Backend.Diagrams;
 
 namespace EtAlii.Adp.Diagram.CausalLoop;
 
@@ -24,7 +25,9 @@ namespace EtAlii.Adp.Diagram.CausalLoop;
 /// </para>
 /// </remarks>
 public sealed class CausalLoopContextActionProvider(
-    ICausalLoopDocumentStore documents, IHistoryStackStore historyStacks) : IContextActionProvider
+    ICausalLoopDocumentStore documents,
+    IHistoryStackStore historyStacks,
+    IDiagramViewportRegistry sessions) : IContextActionProvider
 {
     /// <summary>Declare a new variable at the point the user asked for one.</summary>
     public const string AddVariableActionId = "causal-loop.add-variable";
@@ -59,6 +62,16 @@ public sealed class CausalLoopContextActionProvider(
     /// <summary>Withdraw a loop's claim. Its links survive.</summary>
     public const string RemoveLoopActionId = "causal-loop.remove-loop";
 
+    /// <summary>
+    /// Arrange the whole diagram with the self-organizing layout (Requirement 6.1).
+    /// </summary>
+    /// <remarks>
+    /// Diagram-wide, and offered where the diagram itself is the selection: on the canvas with
+    /// nothing picked. It is invoked, never automatic - a document opens with the ring layout and
+    /// stays where the author left it until somebody asks for this.
+    /// </remarks>
+    public const string ArrangeActionId = "causal-loop.arrange";
+
     /// <inheritdoc />
     public ContextScope Scope => ContextScope.DiagramElement;
 
@@ -82,8 +95,16 @@ public sealed class CausalLoopContextActionProvider(
 
         if (CausalLoopSelection.IsPlacement(target.ElementId))
         {
+            var arrangeable = entry.Model.Variables.Count > 1;
+
             return Groups([new ContextActionGroupDefinition(
-                [new ContextActionDefinition(AddVariableActionId, "Add variable…", "mdi-plus-circle-outline")])]);
+            [
+                new ContextActionDefinition(AddVariableActionId, "Add variable…", "mdi-plus-circle-outline"),
+                new ContextActionDefinition(
+                    ArrangeActionId, "Arrange diagram", "mdi-graph-outline", null,
+                    arrangeable,
+                    "There is nothing to arrange until this diagram has two variables."),
+            ])]);
         }
 
         if (CausalLoopSelection.VariableOf(target.ElementId) is { } variable)
@@ -131,6 +152,7 @@ public sealed class CausalLoopContextActionProvider(
                 "Rename loop", "mdi-rename-outline", "Name",
                 entry.Model.Loops.FirstOrDefault(loop => loop.Id == target.ElementId)?.Name ?? ""),
             RemoveVariableActionId => Confirm(entry.Model, target),
+            ArrangeActionId => ArrangeAsync(target, cancellationToken),
             _ => RunAsync(target, actionId, "", cancellationToken),
         };
     }
@@ -248,6 +270,28 @@ public sealed class CausalLoopContextActionProvider(
 
         var result = await historyStacks.Get(target.RootPath).ExecuteAsync(command, cancellationToken);
         return result.IsSuccess ? new ContextExecutionCompleted() : new ContextExecutionFailed(result.Error);
+    }
+
+    /// <summary>
+    /// Runs the arrangement on the session the reader has open.
+    /// </summary>
+    /// <remarks>
+    /// The session is where the registration path lives - a context target carries the body it
+    /// was opened for, and a body does not know which <c>.adp</c> registered it. Reaching the
+    /// session through the viewport registry is the seam a MoveElement already uses for exactly
+    /// this reason, so the arrangement travels the path a drag travels rather than a new one.
+    /// </remarks>
+    private async ValueTask<ContextExecutionResult> ArrangeAsync(
+        ContextTarget target, CancellationToken cancellationToken)
+    {
+        if (sessions.Find(target.WatchId, target.ResolvedFullPath) is not CausalLoopSession session)
+        {
+            return new ContextExecutionFailed(
+                "This diagram is not open on this connection, so there is nothing to arrange.");
+        }
+
+        var refusal = await session.ArrangeAsync(cancellationToken);
+        return refusal.Length == 0 ? new ContextExecutionCompleted() : new ContextExecutionFailed(refusal);
     }
 
     private static IReadOnlyList<ContextActionGroupDefinition> VariableActions(CausalLoopModel model, string variable)
