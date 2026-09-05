@@ -4,7 +4,7 @@ Step-by-step checks for bugs that only reproduce through the running app, so the
 re-executed as part of a manual verification pass. Each entry names the spec and task it
 came from. (See CLAUDE.md, "Bugs found during implementation or verification".)
 
-## Three things every entry below assumes
+## Four things every entry below assumes
 
 **Signing in.** The app opens on a sign-in form and nothing below is reachable until somebody is
 through it. An agent cannot type the credential, so **a person signs the tester in once and the
@@ -27,6 +27,26 @@ were normalised on 2026-09-05, keeping every date and sentence. **This is a conv
 guard**: a check asserting the wording would be a second copy of this paragraph and would need
 editing the next time an outcome is legitimately phrased differently. It is written here because
 this is the section everyone editing the file reads.
+
+**And do not build a script on the verdict word either.** The label is now one word; the verdict
+after it is not, and normalising those would mean rewriting other people's findings. Counting the
+blocked checks on 2026-09-05 turned up **four vocabularies** — `**passes**`, `pass -`,
+`**not run**` and `**pending**` — plus a `- **Result**:` with **no date at all** on four
+causal-loop entries, two of which are the *"Same reason as above"* inheritance that defines the
+blocked set. A pattern requiring a date silently drops exactly those. Two phrasings also exist for
+a check standing in meanwhile, `Covered meanwhile by X` and `What stands in meanwhile: X`, which
+is why that population has been reported as three when it is six. **Read the verdicts; do not
+match them.**
+
+**A "task complete" commit on `develop` does not mean the code is on `develop`.** Specification
+bookkeeping is committed to `develop` in the main checkout while the implementation stays in a
+worktree until it is gated and merged — both rules are right, and their intersection produces a
+log that truthfully describes work this build does not contain. On 2026-09-05 `develop` carried
+*"Marked developer-sign-in-bypass tasks 1 to 3 complete… the client opens already authenticated"*
+while the commits implementing it were on a branch, so the app still opened on the sign-in form.
+Anyone reading the log would conclude the blocked checks below had become runnable. **Check the
+implementation commit, not the bookkeeping one**: `git merge-base --is-ancestor <commit> develop`,
+or look for the type it introduces in `develop`'s sources.
 
 ## The context surface is reachable on a causal loop diagram (causal-loop-diagram, resolver fix)
 
