@@ -93,9 +93,34 @@ public static class AdpFileWriter
             // so explicitly or took File.WriteAllText's default, which is the same thing.
             File.WriteAllText(temporary, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
 
-            // The overwriting move is the whole difference from CreateAll: here the
+            // Replacing the destination is the whole difference from CreateAll: here the
             // destination existing is the expected case rather than the failure.
-            File.Move(temporary, path, overwrite: true);
+            //
+            // File.Replace, NOT File.Move(overwrite: true). The two look interchangeable and are
+            // not: a move-with-overwrite is denied while ANY handle is open on the destination,
+            // including one opened FileShare.ReadWrite | Delete - which is what
+            // SharedDocumentReader opens, and precisely the case this read/write pair exists to
+            // permit. Measured, because the failure modes are indistinguishable from outside:
+            //
+            //     holder shares         WriteAllText   Move(overwrite)   Replace
+            //     ReadWrite | Delete    OK             DENIED            OK
+            //     Read                  denied         DENIED            denied
+            //
+            // A save landing while a reader held the document therefore failed here and nowhere
+            // else, and rarely enough - about one concurrent run in twenty - to read as
+            // flakiness rather than as a defect. A reader sharing only Read still denies the
+            // replace and must: that reader has asked for the file not to change under it.
+            // AdpFileWriter.SharingContract.Tests pins both directions.
+            if (File.Exists(path))
+            {
+                File.Replace(temporary, path, destinationBackupFileName: null, ignoreMetadataErrors: true);
+            }
+            else
+            {
+                // Replace requires an existing destination. A first publish has none, and a
+                // plain move is right there because there is nothing to replace.
+                File.Move(temporary, path);
+            }
         }
         catch
         {
