@@ -65,6 +65,8 @@ Six worked instances and the reasoning: [processes.md, *Checking that a command 
 
 Commit any set of files added or removed under `.spec-workflow/` immediately, in its own commit — implementation logs included. Commit a document and its approval-lifecycle files when it is approved. **Approval comes from the dashboard and nowhere else: verbal approval is never accepted, from anyone.**
 
+**Do not amend a document under a pending card unless you are willing to ask the user to reject it.** The tool refuses to delete a pending approval, so an agent cannot clean up after itself: the card is left pointing at a snapshot that no longer matches the file, and only the user can break that by rejecting it. **Disclosure is not sufficient** — disclosing an amendment tells the user it happened; it does not restore the record.
+
 **Verdict snapshots arrive already staged and belong to nobody.** The dashboard writes them under `.spec-workflow/approvals/*/.snapshots/` when a card is answered, staged in the shared index — and any staged entry makes an in-place merge unsafe here, so they block whoever merges next. **Staged is the hazard; modified is somebody working.** Before merging, if `git diff --cached` is non-empty, commit **precisely those staged paths and nothing else**, in their own commit, whether or not they are yours. Never extend that to modified-but-unstaged files — sweeping those into your commit under your message is the exact failure that produced three misattributed commits in one day. If you raised the card, check for staged snapshots when its verdict lands.
 
 Full rules and reasoning: [processes.md, *Specification bookkeeping*](.spec-workflow/steering/processes.md#specification-bookkeeping).
