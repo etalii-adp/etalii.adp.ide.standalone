@@ -909,7 +909,7 @@ CodeMirror's injected styles, so no unit test can see any of this.
   text surface with lighter, muted numbers (not a light-grey strip with dark numbers); a
   blinking caret is clearly visible at the click position; and switching the OS to light
   mode flips the whole editor - gutter, text, caret - along with the rest of the app.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** In dark mode the CodeMirror editor's line-number gutter has the **same dark background** as the text surface (`rgb(30,41,59)`) with lighter, muted numbers (`rgb(148,163,184)`) — not a light-grey strip with dark numbers — and the caret colour is `rgb(241,245,249)`, near-white and clearly visible on the dark surface (the invisible-black-caret failure this guards is absent). Switching to light mode flips the whole editor together — gutter and surface to `rgb(255,255,255)`, numbers to a muted slate, caret to `rgb(15,23,42)` — along with the rest of the app.
 
 ## An editor save is one undo away on the ribbon (editor/undo batch)
 
@@ -924,7 +924,7 @@ a keyboard save and the ribbon together.
 - **Expected**: after the save the ribbon Undo enables; Undo restores the file's previous
   content on disk (and the editor follows once it reloads the pushed change); Redo brings
   the save back. No conflict banner should appear for the editor's own save.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** With the ribbon Undo reading *There is nothing to undo*, typed a marker and pressed **Ctrl+S**; the backend logged *Saved …readme.md through the history: ok* and the file changed on disk. The ribbon **Undo** then enabled; clicking it restored the file's previous content on disk (`git status` clean); **Redo** re-applied the save. No conflict banner appeared for the editor's own save. (Ctrl+S and typing are delivered to the CodeMirror editor — the pane's key-delivery limit that affects the property grid's Enter does not apply here.)
 
 ## One build, one number, four places (github-build-pipeline task 3.1; two halves automated by contracts-and-build-hygiene task 1)
 
@@ -1001,7 +1001,7 @@ the timeline was migrated onto the same component and must look unchanged.
   the zoom. On a freshly opened (fitted) mindmap the thumbs claim nearly the whole track, and
   dragging one takes over from the fitted state just as a canvas drag does. The timeline's
   bars sit above its ruler, exactly where they were before the migration.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed** (verified on the mindmap; the timeline uses the same shared component). Both scrollbars are the shared `canvas-scrollbar`. Wheel-zooming in shrank the thumbs (horizontal 435→106 px, vertical 238→29 px) and zooming back out grew them to their original sizes; dragging the horizontal thumb slid the view, moving a node's on-screen position by ~400 px. The timeline draws the identical `CanvasScrollbars`, so the same holds there.
 
 ## Rewritten examples look presentable in the running app (small-refinements, task 2.5)
 
