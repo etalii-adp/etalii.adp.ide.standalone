@@ -229,7 +229,7 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
         {
             case RenameTaskActionId when task is { } selected:
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Rename task", "mdi-pencil-outline", "Key", selected.Task.Key, "Rename"));
+                    "Rename task", "mdi-pencil-outline", "Key", selected.Task.Key, "Rename", target.ElementId));
 
             case SetRunIfActionId when task is { } selected:
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
@@ -312,7 +312,7 @@ public sealed class DatabricksContextActionProvider : IContextActionProvider
 
             case RenameBundleActionId when DatabricksSelection.IsBundle(target.ElementId):
                 return new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Rename bundle", "mdi-pencil-outline", "Name", entry.Bundle.Name, "Rename"));
+                    "Rename bundle", "mdi-pencil-outline", "Name", entry.Bundle.Name, "Rename", target.ElementId));
 
             case var _ when actionId.StartsWith(AddResourceActionPrefix, StringComparison.Ordinal):
                 return new ContextExecutionRequiresInput(new ContextInputRequest(

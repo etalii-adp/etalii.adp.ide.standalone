@@ -56,6 +56,41 @@ public class DatabricksContextActionProviderTests : IDisposable
     }
 
     [Fact]
+    public async Task OnlyTheTwoLabelPrompts_AreMarkedForInlineEditing()
+    {
+        // Arrange.
+        // Every prompt this provider can raise, asked together: a marker on the right action
+        // proves nothing if a neighbour has quietly acquired one.
+        //
+        // Rename-task asks for the task's Key and the canvas draws exactly that, so an
+        // identifier that happens to be the drawn text is still the drawn text. Rename-bundle
+        // qualifies for a reason that needs the mapper to see: the bundle element is packed
+        // with Key = bundle.Name, so `payload.key || payload.kind` renders the very value this
+        // prompt asks for. The fallback is an empty-state placeholder, not a second value.
+        //
+        // The rest ask for something that is not the drawn text: a run-if expression, a cluster
+        // key, or the name of a thing that does not exist yet.
+        var job = CopyFixture("job.yml");
+        var bundle = CopyFixture("bundle.yml");
+
+        // Act.
+        var renameTask = await _actions.ExecuteAsync(Target(job, "task:publish"), DatabricksContextActionProvider.RenameTaskActionId, TestContext.Current.CancellationToken);
+        var runIf = await _actions.ExecuteAsync(Target(job, "task:publish"), DatabricksContextActionProvider.SetRunIfActionId, TestContext.Current.CancellationToken);
+        var cluster = await _actions.ExecuteAsync(Target(job, "task:publish"), DatabricksContextActionProvider.AssignClusterActionId, TestContext.Current.CancellationToken);
+        var addTask = await _actions.ExecuteAsync(Target(job, "task:publish"), DatabricksContextActionProvider.AddTaskActionPrefix + "notebook", TestContext.Current.CancellationToken);
+        var renameBundle = await _actions.ExecuteAsync(Target(bundle, "bundle"), DatabricksContextActionProvider.RenameBundleActionId, TestContext.Current.CancellationToken);
+        var addResource = await _actions.ExecuteAsync(Target(bundle, "bundle"), DatabricksContextActionProvider.AddResourceActionPrefix + "job", TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal("task:publish", Assert.IsType<ContextExecutionRequiresInput>(renameTask).Request.InlineLabelElementId);
+        Assert.Equal("bundle", Assert.IsType<ContextExecutionRequiresInput>(renameBundle).Request.InlineLabelElementId);
+        Assert.Equal("", Assert.IsType<ContextExecutionRequiresInput>(runIf).Request.InlineLabelElementId);
+        Assert.Equal("", Assert.IsType<ContextExecutionRequiresInput>(cluster).Request.InlineLabelElementId);
+        Assert.Equal("", Assert.IsType<ContextExecutionRequiresInput>(addTask).Request.InlineLabelElementId);
+        Assert.Equal("", Assert.IsType<ContextExecutionRequiresInput>(addResource).Request.InlineLabelElementId);
+    }
+
+    [Fact]
     public async Task ATask_DiscoversItsMenu_IncludingPerEdgeDisconnectsAndTheSimulatedRun()
     {
         // Arrange.
