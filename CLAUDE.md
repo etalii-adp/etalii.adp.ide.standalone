@@ -105,6 +105,22 @@ Run `dotnet format style --verify-no-changes --severity info` (from `src/backend
 
 **Before merging a worktree back into `develop`, run that command and make it exit zero** — it is one of the four gates. A finding it reports is either code to fix or a rule to downgrade with a note; leaving it reported is not an option. Why, and the second tool that sees what this one does not: [processes.md, *Checking that the conventions are actually followed*](.spec-workflow/steering/processes.md#checking-that-the-conventions-are-actually-followed).
 
+## Folders and namespaces
+
+**A folder that should not contribute to the namespace is fixed in the project's `.DotSettings`, not by touching the namespace.** The namespace rules themselves are already right - do not "correct" a namespace to match a folder. What is wrong in that situation is the *folder*, which is still marked as a namespace provider, and Rider's way to say otherwise is a per-folder boolean in `<Project>.csproj.DotSettings`:
+
+```xml
+<s:Boolean x:Key="/Default/CodeInspection/NamespaceProvider/NamespaceFoldersToSkip/=commands/@EntryIndexedValue">True</s:Boolean>
+```
+
+That one line stops the `commands` folder being required to appear in the namespace, and clears every warning that followed from it.
+
+**The folder path in the key is escaped, and getting it wrong silently does nothing** - the entry parses, matches no folder, and the warnings stay. A path separator becomes `_005C` and an underscore becomes `_005F`, so `hierarchy\_model` is written `hierarchy_005C_005Fmodel`. Existing files show both shapes: `src/backend/EtAlii.Adp.Backend/EtAlii.Adp.Backend.csproj.DotSettings` has nine such entries, and every diagram module has its own.
+
+**Add the entry to the `.DotSettings` beside the `.csproj` that owns the folder**, keeping the file's existing shape - BOM, tab indentation, and the closing `</wpf:ResourceDictionary>` on the last entry's line.
+
+**Check the result with JetBrains' own command-line inspector rather than by eye** - `dotnet tool install -g JetBrains.ReSharper.GlobalTools`, then `jb inspectcode`. It is not installed in this repository and is not one of the four gates; `dotnet format` does not see these warnings at all, which is exactly why they accumulate unnoticed.
+
 ## Line endings
 
 **CRLF in the working tree, LF in the index, on every machine.** Two files say so and they must agree: `.gitattributes` at the repository root (`* text=auto eol=crlf`) and `src/.editorconfig` (`end_of_line = crlf` under `[*]`). Changing the house style means changing both, in one commit — an editor honouring one while git honours the other is how a repository starts rewriting whole files on alternate saves.
