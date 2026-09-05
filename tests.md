@@ -4,7 +4,7 @@ Step-by-step checks for bugs that only reproduce through the running app, so the
 re-executed as part of a manual verification pass. Each entry names the spec and task it
 came from. (See CLAUDE.md, "Bugs found during implementation or verification".)
 
-## Two things every entry below assumes
+## Three things every entry below assumes
 
 **Signing in.** The app opens on a sign-in form and nothing below is reachable until somebody is
 through it. An agent cannot type the credential, so **a person signs the tester in once and the
@@ -18,6 +18,15 @@ not fit — at 1440x900 that pane is 253px, which fits one tab, so `Properties` 
 **"1 more tabs" overflow button** beside `Toolbox`. That is the pane working as designed rather
 than a defect. Widening the pane or clicking the overflow both reach it; hunting for it is what
 costs the time, and it is written here once rather than in each of the thirteen.
+
+**One word for an outcome.** An outcome is recorded as `- **Result <date>**: **<verdict>** — ...`,
+one label, no synonyms. Ten entries here once said `**Verified <date>**` instead, and because every
+count anyone ran greps for `Result`, those ten read as *never run* for as long as they existed -
+which is how "ten entries have no outcome" was repeated all day when the true figure was zero. They
+were normalised on 2026-09-05, keeping every date and sentence. **This is a convention, not a
+guard**: a check asserting the wording would be a second copy of this paragraph and would need
+editing the next time an outcome is legitimately phrased differently. It is written here because
+this is the section everyone editing the file reads.
 
 ## The context surface is reachable on a causal loop diagram (causal-loop-diagram, resolver fix)
 
@@ -44,7 +53,7 @@ provider directly — skipping exactly the step that did not exist.
     `layout:` block into the `.adp`, leaves the `.cld` untouched, and **one** Undo restores the
     registration.
 
-**Verified in full on 2026-09-05**, against a running build. The menus, the selection and the
+Verified in full on 2026-09-05, against a running build. The menus, the selection and the
 ribbon first (`Selected .../on-call.cld ... as ContextMenu, with 1 action groups`), then the
 arrangement itself:
 
@@ -407,7 +416,8 @@ worktree name, and the longest project path needs the machine's long-path suppor
 - **Note**: a genuinely empty run does exit non-zero (5 for zero tests, 8 for a filter matching
   nothing), so any CI step must check the exit code rather than grepping the output for
   `failed`. Grepping alone reads a zero-test run as a pass.
-- **Verified 2026-09-03** in a 39-character worktree (`a-deliberately-long-worktree-name-x`,
+- **Result 2026-09-03**: **passes** —
+  verified in a 39-character worktree (`a-deliberately-long-worktree-name-x`,
   develop at 228721e7): full `dotnet test --solution` run, exit 0 with tests discovered and
   executed, and no `ADP0001`, `ADP0002` or `MSB3030` anywhere in the output.
 
@@ -550,14 +560,15 @@ clipping, and that is only visible on screen.
   whatever the pan's vertical component - while the month label slides horizontally by exactly
   the pan distance, staying over the time it names. A label panned out of the view disappears
   rather than piling up at the edge.
-- **Verified 2026-09-01** against the running app: ruler top identical before and after a pan
+- **Result 2026-09-01**: **passes** —
+  verified against the running app: ruler top identical before and after a pan
   with a 100px vertical component; "Mar 2026" slid exactly +80px for an 80px pan; "2026"
   disappeared once panned off-view.
 
 - **Result 2026-09-05**: **text reviewed against the implementation, no drift.** Not re-executed
   - the client dev server is down and the pass waits on `developer-sign-in-bypass`.
-  Reviewed in a sweep of the seven timeline entries, all of which carry a **Verified 2026-09-01**
-  outcome rather than a `Result` line - see the preamble.
+  Reviewed in a sweep of the seven timeline entries, whose 2026-09-01 outcomes were recorded
+  under the older `Verified` label and normalised on 2026-09-05 - see the preamble.
 
   `TimelineRuler.tsx` has not changed since `a68d0701` (2026-08-31), before the verification. The
   clause that could have drifted is *"a label panned out of the view disappears"*: the timeline
@@ -576,11 +587,12 @@ clipping, and that is only visible on screen.
   starting span, day labels ("Mar 12", "Mar 19") once weeks are visible, then years and
   multi-year steps ("2020", "2022", "2024") when zoomed far out. At no zoom level do labels
   overlap or disappear entirely.
-- **Verified 2026-09-01** against the running app across that whole range.
+- **Result 2026-09-01**: **passes** —
+  verified against the running app across that whole range.
 
 - **Result 2026-09-05**: **text reviewed against the implementation, no drift.** Not re-executed.
-  Reviewed in a sweep of the seven timeline entries, all of which carry a **Verified 2026-09-01**
-  outcome rather than a `Result` line - see the preamble.
+  Reviewed in a sweep of the seven timeline entries, whose 2026-09-01 outcomes were recorded
+  under the older `Verified` label and normalised on 2026-09-05 - see the preamble.
 
   `timelineTicks.ts` unchanged since `a68d0701` (2026-08-31). Same reasoning as the entry above:
   unit selection is a function of the visible span alone, so view filtering cannot empty the
@@ -596,13 +608,14 @@ clipping, and that is only visible on screen.
   and the hint shows the times and row the element would land on (for example
   "2026-01-31 · row 1"). Escape returns the element and its curves to where they started, and
   the file on disk is byte-for-byte untouched.
-- **Verified 2026-09-01** against the running app: the connection path changed mid-drag, the
+- **Result 2026-09-01**: **passes** —
+  verified against the running app: the connection path changed mid-drag, the
   hint read "2026-01-31 · row 1", Escape restored the original path, and the file still read
   `begin: 2026-01-05`.
 
 - **Result 2026-09-05**: **text reviewed against the implementation, no drift.** Not re-executed.
-  Reviewed in a sweep of the seven timeline entries, all of which carry a **Verified 2026-09-01**
-  outcome rather than a `Result` line - see the preamble.
+  Reviewed in a sweep of the seven timeline entries, whose 2026-09-01 outcomes were recorded
+  under the older `Verified` label and normalised on 2026-09-05 - see the preamble.
 
   `TimelineCanvas.tsx` **did** change after the verification - twice - so this one needed reading
   rather than assuming. `3bc98214` migrated it onto the shared scroll view and `58934ae1`
@@ -625,12 +638,13 @@ clipping, and that is only visible on screen.
 - **Expected**: a "New element" appears at the dropped time and row immediately - no dialog -
   and one undo removes it. Dropping never answers "That action is not available for this item"
   (the placement target must discover the add actions, or executing by id resolves nothing).
-- **Verified 2026-09-01** against the running app after fixing exactly that: a placement target
+- **Result 2026-09-01**: **passes** —
+  verified against the running app after fixing exactly that: a placement target
   that discovered no actions made every drop a no-op with that message.
 
 - **Result 2026-09-05**: **text reviewed against the implementation, no drift.** Not re-executed.
-  Reviewed in a sweep of the seven timeline entries, all of which carry a **Verified 2026-09-01**
-  outcome rather than a `Result` line - see the preamble.
+  Reviewed in a sweep of the seven timeline entries, whose 2026-09-01 outcomes were recorded
+  under the older `Verified` label and normalised on 2026-09-05 - see the preamble.
 
   Checked specifically because `58934ae1` altered the timeline's context actions the same day. It
   did not touch this path, and said so in terms: rename and relabel gained a target `ElementId`
@@ -647,12 +661,13 @@ clipping, and that is only visible on screen.
 - **Expected**: each removal happens and is one undo away. A relation-free Remove must act
   immediately - an execute that answers Completed without dispatching has done nothing, because
   the commit leg only runs after a dialog.
-- **Verified 2026-09-01** against the running app after fixing exactly that: menu-Remove on a
+- **Result 2026-09-01**: **passes** —
+  verified against the running app after fixing exactly that: menu-Remove on a
   relation-free element silently did nothing until the execute leg dispatched the command.
 
 - **Result 2026-09-05**: **text reviewed against the implementation, no drift.** Not re-executed.
-  Reviewed in a sweep of the seven timeline entries, all of which carry a **Verified 2026-09-01**
-  outcome rather than a `Result` line - see the preamble.
+  Reviewed in a sweep of the seven timeline entries, whose 2026-09-01 outcomes were recorded
+  under the older `Verified` label and normalised on 2026-09-05 - see the preamble.
 
   `TimelineContextActionProvider.cs` changed on 2026-09-05 (`58934ae1`), by four lines, all of
   them adding `target.ElementId` to rename and relabel. Removal is untouched, so the entry's
@@ -665,13 +680,14 @@ clipping, and that is only visible on screen.
 - **Actions**: drag from a side anchor and release over empty canvas.
 - **Expected**: a "New element" appears at the release point with a relation from the source to
   it - one history entry, one undo removing both. Releasing back on the source cancels quietly.
-- **Verified 2026-09-01** against the running app: elements 4→5 and relations 2→3 from one
+- **Result 2026-09-01**: **passes** —
+  verified against the running app: elements 4→5 and relations 2→3 from one
   gesture.
 
 - **Result 2026-09-05**: **drifted, mildly: the entry describes one of two anchors as though it
   were both.** Not re-executed.
-  Reviewed in a sweep of the seven timeline entries, all of which carry a **Verified 2026-09-01**
-  outcome rather than a `Result` line - see the preamble.
+  Reviewed in a sweep of the seven timeline entries, whose 2026-09-01 outcomes were recorded
+  under the older `Verified` label and normalised on 2026-09-05 - see the preamble.
 
   The entry says *"drag from a side anchor and release over empty canvas"* and expects *"a
   relation from the source to it"*. Since `1c92704c` that holds for one side only: a relation
@@ -695,13 +711,14 @@ clipping, and that is only visible on screen.
 - **Expected**: the right-drag pans exactly as a left-drag; Tab adds an element two days after
   the selected one on its row, Enter adds one below on the next row, neither asking anything;
   the thumbs pan the view within the content's extent.
-- **Verified 2026-09-01** against the running app (Tab and right-drag live; Enter and the
+- **Result 2026-09-01**: **passes** —
+  verified against the running app (Tab and right-drag live; Enter and the
   thumbs through the same handlers in the test suite).
 
 - **Result 2026-09-05**: **drifted twice, and the second one changes what the check means.** Not
   re-executed.
-  Reviewed in a sweep of the seven timeline entries, all of which carry a **Verified 2026-09-01**
-  outcome rather than a `Result` line - see the preamble.
+  Reviewed in a sweep of the seven timeline entries, whose 2026-09-01 outcomes were recorded
+  under the older `Verified` label and normalised on 2026-09-05 - see the preamble.
 
   **First: the component it was verified against no longer exists.** On 2026-09-03 `3bc98214`
   migrated the timeline onto the shared scroll view - `TimelineScrollbars` was **removed** and
@@ -886,7 +903,8 @@ release artifact can check end to end.
   rather than resolved from the default branch, and a mismatch now fails the run instead of
   passing silently. The decisive observation is still owed: the first push that races another.
   The ZIP name and login line for this release have not been checked by anyone yet.
-- **Verified end to end 2026-09-04**, against the first release this pipeline has ever
+- **Result 2026-09-04**: **passes** —
+  verified end to end, against the first release this pipeline has ever
   produced. The run went green on the Linux runner and tagged `v0.1.402-alpha` at commit
   `99796eba` - the commit that was pushed. The user downloaded the ZIP, ran
   `dotnet EtAlii.Adp.Backend.Service.dll` from it, and the line below the login panel read
@@ -1460,10 +1478,12 @@ reading: shapes carry kind, and the axioms are visible without opening the Turtl
   to their own folder. And the `.adp` is nested **under** `owl-time.ttl` in the explorer rather
   than beside it, so it takes two expands to reach.
 
-## Four diagram types tell you to open a diagram while one is open (found 2026-09-05, by text review)
+## One diagram type tells you to open a diagram while one is open (found 2026-09-05, by text review)
 
 **A defect found without running the application**, by checking an entry's text against the
-implementation rather than against a recorded result.
+implementation rather than against a recorded result. **Filed first as four diagram types; three of
+those were mine and wrong.** The correction is kept below rather than tidied away, because how it
+was wrong is the whole argument for the guard.
 
 `ToolboxPanel` distinguishes two empty states deliberately: `items === null` means *nothing is
 open* and renders "Open a diagram to see the elements its type offers", while `items.length === 0`
@@ -1471,34 +1491,41 @@ means *this type offers nothing* and renders "This diagram type offers no toolbo
 canvas that never registers an answer leaves `items` at `null`, so an open diagram wears the
 placeholder that says nothing is open.
 
-**Four mounted canvases never register**, so four diagram types show it:
+**`SparqlCanvas` (`w3c/sparql`) is the one canvas that never registers.** It calls
+`useRegisterDiagramView` at line 168 but never imports `useRegisterDiagramToolbox`, and it composes
+its own JSX rather than delegating to a component that might register for it. So it registered one
+half of a pair and missed the other. Observed in the running app with `proteome-location-of-gene`
+open, before the dev server went down.
 
-- `SparqlCanvas` — `w3c/sparql`
-- `BundleCanvas` — `databricks/bundle`
-- `JobCanvas` — `databricks/job`
-- `PipelineCanvas` — `databricks/pipeline`
+**The three false positives, and why they were plausible.** `BundleCanvas`, `JobCanvas` and
+`PipelineCanvas` contain no registration call. Each is a one-line wrapper returning
+`<DatabricksCanvas ... />`, and `DatabricksCanvas` registers the toolbox at line 117 and the view
+at 216. **They register through composition.** I had the evidence and drew the opposite conclusion
+from it - my own filing said *"DatabricksCanvas registers but is not the component register.ts
+mounts"*, which is true and answers the wrong question. The Scrum master caught it after Architect
+1 hit the same trap from the other direction while measuring view registration.
 
-All four are live: each is the `Canvas` its module's `register.ts` mounts. Fourteen other canvases
-call `useRegisterDiagramToolbox` and are correct. (`DatabricksCanvas.tsx` registers but is not the
-component `register.ts` mounts, which is worth a look when this is fixed.)
+**This is exactly why the guard cannot be a grep.** A check that searches a canvas's source for the
+hook reports those three databricks files as offenders immediately and permanently, because
+registration through composition is invisible to text. The check has to **mount each registered
+canvas and observe the registry**, which is the mechanism Architect 1 has written into
+`fit-to-view-extent` as the load-bearing decision for the view-controls guard; the toolbox guard is
+the same shape and should share it.
 
-**This is a known shape, already fixed once.** The ansible entry above records it in its own
-words: *"Unregistered, an open structure diagram wears the misleading 'Open a diagram' placeholder
-— the same defect the wardley and pipeline canvases had."* Three canvases were fixed then; four
-were missed, and nothing guards the rule.
+**And a guard is still the right answer for one defect rather than four.** The ansible entry above
+records this same shape found and fixed once - *"the same defect the wardley and pipeline canvases
+had"* - with three canvases repaired and nothing left behind to catch the next one. `sparql` is the
+next one. (Note the name collision when reading that sentence: azure-pipeline and databricks both
+have a `PipelineCanvas`, and it is the azure-pipeline one that was repaired then.)
 
-- **Preconditions**: backend + client running; a project containing a `.rq` and a databricks
-  bundle.
-- **Actions**: open a sparql query diagram and look at the Toolbox panel. Repeat for a databricks
-  bundle, job and pipeline.
+- **Preconditions**: backend + client running; a project containing a `.rq`.
+- **Actions**: open a sparql query diagram and look at the Toolbox panel.
 - **Expected**: "This diagram type offers no toolbox elements", the state that describes what is
   true. **Observed**: "Open a diagram to see the elements its type offers", while one is open.
 
-- **Result 2026-09-05**: **open.** Confirmed in the running app for sparql; established from the
-  source for the other three. Not fixed here — the Tester found it, and the canvases belong to
-  whoever holds their specifications. **Worth a guard rather than four fixes**: a test asserting
-  every mounted canvas registers a toolbox answer would have caught all four, and would catch the
-  fifth.
+- **Result 2026-09-05**: **open, one canvas.** Confirmed in the running app for sparql. Not fixed
+  here - the Tester found it, and the canvas belongs to whoever holds its specification. The case
+  for a mounting guard has gone to Architect 2 for `diagram-module-conformance`.
 
 ## Fit to View shows less of a viewport-filtered diagram than the reader already had (view-delta-adoption, found 2026-09-05)
 
