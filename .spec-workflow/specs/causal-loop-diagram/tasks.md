@@ -169,13 +169,13 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer executing the vendoring discipline | Task: Ship examples, preferring a verifiable permissive source and otherwise authoring them under the honest-fallback rule | Restrictions: the four recorded rejections are not revisited for convenience; an authored example is labelled as authored and never attributed to an unlicensed source | Success: examples open with no setup and one demonstrates the label disagreement. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 5.2 The catalog row
+- [x] 5.2 The catalog row
   - Files: `docs/diagrams.md`
   - A row for the causal loop diagram, which the catalog has none of today, with the state icon matching its real state and the origin tag `systems/causal-loop-diagram`
   - _Requirements: 12.1, 12.2, 12.3_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Developer | Task: Add the catalog row with its state icon and origin tag | Restrictions: edit in place; the origin is `systems/causal-loop-diagram` exactly | Success: the row is present and the catalog coherence test passes. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5.3 Final gate, merge, retire, manual pass
+- [-] 5.3 Final gate, merge, retire, manual pass
   - The four gates with exit codes checked; merge through a scratch worktree; retire it, reporting a removal failure rather than forcing it; add the design's three `tests.md` entries and run them against the running app
   - _Requirements: (gate + the manual halves of 2, 3 and 6)_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer | Task: Run all four gates, merge, retire the worktree, and execute the manual pass | Restrictions: do not merge on a failing gate; report worktree-removal failures rather than forcing them | Success: gates green, merged, worktree retired, manual pass recorded. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
