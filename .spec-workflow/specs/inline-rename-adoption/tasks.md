@@ -50,7 +50,7 @@ One worktree for the whole spec: `.claude/worktrees/adopt` — short, because th
   - _Requirements: 1.1, 1.3, 1.6, 3.4, 4.1, 6.1, 8.1, 8.2, 9.2_
   - _Prompt: Implement the task for spec inline-rename-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer | Task: Adopt inline rename for databricks elements, marking rename-task and - only if its value is the drawn text - rename-bundle | Restrictions: connections out of scope, recorded as pending not excluded; verify the bundle label before marking rather than assuming symmetry with the task label | _Leverage: the task 2 and 3 adopters; BoxElement's centred label | Success: contrast test covers every input action, the drawn label changes inline, gates green. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5. azure-pipeline adopts — and gains the F2 it never had
+- [-] 5. azure-pipeline adopts — and gains the F2 it never had
   - Files: `src/diagrams/azure-pipeline/backend/EtAlii.Adp.Diagram.AzurePipeline/PipelineContextActionProvider.cs` and its test, `src/diagrams/azure-pipeline/client/PipelineCanvas.tsx` and its test
   - Elements are already selectable; **`F2` is not forwarded**, so add it through the existing `structuralShortcutFor` seam with no key-to-action table on the client. That is the whole prerequisite, and it is small.
   - Mark `azure-pipeline.rename`, which asks for the display name. The add actions and `ToggleEnabledActionId` are not marked.
