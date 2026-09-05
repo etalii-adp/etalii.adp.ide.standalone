@@ -1,6 +1,10 @@
 using Grpc.Core;
 using Grpc.Core.Interceptors;
 using Serilog;
+#if DEBUG
+using EtAlii.Adp.Backend.Authentication;
+using Microsoft.Extensions.Options;
+#endif
 
 namespace EtAlii.Adp.Backend.Sessions;
 
@@ -16,10 +20,25 @@ public sealed class SessionInterceptor : Interceptor
     private static readonly ILogger _logger = Log.ForContext<SessionInterceptor>();
 
     private readonly ISessionStore _sessionStore;
+#if DEBUG
+    private readonly LocalAuthenticatorOptions _localAuthenticator;
+#endif
 
-    public SessionInterceptor(ISessionStore sessionStore)
+    public SessionInterceptor(
+        ISessionStore sessionStore
+#if DEBUG
+        ,
+        // Optional so the existing tests that construct an interceptor with a store alone keep
+        // compiling and keep meaning what they meant; absent, the bypass is not disabled, which
+        // is its ordinary Debug state.
+        IOptions<LocalAuthenticatorOptions>? localAuthenticator = null
+#endif
+        )
     {
         _sessionStore = sessionStore;
+#if DEBUG
+        _localAuthenticator = localAuthenticator?.Value ?? new LocalAuthenticatorOptions();
+#endif
     }
 
     public override Task<TResponse> UnaryServerHandler<TRequest, TResponse>(
@@ -51,12 +70,29 @@ public sealed class SessionInterceptor : Interceptor
         return continuation(request, responseStream, context);
     }
 
-    private static bool IsExempt(string method) =>
+    /// <summary>Whether a call may proceed without a session token at all.</summary>
+    /// <remarks>
+    /// Internal rather than private so the tests can ask it directly: whether a route is
+    /// reachable without a credential is the single most consequential line in this file, and
+    /// it deserves to be asserted rather than inferred from a call that happened to succeed.
+    /// </remarks>
+    internal bool IsExempt(string method) =>
         // Login is how a token is first obtained; DescribeProduct is how the login page names
         // the product version before any session exists - a version is not a secret, and the
         // page that shows it renders before anyone can log in (github-build-pipeline R3.2).
         method.EndsWith("/Login", StringComparison.Ordinal)
-        || method.EndsWith("/DescribeProduct", StringComparison.Ordinal);
+        || method.EndsWith("/DescribeProduct", StringComparison.Ordinal)
+#if DEBUG
+        // The developer sign-in bypass (developer-sign-in-bypass Requirement 2.1). This entry
+        // and the handler it exempts are the whole of the bypass, and each sits inside a
+        // #if DEBUG in its own file so that neither can survive into a release without the
+        // other. The configuration check is repeated here rather than left to the handler:
+        // turning the bypass off should close the route, not merely make the route answer
+        // nothing.
+        || (!_localAuthenticator.DeveloperSessionDisabled
+            && method.EndsWith("/DeveloperSession", StringComparison.Ordinal))
+#endif
+        ;
 
     private void EnsureAuthenticatedUnlessExempt(ServerCallContext context)
     {

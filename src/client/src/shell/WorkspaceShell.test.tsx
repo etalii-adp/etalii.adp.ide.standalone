@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { AuthProvider } from "../auth/AuthContext";
 import { WorkspaceShell } from "./WorkspaceShell";
@@ -9,18 +9,26 @@ import { WorkspaceShell } from "./WorkspaceShell";
 // Its ListEntries/WatchHierarchy calls will fail with no real backend behind
 // this test's transport; ExplorerTreePanel catches that into its own error
 // state rather than throwing, so it doesn't affect these structural assertions.
-function renderShell(props: Partial<ComponentProps<typeof WorkspaceShell>> = {}) {
-  return render(
+// AuthProvider asks once, on mount, whether this build hands out a session without anyone
+// signing in (developer-sign-in-bypass Requirement 1.1), and renders nothing until the answer
+// arrives - otherwise the sign-in form would show for a frame. So the shell exists only after
+// that settles, and these renders await it.
+async function renderShell(props: Partial<ComponentProps<typeof WorkspaceShell>> = {}) {
+  const result = render(
     <AuthProvider>
       <WorkspaceShell projectId={new Uint8Array(16)} projectName="Test Project" onBack={() => {}} {...props} />
     </AuthProvider>,
   );
+  await act(async () => {
+    await Promise.resolve();
+  });
+  return result;
 }
 
 describe("WorkspaceShell", () => {
-  it("renders the default pane/tab arrangement, with Toolbox and Properties in the rightmost column", () => {
+  it("renders the default pane/tab arrangement, with Toolbox and Properties in the rightmost column", async () => {
     // Arrange.
-    renderShell();
+    await renderShell();
 
     // Arrange, continued.
     const tabLists = screen.getAllByRole("tablist");
@@ -46,17 +54,17 @@ describe("WorkspaceShell", () => {
     expect(screen.getByText("Double-click a diagram in the explorer to open it here.")).toBeTruthy();
   });
 
-  it("displays the project name", () => {
+  it("displays the project name", async () => {
     // Arrange and act.
-    renderShell();
+    await renderShell();
     // Assert.
     expect(screen.getByText("Test Project")).toBeTruthy();
   });
 
-  it("calls onBack when the back affordance is used", () => {
+  it("calls onBack when the back affordance is used", async () => {
     // Arrange.
     const onBack = vi.fn();
-    renderShell({ onBack });
+    await renderShell({ onBack });
 
     // Act.
     fireEvent.click(screen.getByText(/Back to projects/));
