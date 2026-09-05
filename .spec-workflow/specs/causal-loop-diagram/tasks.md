@@ -127,7 +127,7 @@ A note on guards, since the question will come up: this specification has **no l
 - [ ] 4. Meyer's method, with the randomness removed
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8_
 
-- [-] 4.1 The self-organizing pass, made deterministic
+- [x] 4.1 The self-organizing pass, made deterministic
   - Files: `SelfOrganizingLayout.cs`
   - Meyer's self-organizing graphs — competitive learning from Kohonen's map with the neighbourhood measured in **graph** distance, which is what makes it a graph layout rather than a clustering
   - The three sources of randomness are replaced one for one: initial positions from a phyllotaxis spiral in the document's stable order; stimuli from a fixed-length low-discrepancy sequence computed from the iteration index; tie-breaking by the stable document order. A fixed iteration count, and a learning-rate and radius schedule that is a function of the iteration index alone. No wall-clock, no random source, no settling animation
@@ -137,7 +137,7 @@ A note on guards, since the question will come up: this specification has **no l
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
   - _Prompt: Implement the task for spec causal-loop-diagram, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer implementing a neural layout | Task: Implement Meyer's self-organizing graph layout with every source of randomness replaced by a function of the document and the iteration index | Restrictions: no RNG, no wall-clock, no animation-to-rest; invoked as an action, never on open; behind the drawn-element budget | _Leverage: layout-modes' Cloud requirement, which answers the same three grounds | Success: the same document laid out in two different processes gives identical positions. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4.2 The separation pass, and the honest refusal
+- [-] 4.2 The separation pass, and the honest refusal
   - Files: `SelfOrganizingLayout.cs` (second phase)
   - **A converged self-organizing map does not guarantee non-overlap and the requirement does.** A bounded deterministic separation pass pushes overlapping boxes apart in stable order for a fixed number of rounds
   - If overlaps survive the rounds, the action **refuses for that document and reports the size at which it failed**. That is the correct outcome, not a failure of nerve, and not grounds for relaxing the overlap rule
