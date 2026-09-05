@@ -713,9 +713,16 @@ clipping, and that is only visible on screen.
 ## A relation dragged onto empty space creates the element it reaches (timeline-diagram, tview pass)
 
 - **Preconditions**: as above; an element selected so its anchors show.
-- **Actions**: drag from a side anchor and release over empty canvas.
-- **Expected**: a "New element" appears at the release point with a relation from the source to
-  it - one history entry, one undo removing both. Releasing back on the source cancels quietly.
+- **Actions**: do this twice, once from each side anchor - **the two anchors are not symmetric**
+  and the direction is the thing under test. Drag from the **END** anchor and release over empty
+  canvas; then, on a fresh element, drag from the **BEGIN** anchor and release over empty canvas.
+- **Expected**: each time a "New element" appears at the release point, joined by one relation -
+  one history entry, one undo removing both. Releasing back on the source cancels quietly.
+  **The direction differs by anchor, and both are correct:**
+  - From the **END** anchor, the relation runs **from the dragged element to the new one**.
+  - From the **BEGIN** anchor it arrives **reversed**: the new element becomes the relation's
+    **source**, pointing into the dragged element's start (`1c92704c`). Reading this as a wrong
+    direction is the mistake this wording exists to prevent - it is the feature.
 - **Result 2026-09-01**: **passes** —
   verified against the running app: elements 4→5 and relations 2→3 from one
   gesture.
@@ -741,12 +748,22 @@ clipping, and that is only visible on screen.
 
 ## Right-drag pans; Tab and Enter add; scrollbars pan (timeline-diagram, tview pass)
 
-- **Preconditions**: as above.
+- **Preconditions**: as above. The scrollbars are the shared `CanvasScrollbars` since
+  `3bc98214`; `TimelineScrollbars` was removed that day and no longer exists to look for.
 - **Actions**: right-press empty canvas and drag (no browser menu may appear); select an
-  element and press Tab, then Enter; drag each scrollbar thumb.
+  element and press Tab, then Enter; drag each scrollbar thumb, including all the way into the
+  margin past the content.
 - **Expected**: the right-drag pans exactly as a left-drag; Tab adds an element two days after
   the selected one on its row, Enter adds one below on the next row, neither asking anything;
-  the thumbs pan the view within the content's extent.
+  the thumbs pan the view.
+  **What the thumb's size means, since view-delta-adoption task 5 (`337938aa`):** the extent it
+  describes is **what has been delivered so far, plus a margin** - half the span horizontally,
+  two rows vertically - not the whole document. `scrollAxesOf` measures `model.elements`, which
+  is the subset the session has sent for the reported viewport. So **panning to the end of the
+  thumb and finding yet more timeline appear is correct**, not a defect: the drag reports a new
+  view, the deltas arrive, and the extent grows. Do not use the thumb's size to judge how much
+  timeline exists. This is the opposite of the `Fit to View` defect recorded below, where the
+  delivered set collapsed inward instead - the two look alike from the outside.
 - **Result 2026-09-01**: **passes** —
   verified against the running app (Tab and right-drag live; Enter and the
   thumbs through the same handlers in the test suite).
