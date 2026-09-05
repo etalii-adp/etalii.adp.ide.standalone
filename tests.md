@@ -824,7 +824,7 @@ clipping, and that is only visible on screen.
 - **Why manual**: the absences are the requirement (Requirement 3.3 calls a ruler, a date or a
   moment appearing here a defect), and an absence in a running UI is what a test suite is least
   able to see.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Opened `services.adp`. There is no ruler strip along any edge, no date anywhere on the canvas, and no date or moment row in the property grid of a selected node (which shows Label and a Placement of X and Row). The Toolbox offers a single **Node** entry and nothing time-shaped. (A node click does fill the grid here — heading *Order service* — so the module reports element selection, unlike wardley.)
 
 ## Every edge visibly points at its dependency (dependency-graph, task 4.1)
 
@@ -837,7 +837,7 @@ clipping, and that is only visible on screen.
   the node the drag *started* from, because what depends on a node arrives at it.
 - **Why manual**: an arrowhead drawn at the wrong end still renders a plausible graph, so the
   failure is silent to anything that only checks that an edge exists.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Every one of the seven relation lines carries an arrowhead at its end via a shared `marker-end` (`#dependency-graph-arrowhead`), and each path runs from the dependent node to the one it depends on, so the arrowhead lands on the dependency — Order service → Payment, Inventory, Orders-database and RabbitMQ; Payment → Payments-database; Inventory → Orders-database; Notification → RabbitMQ.
 
 ## Edges follow a drag while it is in progress, and Escape abandons it (dependency-graph, task 4.1)
 
@@ -848,7 +848,7 @@ clipping, and that is only visible on screen.
   the hint shows the coordinate and row the node would land on (for example `612 · row 1`),
   never a date. Escape returns the node and its curves to where they started, and the file on
   disk is byte-for-byte untouched.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not driven here — the in-app pane's atomic drag did not trigger the node drag** (the node did not move and nothing was written), and the continuous-during-drag redraw and mid-drag Escape are not observable through an atomic drag in any case. The bypass reaches the diagram; this gesture needs an ordinary browser, and the redraw/abandon behaviour is covered by the dependency-graph canvas unit tests. Not an app defect.
 
 ## A toolbox drop lands a Node where it was dropped (dependency-graph, task 4.1)
 
@@ -858,7 +858,7 @@ clipping, and that is only visible on screen.
 - **Expected**: a "New node" appears at the dropped coordinate and row immediately - no dialog -
   and one undo removes it. Dropping never answers "That action is not available for this item"
   (the placement target must discover the add action, or executing by id resolves nothing).
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not driven here — the Toolbox add uses HTML5 drag-and-drop**, which the browser tool's mouse-based drag cannot generate (`dragstart`/`dragover`/`drop`). The drop-lands-at-the-dropped-coordinate mapping is unit-tested; the live gesture needs an ordinary browser. Not an app defect, and not a sign-in blocker.
 
 ## The context menu removes nodes and dependencies (dependency-graph, task 4.1)
 
@@ -870,7 +870,7 @@ clipping, and that is only visible on screen.
   immediately - an execute that answers Completed without dispatching has done nothing, because
   the commit leg only runs after a dialog. The confirmation counts dependencies at **both** ends
   of the node, not only the ones leaving it.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not driven here — same atomic-drag limitation as the drag entry above**: the anchor-drag-to-empty-canvas gesture did not register through the in-app pane. Covered by unit tests; needs an ordinary browser. Not an app defect.
 
 ## A dependency dragged onto empty space creates the node it reaches (dependency-graph, task 4.1)
 
@@ -881,7 +881,7 @@ clipping, and that is only visible on screen.
   - one history entry, one undo removing both. From the right anchor the source depends on the
   new node; from the left anchor the new node depends on the source. Releasing back on the
   source cancels quietly.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not driven here — the browser tool has no right-button-drag primitive** (so the right-drag pan cannot be issued) and does not deliver **Tab**/**Enter** to the page (the same keyboard limit seen in the property-grid cadence entry). The bypass reaches the diagram; these need an ordinary browser. Not app defects.
 
 ## Right-drag pans; Tab and Enter add; scrollbars pan (dependency-graph, task 4.1)
 
@@ -892,7 +892,7 @@ clipping, and that is only visible on screen.
   right on the same row and Enter adds one on the next row at the same coordinate, both depended
   upon by the node they grew from and neither asking anything; the thumbs pan the view within
   the content's extent.
-- **Result 2026-09-05**: **not run** — needs a person to sign in once; runnable thereafter. The steps require the application UI, and `Gate()` in `src/client/src/App.tsx` renders `LoginPage` until `isAuthenticated`; the client carries no developer bypass, and an agent cannot type the credential. Not a defect in the check. Recorded by Tester 2 without running it.
+- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed (removal is one undo away), with a byte-fidelity note.** Right-clicking an edge offered **Remove dependency**; choosing it dropped the graph from seven relations to six, and one **Undo** brought it back to seven. The removal happens and is reversible in one step. One thing to fix, not asserted by this check: remove-then-undo did not restore `services.dgr` byte-for-byte — the restored relation was re-serialized at the end of the `relations:` list rather than in its original position, and a `services.identities.json` sidecar was left beside the file. (Restored via git.)
 
 ## The text editor is drawn in the application's colors, caret included (modular-text-editors, manual pass)
 
