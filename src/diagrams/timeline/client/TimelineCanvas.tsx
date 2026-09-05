@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { facingAnchorsBetween, horizontalBezierPath, sideAnchorOf, type ConnectorBox } from "@client/canvas/connectors";
 import { InteractiveBezierConnection } from "@client/canvas/connections/interactive-bezier/InteractiveBezierConnection";
+import { InlineLabelEditor } from "@client/canvas/label/InlineLabelEditor";
+import { asideLabelPlacement, centredLabelPlacement, midpointLabelPlacement } from "@client/canvas/label/labelPlacement";
+import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
+import { useRegisterInlineLabelPlacement, type LabelPlacement } from "@client/shell/panels/InlineLabelPlacementContext";
 import { SpanElement, type SpanElementClasses } from "@client/canvas/elements/span/SpanElement";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
 import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
-import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { ContextMenu } from "@client/shell/context/ContextMenu";
 import { toMenuGroups } from "@client/shell/context/toMenuGroups";
 import { TOOLBOX_DRAG_TYPE } from "@client/shell/panels/DiagramToolboxContext";
@@ -36,6 +40,10 @@ const ELEMENT_HEIGHT = 36;
 
 /** A moment's marker radius. */
 const MOMENT_RADIUS = 9;
+/** SpanElement puts an instant's label this far past its diamond, start-anchored. */
+const MOMENT_LABEL_GAP = 6;
+/** InteractiveBezierConnection's own label offset, above the curve's midpoint. */
+const CONNECTION_LABEL_DY = -6;
 
 const DAY = 86400;
 
@@ -310,7 +318,73 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
   const secondsToPx = (seconds: number): number => (seconds - view.startSeconds) / view.secondsPerPixel;
   const yToPx = (y: number): number => (y - view.panY) * view.verticalScale;
 
+  // Where an element's label, or a connection's, is drawn - for the shell's inline editor.
+  //
+  // Memoized on the model AND the view, unlike the adopters whose canvases carry a viewBox.
+  // This surface has none: it positions everything in pixels through secondsToPx and yToPx,
+  // so a pan or a zoom moves every label without changing the model. A resolver memoized on
+  // the model alone would keep answering with the pixels of a view the reader has left.
+  const placementOfLabel = useCallback(
+    (elementId: string): LabelPlacement | null => {
+      const element = model.elements.get(elementId);
+      if (element !== undefined) {
+        const box = boxFor(element, null, null, secondsToPx, yToPx, view.secondsPerPixel, view.verticalScale);
+
+        // A span's label is centred in its box; an instant's sits beside its diamond, because
+        // there is no box to put it in. SpanElement draws them differently and so must this -
+        // a centred editor on an instant would open over the marker rather than over the text.
+        return element.isPeriod
+          ? centredLabelPlacement(box, element.label)
+          : asideLabelPlacement({ x: box.x, y: box.y }, MOMENT_RADIUS + MOMENT_LABEL_GAP, element.label);
+      }
+
+      const connection = model.connections.get(elementId);
+      if (connection === undefined) {
+        return null;
+      }
+
+      const fromElement = model.elements.get(connection.fromElementId);
+      const toElement = model.elements.get(connection.toElementId);
+      if (fromElement === undefined || toElement === undefined) {
+        return null; // a dangling connection is drawn nowhere, so it can be placed nowhere
+      }
+
+      const from = boxFor(fromElement, null, null, secondsToPx, yToPx, view.secondsPerPixel, view.verticalScale);
+      const to = boxFor(toElement, null, null, secondsToPx, yToPx, view.secondsPerPixel, view.verticalScale);
+      // The same two anchors InteractiveBezierConnection picks, loop and all: it draws the
+      // label at their midpoint, so a resolver using a different pair would place the
+      // editor somewhere the text is not.
+      const loopsBack = toElement.x < endSecondsOf(fromElement);
+      const [start, end] = loopsBack
+        ? [sideAnchorOf(from, "right"), sideAnchorOf(to, "left")]
+        : facingAnchorsBetween(from, to);
+      return midpointLabelPlacement(start, end, CONNECTION_LABEL_DY, connection.label);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- secondsToPx and yToPx are
+    // recreated every render and are pure functions of view, which is in the list.
+    [model, view],
+  );
+  useRegisterInlineLabelPlacement(placementOfLabel);
+
+  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
+  const editingId = inlineLabelElementIdOf(prompt);
+  const editingPlacement = editingId === null ? null : placementOfLabel(editingId);
+
+  /**
+   * Ends an open inline edit before a gesture that moves the canvas begins. Taking the focus is
+   * the whole mechanism: the editor commits on blur, so the commit rule stays in one place
+   * rather than being reimplemented per gesture.
+   */
+  const returnFocusToSurface = useCallback(() => surfaceRef.current?.focus(), []);
+
+  const endInlineEditBeforeGesture = () => {
+    if (editingPlacement !== null) {
+      surfaceRef.current?.focus();
+    }
+  };
+
   const onSurfacePointerDown = (event: React.MouseEvent) => {
+    endInlineEditBeforeGesture();
     // "Empty space" is the surface div OR the bare svg that fills it. A real click never lands
     // on the div itself - the svg covers it - so a target===currentTarget check silently
     // disabled panning for every real mouse, while the synthetic events that verified it
@@ -334,6 +408,7 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
 
   const onElementPointerDown = (event: React.MouseEvent, element: TimelineElement) => {
     event.stopPropagation();
+    endInlineEditBeforeGesture();
     setRejection("");
     dragRef.current = {
       id: element.id,
@@ -653,6 +728,19 @@ export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps)
           })}
 
           {connect ? <PendingConnection boxes={boxes} connect={connect} secondsToPx={secondsToPx} yToPx={yToPx} /> : null}
+
+          {/* Last of all, so the editor is above every span and connection it overlaps. This
+              surface carries no viewBox, so its placements are pixels rather than module
+              units - which the editor neither knows nor needs to. */}
+          {editingPlacement !== null && (
+            <InlineLabelEditor
+              placement={editingPlacement}
+              onPropose={onProposeLabel}
+              onSubmit={onSubmitLabel}
+              onCancel={onCancelLabel}
+              onReturnFocus={returnFocusToSurface}
+            />
+          )}
 
           {[...model.elements.values()].map((element) => (
             <TimelineElementShape

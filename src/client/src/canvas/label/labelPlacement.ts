@@ -34,7 +34,7 @@ export interface LabelPoint {
  */
 const ESTIMATED_CHAR_WIDTH = 7;
 const MINIMUM_ESTIMATED_WIDTH = 80;
-const CONNECTION_LABEL_HEIGHT = 16;
+const TEXT_LABEL_HEIGHT = 16;
 
 /**
  * A label filling its element's box: the editor covers exactly what the element draws. For a
@@ -96,9 +96,41 @@ export function midpointLabelPlacement(
 
   return {
     x: middle.x - width / 2,
-    y: middle.y + dy - CONNECTION_LABEL_HEIGHT,
+    y: middle.y + dy - TEXT_LABEL_HEIGHT,
     width,
-    height: CONNECTION_LABEL_HEIGHT,
+    height: TEXT_LABEL_HEIGHT,
+    text,
+  };
+}
+
+/**
+ * A label drawn BESIDE a point marker rather than inside a box: start-anchored, a fixed gap to
+ * the right of the marker's centre, and vertically centred on it.
+ *
+ * This is the fourth shape, and it exists because a canvas drawing both spans and instants
+ * draws their labels differently: a span's label is centred in its box, an instant's sits
+ * outside the marker because there is no box to put it in. Centring an editor on the marker
+ * would open it over the marker rather than over the text it replaces.
+ *
+ * <paramref name="gap"/> is measured from the marker's CENTRE, so a caller passes its radius
+ * plus whatever spacing it draws - the same sum it already gives its text element's x.
+ *
+ * Width follows the same rule as a connection label: the caller's measured width where it has
+ * one, the per-character estimate otherwise, and jsdom takes the estimate branch always.
+ */
+export function asideLabelPlacement(
+  at: LabelPoint,
+  gap: number,
+  text: string,
+  measuredWidth: number | null = null,
+): LabelPlacement {
+  const width = measuredWidth ?? Math.max(text.length * ESTIMATED_CHAR_WIDTH, MINIMUM_ESTIMATED_WIDTH);
+
+  return {
+    x: at.x + gap,
+    y: at.y - TEXT_LABEL_HEIGHT / 2,
+    width,
+    height: TEXT_LABEL_HEIGHT,
     text,
   };
 }
