@@ -731,11 +731,22 @@ public sealed class HierarchyModel
 
     private void RenumberPath(ShortGuid id, string oldPath, string newPath)
     {
-        foreach (var childId in _entriesById.Values.Where(e => e.ParentId == id).Select(e => e.Id).ToList())
+        // Only a FOLDER carries its children's paths with it. A file's model children are its
+        // nested registrations, which live BESIDE it in the same directory - their files do
+        // not move when their subject is renamed, so rewriting their paths as if they sat
+        // under it corrupts them into paths under a file. That corruption fired on every
+        // save, because AdpFileWriter publishes by moving a scratch file onto the
+        // destination and the watcher reports the swap as renames of the subject - after
+        // which the registrations were invisible to every sibling computation, could never
+        // re-nest, and reached the client flattened to the folder.
+        if (_entriesById.TryGetValue(id, out var renamed) && renamed.IsFolder)
         {
-            var childOldPath = _pathById[childId];
-            var childNewPath = IoPath.Combine(newPath, IoPath.GetFileName(childOldPath));
-            RenumberPath(childId, childOldPath, childNewPath);
+            foreach (var childId in _entriesById.Values.Where(e => e.ParentId == id).Select(e => e.Id).ToList())
+            {
+                var childOldPath = _pathById[childId];
+                var childNewPath = IoPath.Combine(newPath, IoPath.GetFileName(childOldPath));
+                RenumberPath(childId, childOldPath, childNewPath);
+            }
         }
 
         _idByPath.Remove(oldPath);

@@ -180,7 +180,8 @@ public sealed class PipelineContextActionProvider : IContextActionProvider
                 "mdi-pencil-outline",
                 "Display name",
                 DisplayName(location),
-                "Rename")))
+                "Rename",
+                target.ElementId)))
             : Result(new ContextExecutionCompleted());
     }
 
