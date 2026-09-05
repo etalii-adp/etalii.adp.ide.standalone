@@ -53,10 +53,18 @@ const executeShortcut = vi.fn(async () => ({ accepted: true, error: "" }));
 let currentSelectionKey: string | null = null;
 let currentActions: unknown[] = [];
 
+let currentPrompt: unknown = null;
+const submitLabel = vi.fn(async () => ({ accepted: true, error: "" }));
+
 vi.mock("@client/shell/context/ContextConnectionProvider", () => ({
   innermostKey: () => currentSelectionKey,
   useContextConnection: () => ({ select, executeAction, executeShortcut }),
   useContextSelection: () => ({ selection: currentSelectionKey, levels: [], actions: currentActions }),
+  useContextPrompt: () => ({ prompt: currentPrompt, onPropose: vi.fn(async () => ({ accepted: true, error: "" })), onSubmit: submitLabel, onCancel: vi.fn() }),
+}));
+
+vi.mock("@client/shell/panels/InlineLabelPlacementContext", () => ({
+  useRegisterInlineLabelPlacement: () => undefined,
 }));
 
 vi.mock("@client/shell/panels/DiagramViewContext", () => ({
@@ -707,6 +715,7 @@ describe("WardleyCanvas selection", () => {
   beforeEach(() => {
     currentSelectionKey = null;
     currentActions = [];
+    currentPrompt = null;
   });
 
   function withOneComponent() {
@@ -783,5 +792,74 @@ describe("WardleyCanvas selection", () => {
 
     // Assert.
     expect(executeShortcut).not.toHaveBeenCalled();
+  });
+
+  // ---- inline renaming, on the selection this canvas just gained ---------------------------
+
+  function labelPromptFor(elementId: string, text: string): unknown {
+    return {
+      prompt: {
+        case: "inputDialog",
+        value: {
+          title: "Rename element",
+          icon: "mdi-pencil-outline",
+          fieldLabel: "Name",
+          initialValue: text,
+          confirmLabel: "Rename",
+          inlineLabelEdit: { elementId: { value: elementId } },
+        },
+      },
+    };
+  }
+
+  function editorBox(container: HTMLElement): SVGForeignObjectElement {
+    return container.querySelector("foreignObject.inline-label-editor") as SVGForeignObjectElement;
+  }
+
+  it("opens the editor at the label's own offset, and submits what is typed", async () => {
+    // Arrange. The offset is the document's: this author put the label 57 left of the mark,
+    // so an editor at the default right-hand offset would open over empty map. The element
+    // sits away from the origin so a broken offset cannot hide there.
+    currentPrompt = labelPromptFor("aaa", "Kettle");
+    const model = withElement(withAxis(), "aaa", "wardley/map+element", element({ name: "Kettle", labelOffset: { x: -57, y: 4 } }), 0.4, 0.4);
+    const { container } = renderCanvas(model);
+
+    // Assert: start-anchored at scale(0.4) - 57, exactly where the drawn text begins.
+    const box = editorBox(container);
+    expect(box).not.toBeNull();
+    expect(Number(box.getAttribute("x"))).toBeCloseTo(0.4 * 1000 - 57, 5);
+
+    const field = container.querySelector("input.inline-label-editor-field") as HTMLInputElement;
+    expect(field.value).toBe("Kettle");
+    fireEvent.change(field, { target: { value: "Urn" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    await waitFor(() => expect(submitLabel).toHaveBeenCalledWith("Urn"));
+  });
+
+  it("places no editor for an element that is not in the map", () => {
+    // Arrange.
+    currentPrompt = labelPromptFor("gone", "Ghost");
+
+    // Act.
+    const { container } = renderCanvas(withOneComponent());
+
+    // Assert.
+    expect(editorBox(container)).toBeNull();
+  });
+
+  it("leaves the selection alone when an inline edit commits", async () => {
+    // Arrange.
+    currentSelectionKey = "element:aaa";
+    currentPrompt = labelPromptFor("aaa", "Kettle");
+    const { container } = renderCanvas(withOneComponent());
+
+    // Act.
+    const field = container.querySelector("input.inline-label-editor-field") as HTMLInputElement;
+    fireEvent.change(field, { target: { value: "Urn" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+
+    // Assert.
+    await waitFor(() => expect(submitLabel).toHaveBeenCalled());
+    expect(select).not.toHaveBeenCalled();
   });
 });

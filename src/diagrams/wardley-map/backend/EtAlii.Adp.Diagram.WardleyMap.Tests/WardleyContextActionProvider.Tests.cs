@@ -47,6 +47,27 @@ public sealed class WardleyContextActionProviderTests : IDisposable
     // ---- what is offered ----------------------------------------------------------------------
 
     [Fact]
+    public async Task OnlyTheRenamePrompt_IsMarkedForInlineEditing()
+    {
+        // Arrange.
+        // Three prompts asked together: a marker on the right action proves nothing if a
+        // neighbour has quietly acquired one. Rename asks for the component's Name, which is
+        // the drawn label. Add-component asks for a name that does not exist yet, and evolve
+        // asks for a maturity number - emphatically not a label.
+        var kettle = IdOf("Kettle");
+
+        // Act.
+        var rename = await _provider.ExecuteAsync(Target(kettle), WardleyContextActionProvider.RenameActionId, TestContext.Current.CancellationToken);
+        var evolve = await _provider.ExecuteAsync(Target(kettle), WardleyContextActionProvider.SetEvolveActionId, TestContext.Current.CancellationToken);
+        var add = await _provider.ExecuteAsync(Target(""), WardleyContextActionProvider.AddComponentActionId, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.Equal(kettle, Assert.IsType<ContextExecutionRequiresInput>(rename).Request.InlineLabelElementId);
+        Assert.Equal("", Assert.IsType<ContextExecutionRequiresInput>(evolve).Request.InlineLabelElementId);
+        Assert.Equal("", Assert.IsType<ContextExecutionRequiresInput>(add).Request.InlineLabelElementId);
+    }
+
+    [Fact]
     public void ItContributesToTheDiagramElementScope_AndNoOther()
     {
         // Arrange, act and assert.

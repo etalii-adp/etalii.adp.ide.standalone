@@ -153,7 +153,7 @@ public sealed class WardleyContextActionProvider : IContextActionProvider
         {
             case RenameActionId when component is not null:
                 return Result(new ContextExecutionRequiresInput(new ContextInputRequest(
-                    "Rename element", "mdi-pencil-outline", "Name", component.Name, "Rename")));
+                    "Rename element", "mdi-pencil-outline", "Name", component.Name, "Rename", target.ElementId)));
 
             case RemoveActionId when component is not null:
                 // Confirmed, because removing an element takes its links and its `evolve` with
