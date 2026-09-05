@@ -7,8 +7,89 @@ namespace EtAlii.Adp.Backend.Tests;
 
 public class DiagramOptionTreeTests
 {
-    private static DiagramDefinition Definition(string vendor, string type, string title, string subtype = "")
-        => new(new DiagramOrigin(vendor, type, subtype), title);
+    private static DiagramDefinition Definition(
+        string vendor,
+        string type,
+        string title,
+        string subtype = "",
+        DiagramSubject subject = DiagramSubject.Document)
+        => new(new DiagramOrigin(vendor, type, subtype), title, Subject: subject);
+
+    /// <summary>
+    /// The shape the provider will use in task 3: one look at the definition decides all three
+    /// values. A folder-subject type wants no name and says why - and here is also already
+    /// registered, so it cannot be chosen either. Everything else suggests a file name.
+    /// </summary>
+    private static ContextOptionAnnotations Annotate(DiagramDefinition definition) =>
+        definition.HasFolderSubject
+            ? new ContextOptionAnnotations(
+                NameSuppressedReason: "This type registers the folder itself.",
+                UnavailableReason: "This folder is already registered by `structure.adp`")
+            : new ContextOptionAnnotations(SuggestedValue: $"{definition.Origin.Type}.adp");
+
+    [Fact]
+    public void Build_ForAFolderSubjectType_CarriesTheSuppressionAndNoSuggestion()
+    {
+        // Arrange and act.
+        var tree = DiagramOptionTree.Build(
+            [Definition("ansible", "structure", "Ansible structure", subject: DiagramSubject.Folder)],
+            Annotate);
+
+        // Assert: all three annotations reach the leaf through one seam. The suggestion being
+        // empty is the point rather than an omission - an option that wants no name has
+        // nothing to suggest, and a leftover suggestion would be offered for a field that is
+        // not there.
+        var option = Assert.Single(Assert.Single(tree).Children!);
+        Assert.Equal("This type registers the folder itself.", option.NameSuppressedReason);
+        Assert.Equal("This folder is already registered by `structure.adp`", option.UnavailableReason);
+        Assert.Equal("", option.SuggestedValue);
+    }
+
+    [Fact]
+    public void Build_ForADocumentSubjectType_CarriesTheSuggestionAndNoSuppression()
+    {
+        // Arrange and act.
+        var tree = DiagramOptionTree.Build([Definition("c4", "context", "System Context")], Annotate);
+
+        // Assert: today's behaviour, unchanged by the new seam.
+        var option = Assert.Single(Assert.Single(tree).Children!);
+        Assert.Equal("context.adp", option.SuggestedValue);
+        Assert.Equal("", option.NameSuppressedReason);
+        Assert.Equal("", option.UnavailableReason);
+    }
+
+    [Fact]
+    public void Build_ForAGroup_CarriesNoAnnotationsAndDoesNotConsultTheCallback()
+    {
+        // Arrange: a vendor group, and a synthesised type group over a lone subtype - the two
+        // ways a non-selectable node appears. Neither is a definition, so neither has anything
+        // for the callback to answer about.
+        var consulted = new List<string>();
+
+        // Act.
+        var tree = DiagramOptionTree.Build(
+            [Definition("c4", "component", "Code", subtype: "code")],
+            definition =>
+            {
+                consulted.Add(definition.Origin.Key);
+                return Annotate(definition);
+            });
+
+        // Assert.
+        var vendor = Assert.Single(tree);
+        var typeGroup = Assert.Single(vendor.Children!);
+        foreach (var group in new[] { vendor, typeGroup })
+        {
+            Assert.False(group.Selectable);
+            Assert.Equal("", group.SuggestedValue);
+            Assert.Equal("", group.NameSuppressedReason);
+            Assert.Equal("", group.UnavailableReason);
+        }
+
+        // And the callback was asked once, about the one real definition - not about either
+        // group, which would mean asking what a heading suggests.
+        Assert.Equal(["c4/component/code"], consulted);
+    }
 
     [Fact]
     public void Build_WithNoDefinitions_ReturnsNoOptions()

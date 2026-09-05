@@ -174,7 +174,10 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
                 Title: "Add diagram",
                 Icon: "mdi-plus",
                 ConfirmLabel: "Add",
-                Options: DiagramOptionTree.Build(_definitions, origin => DiagramFileName.Suggest(origin, target.ResolvedFullPath)),
+                Options: DiagramOptionTree.Build(
+                    _definitions,
+                    definition => new ContextOptionAnnotations(
+                        SuggestedValue: DiagramFileName.Suggest(definition.Origin, target.ResolvedFullPath))),
                 EmptyMessage: NoDiagramTypes,
                 NameField: new ContextTextFieldRequest(Label: "Name"))));
     }

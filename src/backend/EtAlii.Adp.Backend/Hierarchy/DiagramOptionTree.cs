@@ -17,14 +17,19 @@ namespace EtAlii.Adp.Backend.Hierarchy;
 public static class DiagramOptionTree
 {
     /// <param name="definitions">The discovered diagram types.</param>
-    /// <param name="suggest">
-    /// Optionally, the value a text field beside the tree should take when an option is
-    /// picked - computed here, while the folder is known, so choosing a type costs no round
-    /// trip. Groups never carry one.
+    /// <param name="annotate">
+    /// Optionally, the per-option values a caller decides while the subject is still known -
+    /// computed here so that choosing a type costs no round trip. Groups never receive it: a
+    /// heading is not something that can be created, so none of the three applies.
+    /// <para>
+    /// It takes the <see cref="DiagramDefinition"/> rather than its <c>Origin</c> because the
+    /// answers depend on the definition itself - whether the type registers a folder is a
+    /// property of the definition, and the origin alone cannot be asked.
+    /// </para>
     /// </param>
     public static IReadOnlyList<ContextOptionNode> Build(
         IReadOnlyList<DiagramDefinition> definitions,
-        Func<DiagramOrigin, string>? suggest = null)
+        Func<DiagramDefinition, ContextOptionAnnotations>? annotate = null)
     {
         ArgumentNullException.ThrowIfNull(definitions);
 
@@ -35,13 +40,13 @@ public static class DiagramOptionTree
                 Id: vendor.Key,
                 Label: vendor.Key,
                 Selectable: false,
-                Children: BuildVendor(vendor, suggest)))
+                Children: BuildVendor(vendor, annotate)))
             .ToArray();
     }
 
     private static IReadOnlyList<ContextOptionNode> BuildVendor(
         IEnumerable<DiagramDefinition> definitions,
-        Func<DiagramOrigin, string>? suggest)
+        Func<DiagramDefinition, ContextOptionAnnotations>? annotate)
     {
         var byType = definitions
             .GroupBy(definition => definition.Origin.Type, StringComparer.Ordinal)
@@ -54,26 +59,16 @@ public static class DiagramOptionTree
             var subtypes = type
                 .Where(definition => definition.Origin.Subtype.Length > 0)
                 .OrderBy(definition => definition.Title, StringComparer.Ordinal)
-                .Select(definition => new ContextOptionNode(
-                    definition.Origin.Key,
-                    definition.Title,
-                    Selectable: true,
-                    SuggestedValue: Suggestion(suggest, definition),
-                    Description: definition.Description,
-                    Icon: definition.Icon))
+                .Select(definition => Leaf(definition, annotate))
                 .ToArray();
 
             if (plain is not null)
             {
                 // The type itself is a choice; any subtypes hang off it.
-                nodes.Add(new ContextOptionNode(
-                    plain.Origin.Key,
-                    plain.Title,
-                    Selectable: true,
-                    Children: subtypes.Length == 0 ? null : subtypes,
-                    SuggestedValue: Suggestion(suggest, plain),
-                    Description: plain.Description,
-                    Icon: plain.Icon));
+                nodes.Add(Leaf(plain, annotate) with
+                {
+                    Children = subtypes.Length == 0 ? null : subtypes,
+                });
             }
             else
             {
@@ -92,6 +87,24 @@ public static class DiagramOptionTree
             .ToArray();
     }
 
-    private static string Suggestion(Func<DiagramOrigin, string>? suggest, DiagramDefinition definition) =>
-        suggest is null ? "" : suggest(definition.Origin);
+    /// <summary>
+    /// One choosable diagram type, with whatever the caller has to say about it. Both leaf
+    /// shapes - a subtype and a type that is itself a choice - go through here, so the three
+    /// annotations cannot end up applied to one and forgotten on the other.
+    /// </summary>
+    private static ContextOptionNode Leaf(
+        DiagramDefinition definition,
+        Func<DiagramDefinition, ContextOptionAnnotations>? annotate)
+    {
+        var annotations = annotate is null ? ContextOptionAnnotations.None : annotate(definition);
+        return new ContextOptionNode(
+            definition.Origin.Key,
+            definition.Title,
+            Selectable: true,
+            SuggestedValue: annotations.SuggestedValue,
+            Description: definition.Description,
+            Icon: definition.Icon,
+            NameSuppressedReason: annotations.NameSuppressedReason,
+            UnavailableReason: annotations.UnavailableReason);
+    }
 }
