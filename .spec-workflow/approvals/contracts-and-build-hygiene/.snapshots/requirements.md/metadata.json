@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/contracts-and-build-hygiene/requirements.md",
-  "currentVersion": 4,
+  "currentVersion": 5,
   "snapshots": [
     {
       "version": 1,
@@ -33,6 +33,14 @@
       "trigger": "approved",
       "approvalId": "approval_1788512254394_kl3ot2y03",
       "approvalTitle": "contracts-and-build-hygiene — Requirements (rev 3: wire-data naming criterion)"
+    },
+    {
+      "version": 5,
+      "filename": "snapshot-005.json",
+      "timestamp": "2026-09-04T23:45:26.492Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788563868213_2u56d8ia2",
+      "approvalTitle": "contracts-and-build-hygiene — Requirements amendment: tags stay; releases decouple from pushes"
     }
   ]
 }

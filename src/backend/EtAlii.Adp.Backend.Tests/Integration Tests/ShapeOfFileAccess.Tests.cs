@@ -114,12 +114,28 @@ public partial class ShapeOfFileAccessTests
         throw new InvalidOperationException("The repository root (src/diagrams beside src/backend) was not found above the test binary.");
     }
 
-    /// <summary>Production C# only: generated output, build artifacts and test projects are not the subject.</summary>
+    /// <summary>Production C# only: generated output, build artifacts and test code are not the subject.</summary>
+    /// <remarks>
+    /// <b>These disciplines are the application's, not the test suite's.</b> A test opens files it
+    /// created moments earlier in a folder nobody else can see; nothing contends for them, no user
+    /// is editing them, and a torn read is not a risk that exists. Holding test code to a rule
+    /// written for a user's document costs work and buys nothing.
+    /// <para>
+    /// Two exclusions are needed rather than one, and the second is not obvious. A test project is
+    /// named <c>*.Tests</c> and its path says so - but <c>src/TestSupport/</c> holds the shared
+    /// <c>LogCapture</c> and <c>TestFolder</c> helpers, which are compiled INTO each test project
+    /// as source and never ship. Nothing in that path contains <c>.Tests</c>, so it was being
+    /// walked as though it were the application. It is green today only because those two files
+    /// happen not to touch a file API; the first test helper that needs to read a fixture would
+    /// have been told to use <c>SharedDocumentReader</c> for no reason at all.
+    /// </para>
+    /// </remarks>
     private static IEnumerable<string> ProductionSources() =>
         Directory.EnumerateFiles(IoPath.Combine(RepositoryRoot, "src"), "*.cs", SearchOption.AllDirectories)
             .Where(path => !path.Contains($"{IoPath.DirectorySeparatorChar}bin{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(path => !path.Contains($"{IoPath.DirectorySeparatorChar}obj{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(path => !path.Contains(".Tests", StringComparison.Ordinal))
+            .Where(path => !path.Contains($"{IoPath.DirectorySeparatorChar}TestSupport{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(path => !path.EndsWith(".g.cs", StringComparison.Ordinal));
 
     /// <summary>
@@ -162,14 +178,6 @@ public partial class ShapeOfFileAccessTests
         return found;
     }
 
-    private static bool IsPermitted(string relativePath, string rule) =>
-        Permanent.Any(entry =>
-            relativePath.EndsWith(entry.File.Replace('/', IoPath.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase) &&
-            (entry.Rule == AllRules || entry.Rule == rule)) ||
-        Tracked.Any(entry =>
-            relativePath.EndsWith(entry.File.Replace('/', IoPath.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase) &&
-            entry.Rule == rule);
-
     /// <summary>
     /// The whole survey, walked once per test run rather than once per call.
     /// </summary>
@@ -206,21 +214,60 @@ public partial class ShapeOfFileAccessTests
         return all;
     }
 
+    /// <summary>
+    /// The unexcused-offence decision, over supplied lists rather than the real ones.
+    /// </summary>
+    /// <remarks>
+    /// Extracted in task 7.1 so the property the whole sequencing rests on can be asserted
+    /// rather than remembered. Three agents each watched this guard fail both ways on a real
+    /// conversion and wrote it up in a commit message - which is evidence that does not re-run.
+    /// A pure function over synthetic inputs does.
+    /// </remarks>
+    internal static IReadOnlyList<string> Unexcused(
+        IReadOnlyList<(string RelativePath, string Offence, string Rule)> found,
+        IReadOnlyList<(string File, string Rule, string Reason)> permanent,
+        IReadOnlyList<(string File, string Rule, string Owner)> tracked) =>
+        found
+            .Where(entry => !Excuses(entry.RelativePath, entry.Rule, permanent, tracked))
+            .Select(entry => entry.Offence)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+    /// <summary>
+    /// The stale-entry decision, over supplied lists rather than the real ones. A tracked entry
+    /// whose site no longer offends must be reported, or "not yet" quietly becomes "never".
+    /// </summary>
+    internal static IReadOnlyList<string> Stale(
+        IReadOnlyList<(string RelativePath, string Offence, string Rule)> found,
+        IReadOnlyList<(string File, string Rule, string Owner)> tracked) =>
+        tracked
+            .Where(entry => !found.Any(hit => Matches(hit.RelativePath, entry.File) && hit.Rule == entry.Rule))
+            .Select(entry => $"{entry.File} ({entry.Owner}) is tracked but no longer offends - delete its line")
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+    private static bool Matches(string relativePath, string entryFile) =>
+        relativePath.EndsWith(entryFile.Replace('/', IoPath.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase);
+
+    private static bool Excuses(
+        string relativePath,
+        string rule,
+        IReadOnlyList<(string File, string Rule, string Reason)> permanent,
+        IReadOnlyList<(string File, string Rule, string Owner)> tracked) =>
+        permanent.Any(entry => Matches(relativePath, entry.File) && (entry.Rule == AllRules || entry.Rule == rule)) ||
+        tracked.Any(entry => Matches(relativePath, entry.File) && entry.Rule == rule);
+
     [Fact]
     public void NoProductionFileReachesForARawFileApi()
     {
         // Act.
-        var unexcused = Survey()
-            .Where(entry => !IsPermitted(entry.RelativePath, entry.Rule))
-            .Select(entry => entry.Offence)
-            .Order(StringComparer.Ordinal)
-            .ToArray();
+        var unexcused = Unexcused(Survey(), Permanent, Tracked);
 
         // Assert.
         // The message is the deliverable: whoever hits this needs the file, the line and the
         // call to use, not a count.
         Assert.True(
-            unexcused.Length == 0,
+            unexcused.Count == 0,
             "These reach for a raw file API where a central helper exists:" +
             Environment.NewLine + string.Join(Environment.NewLine, unexcused));
     }
@@ -234,16 +281,10 @@ public partial class ShapeOfFileAccessTests
         var live = Survey();
 
         // Act.
-        var stale = Tracked
-            .Where(entry => !live.Any(found =>
-                found.RelativePath.EndsWith(entry.File.Replace('/', IoPath.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase) &&
-                found.Rule == entry.Rule))
-            .Select(entry => $"{entry.File} ({entry.Owner}) is tracked but no longer offends - delete its line")
-            .Order(StringComparer.Ordinal)
-            .ToArray();
+        var stale = Stale(live, Tracked);
 
         // Assert.
-        Assert.True(stale.Length == 0, string.Join(Environment.NewLine, stale));
+        Assert.True(stale.Count == 0, string.Join(Environment.NewLine, stale));
     }
 
     [Fact]
@@ -266,6 +307,100 @@ public partial class ShapeOfFileAccessTests
             .ToArray();
 
         Assert.True(pardoned.Length == 0, string.Join(Environment.NewLine, pardoned));
+    }
+
+    [Fact]
+    public void TheAllowListDecisionsHoldInBothDirections()
+    {
+        // The property the whole sequencing rests on, over synthetic lists so it re-runs rather
+        // than living in three commit messages. Both directions matter and they fail differently:
+        // one lets a conversion land while its exemption silently stays, the other lets an
+        // exemption be deleted while the code still offends.
+        // The survey yields OS-separator relative paths, so the synthetic one must too. The
+        // first draft of this test wrote a forward slash and failed on Windows for that reason
+        // alone - the same lesson in miniature: a synthetic input shaped unlike the real one
+        // tests something else.
+        var path = IoPath.Combine("Fake", "Store.cs");
+        var offence = (path, $"{path}:1 - raw read", RawRead);
+        var found = new[] { offence };
+        var empty = Array.Empty<(string, string, string)>();
+
+        var permanentNone = Array.Empty<(string File, string Rule, string Reason)>();
+        var trackedNone = Array.Empty<(string File, string Rule, string Owner)>();
+        var trackedIt = new[] { ("Fake/Store.cs", RawRead, "some task") };
+
+        // Direction one - code offends, nothing excuses it: reported.
+        Assert.Single(Unexcused(found, permanentNone, trackedNone));
+
+        // Direction two - code offends and a tracked entry owns it: not reported, and not stale.
+        Assert.Empty(Unexcused(found, permanentNone, trackedIt));
+        Assert.Empty(Stale(found, trackedIt));
+
+        // Direction three - the site is clean but its tracked line remains: reported as stale.
+        var stale = Stale(empty, trackedIt);
+        Assert.Single(stale);
+        Assert.Contains("no longer offends", stale[0], StringComparison.Ordinal);
+        Assert.Contains("some task", stale[0], StringComparison.Ordinal);
+
+        // Direction four - the exemption is deleted while the code still offends: reported again.
+        // Together with direction two this is the pincer: neither half can be dropped quietly.
+        Assert.Single(Unexcused(found, permanentNone, trackedNone));
+
+        // A tracked entry excuses ONE rule, never the file. An entry for a different rule must
+        // not pardon this offence - the failure that let a fine JSON read excuse a hand-rolled
+        // publish the first time this guard ran.
+        Assert.Single(Unexcused(found, permanentNone, [("Fake/Store.cs", HandRolledPublish, "other task")]));
+
+        // A permanent all-rules entry does excuse the file, which is exactly why so few exist.
+        Assert.Empty(Unexcused(found, [("Fake/Store.cs", AllRules, "it is the implementation")], trackedNone));
+    }
+
+    [Fact]
+    public void TheseRulesAreTheApplicationsAndNotTheTestSuites()
+    {
+        // These disciplines exist because a USER may be editing the file while ADP reads it, and
+        // because ADP's own publish must be able to replace it mid-read. Neither is true of a
+        // scratch file a test just made in its own temp folder, so test code is not the subject.
+        var scanned = ProductionSources().ToList();
+
+        Assert.DoesNotContain(scanned, path => path.Contains(".Tests", StringComparison.Ordinal));
+
+        // src/TestSupport holds LogCapture and TestFolder, compiled into every test project as
+        // source and shipped nowhere. Its path carries no ".Tests", so the first filter misses it
+        // entirely - which is why it needs its own, and why this asserts on the real enumeration
+        // rather than on the predicate. It passed for months only because those two files happen
+        // not to touch a file API.
+        Assert.DoesNotContain(
+            scanned,
+            path => path.Contains($"{IoPath.DirectorySeparatorChar}TestSupport{IoPath.DirectorySeparatorChar}", StringComparison.Ordinal));
+
+        // And the exclusions have not swallowed the subject: the application is still walked.
+        Assert.Contains(scanned, path => path.EndsWith("SharedDocumentReader.cs", StringComparison.Ordinal));
+        Assert.Contains(scanned, path => path.EndsWith("TimelineDocumentStore.cs", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TheTrackedListHoldsNothingThisSpecStillOwes()
+    {
+        // file-io-centralization's own debt is discharged: groups 3 and 5 deleted every line
+        // that named one of its tasks. What may remain is another spec's, and saying so here
+        // means a new tracked entry cannot be added under this spec's name and forgotten -
+        // the failure mode task 1.1 named when it created the list.
+        var mine = Tracked
+            .Where(entry => entry.Owner.Contains("file-io-centralization", StringComparison.OrdinalIgnoreCase))
+            .Select(entry => $"{entry.File} still names this spec ({entry.Owner})")
+            .ToArray();
+
+        Assert.True(mine.Length == 0, string.Join(Environment.NewLine, mine));
+
+        // And every survivor carries an owner that is somebody, not a shrug.
+        var ownerless = Tracked
+            .Where(entry => string.IsNullOrWhiteSpace(entry.Owner) ||
+                            entry.Owner.Contains("unassigned", StringComparison.OrdinalIgnoreCase))
+            .Select(entry => $"{entry.File} has no owner - a tracked entry without one is a permanent entry in disguise")
+            .ToArray();
+
+        Assert.True(ownerless.Length == 0, string.Join(Environment.NewLine, ownerless));
     }
 
     [Fact]

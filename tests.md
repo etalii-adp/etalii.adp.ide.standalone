@@ -1025,14 +1025,63 @@ reading: shapes carry kind, and the axioms are visible without opening the Turtl
   deprecated OWL-Time classes are visibly dimmed; and the Errors and Warnings panel reports
   nothing for either file.
 
-- **Result 2026-09-04**: **pending** - the app opens on a sign-in form, and entering a
-  credential is outside what an agent does here, the checked-in developer placeholder included.
-  Recorded rather than skipped, and the drawing itself is covered meanwhile: `OwlCanvasTests`
-  asserts each kind's shape, the badges and rows on a card, and the dimming classes; and the
-  layout was measured on this very file by `OwlLayoutTests.NoTwoElementsOverlap_OnARealOntology`
-  and `ASubclassEdge_RunsBetweenNeighbouringColumns_RatherThanAcrossTheCanvas`, which is what
-  turned an unreadable first drawing into the current one. That the file reports nothing is
-  covered by `OwlValidatorTests` plus the probe recorded in the examples readme (0 findings).
+- **Result 2026-09-05**: **passes, with one assertion unverifiable and one defect found.** Run
+  against a worktree build (backend 5091, client 5191) with `src/examples` opened as a project.
+  The user signed in; see the note under *Signing in* below.
+
+  Verified in the running app: **classes draw as ellipses and datatypes as rectangles** - the
+  drawn nodes carry `owl-class`/`owl-datatype` and resolve to `<ellipse>` and `<rect>`
+  respectively. **Restriction nodes sit beside their classes with Manchester labels** - 42 of
+  them, reading `∀ days du…`, `≤ 1 month`, `= 1 Tempo…`, `∋ Tempora…`. **Subclass edges are
+  dashed and property edges carry names** - three dash patterns alongside 48 solid, with labels
+  `has beginning`, `has end`, `has duration description`, `in time zone`. **Both deprecated
+  classes are dimmed** - `January` and `Year` carry `owl-deprecated` at computed opacity 0.55
+  against 1.0 for their neighbours. **`prov-o` opens beside it** and draws 30 classes.
+
+  **Not verifiable as written: "the Errors and Warnings panel reports nothing for either file."**
+  The panel renders 999 rows and states `524 more problems are not shown` - the showcase carries
+  1,524 problems, nearly all of them SKOS typing warnings from `business-economics`. No owl-time
+  or prov-o row appears among the 999 that render, but a quarter of the set cannot be inspected
+  from the panel at all. **This assertion needs a project scoped to the ontology folder rather
+  than the whole showcase**, and stating it against `src/examples` was a mistake in the check
+  rather than a fault in the app.
+
+  **Two corrections to this entry's own instructions**, both found by following them: the file is
+  at `diagrams/owl/owl-time/owl-time.adp`, not `diagrams/rdf/owl-time/` - the OWL examples moved
+  to their own folder. And the `.adp` is nested **under** `owl-time.ttl` in the explorer rather
+  than beside it, so it takes two expands to reach.
+
+## Fit to View shows less of a viewport-filtered diagram than the reader already had (view-delta-adoption, found 2026-09-05)
+
+**A defect, found by using the application, in work I merged myself.** `Fit to View` is the one
+control that means "show me the whole diagram", and on any canvas that filters by viewport it
+shows *less* than was on screen a moment earlier.
+
+- **Preconditions**: backend + client running; `src/examples` open as a project.
+- **Actions**: open `diagrams/owl/owl-time/owl-time.adp`; press `Zoom Out` five or six times,
+  watching the element count grow as the backend delivers what comes into view; then press
+  `Fit to View`.
+- **Expected**: the whole ontology, or at least no less than was already delivered.
+- **Observed**: the drawn set fell from **114 nodes to 85** and stayed there across four further
+  presses of `Fit to View`. It is a stable fixed point, not a transient.
+
+**Mechanism, confirmed in the source rather than inferred.** `OwlCanvas.fitToView` computes its
+bounds from `model.nodes` - the elements the **client currently holds**, which is exactly what
+the last viewport admitted. Fitting to that subset reports a viewport smaller than the one the
+reader had zoomed out to, the backend culls to the smaller window, and the client drops the
+difference. Pressing it again re-fits the now-smaller set, which is why it settles rather than
+oscillating.
+
+**Scope**: every canvas whose `fitToView` reads the delivered model, which after
+`view-delta-adoption` is all eleven. Verified on `owl`; the same shape is in the other canvases'
+fit helpers.
+
+**Why no unit test caught it**: the view-delta tests assert that a view *change* produces deltas,
+which is true here - the culling is the loop working exactly as specified. Nothing asserts that
+`Fit to View` shows the whole document, because until the loop landed it always did.
+
+- **Result 2026-09-05**: **open**, reported to the scrum master. Not fixed here: the Tester found
+  it, and the canvases belong to whoever holds their specification.
 
 ## An expression node refuses to be dragged, and says why (owl-diagram, task 4.3)
 

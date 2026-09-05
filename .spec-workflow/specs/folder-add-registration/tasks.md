@@ -14,7 +14,7 @@ Two phases, and the split is not cosmetic: **phase 1 touches no example file and
 
 ## Phase 1 — the dialog
 
-- [ ] 1. `ContextOption` learns to be offered without being choosable, and to want no name
+- [x] 1. `ContextOption` learns to be offered without being choosable, and to want no name
   - Files: `src/api/context.proto`, `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextOptionNode.cs`, generated code on both sides
   - Add `string name_suppressed_reason = 8` and `string unavailable_reason = 9` to `ContextOption` (fields 1-7 are taken; 8 and 9 are the next free). Mirror both on `ContextOptionNode` at the end of its optional tail.
   - **Each field carries the condition and its explanation in one value.** Non-empty means "this applies", and the string is what the user reads. That is deliberate: it makes it impossible to suppress the name field or grey out an option without saying why, so Requirement 1.3 holds by construction rather than by review.
@@ -23,7 +23,7 @@ Two phases, and the split is not cosmetic: **phase 1 touches no example file and
   - _Requirements: 1.2, 1.3, 2.1_
   - _Prompt: Implement the task for spec folder-add-registration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: API developer | Task: Add the two per-option fields to ContextOption and mirror them on ContextOptionNode | Restrictions: field numbers 8 and 9; do not touch selectable; no new message and no new RPC; the unavailable_reason comment must describe the general idiom and name both consumers, not the folder case alone; regenerate both sides and keep the four gates green | _Leverage: ContextAction.unavailable_reason at context.proto:294 for the name and meaning | Success: both fields exist on the wire and in the record, the comment scopes the second one generally, and nothing yet sets either. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. One annotation callback replaces the suggestion callback
+- [x] 2. One annotation callback replaces the suggestion callback
   - Files: `src/backend/EtAlii.Adp.Backend/Hierarchy/DiagramOptionTree.cs`, `src/backend/EtAlii.Adp.Backend/Context/_Model/ContextOptionAnnotations.cs` (new)
   - Replace `Func<DiagramOrigin, string>? suggest` with `Func<DiagramDefinition, ContextOptionAnnotations>? annotate`, the record carrying `SuggestedValue`, `NameSuppressedReason` and `UnavailableReason`. Taking the **definition** rather than the origin is what lets a caller read `HasFolderSubject` at all.
   - Three per-option values decided in one place instead of three. Groups keep getting nothing, exactly as today.
@@ -32,7 +32,7 @@ Two phases, and the split is not cosmetic: **phase 1 touches no example file and
   - _Requirements: 1.4, 1.5_
   - _Prompt: Implement the task for spec folder-add-registration, first run spec-workflow-guide to get the workflow guide then implement the task: Role: C# developer | Task: Collapse the option-tree's suggestion callback into one annotation callback taking the DiagramDefinition | Restrictions: groups still receive nothing; no behaviour change for document-subject types, suggestion included; both call sites updated in the same change | _Leverage: DiagramOptionTree.Build's existing per-definition callback and its Suggestion helper | Success: the three per-option values come from one seam, with the three cases tested. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. The provider suppresses the name, and refuses a folder that is already registered
+- [-] 3. The provider suppresses the name, and refuses a folder that is already registered
   - Files: `src/backend/EtAlii.Adp.Backend/Hierarchy/AddDiagramContextActionProvider.cs`
   - **Prompt side**: for a folder target, compute the folder's existing folder-subject registration **once**, then annotate — a folder-subject type gets the suppression sentence and no suggestion, and gets an `unavailable_reason` naming the existing file when the folder already holds one. The prompt-level `NameField` stays: file-subject types still need it, and serving both from one dialog is the point.
   - The two sentences are the user-visible half of this spec. Suppression: *"This type registers the folder itself, so the registration is created as `.adp` inside it."* Unavailable: *"This folder is already registered by `structure.adp`"* — naming the file the user can go and look at, bare or legacy-named alike.

@@ -1,5 +1,4 @@
 using EtAlii.Adp.Backend.Diagrams;
-using Google.Protobuf;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.CausalLoop.Tests;

@@ -3,8 +3,10 @@
   "title": "multi-select requirements",
   "filePath": ".spec-workflow/specs/multi-select/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-03T22:35:37.670Z",
   "category": "spec",
-  "categoryName": "multi-select"
+  "categoryName": "multi-select",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-04T09:06:56.571Z"
 }

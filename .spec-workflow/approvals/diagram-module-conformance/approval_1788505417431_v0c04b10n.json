@@ -3,8 +3,10 @@
   "title": "diagram-module-conformance - Requirements",
   "filePath": ".spec-workflow/specs/diagram-module-conformance/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-04T07:03:37.431Z",
   "category": "spec",
-  "categoryName": "diagram-module-conformance"
+  "categoryName": "diagram-module-conformance",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-04T11:59:33.266Z"
 }
