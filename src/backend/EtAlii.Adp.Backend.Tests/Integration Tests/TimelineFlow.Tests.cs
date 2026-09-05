@@ -239,6 +239,20 @@ public class TimelineFlowTests : IClassFixture<WebApplicationFactory<Program>>, 
             new WatchContextRequest { ProjectId = projectId, WatchId = watchId },
             headers, cancellationToken: cts.Token);
 
+        // Wait until the server has actually registered the watch, rather than assume that
+        // starting the call did it. Watch() returns as soon as the request is on the wire; the
+        // handler registers some time later and only then begins writing. An ExecuteAction sent
+        // immediately can arrive first, find nothing listening, and be refused with "This
+        // connection is no longer watching the project" - which is what this test did on three
+        // runs in four when its class ran alone, and intermittently otherwise.
+        //
+        // The first message is the handshake and needs no timeout of its own: the handler writes
+        // the baseline as it registers and only starts pumping afterwards, so a message in the
+        // client's hands is proof the registration happened.
+        Assert.True(
+            await watch.ResponseStream.MoveNext(cts.Token),
+            "the context watch closed before it sent its baseline");
+
         var selected = await contextClient.SelectAsync(
             new SelectRequest
             {

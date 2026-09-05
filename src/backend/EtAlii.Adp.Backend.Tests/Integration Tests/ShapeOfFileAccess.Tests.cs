@@ -96,9 +96,6 @@ public partial class ShapeOfFileAccessTests
     /// </remarks>
     private static readonly (string File, string Rule, string Owner)[] Tracked =
     [
-        // Core reads of a user document - owned by backend-consistency, not by this spec.
-        ("Hierarchy/AddDiagramContextActionProvider.cs", RawRead, "backend-consistency AC1"),
-        ("Hierarchy/RegistrationLayout.cs", RawRead, "backend-consistency AC2"),
     ];
 
     private const string RawRead = "reads a file with a raw File.ReadAllText/ReadAllLines/ReadAllBytes, which opens at FileShare.Read and loses to a concurrent save";
@@ -407,6 +404,29 @@ public partial class ShapeOfFileAccessTests
         // And the exclusions have not swallowed the subject: the application is still walked.
         Assert.Contains(scanned, path => path.EndsWith("SharedDocumentReader.cs", StringComparison.Ordinal));
         Assert.Contains(scanned, path => path.EndsWith("TimelineDocumentStore.cs", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void NoApplicationReaderCanBlockAnApplicationWrite()
+    {
+        // The property the OwlFlow reposition flake turned out to need, asserted structurally
+        // rather than by re-running a suite until it happens to stay green.
+        //
+        // A publish REPLACES its destination, and a replace is denied while any handle on that
+        // destination lacks FileShare.Delete - AdpFileWriter.SharingContract.Tests pins both
+        // directions of that. SharedDocumentReader is the only read here that shares Delete.
+        // So while no production file reaches for a raw read, ADP cannot deny its own publish,
+        // and the reposition-then-undo race that produced "Could not remove the position: the
+        // process cannot access the file" cannot recur from inside the application.
+        //
+        // An empty tracked list IS that guarantee, which is why this asserts it rather than
+        // leaving it observed: one tracked raw-read entry reopens the whole class.
+        var blocking = Tracked
+            .Where(entry => entry.Rule == RawRead || entry.Rule == NarrowShare || entry.Rule == AllRules)
+            .Select(entry => $"{entry.File} ({entry.Owner}) may hold a document without sharing Delete, which can deny ADP's own publish")
+            .ToArray();
+
+        Assert.True(blocking.Length == 0, string.Join(Environment.NewLine, blocking));
     }
 
     [Fact]

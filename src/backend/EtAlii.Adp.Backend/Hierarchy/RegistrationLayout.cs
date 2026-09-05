@@ -290,7 +290,15 @@ public static class RegistrationLayout
         string text;
         try
         {
-            text = File.ReadAllText(adpPath);
+            // Shared - and it is ADP's own writes this protects, not a user's editor. A
+            // registration is read on every reload the watcher triggers and rewritten by every
+            // reposition, so this read and WriteBlock below meet on the same file whenever a
+            // move is followed closely by an undo. File.ReadAllText shares Read only, which
+            // denies the replace WriteBlock performs; the undo then fails with "Could not
+            // remove the position: the process cannot access the file". That is the OwlFlow
+            // reposition flake - ADP blocking its own write, about one concurrent run in
+            // twenty. Reading through SharedDocumentReader shares Delete and lets it land.
+            text = SharedDocumentReader.ReadAllText(adpPath);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or FileNotFoundException or DirectoryNotFoundException)
         {
