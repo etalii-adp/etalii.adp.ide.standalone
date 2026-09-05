@@ -19,6 +19,82 @@ not fit — at 1440x900 that pane is 253px, which fits one tab, so `Properties` 
 than a defect. Widening the pane or clicking the overflow both reach it; hunting for it is what
 costs the time, and it is written here once rather than in each of the thirteen.
 
+## A loop labelled R is arithmetically balancing, and the tool says so without changing the file (causal-loop-diagram, task 5.3)
+
+The claim this diagram type exists to make: an `R`/`B` label is **checkable**, and a disagreement
+is reported rather than corrected. The unit tests prove the arithmetic and the finding; what they
+cannot prove is that a reader meets the finding, in the problems panel and in the property grid,
+without the document changing under them.
+
+- **Preconditions**: backend + client running; `src/examples` open as a project.
+- **Actions**: open `diagrams/causal-loop/reference/reference.adp`. Read the problems panel.
+  Select the loop labelled `R3` on the canvas and read the Properties panel (see the preamble on
+  finding it). Then close the tab and reopen it.
+- **Expected**:
+  - The problems panel carries a warning naming `R3`, both polarities, and the negative count —
+    something of the shape *"Loop R3 is labelled reinforcing but its links make it balancing: it
+    runs through 3 negative links…"*.
+  - The property grid shows **Computed polarity: balancing** and, because they differ, a second
+    row **Stated polarity: reinforcing** whose read-only reason says neither is corrected for you.
+  - `reference.cld` on disk is **byte-for-byte unchanged** — check with `git status`. Reporting is
+    not correcting, and this is where that would break first.
+  - Reopening shows the same finding: it is derived from the document, not remembered.
+- **Also worth seeing while here**: loop `B4` reads **undecidable** rather than reinforcing or
+  balancing, because the link into it states no polarity. Unknown is not none.
+
+- **Result**: **not run.** No agent on this specification can sign in — see the preamble. Needs a
+  person, or a session permitted to enter the placeholder credential.
+
+## A delayed link draws its strokes, and the grid agrees with the drawing (causal-loop-diagram, task 5.3)
+
+A delay is drawn as short strokes across the arrow. That is the whole of its visual existence, and
+nothing in the backend suite can see whether it was painted.
+
+- **Preconditions**: backend + client running; `src/examples` open as a project.
+- **Actions**: open `diagrams/causal-loop/reference/reference.adp`. Find the link from
+  `crowding` to `sanitation`. Select it and read the Properties panel. Then right-click it.
+- **Expected**:
+  - The link is drawn with the conventional strokes across it, and its polarity mark reads `−` at
+    the arrowhead end. The other links carry no strokes.
+  - The grid shows **Delayed: true** as a toggle, **Polarity: negative** as a list, and a
+    **Weight** row that is empty rather than `0` — this link has no weight, and an unweighted link
+    is not a link of weight zero.
+  - The context menu offers **Not delayed** (the opposite of what the link states), **Same
+    direction (+)** as available, and **Opposite direction (−)** as *unavailable* with the reason
+    *"This link already states −."*
+- **Then**: toggle the delay off from the menu and confirm the strokes disappear; one Undo brings
+  them back and the `.cld` returns byte-for-byte.
+
+- **Result**: **not run.** Same reason as above.
+
+## The self-organizing layout rearranges a diagram, and one undo puts it back exactly (causal-loop-diagram, task 5.3)
+
+Requirement 6 in one gesture. The layout is deterministic, it is invoked rather than automatic, it
+writes authored positions rather than touching the body, and it is **one** undo away rather than
+one per variable — that last point is the one a test in the backend can assert but only a person
+can feel.
+
+- **Preconditions**: backend + client running; `src/examples` open as a project.
+- **Actions**: open `diagrams/causal-loop/on-call/on-call.adp`. Drag two or three variables into a
+  deliberate mess. Right-click the canvas **background** — with nothing selected — and choose
+  **Arrange diagram**. Then press Undo **once**.
+- **Expected**:
+  - Arrange is offered on the background and **not** on a selected variable: it is diagram-wide.
+  - The diagram rearranges. No two variables overlap.
+  - `on-call.cld` is **unchanged**; `on-call.adp` gained a `layout:` block. An arrangement is an
+    opinion about where things are drawn, not a change to what the document says.
+  - **One** Undo restores the registration exactly, including any positions that were authored
+    before the arrange. Not one undo per variable.
+- **And the determinism**: with the diagram arranged, note two or three positions, restart the
+  backend, reopen and arrange again from the same starting registration. The positions are
+  identical. If they are not, Requirement 6.3 has broken in a way the two-process unit test did
+  not reach.
+- **A refusal is a pass, not a failure**: if a diagram is refused with a sentence naming its size,
+  that is the specified behaviour (Requirement 6.7) and should be recorded as such rather than
+  retried until it succeeds.
+
+- **Result**: **not run.** Same reason as above.
+
 ## Drop-target highlight actually paints (mindmap-diagram, bezier-connector pass)
 
 The unit test can only assert the `mindmap-node-drop-target` class - jsdom does not load
