@@ -14,7 +14,7 @@ One worktree for the whole spec: `.claude/worktrees/adopt` — short, because th
 - **A test written for a defect is accepted only when it has been seen to fail against that defect.** On `inline-rename` three tests passed against broken code — one whose window React batched away, one whose blur jsdom never delivered, and one that omitted `StrictMode`, outside which the bug could not exist — and the third was deleted rather than kept. Perturb, watch it fail, restore, then keep it.
 - **Mark only what the module draws.** Before marking any prompt, confirm its value **is** the text on screen. Requirement 1 is the test; the databricks task below carries a worked example of a label that looks markable and is not.
 
-- [-] 1. The three placement helpers — the shared half, extracted rather than written
+- [x] 1. The three placement helpers — the shared half, extracted rather than written
   - Files: `src/client/src/canvas/label/labelPlacement.ts` (new), `src/client/src/canvas/label/labelPlacement.test.ts` (new), `src/diagrams/c4/client/C4Canvas.tsx`, `src/client/src/canvas/label/readme.md`
   - Three pure functions, no React and no module vocabulary, each returning `LabelPlacement`: `centredLabelPlacement(box, text)` for a label filling its element's box; `insetLabelPlacement(box, top, height, text)` for one named line inside a composite box; `midpointLabelPlacement(from, to, dy, text)` for a bare text on a connection.
   - **Extract, do not invent.** C4's private `nodeNamePlacement` and `relationshipLabelPlacement` are the prototypes for the second and third; move them, generalise the constants into arguments, and have C4 call the helpers.
