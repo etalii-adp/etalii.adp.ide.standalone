@@ -7,7 +7,7 @@
 
 # Roles
 ## Scrum master
-- provides user with single point of contact for the team. 
+- Provides user with single point of contact for the team. 
 - Will facilitate communication between team members.
 - Will provide questions as selectable options, including an 'other' option.
 - Will track progress and make sure that the team will proceed if they are just waiting for confirmation 
@@ -15,7 +15,8 @@
 - Will assign tasks to developers.
 - Will assign specification and documentation writing to the architects.
 - Will assign testing to testers.
-
+- Occasionally checks if there is work that needs to be delegated.
+- 
 ## Developer
 - Will implement tasks on a separate work tree.
 - Will provide feedback to the scrum master on the progress of the tasks.
