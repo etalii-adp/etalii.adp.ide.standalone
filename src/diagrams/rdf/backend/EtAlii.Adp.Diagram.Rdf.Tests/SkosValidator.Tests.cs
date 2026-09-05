@@ -164,6 +164,30 @@ public class SkosValidatorTests : IDisposable
     }
 
     [Fact]
+    public async Task AConceptPastTheDrawingBudget_IsStillTyped()
+    {
+        // Arrange: every concept is typed in the file, and there is one more of them than the
+        // drawing budget shows. The typing check must read the file's assertions, not the drawn
+        // subset - judged against the truncated projection it called 1,517 typed concepts of the
+        // vendored STW extract untyped, one message per assertion touching the cut.
+        var lines = new List<string>
+        {
+            """ex:s a skos:ConceptScheme ; skos:prefLabel "S"@en ; skos:hasTopConcept ex:top .""",
+            """ex:top a skos:Concept ; skos:prefLabel "Top"@en ; skos:topConceptOf ex:s .""",
+        };
+        for (var i = 0; i < 1005; i++)
+        {
+            lines.Add($"""ex:c{i} a skos:Concept ; skos:prefLabel "C{i}"@en ; skos:inScheme ex:s ; skos:broader ex:top .""");
+        }
+
+        // Act.
+        var problems = await Validate(string.Join("\n", lines));
+
+        // Assert.
+        Assert.DoesNotContain(problems, problem => problem.RuleId == SkosValidator.NonConceptRuleId);
+    }
+
+    [Fact]
     public async Task AMisplacedLanguageHeader_IsNamedWithItsLine()
     {
         // Arrange: the registration whose language: line sits above body: - ignored by the

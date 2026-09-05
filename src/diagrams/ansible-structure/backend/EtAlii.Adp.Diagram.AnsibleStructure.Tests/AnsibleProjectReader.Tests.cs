@@ -135,6 +135,23 @@ public class AnsibleProjectReaderTests
     }
 
     [Fact]
+    public void ARootIniInventory_CarriesItsGroups()
+    {
+        // The vendored tomcat-memcached-failover corpus keeps a classic INI `hosts` file, the
+        // format most real projects and every old tutorial use. Reading it as zero groups made
+        // the unmatched-hosts rule claim "no inventory defines" groups the file plainly defines.
+        var inventory = Read("ini-inventory").Inventories.Single(i => i.Name == "hosts");
+
+        // Assert.
+        Assert.Equal(["web", "db", "app"], inventory.Groups.Select(g => g.Name));
+        Assert.Equal(2, inventory.Groups.Single(g => g.Name == "web").HostCount);
+        Assert.Equal(1, inventory.Groups.Single(g => g.Name == "db").HostCount);
+        // A :children group holds the sum of the groups it gathers, and a :vars section is
+        // configuration rather than membership - it must neither appear nor add a group.
+        Assert.Equal(3, inventory.Groups.Single(g => g.Name == "app").HostCount);
+    }
+
+    [Fact]
     public void TheAnnotations_AreRecordedRatherThanDrawn()
     {
         // Act.

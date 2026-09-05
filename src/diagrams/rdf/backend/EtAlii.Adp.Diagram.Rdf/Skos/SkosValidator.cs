@@ -79,7 +79,10 @@ public sealed class SkosValidator(DiagramOrigin origin) : IDiagramValidator
                 Location(cycle.Triples.FirstOrDefault())));
         }
 
-        var conceptIds = projection.Concepts.Select(concept => concept.Id).ToHashSet(StringComparer.Ordinal);
+        // The file's own typing assertions, never the projection's concept list: that list is
+        // cut to the drawing budget, and a concept past the cut is still typed (the rule's
+        // message promises "the file's own silence", so the file is what it must read).
+        var conceptIds = SkosProjection.TypedIds(model, SkosVocabulary.Concept);
         foreach (var concept in projection.Concepts)
         {
             foreach (var group in concept.Labels
