@@ -87,10 +87,10 @@ public sealed class MoveWardleyElementCommandHandler : ICommandHandler<MoveWardl
             _logger.Debug("Moved {Name} to {Visibility},{Maturity}", component.Name, clamped.Visibility, clamped.Maturity);
         }
 
-        var error = _documents.Save(command.BodyPath);
-        return Task.FromResult(error.Length == 0
-            ? CommandResult.Success( new RestoreWardleyLineCommand(command.BodyPath, line, before))
-            : CommandResult.Failure(error));
+        var published = _documents.Save(command.BodyPath);
+        return Task.FromResult(published.Error.Length == 0
+            ? CommandResult.Success( new RestoreWardleyLineCommand(command.BodyPath, line, before), published.Warning)
+            : CommandResult.Failure(published.Error));
     }
 
     /// <summary>The component or pipeline child <paramref name="elementId"/> names, or null.</summary>

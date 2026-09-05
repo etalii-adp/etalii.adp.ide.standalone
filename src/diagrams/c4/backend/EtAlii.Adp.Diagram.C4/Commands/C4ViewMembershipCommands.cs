@@ -43,9 +43,12 @@ internal sealed class MoveC4ElementCommandHandler(IC4DocumentStore documents, C4
             ? new RestoreC4ElementPositionCommand(command.BodyPath, command.ViewKey, command.ElementId, was.X, was.Y)
             : new RestoreC4ElementPositionCommand(command.BodyPath, command.ViewKey, command.ElementId, null, null);
 
-        sidecar.Write(command.BodyPath, command.ViewKey, command.ElementId, new C4SidecarPosition(command.X, command.Y));
+        // Succeeds either way: the element HAS moved, and refusing the drag because its new
+        // position could not be recorded would lose work the user can see. The warning is
+        // what stops the position quietly not being there on the next open.
+        var warning = sidecar.Write(command.BodyPath, command.ViewKey, command.ElementId, new C4SidecarPosition(command.X, command.Y));
         documents.Touch(command.BodyPath);
-        return Task.FromResult(CommandResult.Success(previous));
+        return Task.FromResult(CommandResult.Success(previous, warning));
     }
 }
 
@@ -61,20 +64,16 @@ internal sealed class RestoreC4ElementPositionCommandHandler(IC4DocumentStore do
             ? new MoveC4ElementCommand(command.BodyPath, command.ViewKey, command.ElementId, was.X, was.Y)
             : null;
 
-        if (command.X is { } x && command.Y is { } y)
-        {
-            sidecar.Write(command.BodyPath, command.ViewKey, command.ElementId, new C4SidecarPosition(x, y));
-        }
-        else
-        {
-            sidecar.Remove(command.BodyPath, command.ViewKey, command.ElementId);
-        }
+        var warning = command.X is { } x && command.Y is { } y
+            ? sidecar.Write(command.BodyPath, command.ViewKey, command.ElementId, new C4SidecarPosition(x, y))
+            : sidecar.Remove(command.BodyPath, command.ViewKey, command.ElementId);
 
         documents.Touch(command.BodyPath);
 
         // Redoing a "restore to computed" means moving back to where the drag put it; when
         // there was nothing to move back to, the inverse is a no-op restore.
         return Task.FromResult(CommandResult.Success(
-            (ICommand?)current ?? new RestoreC4ElementPositionCommand(command.BodyPath, command.ViewKey, command.ElementId, null, null)));
+            (ICommand?)current ?? new RestoreC4ElementPositionCommand(command.BodyPath, command.ViewKey, command.ElementId, null, null),
+            warning));
     }
 }

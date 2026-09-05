@@ -55,11 +55,12 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
             .ToArray();
     }
 
-    public string Save(string path)
+    public WardleyPublishResult Save(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
         var document = GetOrLoad(path);
+        var warning = "";
         _selfWrites[path] = 1;
         try
         {
@@ -72,7 +73,7 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
                 // reported this since it was written; wardley did not, and the difference is
                 // what WardleyMapFlowTests caught intermittently. Not a flaky test: a failed
                 // save answered as a successful one.
-                return $"{IoPath.GetFileName(path)} could not be written. The change is still here to try again.";
+                return WardleyPublishResult.Failed($"{IoPath.GetFileName(path)} could not be written. The change is still here to try again.");
             }
 
             // The edit may have added or removed elements, so identities are re-reconciled
@@ -81,7 +82,7 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
             // (Requirement 4.3).
             var reconciled = WardleyIdentities.Reconcile(WardleyParser.Parse(document), Identities(path));
             _identities[path] = reconciled;
-            _sidecar.Write(path, reconciled);
+            warning = _sidecar.Write(path, reconciled);
         }
         finally
         {
@@ -89,7 +90,7 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
         }
 
         Changed?.Invoke(this, new WardleyDocumentChangedEventArgs(path));
-        return "";
+        return WardleyPublishResult.WithWarning(warning);
     }
 
     public void Touch(string path)

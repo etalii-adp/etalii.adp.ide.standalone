@@ -614,4 +614,27 @@ public sealed class WardleyCommandsTests : IDisposable
         Assert.Contains("could not be written", result.Error, StringComparison.Ordinal);
         Assert.Equal("component Alpha [0.5, 0.5]\n", Read());
     }
+
+    [Fact]
+    public async Task AnEditWhoseIdentitiesCannotBeSaved_SucceedsButSaysSo()
+    {
+        // Arrange: one edit so the identity sidecar exists, then hold it so it cannot be
+        // replaced. A missing sidecar is re-derived and succeeds, so it has to exist here.
+        Write("component Alpha [0.5, 0.5]\n");
+        await Execute(new AddWardleyElementCommand(_path, "component", "Beta", 0.8d, 0.2d));
+        var sidecarPath = WardleyIdentities.PathFor(_path);
+        Assert.True(File.Exists(sidecarPath), $"expected a sidecar at {sidecarPath}");
+        using var holder = new FileStream(sidecarPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+        // Act.
+        var result = await Execute(new AddWardleyElementCommand(_path, "component", "Gamma", 0.3d, 0.7d));
+
+        // Assert: the map itself was written, so the command succeeds - the element is there and
+        // refusing it would lose real work. The identities were not, which costs stable ids on
+        // the next open, so the user is told instead of finding out then.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Contains("component Gamma", Read(), StringComparison.Ordinal);
+        Assert.NotEqual("", result.Warning);
+        Assert.Contains("new ids", result.Warning, StringComparison.Ordinal);
+    }
 }
