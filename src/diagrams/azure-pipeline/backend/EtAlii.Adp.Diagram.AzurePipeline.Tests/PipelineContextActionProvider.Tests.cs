@@ -88,6 +88,23 @@ public class PipelineContextActionProviderTests : IDisposable
         await _provider.CommitAsync(Target(path, elementId), actionId, value, "", CancellationToken.None);
 
     [Fact]
+    public async Task TheRenamePrompt_IsMarkedForInlineEditing_AndItIsTheOnlyPromptThereIs()
+    {
+        // Arrange.
+        // This provider raises exactly one input prompt - the rename; every other action
+        // commits straight away rather than asking. So there is no unmarked neighbour to
+        // contrast against, and this test says that in as many words instead of inventing
+        // one: if a second prompt ever appears here, the contrast belongs in this test.
+        var path = Write();
+
+        // Act.
+        var rename = await _provider.ExecuteAsync(Target(path, "Build"), PipelineContextActionProvider.RenameActionId, CancellationToken.None);
+
+        // Assert.
+        Assert.Equal("Build", Assert.IsType<ContextExecutionRequiresInput>(rename).Request.InlineLabelElementId);
+    }
+
+    [Fact]
     public void ItAnswersForDiagramElements()
     {
         // Assert.

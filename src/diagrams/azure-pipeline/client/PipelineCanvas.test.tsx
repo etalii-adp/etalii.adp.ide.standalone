@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, fireEvent } from "@testing-library/react";
+import { render, fireEvent, waitFor } from "@testing-library/react";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { ElementSchema } from "@client/generated/elements_pb";
 import { ProblemSchema, ProblemSeverity } from "@client/generated/context_pb";
@@ -20,6 +20,10 @@ import { ToolboxItemSchema, type ToolboxItem } from "@client/generated/diagrams_
 import { DiagramToolboxProvider, useDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 
 const select = vi.fn();
+const executeShortcut = vi.fn(async () => ({ accepted: true, error: "" }));
+const submitLabel = vi.fn(async () => ({ accepted: true, error: "" }));
+let currentSelectionKey: string | null = null;
+let currentPrompt: unknown = null;
 let currentModel: PipelineModel = emptyModel;
 let currentLoading = false;
 let currentFailed = false;
@@ -39,14 +43,20 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
   const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
   return {
     ...actual,
-    useContextConnection: () => ({ watchId: new Uint8Array(16), select }),
-    useContextSelection: () => ({ selection: null, actions: [] }),
+    useContextConnection: () => ({ watchId: new Uint8Array(16), select, executeShortcut }),
+    useContextSelection: () => ({ selection: currentSelectionKey, actions: [] }),
+    innermostKey: () => currentSelectionKey,
+    useContextPrompt: () => ({ prompt: currentPrompt, onPropose: vi.fn(async () => ({ accepted: true, error: "" })), onSubmit: submitLabel, onCancel: vi.fn() }),
     useContextProblems: () => currentProblems,
   };
 });
 
 let currentToolboxItems: ToolboxItem[] = [];
 let toolboxRequests: (readonly string[])[] = [];
+
+vi.mock("@client/shell/panels/InlineLabelPlacementContext", () => ({
+  useRegisterInlineLabelPlacement: () => undefined,
+}));
 
 vi.mock("@client/shell/panels/useToolboxItems", () => ({
   useToolboxItems: (_projectId: Uint8Array, path: readonly string[]) => {
@@ -132,6 +142,9 @@ function draw() {
 describe("PipelineCanvas", () => {
   beforeEach(() => {
     currentModel = emptyModel;
+    currentSelectionKey = null;
+    currentPrompt = null;
+    executeShortcut.mockClear();
     currentLoading = false;
     currentFailed = false;
     currentProblems = null;
@@ -504,6 +517,98 @@ describe("PipelineCanvas", () => {
 
     // Assert.
     expect(view.getByRole("alert").textContent).toContain("no longer available");
+  });
+
+  // ---- inline renaming and the F2 it gained ------------------------------------------------
+
+  function labelPromptFor(elementId: string, text: string): unknown {
+    return {
+      prompt: {
+        case: "inputDialog",
+        value: {
+          title: "Rename",
+          icon: "mdi-pencil-outline",
+          fieldLabel: "Display name",
+          initialValue: text,
+          confirmLabel: "Rename",
+          inlineLabelEdit: { elementId: { value: elementId } },
+        },
+      },
+    };
+  }
+
+  function editorBox(container: HTMLElement): SVGForeignObjectElement {
+    return container.querySelector("foreignObject.inline-label-editor") as SVGForeignObjectElement;
+  }
+
+  it("forwards F2 on the selected element to the backend, which owns the key-to-action map", () => {
+    // Arrange. The reach this task added: the provider has declared F2 for its rename all
+    // along, and no keyboard path on this canvas could deliver it.
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build it")));
+    currentSelectionKey = "element:Build";
+    const { container } = draw();
+
+    // Act.
+    fireEvent.keyDown(container.querySelector("svg.pipeline-canvas-surface") as SVGSVGElement, { key: "F2" });
+
+    // Assert: the key went over as data, addressed to the selected element.
+    expect(executeShortcut).toHaveBeenCalledTimes(1);
+    const [shortcut, source] = executeShortcut.mock.calls[0] as unknown as [unknown, unknown];
+    expect((shortcut as { key: string }).key).toBe("F2");
+    expect((source as { source: { value: { value: string } } }).source.value.value).toBe("Build");
+  });
+
+  it("forwards nothing while no element is selected", () => {
+    // Arrange.
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build it")));
+    const { container } = draw();
+
+    // Act.
+    fireEvent.keyDown(container.querySelector("svg.pipeline-canvas-surface") as SVGSVGElement, { key: "F2" });
+
+    // Assert.
+    expect(executeShortcut).not.toHaveBeenCalled();
+  });
+
+  it("opens a stage's editor over its name line, not over the whole card", () => {
+    // Arrange. The card draws its name with the job count under it; a card-sized editor
+    // would sit over both lines to edit one of them.
+    // The stage sits away from the origin on purpose: BoxElement is corner-anchored while
+    // the shared helpers speak centred boxes, and at (0, 0) a missed conversion is
+    // invisible - the wrong editor lands in the right place.
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build it", {}, 40, 30)));
+    currentPrompt = labelPromptFor("Build", "Build it");
+
+    // Act.
+    const { container } = draw();
+
+    // Assert: on the card, at its top - the name line - not centred on it or beside it.
+    const card = container.querySelector('[data-testid="stage-Build"] rect') as SVGRectElement;
+    const box = editorBox(container);
+    expect(box).not.toBeNull();
+    expect(Number(box.getAttribute("x"))).toBe(40);
+    expect(Number(box.getAttribute("y"))).toBe(30 + 6);
+    expect(Number(box.getAttribute("height"))).toBeLessThan(Number(card.getAttribute("height")));
+
+    const field = container.querySelector("input.inline-label-editor-field") as HTMLInputElement;
+    expect(field.value).toBe("Build it");
+  });
+
+  it("submits what is typed, and an edit commits through the prompt rather than re-selecting", async () => {
+    // Arrange.
+    currentModel = applyDelta(emptyModel, add(stage("Build", "Build it")));
+    currentPrompt = labelPromptFor("Build", "Build it");
+    const { container } = draw();
+    select.mockClear();
+
+    // Act.
+    const field = container.querySelector("input.inline-label-editor-field") as HTMLInputElement;
+    fireEvent.change(field, { target: { value: "Build everything" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+
+    // Assert.
+    await waitFor(() => expect(submitLabel).toHaveBeenCalledWith("Build everything"));
+    expect(select).not.toHaveBeenCalled();
   });
 });
 

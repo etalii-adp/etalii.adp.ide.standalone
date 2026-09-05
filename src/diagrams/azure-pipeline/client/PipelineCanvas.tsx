@@ -5,8 +5,13 @@ import { FixedBezierConnection } from "@client/canvas/connections/fixed-bezier/F
 import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
 import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import { BoxElement } from "@client/canvas/elements/box/BoxElement";
-import { elementSelectionOf } from "@client/canvas/selection";
-import { useContextConnection, useContextProblems } from "@client/shell/context/ContextConnectionProvider";
+import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
+import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
+import { InlineLabelEditor } from "@client/canvas/label/InlineLabelEditor";
+import { centredLabelPlacement, insetLabelPlacement } from "@client/canvas/label/labelPlacement";
+import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
+import { useRegisterInlineLabelPlacement, type LabelPlacement } from "@client/shell/panels/InlineLabelPlacementContext";
+import { innermostKey, useContextConnection, useContextPrompt, useContextProblems, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { useRegisterDiagramView, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
 import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
@@ -24,6 +29,10 @@ import {
   type PipelineNode,
 } from "./pipelineModel";
 import { usePipelineStream } from "./usePipelineStream";
+
+/** The stage card's name line: baseline 24 with the job count under it, so the editor covers the name alone. */
+const STAGE_NAME_TOP = 6;
+const STAGE_NAME_HEIGHT = 24;
 
 /** The visible rectangle, in canvas units - the svg viewBox as data. */
 interface ViewBox {
@@ -62,7 +71,9 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
   // The palette the Toolbox panel shows while this pipeline is open - described by the
   // backend (Requirement 9.6), registered here and withdrawn on unmount.
   useRegisterDiagramToolbox(useToolboxItems(projectId, path));
-  const { select } = useContextConnection();
+  const { select, executeShortcut } = useContextConnection();
+  const { selection } = useContextSelection();
+  const selectedId = elementIdOfKey(innermostKey(selection ?? null));
   // Problems arrive for the whole project, so an element only wears the ones that name it and
   // this file - two pipelines may each have a stage called Build (Requirement 8.7).
   const problems = useContextProblems()?.problems ?? [];
@@ -77,6 +88,61 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
   const effectiveView = view ?? fitBox;
   const viewRef = useRef(effectiveView);
   viewRef.current = effectiveView;
+
+  // Where an element's name is drawn - for the shell's inline editor. This canvas carries a
+  // viewBox, so placements are module units and the model alone decides them: a pan changes
+  // the viewBox, not where anything sits in it.
+  //
+  // Two shapes. A stage is a composite card - its name line sits above the job count - so the
+  // editor covers that line rather than the card. A job, step or template is a single-line
+  // box, and the editor covers it whole. BoxElement is corner-anchored, so both convert to
+  // the centred box the shared helpers speak.
+  const placementOfLabel = useCallback(
+    (elementId: string): LabelPlacement | null => {
+      const node = model.nodes.get(elementId);
+      if (node === undefined) {
+        return null;
+      }
+
+      const { displayName, width, height } = node.payload;
+      const box = { x: node.x + width / 2, y: node.y + height / 2, width, height };
+      return node.type === STAGE_TYPE
+        ? insetLabelPlacement(box, STAGE_NAME_TOP, STAGE_NAME_HEIGHT, displayName)
+        : centredLabelPlacement(box, displayName);
+    },
+    [model],
+  );
+  useRegisterInlineLabelPlacement(placementOfLabel);
+
+  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
+  const editingId = inlineLabelElementIdOf(prompt);
+  const editingPlacement = editingId === null ? null : placementOfLabel(editingId);
+  const returnFocusToSurface = useCallback(() => surfaceRef.current?.focus(), []);
+
+  /** Ends an open inline edit before a gesture begins; the editor commits on blur. */
+  const endInlineEditBeforeGesture = () => {
+    if (editingPlacement !== null) {
+      surfaceRef.current?.focus();
+    }
+  };
+
+  /**
+   * F2 on the selected element, forwarded as data through the same seam every other canvas
+   * uses: the backend maps the key to its action, so no key-to-action table lives here.
+   */
+  const onKeyDown = async (event: React.KeyboardEvent) => {
+    if (!selectedId || isTextTarget(event.target)) {
+      return;
+    }
+
+    const shortcut = structuralShortcutFor(event, ["F2"]);
+    if (!shortcut) {
+      return;
+    }
+
+    event.preventDefault();
+    await executeShortcut(shortcut, elementSourceOf(selectedId));
+  };
 
   const zoomBy = useCallback((factor: number, aboutX?: number, aboutY?: number) => {
     setView(() => {
@@ -134,6 +200,7 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
   };
 
   const onSurfacePointerDown = (event: React.MouseEvent) => {
+    endInlineEditBeforeGesture();
     if (event.target !== event.currentTarget) {
       return;
     }
@@ -217,6 +284,7 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
           aria-label={`Pipeline ${path.join("/")}`}
           onClick={onBackgroundClick}
           onMouseDown={onSurfacePointerDown}
+          onKeyDown={onKeyDown}
           onMouseMove={onSurfacePointerMove}
           onMouseUp={onSurfacePointerUp}
           onMouseLeave={onSurfacePointerUp}
@@ -257,6 +325,18 @@ export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps
               onSelect={() => onNodeClick(node)}
             />
           ))}
+
+          {/* Last of all, so the editor is above every card it overlaps. Placed in canvas
+              units; the viewBox carries it through pans and zooms like everything else. */}
+          {editingPlacement !== null && (
+            <InlineLabelEditor
+              placement={editingPlacement}
+              onPropose={onProposeLabel}
+              onSubmit={onSubmitLabel}
+              onCancel={onCancelLabel}
+              onReturnFocus={returnFocusToSurface}
+            />
+          )}
         </svg>
         <CanvasScrollbars
           {...scrollAxesOf(effectiveView, model)}
