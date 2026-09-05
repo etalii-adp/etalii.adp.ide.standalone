@@ -1,4 +1,6 @@
-﻿namespace EtAlii.Adp.Backend.Diagrams;
+﻿using System;
+
+namespace EtAlii.Adp.Backend.Diagrams;
 
 /// <summary>
 /// A diagram element as the core stream carries it: identity, where the module's layout put
