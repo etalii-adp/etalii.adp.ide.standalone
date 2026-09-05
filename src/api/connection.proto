@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package etalii.adp;
+
+option csharp_namespace = "EtAlii.Adp";
+
+// Ordered path segments. The leading segments resolve to a file within
+// the workspace; any additional segments address a location/sub-scope
+// within that file.
+message Path {
+  repeated string segments = 1;
+}
+
+message Point2D {
+  double x = 1;
+  double y = 2;
+}
+
+message BoundingBox {
+  Point2D min = 1;
+  Point2D max = 2;
+}
+
+message ViewUpdate {
+  Point2D center = 1;
+  BoundingBox bounding_box = 2;
+}
