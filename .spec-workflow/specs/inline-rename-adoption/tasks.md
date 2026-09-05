@@ -76,7 +76,7 @@ One worktree for the whole spec: `.claude/worktrees/adopt` — short, because th
   - _Requirements: 1.1, 3.3, 4.1, 6.1, 8.2, 9.2_
   - _Prompt: Implement the task for spec inline-rename-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer | Task: Mark wardley's rename prompt and adopt the inline editor in WardleyCanvas, on the selection task 6 added | Restrictions: mark only the rename - not the adds, not evolve; do not touch fitToView | _Leverage: task 6's selection; the adopters from tasks 2 to 5 | Success: an element renames in place, unmarked actions still open dialogs, gates green. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 8. Documentation, the manual checks, coverage and merge
+- [x] 8. Documentation, the manual checks, coverage and merge
   - Files: `src/client/src/canvas/label/readme.md`, `docs/creating-a-diagram-module.md`, each excluded module's client readme, `tests.md`
   - Record the adoption list as **what is true**, not what was planned, and record every exclusion with its reason in that module's own readme (Requirement 1.6): the four RDF readings because the drawn label is a prefixed name computed from an IRI; ansible-structure, helm-charts and sparql because they have no rename to mark; databricks' connections and anything else out **for now** as pending rather than exempt.
   - Update `creating-a-diagram-module.md`'s *Renaming in place* section with the three placement helpers, since it currently tells a module author to write a resolver by hand.
