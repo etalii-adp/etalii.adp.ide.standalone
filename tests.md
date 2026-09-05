@@ -19,6 +19,40 @@ not fit — at 1440x900 that pane is 253px, which fits one tab, so `Properties` 
 than a defect. Widening the pane or clicking the overflow both reach it; hunting for it is what
 costs the time, and it is written here once rather than in each of the thirteen.
 
+## A feedback loop is drawn as a loop (causal-loop-diagram, arcs fix)
+
+**A defect found by looking at the running app.** The diagram type is named after loops and drew
+none. Both links of a two-variable loop took the shared tree connector, which anchors on the sides
+facing each other, so `a -> b` and `b -> a` produced the same path and rendered as **one line with
+an arrowhead at each end**. Longer cycles read as a concertina rather than a ring.
+
+The fix follows the notation's own convention — and Vensim's, which gives each arrow a single
+curvature handle: one control point, offset perpendicular to the chord, always to the same side of
+**travel**. Reversing a link reverses travel, which flips the offset, which is what encloses the
+loop.
+
+- **Preconditions**: backend + client running; `src/examples` open as a project.
+- **Actions**: open `diagrams/causal-loop/on-call/on-call.adp`, then
+  `diagrams/causal-loop/reference/reference.adp`.
+- **Expected**:
+  - Two variables joined both ways draw an **ellipse** between them, not a single line. This is
+    the case that was broken.
+  - A longer cycle bows outward consistently and reads as a **ring**.
+  - Each link is a single arc, not an S-curve.
+  - A loop's identifier sits inside a small **circular arrow** at the loop's centre, turning
+    clockwise for a reinforcing loop and anticlockwise for a balancing one.
+  - A delayed link's two strokes cross the curve **at right angles to it**, wherever on the arc
+    they fall — not drawn vertically against a near-vertical link, where they used to vanish into
+    the line.
+  - The polarity mark sits beside the arc near the arrowhead, not underneath it.
+
+**Why the unit tests did not catch the original**: every canvas test asserted that link elements
+existed and carried their classes and marks. Nothing asserted anything about the **shape**, so two
+links drawing the identical path was invisible. The tests added with this fix compare the two
+paths and the sign of each curve's control point, and were seen to fail against the old geometry.
+
+- **Result**: **not run.** No agent on this specification can sign in — see the preamble.
+
 ## A loop labelled R is arithmetically balancing, and the tool says so without changing the file (causal-loop-diagram, task 5.3)
 
 The claim this diagram type exists to make: an `R`/`B` label is **checkable**, and a disagreement
