@@ -126,6 +126,19 @@ the prompt it matches. Its [readme](../src/client/src/canvas/label/readme.md) is
 and a guard, [`noPrivateLabelEditors.test.ts`](../src/client/src/canvas/label/noPrivateLabelEditors.test.ts),
 fails naming any module that renders a text field of its own instead.
 
+**Do not compute the rectangle by hand.** The four helpers in
+[`labelPlacement.ts`](../src/client/src/canvas/label/labelPlacement.ts) cover the shapes a
+canvas actually draws, and every adopter uses them: `centredLabelPlacement` for a label filling
+its element's box, `insetLabelPlacement` for one named line inside a composite card,
+`midpointLabelPlacement` for a bare text on a connection, and `asideLabelPlacement` for a label
+beside a point marker - an instant's diamond, a Wardley mark, anywhere there is no box to put
+the text in. They are pure and unit-agnostic: a viewBox canvas passes module units and a
+pixel-positioned one passes pixels, and only the second kind memoizes its resolver on the view
+as well as the model, because there a pan moves every label without changing the model. A
+connection or aside label has no box, so its width is your measured width where the browser can
+give one and a per-character estimate otherwise - and jsdom measures nothing, so unit tests
+exercise the estimate by construction.
+
 Three things are worth knowing before you write the resolver.
 
 **Give the label's rectangle, not the element's.** A C4 box carries a name, a type line and a

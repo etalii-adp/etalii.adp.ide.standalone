@@ -1985,3 +1985,68 @@ the measured path and the real focus behaviour are verified.
   that nothing could ever commit; and the editor sending a value the module had already refused,
   which wrote `container ""` into a real example document before it was undone. All four are fixed
   and each has a test that was seen to fail without its fix.
+
+## Renaming in place across the five newly adopted modules (inline-rename-adoption, task 8)
+
+One check per adopter, each runnable against a local developer build signed in with the
+checked-in placeholder, on `src/examples/`. The Enter caveat from the inline-rename entry above
+applies to every one of these: a synthesised Return does not reach an input inside a
+`foreignObject` while Escape does, so an automated pass will watch Enter do nothing and be wrong
+about it. Each check names the unit tests that already pin its behaviour, so the eyes-on half is
+verifying focus, caret and the measured label width - the parts jsdom cannot.
+
+### timeline
+
+- **Actions**: open a timeline; select a span, press **F2**, retype, **Enter**. Then select the
+  connection between two elements, run **Relabel** from its menu, and watch where the editor
+  opens. Finally rename an *instant* (a diamond, not a bar).
+- **Expected**: the span's editor covers its bar; the connection's sits at the line's midpoint,
+  where its label is drawn; the instant's opens **beside its diamond**, not on top of it - the
+  case that grew `asideLabelPlacement`. Automated: `TimelineCanvas.test.tsx`, the four
+  inline-rename tests; `OnlyTheTwoLabelPrompts_AreMarkedForInlineEditing`.
+
+### dependency-graph
+
+- **Actions**: rename a node with **F2**; relabel a relation from its menu; then run **Add node**
+  from the background menu.
+- **Expected**: node and relation edit in place; **Add node still opens the ordinary dialog**,
+  because it asks for a label that does not exist yet. Automated:
+  `DependencyGraphCanvas.test.tsx`; the marker contrast test.
+
+### databricks
+
+- **Actions**: in a job, rename a task with **F2**; in a bundle, rename the bundle node; then
+  run **Set run if** on a task.
+- **Expected**: the task's key and the bundle's name edit in place - the bundle node's drawn key
+  IS the name being renamed - while **Set run if opens the dialog**, its value being an
+  expression rather than the label. Edges cannot be selected at all; that is recorded as pending
+  in the label library's readme, not a defect here. Automated: `JobCanvas.test.tsx`,
+  `BundleCanvas.test.tsx`; `OnlyTheTwoLabelPrompts_AreMarkedForInlineEditing`.
+
+### azure-pipeline
+
+- **Actions**: select a stage, press **F2** - the first keyboard gesture this canvas has ever
+  had - retype the display name, **Enter**. Repeat on a job. Then clear a display name entirely
+  and commit.
+- **Expected**: the stage's editor covers its **name line**, above the job count; the job's
+  covers its single-line box. Clearing commits an empty display name - a real instruction, after
+  which the element falls back to its own identifying name on screen. Automated:
+  `PipelineCanvas.test.tsx`, including the F2-reach test that fails with the wiring removed.
+
+### wardley-map
+
+- **Actions**: click a component - selection is itself new here - then **F2**, retype, **Enter**.
+  Rename a component whose label the author positioned left of its mark
+  (`label [-57, ...]` in the DSL). Then run **Evolve** from the menu.
+- **Expected**: the editor opens where the drawn text begins, the author's offset honoured on
+  either side of the mark; **Evolve opens the dialog**, a maturity number being emphatically not
+  a label. Automated: `WardleyCanvas.test.tsx` selection and adoption tests;
+  `OnlyTheRenamePrompt_IsMarkedForInlineEditing`.
+
+- **Result 2026-09-05**: **written and not yet executed by eyes.** The implementing session holds
+  a standing prohibition on entering credentials that its own rules do not let CLAUDE.md's
+  sign-in ruling override, so the checks above are handed over runnable rather than recorded as
+  a pass. Every behaviour listed is pinned by the named unit tests, each of which was seen to
+  fail against its own defect before being trusted; what remains for the eyes-on pass is what
+  jsdom cannot model - focus, the caret, blur-commit ordering and the measured label widths.
+

@@ -11,3 +11,11 @@ dependency, an include no local partial defines) draw as labeled stubs.
 
 Styling lives entirely in `helm-charts.css`, one hue per element kind - a theme change is a
 stylesheet change, never a protocol one.
+
+## Inline renaming
+
+**Exempt, not pending: there is no rename to mark.** Every context row this module shows is
+read-only with a stated reason - a chart's anatomy is defined in its files, and the canvas's
+own zero-writes guarantee is load-bearing (`ZeroWrites.Tests.cs`). There is no prompt whose
+value is a drawn label, so there is nothing to mark. If an editing action ever arrives, it
+adopts the ordinary way through the shared label library.

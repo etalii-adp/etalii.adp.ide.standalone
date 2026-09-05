@@ -29,3 +29,12 @@ Keep it that way: a colour on the wire would put half the design in the backend 
 change into a protocol change. If you add a palette slot to the stylesheet, bump `PALETTE_SLOTS`
 in `AnsibleCanvas.tsx` to match — that constant is the only thing the component knows about the
 palette, and it knows only how many there are.
+
+## Inline renaming
+
+**Exempt, not pending: there is no rename to mark.** This module's context actions offer no
+rename at all - the structure it draws comes from the inventory's own files, and changing a
+host's or group's name is an edit to those files, not to a label. A module with no prompt whose
+value is the drawn text has nothing this feature could attach to. If a rename action is ever
+added, it adopts the ordinary way: mark the prompt with the element id, register a placement
+resolver over the shared helpers.
