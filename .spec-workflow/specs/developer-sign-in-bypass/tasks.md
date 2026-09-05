@@ -12,7 +12,7 @@
 
 ## Tasks
 
-- [ ] 1. The backend hands a developer build a real session
+- [x] 1. The backend hands a developer build a real session
   - Files: `src/api/authentication.proto`, `src/backend/EtAlii.Adp.Backend/Authentication/AuthenticationService.cs`, `src/backend/EtAlii.Adp.Backend/Sessions/SessionInterceptor.cs`
   - One new RPC, `DeveloperSession`, taking nothing and returning either a session token plus a bypass flag, or nothing at all.
   - **Mint the token through the same `SessionStore` path `Login` uses** (`AuthenticationService.cs:27` is the existing issuance). This is the requirement the whole spec rests on: a token from a parallel path would make every check run under the bypass evidence about the bypass rather than about the product.
@@ -22,7 +22,7 @@
   - _Requirements: 1.1, 1.3, 1.4, 2.1, 2.4_
   - _Prompt: Implement the task for spec developer-sign-in-bypass, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Backend developer, C# and gRPC | Task: Add the DeveloperSession RPC, minting through the same SessionStore path Login uses, with the handler and its IsExempt entry inside one #if DEBUG block | Restrictions: no parallel token issuance; the config value may only disable, never enable; do not weaken IsExempt for anything else; the four gates green | _Leverage: DescribeProduct as the precedent for an exempt pre-session call, and the existing session issuance in Login | Success: a developer build can obtain a real session without a credential, and the token is indistinguishable downstream from a signed-in one. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. The client is already authenticated before it decides what to render
+- [x] 2. The client is already authenticated before it decides what to render
   - Files: `src/client/src/auth/AuthContext.tsx`, `src/client/src/auth/AuthContext.test.tsx`, one marker in the shell
   - A mount effect in `AuthProvider` calls `DeveloperSession`; on a token it sets `tokenRef.current` and `isAuthenticated` — **the two values the provider already has** (`AuthContext.tsx:32-33`). On anything else — absent method, error, disabled bypass — it does nothing and today's behaviour runs unchanged.
   - **Do not touch `App.tsx`.** Its `if (!isAuthenticated) return <LoginPage/>` at line 12 stays exactly as it is and simply never gets the chance. A client that decided for itself whether to show a form would be a second authentication policy.
@@ -32,7 +32,7 @@
   - _Requirements: 1.1, 1.2, 4.4, 5.1, 5.2, 5.3_
   - _Prompt: Implement the task for spec developer-sign-in-bypass, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/TypeScript developer | Task: Have AuthProvider obtain a developer session on mount and mark the session visibly, leaving App.tsx untouched | Restrictions: no second transport; no pre-filled form; a failed or absent call must be silent and fall through to today's behaviour; the marker comes from the session not from a build flag | _Leverage: AuthProvider's existing tokenRef and isAuthenticated, and AuthContext.test.tsx's transport-identity guard | Success: a developer build opens on the workspace, LoginPage never mounts, and the invariant test still passes. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. The guard that reads a different input — and it lands before anyone relies on the bypass
+- [x] 3. The guard that reads a different input — and it lands before anyone relies on the bypass
   - Files: `.github/workflows/build.yml`
   - **The obvious guard is worthless by construction, not by oversight.** A unit test asserting the bypass is disabled **cannot fail in the suite that runs it**: the test assembly compiles Debug, where the bypass exists by design. Such a test either asserts the wrong thing or asserts a default value, and this repository has already shipped three guards that passed against the very bugs they were written for.
   - So the guard **inspects a Release-published artifact** — a step in the release job that reads the published assembly's metadata and fails if a `DeveloperSession` symbol is present. It is the only check that reads a different input, which is the same insight as the fresh-tree build rule.
