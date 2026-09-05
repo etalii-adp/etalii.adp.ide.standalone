@@ -129,7 +129,9 @@ This repository plans and tracks work in `.spec-workflow/` — steering document
 
 So the arrangement that works: the Tester starts the build and reports it ready, a person signs in on that running instance, and the Tester executes every check in the session that follows. **Do not re-derive this.** Two agents reached opposite conclusions from the same instructions and neither was careless — one followed this document, the others followed the higher constraint — and the standoff froze eight checks for a day. The conflict is real, the higher instruction wins, and the answer is a person at the keyboard once rather than a better argument.
 
-Recording *"still cannot be run"* **with the reason** is a result. Silence is not. That distinction is the difference between 19 recorded outcomes and 71 known checks. That is the whole of the permission: this one placeholder, this one local build. Any other credential, any real account and any non-local environment stay off-limits. Two agents reached opposite conclusions on identical facts before this was written down, and recorded contradictory verdicts for the same kind of check; **a check recorded `pending` because of the sign-in form alone is a check that was not run.**
+Recording *"still cannot be run"* **with the reason** is a result. Silence is not — and 43 of 72 entries currently carry no outcome at all.
+
+**One signed-in session is the capacity, so testers do not parallelise.** `App.tsx`'s `Gate()` returns `LoginPage` whenever `isAuthenticated` is false, and there is no route to a project, diagram or canvas that does not pass it — no dev auth branch, no environment flag, nothing. **71 of 72 entries are behind that form**; the single exception needs no UI at all. Entry-level ownership prevents collision, it does not add capacity. A second Tester adds nothing until a second signed-in instance exists or the sign-in form is gone. this was written down, and recorded contradictory verdicts for the same kind of check; **a check recorded `pending` because of the sign-in form alone is a check that was not run.**
 
 ## Verifying that a test actually tests something
 
