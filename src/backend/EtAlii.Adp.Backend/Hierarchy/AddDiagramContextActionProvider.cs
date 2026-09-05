@@ -128,7 +128,10 @@ public sealed class AddDiagramContextActionProvider : IContextActionProvider
 
         try
         {
-            return definition.SuggestsBody(File.ReadAllText(target.ResolvedFullPath));
+            // Shared, for the reason RegistrationLayout's read is: this runs while the user
+            // browses, over files ADP may be publishing at that moment, and a read sharing only
+            // Read denies that publish.
+            return definition.SuggestsBody(SharedDocumentReader.ReadAllText(target.ResolvedFullPath));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
