@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { centredLabelPlacement, insetLabelPlacement, midpointLabelPlacement } from "./labelPlacement";
+import { asideLabelPlacement, centredLabelPlacement, insetLabelPlacement, midpointLabelPlacement } from "./labelPlacement";
 
 describe("centredLabelPlacement", () => {
   it("turns a centred box into the corner-anchored rectangle an editor is drawn in", () => {
@@ -66,5 +66,23 @@ describe("midpointLabelPlacement", () => {
 
     expect(long.width).toBe(40 * 7);
     expect(empty.width).toBe(80);
+  });
+});
+
+describe("asideLabelPlacement", () => {
+  it("starts the label past the marker and centres it on the marker's line", () => {
+    // The defect this pins is an editor opened ON a point marker: an instant has no box, so a
+    // centred placement covers the marker rather than the text drawn next to it.
+    const placement = asideLabelPlacement({ x: 100, y: 50 }, 15, "Go");
+
+    expect(placement.x).toBe(115);
+    expect(placement.y + placement.height / 2).toBe(50);
+  });
+
+  it("takes the caller's measured width, and estimates with a floor otherwise", () => {
+    // Same rule as a connection label, and the same jsdom caveat: the estimate is the branch
+    // every unit test takes, because no getBBox exists to measure with.
+    expect(asideLabelPlacement({ x: 0, y: 0 }, 15, "Go", 42).width).toBe(42);
+    expect(asideLabelPlacement({ x: 0, y: 0 }, 15, "").width).toBe(80);
   });
 });
