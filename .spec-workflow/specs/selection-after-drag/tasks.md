@@ -81,7 +81,7 @@ than missed.
   - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 4.1, 4.2, 5.1, 5.2_
   - _Prompt: Implement the task for spec selection-after-drag, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Write the C4 latch reproduction, see it fail against today's code and record the failure, then convert C4Canvas onto the arbiter deleting the flag machinery per the design's deletion table | Restrictions: reproduction before conversion, never after; no behaviour change outside the defective boundary — thresholds, Escape, context menu and inline-edit-before-gesture as today; net line count goes down | _Leverage: the arbiter from task 1; the design's deletion table for the exact sites | Success: the reproduction failed before and passes after, the sabotage reddens exactly it, no JustEndedRef remains in the file, and the c4 client tests pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3. Mindmap: both latch faces reproduced, then the conversion
+- [x] 3. Mindmap: both latch faces reproduced, then the conversion
   - Files: `src/diagrams/mindmap/client/MindmapCanvas.tsx`, `src/diagrams/mindmap/client/MindmapCanvas.test.tsx`
   - **Two reproductions first, both seen to fail**: (a) drag node A onto parent P — the
     reparent's layout moves A from under the pointer — then click node B; today the trailing
@@ -96,7 +96,7 @@ than missed.
   - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 4.1, 4.2, 5.1, 5.2_
   - _Prompt: Implement the task for spec selection-after-drag, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React developer | Task: Write both mindmap reproductions, see both fail and record the failures, then convert MindmapCanvas onto the arbiter deleting its flag machinery and leave-handler flush | Restrictions: reproductions before conversion; the reparent's semantics and its backend refusals unchanged; a completed drag over empty canvas neither selects nor deselects | _Leverage: the arbiter from task 1; task 2's conversion as the shape | Success: both reproductions failed before and pass after, the sabotage reddens them, no JustEndedRef remains, mindmap tests pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. Relations everywhere: raw click becomes a press, with the theft reproduced
+- [-] 4. Relations everywhere: raw click becomes a press, with the theft reproduced
   - Files: `src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx` and its test;
     every other canvas whose relations are selected through a raw `onClick` — **enumerate by
     measurement, not from memory**: grep the canvases for relation/connection click handlers
