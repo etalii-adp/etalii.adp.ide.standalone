@@ -14,7 +14,6 @@ export interface ChoicePromptDialogProps {
   onCancel: () => void;
 }
 
-/** The suggestion a selectable option carries for the text field, if the prompt has one. */
 /** The selected option is own description, or empty when nothing (or a group) is selected. */
 function descriptionFor(options: ContextOption[], id: string | null): string {
   if (id === null) {
@@ -36,6 +35,7 @@ function descriptionFor(options: ContextOption[], id: string | null): string {
   return walk(options);
 }
 
+/** The suggestion a selectable option carries for the text field, if the prompt has one. */
 function suggestionFor(options: ContextOption[], id: string | null): string {
   if (id === null) {
     return "";
@@ -50,6 +50,36 @@ function suggestionFor(options: ContextOption[], id: string | null): string {
     }
   }
   return "";
+}
+
+/** The option with this id, anywhere in the tree, or undefined. */
+function findOption(options: ContextOption[], id: string | null): ContextOption | undefined {
+  if (id === null) {
+    return undefined;
+  }
+  for (const option of options) {
+    if (option.id === id) {
+      return option;
+    }
+    const nested = findOption(option.children, id);
+    if (nested !== undefined) {
+      return nested;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Why the selected option wants no name, or empty when it wants one. Non-empty means the name
+ * row renders this sentence in the field's place and the submission carries no name at all.
+ */
+function nameSuppressionFor(options: ContextOption[], id: string | null): string {
+  return findOption(options, id)?.nameSuppressedReason ?? "";
+}
+
+/** Why the selected option cannot be chosen, or empty when it can. */
+function unavailableReasonFor(options: ContextOption[], id: string | null): string {
+  return findOption(options, id)?.unavailableReason ?? "";
 }
 
 /** The first selectable option, depth first - what the text field starts out describing. */
@@ -142,15 +172,29 @@ export function ChoicePromptDialog({ prompt, onPropose, onSubmit, onCancel }: Ch
   }, [debounced, onPropose]);
 
   const verdictIsCurrent = verdict !== null && verdict.revision === nameRevision;
+
+  // The selected option may want no name at all, in which case the field is replaced by its
+  // sentence. canSubmit has to stop requiring a name in the same breath: a dialog that offers
+  // no field and then refuses to submit without one is a dead end with nothing to fix.
+  const nameSuppression = nameSuppressionFor(prompt.options, selectedId);
+  const nameIsSuppressed = nameSuppression !== "";
   const nameIsAcceptable =
-    nameField === undefined ? true : nameRevision === 0 ? name.length > 0 : verdictIsCurrent && verdict.valid;
-  const nameError = nameRevision > 0 && verdictIsCurrent && !verdict.valid ? verdict.reason : "";
+    nameField === undefined || nameIsSuppressed
+      ? true
+      : nameRevision === 0
+        ? name.length > 0
+        : verdictIsCurrent && verdict.valid;
+  const nameError = !nameIsSuppressed && nameRevision > 0 && verdictIsCurrent && !verdict.valid ? verdict.reason : "";
 
   const rows = useMemo(() => visibleRows(prompt.options, expanded), [prompt.options, expanded]);
   const isEmpty = prompt.options.length === 0;
   // One Tab stop: the focused row, or failing that the first one.
   const tabbableId = focusedId ?? rows[0]?.option.id ?? null;
-  const canSubmit = selectedId !== null && !submitting && nameIsAcceptable;
+  // An unavailable option cannot be submitted even if something managed to select it. The row
+  // refuses selection too; this is the second of the two, because the confirm button and the
+  // double-click path do not go through the row's click handler.
+  const canSubmit =
+    selectedId !== null && !submitting && nameIsAcceptable && unavailableReasonFor(prompt.options, selectedId) === "";
 
   const focusRow = useCallback((id: string | undefined) => {
     if (id === undefined) {
@@ -163,8 +207,17 @@ export function ChoicePromptDialog({ prompt, onPropose, onSubmit, onCancel }: Ch
   /** Choosing an option names the file too - until the user has named it themselves. */
   const choose = useCallback(
     (id: string) => {
+      if (unavailableReasonFor(prompt.options, id) !== "") {
+        // Shown, explained, and not choosable. Refused here rather than only disabled in the
+        // markup, so every path that selects - click, keyboard, double click - is covered by
+        // the same rule.
+        return;
+      }
       setSelectedId(id);
       if (nameField !== undefined && !touched) {
+        // A suppressed option suggests nothing, so this clears the field; switching back to a
+        // type that takes a name restores its suggestion through the same line. That is what
+        // keeps the round trip out of a selection change.
         setName(suggestionFor(prompt.options, id));
         setNameRevision(0);
         setVerdict(null);
@@ -193,7 +246,11 @@ export function ChoicePromptDialog({ prompt, onPropose, onSubmit, onCancel }: Ch
     setSubmitError("");
     try {
       // A prompt without a name field submits exactly as it always did: one answer, no second.
-      const result = nameField === undefined ? await onSubmit(selectedId) : await onSubmit(selectedId, name);
+      // An option whose name is suppressed submits the same way - it has no name to send, and
+      // sending the stale contents of a field the user cannot see would be worse than sending
+      // nothing.
+      const result =
+        nameField === undefined || nameIsSuppressed ? await onSubmit(selectedId) : await onSubmit(selectedId, name);
       if (!result.completed) {
         // Left open on purpose: the choice is still there to reconsider or cancel.
         setSubmitError(result.error);
@@ -201,7 +258,7 @@ export function ChoicePromptDialog({ prompt, onPropose, onSubmit, onCancel }: Ch
     } finally {
       setSubmitting(false);
     }
-  }, [name, nameField, onSubmit, selectedId]);
+  }, [name, nameField, nameIsSuppressed, onSubmit, selectedId]);
 
   const handleKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLUListElement>) => {
@@ -318,10 +375,13 @@ export function ChoicePromptDialog({ prompt, onPropose, onSubmit, onCancel }: Ch
                 // name is in the field, which is the suggestion for this option unless the
                 // user has typed one.
                 choose(row.option.id);
+                const suppressed = row.option.nameSuppressedReason !== "";
                 const submittedName = touched ? name : suggestionFor(prompt.options, row.option.id);
-                if (!submitting && (nameField === undefined || submittedName.length > 0)) {
+                if (!submitting && (nameField === undefined || suppressed || submittedName.length > 0)) {
                   const submission =
-                    nameField === undefined ? onSubmit(row.option.id) : onSubmit(row.option.id, submittedName);
+                    nameField === undefined || suppressed
+                      ? onSubmit(row.option.id)
+                      : onSubmit(row.option.id, submittedName);
                   void submission.then((result) => {
                     if (!result.completed) {
                       setSubmitError(result.error);
@@ -340,7 +400,16 @@ export function ChoicePromptDialog({ prompt, onPropose, onSubmit, onCancel }: Ch
           {descriptionFor(prompt.options, selectedId)}
         </p>
       )}
-      {!isEmpty && nameField !== undefined && (
+      {!isEmpty && nameField !== undefined && nameIsSuppressed && (
+        // The sentence stands where the field was, rather than the row vanishing. A field that
+        // disappears without explanation reads as a bug; this says what will happen instead.
+        <div className="field choice-name-field">
+          <span className="choice-name-suppressed" data-testid="choice-name-suppressed">
+            {nameSuppression}
+          </span>
+        </div>
+      )}
+      {!isEmpty && nameField !== undefined && !nameIsSuppressed && (
         <div className="field choice-name-field">
           <label htmlFor={nameInputId}>{nameField.label}</label>
           <input
@@ -390,6 +459,9 @@ interface ChoiceRowProps {
 function ChoiceRow({ row, selected, tabbable, rowRefs, onFocus, onToggle, onChoose, onConfirm }: ChoiceRowProps) {
   const { option, depth, expandable, expanded } = row;
   const isGroup = !option.selectable;
+  // Offered rather than hidden, because a type that simply vanishes leaves the user wondering
+  // where it went. Greyed with the reason answers that question instead of raising it.
+  const unavailable = option.unavailableReason !== "";
 
   // The whole tree is flat in the DOM - rows carry aria-level - so the keyboard order and
   // the visual order are one list, as in the explorer.
@@ -399,9 +471,16 @@ function ChoiceRow({ row, selected, tabbable, rowRefs, onFocus, onToggle, onChoo
       aria-level={depth + 1}
       aria-expanded={expandable ? expanded : undefined}
       aria-selected={option.selectable ? selected : undefined}
-      className={`choice-tree-row${isGroup ? " choice-tree-row-group" : ""}${selected ? " choice-tree-row-selected" : ""}`}
+      aria-disabled={unavailable ? true : undefined}
+      className={`choice-tree-row${isGroup ? " choice-tree-row-group" : ""}${selected ? " choice-tree-row-selected" : ""}${unavailable ? " choice-tree-row-unavailable" : ""}`}
       style={{ paddingLeft: `${depth * 16 + 8}px` }}
       onDoubleClick={() => {
+        if (unavailable) {
+          // The row is inert, both ways it can be pressed. Guarded here beside the click
+          // handler rather than inside onConfirm as well: two guards where either suffices
+          // means neither can be shown to be load-bearing, and the spare rots.
+          return;
+        }
         if (option.selectable) {
           onConfirm();
         } else if (expandable) {
@@ -442,6 +521,9 @@ function ChoiceRow({ row, selected, tabbable, rowRefs, onFocus, onToggle, onChoo
         tabIndex={tabbable ? 0 : -1}
         onFocus={onFocus}
         onClick={() => {
+          if (unavailable) {
+            return;
+          }
           if (option.selectable) {
             onChoose();
           } else if (expandable) {
@@ -451,6 +533,11 @@ function ChoiceRow({ row, selected, tabbable, rowRefs, onFocus, onToggle, onChoo
       >
         {option.icon && <span className={`mdi ${option.icon} choice-tree-icon`} aria-hidden="true" />}
         <span className="choice-tree-label-text">{option.label}</span>
+        {unavailable && (
+          <span className="choice-tree-row-reason" data-testid={`choice-unavailable-${option.id}`}>
+            {option.unavailableReason}
+          </span>
+        )}
       </button>
     </li>
   );
