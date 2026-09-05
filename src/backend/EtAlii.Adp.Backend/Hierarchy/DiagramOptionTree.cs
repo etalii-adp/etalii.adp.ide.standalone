@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Diagram;
 
