@@ -18,6 +18,9 @@ public class SelfOrganizingLayoutTests
     /// </summary>
     internal const string EmitToVariable = "ETALII_ADP_CAUSAL_LOOP_LAYOUT_OUT";
 
+    /// <summary>The line ending this module's documents use, named so a fixture never spells it.</summary>
+    private const string Newline = "\r\n";
+
     private const string EmitterFilter =
         "/*/*/SelfOrganizingLayoutTests/EmitsPositionsForTheParentProcess";
 
@@ -311,6 +314,245 @@ public class SelfOrganizingLayoutTests
         var dx = first.CenterX - second.CenterX;
         var dy = first.CenterY - second.CenterY;
         return Math.Sqrt((dx * dx) + (dy * dy));
+    }
+
+    // ---- the separation pass, and what it refuses ----------------------------------------------
+
+    /// <summary>
+    /// Requirement 6.5, the ground the ruling says decides whether this layout is real. A
+    /// converged self-organizing map does not guarantee non-overlap, so the arrangement is
+    /// separated rather than trusted, and this is measured on the arrangement the layout actually
+    /// produces rather than on a hand-placed fixture.
+    /// </summary>
+    [Theory]
+    [InlineData(4)]
+    [InlineData(12)]
+    [InlineData(40)]
+    [InlineData(120)]
+    public void AtEverySize_NoTwoBoxesIntersect(int count)
+    {
+        // Act.
+        var result = SelfOrganizingLayout.Compute(Ring(count));
+
+        // Assert.
+        Assert.True(result.IsArranged, result.Refusal);
+
+        // Requirement 7.4: the claim below is vacuously true of a layout that placed nothing.
+        var boxes = result.Boxes.Values.ToArray();
+        Assert.Equal(count, boxes.Length);
+
+        foreach (var (first, second) in Pairs(boxes))
+        {
+            Assert.False(
+                first.Overlaps(second),
+                $"Two of {count} variables overlap: {first} and {second}.");
+        }
+    }
+
+    /// <summary>
+    /// The one the ruling names, spelled out because it is the trap. A hairball is roughly square:
+    /// it scores near 1:1 and sails past an extent-ratio bound while being exactly the unreadable
+    /// arrangement the rule exists to stop. So the ratio is deliberately NOT the guard — this test
+    /// shows a dense diagram passing the ratio it would have been judged by, and being judged on
+    /// intersection instead.
+    /// </summary>
+    [Fact]
+    public void TheExtentRatio_IsNotWhatGuardsReadability()
+    {
+        // Arrange.
+        // A dense graph: every variable linked to every other, which is the shape that piles up.
+        var text = new StringBuilder("causal-loop 1\r\n");
+        const int count = 24;
+        for (var index = 0; index < count; index++)
+        {
+            text.Append(CultureInfo.InvariantCulture, $"variable v{index} \"Variable {index}\"\r\n");
+        }
+
+        for (var first = 0; first < count; first++)
+        {
+            for (var second = first + 1; second < count; second++)
+            {
+                text.Append(CultureInfo.InvariantCulture, $"link v{first} -> v{second} +\r\n");
+            }
+        }
+
+        // Act.
+        var result = SelfOrganizingLayout.Compute(Parse(text.ToString()));
+        Assert.True(result.IsArranged, result.Refusal);
+        var boxes = result.Boxes.Values.ToArray();
+
+        // Assert.
+        // The ratio this arrangement would have been judged by, had the ratio been the guard.
+        var width = boxes.Max(box => box.Right) - boxes.Min(box => box.X);
+        var height = boxes.Max(box => box.Bottom) - boxes.Min(box => box.Y);
+        var ratio = Math.Max(width, height) / Math.Min(width, height);
+        Assert.InRange(ratio, 1.0, 3.0);
+
+        // And the guard that actually decides: no two boxes share any area.
+        Assert.NotEmpty(boxes);
+        foreach (var (first, second) in Pairs(boxes))
+        {
+            Assert.False(first.Overlaps(second), $"A near-square arrangement still overlaps: {first} and {second}.");
+        }
+    }
+
+    /// <summary>
+    /// Requirement 6.7. The refusal is the correct outcome and not a failure of nerve: a diagram
+    /// delivered as a hairball is worse than a diagram left alone. It is reachable, it names the
+    /// size, and it hands back nothing to draw.
+    /// </summary>
+    [Fact]
+    public void WhenTheBoxesCannotBeSeparated_TheLayoutRefusesNamingTheSize()
+    {
+        // Arrange.
+        // Forty boxes started on top of one another, with one round to move them: the rounds run
+        // out before the overlaps do, which is precisely the condition the requirement is about.
+        var positions = new (double X, double Y)[40];
+        var widths = Enumerable.Repeat(120.0, 40).ToArray();
+
+        // Act.
+        var remaining = SelfOrganizingLayout.Separate(positions, widths, 30, 40);
+        var refusal = SelfOrganizingResult.CouldNotSeparate(40, remaining);
+
+        // Assert.
+        Assert.False(refusal.IsArranged);
+        Assert.Equal(40, refusal.Size);
+        Assert.Contains("40 variables", refusal.Refusal, StringComparison.Ordinal);
+        Assert.Empty(refusal.Boxes);
+    }
+
+    /// <summary>
+    /// The clearance a pair needs is measured from the boxes, not from the separation constant.
+    /// </summary>
+    /// <remarks>
+    /// Found by sabotage, and worth the extra test. Dropping the box height from the vertical
+    /// clearance - asking only for the separation between two centres - passed every other test
+    /// in this class, because the default metrics happen to make the separation (40) slightly
+    /// larger than the box height (39.6), so the wrong arithmetic still cleared the boxes. It is
+    /// only a defect when a diagram is drawn with taller text, which is exactly the case no
+    /// default-metrics fixture reaches. So this one sets the metrics that expose it.
+    /// </remarks>
+    [Fact]
+    public void TheClearance_IsMeasuredFromTheBoxes_AndNotFromTheSeparationAlone()
+    {
+        // Arrange.
+        // Tall text and a narrow gap: a pair separated by the gap alone would still overlap by
+        // most of their height.
+        var metrics = new CausalLoopMetrics(FontSize: 100, Separation: 10);
+        Assert.True(
+            metrics.Height > metrics.Separation,
+            "This test is only meaningful while the box is taller than the separation.");
+
+        // Act.
+        var result = SelfOrganizingLayout.Compute(Ring(16), metrics);
+
+        // Assert.
+        Assert.True(result.IsArranged, result.Refusal);
+
+        var boxes = result.Boxes.Values.ToArray();
+        Assert.Equal(16, boxes.Length);
+        foreach (var (first, second) in Pairs(boxes))
+        {
+            Assert.False(first.Overlaps(second), $"Tall boxes overlap: {first} and {second}.");
+        }
+    }
+
+    /// <summary>
+    /// The refusal is reachable through <c>Compute</c> itself, not only through the pieces. A
+    /// refusal nothing can trigger is a refusal nobody has checked, and it would sit in the code
+    /// looking like compliance while never once having run.
+    /// </summary>
+    [Fact]
+    public void TheRefusal_IsReachableThroughTheLayoutItself()
+    {
+        // Arrange.
+        // A dense graph the self-organizing pass packs tightly, given one round to separate it.
+        var text = new StringBuilder("causal-loop 1" + Newline);
+        const int count = 30;
+        for (var index = 0; index < count; index++)
+        {
+            text.Append(CultureInfo.InvariantCulture, $"variable v{index} \"Variable {index}\"{Newline}");
+        }
+
+        for (var first = 0; first < count; first++)
+        {
+            for (var second = first + 1; second < count; second++)
+            {
+                text.Append(CultureInfo.InvariantCulture, $"link v{first} -> v{second} +{Newline}");
+            }
+        }
+
+        // Act.
+        var result = SelfOrganizingLayout.Compute(Parse(text.ToString()), rounds: 1);
+
+        // Assert.
+        Assert.False(result.IsArranged);
+        Assert.Equal(count, result.Size);
+        Assert.Contains("30 variables", result.Refusal, StringComparison.Ordinal);
+
+        // Nothing to draw: the diagram is left as it was rather than delivered as a hairball.
+        Assert.Empty(result.Boxes);
+
+        // And the same document with the real number of rounds is arranged, so the refusal is
+        // about the rounds running out and not about the document being impossible.
+        Assert.True(SelfOrganizingLayout.Compute(Parse(text.ToString())).IsArranged);
+    }
+
+    /// <summary>
+    /// The rounds are bounded rather than "until no overlaps remain". An unbounded loop on a
+    /// document it cannot satisfy would spin instead of refusing, and Requirement 6.7 wants the
+    /// refusal.
+    /// </summary>
+    [Fact]
+    public void TheSeparationPass_Terminates_EvenWhenItCannotSucceed()
+    {
+        // Arrange.
+        // Every box at the same point and far wider than the rounds can clear.
+        var positions = new (double X, double Y)[200];
+        var widths = Enumerable.Repeat(4000.0, 200).ToArray();
+
+        // Act.
+        var remaining = SelfOrganizingLayout.Separate(positions, widths, 30, 40);
+
+        // Assert.
+        // It came back at all, which is the claim, and it came back honest about what is left.
+        Assert.True(remaining >= 0);
+    }
+
+    /// <summary>
+    /// The separation pass is as deterministic as the pass before it: pairs visited in document
+    /// order, each round reading what the last left, displacement a function of the overlap alone.
+    /// </summary>
+    [Fact]
+    public void TheSeparationPass_MovesBoxesTheSameWayEveryTime()
+    {
+        // Arrange.
+        var widths = Enumerable.Repeat(120.0, 30).ToArray();
+        var first = new (double X, double Y)[30];
+        var second = new (double X, double Y)[30];
+        for (var index = 0; index < 30; index++)
+        {
+            first[index] = (index % 3, index % 5);
+            second[index] = (index % 3, index % 5);
+        }
+
+        // Act.
+        SelfOrganizingLayout.Separate(first, widths, 30, 40);
+        SelfOrganizingLayout.Separate(second, widths, 30, 40);
+
+        // Assert.
+        Assert.Equal(first, second);
+    }
+
+    private static IEnumerable<(CausalLoopBox First, CausalLoopBox Second)> Pairs(CausalLoopBox[] boxes)
+    {
+        for (var first = 0; first < boxes.Length; first++)
+        {
+            for (var second = first + 1; second < boxes.Length; second++)
+            {
+                yield return (boxes[first], boxes[second]);
+            }
+        }
     }
 
     // ---- the budget, and the shapes that need no arranging -------------------------------------

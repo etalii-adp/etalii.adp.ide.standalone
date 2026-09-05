@@ -79,6 +79,19 @@ public static class SelfOrganizingLayout
     private const double FinalRadius = 0.35;
 
     /// <summary>
+    /// A hair more than the arithmetic needs, so that two boxes pushed to exactly touching are
+    /// not read as overlapping again by the next round's floating-point comparison.
+    /// </summary>
+    private const double Nudge = 0.5;
+
+    /// <summary>
+    /// How many rounds the separation pass gets. Bounded rather than "until no overlaps remain":
+    /// an unbounded loop on a document it cannot satisfy would spin instead of refusing, and
+    /// Requirement 6.7 wants the refusal.
+    /// </summary>
+    public const int SeparationRounds = 200;
+
+    /// <summary>
     /// The golden angle, in radians. Successive multiples of it never repeat a direction, which
     /// is what makes a phyllotaxis spiral spread points evenly without a random source.
     /// </summary>
@@ -92,11 +105,23 @@ public static class SelfOrganizingLayout
     /// the memory ground is answered by not starting, and the caller is told the size so the
     /// refusal names a fact about the document rather than an internal limit.
     /// </remarks>
+    /// <param name="model">The document to arrange.</param>
+    /// <param name="metrics">How wide and tall a variable is drawn.</param>
+    /// <param name="budget">The drawn-element budget above which the layout declines to start.</param>
+    /// <param name="rounds">
+    /// How many rounds the separation pass gets. A parameter so that the refusal path is
+    /// reachable from a test rather than only from a document nobody has yet written: a refusal
+    /// nothing can trigger is a refusal nobody has checked.
+    /// </param>
     public static SelfOrganizingResult Compute(
-        CausalLoopModel model, CausalLoopMetrics? metrics = null, int budget = DefaultBudget)
+        CausalLoopModel model,
+        CausalLoopMetrics? metrics = null,
+        int budget = DefaultBudget,
+        int rounds = SeparationRounds)
     {
         ArgumentNullException.ThrowIfNull(model);
         ArgumentOutOfRangeException.ThrowIfLessThan(budget, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(rounds, 1);
         metrics ??= CausalLoopMetrics.Default;
 
         var variables = model.Variables;
@@ -127,6 +152,14 @@ public static class SelfOrganizingLayout
             Organize(model, variables, positions, widths, height, metrics.Separation);
         }
 
+        // Phase two. A converged self-organizing map does not guarantee non-overlap and
+        // Requirement 6.5 does, so the arrangement is separated rather than trusted.
+        var remaining = Separate(positions, widths, height, metrics.Separation, rounds);
+        if (remaining > 0)
+        {
+            return SelfOrganizingResult.CouldNotSeparate(variables.Count, remaining);
+        }
+
         var boxes = new Dictionary<string, CausalLoopBox>(variables.Count, StringComparer.Ordinal);
         for (var index = 0; index < variables.Count; index++)
         {
@@ -138,6 +171,87 @@ public static class SelfOrganizingLayout
         }
 
         return SelfOrganizingResult.Arranged(boxes);
+    }
+
+    /// <summary>
+    /// Pushes overlapping boxes apart in stable order, and reports how many pairs still overlap
+    /// when the rounds are spent.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The extent ratio is not the guard here, and this is the code that says so.</b> A
+    /// hairball is roughly square: it scores near 1:1 and would pass a ratio bound comfortably
+    /// while being exactly the unreadable arrangement the ruling names. What bites is whether any
+    /// two boxes intersect, so that is what is measured and that is what refuses.
+    /// </para>
+    /// <para>
+    /// Deterministic like the pass before it: pairs are visited in document order, each round
+    /// reads the positions the previous round left, and the displacement is a function of the
+    /// overlap alone. Nothing here consults a random source or a clock, so the arrangement stays
+    /// reproducible across processes and the two-process test still covers this half.
+    /// </para>
+    /// </remarks>
+    internal static int Separate(
+        (double X, double Y)[] positions,
+        double[] widths,
+        double height,
+        double separation,
+        int rounds = SeparationRounds)
+    {
+        var overlaps = 0;
+
+        for (var round = 0; round < rounds; round++)
+        {
+            overlaps = 0;
+
+            for (var first = 0; first < positions.Length; first++)
+            {
+                for (var second = first + 1; second < positions.Length; second++)
+                {
+                    // The half-extents two boxes need between their centres to clear each other,
+                    // plus the separation this module keeps between neighbours.
+                    var neededX = ((widths[first] + widths[second]) / 2) + separation;
+                    var neededY = height + separation;
+
+                    var dx = positions[second].X - positions[first].X;
+                    var dy = positions[second].Y - positions[first].Y;
+
+                    var overlapX = neededX - Math.Abs(dx);
+                    var overlapY = neededY - Math.Abs(dy);
+                    if (overlapX <= 0 || overlapY <= 0)
+                    {
+                        continue;
+                    }
+
+                    overlaps++;
+
+                    // Push along the axis that needs the least movement: separating two boxes
+                    // that are nearly side by side vertically would undo the arrangement the
+                    // first pass worked out.
+                    if (overlapX / neededX < overlapY / neededY)
+                    {
+                        var push = (overlapX / 2) + Nudge;
+                        var direction = dx < 0 ? -1 : 1;
+                        positions[first] = (positions[first].X - (push * direction), positions[first].Y);
+                        positions[second] = (positions[second].X + (push * direction), positions[second].Y);
+                    }
+                    else
+                    {
+                        var push = (overlapY / 2) + Nudge;
+                        var direction = dy < 0 ? -1 : 1;
+                        positions[first] = (positions[first].X, positions[first].Y - (push * direction));
+                        positions[second] = (positions[second].X, positions[second].Y + (push * direction));
+                    }
+                }
+            }
+
+            if (overlaps == 0)
+            {
+                return 0;
+            }
+        }
+
+        return overlaps;
     }
 
     /// <summary>
