@@ -13,7 +13,7 @@ That distinction decides the design, and it is the reason a narrower fix will no
 Measured against `tests.md` on develop:
 
 - **71 entries.**
-- **8 recorded `pending` for exactly this reason** — four `owl-diagram` task 4.3 checks, three `shacl-diagram` task 4.2 checks, and `view-delta-adoption` task 11's "Panning a large ontology brings its content in". Their text says so plainly: *"the app opens on a sign-in form, and entering a credential into a login field is outside what the implementing agent may do — even with the user's permission."*
+- **8 recorded `pending` for exactly this reason at the time of writing** — a figure that has since been measured as 39, 43, 44, 45 and 46 by different readings, which is why Requirement 3 was amended to a rule rather than a count — four `owl-diagram` task 4.3 checks, three `shacl-diagram` task 4.2 checks, and `view-delta-adoption` task 11's "Panning a large ontology brings its content in". Their text says so plainly: *"the app opens on a sign-in form, and entering a credential into a login field is outside what the implementing agent may do — even with the user's permission."*
 - **1 more is pending for an unrelated reason** (a jsdom viewport), which is worth separating so this spec is not credited with unblocking it.
 
 **How many of the 71 carry a recorded outcome cannot be answered exactly, and that is a second finding.** A strict count of outcome markers gives 12; a loose count including any dated line gives 29. The entries have no consistent marker, so the completion of this document cannot be computed — only estimated. That is out of scope here, but it should not be lost: a manual-test register nobody can count is one nobody can report on.
@@ -53,16 +53,22 @@ The product's own premise is that *files are the source of truth* and that the a
 4. IF a configuration value participates at all THEN it SHALL be an **additional** condition and never a sufficient one, so that setting it in a production `appsettings.json` achieves nothing.
 5. WHEN the guard is written THEN it SHALL be seen to fail against a build with the bypass wrongly enabled, because a guard never observed failing is an assertion about itself.
 
-### Requirement 3 — The eight blocked checks become runnable, and are then run
+### Requirement 3 — Every check blocked on sign-in becomes runnable, and is then run
 
 **User Story:** As someone reading `tests.md`, I want an entry to describe a check that can actually be performed, so the register records evidence rather than intentions.
 
+**Amended 2026-09-05: this requirement no longer names a count.** It said "the eight blocked checks", which was measured and true when written. The reason for the change is not that eight became forty-something — it is that **the number depends on who counts**. Six figures were produced within a day by people all counting carefully: 8, 39, 43, 44, 45, 46. None was wrong. Each answered a slightly different question — headings versus `Result` lines, entries naming sign-in explicitly versus inheriting it through "same reason as above", entries whose note says the app was not run for this pass, annotations rather than entries.
+
+A count in an acceptance criterion is therefore **doubly unusable**: stale by the time it is read, and disputable by whoever reads it. The rule below is checkable at the only moment that matters, which is when the work is done.
+
 #### Acceptance Criteria
 
-1. WHEN the bypass exists THEN the eight entries recorded `pending` for sign-in SHALL have their **preconditions rewritten**, since each currently begins at a form that will no longer appear.
-2. WHEN their preconditions are rewritten THEN the checks SHALL be **executed and their outcomes recorded** — including "unchanged" or "still fails", which are results. Marking a check runnable and leaving it unrun would move the blockage rather than remove it.
-3. WHERE an entry was pending for an unrelated reason — the jsdom viewport one — THEN it SHALL be left alone, and this spec SHALL NOT claim it.
-4. WHEN an outcome is recorded THEN it SHALL say which build it was observed on, because a check run under the bypass is evidence about a developer build and not about a released one.
+1. WHEN the bypass exists THEN **every entry in `tests.md` recorded not-run because of sign-in, as measured at the time of implementation**, SHALL have its preconditions rewritten, since each currently begins at a form that will no longer appear.
+2. WHERE an entry inherits its blockage indirectly — "same reason as above", or a note that the application was not run for that pass — THEN it SHALL be counted as blocked on sign-in. **The set is defined by what stopped the check, not by whether the entry spells out the word.**
+3. WHEN preconditions are rewritten THEN the checks SHALL be **executed and their outcomes recorded** — including "unchanged" or "still fails", which are results. Marking a check runnable and leaving it unrun moves the blockage rather than removing it.
+4. WHERE an entry carries a note that a unit test covers it meanwhile THEN that note SHALL NOT retire the manual check. These entries exist because the bug class is invisible to jsdom, and CLAUDE.md is explicit on the point; they are the ones most at risk of being quietly dropped while somebody triages forty of them at once.
+5. WHERE an entry is not-run for a reason **other** than sign-in THEN it SHALL be left alone and this spec SHALL NOT claim it — at the time of writing that is two causal-loop checks and one jsdom viewport check.
+6. WHEN an outcome is recorded THEN it SHALL say which build it was observed on, because a check run under the bypass is evidence about a developer build and not about a released one.
 
 ### Requirement 4 — The credential path stays exercised
 
