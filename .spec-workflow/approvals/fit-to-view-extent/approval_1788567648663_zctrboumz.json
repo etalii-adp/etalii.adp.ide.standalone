@@ -3,8 +3,10 @@
   "title": "fit-to-view-extent requirements",
   "filePath": ".spec-workflow/specs/fit-to-view-extent/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-05T00:20:48.663Z",
   "category": "spec",
-  "categoryName": "fit-to-view-extent"
+  "categoryName": "fit-to-view-extent",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-05T00:51:49.704Z"
 }

@@ -176,6 +176,8 @@ public class CausalLoopContextActionsTests : IDisposable
         Assert.NotEmpty(actions);
         Assert.All(actions, action =>
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             Assert.False(action.Available);
             Assert.Equal(CausalLoopWriter.NoSuchVariable, action.UnavailableReason);
         });
@@ -372,6 +374,8 @@ public class CausalLoopContextActionsTests : IDisposable
         };
         Assert.All(toolbox.Items, item =>
         {
+            ArgumentNullException.ThrowIfNull(item);
+
             Assert.Contains(item.DropActionId, known);
             Assert.NotEqual("", item.Label);
             // The description says where the entry goes, so a user finds out before trying.
