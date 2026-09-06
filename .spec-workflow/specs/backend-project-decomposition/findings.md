@@ -75,3 +75,122 @@ Sessions -> Authentication (3): IAuthenticator, LocalAuthenticator, LocalAuthent
 ## The Backend.Diagrams split, per file (for the Diagram-merge half of the mandate)
 
 Measured before this spec existed and re-stated here for the design: of `EtAlii.Adp.Backend.Diagrams`' twenty files, the session contract is Backend-free — `IDiagramSession`, `IDiagramSessionFactory`, `DiagramSessionFactories`, the delta `_Model` (all eight files), `DiagramElement`, `DiagramViewport`, `IDiagramViewportRegistry`, `DiagramViewportRegistry`, `IDiagramDocumentReloader`. Backend-bound: the three `DiagramService` partials and `ServiceCollection.AddDiagrams` (Hierarchy, Projects, Sessions, History, generated gRPC base), `DiagramDocumentReloadBridge` (Hierarchy), and `EditorSessionAdapter`/`EditorSessionFactories` (`EtAlii.Adp.Editor`).
+
+## Appendix (2026-09-06, second measurement) — per-type consumer maps for Hierarchy and Context
+
+Requested by Architect 1 for the design's per-edge cycle-breaking table (R2.2). For every
+type the two largest folders declare: which folders consume it, plus `Service`
+(`EtAlii.Adp.Backend.Service`) and `modules` (all of `src/diagrams`, tests excluded).
+Recursive walk, comment- and string-stripped word match — the same instrument as the
+per-edge map above.
+
+```text
+== Hierarchy (73 types) ==
+-- consumed only inside Hierarchy (39): AddDiagramContextActionProvider, AdpFileCreated, AdpFileNameTaken, AdpFileWriteFailed, AdpFileWriteResult, DiagramBodyFile, DiagramFilePair, DiagramOptionTree, DiagramRegistrationName, DiagramRegistrationSet, DiagramRouting, EditorAmbiguous, EditorFilePropertyProvider, EditorResolver, EditorRouted, EditorRouting, EntryDiagramState, EntryDiagramStates, EntryNameRules, EntryNode, HierarchyContextActionProvider, HierarchyContextSourceResolver, HierarchyEntryChange, HierarchyEntryCreated, HierarchyEntryRemoved, HierarchyEntryRenamed, HierarchyEntrySubscription, HierarchyEntryUpdated, HierarchyModel, HierarchyModelEntry, HierarchyModelStore, HierarchyNesting, HierarchyRootUnavailable, IHierarchyModelStore, NestedEntry, OpenAsTextContextActionProvider, PortableFileNames, RootFolderWatcher, ServiceCollectionAddHierarchyExtension
+AdpFileWriter: Problems, Projects, modules
+CreateDiagramFileCommand: History
+CreateDiagramFileCommandHandler: History
+CreateFolderCommand: History
+CreateFolderCommandHandler: History
+DeleteEntryCommand: History
+DeleteEntryCommandHandler: History
+DiagramAmbiguousExtension: Problems
+DiagramFileName: Problems
+DiagramFileRouter: Problems, Service, modules
+DiagramRouted: Problems, modules
+DiagramUnknownType: Problems
+DiagramUnreadable: Problems
+HierarchyService: Service
+HierarchyTargets: Problems
+Line: Context, Problems, modules
+LineDocument: modules
+LineRange: modules
+LineSegment: modules
+LineSplice: modules
+NotADiagram: Problems
+RegistrationLayout: modules
+RegistrationPosition: modules
+RemoveCreatedFolderCommand: History
+RemoveCreatedFolderCommandHandler: History
+RemoveRegistrationLayoutCommand: History
+RemoveRegistrationLayoutCommandHandler: History
+RenameEntryCommand: History
+RenameEntryCommandHandler: History
+SaveTextFileCommand: History
+SaveTextFileCommandHandler: History
+SetRegistrationLayoutCommand: History, modules
+SetRegistrationLayoutCommandHandler: History
+SharedDocumentReader: Problems, modules
+== Context (49 types) ==
+-- consumed only inside Context (18): ChainResolution, ContextActionOwner, ContextActionResolver, ContextInteraction, ContextInteractionConnection, ContextInteractionStore, ContextNoticeSink, ContextPropertyResolver, ContextSelectionRecord, ContextSelectionResolver, ContextSelectionStore, ContextSelectionStoreEntry, IContextActionResolver, IContextInteractionStore, IContextPropertyResolver, RejectedChain, ResolvedChain, ServiceCollectionAddContextExtension
+ContextActionDefinition: Hierarchy, History, Problems, modules
+ContextActionGroupDefinition: Hierarchy, History, Problems, modules
+ContextChoiceRequest: Hierarchy, modules
+ContextCommitResult: Hierarchy, History, Problems, modules
+ContextConfirmationRequest: Hierarchy, modules
+ContextExecutionCompleted: Hierarchy, History, Problems, modules
+ContextExecutionFailed: Hierarchy, History, Problems, modules
+ContextExecutionRequiresChoice: Hierarchy, modules
+ContextExecutionRequiresConfirmation: Hierarchy, modules
+ContextExecutionRequiresInput: Hierarchy, modules
+ContextExecutionResult: Hierarchy, History, Problems, modules
+ContextInputRequest: Hierarchy, modules
+ContextLevelResolution: Hierarchy, Problems, modules
+ContextNesting: Hierarchy, Problems, modules
+ContextOptionAnnotations: Hierarchy
+ContextOptionNode: Hierarchy, modules
+ContextPropertyDefinition: Hierarchy, modules
+ContextPropertyResult: Hierarchy, modules
+ContextResolvedLevel: Hierarchy, Problems, modules
+ContextService: Service
+ContextShortcutDefinition: Hierarchy, History, Problems, modules
+ContextTarget: Hierarchy, History, Problems, modules
+ContextTextFieldRequest: Hierarchy
+ContextValidationResult: Hierarchy, History, Problems, modules
+HistoryActionsBroadcaster: History, Service
+IContextActionProvider: Hierarchy, History, Problems, modules
+IContextPropertyProvider: Hierarchy, modules
+IContextSelectionStore: Problems
+IContextSourceResolver: Hierarchy, Problems, modules
+RejectedContextLevel: Hierarchy, Problems, modules
+ResolvedContextLevel: Hierarchy, Problems, modules
+```
+
+Readings for the design:
+
+- **39 of Hierarchy's 73 types and 18 of Context's 49 are consumed nowhere outside their
+  own folder** — they move wherever their folder moves, with no edge to break.
+- **Hierarchy's exported surface is three families**: the eight command/handler pairs
+  (consumed only by History — dispatcher wiring, movable to the composition root); the
+  diagram-routing family (`DiagramFileRouter` and friends, consumed by Problems, Service
+  and modules); and the **`Line` document family** (`Line`, `LineDocument`, `LineRange`,
+  `LineSegment`, `LineSplice`) plus `AdpFileWriter` and `SharedDocumentReader` — shared
+  text-document primitives consumed by modules, Problems, Projects and Context. The single
+  type behind the Context→Hierarchy back-edge (`Line`) belongs to this family: re-homing
+  the family low dissolves the fattest cycle's thin edge and removes the modules' widest
+  Hierarchy dependency at the same time.
+- **Context's exported surface is exactly the provider contract** (the
+  `IContext*Provider`/`IContextSourceResolver` interfaces and their definition/result
+  records), consumed uniformly by Hierarchy, History, Problems and modules — a natural
+  bottom-project citizen. `HistoryActionsBroadcaster` is declared in Context but consumed
+  by History and Service, a naming-versus-home mismatch the design may want to resolve.
+
+## Appendix — instrument audit behind the 19-versus-15 correction
+
+The `15` never came from this file's instruments: the folder survey and both maps use a
+**recursive** walk, and the survey read 19 History files from the start — which is why the
+per-edge map already carries the `_Model/` DTOs (`CommandResult`,
+`HistoryChangedEventArgs`) on the History edges. The 15 came from a non-recursive
+`History/*.cs` listing elsewhere and entered this trail when Developer 3 repeated the
+relayed figure in prose **over its own primary measurement** — the failure is
+relay-propagation, not parsing, and the lesson is to re-read one's own instrument before
+repeating a verifier's number. One superseded early pass (the first silent-edge harvest)
+did use a non-recursive listing; the committed map replaced it. A separate audit of the
+type-declaration filter across all of Backend found exactly one declaration it misses
+(`RawLine` in `Hierarchy/RegistrationLayout.cs`, a nested type without an access
+modifier) — private, so no cross-folder edge is affected.
+
+Architect 1's design fact stands recorded: the command/history contract that moves low
+under R1 is the interfaces at History's root **plus the records beneath `History/_Model/`**,
+as one unit.
+
