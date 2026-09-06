@@ -3,8 +3,10 @@
   "title": "diagram-library-adoption design",
   "filePath": ".spec-workflow/specs/diagram-library-adoption/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-06T09:37:52.070Z",
   "category": "spec",
-  "categoryName": "diagram-library-adoption"
+  "categoryName": "diagram-library-adoption",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-06T09:53:48.241Z"
 }
