@@ -119,6 +119,39 @@ like the context surface being broken again, and it is not.
 
 - **Result 2026-09-05**: **passed**, all six claims of Requirement 6 confirmed in the running app.
 
+## Anchors and the connect preview are styled, not black (canvas library, found in the app)
+
+**Reported from the running app, and invisible to every test.** The canvas library draws four
+things a module never supplies a class for - the anchors it derives from a type's `anchors`
+declaration, the preview path a connect gesture drags, and the resize and adjust handles. It
+names them `library-*`, and 31 of its 32 classes had no CSS anywhere.
+
+The library's canvas `<svg>` computes `fill: rgb(0, 0, 0)`, and SVG's `fill` is **inherited**, so
+every unstyled shape inside it was painted black. Nothing failed: the element rendered, carried
+its class, and the browser painted it with the defaults.
+
+- **Preconditions**: backend + client running; `src/examples` open as a project.
+- **Actions**: open `diagrams/timeline/example-1/roadmap.tml`, then a dependency graph. Look at
+  the anchor dots on each element. Then press an anchor and drag away from it without releasing.
+- **Expected**:
+  - Anchors are the element's own surface colour with a green outline - **not** black discs.
+  - The drag preview is a **dashed green line**. It must not be a filled shape: a curve with a
+    fill paints the region between the curve and its chord, which swept a solid black wedge
+    across the diagram.
+  - Dragging onto a target that refuses the connection turns the preview **red**.
+  - A selected span's resize handles are invisible rather than black bars, and a connection's
+    midpoint adjust handle is a surface-coloured dot.
+- **And the regression to watch for**: the anchors must still be **draggable**. They carry the
+  connect gesture themselves, unlike the shared `.canvas-anchor`, which can be inert only because
+  the modules using it draw a separate hit circle behind it. Copying `pointer-events: none` onto
+  them leaves them looking perfect and impossible to drag from.
+
+**Result 2026-09-05**: **passed** for the colours, measured against the live computed styles
+rather than by eye - anchors `rgb(30,41,59)` where an unstyled path in the same `<svg>` computes
+`rgb(0,0,0)`; preview `fill: none` with a dashed green stroke; invalid variant red. **The drag
+itself was not performed by hand** - a synthesised mousedown did not start the gesture - so the
+wedge's absence is inferred from the computed style, not seen. Worth one human drag.
+
 ## A feedback loop is drawn as a loop (causal-loop-diagram, arcs fix)
 
 **A defect found by looking at the running app.** The diagram type is named after loops and drew
@@ -385,6 +418,11 @@ non-compositing pane.
   Properties panel shows the new value in its Text row - it re-describes from the push. Then
   press **Undo** in tab A: both tabs return to the old value, canvas and grid alike.
 - **Result 2026-09-06 (developer build (Debug, `developer` env, bypass session))**: **still not run — attempted with two real tabs, and the reason it cannot be driven here is now measured rather than asserted.** Two tabs were opened on the same scratch project with the same `mindmap.mm` and its 37 nodes drawn in both. **Two separate obstacles, both in the harness:** **(a)** the second tab's document reports `visibilityState: "hidden"` even after it is fronted (the first tab reports `visible`), and no click on its canvas produces a selection — the same click, on the same node, at the same coordinates, selects in the visible tab and does nothing in the hidden one. So the *same node selected in both* precondition cannot be reached, and tab B's grid can never be brought to the node. **(b)** the edit itself will not commit through the pane: the Text field does take the new value (typed characters land and the field reads `Transforms pushed`), but **Tab** reverts it to the backend's value and clicking another canvas node reverts it too, while **Enter** is not delivered at all — the same key-delivery limitation recorded on the property-grid cadence entry above. Neither is an application finding: both are properties of the non-compositing pane, and both were checked in the direction that would have disproved them. The check wants an ordinary browser with two windows and is left unclaimed rather than faked.
+- **Confirmed 2026-09-06 (Tester 2), and the mechanism is now measured rather than named.** Both obstacles reproduce independently of the run above, by a different method, so this is confirmed twice:
+  - **The hidden second tab is a genuine, permanent limit, and fronting does not lift it.** A second pane tab reports `visibilityState: "hidden"`, `hidden: true`, `hasFocus: false` — and **still reports exactly that after `tabs_select` fronts it**, while the first tab goes on reporting `visible`. The pane has one permanently-visible document; every other tab is permanently hidden. That rules out the obvious workaround.
+  - **But “hidden” is not itself the blocker, and the real one predicts which checks are affected.** The hidden tab *renders*: it drew the full project grid, 97 project elements, and carried the developer-session marker. What fails is that **`requestAnimationFrame` never fires there** — it did not fire in 1.2s, where the visible tab's fires at once. Browsers suspend rAF in hidden documents. So a check needing a **canvas repaint** in the second tab is genuinely undriveable, because canvases repaint on an animation frame that never arrives; a check needing only a **DOM** change there may still be driveable, since initial render and DOM updates plainly work. That is the distinction worth inheriting rather than “the tab is hidden”.
+  - **The property grid does not commit through the pane, and it fails silently.** Typing into the Wardley grid's Name row and pressing Enter leaves the field showing the new text with no error — and `tea.owm` byte-identical, same `git hash-object`, no working-tree change. **Blur commits no better**: clicking away also left the file unchanged, so this is not an Enter-delivery problem alone.
+  - **No commit is even attempted.** The network log for the edit carries `ContextService/Select` and `ContextService/DescribeProperties` and **no property-commit call at all**. So the value is taken into local state and the RPC is never emitted — *never attempted* rather than *attempted and rejected*, which is what makes the silence complete.
 
 ## The Ansible diagram opens from Add and draws its folder (ansible-structure-diagram, task 26)
 
@@ -1130,6 +1168,12 @@ space, which is one candidate to rule out.
   the created `.adp` holds only the MIME line; the diagram opens showing the chart node and
   the metadata band.
 - **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not run here.** This exercises the Add flow on a *scratch* helm-chart-shaped folder — right-clicking it, finding `helm/chart` offered with its ship-wheel icon, and the registration listing rather than creating the chart. The nginx example is already registered so it cannot show the creation, and setting up a fresh chart folder was out of scope for this pass; the Add-dialog-serves-the-folder's-type mechanism is the folder-add-registration spec's. The bypass removes the sign-in blocker, but this one wants a scratch folder set up first.
+- **Result 2026-09-06 (Tester 2, developer build on ports 5099/5199)**: **passes.** It was never blocked by the browser pane — it wanted a scratch folder, which is one `mkdir` and a two-line `Chart.yaml`. Created `C:	est-data\scratchpad\scratch-chart` holding only `Chart.yaml` (name + version), added it through the explorer's right-click → Add… on that folder.
+  - `helm` is listed among the vendors and **not pre-selected**, as the entry requires; expanding it offers **Helm chart anatomy (read-only)** carrying `mdi mdi-ship-wheel` — the icon the entry names, read from the class rather than from the picture.
+  - The created registration holds **only the MIME line**: 12 bytes, `helm/chart` + CRLF, nothing else.
+  - The diagram opened by itself on the chart node `scratch-chart` with its version band, and the problems panel reported *“This application chart has no templates; helm install would render nothing.”* against `scratch-chart/Chart.yaml:1` — correct for a chart with no `templates/`.
+  - **One drift in the entry's own text.** It says *accept the suggested name*, and there is no name step: the dialog offers no name field for this type. That is right rather than broken — a helm registration is folder-scoped and takes no basename, and the shipped `nginx` example's registration is likewise named plainly `.adp`. The instruction should lose that clause.
+  - The scratch folder is left in place so the check is re-runnable without setup.
 
 ## Every helm node kind navigates on double-click (helm-charts, task 7.4)
 
@@ -2383,3 +2427,65 @@ nothing failed - the elements were all present in the DOM, just off-screen.
   after the fix, and seen to fail before it.** The rising 641 / 1160 / 1903 above is the
   measurement against the defect; with `.library-canvas` carrying its own sizing the same probe
   reports 442 / 442 / 442 with all 24 elements inside the surface at every sample.
+
+## wardley-map property grid re-check, and the shared stylesheet imports (defect pair)
+
+Two unowned findings closed at unit level; each hands one eyes-on step over.
+
+**One - the wardley property-grid FLAG** (developer-sign-in-bypass findings, 2026-09-05):
+the missing element-selection wiring it names was closed by the wardley library migration
+(landed 2026-09-06, merge 33aaeba0) - clicks now raise selection-changed and the module
+forwards `elementSelectionOf(entryId, path, id)`; the guard test "reports a clicked element
+as a nested selection" has now been seen to fail with the forwarding severed.
+
+- **Actions**: re-run the FAILED entry "An element selected on the canvas fills the property
+  grid (wardley-map, task 26)" against a build at or after 33aaeba0: open tea.adp, click a
+  component, read the Property Grid.
+- **Expected**: the grid heads with the element and shows its Identity / Position / Strategy
+  rows; the backend log says the element id, not the .adp path. An evolve-target dot stays
+  inert - pressing one neither selects nor deselects, by design.
+
+**Two - five modules styled only by accident**: azure-pipeline, c4, helm-charts, mindmap and
+wardley-map named `canvas-*` classes without importing `@client/canvas/canvas.css`; they
+rendered styled only because `diagramCanvases.ts` eagerly globs every register file, so some
+other module always loaded the sheet. The five registers now import it, and
+`sharedStylesheetImports.test.ts` guards the convention (seen to fail naming all five).
+jsdom applies no CSS, so no automated check can see the appearance itself.
+
+- **Actions**: during the next manual pass, open one diagram from any of the five modules
+  and confirm the shared styling (selection accents, connection lines, anchors) renders.
+- **Expected**: identical appearance to before - the change makes each module's styling
+  self-sufficient, not different.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition.
+
+## A large diagram's drag keeps up with the pointer (drag-and-drop-centralization, task 5)
+
+jsdom measures work done, not smoothness perceived - this is the real-browser half of the
+measurement, on the two models the report named.
+
+- **Steps**: run the app from the implementing worktree on the Developer's reserved ports
+  (both port files changed and reverted afterwards - `src/client/vite.config.ts` and
+  `src/backend/EtAlii.Adp.Backend.Service/appsettings.developer.json`), browsing the
+  backend's port. Open `src/examples/diagrams/rdf/wikidata/marie-curie.ttl` and drag a
+  resource card around for a few seconds; open `src/examples/diagrams/rdf/nobel/laureates.ttl`
+  and do the same, including a card far from the one first selected. Pan both diagrams by
+  dragging the background.
+- **Expected**: on marie-curie the card rides the pointer with no visible lag, the drop
+  commits (the validator re-runs, undo arms) and **another card still selects afterwards**;
+  the pan moves the diagram and both scrollbar thumbs live. On laureates the view is
+  truncated ("Showing 1000 of 1657 resources") and **edits are withheld by design**, so the
+  reposition cannot commit there - pan and selection are what that model exercises. Escape
+  mid-drag puts the card back and selects nothing; Escape mid-pan rolls the view back to
+  where the pan began (this roll-back is deliberate: the pan is the gesture's transient
+  visual until release).
+
+- **Result 2026-09-06**: **run** from the worktree on backend 5091 / client 5191 via the
+  developer session. marie-curie: drag committed and revalidated, selection-after-drag
+  intact, pan moved view and thumbs; laureates: pan and selection fine on the 1,000-card
+  truncated view, reposition withheld as the truncation banner states; zero console errors.
+  The Escape checks were not driven interactively (the automation's drag is atomic) - they
+  are pinned by DiagramCanvas.test.tsx's abandon pair instead. Perceived smoothness is
+  quantified by the jsdom halves in the task-5 implementation log (before: 10.4-47.8ms per
+  frame on the rdf shapes; after: 0.23-0.33ms, flat across model sizes).

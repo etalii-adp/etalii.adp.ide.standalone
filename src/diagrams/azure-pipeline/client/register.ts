@@ -1,5 +1,6 @@
 import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
 import { PipelineCanvas } from "./PipelineCanvas";
+import "@client/canvas/canvas.css";
 import "./azure-pipeline.css";
 
 /**

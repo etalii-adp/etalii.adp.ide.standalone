@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/backend-project-decomposition/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-06T15:21:41.412Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788708101334_s926jzb5f",
+      "approvalTitle": "backend-project-decomposition requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-06T15:23:00.818Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788708101334_s926jzb5f",
+      "approvalTitle": "backend-project-decomposition requirements"
+    }
+  ]
+}

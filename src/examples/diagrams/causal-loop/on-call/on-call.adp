@@ -1,10 +1,11 @@
 systems/causal-loop-diagram
 layout:
-  variable:attrition: 52.674 272.596
-  variable:automation: -313.221 -85.87
-  variable:fatigue: 290.256 88.283
-  variable:incidents: 123.499 -184.121
-  variable:mistakes: 273.458 -169.601
-  variable:onCallLoad: -3.682 -6.394
-  variable:teamSize: -263.701 227.414
-  variable:toil: -66.444 -228.307
+  variable:Test: 103.099 -397.351
+  variable:attrition: 183.135 275.069
+  variable:automation: -375.753 13.047
+  variable:fatigue: 403.405 138.365
+  variable:incidents: 225.31 -193.149
+  variable:mistakes: 589.576 -81.002
+  variable:onCallLoad: 47.597 -44.524
+  variable:teamSize: -81.673 182.278
+  variable:toil: -220.621 -311.289

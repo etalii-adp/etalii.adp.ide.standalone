@@ -1,0 +1,30 @@
+{
+  "filePath": ".spec-workflow/specs/backend-project-decomposition/design.md",
+  "currentVersion": 3,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-06T15:50:20.599Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788709820525_hsf5h9i1y",
+      "approvalTitle": "backend-project-decomposition design"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-06T15:55:21.796Z",
+      "trigger": "revision_requested",
+      "approvalId": "approval_1788709820525_hsf5h9i1y",
+      "approvalTitle": "backend-project-decomposition design"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2026-09-06T16:10:42.119Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788710775839_30gt0pb0q",
+      "approvalTitle": "backend-project-decomposition design (revised)"
+    }
+  ]
+}

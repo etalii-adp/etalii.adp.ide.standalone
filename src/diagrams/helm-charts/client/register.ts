@@ -1,5 +1,6 @@
 import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
 import { HelmCanvas } from "./HelmCanvas";
+import "@client/canvas/canvas.css";
 import "./helm-charts.css";
 
 /**

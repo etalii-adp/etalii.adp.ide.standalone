@@ -1,5 +1,6 @@
 import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
 import { MindmapCanvas } from "./MindmapCanvas";
+import "@client/canvas/canvas.css";
 import "./mindmap.css";
 
 /**

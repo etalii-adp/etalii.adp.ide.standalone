@@ -14,15 +14,16 @@ variable attrition "Attrition"
 variable teamSize "Team size"
 variable automation "Automation work"
 variable toil "Manual toil"
+variable Test "Test"
 
 # ---- the spiral --------------------------------------------------------------
 # Incidents wake people up, tired people make mistakes, mistakes cause
 # incidents. Nothing in this path is negative, so it compounds.
 
-link incidents -> onCallLoad + weight=1
+link incidents -> onCallLoad + flipped weight=1
 link onCallLoad -> fatigue +
-link fatigue -> mistakes + weight=1.5 "the tired-hands effect"
-link mistakes -> incidents +
+link fatigue -> mistakes + flipped weight=1.5 "the tired-hands effect"
+link mistakes -> incidents + flipped
 
 loop R1 "Tired hands make more work" incidents onCallLoad fatigue mistakes
 
