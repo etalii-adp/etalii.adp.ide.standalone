@@ -2273,3 +2273,26 @@ build, plus:
   the session's credential prohibition. The beneath-connections paint order, the
   implicit/broken markings and the problem propagation are pinned by unit tests seen to
   fail under narrow sabotages.
+
+## ansible-structure and helm-charts re-run after their library migration (diagram-library-adoption, task 10)
+
+The two plain-graph twins now render through the diagram library: same kind-classed boxes,
+forward-bezier edges out of the right side and into the left, and - the mapping decision the
+inventory records - unresolved and open edges still draw as stubs from their source, as
+render-only elements now. Re-run the standing entries above for both modules, plus:
+
+- **Actions**: in an Ansible structure, find a playbook naming an absent role and one naming
+  an expression, and read both stubs; drag a node; double-click a role; select a node and
+  press Enter; right-click a node. In a Helm chart, double-click the chart card and a
+  dependency card; drag a box; drag a scrollbar thumb.
+- **Expected**: the stubs still say "(missing)" vs "(expression)" (ansible) and
+  "(unvendored)" vs "(not defined here)" (helm); double-click and Enter still reveal the
+  file, and a dependency with no backing artifact reveals nothing; the right-click still
+  selects with the menu gesture; drags land in the layout block (helm shows a dismissable
+  refusal, ansible stays silent, each as before); no rename appears anywhere - both modules
+  are rename-exempt; a background press still deselects nothing (neither module ever did).
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition. The stub distinction, the right-edge departure and
+  the no-artifact activation guard are pinned by unit tests seen to fail under narrow
+  sabotages.

@@ -12,7 +12,5 @@
 
 /** Modules adoption has not reached yet. */
 export const NOT_YET_MIGRATED: ReadonlySet<string> = new Set([
-  "ansible-structure",
   "databricks",
-  "helm-charts",
 ]);
