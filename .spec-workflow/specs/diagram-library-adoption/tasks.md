@@ -53,15 +53,16 @@
   - _Requirements: 1.1, 2.1, 2.2, 2.3, 2.5, 3.3, 4.1, 5.1, 5.2_
   - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer | Task: Rebuild C4Canvas on the library with frame-based nesting and inner-first hit-testing | Restrictions: inventory before code; both registrations keep serving one canvas; no new capability; rewritten tests seen to fail against a deliberate break; guard exclusions deleted in the same change | Success: c4 renders through the library with nesting proven, four gates green, landed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 5. causal-loop migrates — the custom route, first exercise
+- [x] 5. causal-loop migrates — the custom route, first exercise
   - Files: `src/diagrams/causal-loop/client/CausalLoopCanvas.tsx` (510 lines today), its tests, guard exclusion entries
   - The **self-loop as a `CustomRouteRef`** (`causalLoopArc`'s ellipse pair — the one genuinely bespoke geometry the library survey found), the chord-bowed link as the arc route, `allowSelf: true`, and polarity marks plus delay strokes as along-route labels and adornment.
   - The backend self-organizing Arrange stays a backend action the events invoke; layout mode stays manual/external.
   - Parity watchlist: the selected-state adorner styling landed 2026-09-06 (delay strokes, polarity, arrowhead via context-stroke) must survive the rewrite; link weight classes.
+  - **Schema extensions recorded from implementing this task**, additive per the precedent, each guarded by a library test seen to fail first: **`CustomRouteRef.path` receives optional `RouteEnds`** (the endpoint bounds — the arc anchors on boxes and bows to the side of travel, which resolved points cannot say; the connect preview passes none), and **`RelationTypeDefinition.adorn`** (notation adornment rendered inside the connection group with the resolved route and the connection — polarity signs and delay strokes here, and whatever the next notation rides on a line).
   - _Requirements: 1.1, 2.1, 2.2, 2.3, 2.5, 3.3, 4.1, 5.1, 5.2_
   - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer | Task: Rebuild CausalLoopCanvas on the library with the self-loop as a custom route and polarity and delay as along-route adornment | Restrictions: inventory before code; Arrange stays a backend action; the fresh selected-adorner styling survives; rewritten tests seen to fail against a deliberate break; guard exclusions deleted in the same change | Success: causal-loop renders through the library including self-loops, four gates green, landed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 6. The rdf family migrates — skos, owl, shacl on the reference's pattern
+- [-] 6. The rdf family migrates — skos, owl, shacl on the reference's pattern
   - Files: `src/diagrams/rdf/client/SkosCanvas.tsx` (765), `OwlCanvas.tsx` (802), `ShaclCanvas.tsx` (602), their tests, guard exclusion entries
   - Three near-copies of the landed `RdfCanvas` migration: the resource-card `CustomShapeRef`, straight arrowed statements, edge anchors, manual layout, the same event wiring. The value is family consistency — one card mechanism across four vocabularies, not three re-inventions.
   - The skos drawn-element budget and its banner stay model-side, exactly as the reference recorded for rdf.
