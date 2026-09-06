@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/diagram-library-adoption/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-06T09:37:52.400Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788687472070_th1e86e39",
+      "approvalTitle": "diagram-library-adoption design"
+    }
+  ]
+}
