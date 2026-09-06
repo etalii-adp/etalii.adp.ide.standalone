@@ -24,6 +24,7 @@
   <Project Path="EtAlii.Adp.Tests/EtAlii.Adp.Tests.csproj" />
   <Project Path="EtAlii.Adp.Backend.Service/EtAlii.Adp.Backend.Service.csproj" />
   <Project Path="EtAlii.Adp.Backend.Tests/EtAlii.Adp.Backend.Tests.csproj" />
+  <Project Path="EtAlii.Adp.Client/EtAlii.Adp.Client.csproj" />
   <Project Path="EtAlii.Adp.Common/EtAlii.Adp.Common.csproj" />
   <Project Path="EtAlii.Adp.Backend/EtAlii.Adp.Backend.csproj" />
   <Folder Name="/Diagrams/">

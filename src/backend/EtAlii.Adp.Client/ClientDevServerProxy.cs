@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Serilog;
 
-namespace EtAlii.Adp.Backend.Client;
+namespace EtAlii.Adp.Client;
 
 /// <summary>
 /// Forwards requests that don't match a gRPC endpoint to the Vite dev server, so the browser
