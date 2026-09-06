@@ -194,3 +194,48 @@ Architect 1's design fact stands recorded: the command/history contract that mov
 under R1 is the interfaces at History's root **plus the records beneath `History/_Model/`**,
 as one unit.
 
+## Appendix (2026-09-06, third measurement) — module-side consumers of the Line document family
+
+Requested by Architect 1 to size the repo-wide half of the design's first cut: for every
+diagram-module backend project, which of the family's seven types it consumes and in how
+many files. Same instrument as above (recursive, comment- and string-stripped).
+
+```text
+EtAlii.Adp.Diagram.AnsibleStructure (main): Line in 9 files, SharedDocumentReader in 1 files
+EtAlii.Adp.Diagram.AnsibleStructure.Tests (tests): Line in 4 files
+EtAlii.Adp.Diagram.AzurePipeline (main): AdpFileWriter in 1 files, Line in 4 files, SharedDocumentReader in 2 files
+EtAlii.Adp.Diagram.C4 (main): AdpFileWriter in 3 files, Line in 9 files, SharedDocumentReader in 2 files
+EtAlii.Adp.Diagram.C4.Tests (tests): Line in 1 files
+EtAlii.Adp.Diagram.CausalLoop (main): AdpFileWriter in 3 files, LineRange in 7 files, SharedDocumentReader in 2 files
+EtAlii.Adp.Diagram.Databricks (main): AdpFileWriter in 2 files, Line in 3 files, LineRange in 20 files, SharedDocumentReader in 2 files
+EtAlii.Adp.Diagram.Databricks.Tests (tests): LineRange in 2 files
+EtAlii.Adp.Diagram.DependencyGraph (main): AdpFileWriter in 1 files, Line in 3 files, LineDocument in 6 files, LineRange in 6 files, LineSegment in 2 files, LineSplice in 1 files, SharedDocumentReader in 1 files
+EtAlii.Adp.Diagram.DependencyGraph.Tests (tests): Line in 1 files, LineDocument in 7 files, LineRange in 1 files
+EtAlii.Adp.Diagram.HelmCharts (main): Line in 9 files, SharedDocumentReader in 2 files
+EtAlii.Adp.Diagram.HelmCharts.Tests (tests): Line in 3 files
+EtAlii.Adp.Diagram.Mindmap (main): AdpFileWriter in 1 files, Line in 1 files, SharedDocumentReader in 1 files
+EtAlii.Adp.Diagram.Rdf (main): AdpFileWriter in 2 files, Line in 5 files, LineRange in 5 files, SharedDocumentReader in 3 files
+EtAlii.Adp.Diagram.Rdf.Tests (tests): Line in 1 files, LineRange in 2 files
+EtAlii.Adp.Diagram.Sparql (main): Line in 4 files, SharedDocumentReader in 1 files
+EtAlii.Adp.Diagram.Sparql.Tests (tests): Line in 1 files
+EtAlii.Adp.Diagram.Timeline (main): AdpFileWriter in 1 files, Line in 3 files, LineDocument in 6 files, LineRange in 6 files, LineSegment in 2 files, LineSplice in 1 files, SharedDocumentReader in 1 files
+EtAlii.Adp.Diagram.Timeline.Tests (tests): Line in 1 files, LineDocument in 6 files, LineRange in 1 files
+EtAlii.Adp.Diagram.WardleyMap (main): AdpFileWriter in 2 files, Line in 16 files, SharedDocumentReader in 1 files
+EtAlii.Adp.Diagram.WardleyMap.Tests (tests): Line in 4 files
+TOTALS across module projects (files): AdpFileWriter=16, Line=82, LineDocument=25, LineRange=50, LineSegment=4, LineSplice=2, SharedDocumentReader=19
+consuming projects: 21 (12 main, 9 tests)
+```
+
+Readings:
+
+- **Twelve module main projects and nine test projects consume the family** — every
+  implemented module's backend touches it, so the family's re-homing changes a namespace
+  import in effectively every module backend, but nothing structural: the modules already
+  reference `EtAlii.Adp.Backend` today, and after the cut they reference the bottom project
+  the family lands in.
+- **`Line` (82 files) and `LineRange` (50) carry the bulk**; `LineSegment` and `LineSplice`
+  are nearly private to the two span-shaped modules (timeline and its dependency-graph
+  fork, whose identical 6/6/2/1 profiles show the fork lineage in the data).
+- **Databricks is the heaviest single consumer** (`LineRange` in 20 files) — worth knowing
+  when sequencing the mechanical rename inside the cut.
+
