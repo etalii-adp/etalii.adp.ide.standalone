@@ -23,7 +23,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { NOT_YET_MIGRATED, NOT_YET_MIGRATED_FILES } from "./adoptionStatus";
+import { NOT_YET_MIGRATED } from "./adoptionStatus";
 
 /**
  * The library's three standing guards (diagram-library Requirement 10.1), each mounting
@@ -179,10 +179,6 @@ describe("the library's standing guards", () => {
       const register = readFileSync(join(client, "register.ts"), "utf-8");
       for (const [, , imported] of register.matchAll(/import\s+\{\s*(\w+Canvas)\s*\}\s+from\s+"\.\/(\w+)"/g)) {
         const file = `${imported}.tsx`;
-        if (NOT_YET_MIGRATED_FILES.has(file)) {
-          continue;
-        }
-
         const source = readFileSync(join(client, file), "utf-8");
         const onLibrary = source.includes("@client/canvas/library") || /from\s+"\.\/\w*Canvas"/.test(source);
         if (!onLibrary) {

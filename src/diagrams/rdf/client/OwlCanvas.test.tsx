@@ -191,8 +191,8 @@ describe("the owl canvas", () => {
     const datatype = container.querySelector('[data-element-id="res:http://www.w3.org/2001/XMLSchema#integer"]')!;
     expect(datatype.querySelector("rect.owl-datatype-box")).not.toBeNull();
 
-    const thing = container.querySelector(`[data-element-id="thing:${NS}toppingOf|domain"]`)!;
-    expect(thing.classList.contains("owl-thing")).toBe(true);
+    const thing = elementWithId(container, `thing:${NS}toppingOf|domain`);
+    expect(thing.querySelector(".owl-thing")).not.toBeNull();
     expect(thing.querySelector("ellipse")).not.toBeNull();
 
     const individual = container.querySelector(`[data-element-id="res:${NS}Margherita"]`)!;
@@ -201,10 +201,10 @@ describe("the owl canvas", () => {
     expect(individual.querySelector("text.owl-row")!.textContent).toBe(":hasCalories: 850");
 
     // Dimming rides classes, so a theme decides how dim (Requirement 1.6).
-    expect(container.querySelector(`[data-element-id="res:${NS}Old"]`)!.classList.contains("owl-deprecated")).toBe(true);
+    expect(container.querySelector(`[data-element-id="res:${NS}Old"] .owl-deprecated`)).not.toBeNull();
     expect(
-      container.querySelector('[data-element-id="res:http://example.org/ext#Base"]')!.classList.contains("owl-external"),
-    ).toBe(true);
+      container.querySelector('[data-element-id="res:http://example.org/ext#Base"]')!.querySelector(".owl-external"),
+    ).not.toBeNull();
   });
 
   it("marks an equivalent class with the doubled outline the notation uses", () => {
@@ -225,8 +225,8 @@ describe("the owl canvas", () => {
     // Assert: the depth-capped label, the visible marker, and no anchors - an expression has no
     // identity an edit could key off (Requirements 3.1, 3.2, 3.4).
     const expression = elementWithId(container, EXPRESSION_ID);
-    expect(expression.classList.contains("owl-restriction")).toBe(true);
-    expect(expression.classList.contains("owl-elided")).toBe(true);
+    expect(expression.querySelector(".owl-restriction")).not.toBeNull();
+    expect(expression.querySelector(".owl-elided")).not.toBeNull();
     expect(expression.querySelector("text")!.textContent).toBe("∃ :hasTopping.(:B ∪ …) …");
   });
 
@@ -235,39 +235,43 @@ describe("the owl canvas", () => {
     const { container } = renderCanvas();
 
     // Assert (Requirement 2).
-    const subclass = container.querySelector('[data-element-id="edge:subclass"] .owl-edge')!;
+    const subclass = container.querySelector('[data-connection-id="edge:subclass"]')!;
     expect(subclass.classList.contains("owl-edge-subclass")).toBe(true);
-    const property = container.querySelector('[data-element-id="edge:property"]')!;
-    expect(property.querySelector(".owl-edge")!.classList.contains("owl-edge-object-property")).toBe(true);
+    const property = container.querySelector('[data-connection-id="edge:property"]')!;
+    expect(property.classList.contains("owl-edge-object-property")).toBe(true);
     // The property's characteristic words ride its label (Requirement 2.3).
-    expect(property.querySelector("text.owl-edge-label")!.textContent).toBe("hasTopping (functional)");
+    expect(property.querySelector("text.library-connection-label")!.textContent).toBe("hasTopping (functional)");
     // A symmetric axiom carries no arrowhead; a directed one does.
-    expect(container.querySelector('[data-element-id="edge:equivalent"] path[marker-end]')).toBeNull();
-    expect(container.querySelector('[data-element-id="edge:property"] path[marker-end]')).not.toBeNull();
+    expect(container.querySelector('[data-connection-id="edge:equivalent"] path[marker-end]')).toBeNull();
+    expect(container.querySelector('[data-connection-id="edge:property"] path[marker-end]')).not.toBeNull();
     // A pure axiom edge has no label to draw.
-    expect(container.querySelector('[data-element-id="edge:subclass"] text.owl-edge-label')).toBeNull();
+    expect(container.querySelector('[data-connection-id="edge:subclass"] text.library-connection-label')).toBeNull();
   });
 
   it("repositions a class through the layout path, and shows the refusal an expression drag earns", async () => {
     // Arrange.
     const { container } = renderCanvas();
-    const pizza = container.querySelector(`[data-element-id="res:${NS}Pizza"]`)!;
+    const pizza = elementWithId(container, `res:${NS}Pizza`);
 
-    // Act: press, move past the threshold, release.
-    fireEvent.mouseDown(pizza, { clientX: 10, clientY: 10 });
-    fireEvent.mouseMove(container.querySelector(".owl-surface")!, { clientX: 90, clientY: 60 });
-    fireEvent.mouseUp(container.querySelector(".owl-surface")!, { clientX: 90, clientY: 60 });
+    // Act: press, move past the threshold, release - the pointer vocabulary the library hears.
+    fireEvent(pizza, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(pizza, new MouseEvent("pointermove", { bubbles: true, clientX: 90, clientY: 60 }));
+    fireEvent(pizza, new MouseEvent("pointerup", { bubbles: true, clientX: 90, clientY: 60 }));
 
-    // Assert: one move, carrying the element's own id - the file is never written from here.
+    // Assert: one move, carrying the authored corner - the library reports the dragged
+    // CENTRE, and the module converts back before the layout path sees it. Pizza's corner is
+    // (0,0) and jsdom's zero-size rect makes one pixel one unit, so the delta lands verbatim.
     expect(moves).toHaveLength(1);
     expect(moves[0].elementId).toBe(`res:${NS}Pizza`);
+    expect(moves[0].x).toBe(80);
+    expect(moves[0].y).toBe(50);
 
     // And a refusal from the backend is shown rather than swallowed (Requirement 3.2).
     moveError = "That is an anonymous class expression, whose identity does not survive an edit to the file.";
     const expression = elementWithId(container, EXPRESSION_ID);
-    fireEvent.mouseDown(expression, { clientX: 10, clientY: 10 });
-    fireEvent.mouseMove(container.querySelector(".owl-surface")!, { clientX: 90, clientY: 60 });
-    fireEvent.mouseUp(container.querySelector(".owl-surface")!, { clientX: 90, clientY: 60 });
+    fireEvent(expression, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(expression, new MouseEvent("pointermove", { bubbles: true, clientX: 90, clientY: 60 }));
+    fireEvent(expression, new MouseEvent("pointerup", { bubbles: true, clientX: 90, clientY: 60 }));
     await vi.waitFor(() => {
       expect(container.querySelector(".owl-rejection")!.textContent).toContain("does not survive an edit");
     });
@@ -276,14 +280,19 @@ describe("the owl canvas", () => {
   it("sends a toolbox drop as a placement and a gesture as one rel: call", () => {
     // Arrange.
     const { container } = renderCanvas();
-    const surface = container.querySelector(".owl-surface")!;
-
-    // Act: a drop names the place it landed (Requirement 6.2).
-    fireEvent.drop(surface, {
-      dataTransfer: { getData: () => "owl.add-class", types: ["application/x-adp-toolbox-item"] },
-      clientX: 40,
-      clientY: 50,
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+    const box = surface.getAttribute("viewBox")!.split(" ").map(Number);
+    Object.defineProperty(surface, "getBoundingClientRect", {
+      value: () => ({ x: 0, y: 0, top: 0, left: 0, right: box[2], bottom: box[3], width: box[2], height: box[3], toJSON: () => ({}) }),
     });
+
+    // Act: a drop names the place it landed (Requirement 6.2), built by hand because
+    // fireEvent.drop loses clientX/clientY in jsdom.
+    const event = new MouseEvent("drop", { bubbles: true, cancelable: true, clientX: 40, clientY: 50 });
+    Object.defineProperty(event, "dataTransfer", {
+      value: { getData: () => "owl.add-class", types: ["application/x-adp-toolbox-item"] },
+    });
+    fireEvent(surface, event);
 
     // Assert.
     expect(executed[0].actionId).toBe("owl.add-class");

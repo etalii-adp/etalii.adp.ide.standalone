@@ -47,6 +47,11 @@ export interface DiagramModelConnection {
   sourceAnchor?: string;
   targetAnchor?: string;
   label?: string;
+  /**
+   * Extra class names for the connection's group - for kinds a definition cannot enumerate
+   * as relation types, like shacl's open edge-kind strings.
+   */
+  className?: string;
   /** A hover tooltip for the whole connection - a wardley link's context sentence. */
   title?: string;
   /**

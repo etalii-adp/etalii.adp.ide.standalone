@@ -326,9 +326,20 @@ export function DiagramCanvas({
    * the definition's "default" answer to Requirement 5.5, so the library never guesses twice.
    */
   const relationFrom = useCallback(
-    (element: DiagramModelElement): RelationTypeDefinition | undefined => {
-      const admits = (relation: RelationTypeDefinition | undefined) =>
-        relation !== undefined && relation.endpoints.source.elementTypes.includes(element.type) ? relation : undefined;
+    (element: DiagramModelElement, anchor?: string): RelationTypeDefinition | undefined => {
+      // The anchor a connect starts from is part of the gesture's meaning: skos files a
+      // concept under another from its TOP anchor and cross-links from its SIDE. A source
+      // constraint naming anchors admits only drags that began on one of them.
+      const admits = (relation: RelationTypeDefinition | undefined) => {
+        if (relation === undefined || !relation.endpoints.source.elementTypes.includes(element.type)) {
+          return undefined;
+        }
+        const allowed = relation.endpoints.source.anchors;
+        if (Array.isArray(allowed) && (anchor === undefined || !allowed.includes(anchor))) {
+          return undefined;
+        }
+        return relation;
+      };
       return admits(config?.activeTool !== undefined ? relationTypes.get(config.activeTool) : undefined)
         ?? definition.relationTypes.map((relation) => admits(relation)).find((relation) => relation !== undefined);
     },
@@ -409,7 +420,7 @@ export function DiagramCanvas({
           break;
         }
         case "anchor": {
-          const relation = relationFrom(target.element);
+          const relation = relationFrom(target.element, target.anchor);
           if (relation === undefined) {
             break; // no relation may leave this element; nothing to preview
           }
@@ -1037,7 +1048,7 @@ function LibraryConnection({
 
   return (
     <g
-      className={`canvas-connection library-connection ${relation.className ?? ""}${selected ? " canvas-selected" : ""}`.trim()}
+      className={`canvas-connection library-connection ${relation.className ?? ""} ${connection.className ?? ""}${selected ? " canvas-selected" : ""}`.replace(/\s+/g, " ").trim()}
       data-connection-id={connection.id}
       {...press}
       onContextMenu={onContextMenu}

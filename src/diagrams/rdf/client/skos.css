@@ -61,16 +61,6 @@
   stroke-dasharray: 2 3;
 }
 
-.skos-edge-label {
-  text-anchor: middle;
-  pointer-events: none;
-}
-
-/* The gesture in flight, told apart by which anchor started it. */
-.skos-pending-hierarchy {
-  stroke-dasharray: none;
-}
-
 /* The showing-N-of-M banner over a budget-cut view (Requirement 8). */
 .skos-truncation-banner {
   position: absolute;

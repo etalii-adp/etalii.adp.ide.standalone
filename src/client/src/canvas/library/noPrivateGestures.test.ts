@@ -1,9 +1,9 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, relative, sep } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { NOT_YET_MIGRATED, NOT_YET_MIGRATED_FILES } from "./adoptionStatus";
+import { NOT_YET_MIGRATED } from "./adoptionStatus";
 
 /**
  * A migrated module holds no private gesture state. There is one gesture layer, inside
@@ -88,10 +88,6 @@ describe("no private gestures in a migrated module", () => {
 
     for (const module of moduleNames(root).filter((name) => !NOT_YET_MIGRATED.has(name))) {
       for (const path of clientSources(root, module)) {
-        if (NOT_YET_MIGRATED_FILES.has(path.split(sep).pop() ?? "")) {
-          continue;
-        }
-
         const content = readFileSync(path, "utf-8");
         if (GESTURE_STATE.test(content)) {
           offenders.push(`${relative(root, path)}: holds private drag/pan/connect state or raw pointer capture`);
