@@ -4,7 +4,7 @@ One worktree for the whole specification (`.claude/worktrees/dnd`, per CLAUDE.md
 
 **The scope is one discipline in one file.** The structural half of this specification was delivered by `diagram-library-adoption` and is recorded as such in the requirements; nothing here recreates it, and `noPrivateGestures.test.ts` holds module gesture code at zero throughout.
 
-- [ ] 1. The gesture-frame scheduler
+- [-] 1. The gesture-frame scheduler
   - Files: `src/client/src/canvas/library/gestureFrame.ts` (new), `src/client/src/canvas/library/gestureFrame.test.ts` (new)
   - The cached surface rect captured at gesture start; the `requestAnimationFrame` coalescer (latest deltas win, one applied frame per displayed frame, synchronous application when no frame provider exists so jsdom exercises the same write path); the live-write handles; `commit` and `revert`. No React dependency beyond types. Tested alone: N moves yield one applied frame; the last value wins; `revert` undoes every write; unmount cancels a pending frame.
   - _Requirements: 1.2, 1.3, 2.3_
