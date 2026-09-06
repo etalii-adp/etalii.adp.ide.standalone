@@ -1,11 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <!-- EtAlii.Adp carries the shared PluginDefinitionScan; EtAlii.Adp.Diagram carries the
-         assembly walk (FindApplicationAssemblies) both discovery families share. The design's
-         arrow list also names EtAlii.Adp.Backend, but the session ADAPTER lives in core
-         (Backend references THIS project for it), and referencing Backend from here as well
-         would be a cycle - the arrow list loses to the adapter section it cites. -->
+    <!-- Core is the only reference, and deliberately so: it carries both halves of the
+         shared discovery infrastructure - PluginDefinitionScan and the ApplicationAssemblies
+         walk - so this project needs no Diagram reference at all (the walk moved to core in
+         backend-project-decomposition task 8, which is what broke the Editor-Diagram cycle
+         the Diagrams merge would otherwise have made). Backend references THIS project, so
+         referencing Backend from here would be a cycle. -->
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
   </ItemGroup>
 
