@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Backend;
 
 internal sealed class RetainedHistoryStack(string rootPath, IHistoryStack stack)

@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common;
 using Serilog;
 
 namespace EtAlii.Adp.Backend;

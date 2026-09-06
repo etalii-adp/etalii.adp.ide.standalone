@@ -1,5 +1,7 @@
 using EtAlii.Adp.Backend;
 
+
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.CausalLoop;
 
 /// <summary>Restates what a loop claims about its own polarity.</summary>

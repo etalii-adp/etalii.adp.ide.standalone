@@ -1,5 +1,7 @@
 ﻿using EtAlii.Adp.Backend;
 
+
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 
 /// <summary>Declares one more target on a shape (Requirement 5.3).</summary>

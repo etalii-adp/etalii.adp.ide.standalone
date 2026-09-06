@@ -1,5 +1,7 @@
 ﻿using EtAlii.Adp.Backend;
 
+
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>Declares one more prefix beside the existing run (Requirement 5.7's approved half - never invented, always deliberate).</summary>

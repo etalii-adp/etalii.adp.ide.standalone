@@ -1,5 +1,7 @@
 using EtAlii.Adp.Backend;
 
+
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.Databricks;
 
 /// <summary>Adds a library entry to a pipeline (Requirement 11.2).</summary>

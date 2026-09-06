@@ -1,5 +1,7 @@
 using EtAlii.Adp.Backend;
 
+
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.CausalLoop;
 
 /// <summary>Renames a variable, and every link and loop that names it.</summary>

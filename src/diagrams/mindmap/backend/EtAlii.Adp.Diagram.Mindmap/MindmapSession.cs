@@ -1,5 +1,7 @@
 using EtAlii.Adp.Backend.Diagrams;
 
+
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.Mindmap;
 
 /// <summary>
@@ -15,7 +17,7 @@ internal sealed class MindmapSession : IDiagramSession
     private readonly IMindmapDocumentStore _documents;
     private readonly MindmapViewState _views;
     private readonly MindmapElementMapper _mapper;
-    private readonly Backend.IHistoryStack _history;
+    private readonly Common.IHistoryStack _history;
     private DiagramViewport _viewport = DiagramViewport.Unbounded;
 
     public MindmapSession(
@@ -24,7 +26,7 @@ internal sealed class MindmapSession : IDiagramSession
         IMindmapDocumentStore documents,
         MindmapViewState views,
         MindmapElementMapper mapper,
-        Backend.IHistoryStack history)
+        Common.IHistoryStack history)
     {
         _watchId = watchId;
         _bodyPath = bodyPath;

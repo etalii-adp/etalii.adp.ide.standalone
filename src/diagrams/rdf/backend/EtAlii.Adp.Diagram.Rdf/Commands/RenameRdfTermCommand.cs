@@ -1,5 +1,7 @@
 ﻿using EtAlii.Adp.Backend;
 
+
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>Renames a term everywhere it occurs, in one operation, so no reference is stranded (Requirement 5.4).</summary>

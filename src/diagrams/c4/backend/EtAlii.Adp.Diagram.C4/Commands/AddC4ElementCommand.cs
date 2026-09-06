@@ -1,5 +1,7 @@
 using EtAlii.Adp.Backend;
 
+
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.C4;
 
 /// <summary>Adds one element to a C4 model, inside <paramref name="ParentId"/> or at the top when it is empty.</summary>
