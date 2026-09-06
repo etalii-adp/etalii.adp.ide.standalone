@@ -18,7 +18,7 @@
 
 ## Tasks
 
-- [ ] 1. The measurement and the guards that will shrink
+- [-] 1. The measurement and the guards that will shrink
   - Files: `src/client/src/canvas/library/noPrivateGestures.test.ts` (new), `src/client/src/canvas/library/libraryGuards.test.tsx`, a measurement record in this task's implementation log
   - Re-run the population measurement against `src/diagrams/*/client/register.ts` and the canvases importing the library; record it with the design-time baseline beside it (Requirement 1.1's "measured, not inherited").
   - `noPrivateGestures` joins the noPrivate family: no migrated module's client sources hold private gesture state (`dragRef`/`panRef`/`connectRef` naming, raw pointer-capture handling outside the library, private connector path assembly for library-expressible routes), with an explicit **`NOT_YET_MIGRATED` exclusion list holding today's eleven unmigrated modules that only ever shrinks** — the guard fails on any added entry. Its text-reading limit stated in the file, as the family does.
