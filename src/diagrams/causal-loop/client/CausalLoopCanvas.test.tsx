@@ -28,7 +28,7 @@ SVGElement.prototype.releasePointerCapture ??= () => {};
 const select = vi.fn();
 const moveElementTo = vi.fn(() => Promise.resolve(""));
 const reportView = vi.fn();
-const executeAction = vi.fn(() => Promise.resolve());
+const executeAction = vi.fn(() => Promise.resolve({ accepted: true, error: "" }));
 let currentActions: unknown[] = [];
 let currentModel: CausalLoopModel = emptyModel;
 let currentLoading = false;
@@ -54,6 +54,9 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
     // mock has to carry them: a shape that is missing here is a crash there, which is what this
     // suite caught the moment the menu was wired.
     useContextSelection: () => ({ selection: currentSelection, actions: currentActions }),
+    // The canvas now reads the inline-rename prompt too; the suite drives rename through the
+    // action, so a quiet no-op prompt is all the mock owes it.
+    useContextPrompt: () => ({ prompt: null, onPropose: vi.fn(), onSubmit: vi.fn(), onCancel: vi.fn() }),
   };
 });
 
@@ -457,6 +460,25 @@ describe("CausalLoopCanvas", () => {
     realDrag(a, surface, 0, 0, 50, 50, badge);
 
     expect(select).not.toHaveBeenCalled();
+  });
+
+  it("a toolbox drop of the variable action adds one at the drop point, with no dialog", () => {
+    // The toolbox item carries the backend add-variable action; the drop turns it into that
+    // action against a placement at where it landed - the module names the variable, no prompt.
+    const { container } = renderCanvas();
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+
+    const data = new Map<string, string>([["application/x-adp-toolbox-item", "causal-loop.add-variable"]]);
+    const dataTransfer = { getData: (type: string) => data.get(type) ?? "", dropEffect: "", types: [...data.keys()] };
+    fireEvent.dragOver(surface, { dataTransfer });
+    fireEvent.drop(surface, { dataTransfer, clientX: 0, clientY: 0 });
+
+    // The action raised is the add-variable one, sourced at a placement (`new:{x},{y}`), never a
+    // dialog and never a bare variable id.
+    expect(executeAction).toHaveBeenCalled();
+    const [actionId, source] = executeAction.mock.calls.at(-1) as unknown as [string, { source?: { value?: { value?: string } } }];
+    expect(actionId).toBe("causal-loop.add-variable");
+    expect(source?.source?.value?.value ?? "").toMatch(/^new:/);
   });
 
   it("selecting after a drag still selects the next variable pressed", () => {

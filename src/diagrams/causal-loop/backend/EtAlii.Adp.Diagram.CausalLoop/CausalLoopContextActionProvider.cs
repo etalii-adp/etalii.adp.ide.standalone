@@ -42,6 +42,9 @@ public sealed class CausalLoopContextActionProvider(
     /// <summary>State a link from the selected variable to another.</summary>
     public const string AddLinkActionId = "causal-loop.add-link";
 
+    /// <summary>State a link drawn from one variable to another - the two ends carried in the id, no dialog.</summary>
+    public const string ConnectActionId = "causal-loop.connect";
+
     /// <summary>Say the effect runs the same way.</summary>
     public const string MakePositiveActionId = "causal-loop.make-positive";
 
@@ -103,13 +106,21 @@ public sealed class CausalLoopContextActionProvider(
             return Groups([]);
         }
 
+        // A relation gesture is a link the user drew; the only thing offered on it is stating that
+        // link, which is what the gesture asked for. Discovered so ExecuteAction accepts it.
+        if (CausalLoopSelection.RelationOf(target.ElementId) is not null)
+        {
+            return Groups([new ContextActionGroupDefinition(
+                [new ContextActionDefinition(ConnectActionId, "Add link", "mdi-arrow-right-thin")])]);
+        }
+
         if (CausalLoopSelection.IsPlacement(target.ElementId))
         {
             var arrangeable = entry.Model.Variables.Count > 1;
 
             return Groups([new ContextActionGroupDefinition(
             [
-                new ContextActionDefinition(AddVariableActionId, "Add variable…", "mdi-plus-circle-outline"),
+                new ContextActionDefinition(AddVariableActionId, "Add variable", "mdi-plus-circle-outline"),
                 new ContextActionDefinition(
                     ArrangeActionId, "Arrange diagram", "mdi-graph-outline", null,
                     arrangeable,
@@ -152,10 +163,10 @@ public sealed class CausalLoopContextActionProvider(
         // The gestures that need a word from the user ask for one; the rest run.
         return actionId switch
         {
-            AddVariableActionId => Ask("Add variable", "mdi-plus-circle-outline", "Name", ""),
-            RenameVariableActionId => Ask(
+            AddVariableActionId => AddVariableAsync(target, cancellationToken),
+            RenameVariableActionId => AskInline(
                 "Rename variable", "mdi-rename-outline", "Name",
-                CausalLoopSelection.VariableOf(target.ElementId) ?? ""),
+                LabelOf(entry.Model, target.ElementId), target.ElementId),
             AddLinkActionId => Ask("Add link", "mdi-arrow-right-thin", "To variable", ""),
             AddLoopActionId => Ask("Claim a loop", "mdi-sync", "Identifier", NextLoopIdentifier(entry.Model)),
             RenameLoopActionId => Ask(
@@ -183,10 +194,10 @@ public sealed class CausalLoopContextActionProvider(
 
         return ValueTask.FromResult(actionId switch
         {
-            AddVariableActionId or RenameVariableActionId when value.Any(char.IsWhiteSpace) || value.Length == 0 =>
-                ContextValidationResult.Rejected(CausalLoopWriter.UnusableName),
-            AddVariableActionId when entry.Model.Declares(value) =>
-                ContextValidationResult.Rejected(CausalLoopWriter.AlreadyDeclared),
+            // The label is written quoted, so it may hold spaces but not a quote or a line break,
+            // and it must not be empty - an empty name leaves nothing to read on the variable.
+            RenameVariableActionId when value.Length == 0 || value.Contains('"', StringComparison.Ordinal) || value.Any(char.IsControl) =>
+                ContextValidationResult.Rejected("A name needs at least one character, and cannot contain a quote or a line break."),
             AddLinkActionId when !entry.Model.Declares(value) =>
                 ContextValidationResult.Rejected($"'{value}' is not a variable in this diagram."),
             AddLoopActionId when entry.Model.Loops.Any(loop => loop.Identifier == value) =>
@@ -220,10 +231,14 @@ public sealed class CausalLoopContextActionProvider(
         return actionId switch
         {
             AddVariableActionId => new AddVariableCommand(body, value, value),
-            RenameVariableActionId when variable is not null => new RenameVariableCommand(body, variable, value),
+            // The visible name is the label, so renaming edits the label - the identifier a link
+            // refers to stays put. It is edited inline, over the variable, rather than in a dialog.
+            RenameVariableActionId when variable is not null => new SetVariableLabelCommand(body, variable, value),
             RemoveVariableActionId when variable is not null => new RemoveVariableCommand(body, variable),
             AddLinkActionId when variable is not null =>
                 new AddLinkCommand(body, variable, value, CausalLoopPolarity.Positive),
+            ConnectActionId when CausalLoopSelection.RelationOf(target.ElementId) is { } ends =>
+                new AddLinkCommand(body, ends.From, ends.To, CausalLoopPolarity.Positive),
             AddLoopActionId when variable is not null =>
                 new AddLoopCommand(body, value, value, LoopThrough(entry.Model, variable)),
             MakePositiveActionId when link is not null =>
@@ -251,6 +266,43 @@ public sealed class CausalLoopContextActionProvider(
     private static ValueTask<ContextExecutionResult> Ask(string title, string icon, string field, string initial) =>
         ValueTask.FromResult<ContextExecutionResult>(
             new ContextExecutionRequiresInput(new ContextInputRequest(title, icon, field, initial, "Apply")));
+
+    /// <summary>
+    /// An inline prompt: the same input, marked to open over the element whose visible text it is
+    /// rather than in a dialog. A rename of a variable edits the name a reader sees on it.
+    /// </summary>
+    private static ValueTask<ContextExecutionResult> AskInline(string title, string icon, string field, string initial, string elementId) =>
+        ValueTask.FromResult<ContextExecutionResult>(
+            new ContextExecutionRequiresInput(new ContextInputRequest(title, icon, field, initial, "Apply", elementId)));
+
+    /// <summary>The visible name a variable id names, for seeding the inline rename with what is there.</summary>
+    private static string LabelOf(CausalLoopModel model, string? elementId) =>
+        CausalLoopSelection.VariableOf(elementId) is { } id
+            ? model.Variables.FirstOrDefault(variable => variable.Id == id)?.Display ?? ""
+            : "";
+
+    /// <summary>
+    /// Adds a variable nobody named, at the point it was dropped or right-clicked. The name is the
+    /// module's own next free one, so no dialog interrupts the gesture; the position is authored
+    /// through the session where there is a registration to write it into, and left to the layout
+    /// where there is not.
+    /// </summary>
+    private async ValueTask<ContextExecutionResult> AddVariableAsync(ContextTarget target, CancellationToken cancellationToken)
+    {
+        var entry = documents.GetOrLoad(target.ResolvedFullPath);
+        var (id, label) = CausalLoopWriter.NextVariableName(entry.Model);
+
+        if (CausalLoopSelection.PlacementPoint(target.ElementId) is { } point &&
+            sessions.Find(target.WatchId, target.ResolvedFullPath) is CausalLoopSession session)
+        {
+            var refusal = await session.AddVariableAtAsync(id, label, point.X, point.Y, cancellationToken);
+            return refusal.Length == 0 ? new ContextExecutionCompleted() : new ContextExecutionFailed(refusal);
+        }
+
+        var result = await historyStacks.Get(target.RootPath).ExecuteAsync(
+            new AddVariableCommand(target.ResolvedFullPath, id, label), cancellationToken);
+        return result.IsSuccess ? new ContextExecutionCompleted() : new ContextExecutionFailed(result.Error);
+    }
 
     /// <summary>
     /// Removing a variable takes the links and loops that named it, so the count is stated before

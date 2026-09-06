@@ -51,4 +51,43 @@ public static class CausalLoopSelection
     /// <summary>Whether an id is a placement rather than an element.</summary>
     public static bool IsPlacement(string? elementId) =>
         elementId is not null && elementId.StartsWith(PlacementPrefix, StringComparison.Ordinal);
+
+    /// <summary>The point a placement id names, or null when the id is not a placement or is malformed.</summary>
+    public static (double X, double Y)? PlacementPoint(string? elementId)
+    {
+        if (elementId is null || !elementId.StartsWith(PlacementPrefix, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var body = elementId[PlacementPrefix.Length..];
+        var comma = body.IndexOf(',', StringComparison.Ordinal);
+        if (comma <= 0 ||
+            !double.TryParse(body[..comma], NumberStyles.Float, CultureInfo.InvariantCulture, out var x) ||
+            !double.TryParse(body[(comma + 1)..], NumberStyles.Float, CultureInfo.InvariantCulture, out var y))
+        {
+            return null;
+        }
+
+        return (x, y);
+    }
+
+    /// <summary>The id a right-drag connect carries: <c>rel:{from}-&gt;{to}</c>, the two ends of the link to state.</summary>
+    private const string RelationPrefix = "rel:";
+
+    /// <summary>The id the canvas writes when a link is drawn from one variable to another.</summary>
+    public static string RelationFor(string from, string to) => $"{RelationPrefix}{from}->{to}";
+
+    /// <summary>The two ends the relation id names, or null when it is not one.</summary>
+    public static (string From, string To)? RelationOf(string? elementId)
+    {
+        if (elementId is null || !elementId.StartsWith(RelationPrefix, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var body = elementId[RelationPrefix.Length..];
+        var arrow = body.IndexOf("->", StringComparison.Ordinal);
+        return arrow > 0 ? (body[..arrow], body[(arrow + 2)..]) : null;
+    }
 }

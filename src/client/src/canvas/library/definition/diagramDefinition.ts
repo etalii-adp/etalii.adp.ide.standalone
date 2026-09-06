@@ -394,6 +394,14 @@ export interface DiagramDefinition {
   extent?: ShapeBounds;
   background?: DiagramBackgroundRef;
   /**
+   * Draw a relation by dragging with the RIGHT button from an element's body to another - the
+   * gesture a causal loop diagram links with, where the arrows are the whole point and reaching
+   * for a small anchor handle would be in the way. Left-button anchor drags still connect where a
+   * module renders anchors; this only adds the right-button-from-anywhere path, and only where a
+   * module asks for it. A right press that does not move stays the context menu.
+   */
+  connectOnRightDrag?: boolean;
+  /**
    * A hard edge for element drags, where the notation's space has one: the dragged element's
    * CENTRE is clamped inside this box, in the preview under the pointer and in the raised
    * `element-moved` position alike - a wardley component must not be draggable off the map

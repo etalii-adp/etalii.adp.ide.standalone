@@ -58,6 +58,8 @@ public static class ServiceCollectionAddCausalLoopExtension
         services.AddSingleton<ICommandHandler<SetLinkPolarityCommand>, SetLinkPolarityCommandHandler>();
         services.AddSingleton<ICommandHandler<SetLinkDelayCommand>, SetLinkDelayCommandHandler>();
         services.AddSingleton<ICommandHandler<SetLinkCurvatureCommand>, SetLinkCurvatureCommandHandler>();
+        services.AddSingleton<ICommandHandler<AddVariableAtCommand>, AddVariableAtCommandHandler>();
+        services.AddSingleton<ICommandHandler<RestoreVariableAdditionCommand>, RestoreVariableAdditionCommandHandler>();
         services.AddSingleton<ICommandHandler<SetLinkWeightCommand>, SetLinkWeightCommandHandler>();
         services.AddSingleton<ICommandHandler<SetLinkLabelCommand>, SetLinkLabelCommandHandler>();
         services.AddSingleton<ICommandHandler<RemoveLinkCommand>, RemoveLinkCommandHandler>();

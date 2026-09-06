@@ -13,7 +13,9 @@ public sealed class AddLinkCommandHandler(ICausalLoopDocumentStore documents) : 
         ArgumentNullException.ThrowIfNull(command);
         cancellationToken.ThrowIfCancellationRequested();
 
+        // Auto-claims every feedback loop the new link closes, in the same undoable edit: a link
+        // and the loops it creates are the one gesture the user made.
         return CausalLoopEdits.Run(documents, command.BodyPath, command, entry =>
-            CausalLoopWriter.AddLink(entry.Document, entry.Model, command.From, command.To, command.Polarity));
+            CausalLoopWriter.AddLinkAndClaimLoops(entry.Document, entry.Model, command.From, command.To, command.Polarity));
     }
 }

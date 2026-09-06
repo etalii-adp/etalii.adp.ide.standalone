@@ -151,6 +151,34 @@ internal sealed class CausalLoopSession : IDiagramSession
     }
 
     /// <summary>
+    /// Declares a variable and authors its position at the point it was added, as one undoable
+    /// step - the drop and the right-click "add variable" both land here. Where the diagram has no
+    /// registration, there is nowhere to store a position, so the caller adds the variable
+    /// without one and the layout places it.
+    /// </summary>
+    public async Task<string> AddVariableAtAsync(string id, string label, double x, double y, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (_history is null)
+        {
+            return "This diagram is read-only.";
+        }
+
+        if (_registrationPath is not { Length: > 0 })
+        {
+            return "This diagram was opened without a registration, so there is nowhere to store a position.";
+        }
+
+        var result = await _history.ExecuteAsync(
+            new AddVariableAtCommand(_bodyPath, _registrationPath, id, label, x, y),
+            cancellationToken);
+
+        return result.IsSuccess ? "" : result.Error;
+    }
+
+    /// <summary>
     /// Arranges the whole diagram with the self-organizing layout and stores the result as
     /// authored positions (causal-loop-diagram Requirement 6.1 and 6.8).
     /// </summary>

@@ -313,6 +313,92 @@ public class CausalLoopContextActionsTests : IDisposable
         Assert.Equal("Curve back the other way", after.Label);
     }
 
+    // ---- the gestures that replaced the dialogs ---------------------------------------------
+
+    [Fact]
+    public async Task AddingAVariable_CompletesWithACalculatedName_WithoutAskingForOne()
+    {
+        // The drop and the canvas "Add variable" no longer prompt; the module names the variable.
+        // Act.
+        var result = await _actions.ExecuteAsync(
+            Target(CausalLoopSelection.PlacementFor(10, 20)),
+            CausalLoopContextActionProvider.AddVariableActionId,
+            TestContext.Current.CancellationToken);
+
+        // Assert. Not a dialog; a variable appears, named by the module.
+        Assert.IsNotType<ContextExecutionRequiresInput>(result);
+        Assert.IsType<ContextExecutionCompleted>(result);
+        _store.Reload(_path);
+        Assert.Contains(_store.GetOrLoad(_path).Model.Variables, variable => variable.Id == "variable1");
+    }
+
+    [Fact]
+    public async Task RenamingAVariable_OpensInlineOverIt_AndEditsTheLabelNotTheIdentifier()
+    {
+        // The rename is the inline editor now, marked with the variable's element id so the canvas
+        // opens it over the pill; committing sets the LABEL, leaving the id its links refer to.
+        // Act.
+        var prompt = await _actions.ExecuteAsync(
+            Target("variable:births"),
+            CausalLoopContextActionProvider.RenameVariableActionId,
+            TestContext.Current.CancellationToken);
+
+        // Assert: an inline input, seeded with the current label.
+        var input = Assert.IsType<ContextExecutionRequiresInput>(prompt);
+        Assert.Equal("variable:births", input.Request.InlineLabelElementId);
+        Assert.Equal("Births", input.Request.InitialValue);
+
+        // And committing changes the label while the id and its links stand.
+        await _actions.CommitAsync(
+            Target("variable:births"), CausalLoopContextActionProvider.RenameVariableActionId,
+            "Newborns", "", TestContext.Current.CancellationToken);
+        _store.Reload(_path);
+        var model = _store.GetOrLoad(_path).Model;
+        Assert.Contains(model.Variables, variable => variable.Id == "births" && variable.Display == "Newborns");
+        Assert.Contains(model.Links, link => link.From == "births" || link.To == "births");
+    }
+
+    [Fact]
+    public async Task ADrawnLink_StatesItAndClaimsNoDialog_ThroughTheConnectGesture()
+    {
+        // The right-button draw raises a `rel:{from}->{to}`; the provider states that link with no
+        // dialog. (The corpus already links both ways, so this draws a self-loop-free fresh pair.)
+        // Arrange.
+        var freshPath = IoPath.Combine(_root, "fresh.cld");
+        await File.WriteAllTextAsync(
+            freshPath, "causal-loop 1\r\n\r\nvariable a\r\nvariable b\r\nlink a -> b +\r\n",
+            TestContext.Current.CancellationToken);
+        var target = new ContextTarget(
+            ContextScope.DiagramElement, freshPath, false, ShortGuid.NewShortGuid(), _root, default,
+            CausalLoopSelection.RelationFor("b", "a"));
+
+        // Act.
+        var result = await _actions.ExecuteAsync(
+            target, CausalLoopContextActionProvider.ConnectActionId, TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(result);
+        _store.Reload(freshPath);
+        var model = _store.GetOrLoad(freshPath).Model;
+        Assert.Contains(model.Links, link => link.From == "b" && link.To == "a");
+        // And the reverse link closes a loop, which the same edit claimed.
+        Assert.Single(model.Loops);
+    }
+
+    [Fact]
+    public async Task TheConnectGesture_IsOfferedForARelationTarget_SoExecuteActionAcceptsIt()
+    {
+        // ExecuteAction runs only an action the target discovered. A gesture-only action still has
+        // to be discovered for its transient target, or the gesture is refused as unavailable.
+        // Act.
+        var actions = (await _actions.DiscoverAsync(
+            Target(CausalLoopSelection.RelationFor("population", "births")),
+            TestContext.Current.CancellationToken)).SelectMany(group => group.Actions).ToList();
+
+        // Assert.
+        Assert.Contains(actions, action => action.Id == CausalLoopContextActionProvider.ConnectActionId);
+    }
+
     // ---- the removal that takes more than it names ------------------------------------------
 
     /// <summary>
@@ -344,16 +430,18 @@ public class CausalLoopContextActionsTests : IDisposable
     [Fact]
     public async Task ANameTheFormatCannotRoundTrip_IsRejectedBeforeItIsWritten()
     {
+        // Adding a variable no longer asks for a name - the module calculates one - so the name
+        // the format has to round-trip is the one the inline rename edits: the label, which is
+        // written quoted and so cannot itself hold a quote.
         // Act.
         var result = await _actions.ValidateAsync(
-            Target(CausalLoopSelection.PlacementFor(0, 0)),
-            CausalLoopContextActionProvider.AddVariableActionId,
-            "two words",
+            Target("variable:population"),
+            CausalLoopContextActionProvider.RenameVariableActionId,
+            "a \" quote",
             TestContext.Current.CancellationToken);
 
         // Assert.
         Assert.False(result.Valid);
-        Assert.Equal(CausalLoopWriter.UnusableName, result.Reason);
     }
 
     [Fact]

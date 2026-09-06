@@ -172,24 +172,5 @@ public sealed class CausalLoopValidator(DiagramOrigin origin) : IDiagramValidato
     /// from a different member is the same loop, and must not be reported as unlabelled because
     /// the author began it elsewhere.
     /// </summary>
-    private static string Signature(IReadOnlyList<string> cycle)
-    {
-        if (cycle.Count == 0)
-        {
-            return "";
-        }
-
-        // Rotate to start at the ordinally least member, which is a canonical form for a
-        // directed cycle - the direction still matters, so this rotates rather than sorts.
-        var start = 0;
-        for (var index = 1; index < cycle.Count; index++)
-        {
-            if (string.CompareOrdinal(cycle[index], cycle[start]) < 0)
-            {
-                start = index;
-            }
-        }
-
-        return string.Join("\0", Enumerable.Range(0, cycle.Count).Select(offset => cycle[(start + offset) % cycle.Count]));
-    }
+    private static string Signature(IReadOnlyList<string> cycle) => CycleFinder.CanonicalSignature(cycle);
 }

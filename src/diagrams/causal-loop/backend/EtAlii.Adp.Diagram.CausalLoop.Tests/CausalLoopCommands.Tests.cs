@@ -270,6 +270,74 @@ public class CausalLoopCommandsTests : IDisposable
         Assert.Equal(Corpus, await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken));
     }
 
+    // ---- a link claims the loops it closes -------------------------------------------------
+
+    /// <summary>Writes a fresh document under the test root and returns its path.</summary>
+    private string WriteFresh(string body)
+    {
+        var path = IoPath.Combine(_root, $"{Guid.NewGuid():N}.cld");
+        File.WriteAllText(path, body);
+        return path;
+    }
+
+    [Fact]
+    public async Task AddingALinkThatClosesATwoVariableLoop_ClaimsThatLoop_AndUndoesTogether()
+    {
+        // Two variables, one link, no loop: the reverse link closes the loop, and stating it
+        // should claim that loop in the same undoable edit.
+        var path = WriteFresh("causal-loop 1\r\n\r\nvariable a\r\nvariable b\r\nlink a -> b +\r\n");
+
+        // Act.
+        var result = await new AddLinkCommandHandler(_store).ExecuteAsync(
+            new AddLinkCommand(path, "b", "a", CausalLoopPolarity.Positive), TestContext.Current.CancellationToken);
+
+        // Assert. A loop is claimed, named R for the reinforcing polarity two positive links give.
+        Assert.True(result.IsSuccess, result.Error);
+        var loop = Assert.Single(_store.GetOrLoad(path).Model.Loops);
+        Assert.StartsWith("R", loop.Identifier, StringComparison.Ordinal);
+        Assert.Equal(new[] { "a", "b" }, loop.Variables.OrderBy(variable => variable, StringComparer.Ordinal));
+
+        // The link and its loop are one edit: undo removes both.
+        var restore = Assert.IsType<RestoreCausalLoopDocumentCommand>(result.Inverse);
+        await new RestoreCausalLoopDocumentCommandHandler(_store).ExecuteAsync(restore, TestContext.Current.CancellationToken);
+        Assert.Empty(_store.GetOrLoad(path).Model.Loops);
+        Assert.Single(_store.GetOrLoad(path).Model.Links);
+    }
+
+    [Fact]
+    public async Task AddingALinkThatClosesNoLoop_ClaimsNothing()
+    {
+        var path = WriteFresh("causal-loop 1\r\n\r\nvariable a\r\nvariable b\r\nvariable c\r\nlink a -> b +\r\n");
+
+        // Act. b -> c extends the chain without closing a cycle.
+        var result = await new AddLinkCommandHandler(_store).ExecuteAsync(
+            new AddLinkCommand(path, "b", "c", CausalLoopPolarity.Positive), TestContext.Current.CancellationToken);
+
+        // Assert.
+        Assert.True(result.IsSuccess, result.Error);
+        Assert.Empty(_store.GetOrLoad(path).Model.Loops);
+    }
+
+    [Fact]
+    public async Task AddingALinkThatClosesANewLoop_LeavesTheExistingClaimAlone()
+    {
+        // a<->b already claimed as R1; adding c -> a closes a longer loop a -> b -> c -> a.
+        var path = WriteFresh(
+            "causal-loop 1\r\n\r\nvariable a\r\nvariable b\r\nvariable c\r\n"
+            + "link a -> b +\r\nlink b -> a +\r\nlink b -> c +\r\nloop R1 \"\" a b\r\n");
+
+        // Act.
+        var result = await new AddLinkCommandHandler(_store).ExecuteAsync(
+            new AddLinkCommand(path, "c", "a", CausalLoopPolarity.Positive), TestContext.Current.CancellationToken);
+
+        // Assert. R1 untouched; exactly one new loop, over the three-variable cycle.
+        Assert.True(result.IsSuccess, result.Error);
+        var loops = _store.GetOrLoad(path).Model.Loops;
+        Assert.Equal(2, loops.Count);
+        Assert.Contains(loops, loop => loop.Identifier == "R1");
+        Assert.Contains(loops, loop => loop.Identifier != "R1" && loop.Variables.Count == 3);
+    }
+
     [Fact]
     public async Task ALoopThroughAnUndeclaredVariable_IsRefusedNamingIt()
     {

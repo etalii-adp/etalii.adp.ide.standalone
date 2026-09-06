@@ -1,17 +1,18 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { ArcBow, arcBetween, normalAlong, pointAlong, type ArcBox } from "./causalLoopArc";
 import { BoxElement } from "@client/canvas/elements/box/BoxElement";
-import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
+import { elementSelectionOf, elementSourceOf, selectedElementIdOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
 import type { CustomShapeRef, CustomShapeState, DiagramDefinition, RelationTypeDefinition, RouteEnds, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
 import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
 import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
+import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
 import { ContextMenu } from "@client/shell/context/ContextMenu";
 import { toMenuGroups } from "@client/shell/context/toMenuGroups";
-import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
+import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { ContextSelectionAction } from "@client/generated/context_pb";
@@ -31,6 +32,15 @@ export interface CausalLoopCanvasProps {
   entryId: Uint8Array;
   path: readonly string[];
 }
+
+/**
+ * The backend actions this canvas drives by gesture rather than by menu. Each is the same id the
+ * provider answers to; the client only decides when to raise it and what source to carry.
+ */
+const AddVariableActionId = "causal-loop.add-variable";
+const RenameVariableActionId = "causal-loop.rename-variable";
+const ConnectActionId = "causal-loop.connect";
+
 
 /** An element as the library carries it here: the model element plus what it draws. */
 type VariableElement = DiagramModelElement & { variable: CausalLoopVariable };
@@ -186,7 +196,7 @@ function loopMarkerPath(centreX: number, centreY: number, radius: number, clockw
  * centre of the variables the loop runs through. Renaming stays the dialog it always was;
  * Arrange stays a backend action.
  */
-function definitionOf(onActivate: (id: string) => void): DiagramDefinition {
+function definitionOf(): DiagramDefinition {
   const variableShape: CustomShapeRef = {
     customShape: "causal-loop-variable",
     render: (raw, state?: CustomShapeState) => {
@@ -204,7 +214,6 @@ function definitionOf(onActivate: (id: string) => void): DiagramDefinition {
           boxClassName="canvas-node"
           labelClassName="canvas-node-label"
           labelX={width / 2}
-          onDoubleClick={() => onActivate(element.id)}
         />
       );
     },
@@ -241,7 +250,9 @@ function definitionOf(onActivate: (id: string) => void): DiagramDefinition {
 
   return assertValidDiagramDefinition({
     elementTypes: [
-      { id: "variable", shape: variableShape, anchors: { kind: "edge" }, sizing: "model" },
+      // The label is the visible name and the one editable thing: renaming edits it in place,
+      // centred over the pill. "inside" opens the editor at the element's centre.
+      { id: "variable", shape: variableShape, anchors: { kind: "edge" }, sizing: "model", label: { placement: "inside", editable: true } },
       { id: "loop", shape: loopShape, anchors: { kind: "edge" }, sizing: "model", draggable: false },
     ],
     relationTypes: [
@@ -254,6 +265,9 @@ function definitionOf(onActivate: (id: string) => void): DiagramDefinition {
     ],
     layout: { modes: ["manual"] },
     dragging: "enabled",
+    // The right-button drag draws a link, in the shared gesture layer - so a causal loop links
+    // by dragging between variables, and this module keeps no gesture state of its own.
+    connectOnRightDrag: true,
   });
 }
 
@@ -267,18 +281,26 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
   const { model, loading, failed, moveElementTo, reportView } = useCausalLoopStream(projectId, path);
   const { select, executeAction } = useContextConnection();
   const { selection, actions } = useContextSelection();
+  const { prompt, onPropose, onSubmit, onCancel } = useContextPrompt();
   const toolboxItems = useToolboxItems(projectId, path);
   const [rejection, setRejection] = useState<string | null>(null);
   const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
   const selectionKey = innermostKey(selection);
   const selectedId = selectedElementIdOf(selection);
+  const editingId = inlineLabelElementIdOf(prompt);
 
-  const definition = useMemo(
-    () => definitionOf((id) => select(elementSelectionOf(entryId, path, id, ContextSelectionAction.ACTIVATE))),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [entryId, path, select],
-  );
+  /** Runs a backend action, threading its source and surfacing any refusal. */
+  const runAction = (actionId: string, sourceId?: string) => {
+    void (async () => {
+      const outcome = await executeAction(actionId, sourceId !== undefined ? elementSourceOf(sourceId) : undefined);
+      if (!outcome.accepted && outcome.error) {
+        setRejection(outcome.error);
+      }
+    })();
+  };
+
+  const definition = useMemo(() => definitionOf(), []);
 
   const diagramModel = useMemo<DiagramModel>(() => {
     const variables = [...model.variables.values()].map((variable): VariableElement => ({
@@ -340,8 +362,31 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
       })();
     },
     onViewChanged: ({ viewport: next }) => setViewport(next),
-    // Deliberately unanswered: drops (the hand-built canvas never wired them) and deletions
-    // (Delete was never a causal-loop key; removal lives in the menu the backend pushes).
+    // A toolbox drop carries the backend action its item names; the placement carries where it
+    // landed. "Add variable" then adds one there with a calculated name and no dialog; a link
+    // or loop item drops onto whatever variable it was released on, the same as its menu entry.
+    onElementDropped: ({ elementType, position }) => {
+      if (elementType === AddVariableActionId) {
+        runAction(elementType, `new:${position.x},${position.y}`);
+        return;
+      }
+      // A link or loop item is dropped ONTO a variable; find which one it landed on.
+      const variableId = variableAtCanvas(position);
+      if (variableId !== null) {
+        runAction(elementType, variableId);
+      } else {
+        setRejection("Drop a link or a loop onto a variable.");
+      }
+    },
+    // A link drawn by right-dragging between two variables: the shared gesture layer raises this,
+    // and the module states the link (and claims the loops it closes) with no dialog.
+    onConnectionDrawn: ({ sourceElementId, targetElementId }) => {
+      const from = sourceElementId.slice("variable:".length);
+      const to = targetElementId.slice("variable:".length);
+      runAction(ConnectActionId, `rel:${from}->${to}`);
+    },
+    // Deletions stay unanswered: Delete was never a causal-loop key; removal lives in the menu
+    // the backend pushes.
   };
 
   useViewReport({
@@ -382,6 +427,47 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
     surfaceMenu.openMenuAt(event, `new:${x},${y}`);
   };
 
+  /** The `variable:…` id of the topmost variable whose box contains a canvas point, or null. */
+  const variableAtCanvas = (point: { x: number; y: number }): string | null => {
+    const variables = [...model.variables.values()];
+    for (let index = variables.length - 1; index >= 0; index--) {
+      const variable = variables[index];
+      const halfWidth = variable.payload.width / 2;
+      const halfHeight = variable.payload.height / 2;
+      if (
+        point.x >= variable.x - halfWidth && point.x <= variable.x + halfWidth &&
+        point.y >= variable.y - halfHeight && point.y <= variable.y + halfHeight
+      ) {
+        return variable.id;
+      }
+    }
+    return null;
+  };
+
+
+  // A double-click detected by hand rather than by the browser's `dblclick`: the library
+  // re-renders the pressed element on selection, so the second click lands on a fresh DOM node
+  // and the browser, seeing two clicks on different nodes, never fires `dblclick`. The frame is
+  // stable, so counting clicks on it is reliable.
+  const lastClickRef = useRef<{ id: string; at: number }>({ id: "", at: 0 });
+  const onFrameClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    const id = (event.target as Element).closest("[data-element-id]")?.getAttribute("data-element-id") ?? "";
+    if (!id.startsWith("variable:")) {
+      lastClickRef.current = { id: "", at: 0 };
+      return;
+    }
+    const now = event.timeStamp;
+    const previous = lastClickRef.current;
+    if (previous.id === id && now - previous.at < 400) {
+      lastClickRef.current = { id: "", at: 0 };
+      // Rename the variable in place: the action returns an inline prompt the library opens over
+      // the pill, rather than the dialog it used to.
+      runAction(RenameVariableActionId, id);
+      return;
+    }
+    lastClickRef.current = { id, at: now };
+  };
+
   if (failed) {
     return <div className="causal-loop-message">This causal loop diagram could not be opened.</div>;
   }
@@ -391,7 +477,11 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
   }
 
   return (
-    <div className="causal-loop-frame canvas-host" onContextMenu={onSurfaceContextMenu}>
+    <div
+      className="causal-loop-frame canvas-host"
+      onContextMenu={onSurfaceContextMenu}
+      onClick={onFrameClick}
+    >
       {rejection !== null && (
         <div className="canvas-rejection" role="status" onClick={() => setRejection(null)}>
           {rejection}
@@ -412,6 +502,7 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
             selectForMenu: (id) => select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
             executeAction: (actionId) => void executeAction(actionId),
           }}
+          editing={{ editingId, onPropose, onSubmit, onCancel }}
           className="causal-loop-canvas-host"
           ariaLabel="Causal loop diagram"
         />
