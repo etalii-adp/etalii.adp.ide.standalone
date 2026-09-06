@@ -43,6 +43,7 @@ import {
 } from "./api/diagramEvents";
 import { effectiveDefinition, type DiagramRuntimeConfig } from "./api/diagramRuntimeConfig";
 import type { DiagramModel, DiagramModelConnection, DiagramModelElement } from "./api/diagramModel";
+import { layoutAlgorithmFor, type LayoutInput } from "./layout/layoutAlgorithm";
 import type {
   AnchorSet,
   CustomShapeRef,
@@ -166,7 +167,37 @@ export function DiagramCanvas({
     () => new Map(definition.relationTypes.map((type) => [type.id, type])),
     [definition.relationTypes],
   );
-  const elementsById = useMemo(() => new Map(model.elements.map((element) => [element.id, element])), [model.elements]);
+  // The layout seam (Requirement 8.1): the active mode's algorithm places the elements, and
+  // everything downstream - rendering, hit-testing, anchors, fit - reads the placed set.
+  // Manual/external returns null and the model's own positions pass through untouched.
+  const activeLayoutMode = config?.activeLayoutMode ?? definition.layout.modes[0] ?? "manual";
+  const layoutPositions = useMemo(() => {
+    const algorithm = layoutAlgorithmFor(activeLayoutMode);
+    if (algorithm === undefined) {
+      return null; // an unimplemented mode lays out as manual - the honest fallback
+    }
+    const input: LayoutInput = {
+      elements: model.elements.map((element) => {
+        const bounds = elementBounds(element, elementTypes.get(element.type));
+        return { id: element.id, x: element.x, y: element.y, width: bounds.width, height: bounds.height, parentId: element.parentId };
+      }),
+      connections: model.connections.map((connection) => ({ sourceId: connection.sourceId, targetId: connection.targetId })),
+    };
+    return algorithm.place(input, definition.layout);
+  }, [activeLayoutMode, model, elementTypes, definition.layout]);
+
+  const elements = useMemo(
+    () =>
+      layoutPositions === null
+        ? model.elements
+        : model.elements.map((element) => {
+            const at = layoutPositions.get(element.id);
+            return at === undefined ? element : { ...element, x: at.x, y: at.y };
+          }),
+    [model.elements, layoutPositions],
+  );
+
+  const elementsById = useMemo(() => new Map(elements.map((element) => [element.id, element])), [elements]);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const [view, setView] = useState<ViewBox | null>(null);
@@ -176,7 +207,7 @@ export function DiagramCanvas({
 
   const selection = controlledSelection ?? ownSelection;
 
-  const fitBox = useMemo(() => fitBoxOf(model, elementTypes), [model, elementTypes]);
+  const fitBox = useMemo(() => fitBoxOf(elements, elementTypes), [elements, elementTypes]);
   const effectiveView = view ?? fitBox;
   const viewRef = useRef(effectiveView);
   viewRef.current = effectiveView;
@@ -304,20 +335,20 @@ export function DiagramCanvas({
   /** The topmost element whose bounds contain the point - later in the model draws on top. */
   const elementAt = useCallback(
     (point: Point): DiagramModelElement | undefined => {
-      for (let i = model.elements.length - 1; i >= 0; i--) {
-        const bounds = boundsOf(model.elements[i]);
+      for (let i = elements.length - 1; i >= 0; i--) {
+        const bounds = boundsOf(elements[i]);
         if (
           point.x >= bounds.x &&
           point.x <= bounds.x + bounds.width &&
           point.y >= bounds.y &&
           point.y <= bounds.y + bounds.height
         ) {
-          return model.elements[i];
+          return elements[i];
         }
       }
       return undefined;
     },
-    [model.elements, boundsOf],
+    [elements, boundsOf],
   );
 
   const gesture = usePointerGesture<PressTarget>({
@@ -395,6 +426,13 @@ export function DiagramCanvas({
             break;
           }
           setDragOffset(null);
+          // Under an automatic layout the definition says what the drag MEANS (Requirement
+          // 8.4): a reclaimed displacement raises nothing - the next layout pass takes the
+          // element back - while repin-to-manual raises the move, and the module answers by
+          // recording the position its manual placement will then honour.
+          if (activeLayoutMode !== "manual" && (definition.layout.dragUnderAutomaticLayout ?? "repin-to-manual") === "reclaimed-displacement") {
+            break;
+          }
           raise({
             kind: "element-moved",
             elementId: target.element.id,
@@ -488,10 +526,10 @@ export function DiagramCanvas({
       zoomOut: () => zoomBy(1 / ZOOM_STEP),
       fitToView: () => {
         setView(null);
-        raiseView(fitBoxOf(model, elementTypes));
+        raiseView(fitBoxOf(elements, elementTypes));
       },
     }),
-    [zoomBy, raiseView, model, elementTypes],
+    [zoomBy, raiseView, elements, elementTypes],
   );
 
   // The pair, by construction (Requirement 1.4): this component registers BOTH the view
@@ -629,8 +667,8 @@ export function DiagramCanvas({
   // hit-testing (which walks the model backwards) and painting agree about what is on top.
   const ordered = useMemo(() => {
     const isFrame = (element: DiagramModelElement) => elementTypes.get(element.type)?.shape === "frame";
-    return [...model.elements.filter(isFrame), ...model.elements.filter((element) => !isFrame(element))];
-  }, [model.elements, elementTypes]);
+    return [...elements.filter(isFrame), ...elements.filter((element) => !isFrame(element))];
+  }, [elements, elementTypes]);
 
   const isSelected = (kind: SelectedItem["kind"], id: string) =>
     selection.some((item) => item.kind === kind && item.id === id);
@@ -724,6 +762,21 @@ export function DiagramCanvas({
           />
         )}
       </svg>
+
+      {definition.layout.modes.length > 1 && (
+        <div className="library-layout-switcher" data-testid="layout-switcher">
+          {definition.layout.modes.map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              className={mode === activeLayoutMode ? "library-layout-active" : undefined}
+              onClick={() => raise({ kind: "layout-mode-changed", mode })}
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
+      )}
 
       <CanvasScrollbars
         horizontal={{ viewStart: effectiveView.x, viewSpan: effectiveView.w, ...scrollExtentOf(fitBox.x, fitBox.x + fitBox.w, { factor: 0.5 }) }}
@@ -1151,12 +1204,12 @@ function elementBounds(element: DiagramModelElement, type: ElementTypeDefinition
 }
 
 /** The box that fits every element with a margin - what the canvas opens with and Fit returns to. */
-function fitBoxOf(model: DiagramModel, elementTypes: Map<string, ElementTypeDefinition>): ViewBox {
-  if (model.elements.length === 0) {
+function fitBoxOf(elements: readonly DiagramModelElement[], elementTypes: Map<string, ElementTypeDefinition>): ViewBox {
+  if (elements.length === 0) {
     return { x: -200, y: -150, w: 400, h: 300 };
   }
 
-  const boxes = model.elements.map((element) => elementBounds(element, elementTypes.get(element.type)));
+  const boxes = elements.map((element) => elementBounds(element, elementTypes.get(element.type)));
   const minX = Math.min(...boxes.map((box) => box.x)) - FIT_PADDING;
   const minY = Math.min(...boxes.map((box) => box.y)) - FIT_PADDING;
   const maxX = Math.max(...boxes.map((box) => box.x + box.width)) + FIT_PADDING;
