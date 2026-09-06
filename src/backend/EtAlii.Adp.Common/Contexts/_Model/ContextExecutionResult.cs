@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// What a provider wants to happen next after an action is triggered: gather a value,

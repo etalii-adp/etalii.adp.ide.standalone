@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// What came of applying a property value.

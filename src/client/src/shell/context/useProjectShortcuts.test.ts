@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import { createElement } from "react";
 import { create } from "@bufbuild/protobuf";
-import { ContextActionGroupSchema, type ContextActionGroup, type ContextPrompt } from "../../generated/context_pb";
+import { ContextActionGroupSchema } from "../../generated/context-contract_pb";
+import { type ContextActionGroup } from "../../generated/context-contract_pb";
+import { type ContextPrompt } from "../../generated/context_pb";
 import { PROJECT_SOURCE } from "./ContextConnectionProvider";
 import { useProjectShortcuts } from "./useProjectShortcuts";
 

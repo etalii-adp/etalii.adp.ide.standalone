@@ -1,0 +1,158 @@
+syntax = "proto3";
+
+package etalii.adp;
+
+option csharp_namespace = "EtAlii.Adp.Common.Wire";
+
+import "shared.proto";   // ShortGuid, EntryKind
+import "elements.proto"; // ElementId
+import "google/protobuf/empty.proto"; // ContextSource.project
+import "google/protobuf/any.proto";   // ElementDetail.payload
+
+// The context vocabulary every area speaks - scopes, sources, actions, shortcuts and the
+// level-description messages - split out of context.proto (backend-project-decomposition
+// task 10) so it generates into EtAlii.Adp.Common.Wire beneath EtAlii.Adp.Context, and
+// kept out of shared.proto so that file stays the primitives it has always been. Same
+// package as every sibling, so nothing moves on the wire. The context STREAM envelope
+// (ContextMessage and its payloads) deliberately stays in context.proto - it is the
+// service's own shape, and will move with it to Context.Wire when the area extracts.
+
+// Owned here rather than in context.proto since backend-project-decomposition task 10:
+// hierarchy, history and problems code all route on this enum, so it must generate into
+// EtAlii.Adp.Common.Wire for the area projects to reach it beneath EtAlii.Adp.Context.
+// Same package, so the wire name etalii.adp.ContextScope is unchanged.
+// Routes context actions to the providers that serve a kind of thing. Never sent by
+// a client: the backend derives it from the ContextSource member an id uses.
+enum ContextScope {
+  CONTEXT_SCOPE_UNSPECIFIED = 0;
+  HIERARCHY = 1;
+  // The project itself: actions that belong to it rather than to a selection - undo and redo
+  // (diagram-undo-redo Requirement 5.1).
+  PROJECT = 2;
+  // An element inside an open diagram - a mindmap node, later a class or a box - served by
+  // the diagram type's own providers (mindmap-diagram Requirement 10.3).
+  DIAGRAM_ELEMENT = 3;
+  // The errors-and-warnings panel itself: actions that belong to the problem list rather
+  // than to anything in it - Validate all (errors-and-warnings-panel Requirement 7.4).
+  // Not plain PROBLEMS: proto3 enum values are siblings of their package, and
+  // ContextSelectionSource already claimed that name.
+  PROBLEMS_PANEL = 4;
+}
+
+// The context vocabulary the area projects share - actions, shortcuts, sources and the
+// property-editor enum - owned here since backend-project-decomposition task 10 for the
+// same reason as ContextScope above: hierarchy, history and problems code all speak these,
+// so they must generate into EtAlii.Adp.Common.Wire beneath EtAlii.Adp.Context. Same
+// package, so nothing moves on the wire. The context STREAM envelope (ContextMessage and
+// its payloads) deliberately stays in context.proto - it is the service's own shape.
+// A keypress, expressed so the client can match it directly against a KeyboardEvent
+// without a client-side table of which key means which action.
+message ContextShortcut {
+  string key = 1; // DOM KeyboardEvent.key, e.g. "F2", "Delete"
+  bool ctrl = 2;
+  bool shift = 3;
+  bool alt = 4;
+  bool meta = 5;
+}
+
+message ContextAction {
+  string id = 1;
+  string label = 2;
+  string icon = 3;                       // @mdi/font class, e.g. "mdi-pencil-outline"
+  ContextShortcut shortcut = 4;          // unset when the action has none
+  bool available = 5;                    // false -> rendered disabled, shortcut inert
+  string unavailable_reason = 6;         // surfaced as the disabled item's tooltip
+  repeated ContextActionGroup items = 7; // non-empty -> a submenu instead of an action
+}
+
+// One provider's contribution; the client renders each as one ContextMenuGroup (and
+// one ribbon group).
+message ContextActionGroup {
+  repeated ContextAction actions = 1;
+}
+
+// What a selection or an action refers to. For the hierarchy this is an entry id,
+// which the backend resolves to an absolute path before handing it to a provider -
+// the client is never given, and never supplies, a filesystem path (tech.md: the
+// client never touches the filesystem; an absolute path would also leak the user's
+// directory layout). A new kind of thing (a diagram element, a location in a file)
+// is one more member here, served by its own resolver on the backend.
+message ContextSource {
+  oneof source {
+    ShortGuid entry_id = 1;
+    // An element inside the diagram the enclosing selection level names; the same id the
+    // delta stream carries for it, so a selection and an element are one identity
+    // (mindmap-diagram Requirement 10.2). Only meaningful as a child of a diagram file.
+    ElementId element_id = 2;
+    // The project this call is already scoped to. Empty rather than a project id: the request
+    // already carries project_id and the backend already resolved it, so a second copy would
+    // be a second thing to authorize and to disagree with (diagram-undo-redo).
+    google.protobuf.Empty project = 3;
+    // The errors-and-warnings panel, as a place rather than a thing in it - what the panel
+    // selects when it takes focus, routed to ContextScope.PROBLEMS. Empty for the same
+    // reason as `project`: the request already says which project's problems these are.
+    google.protobuf.Empty problems = 4;
+  }
+}
+
+// Which surface produced a selection, so a consumer can tell "the explorer selected
+// X" from "the canvas selected X" - e.g. so a surface does not re-react to its own.
+enum ContextSelectionSource {
+  CONTEXT_SELECTION_SOURCE_UNSPECIFIED = 0;
+  EXPLORER = 1;
+  DIAGRAM_CANVAS = 2;
+  SEARCH = 3;
+  PROBLEMS = 4;
+  TOOLBOX = 5;
+  RIBBON = 6;
+  PROPERTY_GRID = 7;
+}
+
+// How a property is edited, which is all the grid knows about its type.
+enum ContextPropertyEditor {
+  CONTEXT_PROPERTY_EDITOR_LINE = 0;   // a single line: a name, a technology
+  CONTEXT_PROPERTY_EDITOR_TEXT = 1;   // several lines: a description, a note
+  CONTEXT_PROPERTY_EDITOR_TOGGLE = 2; // yes or no; value carries "true" or "false"
+  // One of a known set, offered as a list: a pipeline stage's dependsOn, whose valid values
+  // are the other stages. `candidates` carries them and `value` is whichever is current, so
+  // this stays a single-valued editor like the three above.
+  CONTEXT_PROPERTY_EDITOR_CHOICE = 3;
+}
+
+message EntryDetail {
+  EntryKind kind = 1;
+  bool available = 2;
+  // The diagram type of this entry, resolved by the backend through the same routing that
+  // opens it - the .adp first line, or a declared body extension for a bare body. Empty for
+  // anything that is not an openable diagram, including a body whose extension more than one
+  // type claims: a file the backend refuses to route is not presented as openable
+  // (diagram-workspace-tabs Requirement 1). The client keeps no file-type table of its own.
+  string diagram_mime_type = 3;
+}
+
+// What the backend resolved about a selected diagram element, so a consumer can show what
+// is selected without a lookup of its own (mindmap-diagram Requirement 10.6).
+message ElementDetail {
+  string text = 1;
+  bool has_children = 2;
+  bool folded = 3;
+  bool linked = 4;
+  // The element as its own module describes it - the same mime-style type and type-specific
+  // payload `Element` carries on the diagram stream, so a consumer that already holds the
+  // module has everything it shows without a second call of its own (wardley-map
+  // Requirement 11.3). Both are empty for a resolver that offers nothing beyond the four
+  // fields above, which is every resolver written before this one. Nothing here names a
+  // diagram type: what a payload means is the module's business, exactly as it already is
+  // for `Element.payload`.
+  string element_type = 5;         // mime-style, e.g. "wardley/map+element"
+  google.protobuf.Any payload = 6; // type-specific message, defined per diagram module
+}
+
+// Backend-resolved detail for one level of a selection, which a client cannot and
+// must not supply itself. One member per kind of thing.
+message ContextLevelDetail {
+  oneof detail {
+    EntryDetail entry = 1;
+    ElementDetail element = 2;
+  }
+}

@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// How things of one kind relate to a selection nested under them. Declared by the

@@ -33,6 +33,7 @@
       the single-project build had - these three carry no service, so it emits messages only.
     -->
     <Protobuf Include="..\..\api\shared.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\shared.proto" />
+    <Protobuf Include="..\..\api\context-contract.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\context-contract.proto" />
     <Protobuf Include="..\..\api\connection.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\connection.proto" />
     <Protobuf Include="..\..\api\elements.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\elements.proto" />
   </ItemGroup>

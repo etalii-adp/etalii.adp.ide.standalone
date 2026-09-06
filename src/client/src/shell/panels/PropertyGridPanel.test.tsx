@@ -1,18 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
-import {
-  ContextLevelDetailSchema,
-  ContextSelectionAction,
-  ContextSelectionSource,
-  type ContextActionGroup,
-  type ContextLevelDetail,
-  type ContextSelection,
-  type ContextProperty,
-  ContextPropertySchema,
-  ContextPropertyEditor,
-} from "../../generated/context_pb";
-import { EntryKind } from "../../generated/hierarchy_pb";
+import { ContextLevelDetailSchema, ContextSelectionSource, ContextPropertyEditor } from "../../generated/context-contract_pb";
+import { type ContextActionGroup, type ContextLevelDetail } from "../../generated/context-contract_pb";
+import { ContextSelectionAction, type ContextSelection, type ContextProperty, ContextPropertySchema } from "../../generated/context_pb";
+import { EntryKind } from "../../generated/shared_pb";
 import { NONE_DETAIL, selectionFor } from "../context/ContextConnectionProvider";
 import { PropertyGridPanel, groupsOf, levelsOf } from "./PropertyGridPanel";
 

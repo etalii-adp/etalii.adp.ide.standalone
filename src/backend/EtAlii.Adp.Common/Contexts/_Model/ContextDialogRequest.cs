@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Common;
 
 /// <summary>A dialog asking the user for a single value, described entirely as data.</summary>
 /// <param name="InlineLabelElementId">

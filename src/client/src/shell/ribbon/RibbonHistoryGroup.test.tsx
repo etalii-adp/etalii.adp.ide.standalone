@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
-import { ContextActionGroupSchema, type ContextActionGroup } from "../../generated/context_pb";
+import { ContextActionGroupSchema } from "../../generated/context-contract_pb";
+import { type ContextActionGroup } from "../../generated/context-contract_pb";
 import { PROJECT_SOURCE } from "../context/ContextConnectionProvider";
 import { RibbonHistoryGroup } from "./RibbonHistoryGroup";
 

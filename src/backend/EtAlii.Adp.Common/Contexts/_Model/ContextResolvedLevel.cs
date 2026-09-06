@@ -1,4 +1,5 @@
-namespace EtAlii.Adp.Backend.Context;
+using EtAlii.Adp.Common.Wire;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// One level of a selection after the backend resolved it: where it is, what it is, and

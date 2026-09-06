@@ -1,11 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
-import {
-  ContextPropertyEditor,
-  ContextPropertySchema,
-  type ContextProperty,
-} from "../../generated/context_pb";
+import { ContextPropertyEditor } from "../../generated/context-contract_pb";
+import { ContextPropertySchema, type ContextProperty } from "../../generated/context_pb";
 import { PropertyRow } from "./PropertyRow";
 
 type PropertyOverrides = Omit<Partial<ContextProperty>, "$typeName" | "$unknown"> & {

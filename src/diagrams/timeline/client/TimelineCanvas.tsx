@@ -8,7 +8,8 @@ import { innermostKey, useContextConnection, useContextPrompt, useContextSelecti
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import type { DiagramCanvasProps as ShellCanvasProps } from "@client/shell/panels/diagramCanvas";
-import { ContextSelectionAction, type ContextShortcut } from "@client/generated/context_pb";
+import { type ContextShortcut } from "@client/generated/context-contract_pb";
+import { ContextSelectionAction } from "@client/generated/context_pb";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
 import type { CustomShapeRef, DiagramDefinition } from "@client/canvas/library/definition/diagramDefinition";
 import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";

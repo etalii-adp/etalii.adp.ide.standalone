@@ -15,7 +15,7 @@ import { ContextSelectionAction } from "@client/generated/context_pb";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
-import type { ContextShortcut } from "@client/generated/context_pb";
+import type { ContextShortcut } from "@client/generated/context-contract_pb";
 import {
   WardleyAttitudeKind,
   WardleyDecorator,

@@ -11,12 +11,6 @@ service HierarchyService {
   rpc WatchHierarchy(WatchHierarchyRequest) returns (stream HierarchyMessage);
 }
 
-enum EntryKind {
-  ENTRY_KIND_UNSPECIFIED = 0;
-  FILE = 1;
-  FOLDER = 2;
-}
-
 // What ADP's own routing says about an entry (small-refinements Requirement 3): a
 // registration governs it, something merely claims it, or neither. Zero is neutral on
 // purpose - an older peer's silence and "nothing to say" must read identically.

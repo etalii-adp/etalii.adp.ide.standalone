@@ -12,7 +12,8 @@ import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/libr
 import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { ContextSelectionAction, type ContextShortcut } from "@client/generated/context_pb";
+import { type ContextShortcut } from "@client/generated/context-contract_pb";
+import { ContextSelectionAction } from "@client/generated/context_pb";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import type { C4Model, C4Node, C4BoundaryBox } from "./c4Model";

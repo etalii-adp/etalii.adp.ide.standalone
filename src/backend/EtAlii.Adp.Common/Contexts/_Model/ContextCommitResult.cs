@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Common;
 
 /// <summary>The outcome of actually performing an action, once the user confirmed it.</summary>
 /// <param name="CreatedFullPath">

@@ -1,4 +1,5 @@
-namespace EtAlii.Adp.Backend.Context;
+using EtAlii.Adp.Common.Wire;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// Resolves ids of one kind (one <see cref="ContextSource"/> member) into locations the

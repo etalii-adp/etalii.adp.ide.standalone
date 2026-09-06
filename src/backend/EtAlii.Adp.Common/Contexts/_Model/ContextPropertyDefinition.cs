@@ -1,4 +1,5 @@
-namespace EtAlii.Adp.Backend.Context;
+using EtAlii.Adp.Common.Wire;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// One editable - or merely visible - property of whatever is selected.

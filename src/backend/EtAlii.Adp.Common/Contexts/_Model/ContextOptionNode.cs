@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// One node of a choice dialog's option tree. A node that is not <paramref name="Selectable"/>

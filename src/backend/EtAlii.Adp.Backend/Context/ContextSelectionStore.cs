@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
+using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using Serilog;
 using Path = EtAlii.Adp.Common.Wire.Path;
@@ -41,14 +42,14 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
             // project's own actions, and the project's problems, so a connection is fully
             // current the moment it registers.
             writer.TryWrite(ContextSelectionRecord.ToWire(entry.Record, entry.RootActions));
-            writer.TryWrite(ContextActionGroupDefinition.ToProto(projectActions));
+            writer.TryWrite(ContextActionGroups.ToProto(projectActions));
             writer.TryWrite(new ContextMessage { Problems = problems });
         }
     }
 
     public void PushProjectActions(string rootPath, IReadOnlyList<ContextActionGroupDefinition> actions)
     {
-        var message = ContextActionGroupDefinition.ToProto(actions);
+        var message = ContextActionGroups.ToProto(actions);
         foreach (var entry in _entries.Values)
         {
             lock (entry.Gate)

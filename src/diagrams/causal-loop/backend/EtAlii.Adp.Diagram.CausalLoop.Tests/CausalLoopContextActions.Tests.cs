@@ -2,6 +2,7 @@ using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Diagram;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;

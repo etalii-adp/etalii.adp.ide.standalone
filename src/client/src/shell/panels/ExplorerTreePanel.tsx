@@ -10,10 +10,13 @@ import {
 import { createClient } from "@connectrpc/connect";
 import { base64Encode } from "@bufbuild/protobuf/wire";
 import { useAuth } from "../../auth/AuthContext";
-import { EntryDiagramState, EntryKind, HierarchyService } from "../../generated/hierarchy_pb";
+import { EntryDiagramState, HierarchyService } from "../../generated/hierarchy_pb";
+import { EntryKind } from "../../generated/shared_pb";
 import type { Entry, HierarchyChange } from "../../generated/hierarchy_pb";
-import { ContextSelectionAction, ContextSelectionSource } from "../../generated/context_pb";
-import type { ContextAction, ContextActionGroup, ContextSelection } from "../../generated/context_pb";
+import { ContextSelectionSource } from "../../generated/context-contract_pb";
+import { ContextSelectionAction } from "../../generated/context_pb";
+import type { ContextAction, ContextActionGroup } from "../../generated/context-contract_pb";
+import type { ContextSelection } from "../../generated/context_pb";
 import { ContextMenu } from "../context/ContextMenu";
 import { toMenuGroups } from "../context/toMenuGroups";
 import {

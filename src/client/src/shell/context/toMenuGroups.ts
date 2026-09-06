@@ -1,4 +1,4 @@
-import type { ContextAction, ContextActionGroup } from "../../generated/context_pb";
+import type { ContextAction, ContextActionGroup } from "../../generated/context-contract_pb";
 import type { ContextMenuGroup, ContextMenuItem } from "./ContextMenu";
 
 /**

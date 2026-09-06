@@ -1,5 +1,6 @@
 using System.Threading.Channels;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Projects;
 using Grpc.Core;
 using Serilog;

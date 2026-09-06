@@ -1,12 +1,14 @@
 using EtAlii.Adp.Backend.Context;
 
+using EtAlii.Adp.Common;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Backend;
 
 /// <summary>
-/// Registers undo and redo as project-scope context actions, and the broadcaster that pushes
-/// their availability whenever a project's history changes (diagram-undo-redo Requirement 5).
+/// Registers undo and redo as project-scope context actions (diagram-undo-redo Requirement 5).
+/// The broadcaster that pushes their availability is Context's own machinery and is
+/// registered by AddContext (backend-project-decomposition task 10).
 /// </summary>
 /// <remarks>
 /// Separate from <see cref="ServiceCollectionAddCommandsExtension.AddCommands"/> on purpose:
@@ -20,7 +22,6 @@ public static class ServiceCollectionAddHistoryActionsExtension
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddSingleton<IContextActionProvider, HistoryContextActionProvider>();
-        services.AddSingleton<HistoryActionsBroadcaster>();
 
         return services;
     }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, Component, type ReactNode } from "react";
 import { create } from "@bufbuild/protobuf";
 import { ToolboxItemSchema, type ToolboxItem } from "@client/generated/diagrams_pb";
-import type { ContextActionGroup } from "@client/generated/context_pb";
+import type { ContextActionGroup } from "@client/generated/context-contract_pb";
 import {
   arcPath,
   edgePointOf,

@@ -1,4 +1,5 @@
-namespace EtAlii.Adp.Backend.Context;
+using EtAlii.Adp.Common.Wire;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// One action a provider offers for a target. An action that currently cannot be

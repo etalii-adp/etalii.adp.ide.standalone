@@ -2,15 +2,15 @@
 // @generated from file shared.proto (package etalii.adp, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file shared.proto.
  */
 export const file_shared: GenFile = /*@__PURE__*/
-  fileDesc("CgxzaGFyZWQucHJvdG8SCmV0YWxpaS5hZHAiGgoJU2hvcnRHdWlkEg0KBXZhbHVlGAEgASgMQhmqAhZFdEFsaWkuQWRwLkNvbW1vbi5XaXJlYgZwcm90bzM");
+  fileDesc("CgxzaGFyZWQucHJvdG8SCmV0YWxpaS5hZHAiGgoJU2hvcnRHdWlkEg0KBXZhbHVlGAEgASgMKj0KCUVudHJ5S2luZBIaChZFTlRSWV9LSU5EX1VOU1BFQ0lGSUVEEAASCAoERklMRRABEgoKBkZPTERFUhACQhmqAhZFdEFsaWkuQWRwLkNvbW1vbi5XaXJlYgZwcm90bzM");
 
 /**
  * The raw 16-byte representation of a System.Guid (EtAlii.Adp.ShortGuid);
@@ -31,4 +31,36 @@ export type ShortGuid = Message<"etalii.adp.ShortGuid"> & {
  */
 export const ShortGuidSchema: GenMessage<ShortGuid> = /*@__PURE__*/
   messageDesc(file_shared, 0);
+
+/**
+ * The level-description vocabulary - what kind of entry, what an element shows - moved
+ * with the context vocabulary above (backend-project-decomposition task 10). EntryKind
+ * came from hierarchy.proto: ContextLevelDetail needs it, shared cannot import hierarchy
+ * (hierarchy imports shared), and its descent deletes context.proto's hierarchy import -
+ * one proto edge the Context extraction no longer carries.
+ *
+ * @generated from enum etalii.adp.EntryKind
+ */
+export enum EntryKind {
+  /**
+   * @generated from enum value: ENTRY_KIND_UNSPECIFIED = 0;
+   */
+  ENTRY_KIND_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: FILE = 1;
+   */
+  FILE = 1,
+
+  /**
+   * @generated from enum value: FOLDER = 2;
+   */
+  FOLDER = 2,
+}
+
+/**
+ * Describes the enum etalii.adp.EntryKind.
+ */
+export const EntryKindSchema: GenEnum<EntryKind> = /*@__PURE__*/
+  enumDesc(file_shared, 0);
 

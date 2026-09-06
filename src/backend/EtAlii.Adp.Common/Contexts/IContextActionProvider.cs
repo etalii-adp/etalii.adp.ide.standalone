@@ -1,4 +1,5 @@
-namespace EtAlii.Adp.Backend.Context;
+using EtAlii.Adp.Common.Wire;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// Contributes the actions available for a target within one scope, and performs them.

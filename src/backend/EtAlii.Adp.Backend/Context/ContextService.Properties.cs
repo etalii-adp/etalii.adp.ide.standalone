@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common;
 using Grpc.Core;
 
 namespace EtAlii.Adp.Backend.Context;

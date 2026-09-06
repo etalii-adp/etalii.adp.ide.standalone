@@ -1,5 +1,6 @@
 using EtAlii.Adp.Common;
-namespace EtAlii.Adp.Backend.Context;
+using EtAlii.Adp.Common.Wire;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// What a context action applies to, already resolved by the service layer: a provider

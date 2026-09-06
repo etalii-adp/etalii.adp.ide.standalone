@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import type { ContextAction, ContextActionGroup, ContextShortcut } from "../../generated/context_pb";
+import type { ContextAction, ContextActionGroup, ContextShortcut } from "../../generated/context-contract_pb";
 import { innermostKey, useContextConnection, useContextSelection } from "../context/ContextConnectionProvider";
 import { RibbonDropdownButton } from "./RibbonDropdownButton";
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import type { ContextAction } from "../../generated/context_pb";
+import type { ContextAction } from "../../generated/context-contract_pb";
 import { ContextMenu } from "../context/ContextMenu";
 import { toMenuGroups } from "../context/toMenuGroups";
 

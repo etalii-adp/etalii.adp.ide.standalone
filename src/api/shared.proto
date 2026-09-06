@@ -8,8 +8,20 @@ package etalii.adp;
 // the wire representation of.
 option csharp_namespace = "EtAlii.Adp.Common.Wire";
 
+
 // The raw 16-byte representation of a System.Guid (EtAlii.Adp.ShortGuid);
 // the base36 string form is a display/URL concern, not a wire concern.
 message ShortGuid {
   bytes value = 1;
+}
+
+// The level-description vocabulary - what kind of entry, what an element shows - moved
+// with the context vocabulary above (backend-project-decomposition task 10). EntryKind
+// came from hierarchy.proto: ContextLevelDetail needs it, shared cannot import hierarchy
+// (hierarchy imports shared), and its descent deletes context.proto's hierarchy import -
+// one proto edge the Context extraction no longer carries.
+enum EntryKind {
+  ENTRY_KIND_UNSPECIFIED = 0;
+  FILE = 1;
+  FOLDER = 2;
 }

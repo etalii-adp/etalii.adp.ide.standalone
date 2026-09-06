@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { create } from "@bufbuild/protobuf";
-import { ContextActionGroupSchema } from "../../generated/context_pb";
+import { ContextActionGroupSchema } from "../../generated/context-contract_pb";
 import { toMenuGroups } from "./toMenuGroups";
 
 describe("toMenuGroups", () => {

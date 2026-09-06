@@ -1,4 +1,4 @@
-import type { ContextShortcut } from "../generated/context_pb";
+import type { ContextShortcut } from "../generated/context-contract_pb";
 
 /**
  * The keyboard half of a canvas's element interaction, shared by every diagram type.

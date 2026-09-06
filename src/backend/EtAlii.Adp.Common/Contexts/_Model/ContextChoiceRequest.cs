@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Context;
+namespace EtAlii.Adp.Common;
 
 /// <summary>A dialog asking the user to pick one option out of a grouped tree, described entirely as data.</summary>
 /// <param name="EmptyMessage">Shown in place of the tree when <paramref name="Options"/> is empty.</param>
