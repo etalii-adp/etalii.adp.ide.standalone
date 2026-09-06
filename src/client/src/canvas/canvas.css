@@ -144,6 +144,16 @@
   user-select: none;
 }
 
+/* A selected connection highlights whole: its label and marks as much as its line, so the
+   adorners riding on it - a polarity sign, a weight, a label - never read as belonging to
+   something else. Both shapes, because modules put canvas-selected on the connection group
+   itself or on an ancestor. */
+.canvas-selected.canvas-connection text,
+.canvas-selected .canvas-connection text,
+.canvas-connection.canvas-selected text {
+  fill: var(--color-primary, limegreen);
+}
+
 .canvas-pending-connection {
   fill: none;
   stroke: var(--color-primary, limegreen);
@@ -152,8 +162,12 @@
   pointer-events: none;
 }
 
-/* The arrowhead a directed canvas defines; each module attaches its own marker id. */
+/* The arrowhead a directed canvas defines; each module attaches its own marker id. A marker
+   lives in <defs>, so no selector on the selected connection can ever reach it - context-stroke
+   is how it follows the line that references it, muted normally and primary when the line is
+   selected. The literal fallback stays first for engines without SVG2 context paint. */
 .canvas-arrowhead {
   fill: var(--color-text-muted, #5a6376);
+  fill: context-stroke;
   stroke: none;
 }

@@ -153,6 +153,7 @@
 
 .ansible-arrowhead {
   fill: var(--ansible-edge-stroke, var(--color-text-muted));
+  fill: context-stroke; /* follow the referencing line - muted normally, primary selected */
 }
 
 .ansible-edge-label {

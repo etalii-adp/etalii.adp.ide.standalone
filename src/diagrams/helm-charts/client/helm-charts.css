@@ -139,6 +139,7 @@
 
 .helm-arrowhead {
   fill: var(--helm-edge-stroke, var(--color-text-muted));
+  fill: context-stroke; /* follow the referencing line - muted normally, primary selected */
 }
 
 .helm-edge-label {

@@ -400,6 +400,80 @@ public class WardleyMapFlowTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
+    public async Task SettingAProperty_LeavesTheSelectionSelected()
+    {
+        // Arrange. Found in the field: committing a checkbox or a name in the property grid
+        // made the selection vanish. A commit rewrites the document on disk, the write's
+        // watcher events reload it, and every module's selection track re-finds the element in
+        // whatever the reload holds - so a reload observed mid-swap reads as "element gone"
+        // and clears a selection whose element never went anywhere.
+        using var channel = CreateChannel();
+        var headers = await LoginAsync(channel);
+        var projectId = await AddProjectAsync(channel, headers);
+        var watchId = ShortGuid.NewShortGuid();
+        var hierarchyClient = new HierarchyService.HierarchyServiceClient(channel);
+        var contextClient = new ContextService.ContextServiceClient(channel);
+        var diagramClient = new DiagramService.DiagramServiceClient(channel);
+
+        var entryId = await NestedEntryLookup.EntryIdOfAsync(hierarchyClient, projectId, watchId, headers, "tea.adp");
+        var elements = await BaselineAsync(diagramClient, headers, projectId, "tea.adp");
+        var kettle = elements.Single(element =>
+            element.Type == WardleyElementTypes.Element &&
+            WardleyElementPayload.Parser.ParseFrom(element.Payload.Value.Span).Name == "Kettle");
+
+        using var cts = CreateMessageTimeout();
+        using var contextCall = contextClient.Watch(
+            new WatchContextRequest { ProjectId = projectId, WatchId = watchId },
+            headers, cancellationToken: TestContext.Current.CancellationToken);
+        var pendingSelection = ReadUntilSelectionWithActionsAsync(contextCall.ResponseStream, cts.Token);
+        await Task.Delay(StreamStartupGrace, TestContext.Current.CancellationToken);
+
+        var selected = await contextClient.SelectAsync(
+            new SelectRequest { ProjectId = projectId, WatchId = watchId, Selection = ElementChain(entryId, kettle.Id.Value) },
+            headers, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal("", selected.Error);
+        Assert.Equal("Kettle", (await pendingSelection).Levels[^1].Element.Text);
+
+        // Act: the property grid's commit.
+        var set = await contextClient.SetPropertyAsync(
+            new SetPropertyRequest { ProjectId = projectId, WatchId = watchId, PropertyId = WardleyContextPropertyProvider.MaturityPropertyId, Value = "0.42" },
+            headers, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal("", set.Error);
+
+        // Assert: give the write's watcher storm time to land, and read every push it causes.
+        // A push that carries no selection is the store clearing it - the defect. Transient
+        // pushes are hover previews and are not selection changes.
+        var pushes = new List<string>();
+        using var settle = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        settle.CancelAfter(TimeSpan.FromSeconds(3));
+        try
+        {
+            while (await contextCall.ResponseStream.MoveNext(settle.Token))
+            {
+                var message = contextCall.ResponseStream.Current;
+                if (message.MessageCase != ContextMessage.MessageOneofCase.Selection || message.Selection.Transient)
+                {
+                    continue;
+                }
+
+                pushes.Add(message.Selection.Selection is null
+                    ? "CLEARED"
+                    : $"levels={message.Selection.Levels.Count}");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The settle window closing is the expected way out.
+        }
+        catch (RpcException exception) when (exception.StatusCode == StatusCode.Cancelled)
+        {
+            // Same window, surfaced through gRPC.
+        }
+
+        Assert.DoesNotContain("CLEARED", pushes);
+    }
+
+    [Fact]
     public async Task TheToolboxIsDescribedForAnOpenMap()
     {
         // Arrange. Requirement 13 - the palette is data the client renders without

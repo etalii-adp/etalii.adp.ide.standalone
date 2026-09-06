@@ -94,65 +94,83 @@ public class DependencyGraphSessionTests : IDisposable
     }
 
     /// <summary>
+    /// The two-node fixture plus an island nothing relates to, far off to the right. A
+    /// relation now travels wherever its span touches the view and carries its ends with it,
+    /// so the connected pair never separates - what a view change adds and removes is what
+    /// shares no crossing span with it. The nodes draw 160 wide and 36 tall, so `aaa` is
+    /// 240..400 by 0..36, `bbb` 480..640 by 120..156, and the island 20000..20160 by 0..36.
+    /// </summary>
+    private const string GraphWithAnIsland = """
+        dependencies: 1
+        elements:
+          - id: aaa
+            label: API gateway
+            x: 240
+            row: 0
+          - id: bbb
+            label: Identity service
+            x: 480
+            row: 2
+          - id: island
+            label: Unrelated island
+            x: 20000
+            row: 0
+        relations:
+          - id: ccc
+            from: aaa
+            to: bbb
+            label: verifies tokens with
+        """;
+
+    /// <summary>
     /// The behavioural half of the view-delta loop: a changed viewport produces deltas, in the
     /// Add-then-Remove order both reference implementations use. This is the test that fails
     /// against the `return []` this session answered with before adoption - asserting that the
     /// client called `UpdateView` would not, because an empty answer passes that too
     /// (view-delta-adoption Requirement 1.3).
     /// </summary>
-    /// <remarks>
-    /// The fixture places `aaa` at x 240 row 0 and `bbb` at x 480 row 2, so with a node drawn
-    /// 160 wide and 36 tall their boxes are 240..400 by 0..36 and 480..640 by 120..156 - far
-    /// enough apart that one viewport can hold either alone.
-    /// </remarks>
     [Fact]
     public void AChangedViewport_AddsWhatAppeared_ThenRemovesWhatLeft()
     {
-        // Arrange: opened whole, then narrowed to the first node alone.
-        var path = Write();
+        // Arrange: opened whole, then narrowed to the connected pair - the island leaves.
+        var path = Write(GraphWithAnIsland);
         using var session = Wrap(Open(path));
         session.Value.Baseline();
         session.Value.UpdateView(new DiagramViewport(200, -10, 420, 60));
 
-        // Act: move the view to the second node, which the first no longer touches.
-        var deltas = session.Value.UpdateView(new DiagramViewport(450, 100, 700, 200));
+        // Act: move the view to the island, which no span reaches.
+        var deltas = session.Value.UpdateView(new DiagramViewport(19_900, -10, 20_500, 60));
 
         // Assert: Add first, then Remove - the order the design corrected Requirement 4.3 to.
         Assert.Equal(2, deltas.Count);
         var appeared = Assert.IsType<DiagramAddDelta>(deltas[0]);
         var departed = Assert.IsType<DiagramRemoveDelta>(deltas[1]);
-        Assert.Equal(["bbb"], appeared.Elements.Select(element => element.Id));
-        Assert.Equal(["aaa"], departed.ElementIds);
+        Assert.Equal(["island"], appeared.Elements.Select(element => element.Id));
+        Assert.Equal(["aaa", "bbb", "ccc"], departed.ElementIds.Order());
     }
 
     /// <summary>
-    /// A relation has no box of its own: it is delivered exactly when both of its ends are, and
-    /// withdrawn as soon as either leaves - which is also what the canvas does with a curve
-    /// whose endpoint it does not hold.
+    /// A relation has no box of its own, but it has a span, and it is drawn wherever that
+    /// span touches the view - its ends riding along as anchors. Deciding it by both ends
+    /// being in view instead hid, on zooming in, every line whose far end left the window
+    /// (found in the field).
     /// </summary>
     [Fact]
-    public void ARelation_TravelsWithBothOfItsEnds()
+    public void ARelation_TravelsWhereItsSpanDoes()
     {
-        // Arrange: one node in view, so the relation is not.
-        var path = Write();
+        // Arrange: the island alone in view - no span reaches it, so the pair is not held.
+        var path = Write(GraphWithAnIsland);
         using var session = Wrap(Open(path));
         session.Value.Baseline();
-        session.Value.UpdateView(new DiagramViewport(200, -10, 420, 60));
+        session.Value.UpdateView(new DiagramViewport(19_900, -10, 20_500, 60));
 
-        // Act: widen to hold both nodes.
-        var widened = session.Value.UpdateView(new DiagramViewport(0, -10, 900, 300));
+        // Act: move onto the first node - the relation's span touches, so all three arrive.
+        var moved = session.Value.UpdateView(new DiagramViewport(200, -10, 420, 60));
 
-        // Assert: the second node and the relation arrive together, and nothing leaves.
-        var appeared = Assert.IsType<DiagramAddDelta>(widened[0]);
-        Assert.Equal(["bbb", "ccc"], appeared.Elements.Select(element => element.Id).Order());
-        Assert.DoesNotContain(widened, delta => delta is DiagramRemoveDelta);
-
-        // Act, continued: narrow back to the first node alone.
-        var narrowed = session.Value.UpdateView(new DiagramViewport(200, -10, 420, 60));
-
-        // Assert: the relation leaves with the end that left.
-        var departed = Assert.IsType<DiagramRemoveDelta>(narrowed.Single());
-        Assert.Equal(["bbb", "ccc"], departed.ElementIds.Order());
+        // Assert.
+        var appeared = Assert.IsType<DiagramAddDelta>(moved[0]);
+        Assert.Equal(["aaa", "bbb", "ccc"], appeared.Elements.Select(element => element.Id).Order());
+        Assert.Equal(["island"], Assert.IsType<DiagramRemoveDelta>(moved[1]).ElementIds);
     }
 
     /// <summary>

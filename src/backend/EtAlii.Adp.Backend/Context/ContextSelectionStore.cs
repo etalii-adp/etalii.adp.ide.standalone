@@ -268,8 +268,15 @@ public sealed class ContextSelectionStore : IContextSelectionStore, IDisposable
         var levels = record.Levels.ToList();
         var level = levels[levelIndex];
         // The target moves with the path: providers re-discovering actions must look at
-        // where the thing is now, not where it was when selected.
-        var target = level.Target with { ResolvedFullPath = Relocate(level.Target.ResolvedFullPath, level.RelativePath.Count, newRelativePath) };
+        // where the thing is now, not where it was when selected. That holds for the levels
+        // whose relative path IS a file path - a diagram element's relative path is display
+        // text (a node's label, a variable's name), and its target's ResolvedFullPath is the
+        // body file holding it, which a relabel does not move. Relocating it from display
+        // segments turned the body path into "<folder>/<new label>", after which every
+        // describe and re-resolution on the selection read a file that does not exist.
+        var target = level.Target.Scope == ContextScope.DiagramElement
+            ? level.Target
+            : level.Target with { ResolvedFullPath = Relocate(level.Target.ResolvedFullPath, level.RelativePath.Count, newRelativePath) };
         levels[levelIndex] = level with { RelativePath = newRelativePath, Target = target };
 
         var chain = record.Chain.Clone();

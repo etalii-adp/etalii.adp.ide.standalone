@@ -257,6 +257,61 @@ public class ContextSelectionStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateFromTrack_OnAnElementLevel_LeavesTheBodyPathAlone()
+    {
+        // Arrange. An element level's relative path is DISPLAY text - a mindmap node's label, a
+        // causal-loop variable's name - while its target's ResolvedFullPath is the body file
+        // that holds it. Relocating the file path from display segments turned the target into
+        // "<folder>/<new label>", after which every re-resolution and property describe on the
+        // selection read a file that does not exist. Found in the field: committing a value in
+        // the property grid made the selection go away.
+        var watchId = ShortGuid.NewShortGuid();
+        var fileResolver = new ContextSelectionStoreStubResolver();
+        var elementResolver = new ContextSelectionStoreStubResolver();
+        var bodyPath = System.IO.Path.Combine(Root, "plan.cld");
+
+        var fileId = new ContextSource { EntryId = ShortGuid.NewShortGuid() };
+        var fileChain = new ContextSelection { Source = ContextSelectionSource.Explorer, Id = fileId, Path = new Path() };
+        fileChain.Path.Segments.Add("plan.cld");
+        var elementId = new ContextSource { ElementId = new ElementId { Value = "variable:incidents" } };
+        var elementChain = new ContextSelection { Source = ContextSelectionSource.DiagramCanvas, Id = elementId, Path = new Path() };
+        elementChain.Path.Segments.Add("Incidents");
+        fileChain.Child = elementChain;
+
+        var fileLevel = new ContextResolvedLevel(
+            ContextSelectionSource.Explorer, fileId, ["plan.cld"], ContextScope.Hierarchy,
+            new ContextTarget(ContextScope.Hierarchy, bodyPath, false, (ShortGuid)fileId.EntryId),
+            new ContextLevelDetail { Entry = new EntryDetail { Kind = EntryKind.File, Available = true } },
+            fileResolver);
+        var elementLevel = new ContextResolvedLevel(
+            ContextSelectionSource.DiagramCanvas, elementId, ["Incidents"], ContextScope.DiagramElement,
+            new ContextTarget(ContextScope.DiagramElement, bodyPath, false, default, Root, watchId, "variable:incidents"),
+            new ContextLevelDetail { Element = new ElementDetail { Text = "Incidents" } },
+            elementResolver);
+
+        ContextSelectionRecord? rediscoveredWith = null;
+        _store.Set(watchId, Root, new ContextSelectionRecord(fileChain, [fileLevel, elementLevel], [], null, []), (record, _) =>
+        {
+            rediscoveredWith = record;
+            return ValueTask.FromResult(record);
+        });
+
+        // Act: the element's label changed, so its track reports the new display path.
+        elementResolver.Fire(["New label"]);
+
+        var deadline = DateTime.UtcNow + Timeout;
+        while (rediscoveredWith is null && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
+
+        // Assert: the display path moved, the body file did not.
+        Assert.NotNull(rediscoveredWith);
+        Assert.Equal(new[] { "New label" }, rediscoveredWith!.Innermost.RelativePath);
+        Assert.Equal(bodyPath, rediscoveredWith.Innermost.Target.ResolvedFullPath);
+    }
+
+    [Fact]
     public async Task UpdateFromTrack_WithNull_Clears()
     {
         // Arrange.

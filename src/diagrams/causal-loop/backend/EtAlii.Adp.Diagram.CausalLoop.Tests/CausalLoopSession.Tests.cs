@@ -81,29 +81,37 @@ public class CausalLoopSessionTests : IDisposable
     [Fact]
     public void AViewChange_SendsWhatCameIntoView_AndTakesBackWhatLeft()
     {
-        // Arrange.
-        var session = Session();
+        // Arrange. The corpus triangle no longer works here: a link travels wherever its span
+        // touches the view and brings its ends along, so in a triangle every narrowing keeps
+        // everything. What leaves a view is what is neither in it nor anchoring a line that
+        // crosses it - an UNLINKED variable far away, pinned by authored positions so the
+        // geometry is this test's own rather than the layout's.
+        var bodyPath = IoPath.Combine(_root, "coasts.cld");
+        var registrationPath = IoPath.Combine(_root, "coasts.adp");
+        File.WriteAllText(bodyPath, "causal-loop 1\r\nvariable near \"Near\"\r\nvariable far \"Far\"\r\n");
+        File.WriteAllText(
+            registrationPath,
+            "systems/causal-loop-diagram\r\nbody: coasts.cld\r\nlayout:\r\n  variable:near: 0 0\r\n  variable:far: 10000 0\r\n");
+        var session = new CausalLoopSession(bodyPath, registrationPath, _store, new CausalLoopElementMapper());
         var all = Assert.IsType<DiagramAddDelta>(Assert.Single(session.Baseline())).Elements;
-        var variables = all.Where(element => element.Type == CausalLoopElementMapper.VariableType).ToArray();
-        var leftmost = variables.MinBy(element => element.X)!;
-        var rightmost = variables.MaxBy(element => element.X)!;
-        Assert.NotEqual(leftmost.Id, rightmost.Id);
+        var near = all.Single(element => element.Id == "variable:near");
+        var far = all.Single(element => element.Id == "variable:far");
 
         // Act.
-        var narrowed = session.UpdateView(Around(leftmost));
-        var moved = session.UpdateView(Around(rightmost));
+        var narrowed = session.UpdateView(Around(near));
+        var moved = session.UpdateView(Around(far));
 
         // Assert: narrowing took back the far variable and added nothing.
-        Assert.Contains(rightmost.Id, narrowed.OfType<DiagramRemoveDelta>().SelectMany(delta => delta.ElementIds));
+        Assert.Contains(far.Id, narrowed.OfType<DiagramRemoveDelta>().SelectMany(delta => delta.ElementIds));
         Assert.DoesNotContain(
             narrowed.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements),
-            element => element.Id == rightmost.Id);
+            element => element.Id == far.Id);
 
         // ...and moving across added the far one and took back the near one, in that order.
         Assert.Contains(
             moved.OfType<DiagramAddDelta>().SelectMany(delta => delta.Elements),
-            element => element.Id == rightmost.Id);
-        Assert.Contains(leftmost.Id, moved.OfType<DiagramRemoveDelta>().SelectMany(delta => delta.ElementIds));
+            element => element.Id == far.Id);
+        Assert.Contains(near.Id, moved.OfType<DiagramRemoveDelta>().SelectMany(delta => delta.ElementIds));
         Assert.IsType<DiagramAddDelta>(moved[0]);
         Assert.IsType<DiagramRemoveDelta>(moved[1]);
     }

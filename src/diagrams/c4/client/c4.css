@@ -100,6 +100,9 @@
 
 .c4-arrowhead {
   fill: var(--color-border);
+  /* A marker lives in <defs>, so the selected-state selector below never reaches it; this is
+     what actually turns the arrowhead primary with its selected line. */
+  fill: context-stroke;
 }
 
 /* A relationship the user can point at. The pointer target is the shared invisible fat twin

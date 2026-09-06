@@ -82,18 +82,32 @@ public sealed class DependencyGraphElementMapper
     {
         ArgumentNullException.ThrowIfNull(model);
 
-        var shown = model.Elements
+        var byId = model.Elements.ToDictionary(element => element.Id, StringComparer.Ordinal);
+        var shownIds = model.Elements
             .Where(element => Intersects(element, viewport))
+            .Select(element => element.Id)
+            .ToHashSet(StringComparer.Ordinal);
+
+        // A relation is drawn where its SPAN - the hull of its two end boxes - touches the
+        // viewport. Requiring both ends in view instead hid, on zooming in, every line whose
+        // far end left the window (found in the field). Its ends ride along as anchors, so
+        // the canvas always has two boxes to draw the line between.
+        var drawnRelations = model.Relations
+            .Where(relation => byId.TryGetValue(relation.From, out var from)
+                && byId.TryGetValue(relation.To, out var to)
+                && SpanIntersects(from, to, viewport))
             .ToArray();
-        var shownIds = shown.Select(element => element.Id).ToHashSet(StringComparer.Ordinal);
+        foreach (var relation in drawnRelations)
+        {
+            shownIds.Add(relation.From);
+            shownIds.Add(relation.To);
+        }
 
         // Document order is preserved on both passes, so one viewport always yields one sequence.
         return
         [
-            .. shown.Select(Element),
-            .. model.Relations
-                .Where(relation => shownIds.Contains(relation.From) && shownIds.Contains(relation.To))
-                .Select(Relation),
+            .. model.Elements.Where(element => shownIds.Contains(element.Id)).Select(Element),
+            .. drawnRelations.Select(Relation),
         ];
     }
 
@@ -157,6 +171,21 @@ public sealed class DependencyGraphElementMapper
             && element.X <= viewport.MaxX
             && top + NodeHeight >= viewport.MinY
             && top <= viewport.MaxY;
+    }
+
+    /// <summary>
+    /// Whether the hull of two nodes' boxes - a relation's span - touches the viewport. The
+    /// drawn line bows a little for the bezier; the criterion is the bounding box, not its
+    /// every pixel.
+    /// </summary>
+    private static bool SpanIntersects(DependencyGraphElement from, DependencyGraphElement to, DiagramViewport viewport)
+    {
+        var fromTop = DependencyGraphRows.ToY(from.Row);
+        var toTop = DependencyGraphRows.ToY(to.Row);
+        return Math.Max(from.X, to.X) + NodeWidth >= viewport.MinX
+            && Math.Min(from.X, to.X) <= viewport.MaxX
+            && Math.Max(fromTop, toTop) + NodeHeight >= viewport.MinY
+            && Math.Min(fromTop, toTop) <= viewport.MaxY;
     }
 
     private static bool Same(DiagramElement left, DiagramElement right) =>

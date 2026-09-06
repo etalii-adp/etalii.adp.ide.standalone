@@ -2041,3 +2041,54 @@ verifying focus, caret and the measured label width - the parts jsdom cannot.
   fail against its own defect before being trusted; what remains for the eyes-on pass is what
   jsdom cannot model - focus, the caret, blur-commit ordering and the measured label widths.
 
+## Four canvas and selection fixes in one pass (2026-09-06)
+
+Four field reports, three fixed in the backend with unit guards seen to fail first; what
+remains for eyes is the styling and the feel. One signed-in session, `src/examples/`.
+
+### A selected connection highlights whole
+
+- **Actions**: in the on-call causal loop, select a link that has a polarity sign and a delay
+  mark (`fatigue -> attrition`). Then select a C4 relationship, and an edge in ansible, helm
+  and azure-pipeline.
+- **Expected**: the line, its **arrowhead**, the polarity sign, the delay strokes and the label
+  all take the selection colour together - nothing stays grey. The arrowhead follows via SVG2
+  `context-stroke`, so this needs a Chromium of the last two years; the muted fallback before
+  it means an older engine shows today's behaviour rather than black. No unit guard is
+  possible - jsdom computes no styles - which is why this check exists.
+
+### A property-grid commit keeps the selection
+
+- **Actions**: select a causal-loop link, tick **Delayed** in the property grid. Then select a
+  variable and change its **Label**. Then rename a mindmap node the same way.
+- **Expected**: the selection survives every commit - canvas highlight, property grid and
+  context ribbon all still on the element. Guarded by
+  `UpdateFromTrack_OnAnElementLevel_LeavesTheBodyPathAlone` (the store rewrote the element's
+  body path into `<folder>/<new label>` on every track push, and everything downstream read a
+  file that does not exist); the eyes-on half is that the panels visibly keep up.
+
+### A folder's colour is right before it is opened
+
+- **Actions**: open `src/examples/` fresh; look at `diagrams/ansible-structure/` and
+  `diagrams/helm-charts/` corpora folders WITHOUT expanding them.
+- **Expected**: a folder whose registration declares a folder subject shows the registered
+  colour immediately - not only after expanding it. Guarded by
+  `ListChildren_AFolderHoldingAFolderSubjectRegistration_IsRegistered_BeforeItIsEverExpanded`.
+
+### A line whose ends left the view still crosses it
+
+- **Actions**: in the on-call causal loop, zoom far in on a single variable that has links to
+  off-screen neighbours; pan so both ends of one long link are outside the window. Repeat in
+  the dependency-graph example (`services.dgr`).
+- **Expected**: every link whose span touches the window is drawn - lines run to elements you
+  cannot see, and a long line crosses the window even with both ends outside. Guarded by
+  `ALinkTravelsWhereItsSpanTouchesTheView`, `ALinkBetweenTwoOffscreenVariables_StillCrossesTheView`
+  and the dependency-graph twins. Other modules (c4, ansible, databricks) draw one-hop
+  neighbours already and were left as they are; their both-ends-out crossing case is a known,
+  smaller gap.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - the implementing session's
+  own credential prohibition stands, so the checks are handed over runnable. Every mechanism
+  above is pinned by the named unit tests, each seen to fail against its defect first; the
+  styling check has no possible unit guard and is eyes-only.
+
