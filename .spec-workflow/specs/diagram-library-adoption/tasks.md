@@ -18,7 +18,7 @@
 
 ## Tasks
 
-- [-] 1. The measurement and the guards that will shrink
+- [x] 1. The measurement and the guards that will shrink
   - Files: `src/client/src/canvas/library/noPrivateGestures.test.ts` (new), `src/client/src/canvas/library/libraryGuards.test.tsx`, a measurement record in this task's implementation log
   - Re-run the population measurement against `src/diagrams/*/client/register.ts` and the canvases importing the library; record it with the design-time baseline beside it (Requirement 1.1's "measured, not inherited").
   - `noPrivateGestures` joins the noPrivate family: no migrated module's client sources hold private gesture state (`dragRef`/`panRef`/`connectRef` naming, raw pointer-capture handling outside the library, private connector path assembly for library-expressible routes), with an explicit **`NOT_YET_MIGRATED` exclusion list holding today's eleven unmigrated modules that only ever shrinks** — the guard fails on any added entry. Its text-reading limit stated in the file, as the family does.
@@ -27,7 +27,7 @@
   - _Requirements: 1.1, 3.2, 5.2_
   - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Re-measure the adoption population and land the noPrivateGestures guard and per-module pair-registration coverage, each with a shrink-only exclusion list | Restrictions: guards follow the house family shape with limits stated; exclusion lists may only shrink; both guards seen to fail under a planted offence before being trusted | Success: measurement recorded, both guards green with full exclusion lists and red under sabotage. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. wardley-map migrates — the intrinsic space, first exercise
+- [-] 2. wardley-map migrates — the intrinsic space, first exercise
   - Files: `src/diagrams/wardley-map/client/WardleyCanvas.tsx` (784 lines today), its tests, guard exclusion entries
   - The definition declares the **intrinsic 0..1 extent and the evolution axis as the in-canvas background** — the schema mechanism no reference exercised (design: first slot per Requirement 4.2). Symbol-shaped components; authored `label [-x, y]` offsets in the label rule; straight links.
   - Parity watchlist from the inventory: selection and F2 landed 2026-09-05 (inline-rename-adoption tasks 6–7); the inline editor placement honours authored label offsets; `setView(fullView)` behaviour — the one fit-to-view-immune canvas — survives as the intrinsic extent.
