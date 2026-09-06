@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Grpc.Core.Api" />
+    <PackageReference Include="Serilog" />
+    <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Authentication\EtAlii.Adp.Authentication.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- SessionInterceptor.IsExempt is internal: which paths bypass the session check is
+         this project's own affair, visible only to the backend's tests. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Backend.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -6,7 +6,6 @@
     <PackageReference Include="Grpc.AspNetCore.Web" />
     <PackageReference Include="Serilog" />
     <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.Authentication\EtAlii.Adp.Authentication.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Projects\EtAlii.Adp.Projects.csproj" />
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
     <!-- Core -> abstraction only: the Add action reads DiagramDefinition.All; no module is referenced. -->
