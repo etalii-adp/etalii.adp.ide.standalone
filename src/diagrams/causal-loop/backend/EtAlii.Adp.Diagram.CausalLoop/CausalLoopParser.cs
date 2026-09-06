@@ -103,7 +103,7 @@ public static class CausalLoopParser
     };
 
     /// <summary>
-    /// <c>link &lt;from&gt; -&gt; &lt;to&gt; [polarity] [delayed] [weight=n] ["label"]</c>.
+    /// <c>link &lt;from&gt; -&gt; &lt;to&gt; [polarity] [delayed] [flipped] [weight=n] ["label"]</c>.
     /// </summary>
     private static bool TryReadLink(IReadOnlyList<string> tokens, LineRange range, out CausalLoopLink? link, out string? problem)
     {
@@ -112,12 +112,13 @@ public static class CausalLoopParser
 
         if (tokens.Count < 4 || tokens[2] != "->")
         {
-            problem = "A link reads 'link <from> -> <to>', optionally followed by a polarity, 'delayed', a weight and a label.";
+            problem = "A link reads 'link <from> -> <to>', optionally followed by a polarity, 'delayed', 'flipped', a weight and a label.";
             return false;
         }
 
         var polarity = CausalLoopPolarity.Unstated;
         var delayed = false;
+        var flipped = false;
         double? weight = null;
         var label = "";
 
@@ -126,6 +127,10 @@ public static class CausalLoopParser
             if (token is "delayed")
             {
                 delayed = true;
+            }
+            else if (token is "flipped")
+            {
+                flipped = true;
             }
             else if (token.StartsWith("weight=", StringComparison.Ordinal))
             {
@@ -147,7 +152,7 @@ public static class CausalLoopParser
             }
         }
 
-        link = new CausalLoopLink(tokens[1], tokens[3], polarity, delayed, weight, label, range);
+        link = new CausalLoopLink(tokens[1], tokens[3], polarity, delayed, flipped, weight, label, range);
         return true;
     }
 

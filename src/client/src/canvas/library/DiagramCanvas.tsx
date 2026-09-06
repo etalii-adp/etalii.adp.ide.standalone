@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, Component, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, Component, type ReactNode } from "react";
 import { create } from "@bufbuild/protobuf";
 import { ToolboxItemSchema, type ToolboxItem } from "@client/generated/diagrams_pb";
 import type { ContextActionGroup } from "@client/generated/context_pb";
@@ -65,6 +65,83 @@ interface ViewBox {
   y: number;
   w: number;
   h: number;
+}
+
+/** The surface's size in real pixels, or null while nothing has been measured. */
+interface PaneSize {
+  width: number;
+  height: number;
+}
+
+/**
+ * The surface's own size, measured.
+ *
+ * jsdom computes no layout and has no `ResizeObserver`, so this stays null there and
+ * {@link shapedToPane} hands the view back untouched - which is what every existing test in
+ * this repository was written against.
+ */
+function usePaneSize(ref: React.RefObject<SVGSVGElement | null>): PaneSize | null {
+  const [size, setSize] = useState<PaneSize | null>(null);
+
+  useLayoutEffect(() => {
+    const surface = ref.current;
+    if (surface === null) {
+      return;
+    }
+
+    const measure = () => {
+      const rect = surface.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) {
+        return;
+      }
+      setSize((current) =>
+        current !== null && current.width === rect.width && current.height === rect.height
+          ? current
+          : { width: rect.width, height: rect.height },
+      );
+    };
+
+    measure();
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(surface);
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return size;
+}
+
+/**
+ * The same view, grown on one axis until it has the pane's proportions.
+ *
+ * It only ever **grows**, so nothing that was visible stops being visible: the slack an svg
+ * would have letterboxed becomes view the reader can actually use, centred on what was there
+ * before. Growing rather than cropping is what makes it safe to apply to a fitted box - fit
+ * still shows the whole diagram, with more room around it rather than less.
+ */
+function shapedToPane(view: ViewBox, pane: PaneSize | null): ViewBox {
+  if (pane === null || view.w <= 0 || view.h <= 0) {
+    return view;
+  }
+
+  const paneAspect = pane.width / pane.height;
+  const viewAspect = view.w / view.h;
+  // Within a rounding error of each other already: hand back the same object, so the memo
+  // above keeps its identity and the view-changed effect does not fire on a no-op.
+  if (Math.abs(paneAspect - viewAspect) < 1e-6) {
+    return view;
+  }
+
+  if (viewAspect < paneAspect) {
+    const w = view.h * paneAspect;
+    return { x: view.x - (w - view.w) / 2, y: view.y, w, h: view.h };
+  }
+
+  const h = view.w / paneAspect;
+  return { x: view.x, y: view.y - (h - view.h) / 2, w: view.w, h };
 }
 
 /**
@@ -219,7 +296,23 @@ export function DiagramCanvas({
     }
     return fitBoxOf(elements, elementTypes);
   }, [definition.extent, elements, elementTypes]);
-  const effectiveView = view ?? fitBox;
+  // The view is widened or heightened to the pane's own proportions before anything uses it.
+  //
+  // An svg with a viewBox scales uniformly and centres the slack (`preserveAspectRatio`'s
+  // default), so a view whose shape differs from the pane's is letterboxed - and then a canvas
+  // unit is not worth the same number of pixels across as it is down. Every screen mapping here
+  // assumes it is: `unitsPerPixel` divides the view's width by the surface's width, the module's
+  // viewport report describes the rectangle as if it filled the pane, and a ruler drawn beside
+  // the canvas lays its labels out across that width. Matching the shapes makes the assumption
+  // true instead of nearly true, and there is no letterbox left to centre.
+  //
+  // It also replaces what used to make this work by accident: the surface carried the container
+  // class, took a height and no width, and so sized *itself* from the viewBox's aspect ratio.
+  // The proportions matched, but the surface was then narrower than the pane and clipped the
+  // diagram down a vertical line - the line moved while panning and zooming, because the view's
+  // proportions did.
+  const paneSize = usePaneSize(svgRef);
+  const effectiveView = useMemo(() => shapedToPane(view ?? fitBox, paneSize), [view, fitBox, paneSize]);
   const viewRef = useRef(effectiveView);
   viewRef.current = effectiveView;
 
@@ -823,7 +916,13 @@ export function DiagramCanvas({
     <div className={`library-canvas ${className ?? ""}`.trim()} data-testid="library-canvas">
       <svg
         ref={svgRef}
-        className="canvas-host library-canvas-surface"
+        // `canvas-drawing`, never `canvas-host`: the host class is for the *container* and
+        // gives height without width, so the svg falls back to sizing its width from the
+        // viewBox's aspect ratio. An svg clips to its own viewport, so a surface narrower than
+        // the pane it sits in cuts the diagram off down a vertical line - one that moves as
+        // the viewBox's proportions change, which is why it appeared while panning and
+        // zooming. Every hand-written canvas in the repository already wears `canvas-drawing`.
+        className="canvas-drawing library-canvas-surface"
         viewBox={`${effectiveView.x} ${effectiveView.y} ${effectiveView.w} ${effectiveView.h}`}
         tabIndex={0}
         role="img"

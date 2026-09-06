@@ -283,6 +283,36 @@ public class CausalLoopContextActionsTests : IDisposable
         Assert.Equal("Not delayed", after.Label);
     }
 
+    [Fact]
+    public async Task TheFlipGesture_ReadsAsTheOppositeOfWhatTheLinkStates_AndWritesTheWord()
+    {
+        // Which side an arc bows to is the module's own decision until the author overrides it,
+        // so this gesture is a toggle on the document rather than a view setting: it has to
+        // offer the opposite of what is written, and write what it offered.
+        // Act.
+        var before = Assert.Single(
+            await Discover("link:population|births"),
+            action => action.Id == CausalLoopContextActionProvider.FlipCurvatureActionId);
+
+        var result = await _actions.ExecuteAsync(
+            Target("link:population|births"),
+            CausalLoopContextActionProvider.FlipCurvatureActionId,
+            TestContext.Current.CancellationToken);
+
+        var written = await File.ReadAllTextAsync(_path, TestContext.Current.CancellationToken);
+        _store.Reload(_path);
+
+        var after = Assert.Single(
+            await Discover("link:population|births"),
+            action => action.Id == CausalLoopContextActionProvider.FlipCurvatureActionId);
+
+        // Assert.
+        Assert.IsType<ContextExecutionCompleted>(result);
+        Assert.Equal("Flip the curve", before.Label);
+        Assert.Contains("link population -> births + flipped", written, StringComparison.Ordinal);
+        Assert.Equal("Curve back the other way", after.Label);
+    }
+
     // ---- the removal that takes more than it names ------------------------------------------
 
     /// <summary>

@@ -193,6 +193,37 @@ describe("the timeline canvas, on the library", () => {
     expect(thumb.style.left).not.toBe(before);
   });
 
+  it("lays the ruler out across the surface's real width, not an assumed one", () => {
+    // The defect this guards: the ruler was handed the constant the frozen scale is normalized
+    // against (1200) as though it were the surface's width. The ladder was then laid out for a
+    // 1200px ruler whatever the pane really was, and the labels stopped agreeing with the
+    // elements they date - measured live at 469px, a milestone at 2026-01-06 drew 130px to the
+    // left of where the ruler put "2026".
+    //
+    // jsdom computes no layout, so the surface's width is stubbed here; without the stub the
+    // measurement reads zero and the fallback stands, which is what every other test in this
+    // file relies on.
+    const measured = 400;
+    const original = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function (this: Element) {
+      return this.classList?.contains("timeline-canvas")
+        ? ({ x: 0, y: 0, top: 0, left: 0, right: measured, bottom: 300, width: measured, height: 300, toJSON: () => ({}) } as DOMRect)
+        : original.call(this);
+    };
+
+    try {
+      const { container } = renderCanvas();
+      const offsets = [...container.querySelectorAll<HTMLElement>(".timeline-ruler-tick")].map((tick) => Number.parseFloat(tick.style.left));
+
+      expect(offsets.length).toBeGreaterThan(0);
+      // A ladder built for 1200px reaches roughly three times as far across a 400px surface.
+      // The last label may sit a little beyond the edge; three times beyond it is the bug.
+      expect(Math.max(...offsets)).toBeLessThanOrEqual(measured * 1.2);
+    } finally {
+      Element.prototype.getBoundingClientRect = original;
+    }
+  });
+
   it("draws the period, the moment, the connection and the ruler", () => {
     const { container } = renderCanvas();
 

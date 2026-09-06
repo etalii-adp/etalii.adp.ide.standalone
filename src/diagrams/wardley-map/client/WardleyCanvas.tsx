@@ -25,14 +25,23 @@ import type { WardleyAxis, WardleyElement, WardleyModel } from "./wardleyModel";
 import { useWardleyStream } from "./useWardleyStream";
 
 /**
- * The map's own space is 0..1 on both axes, drawn into a fixed box of canvas units so labels
- * and stroke widths have a sensible scale - the intrinsic space the definition declares as its
+ * The map's own space is 0..1 on both axes, drawn into a box of canvas units so labels and
+ * stroke widths have a sensible scale - the intrinsic space the definition declares as its
  * extent, which is why Fit shows the whole map rather than a box derived from its contents.
+ *
+ * The box is only square when the pane is. A Wardley map's two axes measure unrelated things -
+ * evolution across, value chain up - so the space is stretched to the shape of the pane rather
+ * than letterboxed inside it. This is the height; the width comes from {@link spaceWidthFor}.
+ * Both stay canvas units in one uniform system, so a mark's dot stays round and its label stays
+ * unstretched: what varies is where the space's right-hand edge falls.
  */
 const SPACE = 1000;
 
 /** Room outside the space for the axis labels, which sit beyond the plotted area. */
 const MARGIN = 90;
+
+/** A floor for the plotted width, so a very tall narrow pane still leaves a map to read. */
+const MIN_SPACE_WIDTH = 300;
 
 /** The radius a component is drawn at, and the box a connector anchors on. */
 const DOT = 9;
@@ -43,9 +52,50 @@ export interface WardleyCanvasProps {
   path: readonly string[];
 }
 
-/** A 0..1 map coordinate as canvas units, rounded far finer than a pixel to keep the DOM readable. */
-function scale(value: number): number {
-  return Math.round(value * SPACE * 100) / 100;
+/**
+ * The plotted width that makes the whole space - plus both margins - sit at the pane's own
+ * proportions, so the map fills the canvas and the axes land on its left and bottom.
+ *
+ * A square space on a wide pane was drawn as a square in the middle with dead margins either
+ * side: on a 469x285 pane, 92px of nothing on each side, with the value-chain axis floating
+ * 114px in from the left edge instead of sitting at it.
+ *
+ * The aspect is taken from the reported viewport rather than measured again here, because the
+ * library already guarantees the view carries the pane's proportions - it grows the view to
+ * them before anything reads it. Nothing circular follows: the view's SHAPE is the pane's
+ * whatever this returns, so the width settles on the first report and stays put under pan and
+ * zoom.
+ */
+function spaceWidthFor(paneAspect: number | null): number {
+  if (paneAspect === null || !Number.isFinite(paneAspect) || paneAspect <= 0) {
+    return SPACE;
+  }
+
+  return Math.max(MIN_SPACE_WIDTH, paneAspect * (SPACE + MARGIN * 2) - MARGIN * 2);
+}
+
+/**
+ * The map's 0..1 space as canvas units, one function per axis.
+ *
+ * Rounded far finer than a pixel, to keep the DOM readable and a snapshot diff legible.
+ */
+export interface MapScale {
+  /** A 0..1 evolution coordinate as canvas units. */
+  x: (value: number) => number;
+  /** A 0..1 value-chain coordinate as canvas units. */
+  y: (value: number) => number;
+  /** The plotted space's own size in canvas units. */
+  width: number;
+  height: number;
+}
+
+function mapScaleOf(spaceWidth: number): MapScale {
+  return {
+    x: (value) => Math.round(value * spaceWidth * 100) / 100,
+    y: (value) => Math.round(value * SPACE * 100) / 100,
+    width: spaceWidth,
+    height: SPACE,
+  };
 }
 
 /** An element as the library carries it here: the model element plus the mark it draws. */
@@ -182,7 +232,7 @@ const evolveTargetShape: CustomShapeRef = {
  * none). The axis chrome, attitudes, accelerators, notes and annotations are the background:
  * inert before the migration, inert after it.
  */
-function definitionOf(model: WardleyModel): DiagramDefinition {
+function definitionOf(model: WardleyModel, scale: MapScale): DiagramDefinition {
   return assertValidDiagramDefinition({
     elementTypes: [
       { id: "component", shape: markShape, anchors: { kind: "edge" }, sizing: "model", label: { placement: "beside", editable: true } },
@@ -229,12 +279,12 @@ function definitionOf(model: WardleyModel): DiagramDefinition {
     dragging: "enabled",
     // The intrinsic space: Fit shows exactly this, margins included, because the map's plane
     // is the 0..1 space itself rather than whatever its contents span.
-    extent: { x: -MARGIN, y: -MARGIN, width: SPACE + MARGIN * 2, height: SPACE + MARGIN * 2 },
+    extent: { x: -MARGIN, y: -MARGIN, width: scale.width + MARGIN * 2, height: scale.height + MARGIN * 2 },
     // And its hard edge: a mark must not be draggable off the map while the pointer is down.
-    dragBounds: { x: 0, y: 0, width: SPACE, height: SPACE },
+    dragBounds: { x: 0, y: 0, width: scale.width, height: scale.height },
     background: {
       background: "wardley-chrome",
-      render: (view: ShapeBounds) => <WardleyBackground model={model} view={view} />,
+      render: (view: ShapeBounds) => <WardleyBackground model={model} view={view} scale={scale} />,
     },
   });
 }
@@ -261,24 +311,29 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
   const editingId = inlineLabelElementIdOf(prompt);
 
+  // The pane's proportions, read off the view the library reports: it shapes the view to the
+  // pane before anything sees it, so this is the pane's aspect without measuring it twice.
+  const paneAspect = viewport !== null && viewport.height > 0 ? viewport.width / viewport.height : null;
+  const scale = useMemo(() => mapScaleOf(spaceWidthFor(paneAspect)), [paneAspect]);
+
   // The definition closes over the model for its background - read every render, so the axis
   // and the inert furniture follow the document without a remount.
-  const definition = useMemo(() => definitionOf(model), [model]);
+  const definition = useMemo(() => definitionOf(model, scale), [model, scale]);
 
   const diagramModel = useMemo<DiagramModel>(() => {
     const marks = [...model.elements.values()].map((element): MarkElement => ({
       id: element.id,
       type: kindName(element.kind),
-      x: scale(element.x),
-      y: scale(element.y),
+      x: scale.x(element.x),
+      y: scale.y(element.y),
       width: DOT * 2,
       height: DOT * 2,
       label: element.name,
       // Where the drawn label begins - the author's own offset, left of the mark included -
       // so the editor opens over the text it replaces.
       labelAt: {
-        x: scale(element.x) + (element.labelOffset?.x ?? DOT + 6),
-        y: scale(element.y) + (element.labelOffset?.y ?? 4) - 4,
+        x: scale.x(element.x) + (element.labelOffset?.x ?? DOT + 6),
+        y: scale.y(element.y) + (element.labelOffset?.y ?? 4) - 4,
       },
       mark: element,
     }));
@@ -291,8 +346,8 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
       .map((element): EvolveTargetElement => ({
         id: `evolve:${element.id}`,
         type: "evolve-target",
-        x: scale(element.evolve!.maturity),
-        y: scale(element.y),
+        x: scale.x(element.evolve!.maturity),
+        y: scale.y(element.y),
         width: DOT * 2,
         height: DOT * 2,
         overrideName: element.evolve!.overrideName || undefined,
@@ -356,7 +411,7 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
       // back into the document's axes and the new position returns as an ordinary delta. The
       // library already clamped to the map's edge; the division puts it back into 0..1.
       void (async () => {
-        const error = await moveElementTo(elementId, position.x / SPACE, position.y / SPACE);
+        const error = await moveElementTo(elementId, position.x / scale.width, position.y / scale.height);
         if (error) {
           setRejection(error);
         }
@@ -373,10 +428,10 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
     view: { x: viewport?.x ?? 0, y: viewport?.y ?? 0, w: viewport?.width ?? 0, h: viewport?.height ?? 0 },
     report: reportView,
     convert: () => ({
-      minX: (viewport?.x ?? 0) / SPACE,
-      minY: (viewport?.y ?? 0) / SPACE,
-      maxX: ((viewport?.x ?? 0) + (viewport?.width ?? 0)) / SPACE,
-      maxY: ((viewport?.y ?? 0) + (viewport?.height ?? 0)) / SPACE,
+      minX: (viewport?.x ?? 0) / scale.width,
+      minY: (viewport?.y ?? 0) / scale.height,
+      maxX: ((viewport?.x ?? 0) + (viewport?.width ?? 0)) / scale.width,
+      maxY: ((viewport?.y ?? 0) + (viewport?.height ?? 0)) / scale.height,
     }),
     ready: !loading && !failed && viewport !== null,
   });
@@ -442,29 +497,29 @@ export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) 
  * The stage boundaries come from the model's axis, never from a constant here: the backend
  * holds the one copy and this draws what it is told.
  */
-function WardleyBackground({ model, view }: { model: WardleyModel; view: ShapeBounds }) {
+function WardleyBackground({ model, view, scale }: { model: WardleyModel; view: ShapeBounds; scale: MapScale }) {
   // Stage and axis labels hold a readable size as the map is zoomed; the boundaries they name
   // do not, because a position is only meaningful against its own axes.
-  const scaleFactor = view.width / (SPACE + MARGIN * 2);
+  const scaleFactor = view.width / (scale.width + MARGIN * 2);
   const labelSize = 20 * Math.max(0.35, Math.min(2.5, scaleFactor));
 
   return (
     <g className="wardley-chrome" aria-hidden="true">
-      <WardleyAxes axis={model.axis} labelSize={labelSize} />
+      <WardleyAxes axis={model.axis} labelSize={labelSize} scale={scale} />
 
       {[...model.attitudes.values()].map((attitude) => (
         <g key={attitude.id}>
           <rect
             className={`wardley-attitude wardley-attitude-${attitudeName(attitude.kind)}`}
-            x={scale(Math.min(attitude.x, attitude.opposite.x))}
-            y={scale(Math.min(attitude.y, attitude.opposite.y))}
-            width={scale(Math.abs(attitude.opposite.x - attitude.x))}
-            height={scale(Math.abs(attitude.opposite.y - attitude.y))}
+            x={scale.x(Math.min(attitude.x, attitude.opposite.x))}
+            y={scale.y(Math.min(attitude.y, attitude.opposite.y))}
+            width={scale.x(Math.abs(attitude.opposite.x - attitude.x))}
+            height={scale.y(Math.abs(attitude.opposite.y - attitude.y))}
           />
           <text
             className="wardley-attitude-label"
-            x={scale(Math.min(attitude.x, attitude.opposite.x)) + 8}
-            y={scale(Math.min(attitude.y, attitude.opposite.y)) + 22}
+            x={scale.x(Math.min(attitude.x, attitude.opposite.x)) + 8}
+            y={scale.y(Math.min(attitude.y, attitude.opposite.y)) + 22}
           >
             {attitudeName(attitude.kind)}
           </text>
@@ -476,18 +531,18 @@ function WardleyBackground({ model, view }: { model: WardleyModel; view: ShapeBo
           <path
             className={accelerator.isDeaccelerator ? "wardley-accelerator-back" : "wardley-accelerator-forward"}
             d={straightPath(
-              { x: scale(accelerator.x) - 16, y: scale(accelerator.y) },
-              { x: scale(accelerator.x) + 16, y: scale(accelerator.y) },
+              { x: scale.x(accelerator.x) - 16, y: scale.y(accelerator.y) },
+              { x: scale.x(accelerator.x) + 16, y: scale.y(accelerator.y) },
             )}
           />
-          <text className="wardley-element-label" x={scale(accelerator.x) + 22} y={scale(accelerator.y) + 4}>
+          <text className="wardley-element-label" x={scale.x(accelerator.x) + 22} y={scale.y(accelerator.y) + 4}>
             {accelerator.name}
           </text>
         </g>
       ))}
 
       {[...model.notes.values()].map((note) => (
-        <text key={note.id} className="wardley-note" x={scale(note.x)} y={scale(note.y)}>
+        <text key={note.id} className="wardley-note" x={scale.x(note.x)} y={scale.y(note.y)}>
           {note.text}
         </text>
       ))}
@@ -497,8 +552,8 @@ function WardleyBackground({ model, view }: { model: WardleyModel; view: ShapeBo
       {[...model.annotations.values()].flatMap((annotation) =>
         annotation.occurrences.map((occurrence, index) => (
           <g key={`${annotation.id}-${index}`} className="wardley-annotation">
-            <circle cx={scale(occurrence.x)} cy={scale(occurrence.y)} r={11} />
-            <text x={scale(occurrence.x)} y={scale(occurrence.y) + 4} textAnchor="middle">
+            <circle cx={scale.x(occurrence.x)} cy={scale.y(occurrence.y)} r={11} />
+            <text x={scale.x(occurrence.x)} y={scale.y(occurrence.y) + 4} textAnchor="middle">
               {annotation.number}
             </text>
             <title>{annotation.text}</title>
@@ -510,31 +565,31 @@ function WardleyBackground({ model, view }: { model: WardleyModel; view: ShapeBo
 }
 
 /** The bands, the two axes and their labels - what an empty map shows on its own. */
-function WardleyAxes({ axis, labelSize }: { axis?: WardleyAxis; labelSize: number }) {
+function WardleyAxes({ axis, labelSize, scale }: { axis?: WardleyAxis; labelSize: number; scale: MapScale }) {
   return (
     <>
       {(axis?.stages ?? []).map((stage, index) => (
         <g key={stage.label}>
           <rect
             className={`wardley-band wardley-band-${index}`}
-            x={scale(stage.start)}
+            x={scale.x(stage.start)}
             y={0}
-            width={scale(stage.end - stage.start)}
-            height={SPACE}
+            width={scale.x(stage.end - stage.start)}
+            height={scale.height}
           />
           {index > 0 ? (
             <line
               className="wardley-band-edge"
-              x1={scale(stage.start)}
+              x1={scale.x(stage.start)}
               y1={0}
-              x2={scale(stage.start)}
-              y2={SPACE}
+              x2={scale.x(stage.start)}
+              y2={scale.height}
             />
           ) : null}
           <text
             className="wardley-band-label"
-            x={scale((stage.start + stage.end) / 2)}
-            y={SPACE + 34}
+            x={scale.x((stage.start + stage.end) / 2)}
+            y={scale.height + 34}
             fontSize={labelSize}
             textAnchor="middle"
           >
@@ -544,20 +599,20 @@ function WardleyAxes({ axis, labelSize }: { axis?: WardleyAxis; labelSize: numbe
       ))}
 
       {/* The value chain: the user need at the top, invisible at the bottom. */}
-      <line className="wardley-axis" x1={0} y1={0} x2={0} y2={SPACE} />
+      <line className="wardley-axis" x1={0} y1={0} x2={0} y2={scale.height} />
       {/* Evolution: genesis at the left, commodity at the right. */}
-      <line className="wardley-axis" x1={0} y1={SPACE} x2={SPACE} y2={SPACE} />
+      <line className="wardley-axis" x1={0} y1={scale.height} x2={scale.width} y2={scale.height} />
 
-      <text className="wardley-axis-label" transform={`translate(${-34} ${SPACE / 2}) rotate(-90)`} fontSize={labelSize} textAnchor="middle">
+      <text className="wardley-axis-label" transform={`translate(${-34} ${scale.height / 2}) rotate(-90)`} fontSize={labelSize} textAnchor="middle">
         Value chain
       </text>
       <text className="wardley-axis-end" x={-14} y={12} fontSize={labelSize * 0.8} textAnchor="end">
         Visible
       </text>
-      <text className="wardley-axis-end" x={-14} y={SPACE} fontSize={labelSize * 0.8} textAnchor="end">
+      <text className="wardley-axis-end" x={-14} y={scale.height} fontSize={labelSize * 0.8} textAnchor="end">
         Invisible
       </text>
-      <text className="wardley-axis-label" x={SPACE / 2} y={SPACE + 66} fontSize={labelSize} textAnchor="middle">
+      <text className="wardley-axis-label" x={scale.width / 2} y={scale.height + 66} fontSize={labelSize} textAnchor="middle">
         Evolution
       </text>
     </>

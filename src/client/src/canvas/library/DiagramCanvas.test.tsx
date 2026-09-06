@@ -305,6 +305,24 @@ describe("DiagramCanvas", () => {
     expect(container.querySelector('[data-testid="adjust-a->b"]')).toBeNull();
   });
 
+  it("gives its surface the full pane, so nothing is clipped down a vertical line", () => {
+    const { container } = renderCanvas();
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+
+    // An svg clips to its own viewport, so the surface has to be told to fill the pane in both
+    // directions. `canvas-host` is the *container's* class: it sets a height and no width, and
+    // an svg with a height, no width and a viewBox sizes its width from the viewBox's aspect
+    // ratio. The surface then came out narrower than the pane and cut the diagram off down a
+    // vertical line that moved as the view's proportions changed - visible while panning and
+    // zooming. `canvas-drawing` is the shared width:100%/height:100% surface class every
+    // hand-written canvas in this repository already wears.
+    //
+    // jsdom computes no layout, so this asserts the mechanism rather than the pixels; the
+    // measurement that found the bug was 303px of surface inside a 469px pane.
+    expect(surface.classList.contains("canvas-drawing")).toBe(true);
+    expect(surface.classList.contains("canvas-host")).toBe(false);
+  });
+
   it("a declared background draws behind the elements, and a declared extent is what fit shows", () => {
     const definition = definitionOf({
       extent: { x: 0, y: 0, width: 1000, height: 500 },

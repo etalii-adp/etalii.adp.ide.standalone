@@ -135,6 +135,54 @@ function renderCanvas(model: WardleyModel, options?: { loading?: boolean; failed
 }
 
 describe("WardleyCanvas chrome", () => {
+  it("stretches the plotted space to the pane's shape, so the axes reach the canvas's edges", () => {
+    // The defect this guards: the space was square whatever the pane was. An svg scales its
+    // viewBox uniformly and centres the slack, so on a wide pane the map was drawn as a square
+    // in the middle with dead space either side - on a 469x285 pane, 92px of nothing on each
+    // side, with the value-chain axis floating 114px in from the left edge instead of sitting
+    // at it.
+    //
+    // jsdom computes no layout, so the surface the library measures is stubbed here. Unstubbed
+    // it reads zero, the view keeps the declared square extent, the space stays square, and
+    // every other test in this file keeps saying exactly what it said.
+    const pane = { width: 469, height: 285 };
+    const original = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function (this: Element) {
+      return this.classList?.contains("library-canvas-surface")
+        ? ({
+            x: 0,
+            y: 0,
+            top: 0,
+            left: 0,
+            right: pane.width,
+            bottom: pane.height,
+            width: pane.width,
+            height: pane.height,
+            toJSON: () => ({}),
+          } as DOMRect)
+        : original.call(this);
+    };
+
+    try {
+      const { container } = renderCanvas(withAxis());
+      const surface = container.querySelector("svg.library-canvas-surface")!;
+      const [, , width, height] = (surface.getAttribute("viewBox") ?? "").split(" ").map(Number);
+
+      // The view carries the pane's proportions, so the map fills the canvas rather than
+      // sitting letterboxed in it. A square space - the bug - comes out at 1.
+      expect(width / height).toBeCloseTo(pane.width / pane.height, 3);
+
+      // And the evolution axis spans the stretched space, not the square one: its right-hand
+      // end is the plotted width, which is now wider than the 1000-unit height.
+      const evolution = [...container.querySelectorAll("line.wardley-axis")].find(
+        (line) => line.getAttribute("y1") === line.getAttribute("y2"),
+      )!;
+      expect(Number(evolution.getAttribute("x2"))).toBeGreaterThan(Number(evolution.getAttribute("y1")));
+    } finally {
+      Element.prototype.getBoundingClientRect = original;
+    }
+  });
+
   it("draws a band for every stage the backend sent", () => {
     // Act.
     const { container } = renderCanvas(withAxis());

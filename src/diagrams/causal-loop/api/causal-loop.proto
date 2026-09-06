@@ -65,6 +65,11 @@ message CausalLoopLinkPayload {
 
   // An optional note on the link.
   string label = 7;
+
+  // Whether the arc bows to the other side of its chord than the one this module would choose.
+  // The side is normally derived from the direction of travel, so that a two-variable loop draws
+  // as an ellipse; this is the author overriding that for one link, to untangle a crossing.
+  bool flipped = 8;
 }
 
 // One feedback loop, drawn at the centroid of the variables it runs through.

@@ -8,7 +8,15 @@ The images the root readme shows, and how each was taken — precisely enough th
 - **App**: run from source per the root readme's getting-started steps (this is deliberate — capturing the screenshots doubles as verifying those steps). From a worktree, use a free port pair per CLAUDE.md's port rule; the committed set was captured on backend `5480` / client `5474`.
 - **Browser**: headless Chrome, viewport **1600×900 CSS px, device pixel ratio 1, 100% zoom**, full-viewport crop, no browser chrome.
 - **Theme**: the app's default (dark). Nothing toggled.
-- **Login**: the `developer` environment credentials (`admin` / `changeme`).
+- **Login**: the `developer` environment credentials (`admin` / `changeme`) - typed only if a
+  sign-in form appears. A developer build opens already authenticated
+  (developer-sign-in-bypass), and the script types nothing in that case.
+- **Known artefact of that**: a build that bypassed the sign-in renders a quiet `developer
+  session` marker at the right-hand end of the header, which a user of a release build never
+  sees. The committed set carries it, because the capture was taken without typing a
+  credential. To retake without it, start the backend with
+  `LocalAuthenticator__DeveloperSessionDisabled=true` and let the script sign in; everything
+  else about the images is unchanged.
 - **Format and budget**: PNG; each image ≤ 300 KB, the workspace overview ≤ 1 MB.
 
 The whole procedure is executable: [`capture.mjs`](capture.mjs) drives all of the above with puppeteer-core (`npm i puppeteer-core`, then `node capture.mjs http://localhost:5480 .` — it expects Chrome at its standard Windows path; adjust the constant for another machine). Retaking one image means re-running the script and committing the changed file; the entries below say what each image must show, which is what to check before committing a retake.

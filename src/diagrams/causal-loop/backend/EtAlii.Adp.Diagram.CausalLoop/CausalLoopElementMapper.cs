@@ -151,6 +151,7 @@ public sealed class CausalLoopElementMapper
                 _ => Wire.CausalLoopPolarityProto.Unstated,
             },
             Delayed = link.Delayed,
+            Flipped = link.Flipped,
             Weight = link.Weight ?? 0,
             HasWeight = link.Weight.HasValue,
             Label = link.Label,
