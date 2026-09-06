@@ -189,6 +189,65 @@ describe("DiagramCanvas", () => {
     expect(container.querySelector(".library-element-dragging")).toBeNull();
   });
 
+  it("a pan tracks the pointer live and becomes state once, at release", () => {
+    // Paired with the abandon test below. The viewBox moves per frame through the
+    // scheduler's live write; view-changed reaches the module exactly twice - the mount
+    // and the settled view - never per pointer frame (Requirement 1.5).
+    const onViewChanged = vi.fn();
+    const { container } = renderCanvas({ onViewChanged });
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+    const before = surface.getAttribute("viewBox")!;
+    const [x0, y0, w, h] = before.split(" ").map(Number);
+
+    // Two moves, deliberately: with a single move, one per-frame dispatch and one settled
+    // dispatch count the same - a sabotage restoring per-frame setView passed a one-move
+    // draft of this test, which is exactly the shape of guard the process forbids.
+    fireEvent(surface, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(surface, pointer("pointermove", { clientX: 150, clientY: 130 }));
+    expect(surface.getAttribute("viewBox")).toBe(`${x0 - 50} ${y0 - 30} ${w} ${h}`); // live, mid-gesture
+    fireEvent(surface, pointer("pointermove", { clientX: 180, clientY: 160 }));
+    expect(surface.getAttribute("viewBox")).toBe(`${x0 - 80} ${y0 - 60} ${w} ${h}`); // the latest wins
+    fireEvent(surface, pointer("pointerup", { clientX: 180, clientY: 160 }));
+
+    expect(surface.getAttribute("viewBox")).toBe(`${x0 - 80} ${y0 - 60} ${w} ${h}`);
+    expect(onViewChanged).toHaveBeenCalledTimes(2);
+    expect(onViewChanged).toHaveBeenLastCalledWith({
+      kind: "view-changed",
+      viewport: { x: x0 - 80, y: y0 - 60, width: w, height: h },
+    });
+  });
+
+  it("an abandoned pan rolls the view back and reports nothing", () => {
+    const onViewChanged = vi.fn();
+    const { container } = renderCanvas({ onViewChanged });
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+    const before = surface.getAttribute("viewBox")!;
+    onViewChanged.mockClear(); // the mount report is not this test's subject
+
+    fireEvent(surface, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(surface, pointer("pointermove", { clientX: 150, clientY: 130 }));
+    expect(surface.getAttribute("viewBox")).not.toBe(before); // the pan was live
+    fireEvent.keyDown(surface, { key: "Escape" });
+
+    expect(surface.getAttribute("viewBox")).toBe(before);
+    expect(onViewChanged).not.toHaveBeenCalled();
+  });
+
+  it("an abandoned connect dissolves its preview and draws nothing", () => {
+    // Paired with the permitted-connect test below, which sees exactly one dispatch.
+    const onConnectionDrawn = vi.fn();
+    const { container } = renderCanvas({ onConnectionDrawn });
+
+    const anchor = anchorOn(container, "a", "e");
+    fireEvent(anchor, pointer("pointerdown", { button: 0, clientX: 50, clientY: 0 }));
+    fireEvent(anchor, pointer("pointermove", { clientX: 260, clientY: 0 }));
+    expect(container.querySelector('[data-testid="connect-preview"]')).not.toBeNull(); // the preview was live
+    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface")!, { key: "Escape" });
+
+    expect(container.querySelector('[data-testid="connect-preview"]')).toBeNull();
+    expect(onConnectionDrawn).not.toHaveBeenCalled();
+  });
+
   it("a permitted connect raises connection-drawn with the anchors involved", () => {
     const onConnectionDrawn = vi.fn();
     const { container } = renderCanvas({ onConnectionDrawn });

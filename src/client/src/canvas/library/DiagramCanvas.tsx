@@ -22,6 +22,7 @@ import {
   valueWrite,
   type GestureFrame,
   type GestureValue,
+  type LiveWrite,
   type SurfaceRect,
 } from "./gestureFrame";
 import { BoxElement } from "../elements/box/BoxElement";
@@ -34,7 +35,7 @@ import { SymbolElement } from "../elements/symbol/SymbolElement";
 import { InlineLabelEditor, type InlineLabelEditorProps } from "../label/InlineLabelEditor";
 import { asideLabelPlacement, centredLabelPlacement, insetLabelPlacement, midpointLabelPlacement } from "../label/labelPlacement";
 import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
-import { scrollExtentOf } from "../scroll/scrollGeometry";
+import { scrollExtentOf, thumbOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
 import { isTextTarget } from "../interaction";
 import { ContextMenu } from "@client/shell/context/ContextMenu";
@@ -296,23 +297,34 @@ export function DiagramCanvas({
   const elementsById = useMemo(() => new Map(elements.map((element) => [element.id, element])), [elements]);
 
   const svgRef = useRef<SVGSVGElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<ViewBox | null>(null);
   const [ownSelection, setOwnSelection] = useState<DiagramSelection>([]);
   const [resizePreview, setResizePreview] = useState<{ id: string; side: "left" | "right"; dx: number } | null>(null);
-  const [connect, setConnect] = useState<ConnectPreview | null>(null);
 
-  // A reposition's per-frame value is NOT React state on the canvas: it flows through the
-  // gesture-frame scheduler into this cell, and only the dragged element subscribes with a
-  // snapshot that concerns it - so per pointer frame React renders the gesture's own
-  // participants and nothing else (Requirement 1.1, the design's scoped re-render).
+  // A gesture's per-frame values are NOT React state on the canvas: they flow through the
+  // gesture-frame scheduler into these cells, and only the gesture's own participants
+  // subscribe with snapshots that concern them - so per pointer frame React renders the
+  // dragged element or the connect preview and nothing else (Requirement 1.1, the design's
+  // scoped re-render). A pan writes no cell at all: its per-frame values go straight to the
+  // svg's viewBox attribute and the scrollbar thumbs, and the view becomes state once, at
+  // gesture end (Requirement 1.5).
   const dragValue = useMemo(() => createGestureValue<ElementDragOffset>(), []);
   const dragFrameRef = useRef<GestureFrame<ElementDragOffset> | null>(null);
+  const connectValue = useMemo(() => createGestureValue<ConnectPreview>(), []);
+  const connectFrameRef = useRef<GestureFrame<ConnectPreview> | null>(null);
+  const panFrameRef = useRef<GestureFrame<ViewBox> | null>(null);
+  const panLatestRef = useRef<ViewBox | null>(null);
   useEffect(
     () => () => {
       // The surface is unmounting: the nodes the writes went to are going away with it,
-      // so only the pending animation frame needs cancelling (Requirement 2.3).
+      // so only the pending animation frames need cancelling (Requirement 2.3).
       dragFrameRef.current?.cancel();
       dragFrameRef.current = null;
+      connectFrameRef.current?.cancel();
+      connectFrameRef.current = null;
+      panFrameRef.current?.cancel();
+      panFrameRef.current = null;
     },
     [],
   );
@@ -377,6 +389,56 @@ export function DiagramCanvas({
       viewport: { x: effectiveView.x, y: effectiveView.y, width: effectiveView.w, height: effectiveView.h },
     });
   }, [effectiveView.x, effectiveView.y, effectiveView.w, effectiveView.h]);
+
+  /**
+   * The pan gesture's live writes: the svg's viewBox attribute and the scrollbar thumb
+   * positions, straight to the DOM per applied frame - the thumbs are in the write set
+   * because committing the view only at gesture end would freeze them mid-pan, and
+   * Requirement 2 covers what the user watches, not only what is dispatched. Each write
+   * captures what React last rendered on its first application and restores it on revert.
+   */
+  const panWrites = useCallback((): Array<LiveWrite<ViewBox>> => {
+    const svg = svgRef.current;
+    const root = rootRef.current;
+    const horizontalThumb = root?.querySelector<HTMLElement>(".canvas-scrollbar-horizontal .canvas-scrollbar-thumb") ?? null;
+    const verticalThumb = root?.querySelector<HTMLElement>(".canvas-scrollbar-vertical .canvas-scrollbar-thumb") ?? null;
+    const horizontalExtent = scrollExtentOf(fitBox.x, fitBox.x + fitBox.w, { factor: 0.5 });
+    const verticalExtent = scrollExtentOf(fitBox.y, fitBox.y + fitBox.h, { factor: 0.5 });
+    let before: { viewBox: string | null; left: string; top: string } | null = null;
+    return [
+      {
+        apply(next) {
+          before ??= {
+            viewBox: svg?.getAttribute("viewBox") ?? null,
+            left: horizontalThumb?.style.left ?? "",
+            top: verticalThumb?.style.top ?? "",
+          };
+          svg?.setAttribute("viewBox", `${next.x} ${next.y} ${next.w} ${next.h}`);
+          if (horizontalThumb !== null) {
+            horizontalThumb.style.left = `${thumbOf({ viewStart: next.x, viewSpan: next.w, ...horizontalExtent }).offset * 100}%`;
+          }
+          if (verticalThumb !== null) {
+            verticalThumb.style.top = `${thumbOf({ viewStart: next.y, viewSpan: next.h, ...verticalExtent }).offset * 100}%`;
+          }
+        },
+        revert() {
+          if (before === null) {
+            return;
+          }
+          if (before.viewBox !== null) {
+            svg?.setAttribute("viewBox", before.viewBox);
+          }
+          if (horizontalThumb !== null) {
+            horizontalThumb.style.left = before.left;
+          }
+          if (verticalThumb !== null) {
+            verticalThumb.style.top = before.top;
+          }
+          before = null;
+        },
+      },
+    ];
+  }, [fitBox]);
 
   /** How many canvas units one screen pixel spans - what turns pointer deltas into movement. */
   const unitsPerPixel = useCallback((box: ViewBox): number => {
@@ -541,8 +603,11 @@ export function DiagramCanvas({
     onDragMove: (target, dx, dy) => {
       switch (target.kind) {
         case "background": {
-          const scaleAtPress = unitsPerPixel(target.view);
-          setView({ ...target.view, x: target.view.x - dx * scaleAtPress, y: target.view.y - dy * scaleAtPress });
+          const frame = (panFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), panWrites()));
+          const scaleAtPress = frame.rect.width > 0 ? target.view.w / frame.rect.width : 1;
+          const next = { ...target.view, x: target.view.x - dx * scaleAtPress, y: target.view.y - dy * scaleAtPress };
+          panLatestRef.current = next;
+          frame.move(next);
           break;
         }
         case "element": {
@@ -562,11 +627,14 @@ export function DiagramCanvas({
           if (relation === undefined) {
             break; // no relation may leave this element; nothing to preview
           }
-          const scale = unitsPerPixel(viewRef.current);
+          const frame = (connectFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), [valueWrite(connectValue)]));
+          const scale = frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : 1;
           const point = { x: target.at.x + dx * scale, y: target.at.y + dy * scale };
+          // Per-frame COMPUTATION, deliberately kept: the hit-test and the verdict are what
+          // make refusal render under the pointer; the requirement governs rendering.
           const candidate = elementAt(point);
           const valid = candidate !== undefined && connectVerdict(relation, target.element.id, candidate);
-          setConnect({
+          frame.move({
             relation,
             sourceId: target.element.id,
             sourceAnchor: target.anchor,
@@ -584,7 +652,6 @@ export function DiagramCanvas({
         case "adjust": {
           // Live feedback only; the commit is the release. The single midpoint waypoint is
           // the minimal adjustment surface; richer editing rides the same event.
-          setConnect(null);
           break;
         }
         case "connection":
@@ -592,10 +659,21 @@ export function DiagramCanvas({
       }
     },
     onDragEnd: (target, dx, dy) => {
-      const scale = unitsPerPixel(viewRef.current);
       switch (target.kind) {
-        case "background":
-          break; // the view effect above reports the settled viewport
+        case "background": {
+          // The single state write of the whole pan (Requirement 1.5): the commit undoes
+          // the live viewBox and thumb writes, and setView paints the settled view through
+          // the same code path as before - one render, one view-changed for the modules.
+          const frame = panFrameRef.current;
+          panFrameRef.current = null;
+          const settled = panLatestRef.current;
+          panLatestRef.current = null;
+          frame?.commit();
+          if (settled !== null) {
+            setView(settled);
+          }
+          break;
+        }
         case "element": {
           if (!draggingEnabled(target.element)) {
             break;
@@ -623,14 +701,18 @@ export function DiagramCanvas({
         }
         case "resize": {
           setResizePreview(null);
-          const bounds = resizedBounds(elementBounds(target.element, elementTypes.get(target.element.type)), target.side, dx * scale);
+          const bounds = resizedBounds(elementBounds(target.element, elementTypes.get(target.element.type)), target.side, dx * unitsPerPixel(viewRef.current));
           raise({ kind: "element-resized", elementId: target.element.id, side: target.side, bounds });
           break;
         }
         case "anchor": {
-          const preview = connectRef.current;
-          setConnect(null);
-          if (preview !== undefined && preview !== null && preview.valid && preview.target !== undefined) {
+          // The latest preview is read from the cell BEFORE the commit clears it: the
+          // verdict the last applied frame rendered is exactly what the release honours.
+          const preview = connectValue.get();
+          const frame = connectFrameRef.current;
+          connectFrameRef.current = null;
+          frame?.commit();
+          if (preview !== null && preview.valid && preview.target !== undefined) {
             // Raised only because the verdict already said yes: an invalid release raises
             // nothing and the preview simply dissolves (design, Error Handling 2).
             raise({
@@ -641,7 +723,7 @@ export function DiagramCanvas({
               sourceAnchor: preview.sourceAnchor,
               targetAnchor: preview.target.anchor,
             });
-          } else if (preview !== undefined && preview !== null && preview.relation.emptyRelease === "complete" && elementAt(preview.point) === undefined) {
+          } else if (preview !== null && preview.relation.emptyRelease === "complete" && elementAt(preview.point) === undefined) {
             // The definition declared an empty release meaningful - the create-and-relate
             // gesture - so the point travels to the module instead of dissolving.
             raise({
@@ -655,6 +737,7 @@ export function DiagramCanvas({
           break;
         }
         case "adjust": {
+          const scale = unitsPerPixel(viewRef.current);
           raise({
             kind: "connection-adjusted",
             connectionId: target.connection.id,
@@ -668,18 +751,19 @@ export function DiagramCanvas({
     },
     onDragAbandon: () => {
       // The revert is the scheduler's: an abandonment cannot leak a publication any more
-      // than it can leak state, and nothing is dispatched (Requirement 2.3).
+      // than it can leak an attribute, and nothing is dispatched (Requirement 2.3). For a
+      // pan that means the view rolls back to where the gesture began - the abandoned
+      // gesture's transient visual dissolves, exactly as the requirement words it.
       dragFrameRef.current?.revert();
       dragFrameRef.current = null;
+      connectFrameRef.current?.revert();
+      connectFrameRef.current = null;
+      panFrameRef.current?.revert();
+      panFrameRef.current = null;
+      panLatestRef.current = null;
       setResizePreview(null);
-      setConnect(null);
     },
   });
-
-  // Read at gesture end through a ref: the last pointermove's state write and the pointerup
-  // can share a render, and the closure would be a frame behind.
-  const connectRef = useRef(connect);
-  connectRef.current = connect;
 
   // ---- view: zoom, fit, wheel, controls-and-toolbox as a pair ------------------------------
 
@@ -960,7 +1044,7 @@ export function DiagramCanvas({
       resizable={elementTypes.get(element.type)?.sizing === "user"}
       resizePress={(side) => gesture.press({ kind: "resize", element, side })}
       selected={isSelected("element", element.id)}
-      connectHighlight={connect?.target?.elementId === element.id ? "valid" : connect !== null && !connect.valid && connectTargetUnder(connect, element, boundsOf) ? "invalid" : undefined}
+      connectValue={connectValue}
       press={gesture.press({ kind: "element", element })}
       anchorPress={(anchor, at) => gesture.press({ kind: "anchor", element, anchor, at })}
       onContextMenu={onItemContextMenu(element.id)}
@@ -968,7 +1052,7 @@ export function DiagramCanvas({
   );
 
   return (
-    <div className={`library-canvas ${className ?? ""}`.trim()} data-testid="library-canvas">
+    <div ref={rootRef} className={`library-canvas ${className ?? ""}`.trim()} data-testid="library-canvas">
       <svg
         ref={svgRef}
         // `canvas-drawing`, never `canvas-host`: the host class is for the *container* and
@@ -1028,15 +1112,7 @@ export function DiagramCanvas({
 
         {aboveConnections.map((element) => renderLibraryElement(element))}
 
-        {connect !== null && (
-          // The live preview, routed and styled as the relation prescribes (Requirement 5.4).
-          <path
-            className={`library-connect-preview${connect.valid ? "" : " library-connect-preview-invalid"}`}
-            data-testid="connect-preview"
-            d={routePath(connect.relation, connect.from, connect.point, [])}
-            pointerEvents="none"
-          />
-        )}
+        <ConnectPreviewLayer value={connectValue} />
 
         {editing !== undefined && editing.editingId !== null && editingPlacement !== null && (
           <InlineLabelEditor
@@ -1100,15 +1176,36 @@ export function DiagramCanvas({
 
 // ---- the pieces the component composes -----------------------------------------------------
 
+/**
+ * The connect gesture's own participant: the one component that re-renders per applied
+ * frame, drawing the preview routed and styled as the relation prescribes (Requirement 5.4).
+ * Subscribing here rather than holding the preview as canvas state is what keeps a connect
+ * drag from re-rendering every element per pointer frame (Requirement 1.5).
+ */
+function ConnectPreviewLayer({ value }: { value: GestureValue<ConnectPreview> }) {
+  const preview = useSyncExternalStore(value.subscribe, value.get);
+  if (preview === null) {
+    return null;
+  }
+  return (
+    <path
+      className={`library-connect-preview${preview.valid ? "" : " library-connect-preview-invalid"}`}
+      data-testid="connect-preview"
+      d={routePath(preview.relation, preview.from, preview.point, [])}
+      pointerEvents="none"
+    />
+  );
+}
+
 function LibraryElement({
   element,
   type,
   dragValue,
+  connectValue,
   resize,
   resizable,
   resizePress,
   selected,
-  connectHighlight,
   press,
   anchorPress,
   onContextMenu,
@@ -1116,11 +1213,11 @@ function LibraryElement({
   element: DiagramModelElement;
   type: ElementTypeDefinition | undefined;
   dragValue: GestureValue<ElementDragOffset>;
+  connectValue: GestureValue<ConnectPreview>;
   resize?: { side: "left" | "right"; dx: number };
   resizable: boolean;
   resizePress: (side: "left" | "right") => PointerPressWiring;
   selected: boolean;
-  connectHighlight?: "valid" | "invalid";
   press: PointerPressWiring;
   anchorPress: (anchor: string | undefined, at: Point) => PointerPressWiring;
   onContextMenu: (event: React.MouseEvent) => void;
@@ -1132,6 +1229,20 @@ function LibraryElement({
   const offset = useSyncExternalStore(dragValue.subscribe, () => {
     const value = dragValue.get();
     return value !== null && value.id === element.id ? value : null;
+  });
+  // The connect highlight subscribes the same way, with a PRIMITIVE snapshot: per applied
+  // frame every element answers "does this preview concern me" - a bounds check, which is
+  // per-frame computation - and only an element whose answer CHANGED re-renders, so the
+  // refusal still renders under the pointer (Requirement 4.3) at transition cost.
+  const connectHighlight = useSyncExternalStore(connectValue.subscribe, (): "valid" | "invalid" | undefined => {
+    const preview = connectValue.get();
+    if (preview === null) {
+      return undefined;
+    }
+    if (preview.target?.elementId === element.id) {
+      return "valid";
+    }
+    return !preview.valid && connectTargetUnder(preview, element, (candidate) => elementBounds(candidate, type)) ? "invalid" : undefined;
   });
   const shifted: DiagramModelElement = offset ? { ...element, x: element.x + offset.dx, y: element.y + offset.dy } : element;
   const plainBounds = elementBounds(shifted, type);
