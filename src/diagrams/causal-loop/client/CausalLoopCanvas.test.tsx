@@ -144,7 +144,7 @@ describe("CausalLoopCanvas", () => {
     const { container } = renderCanvas();
 
     expect(container.querySelectorAll('[data-element-id^="variable:"]')).toHaveLength(2);
-    expect(container.querySelectorAll('[data-element-id^="link:"]')).toHaveLength(2);
+    expect(container.querySelectorAll('[data-connection-id^="link:"]')).toHaveLength(2);
     expect(container.textContent).toContain("Alpha");
     expect(container.textContent).toContain("R1");
   });
@@ -160,7 +160,7 @@ describe("CausalLoopCanvas", () => {
   it("draws the two directions of a loop as two different paths", () => {
     const { container } = renderCanvas();
 
-    const paths = [...container.querySelectorAll('[data-element-id^="link:"] .canvas-connection-line')]
+    const paths = [...container.querySelectorAll('[data-connection-id^="link:"] .canvas-connection-line')]
       .map((path) => path.getAttribute("d"));
 
     expect(paths).toHaveLength(2);
@@ -170,7 +170,7 @@ describe("CausalLoopCanvas", () => {
   it("curves every link with a single control point, as the notation does", () => {
     const { container } = renderCanvas();
 
-    for (const path of container.querySelectorAll('[data-element-id^="link:"] .canvas-connection-line')) {
+    for (const path of container.querySelectorAll('[data-connection-id^="link:"] .canvas-connection-line')) {
       const d = path.getAttribute("d") ?? "";
 
       // One quadratic segment. A cubic would be the shared tree connector back again, which
@@ -185,7 +185,7 @@ describe("CausalLoopCanvas", () => {
     const { container } = renderCanvas();
 
     // The y of each path's control point - the number after the Q.
-    const bows = [...container.querySelectorAll('[data-element-id^="link:"] .canvas-connection-line')]
+    const bows = [...container.querySelectorAll('[data-connection-id^="link:"] .canvas-connection-line')]
       .map((path) => {
         const control = /Q\s+(-?[\d.]+)\s+(-?[\d.]+)/.exec(path.getAttribute("d") ?? "");
         return Number(control?.[2] ?? 0);
@@ -220,7 +220,7 @@ describe("CausalLoopCanvas", () => {
 
     // The rule five modules broke: compose canvas.css, do not restate it.
     expect(container.querySelector(".canvas-host")).not.toBeNull();
-    expect(container.querySelector(".canvas-drawing")).not.toBeNull();
+    expect(container.querySelector(".library-canvas")).not.toBeNull(); // the drawing group became the library's host
     expect(container.querySelector(".canvas-node")).not.toBeNull();
     expect(container.querySelector(".canvas-connection-line")).not.toBeNull();
     expect(container.querySelector(".canvas-arrowhead")).not.toBeNull();
@@ -247,7 +247,7 @@ describe("CausalLoopCanvas", () => {
 
     expect(container.querySelectorAll(".causal-loop-polarity")).toHaveLength(0);
     // ...and the link is still drawn: unknown polarity is not a reason to hide the causality.
-    expect(container.querySelectorAll('[data-element-id^="link:"]')).toHaveLength(1);
+    expect(container.querySelectorAll('[data-connection-id^="link:"]')).toHaveLength(1);
   });
 
   it("marks a delay with strokes across the link", () => {
@@ -352,7 +352,7 @@ describe("CausalLoopCanvas", () => {
     expect(reportView.mock.calls.at(-1)![0]).toEqual({ minX: x, minY: y, maxX: x + w, maxY: y + h });
 
     reportView.mockClear();
-    fireEvent.wheel(container.querySelector("svg.causal-loop-canvas")!, { deltaY: -100 });
+    fireEvent.wheel(container.querySelector("svg.library-canvas-surface")!, { deltaY: -100 });
 
     await waitFor(() => expect(reportView).toHaveBeenCalled(), { timeout: 2000 });
     const [zx, zy, zw, zh] = viewBoxOf(container);
@@ -465,7 +465,7 @@ describe("CausalLoopCanvas", () => {
 });
 
 const viewBoxOf = (container: HTMLElement) =>
-  (container.querySelector("svg.causal-loop-canvas")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
+  (container.querySelector("svg.library-canvas-surface")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
 
 /** The sweep flag of the first elliptical arc in a path - which way it turns. */
 function sweepOf(path: string): string {

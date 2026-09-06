@@ -2155,3 +2155,24 @@ are the library's now. Re-run the standing c4 entries above against a migrated b
   (corner bounds fed to the centre-based FrameElement) - fixed centrally with the failing
   test as the guard, before any migrated module had mounted one.
 
+## causal-loop re-run after its library migration (diagram-library-adoption, task 5)
+
+The diagram now renders through the diagram library: same pill variables, chord-bowed arcs,
+polarity signs, delay strokes, loop markers and badges; the arcs anchor on the end boxes
+exactly as before, through the custom route the library now hands endpoint bounds to. Re-run
+the standing causal-loop entries above against a migrated build, plus:
+
+- **Actions**: select a delayed, signed link and confirm the whole of it - line, arrowhead,
+  polarity, delay strokes - takes the accent together; right-click empty canvas and use Add
+  variable here; double-click a variable; drag a variable and watch the arcs follow on
+  commit; compare feel on the on-call example.
+- **Expected**: the empty-canvas menu still carries the diagram-wide actions with the
+  placement honoured; double-click still activates; wheel zoom now zooms about the pointer
+  (recorded unification); arcs redraw when the move lands rather than mid-drag (the library
+  norm, recorded); nothing feels worse.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition. The custom-route and adornment mechanisms are pinned
+  by unit tests seen to fail under three narrow sabotages (adornment unhooked, arc flattened
+  to a straight line, weight ladder collapsed).
+

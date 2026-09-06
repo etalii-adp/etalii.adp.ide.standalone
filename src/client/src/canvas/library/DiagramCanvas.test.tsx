@@ -525,6 +525,44 @@ describe("DiagramCanvas", () => {
     expect(field.value).toBe("Verifies tokens");
   });
 
+  it("a custom route is handed its endpoint bounds, for geometry that anchors on boxes", () => {
+    // causal-loop's arc picks its own anchors from the two end BOXES - bowed to the side of
+    // travel, an ellipse pair for a self-loop - which resolved points alone cannot express.
+    const seen: unknown[] = [];
+    const definition = definitionOf();
+    (definition.relationTypes[0] as { route: unknown }).route = {
+      customRoute: "probe",
+      path: (_from: unknown, _to: unknown, _waypoints: unknown, ends?: unknown) => {
+        seen.push(ends);
+        return "M 0 0 L 10 10";
+      },
+    };
+
+    renderCanvas({}, definition, modelOf());
+
+    expect(seen.length).toBeGreaterThan(0);
+    const ends = seen[0] as { source: { width: number }; target: { width: number } };
+    expect(ends).toBeDefined();
+    expect(ends.source.width).toBe(100);
+    expect(ends.target.width).toBe(100);
+  });
+
+  it("a relation's adornment renders inside the connection group, where selection styling reaches it", () => {
+    // Polarity signs and delay strokes ride the connection: drawn inside its group so the
+    // shared .canvas-selected cascade colours them with the line they describe.
+    const definition = definitionOf();
+    (definition.relationTypes[0] as { adorn?: unknown }).adorn = () => (
+      <text className="probe-adornment" data-testid="probe-adornment">
+        +
+      </text>
+    );
+
+    const { container } = renderCanvas({}, definition, modelOf());
+
+    const adornment = container.querySelector('[data-connection-id="a->b"] [data-testid="probe-adornment"]');
+    expect(adornment).not.toBeNull();
+  });
+
   it("a label the definition does not mark editable opens no editor", () => {
     const { container } = renderCanvas({}, definitionOf(), modelOf(), {
       editing: {

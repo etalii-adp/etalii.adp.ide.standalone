@@ -14,7 +14,6 @@
 export const NOT_YET_MIGRATED: ReadonlySet<string> = new Set([
   "ansible-structure",
   "azure-pipeline",
-  "causal-loop",
   "databricks",
   "dependency-graph",
   "helm-charts",
