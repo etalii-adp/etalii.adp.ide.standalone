@@ -2,21 +2,28 @@
 
 ## Introduction
 
-Every diagram canvas in the client hand-rolls its own pointer gestures. Ten canvases carry their own drag state, their own pan state, their own connect state and their own toolbox-drop handling, copied from whichever canvas came before and adjusted in place. This specification extracts that machinery into the central canvas library as **separate, deliberately unmerged implementations** — one folder per kind of gesture — leaving each module's own semantics where they belong: in the module.
+This specification began as two things the prompting report treated as one: a **structural** consolidation — every canvas hand-rolled its own pointer gestures — and a **per-frame render discipline**, because the measured slowness tracked drawn-element count, not which canvas was drawing.
 
-The work was prompted by a report that dragging feels slow on the RDF and Helm chart diagrams, with the hypothesis that those two use a different implementation while the timeline, mindmap and dependency-graph diagrams use a shared, reusable one. That hypothesis was tested before this document was written. It is half right, and the half that is wrong changes what this specification has to ask for.
+**The structural half has been delivered by another specification, and this document now asks only for the performance half.** On 2026-09-06, `diagram-library-adoption` landed `src/client/src/canvas/library/DiagramCanvas.tsx` (`9769cfd4`) and migrated **all fifteen canvas files** onto it. Its requirements cite this specification's survey by name — "after full adoption those counts are zero, and that is checkable" — and `library/noPrivateGestures.test.ts` is that check. What this document previously asked for structurally is recorded below as delivered, so it is not re-done; what remains is the render discipline, which survived the consolidation intact and now lives in exactly one file.
 
-## What the survey and the measurement found
+## The survey, in three readings
 
-**A shared click-or-drag arbiter now exists; the gesture kinds still do not.** When this document was first written (2026-09-03), the central canvas library held no gesture code at all: it held `connections/`, `elements/`, `scroll/`, `connectors.ts`, `selection.ts`, `useElementContextMenu.ts` and `interaction.ts` — and `interaction.ts`, the only file whose name suggests gestures, is 37 lines of *keyboard* handling. Since then, `selection-after-drag` has landed `src/client/src/canvas/gesture/usePointerGesture.ts` on develop at `b9295b0a`: one gesture at a time, its click-or-drag verdict decided **at gesture end** from what the gesture itself recorded, pointer capture on the pressed element, `lostpointercapture` as the abandonment signal, and the one movement threshold as `GESTURE_MOVEMENT_THRESHOLD_PX`. The arbiter is deliberately **not** any of the five derivatives this specification asks for — its own readme records that it "only tells their owner whether a drag happened at all" — so what this specification creates sits **on** it, never beside it. And nothing built here may subscribe to the browser's `click` event: `gesture/readme.md` forbids it in as many words, because the arbiter exists to delete the trailing-click defect that `selection-after-drag` traced. The premise that RDF and Helm are failing to use an existing shared drag capability remains not the case: the arbiter answers *whether* a drag happened, and nothing shared yet answers *what kind*.
+**2026-09-03 (this document's first version).** 13 canvas files; eight private `dragRef`, ten `panRef`, four `connectRef`, seven `zoomBy`; nothing shared existed. The per-frame measurement (below) showed cost tracking drawn elements at 0.012–0.020 ms per DOM node in every canvas measured, because each pointer move wrote React state and re-rendered the whole canvas.
 
-**The gesture machinery is duplicated across ten canvases, and the duplication grew by half while this specification waited.** Counting the canvases that draw and interact (`grep` over `src/diagrams/*/client/*Canvas.tsx`) at 2026-09-03: eight carried a private `dragRef` reposition gesture, ten a private `panRef`, four a private `connectRef` relation gesture, seven a private `zoomBy`, five a private toolbox-drop handler, and six their own anchor rendering. Re-running the same counts on 2026-09-05 gives 18 canvas files instead of 13, with 12 private `dragRef`, 12 `panRef`, 6 `connectRef` and 12 `zoomBy`: the five new canvases — `OwlCanvas`, `ShaclCanvas`, `SkosCanvas`, `SparqlCanvas` and `CausalLoopCanvas`, all created on 2026-09-04 — **each hand-rolled its own drag and pan**, because that is what the canvas beside each of them did. That growth is why Requirement 6 is this specification's spine rather than its closing task: a consolidation with no guard gets to be done again. The RDF canvas is not an outlier here — it imports *more* of the central library (`scroll/`, `interaction`, `useElementContextMenu`, `connectors`, `selection`) than the Azure pipeline, Ansible, Wardley or Helm canvases do. Helm is the genuine outlier in the opposite direction: it uses none of `scroll/`, `interaction` or `useElementContextMenu`, and drives its viewport through an SVG `viewBox` rather than the pixels-per-unit view the others share.
+**2026-09-05.** 18 canvas files and 12/12/6/12 — five canvases created on 2026-09-04 had each hand-rolled drag and pan. `selection-after-drag` had landed the click-or-drag arbiter (`gesture/usePointerGesture.ts`, `b9295b0a`), adopted by six canvases, three of them for relations only, leaving two click-or-drag boundaries live at once.
 
-**Adoption of the arbiter is real but partial, and it sorts the canvases into three tiers.** `azure-pipeline`, `c4` and `mindmap` press everything through `usePointerGesture` over a rich press target and carry no inline threshold; `timeline`, `dependency-graph` and `causal-loop` use it for relations only and keep private drag and pan beside it; the remaining nine canvas files — `ansible-structure`, `databricks` and its three twelve-line wrappers, `helm-charts`, the four `rdf` readings and `sparql` and `wardley-map` — do not use it at all. Any survey or guard over this population must count **canvas files, not modules**: the three databricks wrappers render the shared inner `DatabricksCanvas`, which is where the gesture code actually lives.
+**2026-09-06 (current).** All fifteen canvas files render through `DiagramCanvas`. Private `dragRef`, `panRef`, `connectRef` and `zoomBy` in module sources: **zero, zero, zero, zero** — the only remaining matches in `src/diagrams/` are module *test* files exercising the shared layer. `DiagramCanvas` composes `usePointerGesture`, so one click-or-drag boundary remains (4 client pixels by hypotenuse). `noPrivateGestures.test.ts` guards the zeros, walking the tree and failing once naming every offender, with its text-reading limit stated in its own doc-comment.
 
-**Two click-or-drag boundaries are live in the tree at once.** The arbiter's is `GESTURE_MOVEMENT_THRESHOLD_PX = 4`, by hypotenuse, strictly greater-than. Twelve canvas files still carry the older inline rule — 3 pixels, by Manhattan distance — and `DependencyGraphCanvas` and `TimelineCanvas` run **both in one file**, so pressing a relation and pressing an element are decided by different rules on the same canvas today. Requirement 4.2 is written to converge on the arbiter's boundary for exactly this reason. The un-migrated canvases are also still wired to `React.MouseEvent` rather than pointer events, so migrating one changes capture semantics — a hazard to test per canvas, not a rename.
+**What survived the consolidation, confirmed in `DiagramCanvas` at HEAD.** The gesture-frame mechanism this specification measured in ten canvases now exists once, unchanged in kind:
 
-**The slowness is real, but its cause is not the implementation split.** A drag was measured in jsdom over 30 pointer frames on realistic models, counting rendered DOM nodes and milliseconds per frame:
+- `onDragMove` writes React state **per pointer frame** — `setDragOffset` for a reposition, `setView` for a pan, `setConnect` for a connect preview — so every pointer frame re-renders the whole canvas, rebuilding every element rather than the one under the pointer.
+- `unitsPerPixel`, called on every drag move to turn pointer deltas into canvas units, performs a synchronous `getBoundingClientRect` — **one layout read per pointer frame**.
+
+Centralization did not fix the cost; it made the fix a change to one file instead of ten. That is the whole remaining scope.
+
+### The measurement (2026-09-03, quoted)
+
+A drag was measured in jsdom over 30 pointer frames on realistic models, counting rendered DOM nodes and milliseconds per frame:
 
 | Canvas and model | DOM nodes | ms per frame | ms per DOM node |
 |---|---|---|---|
@@ -25,129 +32,82 @@ The work was prompted by a report that dragging feels slow on the RDF and Helm c
 | Timeline, 100 spans | 308 | 5.3 | 0.017 |
 | Timeline, 1,000 spans | 3,008 | 34.6 | 0.012 |
 
-Cost tracks the number of drawn elements, not which canvas is drawing them: per DOM node every canvas measured lands between 0.012 and 0.020 ms, and the timeline at 1,000 spans (34.6 ms per frame) is as slow as the RDF canvas the report calls slow. The mechanism is the same in all of them, because it was copied: a pointer move calls `setDrag`, React re-renders the whole canvas, and every element — not just the one under the pointer — is rebuilt for that frame. RDF and Helm feel slower only because their documents routinely produce far more elements than a timeline's do; the timeline's own examples are tens of elements, so its users never reach the same wall. Left alone, the timeline will feel exactly this slow the first time somebody opens a thousand-span roadmap.
+Cost tracks the number of drawn elements, not which canvas draws them. These figures predate the library; Requirement 4 re-measures on the same models rather than comparing against this quote.
 
-So this specification asks for two things that the report treated as one: the **structural** consolidation the user asked for, and a **per-frame render discipline** that belongs in the shared implementation so it is fixed once rather than ten times.
+## Delivered elsewhere, recorded so it is not re-done
+
+The first version of this document carried requirements for a `drag/` folder of five gesture derivatives, diagram-neutral naming, module-owned semantics, behaviour-preserving per-canvas migrations, a no-private-implementation guard, and a self-documenting readme. **`diagram-library-adoption` delivered the substance of all of them by a different route** — a declarative diagram definition consumed by one `DiagramCanvas`, rather than composable derivative hooks — and the five-folder shape is withdrawn as overtaken:
+
+- One gesture layer exists, inside `DiagramCanvas`, built on `gesture/usePointerGesture`; module sources hold none.
+- Diagram-specific semantics cross as the definition's typed fields and callbacks; shared code names no diagram type.
+- `noPrivateGestures.test.ts` keeps the private-gesture count at zero, per canvas file, with the databricks wrappers correctly out of its population.
+- The Helm canvas — whose `viewBox` viewport this document once treated as its hardest case — is migrated with the rest.
+
+Nothing in this specification SHALL re-create, duplicate or re-migrate any of that. Where this document's remaining requirements touch `DiagramCanvas`, they change how it schedules gesture frames, never what a gesture means.
 
 ## Alignment with Product Vision
 
-`structure.md` requires that canvas rendering infrastructure not depend on any single diagram type's schema, so new diagram types can be added without touching core code. Gesture handling is canvas rendering infrastructure that has never been held to that rule: it lives in the modules, is copied per module, and is therefore rewritten by every new diagram type. Moving it into the central library under diagram-neutral names, while keeping each module's semantics in the module, is that rule applied to the last part of the canvas that has not had it.
+`structure.md` requires that canvas rendering infrastructure not depend on any single diagram type's schema. The gesture layer now satisfies that structurally; this specification makes its **cost** satisfy it too — a drag on a big diagram is the report that prompted all of this, and the reader who dragged it is still waiting.
 
 ## Requirements
 
-### Requirement 1 — One folder per gesture, deliberately unmerged
-
-**User Story:** As a developer adding a diagram type, I want each kind of canvas gesture available as its own implementation in the central library, so that I compose the gestures my diagram needs instead of copying another module's canvas.
-
-#### Acceptance Criteria
-
-1. WHEN the central canvas library is read THEN it SHALL hold a `drag/` folder beside the existing `connections/`, `elements/`, `gesture/`, `label/` and `scroll/` folders, containing one subfolder per gesture derivative — the shape `connections/` already demonstrates, where `straight/`, `bezier/`, `fixed-bezier/` and `interactive-bezier/` sit side by side as separate implementations.
-2. WHEN the derivatives are enumerated THEN they SHALL be the five the survey found in the canvases: **reposition** (a pointer drag that moves an element to a new position), **pan** (a pointer drag on empty canvas that moves the viewport), **connect** (a pointer drag from an element's anchor to another element, yielding a relation gesture), **placement** (an HTML5 drag from the toolbox dropped onto the canvas, yielding a drop position), and **reparent** (a pointer drag of an element onto another element, yielding a structural move rather than a position).
-3. WHEN the derivatives are implemented THEN they SHALL NOT be merged into a single generalized gesture, and no derivative SHALL be implemented in terms of another; the folder's readme SHALL say so explicitly, as `connections/readme.md` does, and SHALL record that unifying them is a later and separate decision.
-4. IF a gesture is already centralized elsewhere THEN it SHALL stay where it is and be named in the readme rather than moved: scrollbar-thumb dragging already lives in `scroll/`, and duplicating it under `drag/` would create the second implementation this specification exists to prevent.
-5. WHEN a derivative needs the click-or-drag verdict, pointer capture, the movement threshold or the abandonment signal THEN it SHALL compose `gesture/usePointerGesture` rather than re-implement any of them — the derivatives sit **on** the arbiter, never beside it — and NO code under `drag/` SHALL subscribe to the browser's `click` event, per the prohibition `gesture/readme.md` states and the defect history behind it. A derivative that re-implements a threshold, a capture or an abandonment path has broken this layering, and the Requirement 6.3 guard SHALL treat it as a private implementation.
-
-### Requirement 2 — Names say what the gesture is, never who uses it
-
-**User Story:** As a developer reading the central library, I want every name there to describe a mechanism, so that nothing in shared code reads as though it belongs to one diagram type.
-
-#### Acceptance Criteria
-
-1. WHEN any folder, file, exported function, hook, type or option under `drag/` is named THEN the name SHALL describe the gesture or its mechanics, and SHALL NOT contain a diagram type, vendor or module name — the standard `connections/` and `elements/` already keep.
-2. WHEN a derivative's name is chosen THEN it SHALL name the gesture rather than the module that grew it, even where the implementation is lifted wholesale from one module.
-3. WHEN vocabulary appears in shared code that a module invented — element-id prefixes such as `rel:` and `new:`, action ids, or payload field names — THEN it SHALL be passed in by the module or expressed as a callback result, never hard-coded in the central library.
-4. WHEN the migration is complete THEN a search of `src/client/src/canvas/` for the names of the diagram types SHALL return nothing outside comments that cite provenance.
-
-### Requirement 3 — Diagram-specific behaviour stays in the module
-
-**User Story:** As a module author, I want my diagram's own rules to remain mine, so that sharing the mechanics does not quietly standardize semantics that differ on purpose.
-
-#### Acceptance Criteria
-
-1. WHEN a derivative is extracted THEN it SHALL carry only the mechanics — pointer bookkeeping, movement thresholds, coordinate conversion, frame scheduling, gesture lifecycle — and SHALL take every decision that depends on the diagram as a parameter or callback.
-2. WHEN the semantics the survey found are considered THEN each SHALL remain in its module: the timeline's horizontal axis being **seconds** rather than canvas units, the Wardley map **clamping** both coordinates into its 0..1 map space, the mindmap's drop onto another node meaning **re-parenting**, the RDF canvas refusing drags rooted in **blank nodes**, and the Helm canvas driving its viewport through an SVG **viewBox**.
-3. WHEN a module refuses a gesture THEN the refusal and its sentence SHALL come from the module or its backend, and the central implementation SHALL surface the refusal without composing or interpreting it.
-4. IF a derivative cannot be extracted without absorbing a diagram-specific rule THEN that derivative SHALL be left in its module and the readme SHALL record why, rather than the rule being generalized into shared code.
-5. WHEN a module keeps a gesture of its own THEN it SHALL still be able to use the other derivatives, so that partial adoption is possible and no canvas is forced to migrate all its gestures at once.
-
-### Requirement 4 — Migration preserves behaviour exactly
-
-**User Story:** As a user of any existing diagram, I want the canvases to behave exactly as they do today after the consolidation, so that a refactor costs me nothing.
-
-#### Acceptance Criteria
-
-1. WHEN a canvas is migrated onto a derivative THEN its existing client tests SHALL pass unchanged, and any test that must change SHALL be treated as evidence of a behaviour change rather than as a test to update.
-2. WHEN the migration touches a canvas THEN the still-click-selects rule, the Escape-abandons-gesture rule and the authored-position-is-stored-unrounded rule SHALL be preserved as they are today. The click-or-drag boundary, however, SHALL converge on the arbiter's `GESTURE_MOVEMENT_THRESHOLD_PX` — 4 client pixels by hypotenuse — rather than being preserved per canvas: the tree holds two boundaries today, and two canvases run both at once, so there is no single "as it is today" left to preserve, and keeping each canvas's own would perpetuate the split this specification exists to remove. The observable change SHALL be stated in the migration's log: a small diagonal wobble that Manhattan-3 read as a drag reads as a click under hypotenuse-4, which is the direction `selection-after-drag` chose deliberately.
-3. WHEN a gesture completes THEN it SHALL dispatch exactly what it dispatches today — the same command, the same action id, the same one-undo-per-gesture contract.
-4. WHEN every canvas has been migrated THEN no canvas SHALL retain a private implementation of a derivative the central library provides.
-
-### Requirement 5 — A drag costs the same on a large diagram as on a small one
+### Requirement 1 — A drag costs the same on a large diagram as on a small one
 
 **User Story:** As a user dragging on a big diagram, I want the canvas to keep up with my pointer, so that arranging a large graph is not slower than arranging a small one.
 
 #### Acceptance Criteria
 
 1. WHEN an element is dragged THEN the elements that are not part of the gesture SHALL NOT be re-rendered for each pointer frame; the per-frame cost SHALL be a function of the gesture, not of how many elements the diagram draws.
-2. WHEN the per-frame cost is measured on a diagram at the drawn-element budget and on a ten-element diagram of the same type THEN the two SHALL be within a stated tolerance of each other, and the tolerance SHALL be recorded in the test that measures it.
-3. WHEN pointer events arrive faster than the display refreshes THEN the shared implementation SHALL coalesce them, so that one frame is rendered per displayed frame rather than one per event.
-4. WHEN a canvas reads layout from the DOM during a gesture THEN the shared implementation SHALL NOT perform a synchronous layout read per pointer frame.
-5. WHEN the discipline is implemented THEN it SHALL live in the shared derivative rather than in any module, so that every canvas gets it once — including the timeline, mindmap and dependency-graph canvases, which the measurement shows are only fast today because their documents are small.
+2. WHEN pointer events arrive faster than the display refreshes THEN they SHALL be coalesced, one rendered frame per displayed frame — and it is recorded here that coalescing alone does NOT satisfy criterion 1: it caps how often the whole canvas is rebuilt without stopping each rebuild being proportional to element count.
+3. WHEN a gesture is in flight THEN no synchronous layout read SHALL be performed per pointer frame; the surface rectangle SHALL be read once at gesture start and cached for the gesture's life. `unitsPerPixel`'s per-move `getBoundingClientRect` is the named offender.
+4. WHEN the discipline is implemented THEN it SHALL live in `DiagramCanvas` — never pushed into diagram definitions or modules — so every canvas, present and future, gets it from the one gesture layer.
+5. WHEN a pan or a connect preview is in flight THEN the same discipline SHALL apply to them as to a reposition, because all three write React state per pointer frame today and fixing one leaves the report's symptom reproducible through the others.
 
-### Requirement 6 — The improvement is guarded, not just achieved
+### Requirement 2 — Nothing a gesture means changes
 
-**User Story:** As a maintainer, I want the performance property pinned by a test, so that the next canvas cannot quietly reintroduce the per-element cost.
-
-#### Acceptance Criteria
-
-1. WHEN the shared derivatives are in place THEN a client test SHALL drag on a large model and a small model of the same diagram type and SHALL fail if the per-frame cost regains its scaling with element count.
-2. WHEN that test is written THEN it SHALL state its own tolerance and the machine-independent property it asserts — a ratio between two measurements taken in the same run — rather than an absolute millisecond budget, so it does not become a flaky test on a slower machine.
-3. WHEN a canvas is added or migrated THEN a test SHALL fail if it implements a derivative privately instead of composing the shared one.
-
-### Requirement 7 — The library documents itself the way it already does
-
-**User Story:** As a developer meeting the canvas library for the first time, I want the new folder to explain its own shape, so that the next person extends it correctly instead of guessing.
+**User Story:** As a user of any existing diagram, I want every gesture to behave exactly as it does today, so that a scheduling change costs me nothing.
 
 #### Acceptance Criteria
 
-1. WHEN `drag/` is created THEN it SHALL carry a `readme.md` in the register `connections/readme.md` uses: one entry per derivative saying what it is, which module it grew in, and what stays with the module.
-2. WHEN a derivative's provenance is recorded THEN the readme SHALL name the canvas it was extracted from, so that a reader tracing behaviour knows where its history is.
-3. WHEN the consolidation moves a touch point named in `docs/creating-a-diagram-module.md` THEN that document SHALL be updated in the same change, per the documentation-refresh rule in CLAUDE.md.
-4. WHEN the readme is written THEN it SHALL record the measurement in this document's survey as the reason the render discipline lives in the shared code, so the constraint is not later mistaken for an accident.
+1. WHEN the discipline lands THEN the existing module and library tests SHALL pass unchanged, and any test that must change SHALL be treated as evidence of a behaviour change rather than as a test to update.
+2. WHEN a gesture completes THEN it SHALL dispatch exactly what it dispatches today — the same command, the same action id, the same one-undo-per-gesture contract — and the still-click-selects rule, the Escape-abandons rule and the authored-position-is-stored-unrounded rule SHALL be untouched.
+3. WHEN a gesture is abandoned mid-flight — Escape, lost capture, unmount — THEN it SHALL leave no state behind and dispatch nothing, including whatever transient visual the discipline was showing.
 
-### Requirement 8 — The report's own diagrams are verified, not assumed
+### Requirement 3 — The improvement is guarded, not just achieved
+
+**User Story:** As a maintainer, I want the performance property pinned by a test, so that a later change to the one gesture layer cannot quietly reintroduce the per-element cost.
+
+#### Acceptance Criteria
+
+1. WHEN the discipline is in place THEN a test SHALL drag on a large model and a small model of the same diagram type in one run and SHALL fail if the per-frame cost regains its scaling with element count.
+2. WHEN that test is written THEN it SHALL assert a machine-independent property — a ratio between the two measurements from the same run, with its tolerance stated in the test — never an absolute millisecond budget, which becomes a flaky test on a slower machine.
+3. WHEN the guard is accepted THEN it SHALL first have been seen to fail for the right reason, by restoring the per-frame state write and watching the ratio blow its tolerance; a ratio test that has never failed is asserting arithmetic, not a property.
+
+### Requirement 4 — The report's own diagrams are verified, not assumed
 
 **User Story:** As the person who reported that RDF and Helm feel slow, I want the fix demonstrated on the diagrams I complained about, so that the work is judged against the symptom that prompted it.
 
 #### Acceptance Criteria
 
-1. WHEN the migration is complete THEN the RDF canvas and the Helm chart canvas SHALL both be measured again on the same models used in this document's survey, and the before-and-after figures SHALL be recorded.
-2. WHEN the Helm canvas is migrated THEN its `viewBox`-driven viewport SHALL be reconciled with the shared derivatives without changing what the user sees, or the readme SHALL record why it keeps its own viewport handling.
-3. WHEN the measurement is repeated THEN a manual check SHALL be added to `tests.md` for dragging on the Wikidata and laureates examples, so the improvement is confirmed in a real browser and not only in jsdom.
+1. WHEN the discipline lands THEN the RDF and Helm canvases SHALL be measured again on the same models as the 2026-09-03 survey, with fresh before-and-after figures recorded — new measurements on both sides, not comparisons against the quote above.
+2. WHEN the measurement is repeated THEN a manual check SHALL be added to `tests.md` for dragging on the Wikidata and laureates examples, so the improvement is confirmed in a real browser and not only in jsdom.
 
 ## Non-Functional Requirements
 
 ### Code Architecture and Modularity
 
-- **Single Responsibility Principle**: each derivative folder holds one gesture and nothing else; a file that handles two gestures is a merge this specification forbids.
-- **Modular Design**: the derivatives depend on the central canvas library and on React, never on a diagram module; the dependency runs module to library and never back.
-- **Dependency Management**: a module adopts derivatives one at a time; no derivative requires another.
-- **Clear Interfaces**: every diagram-specific decision crosses the boundary as a typed parameter or callback, so the contract can be read without reading a module.
+- The change is to how `DiagramCanvas` schedules gesture frames; its definition contract, its event handlers and the module boundary are untouched.
+- No module gains gesture code, and `noPrivateGestures.test.ts` continues to hold that at zero.
 
 ### Performance
 
-- The per-frame cost of a gesture is independent of the number of drawn elements (Requirement 5), and that independence is asserted by a test that compares two measurements from one run (Requirement 6).
-- The consolidation adds no per-frame synchronous layout reads, and removes the ones the canvases perform today where it can do so without changing behaviour.
-
-### Security
-
-- No new surface: gestures dispatch the same commands and actions through the same context and history paths they use today, and the central library gains no ability to write a file or bypass a backend refusal.
+- Per-frame gesture cost independent of drawn-element count (Requirement 1), asserted by a same-run ratio (Requirement 3).
+- No per-frame synchronous layout reads (Requirement 1.3).
 
 ### Reliability
 
-- A gesture abandoned mid-flight — Escape, a lost pointer, an unmount — leaves no state behind and dispatches nothing, exactly as the canvases behave today.
-- A refused gesture leaves the document untouched, with the refusal surfaced verbatim from the module or backend that issued it.
+- An abandoned gesture reverts its transient visual and dispatches nothing (Requirement 2.3).
 
 ### Usability
 
-- Nothing the user does changes: the same gestures produce the same results, and the only difference is that large diagrams keep up with the pointer.
-- Each module keeps its own cursor, styling and affordances, since styling stays with the module the way it does for `connections/` today.
+- Nothing the user does changes; the only difference is that large diagrams keep up with the pointer.
