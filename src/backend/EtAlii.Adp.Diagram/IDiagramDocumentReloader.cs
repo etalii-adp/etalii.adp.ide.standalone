@@ -1,7 +1,7 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
 
-namespace EtAlii.Adp.Backend.Diagrams;
+namespace EtAlii.Adp.Diagram;
 
 /// <summary>
 /// Re-reads one diagram document after something outside its own store changed it on disk -

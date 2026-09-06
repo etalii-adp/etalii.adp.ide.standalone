@@ -2,6 +2,8 @@
   <ItemGroup>
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Editor\EtAlii.Adp.Editor.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -11,9 +13,22 @@
       pipeline everywhere; DependencyModel to read the deployment manifest the assembly walk
       is seeded from.
     -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.DependencyModel" />
     <PackageReference Include="Serilog" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The diagram wire contract, owned here since the Backend.Diagrams merge: the protos
+         stay at the repository root and generate into EtAlii.Adp.Diagram.Wire. diagrams
+         imports deltas, so both live in the one project that serves them. -->
+    <Protobuf Include="..\..\api\deltas.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\deltas.proto" />
+    <Protobuf Include="..\..\api\diagrams.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\diagrams.proto" />
   </ItemGroup>
 
   <ItemGroup>

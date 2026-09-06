@@ -1,6 +1,6 @@
 using EtAlii.Adp.Editor;
 
-namespace EtAlii.Adp.Backend.Diagrams;
+namespace EtAlii.Adp.Diagram;
 
 /// <summary>
 /// The registered editor session factories, keyed by the editor id they serve - the editor

@@ -21,7 +21,7 @@
       client stubs generated here to call the services in-process.
     -->
     <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="Both"
-              Exclude="..\..\api\shared.proto;..\..\api\connection.proto;..\..\api\elements.proto" />
+              Exclude="..\..\api\shared.proto;..\..\api\connection.proto;..\..\api\elements.proto;..\..\api\diagrams.proto;..\..\api\deltas.proto" />
   </ItemGroup>
 
   <ItemGroup>

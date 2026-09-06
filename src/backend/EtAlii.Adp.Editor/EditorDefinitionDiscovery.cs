@@ -1,5 +1,4 @@
 using System.Reflection;
-using EtAlii.Adp.Diagram;
 using Serilog;
 
 namespace EtAlii.Adp.Editor;
@@ -10,7 +9,7 @@ namespace EtAlii.Adp.Editor;
 /// holding <see cref="EditorDefinition"/>s - the same scan the diagram family runs for its
 /// <c>Diagram</c> classes, extended rather than duplicated (modular-text-editors
 /// Requirement 1.3): the mechanical half is the shared <c>PluginDefinitionScan</c>, and the
-/// assembly walk is <see cref="DiagramDefinitionDiscovery.FindApplicationAssemblies"/> itself.
+/// assembly walk is <see cref="ApplicationAssemblies.Find"/> itself.
 /// </summary>
 /// <remarks>
 /// It never throws for a bad assembly or a bad candidate. A module that cannot be loaded or
@@ -27,7 +26,7 @@ public sealed class EditorDefinitionDiscovery
     /// <summary>Scans the application's own assemblies, found by the shared walk.</summary>
     public static IReadOnlyList<EditorDefinition> Discover()
     {
-        var assemblies = DiagramDefinitionDiscovery.FindApplicationAssemblies();
+        var assemblies = ApplicationAssemblies.Find();
         return Discover(assemblies);
     }
 

@@ -1,7 +1,9 @@
 using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Backend.Projects;
+using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Diagram.Databricks;
+using EtAlii.Adp.Diagram.Wire;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;

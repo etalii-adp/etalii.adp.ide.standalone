@@ -2,7 +2,6 @@ using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Authentication;
 using EtAlii.Adp.Backend.Client;
 using EtAlii.Adp.Backend.Context;
-using EtAlii.Adp.Backend.Diagrams;
 using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Backend.Problems;
 using EtAlii.Adp.Backend.Projects;

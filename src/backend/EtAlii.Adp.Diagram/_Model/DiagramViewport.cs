@@ -1,4 +1,4 @@
-﻿namespace EtAlii.Adp.Backend.Diagrams;
+﻿namespace EtAlii.Adp.Diagram;
 
 /// <summary>The visible rectangle a connection reported, in the diagram's own units.</summary>
 public readonly record struct DiagramViewport(double MinX, double MinY, double MaxX, double MaxY)

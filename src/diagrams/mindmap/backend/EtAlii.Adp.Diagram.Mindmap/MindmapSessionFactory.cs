@@ -1,7 +1,5 @@
-using EtAlii.Adp.Backend.Diagrams;
-
-
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Diagram;
 namespace EtAlii.Adp.Diagram.Mindmap;
 
 /// <summary>Opens a <see cref="MindmapSession"/> per connection - the module's fourth registration seam.</summary>

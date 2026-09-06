@@ -1,7 +1,5 @@
-using EtAlii.Adp.Backend.Diagrams;
-
-
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Diagram;
 namespace EtAlii.Adp.Diagram.Mindmap;
 
 /// <summary>

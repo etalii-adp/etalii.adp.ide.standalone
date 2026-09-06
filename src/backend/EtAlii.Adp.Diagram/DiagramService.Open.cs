@@ -4,9 +4,10 @@ using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Diagram.Wire;
 using Grpc.Core;
 using Path = EtAlii.Adp.Common.Wire.Path;
-namespace EtAlii.Adp.Backend.Diagrams;
+namespace EtAlii.Adp.Diagram;
 
 public sealed partial class DiagramService
 {

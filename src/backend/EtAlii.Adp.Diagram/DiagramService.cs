@@ -4,11 +4,12 @@ using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Diagram.Wire;
 using Google.Protobuf;
 using Grpc.Core;
 using Serilog;
 using Path = EtAlii.Adp.Common.Wire.Path;
-namespace EtAlii.Adp.Backend.Diagrams;
+namespace EtAlii.Adp.Diagram;
 
 /// <summary>
 /// The one entry point for viewing and editing a diagram, whatever its type. It resolves the
@@ -17,7 +18,7 @@ namespace EtAlii.Adp.Backend.Diagrams;
 /// the module's backend delta records to the contract's proto in the one place that mapping
 /// lives. It knows no diagram type (mindmap-diagram Requirement 13.4).
 /// </summary>
-public sealed partial class DiagramService : EtAlii.Adp.DiagramService.DiagramServiceBase
+public sealed partial class DiagramService : Wire.DiagramService.DiagramServiceBase
 {
     private static readonly ILogger _logger = Log.ForContext<DiagramService>();
 

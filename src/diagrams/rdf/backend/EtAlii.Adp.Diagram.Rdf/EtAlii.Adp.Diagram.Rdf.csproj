@@ -9,7 +9,6 @@
       not because this module asked for a hook.
     -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
-    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend.Diagrams\EtAlii.Adp.Backend.Diagrams.csproj" />
   </ItemGroup>
 
   <ItemGroup>

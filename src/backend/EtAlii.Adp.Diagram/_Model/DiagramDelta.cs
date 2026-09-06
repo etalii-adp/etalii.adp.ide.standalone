@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Diagrams;
+namespace EtAlii.Adp.Diagram;
 
 /// <summary>
 /// One change to a diagram, in the core add/remove/group/ungroup vocabulary but as backend

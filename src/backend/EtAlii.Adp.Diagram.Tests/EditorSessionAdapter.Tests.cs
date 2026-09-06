@@ -2,7 +2,7 @@ using System.Text;
 using EtAlii.Adp.Editor;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Diagrams.Tests;
+namespace EtAlii.Adp.Diagram.Tests;
 
 /// <summary>
 /// The bridge between the families (modular-text-editors, "no new stream"): a text file rides

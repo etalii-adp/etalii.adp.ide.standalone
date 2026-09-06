@@ -1,6 +1,8 @@
-﻿using Grpc.Core;
+﻿using EtAlii.Adp.Common;
+using EtAlii.Adp.Diagram.Wire;
+using Grpc.Core;
 
-namespace EtAlii.Adp.Backend.Diagrams;
+namespace EtAlii.Adp.Diagram;
 
 public sealed partial class DiagramService
 {

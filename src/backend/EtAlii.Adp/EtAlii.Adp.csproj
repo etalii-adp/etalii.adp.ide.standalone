@@ -3,6 +3,7 @@
   <ItemGroup>
     <!-- Serves PluginDefinitionScan only: the shared module-discovery scan logs through the
          same static Serilog pipeline everything else uses. -->
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" />
     <PackageReference Include="Serilog" />
   </ItemGroup>
 

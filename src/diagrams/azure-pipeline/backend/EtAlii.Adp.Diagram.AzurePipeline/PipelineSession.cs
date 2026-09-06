@@ -1,4 +1,4 @@
-using EtAlii.Adp.Backend.Diagrams;
+using EtAlii.Adp.Diagram;
 using Serilog;
 
 namespace EtAlii.Adp.Diagram.AzurePipeline;
