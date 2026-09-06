@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/drag-and-drop-centralization/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-06T15:26:02.866Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788708362492_eak7xdgow",
+      "approvalTitle": "drag-and-drop-centralization tasks"
+    }
+  ]
+}
