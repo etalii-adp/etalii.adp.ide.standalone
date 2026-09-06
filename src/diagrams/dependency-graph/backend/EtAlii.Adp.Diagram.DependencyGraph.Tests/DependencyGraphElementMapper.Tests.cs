@@ -51,6 +51,58 @@ public class DependencyGraphElementMapperTests
         Assert.Equal(DependencyGraphRows.ToY(2), second.Y);
     }
 
+    private const string TwoCoastsAndAnIsland = """
+        dependencies: 1
+        elements:
+          - id: near
+            label: Near coast
+            x: 0
+            row: 0
+          - id: far
+            label: Far coast
+            x: 10000
+            row: 0
+          - id: island
+            label: Unrelated island
+            x: 20000
+            row: 0
+        relations:
+          - id: crossing
+            from: near
+            to: far
+            label: ships to
+        """;
+
+    /// <summary>
+    /// Found in the field: zooming in hid every relation whose far end left the view. A
+    /// relation is drawn where its SPAN - the hull of its two end boxes - touches the
+    /// viewport, and its ends ride along as anchors; what shares no crossing span stays out.
+    /// </summary>
+    [Fact]
+    public void ARelationTravelsWhereItsSpanTouchesTheView()
+    {
+        // Act: a window over the near coast only.
+        var overNear = _mapper.Visible(Parse(TwoCoastsAndAnIsland), new DiagramViewport(-10, -10, 60, 100));
+
+        // Assert: the relation is drawn and brings the far coast with it; the island is not.
+        Assert.Contains(overNear, element => element.Id == "crossing");
+        Assert.Contains(overNear, element => element.Id == "far");
+        Assert.DoesNotContain(overNear, element => element.Id == "island");
+    }
+
+    [Fact]
+    public void ARelationBetweenTwoOffscreenNodes_StillCrossesTheView()
+    {
+        // Act: the zoomed-in reading of a long line - both ends outside, the line through it.
+        var betweenCoasts = _mapper.Visible(Parse(TwoCoastsAndAnIsland), new DiagramViewport(4000, -10, 6000, 100));
+
+        // Assert.
+        Assert.Contains(betweenCoasts, element => element.Id == "crossing");
+        Assert.Contains(betweenCoasts, element => element.Id == "near");
+        Assert.Contains(betweenCoasts, element => element.Id == "far");
+        Assert.DoesNotContain(betweenCoasts, element => element.Id == "island");
+    }
+
     [Fact]
     public void NodesAndRelationsCarryDifferentTypes()
     {

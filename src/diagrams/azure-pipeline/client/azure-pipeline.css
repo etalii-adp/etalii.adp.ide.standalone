@@ -102,6 +102,7 @@
 
 .pipeline-arrowhead {
   fill: var(--adp-border-strong, #9ca3af);
+  fill: context-stroke; /* follow the referencing line - muted normally, primary selected */
 }
 
 /*

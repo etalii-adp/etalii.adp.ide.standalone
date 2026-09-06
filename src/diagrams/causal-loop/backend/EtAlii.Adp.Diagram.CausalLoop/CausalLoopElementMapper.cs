@@ -65,18 +65,40 @@ public sealed class CausalLoopElementMapper
         var drawn = new Dictionary<string, CausalLoopBox>(StringComparer.Ordinal);
         foreach (var variable in model.Variables)
         {
-            if (!boxes.TryGetValue(variable.Id, out var box) || !Intersects(box, viewport))
+            if (boxes.TryGetValue(variable.Id, out var box) && Intersects(box, viewport))
+            {
+                drawn[variable.Id] = box;
+            }
+        }
+
+        // A link has no position of its own, but it has a SPAN - the hull of its two end
+        // boxes - and it is drawn when that span touches the viewport. Deciding it by whether
+        // both endpoints survived instead hid, on zooming in, every line whose far end left
+        // the view (found in the field). Its ends ride along as anchors, so the canvas always
+        // has two boxes to draw it between - and so the arrowhead lands on a real edge.
+        var visibleLinks = new List<CausalLoopLink>();
+        foreach (var link in model.Links)
+        {
+            if (!boxes.TryGetValue(link.From, out var from) || !boxes.TryGetValue(link.To, out var to)
+                || !Intersects(Hull(from, to), viewport))
             {
                 continue;
             }
 
-            drawn[variable.Id] = box;
-            elements.Add(VariableElement(variable, box));
+            visibleLinks.Add(link);
+            drawn[link.From] = from;
+            drawn[link.To] = to;
         }
 
-        // A link rides on its endpoints: both must be drawn, or there is nothing to draw it
-        // between. It has no position to test, and asking one of it would be inventing one.
-        foreach (var link in model.Links.Where(link => drawn.ContainsKey(link.From) && drawn.ContainsKey(link.To)))
+        foreach (var variable in model.Variables)
+        {
+            if (drawn.TryGetValue(variable.Id, out var box))
+            {
+                elements.Add(VariableElement(variable, box));
+            }
+        }
+
+        foreach (var link in visibleLinks)
         {
             elements.Add(LinkElement(link, drawn[link.From], drawn[link.To]));
         }
@@ -180,4 +202,15 @@ public sealed class CausalLoopElementMapper
     private static bool Intersects(CausalLoopBox box, DiagramViewport viewport) =>
         box.Right >= viewport.MinX && box.X <= viewport.MaxX
         && box.Bottom >= viewport.MinY && box.Y <= viewport.MaxY;
+
+    /// <summary>
+    /// The smallest box holding both - a link's span. The arc bows a little beyond it, which
+    /// is accepted: the criterion is the line's bounding box, not its every pixel.
+    /// </summary>
+    private static CausalLoopBox Hull(CausalLoopBox first, CausalLoopBox second)
+    {
+        var x = Math.Min(first.X, second.X);
+        var y = Math.Min(first.Y, second.Y);
+        return new CausalLoopBox(x, y, Math.Max(first.Right, second.Right) - x, Math.Max(first.Bottom, second.Bottom) - y);
+    }
 }

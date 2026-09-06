@@ -740,6 +740,32 @@ public sealed class HierarchyModel
             Apply(id, EntryDiagramStates.Decide(
                 folder.Name, isFolder: true, names, BodyNameOf, _router.ClaimsExtensionOf, _editorResolver.IsClaimed, DeclaresFolderSubject), raise: true);
         }
+
+        // And each CONTAINED folder's state, from a one-level peek at its files - the colour
+        // has to be right on first paint, before the folder is ever expanded, and until it is
+        // expanded no scan of its own will run. Found in the field: a folder holding a
+        // folder-subject .adp showed its colour only after being opened. Only file names are
+        // read; the folder is not synced, and once it is, its own scan decides the same way.
+        foreach (var sub in contained.Where(entry => entry.IsFolder))
+        {
+            var subPath = IoPath.Combine(folderPath, sub.Name);
+            string[] subNames;
+            try
+            {
+                subNames = Directory.EnumerateFiles(subPath).Select(IoPath.GetFileName).OfType<string>().ToArray();
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or DirectoryNotFoundException)
+            {
+                continue; // Vanished or unreadable mid-scan: its state stays what it was.
+            }
+
+            bool DeclaresFolderSubjectIn(string registration) =>
+                _router.HasFolderSubjectTypes
+                && _router.Route(IoPath.Combine(subPath, registration), RootPath) is DiagramRouted { Definition.HasFolderSubject: true };
+
+            Apply(sub.Id, EntryDiagramStates.Decide(
+                sub.Name, isFolder: true, subNames, name => ResolvedBodyNameOf(subPath, name), _router.ClaimsExtensionOf, _editorResolver.IsClaimed, DeclaresFolderSubjectIn), raiseEvents);
+        }
     }
 
     /// <summary>

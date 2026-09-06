@@ -78,6 +78,24 @@ public class HierarchyModelDiagramStateTests : IDisposable
     }
 
     [Fact]
+    public void ListChildren_AFolderHoldingAFolderSubjectRegistration_IsRegistered_BeforeItIsEverExpanded()
+    {
+        // Arrange: the shipped shape - infrastructure/structure.adp registers its own folder.
+        // Found in the field: the folder showed its colour only after being opened, because its
+        // state was decided in its own scan and nothing scanned it until it was expanded. The
+        // parent's scan already walks the directory; peeking one level down for a registration
+        // is what lets the colour be right on first paint.
+        Directory.CreateDirectory(IoPath.Combine(_root, "infrastructure"));
+        Write(IoPath.Combine("infrastructure", "structure.adp"), Structure.Origin.MimeType + "\n");
+
+        // Act: list the ROOT only - the folder itself is never expanded.
+        var folder = Assert.Single(Model().ListChildren(null));
+
+        // Assert.
+        Assert.Equal(Hierarchy.EntryDiagramState.Registered, folder.DiagramState);
+    }
+
+    [Fact]
     public void ListChildren_AFolderHoldingAFolderSubjectRegistration_IsRegistered_OnceScanned()
     {
         // Arrange: the shipped shape - infrastructure/structure.adp registers its own folder.
@@ -102,10 +120,15 @@ public class HierarchyModelDiagramStateTests : IDisposable
         // CHILDREN, never the folder itself, so if its own state change stays silent on a
         // listing-triggered (raiseEvents: false) scan the client can never learn it - the
         // expanded infrastructure folder sat neutral. The watch stream is the only channel.
+        // The parent's one-level peek now colours the folder at first listing, so the change
+        // this guards arrives later: the registration appears while the folder was never
+        // listed - whose watcher events are discarded by design - and the expand is the first
+        // scan to see it.
         Directory.CreateDirectory(IoPath.Combine(_root, "infrastructure"));
-        Write(IoPath.Combine("infrastructure", "structure.adp"), Structure.Origin.MimeType + "\n");
         var model = Model();
         var folder = Assert.Single(model.ListChildren(null));
+        Assert.Equal(Hierarchy.EntryDiagramState.Unspecified, folder.DiagramState);
+        Write(IoPath.Combine("infrastructure", "structure.adp"), Structure.Origin.MimeType + "\n");
         var changes = new List<HierarchyEntryChange>();
         model.EntryChanged += changes.Add;
 

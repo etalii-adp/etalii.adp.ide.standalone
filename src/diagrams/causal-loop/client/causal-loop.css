@@ -57,6 +57,14 @@
   stroke-width: 1.5;
 }
 
+/* Selected, the delay strokes highlight with the line they cross - an adorner left behind in
+   the base colour reads as not being part of the selected link. The polarity mark needs no
+   rule here: it is a text inside the connection group, which the shared selected-text rule
+   already colours. */
+.canvas-selected .causal-loop-delay line {
+  stroke: var(--color-primary, limegreen);
+}
+
 /* The loop badge, among the variables it runs through. */
 .causal-loop-badge {
   font-size: 12px;

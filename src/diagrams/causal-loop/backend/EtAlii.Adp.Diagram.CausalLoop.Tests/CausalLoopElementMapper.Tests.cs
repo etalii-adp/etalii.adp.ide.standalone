@@ -45,40 +45,75 @@ public class CausalLoopElementMapperTests
     }
 
     /// <summary>
-    /// The rule Requirement 7.3 turns on: a link has no position, so it is decided by whether
-    /// both of its endpoints survived, not by where it might have been.
+    /// Requirement 7.3 originally decided a link by whether both endpoints survived the
+    /// viewport, and the field corrected it: zooming in hid every line whose far end left the
+    /// view. A link has no position, but it has a SPAN - the hull of its two end boxes - and
+    /// it is drawn when that span touches the viewport, its ends riding along as anchors.
     /// </summary>
     [Fact]
-    public void ALinkTravelsOnlyWhereBothItsEndsDo()
+    public void ALinkTravelsWhereItsSpanTouchesTheView()
     {
         // Arrange.
         var model = Model("variable a", "variable b", "variable c", "link a -> b +", "link b -> c +");
 
         // Act.
-        // A window over a and b only: c sits at x = 200 and is left out.
-        var elements = _mapper.Visible(model, Row("a", "b", "c"), new DiagramViewport(-10, -10, 160, 100));
+        // A window over a only: a -> b's span reaches into it, so the link is drawn and b comes
+        // along as its anchor; b -> c's span lies wholly to the right and stays out.
+        var elements = _mapper.Visible(model, Row("a", "b", "c"), new DiagramViewport(-10, -10, 60, 100));
 
         // Assert.
         var links = elements.Where(element => element.Type == CausalLoopElementMapper.LinkType).ToArray();
-        Assert.Single(links);
         Assert.Equal("link:a|b", Assert.Single(links).Id);
+        Assert.Equal(
+            ["variable:a", "variable:b"],
+            elements.Where(element => element.Type == CausalLoopElementMapper.VariableType).Select(element => element.Id));
+    }
+
+    [Fact]
+    public void ALinkBetweenTwoOffscreenVariables_StillCrossesTheView()
+    {
+        // Arrange: the zoomed-in reading of a long line - both ends outside the window, the
+        // line running straight through it.
+        var model = Model("variable a", "variable b", "link a -> b +");
+        var far = new Dictionary<string, CausalLoopBox>(StringComparer.Ordinal)
+        {
+            ["a"] = new(0, 0, 50, 30),
+            ["b"] = new(1000, 0, 50, 30),
+        };
+
+        // Act.
+        var elements = _mapper.Visible(model, far, new DiagramViewport(400, -10, 600, 100));
+
+        // Assert: the link is drawn, and both ends are delivered so it has something to be
+        // drawn between.
+        Assert.Contains(elements, element => element.Type == CausalLoopElementMapper.LinkType);
+        Assert.Equal(2, elements.Count(element => element.Type == CausalLoopElementMapper.VariableType));
     }
 
     [Fact]
     public void ALoopLabelTravelsOnlyWhereAllItsMembersDo()
     {
-        // Arrange.
+        // Arrange: four members far enough apart that c is neither in view nor the anchor of
+        // any view-crossing link - so the loop's members are a genuine subset, and a label
+        // placed among a subset would sit somewhere the loop is not.
         var model = Model(
-            "variable a", "variable b", "variable c",
-            "link a -> b +", "link b -> c +", "link c -> a +",
-            "loop R1 \"three\" a b c");
+            "variable a", "variable b", "variable c", "variable d",
+            "link a -> b +", "link b -> c +", "link c -> d +", "link d -> a +",
+            "loop R1 \"four\" a b c d");
+        var spread = new Dictionary<string, CausalLoopBox>(StringComparer.Ordinal)
+        {
+            ["a"] = new(0, 0, 50, 30),
+            ["b"] = new(300, 0, 50, 30),
+            ["c"] = new(600, 0, 50, 30),
+            ["d"] = new(900, 0, 50, 30),
+        };
 
         // Act.
-        var narrow = _mapper.Visible(model, Row("a", "b", "c"), new DiagramViewport(-10, -10, 160, 100));
-        var whole = _mapper.Elements(model, Row("a", "b", "c"));
+        var narrow = _mapper.Visible(model, spread, new DiagramViewport(-10, -10, 60, 100));
+        var whole = _mapper.Elements(model, spread);
 
         // Assert.
-        // A label placed among a subset would sit somewhere the loop is not.
+        Assert.DoesNotContain(narrow, element => element.Id == "variable:c");
         Assert.DoesNotContain(narrow, element => element.Type == CausalLoopElementMapper.LoopType);
         Assert.Contains(whole, element => element.Type == CausalLoopElementMapper.LoopType);
     }
