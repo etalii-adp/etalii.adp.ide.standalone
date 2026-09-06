@@ -397,7 +397,7 @@ describe("DiagramCanvas", () => {
       target: { kind: "element", id: "a" },
       value: "Alpha Prime",
     });
-    expect(onSubmit).toHaveBeenCalledWith("Alpha Prime", undefined);
+    expect(onSubmit).toHaveBeenCalledWith("Alpha Prime");
   });
 
   it("a label the definition does not mark editable opens no editor", () => {

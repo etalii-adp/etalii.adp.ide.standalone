@@ -24,7 +24,7 @@ import { SpanElement } from "../elements/span/SpanElement";
 import { StyledBoxElement } from "../elements/styled-box/StyledBoxElement";
 import { SymbolElement } from "../elements/symbol/SymbolElement";
 import { InlineLabelEditor, type InlineLabelEditorProps } from "../label/InlineLabelEditor";
-import { centredLabelPlacement, midpointLabelPlacement } from "../label/labelPlacement";
+import { asideLabelPlacement, centredLabelPlacement, midpointLabelPlacement } from "../label/labelPlacement";
 import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { scrollExtentOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
@@ -110,6 +110,8 @@ export interface DiagramCanvasProps {
    */
   toolboxItems?: ToolboxItem[];
   className?: string;
+  /** An extra class on both scrollbars, for placement only - a canvas with a ruler insets its bars. */
+  scrollbarsClassName?: string;
   ariaLabel?: string;
 }
 
@@ -154,6 +156,7 @@ export function DiagramCanvas({
   editing,
   toolboxItems,
   className,
+  scrollbarsClassName,
   ariaLabel,
 }: DiagramCanvasProps) {
   // Memoized because two registrations key on its identity: a fresh object per render
@@ -622,7 +625,17 @@ export function DiagramCanvas({
   // ---- keyboard: delete --------------------------------------------------------------------
 
   const onKeyDown = (event: React.KeyboardEvent) => {
-    if (isTextTarget(event.target) || (event.key !== "Delete" && event.key !== "Backspace")) {
+    if (isTextTarget(event.target)) {
+      return;
+    }
+
+    if (event.key === "Escape") {
+      // Whatever gesture is in flight dissolves, dispatching nothing.
+      gesture.abandon();
+      return;
+    }
+
+    if (event.key !== "Delete" && event.key !== "Backspace") {
       return;
     }
 
@@ -671,7 +684,12 @@ export function DiagramCanvas({
         if (type?.label?.editable !== true) {
           return null;
         }
-        return centredLabelPlacement(elementBounds(element, type), element.label ?? "");
+        const bounds = elementBounds(element, type);
+        // "beside" opens next to the shape - a moment's diamond has no box to open inside.
+        if (type.label.placement === "beside") {
+          return asideLabelPlacement({ x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 }, 6, element.label ?? "");
+        }
+        return centredLabelPlacement(bounds, element.label ?? "");
       }
 
       const connection = model.connections.find((candidate) => candidate.id === id);
@@ -788,17 +806,18 @@ export function DiagramCanvas({
           <InlineLabelEditor
             placement={editingPlacement}
             onPropose={editing.onPropose}
-            onSubmit={(value, text) => {
+            onSubmit={(...args) => {
               // The commit is an event first (Requirement 6.1): the module hears what was
-              // asked, then the shell's own prompt flow carries it - one editor, one commit.
+              // asked, then the shell's own prompt flow carries it - one editor, one commit,
+              // with the editor's own arguments forwarded exactly as it sent them.
               raise({
                 kind: "label-commit-requested",
                 target: elementsById.has(editing.editingId!)
                   ? { kind: "element", id: editing.editingId! }
                   : { kind: "connection", id: editing.editingId! },
-                value,
+                value: args[0],
               });
-              return editing.onSubmit(value, text);
+              return editing.onSubmit(...args);
             }}
             onCancel={editing.onCancel}
             onReturnFocus={() => svgRef.current?.focus()}
@@ -824,6 +843,7 @@ export function DiagramCanvas({
       <CanvasScrollbars
         horizontal={{ viewStart: effectiveView.x, viewSpan: effectiveView.w, ...scrollExtentOf(fitBox.x, fitBox.x + fitBox.w, { factor: 0.5 }) }}
         vertical={{ viewStart: effectiveView.y, viewSpan: effectiveView.h, ...scrollExtentOf(fitBox.y, fitBox.y + fitBox.h, { factor: 0.5 }) }}
+        className={scrollbarsClassName}
         onPan={(x, y) => setView({ ...effectiveView, x, y })}
       />
 
@@ -956,14 +976,14 @@ function LibraryConnection({
 
   return (
     <g
-      className={`canvas-connection library-connection${selected ? " canvas-selected" : ""}`}
+      className={`canvas-connection library-connection ${relation.className ?? ""}${selected ? " canvas-selected" : ""}`.trim()}
       data-connection-id={connection.id}
       {...press}
       onContextMenu={onContextMenu}
     >
-      <path className="canvas-connection-hit" d={d} />
+      <path className={`canvas-connection-hit ${relation.hitClassName ?? ""}`.trim()} d={d} />
       <path
-        className="canvas-connection-line library-connection-line"
+        className={`canvas-connection-line library-connection-line ${relation.lineClassName ?? ""}`.trim()}
         d={d}
         markerEnd={markerRef(style.endMarker ?? "arrow")}
         markerStart={markerRef(style.startMarker ?? "none")}

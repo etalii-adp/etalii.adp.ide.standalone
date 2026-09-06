@@ -278,6 +278,13 @@ export interface RelationTypeDefinition {
   /** Whether waypoints or control points may be dragged (Requirement 3.5). */
   adjustable?: boolean;
   /**
+   * Extra class names for the pieces, so a module's stylesheet keeps dressing what it always
+   * dressed: the connection group, its visible line, and its fat hit twin.
+   */
+  className?: string;
+  lineClassName?: string;
+  hitClassName?: string;
+  /**
    * What a connect gesture released over empty canvas means. The default, `ignore`, is the
    * library's enforcement rule: nothing was allowed there, nothing is raised. `complete`
    * declares the release itself meaningful - the timeline's create-and-relate gesture - and

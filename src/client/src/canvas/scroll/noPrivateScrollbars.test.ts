@@ -31,6 +31,13 @@ const SCROLLBAR = /scroll(bar|-thumb|-track)/i;
 const SHARED_IMPORT = /from\s+["']@client\/canvas\/scroll\//;
 
 /**
+ * A canvas built on the diagram library scrolls through the shared bars BY CONSTRUCTION -
+ * DiagramCanvas renders CanvasScrollbars itself - so such a module naming a scrollbar class
+ * is only positioning bars the library already owns.
+ */
+const LIBRARY_IMPORT = /from\s+["']@client\/canvas\/library\/DiagramCanvas["']/;
+
+/**
  * The shared component's own internal class names. A module has no reason to write these: it
  * passes a `className` for the bar and the component builds the thumb and track itself. Checked
  * separately from the import, because importing `scrollGeometry` for the axes and then
@@ -136,7 +143,7 @@ function offenceIn(path: string, content: string): string | null {
   if (SHARED_INTERNALS.test(content)) {
     return "builds a scrollbar's thumb or track itself";
   }
-  if (SCROLLBAR.test(content) && !SHARED_IMPORT.test(content)) {
+  if (SCROLLBAR.test(content) && !SHARED_IMPORT.test(content) && !LIBRARY_IMPORT.test(content)) {
     return "names a scrollbar without importing the shared one";
   }
   return null;
