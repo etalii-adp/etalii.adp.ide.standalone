@@ -1,31 +1,31 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
+
 import { BoxElement } from "@client/canvas/elements/box/BoxElement";
-import { InlineLabelEditor } from "@client/canvas/label/InlineLabelEditor";
-import { centredLabelPlacement } from "@client/canvas/label/labelPlacement";
-import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { useRegisterInlineLabelPlacement, type LabelPlacement } from "@client/shell/panels/InlineLabelPlacementContext";
 import { FrameElement } from "@client/canvas/elements/frame/FrameElement";
-import { FixedBezierConnection } from "@client/canvas/connections/fixed-bezier/FixedBezierConnection";
-import { StraightConnection } from "@client/canvas/connections/straight/StraightConnection";
-import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
-import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
-import { useViewReport } from "@client/diagrams/useViewReport";
-import type { ViewBox, Viewport } from "@client/diagrams/viewReport";
-import type { ConnectorBox, Point } from "@client/canvas/connectors";
+import { edgePointOf } from "@client/canvas/connectors";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
-import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
+import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
+import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
+import type {
+  CustomRouteRef,
+  CustomShapeRef,
+  CustomShapeState,
+  DiagramDefinition,
+  ShapeBounds,
+  ShapePoint,
+} from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
+import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
 import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
-import { ContextMenu } from "@client/shell/context/ContextMenu";
-import { toMenuGroups } from "@client/shell/context/toMenuGroups";
-import { TOOLBOX_DRAG_TYPE, useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
-import { useRegisterDiagramView } from "@client/shell/panels/DiagramViewContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
-import { ContextSelectionAction } from "@client/generated/context_pb";
+import { ContextSelectionAction, type ContextShortcut } from "@client/generated/context_pb";
+import { useViewReport } from "@client/diagrams/useViewReport";
 import { useDatabricksStream } from "./useDatabricksStream";
 import { useSimulatedRun } from "./useSimulatedRun";
-import type { DatabricksEdge, DatabricksModel } from "./databricksModel";
+import type { DatabricksFrame, DatabricksNode } from "./databricksModel";
 
 /** A node's drawn size, in the module's own canvas units - matching the backend layouts' spacing. */
 export const NODE_WIDTH = 200;
@@ -35,51 +35,8 @@ export const NODE_HEIGHT = 56;
 const FRAME_WIDTH = 220;
 const FRAME_HEIGHT = 120;
 
-/**
- * The surface size assumed before the first measure - in jsdom, and in the frame between mount
- * and layout. Both the scrollbars and the view report need a span in canvas units, and a span of
- * zero would report an empty viewport and have the backend cull the whole diagram.
- */
-const DEFAULT_SURFACE_WIDTH = 1200;
-const DEFAULT_SURFACE_HEIGHT = 600;
-
-/** The id of the arrowhead marker this family defines and its edge stylesheet points at. */
-const ARROWHEAD_ID = "databricks-arrowhead";
-
-/** Zoom limits, in pixels per canvas unit. */
-const MIN_PIXELS_PER_UNIT = 0.05;
-const MAX_PIXELS_PER_UNIT = 8;
-const ZOOM_STEP = 1.25;
-
-interface DatabricksView {
-  /** The canvas coordinate at the view's top-left corner. */
-  startX: number;
-  startY: number;
-  /** How many pixels one canvas unit covers - the zoom, which never reaches the backend. */
-  pixelsPerUnit: number;
-}
-
-interface DragState {
-  id: string;
-  clientX: number;
-  clientY: number;
-  x: number;
-  y: number;
-  moved: boolean;
-}
-
-interface DragPreview {
-  id: string;
-  x: number;
-  y: number;
-}
-
-interface ConnectDrag {
-  fromId: string;
-  x: number;
-  y: number;
-  overId?: string;
-}
+/** FixedBezierConnection's control reach, kept for the family's layered edges. */
+const EDGE_REACH = 30;
 
 export interface DatabricksCanvasConfig {
   /** The aria label naming which of the family's readings this canvas draws. */
@@ -94,12 +51,190 @@ export interface DatabricksCanvasConfig {
   interceptAction?: (actionId: string) => boolean;
 }
 
+/** An element as the library carries it here: the model element plus what it draws. */
+type NodeElement = DiagramModelElement & { node: DatabricksNode; simulated: string | undefined };
+type FrameBoxElement = DiagramModelElement & { frame: DatabricksFrame };
+
+function boxEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
+  const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+  return edgePointOf(
+    { x: centre.x, y: centre.y, width: bounds.width, height: bounds.height },
+    towards.x - centre.x,
+    towards.y - centre.y,
+  );
+}
+
+/** One node: kind, unresolved and simulation stylings ride its classes; badges its footer. */
+const nodeShape: CustomShapeRef = {
+  customShape: "databricks-node",
+  render: (raw, state?: CustomShapeState) => {
+    const element = raw as NodeElement;
+    const node = element.node;
+    const classes = ["databricks-node canvas-element", `databricks-node-${node.kind}`];
+    if (node.unresolved) {
+      classes.push("databricks-node-missing");
+    }
+
+    if (element.simulated) {
+      classes.push(`databricks-sim-${element.simulated}`);
+    }
+
+    if (state?.selected) {
+      classes.push("databricks-selected");
+    }
+
+    if (state?.connectTarget) {
+      classes.push("databricks-connect-target canvas-connect-target");
+    }
+
+    return (
+      <BoxElement
+        className={classes.join(" ")}
+        x={element.x - NODE_WIDTH / 2}
+        y={element.y - NODE_HEIGHT / 2}
+        width={NODE_WIDTH}
+        height={NODE_HEIGHT}
+        label={node.label}
+        boxClassName="databricks-node-box canvas-node"
+        labelClassName="databricks-label canvas-node-label"
+        labelY={NODE_HEIGHT / 2 - 4}
+      >
+        {node.badges.length > 0 ? (
+          <text className="databricks-badges" x={8} y={NODE_HEIGHT - 8}>
+            {node.badges.join(" · ")}
+          </text>
+        ) : null}
+      </BoxElement>
+    );
+  },
+  edgePoint: boxEdgePoint,
+};
+
+/** A target frame: the dashed enclosure with its mode/default/override badges. */
+const frameShape: CustomShapeRef = {
+  customShape: "databricks-frame",
+  render: (raw, state?: CustomShapeState) => {
+    const element = raw as FrameBoxElement;
+    const frame = element.frame;
+    const badges = [frame.mode, frame.isDefault ? "default" : "", overrides(frame.overrideCount)]
+      .filter((badge) => badge.length > 0)
+      .join(" · ");
+
+    return (
+      <FrameElement
+        className={`databricks-frame${state?.selected ? " databricks-selected" : ""}`}
+        x={element.x}
+        y={element.y}
+        width={FRAME_WIDTH}
+        height={FRAME_HEIGHT}
+        label={frame.label}
+        labelClassName="databricks-frame-label"
+      >
+        {badges ? (
+          <text className="databricks-badges" x={-FRAME_WIDTH / 2 + 12} y={-FRAME_HEIGHT / 2 + 18}>
+            {badges}
+          </text>
+        ) : null}
+      </FrameElement>
+    );
+  },
+  edgePoint: boxEdgePoint,
+};
+
+/**
+ * A dependency or flow edge, exactly as FixedBezierConnection drew it: out of the source's
+ * right edge, into the target's left, with the fixed control reach the layered layout wants.
+ */
+const layeredRoute: CustomRouteRef = {
+  customRoute: "databricks-layered",
+  path: (from, to, _waypoints, ends) => {
+    const a = ends ? { x: ends.source.x + ends.source.width, y: ends.source.y + ends.source.height / 2 } : from;
+    const b = ends ? { x: ends.target.x, y: ends.target.y + ends.target.height / 2 } : to;
+    return `M ${a.x} ${a.y} C ${a.x + EDGE_REACH} ${a.y}, ${b.x - EDGE_REACH} ${b.y}, ${b.x} ${b.y}`;
+  },
+};
+
+/**
+ * What the family's diagrams allow, stated once per reading: task and resource nodes that
+ * drag and select, frames that drag and select, three edge kinds - depends and flow on the
+ * layered bezier, overrides straight - and the dependency gesture only where the reading
+ * offers it (the job canvas). Edges are not selectable in this family and the migration is
+ * not the moment that changes: a press on one is ignored, exactly as it fell on nothing
+ * before.
+ */
+function definitionFor(connectable: boolean): DiagramDefinition {
+  const targets = ["task", "node", "frame"];
+  return assertValidDiagramDefinition({
+    elementTypes: [
+      {
+        id: "task",
+        shape: nodeShape,
+        label: { placement: "inside", editable: true },
+        anchors: connectable
+          ? {
+            kind: "sides",
+            fractions: [
+              { side: "left", at: 0.5, name: "left" },
+              { side: "right", at: 0.5, name: "right" },
+            ],
+          }
+          : { kind: "edge" },
+        sizing: "model",
+      },
+      { id: "node", shape: nodeShape, label: { placement: "inside", editable: true }, anchors: { kind: "edge" }, sizing: "model" },
+      { id: "frame", shape: frameShape, anchors: { kind: "edge" }, sizing: "model" },
+    ],
+    relationTypes: [
+      {
+        id: "depends",
+        route: layeredRoute,
+        style: { endMarker: "arrow" },
+        label: { placement: "midpoint", offset: -6 },
+        className: "databricks-edge databricks-edge-depends",
+        endpoints: {
+          source: { elementTypes: ["task"], anchors: connectable ? ["left", "right"] : [] },
+          target: { elementTypes: targets, anchors: "edge" },
+          allowSelf: false,
+        },
+      },
+      {
+        id: "flow",
+        route: layeredRoute,
+        style: { endMarker: "arrow" },
+        label: { placement: "midpoint", offset: -6 },
+        className: "databricks-edge databricks-edge-flow",
+        endpoints: {
+          source: { elementTypes: targets, anchors: [] },
+          target: { elementTypes: targets, anchors: "edge" },
+          allowSelf: false,
+        },
+      },
+      {
+        id: "override",
+        route: "straight",
+        style: { endMarker: "arrow" },
+        className: "databricks-override",
+        lineClassName: "databricks-override-line",
+        endpoints: {
+          source: { elementTypes: targets, anchors: [] },
+          target: { elementTypes: targets, anchors: "edge" },
+          allowSelf: false,
+        },
+      },
+    ],
+    layout: { modes: ["manual"] },
+    dragging: "enabled",
+  });
+}
+
+const CONNECTABLE_DEFINITION = definitionFor(true);
+const RENDER_ONLY_DEFINITION = definitionFor(false);
+
 /**
  * The family's shared canvas: boxes, frames and directed edges at the positions the backend
- * computed and the `.adp` authored, drawn through the central canvas library. The three diagram
- * types differ in what arrives on the stream and whether the dependency gesture is offered -
- * everything else (pan, zoom, drag-to-reposition through the layout path, selection, the shared
- * context menu, toolbox drops via placement ids) is one implementation.
+ * computed and the `.adp` authored, drawn through the central canvas library. The three
+ * diagram types differ in what arrives on the stream and whether the dependency gesture is
+ * offered - everything else is one implementation (Requirement 1.2).
  *
  * A drag never writes the body file: `moveElementTo` lands in the registration's `layout:`
  * block as one undoable command (Requirement 7).
@@ -116,199 +251,62 @@ export function DatabricksCanvas({
   const simulation = useSimulatedRun(model);
   const { select, executeAction, executeShortcut } = useContextConnection();
   const { selection, actions } = useContextSelection();
-  const surfaceRef = useRef<HTMLDivElement | null>(null);
-
-  useRegisterDiagramToolbox(useToolboxItems(projectId, path));
-
-  const [view, setView] = useState<DatabricksView>(() => ({ startX: -60, startY: -60, pixelsPerUnit: 1 }));
-  const fittedRef = useRef(false);
-
-  // The report fires after the view settles, so it must read the live view rather than the one
-  // captured when the effect was scheduled.
-  const viewRef = useRef(view);
-  viewRef.current = view;
-
-  // What this canvas can see, in its own units. It draws pixel-mapped into a div rather than
-  // through an svg viewBox, so the shared `shownRectOf` has nothing to convert here and is not
-  // used: the span is the surface's pixels divided by the zoom, which is the same arithmetic
-  // `scrollAxesOf` below does for the bars (view-delta-adoption Requirement 3.4 - the module
-  // converts, the shared code does not).
-  const shownRect = useCallback((): Viewport => {
-    const current = viewRef.current;
-    const rect = surfaceRef.current?.getBoundingClientRect();
-    const widthPx = rect?.width || DEFAULT_SURFACE_WIDTH;
-    const heightPx = rect?.height || DEFAULT_SURFACE_HEIGHT;
-
-    return {
-      minX: current.startX,
-      minY: current.startY,
-      maxX: current.startX + widthPx / current.pixelsPerUnit,
-      maxY: current.startY + heightPx / current.pixelsPerUnit,
-    };
-  }, []);
-
-  // The backend culls to what a connection can see, so it has to be told - on every settled
-  // view change, which is what makes a pan bring content in rather than merely move over it.
-  // Keyed on the four numbers of the rectangle, so a zoom counts as a change as much as a pan
-  // does, and so does the surface being resized.
-  useViewReport({
-    view: viewBoxOf(view, surfaceRef.current?.getBoundingClientRect() ?? null),
-    report: reportView,
-    convert: shownRect,
-    ready: !loading && !failed,
-  });
-
-  const panRef = useRef<{ clientX: number; clientY: number; view: DatabricksView; moved: boolean } | null>(null);
-  const dragRef = useRef<DragState | null>(null);
-  const [drag, setDrag] = useState<DragPreview | null>(null);
-  const [connect, setConnect] = useState<ConnectDrag | null>(null);
-  const connectRef = useRef<ConnectDrag | null>(null);
+  const toolboxItems = useToolboxItems(projectId, path);
   const [rejection, setRejection] = useState("");
+  const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
   const selectionKey = innermostKey(selection);
   const selectedId = elementIdOfKey(selectionKey ?? null);
 
-  const { menuPosition, openMenuAt, closeMenu } = useElementContextMenu(selectionKey, actions.length > 0, (id) =>
-    select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
-  );
-
-  /** Fits everything into view, with a margin. */
-  const fitToView = useCallback(() => {
-    const surface = surfaceRef.current;
-    const boxes = [...model.nodes.values(), ...model.frames.values()];
-    if (!surface || boxes.length === 0) {
-      return;
-    }
-
-    const minX = Math.min(...boxes.map((box) => box.x));
-    const maxX = Math.max(...boxes.map((box) => box.x + FRAME_WIDTH));
-    const span = Math.max(maxX - minX, NODE_WIDTH);
-    const width = surface.getBoundingClientRect().width || 1200;
-
-    setView({
-      startX: minX - span * 0.1,
-      startY: Math.min(...boxes.map((box) => box.y)) - NODE_HEIGHT,
-      pixelsPerUnit: clampZoom(width / (span * 1.2)),
-    });
-  }, [model]);
-
-  // Fitted once, when the first delta lands - refitting on every edit would fight the user's pan.
-  useEffect(() => {
-    if (!loading && !fittedRef.current && model.nodes.size > 0) {
-      fittedRef.current = true;
-      fitToView();
-    }
-  }, [loading, model, fitToView]);
-
-  const zoomBy = useCallback((factor: number) => {
-    setView((current) => {
-      const rect = surfaceRef.current?.getBoundingClientRect();
-      const width = rect?.width || DEFAULT_SURFACE_WIDTH;
-      const height = rect?.height || DEFAULT_SURFACE_HEIGHT;
-      const next = clampZoom(current.pixelsPerUnit * factor);
-      // About the centre, so the thing being looked at stays where it is.
-      const centreX = current.startX + (width / 2) / current.pixelsPerUnit;
-      const centreY = current.startY + (height / 2) / current.pixelsPerUnit;
-      return {
-        startX: centreX - (width / 2) / next,
-        startY: centreY - (height / 2) / next,
-        pixelsPerUnit: next,
-      };
-    });
-  }, []);
-
-  useRegisterDiagramView(
-    useMemo(
-      () => ({
-        zoomIn: () => zoomBy(ZOOM_STEP),
-        zoomOut: () => zoomBy(1 / ZOOM_STEP),
-        fitToView,
-      }),
-      [zoomBy, fitToView],
-    ),
-  );
-
-  // Non-passive by hand: React's synthetic wheel listener cannot preventDefault, and without
-  // it every zoom also scrolls the page.
-  useEffect(() => {
-    const surface = surfaceRef.current;
-    if (!surface) {
-      return;
-    }
-
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      zoomBy(event.deltaY > 0 ? 1 / ZOOM_STEP : ZOOM_STEP);
-    };
-
-    surface.addEventListener("wheel", onWheel, { passive: false });
-    return () => surface.removeEventListener("wheel", onWheel);
-  }, [zoomBy]);
-
-  // Escape abandons whichever gesture is in flight, dispatching nothing.
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") {
-        return;
-      }
-
-      dragRef.current = null;
-      connectRef.current = null;
-      setDrag(null);
-      setConnect(null);
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
-
-  const toUnitsX = (clientX: number): number => {
-    const rect = surfaceRef.current?.getBoundingClientRect();
-    return view.startX + (clientX - (rect?.left ?? 0)) / view.pixelsPerUnit;
-  };
-
-  const toUnitsY = (clientY: number): number => {
-    const rect = surfaceRef.current?.getBoundingClientRect();
-    return view.startY + (clientY - (rect?.top ?? 0)) / view.pixelsPerUnit;
-  };
-
-  const xToPx = (x: number): number => (x - view.startX) * view.pixelsPerUnit;
-  const yToPx = (y: number): number => (y - view.startY) * view.pixelsPerUnit;
-
-  // Where a node's label is drawn - for the shell's inline editor. Nodes only: this canvas
-  // has no edge selection, so a relabelled edge could not be reached even if one were marked.
-  //
-  // Memoized on the model AND the view, as the other pixel-positioned canvases are: there is
-  // no viewBox here, so a pan moves every label without touching the model.
-  const placementOfLabel = useCallback(
-    (elementId: string): LabelPlacement | null => {
-      const node = model.nodes.get(elementId);
-      if (node === undefined) {
-        return null; // frames are not renamed, and edges cannot be selected
-      }
-
-      return centredLabelPlacement(
-        boxFor(at(node, null), NODE_WIDTH, NODE_HEIGHT, xToPx, yToPx, view.pixelsPerUnit),
-        node.label,
-      );
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- xToPx and yToPx are recreated
-    // every render and are pure functions of view, which is in the list.
-    [model, view],
-  );
-  useRegisterInlineLabelPlacement(placementOfLabel);
-
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
   const editingId = inlineLabelElementIdOf(prompt);
-  const editingPlacement = editingId === null ? null : placementOfLabel(editingId);
-  const returnFocusToSurface = useCallback(() => surfaceRef.current?.focus(), []);
 
-  /** Ends an open inline edit before a gesture begins; the editor commits on blur. */
-  const endInlineEditBeforeGesture = () => {
-    if (editingPlacement !== null) {
-      surfaceRef.current?.focus();
+  const diagramModel = useMemo<DiagramModel>(() => {
+    // Frames first, so everything they enclose paints on top.
+    const frames = [...model.frames.values()].map((frame): FrameBoxElement => ({
+      id: frame.id,
+      type: "frame",
+      x: frame.x + FRAME_WIDTH / 2,
+      y: frame.y + FRAME_HEIGHT / 2,
+      width: FRAME_WIDTH,
+      height: FRAME_HEIGHT,
+      label: frame.label,
+      frame,
+    }));
+    const nodes = [...model.nodes.values()].map((node): NodeElement => ({
+      id: node.id,
+      // The dependency gesture is tasks-only, so the task kind is its own element type.
+      type: node.id.startsWith("task:") ? "task" : "node",
+      x: node.x + NODE_WIDTH / 2,
+      y: node.y + NODE_HEIGHT / 2,
+      width: NODE_WIDTH,
+      height: NODE_HEIGHT,
+      label: node.label,
+      node,
+      simulated: simulation.states.get(node.id),
+    }));
+    const connections = [...model.edges.values()].map((edge) => ({
+      id: edge.id,
+      type: edge.kind,
+      sourceId: edge.fromElementId,
+      targetId: edge.toElementId,
+      label: edge.outcome || undefined,
+      className: edge.outcome === "true"
+        ? "databricks-edge-outcome-true"
+        : edge.outcome === "false"
+          ? "databricks-edge-outcome-false"
+          : undefined,
+    }));
+    return { elements: [...frames, ...nodes], connections };
+  }, [model, simulation.states]);
+
+  /** The backend's push is the selection; the canvas renders it and never decides. */
+  const librarySelection = useMemo<DiagramSelection>(() => {
+    if (selectedId === null) {
+      return [];
     }
-  };
+    return [{ kind: model.edges.has(selectedId) ? "connection" : "element", id: selectedId }];
+  }, [selectedId, model.edges]);
 
   /**
    * Runs an action, letting the interception seam play it locally first (Requirement 8.6): a
@@ -328,179 +326,78 @@ export function DatabricksCanvas({
     })();
   };
 
-  const onSurfacePointerDown = (event: React.MouseEvent) => {
-    endInlineEditBeforeGesture();
-    const target = event.target as Element;
-    if (target !== event.currentTarget && !target.classList?.contains("databricks-content")) {
-      return;
-    }
-
-    closeMenu();
-    if (event.button === 0) {
-      select(null);
-    }
-
-    panRef.current = { clientX: event.clientX, clientY: event.clientY, view, moved: false };
+  const runShortcut = (shortcut: ContextShortcut, sourceId: string) => {
+    void (async () => {
+      const outcome = await executeShortcut(shortcut, elementSourceOf(sourceId));
+      if (!outcome.accepted && outcome.error) {
+        setRejection(outcome.error);
+      }
+    })();
   };
 
-  const onBoxPointerDown = (event: React.MouseEvent, id: string, x: number, y: number) => {
-    event.stopPropagation();
-    endInlineEditBeforeGesture();
-    setRejection("");
-    dragRef.current = { id, clientX: event.clientX, clientY: event.clientY, x, y, moved: false };
-  };
-
-  const onAnchorPointerDown = (event: React.MouseEvent, id: string) => {
-    event.stopPropagation();
-    const start: ConnectDrag = { fromId: id, x: toUnitsX(event.clientX), y: toUnitsY(event.clientY) };
-    connectRef.current = start;
-    setConnect(start);
-  };
-
-  const onPointerMove = (event: React.MouseEvent) => {
-    const dragging = dragRef.current;
-    if (dragging) {
-      dragging.moved ||= Math.abs(event.clientX - dragging.clientX) + Math.abs(event.clientY - dragging.clientY) > 3;
-      setDrag({
-        id: dragging.id,
-        x: dragging.x + (event.clientX - dragging.clientX) / view.pixelsPerUnit,
-        y: dragging.y + (event.clientY - dragging.clientY) / view.pixelsPerUnit,
-      });
-      return;
-    }
-
-    const connecting = connectRef.current;
-    if (connecting) {
-      const next = { ...connecting, x: toUnitsX(event.clientX), y: toUnitsY(event.clientY) };
-      connectRef.current = next;
-      setConnect(next);
-      return;
-    }
-
-    const pan = panRef.current;
-    if (pan) {
-      pan.moved ||= Math.abs(event.clientX - pan.clientX) + Math.abs(event.clientY - pan.clientY) > 3;
-      setView({
-        ...pan.view,
-        startX: pan.view.startX - (event.clientX - pan.clientX) / pan.view.pixelsPerUnit,
-        startY: pan.view.startY - (event.clientY - pan.clientY) / pan.view.pixelsPerUnit,
-      });
-    }
-  };
-
-  /** The canvas owns the right button: a drag pans, and the browser's own menu never appears. */
-  const onSurfaceContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-  };
-
-  const onPointerUp = (event: React.MouseEvent) => {
-    panRef.current = null;
-
-    const dragging = dragRef.current;
-    const landed = drag;
-    dragRef.current = null;
-    setDrag(null);
-    if (dragging && landed && dragging.moved) {
+  const events: DiagramEventHandlers = {
+    onSelectionChanged: ({ selection: next }) => {
+      // Edges are not selectable in this family (recorded pending elsewhere): a press on a
+      // connection is ignored, exactly as it fell on nothing before the migration.
+      if (next.some((item) => item.kind === "connection")) {
+        return;
+      }
+      const element = next.find((item) => item.kind === "element");
+      select(element !== undefined ? elementSelectionOf(entryId, path, element.id) : null);
+    },
+    onElementMoved: ({ elementId, position }) => {
+      setRejection("");
+      const isFrame = model.frames.has(elementId);
+      const width = isFrame ? FRAME_WIDTH : NODE_WIDTH;
+      const height = isFrame ? FRAME_HEIGHT : NODE_HEIGHT;
       // The authored position, raw: the layout block stores what the author placed, and
       // rounding it here would quietly turn the canvas into a grid.
       void (async () => {
-        const error = await moveElementTo(landed.id, landed.x, landed.y);
+        const error = await moveElementTo(elementId, position.x - width / 2, position.y - height / 2);
         if (error) {
           setRejection(error);
         }
       })();
-      return;
-    }
-
-    if (dragging && !dragging.moved) {
-      // A press with no movement is a click: a selection, never an edit.
-      select(elementSelectionOf(entryId, path, dragging.id));
-      return;
-    }
-
-    const connecting = connectRef.current;
-    connectRef.current = null;
-    setConnect(null);
-    if (connecting) {
-      const under = (event.target as Element | null)?.closest?.("[data-element-id]");
-      const targetId = connecting.overId ?? under?.getAttribute("data-element-id") ?? null;
-      if (!targetId || targetId === connecting.fromId) {
-        // Released on nothing, or back onto its own source: a "never mind". This family
-        // creates tasks by drop, not by relation-to-empty-space, so no placement is fabricated.
-        return;
-      }
-
-      // The whole gesture in one stateless rel: call - the dragged task becomes the dependency
-      // the landing task waits for.
-      runAction("databricks.connect", `rel:${connecting.fromId}->${targetId}`);
-    }
+    },
+    // The whole gesture in one stateless rel: call - the dragged task becomes the dependency
+    // the landing task waits for. Released on nothing, the library raises nothing: this
+    // family creates tasks by drop, not by relation-to-empty-space.
+    onConnectionDrawn: ({ sourceElementId, targetElementId }) =>
+      runAction("databricks.connect", `rel:${sourceElementId}->${targetElementId}`),
+    // A toolbox drop names a placement - `new:{x},{y}` under the pointer (Requirement 9).
+    onElementDropped: ({ elementType, position }) => runAction(elementType, `new:${position.x},${position.y}`),
+    onElementDeleted: ({ elementId }) =>
+      runShortcut({ key: "Delete", ctrl: false, shift: false, alt: false, meta: false } as ContextShortcut, elementId),
+    onConnectionDeleted: ({ connectionId }) =>
+      runShortcut({ key: "Delete", ctrl: false, shift: false, alt: false, meta: false } as ContextShortcut, connectionId),
+    onViewChanged: ({ viewport: next }) => setViewport(next),
   };
 
-  const onBoxPointerEnter = (id: string) => {
-    const connecting = connectRef.current;
-    if (connecting && id !== connecting.fromId) {
-      const next = { ...connecting, overId: id };
-      connectRef.current = next;
-      setConnect(next);
-    }
-  };
+  useViewReport({
+    view: { x: viewport?.x ?? 0, y: viewport?.y ?? 0, w: viewport?.width ?? 0, h: viewport?.height ?? 0 },
+    report: reportView,
+    convert: () => ({
+      minX: viewport?.x ?? 0,
+      minY: viewport?.y ?? 0,
+      maxX: (viewport?.x ?? 0) + (viewport?.width ?? 0),
+      maxY: (viewport?.y ?? 0) + (viewport?.height ?? 0),
+    }),
+    ready: !loading && !failed && viewport !== null,
+  });
 
-  const onBoxPointerLeave = () => {
-    const connecting = connectRef.current;
-    if (connecting?.overId) {
-      const next = { ...connecting, overId: undefined };
-      connectRef.current = next;
-      setConnect(next);
-    }
-  };
-
-  const openTargetMenuAt = (event: React.MouseEvent, id: string) => {
-    if (panRef.current?.moved) {
-      return;
-    }
-
-    openMenuAt(event, id);
-  };
-
-  /**
-   * A toolbox entry dropped anywhere on the canvas: the drop names a placement - `new:{x},{y}`
-   * under the pointer - and the element appears there with nothing asked (Requirement 9).
-   */
-  const onSurfaceDrop = (event: React.DragEvent) => {
-    const actionId = event.dataTransfer.getData(TOOLBOX_DRAG_TYPE);
-    if (!actionId) {
-      return;
-    }
-
-    event.preventDefault();
-    runAction(actionId, `new:${toUnitsX(event.clientX)},${toUnitsY(event.clientY)}`);
-  };
-
-  const onDragOver = (event: React.DragEvent) => {
-    if (event.dataTransfer.types.includes(TOOLBOX_DRAG_TYPE)) {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = "copy";
-    }
-  };
-
-  /** Structural keys travel to the backend as data - the backend owns the key-to-action table. */
+  /** F2 travels to the backend as data; Delete is the library's event, handled above. */
   const onKeyDown = (event: React.KeyboardEvent) => {
     if (!selectedId || isTextTarget(event.target)) {
       return;
     }
 
-    const shortcut = structuralShortcutFor(event, ["F2", "Delete"]);
+    const shortcut = structuralShortcutFor(event, ["F2"]);
     if (!shortcut) {
       return;
     }
 
     event.preventDefault();
-    void (async () => {
-      const outcome = await executeShortcut(shortcut, elementSourceOf(selectedId));
-      if (!outcome.accepted && outcome.error) {
-        setRejection(outcome.error);
-      }
-    })();
+    runShortcut(shortcut, selectedId);
   };
 
   if (failed) {
@@ -511,176 +408,24 @@ export function DatabricksCanvas({
     );
   }
 
-  const boxes = new Map<string, ConnectorBox>();
-  for (const node of model.nodes.values()) {
-    boxes.set(node.id, boxFor(at(node, drag), NODE_WIDTH, NODE_HEIGHT, xToPx, yToPx, view.pixelsPerUnit));
-  }
-
-  for (const frame of model.frames.values()) {
-    boxes.set(frame.id, boxFor(at(frame, drag), FRAME_WIDTH, FRAME_HEIGHT, xToPx, yToPx, view.pixelsPerUnit));
-  }
-
   return (
-    <div className="databricks-canvas canvas-host">
-      <div
-        ref={surfaceRef}
-        className="databricks-surface canvas-viewport"
-        role="application"
-        aria-label={ariaLabel}
-        tabIndex={0}
-        onMouseDown={onSurfacePointerDown}
-        onMouseMove={onPointerMove}
-        onMouseUp={onPointerUp}
-        onMouseLeave={onPointerUp}
-        onContextMenu={onSurfaceContextMenu}
-        onKeyDown={onKeyDown}
-        onDragOver={onDragOver}
-        onDrop={onSurfaceDrop}
-      >
-        <svg className="databricks-content canvas-drawing">
-          <defs>
-            <marker
-              id={ARROWHEAD_ID}
-              className="databricks-arrowhead canvas-arrowhead"
-              viewBox="0 0 10 10"
-              refX="9"
-              refY="5"
-              markerWidth="7"
-              markerHeight="7"
-              orient="auto-start-reverse"
-            >
-              <path d="M 0 0 L 10 5 L 0 10 z" />
-            </marker>
-          </defs>
-
-          {/* Frames first, so everything they enclose paints on top. */}
-          {[...model.frames.values()].map((frame) => {
-            const box = boxes.get(frame.id)!;
-            const badges = [frame.mode, frame.isDefault ? "default" : "", overrides(frame.overrideCount)]
-              .filter((badge) => badge.length > 0)
-              .join(" · ");
-            return (
-              <FrameElement
-                key={frame.id}
-                className={`databricks-frame${frame.id === selectedId ? " databricks-selected" : ""}`}
-                data-element-id={frame.id}
-                x={box.x}
-                y={box.y}
-                width={box.width}
-                height={box.height}
-                label={frame.label}
-                labelClassName="databricks-frame-label"
-                onMouseDown={(event) => onBoxPointerDown(event, frame.id, at(frame, drag).x, at(frame, drag).y)}
-                onContextMenu={(event) => openTargetMenuAt(event, frame.id)}
-              >
-                {badges ? (
-                  <text className="databricks-badges" x={-box.width / 2 + 12} y={-box.height / 2 + 18}>
-                    {badges}
-                  </text>
-                ) : null}
-              </FrameElement>
-            );
-          })}
-
-          {[...model.edges.values()].map((edge) => renderEdge(edge, boxes, selectedId))}
-
-          {connect ? <PendingEdge boxes={boxes} connect={connect} xToPx={xToPx} yToPx={yToPx} /> : null}
-
-          {[...model.nodes.values()].map((node) => {
-            const box = boxes.get(node.id)!;
-            const classes = ["databricks-node canvas-element", `databricks-node-${node.kind}`];
-            if (node.unresolved) {
-              classes.push("databricks-node-missing");
-            }
-
-            const simulated = simulation.states.get(node.id);
-            if (simulated) {
-              classes.push(`databricks-sim-${simulated}`);
-            }
-
-            if (node.id === selectedId) {
-              classes.push("databricks-selected canvas-selected");
-            }
-
-            if (connect?.overId === node.id) {
-              classes.push("databricks-connect-target canvas-connect-target");
-            }
-
-            return (
-              <BoxElement
-                key={node.id}
-                className={classes.join(" ")}
-                data-element-id={node.id}
-                x={box.x - box.width / 2}
-                y={box.y - box.height / 2}
-                width={box.width}
-                height={box.height}
-                label={node.label}
-                boxClassName="databricks-node-box canvas-node"
-                labelClassName="databricks-label canvas-node-label"
-                labelY={box.height / 2 - 4}
-                onMouseDown={(event) => onBoxPointerDown(event, node.id, at(node, drag).x, at(node, drag).y)}
-                onMouseEnter={() => onBoxPointerEnter(node.id)}
-                onMouseLeave={onBoxPointerLeave}
-                onContextMenu={(event) => openTargetMenuAt(event, node.id)}
-                onDragOver={(event) => event.preventDefault()}
-              >
-                {node.badges.length > 0 ? (
-                  <text className="databricks-badges" x={8} y={box.height - 8}>
-                    {node.badges.join(" · ")}
-                  </text>
-                ) : null}
-                {connectable && node.id === selectedId && movable(node.id) ? (
-                  <>
-                    {/* A visible dot with an invisible fat grab twin - the shared anchor pair. */}
-                    <circle className="databricks-anchor canvas-anchor" cx={0} cy={box.height / 2} r={4} />
-                    <circle className="databricks-anchor canvas-anchor" cx={box.width} cy={box.height / 2} r={4} />
-                    <circle
-                      className="databricks-anchor-hit canvas-anchor-hit"
-                      cx={0}
-                      cy={box.height / 2}
-                      r={10}
-                      onMouseDown={(event) => onAnchorPointerDown(event, node.id)}
-                    />
-                    <circle
-                      className="databricks-anchor-hit canvas-anchor-hit"
-                      cx={box.width}
-                      cy={box.height / 2}
-                      r={10}
-                      onMouseDown={(event) => onAnchorPointerDown(event, node.id)}
-                    />
-                  </>
-                ) : null}
-              </BoxElement>
-            );
-          })}
-
-          {/* Last of all, so the editor is above every node it overlaps. This canvas carries
-              no viewBox, so its placements are pixels rather than module units. */}
-          {editingPlacement !== null && (
-            <InlineLabelEditor
-              placement={editingPlacement}
-              onPropose={onProposeLabel}
-              onSubmit={onSubmitLabel}
-              onCancel={onCancelLabel}
-              onReturnFocus={returnFocusToSurface}
-            />
-          )}
-        </svg>
-        <CanvasScrollbars
-          {...scrollAxesOf(model, view, surfaceRef.current?.getBoundingClientRect() ?? null)}
-          className="databricks-scrollbars"
-          onPan={(startX, startY) => setView((current) => ({ ...current, startX, startY }))}
-        />
-      </div>
-      <ContextMenu
-        open={menuPosition !== null}
-        groups={toMenuGroups(actions, (action) => {
-          closeMenu();
-          runAction(action.id, selectedId ?? undefined);
-        })}
-        position={menuPosition ?? { x: 0, y: 0 }}
-        onClose={closeMenu}
+    <div className="databricks-canvas canvas-host" role="application" aria-label={ariaLabel} onKeyDown={onKeyDown}>
+      <DiagramCanvas
+        definition={connectable ? CONNECTABLE_DEFINITION : RENDER_ONLY_DEFINITION}
+        model={diagramModel}
+        events={events}
+        selection={librarySelection}
+        toolboxItems={toolboxItems}
+        editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
+        context={{
+          selectionKey: selectionKey ?? undefined,
+          actions,
+          selectForMenu: (id) => select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
+          executeAction: (actionId) => runAction(actionId, selectedId ?? undefined),
+        }}
+        ariaLabel={ariaLabel}
+        className="databricks-surface"
+        scrollbarsClassName="databricks-scrollbars"
       />
       {simulation.marker ? (
         <button type="button" className="databricks-simulation-banner" onClick={simulation.dismiss}>
@@ -693,174 +438,6 @@ export function DatabricksCanvas({
   );
 }
 
-/** Whether an id is a box a gesture may start from - the dependency gesture is tasks-only. */
-function movable(id: string): boolean {
-  return id.startsWith("task:");
-}
-
-/**
- * The two scroll axes as the shared bars want them: the view's window, and the content's
- * bounds - nodes and frames alike - padded so a drag can go a little past the content, or the
- * plane stops feeling unbounded. Everything in the module's own canvas units.
- */
-/**
- * The view as the shared report hook keys on it: the origin it starts at and the span it covers,
- * both in canvas units. The span moves with the zoom and with the surface's size, so keying on
- * these four numbers makes a zoom and a resize each count as a view change - which they are.
- */
-function viewBoxOf(view: DatabricksView, surface: DOMRect | null): ViewBox {
-  const widthPx = surface?.width || DEFAULT_SURFACE_WIDTH;
-  const heightPx = surface?.height || DEFAULT_SURFACE_HEIGHT;
-
-  return {
-    x: view.startX,
-    y: view.startY,
-    w: widthPx / view.pixelsPerUnit,
-    h: heightPx / view.pixelsPerUnit,
-  };
-}
-
-function scrollAxesOf(model: DatabricksModel, view: DatabricksView, surface: DOMRect | null) {
-  const widthPx = surface?.width || DEFAULT_SURFACE_WIDTH;
-  const heightPx = surface?.height || DEFAULT_SURFACE_HEIGHT;
-  const boxes = [
-    ...[...model.nodes.values()].map((node) => ({ x: node.x, y: node.y, width: NODE_WIDTH, height: NODE_HEIGHT })),
-    ...[...model.frames.values()].map((frame) => ({ x: frame.x, y: frame.y, width: FRAME_WIDTH, height: FRAME_HEIGHT })),
-  ];
-
-  const horizontalSpan = widthPx / view.pixelsPerUnit;
-  const verticalSpan = heightPx / view.pixelsPerUnit;
-  const minX = boxes.length > 0 ? Math.min(...boxes.map((box) => box.x)) : view.startX;
-  const maxX = boxes.length > 0 ? Math.max(...boxes.map((box) => box.x + box.width)) : view.startX + horizontalSpan;
-  const minY = boxes.length > 0 ? Math.min(...boxes.map((box) => box.y)) : view.startY;
-  const maxY = boxes.length > 0 ? Math.max(...boxes.map((box) => box.y + box.height)) : view.startY + verticalSpan;
-
-  return {
-    horizontal: {
-      viewStart: view.startX,
-      viewSpan: horizontalSpan,
-      ...scrollExtentOf(minX, maxX, { factor: 0.5, minimumSpan: NODE_WIDTH }),
-    },
-    vertical: {
-      viewStart: view.startY,
-      viewSpan: verticalSpan,
-      ...scrollExtentOf(minY, maxY, { factor: 0, minimum: 2 * NODE_HEIGHT }),
-    },
-  };
-}
-
 function overrides(count: number): string {
   return count === 0 ? "" : count === 1 ? "1 override" : `${count} overrides`;
-}
-
-function at(placed: { id: string; x: number; y: number }, drag: DragPreview | null): { x: number; y: number } {
-  return drag && drag.id === placed.id ? { x: drag.x, y: drag.y } : { x: placed.x, y: placed.y };
-}
-
-/** A box in pixels, centre-based as the shared geometry expects. */
-function boxFor(
-  position: { x: number; y: number },
-  width: number,
-  height: number,
-  xToPx: (x: number) => number,
-  yToPx: (y: number) => number,
-  pixelsPerUnit: number,
-): ConnectorBox {
-  const w = Math.max(width * pixelsPerUnit, 2);
-  const h = Math.max(height * pixelsPerUnit, 2);
-  return {
-    x: xToPx(position.x) + w / 2,
-    y: yToPx(position.y) + h / 2,
-    width: w,
-    height: h,
-  };
-}
-
-/**
- * One edge, drawn per its kind: dependencies and flow lines leave the source's right edge and
- * curve into the target's left (the layered-layout case), overrides run straight from a target
- * frame to the resource it overrides. An edge whose end is missing draws nothing - a dangling
- * reference is the validator's to report.
- */
-function renderEdge(edge: DatabricksEdge, boxes: Map<string, ConnectorBox>, selectedId: string | null) {
-  const from = boxes.get(edge.fromElementId);
-  const to = boxes.get(edge.toElementId);
-  if (!from || !to) {
-    return null;
-  }
-
-  if (edge.kind === "override") {
-    return (
-      <StraightConnection
-        key={edge.id}
-        from={from}
-        to={to}
-        className={`databricks-override${edge.id === selectedId ? " databricks-selected canvas-selected" : ""}`}
-        pathClassName="databricks-override-line canvas-connection-line"
-        markerEnd={`url(#${ARROWHEAD_ID})`}
-      />
-    );
-  }
-
-  const start: Point = { x: from.x + from.width / 2, y: from.y };
-  const end: Point = { x: to.x - to.width / 2, y: to.y };
-  const classes = [`databricks-edge canvas-connection-line databricks-edge-${edge.kind}`];
-  if (edge.outcome === "true") {
-    classes.push("databricks-edge-outcome-true");
-  } else if (edge.outcome === "false") {
-    classes.push("databricks-edge-outcome-false");
-  }
-
-  if (edge.id === selectedId) {
-    classes.push("databricks-selected canvas-selected");
-  }
-
-  return (
-    <g key={edge.id} data-element-id={edge.id}>
-      <FixedBezierConnection
-        from={start}
-        to={end}
-        className={classes.join(" ")}
-        markerEnd={`url(#${ARROWHEAD_ID})`}
-      />
-      {edge.outcome ? (
-        <text className="databricks-outcome-label canvas-hint" x={(start.x + end.x) / 2} y={(start.y + end.y) / 2 - 6}>
-          {edge.outcome}
-        </text>
-      ) : null}
-    </g>
-  );
-}
-
-function PendingEdge({
-  boxes,
-  connect,
-  xToPx,
-  yToPx,
-}: {
-  boxes: Map<string, ConnectorBox>;
-  connect: ConnectDrag;
-  xToPx: (x: number) => number;
-  yToPx: (y: number) => number;
-}) {
-  const from = boxes.get(connect.fromId);
-  if (!from) {
-    return null;
-  }
-
-  const end = connect.overId && boxes.has(connect.overId)
-    ? { x: boxes.get(connect.overId)!.x - boxes.get(connect.overId)!.width / 2, y: boxes.get(connect.overId)!.y }
-    : { x: xToPx(connect.x), y: yToPx(connect.y) };
-  const start: Point = { x: from.x + from.width / 2, y: from.y };
-
-  return (
-    <path
-      className="databricks-pending-edge canvas-pending-connection"
-      d={`M ${start.x} ${start.y} C ${start.x + 30} ${start.y}, ${end.x - 30} ${end.y}, ${end.x} ${end.y}`}
-    />
-  );
-}
-
-function clampZoom(pixelsPerUnit: number): number {
-  return Math.min(MAX_PIXELS_PER_UNIT, Math.max(MIN_PIXELS_PER_UNIT, pixelsPerUnit));
 }

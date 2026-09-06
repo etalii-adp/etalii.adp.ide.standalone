@@ -112,17 +112,19 @@ describe("the bundle canvas", () => {
   it("repositions a target frame through the layout path, like any node", () => {
     // Arrange.
     const { container } = renderCanvas();
-    const surface = container.querySelector(".databricks-surface")!;
     const frame = container.querySelector('[data-element-id="target:prod"]')!;
 
     // Act.
-    fireEvent.mouseDown(frame, { clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(surface, { clientX: 180, clientY: 140 });
-    fireEvent.mouseUp(surface);
+    fireEvent(frame, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(frame, new MouseEvent("pointermove", { bubbles: true, clientX: 180, clientY: 140 }));
+    fireEvent(frame, new MouseEvent("pointerup", { bubbles: true, clientX: 180, clientY: 140 }));
 
-    // Assert.
+    // Assert: the authored corner, converted back with the FRAME's own size - jsdom's
+    // zero-size rect makes one pixel one unit, so the delta lands verbatim.
     expect(moves).toHaveLength(1);
     expect(moves[0].elementId).toBe("target:prod");
+    expect(moves[0].x).toBeCloseTo(80, 5);
+    expect(moves[0].y).toBeCloseTo(440, 5);
   });
 
   it("offers no dependency anchors: overrides are written in the file, not drawn", () => {
