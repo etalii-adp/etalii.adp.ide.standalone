@@ -39,12 +39,6 @@
   pointer-events: none;
 }
 
-/* The predicate or property path riding its edge. */
-.sparql-edge-label {
-  text-anchor: middle;
-  pointer-events: none;
-}
-
 /* A property path is a multi-step ask, and says so. */
 .sparql-edge-path .sparql-edge-line {
   stroke-dasharray: 6 2;

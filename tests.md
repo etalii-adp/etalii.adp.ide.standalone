@@ -2201,3 +2201,25 @@ library's now. Re-run the standing rdf-family entries above against a migrated b
   the session's credential prohibition. The anchor-selects-relation mechanism, the
   equivalence doubling, the centre-to-corner conversion on drags and the drop-on-card
   hit-test are pinned by unit tests seen to fail under narrow sabotages.
+
+## sparql re-run after its library migration (diagram-library-adoption, task 7)
+
+The query diagram now renders through the diagram library: same pattern nodes with their
+kind stylings and projection marks, group constructs as labelled frames painting behind
+their contents, annotation badges by their anchors, the header band above the canvas.
+Re-run the standing sparql entries above against a migrated build, plus:
+
+- **Actions**: open a query with an OPTIONAL group and confirm the frame paints behind the
+  nodes it contains; select a property-path edge and a plain-predicate edge; drag a node and
+  a region; drag an element the backend refuses (an anonymous variable) and read the
+  sentence; try to find any editing affordance - anchors, a toolbox, a drop target, a
+  rename.
+- **Expected**: the frame stays behind its contents; the path edge keeps its multi-step
+  marking; drags land in the layout block and refusals surface verbatim; there is still no
+  way to edit the query from the canvas - no anchors appear on selection, no drop lands,
+  no editor opens; wheel zoom now zooms about the pointer and links redraw on commit (the
+  recorded library unifications).
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition. The paint order, path marking and refusal reporting
+  are pinned by unit tests seen to fail under narrow sabotages.
