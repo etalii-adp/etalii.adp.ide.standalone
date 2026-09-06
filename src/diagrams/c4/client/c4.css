@@ -19,9 +19,13 @@
   background: var(--color-surface);
 }
 
-.c4-canvas-surface {
-  flex: 1;
-  min-height: 0;
+/*
+ * The library's canvas wrapper, as this module names it. `.c4-canvas-surface` was the
+ * hand-built svg's class and the migration left it behind with nothing wearing it, so the
+ * wrapper had no rule at all - see the note on `.library-canvas` in canvas.css for what an
+ * unsized wrapper did to this diagram.
+ */
+.c4-canvas-host {
   outline: none;
   touch-action: none;
 }
