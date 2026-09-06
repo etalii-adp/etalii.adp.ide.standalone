@@ -26,7 +26,7 @@
   - _Requirements: 4.1, 4.2, 8.1, 8.2, 9.4_
   - _Prompt: Implement the task for spec diagram-library, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Define the diagram-definition schema and its validators as plain data under canvas/library/definition | Restrictions: no React or non-serializable values in a definition; reject a zero-layout-mode definition, an endpoint naming an unknown element type, and a custom shape/route with no renderer; the built-in route set must cover the design's four families | Success: the schema types exist and the validators reject each bad shape, seen to do so. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2. The API surface: events and runtime configuration
+- [x] 2. The API surface: events and runtime configuration
   - Files: `src/client/src/canvas/library/api/` (new), and its tests
   - The `DiagramEvent` union — one member per behaviour the design lists: `elementDropped`, `elementDeleted`, `elementMoved`, `connectionDrawn`, `connectionDeleted`, `connectionAdjusted`, `selectionChanged`, `labelCommitRequested`, `viewChanged`, `layoutModeChanged` — and the `runtimeConfig` shape (`dragging`, `activeLayoutMode`, `activeTool`, definition overrides).
   - **Every event is a request, never a mutation** (Requirement 1.2): the types carry what the module needs to answer and nothing the library would act on itself.
@@ -35,7 +35,7 @@
   - _Requirements: 1.1, 1.2, 1.5, 7.4_
   - _Prompt: Implement the task for spec diagram-library, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Define the DiagramEvent union and runtimeConfig types under canvas/library/api | Restrictions: every event is a request the module answers, not an action the library takes; the selection type is set-shaped but single until multi-select lands; a capability reachable only by forking the canvas is a defect in this surface | Success: the event and config types exist and a handler map over them typechecks. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. The canvas component over the existing parts
+- [-] 3. The canvas component over the existing parts
   - Files: `src/client/src/canvas/library/DiagramCanvas.tsx` (new), and its tests
   - Render elements through the seven shape components and custom shapes; render connections through the route builders; **resolve each anchor once for rendering, the connect preview and hit-testing** so the three cannot disagree (Requirement 3.4); own pan/zoom/selection state; drive every gesture through `usePointerGesture` (Requirement 5.1) — no gesture machinery beside it.
   - **The component mutates nothing.** Each gesture calls the matching handler and waits for `model` to change, as the backend-fed canvases already behave (Requirement 1.2).
