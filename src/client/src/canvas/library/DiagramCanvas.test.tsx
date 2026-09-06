@@ -418,6 +418,52 @@ describe("DiagramCanvas", () => {
     expect((items as { id: string; label: string }[]).map((item) => item.id)).toEqual(["service", "store"]);
   });
 
+  it("an abandoned resize restores the bounds and dispatches nothing", () => {
+    // Paired with the commit test above (exactly one element-resized), per the rule that
+    // a negative-only assertion at a seam proves nothing on its own.
+    const onElementResized = vi.fn();
+    const definition = definitionOf();
+    (definition.elementTypes[0] as { sizing: string }).sizing = "user";
+    const { container } = renderCanvas({ onElementResized }, definition, modelOf(), {
+      selection: [{ kind: "element", id: "a" }],
+    });
+
+    const handle = container.querySelector('[data-element-id="a"] [data-resize="right"]')!;
+    fireEvent(handle, pointer("pointerdown", { button: 0, clientX: 50, clientY: 0 }));
+    fireEvent(handle, pointer("pointermove", { clientX: 90, clientY: 0 }));
+    expect(container.querySelector('[data-element-id="a"] rect.library-shape')!.getAttribute("width")).toBe("140"); // live
+    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface")!, { key: "Escape" });
+
+    expect(container.querySelector('[data-element-id="a"] rect.library-shape')!.getAttribute("width")).toBe("100");
+    expect(onElementResized).not.toHaveBeenCalled();
+  });
+
+  it("an abandoned adjust restores the route and dispatches nothing", () => {
+    // Paired with the commit test below (exactly one connection-adjusted). The mid-drag
+    // assertion is the amendment's live preview: the route redraws through the waypoint
+    // under the pointer, and only this connection re-renders for it.
+    const onConnectionAdjusted = vi.fn();
+    const definition = definitionOf();
+    (definition.relationTypes[0] as { adjustable?: boolean }).adjustable = true;
+    // A polyline, not the default straight: a straight route ignores waypoints by design,
+    // so it is the one route on which a live waypoint could not show in the line at all.
+    (definition.relationTypes[0] as { route: string }).route = "polyline";
+    const { container } = renderCanvas({ onConnectionAdjusted }, definition, modelOf(), {
+      selection: [{ kind: "connection", id: "a->b" }],
+    });
+
+    const line = () => container.querySelector('[data-connection-id="a->b"] path.canvas-connection-line')!.getAttribute("d");
+    const before = line();
+    const handle = screen.getByTestId("adjust-a->b");
+    fireEvent(handle, pointer("pointerdown", { button: 0, clientX: 175, clientY: 0 }));
+    fireEvent(handle, pointer("pointermove", { clientX: 175, clientY: 60 }));
+    expect(line()).not.toBe(before); // the route rides the pointer
+    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface")!, { key: "Escape" });
+
+    expect(line()).toBe(before);
+    expect(onConnectionAdjusted).not.toHaveBeenCalled();
+  });
+
   it("an adjustable relation offers its handle only when selected, and dragging it raises connection-adjusted", () => {
     const onConnectionAdjusted = vi.fn();
     const definition = definitionOf();

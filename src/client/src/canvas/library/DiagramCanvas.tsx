@@ -217,6 +217,19 @@ interface ElementDragOffset {
   dy: number;
 }
 
+/** A span resize in flight, in canvas units - the amendment's first added kind (R1.5). */
+interface ResizeDragPreview {
+  id: string;
+  side: "left" | "right";
+  dx: number;
+}
+
+/** A connection-adjust in flight: the waypoint under the pointer - the second added kind. */
+interface AdjustDragPreview {
+  connectionId: string;
+  waypoint: Point;
+}
+
 /** A connect gesture in flight: what it left from, where it is, and what it would land on. */
 interface ConnectPreview {
   relation: RelationTypeDefinition;
@@ -300,7 +313,6 @@ export function DiagramCanvas({
   const rootRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<ViewBox | null>(null);
   const [ownSelection, setOwnSelection] = useState<DiagramSelection>([]);
-  const [resizePreview, setResizePreview] = useState<{ id: string; side: "left" | "right"; dx: number } | null>(null);
 
   // A gesture's per-frame values are NOT React state on the canvas: they flow through the
   // gesture-frame scheduler into these cells, and only the gesture's own participants
@@ -321,6 +333,10 @@ export function DiagramCanvas({
   const dragFrameRef = useRef<GestureFrame<ElementDragOffset> | null>(null);
   const connectValue = useMemo(() => createGestureValue<ConnectPreview>(), []);
   const connectFrameRef = useRef<GestureFrame<ConnectPreview> | null>(null);
+  const resizeValue = useMemo(() => createGestureValue<ResizeDragPreview>(), []);
+  const resizeFrameRef = useRef<GestureFrame<ResizeDragPreview> | null>(null);
+  const adjustValue = useMemo(() => createGestureValue<AdjustDragPreview>(), []);
+  const adjustFrameRef = useRef<GestureFrame<AdjustDragPreview> | null>(null);
   const panFrameRef = useRef<GestureFrame<ViewBox> | null>(null);
   const panLatestRef = useRef<ViewBox | null>(null);
   useEffect(
@@ -331,6 +347,10 @@ export function DiagramCanvas({
       dragFrameRef.current = null;
       connectFrameRef.current?.cancel();
       connectFrameRef.current = null;
+      resizeFrameRef.current?.cancel();
+      resizeFrameRef.current = null;
+      adjustFrameRef.current?.cancel();
+      adjustFrameRef.current = null;
       panFrameRef.current?.cancel();
       panFrameRef.current = null;
     },
@@ -654,12 +674,20 @@ export function DiagramCanvas({
           break;
         }
         case "resize": {
-          setResizePreview({ id: target.element.id, side: target.side, dx: dx * unitsPerPixel(viewRef.current) });
+          const frame = (resizeFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), [valueWrite(resizeValue)]));
+          const scale = frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : 1;
+          frame.move({ id: target.element.id, side: target.side, dx: dx * scale });
           break;
         }
         case "adjust": {
-          // Live feedback only; the commit is the release. The single midpoint waypoint is
-          // the minimal adjustment surface; richer editing rides the same event.
+          // Live feedback through the gesture cell: the adjusted connection re-renders
+          // alone, carrying the waypoint under the pointer; the commit is the release.
+          const frame = (adjustFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), [valueWrite(adjustValue)]));
+          const scale = frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : 1;
+          frame.move({
+            connectionId: target.connection.id,
+            waypoint: { x: target.from.x + dx * scale, y: target.from.y + dy * scale },
+          });
           break;
         }
         case "connection":
@@ -708,8 +736,11 @@ export function DiagramCanvas({
           break;
         }
         case "resize": {
-          setResizePreview(null);
-          const bounds = resizedBounds(elementBounds(target.element, elementTypes.get(target.element.type)), target.side, dx * unitsPerPixel(viewRef.current));
+          const frame = resizeFrameRef.current;
+          resizeFrameRef.current = null;
+          const scale = frame !== null && frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : unitsPerPixel(viewRef.current);
+          frame?.commit();
+          const bounds = resizedBounds(elementBounds(target.element, elementTypes.get(target.element.type)), target.side, dx * scale);
           raise({ kind: "element-resized", elementId: target.element.id, side: target.side, bounds });
           break;
         }
@@ -745,7 +776,10 @@ export function DiagramCanvas({
           break;
         }
         case "adjust": {
-          const scale = unitsPerPixel(viewRef.current);
+          const frame = adjustFrameRef.current;
+          adjustFrameRef.current = null;
+          const scale = frame !== null && frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : unitsPerPixel(viewRef.current);
+          frame?.commit();
           raise({
             kind: "connection-adjusted",
             connectionId: target.connection.id,
@@ -766,10 +800,13 @@ export function DiagramCanvas({
       dragFrameRef.current = null;
       connectFrameRef.current?.revert();
       connectFrameRef.current = null;
+      resizeFrameRef.current?.revert();
+      resizeFrameRef.current = null;
+      adjustFrameRef.current?.revert();
+      adjustFrameRef.current = null;
       panFrameRef.current?.revert();
       panFrameRef.current = null;
       panLatestRef.current = null;
-      setResizePreview(null);
     },
   });
 
@@ -1170,7 +1207,7 @@ export function DiagramCanvas({
       element={element}
       type={elementTypes.get(element.type)}
       dragValue={dragValue}
-      resize={resizePreview?.id === element.id ? resizePreview : undefined}
+      resizeValue={resizeValue}
       resizable={elementTypes.get(element.type)?.sizing === "user"}
       resizePress={(side) => gesture.press({ kind: "resize", element, side })}
       selected={isSelected("element", element.id)}
@@ -1242,6 +1279,7 @@ export function DiagramCanvas({
             elementsById={elementsById}
             elementTypes={elementTypes}
             attachmentPoint={attachmentPoint}
+            adjustValue={adjustValue}
             selected={isSelected("connection", connection.id)}
             press={gesture.press({ kind: "connection", connection })}
             adjustPress={(from) => gesture.press({ kind: "adjust", connection, from })}
@@ -1341,7 +1379,7 @@ function LibraryElement({
   type,
   dragValue,
   connectValue,
-  resize,
+  resizeValue,
   resizable,
   resizePress,
   selected,
@@ -1353,7 +1391,7 @@ function LibraryElement({
   type: ElementTypeDefinition | undefined;
   dragValue: GestureValue<ElementDragOffset>;
   connectValue: GestureValue<ConnectPreview>;
-  resize?: { side: "left" | "right"; dx: number };
+  resizeValue: GestureValue<ResizeDragPreview>;
   resizable: boolean;
   resizePress: (side: "left" | "right") => PointerPressWiring;
   selected: boolean;
@@ -1382,6 +1420,12 @@ function LibraryElement({
       return "valid";
     }
     return !preview.valid && connectTargetUnder(preview, element, (candidate) => elementBounds(candidate, type)) ? "invalid" : undefined;
+  });
+  // The resize preview rides the same seam: only the element whose edge is being dragged
+  // re-renders per frame with its live bounds - the amendment's first added kind (R1.5).
+  const resize = useSyncExternalStore(resizeValue.subscribe, () => {
+    const value = resizeValue.get();
+    return value !== null && value.id === element.id ? value : null;
   });
   const shifted: DiagramModelElement = offset ? { ...element, x: element.x + offset.dx, y: element.y + offset.dy } : element;
   const plainBounds = elementBounds(shifted, type);
@@ -1436,6 +1480,7 @@ function LibraryConnection({
   elementsById,
   elementTypes,
   attachmentPoint,
+  adjustValue,
   selected,
   press,
   adjustPress,
@@ -1446,11 +1491,20 @@ function LibraryConnection({
   elementsById: Map<string, DiagramModelElement>;
   elementTypes: Map<string, ElementTypeDefinition>;
   attachmentPoint: (element: DiagramModelElement, anchor: string | undefined, towards: Point) => Point;
+  adjustValue: GestureValue<AdjustDragPreview>;
   selected: boolean;
   press: PointerPressWiring;
   adjustPress: (from: Point) => PointerPressWiring;
   onContextMenu: (event: React.MouseEvent) => void;
 }) {
+  // The adjust preview: only the connection whose handle is being dragged re-renders per
+  // frame, redrawing its route through the waypoint under the pointer - the amendment's
+  // second added kind (R1.5). Subscribed before the early returns, per the rules of hooks.
+  const liveAdjust = useSyncExternalStore(adjustValue.subscribe, () => {
+    const value = adjustValue.get();
+    return value !== null && value.connectionId === connection.id ? value : null;
+  });
+
   if (relation === undefined) {
     return null; // an undeclared relation type has nothing to route; the validator rejects it upstream
   }
@@ -1461,7 +1515,7 @@ function LibraryConnection({
   }
 
   const [from, to] = ends;
-  const waypoints = connection.waypoints ?? [];
+  const waypoints = liveAdjust !== null ? [liveAdjust.waypoint] : connection.waypoints ?? [];
   const source = elementsById.get(connection.sourceId);
   const target = elementsById.get(connection.targetId);
   const routeEnds =
