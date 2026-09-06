@@ -52,10 +52,19 @@ function countingDefinition(counts: Map<string, number>): DiagramDefinition {
           edgePoint: (bounds, towards) => ({ x: bounds.x, y: towards.y }),
         },
         anchors: { kind: "edge" },
-        sizing: "model",
+        // "user" rather than "model", so el-0 earns resize handles when selected and the
+        // resize kind is drivable - the amendment widened the guard to every kind (R3.1).
+        sizing: "user",
       },
     ],
-    relationTypes: [],
+    relationTypes: [
+      {
+        id: "link",
+        route: "straight",
+        adjustable: true,
+        endpoints: { source: { elementTypes: ["node"] }, target: { elementTypes: ["node"] }, allowSelf: false },
+      },
+    ],
     layout: { modes: ["manual"] },
     dragging: "enabled",
   };
@@ -72,7 +81,9 @@ function gridModel(count: number): DiagramModel {
       width: 40,
       height: 20,
     })),
-    connections: [],
+    // One adjustable connection between two NON-dragged elements, so the adjust kind has
+    // a handle to drag while every element on the canvas should stay unrendered.
+    connections: [{ id: "c1", type: "link", sourceId: "el-1", targetId: "el-2" }],
   };
 }
 
@@ -91,6 +102,12 @@ function pointer(type: string, init: MouseEventInit) {
   return new MouseEvent(type, { bubbles: true, button: 0, ...init });
 }
 
+/** An unmoved press - what selects an element or a connection before a handle can exist. */
+function press(target: Element) {
+  fireEvent(target, pointer("pointerdown", { clientX: 10, clientY: 10 }));
+  fireEvent(target, pointer("pointerup", { clientX: 10, clientY: 10 }));
+}
+
 /** Thirty pointer frames of a gesture on `target`, down to before the release. */
 function driveFrames(target: Element) {
   fireEvent(target, pointer("pointerdown", { clientX: 10, clientY: 10 }));
@@ -100,7 +117,7 @@ function driveFrames(target: Element) {
 }
 
 describe("drag cost", () => {
-  it("neither a reposition nor a pan re-renders a non-gesture element, on a hundred-element model", () => {
+  it("no gesture kind - reposition, pan, resize or adjust - re-renders a non-gesture element, on a hundred-element model", () => {
     const counts = new Map<string, number>();
     const { container, unmount } = mountCanvas(counts, 100);
 
@@ -124,6 +141,24 @@ describe("drag cost", () => {
     driveFrames(container.querySelector("svg.library-canvas-surface")!);
     expect([...counts.entries()]).toEqual([]); // a pan renders no element per frame at all
     fireEvent(container.querySelector("svg.library-canvas-surface")!, pointer("pointerup", { clientX: 200, clientY: 200 }));
+
+    // The span resize, thirty frames on el-0's right handle - the amendment's first added
+    // kind (R1.5 as amended; R3.1 requires the guard to exercise every kind it covers).
+    // Selecting first is what makes the handles render; that render is not the gesture's.
+    press(container.querySelector('[data-element-id="el-0"]')!);
+    counts.clear();
+    driveFrames(container.querySelector('[data-element-id="el-0"] [data-resize="right"]')!);
+    expect(counts.get("el-0") ?? 0).toBeGreaterThan(0); // the resized element rides the drag
+    expect([...counts.entries()].filter(([id]) => id !== "el-0")).toEqual([]);
+    fireEvent(container.querySelector('[data-element-id="el-0"] [data-resize="right"]')!, pointer("pointerup", { clientX: 200, clientY: 200 }));
+
+    // The connection-adjust, thirty frames on c1's midpoint handle - the second added
+    // kind. The adjusted CONNECTION re-renders per frame; no element does, at all.
+    press(container.querySelector('[data-connection-id="c1"]')!);
+    counts.clear();
+    driveFrames(container.querySelector('[data-testid="adjust-c1"]')!);
+    expect([...counts.entries()]).toEqual([]); // an adjust renders no element per frame
+    fireEvent(container.querySelector('[data-testid="adjust-c1"]')!, pointer("pointerup", { clientX: 200, clientY: 200 }));
 
     unmount();
   });
