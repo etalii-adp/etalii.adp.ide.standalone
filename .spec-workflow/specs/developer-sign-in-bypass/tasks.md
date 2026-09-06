@@ -40,7 +40,7 @@
   - _Requirements: 2.2, 2.3, 2.5_
   - _Prompt: Implement the task for spec developer-sign-in-bypass, first run spec-workflow-guide to get the workflow guide then implement the task: Role: CI engineer | Task: Add a release-job step that fails if the published Release assembly contains the DeveloperSession symbol, and demonstrate it failing against a Debug-published output first | Restrictions: do not implement this as a unit test - a Debug-compiled suite cannot observe a Release-compiled absence; no third-party actions; judge by exit code | _Leverage: the release job's existing publish step, which already produces the artifact to inspect | Success: the guard fails on a Debug publish and passes on a Release publish, both observed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4. Every check blocked on sign-in is rewritten, run, and recorded
+- [x] 4. Every check blocked on sign-in is rewritten, run, and recorded
   - Files: `tests.md`
   - **This is the point of the spec and the largest task by a wide margin.** Every entry recorded not-run because of sign-in gets its preconditions rewritten — each currently begins at a form that will no longer appear — and is then **executed**, with its outcome recorded.
   - **The set is defined by what stopped the check, not by whether the entry spells out the word.** Include entries inheriting the blockage through "same reason as above", and those whose note says the application was not run for that pass. Do **not** work from a count: five different figures were produced in one day by people all counting carefully, each answering a slightly different question. Measure the set at implementation time and record what you measured.
@@ -51,7 +51,7 @@
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
   - _Prompt: Implement the task for spec developer-sign-in-bypass, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Tester | Task: Rewrite the preconditions of every tests.md entry blocked on sign-in, execute each one, and record its outcome with the build it was observed on | Restrictions: measure the blocked set rather than trusting any count; include entries inheriting the blockage indirectly; never retire a manual check because a unit test covers it meanwhile; leave entries blocked for other reasons alone; consume Tester 2's review annotations rather than repeating that pass | Success: no entry remains recorded not-run for sign-in, and every one of them carries an outcome and a build. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5. Gate, merge, and keep the credential path honest
+- [x] 5. Gate, merge, and keep the credential path honest
   - Four gates, exit codes captured before any pipe, merged through a **per-agent** scratch worktree with the reset, merge, gates and fast-forward chained into one command — develop moves faster than a gate cycle here.
   - **Confirm before merging that the existing `admin` / `changeme` integration tests still run and still pass** (Requirement 4.1). If nothing signs in any more, the sign-in code stops being covered, and the first person to find it broken will be a user. One new test signs in the ordinary way **with the bypass compiled in**, proving the two paths coexist rather than replace one another.
   - _Requirements: 4.1, 4.2, 4.3_

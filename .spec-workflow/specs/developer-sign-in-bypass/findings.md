@@ -19,3 +19,22 @@ Clicking a component on a Wardley map does **not** fill the Property Grid. The s
 - **wardley-map writer strips a leading UTF-8 BOM.** Dragging a component and saving `tea.owm` produced the correct one-line position change but also removed the file's leading BOM (`-﻿title` / `+title`); Undo reverted the position but not the BOM (write-side normalization).
 - **dependency-graph remove+undo re-orders the file.** Removing a dependency and undoing restored the relation at the **end** of the `relations:` list rather than its original position — the canvas is right, the bytes are not.
 - **Both wardley and dependency-graph leave an `*.identities.json` sidecar** in the project folder after an edit; ADP's own file, but it appears beside the user's document.
+## Observations from the closing pass (2026-09-06)
+
+- **No vendored SHACL corpus contains a `sh:sparql` constraint.** `sh:sparql` and `sh:select`
+  appear nowhere under `src/examples/diagrams/shacl/`; the only mention of SPARQL in either
+  corpus is an `rdfs:comment` in `shacl-shacl.ttl`. So the manual check named for that card
+  cannot be run against the example data at all — not a module defect, and now stated in
+  `src/examples/diagrams/shacl/w3c-shacl/readme.md`. Vendoring a shapes file that carries one
+  is the way to demonstrate the opaque badged row.
+- **A canvas *background* right-click shows one entry, "Validate all"** — the shell's
+  project-wide *document* validation (`ValidateAllContextActionProvider`, scope
+  `ProblemsPanel`). The causal-loop canvas shows the identical single entry, so this is not the
+  SHACL module offering to validate data, and it is **not** raised as a defect. It is recorded
+  because the word appears on a shapes canvas, which is exactly the impression that check
+  exists to police, and because the module's own background action (*Add node shape here…*,
+  `ShaclActions.cs:69`) did not appear either — on causal-loop as much as on shacl. Whoever
+  owns canvas-background context resolution may want to look at that second half.
+- **`tests.md` credited `C4InteropTests` with passing in a full-suite gate; the suite skips all
+  43 of its cases** for want of a Structurizr CLI. A green run prints nothing about a skipped
+  test, so the claim survived a gate that could never contradict it. Corrected in place.
