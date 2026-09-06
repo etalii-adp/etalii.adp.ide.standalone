@@ -64,7 +64,7 @@
   - _Requirements: 9.3, 2.1, 3.1, 3.4, 4.3, 5.2, 5.4_
   - _Prompt: Implement the task for spec diagram-library, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer | Task: Rebuild RdfCanvas on the library as the graph-shaped reference, at the existing 1000-element budget | Restrictions: no new capability rides along; keep today's fitToView behaviour; mounted tests seen to fail against a deliberate break first | Success: rdf renders and operates through the library and its guards fail-then-pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 6. timeline as the axis-shaped reference, end to end
+- [x] 6. timeline as the axis-shaped reference, end to end
   - Files: `src/diagrams/timeline/client/TimelineCanvas.tsx`, its definition, and tests
   - Span elements on a **time-scaled axis declared as a background**, cubic-bezier routes with facing anchors (`sideAnchorOf` + `facingAnchorsBetween`), the three label placements timeline uses (aside, centred, midpoint) — proving the intrinsic-axis/background mechanism and along-route labels that wardley and causal-loop will also need.
   - `TimelineCanvas` builds `fitToView` at `TimelineCanvas.tsx:209`; keep that behaviour through the library.
@@ -86,7 +86,7 @@
     the left (the arbiter's right button stays the menu's), and a left press on empty space
     now deselects at release rather than at press.
 
-- [ ] 7. The guards, mounted, and gate and merge
+- [-] 7. The guards, mounted, and gate and merge
   - Files: shared guards beside the client's diagram tests; then the four gates and the merge
   - Three guards, each **mounting rather than grepping** and carrying a named-member canary (Requirement 10.2), because a grep over canvas sources has already reported three correct databricks canvases as offenders here:
     - a definition with a forbidden pair, mounted, cannot produce a `connectionDrawn` for it (Requirement 10.1) — seen to fail against a canvas that raises first and vetoes after;
