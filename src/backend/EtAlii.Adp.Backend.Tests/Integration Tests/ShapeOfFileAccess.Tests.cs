@@ -30,9 +30,9 @@ namespace EtAlii.Adp.Backend.Tests;
 public partial class ShapeOfFileAccessTests
 {
     /// <summary>One reach for a raw file API, with the central call that replaces it.</summary>
-    private sealed record Violation(string File, int Line, string Rule, string Replacement)
+    private sealed record Violation()
     {
-        public override string ToString() => $"{File}:{Line} - {Rule}. Use {Replacement}.";
+        public static string ToString(string file, int line, string rule, string replacement) => $"{file}:{line} - {rule}. Use {replacement}.";
     }
 
     /// <summary>
@@ -173,12 +173,12 @@ public partial class ShapeOfFileAccessTests
 
             if (RawReadExpression().IsMatch(line))
             {
-                found.Add(new Violation(relativePath, i + 1, RawRead, Replacement).ToString());
+                found.Add(Violation.ToString(relativePath, i + 1, RawRead, Replacement));
             }
 
             if (ReadStreamExpression().IsMatch(line) && !line.Contains("FileShare.Delete", StringComparison.Ordinal))
             {
-                found.Add(new Violation(relativePath, i + 1, NarrowShare, Replacement).ToString());
+                found.Add(Violation.ToString(relativePath, i + 1, NarrowShare, Replacement));
             }
 
             // A publish is a move OUT of a temporary; a rename moves a real path to a real path
@@ -186,12 +186,12 @@ public partial class ShapeOfFileAccessTests
             if (line.Contains("File.Move(", StringComparison.Ordinal) &&
                 line.Contains("temporar", StringComparison.OrdinalIgnoreCase))
             {
-                found.Add(new Violation(relativePath, i + 1, HandRolledPublish, Replacement).ToString());
+                found.Add(Violation.ToString(relativePath, i + 1, HandRolledPublish, Replacement));
             }
 
             if (UnguardedWriteExpression().IsMatch(line))
             {
-                found.Add(new Violation(relativePath, i + 1, UnguardedWrite, Replacement).ToString());
+                found.Add(Violation.ToString(relativePath, i + 1, UnguardedWrite, Replacement));
             }
         }
 
