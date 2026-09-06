@@ -404,7 +404,8 @@ export function DiagramCanvas({
           if (!draggingEnabled(target.element)) {
             break; // disabled dragging: the press stays a press (Requirement 5.2)
           }
-          setDragOffset({ id: target.element.id, dx: dx * scale, dy: dy * scale });
+          const at = clampToDragBounds(definition.dragBounds, target.element, dx * scale, dy * scale);
+          setDragOffset({ id: target.element.id, dx: at.x - target.element.x, dy: at.y - target.element.y });
           break;
         }
         case "anchor": {
@@ -460,7 +461,7 @@ export function DiagramCanvas({
           raise({
             kind: "element-moved",
             elementId: target.element.id,
-            position: { x: target.element.x + dx * scale, y: target.element.y + dy * scale },
+            position: clampToDragBounds(definition.dragBounds, target.element, dx * scale, dy * scale),
           });
           break;
         }
@@ -686,8 +687,12 @@ export function DiagramCanvas({
         }
         const bounds = elementBounds(element, type);
         // "beside" opens next to the shape - a moment's diamond has no box to open inside.
+        // An element carrying its own label origin opens there: the author put the drawn
+        // text at an offset (left of the mark included), and the editor covers the text.
         if (type.label.placement === "beside") {
-          return asideLabelPlacement({ x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 }, 6, element.label ?? "");
+          return element.labelAt !== undefined
+            ? asideLabelPlacement(element.labelAt, 0, element.label ?? "")
+            : asideLabelPlacement({ x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 }, 6, element.label ?? "");
         }
         return centredLabelPlacement(bounds, element.label ?? "");
       }
@@ -998,6 +1003,7 @@ function LibraryConnection({
           {label}
         </text>
       )}
+      {connection.title !== undefined && connection.title !== "" && <title>{connection.title}</title>}
       {selected && relation.adjustable === true && (
         // The one adjustment handle: dragging it raises connection-adjusted with the carried
         // waypoint; a definition that forbids adjustment never renders it (Requirement 3.5).
@@ -1291,6 +1297,28 @@ function resizedBounds(bounds: ConnectorBox, side: "left" | "right", dx: number)
   }
   const width = Math.max(bounds.width + dx, 1);
   return { ...bounds, width };
+}
+
+/**
+ * The dragged centre, kept inside the definition's drag bounds where it declares any - the
+ * hard edge of an intrinsic space, applied to the preview and the raised position alike so
+ * the user is never shown a position that cannot exist.
+ */
+function clampToDragBounds(
+  bounds: import("./definition/diagramDefinition").ShapeBounds | undefined,
+  element: DiagramModelElement,
+  dx: number,
+  dy: number,
+): Point {
+  const x = element.x + dx;
+  const y = element.y + dy;
+  if (bounds === undefined) {
+    return { x, y };
+  }
+  return {
+    x: Math.min(bounds.x + bounds.width, Math.max(bounds.x, x)),
+    y: Math.min(bounds.y + bounds.height, Math.max(bounds.y, y)),
+  };
 }
 
 function elementBounds(element: DiagramModelElement, type: ElementTypeDefinition | undefined): ConnectorBox {

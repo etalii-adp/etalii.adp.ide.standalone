@@ -2092,3 +2092,23 @@ remains for eyes is the styling and the feel. One signed-in session, `src/exampl
   above is pinned by the named unit tests, each seen to fail against its defect first; the
   styling check has no possible unit guard and is eyes-only.
 
+## wardley-map re-run after its library migration (diagram-library-adoption, task 2)
+
+The map now renders through the diagram library: same marks, links, evolve indicators,
+attitudes, notes and annotations, same selection, menu, F2 and in-place rename, same
+whole-space Fit. Re-run the standing wardley entries above against a migrated build, plus:
+
+- **Actions**: drag a component hard against every edge of the map; zoom with the wheel; open
+  the largest example map and compare drag latency, pan smoothness and open-to-first-paint
+  against a pre-migration build.
+- **Expected**: a mark stops at the map's edge while the pointer is still down (the library's
+  dragBounds, guarded by unit tests); wheel zoom now zooms about the POINTER rather than the
+  view's centre - a recorded unification with every library canvas; links follow a dragged
+  mark on commit rather than under the pointer - the library norm, also recorded; nothing
+  feels worse on the largest example, or the merge should have been blocked.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - the implementing session's
+  credential prohibition stands, so this is handed over runnable. Every geometric and gestural
+  behaviour is pinned by the 38 adapted unit tests, three of which were seen to fail under
+  narrow sabotages (dragBounds removed, labelAt dropped, the 0..1 conversion broken).
+
