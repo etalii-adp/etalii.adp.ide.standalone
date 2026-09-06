@@ -76,7 +76,7 @@ Beside `libraryGuards`, one test file with two assertions, both mounted through 
 
 ### Component 4 — the measurements and the manual check
 
-Fresh before-and-after figures on the Wikidata, laureates and Helm models (Requirement 4.1) — both sides newly measured, never compared against the 2026-09-03 quote — recorded in the implementation log and in `DiagramCanvas`'s doc-comment beside the scheduler's reasoning. A `tests.md` entry for dragging the Wikidata and laureates examples in a real browser (Requirement 4.2), because jsdom measures work done, not smoothness perceived.
+Fresh before-and-after figures on the Wikidata, laureates, `owl-time` and Helm models (Requirement 4.1) — both sides newly measured, never compared against the 2026-09-03 quote — recorded in the implementation log and in `DiagramCanvas`'s doc-comment beside the scheduler's reasoning. In the same run, a timeline drag at a comparable element count is measured and recorded beside the after figures (Requirement 4.2): the user's acceptance bar is *"prefer the timeline/dependency graph/causal loop drag over the owl/rdf/shacl one"*, and a number beside a number is how that preference is answered rather than asserted. A `tests.md` entry for dragging the Wikidata and laureates examples in a real browser (Requirement 4.3), because jsdom measures work done, not smoothness perceived.
 
 ## Data Models
 
