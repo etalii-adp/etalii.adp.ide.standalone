@@ -3,8 +3,19 @@
   "title": "backend-project-decomposition design",
   "filePath": ".spec-workflow/specs/backend-project-decomposition/design.md",
   "type": "document",
-  "status": "pending",
+  "status": "needs-revision",
   "createdAt": "2026-09-06T15:50:20.525Z",
   "category": "spec",
-  "categoryName": "backend-project-decomposition"
+  "categoryName": "backend-project-decomposition",
+  "response": "Feedback Summary (1 comments):\n\nGeneral Comments:\n1. The .protos should not generate in .wire projects, but rather in the functional projects they are part of, and then in a .Wire namespace.\n\nSo:\n- Refer the api/*.prot files from the root and link them into the corresponding projects.\n- Make sure they generate code as per the previous implementation.\n- Make sure they generate in the correct namespace.\n\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"general\",\n      \"comment\": \"The .protos should not generate in .wire projects, but rather in the functional projects they are part of, and then in a .Wire namespace.\\n\\nSo:\\n- Refer the api/*.prot files from the root and link them into the corresponding projects.\\n- Make sure they generate code as per the previous implementation.\\n- Make sure they generate in the correct namespace.\",\n      \"timestamp\": \"2026-09-06T15:55:18.950Z\",\n      \"id\": \"comment_1788710118950_jxho7a0o5\"\n    }\n  ],\n  \"summary\": \"Feedback Summary (1 comments):\\n\\nGeneral Comments:\\n1. The .protos should not generate in .wire projects, but rather in the functional projects they are part of, and then in a .Wire namespace.\\n\\nSo:\\n- Refer the api/*.prot files from the root and link them into the corresponding projects.\\n- Make sure they generate code as per the previous implementation.\\n- Make sure they generate in the correct namespace.\\n\\n\",\n  \"timestamp\": \"2026-09-06T15:55:20.495Z\"\n}",
+  "respondedAt": "2026-09-06T15:55:21.988Z",
+  "comments": [
+    {
+      "type": "general",
+      "comment": "The .protos should not generate in .wire projects, but rather in the functional projects they are part of, and then in a .Wire namespace.\n\nSo:\n- Refer the api/*.prot files from the root and link them into the corresponding projects.\n- Make sure they generate code as per the previous implementation.\n- Make sure they generate in the correct namespace.",
+      "timestamp": "2026-09-06T15:55:18.950Z",
+      "id": "comment_1788710118950_jxho7a0o5"
+    }
+  ]
 }
