@@ -17,5 +17,4 @@ export const NOT_YET_MIGRATED: ReadonlySet<string> = new Set([
   "databricks",
   "dependency-graph",
   "helm-charts",
-  "sparql",
 ]);

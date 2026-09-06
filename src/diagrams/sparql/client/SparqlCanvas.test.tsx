@@ -49,6 +49,15 @@ vi.mock("@client/shell/panels/DiagramViewContext", () => ({
   useRegisterDiagramView: () => undefined,
 }));
 
+vi.mock("@client/shell/panels/DiagramToolboxContext", () => ({
+  TOOLBOX_DRAG_TYPE: "application/x-adp-toolbox-item",
+  useRegisterDiagramToolbox: () => undefined,
+}));
+
+vi.mock("@client/shell/panels/useToolboxItems", () => ({
+  useToolboxItems: () => [],
+}));
+
 const { SparqlCanvas } = await import("./SparqlCanvas");
 
 function node(id: string, display: string, kind: SparqlNode["kind"], options: Partial<SparqlNode> = {}): SparqlNode {
@@ -143,7 +152,7 @@ describe("SparqlCanvas", () => {
     // Assert.
     const projected = container.querySelectorAll(".sparql-node-projected");
     expect(projected).toHaveLength(1);
-    expect(projected[0].getAttribute("data-element-id")).toBe("var:person");
+    expect(projected[0].closest("[data-element-id]")!.getAttribute("data-element-id")).toBe("var:person");
     expect(container.querySelectorAll(".sparql-projection-mark")).toHaveLength(1);
   });
 
@@ -198,9 +207,9 @@ describe("SparqlCanvas", () => {
     const target = container.querySelector('[data-element-id="var:person"]')!;
 
     // Act.
-    fireEvent.mouseDown(target, { clientX: 10, clientY: 10 });
-    fireEvent.mouseMove(container.querySelector(".sparql-surface")!, { clientX: 90, clientY: 60 });
-    fireEvent.mouseUp(container.querySelector(".sparql-surface")!);
+    fireEvent(target, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(target, new MouseEvent("pointermove", { bubbles: true, clientX: 90, clientY: 60 }));
+    fireEvent(target, new MouseEvent("pointerup", { bubbles: true, clientX: 90, clientY: 60 }));
 
     // Assert.
     expect(moves).toHaveLength(1);
@@ -215,9 +224,9 @@ describe("SparqlCanvas", () => {
     const target = container.querySelector('[data-element-id="anon:0"]')!;
 
     // Act.
-    fireEvent.mouseDown(target, { clientX: 10, clientY: 10 });
-    fireEvent.mouseMove(container.querySelector(".sparql-surface")!, { clientX: 90, clientY: 60 });
-    fireEvent.mouseUp(container.querySelector(".sparql-surface")!);
+    fireEvent(target, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(target, new MouseEvent("pointermove", { bubbles: true, clientX: 90, clientY: 60 }));
+    fireEvent(target, new MouseEvent("pointerup", { bubbles: true, clientX: 90, clientY: 60 }));
 
     // Assert: the reason reaches the user where they are looking.
     expect(await findByText(/anonymous variable/)).toBeTruthy();
@@ -229,8 +238,8 @@ describe("SparqlCanvas", () => {
     const target = container.querySelector('[data-element-id="var:friend"]')!;
 
     // Act.
-    fireEvent.mouseDown(target, { clientX: 10, clientY: 10 });
-    fireEvent.mouseUp(container.querySelector(".sparql-surface")!);
+    fireEvent(target, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(target, new MouseEvent("pointerup", { bubbles: true, clientX: 10, clientY: 10 }));
 
     // Assert.
     expect(moves).toHaveLength(0);
@@ -246,7 +255,7 @@ describe("SparqlCanvas", () => {
     expect(container.querySelectorAll(".canvas-anchor")).toHaveLength(0);
     expect(container.querySelectorAll(".canvas-anchor-hit")).toHaveLength(0);
     expect(container.querySelectorAll(".canvas-pending-connection")).toHaveLength(0);
-    expect(container.querySelector(".sparql-surface")?.getAttribute("ondrop")).toBeNull();
+    expect(container.querySelector("svg.library-canvas-surface")?.getAttribute("ondrop")).toBeNull();
   });
 
   it("shows the showing-N-of-M banner when the sanity bound cut the query", () => {
@@ -273,8 +282,8 @@ describe("SparqlCanvas", () => {
       vi.advanceTimersByTime(VIEW_REPORT_DEBOUNCE_MS * 2);
       reportView.mockClear();
 
-      // Act: a wheel zoom, which changes pixelsPerUnit and so the rectangle.
-      const surface = container.querySelector(".sparql-surface")!;
+      // Act: a wheel zoom, which changes the visible rectangle.
+      const surface = container.querySelector("svg.library-canvas-surface")!;
       fireEvent.wheel(surface, { deltaY: -1, clientX: 10, clientY: 10 });
       vi.advanceTimersByTime(VIEW_REPORT_DEBOUNCE_MS * 2);
 
