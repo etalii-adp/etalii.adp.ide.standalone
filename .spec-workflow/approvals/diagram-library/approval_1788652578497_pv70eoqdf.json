@@ -3,8 +3,10 @@
   "title": "diagram-library requirements",
   "filePath": ".spec-workflow/specs/diagram-library/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-05T23:56:18.497Z",
   "category": "spec",
-  "categoryName": "diagram-library"
+  "categoryName": "diagram-library",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-06T00:01:32.611Z"
 }

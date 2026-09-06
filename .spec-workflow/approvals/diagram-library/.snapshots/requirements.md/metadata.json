@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/diagram-library/requirements.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-05T23:56:18.886Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788652578497_pv70eoqdf",
+      "approvalTitle": "diagram-library requirements"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-06T00:01:32.606Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788652578497_pv70eoqdf",
+      "approvalTitle": "diagram-library requirements"
+    }
+  ]
+}
