@@ -200,6 +200,20 @@ public sealed class HierarchyModel
                     OnCreated(newPath);
                     break;
                 case WatcherChangeTypes.Deleted when oldPath is not null:
+                    // A Deleted whose path still exists is not a deletion: Windows' ReplaceFile -
+                    // which File.Replace uses, and AdpFileWriter.Save with it to rewrite a
+                    // registration in place - raises a spurious Deleted for the destination it
+                    // just refreshed, immediately followed by a Created. Removing the entry here
+                    // would hand the file a new id on that Created, orphaning any open document
+                    // that still holds the old one. An entry stands for a path, and the path is
+                    // still there, so the entry - and its id - must survive. A genuine deletion
+                    // leaves nothing on disk and still removes, as it must.
+                    if (IoPath.Exists(oldPath))
+                    {
+                        _logger.Verbose("Dropping a Deleted watcher event for {Path}, which still exists on disk - an in-place replace, not a deletion", oldPath);
+                        break;
+                    }
+
                     OnRemoved(oldPath);
                     break;
                 case WatcherChangeTypes.Renamed when oldPath is not null && newPath is not null:
@@ -213,9 +227,10 @@ public sealed class HierarchyModel
     }
 
     /// <summary>
-    /// Whether a path is one of <see cref="AdpFileWriter"/>'s temporary files. A reconcile
-    /// filters on this too, so a scratch file left behind by an interrupted write can never
-    /// reappear as an entry.
+    /// Whether a path is a write transient rather than project content: one of
+    /// <see cref="AdpFileWriter"/>'s own temporary files, or one of Windows' ReplaceFile backup
+    /// temporaries. A reconcile filters on this too, so a scratch file left behind by an
+    /// interrupted write can never reappear as an entry.
     /// </summary>
     private static bool IsScratchFile(string? path)
     {
@@ -225,8 +240,57 @@ public sealed class HierarchyModel
         }
 
         var name = IoPath.GetFileName(path);
-        return name.StartsWith(AdpFileWriter.TempPrefix, StringComparison.Ordinal) &&
-            name.EndsWith(AdpFileWriter.TempExtension, StringComparison.OrdinalIgnoreCase);
+        return (name.StartsWith(AdpFileWriter.TempPrefix, StringComparison.Ordinal) &&
+                name.EndsWith(AdpFileWriter.TempExtension, StringComparison.OrdinalIgnoreCase))
+            || IsReplaceFileBackup(name);
+    }
+
+    /// <summary>
+    /// Whether a name is one of Windows' ReplaceFile backup temporaries - <c>name~RF&lt;hex&gt;.TMP</c>,
+    /// which <c>File.Replace</c> (and <see cref="AdpFileWriter.Save"/> through it) conjures beside
+    /// a file it rewrites in place.
+    /// </summary>
+    /// <remarks>
+    /// These must be scratch to this model, and the reason is subtle enough to spell out:
+    /// ReplaceFile announces itself as <i>Created(backup)</i>, <b>Renamed(file → backup)</b>,
+    /// <i>Created(file)</i>, <i>Deleted(backup)</i> - observed verbatim from a live watcher. Taken
+    /// at face value, the Renamed walks the file's entry off its path onto the backup name, the
+    /// Created then mints a NEW id for the same file, and the Deleted removes the old entry under
+    /// its backup name. Every open document holding the old id is orphaned - which is exactly what
+    /// left a causal-loop diagram unselectable after its first variable drag, since that module
+    /// stores positions in the <c>.adp</c>'s <c>layout:</c> block and so rewrites the registration
+    /// in place on every move. Treating the backup name as scratch makes the whole sequence a
+    /// no-op: the rename onto it is ignored, so the entry never leaves its path, and the create
+    /// finds the path already known.
+    /// </remarks>
+    private static bool IsReplaceFileBackup(string name)
+    {
+        if (!name.EndsWith(".TMP", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var marker = name.LastIndexOf("~RF", StringComparison.OrdinalIgnoreCase);
+        if (marker < 0)
+        {
+            return false;
+        }
+
+        var hex = name.AsSpan(marker + 3, name.Length - marker - 3 - ".TMP".Length);
+        if (hex.IsEmpty)
+        {
+            return false;
+        }
+
+        foreach (var character in hex)
+        {
+            if (!Uri.IsHexDigit(character))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public void NotifyRootUnavailable(string message)
