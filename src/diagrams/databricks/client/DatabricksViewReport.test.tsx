@@ -84,7 +84,7 @@ describe("the databricks view-delta loop, client half", () => {
     const first = reports.length;
 
     // Act: a wheel zoom, which changes the view without changing the model.
-    const surface = container.querySelector(".databricks-surface")!;
+    const surface = container.querySelector("svg.library-canvas-surface")!;
     fireEvent.wheel(surface, { deltaY: -100 });
     vi.advanceTimersByTime(VIEW_REPORT_DEBOUNCE_MS);
 

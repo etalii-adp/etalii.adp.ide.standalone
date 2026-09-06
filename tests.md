@@ -2296,3 +2296,27 @@ render-only elements now. Re-run the standing entries above for both modules, pl
   the session's credential prohibition. The stub distinction, the right-edge departure and
   the no-artifact activation guard are pinned by unit tests seen to fail under narrow
   sabotages.
+
+## databricks family re-run after its library migration (diagram-library-adoption, task 11)
+
+The three readings - bundle, job, pipeline - now render through the one migrated shared
+canvas: same kind-classed nodes with badges, dashed target frames with mode/default/override
+badges, depends and flow edges on the layered bezier, overrides straight, the simulation
+banner and its client-side show. Re-run the standing databricks entries above against a
+migrated build, plus:
+
+- **Actions**: in a job, drag from a task's side anchor onto another task, and from an
+  anchor onto empty canvas; drop a task from the toolbox, then drop the simulated run entry
+  and watch the show; click a dependency edge; rename a task with F2; in a bundle, drag a
+  target frame; in a pipeline, look for anchors.
+- **Expected**: the anchor drag relates the tasks in one call and the empty release is a
+  never-mind (no placement is fabricated); the simulated id plays locally and reaches no
+  history; clicking an edge does NOTHING - edges stay unselectable in this family, the
+  recorded pending item, even though the library makes them pressable; the frame drag lands
+  with the frame's own size in the layout block; the pipeline reading offers no anchors;
+  task anchors now render always and show by stylesheet rather than only on the selected
+  node (the library norm, recorded).
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition. The edge-press inertness, the simulation seam and
+  the frame-size conversion are pinned by unit tests seen to fail under narrow sabotages.

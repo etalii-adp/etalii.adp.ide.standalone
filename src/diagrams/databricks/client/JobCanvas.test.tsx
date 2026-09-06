@@ -60,6 +60,18 @@ vi.mock("@client/shell/panels/useToolboxItems", () => ({
   useToolboxItems: () => [],
 }));
 
+/**
+ * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
+ * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined.
+ */
+function pointer(type: string, init: MouseEventInit) {
+  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
+}
+
+// jsdom implements no pointer capture on SVG elements; the arbiter uses it.
+SVGElement.prototype.setPointerCapture ??= () => {};
+SVGElement.prototype.releasePointerCapture ??= () => {};
+
 const { JobCanvas } = await import("./JobCanvas");
 
 function task(id: string, label: string, x: number, y: number, badges: string[] = [], unresolved = false, kind = "notebook") {
@@ -105,7 +117,7 @@ describe("the job canvas", () => {
     // Assert.
     expect(container.querySelectorAll(".databricks-node")).toHaveLength(4);
     expect(container.querySelectorAll(".databricks-edge")).toHaveLength(1);
-    expect(container.querySelector("marker#databricks-arrowhead")).not.toBeNull();
+    expect(container.querySelector("marker#library-arrow")).not.toBeNull();
     expect(container.textContent).toContain("ingest");
     expect(container.textContent).toContain("2 workers");
   });
@@ -116,7 +128,7 @@ describe("the job canvas", () => {
 
     // Assert.
     expect(container.querySelector(".databricks-edge-outcome-true")).not.toBeNull();
-    expect(container.querySelector(".databricks-outcome-label")!.textContent).toBe("true");
+    expect(container.querySelector(".databricks-edge text.library-connection-label")!.textContent).toBe("true");
   });
 
   it("marks a depends_on stub as missing rather than dropping it (Requirement 4.5)", () => {
@@ -135,25 +147,38 @@ describe("the job canvas", () => {
     const element = container.querySelector('[data-element-id="task:ingest"]')!;
 
     // Act.
-    fireEvent.mouseDown(element, { clientX: 100, clientY: 100 });
-    fireEvent.mouseUp(container.querySelector(".databricks-surface")!);
+    fireEvent(element, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(element, pointer("pointerup", { clientX: 100, clientY: 100 }));
 
     // Assert.
     expect(moves).toHaveLength(0);
     expect(selections).toHaveLength(1);
   });
 
+  it("ignores a press on an edge: edges are not selectable in this family", () => {
+    // Recorded pending in the label library's readme, and a migration is not the moment it
+    // changes: the library makes connections pressable, so the module must drop the raise.
+    const { container } = renderCanvas();
+    const edge = container.querySelector('[data-connection-id="edge:ingest->publish"]')!;
+
+    // Act.
+    fireEvent(edge, pointer("pointerdown", { button: 0, clientX: 300, clientY: 28 }));
+    fireEvent(edge, pointer("pointerup", { clientX: 300, clientY: 28 }));
+
+    // Assert: no selection travels - not the edge, and not a deselect either.
+    expect(selections).toHaveLength(0);
+  });
+
   it("commits a drag as one move in raw module coordinates - the layout path, never a grid", () => {
     // Arrange.
     const { container } = renderCanvas();
-    const surface = container.querySelector(".databricks-surface")!;
     const element = container.querySelector('[data-element-id="task:ingest"]')!;
     const pixelsPerUnit = Number(container.querySelector(".databricks-node-box")!.getAttribute("width")) / 200;
 
     // Act: an odd, fractional distance.
-    fireEvent.mouseDown(element, { clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(surface, { clientX: 137.5, clientY: 112 });
-    fireEvent.mouseUp(surface);
+    fireEvent(element, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(element, pointer("pointermove", { clientX: 137.5, clientY: 112 }));
+    fireEvent(element, pointer("pointerup", { clientX: 137.5, clientY: 112 }));
 
     // Assert.
     expect(moves).toHaveLength(1);
@@ -165,29 +190,29 @@ describe("the job canvas", () => {
   it("abandons a drag on Escape with nothing dispatched", () => {
     // Arrange.
     const { container } = renderCanvas();
-    const surface = container.querySelector(".databricks-surface")!;
     const element = container.querySelector('[data-element-id="task:ingest"]')!;
 
     // Act.
-    fireEvent.mouseDown(element, { clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(surface, { clientX: 300, clientY: 300 });
-    fireEvent.keyDown(window, { key: "Escape" });
-    fireEvent.mouseUp(surface);
+    fireEvent(element, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(element, pointer("pointermove", { clientX: 300, clientY: 300 }));
+    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface")!, { key: "Escape" });
+    fireEvent(element, pointer("pointerup", { clientX: 300, clientY: 300 }));
 
     // Assert.
     expect(moves).toHaveLength(0);
   });
 
   it("relates two tasks in one stateless rel: call from the anchor drag", () => {
-    // Arrange: anchors render on the selected task only.
-    currentSelectionKey = "element:task:ingest";
+    // Arrange: the library renders the named anchors always, shown by the stylesheet
+    // when they matter.
     const { container } = renderCanvas();
-    const anchor = container.querySelectorAll(".databricks-anchor-hit")[1];
-    const target = container.querySelector('[data-element-id="task:publish"]')!;
+    const anchor = container.querySelector('[data-element-id="task:ingest"] [data-anchor="right"]')!;
 
-    // Act.
-    fireEvent.mouseDown(anchor, { clientX: 100, clientY: 30 });
-    fireEvent.mouseUp(target);
+    // Act: drag to publish's centre - jsdom's zero-size rect makes one pixel one unit.
+    const overPublish = { clientX: 620, clientY: 28 };
+    fireEvent(anchor, pointer("pointerdown", { button: 0, clientX: 200, clientY: 28 }));
+    fireEvent(anchor, pointer("pointermove", { ...overPublish }));
+    fireEvent(anchor, pointer("pointerup", { ...overPublish }));
 
     // Assert.
     const calls = executed.filter((call) => call.actionId === "databricks.connect");
@@ -199,14 +224,13 @@ describe("the job canvas", () => {
   it("a release on empty canvas is a never-mind, not a placement gesture", () => {
     // Arrange.
     // This family creates tasks by drop, not by relation-to-empty-space.
-    currentSelectionKey = "element:task:ingest";
     const { container } = renderCanvas();
-    const anchor = container.querySelectorAll(".databricks-anchor-hit")[0];
-    const surface = container.querySelector(".databricks-surface")!;
+    const anchor = container.querySelector('[data-element-id="task:ingest"] [data-anchor="left"]')!;
 
     // Act.
-    fireEvent.mouseDown(anchor, { clientX: 100, clientY: 30 });
-    fireEvent.mouseUp(surface);
+    fireEvent(anchor, pointer("pointerdown", { button: 0, clientX: 0, clientY: 28 }));
+    fireEvent(anchor, pointer("pointermove", { clientX: 900, clientY: 300 }));
+    fireEvent(anchor, pointer("pointerup", { clientX: 900, clientY: 300 }));
 
     // Assert.
     expect(executed.filter((call) => call.actionId === "databricks.connect")).toHaveLength(0);
@@ -215,13 +239,18 @@ describe("the job canvas", () => {
   it("lands a toolbox drop as a new: placement action, with nothing asked", () => {
     // Arrange.
     const { container } = renderCanvas();
-    const surface = container.querySelector(".databricks-surface")!;
-    const data = new Map([["application/x-adp-toolbox-item", "databricks.add-task:notebook"]]);
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+    const box = surface.getAttribute("viewBox")!.split(" ").map(Number);
+    Object.defineProperty(surface, "getBoundingClientRect", {
+      value: () => ({ x: 0, y: 0, top: 0, left: 0, right: box[2], bottom: box[3], width: box[2], height: box[3], toJSON: () => ({}) }),
+    });
 
     // Act.
-    fireEvent.drop(surface, {
-      dataTransfer: { getData: (type: string) => data.get(type) ?? "", types: [...data.keys()] },
+    const event = new MouseEvent("drop", { bubbles: true, cancelable: true, clientX: 100, clientY: 100 });
+    Object.defineProperty(event, "dataTransfer", {
+      value: { getData: (type: string) => (type === "application/x-adp-toolbox-item" ? "databricks.add-task:notebook" : ""), types: ["application/x-adp-toolbox-item"] },
     });
+    fireEvent(surface, event);
 
     // Assert.
     expect(executed).toHaveLength(1);
@@ -250,28 +279,33 @@ describe("the job canvas", () => {
 
     // Assert.
     expect(container.querySelector(".databricks-canvas")!.classList.contains("canvas-host")).toBe(true);
-    expect(container.querySelector(".databricks-surface")!.classList.contains("canvas-viewport")).toBe(true);
-    expect(container.querySelector(".databricks-content")!.classList.contains("canvas-drawing")).toBe(true);
+    expect(container.querySelector(".databricks-surface")!.classList.contains("library-canvas")).toBe(true);
+    expect(container.querySelector("svg.library-canvas-surface")).not.toBeNull();
     expect(container.querySelector(".databricks-node-box")!.classList.contains("canvas-node")).toBe(true);
     expect(container.querySelector(".databricks-label")!.classList.contains("canvas-node-label")).toBe(true);
-    expect(container.querySelector(".databricks-edge")!.classList.contains("canvas-connection-line")).toBe(true);
-    expect(container.querySelector("marker#databricks-arrowhead")!.classList.contains("canvas-arrowhead")).toBe(true);
+    expect(container.querySelector(".databricks-edge .canvas-connection-line")).not.toBeNull();
+    expect(container.querySelector("marker#library-arrow path")!.classList.contains("canvas-arrowhead")).toBe(true);
   });
 
   it("draws the shared scrollbars, and dragging the horizontal thumb pans", () => {
     // Arrange.
     const { container } = renderCanvas();
-    const thumb = container.querySelector(".databricks-scrollbars.canvas-scrollbar-horizontal .canvas-scrollbar-thumb")!;
-    const before = container.querySelector(".databricks-node-box")!.parentElement!.getAttribute("transform");
+    const bar = container.querySelector(".databricks-scrollbars.canvas-scrollbar-horizontal")!;
+    Object.defineProperty(bar, "getBoundingClientRect", {
+      value: () => ({ x: 0, y: 0, top: 0, left: 0, right: 200, bottom: 10, width: 200, height: 10, toJSON: () => ({}) }),
+    });
+    const thumb = bar.querySelector(".canvas-scrollbar-thumb")!;
+    const svg = container.querySelector("svg.library-canvas-surface")!;
+    const before = svg.getAttribute("viewBox");
 
     // Act.
     fireEvent.mouseDown(thumb, { clientX: 100, clientY: 300 });
     fireEvent.mouseMove(window, { clientX: 180, clientY: 300 });
     fireEvent.mouseUp(window);
 
-    // Assert.
+    // Assert: panning moves the viewBox now, not each node's own transform.
     expect(container.querySelector(".databricks-scrollbars.canvas-scrollbar-vertical")).not.toBeNull();
-    expect(container.querySelector(".databricks-node-box")!.parentElement!.getAttribute("transform")).not.toBe(before);
+    expect(svg.getAttribute("viewBox")).not.toBe(before);
   });
 
   it("intercepts a simulated action id: the show plays locally and executeAction is never called", () => {
@@ -279,13 +313,14 @@ describe("the job canvas", () => {
     // The Requirement 8.6 seam: the id is exactly what the backend discovers, the marker is
     // what the canvas intercepts on - and nothing may reach the history (Requirement 11.6).
     const { container } = renderCanvas();
-    const surface = container.querySelector(".databricks-surface")!;
-    const data = new Map([["application/x-adp-toolbox-item", "databricks.simulated.run-job"]]);
+    const surface = container.querySelector("svg.library-canvas-surface")!;
 
     // Act.
-    fireEvent.drop(surface, {
-      dataTransfer: { getData: (type: string) => data.get(type) ?? "", types: [...data.keys()] },
+    const event = new MouseEvent("drop", { bubbles: true, cancelable: true, clientX: 100, clientY: 100 });
+    Object.defineProperty(event, "dataTransfer", {
+      value: { getData: (type: string) => (type === "application/x-adp-toolbox-item" ? "databricks.simulated.run-job" : ""), types: ["application/x-adp-toolbox-item"] },
     });
+    fireEvent(surface, event);
 
     // Assert.
     expect(executed).toHaveLength(0);
