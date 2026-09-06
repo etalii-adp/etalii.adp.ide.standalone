@@ -205,12 +205,13 @@ describe("WardleyCanvas chrome", () => {
     // Act.
     const { container } = renderCanvas(model);
 
-    // Assert. In SVG, paint order is document order.
+    // Assert. In SVG, paint order is document order - the chrome is the declared background,
+    // which the library draws before every connection and element.
     const chrome = container.querySelector(".wardley-chrome");
-    const contents = container.querySelector(".wardley-contents");
+    const mark = container.querySelector('[data-element-id="a"]');
     expect(chrome).not.toBeNull();
-    expect(contents).not.toBeNull();
-    expect(chrome!.compareDocumentPosition(contents!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(mark).not.toBeNull();
+    expect(chrome!.compareDocumentPosition(mark!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("shows the axes and nothing else for an empty map", () => {
@@ -269,7 +270,7 @@ describe("WardleyCanvas scrollbars", () => {
   // Each test is named for the defect it catches.
 
   const viewBoxOf = (container: HTMLElement) =>
-    (container.querySelector(".wardley-surface")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
+    (container.querySelector("svg")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
 
   const thumbOf = (container: HTMLElement, axis: "horizontal" | "vertical") =>
     container.querySelector(`.canvas-scrollbar-${axis} .canvas-scrollbar-thumb`) as HTMLElement;
@@ -295,7 +296,7 @@ describe("WardleyCanvas scrollbars", () => {
     // real rectangle makes its existing arithmetic run as it does in a browser - the wiring
     // under test is the bars reading the same view state, not the canvas's pan maths.
     const { container } = renderCanvas(withAxis());
-    const surface = container.querySelector(".wardley-surface")!;
+    const surface = container.querySelector("svg")!;
     surface.getBoundingClientRect = () =>
       ({ width: 800, height: 600, x: 0, y: 0, top: 0, left: 0, right: 800, bottom: 600, toJSON: () => ({}) }) as DOMRect;
     // Zoom in first: this map opens showing its whole space, so at the fitted view the thumb
@@ -304,10 +305,10 @@ describe("WardleyCanvas scrollbars", () => {
     act(() => viewControls!.zoomIn());
     const before = thumbOf(container, "horizontal").style.left;
 
-    // Act.
-    fireEvent.mouseDown(surface, { button: 0, clientX: 200, clientY: 100 });
-    fireEvent.mouseMove(surface, { clientX: 60, clientY: 100 });
-    fireEvent.mouseUp(surface);
+    // Act: the library's pan is the background press, driven by pointer events.
+    fireEvent(surface, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 200, clientY: 100 }));
+    fireEvent(surface, new MouseEvent("pointermove", { bubbles: true, clientX: 60, clientY: 100 }));
+    fireEvent(surface, new MouseEvent("pointerup", { bubbles: true, clientX: 60, clientY: 100 }));
 
     // Assert.
     expect(thumbOf(container, "horizontal").style.left).not.toBe(before);
@@ -345,7 +346,7 @@ describe("WardleyCanvas view reporting", () => {
     // a bug that looks exactly like a working loop from the client side.
     vi.useFakeTimers();
     const { container } = renderCanvas(withAxis());
-    const surface = container.querySelector(".wardley-surface")!;
+    const surface = container.querySelector("svg")!;
     surface.getBoundingClientRect = () =>
       ({ width: 800, height: 800, x: 0, y: 0, top: 0, left: 0, right: 800, bottom: 800, toJSON: () => ({}) }) as DOMRect;
 
@@ -364,7 +365,7 @@ describe("WardleyCanvas view reporting", () => {
     // Arrange.
     vi.useFakeTimers();
     const { container } = renderCanvas(withAxis());
-    const surface = container.querySelector(".wardley-surface")!;
+    const surface = container.querySelector("svg")!;
     surface.getBoundingClientRect = () =>
       ({ width: 800, height: 800, x: 0, y: 0, top: 0, left: 0, right: 800, bottom: 800, toJSON: () => ({}) }) as DOMRect;
     act(() => void vi.advanceTimersByTime(500));
@@ -585,9 +586,11 @@ describe("WardleyCanvas dragging", () => {
     const surface = container.querySelector("svg")!;
 
     // Act. 100px right and down; the space is 1000 units, so 0.1 of the map each way.
-    fireEvent.mouseDown(container.querySelector("[data-element-id='a']")!, { clientX: 500, clientY: 500 });
-    fireEvent.mouseMove(surface, { clientX: 600, clientY: 600 });
-    fireEvent.mouseUp(surface);
+    const mark = container.querySelector("[data-element-id='a']")!;
+    fireEvent(mark, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 500, clientY: 500 }));
+    fireEvent(mark, new MouseEvent("pointermove", { bubbles: true, clientX: 600, clientY: 600 }));
+    fireEvent(mark, new MouseEvent("pointerup", { bubbles: true, clientX: 600, clientY: 600 }));
+    void surface;
 
     // Assert. Requirement 7.2 - position is meaning here, so this is an edit rather than a view
     // change, and the backend converts the point back into the document's own axes.
@@ -603,8 +606,9 @@ describe("WardleyCanvas dragging", () => {
     const { container } = renderDraggable();
 
     // Act.
-    fireEvent.mouseDown(container.querySelector("[data-element-id='a']")!, { clientX: 500, clientY: 500 });
-    fireEvent.mouseUp(container.querySelector("svg")!);
+    const mark = container.querySelector("[data-element-id='a']")!;
+    fireEvent(mark, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 500, clientY: 500 }));
+    fireEvent(mark, new MouseEvent("pointerup", { bubbles: true, clientX: 500, clientY: 500 }));
 
     // Assert.
     expect(moves).toHaveLength(0);
@@ -616,30 +620,32 @@ describe("WardleyCanvas dragging", () => {
     const { container } = renderDraggable();
 
     // Act. Far past the right-hand edge.
-    fireEvent.mouseDown(container.querySelector("[data-element-id='a']")!, { clientX: 500, clientY: 500 });
-    fireEvent.mouseMove(container.querySelector("svg")!, { clientX: 2000, clientY: 500 });
+    const mark = container.querySelector("[data-element-id='a']")!;
+    fireEvent(mark, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 500, clientY: 500 }));
+    fireEvent(mark, new MouseEvent("pointermove", { bubbles: true, clientX: 2000, clientY: 500 }));
 
-    // Assert.
+    // Assert: the definition's dragBounds is the map itself, and the preview honours it.
     expect(container.querySelector("[data-element-id='a'] circle")?.getAttribute("cx")).toBe("1000");
   });
 
-  it("moves the links that reach an element with it", () => {
-    // Arrange. If the dragged position is not substituted everywhere, the line detaches from
-    // the shape while the gesture is in flight.
+  it("redraws the links from the model, before a drag and after its commit lands", () => {
+    // Recorded unification: the hand-built canvas substituted the dragged position into its
+    // links mid-gesture; the library redraws connections when the MODEL changes, as every
+    // migrated canvas does, so the line follows on commit rather than under the pointer.
     let model = withElement(withAxis(), "a", "wardley/map+element", element({ name: "A" }), 0.5, 0.5);
     model = withElement(model, "b", "wardley/map+element", element({ name: "B" }), 0.9, 0.9);
     const link = toBinary(
       WardleyLinkPayloadSchema,
       create(WardleyLinkPayloadSchema, { sourceId: "a", targetId: "b" }),
     );
-    const { container } = renderCanvas(applyDelta(model, addDelta("l", "wardley/map+link", link)));
-    const surface = container.querySelector("svg")!;
-    sizeSurface(surface);
+    const linked = applyDelta(model, addDelta("l", "wardley/map+link", link));
+    const { container, rerender } = renderCanvas(linked);
     const before = container.querySelector(".wardley-link")?.getAttribute("d");
+    expect(before).toBeTruthy();
 
-    // Act.
-    fireEvent.mouseDown(container.querySelector("[data-element-id='a']")!, { clientX: 500, clientY: 500 });
-    fireEvent.mouseMove(surface, { clientX: 400, clientY: 500 });
+    // Act: the committed move comes back as a model change, exactly as the backend answers.
+    currentModel = withElement(linked, "a", "wardley/map+element", element({ name: "A" }), 0.4, 0.5);
+    rerender(<WardleyCanvas projectId={new Uint8Array([1])} entryId={new Uint8Array([2])} path={["map.adp"]} />);
 
     // Assert.
     expect(container.querySelector(".wardley-link")?.getAttribute("d")).not.toBe(before);
@@ -652,9 +658,11 @@ describe("WardleyCanvas dragging", () => {
     const surface = container.querySelector("svg")!;
 
     // Act.
-    fireEvent.mouseDown(container.querySelector("[data-element-id='a']")!, { clientX: 500, clientY: 500 });
-    fireEvent.mouseMove(surface, { clientX: 600, clientY: 500 });
-    fireEvent.mouseUp(surface);
+    const mark = container.querySelector("[data-element-id='a']")!;
+    fireEvent(mark, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 500, clientY: 500 }));
+    fireEvent(mark, new MouseEvent("pointermove", { bubbles: true, clientX: 600, clientY: 500 }));
+    fireEvent(mark, new MouseEvent("pointerup", { bubbles: true, clientX: 600, clientY: 500 }));
+    void surface;
 
     // Assert. The shape snaps back because the model never changed, and the reason is visible.
     await waitFor(() => expect(container.textContent).toContain("This map is read-only."));
@@ -667,8 +675,9 @@ describe("WardleyCanvas dragging", () => {
     const before = surface.getAttribute("viewBox");
 
     // Act.
-    fireEvent.mouseDown(container.querySelector("[data-element-id='a']")!, { clientX: 500, clientY: 500 });
-    fireEvent.mouseMove(surface, { clientX: 600, clientY: 600 });
+    const mark = container.querySelector("[data-element-id='a']")!;
+    fireEvent(mark, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 500, clientY: 500 }));
+    fireEvent(mark, new MouseEvent("pointermove", { bubbles: true, clientX: 600, clientY: 600 }));
 
     // Assert.
     expect(surface.getAttribute("viewBox")).toBe(before);
@@ -733,17 +742,17 @@ describe("WardleyCanvas selection", () => {
     expect(shape).not.toBeNull();
 
     // Act: a press with no movement is a click, which is the selection gesture.
-    fireEvent.mouseDown(shape, { clientX: 100, clientY: 100 });
-    fireEvent.mouseUp(container.querySelector(".wardley-surface") as SVGSVGElement);
+    fireEvent(shape, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(shape, new MouseEvent("pointerup", { bubbles: true, clientX: 100, clientY: 100 }));
 
     // Assert: the backend hears a nested selection whose innermost element is this one.
     expect(select).toHaveBeenCalledTimes(1);
     expect(selectedElementIdOf(select.mock.calls[0][0] as ContextSelection)).toBe("aaa");
 
     // Act, continued: a click on empty canvas deselects.
-    const surface = container.querySelector(".wardley-surface") as SVGSVGElement;
-    fireEvent.mouseDown(surface, { clientX: 300, clientY: 300 });
-    fireEvent.mouseUp(surface);
+    const surface = container.querySelector("svg") as SVGSVGElement;
+    fireEvent(surface, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 300, clientY: 300 }));
+    fireEvent(surface, new MouseEvent("pointerup", { bubbles: true, clientX: 300, clientY: 300 }));
     expect(select).toHaveBeenLastCalledWith(null);
   });
 

@@ -362,4 +362,11 @@ export interface DiagramDefinition {
    */
   extent?: ShapeBounds;
   background?: DiagramBackgroundRef;
+  /**
+   * A hard edge for element drags, where the notation's space has one: the dragged element's
+   * CENTRE is clamped inside this box, in the preview under the pointer and in the raised
+   * `element-moved` position alike - a wardley component must not be draggable off the map
+   * while the pointer is still down. Omitted, drags roam free.
+   */
+  dragBounds?: ShapeBounds;
 }

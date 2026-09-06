@@ -21,7 +21,6 @@ export const NOT_YET_MIGRATED: ReadonlySet<string> = new Set([
   "helm-charts",
   "mindmap",
   "sparql",
-  "wardley-map",
 ]);
 
 /**

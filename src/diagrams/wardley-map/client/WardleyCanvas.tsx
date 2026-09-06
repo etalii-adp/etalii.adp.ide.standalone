@@ -1,23 +1,21 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { straightPath, type ConnectorBox } from "@client/canvas/connectors";
-import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
-import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
-import { StraightConnection } from "@client/canvas/connections/straight/StraightConnection";
+import { useMemo, useState } from "react";
+
+import { straightPath } from "@client/canvas/connectors";
 import { SymbolElement } from "@client/canvas/elements/symbol/SymbolElement";
+import { edgePointOf } from "@client/canvas/connectors";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
-import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
+import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
+import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
+import type { CustomShapeRef, CustomShapeState, DiagramDefinition, ShapeBounds } from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
-import { ContextMenu } from "@client/shell/context/ContextMenu";
-import { toMenuGroups } from "@client/shell/context/toMenuGroups";
 import { ContextSelectionAction } from "@client/generated/context_pb";
-import { InlineLabelEditor } from "@client/canvas/label/InlineLabelEditor";
-import { asideLabelPlacement } from "@client/canvas/label/labelPlacement";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { useRegisterInlineLabelPlacement, type LabelPlacement } from "@client/shell/panels/InlineLabelPlacementContext";
-import { useRegisterDiagramView } from "@client/shell/panels/DiagramViewContext";
-import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
+import { useViewReport } from "@client/diagrams/useViewReport";
+import type { ContextShortcut } from "@client/generated/context_pb";
 import {
   WardleyAttitudeKind,
   WardleyDecorator,
@@ -25,32 +23,19 @@ import {
 } from "@client/generated/wardley-map_pb";
 import type { WardleyAxis, WardleyElement, WardleyModel } from "./wardleyModel";
 import { useWardleyStream } from "./useWardleyStream";
-import { useViewReport } from "@client/diagrams/useViewReport";
-import { shownRectOf, type Viewport } from "@client/diagrams/viewReport";
 
 /**
- * The map's own space is 0..1 on both axes. It is drawn into a fixed box of canvas units so
- * labels and stroke widths have a sensible scale to be expressed in; the viewBox then pans and
- * zooms over that.
+ * The map's own space is 0..1 on both axes, drawn into a fixed box of canvas units so labels
+ * and stroke widths have a sensible scale - the intrinsic space the definition declares as its
+ * extent, which is why Fit shows the whole map rather than a box derived from its contents.
  */
 const SPACE = 1000;
 
 /** Room outside the space for the axis labels, which sit beyond the plotted area. */
 const MARGIN = 90;
 
-const ZOOM_STEP = 1.25;
-const MIN_VIEW_WIDTH = 120;
-const MAX_VIEW_WIDTH = 12000;
-
-/** The visible rectangle, in canvas units - the svg viewBox as data. */
-interface ViewBox {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
-const fullView: ViewBox = { x: -MARGIN, y: -MARGIN, w: SPACE + MARGIN * 2, h: SPACE + MARGIN * 2 };
+/** The radius a component is drawn at, and the box a connector anchors on. */
+const DOT = 9;
 
 export interface WardleyCanvasProps {
   projectId: Uint8Array;
@@ -58,691 +43,16 @@ export interface WardleyCanvasProps {
   path: readonly string[];
 }
 
-/**
- * A 0..1 map coordinate as canvas units.
- *
- * Rounded to two decimals, which at a 1000-unit space is far finer than a pixel. Without it,
- * ordinary arithmetic on the author's numbers puts values like `350.00000000000006` into the
- * DOM - noise in every attribute, and a diff nobody can read when a snapshot is compared.
- */
+/** A 0..1 map coordinate as canvas units, rounded far finer than a pixel to keep the DOM readable. */
 function scale(value: number): number {
   return Math.round(value * SPACE * 100) / 100;
 }
 
-/**
- * Renders one Wardley map.
- *
- * **The axes are drawn by this module, and core was asked for nothing to allow it.** A module
- * claims its MIME type through `DiagramCanvasRegistration` and supplies a component that owns
- * its whole `<svg>` - its viewBox, its pan and zoom, its layer order - so the axis chrome is
- * simply what this draws first, beneath its elements (Requirement 8.4).
- *
- * Every position it draws came from the document. There is no layout here and no layout
- * anywhere in this module: a component sits where its author put it, and that is the whole
- * claim a Wardley map makes (Requirement 7.1).
- */
-// `entryId` is part of every canvas's props and is not destructured yet: it names the `.adp`
-// entry a selection reports as its outer level, which task 19's context resolver needs and
-// nothing here does.
-export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) {
-  const { model, loading, failed, moveElementTo, reportView } = useWardleyStream(projectId, path);
+/** An element as the library carries it here: the model element plus the mark it draws. */
+type MarkElement = DiagramModelElement & { mark: WardleyElement };
 
-  // The context channel this canvas never had: every wardley action the backend has offered
-  // all along becomes reachable the moment an element can be selected. Renaming is one of
-  // them, but the seam is general on purpose.
-  const { select, executeAction, executeShortcut } = useContextConnection();
-  const { selection, actions } = useContextSelection();
-  const selectionKey = innermostKey(selection);
-  const selectedId = elementIdOfKey(selectionKey);
-  const { menuPosition, openMenuAt, closeMenu } = useElementContextMenu(selectionKey, actions.length > 0, (id) =>
-    select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
-  );
-
-  // Where an element's label is drawn - for the shell's inline editor. The map's own 0..1
-  // space is not a special case: scale() puts elements into canvas units independent of the
-  // view, so the resolver keys on the model alone, like every viewBox canvas.
-  //
-  // A wardley label is a bare start-anchored text at a document-carried pixel offset from the
-  // mark - to its right by default, and wherever the author put it otherwise, left included.
-  // That is asideLabelPlacement's shape exactly, with the offset as the (possibly negative)
-  // gap, and the vertical anchored to the label's own baseline rather than the mark's centre.
-  const placementOfLabel = useCallback(
-    (elementId: string): LabelPlacement | null => {
-      const element = model.elements.get(elementId);
-      if (element === undefined) {
-        return null;
-      }
-
-      const offsetX = element.labelOffset?.x ?? DOT + 6;
-      const offsetY = element.labelOffset?.y ?? 4;
-      return asideLabelPlacement(
-        { x: scale(element.x), y: scale(element.y) + offsetY - 4 },
-        offsetX,
-        element.name,
-      );
-    },
-    [model],
-  );
-  useRegisterInlineLabelPlacement(placementOfLabel);
-
-  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
-  const editingId = inlineLabelElementIdOf(prompt);
-  const editingPlacement = editingId === null ? null : placementOfLabel(editingId);
-  const returnFocusToSurface = useCallback(() => surfaceRef.current?.focus(), []);
-
-  /** Ends an open inline edit before a gesture begins; the editor commits on blur. */
-  const endInlineEditBeforeGesture = () => {
-    if (editingPlacement !== null) {
-      surfaceRef.current?.focus();
-    }
-  };
-
-  // The palette the Toolbox panel shows while this map is open - described by the backend
-  // (Requirement 13), registered here and withdrawn on unmount.
-  useRegisterDiagramToolbox(useToolboxItems(projectId, path));
-  const [view, setView] = useState<ViewBox>(fullView);
-  // Read by the debounced report when it fires rather than when it was scheduled, so the
-  // rectangle sent is where the reader's view came to rest.
-  const viewRef = useRef(view);
-  viewRef.current = view;
-  const surfaceRef = useRef<SVGSVGElement | null>(null);
-  const panRef = useRef<{ clientX: number; clientY: number; view: ViewBox } | null>(null);
-  const panMovedRef = useRef(false);
-
-  // A drag in flight: which element, where the pointer started, where the element started, and
-  // whether it has moved far enough to be a drag rather than a wobbly click. A ref for what
-  // nothing renders from; the live offset is state, because the shape follows the pointer.
-  const dragRef = useRef<{ id: string; clientX: number; clientY: number; x: number; y: number } | null>(null);
-  const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(null);
-  const [rejection, setRejection] = useState("");
-
-  const zoomBy = useCallback((factor: number) => {
-    setView((current) => {
-      const w = Math.min(MAX_VIEW_WIDTH, Math.max(MIN_VIEW_WIDTH, current.w * factor));
-      const h = (current.h / current.w) * w;
-      // Zoom about the centre, so the thing being looked at stays where it is.
-      return { x: current.x + (current.w - w) / 2, y: current.y + (current.h - h) / 2, w, h };
-    });
-  }, []);
-
-  const fitToView = useCallback(() => setView(fullView), []);
-
-  useRegisterDiagramView(
-    useMemo(
-      () => ({
-        zoomIn: () => zoomBy(1 / ZOOM_STEP),
-        zoomOut: () => zoomBy(ZOOM_STEP),
-        fitToView,
-      }),
-      [zoomBy, fitToView],
-    ),
-  );
-
-  // Attached by hand as non-passive: React's synthetic wheel listener cannot preventDefault,
-  // and without that every zoom also scrolls the page.
-  useEffect(() => {
-    const surface = surfaceRef.current;
-    if (!surface) {
-      return;
-    }
-
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      zoomBy(event.deltaY > 0 ? ZOOM_STEP : 1 / ZOOM_STEP);
-    };
-
-    surface.addEventListener("wheel", onWheel, { passive: false });
-    return () => surface.removeEventListener("wheel", onWheel);
-  }, [zoomBy]);
-
-  /** Right-click on an element: select it with the menu gesture and open the menu on the push. */
-  const onElementContextMenu = (event: React.MouseEvent, element: WardleyElement) => {
-    surfaceRef.current?.focus();
-    openMenuAt(event, element.id);
-  };
-
-  /**
-   * F2 on the selected element, forwarded as data: the backend owns the key-to-action map,
-   * so no table of keys lives on this canvas.
-   */
-  const onKeyDown = (event: React.KeyboardEvent) => {
-    if (!selectedId || isTextTarget(event.target)) {
-      return;
-    }
-
-    const shortcut = structuralShortcutFor(event, ["F2"]);
-    if (!shortcut) {
-      return;
-    }
-
-    event.preventDefault();
-    void executeShortcut(shortcut, elementSourceOf(selectedId));
-  };
-
-  /** Canvas units per screen pixel, for turning a pointer delta into a map delta. */
-  const unitsPerPixel = useCallback(() => {
-    const surface = surfaceRef.current;
-    return surface ? view.w / surface.getBoundingClientRect().width : 1;
-  }, [view.w]);
-
-  const onPointerDown = (event: React.MouseEvent) => {
-    endInlineEditBeforeGesture();
-    panRef.current = { clientX: event.clientX, clientY: event.clientY, view };
-    panMovedRef.current = false;
-  };
-
-  const onElementPointerDown = (event: React.MouseEvent, element: WardleyElement) => {
-    // The element takes the gesture; the surface must not also pan under it.
-    event.stopPropagation();
-    endInlineEditBeforeGesture();
-    setRejection("");
-    dragRef.current = {
-      id: element.id,
-      clientX: event.clientX,
-      clientY: event.clientY,
-      x: element.x,
-      y: element.y,
-    };
-  };
-
-  const onPointerMove = (event: React.MouseEvent) => {
-    const dragging = dragRef.current;
-    if (dragging) {
-      const perPixel = unitsPerPixel() / SPACE;
-      setDrag({
-        id: dragging.id,
-        // Clamped here as well as in the backend: the shape must not be draggable outside the
-        // map while the pointer is still down, or the user is shown a position that cannot
-        // exist (Requirement 7.3).
-        x: clamp01(dragging.x + (event.clientX - dragging.clientX) * perPixel),
-        y: clamp01(dragging.y + (event.clientY - dragging.clientY) * perPixel),
-      });
-      return;
-    }
-
-    const pan = panRef.current;
-    const surface = surfaceRef.current;
-    if (!pan || !surface) {
-      return;
-    }
-
-    const rect = surface.getBoundingClientRect();
-    const perPixel = pan.view.w / rect.width;
-    if (event.clientX !== pan.clientX || event.clientY !== pan.clientY) {
-      panMovedRef.current = true;
-    }
-    setView({
-      ...pan.view,
-      x: pan.view.x - (event.clientX - pan.clientX) * perPixel,
-      y: pan.view.y - (event.clientY - pan.clientY) * perPixel,
-    });
-  };
-
-  const onPointerUp = () => {
-    const dragging = dragRef.current;
-    const landed = drag;
-    dragRef.current = null;
-    panRef.current = null;
-
-    if (!dragging || !landed) {
-      // A press with no movement is a click, not a drag, and must not write to the document.
-      // On an element it is the selection gesture - a nested selection, the .adp then the
-      // element - and the surface takes the keyboard so F2 lands here rather than wherever
-      // focus last was. On the background it clears, unless the press was really a pan.
-      setDrag(null);
-      if (dragging) {
-        surfaceRef.current?.focus();
-        select(elementSelectionOf(entryId, path, dragging.id));
-      } else if (!panMovedRef.current) {
-        select(null);
-      }
-      return;
-    }
-
-    setDrag(null);
-    void (async () => {
-      // A drag is a DOCUMENT EDIT here, not a view change: moving a component right asserts
-      // that it is more evolved. The backend converts the point back into the document's axes,
-      // dispatches it as a command, and the new position returns as an ordinary delta
-      // (Requirement 7.2).
-      const error = await moveElementTo(landed.id, landed.x, landed.y);
-      if (error) {
-        // A refusal is shown rather than swallowed - read-only, or an element that has since
-        // gone. The shape snaps back because the model never changed.
-        setRejection(error);
-      }
-    })();
-  };
-
-  // What the reader can see, reported once the view settles, so the session delivers what falls
-  // inside it rather than the whole map. Converted here and only here: the canvas draws the 0..1
-  // map into a SPACE-unit box, the session compares against 0..1, and the shared library is not
-  // told about either (view-delta-adoption Requirement 3.4).
-  useViewReport({
-    view,
-    report: reportView,
-    convert: () => inMapSpace(shownRectOf(viewRef.current, surfaceRef.current)),
-    ready: !loading && !failed,
-  });
-
-  if (failed) {
-    return (
-      <div className="wardley-canvas wardley-canvas-message">
-        <p>This map could not be opened.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="wardley-canvas">
-      <svg
-        ref={surfaceRef}
-        className="wardley-surface"
-        viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
-        tabIndex={0}
-        onKeyDown={onKeyDown}
-        onMouseDown={onPointerDown}
-        onMouseMove={onPointerMove}
-        onMouseUp={onPointerUp}
-        onMouseLeave={onPointerUp}
-        role="img"
-        aria-label={model.axis?.title ? `Wardley map: ${model.axis.title}` : "Wardley map"}
-      >
-        {/* Drawn first, so everything else sits on top of it (Requirement 8.4). */}
-        <WardleyChrome axis={model.axis} scaleFactor={view.w / (SPACE + MARGIN * 2)} />
-        {loading ? null : (
-          <WardleyContents model={model} drag={drag} selectedId={selectedId} onElementPointerDown={onElementPointerDown} onElementContextMenu={onElementContextMenu} />
-        )}
-
-        {/* Last of all, so the editor is above every mark and link it overlaps. Placed in
-            canvas units; the viewBox carries it through pans and zooms like everything else. */}
-        {editingPlacement !== null && (
-          <InlineLabelEditor
-            placement={editingPlacement}
-            onPropose={onProposeLabel}
-            onSubmit={onSubmitLabel}
-            onCancel={onCancelLabel}
-            onReturnFocus={returnFocusToSurface}
-          />
-        )}
-      </svg>
-      <CanvasScrollbars
-        {...scrollAxesOf(view)}
-        className="wardley-scrollbars"
-        onPan={(x, y) => setView({ ...view, x, y })}
-      />
-      {rejection ? <p className="wardley-rejection">{rejection}</p> : null}
-      {/* The element's right-click menu: the shared menu, filled with the actions the backend
-          pushed for this very selection - never a client-side guess. */}
-      <ContextMenu
-        open={menuPosition !== null}
-        groups={toMenuGroups(actions, (action) => {
-          closeMenu();
-          void executeAction(action.id);
-        })}
-        position={menuPosition ?? { x: 0, y: 0 }}
-        onClose={closeMenu}
-      />
-    </div>
-  );
-}
-
-/**
- * A rectangle of canvas units as the map's own 0..1 space - the units its elements are in, and so
- * the units a viewport report has to be in.
- *
- * The map's space is drawn at {@link SPACE} units to the unit interval, so this is a division and
- * nothing else. It deliberately does **not** clamp to 0..1: the view can and does extend into the
- * margin where the axis labels sit, and a report clamped to the plotted area would cull the
- * elements sitting closest to the edge the reader has just panned to.
- */
-function inMapSpace(rect: Viewport): Viewport {
-  return {
-    minX: rect.minX / SPACE,
-    minY: rect.minY / SPACE,
-    maxX: rect.maxX / SPACE,
-    maxY: rect.maxY / SPACE,
-  };
-}
-
-/**
- * Where the view sits inside the map, as the two axes the shared scrollbars take.
- *
- * The one canvas here whose extent is NOT its content: a Wardley map's plane is the 0..1 space
- * itself, so a map carrying two components still has the whole space to show, and deriving the
- * extent from content would let a reader pan into emptiness while half the map went missing.
- * `fullView` already expresses that space, so the extent is simply it - passed through the
- * shared helper with no margin, because the map's own MARGIN is already part of it.
- *
- * This is a call-site decision and stays one: the component takes four plain numbers and does
- * not care where they came from, so nothing here justifies widening it or teaching the shared
- * geometry about map space.
- */
-function scrollAxesOf(view: ViewBox) {
-  return {
-    horizontal: { viewStart: view.x, viewSpan: view.w, ...scrollExtentOf(fullView.x, fullView.x + fullView.w) },
-    vertical: { viewStart: view.y, viewSpan: view.h, ...scrollExtentOf(fullView.y, fullView.y + fullView.h) },
-  };
-}
-
-function clamp01(value: number): number {
-  return Math.min(1, Math.max(0, value));
-}
-
-/**
- * The bands, the two axes and their labels.
- *
- * The stage boundaries come from `axis`, never from a constant here. They are not published in
- * the DSL - they are derived from the reference renderer's own offsets - so the backend holds
- * the one copy and this draws what it is told (Requirement 8.2).
- */
-function WardleyChrome({ axis, scaleFactor }: { axis?: WardleyAxis; scaleFactor: number }) {
-  // Stage labels hold a readable size as the map is zoomed; the boundaries they name do not,
-  // because a component's position is only meaningful against its own axes (Requirement 8.5).
-  const labelSize = 20 * Math.max(0.35, Math.min(2.5, scaleFactor));
-
-  return (
-    <g className="wardley-chrome" aria-hidden="true">
-      {(axis?.stages ?? []).map((stage, index) => (
-        <g key={stage.label}>
-          <rect
-            className={`wardley-band wardley-band-${index}`}
-            x={scale(stage.start)}
-            y={0}
-            width={scale(stage.end - stage.start)}
-            height={SPACE}
-          />
-          {index > 0 ? (
-            <line
-              className="wardley-band-edge"
-              x1={scale(stage.start)}
-              y1={0}
-              x2={scale(stage.start)}
-              y2={SPACE}
-            />
-          ) : null}
-          <text
-            className="wardley-band-label"
-            x={scale((stage.start + stage.end) / 2)}
-            y={SPACE + 34}
-            fontSize={labelSize}
-            textAnchor="middle"
-          >
-            {stage.label}
-          </text>
-        </g>
-      ))}
-
-      {/* The value chain: the user need at the top, invisible at the bottom. */}
-      <line className="wardley-axis" x1={0} y1={0} x2={0} y2={SPACE} />
-      {/* Evolution: genesis at the left, commodity at the right. */}
-      <line className="wardley-axis" x1={0} y1={SPACE} x2={SPACE} y2={SPACE} />
-
-      <text
-        className="wardley-axis-label"
-        transform={`translate(${-34} ${SPACE / 2}) rotate(-90)`}
-        fontSize={labelSize}
-        textAnchor="middle"
-      >
-        Value chain
-      </text>
-      <text
-        className="wardley-axis-end"
-        x={-14}
-        y={12}
-        fontSize={labelSize * 0.8}
-        textAnchor="end"
-      >
-        Visible
-      </text>
-      <text
-        className="wardley-axis-end"
-        x={-14}
-        y={SPACE}
-        fontSize={labelSize * 0.8}
-        textAnchor="end"
-      >
-        Invisible
-      </text>
-      <text
-        className="wardley-axis-label"
-        x={SPACE / 2}
-        y={SPACE + 66}
-        fontSize={labelSize}
-        textAnchor="middle"
-      >
-        Evolution
-      </text>
-    </g>
-  );
-}
-
-/** The radius a component is drawn at, and the box a connector anchors on. */
-const DOT = 9;
-
-/** A component as a box for the shared connector geometry, which works in centres and sizes. */
-function boxOf(element: { x: number; y: number }): ConnectorBox {
-  return { x: scale(element.x), y: scale(element.y), width: DOT * 2, height: DOT * 2 };
-}
-
-/**
- * Everything the author put on the map: the attitude regions behind, then the links, then the
- * elements and their annotations on top.
- *
- * The chrome is a separate component because it is the half that must be correct before
- * anything is plotted against it, and it is what an empty map shows on its own
- * (Requirement 1.4).
- */
-function WardleyContents({
-  model,
-  drag,
-  selectedId,
-  onElementPointerDown,
-  onElementContextMenu,
-}: {
-  model: WardleyModel;
-  drag: { id: string; x: number; y: number } | null;
-  selectedId: string | null;
-  onElementPointerDown: (event: React.MouseEvent, element: WardleyElement) => void;
-  onElementContextMenu: (event: React.MouseEvent, element: WardleyElement) => void;
-}) {
-  // The element being dragged is shown where the pointer is, so the gesture is visible before
-  // the round trip answers. Everything else - the links that reach it, its evolve indicator -
-  // follows from the same substituted position rather than lagging behind it.
-  const at = (element: WardleyElement): WardleyElement =>
-    drag && drag.id === element.id ? { ...element, x: drag.x, y: drag.y } : element;
-
-  const elements = [...model.elements.values()].map(at);
-  const byId = new Map(elements.map((element) => [element.id, element]));
-
-  return (
-    <g className="wardley-contents">
-      {/* Behind the elements they cover (Requirement 6.4). */}
-      {[...model.attitudes.values()].map((attitude) => (
-        <g key={attitude.id}>
-          <rect
-            className={`wardley-attitude wardley-attitude-${attitudeName(attitude.kind)}`}
-            x={scale(Math.min(attitude.x, attitude.opposite.x))}
-            y={scale(Math.min(attitude.y, attitude.opposite.y))}
-            width={scale(Math.abs(attitude.opposite.x - attitude.x))}
-            height={scale(Math.abs(attitude.opposite.y - attitude.y))}
-          />
-          <text
-            className="wardley-attitude-label"
-            x={scale(Math.min(attitude.x, attitude.opposite.x)) + 8}
-            y={scale(Math.min(attitude.y, attitude.opposite.y)) + 22}
-          >
-            {attitudeName(attitude.kind)}
-          </text>
-        </g>
-      ))}
-
-      {[...model.links.values()].map((link) => {
-        const source = byId.get(link.sourceId);
-        const target = byId.get(link.targetId);
-        if (!source || !target) {
-          // An endpoint that does not resolve is a dangling link. It is not drawn - there is
-          // nowhere to draw it to - and the elements involved are marked instead
-          // (Requirements 3.5, 14.2).
-          return null;
-        }
-
-        // The shared connection: a Wardley link joins two boxes, and that the centres came
-        // from the document rather than from a layout changes nothing about the maths.
-        return (
-          <StraightConnection
-            key={link.id}
-            from={boxOf(source)}
-            to={boxOf(target)}
-            pathClassName={`wardley-link${link.isFlow ? " wardley-link-flow" : ""}`}
-            title={link.context || undefined}
-          />
-        );
-      })}
-
-      {/*
-        An evolving component is shown at BOTH positions joined by a movement indicator, because
-        the pair is the point of the statement (Requirement 6.1). The same connector call as a
-        link, styled dashed - the target sits at the same visibility, so this is a horizontal
-        move along the evolution axis.
-      */}
-      {elements
-        .filter((element) => element.evolve)
-        .map((element) => {
-          const target = { x: element.evolve!.maturity, y: element.y };
-          return (
-            <g key={`${element.id}-evolve`}>
-              <StraightConnection from={boxOf(element)} to={boxOf(target)} pathClassName="wardley-evolve" />
-              <circle
-                className="wardley-evolve-target"
-                cx={scale(target.x)}
-                cy={scale(target.y)}
-                r={DOT}
-              />
-              {element.evolve!.overrideName ? (
-                <text
-                  className="wardley-element-label"
-                  x={scale(target.x) + DOT + 6}
-                  y={scale(target.y) + 4}
-                >
-                  {element.evolve!.overrideName}
-                </text>
-              ) : null}
-            </g>
-          );
-        })}
-
-      {elements.map((element) => (
-        <WardleyElementShape
-          key={element.id}
-          element={element}
-          dragging={drag?.id === element.id}
-          selected={element.id === selectedId}
-          onPointerDown={onElementPointerDown}
-          onContextMenu={onElementContextMenu}
-        />
-      ))}
-
-      {[...model.accelerators.values()].map((accelerator) => (
-        <g key={accelerator.id} className="wardley-accelerator">
-          <path
-            className={accelerator.isDeaccelerator ? "wardley-accelerator-back" : "wardley-accelerator-forward"}
-            d={straightPath(
-              { x: scale(accelerator.x) - 16, y: scale(accelerator.y) },
-              { x: scale(accelerator.x) + 16, y: scale(accelerator.y) },
-            )}
-          />
-          <text className="wardley-element-label" x={scale(accelerator.x) + 22} y={scale(accelerator.y) + 4}>
-            {accelerator.name}
-          </text>
-        </g>
-      ))}
-
-      {[...model.notes.values()].map((note) => (
-        <text key={note.id} className="wardley-note" x={scale(note.x)} y={scale(note.y)}>
-          {note.text}
-        </text>
-      ))}
-
-      {/*
-        Every occurrence, not just the first. The DSL permits one numbered annotation pinned in
-        several places, and none of them may be lost (Requirement 6.8).
-      */}
-      {[...model.annotations.values()].flatMap((annotation) =>
-        annotation.occurrences.map((occurrence, index) => (
-          <g key={`${annotation.id}-${index}`} className="wardley-annotation">
-            <circle cx={scale(occurrence.x)} cy={scale(occurrence.y)} r={11} />
-            <text x={scale(occurrence.x)} y={scale(occurrence.y) + 4} textAnchor="middle">
-              {annotation.number}
-            </text>
-            <title>{annotation.text}</title>
-          </g>
-        )),
-      )}
-    </g>
-  );
-}
-
-/**
- * One component, anchor or submap: its shape says which kind it is, and its decorations say
- * what the author claimed about it - both without entering an edit mode (Requirement 6.9).
- */
-function WardleyElementShape({
-  element,
-  dragging,
-  selected,
-  onPointerDown,
-  onContextMenu,
-}: {
-  element: WardleyElement;
-  dragging: boolean;
-  selected: boolean;
-  onPointerDown: (event: React.MouseEvent, element: WardleyElement) => void;
-  onContextMenu: (event: React.MouseEvent, element: WardleyElement) => void;
-}) {
-  const x = scale(element.x);
-  const y = scale(element.y);
-
-  // The label offset is in PIXELS rather than map coordinates - a property of the format, which
-  // ADP reproduces rather than corrects (Requirement 5.5).
-  const labelX = x + (element.labelOffset?.x ?? DOT + 6);
-  const labelY = y + (element.labelOffset?.y ?? 4);
-
-  const decorations = element.decorators.map(decoratorName).filter((name) => name.length > 0);
-  const badges = [...decorations, ...(element.inertia ? ["inertia"] : [])];
-
-  // An anchor is the user need the chain hangs from, drawn as a distinct mark rather than one
-  // more component; a submap's double ring says there is something behind it.
-  const variant =
-    element.kind === WardleyElementKind.ANCHOR
-      ? ("square" as const)
-      : element.kind === WardleyElementKind.SUBMAP
-        ? ("double-circle" as const)
-        : ("circle" as const);
-
-  return (
-    <SymbolElement
-      className={`wardley-element-group wardley-kind-${kindName(element.kind)}${dragging ? " wardley-dragging" : ""}${selected ? " wardley-selected canvas-selected" : ""}`}
-      x={x}
-      y={y}
-      radius={DOT}
-      variant={variant}
-      label={element.name}
-      labelX={labelX}
-      labelY={labelY}
-      badges={badges}
-      inertia={element.inertia}
-      markClassName="wardley-element"
-      outerClassName="wardley-element-outer"
-      labelClassName="wardley-element-label"
-      badgesClassName="wardley-element-badges"
-      inertiaClassName="wardley-inertia"
-      onMouseDown={(event) => onPointerDown(event, element)}
-      onContextMenu={(event) => onContextMenu(event, element)}
-      data-element-id={element.id}
-    />
-  );
-}
+/** An evolve target as the library carries it: the destination dot of a `evolve` statement. */
+type EvolveTargetElement = DiagramModelElement & { overrideName?: string };
 
 function kindName(kind: WardleyElementKind): string {
   switch (kind) {
@@ -781,4 +91,475 @@ function attitudeName(kind: WardleyAttitudeKind): string {
     default:
       return "pioneers";
   }
+}
+
+/** A circle's edge, for the connector geometry - the same box edge the old canvas anchored on. */
+function circleEdgePoint(bounds: ShapeBounds, towards: { x: number; y: number }) {
+  const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+  return edgePointOf(
+    { x: centre.x, y: centre.y, width: bounds.width, height: bounds.height },
+    towards.x - centre.x,
+    towards.y - centre.y,
+  );
+}
+
+/**
+ * A component, anchor or submap as a first-class custom shape: the shared symbol mark with
+ * this notation's decorations - variant by kind, decorator badges, inertia, the label at its
+ * authored pixel offset - while hit-testing, edge attachment and dragging stay the library's.
+ */
+const markShape: CustomShapeRef = {
+  customShape: "wardley-mark",
+  render: (raw, state?: CustomShapeState) => {
+    const element = raw as MarkElement;
+    const mark = element.mark;
+    const x = element.x;
+    const y = element.y;
+
+    // The label offset is in PIXELS rather than map coordinates - a property of the format,
+    // which ADP reproduces rather than corrects.
+    const labelX = x + (mark.labelOffset?.x ?? DOT + 6);
+    const labelY = y + (mark.labelOffset?.y ?? 4);
+
+    const decorations = mark.decorators.map(decoratorName).filter((name) => name.length > 0);
+    const badges = [...decorations, ...(mark.inertia ? ["inertia"] : [])];
+
+    const variant =
+      mark.kind === WardleyElementKind.ANCHOR
+        ? ("square" as const)
+        : mark.kind === WardleyElementKind.SUBMAP
+          ? ("double-circle" as const)
+          : ("circle" as const);
+
+    return (
+      <SymbolElement
+        className={`wardley-element-group wardley-kind-${kindName(mark.kind)}${state?.dragging ? " wardley-dragging" : ""}${state?.selected ? " wardley-selected" : ""}`}
+        x={x}
+        y={y}
+        radius={DOT}
+        variant={variant}
+        label={mark.name}
+        labelX={labelX}
+        labelY={labelY}
+        badges={badges}
+        inertia={mark.inertia}
+        markClassName="wardley-element"
+        outerClassName="wardley-element-outer"
+        labelClassName="wardley-element-label"
+        badgesClassName="wardley-element-badges"
+        inertiaClassName="wardley-inertia"
+      />
+    );
+  },
+  edgePoint: circleEdgePoint,
+};
+
+/** The destination of an evolve statement: the hollow dot, with the override name where one is given. */
+const evolveTargetShape: CustomShapeRef = {
+  customShape: "wardley-evolve-target",
+  render: (raw) => {
+    const element = raw as EvolveTargetElement;
+    return (
+      <g>
+        <circle className="wardley-evolve-target" cx={element.x} cy={element.y} r={DOT} />
+        {element.overrideName ? (
+          <text className="wardley-element-label" x={element.x + DOT + 6} y={element.y + 4}>
+            {element.overrideName}
+          </text>
+        ) : null}
+      </g>
+    );
+  },
+  edgePoint: circleEdgePoint,
+};
+
+/**
+ * What a Wardley map allows, stated once: marks that drag inside the intrinsic 0..1 space and
+ * edit their names in place, links and evolve indicators drawn between them, and nothing else
+ * interactive - the toolbox palette comes from the backend, drops stay unanswered exactly as
+ * the hand-built canvas left them, and no connect gesture exists because no mark renders an
+ * anchor (edge attachment draws the lines; the gesture starts from anchors, and there are
+ * none). The axis chrome, attitudes, accelerators, notes and annotations are the background:
+ * inert before the migration, inert after it.
+ */
+function definitionOf(model: WardleyModel): DiagramDefinition {
+  return assertValidDiagramDefinition({
+    elementTypes: [
+      { id: "component", shape: markShape, anchors: { kind: "edge" }, sizing: "model", label: { placement: "beside", editable: true } },
+      { id: "anchor", shape: markShape, anchors: { kind: "edge" }, sizing: "model", label: { placement: "beside", editable: true } },
+      { id: "submap", shape: markShape, anchors: { kind: "edge" }, sizing: "model", label: { placement: "beside", editable: true } },
+      { id: "evolve-target", shape: evolveTargetShape, anchors: { kind: "edge" }, sizing: "model", draggable: false },
+    ],
+    relationTypes: [
+      {
+        id: "link",
+        route: "straight",
+        style: { endMarker: "none" },
+        lineClassName: "wardley-link",
+        endpoints: {
+          source: { elementTypes: ["component", "anchor", "submap"] },
+          target: { elementTypes: ["component", "anchor", "submap"], anchors: "edge" },
+          allowSelf: false,
+        },
+      },
+      {
+        id: "flow-link",
+        route: "straight",
+        style: { endMarker: "none" },
+        lineClassName: "wardley-link wardley-link-flow",
+        endpoints: {
+          source: { elementTypes: ["component", "anchor", "submap"] },
+          target: { elementTypes: ["component", "anchor", "submap"], anchors: "edge" },
+          allowSelf: false,
+        },
+      },
+      {
+        id: "evolve",
+        route: "straight",
+        style: { endMarker: "none" },
+        lineClassName: "wardley-evolve",
+        endpoints: {
+          source: { elementTypes: ["component", "anchor", "submap"] },
+          target: { elementTypes: ["evolve-target"], anchors: "edge" },
+          allowSelf: false,
+        },
+      },
+    ],
+    layout: { modes: ["manual"] },
+    dragging: "enabled",
+    // The intrinsic space: Fit shows exactly this, margins included, because the map's plane
+    // is the 0..1 space itself rather than whatever its contents span.
+    extent: { x: -MARGIN, y: -MARGIN, width: SPACE + MARGIN * 2, height: SPACE + MARGIN * 2 },
+    // And its hard edge: a mark must not be draggable off the map while the pointer is down.
+    dragBounds: { x: 0, y: 0, width: SPACE, height: SPACE },
+    background: {
+      background: "wardley-chrome",
+      render: (view: ShapeBounds) => <WardleyBackground model={model} view={view} />,
+    },
+  });
+}
+
+/**
+ * Renders one Wardley map, through the diagram library: the module supplies the definition
+ * above, folds the stream into the library's model, and answers events - a drag as the same
+ * backend move it always was, the menu and F2 through the context channel, the label editor
+ * opening where the drawn text begins. The axes are still drawn by this module, now as the
+ * definition's declared background, and every position still comes from the document: there
+ * is no layout here and none anywhere in this module.
+ */
+export function WardleyCanvas({ projectId, entryId, path }: WardleyCanvasProps) {
+  const { model, loading, failed, moveElementTo, reportView } = useWardleyStream(projectId, path);
+  const { select, executeAction, executeShortcut } = useContextConnection();
+  const { selection, actions } = useContextSelection();
+  const toolboxItems = useToolboxItems(projectId, path);
+  const [rejection, setRejection] = useState("");
+  const [viewport, setViewport] = useState<ShapeBounds | null>(null);
+
+  const selectionKey = innermostKey(selection);
+  const selectedId = elementIdOfKey(selectionKey ?? null);
+
+  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
+  const editingId = inlineLabelElementIdOf(prompt);
+
+  // The definition closes over the model for its background - read every render, so the axis
+  // and the inert furniture follow the document without a remount.
+  const definition = useMemo(() => definitionOf(model), [model]);
+
+  const diagramModel = useMemo<DiagramModel>(() => {
+    const marks = [...model.elements.values()].map((element): MarkElement => ({
+      id: element.id,
+      type: kindName(element.kind),
+      x: scale(element.x),
+      y: scale(element.y),
+      width: DOT * 2,
+      height: DOT * 2,
+      label: element.name,
+      // Where the drawn label begins - the author's own offset, left of the mark included -
+      // so the editor opens over the text it replaces.
+      labelAt: {
+        x: scale(element.x) + (element.labelOffset?.x ?? DOT + 6),
+        y: scale(element.y) + (element.labelOffset?.y ?? 4) - 4,
+      },
+      mark: element,
+    }));
+
+    // An evolving mark is shown at BOTH positions joined by a movement indicator, because the
+    // pair is the point of the statement: the destination is an element (a line needs two
+    // ends) that ignores every gesture, and the indicator is an ordinary connection.
+    const evolveTargets = [...model.elements.values()]
+      .filter((element) => element.evolve)
+      .map((element): EvolveTargetElement => ({
+        id: `evolve:${element.id}`,
+        type: "evolve-target",
+        x: scale(element.evolve!.maturity),
+        y: scale(element.y),
+        width: DOT * 2,
+        height: DOT * 2,
+        overrideName: element.evolve!.overrideName || undefined,
+      }));
+
+    const links = [...model.links.values()].flatMap((link) =>
+      model.elements.has(link.sourceId) && model.elements.has(link.targetId)
+        ? [{
+            id: link.id,
+            type: link.isFlow ? "flow-link" : "link",
+            sourceId: link.sourceId,
+            targetId: link.targetId,
+            title: link.context || undefined,
+          }]
+        : [], // a dangling link has nowhere to be drawn to, exactly as before
+    );
+
+    const evolves = [...model.elements.values()]
+      .filter((element) => element.evolve)
+      .map((element) => ({
+        id: `evolve-line:${element.id}`,
+        type: "evolve",
+        sourceId: element.id,
+        targetId: `evolve:${element.id}`,
+      }));
+
+    return { elements: [...marks, ...evolveTargets], connections: [...links, ...evolves] };
+  }, [model]);
+
+  /** The backend's push is the selection; the canvas renders it and never decides. */
+  const librarySelection = useMemo<DiagramSelection>(
+    () => (selectedId === null || !model.elements.has(selectedId) ? [] : [{ kind: "element", id: selectedId }]),
+    [selectedId, model.elements],
+  );
+
+  const runShortcut = (shortcut: ContextShortcut, sourceId: string) => {
+    void (async () => {
+      const outcome = await executeShortcut(shortcut, elementSourceOf(sourceId));
+      if (!outcome.accepted && outcome.error) {
+        setRejection(outcome.error);
+      }
+    })();
+  };
+
+  const events: DiagramEventHandlers = {
+    onSelectionChanged: ({ selection: next }) => {
+      // An evolve target ignores every gesture: it exists so the indicator has two ends, and
+      // a press on it neither selects nor deselects - the closest the library offers to the
+      // inert dot it replaced.
+      if (next.length > 0 && next[0].id.startsWith("evolve:")) {
+        return;
+      }
+      select(next.length > 0 ? elementSelectionOf(entryId, path, next[0].id) : null);
+    },
+    onElementMoved: ({ elementId, position }) => {
+      if (!model.elements.has(elementId)) {
+        return;
+      }
+      setRejection("");
+      // A drag is a DOCUMENT EDIT here, not a view change: the backend converts the point
+      // back into the document's axes and the new position returns as an ordinary delta. The
+      // library already clamped to the map's edge; the division puts it back into 0..1.
+      void (async () => {
+        const error = await moveElementTo(elementId, position.x / SPACE, position.y / SPACE);
+        if (error) {
+          setRejection(error);
+        }
+      })();
+    },
+    onViewChanged: ({ viewport: next }) => setViewport(next),
+    // Deliberately unanswered: element-dropped (the hand-built canvas never wired toolbox
+    // drops, and a migration adds nothing), element-deleted and connection-deleted (Delete
+    // was never a wardley key; removal lives in the menu the backend pushes).
+  };
+
+  // What the reader can see, reported once it settles, in the map's own 0..1 units.
+  useViewReport({
+    view: { x: viewport?.x ?? 0, y: viewport?.y ?? 0, w: viewport?.width ?? 0, h: viewport?.height ?? 0 },
+    report: reportView,
+    convert: () => ({
+      minX: (viewport?.x ?? 0) / SPACE,
+      minY: (viewport?.y ?? 0) / SPACE,
+      maxX: ((viewport?.x ?? 0) + (viewport?.width ?? 0)) / SPACE,
+      maxY: ((viewport?.y ?? 0) + (viewport?.height ?? 0)) / SPACE,
+    }),
+    ready: !loading && !failed && viewport !== null,
+  });
+
+  /** F2 travels to the backend as data - the backend owns the key-to-action map. */
+  const onKeyDown = (event: React.KeyboardEvent) => {
+    if (!selectedId || isTextTarget(event.target)) {
+      return;
+    }
+    const shortcut = structuralShortcutFor(event, ["F2"]);
+    if (!shortcut) {
+      return;
+    }
+    event.preventDefault();
+    runShortcut(shortcut, selectedId);
+  };
+
+  if (failed) {
+    return (
+      <div className="wardley-canvas wardley-canvas-message">
+        <p>This map could not be opened.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="wardley-canvas" role="application" aria-label={model.axis?.title ? `Wardley map: ${model.axis.title}` : "Wardley map"} onKeyDown={onKeyDown}>
+      <DiagramCanvas
+        definition={definition}
+        model={loading ? { elements: [], connections: [] } : diagramModel}
+        events={events}
+        selection={librarySelection}
+        toolboxItems={toolboxItems}
+        context={{
+          selectionKey: selectionKey ?? undefined,
+          actions,
+          selectForMenu: (id) => select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
+          executeAction: (actionId) => {
+            void (async () => {
+              const outcome = await executeAction(actionId);
+              if (!outcome.accepted && outcome.error) {
+                setRejection(outcome.error);
+              }
+            })();
+          },
+        }}
+        editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
+        className="wardley-surface"
+        scrollbarsClassName="wardley-scrollbars"
+        ariaLabel={model.axis?.title ? `Wardley map: ${model.axis.title}` : "Wardley map"}
+      />
+      {rejection ? <p className="wardley-rejection">{rejection}</p> : null}
+    </div>
+  );
+}
+
+/**
+ * Everything inert, drawn behind the elements: the bands, axes and their labels, the attitude
+ * regions, the accelerators, the notes and the numbered annotations. All of it ignored every
+ * gesture before the migration, and the background layer is what keeps it that way - at the
+ * recorded cost that a note overlapping a link now draws beneath it rather than above.
+ *
+ * The stage boundaries come from the model's axis, never from a constant here: the backend
+ * holds the one copy and this draws what it is told.
+ */
+function WardleyBackground({ model, view }: { model: WardleyModel; view: ShapeBounds }) {
+  // Stage and axis labels hold a readable size as the map is zoomed; the boundaries they name
+  // do not, because a position is only meaningful against its own axes.
+  const scaleFactor = view.width / (SPACE + MARGIN * 2);
+  const labelSize = 20 * Math.max(0.35, Math.min(2.5, scaleFactor));
+
+  return (
+    <g className="wardley-chrome" aria-hidden="true">
+      <WardleyAxes axis={model.axis} labelSize={labelSize} />
+
+      {[...model.attitudes.values()].map((attitude) => (
+        <g key={attitude.id}>
+          <rect
+            className={`wardley-attitude wardley-attitude-${attitudeName(attitude.kind)}`}
+            x={scale(Math.min(attitude.x, attitude.opposite.x))}
+            y={scale(Math.min(attitude.y, attitude.opposite.y))}
+            width={scale(Math.abs(attitude.opposite.x - attitude.x))}
+            height={scale(Math.abs(attitude.opposite.y - attitude.y))}
+          />
+          <text
+            className="wardley-attitude-label"
+            x={scale(Math.min(attitude.x, attitude.opposite.x)) + 8}
+            y={scale(Math.min(attitude.y, attitude.opposite.y)) + 22}
+          >
+            {attitudeName(attitude.kind)}
+          </text>
+        </g>
+      ))}
+
+      {[...model.accelerators.values()].map((accelerator) => (
+        <g key={accelerator.id} className="wardley-accelerator">
+          <path
+            className={accelerator.isDeaccelerator ? "wardley-accelerator-back" : "wardley-accelerator-forward"}
+            d={straightPath(
+              { x: scale(accelerator.x) - 16, y: scale(accelerator.y) },
+              { x: scale(accelerator.x) + 16, y: scale(accelerator.y) },
+            )}
+          />
+          <text className="wardley-element-label" x={scale(accelerator.x) + 22} y={scale(accelerator.y) + 4}>
+            {accelerator.name}
+          </text>
+        </g>
+      ))}
+
+      {[...model.notes.values()].map((note) => (
+        <text key={note.id} className="wardley-note" x={scale(note.x)} y={scale(note.y)}>
+          {note.text}
+        </text>
+      ))}
+
+      {/* Every occurrence, not just the first: one numbered annotation may be pinned in
+          several places, and none of them may be lost. */}
+      {[...model.annotations.values()].flatMap((annotation) =>
+        annotation.occurrences.map((occurrence, index) => (
+          <g key={`${annotation.id}-${index}`} className="wardley-annotation">
+            <circle cx={scale(occurrence.x)} cy={scale(occurrence.y)} r={11} />
+            <text x={scale(occurrence.x)} y={scale(occurrence.y) + 4} textAnchor="middle">
+              {annotation.number}
+            </text>
+            <title>{annotation.text}</title>
+          </g>
+        )),
+      )}
+    </g>
+  );
+}
+
+/** The bands, the two axes and their labels - what an empty map shows on its own. */
+function WardleyAxes({ axis, labelSize }: { axis?: WardleyAxis; labelSize: number }) {
+  return (
+    <>
+      {(axis?.stages ?? []).map((stage, index) => (
+        <g key={stage.label}>
+          <rect
+            className={`wardley-band wardley-band-${index}`}
+            x={scale(stage.start)}
+            y={0}
+            width={scale(stage.end - stage.start)}
+            height={SPACE}
+          />
+          {index > 0 ? (
+            <line
+              className="wardley-band-edge"
+              x1={scale(stage.start)}
+              y1={0}
+              x2={scale(stage.start)}
+              y2={SPACE}
+            />
+          ) : null}
+          <text
+            className="wardley-band-label"
+            x={scale((stage.start + stage.end) / 2)}
+            y={SPACE + 34}
+            fontSize={labelSize}
+            textAnchor="middle"
+          >
+            {stage.label}
+          </text>
+        </g>
+      ))}
+
+      {/* The value chain: the user need at the top, invisible at the bottom. */}
+      <line className="wardley-axis" x1={0} y1={0} x2={0} y2={SPACE} />
+      {/* Evolution: genesis at the left, commodity at the right. */}
+      <line className="wardley-axis" x1={0} y1={SPACE} x2={SPACE} y2={SPACE} />
+
+      <text className="wardley-axis-label" transform={`translate(${-34} ${SPACE / 2}) rotate(-90)`} fontSize={labelSize} textAnchor="middle">
+        Value chain
+      </text>
+      <text className="wardley-axis-end" x={-14} y={12} fontSize={labelSize * 0.8} textAnchor="end">
+        Visible
+      </text>
+      <text className="wardley-axis-end" x={-14} y={SPACE} fontSize={labelSize * 0.8} textAnchor="end">
+        Invisible
+      </text>
+      <text className="wardley-axis-label" x={SPACE / 2} y={SPACE + 66} fontSize={labelSize} textAnchor="middle">
+        Evolution
+      </text>
+    </>
+  );
 }

@@ -400,6 +400,56 @@ describe("DiagramCanvas", () => {
     expect(onSubmit).toHaveBeenCalledWith("Alpha Prime");
   });
 
+  it("a beside-placed editor opens at the model's own label origin where one is carried", () => {
+    // A wardley label sits at an AUTHORED pixel offset from its mark - left of it included -
+    // and the editor must open where the drawn text begins, not at the shape's default gap.
+    // The model carries the origin (labelAt); the definition still decides editability.
+    const definition = definitionOf();
+    (definition.elementTypes[0] as { label?: unknown }).label = { placement: "beside", editable: true };
+    const model = modelOf();
+    (model.elements[0] as { labelAt?: unknown }).labelAt = { x: -57, y: 48 };
+
+    const { container } = renderCanvas({}, definition, model, {
+      editing: {
+        editingId: "a",
+        onPropose: async (revision: number) => ({ revision, valid: true, reason: "" }),
+        onSubmit: async () => ({ completed: true, error: "" }),
+        onCancel: () => {},
+      },
+    });
+
+    const editor = container.querySelector("foreignObject")!;
+    expect(editor).not.toBeNull();
+    expect(Number(editor.getAttribute("x"))).toBe(-57);
+  });
+
+  it("a drag is clamped to the definition's drag bounds, preview and raised position alike", () => {
+    // An intrinsic space is a hard edge: a wardley component must not be draggable off the
+    // map while the pointer is down, and the raised position must already respect it.
+    const onElementMoved = vi.fn();
+    const definition = definitionOf({ dragBounds: { x: -100, y: -100, width: 200, height: 200 } });
+    const { container } = renderCanvas({ onElementMoved }, definition);
+
+    drag(elementOn(container, "a"), 10, 10, 160, 40);
+
+    expect(onElementMoved).toHaveBeenCalledExactlyOnceWith({
+      kind: "element-moved",
+      elementId: "a",
+      position: { x: 100, y: 30 },
+    });
+  });
+
+  it("a connection carrying a title renders it as the hover tooltip", () => {
+    // A wardley link's `context` is a tooltip on the whole connection; a migration must not
+    // silently drop it.
+    const model = modelOf();
+    (model.connections[0] as { title?: string }).title = "verifies tokens with";
+
+    const { container } = renderCanvas({}, definitionOf(), model);
+
+    expect(container.querySelector('[data-connection-id="a->b"] title')?.textContent).toBe("verifies tokens with");
+  });
+
   it("a label the definition does not mark editable opens no editor", () => {
     const { container } = renderCanvas({}, definitionOf(), modelOf(), {
       editing: {
