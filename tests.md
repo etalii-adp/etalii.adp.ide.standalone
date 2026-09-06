@@ -2223,3 +2223,29 @@ Re-run the standing sparql entries above against a migrated build, plus:
 - **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
   the session's credential prohibition. The paint order, path marking and refusal reporting
   are pinned by unit tests seen to fail under narrow sabotages.
+
+## dependency-graph re-run after its library migration (diagram-library-adoption, task 8)
+
+The graph now renders through the diagram library: same span nodes and forward-looping
+bezier dependencies, arrowheads on the dependency end, labels editable inline on nodes and
+relations. The backend's span-viewport culling is untouched. Re-run the standing
+dependency-graph entries above against a migrated build, plus:
+
+- **Actions**: drag a node down most of a row and release; drag from a node's right anchor
+  onto another node, then from its left anchor; drag from an anchor and release on empty
+  canvas; select a dependency whose target sits behind its source and check the loop; rename
+  a node and a dependency inline; Tab/Enter/Insert against a selected node; drop a toolbox
+  entry.
+- **Expected**: the release lands on the snapped row (the mid-drag row-snap preview and the
+  "x · row N" hint retired with the module's own drag machinery - a recorded loss; the
+  landing is still snapped); the right-anchor drag relates dragged->landing and the
+  left-anchor drag the reverse; the empty release still creates-and-relates at the pointer;
+  the loop still departs rightward and arrives from the left; zoom is the library's uniform
+  viewBox step (the separate tighter vertical clamp retired - recorded); the right-button
+  background pan retired with the library's surface gestures (recorded); nothing else feels
+  worse.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition. The anchor-decides-direction rule, the release-time
+  row snap and the loop-back route are pinned by unit tests seen to fail under narrow
+  sabotages.
