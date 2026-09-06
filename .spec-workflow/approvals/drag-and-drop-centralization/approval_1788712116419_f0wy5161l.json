@@ -3,8 +3,10 @@
   "title": "drag-and-drop-centralization tasks (7 and 8, the corrected boundary)",
   "filePath": ".spec-workflow/specs/drag-and-drop-centralization/tasks.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-06T16:28:36.419Z",
   "category": "spec",
-  "categoryName": "drag-and-drop-centralization"
+  "categoryName": "drag-and-drop-centralization",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-06T16:44:48.288Z"
 }

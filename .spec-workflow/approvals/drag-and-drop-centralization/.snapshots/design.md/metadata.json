@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/drag-and-drop-centralization/design.md",
-  "currentVersion": 5,
+  "currentVersion": 6,
   "snapshots": [
     {
       "version": 1,
@@ -41,6 +41,14 @@
       "trigger": "approved",
       "approvalId": "approval_1788709656473_ef4hvsj6h",
       "approvalTitle": "drag-and-drop-centralization design (task-1 deviations annotated)"
+    },
+    {
+      "version": 6,
+      "filename": "snapshot-006.json",
+      "timestamp": "2026-09-06T16:44:46.615Z",
+      "trigger": "approved",
+      "approvalId": "approval_1788712109819_rv7gx1dwm",
+      "approvalTitle": "drag-and-drop-centralization design (resize/adjust amendment)"
     }
   ]
 }
