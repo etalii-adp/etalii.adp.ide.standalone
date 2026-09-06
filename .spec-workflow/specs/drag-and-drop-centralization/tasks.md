@@ -29,7 +29,7 @@ One worktree for the whole specification (`.claude/worktrees/dnd`, per CLAUDE.md
   - Fresh before-and-after figures on the Wikidata, laureates, `owl-time` and Helm models — the before side measured on the pre-change commit in the worktree, never compared against the requirements' 2026-09-03 quote — plus a timeline drag at comparable element count in the same run, recorded beside the after figures so the user's "prefer the timeline drag" benchmark is answered with a number beside a number. All recorded in the implementation log and summarized in `DiagramCanvas`'s doc-comment beside the scheduler's reasoning. A `tests.md` entry for dragging the Wikidata and laureates examples in a real browser, run from the worktree on the implementing Developer's reserved ports, because jsdom measures work done rather than smoothness perceived.
   - _Requirements: 4.1, 4.2, 4.3_
 
-- [ ] 6. Gate and merge
+- [-] 6. Gate and merge
   - All four gates exit zero on the merged tree in a per-agent scratch worktree, landed with `--ff-only` from the main checkout; any port change reverted before the merge; the coverage diff re-run against the finished code.
   - _Requirements: 2.1_
 
