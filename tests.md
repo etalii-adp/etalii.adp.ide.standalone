@@ -1764,6 +1764,14 @@ can see and grab is a question only a browser answers.
   the per-canvas drag, pan and zoom tests in each `*Canvas.test.tsx`, each verified by sabotage:
   unwiring `onPan`, feeding the fitted box instead of the live view, and hard-coding the view
   span each fail their named test and nothing else.
+- **Result 2026-09-05 (Tester 2)**: **fails on the SVG view-box canvas, passes on the pixels-per-unit one.** Run against a developer build on the reserved ports, `c4/reference/architecture/courier.containers.adp` and `timeline/example-1/roadmap.tml`.
+  - **The bars are real.** In a browser the horizontal track measures 771×10px with a 385px thumb and the vertical 288×10px with a 153px thumb — grabbable, and every one of these is zero in jsdom, which is why this check exists.
+  - **Dragging tracks the pointer.** A 194px horizontal drag moved the thumb 192px and panned the view 1214 units; a 67px vertical drag moved the thumb 67px. No lag, lead or jump, and the content moved proportionally.
+  - **Zoom resizes the thumb.** Zooming in took the view box from 2424 to 1939.2 units (×0.8) and both thumbs shrank by the same factor — size tracking zoom rather than only offset.
+  - **The failure is the fitted state on c4.** Zoomed out until both thumbs fill their tracks exactly (fill 1.000, thumb x = track x), a 115px drag *on the thumb* left the thumb where it was and **panned the canvas 723 units**. The entry requires dragging to move nothing there, because nothing is outside the view to pan to. Worse than the stated expectation: the thumb still reports the whole diagram visible while the view has been panned off it.
+  - **Not a mis-aimed drag**, checked rather than assumed: `document.elementFromPoint` at the drag origin returns `canvas-scrollbar-thumb` for both axes, so the gesture began on the thumb and not on the canvas behind it.
+  - **The same test on timeline passes** — fitted, thumb filling its track, the identical drag left the content exactly where it was. So this is specific to the SVG view-box shape rather than to the shared scrollbar component, which is precisely the distinction this entry's insistence on one canvas of each shape was written to expose.
+  - **Expressible as a unit test** despite the jsdom caveat: the property is fraction arithmetic, not pixels — given a fitted view, a thumb drag must produce no view change. Not written here; filing rather than fixing.
 
 ## No canvas grows a scrollbar of its own (canvas-scrollbars, task 6)
 
