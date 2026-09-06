@@ -2459,3 +2459,26 @@ jsdom applies no CSS, so no automated check can see the appearance itself.
 
 - **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
   the session's credential prohibition.
+
+## A large diagram's drag keeps up with the pointer (drag-and-drop-centralization, task 5)
+
+jsdom measures work done, not smoothness perceived - this is the real-browser half of the
+measurement, on the two models the report named.
+
+- **Steps**: run the app from the implementing worktree on the Developer's reserved ports
+  (both port files changed and reverted afterwards - `src/client/vite.config.ts` and
+  `src/backend/EtAlii.Adp.Backend.Service/appsettings.developer.json`), browsing the
+  backend's port. Open `src/examples/diagrams/rdf/wikidata/marie-curie.ttl` and drag a
+  resource card around for a few seconds; open `src/examples/diagrams/rdf/nobel/laureates.ttl`
+  and do the same, including a card far from the one first selected. Pan both diagrams by
+  dragging the background.
+- **Expected**: the card rides the pointer with no visible lag on both models - the
+  laureates drag feels like a timeline drag, which is the user's stated benchmark - and the
+  pan moves the diagram and both scrollbar thumbs live. Escape mid-drag puts the card back
+  and selects nothing; Escape mid-pan rolls the view back to where the pan began (this
+  roll-back is deliberate: the pan is the gesture's transient visual until release).
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - recorded runnable for
+  the next manual pass; the jsdom halves of the same measurement are in the task-5
+  implementation log (before: 10.4-47.8ms per frame on the rdf shapes; after: 0.23-0.33ms,
+  flat across model sizes).

@@ -309,6 +309,14 @@ export function DiagramCanvas({
   // scoped re-render). A pan writes no cell at all: its per-frame values go straight to the
   // svg's viewBox attribute and the scrollbar thumbs, and the view becomes state once, at
   // gesture end (Requirement 1.5).
+  //
+  // Measured on 2026-09-06 (jsdom, 30 pointer frames, best of three, same harness both
+  // sides): before this scheduling, per-frame drag cost tracked drawn DOM nodes - helm
+  // prometheus (196 nodes) 1.40ms, owl-time (422) 2.68ms, rdf Wikidata shape (2,086)
+  // 10.44ms, rdf laureates shape (9,016) 47.78ms. After, the same drags cost 0.19, 0.21,
+  // 0.23 and 0.33ms - flat across a 46x spread of drawn nodes, and a laureates drag now
+  // sits between the timeline's own 100-span (0.24ms) and 1,000-span (0.49ms) readings,
+  // which is the user's "prefer the timeline drag" benchmark answered with a number.
   const dragValue = useMemo(() => createGestureValue<ElementDragOffset>(), []);
   const dragFrameRef = useRef<GestureFrame<ElementDragOffset> | null>(null);
   const connectValue = useMemo(() => createGestureValue<ConnectPreview>(), []);
