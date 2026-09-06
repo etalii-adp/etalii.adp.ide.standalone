@@ -1,5 +1,6 @@
 #if DEBUG
-using EtAlii.Adp.Backend.Authentication;
+using EtAlii.Adp.Authentication;
+using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Backend.Sessions;
 using EtAlii.Adp.Common;
 using Grpc.Core;
@@ -53,7 +54,7 @@ public class DeveloperSessionTests
         DeveloperSessionDisabled = disabled,
     };
 
-    private static Backend.Authentication.AuthenticationService Service(
+    private static EtAlii.Adp.Authentication.AuthenticationService Service(
         ISessionStore store,
         LocalAuthenticatorOptions options,
         string environmentName = "Development") =>

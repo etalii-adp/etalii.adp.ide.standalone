@@ -1,3 +1,4 @@
+using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Common;
 using System.Reflection;
 using Grpc.Core;
@@ -7,9 +8,9 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 #endif
 
-namespace EtAlii.Adp.Backend.Authentication;
+namespace EtAlii.Adp.Authentication;
 
-public sealed class AuthenticationService : EtAlii.Adp.AuthenticationService.AuthenticationServiceBase
+public sealed class AuthenticationService : Wire.AuthenticationService.AuthenticationServiceBase
 {
     private static readonly ILogger _logger = Log.ForContext<AuthenticationService>();
 

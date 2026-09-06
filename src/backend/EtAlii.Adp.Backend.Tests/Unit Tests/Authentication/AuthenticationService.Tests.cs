@@ -1,4 +1,5 @@
-using EtAlii.Adp.Backend.Authentication;
+using EtAlii.Adp.Authentication;
+using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Backend.Sessions;
 using Grpc.Core;
 using Grpc.Core.Testing;
@@ -36,7 +37,7 @@ public class AuthenticationServiceTests
     public async Task DescribeProduct_AnswersTheStampedInformationalVersion()
     {
         // Arrange: the authenticator is irrelevant to this call - a refusing one proves it.
-        var service = new Backend.Authentication.AuthenticationService(new RefusingAuthenticator(), new InMemorySessionStore());
+        var service = new EtAlii.Adp.Authentication.AuthenticationService(new RefusingAuthenticator(), new InMemorySessionStore());
 
         // Act.
         var response = await service.DescribeProduct(new DescribeProductRequest(), CreateContext());
