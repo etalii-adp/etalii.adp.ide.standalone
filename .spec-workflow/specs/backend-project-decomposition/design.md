@@ -33,27 +33,31 @@ Three prior decisions are settled with it: **scope** — contracts and cycle-bre
 
 A **wire layer** (generated proto types) and a **code layer** (hand-written types) each have their own dependency graph, and the decomposition moves both. Keeping them distinct is what stops the design conflating a proto import with a code dependency.
 
-### The wire layer — `.Wire` per project, `Common.Wire` at the bottom
+### The wire layer — a `.Wire` namespace inside each functional project, not a separate assembly
 
-Each `src/api/*.proto` generates into the project it belongs to, in an `EtAlii.Adp.<Area>.Wire` namespace:
+**Corrected per the user's review: the `.proto` files are not moved and no `.Wire` project is created.** The `src/api/*.proto` files stay at the repository root and are **linked** into the functional projects — `<Protobuf Include="..\..\api\X.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="…" />` — generating exactly as the current single-project build already does. Only two things change from today: *which project* compiles each proto, and the `csharp_namespace` it targets. **`EtAlii.Adp.<Area>.Wire` is a namespace inside `EtAlii.Adp.<Area>`, beside that project's hand-written code — never a separate `EtAlii.Adp.<Area>.Wire.csproj`.**
 
-| proto | generates into | wire dependencies |
-| --- | --- | --- |
-| `shared.proto` | `EtAlii.Adp.Common.Wire` | — |
-| `connection.proto` | `EtAlii.Adp.Common.Wire` | — |
-| `elements.proto` | `EtAlii.Adp.Common.Wire` | connection |
-| `authentication.proto` | `EtAlii.Adp.Authentication.Wire` | — |
-| `hierarchy.proto` | `EtAlii.Adp.Hierarchy.Wire` | Common.Wire |
-| `projects.proto` | `EtAlii.Adp.Projects.Wire` | Common.Wire |
-| `deltas.proto` | `EtAlii.Adp.Diagram.Wire` | Common.Wire (elements) |
-| `diagrams.proto` | `EtAlii.Adp.Diagram.Wire` | Common.Wire, deltas |
-| `context.proto` | `EtAlii.Adp.Context.Wire` | Common.Wire, Hierarchy.Wire |
+**Each proto is owned — linked and generated — by exactly one project**, so no type is generated into two assemblies. A proto that several others import is owned once, and the projects needing its types take an ordinary **project reference** to the owner:
 
-**The design question the user's instruction opens — may `.Wire` assemblies reference each other, or must everything shared sink to Common? — is decided: they may reference each other along the proto import graph, and only the universally-imported protos (`shared`, `connection`, `elements`) sink to `Common.Wire`.** The reasoning: forcing everything shared down would drag `hierarchy.proto`'s domain types (`EntryKind`) into Common merely because `context.proto` imports them, which defeats per-project ownership. Letting `Context.Wire` reference `Hierarchy.Wire` mirrors the proto graph exactly and keeps each project's generated types with it. `shared`/`connection`/`elements` sink to Common because they are foundational identity types (`ShortGuid`, `Path`, `ElementId`) imported across unrelated areas, not any one area's domain. **This wire-level `Context.Wire → Hierarchy.Wire` edge is functional-to-functional and does not violate the user's constraint, which is specifically about `EtAlii.Adp.Backend` depending on functional projects.**
+| proto | linked & generated in | csharp_namespace | project references |
+| --- | --- | --- | --- |
+| `shared.proto` | `EtAlii.Adp.Common` | `EtAlii.Adp.Common.Wire` | — |
+| `connection.proto` | `EtAlii.Adp.Common` | `EtAlii.Adp.Common.Wire` | — |
+| `elements.proto` | `EtAlii.Adp.Common` | `EtAlii.Adp.Common.Wire` | Common (connection) |
+| `authentication.proto` | `EtAlii.Adp.Authentication` | `EtAlii.Adp.Authentication.Wire` | — |
+| `hierarchy.proto` | `EtAlii.Adp.Hierarchy` | `EtAlii.Adp.Hierarchy.Wire` | Common |
+| `projects.proto` | `EtAlii.Adp.Projects` | `EtAlii.Adp.Projects.Wire` | Common |
+| `deltas.proto` | `EtAlii.Adp.Diagram` | `EtAlii.Adp.Diagram.Wire` | Common (elements) |
+| `diagrams.proto` | `EtAlii.Adp.Diagram` | `EtAlii.Adp.Diagram.Wire` | Common |
+| `context.proto` | `EtAlii.Adp.Context` | `EtAlii.Adp.Context.Wire` | Common, Hierarchy |
+
+**The cross-import question is answered by ownership, not by separate wire assemblies.** `shared`, `connection` and `elements` carry the foundational identity types (`ShortGuid`, `Path`, `ElementId`) imported across unrelated areas, so `EtAlii.Adp.Common` owns them and everyone references Common. Where one functional proto imports another — `context.proto` imports `hierarchy.proto` — the owning project takes a **project reference** to the other (`EtAlii.Adp.Context` → `EtAlii.Adp.Hierarchy`), and protoc resolves the imported types because `hierarchy.proto`'s `csharp_namespace` is `EtAlii.Adp.Hierarchy.Wire`. **That is a functional-to-functional project reference and does not touch the user's `EtAlii.Adp.Backend`→functional constraint.** Sinking everything imported-across-areas into Common was the alternative and is rejected: it would drag `hierarchy.proto`'s domain types (`EntryKind`) into Common merely because `context.proto` imports them — **Common holds what is *shared*, not what is *reachable*.**
+
+**Setting the namespace, as per the previous implementation** (Requirement: generate the same code as today): each proto's `option csharp_namespace` in the single canonical `src/api/` copy is changed to its owner's `.Wire` namespace — today all but `shared.proto` declare `EtAlii.Adp`, and `shared.proto` declares `EtAlii.Adp.Contracts`. Because each proto is generated by exactly one project, editing the namespace in the one canonical copy is unambiguous: there is no second generator to disagree, which is also why the orphan `hierarchy.proto` (below) must be removed before this step.
 
 ### The code layer — `EtAlii.Adp.Common` at the bottom
 
-`EtAlii.Adp.Common` depends on nothing (except its own `Common.Wire`) and holds what the cycle-breaking pulls down. Measured members:
+`EtAlii.Adp.Common` depends on nothing (its own generated `Common.Wire` types are compiled inside it, not a separate assembly) and holds what the cycle-breaking pulls down. Measured members:
 
 - **The command/history contract** — `ICommand`, `ICommandHandler`, `ICommandDispatcher`, `IHistoryStack`, `IHistoryStackStore`, `IContextNoticeSink`, and the `_Model` records (`CommandResult`, `HistoryEntry`, `HistoryAvailability`, `HistoryChangedEventArgs`). These sit in the root `EtAlii.Adp.Backend` namespace today and are consumed with no `using`, invisibly, by Context (6 sites) and Hierarchy (23 sites). **This is Requirement 1 and it moves first**, because nothing can be extracted while the contract everyone shares sits in a peer folder. The concrete `HistoryStack`/`CommandDispatcher` implementations and the sixteen command/handler *registrations* are composition-root wiring and go to the DI root (`Program.cs`), not to Common.
 - **The `Line` document family** — `Line`, `LineDocument`, `LineRange`, `LineSegment`, `LineSplice`, with `AdpFileWriter` and `SharedDocumentReader`. Shared text-document primitives consumed by modules, Problems, Projects and Context. **The single `Line` type carries the entire Context→Hierarchy back-edge**, so moving the family down turns the fattest cycle (28→1) into a one-directional edge (28→0) and simultaneously shrinks the modules' widest Hierarchy dependency.
@@ -98,7 +102,7 @@ No persisted change, no wire-shape change. The same generated messages, relocate
 
 ## Error Handling / Risks
 
-- **A wire-level `.Wire→.Wire` cycle** would be as fatal as a code cycle. The proto import graph is acyclic (verified), so per-project `.Wire` assemblies following it stay acyclic — but the design pins this: no `.proto` may be moved into a project whose `.Wire` its own imports would then depend on circularly.
+- **A project-reference cycle induced by the proto imports** would be as fatal as a code cycle: because a proto is owned by one project and importers reference the owner, `context.proto` importing `hierarchy.proto` makes `EtAlii.Adp.Context` reference `EtAlii.Adp.Hierarchy`. The proto import graph is acyclic (verified), so these ownership references stay acyclic — the design pins that no proto is assigned to an owner whose project would then have to reference back into a project that references it.
 - **The orphan `hierarchy.proto`** is reconciled against `src/api/hierarchy.proto` and removed in phase one; leaving two divergent copies while distributing protos would generate one area's types from the wrong source.
 - **A generated-code break is invisible to the four gates** because they read `obj/`. Every step that relocates generation or a namespace is accepted only on a **fresh-tree build** (§Verification).
 - **The "try to" back-edges**: an edge that cannot be broken cheaply is recorded with its cost, not forced. Forcing a dependency inversion that contorts the code is a worse outcome than a documented, bounded exception the user flagged as acceptable.
