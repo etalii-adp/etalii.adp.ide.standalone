@@ -1,5 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { beginGestureFrame, environmentFrameProvider, type FrameProvider, type LiveWrite } from "./gestureFrame";
+import {
+  beginGestureFrame,
+  createGestureValue,
+  environmentFrameProvider,
+  valueWrite,
+  type FrameProvider,
+  type LiveWrite,
+} from "./gestureFrame";
 
 /** A frame provider under the test's control: frames run when the test flushes them. */
 function manualFrameProvider() {
@@ -158,6 +165,58 @@ describe("beginGestureFrame", () => {
   it("exposes the rect it was begun with - read once, served for the gesture's life", () => {
     const frame = beginGestureFrame(rect, [], null);
     expect(frame.rect).toBe(rect);
+  });
+});
+
+describe("createGestureValue", () => {
+  it("notifies subscribers on set, and hands the latest value back", () => {
+    const cell = createGestureValue<number>();
+    const heard: Array<number | null> = [];
+    cell.subscribe(() => heard.push(cell.get()));
+
+    cell.set(1);
+    cell.set(2);
+
+    expect(heard).toEqual([1, 2]);
+    expect(cell.get()).toBe(2);
+  });
+
+  it("clear notifies once and an already-empty clear wakes nobody", () => {
+    const cell = createGestureValue<number>();
+    const listener = vi.fn();
+    cell.subscribe(listener);
+
+    cell.clear(); // empty already - a revert of a gesture that never published
+    expect(listener).not.toHaveBeenCalled();
+
+    cell.set(1);
+    cell.clear();
+    cell.clear();
+    expect(listener).toHaveBeenCalledTimes(2); // the set and the one real clear
+    expect(cell.get()).toBeNull();
+  });
+
+  it("an unsubscribed listener hears nothing more", () => {
+    const cell = createGestureValue<number>();
+    const listener = vi.fn();
+    const unsubscribe = cell.subscribe(listener);
+
+    cell.set(1);
+    unsubscribe();
+    cell.set(2);
+
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it("valueWrite publishes on apply and clears on revert - the scheduler's store handle", () => {
+    const cell = createGestureValue<string>();
+    const write = valueWrite(cell);
+
+    write.apply("live");
+    expect(cell.get()).toBe("live");
+
+    write.revert();
+    expect(cell.get()).toBeNull();
   });
 });
 

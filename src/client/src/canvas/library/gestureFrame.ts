@@ -92,6 +92,58 @@ export function environmentFrameProvider(): FrameProvider | null {
 }
 
 /**
+ * A subscribable latest-value cell: the seam through which a gesture's per-frame values
+ * reach the gesture's OWN participants without touching React state on the canvas. A
+ * component subscribes (via `useSyncExternalStore`) with a snapshot that is referentially
+ * stable unless the value concerns it, so a publication re-renders the dragged element in
+ * place - rings, clamps and state classes stay live - while every other element's snapshot
+ * is unchanged and React renders it zero times (Requirement 1.1, the scoped re-render the
+ * design records under Deviations).
+ */
+export interface GestureValue<T> {
+  subscribe(listener: () => void): () => void;
+  get(): T | null;
+  set(value: T): void;
+  clear(): void;
+}
+
+export function createGestureValue<T>(): GestureValue<T> {
+  let value: T | null = null;
+  const listeners = new Set<() => void>();
+  const emit = () => {
+    for (const listener of [...listeners]) {
+      listener();
+    }
+  };
+  return {
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    get: () => value,
+    set: (next) => {
+      value = next;
+      emit();
+    },
+    clear: () => {
+      if (value === null) {
+        return; // nothing published, nobody to wake
+      }
+      value = null;
+      emit();
+    },
+  };
+}
+
+/** The live-write handle publishing a gesture's per-frame value into a {@link GestureValue}. */
+export function valueWrite<T>(target: GestureValue<T>): LiveWrite<T> {
+  return {
+    apply: (value) => target.set(value),
+    revert: () => target.clear(),
+  };
+}
+
+/**
  * Begin scheduling one gesture's frames. With a frame provider, moves coalesce into one
  * applied frame per displayed frame; with none, every move applies synchronously - the same
  * write path, differently paced.

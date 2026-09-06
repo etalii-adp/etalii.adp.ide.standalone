@@ -159,6 +159,23 @@ describe("DiagramCanvas", () => {
     });
   });
 
+  it("an abandoned drag dissolves: nothing dispatched, no dragging visual left behind", () => {
+    // Paired with the commit test above, deliberately: this negative assertion passes
+    // whether or not the positive path works, so it proves abandonment only beside a test
+    // that saw exactly one dispatch on commit (task 2's pairing note).
+    const onElementMoved = vi.fn();
+    const { container } = renderCanvas({ onElementMoved });
+
+    const alpha = elementOn(container, "a");
+    fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(alpha, pointer("pointermove", { clientX: 60, clientY: 40 }));
+    expect(container.querySelector(".library-element-dragging")).not.toBeNull(); // the drag was live
+    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface")!, { key: "Escape" });
+
+    expect(onElementMoved).not.toHaveBeenCalled();
+    expect(container.querySelector(".library-element-dragging")).toBeNull();
+  });
+
   it("disabled dragging keeps the gesture a press: no move preview, no move event", () => {
     const onElementMoved = vi.fn();
     const onSelectionChanged = vi.fn();

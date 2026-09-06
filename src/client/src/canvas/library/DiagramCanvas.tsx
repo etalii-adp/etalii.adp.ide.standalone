@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, Component, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, Component, type ReactNode } from "react";
 import { create } from "@bufbuild/protobuf";
 import { ToolboxItemSchema, type ToolboxItem } from "@client/generated/diagrams_pb";
 import type { ContextActionGroup } from "@client/generated/context_pb";
@@ -16,6 +16,14 @@ import {
   type Point,
 } from "../connectors";
 import { usePointerGesture, type PointerPressWiring } from "../gesture/usePointerGesture";
+import {
+  beginGestureFrame,
+  createGestureValue,
+  valueWrite,
+  type GestureFrame,
+  type GestureValue,
+  type SurfaceRect,
+} from "./gestureFrame";
 import { BoxElement } from "../elements/box/BoxElement";
 import { CenteredBoxElement } from "../elements/centered-box/CenteredBoxElement";
 import { EllipseElement } from "../elements/ellipse/EllipseElement";
@@ -201,6 +209,13 @@ type PressTarget =
   | { kind: "adjust"; connection: DiagramModelConnection; from: Point }
   | { kind: "background"; view: ViewBox };
 
+/** The dragged element's live displacement, in canvas units, clamped - one per gesture. */
+interface ElementDragOffset {
+  id: string;
+  dx: number;
+  dy: number;
+}
+
 /** A connect gesture in flight: what it left from, where it is, and what it would land on. */
 interface ConnectPreview {
   relation: RelationTypeDefinition;
@@ -283,9 +298,36 @@ export function DiagramCanvas({
   const svgRef = useRef<SVGSVGElement>(null);
   const [view, setView] = useState<ViewBox | null>(null);
   const [ownSelection, setOwnSelection] = useState<DiagramSelection>([]);
-  const [dragOffset, setDragOffset] = useState<{ id: string; dx: number; dy: number } | null>(null);
   const [resizePreview, setResizePreview] = useState<{ id: string; side: "left" | "right"; dx: number } | null>(null);
   const [connect, setConnect] = useState<ConnectPreview | null>(null);
+
+  // A reposition's per-frame value is NOT React state on the canvas: it flows through the
+  // gesture-frame scheduler into this cell, and only the dragged element subscribes with a
+  // snapshot that concerns it - so per pointer frame React renders the gesture's own
+  // participants and nothing else (Requirement 1.1, the design's scoped re-render).
+  const dragValue = useMemo(() => createGestureValue<ElementDragOffset>(), []);
+  const dragFrameRef = useRef<GestureFrame<ElementDragOffset> | null>(null);
+  useEffect(
+    () => () => {
+      // The surface is unmounting: the nodes the writes went to are going away with it,
+      // so only the pending animation frame needs cancelling (Requirement 2.3).
+      dragFrameRef.current?.cancel();
+      dragFrameRef.current = null;
+    },
+    [],
+  );
+
+  /**
+   * The surface rectangle, read ONCE when a gesture begins and cached on the gesture's
+   * frame - the only layout read a whole gesture performs (Requirement 1.3). A window
+   * resized mid-gesture serves the stale rect until the gesture ends; the next reads afresh.
+   */
+  const surfaceRectAtGestureStart = useCallback((): SurfaceRect => {
+    const rect = svgRef.current?.getBoundingClientRect();
+    return rect !== undefined
+      ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
+      : { left: 0, top: 0, width: 0, height: 0 };
+  }, []);
 
   const selection = controlledSelection ?? ownSelection;
 
@@ -497,7 +539,6 @@ export function DiagramCanvas({
       svgRef.current?.focus();
     },
     onDragMove: (target, dx, dy) => {
-      const scale = unitsPerPixel(viewRef.current);
       switch (target.kind) {
         case "background": {
           const scaleAtPress = unitsPerPixel(target.view);
@@ -508,8 +549,12 @@ export function DiagramCanvas({
           if (!draggingEnabled(target.element)) {
             break; // disabled dragging: the press stays a press (Requirement 5.2)
           }
-          const at = clampToDragBounds(definition.dragBounds, target.element, dx * scale, dy * scale);
-          setDragOffset({ id: target.element.id, dx: at.x - target.element.x, dy: at.y - target.element.y });
+          // The frame begins on the first move: the rect is read here, once, and served
+          // for the gesture's life - no layout read per pointer frame (Requirement 1.3).
+          const frame = (dragFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), [valueWrite(dragValue)]));
+          const dragScale = frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : 1;
+          const at = clampToDragBounds(definition.dragBounds, target.element, dx * dragScale, dy * dragScale);
+          frame.move({ id: target.element.id, dx: at.x - target.element.x, dy: at.y - target.element.y });
           break;
         }
         case "anchor": {
@@ -517,6 +562,7 @@ export function DiagramCanvas({
           if (relation === undefined) {
             break; // no relation may leave this element; nothing to preview
           }
+          const scale = unitsPerPixel(viewRef.current);
           const point = { x: target.at.x + dx * scale, y: target.at.y + dy * scale };
           const candidate = elementAt(point);
           const valid = candidate !== undefined && connectVerdict(relation, target.element.id, candidate);
@@ -532,7 +578,7 @@ export function DiagramCanvas({
           break;
         }
         case "resize": {
-          setResizePreview({ id: target.element.id, side: target.side, dx: dx * scale });
+          setResizePreview({ id: target.element.id, side: target.side, dx: dx * unitsPerPixel(viewRef.current) });
           break;
         }
         case "adjust": {
@@ -554,7 +600,13 @@ export function DiagramCanvas({
           if (!draggingEnabled(target.element)) {
             break;
           }
-          setDragOffset(null);
+          // The commit undoes the live publication and the state write below paints the
+          // final position - the same code path as before the gesture, in one React batch,
+          // so nothing flickers (design, The commit and the abandon).
+          const frame = dragFrameRef.current;
+          dragFrameRef.current = null;
+          const dragScale = frame !== null && frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : unitsPerPixel(viewRef.current);
+          frame?.commit();
           // Under an automatic layout the definition says what the drag MEANS (Requirement
           // 8.4): a reclaimed displacement raises nothing - the next layout pass takes the
           // element back - while repin-to-manual raises the move, and the module answers by
@@ -565,7 +617,7 @@ export function DiagramCanvas({
           raise({
             kind: "element-moved",
             elementId: target.element.id,
-            position: clampToDragBounds(definition.dragBounds, target.element, dx * scale, dy * scale),
+            position: clampToDragBounds(definition.dragBounds, target.element, dx * dragScale, dy * dragScale),
           });
           break;
         }
@@ -615,7 +667,10 @@ export function DiagramCanvas({
       }
     },
     onDragAbandon: () => {
-      setDragOffset(null);
+      // The revert is the scheduler's: an abandonment cannot leak a publication any more
+      // than it can leak state, and nothing is dispatched (Requirement 2.3).
+      dragFrameRef.current?.revert();
+      dragFrameRef.current = null;
       setResizePreview(null);
       setConnect(null);
     },
@@ -900,7 +955,7 @@ export function DiagramCanvas({
       key={element.id}
       element={element}
       type={elementTypes.get(element.type)}
-      offset={dragOffset?.id === element.id ? dragOffset : undefined}
+      dragValue={dragValue}
       resize={resizePreview?.id === element.id ? resizePreview : undefined}
       resizable={elementTypes.get(element.type)?.sizing === "user"}
       resizePress={(side) => gesture.press({ kind: "resize", element, side })}
@@ -1048,7 +1103,7 @@ export function DiagramCanvas({
 function LibraryElement({
   element,
   type,
-  offset,
+  dragValue,
   resize,
   resizable,
   resizePress,
@@ -1060,7 +1115,7 @@ function LibraryElement({
 }: {
   element: DiagramModelElement;
   type: ElementTypeDefinition | undefined;
-  offset?: { dx: number; dy: number };
+  dragValue: GestureValue<ElementDragOffset>;
   resize?: { side: "left" | "right"; dx: number };
   resizable: boolean;
   resizePress: (side: "left" | "right") => PointerPressWiring;
@@ -1070,6 +1125,14 @@ function LibraryElement({
   anchorPress: (anchor: string | undefined, at: Point) => PointerPressWiring;
   onContextMenu: (event: React.MouseEvent) => void;
 }) {
+  // The scoped re-render: each element subscribes with a snapshot that is null unless the
+  // published displacement is ITS OWN, so a per-frame publication re-renders the dragged
+  // element in place - rings, clamps and state classes stay live - while every other
+  // element's snapshot is unchanged and React renders it zero times (Requirement 1.1).
+  const offset = useSyncExternalStore(dragValue.subscribe, () => {
+    const value = dragValue.get();
+    return value !== null && value.id === element.id ? value : null;
+  });
   const shifted: DiagramModelElement = offset ? { ...element, x: element.x + offset.dx, y: element.y + offset.dy } : element;
   const plainBounds = elementBounds(shifted, type);
   const bounds = resize ? resizedBounds(plainBounds, resize.side, resize.dx) : plainBounds;
@@ -1089,7 +1152,7 @@ function LibraryElement({
   return (
     <g className={classes} data-element-id={element.id} {...press} onContextMenu={onContextMenu}>
       <ShapeErrorBoundary bounds={bounds} label={element.label ?? element.id}>
-        {renderShape(resizing, type, bounds, { selected, dragging: offset !== undefined, connectTarget: connectHighlight === "valid" })}
+        {renderShape(resizing, type, bounds, { selected, dragging: offset !== null, connectTarget: connectHighlight === "valid" })}
       </ShapeErrorBoundary>
       {resizable && selected && (
         // The resize adorners a user-sized element earns when selected: each edge strip
