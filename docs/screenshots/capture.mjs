@@ -63,12 +63,23 @@ async function shoot(name) {
   console.log("captured " + name);
 }
 
-/** Opens a diagram: expands the folder chain, double-clicks the leaf, optionally fits. */
-async function openDiagram(chain, leaf, { fit = true } = {}) {
+/**
+ * Opens a diagram: expands the folder chain, double-clicks the leaf, waits for the drawing to
+ * arrive, and optionally fits.
+ *
+ * The wait is for drawn content rather than for a duration. A diagram streams from the backend,
+ * and a fixed sleep is a bet on how long that takes: the C4 container diagram lost that bet on a
+ * cold backend and was captured as an empty canvas with only its title - a picture that looks
+ * like a broken product and would have been committed as one, since nothing about it fails.
+ */
+async function openDiagram(chain, leaf, { fit = true, expectDrawing = true } = {}) {
   for (const folder of chain) {
     await clickAria(`Expand ${folder}`, { optional: true });
   }
   await clickText(leaf, { double: true });
+  if (expectDrawing) {
+    await page.waitForFunction(() => document.querySelectorAll("[data-element-id]").length > 0, { timeout: 20000 });
+  }
   await sleep(1500);
   if (fit) {
     await clickAria("Fit to View", { optional: true });
@@ -130,7 +141,7 @@ await shoot("dependency-graph.png");
 await closeTab();
 
 // ---- the markdown editor ---------------------------------------------------------------------
-await openDiagram(["editors", "markdown"], "guide.md", { fit: false });
+await openDiagram(["editors", "markdown"], "guide.md", { fit: false, expectDrawing: false });
 await shoot("markdown-editor.png");
 
 await browser.close();
