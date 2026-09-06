@@ -50,8 +50,8 @@ internal sealed class C4ParseState
     {
         if (_stack.Count > 1)
         {
-            var popped = _stack.Pop();
-            if (popped.Scope is C4ParseScope.View)
+            var (scope, _) = _stack.Pop();
+            if (scope is C4ParseScope.View)
             {
                 CurrentViewIndex = null;
             }

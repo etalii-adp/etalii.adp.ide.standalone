@@ -144,6 +144,36 @@ public static class CycleFinder
         return found;
     }
 
+    /// <summary>
+    /// A directed cycle's canonical form: its members rotated to start at the ordinally least, so
+    /// two statements of the same loop that begin at different variables compare equal. The
+    /// direction still matters, so this rotates rather than sorts.
+    /// </summary>
+    /// <remarks>
+    /// One reading, shared by the validator (which cycles the arrows form that no statement
+    /// claims), by the property grid, and by the writer's auto-claim of loops when a link closes
+    /// one - so all three agree on when two cycles are the same loop.
+    /// </remarks>
+    public static string CanonicalSignature(IReadOnlyList<string> cycle)
+    {
+        ArgumentNullException.ThrowIfNull(cycle);
+        if (cycle.Count == 0)
+        {
+            return "";
+        }
+
+        var start = 0;
+        for (var index = 1; index < cycle.Count; index++)
+        {
+            if (string.CompareOrdinal(cycle[index], cycle[start]) < 0)
+            {
+                start = index;
+            }
+        }
+
+        return string.Join("\0", Enumerable.Range(0, cycle.Count).Select(offset => cycle[(start + offset) % cycle.Count]));
+    }
+
     private static void Unblock(string vertex, HashSet<string> blocked, Dictionary<string, HashSet<string>> blockedOn)
     {
         blocked.Remove(vertex);

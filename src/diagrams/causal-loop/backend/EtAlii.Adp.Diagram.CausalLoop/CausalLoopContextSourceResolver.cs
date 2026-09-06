@@ -97,6 +97,14 @@ public sealed class CausalLoopContextSourceResolver : IContextSourceResolver
             return Resolved(source, id, ["This diagram"], bodyPath, rootPath, watchId, elementId, routed, "This diagram", null, this);
         }
 
+        // A relation gesture carries the two ends of a link the user drew, the same one-call,
+        // one-id way a placement carries a point. It resolves to a transient target the connect
+        // action reads the ends back out of; it names nothing and is never selected or stored.
+        if (CausalLoopSelection.RelationOf(elementId) is not null)
+        {
+            return Resolved(source, id, ["New link"], bodyPath, rootPath, watchId, elementId, routed, "New link", null, this);
+        }
+
         var model = _documents.GetOrLoad(bodyPath).Model;
         var text = Describe(model, elementId);
         if (text is null)

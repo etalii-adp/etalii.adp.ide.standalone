@@ -1,17 +1,15 @@
 using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Backend.Projects;
-
+using EtAlii.Adp.Common.Wire;
 using Grpc.Core;
 using Grpc.Net.Client;
-
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-
 using Xunit;
-
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
+using Path = EtAlii.Adp.Common.Wire.Path;
 using Wire = EtAlii.Adp.Diagram.HelmCharts.Wire;
 
 namespace EtAlii.Adp.Backend.Tests;
@@ -245,7 +243,7 @@ public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>
         return false;
     }
 
-    private async Task<IReadOnlyList<Element>> BaselineAsync(GrpcChannel channel, Metadata headers, Contracts.ShortGuid projectId)
+    private async Task<IReadOnlyList<Element>> BaselineAsync(GrpcChannel channel, Metadata headers, Common.Wire.ShortGuid projectId)
     {
         var client = new DiagramService.DiagramServiceClient(channel);
         using var cts = CreateMessageTimeout();
@@ -282,8 +280,8 @@ public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>
 
     private static Task<ExecuteActionResponse> ExecuteProjectActionAsync(
         ContextService.ContextServiceClient contextClient,
-        Contracts.ShortGuid projectId,
-        Contracts.ShortGuid watchId,
+        Common.Wire.ShortGuid projectId,
+        Common.Wire.ShortGuid watchId,
         Metadata headers,
         string actionId) =>
         contextClient.ExecuteActionAsync(
@@ -320,7 +318,7 @@ public class HelmChartsFlowTests : IClassFixture<WebApplicationFactory<Program>>
         return new Metadata { { SessionTokenHeader, response.Session.Value } };
     }
 
-    private async Task<Contracts.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
+    private async Task<Common.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
     {
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var pathMessage = new Path();

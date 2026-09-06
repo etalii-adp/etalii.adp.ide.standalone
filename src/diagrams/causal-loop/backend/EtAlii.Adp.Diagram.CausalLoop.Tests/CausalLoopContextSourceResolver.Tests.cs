@@ -2,6 +2,7 @@ using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Diagrams;
 using EtAlii.Adp.Backend.Hierarchy;
+using EtAlii.Adp.Common.Wire;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;

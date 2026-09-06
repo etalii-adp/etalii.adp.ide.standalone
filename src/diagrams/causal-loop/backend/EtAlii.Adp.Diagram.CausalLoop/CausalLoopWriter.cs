@@ -38,6 +38,150 @@ public static class CausalLoopWriter
 
     // ---- variables -------------------------------------------------------------------------
 
+    /// <summary>
+    /// A free (id, label) pair for a variable nobody named - what the toolbox drop and the
+    /// canvas "Add variable" reach for now that neither asks the user to type one.
+    /// </summary>
+    /// <remarks>
+    /// The id is whitespace-free because a statement is read as words on one line; the label is
+    /// the same number worn as a word a reader recognises. Both are stable once assigned - a
+    /// link refers to the id - so renaming is editing the label, never the id.
+    /// </remarks>
+    public static (string Id, string Label) NextVariableName(CausalLoopModel model)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        for (var number = 1; number < 100000; number++)
+        {
+            var id = string.Create(CultureInfo.InvariantCulture, $"variable{number}");
+            if (!model.Declares(id))
+            {
+                return (id, string.Create(CultureInfo.InvariantCulture, $"Variable {number}"));
+            }
+        }
+
+        return ("variable", "Variable");
+    }
+
+    /// <summary>
+    /// States a link and, in the same edit, claims every feedback loop the new link closes that
+    /// no statement already names - the loop a two-variable pair forms, and the longer loop a new
+    /// edge completes through variables already linked (causal-loop editing Requirement).
+    /// </summary>
+    /// <remarks>
+    /// One document edit, so a link and the loops it creates undo together as the one gesture the
+    /// user made. Only loops whose polarity the arrows actually decide are claimed, and each is
+    /// named for that polarity - R for reinforcing, B for balancing - so an auto-claimed loop
+    /// never lands already disagreeing with itself. A cycle a link states no polarity around is
+    /// left for the author to claim, the way the validator leaves it: "unknown" is not "none".
+    /// </remarks>
+    public static string AddLinkAndClaimLoops(
+        CausalLoopDocument document, CausalLoopModel model, string from, string to, CausalLoopPolarity polarity)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(model);
+
+        if (!model.Declares(from) || !model.Declares(to))
+        {
+            return NoSuchVariable;
+        }
+
+        if (Find(model, from, to) is not null)
+        {
+            return "That link is already stated in this diagram.";
+        }
+
+        var newLink = new CausalLoopLink(from, to, polarity, false, false, null, "", new LineRange(0, 0));
+        var claims = NewLoopClaims(model, newLink);
+
+        var statements = new List<string> { LinkStatement(newLink) };
+        statements.AddRange(claims.Select(claim =>
+            LoopStatement(new CausalLoopLoop(claim.Identifier, "", claim.Variables, new LineRange(0, 0)))));
+
+        document.Insert(AfterLast(document, model.Links.Select(l => l.Lines)), statements);
+        return "";
+    }
+
+    /// <summary>
+    /// The loops the new link closes that the document does not already claim, each with a fresh
+    /// identifier named for the polarity the arrows give it. Computed on the model as it will be
+    /// once the link is added, so a cycle that exists only because of the new edge is seen.
+    /// </summary>
+    private static IReadOnlyList<(string Identifier, IReadOnlyList<string> Variables)> NewLoopClaims(
+        CausalLoopModel model, CausalLoopLink newLink)
+    {
+        var withLink = model with { Links = [.. model.Links, newLink] };
+        var cycles = CycleFinder.Find(withLink).Cycles;
+
+        var seen = model.Loops.Select(loop => CycleFinder.CanonicalSignature(loop.Variables)).ToHashSet(StringComparer.Ordinal);
+        var reinforcing = 0;
+        var balancing = 0;
+        foreach (var loop in model.Loops)
+        {
+            _ = NextNumber(loop.Identifier, 'R', ref reinforcing);
+            _ = NextNumber(loop.Identifier, 'B', ref balancing);
+        }
+
+        var claims = new List<(string Identifier, IReadOnlyList<string> Variables)>();
+        foreach (var cycle in cycles)
+        {
+            if (!ClosesEdge(cycle, newLink.From, newLink.To))
+            {
+                continue;
+            }
+
+            var signature = CycleFinder.CanonicalSignature(cycle);
+            if (!seen.Add(signature))
+            {
+                continue;
+            }
+
+            var identifier = LoopPolarity.Of(withLink, cycle) switch
+            {
+                LoopPolarityResult.Reinforcing => string.Create(CultureInfo.InvariantCulture, $"R{++reinforcing}"),
+                LoopPolarityResult.Balancing => string.Create(CultureInfo.InvariantCulture, $"B{++balancing}"),
+                _ => "",
+            };
+            if (identifier.Length == 0)
+            {
+                continue; // undecidable: the author claims it, not the tool
+            }
+
+            claims.Add((identifier, cycle));
+        }
+
+        return claims;
+    }
+
+    /// <summary>Whether a cycle listed in order runs along the directed edge <paramref name="from"/> to <paramref name="to"/>.</summary>
+    private static bool ClosesEdge(IReadOnlyList<string> cycle, string from, string to)
+    {
+        for (var index = 0; index < cycle.Count; index++)
+        {
+            var next = (index + 1) % cycle.Count;
+            if (string.Equals(cycle[index], from, StringComparison.Ordinal) &&
+                string.Equals(cycle[next], to, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Tracks the highest number already used behind an identifier's prefix, so a fresh claim does not collide.</summary>
+    private static int NextNumber(string identifier, char prefix, ref int highest)
+    {
+        if (identifier.Length > 1 &&
+            char.ToUpperInvariant(identifier[0]) == prefix &&
+            int.TryParse(identifier.AsSpan(1), NumberStyles.None, CultureInfo.InvariantCulture, out var number))
+        {
+            highest = Math.Max(highest, number);
+        }
+
+        return highest;
+    }
+
     /// <summary>Declares a new variable, appended after the last statement of its kind.</summary>
     public static string AddVariable(CausalLoopDocument document, CausalLoopModel model, string id, string label)
     {

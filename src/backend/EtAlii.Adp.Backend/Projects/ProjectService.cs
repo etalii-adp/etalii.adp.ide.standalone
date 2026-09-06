@@ -1,7 +1,9 @@
 using EtAlii.Adp.Backend.Sessions;
+using EtAlii.Adp.Common.Wire;
 using Grpc.Core;
 using Serilog;
-
+
+using Path = EtAlii.Adp.Common.Wire.Path;
 namespace EtAlii.Adp.Backend.Projects;
 
 public sealed class ProjectService : EtAlii.Adp.ProjectService.ProjectServiceBase

@@ -8,8 +8,8 @@ namespace EtAlii.Adp.Backend.Tests;
 internal sealed record CreateDiagramFileFlowSession(
     GrpcChannel Channel,
     Metadata Headers,
-    Contracts.ShortGuid ProjectId,
-    Contracts.ShortGuid WatchId,
+    Common.Wire.ShortGuid ProjectId,
+    Common.Wire.ShortGuid WatchId,
     HierarchyService.HierarchyServiceClient Hierarchy,
     ContextService.ContextServiceClient Context) : IDisposable
 {

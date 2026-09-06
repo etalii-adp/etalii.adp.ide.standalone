@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file elements.proto.
  */
 export const file_elements: GenFile = /*@__PURE__*/
-  fileDesc("Cg5lbGVtZW50cy5wcm90bxIKZXRhbGlpLmFkcCIaCglFbGVtZW50SWQSDQoFdmFsdWUYASABKAkiiAEKB0VsZW1lbnQSIQoCaWQYASABKAsyFS5ldGFsaWkuYWRwLkVsZW1lbnRJZBIlCghwb3NpdGlvbhgCIAEoCzITLmV0YWxpaS5hZHAuUG9pbnQyRBIMCgR0eXBlGAMgASgJEiUKB3BheWxvYWQYBCABKAsyFC5nb29nbGUucHJvdG9idWYuQW55Qg2qAgpFdEFsaWkuQWRwYgZwcm90bzM", [file_connection, file_google_protobuf_any]);
+  fileDesc("Cg5lbGVtZW50cy5wcm90bxIKZXRhbGlpLmFkcCIaCglFbGVtZW50SWQSDQoFdmFsdWUYASABKAkiiAEKB0VsZW1lbnQSIQoCaWQYASABKAsyFS5ldGFsaWkuYWRwLkVsZW1lbnRJZBIlCghwb3NpdGlvbhgCIAEoCzITLmV0YWxpaS5hZHAuUG9pbnQyRBIMCgR0eXBlGAMgASgJEiUKB3BheWxvYWQYBCABKAsyFC5nb29nbGUucHJvdG9idWYuQW55QhmqAhZFdEFsaWkuQWRwLkNvbW1vbi5XaXJlYgZwcm90bzM", [file_connection, file_google_protobuf_any]);
 
 /**
  * @generated from message etalii.adp.ElementId

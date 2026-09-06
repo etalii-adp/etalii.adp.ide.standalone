@@ -2,10 +2,11 @@
 using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
+using EtAlii.Adp.Common.Wire;
 using Google.Protobuf;
 using Grpc.Core;
 using Serilog;
-
+using Path = EtAlii.Adp.Common.Wire.Path;
 namespace EtAlii.Adp.Backend.Diagrams;
 
 /// <summary>
@@ -163,7 +164,7 @@ public sealed partial class DiagramService : EtAlii.Adp.DiagramService.DiagramSe
     /// file names it again rather than opening in an arbitrary rival.
     /// </summary>
     private bool TryResolveEditor(
-        Contracts.ShortGuid projectId,
+        Common.Wire.ShortGuid projectId,
         Path path,
         ServerCallContext context,
         out string rootPath,
@@ -191,7 +192,7 @@ public sealed partial class DiagramService : EtAlii.Adp.DiagramService.DiagramSe
     /// containment check, and the file's existence - nothing about which editor.
     /// </summary>
     private bool TryResolveTextFile(
-        Contracts.ShortGuid projectId,
+        Common.Wire.ShortGuid projectId,
         Path path,
         ServerCallContext context,
         out string rootPath,

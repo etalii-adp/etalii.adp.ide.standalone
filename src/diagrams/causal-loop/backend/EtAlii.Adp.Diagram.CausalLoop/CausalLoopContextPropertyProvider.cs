@@ -75,9 +75,6 @@ public sealed class CausalLoopContextPropertyProvider(
     private const string CausalityGroup = "Causality";
     private const string FeedbackGroup = "Feedback";
 
-    private const string RenameOnTheDiagram =
-        "The identifier is what links and loops refer to. Rename the variable to change it, which carries them with it.";
-
     private const string EndsAreTheIdentity =
         "A link is identified by the two variables it joins. Draw a new link on the canvas rather than changing an end here.";
 
@@ -118,9 +115,7 @@ public sealed class CausalLoopContextPropertyProvider(
             return Rows(
             [
                 new ContextPropertyDefinition(VariableLabelProperty, "Label", variable.Label, Group: IdentityGroup),
-                new ContextPropertyDefinition(
-                    VariableIdProperty, "Identifier", variable.Id,
-                    ReadOnlyReason: RenameOnTheDiagram, Group: IdentityGroup),
+                new ContextPropertyDefinition(VariableIdProperty, "Identifier", variable.Id, Group: IdentityGroup),
             ]);
         }
 
@@ -216,6 +211,13 @@ public sealed class CausalLoopContextPropertyProvider(
             return ContextPropertyResult.Failure($"'{value}' is not a polarity a link can state.");
         }
 
+        // The identifier is written as one word on the statement line, so it cannot hold
+        // whitespace or a quote; the label may, because it is quoted. Refused before writing.
+        if (propertyId == VariableIdProperty && (value.Length == 0 || value.Any(char.IsWhiteSpace) || value.Contains('"', StringComparison.Ordinal)))
+        {
+            return ContextPropertyResult.Failure(CausalLoopWriter.UnusableName);
+        }
+
         var command = CommandFor(entry.Model, target, propertyId, value);
         if (command is null)
         {
@@ -232,9 +234,15 @@ public sealed class CausalLoopContextPropertyProvider(
     {
         var body = target.ResolvedFullPath;
 
-        if (VariableOf(model, target.ElementId) is { } variable && propertyId == VariableLabelProperty)
+        if (VariableOf(model, target.ElementId) is { } variable)
         {
-            return new SetVariableLabelCommand(body, variable.Id, value);
+            return propertyId switch
+            {
+                VariableLabelProperty => new SetVariableLabelCommand(body, variable.Id, value),
+                // The identifier is what links and loops refer to, so restating it carries them.
+                VariableIdProperty => new RenameVariableCommand(body, variable.Id, value),
+                _ => null,
+            };
         }
 
         if (LinkOf(model, target.ElementId) is { } link)

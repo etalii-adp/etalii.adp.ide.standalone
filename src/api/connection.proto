@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package etalii.adp;
 
-option csharp_namespace = "EtAlii.Adp";
+option csharp_namespace = "EtAlii.Adp.Common.Wire";
 
 // Ordered path segments. The leading segments resolve to a file within
 // the workspace; any additional segments address a location/sub-scope

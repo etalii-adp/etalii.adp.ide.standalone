@@ -1,5 +1,6 @@
 using System.Text;
 using EtAlii.Adp.Backend.Projects;
+using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Editor;
 using Grpc.Core;
 using Grpc.Net.Client;
@@ -9,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
+using Path = EtAlii.Adp.Common.Wire.Path;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -143,7 +145,7 @@ public class EditorModuleIsolationTests : IClassFixture<WebApplicationFactory<Pr
         return new Metadata { { SessionTokenHeader, response.Session.Value } };
     }
 
-    private async Task<Contracts.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
+    private async Task<Common.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
     {
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var pathMessage = new Path();

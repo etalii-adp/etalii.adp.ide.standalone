@@ -2,8 +2,9 @@
 using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Backend.Sessions;
+using EtAlii.Adp.Common.Wire;
 using Grpc.Core;
-
+using Path = EtAlii.Adp.Common.Wire.Path;
 namespace EtAlii.Adp.Backend.Diagrams;
 
 public sealed partial class DiagramService
@@ -156,7 +157,7 @@ public sealed partial class DiagramService
     }
 
     private bool TryResolveBody(
-        Contracts.ShortGuid projectId,
+        Common.Wire.ShortGuid projectId,
         Path path,
         ServerCallContext context,
         out string rootPath,

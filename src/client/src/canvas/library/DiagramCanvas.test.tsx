@@ -290,6 +290,67 @@ describe("DiagramCanvas", () => {
     expect(onConnectionDrawn).not.toHaveBeenCalled();
   });
 
+  // ---- drawing a relation with the right button (connectOnRightDrag) ----------------------
+
+  /**
+   * A right-button draw: press button 2 on an element BODY (not an anchor handle), move over a
+   * target, release. It maps its move exactly as the anchor drag does - press point plus pixel
+   * delta in canvas units - so element "a" at (0,0) reaches "b"'s box by a delta of 260 px.
+   */
+  function rightDraw(source: Element, fromX: number, fromY: number, toX: number, toY: number) {
+    fireEvent(source, pointer("pointerdown", { button: 2, clientX: fromX, clientY: fromY }));
+    fireEvent(source, pointer("pointermove", { clientX: toX, clientY: toY }));
+    fireEvent(source, pointer("pointerup", { clientX: toX, clientY: toY }));
+  }
+
+  it("a right-button drag from an element body raises connection-drawn, where the definition opts in", () => {
+    const onConnectionDrawn = vi.fn();
+    const { container } = renderCanvas({ onConnectionDrawn }, definitionOf({ connectOnRightDrag: true }));
+
+    // From Alpha's body into Beta's box, released nearer its west anchor (250,0) - no source
+    // anchor, because the draw started on the body rather than on a handle.
+    rightDraw(elementOn(container, "a"), 0, 0, 260, 0);
+
+    expect(onConnectionDrawn).toHaveBeenCalledExactlyOnceWith({
+      kind: "connection-drawn",
+      relationType: "calls",
+      sourceElementId: "a",
+      targetElementId: "b",
+      sourceAnchor: undefined,
+      targetAnchor: "w",
+    });
+  });
+
+  it("a right-button drag raises nothing where the definition does not opt in", () => {
+    const onConnectionDrawn = vi.fn();
+    const { container } = renderCanvas({ onConnectionDrawn }); // the default definition omits connectOnRightDrag
+
+    rightDraw(elementOn(container, "a"), 0, 0, 260, 0);
+
+    expect(onConnectionDrawn).not.toHaveBeenCalled();
+  });
+
+  it("a right-button draw onto a forbidden target raises nothing", () => {
+    const onConnectionDrawn = vi.fn();
+    const { container } = renderCanvas({ onConnectionDrawn }, definitionOf({ connectOnRightDrag: true }));
+
+    // The store is no legal target of `calls`; the release over it states nothing.
+    rightDraw(elementOn(container, "a"), 0, 0, 150, 200);
+
+    expect(onConnectionDrawn).not.toHaveBeenCalled();
+  });
+
+  it("a right press that does not move raises nothing, leaving the body press to the menu", () => {
+    const onConnectionDrawn = vi.fn();
+    const { container } = renderCanvas({ onConnectionDrawn }, definitionOf({ connectOnRightDrag: true }));
+
+    const body = elementOn(container, "a");
+    fireEvent(body, pointer("pointerdown", { button: 2, clientX: 0, clientY: 0 }));
+    fireEvent(body, pointer("pointerup", { button: 2, clientX: 0, clientY: 0 }));
+
+    expect(onConnectionDrawn).not.toHaveBeenCalled();
+  });
+
   it("a toolbox drop of a declared type raises element-dropped at the drop point", () => {
     const onElementDropped = vi.fn();
     const { container } = renderCanvas({ onElementDropped });

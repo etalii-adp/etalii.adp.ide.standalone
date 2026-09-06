@@ -844,6 +844,113 @@ export function DiagramCanvas({
     };
   }, []);
 
+  // ---- drawing a relation with the right button (Requirement: connectOnRightDrag) ----------
+
+  /**
+   * The right-button draw, where a definition opts in. It reuses the connect preview and the
+   * `connection-drawn` event the left-button anchor drag already raises - the only new thing is
+   * the way it STARTS: a right press on an element body rather than on an anchor handle, so a
+   * causal loop diagram links by dragging between variables. It lives here, in the one gesture
+   * layer, so a module needs no gesture state of its own (the noPrivateGestures rule).
+   */
+  const rightConnectRef = useRef<{ element: DiagramModelElement; relation: RelationTypeDefinition; from: Point; pressX: number; pressY: number } | null>(null);
+  const rightConnectMovedRef = useRef(false);
+
+  const beginRightConnect = useCallback((event: React.PointerEvent) => {
+    if (event.button !== 2 || definition.connectOnRightDrag !== true) {
+      return;
+    }
+    const host = (event.target as Element).closest("[data-element-id]");
+    const id = host?.getAttribute("data-element-id") ?? "";
+    const element = elementsById.get(id);
+    if (element === undefined) {
+      return; // a right press on empty canvas or a connection is the menu's, not a draw's
+    }
+    const relation = relationFrom(element);
+    if (relation === undefined) {
+      return; // nothing may leave this element; leave the press to the menu
+    }
+    rightConnectRef.current = { element, relation, from: { x: element.x, y: element.y }, pressX: event.clientX, pressY: event.clientY };
+    rightConnectMovedRef.current = false;
+    try {
+      svgRef.current?.setPointerCapture(event.pointerId);
+    } catch {
+      // A browser that refuses capture for this pointer still delivers moves by bubbling.
+    }
+    // No preview yet: like the anchor drag, the frame - and the preview it publishes through
+    // the scheduler - begins on the first move, so an unmoved right press stays the menu's.
+  }, [definition.connectOnRightDrag, elementsById, relationFrom]);
+
+  const moveRightConnect = useCallback((event: React.PointerEvent) => {
+    const active = rightConnectRef.current;
+    if (active === null) {
+      return;
+    }
+    rightConnectMovedRef.current = true;
+    // Published through the SAME scheduler frame the anchor drag uses, so the preview renders
+    // and the release reads back through one path (Requirement 1.1, the scoped re-render).
+    const frame = (connectFrameRef.current ??= beginGestureFrame(surfaceRectAtGestureStart(), [valueWrite(connectValue)]));
+    // The point is the press-anchor plus the pixel delta in canvas units, exactly as the
+    // anchor drag maps its move - one rect read served for the gesture's life.
+    const scale = frame.rect.width > 0 ? viewRef.current.w / frame.rect.width : 1;
+    const point = { x: active.from.x + (event.clientX - active.pressX) * scale, y: active.from.y + (event.clientY - active.pressY) * scale };
+    const candidate = elementAt(point);
+    const valid = candidate !== undefined && candidate.id !== active.element.id && connectVerdict(active.relation, active.element.id, candidate);
+    frame.move({
+      relation: active.relation,
+      sourceId: active.element.id,
+      from: active.from,
+      point,
+      target: valid && candidate !== undefined
+        ? { elementId: candidate.id, anchor: nearestAnchor(elementTypes.get(candidate.type), boundsOf(candidate), point, active.relation) }
+        : undefined,
+      valid,
+    });
+  }, [surfaceRectAtGestureStart, connectValue, elementAt, connectVerdict, elementTypes, boundsOf]);
+
+  const endRightConnect = useCallback((event: React.PointerEvent) => {
+    const active = rightConnectRef.current;
+    if (active === null) {
+      return;
+    }
+    try {
+      svgRef.current?.releasePointerCapture(event.pointerId);
+    } catch {
+      // Mirror of the capture guard in beginRightConnect.
+    }
+    rightConnectRef.current = null;
+    // The latest preview is read from the cell BEFORE the commit clears it - the verdict the
+    // last applied frame rendered is exactly what the release honours, as the anchor end does.
+    const preview = connectValue.get();
+    const frame = connectFrameRef.current;
+    connectFrameRef.current = null;
+    frame?.commit();
+    if (rightConnectMovedRef.current && preview !== null && preview.valid && preview.target !== undefined) {
+      // Raised only because the verdict already said yes, exactly as the anchor drag does.
+      raise({
+        kind: "connection-drawn",
+        relationType: preview.relation.id,
+        sourceElementId: preview.sourceId,
+        targetElementId: preview.target.elementId,
+        sourceAnchor: preview.sourceAnchor,
+        targetAnchor: preview.target.anchor,
+      });
+    }
+  }, [connectValue, raise]);
+
+  // An interrupted right draw (pointer cancel, capture lost) reverts the shared connect frame
+  // rather than committing it: were it left set, the next anchor drag's `??=` would reuse this
+  // stale frame. Nothing is raised - an abandonment states no link.
+  const cancelRightConnect = useCallback(() => {
+    if (rightConnectRef.current === null) {
+      return;
+    }
+    rightConnectRef.current = null;
+    const frame = connectFrameRef.current;
+    connectFrameRef.current = null;
+    frame?.revert();
+  }, []);
+
   const onSurfaceDragOver = (event: React.DragEvent) => {
     if (event.dataTransfer.types.includes(TOOLBOX_DRAG_TYPE)) {
       event.preventDefault();
@@ -918,7 +1025,22 @@ export function DiagramCanvas({
     if (context === undefined) {
       return;
     }
+    // A right-button drag that drew a relation is not also a menu: the contextmenu that follows
+    // the release is swallowed rather than opening a menu over the new connection.
+    if (rightConnectMovedRef.current) {
+      rightConnectMovedRef.current = false;
+      event.preventDefault();
+      return;
+    }
     openMenuAt(event, id);
+  };
+
+  /** The surface's own right-click: only the tail of a completed draw reaches here, and it is swallowed. */
+  const onSurfaceContextMenu = (event: React.MouseEvent) => {
+    if (rightConnectMovedRef.current) {
+      rightConnectMovedRef.current = false;
+      event.preventDefault();
+    }
   };
 
   // ---- inline label editing (Requirement 6.1) ----------------------------------------------
@@ -1059,6 +1181,10 @@ export function DiagramCanvas({
     />
   );
 
+  // The surface's own pan/deselect wiring, composed with the right-drag connect on the svg below
+  // so both live in this one gesture layer rather than in a module.
+  const backgroundWiring = gesture.background({ kind: "background", view: effectiveView });
+
   return (
     <div ref={rootRef} className={`library-canvas ${className ?? ""}`.trim()} data-testid="library-canvas">
       <svg
@@ -1074,8 +1200,13 @@ export function DiagramCanvas({
         tabIndex={0}
         role="img"
         aria-label={ariaLabel ?? "Diagram"}
-        {...gesture.background({ kind: "background", view: effectiveView })}
-        onPointerDownCapture={endEditBeforeGesture}
+        onPointerDownCapture={(event) => { endEditBeforeGesture(event); beginRightConnect(event); }}
+        onPointerDown={backgroundWiring.onPointerDown}
+        onPointerMove={(event) => { moveRightConnect(event); backgroundWiring.onPointerMove(event); }}
+        onPointerUp={(event) => { endRightConnect(event); backgroundWiring.onPointerUp(event); }}
+        onPointerCancel={(event) => { cancelRightConnect(); backgroundWiring.onPointerCancel(event); }}
+        onLostPointerCapture={(event) => { cancelRightConnect(); backgroundWiring.onLostPointerCapture(event); }}
+        onContextMenu={onSurfaceContextMenu}
         onKeyDown={onKeyDown}
         onDragOver={onSurfaceDragOver}
         onDrop={onSurfaceDrop}

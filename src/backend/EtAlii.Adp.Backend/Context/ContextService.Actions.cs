@@ -1,5 +1,7 @@
+using EtAlii.Adp.Common.Wire;
 using Grpc.Core;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
+using Path = EtAlii.Adp.Common.Wire.Path;
 
 namespace EtAlii.Adp.Backend.Context;
 
@@ -245,8 +247,8 @@ public sealed partial class ContextService
     /// explorer's empty space reads, and the root is what that space is.
     /// </summary>
     private async ValueTask<ContextTarget?> TryResolveTargetAsync(
-        Contracts.ShortGuid projectId,
-        Contracts.ShortGuid watchId,
+        Common.Wire.ShortGuid projectId,
+        Common.Wire.ShortGuid watchId,
         ContextSource? source,
         ServerCallContext context)
     {

@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend.Projects;
+using EtAlii.Adp.Common.Wire;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
@@ -7,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
+using Path = EtAlii.Adp.Common.Wire.Path;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -281,7 +283,7 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
     /// The watch id is a parameter because a hierarchy model is per connection: a selection made
     /// on one watch id cannot name an entry listed under another.
     /// </remarks>
-    private static async Task<IReadOnlyDictionary<string, Contracts.ShortGuid>> EntriesAsync(
+    private static async Task<IReadOnlyDictionary<string, Common.Wire.ShortGuid>> EntriesAsync(
         GrpcChannel channel,
         Metadata headers,
         ShortGuid projectId,
@@ -320,7 +322,7 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
         Metadata headers,
         ShortGuid projectId,
         ShortGuid watchId,
-        Contracts.ShortGuid entryId)
+        Common.Wire.ShortGuid entryId)
     {
         var response = await client.DiscoverActionsAsync(
             new DiscoverActionsRequest
@@ -342,7 +344,7 @@ public class AzurePipelineFlowTests : IClassFixture<WebApplicationFactory<Progra
     /// The child's path is left empty, which asks the backend to fill in the full chain rather
     /// than trusting the client's version of it - the same thing the pipeline canvas sends.
     /// </remarks>
-    private static ContextSelection ElementChain(Contracts.ShortGuid entryId, string elementId)
+    private static ContextSelection ElementChain(Common.Wire.ShortGuid entryId, string elementId)
     {
         var chain = new ContextSelection
         {

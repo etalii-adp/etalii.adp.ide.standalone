@@ -66,20 +66,21 @@ public class CausalLoopContextPropertiesTests : IDisposable
     // ---- a variable --------------------------------------------------------------------------
 
     [Fact]
-    public async Task AVariable_ShowsItsLabelEditableAndItsIdentifierWithAReason()
+    public async Task AVariable_ShowsBothItsLabelAndItsIdentifierEditable()
     {
         // Act.
         var rows = await Describe("variable:population");
 
-        // Assert.
+        // Assert. The visible name is the label, renamed in place; the identifier is the stable
+        // key a link refers to, editable here for the author who wants to restate it - which
+        // carries every link and loop with it.
         var label = Row(rows, CausalLoopContextPropertyProvider.VariableLabelProperty);
         Assert.Equal("Population", label.Value);
         Assert.True(label.IsEditable);
 
-        // Requirement 8.5: not a disabled box with no explanation.
         var id = Row(rows, CausalLoopContextPropertyProvider.VariableIdProperty);
-        Assert.False(id.IsEditable);
-        Assert.Contains("Rename the variable", id.ReadOnlyReason, StringComparison.Ordinal);
+        Assert.Equal("population", id.Value);
+        Assert.True(id.IsEditable);
     }
 
     /// <summary>
