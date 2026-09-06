@@ -60,7 +60,7 @@ public sealed class WardleyDocumentStore : IWardleyDocumentStore
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
         var document = GetOrLoad(path);
-        var warning = "";
+        string warning;
         _selfWrites[path] = 1;
         try
         {
