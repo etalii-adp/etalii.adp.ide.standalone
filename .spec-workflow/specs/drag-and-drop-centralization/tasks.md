@@ -35,7 +35,7 @@ One worktree for the whole specification (`.claude/worktrees/dnd`, per CLAUDE.md
 
 **Amendment, 2026-09-06.** Tasks 1–6 shipped at `058bb0ca` against Requirement 1.5's original three-kind enumeration. Developer 1's completion note surfaced that the survey's count was short — span resize and connection-adjust also write canvas-level state and read layout per pointer move, and both did when the survey was taken. Tasks 7 and 8 close the corrected boundary; a fresh worktree, same ownership rule.
 
-- [ ] 7. Span resize and connection-adjust through the scheduler, and the guard widened to match
+- [-] 7. Span resize and connection-adjust through the scheduler, and the guard widened to match
   - Files: `src/client/src/canvas/library/DiagramCanvas.tsx`, `src/client/src/canvas/library/dragCost.test.tsx`
   - The `resize` and `adjust` cases publish through a gesture cell each, on the reposition template: `setResizePreview` and the adjust-path state write retired to gesture end, no `unitsPerPixel` layout read per move, commit and abandon through the scheduler's existing paths. Every existing test passes unchanged, with the same pairing rule — the abandon case beside the commit case. The task-4 guard gains both kinds, so it exercises every kind the discipline covers; its widened assertions are seen to fail first by restoring the per-frame writes, exactly as the original two were.
   - _Requirements: 1.1, 1.3, 1.5, 2.1, 2.2, 2.3, 3.1, 3.3_
