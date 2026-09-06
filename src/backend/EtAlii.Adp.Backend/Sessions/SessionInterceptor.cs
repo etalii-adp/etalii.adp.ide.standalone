@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common;
 using Grpc.Core;
 using Grpc.Core.Interceptors;
 using Serilog;

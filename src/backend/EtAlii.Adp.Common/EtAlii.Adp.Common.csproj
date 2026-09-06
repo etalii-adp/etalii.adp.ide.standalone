@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <!-- Google.Protobuf is the runtime; Grpc.Tools compiles the linked protos at build. -->
+    <PackageReference Include="Grpc.Core.Api" />
     <PackageReference Include="Google.Protobuf" />
     <PackageReference Include="Grpc.Tools">
       <PrivateAssets>all</PrivateAssets>

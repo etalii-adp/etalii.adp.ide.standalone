@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Sessions;
+namespace EtAlii.Adp.Common;
 
 public interface ISessionStore
 {
