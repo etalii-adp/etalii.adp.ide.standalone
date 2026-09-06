@@ -86,7 +86,7 @@
     the left (the arbiter's right button stays the menu's), and a left press on empty space
     now deselects at release rather than at press.
 
-- [-] 7. The guards, mounted, and gate and merge
+- [x] 7. The guards, mounted, and gate and merge
   - Files: shared guards beside the client's diagram tests; then the four gates and the merge
   - Three guards, each **mounting rather than grepping** and carrying a named-member canary (Requirement 10.2), because a grep over canvas sources has already reported three correct databricks canvases as offenders here:
     - a definition with a forbidden pair, mounted, cannot produce a `connectionDrawn` for it (Requirement 10.1) — seen to fail against a canvas that raises first and vetoes after;
