@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
-namespace EtAlii.Adp.Backend.Projects;
+namespace EtAlii.Adp.Projects;
 
 public static class ServiceCollectionAddProjectsExtension
 {

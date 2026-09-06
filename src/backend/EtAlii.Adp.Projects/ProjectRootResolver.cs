@@ -1,6 +1,6 @@
 using Serilog;
 
-namespace EtAlii.Adp.Backend.Projects;
+namespace EtAlii.Adp.Projects;
 
 /// <summary>
 /// Answers which folder on disk a project id stands for, for the user asking - the

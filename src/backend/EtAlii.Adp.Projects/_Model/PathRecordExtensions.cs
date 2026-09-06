@@ -1,6 +1,6 @@
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Projects;
+namespace EtAlii.Adp.Projects;
 
 public static class PathRecordExtensions
 {

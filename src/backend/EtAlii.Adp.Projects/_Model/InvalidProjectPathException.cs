@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Projects;
+namespace EtAlii.Adp.Projects;
 
 public sealed class InvalidProjectPathException : Exception
 {

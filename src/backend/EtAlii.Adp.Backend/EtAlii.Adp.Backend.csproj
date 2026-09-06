@@ -6,6 +6,7 @@
     <PackageReference Include="Grpc.AspNetCore.Web" />
     <PackageReference Include="Serilog" />
     <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Projects\EtAlii.Adp.Projects.csproj" />
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
     <!-- Core -> abstraction only: the Add action reads DiagramDefinition.All; no module is referenced. -->
     <ProjectReference Include="..\EtAlii.Adp.Editor\EtAlii.Adp.Editor.csproj" />
@@ -21,7 +22,7 @@
       client stubs generated here to call the services in-process.
     -->
     <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="Both"
-              Exclude="..\..\api\shared.proto;..\..\api\connection.proto;..\..\api\elements.proto;..\..\api\diagrams.proto;..\..\api\deltas.proto" />
+              Exclude="..\..\api\shared.proto;..\..\api\connection.proto;..\..\api\elements.proto;..\..\api\diagrams.proto;..\..\api\deltas.proto;..\..\api\projects.proto" />
   </ItemGroup>
 
   <ItemGroup>
