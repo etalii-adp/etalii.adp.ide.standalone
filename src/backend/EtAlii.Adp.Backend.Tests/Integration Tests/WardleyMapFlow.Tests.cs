@@ -1,3 +1,4 @@
+using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;

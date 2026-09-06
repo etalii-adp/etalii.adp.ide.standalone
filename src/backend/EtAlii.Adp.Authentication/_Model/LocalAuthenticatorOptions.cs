@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Authentication;
+namespace EtAlii.Adp.Authentication;
 
 public sealed class LocalAuthenticatorOptions
 {

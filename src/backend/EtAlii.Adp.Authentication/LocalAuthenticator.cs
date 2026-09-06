@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
 
-namespace EtAlii.Adp.Backend.Authentication;
+namespace EtAlii.Adp.Authentication;
 
 /// <summary>
 /// Default authenticator for the local, standalone "F5" scenario: validates

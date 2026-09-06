@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Serilog" />
+    <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The authentication wire contract, owned here since the area extraction: the proto stays
+         at the repository root and generates into EtAlii.Adp.Authentication.Wire. -->
+    <Protobuf Include="..\..\api\authentication.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\authentication.proto" />
+  </ItemGroup>
+
+</Project>

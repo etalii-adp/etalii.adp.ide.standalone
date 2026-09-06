@@ -3,7 +3,7 @@ using Grpc.Core;
 using Grpc.Core.Interceptors;
 using Serilog;
 #if DEBUG
-using EtAlii.Adp.Backend.Authentication;
+using EtAlii.Adp.Authentication;
 using Microsoft.Extensions.Options;
 #endif
 

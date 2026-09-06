@@ -1,3 +1,4 @@
+using EtAlii.Adp.Authentication.Wire;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
