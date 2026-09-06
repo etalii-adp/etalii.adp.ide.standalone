@@ -31,14 +31,14 @@ link births -> population +
 link population -> deaths +
 link deaths -> population -
 
-link population -> crowding + weight=0.8
-link crowding -> sanitation - delayed "infrastructure lags the crowd"
+link population -> crowding - flipped weight=0.8
+link crowding -> sanitation - delayed flipped "infrastructure lags the crowd"
 link sanitation -> deaths - flipped
 
 # A link nobody has stated a polarity for. Unwritten is not zero and not
 # positive: it is unknown, and any loop through it is undecidable.
 link population -> foodPerCapita -
-link foodPerCapita -> births
+link foodPerCapita -> births +
 
 # ---- loops -------------------------------------------------------------------
 # A loop is a claim about a path. The identifier claims a polarity - R for
