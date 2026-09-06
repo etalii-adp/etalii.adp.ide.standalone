@@ -1,12 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <!-- Core is the only reference, and deliberately so: it carries both halves of the
-         shared discovery infrastructure - PluginDefinitionScan and the ApplicationAssemblies
-         walk - so this project needs no Diagram reference at all (the walk moved to core in
-         backend-project-decomposition task 8, which is what broke the Editor-Diagram cycle
-         the Diagrams merge would otherwise have made). Backend references THIS project, so
-         referencing Backend from here would be a cycle. -->
+    <!-- EtAlii.Adp carries both halves of the shared discovery infrastructure - 
+         PluginDefinitionScan and the assembly walk (ApplicationAssemblies, moved here from
+         Diagram in task 8) - which the diagram and editor discovery families both consume,
+         so this project references core alone and needs no reference to Diagram. It also
+         does not reference EtAlii.Adp.Backend, though the design's arrow list names it:
+         Backend references THIS project (its Hierarchy resolves and routes editors via
+         EditorResolver / IEditorDefinitionCatalog), so referencing Backend from here
+         would be a cycle. -->
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
   </ItemGroup>
 
