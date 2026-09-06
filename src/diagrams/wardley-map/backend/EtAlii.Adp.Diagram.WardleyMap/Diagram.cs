@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
 /// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `wardley/map`.</summary>

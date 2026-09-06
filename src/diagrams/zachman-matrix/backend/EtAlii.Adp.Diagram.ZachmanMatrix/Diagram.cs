@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.ZachmanMatrix;
 
 /// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `zachman/matrix`.</summary>

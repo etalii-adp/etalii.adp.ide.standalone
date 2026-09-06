@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.D2Diagram;
 
 /// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `d2/diagram`.</summary>

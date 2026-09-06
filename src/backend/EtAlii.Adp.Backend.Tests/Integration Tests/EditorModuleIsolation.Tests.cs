@@ -76,7 +76,7 @@ public class EditorModuleIsolationTests : IClassFixture<WebApplicationFactory<Pr
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
+                    provider.GetRequiredService<Common.DiagramValidators>()));
 
                 // The detonating module rides in beside the real ones: the discovered
                 // definitions plus one claimant of .boom, and its throwing factory.

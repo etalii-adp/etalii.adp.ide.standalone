@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.UmlSequence;
 
 /// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `uml/sequence`.</summary>

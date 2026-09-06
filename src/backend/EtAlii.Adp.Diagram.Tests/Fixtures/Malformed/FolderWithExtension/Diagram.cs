@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.Tests.Fixtures.Malformed.FolderWithExtension;
 
 /// <summary>

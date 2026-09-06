@@ -27,8 +27,8 @@ public class EditorFilePropertyProviderTests : IDisposable
         TestFolder.TryDelete(_root);
     }
 
-    private static readonly Diagram.DiagramDefinition Mindmap =
-        new(new Diagram.DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
+    private static readonly Common.DiagramDefinition Mindmap =
+        new(new Common.DiagramOrigin("freeplane", "mindmap"), "Mind map", Extension: ".mm");
 
     private ContextTarget TargetOf(string fileName, byte[] bytes)
     {

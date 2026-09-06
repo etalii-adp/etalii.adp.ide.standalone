@@ -75,7 +75,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<Hierarchy.DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
+                    provider.GetRequiredService<Common.DiagramValidators>()));
             });
         });
     }

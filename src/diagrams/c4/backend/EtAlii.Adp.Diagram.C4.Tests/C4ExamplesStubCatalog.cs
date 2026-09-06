@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.C4.Tests;
 
 /// <summary>The C4 module's own definitions, without a host to run discovery.</summary>

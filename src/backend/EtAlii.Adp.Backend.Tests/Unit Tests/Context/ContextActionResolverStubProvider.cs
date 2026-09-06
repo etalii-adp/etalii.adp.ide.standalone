@@ -7,14 +7,14 @@ internal sealed class ContextActionResolverStubProvider : IContextActionProvider
     private readonly string _actionId;
     private readonly ContextShortcutDefinition? _shortcut;
     private readonly bool _available;
-    private readonly Diagram.DiagramOrigin? _answersFor;
+    private readonly Common.DiagramOrigin? _answersFor;
 
     public ContextActionResolverStubProvider(
         ContextScope scope,
         string actionId,
         ContextShortcutDefinition? shortcut = null,
         bool available = true,
-        Diagram.DiagramOrigin? answersFor = null)
+        Common.DiagramOrigin? answersFor = null)
     {
         _answersFor = answersFor;
         Scope = scope;

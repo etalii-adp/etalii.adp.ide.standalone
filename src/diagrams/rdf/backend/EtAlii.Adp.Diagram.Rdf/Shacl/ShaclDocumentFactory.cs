@@ -1,4 +1,5 @@
 using System.Text;
+using EtAlii.Adp.Common;
 
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 

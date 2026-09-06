@@ -1,9 +1,8 @@
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Backend.Hierarchy;
-
+using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using Xunit;
-
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.AnsibleStructure.Tests;

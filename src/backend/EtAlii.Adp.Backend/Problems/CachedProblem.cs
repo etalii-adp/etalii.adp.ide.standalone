@@ -1,4 +1,4 @@
-using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Common;
 
 // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 

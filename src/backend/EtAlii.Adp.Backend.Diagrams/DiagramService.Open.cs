@@ -163,7 +163,7 @@ public sealed partial class DiagramService
         ServerCallContext context,
         out string rootPath,
         out string bodyPath,
-        out Diagram.DiagramOrigin origin,
+        out Common.DiagramOrigin origin,
         out string? registrationPath)
     {
         bodyPath = "";

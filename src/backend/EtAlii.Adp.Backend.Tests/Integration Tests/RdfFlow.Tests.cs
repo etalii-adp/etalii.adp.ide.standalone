@@ -68,7 +68,7 @@ public class RdfFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisp
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
+                    provider.GetRequiredService<Common.DiagramValidators>()));
             });
         });
     }
