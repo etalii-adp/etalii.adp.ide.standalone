@@ -2472,13 +2472,20 @@ measurement, on the two models the report named.
   resource card around for a few seconds; open `src/examples/diagrams/rdf/nobel/laureates.ttl`
   and do the same, including a card far from the one first selected. Pan both diagrams by
   dragging the background.
-- **Expected**: the card rides the pointer with no visible lag on both models - the
-  laureates drag feels like a timeline drag, which is the user's stated benchmark - and the
-  pan moves the diagram and both scrollbar thumbs live. Escape mid-drag puts the card back
-  and selects nothing; Escape mid-pan rolls the view back to where the pan began (this
-  roll-back is deliberate: the pan is the gesture's transient visual until release).
+- **Expected**: on marie-curie the card rides the pointer with no visible lag, the drop
+  commits (the validator re-runs, undo arms) and **another card still selects afterwards**;
+  the pan moves the diagram and both scrollbar thumbs live. On laureates the view is
+  truncated ("Showing 1000 of 1657 resources") and **edits are withheld by design**, so the
+  reposition cannot commit there - pan and selection are what that model exercises. Escape
+  mid-drag puts the card back and selects nothing; Escape mid-pan rolls the view back to
+  where the pan began (this roll-back is deliberate: the pan is the gesture's transient
+  visual until release).
 
-- **Result 2026-09-06**: **written and not yet executed by eyes** - recorded runnable for
-  the next manual pass; the jsdom halves of the same measurement are in the task-5
-  implementation log (before: 10.4-47.8ms per frame on the rdf shapes; after: 0.23-0.33ms,
-  flat across model sizes).
+- **Result 2026-09-06**: **run** from the worktree on backend 5091 / client 5191 via the
+  developer session. marie-curie: drag committed and revalidated, selection-after-drag
+  intact, pan moved view and thumbs; laureates: pan and selection fine on the 1,000-card
+  truncated view, reposition withheld as the truncation banner states; zero console errors.
+  The Escape checks were not driven interactively (the automation's drag is atomic) - they
+  are pinned by DiagramCanvas.test.tsx's abandon pair instead. Perceived smoothness is
+  quantified by the jsdom halves in the task-5 implementation log (before: 10.4-47.8ms per
+  frame on the rdf shapes; after: 0.23-0.33ms, flat across model sizes).
