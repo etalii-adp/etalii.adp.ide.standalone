@@ -55,7 +55,7 @@
   - _Requirements: 8.1, 8.2, 8.3, 8.4_
   - _Prompt: Implement the task for spec diagram-library, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Build the layout seam with manual/external and tree algorithms behind one interface | Restrictions: manual/external returns model positions untouched; no layout computation crosses the wire; one mode means no switching surface; the definition decides what a drag means under automatic layout | Success: the seam runs manual/external and tree, and a further algorithm is an addition rather than a change. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 5. rdf as the graph-shaped reference, end to end
+- [x] 5. rdf as the graph-shaped reference, end to end
   - Files: `src/diagrams/rdf/client/RdfCanvas.tsx`, its definition, and tests
   - Box elements, straight routes, edge anchors, manual/external layout, at the 1,000-element budget the model already enforces (`RdfProjection.DefaultBudget`) — proving the library at the sizes that started `drag-and-drop-centralization`, and that a plain graph is a short definition.
   - `RdfCanvas` builds `fitToView` at `RdfCanvas.tsx:127` today; the migrated canvas keeps that behaviour through the library rather than by hand.
@@ -64,7 +64,7 @@
   - _Requirements: 9.3, 2.1, 3.1, 3.4, 4.3, 5.2, 5.4_
   - _Prompt: Implement the task for spec diagram-library, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer | Task: Rebuild RdfCanvas on the library as the graph-shaped reference, at the existing 1000-element budget | Restrictions: no new capability rides along; keep today's fitToView behaviour; mounted tests seen to fail against a deliberate break first | Success: rdf renders and operates through the library and its guards fail-then-pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 6. timeline as the axis-shaped reference, end to end
+- [-] 6. timeline as the axis-shaped reference, end to end
   - Files: `src/diagrams/timeline/client/TimelineCanvas.tsx`, its definition, and tests
   - Span elements on a **time-scaled axis declared as a background**, cubic-bezier routes with facing anchors (`sideAnchorOf` + `facingAnchorsBetween`), the three label placements timeline uses (aside, centred, midpoint) — proving the intrinsic-axis/background mechanism and along-route labels that wardley and causal-loop will also need.
   - `TimelineCanvas` builds `fitToView` at `TimelineCanvas.tsx:209`; keep that behaviour through the library.
