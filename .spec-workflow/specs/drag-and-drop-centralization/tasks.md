@@ -14,7 +14,7 @@ One worktree for the whole specification (`.claude/worktrees/dnd`, per CLAUDE.md
   - The `onDragMove` element case writes `transform` on the dragged `<g data-element-id>` group through the scheduler; the `dragOffset` state and the per-element `offset` prop are retired; the rect is read once at gesture start, retiring `unitsPerPixel`'s per-move `getBoundingClientRect` on this path; `onDragEnd` reverts the live writes and performs today's single state write and dispatch; `onDragAbandon` reverts and dispatches nothing. **Every existing module and library test passes unchanged — a test that must change is a finding, not a test to update.** The abandon test (dispatches nothing) is paired with the commit test (dispatches exactly once), because a negative-only assertion at a seam passes whether or not the positive path works.
   - _Requirements: 1.1, 1.3, 1.4, 2.1, 2.2, 2.3_
 
-- [ ] 3. Pan and connect preview through the scheduler
+- [-] 3. Pan and connect preview through the scheduler
   - Files: `src/client/src/canvas/library/DiagramCanvas.tsx`
   - The pan case writes the `<svg>` `viewBox` and the scrollbar thumb positions live, committing `setView` once at gesture end — the thumbs are in the write set because freezing them mid-pan would change what the user watches (Requirement 2.2's scope). The connect case writes the preview node's geometry; per-frame `elementAt` hit-testing stays, being computation rather than rendering. Same commit/abandon pairing and same pass-unchanged bar as task 2.
   - _Requirements: 1.1, 1.5, 2.1, 2.2, 2.3_
