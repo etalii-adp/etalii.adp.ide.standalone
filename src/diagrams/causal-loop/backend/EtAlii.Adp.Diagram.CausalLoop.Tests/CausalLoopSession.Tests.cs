@@ -1,6 +1,7 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -39,7 +40,7 @@ public class CausalLoopSessionTests : IDisposable
         File.WriteAllText(_bodyPath, Corpus);
         File.WriteAllText(_registrationPath, "systems/causal-loop-diagram\r\nbody: feedback.cld\r\n");
 
-        _provider = new ServiceCollection().AddCommands().AddCausalLoop().BuildServiceProvider();
+        _provider = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddCausalLoop().BuildServiceProvider();
     }
 
     public void Dispose()

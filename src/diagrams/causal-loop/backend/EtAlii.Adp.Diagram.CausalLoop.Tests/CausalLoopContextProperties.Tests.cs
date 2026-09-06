@@ -1,6 +1,8 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -43,7 +45,7 @@ public class CausalLoopContextPropertiesTests : IDisposable
         _path = IoPath.Combine(_root, "feedback.cld");
         File.WriteAllText(_path, Corpus);
 
-        _provider = new ServiceCollection().AddCommands().AddCausalLoop().BuildServiceProvider();
+        _provider = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddCausalLoop().BuildServiceProvider();
         _properties = new CausalLoopContextPropertyProvider(
             _provider.GetRequiredService<IHistoryStackStore>(), _store);
     }

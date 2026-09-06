@@ -1,14 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
-import {
-  ContextActionGroupSchema,
-  ContextSelectionSchema,
-  ContextSelectionSource,
-  ContextShortcutSchema,
-  type ContextActionGroup,
-  type ContextSelection,
-} from "../../generated/context_pb";
+import { ContextActionGroupSchema, ContextSelectionSource, ContextShortcutSchema } from "../../generated/context-contract_pb";
+import { type ContextActionGroup } from "../../generated/context-contract_pb";
+import { ContextSelectionSchema, type ContextSelection } from "../../generated/context_pb";
 import { NONE_DETAIL, selectionFor } from "../context/ContextConnectionProvider";
 import { RibbonBar } from "./RibbonBar";
 import { RibbonContextualGroups, formatShortcut, tooltipFor } from "./RibbonContextualGroups";

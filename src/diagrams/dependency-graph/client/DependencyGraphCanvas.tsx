@@ -26,7 +26,8 @@ import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt"
 import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
-import { ContextSelectionAction, type ContextShortcut } from "@client/generated/context_pb";
+import { type ContextShortcut } from "@client/generated/context-contract_pb";
+import { ContextSelectionAction } from "@client/generated/context_pb";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { useDependencyGraphStream } from "./useDependencyGraphStream";
 import type { DependencyGraphElement } from "./dependencyGraphModel";

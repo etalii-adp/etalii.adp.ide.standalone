@@ -1,6 +1,7 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -23,7 +24,7 @@ public class SparqlSessionTests : IDisposable
         Directory.CreateDirectory(_root);
         _provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
-            .AddCommands()
+            .AddCommands().AddHierarchyCommandHandlers()
             .AddSparql()
             .BuildServiceProvider();
     }

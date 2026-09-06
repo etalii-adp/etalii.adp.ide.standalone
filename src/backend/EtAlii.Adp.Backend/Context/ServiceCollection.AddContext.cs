@@ -23,6 +23,12 @@ public static class ServiceCollectionAddContextExtension
         services.AddSingleton<IContextActionResolver, ContextActionResolver>();
         services.AddSingleton<IContextPropertyResolver, ContextPropertyResolver>();
         services.AddSingleton<IContextSelectionStore, ContextSelectionStore>();
+        // History availability onto the context stream: registered here rather than in
+        // AddHistoryActions because the broadcaster is Context's own machinery - it aggregates
+        // through IContextActionResolver and IContextSelectionStore, registered just above, and
+        // it extracts with Context (backend-project-decomposition task 10). Program.cs resolves
+        // it eagerly at startup; that line is a resolution and stays where it is.
+        services.AddSingleton<HistoryActionsBroadcaster>();
 
         // The seam the history stack uses to tell a project that a command succeeded with
         // something worth saying. Registered here because this is where the stream it writes to

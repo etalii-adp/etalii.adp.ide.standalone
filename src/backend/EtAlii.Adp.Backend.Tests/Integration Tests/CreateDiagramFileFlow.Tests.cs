@@ -1,9 +1,10 @@
 using System.Text;
 using EtAlii.Adp.Authentication.Wire;
-using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Hierarchy;
+using EtAlii.Adp.Hierarchy.Wire;
 using EtAlii.Adp.Projects;
 using EtAlii.Adp.Projects.Wire;
 using Grpc.Core;
@@ -13,6 +14,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
+using HierarchyService = EtAlii.Adp.Hierarchy.Wire.HierarchyService;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 using Path = EtAlii.Adp.Common.Wire.Path;
 using ProjectService = EtAlii.Adp.Projects.Wire.ProjectService;

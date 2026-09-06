@@ -1,7 +1,7 @@
 using EtAlii.Adp.Backend;
-using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -33,7 +33,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
         File.WriteAllText(_adpPath, "helm/chart\r\n");
 
         _provider = new ServiceCollection()
-            .AddCommands()
+            .AddCommands().AddHierarchyCommandHandlers()
             .AddHelmCharts()
             .BuildServiceProvider();
         _store = new HelmChartStore(new HelmChartReader(), SettleDelay);

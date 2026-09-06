@@ -1,5 +1,6 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -26,7 +27,7 @@ public class CommandsTests : IDisposable
         _bodyPath = IoPath.Combine(_root, "architecture.mm");
         File.Copy("Fixtures/architecture.mm", _bodyPath);
 
-        _services = new ServiceCollection().AddCommands().AddMindmapCommands().BuildServiceProvider();
+        _services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddMindmapCommands().BuildServiceProvider();
         _history = _services.GetRequiredService<IHistoryStackStore>().Get(_root);
         _documents = _services.GetRequiredService<IMindmapDocumentStore>();
     }

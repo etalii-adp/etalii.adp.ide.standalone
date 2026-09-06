@@ -1,6 +1,7 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -33,7 +34,7 @@ public class MindmapSessionTests : IDisposable
         // real command and lands on a real history.
         _services = new ServiceCollection()
             .AddSingleton<MindmapViewState>()
-            .AddCommands()
+            .AddCommands().AddHierarchyCommandHandlers()
             .AddMindmapCommands()
             .BuildServiceProvider();
         _documents = _services.GetRequiredService<IMindmapDocumentStore>();

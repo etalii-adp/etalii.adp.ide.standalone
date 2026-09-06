@@ -13,18 +13,10 @@ import { create } from "@bufbuild/protobuf";
 import { EmptySchema } from "@bufbuild/protobuf/wkt";
 import { base64Encode } from "@bufbuild/protobuf/wire";
 import { useAuth } from "../../auth/AuthContext";
-import { ContextService, ContextSelectionSchema, ContextSourceSchema } from "../../generated/context_pb";
-import type {
-  ContextActionGroup,
-  ContextLevelDetail,
-  ContextPrompt,
-  ContextSelection,
-  ContextSelectionChanged,
-  ContextProperty,
-  ContextShortcut,
-  ContextSource,
-  ProjectProblems,
-} from "../../generated/context_pb";
+import { ContextSourceSchema } from "../../generated/context-contract_pb";
+import { ContextService, ContextSelectionSchema } from "../../generated/context_pb";
+import type { ContextActionGroup, ContextLevelDetail, ContextShortcut, ContextSource } from "../../generated/context-contract_pb";
+import type { ContextPrompt, ContextSelection, ContextSelectionChanged, ContextProperty, ProjectProblems } from "../../generated/context_pb";
 import type { ContextPromptSubmission, ContextPromptVerdict } from "./ContextPromptHost";
 import { useCoalescedSelect } from "./useCoalescedSelect";
 import { requestTextTab } from "../panels/textTabRequests";

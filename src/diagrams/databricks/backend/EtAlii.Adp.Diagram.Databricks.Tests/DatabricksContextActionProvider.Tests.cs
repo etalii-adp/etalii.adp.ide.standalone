@@ -1,6 +1,8 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -25,7 +27,7 @@ public class DatabricksContextActionProviderTests : IDisposable
         Directory.CreateDirectory(_root);
         _provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
-            .AddCommands()
+            .AddCommands().AddHierarchyCommandHandlers()
             .AddDatabricks()
             .BuildServiceProvider();
         _actions = new DatabricksContextActionProvider(

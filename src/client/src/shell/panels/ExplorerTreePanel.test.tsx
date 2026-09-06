@@ -2,20 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
 import { base64Encode } from "@bufbuild/protobuf/wire";
-import {
-  EntryDiagramState,
-  EntryKind,
-  EntrySchema,
-  HierarchyChangeSchema,
-  type Entry,
-} from "../../generated/hierarchy_pb";
-import {
-  ContextActionGroupSchema,
-  ContextSelectionAction,
-  ContextSelectionSource,
-  type ContextActionGroup,
-  type ContextSelection,
-} from "../../generated/context_pb";
+import { EntryDiagramState, EntrySchema, HierarchyChangeSchema, type Entry } from "../../generated/hierarchy_pb";
+import { EntryKind } from "../../generated/shared_pb";
+import { ContextActionGroupSchema, ContextSelectionSource } from "../../generated/context-contract_pb";
+import { type ContextActionGroup } from "../../generated/context-contract_pb";
+import { ContextSelectionAction, type ContextSelection } from "../../generated/context_pb";
 import { NONE_DETAIL, selectionFor } from "../context/ContextConnectionProvider";
 import {
   EMPTY_TREE_STATE,

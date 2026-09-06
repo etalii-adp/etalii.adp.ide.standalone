@@ -49,7 +49,11 @@ public class ModulePluggabilityTests
         var referencedNames = mindmap.GetReferencedAssemblies().Select(reference => reference.Name).ToArray();
 
         // Assert.
-        Assert.Contains("EtAlii.Adp.Backend", referencedNames);
+        // Backend disappeared from this list when backend-project-decomposition moved the
+        // contracts the module consumes into Common - which is that specification's whole
+        // aim showing up in the metadata. Common is the floor that keeps this test
+        // meaningful rather than vacuous.
+        Assert.Contains("EtAlii.Adp.Common", referencedNames);
         Assert.Contains("EtAlii.Adp.Diagram", referencedNames);
     }
 

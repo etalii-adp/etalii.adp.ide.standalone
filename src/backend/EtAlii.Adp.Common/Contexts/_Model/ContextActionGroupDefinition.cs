@@ -1,0 +1,16 @@
+using EtAlii.Adp.Common.Wire;
+namespace EtAlii.Adp.Common;
+
+/// <summary>One provider's contribution: a set of actions the consumer renders together.</summary>
+public sealed record ContextActionGroupDefinition(
+    IReadOnlyList<ContextActionDefinition> Actions)
+{
+    public static ContextActionGroup ToProto(ContextActionGroupDefinition group)
+    {
+        var result = new ContextActionGroup();
+        result.Actions.AddRange(group.Actions.Select(ContextActionDefinition.ToProto));
+        return result;
+    }
+
+
+}

@@ -1,4 +1,4 @@
-import type { ContextAction } from "../../generated/context_pb";
+import type { ContextAction } from "../../generated/context-contract_pb";
 import { PROJECT_SOURCE, useContextConnection, useProjectActions } from "../context/ContextConnectionProvider";
 import { tooltipFor } from "./RibbonContextualGroups";
 

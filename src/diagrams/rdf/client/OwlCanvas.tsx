@@ -20,7 +20,8 @@ import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/a
 import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
-import { ContextSelectionAction, type ContextShortcut } from "@client/generated/context_pb";
+import { type ContextShortcut } from "@client/generated/context-contract_pb";
+import { ContextSelectionAction } from "@client/generated/context_pb";
 import { useOwlStream } from "./useOwlStream";
 import { useViewReport } from "@client/diagrams/useViewReport";
 import { isCard, isExpression, type OwlEdgeKind, type OwlModel, type OwlNode } from "./owlModel";

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { base64Encode } from "@bufbuild/protobuf/wire";
-import { EntryKind } from "../../generated/hierarchy_pb";
-import { ContextSelectionSource, type ContextLevelDetail, type ContextProperty, type ContextSelection } from "../../generated/context_pb";
+import { EntryKind } from "../../generated/shared_pb";
+import { ContextSelectionSource } from "../../generated/context-contract_pb";
+import { type ContextLevelDetail } from "../../generated/context-contract_pb";
+import { type ContextProperty, type ContextSelection } from "../../generated/context_pb";
 import { useContextConnection, useContextSelection } from "../context/ContextConnectionProvider";
 import { PropertyRow } from "./PropertyRow";
 import { PanelEmptyState } from "./PanelEmptyState";

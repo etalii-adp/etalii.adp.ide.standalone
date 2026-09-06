@@ -1,4 +1,4 @@
-using EtAlii.Adp.Backend.Hierarchy;
+using EtAlii.Adp.Hierarchy;
 using Google.Protobuf;
 
 namespace EtAlii.Adp.Diagram.AnsibleStructure;

@@ -8,7 +8,8 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import { create } from "@bufbuild/protobuf";
-import { ContextSelectionAction, ContextSelectionSchema, ContextSelectionSource, ProblemSetState, ProblemSeverity } from "../../generated/context_pb";
+import { ContextSelectionSource } from "../../generated/context-contract_pb";
+import { ContextSelectionAction, ContextSelectionSchema, ProblemSetState, ProblemSeverity } from "../../generated/context_pb";
 import type { ContextSelection, Problem } from "../../generated/context_pb";
 import { ContextMenu } from "../context/ContextMenu";
 import { toMenuGroups } from "../context/toMenuGroups";

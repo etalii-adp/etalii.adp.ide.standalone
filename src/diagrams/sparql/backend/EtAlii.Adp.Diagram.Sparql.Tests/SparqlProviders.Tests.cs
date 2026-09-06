@@ -1,5 +1,6 @@
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Common.Wire;
 using Xunit;
 using IoPath = System.IO.Path;
 

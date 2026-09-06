@@ -4,17 +4,11 @@ package etalii.adp;
 
 import "shared.proto"; // ShortGuid
 
-option csharp_namespace = "EtAlii.Adp";
+option csharp_namespace = "EtAlii.Adp.Hierarchy.Wire";
 
 service HierarchyService {
   rpc ListEntries(ListEntriesRequest) returns (ListEntriesResponse);
   rpc WatchHierarchy(WatchHierarchyRequest) returns (stream HierarchyMessage);
-}
-
-enum EntryKind {
-  ENTRY_KIND_UNSPECIFIED = 0;
-  FILE = 1;
-  FOLDER = 2;
 }
 
 // What ADP's own routing says about an entry (small-refinements Requirement 3): a

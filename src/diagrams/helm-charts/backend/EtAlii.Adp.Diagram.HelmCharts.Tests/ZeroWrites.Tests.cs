@@ -1,7 +1,9 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -27,7 +29,7 @@ public class ZeroWritesTests : IDisposable
 
     private readonly string _root;
     private readonly HelmChartStore _store = new(new HelmChartReader(), SettleDelay);
-    private readonly ServiceProvider _provider = new ServiceCollection().AddCommands().AddHelmCharts().BuildServiceProvider();
+    private readonly ServiceProvider _provider = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddHelmCharts().BuildServiceProvider();
 
     public ZeroWritesTests()
     {

@@ -1,6 +1,8 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -48,7 +50,7 @@ public class C4ContextPropertyProviderTests : IDisposable
         _bodyPath = IoPath.Combine(_root, "model.dsl");
         File.WriteAllText(_bodyPath, Model);
 
-        _services = new ServiceCollection().AddCommands().AddC4().BuildServiceProvider();
+        _services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddC4().BuildServiceProvider();
         _provider = _services.GetServices<IContextPropertyProvider>().OfType<C4ContextPropertyProvider>().Single();
         _history = _services.GetRequiredService<IHistoryStackStore>().Get(_root);
     }

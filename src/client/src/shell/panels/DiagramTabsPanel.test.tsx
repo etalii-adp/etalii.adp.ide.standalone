@@ -3,14 +3,10 @@ import { act, render, screen, fireEvent } from "@testing-library/react";
 import { markTabDirty } from "./dirtyTabs";
 import { requestTextTab } from "./textTabRequests";
 import { create } from "@bufbuild/protobuf";
-import {
-  ContextLevelDetailSchema,
-  ContextSelectionAction,
-  ContextSelectionSource,
-  type ContextLevelDetail,
-  type ContextSelection,
-} from "../../generated/context_pb";
-import { EntryKind } from "../../generated/hierarchy_pb";
+import { ContextLevelDetailSchema, ContextSelectionSource } from "../../generated/context-contract_pb";
+import { type ContextLevelDetail } from "../../generated/context-contract_pb";
+import { ContextSelectionAction, type ContextSelection } from "../../generated/context_pb";
+import { EntryKind } from "../../generated/shared_pb";
 import { NONE_DETAIL, selectionFor } from "../context/ContextConnectionProvider";
 import { DiagramTabsPanel } from "./DiagramTabsPanel";
 

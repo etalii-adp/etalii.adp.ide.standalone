@@ -1,6 +1,7 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -23,7 +24,7 @@ public class AddAnsibleStructureTests
         // AddCommands first, as the host and every sibling module's test do: the session
         // factory resolves the project's history store from there for its one edit, and the
         // module registers no history of its own.
-        services.AddCommands();
+        services.AddCommands().AddHierarchyCommandHandlers();
         services.AddAnsibleStructure();
         return services.BuildServiceProvider();
     }

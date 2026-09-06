@@ -1,6 +1,7 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -17,7 +18,7 @@ public class C4SessionTests : IDisposable
     private readonly string _root;
     private readonly C4DocumentStore _documents = new();
     private readonly C4ElementMapper _mapper = new(C4Metrics.Default, new C4LayoutSidecar());
-    private readonly IHistoryStackStore _historyStacks = new ServiceCollection().AddCommands().AddC4().BuildServiceProvider().GetRequiredService<IHistoryStackStore>();
+    private readonly IHistoryStackStore _historyStacks = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddC4().BuildServiceProvider().GetRequiredService<IHistoryStackStore>();
 
     public C4SessionTests()
     {

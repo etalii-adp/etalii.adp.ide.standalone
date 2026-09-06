@@ -1,14 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
-import {
-  ContextMessageSchema,
-  ContextSelectionAction,
-  ContextSelectionSource,
-  ProblemSetState,
-  ProblemSeverity,
-  type ContextMessage,
-} from "../../generated/context_pb";
+import { ContextSelectionSource } from "../../generated/context-contract_pb";
+import { ContextMessageSchema, ContextSelectionAction, ProblemSetState, ProblemSeverity, type ContextMessage } from "../../generated/context_pb";
 import {
   ContextConnectionProvider,
   NONE_DETAIL,

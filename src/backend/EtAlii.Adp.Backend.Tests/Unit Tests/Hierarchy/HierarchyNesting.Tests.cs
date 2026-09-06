@@ -1,4 +1,4 @@
-using EtAlii.Adp.Backend.Hierarchy;
+using EtAlii.Adp.Hierarchy;
 using Xunit;
 
 namespace EtAlii.Adp.Backend.Tests;

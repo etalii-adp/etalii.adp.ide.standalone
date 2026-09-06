@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { ContextPropertyEditor, type ContextProperty } from "../../generated/context_pb";
+import { ContextPropertyEditor } from "../../generated/context-contract_pb";
+import { type ContextProperty } from "../../generated/context_pb";
 
 export interface PropertyRowProps {
   property: ContextProperty;

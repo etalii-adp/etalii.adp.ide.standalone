@@ -32,7 +32,7 @@ The promise "every text file in your project opens somewhere" is made true by a 
 
 ## Resolution, and what happens when two editors claim one extension
 
-Core resolves a file's editor through one resolver that knows no extension of its own: [`EditorResolver.cs`](../src/backend/EtAlii.Adp.Backend/Hierarchy/EditorResolver.cs). The order is: exact file-name claim, then extension, then the fallback.
+Core resolves a file's editor through one resolver that knows no extension of its own: [`EditorResolver.cs`](../src/backend/EtAlii.Adp.Hierarchy/EditorResolver.cs). The order is: exact file-name claim, then extension, then the fallback.
 
 Two editors claiming the same extension (or file name) *unintentionally* is a deployment error, **reported at startup** — once, at `Error` level, naming the editors and the claim — and every affected file then refuses to open with the conflict rather than one editor silently winning. Deliberately *not* a startup throw: the resolver's own remarks record why (an optional, additive family must not take the whole host down, diagrams included, over its own misconfiguration), which is a softer failure than the diagram family's two-validators-one-origin throw, chosen after comparing both precedents. Behaviour depending on assembly load order is the thing being prevented either way.
 

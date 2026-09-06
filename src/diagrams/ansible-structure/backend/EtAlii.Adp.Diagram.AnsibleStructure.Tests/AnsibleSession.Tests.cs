@@ -1,6 +1,6 @@
 using EtAlii.Adp.Backend;
-using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -27,7 +27,7 @@ public class AnsibleSessionTests : IDisposable
         CopyTree(IoPath.Combine("Fixtures", "infrastructure"), _root);
         // The registration a real Add would have written. Nothing else is added to the folder.
         File.WriteAllText(IoPath.Combine(_root, "infrastructure.adp"), "ansible/structure\n");
-        _provider = new ServiceCollection().AddCommands().AddAnsibleStructure().BuildServiceProvider();
+        _provider = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddAnsibleStructure().BuildServiceProvider();
         _factory = new AnsibleSessionFactory(
             _store, new AnsibleElementMapper(), _provider.GetRequiredService<IHistoryStackStore>());
     }

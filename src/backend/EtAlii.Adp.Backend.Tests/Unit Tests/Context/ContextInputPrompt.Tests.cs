@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend.Context;
+using EtAlii.Adp.Common;
 using Xunit;
 
 // The generated gRPC stub for `service ContextService` claims the same simple name in

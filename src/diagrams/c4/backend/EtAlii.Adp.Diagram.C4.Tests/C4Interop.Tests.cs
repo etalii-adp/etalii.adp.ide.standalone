@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -110,7 +111,7 @@ public class C4InteropTests : IDisposable
         "Skipped: no Structurizr CLI. This check hands ADP's output to Structurizr's own parser; " +
         "the everyday run checks the same guarantee against committed verdicts instead. " + HowToRun);
 
-    private ServiceProvider Services() => new ServiceCollection().AddCommands().AddC4().BuildServiceProvider();
+    private ServiceProvider Services() => new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddC4().BuildServiceProvider();
 
     public static TheoryData<string> EveryWorkingType() =>
     [

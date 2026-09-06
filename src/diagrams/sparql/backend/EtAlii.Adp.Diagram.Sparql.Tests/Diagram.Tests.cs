@@ -1,8 +1,8 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
-using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -84,7 +84,7 @@ public class DiagramTests : IDisposable
         // the client can offer a user, so a read-only diagram registers no mutating seam at all.
         using var provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
-            .AddCommands()
+            .AddCommands().AddHierarchyCommandHandlers()
             .AddSparql()
             .BuildServiceProvider();
 
@@ -115,7 +115,7 @@ public class DiagramTests : IDisposable
         // than as a finding. It supplies a new file's text and never rewrites an existing one.
         using var provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
-            .AddCommands()
+            .AddCommands().AddHierarchyCommandHandlers()
             .AddSparql()
             .BuildServiceProvider();
 

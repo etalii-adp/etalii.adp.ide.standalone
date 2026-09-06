@@ -1,7 +1,9 @@
 import { create } from "@bufbuild/protobuf";
 import { EmptySchema } from "@bufbuild/protobuf/wkt";
-import { ContextSelectionSchema, ContextSourceSchema } from "../generated/context_pb";
-import type { ContextSelection, ContextSelectionAction, ContextSource } from "../generated/context_pb";
+import { ContextSourceSchema } from "../generated/context-contract_pb";
+import { ContextSelectionSchema } from "../generated/context_pb";
+import type { ContextSource } from "../generated/context-contract_pb";
+import type { ContextSelection, ContextSelectionAction } from "../generated/context_pb";
 
 /**
  * How a diagram canvas talks about its elements to the context channel.
