@@ -138,6 +138,81 @@
   cursor: crosshair;
 }
 
+/* ---- The library's own classes ------------------------------------------------------
+ *
+ * The library draws four things a module never supplies a class for: the anchors it derives
+ * from a type's `anchors` declaration, the preview path a connect gesture drags, and the
+ * resize and adjust handles. It names them `library-*` and nothing styled them, so each fell
+ * back to the SVG defaults - `fill: black`, `stroke: none`.
+ *
+ * Two of those were visible defects rather than merely wrong colours:
+ *
+ *   - Every anchor rendered as a black dot on every timeline and dependency-graph element,
+ *     against a surface the rest of the element takes from `--color-surface`.
+ *   - The connect preview is a *curve*, and filling a curve paints the region between it and
+ *     its chord - so starting a drag swept a solid black wedge across the diagram. The bug is
+ *     not the colour; it is that a line was being filled at all.
+ *
+ * This is the same failure `.library-canvas` above already documents - a class name with no
+ * rule behind it - and the same remedy: the library's own classes are stated here, once,
+ * rather than left for each module to discover. They deliberately reuse the variables the
+ * `canvas-*` rules use, so a library-drawn anchor and a module-drawn one are the same dot.
+ */
+
+/* The library's own anchors carry the connect gesture themselves - the circle is the press
+ * target, not a decoration beside one. So this must NOT take `pointer-events: none` from
+ * `.canvas-anchor` above, which can afford it only because the modules that use it draw a
+ * separate `canvas-anchor-hit` circle behind it. Copying that rule wholesale would have left
+ * the anchors looking right and impossible to drag from. */
+.library-anchor {
+  fill: var(--color-surface, #ffffff);
+  stroke: var(--color-primary, limegreen);
+  stroke-width: 1.5;
+  cursor: crosshair;
+}
+
+/* A span's anchors do have a hit circle behind them, so these may stay inert. */
+.library-span-anchor {
+  fill: var(--color-surface, #ffffff);
+  stroke: var(--color-primary, limegreen);
+  stroke-width: 1.5;
+  cursor: crosshair;
+  pointer-events: none;
+}
+
+.library-span-anchor-hit {
+  fill: transparent;
+  stroke: none;
+  cursor: crosshair;
+}
+
+/* A line, not a region: `fill: none` is what stops the wedge. */
+.library-connect-preview {
+  fill: none;
+  stroke: var(--color-primary, limegreen);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+
+/* A refused target reads as refused before the button is released. */
+.library-connect-preview-invalid {
+  stroke: var(--color-danger, #dc2626);
+}
+
+.library-resize-handle {
+  fill: transparent;
+  stroke: none;
+  cursor: ew-resize;
+}
+
+.library-adjust-handle {
+  fill: var(--color-surface, #ffffff);
+  stroke: var(--color-primary, limegreen);
+  stroke-width: 1.5;
+  cursor: grab;
+}
+
 /* ---- Connections ------------------------------------------------------------------- */
 
 .canvas-connection-line {
