@@ -418,6 +418,246 @@ describe("DiagramCanvas", () => {
     expect(onSubmit).toHaveBeenCalledWith("Alpha Prime");
   });
 
+  it("a beside-placed editor opens at the model's own label origin where one is carried", () => {
+    // A wardley label sits at an AUTHORED pixel offset from its mark - left of it included -
+    // and the editor must open where the drawn text begins, not at the shape's default gap.
+    // The model carries the origin (labelAt); the definition still decides editability.
+    const definition = definitionOf();
+    (definition.elementTypes[0] as { label?: unknown }).label = { placement: "beside", editable: true };
+    const model = modelOf();
+    (model.elements[0] as { labelAt?: unknown }).labelAt = { x: -57, y: 48 };
+
+    const { container } = renderCanvas({}, definition, model, {
+      editing: {
+        editingId: "a",
+        onPropose: async (revision: number) => ({ revision, valid: true, reason: "" }),
+        onSubmit: async () => ({ completed: true, error: "" }),
+        onCancel: () => {},
+      },
+    });
+
+    const editor = container.querySelector("foreignObject")!;
+    expect(editor).not.toBeNull();
+    expect(Number(editor.getAttribute("x"))).toBe(-57);
+  });
+
+  it("a drag is clamped to the definition's drag bounds, preview and raised position alike", () => {
+    // An intrinsic space is a hard edge: a wardley component must not be draggable off the
+    // map while the pointer is down, and the raised position must already respect it.
+    const onElementMoved = vi.fn();
+    const definition = definitionOf({ dragBounds: { x: -100, y: -100, width: 200, height: 200 } });
+    const { container } = renderCanvas({ onElementMoved }, definition);
+
+    drag(elementOn(container, "a"), 10, 10, 160, 40);
+
+    expect(onElementMoved).toHaveBeenCalledExactlyOnceWith({
+      kind: "element-moved",
+      elementId: "a",
+      position: { x: 100, y: 30 },
+    });
+  });
+
+  it("a connection carrying a title renders it as the hover tooltip", () => {
+    // A wardley link's `context` is a tooltip on the whole connection; a migration must not
+    // silently drop it.
+    const model = modelOf();
+    (model.connections[0] as { title?: string }).title = "verifies tokens with";
+
+    const { container } = renderCanvas({}, definitionOf(), model);
+
+    expect(container.querySelector('[data-connection-id="a->b"] title')?.textContent).toBe("verifies tokens with");
+  });
+
+  it("a frame element draws at its centre, not displaced by half its size", () => {
+    // FrameElement is centre-based like every shared element; feeding it the corner-based
+    // library bounds shifted every boundary by half its box - the third instance of the
+    // corner/centre class, caught before c4 mounted a single frame.
+    const definition = definitionOf({
+      elementTypes: [{ id: "boundary", shape: "frame", anchors: { kind: "edge" }, sizing: "model" }],
+      relationTypes: [],
+    });
+    const model: DiagramModel = {
+      elements: [{ id: "b1", type: "boundary", x: 100, y: 50, width: 200, height: 120, label: "Payments" }],
+      connections: [],
+    };
+
+    const { container } = renderCanvas({}, definition, model);
+
+    const rect = container.querySelector('[data-element-id="b1"] rect')!;
+    // Centre (100,50), 200x120: the group is translated to the centre and the rect spans
+    // from minus half - so its absolute left edge is at 0, not at 100.
+    const group = rect.closest("g[transform], g")!;
+    expect(rect.getAttribute("x")).toBe("-100");
+    expect(group.getAttribute("transform") ?? container.innerHTML).toContain("100");
+  });
+
+  it("an inset label rule opens the editor over the named line, not the whole card", () => {
+    // A c4 element is three lines of text; its editor covers the NAME line alone. The inset
+    // placement carries the module's own offsets as definition data.
+    const definition = definitionOf();
+    (definition.elementTypes[0] as { label?: unknown }).label = {
+      placement: "inset",
+      editable: true,
+      insetTop: 6,
+      insetHeight: 20,
+      insetX: 4,
+    };
+
+    const { container } = renderCanvas({}, definitionOf() && definition, modelOf(), {
+      editing: {
+        editingId: "a",
+        onPropose: async (revision: number) => ({ revision, valid: true, reason: "" }),
+        onSubmit: async () => ({ completed: true, error: "" }),
+        onCancel: () => {},
+      },
+    });
+
+    const editor = container.querySelector("foreignObject")!;
+    expect(editor).not.toBeNull();
+    // Element a: centre (0,0), 100x40 - the name line: x = -50+4, y = -20+6, height 20.
+    expect(Number(editor.getAttribute("x"))).toBe(-46);
+    expect(Number(editor.getAttribute("y"))).toBe(-14);
+    expect(Number(editor.getAttribute("height"))).toBe(20);
+  });
+
+  it("a connection's editor opens with its authored edit value, not the drawn label", () => {
+    // c4 draws "description [technology]", sometimes numbered; the editor replaces that whole
+    // string on screen while editing the one authored value - the description.
+    const definition = definitionOf();
+    (definition.relationTypes[0] as { label?: unknown }).label = { placement: "midpoint", editable: true };
+    const model = modelOf();
+    (model.connections[0] as { label?: string; editValue?: string }).label = "2. Verifies tokens [HTTPS]";
+    (model.connections[0] as { editValue?: string }).editValue = "Verifies tokens";
+
+    const { container } = renderCanvas({}, definition, model, {
+      editing: {
+        editingId: "a->b",
+        onPropose: async (revision: number) => ({ revision, valid: true, reason: "" }),
+        onSubmit: async () => ({ completed: true, error: "" }),
+        onCancel: () => {},
+      },
+    });
+
+    const field = container.querySelector("foreignObject input") as HTMLInputElement;
+    expect(field).not.toBeNull();
+    expect(field.value).toBe("Verifies tokens");
+  });
+
+  it("a custom route is handed its endpoint bounds, for geometry that anchors on boxes", () => {
+    // causal-loop's arc picks its own anchors from the two end BOXES - bowed to the side of
+    // travel, an ellipse pair for a self-loop - which resolved points alone cannot express.
+    const seen: unknown[] = [];
+    const definition = definitionOf();
+    (definition.relationTypes[0] as { route: unknown }).route = {
+      customRoute: "probe",
+      path: (_from: unknown, _to: unknown, _waypoints: unknown, ends?: unknown) => {
+        seen.push(ends);
+        return "M 0 0 L 10 10";
+      },
+    };
+
+    renderCanvas({}, definition, modelOf());
+
+    expect(seen.length).toBeGreaterThan(0);
+    const ends = seen[0] as { source: { width: number }; target: { width: number } };
+    expect(ends).toBeDefined();
+    expect(ends.source.width).toBe(100);
+    expect(ends.target.width).toBe(100);
+  });
+
+  it("a relation's adornment renders inside the connection group, where selection styling reaches it", () => {
+    // Polarity signs and delay strokes ride the connection: drawn inside its group so the
+    // shared .canvas-selected cascade colours them with the line they describe.
+    const definition = definitionOf();
+    (definition.relationTypes[0] as { adorn?: unknown }).adorn = () => (
+      <text className="probe-adornment" data-testid="probe-adornment">
+        +
+      </text>
+    );
+
+    const { container } = renderCanvas({}, definition, modelOf());
+
+    const adornment = container.querySelector('[data-connection-id="a->b"] [data-testid="probe-adornment"]');
+    expect(adornment).not.toBeNull();
+  });
+
+  it("the anchor a connect starts from selects the relation whose source allows it", () => {
+    // skos files a concept under another from its TOP anchor and cross-links from its SIDE -
+    // two relations told apart by where the drag began. The source constraint's anchor list
+    // is that meaning; a connect from a named anchor must pick the relation that names it.
+    const onConnectionDrawn = vi.fn();
+    const definition = definitionOf({
+      elementTypes: [
+        { id: "service", shape: "box", anchors: { kind: "compass", positions: ["n", "e"] }, sizing: "model" },
+      ],
+      relationTypes: [
+        {
+          id: "files-under",
+          route: "straight",
+          endpoints: { source: { elementTypes: ["service"], anchors: ["n"] }, target: { elementTypes: ["service"] }, allowSelf: false },
+        },
+        {
+          id: "relates",
+          route: "straight",
+          endpoints: { source: { elementTypes: ["service"], anchors: ["e"] }, target: { elementTypes: ["service"] }, allowSelf: false },
+        },
+      ],
+    });
+    const model: DiagramModel = {
+      elements: [
+        { id: "a", type: "service", x: 0, y: 0, width: 100, height: 40, label: "Alpha" },
+        { id: "b", type: "service", x: 300, y: 0, width: 100, height: 40, label: "Beta" },
+      ],
+      connections: [],
+    };
+
+    const { container } = renderCanvas({ onConnectionDrawn }, definition, model);
+
+    // A drag from the EAST anchor must draw the side relation, not the first declared.
+    const anchor = anchorOn(container, "a", "e");
+    fireEvent(anchor, pointer("pointerdown", { button: 0, clientX: 50, clientY: 0 }));
+    fireEvent(anchor, pointer("pointermove", { clientX: 300, clientY: 0 }));
+    fireEvent(anchor, pointer("pointerup", { clientX: 300, clientY: 0 }));
+
+    expect(onConnectionDrawn).toHaveBeenCalledTimes(1);
+    expect(onConnectionDrawn.mock.calls[0][0].relationType).toBe("relates");
+  });
+
+  it("a connection's own class names join its group, for kinds one relation type cannot enumerate", () => {
+    // A shacl edge's kind is an open string from the document; the connection carries the
+    // kind class itself rather than the definition declaring one relation type per kind.
+    const model = modelOf();
+    (model.connections[0] as { className?: string }).className = "shacl-edge shacl-edge-node";
+
+    const { container } = renderCanvas({}, definitionOf(), model);
+
+    const group = container.querySelector('[data-connection-id="a->b"]')!;
+    expect(group.getAttribute("class")).toContain("shacl-edge-node");
+  });
+
+  it("a type marked beneathConnections paints its elements under the connections", () => {
+    // An opaque container whose members' edges must stay visible over it - azure-pipeline's
+    // stage cards. The default stays connections-first, so only the marked type moves down.
+    const definition = definitionOf();
+    (definition.elementTypes as unknown[]).push({
+      id: "zone",
+      shape: "box",
+      anchors: { kind: "edge" },
+      sizing: "model",
+      beneathConnections: true,
+    });
+    const model = modelOf();
+    (model.elements as unknown[]).push({ id: "z", type: "zone", x: 150, y: 0, width: 500, height: 200 });
+
+    const { container } = renderCanvas({}, definition, model);
+
+    const drawn = [...container.querySelectorAll("[data-element-id], [data-connection-id]")].map(
+      (node) => node.getAttribute("data-element-id") ?? node.getAttribute("data-connection-id"),
+    );
+    expect(drawn.indexOf("z")).toBeLessThan(drawn.indexOf("a->b"));
+    expect(drawn.indexOf("a->b")).toBeLessThan(drawn.indexOf("a"));
+  });
+
   it("a label the definition does not mark editable opens no editor", () => {
     const { container } = renderCanvas({}, definitionOf(), modelOf(), {
       editing: {

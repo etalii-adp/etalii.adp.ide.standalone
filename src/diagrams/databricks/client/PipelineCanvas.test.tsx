@@ -110,7 +110,7 @@ describe("the pipeline canvas", () => {
     // Assert.
     expect(container.querySelector(".databricks-canvas")!.classList.contains("canvas-host")).toBe(true);
     expect(container.querySelector(".databricks-node-box")!.classList.contains("canvas-node")).toBe(true);
-    expect(container.querySelector(".databricks-edge-flow")!.classList.contains("canvas-connection-line")).toBe(true);
+    expect(container.querySelector(".databricks-edge-flow .canvas-connection-line")).not.toBeNull();
     expect(container.querySelector(".databricks-scrollbars.canvas-scrollbar-horizontal")).not.toBeNull();
     expect(container.querySelector(".databricks-scrollbars.canvas-scrollbar-vertical")).not.toBeNull();
   });

@@ -96,7 +96,7 @@ The client half mirrors the backend's discovery, so the shell holds no list of d
 
 - **`client/register.ts`** — timeline's ([`register.ts`](../src/diagrams/timeline/client/register.ts)) exports `registrations`: a predicate on the mime type (`mimeType === "generic/timeline"` — match exactly, not by prefix) and the canvas component to mount. The shell discovers every module's file through `import.meta.glob` in [`diagramCanvases.ts`](../src/client/src/shell/panels/diagramCanvases.ts); adding the file is the whole hookup.
 - **`client/package.json`** — a small workspace package ([timeline's](../src/diagrams/timeline/client/package.json)) declaring what the module's client code imports. It is picked up by the `diagrams/*/client` workspaces glob in [`src/package.json`](../src/package.json); run `npm install` from `src/` after adding it so the lock file learns the new package — `npm ci`, which CI runs first, refuses a lock that missed it.
-- **The canvas** — timeline's `TimelineCanvas.tsx` with its stream hook (`useTimelineStream.ts`) subscribing to the diagram stream and unpacking the module's payloads. Before drawing anything by hand, read the shared canvas library under [`src/client/src/canvas/`](../src/client/src/canvas/): its [elements](../src/client/src/canvas/elements/readme.md) and [connections](../src/client/src/canvas/connections/readme.md) readmes catalogue the box, symbol, span, frame and connector shapes earlier modules grew and generalised — timeline draws its bars with the `span` element and its relations with the `interactive-bezier` connection rather than reinventing either.
+- **The canvas** — a module writes a *definition*, not a canvas. Its `MyCanvas.tsx` keeps a stream hook (`useTimelineStream.ts`-style) that subscribes to the diagram stream and unpacks the module's payloads, then hands three things to the shared [`DiagramCanvas`](../src/client/src/canvas/library/DiagramCanvas.tsx): a `DiagramDefinition` (element types with shapes, anchors and label rules; relation types with routes, markers and endpoint constraints — validated by `assertValidDiagramDefinition`), a memoised `DiagramModel` mapping the stream's model into centre-positioned elements and connections, and `DiagramEventHandlers` answering the gestures the definition allows (`onSelectionChanged`, `onElementMoved`, `onConnectionDrawn`, `onElementDropped`, …) — every event is a request the module answers through its own transport, never a mutation the canvas performs. Pan, zoom, drags, connects, drops, selection, the context menu, scrollbars and the inline label editor are all the library's; a notation the built-ins cannot draw supplies a `CustomShapeRef` or `CustomRouteRef`, which may build its geometry from the shared [elements](../src/client/src/canvas/elements/readme.md), [connections](../src/client/src/canvas/connections/readme.md) and connector primitives. Two guards keep it that way: [`noPrivateGestures.test.ts`](../src/client/src/canvas/library/noPrivateGestures.test.ts) fails any module holding its own drag/pan/connect state, and [`libraryGuards.test.tsx`](../src/client/src/canvas/library/libraryGuards.test.tsx) fails any registered canvas that does not render through the library.
 - **Styling** — the shared appearance lives in [`canvas.css`](../src/client/src/canvas/canvas.css): your `register.ts` imports it (`import "@client/canvas/canvas.css";`) beside your own stylesheet, and your canvas composes its `canvas-*` classes alongside your module's own names (`my-type-node canvas-node`) — the module names carry behaviour and tests, the shared ones carry the look. Your own stylesheet keeps only what is genuinely yours (a ruler, a run-state colouring), states no colour as a literal, and reaches only for theme variables that actually exist in **both** modes of [`index.css`](../src/client/src/index.css) — a `var()` against a variable the theme lacks renders its hardcoded fallback in every theme, which is how one module shipped a dark-only canvas. A colour the theme genuinely lacks is added to the theme, in both modes, never as a module literal. The scrollbars are the shared [`CanvasScrollbars`](../src/client/src/canvas/scroll/CanvasScrollbars.tsx); a module owns only their placement offsets.
 
 - **The context channel reports failure in its return value, never by rejecting.** A canvas that writes a property, runs an action or proposes a value goes through [`ContextConnectionProvider`](../src/client/src/shell/context/ContextConnectionProvider.tsx), and what it does on a dropped connection is one rule rather than a choice per method: **a method returning a value its caller acts on resolves with the failure expressed in that value; a method returning `void` is advisory, swallows its fault, and says so in a comment.** So `setProperty` answers `{ accepted: false, error }` rather than throwing, and `describeProperties` answers `{ properties, error }` — an empty array alone cannot say whether a selection has no properties or could not be read, and a panel must show those two differently. Write your call sites accordingly: they need no `.catch` to be correct, and reaching for one is a sign the method's shape is wrong rather than your handling. [`channelResolvesRatherThanRejects.test.tsx`](../src/client/src/shell/context/channelResolvesRatherThanRejects.test.tsx) drives every value-returning method over a transport that rejects, and fails naming any channel method it cannot classify — so a method added later is covered by having been added, not by somebody remembering this paragraph.
@@ -118,28 +118,20 @@ argument is defaulted, so nothing you already wrote changes.
 is the clearest example: four of its actions ask for text through the identical prompt and only
 `Rename` is marked, because a child's text does not exist yet and notes are not the label.
 
-The client half is a placement resolver. Call `useRegisterInlineLabelPlacement` with a function
-from element id to the label's rectangle **in your canvas's own units**, memoized on your model
-so an element removed mid-edit stops being placeable, and render
-[`InlineLabelEditor`](../src/client/src/canvas/label/InlineLabelEditor.tsx) inside your `svg` for
-the prompt it matches. Its [readme](../src/client/src/canvas/label/readme.md) is the reference,
-and a guard, [`noPrivateLabelEditors.test.ts`](../src/client/src/canvas/label/noPrivateLabelEditors.test.ts),
-fails naming any module that renders a text field of its own instead.
+The client half is definition data plus one prop. Mark the label editable in the definition —
+`label: { placement: "inside", editable: true }` on the element type, an `inset` rule for one
+named line of a composite card, `{ placement: "midpoint", editable: true }` on a relation — and
+hand `DiagramCanvas` the `editing` prop built from `useContextPrompt` and
+`inlineLabelElementIdOf`. The library places the shared
+[`InlineLabelEditor`](../src/client/src/canvas/label/InlineLabelEditor.tsx) over the drawn label
+from the rule alone, commits it as a `label-commit-requested` event through the prompt flow, and
+ends an open edit before any gesture begins. A guard,
+[`noPrivateLabelEditors.test.ts`](../src/client/src/canvas/label/noPrivateLabelEditors.test.ts),
+fails naming any module that renders a text field of its own instead; the placement helpers in
+[`labelPlacement.ts`](../src/client/src/canvas/label/labelPlacement.ts) remain the shared
+geometry underneath and are not called by modules any more.
 
-**Do not compute the rectangle by hand.** The four helpers in
-[`labelPlacement.ts`](../src/client/src/canvas/label/labelPlacement.ts) cover the shapes a
-canvas actually draws, and every adopter uses them: `centredLabelPlacement` for a label filling
-its element's box, `insetLabelPlacement` for one named line inside a composite card,
-`midpointLabelPlacement` for a bare text on a connection, and `asideLabelPlacement` for a label
-beside a point marker - an instant's diamond, a Wardley mark, anywhere there is no box to put
-the text in. They are pure and unit-agnostic: a viewBox canvas passes module units and a
-pixel-positioned one passes pixels, and only the second kind memoizes its resolver on the view
-as well as the model, because there a pan moves every label without changing the model. A
-connection or aside label has no box, so its width is your measured width where the browser can
-give one and a per-character estimate otherwise - and jsdom measures nothing, so unit tests
-exercise the estimate by construction.
-
-Three things are worth knowing before you write the resolver.
+Three things are worth knowing before you mark a rule editable.
 
 **Give the label's rectangle, not the element's.** A C4 box carries a name, a type line and a
 description; an editor over the whole box sits on three lines of text to edit one of them.

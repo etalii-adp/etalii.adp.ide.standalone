@@ -183,27 +183,32 @@ describe("SkosCanvas", () => {
     expect(container.querySelector(".skos-edge-related")).not.toBeNull();
     expect(container.querySelector(".skos-edge-mapping")).not.toBeNull();
     // Only a mapping carries a label - the hierarchy's direction is its layering.
-    expect([...container.querySelectorAll(".skos-edge-label")].map((label) => label.textContent)).toEqual(["skos:exactMatch"]);
+    expect([...container.querySelectorAll(".library-connection-label")].map((label) => label.textContent)).toEqual(["skos:exactMatch"]);
   });
 
   it("dispatches file-under from the top anchor and relate from the side anchor", () => {
-    currentSelectionKey = `element:${TEA}`;
     const { container } = renderCanvas();
 
-    const anchors = container.querySelectorAll(".skos-anchor-hit");
-    expect(anchors.length).toBe(2);
-    const target = container.querySelector(`[data-element-id="${MILK}"]`)!;
+    // The library renders the named anchors always, shown by the stylesheet when they matter;
+    // which anchor the drag begins on is which gesture it is.
+    const fileAnchor = container.querySelector(`[data-element-id="${TEA}"] [data-anchor="file"]`)!;
+    const relateAnchor = container.querySelector(`[data-element-id="${TEA}"] [data-anchor="relate"]`)!;
+    expect(fileAnchor).not.toBeNull();
+    expect(relateAnchor).not.toBeNull();
+
+    // Milk's centre in canvas units; jsdom's zero-size rect makes one pixel one unit.
+    const overMilk = { clientX: 240 + 100, clientY: 100 + 22 };
 
     // Top anchor: the dragged concept is filed under the one it is released on.
-    fireEvent.mouseDown(anchors[0], { clientX: 100, clientY: 100 });
-    fireEvent.mouseEnter(target);
-    fireEvent.mouseUp(target);
+    fireEvent(fileAnchor, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(fileAnchor, new MouseEvent("pointermove", { bubbles: true, ...overMilk }));
+    fireEvent(fileAnchor, new MouseEvent("pointerup", { bubbles: true, ...overMilk }));
     expect(executed.at(-1)?.actionId).toBe("skos.file-under");
 
     // Side anchor: the same gesture, cross-linking instead.
-    fireEvent.mouseDown(anchors[1], { clientX: 100, clientY: 100 });
-    fireEvent.mouseEnter(target);
-    fireEvent.mouseUp(target);
+    fireEvent(relateAnchor, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(relateAnchor, new MouseEvent("pointermove", { bubbles: true, ...overMilk }));
+    fireEvent(relateAnchor, new MouseEvent("pointerup", { bubbles: true, ...overMilk }));
     expect(executed.at(-1)?.actionId).toBe("skos.relate");
   });
 
@@ -211,9 +216,9 @@ describe("SkosCanvas", () => {
     const { container } = renderCanvas();
     const box = container.querySelector(`[data-element-id="${TEA}"]`)!;
 
-    fireEvent.mouseDown(box, { clientX: 10, clientY: 10 });
-    fireEvent.mouseMove(container.querySelector(".skos-surface")!, { clientX: 60, clientY: 40 });
-    fireEvent.mouseUp(container.querySelector(".skos-surface")!);
+    fireEvent(box, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(box, new MouseEvent("pointermove", { bubbles: true, clientX: 60, clientY: 40 }));
+    fireEvent(box, new MouseEvent("pointerup", { bubbles: true, clientX: 60, clientY: 40 }));
 
     // One move, carrying the authored position - the backend turns it into the layout: command.
     expect(moves.length).toBe(1);
@@ -223,11 +228,16 @@ describe("SkosCanvas", () => {
   it("drops a toolbox entry at a placement id under the pointer", () => {
     const { container } = renderCanvas();
 
-    fireEvent.drop(container.querySelector(".skos-surface")!, {
-      dataTransfer: { getData: () => "skos.add-concept", types: ["application/x-adp-toolbox-item"] },
-      clientX: 120,
-      clientY: 80,
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+    const box = surface.getAttribute("viewBox")!.split(" ").map(Number);
+    Object.defineProperty(surface, "getBoundingClientRect", {
+      value: () => ({ x: 0, y: 0, top: 0, left: 0, right: box[2], bottom: box[3], width: box[2], height: box[3], toJSON: () => ({}) }),
     });
+    const event = new MouseEvent("drop", { bubbles: true, cancelable: true, clientX: 120, clientY: 80 });
+    Object.defineProperty(event, "dataTransfer", {
+      value: { getData: () => "skos.add-concept", types: ["application/x-adp-toolbox-item"] },
+    });
+    fireEvent(surface, event);
 
     expect(executed.at(-1)?.actionId).toBe("skos.add-concept");
   });

@@ -24,7 +24,7 @@ import { SpanElement } from "../elements/span/SpanElement";
 import { StyledBoxElement } from "../elements/styled-box/StyledBoxElement";
 import { SymbolElement } from "../elements/symbol/SymbolElement";
 import { InlineLabelEditor, type InlineLabelEditorProps } from "../label/InlineLabelEditor";
-import { asideLabelPlacement, centredLabelPlacement, midpointLabelPlacement } from "../label/labelPlacement";
+import { asideLabelPlacement, centredLabelPlacement, insetLabelPlacement, midpointLabelPlacement } from "../label/labelPlacement";
 import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { scrollExtentOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
@@ -419,9 +419,20 @@ export function DiagramCanvas({
    * the definition's "default" answer to Requirement 5.5, so the library never guesses twice.
    */
   const relationFrom = useCallback(
-    (element: DiagramModelElement): RelationTypeDefinition | undefined => {
-      const admits = (relation: RelationTypeDefinition | undefined) =>
-        relation !== undefined && relation.endpoints.source.elementTypes.includes(element.type) ? relation : undefined;
+    (element: DiagramModelElement, anchor?: string): RelationTypeDefinition | undefined => {
+      // The anchor a connect starts from is part of the gesture's meaning: skos files a
+      // concept under another from its TOP anchor and cross-links from its SIDE. A source
+      // constraint naming anchors admits only drags that began on one of them.
+      const admits = (relation: RelationTypeDefinition | undefined) => {
+        if (relation === undefined || !relation.endpoints.source.elementTypes.includes(element.type)) {
+          return undefined;
+        }
+        const allowed = relation.endpoints.source.anchors;
+        if (Array.isArray(allowed) && (anchor === undefined || !allowed.includes(anchor))) {
+          return undefined;
+        }
+        return relation;
+      };
       return admits(config?.activeTool !== undefined ? relationTypes.get(config.activeTool) : undefined)
         ?? definition.relationTypes.map((relation) => admits(relation)).find((relation) => relation !== undefined);
     },
@@ -497,11 +508,12 @@ export function DiagramCanvas({
           if (!draggingEnabled(target.element)) {
             break; // disabled dragging: the press stays a press (Requirement 5.2)
           }
-          setDragOffset({ id: target.element.id, dx: dx * scale, dy: dy * scale });
+          const at = clampToDragBounds(definition.dragBounds, target.element, dx * scale, dy * scale);
+          setDragOffset({ id: target.element.id, dx: at.x - target.element.x, dy: at.y - target.element.y });
           break;
         }
         case "anchor": {
-          const relation = relationFrom(target.element);
+          const relation = relationFrom(target.element, target.anchor);
           if (relation === undefined) {
             break; // no relation may leave this element; nothing to preview
           }
@@ -553,7 +565,7 @@ export function DiagramCanvas({
           raise({
             kind: "element-moved",
             elementId: target.element.id,
-            position: { x: target.element.x + dx * scale, y: target.element.y + dy * scale },
+            position: clampToDragBounds(definition.dragBounds, target.element, dx * scale, dy * scale),
           });
           break;
         }
@@ -779,10 +791,27 @@ export function DiagramCanvas({
         }
         const bounds = elementBounds(element, type);
         // "beside" opens next to the shape - a moment's diamond has no box to open inside.
+        // An element carrying its own label origin opens there: the author put the drawn
+        // text at an offset (left of the mark included), and the editor covers the text.
         if (type.label.placement === "beside") {
-          return asideLabelPlacement({ x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 }, 6, element.label ?? "");
+          return element.labelAt !== undefined
+            ? asideLabelPlacement(element.labelAt, 0, element.label ?? "")
+            : asideLabelPlacement({ x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 }, 6, element.label ?? "");
         }
-        return centredLabelPlacement(bounds, element.label ?? "");
+        // "inset" opens over the one named line of a composite card - the c4 shape - with the
+        // horizontal inset applied by narrowing the centred box on both sides.
+        if (type.label.placement === "inset") {
+          return insetLabelPlacement(
+            { x: element.x, y: element.y, width: bounds.width - (type.label.insetX ?? 0) * 2, height: bounds.height },
+            type.label.insetTop ?? 0,
+            type.label.insetHeight ?? 20,
+            element.label ?? "",
+          );
+        }
+        // centredLabelPlacement takes a CENTRE-based box while the library's bounds are
+        // corner-based - the same conversion the edge-attachment guard was seen to fail on,
+        // caught here by the mindmap migration's editor-position test.
+        return centredLabelPlacement({ x: element.x, y: element.y, width: bounds.width, height: bounds.height }, element.label ?? "");
       }
 
       const connection = model.connections.find((candidate) => candidate.id === id);
@@ -795,7 +824,23 @@ export function DiagramCanvas({
         if (ends === null) {
           return null;
         }
-        return midpointLabelPlacement(ends[0], ends[1], relation.label.offset ?? -6, connection.label ?? "", null);
+        // The editor opens with the one AUTHORED value where the drawn label decorates it,
+        // and at the drawn text's own measured width where the browser can measure - jsdom
+        // has no getBBox, so unit tests exercise the estimate branch by construction and the
+        // measured path is the manual checks' to verify.
+        // Matched by attribute value rather than a CSS selector: jsdom offers no CSS.escape,
+        // and a connection id is module data no selector grammar should have to survive.
+        const drawnGroup = [...(svgRef.current?.querySelectorAll("[data-connection-id]") ?? [])]
+          .find((candidate) => candidate.getAttribute("data-connection-id") === connection.id);
+        const drawn = drawnGroup?.querySelector("text");
+        const measured = drawn instanceof SVGGraphicsElement && typeof drawn.getBBox === "function" ? drawn.getBBox().width : 0;
+        return midpointLabelPlacement(
+          ends[0],
+          ends[1],
+          relation.label.offset ?? -6,
+          connection.editValue ?? connection.label ?? "",
+          measured > 0 ? measured : null,
+        );
       }
 
       return null;
@@ -815,8 +860,57 @@ export function DiagramCanvas({
     return [...elements.filter(isFrame), ...elements.filter((element) => !isFrame(element))];
   }, [elements, elementTypes]);
 
+  // A type marked beneathConnections paints before the connections - an opaque container
+  // whose members' edges must stay visible over it; everything else keeps the
+  // connections-first order the canvases have always had.
+  const beneathConnections = useMemo(
+    () => ordered.filter((element) => elementTypes.get(element.type)?.beneathConnections === true),
+    [ordered, elementTypes],
+  );
+  const aboveConnections = useMemo(
+    () => ordered.filter((element) => elementTypes.get(element.type)?.beneathConnections !== true),
+    [ordered, elementTypes],
+  );
+
   const isSelected = (kind: SelectedItem["kind"], id: string) =>
     selection.some((item) => item.kind === kind && item.id === id);
+
+  /**
+   * Ends an open inline edit before a gesture begins (the mindmap spec's Requirement 5.5,
+   * inherited by every adopter): the editor commits on blur, so taking the focus is the whole
+   * mechanism, and it lives here once rather than per module. Capture phase, so it runs before
+   * any press wiring; a press inside the editor itself is exempt - ending the edit on the
+   * click being typed into would commit the very edit being clicked.
+   */
+  // Stable, and this is load-bearing: the editor's return-focus effect keys on this function's
+  // IDENTITY, and an inline arrow here re-ran its cleanup every render - which hands focus to
+  // the canvas mid-edit and latches the editor's closing flag, the silent-self-cancel class of
+  // defect the editor's own comments warn about. Caught by the mindmap migration's
+  // commit-before-gesture test.
+  const returnFocusToSurface = useCallback(() => svgRef.current?.focus(), []);
+
+  const endEditBeforeGesture = (event: React.PointerEvent) => {
+    if (editing?.editingId != null && !(event.target instanceof Element && event.target.closest("foreignObject") !== null)) {
+      svgRef.current?.focus();
+    }
+  };
+
+  const renderLibraryElement = (element: DiagramModelElement) => (
+    <LibraryElement
+      key={element.id}
+      element={element}
+      type={elementTypes.get(element.type)}
+      offset={dragOffset?.id === element.id ? dragOffset : undefined}
+      resize={resizePreview?.id === element.id ? resizePreview : undefined}
+      resizable={elementTypes.get(element.type)?.sizing === "user"}
+      resizePress={(side) => gesture.press({ kind: "resize", element, side })}
+      selected={isSelected("element", element.id)}
+      connectHighlight={connect?.target?.elementId === element.id ? "valid" : connect !== null && !connect.valid && connectTargetUnder(connect, element, boundsOf) ? "invalid" : undefined}
+      press={gesture.press({ kind: "element", element })}
+      anchorPress={(anchor, at) => gesture.press({ kind: "anchor", element, anchor, at })}
+      onContextMenu={onItemContextMenu(element.id)}
+    />
+  );
 
   return (
     <div className={`library-canvas ${className ?? ""}`.trim()} data-testid="library-canvas">
@@ -834,6 +928,7 @@ export function DiagramCanvas({
         role="img"
         aria-label={ariaLabel ?? "Diagram"}
         {...gesture.background({ kind: "background", view: effectiveView })}
+        onPointerDownCapture={endEditBeforeGesture}
         onKeyDown={onKeyDown}
         onDragOver={onSurfaceDragOver}
         onDrop={onSurfaceDrop}
@@ -859,6 +954,8 @@ export function DiagramCanvas({
           </g>
         )}
 
+        {beneathConnections.map((element) => renderLibraryElement(element))}
+
         {model.connections.map((connection) => (
           <LibraryConnection
             key={connection.id}
@@ -874,22 +971,7 @@ export function DiagramCanvas({
           />
         ))}
 
-        {ordered.map((element) => (
-          <LibraryElement
-            key={element.id}
-            element={element}
-            type={elementTypes.get(element.type)}
-            offset={dragOffset?.id === element.id ? dragOffset : undefined}
-            resize={resizePreview?.id === element.id ? resizePreview : undefined}
-            resizable={elementTypes.get(element.type)?.sizing === "user"}
-            resizePress={(side) => gesture.press({ kind: "resize", element, side })}
-            selected={isSelected("element", element.id)}
-            connectHighlight={connect?.target?.elementId === element.id ? "valid" : connect !== null && !connect.valid && connectTargetUnder(connect, element, boundsOf) ? "invalid" : undefined}
-            press={gesture.press({ kind: "element", element })}
-            anchorPress={(anchor, at) => gesture.press({ kind: "anchor", element, anchor, at })}
-            onContextMenu={onItemContextMenu(element.id)}
-          />
-        ))}
+        {aboveConnections.map((element) => renderLibraryElement(element))}
 
         {connect !== null && (
           // The live preview, routed and styled as the relation prescribes (Requirement 5.4).
@@ -919,7 +1001,7 @@ export function DiagramCanvas({
               return editing.onSubmit(...args);
             }}
             onCancel={editing.onCancel}
-            onReturnFocus={() => svgRef.current?.focus()}
+            onReturnFocus={returnFocusToSurface}
           />
         )}
       </svg>
@@ -1067,7 +1149,13 @@ function LibraryConnection({
 
   const [from, to] = ends;
   const waypoints = connection.waypoints ?? [];
-  const d = routePath(relation, from, to, waypoints, connection.style?.cornerRadius ?? relation.style?.cornerRadius);
+  const source = elementsById.get(connection.sourceId);
+  const target = elementsById.get(connection.targetId);
+  const routeEnds =
+    source !== undefined && target !== undefined
+      ? { source: elementBounds(source, elementTypes.get(source.type)), target: elementBounds(target, elementTypes.get(target.type)) }
+      : undefined;
+  const d = routePath(relation, from, to, waypoints, connection.style?.cornerRadius ?? relation.style?.cornerRadius, routeEnds);
   const style = { ...relation.style, ...connection.style };
   const mid = waypoints.length > 0 ? waypoints[Math.floor(waypoints.length / 2)] : midpointOf(from, to);
   const label = connection.label;
@@ -1075,7 +1163,7 @@ function LibraryConnection({
 
   return (
     <g
-      className={`canvas-connection library-connection ${relation.className ?? ""}${selected ? " canvas-selected" : ""}`.trim()}
+      className={`canvas-connection library-connection ${relation.className ?? ""} ${connection.className ?? ""}${selected ? " canvas-selected" : ""}`.replace(/\s+/g, " ").trim()}
       data-connection-id={connection.id}
       {...press}
       onContextMenu={onContextMenu}
@@ -1097,6 +1185,8 @@ function LibraryConnection({
           {label}
         </text>
       )}
+      {connection.title !== undefined && connection.title !== "" && <title>{connection.title}</title>}
+      {relation.adorn !== undefined && <>{relation.adorn({ from, to, waypoints, ends: routeEnds }, connection) as ReactNode}</>}
       {selected && relation.adjustable === true && (
         // The one adjustment handle: dragging it raises connection-adjusted with the carried
         // waypoint; a definition that forbids adjustment never renders it (Requirement 3.5).
@@ -1168,7 +1258,10 @@ function renderShape(
     case "ellipse":
       return <EllipseElement x={element.x} y={element.y} radiusX={bounds.width / 2} radiusY={bounds.height / 2} text={label} ellipseClassName="library-shape" style={paint} />;
     case "frame":
-      return <FrameElement className="library-frame" x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} label={label} style={paint} />;
+      // FrameElement is centre-based like the other shared elements; the corner-based bounds
+      // shifted every boundary by half its box (the third corner/centre instance, caught by
+      // the c4 migration's frame test before one ever mounted).
+      return <FrameElement className="library-frame" x={element.x} y={element.y} width={bounds.width} height={bounds.height} label={label} style={paint} />;
     case "span":
       return <SpanElement box={{ x: element.x, y: element.y, width: bounds.width, height: bounds.height }} label={label} classes={{ span: "library-shape library-span", moment: "library-span-moment", label: "library-span-label", hint: "library-span-hint", adorner: "library-span-adorner", anchor: "library-span-anchor", anchorHit: "library-span-anchor-hit" }} style={paint} />;
     case "styled-box":
@@ -1257,10 +1350,11 @@ export function routePath(
   to: Point,
   waypoints: readonly Point[],
   cornerRadius?: number,
+  ends?: import("./definition/diagramDefinition").RouteEnds,
 ): string {
   const route = relation.route;
   if (typeof route !== "string") {
-    return route.path(from, to, waypoints);
+    return route.path(from, to, waypoints, ends);
   }
 
   switch (route) {
@@ -1390,6 +1484,28 @@ function resizedBounds(bounds: ConnectorBox, side: "left" | "right", dx: number)
   }
   const width = Math.max(bounds.width + dx, 1);
   return { ...bounds, width };
+}
+
+/**
+ * The dragged centre, kept inside the definition's drag bounds where it declares any - the
+ * hard edge of an intrinsic space, applied to the preview and the raised position alike so
+ * the user is never shown a position that cannot exist.
+ */
+function clampToDragBounds(
+  bounds: import("./definition/diagramDefinition").ShapeBounds | undefined,
+  element: DiagramModelElement,
+  dx: number,
+  dy: number,
+): Point {
+  const x = element.x + dx;
+  const y = element.y + dy;
+  if (bounds === undefined) {
+    return { x, y };
+  }
+  return {
+    x: Math.min(bounds.x + bounds.width, Math.max(bounds.x, x)),
+    y: Math.min(bounds.y + bounds.height, Math.max(bounds.y, y)),
+  };
 }
 
 function elementBounds(element: DiagramModelElement, type: ElementTypeDefinition | undefined): ConnectorBox {

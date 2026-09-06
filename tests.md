@@ -2092,3 +2092,253 @@ remains for eyes is the styling and the feel. One signed-in session, `src/exampl
   above is pinned by the named unit tests, each seen to fail against its defect first; the
   styling check has no possible unit guard and is eyes-only.
 
+## wardley-map re-run after its library migration (diagram-library-adoption, task 2)
+
+The map now renders through the diagram library: same marks, links, evolve indicators,
+attitudes, notes and annotations, same selection, menu, F2 and in-place rename, same
+whole-space Fit. Re-run the standing wardley entries above against a migrated build, plus:
+
+- **Actions**: drag a component hard against every edge of the map; zoom with the wheel; open
+  the largest example map and compare drag latency, pan smoothness and open-to-first-paint
+  against a pre-migration build.
+- **Expected**: a mark stops at the map's edge while the pointer is still down (the library's
+  dragBounds, guarded by unit tests); wheel zoom now zooms about the POINTER rather than the
+  view's centre - a recorded unification with every library canvas; links follow a dragged
+  mark on commit rather than under the pointer - the library norm, also recorded; nothing
+  feels worse on the largest example, or the merge should have been blocked.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - the implementing session's
+  credential prohibition stands, so this is handed over runnable. Every geometric and gestural
+  behaviour is pinned by the 38 adapted unit tests, three of which were seen to fail under
+  narrow sabotages (dragBounds removed, labelAt dropped, the 0..1 conversion broken).
+
+## mindmap re-run after its library migration (diagram-library-adoption, task 3)
+
+The map now renders through the diagram library: same nodes, branches, indicators, selection,
+menu, structural keys and in-place rename; the backend's own layout untouched. Re-run the
+standing mindmap entries above against a migrated build, plus:
+
+- **Actions**: drag a node over another and watch the preview; drag it over its own child;
+  drop a toolbox entry on a node; rename in place and then immediately pan; open the largest
+  example map and compare drag latency, pan smoothness and open-to-first-paint.
+- **Expected**: the dragged node itself travels (the old dimmed-original-plus-ghost became one
+  thing - recorded); a dashed branch and a ring mark the candidate parent, and neither appears
+  over the node's own subtree; the toolbox drop runs its action against the node under it (the
+  hover highlight during an HTML5 drag is a recorded loss); panning mid-edit commits the edit
+  first; nothing feels worse on the largest example.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition. The migration's tests caught two live library defects
+  before any eyes-on pass: the inside-placed editor opened at half its box off (corner fed to
+  the centre-based placement helper) and an unstable onReturnFocus identity made the editor
+  hand focus away every render - both fixed in the library with the failing tests as guards.
+
+## c4 re-run after its library migration (diagram-library-adoption, task 4)
+
+Both C4 views now render through the diagram library: same cards at the backend's sizes and
+palette, same boundaries, arrows, labels, title and key; nesting and inner-first hit-testing
+are the library's now. Re-run the standing c4 entries above against a migrated build, plus:
+
+- **Actions**: rename an element (the editor must cover the NAME line alone) and a
+  relationship (the editor opens on the description without the [technology] suffix, at the
+  drawn label's own width - the measured branch jsdom cannot take); select a relationship and
+  check line, arrowhead and label take the accent together; drop a toolbox entry on an
+  element and on empty canvas; compare feel on the biggest example.
+- **Expected**: boundaries enclose exactly as before and stay inert; the drawn relationship
+  string keeps its "N. description [technology]" shape; a drop on an element parents the new
+  one there (the hover highlight during an HTML5 drag is a recorded loss); nothing feels
+  worse on the largest example.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition. The migration's tests caught a third live library
+  defect before any eyes-on pass: built-in frame elements drew displaced by half their size
+  (corner bounds fed to the centre-based FrameElement) - fixed centrally with the failing
+  test as the guard, before any migrated module had mounted one.
+
+## causal-loop re-run after its library migration (diagram-library-adoption, task 5)
+
+The diagram now renders through the diagram library: same pill variables, chord-bowed arcs,
+polarity signs, delay strokes, loop markers and badges; the arcs anchor on the end boxes
+exactly as before, through the custom route the library now hands endpoint bounds to. Re-run
+the standing causal-loop entries above against a migrated build, plus:
+
+- **Actions**: select a delayed, signed link and confirm the whole of it - line, arrowhead,
+  polarity, delay strokes - takes the accent together; right-click empty canvas and use Add
+  variable here; double-click a variable; drag a variable and watch the arcs follow on
+  commit; compare feel on the on-call example.
+- **Expected**: the empty-canvas menu still carries the diagram-wide actions with the
+  placement honoured; double-click still activates; wheel zoom now zooms about the pointer
+  (recorded unification); arcs redraw when the move lands rather than mid-drag (the library
+  norm, recorded); nothing feels worse.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition. The custom-route and adornment mechanisms are pinned
+  by unit tests seen to fail under three narrow sabotages (adornment unhooked, arc flattened
+  to a straight line, weight ladder collapsed).
+
+## rdf family readings re-run after their library migration (diagram-library-adoption, task 6)
+
+The three sibling readings of the rdf module - SKOS, OWL and SHACL - now render through the
+diagram library, joining the already-migrated graph reference. Same cards, ellipses, regions,
+badges and edge stylings; hit-testing, anchoring, drags, drops and selection are the
+library's now. Re-run the standing rdf-family entries above against a migrated build, plus:
+
+- **Actions**: in a SKOS scheme, drag from a concept's TOP anchor onto another concept, then
+  from its SIDE anchor onto a third; in an OWL ontology, select a class carrying an
+  equivalence and one without, drag an expression node, and drag from a class's side anchor
+  onto another class; in a SHACL shapes graph, drop a property-row toolbox entry ON a card
+  and then on empty canvas, and click a reference edge; everywhere, F2 and Delete on a
+  selected element.
+- **Expected**: the top-anchor drag files the concept (skos.file-under) and the side-anchor
+  drag cross-links (skos.relate) - the anchor chooses the gesture; the equivalent class keeps
+  its doubled outline; the expression drag is refused with the identity boundary's sentence;
+  the class-to-class anchor drag offers the subclass axiom; the on-card drop acts on that
+  card while the empty drop places; clicking a SHACL reference now selects it (a library
+  unification - the old canvas only displayed a selection made elsewhere); F2 renames and
+  Delete deletes as before.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition. The anchor-selects-relation mechanism, the
+  equivalence doubling, the centre-to-corner conversion on drags and the drop-on-card
+  hit-test are pinned by unit tests seen to fail under narrow sabotages.
+
+## sparql re-run after its library migration (diagram-library-adoption, task 7)
+
+The query diagram now renders through the diagram library: same pattern nodes with their
+kind stylings and projection marks, group constructs as labelled frames painting behind
+their contents, annotation badges by their anchors, the header band above the canvas.
+Re-run the standing sparql entries above against a migrated build, plus:
+
+- **Actions**: open a query with an OPTIONAL group and confirm the frame paints behind the
+  nodes it contains; select a property-path edge and a plain-predicate edge; drag a node and
+  a region; drag an element the backend refuses (an anonymous variable) and read the
+  sentence; try to find any editing affordance - anchors, a toolbox, a drop target, a
+  rename.
+- **Expected**: the frame stays behind its contents; the path edge keeps its multi-step
+  marking; drags land in the layout block and refusals surface verbatim; there is still no
+  way to edit the query from the canvas - no anchors appear on selection, no drop lands,
+  no editor opens; wheel zoom now zooms about the pointer and links redraw on commit (the
+  recorded library unifications).
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition. The paint order, path marking and refusal reporting
+  are pinned by unit tests seen to fail under narrow sabotages.
+
+## dependency-graph re-run after its library migration (diagram-library-adoption, task 8)
+
+The graph now renders through the diagram library: same span nodes and forward-looping
+bezier dependencies, arrowheads on the dependency end, labels editable inline on nodes and
+relations. The backend's span-viewport culling is untouched. Re-run the standing
+dependency-graph entries above against a migrated build, plus:
+
+- **Actions**: drag a node down most of a row and release; drag from a node's right anchor
+  onto another node, then from its left anchor; drag from an anchor and release on empty
+  canvas; select a dependency whose target sits behind its source and check the loop; rename
+  a node and a dependency inline; Tab/Enter/Insert against a selected node; drop a toolbox
+  entry.
+- **Expected**: the release lands on the snapped row (the mid-drag row-snap preview and the
+  "x · row N" hint retired with the module's own drag machinery - a recorded loss; the
+  landing is still snapped); the right-anchor drag relates dragged->landing and the
+  left-anchor drag the reverse; the empty release still creates-and-relates at the pointer;
+  the loop still departs rightward and arrives from the left; zoom is the library's uniform
+  viewBox step (the separate tighter vertical clamp retired - recorded); the right-button
+  background pan retired with the library's surface gestures (recorded); nothing else feels
+  worse.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition. The anchor-decides-direction rule, the release-time
+  row snap and the loop-back route are pinned by unit tests seen to fail under narrow
+  sabotages.
+
+## azure-pipeline re-run after its library migration (diagram-library-adoption, task 9)
+
+The pipeline now renders through the diagram library: same stage cards with their job
+counts, indicators and problem marks, jobs and templates on top, fixed-reach "waits for"
+arrows between edges - and the paint order survives through the library's new
+beneath-connections layer, so an arrow between two jobs stays visible over the opaque stage
+card that holds them. Re-run the standing azure-pipeline entries above against a migrated
+build, plus:
+
+- **Actions**: open a pipeline with an expanded stage and check the arrows between its jobs
+  sit over the card; open the edge-broken-graph example and confirm its broken and implicit
+  arrows draw exactly as before (their problems are the product working); select a stage and
+  press F2 (the editor must cover the name line alone, above the job count); click an arrow;
+  try to drag a box or press Delete.
+- **Expected**: arrows over stage cards, under jobs; broken arrows red-dashed, implicit
+  arrows lighter; the inset editor on the name line; a click on an arrow deselects, as it
+  always fell through to the background; nothing moves and nothing deletes - the backend
+  decides every box; the arrowhead follows the line's colour through the shared marker.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition. The beneath-connections paint order, the
+  implicit/broken markings and the problem propagation are pinned by unit tests seen to
+  fail under narrow sabotages.
+
+## ansible-structure and helm-charts re-run after their library migration (diagram-library-adoption, task 10)
+
+The two plain-graph twins now render through the diagram library: same kind-classed boxes,
+forward-bezier edges out of the right side and into the left, and - the mapping decision the
+inventory records - unresolved and open edges still draw as stubs from their source, as
+render-only elements now. Re-run the standing entries above for both modules, plus:
+
+- **Actions**: in an Ansible structure, find a playbook naming an absent role and one naming
+  an expression, and read both stubs; drag a node; double-click a role; select a node and
+  press Enter; right-click a node. In a Helm chart, double-click the chart card and a
+  dependency card; drag a box; drag a scrollbar thumb.
+- **Expected**: the stubs still say "(missing)" vs "(expression)" (ansible) and
+  "(unvendored)" vs "(not defined here)" (helm); double-click and Enter still reveal the
+  file, and a dependency with no backing artifact reveals nothing; the right-click still
+  selects with the menu gesture; drags land in the layout block (helm shows a dismissable
+  refusal, ansible stays silent, each as before); no rename appears anywhere - both modules
+  are rename-exempt; a background press still deselects nothing (neither module ever did).
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition. The stub distinction, the right-edge departure and
+  the no-artifact activation guard are pinned by unit tests seen to fail under narrow
+  sabotages.
+
+## databricks family re-run after its library migration (diagram-library-adoption, task 11)
+
+The three readings - bundle, job, pipeline - now render through the one migrated shared
+canvas: same kind-classed nodes with badges, dashed target frames with mode/default/override
+badges, depends and flow edges on the layered bezier, overrides straight, the simulation
+banner and its client-side show. Re-run the standing databricks entries above against a
+migrated build, plus:
+
+- **Actions**: in a job, drag from a task's side anchor onto another task, and from an
+  anchor onto empty canvas; drop a task from the toolbox, then drop the simulated run entry
+  and watch the show; click a dependency edge; rename a task with F2; in a bundle, drag a
+  target frame; in a pipeline, look for anchors.
+- **Expected**: the anchor drag relates the tasks in one call and the empty release is a
+  never-mind (no placement is fabricated); the simulated id plays locally and reaches no
+  history; clicking an edge does NOTHING - edges stay unselectable in this family, the
+  recorded pending item, even though the library makes them pressable; the frame drag lands
+  with the frame's own size in the layout block; the pipeline reading offers no anchors;
+  task anchors now render always and show by stylesheet rather than only on the selected
+  node (the library norm, recorded).
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition. The edge-press inertness, the simulation seam and
+  the frame-size conversion are pinned by unit tests seen to fail under narrow sabotages.
+
+## Screenshot verification after diagram-library adoption (diagram-library-adoption, task 12)
+
+Every hand-built canvas now renders through the diagram library, behaviour- and
+appearance-preserving by the spec's parity method. The six readme screenshots were assessed
+against that: each shows a fit-to-view canvas with nothing selected, and no migration
+changed what an unselected, fitted canvas draws - shapes, edges, labels and styling are
+byte-for-byte the same stylesheets and geometry, and anchors stay css-hidden while nothing
+is selected. The assessed conclusion is that no image became a false claim; what can drift
+is framing, since the library's fit padding is uniform where some old canvases padded
+differently.
+
+- **Actions**: during the next manual pass, open each of the six screenshotted documents
+  (docs/screenshots/readme.md's table), click Fit to View, and compare against the
+  committed image; where framing visibly drifted, re-run `node capture.mjs` per the readme
+  and commit the retakes.
+- **Expected**: content, styling and selection state match every image; only fit framing
+  may differ, and a retake is a script run away.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition (the capture script signs in with the developer
+  placeholder itself).

@@ -198,9 +198,9 @@ describe("ShaclCanvas", () => {
     const { container } = renderCanvas();
     const card = container.querySelector(`[data-element-id="${PERSON}"]`)!;
 
-    fireEvent.mouseDown(card, { clientX: 10, clientY: 10 });
-    fireEvent.mouseMove(container.querySelector(".shacl-surface")!, { clientX: 90, clientY: 60 });
-    fireEvent.mouseUp(container.querySelector(".shacl-surface")!);
+    fireEvent(card, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(card, new MouseEvent("pointermove", { bubbles: true, clientX: 90, clientY: 60 }));
+    fireEvent(card, new MouseEvent("pointerup", { bubbles: true, clientX: 90, clientY: 60 }));
 
     expect(moves).toHaveLength(1);
     expect(moves[0].elementId).toBe(PERSON);
@@ -220,19 +220,31 @@ describe("ShaclCanvas", () => {
 
   it("lands a toolbox drop on the card under the pointer, and as a placement otherwise", () => {
     const { container } = renderCanvas();
-    const surface = container.querySelector(".shacl-surface")!;
-    const data = new Map([["application/x-adp-toolbox-item", "shacl.add-property-row"]]);
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+    const box = surface.getAttribute("viewBox")!.split(" ").map(Number);
+    Object.defineProperty(surface, "getBoundingClientRect", {
+      value: () => ({ x: 0, y: 0, top: 0, left: 0, right: box[2], bottom: box[3], width: box[2], height: box[3], toJSON: () => ({}) }),
+    });
     const dataTransfer = {
-      getData: (type: string) => data.get(type) ?? "",
+      getData: (type: string) => (type === "application/x-adp-toolbox-item" ? "shacl.add-property-row" : ""),
       types: ["application/x-adp-toolbox-item"],
       dropEffect: "",
     };
+    const dropAt = (clientX: number, clientY: number) => {
+      const event = new MouseEvent("drop", { bubbles: true, cancelable: true, clientX, clientY });
+      Object.defineProperty(event, "dataTransfer", { value: dataTransfer });
+      fireEvent(surface, event);
+    };
 
-    fireEvent.drop(container.querySelector(`[data-element-id="${PERSON}"]`)!, { dataTransfer });
+    // Inside the Person card, whose authored corner is (0,0): the drop acts on that card.
+    dropAt(130 - box[0], 20 - box[1]);
     expect(executed.at(-1)?.actionId).toBe("shacl.add-property-row");
+    expect((executed.at(-1)?.source as { source: { value: { value: string } } }).source.value.value).toBe(PERSON);
 
-    fireEvent.drop(surface, { dataTransfer });
+    // On empty canvas: the same entry lands as a placement instead.
+    dropAt(1000 - box[0], 1000 - box[1]);
     expect(executed).toHaveLength(2);
+    expect((executed.at(-1)?.source as { source: { value: { value: string } } }).source.value.value).toContain("new:");
   });
 
   it("says so when the diagram cannot be opened", () => {

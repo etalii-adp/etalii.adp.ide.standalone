@@ -155,13 +155,13 @@ describe("AnsibleCanvas", () => {
     const { container } = renderCanvas();
 
     // Assert.
-    const role = container.querySelector('[data-element-id="role:nginx"]');
+    const role = container.querySelector('[data-element-id="role:nginx"] .ansible-node');
     expect(role?.getAttribute("class")).toContain("ansible-play-0");
     // Nothing inline on the drawing: the palette lives in the stylesheet so a theme change is
     // a CSS change. Scoped to the svg rather than the whole container, because the shared
     // scrollbars below it position their thumbs inline - a thumb's offset is geometry, not
     // theme, and it cannot be a class.
-    expect(container.querySelector(".ansible-canvas [style]")).toBeNull();
+    expect(container.querySelector("svg.library-canvas-surface [style]")).toBeNull();
   });
 
 
@@ -182,9 +182,9 @@ describe("AnsibleCanvas", () => {
 
     // Assert: the module keeps its names, so existing selectors and tests hold, and gains the
     // shared appearance beside them.
-    expect(container.querySelector(".ansible-canvas.canvas-drawing")).not.toBeNull();
+    expect(container.querySelector("svg.library-canvas-surface")).not.toBeNull();
     expect(container.querySelector(".ansible-canvas-host.canvas-host")).not.toBeNull();
-    expect(container.querySelector(".ansible-canvas-viewport.canvas-viewport")).not.toBeNull();
+    expect(container.querySelector(".library-canvas.ansible-canvas-viewport")).not.toBeNull();
   });
 
   it("repositions a node when it is dragged past the threshold", async () => {
@@ -195,8 +195,8 @@ describe("AnsibleCanvas", () => {
 
     // Act.
     fireEvent(role, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
-    fireEvent(container.querySelector(".ansible-canvas")!, pointer("pointermove", { clientX: 90, clientY: 70 }));
-    fireEvent(container.querySelector(".ansible-canvas")!, pointer("pointerup", { clientX: 90, clientY: 70 }));
+    fireEvent(role, pointer("pointermove", { clientX: 90, clientY: 70 }));
+    fireEvent(role, pointer("pointerup", { clientX: 90, clientY: 70 }));
 
     // Assert: the element's id and a position, in canvas units.
     expect(moveElementTo).toHaveBeenCalledTimes(1);
@@ -211,8 +211,8 @@ describe("AnsibleCanvas", () => {
 
     // Act.
     fireEvent(role, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
-    fireEvent(container.querySelector(".ansible-canvas")!, pointer("pointermove", { clientX: 11, clientY: 10 }));
-    fireEvent(container.querySelector(".ansible-canvas")!, pointer("pointerup", { clientX: 11, clientY: 10 }));
+    fireEvent(role, pointer("pointermove", { clientX: 11, clientY: 10 }));
+    fireEvent(role, pointer("pointerup", { clientX: 11, clientY: 10 }));
 
     // Assert.
     expect(moveElementTo).not.toHaveBeenCalled();
@@ -227,8 +227,8 @@ describe("AnsibleCanvas", () => {
     // Act.
     if (edge) {
       fireEvent(edge, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
-      fireEvent(container.querySelector(".ansible-canvas")!, pointer("pointermove", { clientX: 90, clientY: 70 }));
-      fireEvent(container.querySelector(".ansible-canvas")!, pointer("pointerup", { clientX: 90, clientY: 70 }));
+      fireEvent(edge, pointer("pointermove", { clientX: 90, clientY: 70 }));
+      fireEvent(edge, pointer("pointerup", { clientX: 90, clientY: 70 }));
     }
 
     // Assert: an edge carries no drag handler at all, so nothing is written.
@@ -321,7 +321,7 @@ describe("AnsibleCanvas", () => {
     expect(numbers[1]).toBe(16);
     expect(numbers[numbers.length - 2]).toBe(300);
     expect(numbers[numbers.length - 1]).toBe(16);
-    expect(line.getAttribute("marker-end")).toBe("url(#ansible-arrow)");
+    expect(line.getAttribute("marker-end")).toBe("url(#library-arrow)");
   });
 
   it("gives a dependsOn edge a style of its own", () => {
@@ -408,7 +408,9 @@ describe("AnsibleCanvas", () => {
   it("selects a node on click", () => {
     // Act.
     const { container } = renderCanvas();
-    fireEvent.click(container.querySelector('[data-element-id="role:nginx"]')!);
+    const role = container.querySelector('[data-element-id="role:nginx"]')!;
+    fireEvent(role, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(role, pointer("pointerup", { clientX: 10, clientY: 10 }));
 
     // Assert.
     expect(select).toHaveBeenCalledTimes(1);
@@ -417,7 +419,7 @@ describe("AnsibleCanvas", () => {
   it("reveals a node's file on double click", () => {
     // Act.
     const { container } = renderCanvas();
-    fireEvent.doubleClick(container.querySelector('[data-element-id="role:nginx"]')!);
+    fireEvent.doubleClick(container.querySelector('[data-element-id="role:nginx"] .ansible-node')!);
 
     // Assert.
     // The jump from the picture to the file is most of what this diagram type is for.
@@ -427,10 +429,12 @@ describe("AnsibleCanvas", () => {
   it("reveals a node's file from the keyboard too", () => {
     // Arrange.
     const { container } = renderCanvas();
-    fireEvent.click(container.querySelector('[data-element-id="role:nginx"]')!);
+    const role = container.querySelector('[data-element-id="role:nginx"]')!;
+    fireEvent(role, pointer("pointerdown", { button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(role, pointer("pointerup", { clientX: 10, clientY: 10 }));
 
     // Act.
-    fireEvent.keyDown(container.querySelector(".ansible-canvas")!, { key: "Enter" });
+    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface")!, { key: "Enter" });
 
     // Assert.
     // A reader who navigates by keyboard should not have to reach for the mouse to use the one

@@ -171,8 +171,9 @@ describe("HelmCanvas", () => {
     expect(chart).not.toBeNull();
 
     // Act.
-    fireEvent.click(chart!);
-    fireEvent.doubleClick(chart!);
+    fireEvent(chart!, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(chart!, new MouseEvent("pointerup", { bubbles: true, clientX: 10, clientY: 10 }));
+    fireEvent.doubleClick(chart!.querySelector(".helm-node")!);
 
     // Assert.
     expect(select).toHaveBeenCalled();
@@ -186,7 +187,7 @@ describe("HelmCanvas", () => {
     const dependency = container.querySelector('[data-element-id="dep:redis"]');
 
     // Act.
-    fireEvent.doubleClick(dependency!);
+    fireEvent.doubleClick(dependency!.querySelector(".helm-node")!);
 
     // Assert.
     expect(revealPath).not.toHaveBeenCalled();
@@ -199,9 +200,9 @@ describe("HelmCanvas", () => {
     expect(chart).not.toBeNull();
 
     // Act.
-    fireEvent.mouseDown(chart!, { button: 0, clientX: 10, clientY: 10 });
-    fireEvent.mouseMove(container.querySelector("svg")!, { clientX: 60, clientY: 40 });
-    fireEvent.mouseUp(container.querySelector("svg")!);
+    fireEvent(chart!, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(chart!, new MouseEvent("pointermove", { bubbles: true, clientX: 60, clientY: 40 }));
+    fireEvent(chart!, new MouseEvent("pointerup", { bubbles: true, clientX: 60, clientY: 40 }));
 
     // Assert.
     expect(moveElementTo).toHaveBeenCalledTimes(1);
@@ -215,8 +216,8 @@ describe("HelmCanvas", () => {
     const chart = container.querySelector('[data-element-id="chart"]');
 
     // Act.
-    fireEvent.mouseDown(chart!, { button: 0, clientX: 10, clientY: 10 });
-    fireEvent.mouseUp(container.querySelector("svg")!);
+    fireEvent(chart!, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 10, clientY: 10 }));
+    fireEvent(chart!, new MouseEvent("pointerup", { bubbles: true, clientX: 10, clientY: 10 }));
 
     // Assert.
     expect(moveElementTo).not.toHaveBeenCalled();
@@ -225,7 +226,7 @@ describe("HelmCanvas", () => {
   // ---- scrollbars: each test is named for the defect it catches -------------------------
 
   const viewBoxOf = (container: HTMLElement) =>
-    (container.querySelector("svg.helm-canvas")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
+    (container.querySelector("svg.library-canvas-surface")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
 
   const thumbOf = (container: HTMLElement, axis: "horizontal" | "vertical") =>
     container.querySelector(`.canvas-scrollbar-${axis} .canvas-scrollbar-thumb`) as HTMLElement;
@@ -276,13 +277,13 @@ describe("HelmCanvas", () => {
   it("moves the thumb when the view is panned by other means - catches a stale copy of the view", () => {
     // Arrange.
     const { container } = renderCanvas();
-    const svg = container.querySelector("svg.helm-canvas")!;
+    const svg = container.querySelector("svg.library-canvas-surface")!;
     const before = thumbOf(container, "horizontal").style.left;
 
     // Act.
-    fireEvent.mouseDown(svg, { button: 0, clientX: 200, clientY: 100 });
-    fireEvent.mouseMove(svg, { clientX: 60, clientY: 100 });
-    fireEvent.mouseUp(svg);
+    fireEvent(svg, new MouseEvent("pointerdown", { bubbles: true, button: 0, clientX: 200, clientY: 100 }));
+    fireEvent(svg, new MouseEvent("pointermove", { bubbles: true, clientX: 60, clientY: 100 }));
+    fireEvent(svg, new MouseEvent("pointerup", { bubbles: true, clientX: 60, clientY: 100 }));
 
     // Assert.
     expect(thumbOf(container, "horizontal").style.left).not.toBe(before);
@@ -291,7 +292,7 @@ describe("HelmCanvas", () => {
   it("resizes the thumb when the view is zoomed - catches a hard-coded viewSpan", () => {
     // Arrange.
     const { container } = renderCanvas();
-    const svg = container.querySelector("svg.helm-canvas")!;
+    const svg = container.querySelector("svg.library-canvas-surface")!;
     const before = thumbOf(container, "horizontal").style.width;
 
     // Act.

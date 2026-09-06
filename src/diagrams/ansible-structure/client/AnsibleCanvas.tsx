@@ -1,34 +1,34 @@
-import { useCallback, useMemo, useRef, useState } from "react";
-import { useViewReport } from "@client/diagrams/useViewReport";
-import { shownRectOf } from "@client/diagrams/viewReport";
-import { forwardBezierPath, straightPath } from "@client/canvas/connectors";
+import { useMemo, useState } from "react";
+
 import { BoxElement } from "@client/canvas/elements/box/BoxElement";
-import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
-import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
+import { edgePointOf, forwardBezierPath, straightPath } from "@client/canvas/connectors";
 import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
+import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
+import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
+import type {
+  CustomRouteRef,
+  CustomShapeRef,
+  CustomShapeState,
+  DiagramDefinition,
+  ShapeBounds,
+  ShapePoint,
+} from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
 import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
+import { useViewReport } from "@client/diagrams/useViewReport";
 import { ContextSelectionAction } from "@client/generated/context_pb";
 import { AnsibleEdgeKind, AnsibleElementKind } from "@client/generated/ansible-structure_pb";
-import { anchorsOf, edgesOf, nodesOf, paletteSlotOf, type AnsibleElement, type AnsibleModel } from "./ansibleModel";
+import { anchorsOf, edgesOf, nodesOf, paletteSlotOf, type AnsibleElement } from "./ansibleModel";
 import { useAnsibleStream } from "./useAnsibleStream";
-
-/** The visible rectangle, in canvas units - the svg viewBox as data. */
-interface ViewBox {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
-const ZOOM_STEP = 1.25;
-const MIN_VIEW_WIDTH = 40;
-const MAX_VIEW_WIDTH = 100000;
-const PADDING = 60;
 
 /** How many play colours the stylesheet defines. The palette itself is CSS's; this is its size. */
 const PALETTE_SLOTS = 6;
+
+/** How far an unresolved edge's stub reaches out of its source, in canvas units. */
+const STUB_LENGTH = 48;
 
 export interface AnsibleCanvasProps {
   projectId: Uint8Array;
@@ -36,210 +36,293 @@ export interface AnsibleCanvasProps {
   path: readonly string[];
 }
 
+/** An element as the library carries it here: the model element plus this canvas's closures. */
+type NodeElement = DiagramModelElement & {
+  node: AnsibleElement;
+  activate: () => void;
+  contextSelect: () => void;
+};
+
+/** An unresolved edge, drawn as a stub element: a line to nothing and the name that failed. */
+type StubElement = DiagramModelElement & {
+  from: ShapePoint;
+  text: string;
+  stubClass: string;
+};
+
+function boxEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
+  const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+  return edgePointOf(
+    { x: centre.x, y: centre.y, width: bounds.width, height: bounds.height },
+    towards.x - centre.x,
+    towards.y - centre.y,
+  );
+}
+
 /**
- * Renders an Ansible project's structure and reports what the user selects.
+ * One box. Its kind and its play slot are CSS classes rather than inline styles, so every
+ * colour and every shape stays in the stylesheet. The double-click and the right-click ride
+ * the shape, because this canvas has no menu of its own - a right-click is a selection with
+ * the gesture named, and the shell answers it.
+ */
+const nodeShape: CustomShapeRef = {
+  customShape: "ansible-node",
+  render: (raw, state?: CustomShapeState) => {
+    const element = raw as NodeElement;
+    const node = element.node;
+    const slot = paletteSlotOf(node, PALETTE_SLOTS);
+    const classes = [
+      "ansible-node",
+      `ansible-node-${kindClass(node.payload.kind)}`,
+      slot >= 0 ? `ansible-play-${slot}` : "ansible-play-none",
+      state?.selected ? "ansible-node-selected" : "",
+      node.payload.hollow ? "ansible-node-hollow" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    return (
+      <BoxElement
+        className={classes}
+        data-kind={kindClass(node.payload.kind)}
+        x={element.x - node.payload.width / 2}
+        y={element.y - node.payload.height / 2}
+        width={node.payload.width}
+        height={node.payload.height}
+        label={node.payload.name}
+        boxClassName="ansible-node-box"
+        labelClassName="ansible-node-label"
+        role="button"
+        tabIndex={0}
+        aria-label={`${kindLabel(node.payload.kind)} ${node.payload.name}`}
+        onDoubleClick={element.activate}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          element.contextSelect();
+        }}
+      >
+        {node.payload.hosts ? (
+          <title>{`${kindLabel(node.payload.kind)} ${node.payload.name} — hosts: ${node.payload.hosts}`}</title>
+        ) : (
+          <title>{`${kindLabel(node.payload.kind)} ${node.payload.name}`}</title>
+        )}
+      </BoxElement>
+    );
+  },
+  edgePoint: boxEdgePoint,
+};
+
+/**
+ * An edge whose target is missing or unknowable has no second box to reach. It is drawn as a
+ * stub from its source rather than not drawn at all: a reader has to be able to see that a
+ * playbook names something that is not there.
+ */
+const stubShape: CustomShapeRef = {
+  customShape: "ansible-stub",
+  render: (raw) => {
+    const element = raw as StubElement;
+    return (
+      <g className={element.stubClass} data-edge-id={element.id}>
+        <path
+          className="ansible-edge-line canvas-connection-line"
+          d={straightPath(element.from, { x: element.from.x + STUB_LENGTH, y: element.from.y })}
+        />
+        <text className="ansible-edge-label" x={element.from.x + 8} y={element.from.y - 6}>
+          {element.text}
+        </text>
+      </g>
+    );
+  },
+  edgePoint: boxEdgePoint,
+};
+
+/**
+ * One relationship, exactly as before: out of the source's right side, into the target's left
+ * side, curving horizontally through the corridor between the columns. The forward bezier
+ * loops around for the rare backward edge.
+ */
+const ansibleRoute: CustomRouteRef = {
+  customRoute: "ansible-forward-bezier",
+  path: (from, to, _waypoints, ends) => {
+    const a = ends ? { x: ends.source.x + ends.source.width, y: ends.source.y + ends.source.height / 2 } : from;
+    const b = ends ? { x: ends.target.x, y: ends.target.y + ends.target.height / 2 } : to;
+    return forwardBezierPath(a, b);
+  },
+};
+
+/**
+ * What this diagram allows, stated once: nodes that drag into the layout block and select,
+ * stubs and edges that only render. No relation declares a source anchor and no type is
+ * deletable, because this diagram edits nothing - its one edit is the drag, and its value is
+ * the jump from a node to its file.
+ */
+const ANSIBLE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
+  elementTypes: [
+    { id: "node", shape: nodeShape, anchors: { kind: "edge" }, sizing: "model", deletable: false },
+    { id: "stub", shape: stubShape, anchors: { kind: "edge" }, sizing: "model", draggable: false, deletable: false },
+  ],
+  relationTypes: [
+    {
+      id: "edge",
+      route: ansibleRoute,
+      style: { endMarker: "arrow" },
+      label: { placement: "midpoint", offset: -6 },
+      className: "ansible-edge",
+      lineClassName: "ansible-edge-line",
+      endpoints: {
+        source: { elementTypes: ["node"], anchors: [] },
+        target: { elementTypes: ["node"], anchors: "edge" },
+        allowSelf: false,
+      },
+    },
+  ],
+  layout: { modes: ["manual"] },
+  dragging: "enabled",
+});
+
+/**
+ * Renders an Ansible project's structure and reports what the user selects - drawn through
+ * the central canvas library.
  *
- * It holds no document state and offers no edit: there is no drag, no toolbox drop, no context
- * menu of commands and no keyboard mutation, because this diagram type has none of those to
- * offer. What it does have is the jump from a node to its file, which is most of the value
- * (Requirement 8.1).
+ * It holds no document state and offers no edit: there is no toolbox drop, no context menu of
+ * commands and no keyboard mutation, because this diagram type has none of those to offer.
+ * What it does have is the jump from a node to its file, which is most of the value
+ * (Requirement 8.1), bound to the double-click and the keyboard alike.
  */
 export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) {
   const { model, loading, failed, reportView, moveElementTo } = useAnsibleStream(projectId, path);
 
   // This type's palette is empty by design - the module registers no toolbox provider,
   // because it edits nothing. Registering the backend's empty answer makes the panel say
-  // exactly that, instead of claiming no diagram is open.
-  useRegisterDiagramToolbox(useToolboxItems(projectId, path));
+  // exactly that, instead of claiming no diagram is open - registered HERE as well as by
+  // the library canvas, because the loading/empty states return before the canvas mounts.
+  const toolboxItems = useToolboxItems(projectId, path);
+  useRegisterDiagramToolbox(toolboxItems);
   const { select, revealPath } = useContextConnection();
   const { selection } = useContextSelection();
 
-  const [view, setView] = useState<ViewBox | null>(null);
   const [focusedId, setFocusedId] = useState<string | undefined>(undefined);
-  const svgRef = useRef<SVGSVGElement | null>(null);
-  const panRef = useRef<{ x: number; y: number; view: ViewBox } | null>(null);
-  /** The in-flight node drag, with `moved` telling a click from a reposition. */
-  const dragRef = useRef<{
-    id: string;
-    clientX: number;
-    clientY: number;
-    x: number;
-    y: number;
-    moved: boolean;
-    /** Which element holds the pointer capture, so the right one releases it. */
-    capture: Element;
-    pointerId: number;
-  } | null>(null);
-  const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
   const nodes = useMemo(() => nodesOf(model), [model]);
   const edges = useMemo(() => edgesOf(model), [model]);
-  const bounds = useMemo(() => boundsOf(nodes), [nodes]);
-  const effective = view ?? bounds;
-  const boundsRef = useRef(bounds);
-  boundsRef.current = bounds;
-  const effectiveRef = useRef(effective);
-  effectiveRef.current = effective;
-
   const selectedId = selectedElementIdOf(selection);
 
-  // What the bars describe: the view against the content's own bounds, padded the shared way,
-  // so a diagram that fits shows thumbs claiming nearly the whole track and invites no pan.
-  const horizontalExtent = scrollExtentOf(bounds.x, bounds.x + bounds.w, { factor: 0.5 });
-  const verticalExtent = scrollExtentOf(bounds.y, bounds.y + bounds.h, { factor: 0.5 });
+  const activate = (element: AnsibleElement) => {
+    const segments = element.payload.projectRelativePath;
+    if (segments.length > 0) {
+      revealPath([...path.slice(0, -1), ...segments]);
+    }
+  };
 
-  // A thumb drag pans and never zooms: it writes a concrete box at the current size, taking
-  // over from the fitted state exactly as dragging the canvas does.
-  const onScrollPan = useCallback((horizontalStart: number, verticalStart: number) => {
-    setView((current) => {
-      const from = current ?? boundsRef.current;
-      return { x: horizontalStart, y: verticalStart, w: from.w, h: from.h };
-    });
-  }, []);
+  const diagramModel = useMemo<DiagramModel>(() => {
+    const elements: DiagramModelElement[] = [];
+    const connections = [];
 
-  // The backend culls to what a connection can see, so it has to be told. This canvas draws a
-  // bare viewBox and measures nothing, so it passes no surface - the shared conversion's
-  // no-surface branch is exactly the rectangle this built inline before.
-  useViewReport({
-    view: effective,
-    report: reportView,
-    convert: () => shownRectOf(effectiveRef.current),
-    ready: !loading && !failed,
-  });
+    // Stubs first, so a node its label happens to cross still draws over it.
+    for (const edge of edges) {
+      const wire = edge.payload.edge;
+      if (!wire) {
+        continue;
+      }
 
-  const onSelect = useCallback(
-    (element: AnsibleElement, gesture?: ContextSelectionAction) => {
-      setFocusedId(element.id);
-      select(elementSelectionOf(entryId, path, element.id, gesture));
-    },
-    [entryId, path, select],
-  );
+      const anchors = anchorsOf(model, edge);
+      if (!anchors) {
+        const source = model.elements.get(wire.sourceId);
+        if (!source) {
+          continue;
+        }
 
-  /**
-   * Activating a node reveals its file in the explorer. The jump from the picture to the file
-   * is most of what this diagram type is for, so it is bound to both the double-click and the
-   * keyboard - a reader who navigates by keyboard should not have to reach for the mouse to use
-   * the one thing the diagram offers.
-   */
-  const onActivate = useCallback(
-    (element: AnsibleElement) => {
-      const segments = element.payload.projectRelativePath;
-      if (segments.length > 0) {
-        revealPath([...path.slice(0, -1), ...segments]);
+        const from = { x: source.x + source.payload.width, y: source.y + source.payload.height / 2 };
+        elements.push({
+          id: edge.id,
+          type: "stub",
+          x: from.x + STUB_LENGTH / 2,
+          y: from.y,
+          width: STUB_LENGTH,
+          height: 12,
+          from,
+          text: `${wire.targetAsWritten}${edge.payload.unresolvable ? " (expression)" : " (missing)"}`,
+          stubClass: `ansible-edge ansible-edge-${edgeClass(wire.kind)} ansible-edge-unresolved`,
+        } as StubElement);
+        continue;
+      }
+
+      connections.push({
+        id: edge.id,
+        type: "edge",
+        sourceId: anchors.from.id,
+        targetId: anchors.to.id,
+        label: wire.condition ? `${wire.directive} when ${wire.condition}` : wire.directive,
+        className: `ansible-edge-${edgeClass(wire.kind)} ${wire.dynamic ? "ansible-edge-dynamic" : "ansible-edge-static"}`,
+      });
+    }
+
+    for (const node of nodes) {
+      elements.push({
+        id: node.id,
+        type: "node",
+        x: node.x + node.payload.width / 2,
+        y: node.y + node.payload.height / 2,
+        width: node.payload.width,
+        height: node.payload.height,
+        label: node.payload.name,
+        node,
+        activate: () => activate(node),
+        contextSelect: () => {
+          setFocusedId(node.id);
+          select(elementSelectionOf(entryId, path, node.id, ContextSelectionAction.CONTEXT_MENU));
+        },
+      } as NodeElement);
+    }
+
+    return { elements, connections };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the closures read stable setters
+    // and the same model/path the listed dependencies cover.
+  }, [model, nodes, edges, entryId, path]);
+
+  /** The backend's push is the selection; the canvas renders it and never decides. */
+  const librarySelection = useMemo<DiagramSelection>(() => {
+    if (!selectedId || !model.elements.has(selectedId)) {
+      return [];
+    }
+    return [{ kind: "element", id: selectedId }];
+  }, [selectedId, model.elements]);
+
+  const events: DiagramEventHandlers = {
+    // A background press never deselected here, so only an element selection is forwarded.
+    onSelectionChanged: ({ selection: next }) => {
+      const element = next.find((item) => item.kind === "element");
+      if (element !== undefined && model.elements.has(element.id)) {
+        setFocusedId(element.id);
+        select(elementSelectionOf(entryId, path, element.id));
       }
     },
-    [path, revealPath],
-  );
-
-  const onWheel = (event: React.WheelEvent) => {
-    event.preventDefault();
-    const factor = event.deltaY < 0 ? 1 / ZOOM_STEP : ZOOM_STEP;
-    const width = clamp(effective.w * factor, MIN_VIEW_WIDTH, MAX_VIEW_WIDTH);
-    const scale = width / effective.w;
-    setView({
-      x: effective.x + (effective.w - width) / 2,
-      y: effective.y + (effective.h - effective.h * scale) / 2,
-      w: width,
-      h: effective.h * scale,
-    });
-  };
-
-  /** Canvas units per screen pixel, for turning a pointer delta into a position. */
-  const unitsPerPixel = () => {
-    const rect = svgRef.current?.getBoundingClientRect();
-    return effective.w / Math.max(rect?.width ?? 1, 1);
-  };
-
-  const onPointerDown = (event: React.PointerEvent) => {
-    if (event.button !== 0 || event.target !== svgRef.current) {
-      return;
-    }
-    // A drag on empty canvas pans; a drag that started on a node repositions it, and that
-    // gesture is begun by the node itself in onNodePointerDown.
-    panRef.current = { x: event.clientX, y: event.clientY, view: effective };
-    svgRef.current?.setPointerCapture(event.pointerId);
-  };
-
-  /**
-   * Begins a reposition. The threshold below is what keeps a click from becoming one.
-   *
-   * The capture goes on the NODE, never on the svg, and that is not a detail: a capture
-   * retargets the pointerup, and the browser fires `click` on the common ancestor of the
-   * down and up targets. Capturing to the svg therefore delivered the click to the svg
-   * instead of the node, which silently broke click-to-select while every unit test passed -
-   * jsdom implements no pointer capture at all, so it cannot see this. Found in the manual
-   * verification pass; `tests.md` carries the check that finds it again.
-   */
-  const onNodePointerDown = (element: AnsibleElement, event: React.PointerEvent) => {
-    if (event.button !== 0) {
-      return;
-    }
-    event.stopPropagation();
-    const capture = event.currentTarget as Element;
-    dragRef.current = {
-      id: element.id,
-      clientX: event.clientX,
-      clientY: event.clientY,
-      x: element.x,
-      y: element.y,
-      moved: false,
-      capture,
-      pointerId: event.pointerId,
-    };
-    capture.setPointerCapture?.(event.pointerId);
-  };
-
-  const onPointerMove = (event: React.PointerEvent) => {
-    const dragging = dragRef.current;
-    if (dragging) {
-      // Three pixels of slack: a hand that moves while clicking must not silently author a
-      // position, and the drop below only writes when this flag is set.
-      dragging.moved ||= Math.abs(event.clientX - dragging.clientX) + Math.abs(event.clientY - dragging.clientY) > 3;
-      const scale = unitsPerPixel();
-      setDrag({
-        id: dragging.id,
-        x: dragging.x + (event.clientX - dragging.clientX) * scale,
-        y: dragging.y + (event.clientY - dragging.clientY) * scale,
-      });
-      return;
-    }
-
-    const pan = panRef.current;
-    if (!pan || !svgRef.current) {
-      return;
-    }
-    const rect = svgRef.current.getBoundingClientRect();
-    const panScale = pan.view.w / Math.max(rect.width, 1);
-    setView({
-      x: pan.view.x - (event.clientX - pan.x) * panScale,
-      y: pan.view.y - (event.clientY - pan.y) * panScale,
-      w: pan.view.w,
-      h: pan.view.h,
-    });
-  };
-
-  const onPointerUp = (event: React.PointerEvent) => {
-    const dragging = dragRef.current;
-    const preview = drag;
-    dragRef.current = null;
-    setDrag(null);
-    panRef.current = null;
-
-    // Released from whichever element took it: a node drag captures on the node, a pan on
-    // the svg, and releasing from the wrong one leaves the pointer captured.
-    if (dragging) {
-      dragging.capture.releasePointerCapture?.(dragging.pointerId);
-    } else {
-      svgRef.current?.releasePointerCapture?.(event.pointerId);
-    }
-
-    if (dragging?.moved && preview) {
+    onElementMoved: ({ elementId, position }) => {
+      const node = model.elements.get(elementId);
+      if (!node) {
+        return;
+      }
       // The write goes to the .adp's layout block; the change comes back through the folder's
       // own watcher, so nothing is echoed locally.
-      void moveElementTo(dragging.id, preview.x, preview.y);
-    }
+      void moveElementTo(elementId, position.x - node.payload.width / 2, position.y - node.payload.height / 2);
+    },
+    onViewChanged: ({ viewport: next }) => setViewport(next),
   };
 
+  useViewReport({
+    view: { x: viewport?.x ?? 0, y: viewport?.y ?? 0, w: viewport?.width ?? 0, h: viewport?.height ?? 0 },
+    report: reportView,
+    convert: () => ({
+      minX: viewport?.x ?? 0,
+      minY: viewport?.y ?? 0,
+      maxX: (viewport?.x ?? 0) + (viewport?.width ?? 0),
+      maxY: (viewport?.y ?? 0) + (viewport?.height ?? 0),
+    }),
+    ready: !loading && !failed && viewport !== null,
+  });
+
+  /** Enter or Space on the focused node reveals its file - the keyboard half of the jump. */
   const onKeyDown = (event: React.KeyboardEvent) => {
     if (event.key !== "Enter" && event.key !== " ") {
       return;
@@ -247,7 +330,7 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
     const element = focusedId ? model.elements.get(focusedId) : undefined;
     if (element) {
       event.preventDefault();
-      onActivate(element);
+      activate(element);
     }
   };
 
@@ -269,201 +352,19 @@ export function AnsibleCanvas({ projectId, entryId, path }: AnsibleCanvasProps) 
   }
 
   return (
-    <div className="ansible-canvas-host canvas-host">
-      <div className="ansible-canvas-viewport canvas-viewport">
-    <svg
-      ref={svgRef}
-      className="ansible-canvas canvas-drawing"
-      viewBox={`${effective.x} ${effective.y} ${effective.w} ${effective.h}`}
-      role="application"
-      aria-label="Ansible project structure"
-      tabIndex={0}
-      onWheel={onWheel}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onKeyDown={onKeyDown}
-    >
-      <defs>
-        {/* One arrowhead, reused: every Ansible edge points from the user of a thing to it. */}
-        <marker id="ansible-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M 0 0 L 10 5 L 0 10 z" className="ansible-arrowhead canvas-arrowhead" />
-        </marker>
-      </defs>
-      <g className="ansible-edges">
-        {edges.map((edge) => (
-          <Edge key={edge.id} edge={edge} model={model} />
-        ))}
-      </g>
-      <g className="ansible-nodes">
-        {nodes.map((node) => (
-          <Node
-            key={node.id}
-            node={node}
-            selected={node.id === selectedId}
-            onSelect={onSelect}
-            onActivate={onActivate}
-            onDragStart={onNodePointerDown}
-            drag={drag?.id === node.id ? drag : undefined}
-          />
-        ))}
-      </g>
-    </svg>
-      </div>
-      <CanvasScrollbars
-        horizontal={{ viewStart: effective.x, viewSpan: effective.w, ...horizontalExtent }}
-        vertical={{ viewStart: effective.y, viewSpan: effective.h, ...verticalExtent }}
-        onPan={onScrollPan}
+    <div className="ansible-canvas-host canvas-host" role="application" aria-label="Ansible project structure" onKeyDown={onKeyDown}>
+      <DiagramCanvas
+        definition={ANSIBLE_DEFINITION}
+        model={diagramModel}
+        events={events}
+        selection={librarySelection}
+        toolboxItems={toolboxItems}
+        ariaLabel="Ansible project structure"
+        className="ansible-canvas-viewport"
+        scrollbarsClassName="ansible-scrollbars"
       />
     </div>
   );
-}
-
-/**
- * One box. Its kind and its play slot are CSS classes rather than inline styles, so every colour
- * and every shape stays in the stylesheet - tech.md's centralised-styling rule, and what keeps a
- * theme change out of this file.
- */
-function Node({
-  node,
-  selected,
-  onSelect,
-  onActivate,
-  onDragStart,
-  drag,
-}: {
-  node: AnsibleElement;
-  selected: boolean;
-  onSelect: (element: AnsibleElement, gesture?: ContextSelectionAction) => void;
-  onActivate: (element: AnsibleElement) => void;
-  onDragStart: (element: AnsibleElement, event: React.PointerEvent) => void;
-  /** Where this node is being dragged to, while that is happening. */
-  drag?: { x: number; y: number };
-}) {
-  const slot = paletteSlotOf(node, PALETTE_SLOTS);
-  const classes = [
-    "ansible-node",
-    `ansible-node-${kindClass(node.payload.kind)}`,
-    slot >= 0 ? `ansible-play-${slot}` : "ansible-play-none",
-    selected ? "ansible-node-selected" : "",
-    node.payload.hollow ? "ansible-node-hollow" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  return (
-    <BoxElement
-      className={classes}
-      data-element-id={node.id}
-      data-kind={kindClass(node.payload.kind)}
-      x={drag?.x ?? node.x}
-      y={drag?.y ?? node.y}
-      width={node.payload.width}
-      height={node.payload.height}
-      label={node.payload.name}
-      boxClassName="ansible-node-box"
-      labelClassName="ansible-node-label"
-      role="button"
-      tabIndex={0}
-      aria-label={`${kindLabel(node.payload.kind)} ${node.payload.name}`}
-      onPointerDown={(event: React.PointerEvent) => onDragStart(node, event)}
-      onClick={() => onSelect(node)}
-      onDoubleClick={() => onActivate(node)}
-      onContextMenu={(event) => {
-        event.preventDefault();
-        onSelect(node, ContextSelectionAction.CONTEXT_MENU);
-      }}
-    >
-      {node.payload.hosts ? (
-        <title>{`${kindLabel(node.payload.kind)} ${node.payload.name} — hosts: ${node.payload.hosts}`}</title>
-      ) : (
-        <title>{`${kindLabel(node.payload.kind)} ${node.payload.name}`}</title>
-      )}
-    </BoxElement>
-  );
-}
-
-/**
- * One relationship. Static mechanisms draw solid and dynamic ones dashed - the convention
- * ansible-playbook-grapher's users already read (Requirement 5.4) - with `dependsOn` in a style
- * of its own, because being depended upon is not the same as being listed by a playbook.
- */
-function Edge({ edge, model }: { edge: AnsibleElement; model: AnsibleModel }) {
-  const wire = edge.payload.edge;
-  const anchors = anchorsOf(model, edge);
-  if (!wire) {
-    return null;
-  }
-
-  // An edge whose target is missing or unknowable has no second box to reach. It is drawn as a
-  // stub from its source rather than not drawn at all: a reader has to be able to see that a
-  // playbook names something that is not there.
-  if (!anchors) {
-    const source = model.elements.get(wire.sourceId);
-    if (!source) {
-      return null;
-    }
-    return (
-      <g className={`ansible-edge ansible-edge-${edgeClass(wire.kind)} ansible-edge-unresolved`} data-edge-id={edge.id}>
-        <path
-          className="ansible-edge-line canvas-connection-line"
-          d={straightPath(
-            { x: source.x + source.payload.width, y: source.y + source.payload.height / 2 },
-            { x: source.x + source.payload.width + 48, y: source.y + source.payload.height / 2 },
-          )}
-        />
-        <text className="ansible-edge-label" x={source.x + source.payload.width + 8} y={source.y + source.payload.height / 2 - 6}>
-          {wire.targetAsWritten}
-          {edge.payload.unresolvable ? " (expression)" : " (missing)"}
-        </text>
-      </g>
-    );
-  }
-
-  const classes = [
-    "ansible-edge",
-    `ansible-edge-${edgeClass(wire.kind)}`,
-    wire.dynamic ? "ansible-edge-dynamic" : "ansible-edge-static",
-  ].join(" ");
-
-  // The layout is columnar, left to right, so an edge reads the same way: out of the source's
-  // right side, into the target's left side, curving horizontally through the corridor
-  // between the columns. The forward bezier loops around for the rare backward edge. The
-  // centre-line anchoring this replaces treated each box's top-left corner as its centre,
-  // which is why every line started half a box off and cut diagonally across the layout.
-  const from = { x: anchors.from.x + anchors.from.payload.width, y: anchors.from.y + anchors.from.payload.height / 2 };
-  const to = { x: anchors.to.x, y: anchors.to.y + anchors.to.payload.height / 2 };
-
-  return (
-    <g className={classes} data-edge-id={edge.id}>
-      <path className="ansible-edge-line canvas-connection-line" d={forwardBezierPath(from, to)} markerEnd="url(#ansible-arrow)" />
-      <text className="ansible-edge-label" x={(from.x + to.x) / 2} y={(from.y + to.y) / 2 - 6} textAnchor="middle">
-        {wire.condition ? `${wire.directive} when ${wire.condition}` : wire.directive}
-      </text>
-    </g>
-  );
-}
-
-function boundsOf(nodes: readonly AnsibleElement[]): ViewBox {
-  if (nodes.length === 0) {
-    return { x: 0, y: 0, w: 800, h: 600 };
-  }
-
-  const minX = Math.min(...nodes.map((node) => node.x));
-  const minY = Math.min(...nodes.map((node) => node.y));
-  const maxX = Math.max(...nodes.map((node) => node.x + node.payload.width));
-  const maxY = Math.max(...nodes.map((node) => node.y + node.payload.height));
-
-  return {
-    x: minX - PADDING,
-    y: minY - PADDING,
-    w: Math.max(maxX - minX + 2 * PADDING, MIN_VIEW_WIDTH),
-    h: Math.max(maxY - minY + 2 * PADDING, MIN_VIEW_WIDTH),
-  };
-}
-
-function clamp(value: number, low: number, high: number): number {
-  return Math.min(Math.max(value, low), high);
 }
 
 function kindClass(kind: AnsibleElementKind): string {
@@ -520,4 +421,3 @@ function edgeClass(kind: AnsibleEdgeKind): string {
       return "unknown";
   }
 }
-

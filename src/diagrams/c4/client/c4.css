@@ -91,18 +91,12 @@
 /* The connection is a <path> (the shared StraightConnection draws one); this selector
    briefly said `line` after the shape changed, and every relationship went invisible -
    labels and arrowheads floating with no line between them. */
-.c4-relationship path {
+.c4-relationship path,
+.c4-relationship-line {
   stroke: var(--color-border);
   stroke-width: 1.5;
   stroke-dasharray: 6 4;
   fill: none;
-}
-
-.c4-arrowhead {
-  fill: var(--color-border);
-  /* A marker lives in <defs>, so the selected-state selector below never reaches it; this is
-     what actually turns the arrowhead primary with its selected line. */
-  fill: context-stroke;
 }
 
 /* A relationship the user can point at. The pointer target is the shared invisible fat twin
@@ -115,18 +109,20 @@
    selection reads at a glance rather than as a slightly different grey. Scoped under the group
    rather than stated on `.c4-relationship` itself, because the selection belongs to the whole
    relationship - line, arrowhead and label - not to the path. */
-.c4-relationship-group.canvas-selected .c4-relationship path {
+.c4-relationship-group.canvas-selected .c4-relationship path,
+.c4-relationship-group.canvas-selected .c4-relationship-line {
   stroke: var(--color-primary);
   stroke-width: 2;
   stroke-dasharray: none;
 }
 
-.c4-relationship-group.canvas-selected .c4-arrowhead,
-.c4-relationship-group.canvas-selected .c4-relationship-label {
+.c4-relationship-group.canvas-selected .c4-relationship-label,
+.c4-relationship-group.canvas-selected .library-connection-label {
   fill: var(--color-primary);
 }
 
-.c4-relationship-label {
+.c4-relationship-label,
+.c4-relationship-group .library-connection-label {
   font-size: 10px;
   fill: var(--color-text-muted);
 }

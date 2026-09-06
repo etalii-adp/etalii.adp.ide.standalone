@@ -133,7 +133,7 @@ describe("the dependency graph canvas", () => {
     expect(container.querySelector(".dependency-graph-label")!.classList.contains("canvas-node-label")).toBe(true);
     expect(container.querySelector(".dependency-graph-relation")!.classList.contains("canvas-connection")).toBe(true);
     expect(container.querySelector(".dependency-graph-relation-line")!.classList.contains("canvas-connection-line")).toBe(true);
-    expect(container.querySelector("marker#dependency-graph-arrowhead")!.classList.contains("canvas-arrowhead")).toBe(true);
+    expect(container.querySelector("marker#library-arrow path")!.classList.contains("canvas-arrowhead")).toBe(true);
   });
 
   it("draws the nodes and the directed dependency between them", () => {
@@ -178,12 +178,13 @@ describe("the dependency graph canvas", () => {
 
     // Assert.
     // The whole difference from the timeline: an edge that means something, drawn pointing at
-    // the thing depended upon. The marker is defined here and attached in the stylesheet, so
-    // this is where its absence would show.
-    const marker = container.querySelector("marker#dependency-graph-arrowhead");
+    // the thing depended upon. The marker is the library's shared arrow now, attached through
+    // the relation type's endMarker style, so this is where its absence would show.
+    const marker = container.querySelector("marker#library-arrow");
     expect(marker).not.toBeNull();
     expect(marker!.getAttribute("orient")).toBe("auto-start-reverse");
-    expect(container.querySelector(".dependency-graph-relation-line")).not.toBeNull();
+    const line = container.querySelector(".dependency-graph-relation-line")!;
+    expect(line.getAttribute("marker-end")).toContain("library-arrow");
   });
 
   it("shows no ruler, no dates and no moments anywhere", () => {
@@ -216,8 +217,8 @@ describe("the dependency graph canvas", () => {
     const element = container.querySelector(".dependency-graph-element")!;
 
     // Act.
-    fireEvent.mouseDown(element, { clientX: 100, clientY: 100 });
-    fireEvent.mouseUp(container.querySelector(".dependency-graph-surface")!);
+    fireEvent(element, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(element, pointer("pointerup", { clientX: 100, clientY: 100 }));
 
     // Assert.
     expect(moves).toHaveLength(0);
@@ -227,13 +228,12 @@ describe("the dependency graph canvas", () => {
   it("commits a drag as one move in module coordinates, snapped to a row", () => {
     // Arrange.
     const { container } = renderCanvas();
-    const surface = container.querySelector(".dependency-graph-surface")!;
     const element = container.querySelector(".dependency-graph-element")!;
 
     // Act: right by 50px, down by most of a row - close enough to snap to row 1.
-    fireEvent.mouseDown(element, { clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(surface, { clientX: 150, clientY: 100 + ROW_HEIGHT - 10 });
-    fireEvent.mouseUp(surface);
+    fireEvent(element, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(element, pointer("pointermove", { clientX: 150, clientY: 100 + ROW_HEIGHT - 10 }));
+    fireEvent(element, pointer("pointerup", { clientX: 150, clientY: 100 + ROW_HEIGHT - 10 }));
 
     // Assert.
     expect(moves).toHaveLength(1);
@@ -248,7 +248,6 @@ describe("the dependency graph canvas", () => {
     // The asymmetry is the placement model: rows are a grid, x is not. Rounding x here would
     // quietly turn the canvas into one.
     const { container } = renderCanvas();
-    const surface = container.querySelector(".dependency-graph-surface")!;
     const element = container.querySelector(".dependency-graph-element")!;
 
     // The zoom the canvas fitted itself to, read back off a node's drawn box rather than
@@ -256,9 +255,9 @@ describe("the dependency graph canvas", () => {
     const pixelsPerUnit = Number(container.querySelector(".dependency-graph-node")!.getAttribute("width")) / 160;
 
     // Act: an odd, fractional distance across.
-    fireEvent.mouseDown(element, { clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(surface, { clientX: 137.5, clientY: 100 });
-    fireEvent.mouseUp(surface);
+    fireEvent(element, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(element, pointer("pointermove", { clientX: 137.5, clientY: 100 }));
+    fireEvent(element, pointer("pointerup", { clientX: 137.5, clientY: 100 }));
 
     // Assert.
     // The coordinate that travels is the pointer's, converted and otherwise untouched - not
@@ -270,49 +269,49 @@ describe("the dependency graph canvas", () => {
   it("abandons a drag on Escape with nothing dispatched", () => {
     // Arrange.
     const { container } = renderCanvas();
-    const surface = container.querySelector(".dependency-graph-surface")!;
     const element = container.querySelector(".dependency-graph-element")!;
 
     // Act.
-    fireEvent.mouseDown(element, { clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(surface, { clientX: 300, clientY: 300 });
-    fireEvent.keyDown(window, { key: "Escape" });
-    fireEvent.mouseUp(surface);
+    fireEvent(element, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(element, pointer("pointermove", { clientX: 300, clientY: 300 }));
+    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface")!, { key: "Escape" });
+    fireEvent(element, pointer("pointerup", { clientX: 300, clientY: 300 }));
 
     // Assert.
     expect(moves).toHaveLength(0);
   });
 
-  it("shows the landing placement in this type's own terms while a drag is in progress", () => {
-    // Arrange.
+  it("previews a drag through the library, with the row decided at release", () => {
+    // Arrange. The old canvas drew its own "x · row N" hint beside the dragged node; that
+    // machinery retired with the migration (a recorded loss), and the landing row is decided
+    // in the release conversion - pinned by the snap test above. What remains observable
+    // mid-drag is the library's preview riding the element.
     const { container } = renderCanvas();
-    const surface = container.querySelector(".dependency-graph-surface")!;
-    const element = container.querySelector(".dependency-graph-element")!;
+    const element = container.querySelector('[data-element-id="aaa"]')!;
 
     // Act.
-    fireEvent.mouseDown(element, { clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(surface, { clientX: 200, clientY: 100 + ROW_HEIGHT });
+    fireEvent(element, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(element, pointer("pointermove", { clientX: 200, clientY: 100 + ROW_HEIGHT }));
 
     // Assert.
-    // The coordinate and the row, where the timeline showed a date and a row.
-    const hint = container.querySelector(".dependency-graph-hint")!;
-    expect(hint).not.toBeNull();
-    expect(hint.textContent).toContain("row 1");
-    expect(hint.textContent).toMatch(/^-?\d+ · row -?\d+$/);
+    expect(element.classList.contains("library-element-dragging")).toBe(true);
+    expect(container.querySelector(".dependency-graph-hint")).toBeNull();
+
+    fireEvent(element, pointer("pointerup", { clientX: 200, clientY: 100 + ROW_HEIGHT }));
   });
 
   it("relates the dependent to the dependency in one stateless call, in the gesture's direction", () => {
-    // Arrange: the anchors render on the selected node only; the second hit circle is the
-    // right-side anchor.
-    currentSelectionKey = "element:aaa";
+    // Arrange: the library renders the named anchors always, shown by the stylesheet when
+    // they matter.
     const { container } = renderCanvas();
-    const rightAnchor = container.querySelectorAll(".dependency-graph-anchor-hit")[1];
-    const target = container.querySelector('[data-element-id="bbb"]')!;
+    const rightAnchor = container.querySelector('[data-element-id="aaa"] [data-anchor="right"]')!;
 
-    // Act: drag from aaa's right anchor and release on bbb. The landing is read from the event's
-    // own target - a fast release must not depend on a mouseenter having kept up.
-    fireEvent.mouseDown(rightAnchor, { clientX: 100, clientY: 30 });
-    fireEvent.mouseUp(target);
+    // Act: drag from aaa's right anchor and release over bbb's centre - jsdom's zero-size
+    // rect makes one pixel one canvas unit.
+    const overBbb = { clientX: 400 + 80, clientY: 2 * ROW_HEIGHT + 18 };
+    fireEvent(rightAnchor, pointer("pointerdown", { button: 0, clientX: 160, clientY: 18 }));
+    fireEvent(rightAnchor, pointer("pointermove", { ...overBbb }));
+    fireEvent(rightAnchor, pointer("pointerup", { ...overBbb }));
 
     // Assert.
     // One call carries the whole gesture, and aaa depends on bbb - the direction the drag had.
@@ -323,15 +322,15 @@ describe("the dependency graph canvas", () => {
   });
 
   it("reverses the dependency when the drag lifts from the left anchor", () => {
-    // Arrange: the first hit circle is the left-side anchor.
-    currentSelectionKey = "element:aaa";
+    // Arrange.
     const { container } = renderCanvas();
-    const leftAnchor = container.querySelectorAll(".dependency-graph-anchor-hit")[0];
-    const target = container.querySelector('[data-element-id="bbb"]')!;
+    const leftAnchor = container.querySelector('[data-element-id="aaa"] [data-anchor="left"]')!;
 
     // Act.
-    fireEvent.mouseDown(leftAnchor, { clientX: 100, clientY: 30 });
-    fireEvent.mouseUp(target);
+    const overBbb = { clientX: 400 + 80, clientY: 2 * ROW_HEIGHT + 18 };
+    fireEvent(leftAnchor, pointer("pointerdown", { button: 0, clientX: 0, clientY: 18 }));
+    fireEvent(leftAnchor, pointer("pointermove", { ...overBbb }));
+    fireEvent(leftAnchor, pointer("pointerup", { ...overBbb }));
 
     // Assert.
     // What depends on a node arrives at it: the landing becomes the dependent and the dragged
@@ -345,12 +344,11 @@ describe("the dependency graph canvas", () => {
   it("never connects from a plain click on the node body", () => {
     // Arrange.
     const { container } = renderCanvas();
-    const surface = container.querySelector(".dependency-graph-surface")!;
     const elements = container.querySelectorAll(".dependency-graph-element");
 
     // Act: press a node body and release - a selection, not a gesture.
-    fireEvent.mouseDown(elements[0], { clientX: 100, clientY: 100 });
-    fireEvent.mouseUp(surface);
+    fireEvent(elements[0], pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(elements[0], pointer("pointerup", { clientX: 100, clientY: 100 }));
 
     // Assert.
     expect(executed.filter((call) => call.actionId === "dependencies.connect")).toHaveLength(0);
@@ -358,14 +356,13 @@ describe("the dependency graph canvas", () => {
 
   it("completes a dependency onto empty space as a create-and-relate placement", () => {
     // Arrange.
-    currentSelectionKey = "element:aaa";
     const { container } = renderCanvas();
-    const rightAnchor = container.querySelectorAll(".dependency-graph-anchor-hit")[1];
-    const surface = container.querySelector(".dependency-graph-surface")!;
+    const rightAnchor = container.querySelector('[data-element-id="aaa"] [data-anchor="right"]')!;
 
     // Act: drag from aaa's right anchor and release over nothing.
-    fireEvent.mouseDown(rightAnchor, { clientX: 100, clientY: 30 });
-    fireEvent.mouseUp(surface);
+    fireEvent(rightAnchor, pointer("pointerdown", { button: 0, clientX: 160, clientY: 18 }));
+    fireEvent(rightAnchor, pointer("pointermove", { clientX: 900, clientY: 400 }));
+    fireEvent(rightAnchor, pointer("pointerup", { clientX: 900, clientY: 400 }));
 
     // Assert.
     // The landing is a placement inside the same rel: gesture - one call, one undo.
@@ -377,14 +374,13 @@ describe("the dependency graph canvas", () => {
 
   it("a left-anchor drag onto empty space puts the placement at the dependent end", () => {
     // Arrange.
-    currentSelectionKey = "element:aaa";
     const { container } = renderCanvas();
-    const leftAnchor = container.querySelectorAll(".dependency-graph-anchor-hit")[0];
-    const surface = container.querySelector(".dependency-graph-surface")!;
+    const leftAnchor = container.querySelector('[data-element-id="aaa"] [data-anchor="left"]')!;
 
     // Act.
-    fireEvent.mouseDown(leftAnchor, { clientX: 100, clientY: 30 });
-    fireEvent.mouseUp(surface);
+    fireEvent(leftAnchor, pointer("pointerdown", { button: 0, clientX: 0, clientY: 18 }));
+    fireEvent(leftAnchor, pointer("pointermove", { clientX: 900, clientY: 400 }));
+    fireEvent(leftAnchor, pointer("pointerup", { clientX: 900, clientY: 400 }));
 
     // Assert.
     // The new node is what depends on the dragged one, so the edge runs out of it and into aaa.
@@ -400,15 +396,18 @@ describe("the dependency graph canvas", () => {
     // and row with nothing asked. One handler on the surface serves drops over nodes and over
     // empty canvas alike.
     const { container } = renderCanvas();
-    const surface = container.querySelector(".dependency-graph-surface")!;
-    const data = new Map([["application/x-adp-toolbox-item", "dependencies.add-element"]]);
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+    const box = surface.getAttribute("viewBox")!.split(" ").map(Number);
+    Object.defineProperty(surface, "getBoundingClientRect", {
+      value: () => ({ x: 0, y: 0, top: 0, left: 0, right: box[2], bottom: box[3], width: box[2], height: box[3], toJSON: () => ({}) }),
+    });
 
     // Act.
-    fireEvent.drop(surface, {
-      clientX: 300,
-      clientY: 200,
-      dataTransfer: { getData: (type: string) => data.get(type) ?? "", types: [...data.keys()] },
+    const event = new MouseEvent("drop", { bubbles: true, cancelable: true, clientX: 300, clientY: 200 });
+    Object.defineProperty(event, "dataTransfer", {
+      value: { getData: (type: string) => (type === "application/x-adp-toolbox-item" ? "dependencies.add-element" : ""), types: ["application/x-adp-toolbox-item"] },
     });
+    fireEvent(surface, event);
 
     // Assert.
     // jsdom's synthetic drop carries no client coordinates, so the numeric halves are not
@@ -421,42 +420,34 @@ describe("the dependency graph canvas", () => {
     expect(source.source.value.value).toMatch(/^new:/);
   });
 
-  it("pans with the right button on empty space, and no browser menu appears", () => {
-    // Arrange.
-    // The observable is a node's drawn x: panning shifts every box by the pan distance.
+  it("pans the view from a background drag", () => {
+    // Arrange. The library draws through a viewBox, so panning moves the viewBox rather than
+    // every node's own x - and surface gestures are the library's now (the right-button pan
+    // the old canvas offered retired with it, a recorded unification).
     const { container } = renderCanvas();
-    const surface = container.querySelector(".dependency-graph-surface")!;
-    const before = container.querySelector(".dependency-graph-node")!.getAttribute("x");
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+    const before = surface.getAttribute("viewBox");
 
     // Act.
-    fireEvent.mouseDown(surface, { button: 2, clientX: 400, clientY: 300 });
-    fireEvent.mouseMove(surface, { clientX: 320, clientY: 300 });
-    const menuPrevented = !fireEvent.contextMenu(surface, { clientX: 320, clientY: 300 });
-    fireEvent.mouseUp(surface);
+    fireEvent(surface, pointer("pointerdown", { button: 0, clientX: 400, clientY: 300 }));
+    fireEvent(surface, pointer("pointermove", { clientX: 320, clientY: 300 }));
+    fireEvent(surface, pointer("pointerup", { clientX: 320, clientY: 300 }));
 
     // Assert.
-    // The view moved, nothing was selected away, and the browser's menu was consumed.
-    expect(container.querySelector(".dependency-graph-node")!.getAttribute("x")).not.toBe(before);
-    expect(menuPrevented).toBe(true);
-    expect(selections).toHaveLength(0);
+    expect(surface.getAttribute("viewBox")).not.toBe(before);
   });
 
-  it("pans when the right button lands on the drawn canvas itself, not only the surface div", () => {
+  it("clears the selection on a background press", () => {
     // Arrange.
-    // Real clicks land on the inner svg, not the surface div - a target===currentTarget guard
-    // silently disabled panning everywhere, and synthetic events aimed at the surface hid it.
     const { container } = renderCanvas();
-    const surface = container.querySelector(".dependency-graph-surface")!;
-    const content = container.querySelector(".dependency-graph-content")!;
-    const before = container.querySelector(".dependency-graph-node")!.getAttribute("x");
+    const surface = container.querySelector("svg.library-canvas-surface")!;
 
-    // Act.
-    fireEvent.mouseDown(content, { button: 2, clientX: 400, clientY: 300 });
-    fireEvent.mouseMove(surface, { clientX: 320, clientY: 300 });
-    fireEvent.mouseUp(surface);
+    // Act: press and release, unmoved, on empty canvas.
+    fireEvent(surface, pointer("pointerdown", { button: 0, clientX: 700, clientY: 300 }));
+    fireEvent(surface, pointer("pointerup", { clientX: 700, clientY: 300 }));
 
-    // Assert.
-    expect(container.querySelector(".dependency-graph-node")!.getAttribute("x")).not.toBe(before);
+    // Assert: the module was asked to select nothing.
+    expect(selections).toEqual([null]);
   });
 
   it("forwards Tab against the selection as a shortcut, letting the backend own the table", () => {
@@ -507,15 +498,14 @@ describe("the dependency graph canvas", () => {
     // makes the browser's trailing click land on the dependency's fat hit path - and a raw
     // click handler there steals a selection the gesture never meant to change.
     const { container } = renderCanvas();
-    const surface = container.querySelector(".dependency-graph-surface")!;
     const element = container.querySelector(".dependency-graph-element")!;
     const hit = container.querySelector(".dependency-graph-relation-hit")!;
 
     // Act: a real drag of the node, then the trailing click as the browser delivers it -
     // targeting whatever now sits under the release point, here the dependency.
-    fireEvent.mouseDown(element, { clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(surface, { clientX: 150, clientY: 120 });
-    fireEvent.mouseUp(surface);
+    fireEvent(element, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
+    fireEvent(element, pointer("pointermove", { clientX: 150, clientY: 120 }));
+    fireEvent(element, pointer("pointerup", { clientX: 150, clientY: 120 }));
     fireEvent.click(hit);
 
     // Assert: the drag moved its node, and neither it nor its trailing click selected anything.
@@ -531,7 +521,7 @@ describe("the dependency graph canvas", () => {
     const { container } = renderCanvas();
 
     // Assert.
-    expect(container.querySelector(".dependency-graph-relation")!.classList.contains("dependency-graph-selected")).toBe(true);
+    expect(container.querySelector(".dependency-graph-relation")!.classList.contains("canvas-selected")).toBe(true);
   });
 
   it("opens the context menu for a dependency once its selection arrives", () => {
@@ -644,25 +634,31 @@ describe("the dependency graph canvas", () => {
   });
 
   it("zooms the rows along with the horizontal axis", () => {
-    // Arrange.
+    // Arrange. The library zooms both axes through one viewBox, which is exactly the coupled
+    // behaviour the old canvas built by hand (its separate vertical clamp retired with it).
     const { container } = renderCanvas();
-    const surface = container.querySelector(".dependency-graph-surface")!;
-    const before = Number(container.querySelector(".dependency-graph-node")!.getAttribute("height"));
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+    const before = surface.getAttribute("viewBox")!.split(" ").map(Number);
 
     // Act: one wheel step in.
     fireEvent.wheel(surface, { deltaY: -100 });
 
-    // Assert.
-    // The node's drawn height scales with the same step the horizontal axis took.
-    const after = Number(container.querySelector(".dependency-graph-node")!.getAttribute("height"));
-    expect(after).toBeCloseTo(before * 1.25, 5);
+    // Assert: both spans shrank by the same step.
+    const after = surface.getAttribute("viewBox")!.split(" ").map(Number);
+    expect(after[2]).toBeCloseTo(before[2] / 1.25, 5);
+    expect(after[3]).toBeCloseTo(before[3] / 1.25, 5);
   });
 
   it("pans horizontally from the scrollbar thumb", () => {
     // Arrange.
     const { container } = renderCanvas();
-    const thumb = container.querySelector(".canvas-scrollbar-horizontal .canvas-scrollbar-thumb")!;
-    const before = container.querySelector(".dependency-graph-node")!.getAttribute("x");
+    const horizontalBar = container.querySelector(".canvas-scrollbar-horizontal")!;
+    Object.defineProperty(horizontalBar, "getBoundingClientRect", {
+      value: () => ({ x: 0, y: 0, top: 0, left: 0, right: 200, bottom: 10, width: 200, height: 10, toJSON: () => ({}) }),
+    });
+    const thumb = horizontalBar.querySelector(".canvas-scrollbar-thumb")!;
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+    const before = surface.getAttribute("viewBox");
 
     // Act.
     fireEvent.mouseDown(thumb, { clientX: 100, clientY: 300 });
@@ -670,7 +666,7 @@ describe("the dependency graph canvas", () => {
     fireEvent.mouseUp(window);
 
     // Assert.
-    expect(container.querySelector(".dependency-graph-node")!.getAttribute("x")).not.toBe(before);
+    expect(surface.getAttribute("viewBox")).not.toBe(before);
   });
 
   it("reports the rectangle it can see, in the module's own units", async () => {
@@ -720,13 +716,13 @@ describe("the dependency graph canvas", () => {
       const first = reportView.mock.calls.at(-1)![0] as { minX: number };
       const before = reportView.mock.calls.length;
 
-      // Act: drag the surface, which moves the view several times.
-      const surface = container.querySelector(".dependency-graph-surface")!;
-      fireEvent.mouseDown(surface, { clientX: 300, clientY: 200 });
-      fireEvent.mouseMove(surface, { clientX: 260, clientY: 200 });
-      fireEvent.mouseMove(surface, { clientX: 220, clientY: 200 });
-      fireEvent.mouseMove(surface, { clientX: 180, clientY: 200 });
-      fireEvent.mouseUp(surface);
+      // Act: drag the background, which moves the view several times.
+      const surface = container.querySelector("svg.library-canvas-surface")!;
+      fireEvent(surface, pointer("pointerdown", { button: 0, clientX: 300, clientY: 200 }));
+      fireEvent(surface, pointer("pointermove", { clientX: 260, clientY: 200 }));
+      fireEvent(surface, pointer("pointermove", { clientX: 220, clientY: 200 }));
+      fireEvent(surface, pointer("pointermove", { clientX: 180, clientY: 200 }));
+      fireEvent(surface, pointer("pointerup", { clientX: 180, clientY: 200 }));
 
       // Assert: one further report, carrying the moved rectangle.
       await vi.waitFor(() => expect(reportView.mock.calls.length).toBeGreaterThan(before), { timeout: 2000 });

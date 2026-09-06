@@ -145,7 +145,16 @@ export interface LabelTypography {
 
 /** How an element's label sits, wraps and edits (Requirement 2.3). */
 export interface LabelRule {
-  placement: "inside" | "above" | "below" | "beside";
+  placement: "inside" | "above" | "below" | "beside" | "inset";
+  /**
+   * The inset placement's own offsets, for a composite card whose first line is the name: the
+   * line's top offset from the box's top, the line's height, and the horizontal inset on both
+   * sides. The c4 card is the shape this exists for; an editor covering the whole card would
+   * sit over three lines of text to edit one of them.
+   */
+  insetTop?: number;
+  insetHeight?: number;
+  insetX?: number;
   wrap?: boolean;
   truncate?: boolean;
   /**
@@ -178,6 +187,12 @@ export interface ElementTypeDefinition {
   draggable?: boolean;
   /** Whether delete gestures reach this type at all (Requirement 5.3). */
   deletable?: boolean;
+  /**
+   * Paints this type's elements beneath the connections: an opaque container whose members'
+   * edges must stay visible over it - azure-pipeline's stage cards. Off, connections draw
+   * under every element as they always have.
+   */
+  beneathConnections?: boolean;
 }
 
 /**
@@ -209,6 +224,12 @@ export const BUILT_IN_ROUTES: readonly BuiltInRoute[] = [
 
 export type RouteKind = BuiltInRoute | CustomRouteRef;
 
+/** The two end boxes a drawn connection runs between - for a route that anchors on boxes. */
+export interface RouteEnds {
+  source: ShapeBounds;
+  target: ShapeBounds;
+}
+
 /** A module-supplied path builder, for geometry no built-in draws. */
 export interface CustomRouteRef {
   /** Names the route, so definitions and test assertions can refer to it. */
@@ -216,8 +237,11 @@ export interface CustomRouteRef {
   /**
    * Builds the SVG path between the resolved endpoints. The same path serves rendering, the
    * connect-gesture preview and hit-testing, so the three cannot disagree (Requirement 3.4).
+   * A drawn connection also receives its endpoint BOUNDS - causal-loop's arc picks its own
+   * anchors from the boxes and bows to the side of travel, which points alone cannot say;
+   * the connect preview has no target box yet and passes none.
    */
-  path: (from: ShapePoint, to: ShapePoint, waypoints: readonly ShapePoint[]) => string;
+  path: (from: ShapePoint, to: ShapePoint, waypoints: readonly ShapePoint[], ends?: RouteEnds) => string;
 }
 
 /** Start and end decorations (Requirement 3.2). */
@@ -277,6 +301,13 @@ export interface RelationTypeDefinition {
   };
   /** Whether waypoints or control points may be dragged (Requirement 3.5). */
   adjustable?: boolean;
+  /**
+   * Adornment drawn inside the connection's group, after its line - polarity signs, delay
+   * strokes, anything the notation rides on a line - so the shared `.canvas-selected` cascade
+   * colours it with the line it describes. Handed the resolved route so it can place itself
+   * along the real geometry.
+   */
+  adorn?: (route: { from: ShapePoint; to: ShapePoint; waypoints: readonly ShapePoint[]; ends?: RouteEnds }, connection: unknown) => unknown;
   /**
    * Extra class names for the pieces, so a module's stylesheet keeps dressing what it always
    * dressed: the connection group, its visible line, and its fat hit twin.
@@ -362,4 +393,11 @@ export interface DiagramDefinition {
    */
   extent?: ShapeBounds;
   background?: DiagramBackgroundRef;
+  /**
+   * A hard edge for element drags, where the notation's space has one: the dragged element's
+   * CENTRE is clamped inside this box, in the preview under the pointer and in the raised
+   * `element-moved` position alike - a wardley component must not be draggable off the map
+   * while the pointer is still down. Omitted, drags roam free.
+   */
+  dragBounds?: ShapeBounds;
 }
