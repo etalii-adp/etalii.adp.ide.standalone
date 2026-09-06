@@ -442,6 +442,8 @@ public sealed class RdfParser
 
     private void Advance() => _current = _tokenizer.Next();
 
+    // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
+    // Reason: This works.
     private void Expect(RdfTokenKind kind, string expectation)
     {
         if (_current.Kind != kind)

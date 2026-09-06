@@ -111,6 +111,8 @@ public sealed class HierarchyService : EtAlii.Adp.HierarchyService.HierarchyServ
 
         async Task RecoverAsync()
         {
+            // ReSharper disable once AccessToDisposedClosure
+            // Reason: This works.
             await WaitForRootRecoveryAsync(rootPath, model, recoveryCts.Token);
             Interlocked.Exchange(ref rootLost, 0);
         }
