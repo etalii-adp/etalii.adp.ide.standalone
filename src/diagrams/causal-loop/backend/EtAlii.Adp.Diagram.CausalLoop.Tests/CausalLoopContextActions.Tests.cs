@@ -41,7 +41,7 @@ public class CausalLoopContextActionsTests : IDisposable
 
         _provider = new ServiceCollection()
             .AddSingleton(_sessions)
-            .AddCommands()
+            .AddCommands().AddHierarchyCommandHandlers()
             .AddCausalLoop()
             .BuildServiceProvider();
         // The registry is the host's, registered by AddDiagrams rather than by this module, so

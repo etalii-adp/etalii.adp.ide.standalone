@@ -3,6 +3,7 @@ using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Diagram.Rdf.Shacl;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path;
@@ -40,7 +41,7 @@ public class ShaclActionsTests : IDisposable
 
         _provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
-            .AddCommands()
+            .AddCommands().AddHierarchyCommandHandlers()
             .AddRdf()
             .BuildServiceProvider();
     }

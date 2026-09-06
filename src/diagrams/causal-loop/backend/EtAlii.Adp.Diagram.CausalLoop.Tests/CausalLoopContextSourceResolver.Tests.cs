@@ -121,7 +121,7 @@ public class CausalLoopContextSourceResolverTests : IDisposable
             .AddSingleton<IDiagramViewportRegistry, DiagramViewportRegistry>()
             .AddSingleton<DiagramFileRouter>()
             .AddSingleton<IDiagramDefinitionCatalog, CausalLoopOnlyCatalog>()
-            .AddCommands()
+            .AddCommands().AddHierarchyCommandHandlers()
             .AddCausalLoop()
             .BuildServiceProvider();
 
@@ -242,7 +242,7 @@ public class CausalLoopContextSourceResolverTests : IDisposable
         var target = Assert.IsType<ResolvedContextLevel>(resolution).Level.Target;
 
         var actions = new CausalLoopContextActionProvider(
-            _store, new ServiceCollection().AddCommands().BuildServiceProvider().GetRequiredService<IHistoryStackStore>(),
+            _store, new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().BuildServiceProvider().GetRequiredService<IHistoryStackStore>(),
             new DiagramViewportRegistry());
 
         // Act.

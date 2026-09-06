@@ -84,7 +84,7 @@ public class DiagramTests : IDisposable
         // the client can offer a user, so a read-only diagram registers no mutating seam at all.
         using var provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
-            .AddCommands()
+            .AddCommands().AddHierarchyCommandHandlers()
             .AddSparql()
             .BuildServiceProvider();
 
@@ -115,7 +115,7 @@ public class DiagramTests : IDisposable
         // than as a finding. It supplies a new file's text and never rewrites an existing one.
         using var provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
-            .AddCommands()
+            .AddCommands().AddHierarchyCommandHandlers()
             .AddSparql()
             .BuildServiceProvider();
 

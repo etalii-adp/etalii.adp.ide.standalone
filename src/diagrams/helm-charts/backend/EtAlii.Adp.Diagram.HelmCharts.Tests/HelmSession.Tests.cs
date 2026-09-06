@@ -33,7 +33,7 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
         File.WriteAllText(_adpPath, "helm/chart\r\n");
 
         _provider = new ServiceCollection()
-            .AddCommands()
+            .AddCommands().AddHierarchyCommandHandlers()
             .AddHelmCharts()
             .BuildServiceProvider();
         _store = new HelmChartStore(new HelmChartReader(), SettleDelay);

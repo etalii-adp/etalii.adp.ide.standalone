@@ -33,7 +33,7 @@ internal sealed class MindmapTestProject : IDisposable
             .AddSingleton<MindmapContextSourceResolver>()
             .AddSingleton<MindmapContextActionProvider>()
             .AddSingleton<MindmapContextPropertyProvider>()
-            .AddCommands()
+            .AddCommands().AddHierarchyCommandHandlers()
             .AddMindmapCommands()
             .BuildServiceProvider();
     }

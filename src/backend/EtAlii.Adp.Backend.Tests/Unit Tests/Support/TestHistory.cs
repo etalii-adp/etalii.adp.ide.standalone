@@ -1,5 +1,6 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Backend.Tests;
@@ -43,7 +44,7 @@ internal static class TestHistory
     /// </summary>
     private static ServiceProvider Services(DiagramDefinition[] definitions) => new ServiceCollection()
         .AddSingleton<IDiagramDefinitionCatalog>(new TestDiagramDefinitionCatalog(definitions))
-        .AddCommands()
+        .AddCommands().AddHierarchyCommandHandlers()
         .BuildServiceProvider();
 
 }

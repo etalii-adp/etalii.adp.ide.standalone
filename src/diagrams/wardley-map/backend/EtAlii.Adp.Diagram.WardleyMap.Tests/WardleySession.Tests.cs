@@ -1,6 +1,7 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -24,7 +25,7 @@ public sealed class WardleySessionTests : IDisposable
     public WardleySessionTests()
     {
         Directory.CreateDirectory(_root);
-        _services = new ServiceCollection().AddCommands().AddWardleyMap().BuildServiceProvider();
+        _services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddWardleyMap().BuildServiceProvider();
         _documents = _services.GetRequiredService<IWardleyDocumentStore>();
         // _identities = _services.GetRequiredService<WardleyIdentities>();
         _mapper = _services.GetRequiredService<WardleyElementMapper>();

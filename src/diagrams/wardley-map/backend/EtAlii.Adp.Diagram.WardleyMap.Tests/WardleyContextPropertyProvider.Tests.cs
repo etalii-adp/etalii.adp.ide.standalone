@@ -2,6 +2,7 @@ using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -39,7 +40,7 @@ public sealed class WardleyContextPropertyProviderTests : IDisposable
     public WardleyContextPropertyProviderTests()
     {
         Directory.CreateDirectory(_root);
-        _services = new ServiceCollection().AddCommands().AddWardleyMap().BuildServiceProvider();
+        _services = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddWardleyMap().BuildServiceProvider();
         _documents = _services.GetRequiredService<IWardleyDocumentStore>();
         _provider = _services.GetServices<IContextPropertyProvider>().OfType<WardleyContextPropertyProvider>().Single();
         _path = IoPath.Combine(_root, "tea.owm");

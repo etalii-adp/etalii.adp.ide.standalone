@@ -2,6 +2,7 @@ using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -45,7 +46,7 @@ public class ZeroWritesTests : IDisposable
 
     public ZeroWritesTests()
     {
-        _provider = new ServiceCollection().AddCommands().AddAnsibleStructure().BuildServiceProvider();
+        _provider = new ServiceCollection().AddCommands().AddHierarchyCommandHandlers().AddAnsibleStructure().BuildServiceProvider();
         _historyStacks = _provider.GetRequiredService<IHistoryStackStore>();
         _root = IoPath.Combine(IoPath.GetTempPath(), "EtAlii.Adp.Tests", Guid.NewGuid().ToString("N"));
         CopyTree(IoPath.Combine("Fixtures", "infrastructure"), _root);

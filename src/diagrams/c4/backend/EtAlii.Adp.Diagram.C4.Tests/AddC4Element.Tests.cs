@@ -1,5 +1,6 @@
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Hierarchy;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
@@ -48,7 +49,7 @@ public class AddC4ElementTests : IDisposable
         File.WriteAllText(_bodyPath, Model);
 
         _services = new ServiceCollection()
-            .AddCommands()
+            .AddCommands().AddHierarchyCommandHandlers()
             .AddC4()
             .BuildServiceProvider();
         _history = _services.GetRequiredService<IHistoryStackStore>().Get(_root);

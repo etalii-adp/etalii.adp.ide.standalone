@@ -27,7 +27,7 @@ public class RdfSessionTests : IDisposable
         Directory.CreateDirectory(_root);
         _provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
-            .AddCommands()
+            .AddCommands().AddHierarchyCommandHandlers()
             .AddRdf()
             .BuildServiceProvider();
     }

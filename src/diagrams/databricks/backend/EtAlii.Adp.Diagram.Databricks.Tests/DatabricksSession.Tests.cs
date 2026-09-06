@@ -24,7 +24,7 @@ public class DatabricksSessionTests : IDisposable
         Directory.CreateDirectory(_root);
         _provider = new ServiceCollection()
             .AddSingleton<IReadOnlyList<DiagramDefinition>>(Diagram.Definitions)
-            .AddCommands()
+            .AddCommands().AddHierarchyCommandHandlers()
             .AddDatabricks()
             .BuildServiceProvider();
     }

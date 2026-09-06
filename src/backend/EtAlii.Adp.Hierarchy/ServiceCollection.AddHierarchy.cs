@@ -47,9 +47,21 @@ public static class ServiceCollectionAddHierarchyExtension
         services.AddSingleton<IContextActionProvider, OpenAsTextContextActionProvider>();
         services.AddSingleton<IContextPropertyProvider, EditorFilePropertyProvider>();
 
-        // The command handlers, moved here from AddCommands with the area extraction:
-        // they are this area's code, and a host (or test host) that dispatches
-        // hierarchy commands wires them by calling this method beside AddCommands.
+        services.AddHierarchyCommandHandlers();
+
+        return services;
+    }
+    /// <summary>
+    /// Just the eight command handlers, callable on their own: a test host that dispatches
+    /// hierarchy commands wires this beside AddCommands without standing up the area's
+    /// providers and resolvers (backend-project-decomposition task 10 - the registrations
+    /// moved here from AddCommands with the area, and the pipeline hosts kept a
+    /// handlers-only seam).
+    /// </summary>
+    public static IServiceCollection AddHierarchyCommandHandlers(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
         services.AddSingleton<ICommandHandler<RenameEntryCommand>, RenameEntryCommandHandler>();
         services.AddSingleton<ICommandHandler<DeleteEntryCommand>, DeleteEntryCommandHandler>();
         services.AddSingleton<ICommandHandler<CreateFolderCommand>, CreateFolderCommandHandler>();
@@ -61,4 +73,5 @@ public static class ServiceCollectionAddHierarchyExtension
 
         return services;
     }
+
 }
