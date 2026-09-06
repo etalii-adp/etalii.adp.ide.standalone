@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/specs/drag-and-drop-centralization/requirements.md",
-  "currentVersion": 3,
+  "currentVersion": 4,
   "snapshots": [
     {
       "version": 1,
@@ -25,6 +25,14 @@
       "trigger": "approved",
       "approvalId": "approval_1788703893334_feeavn4i1",
       "approvalTitle": "drag-and-drop-centralization requirements (updated for the gesture library)"
+    },
+    {
+      "version": 4,
+      "filename": "snapshot-004.json",
+      "timestamp": "2026-09-06T15:05:32.942Z",
+      "trigger": "revision_requested",
+      "approvalId": "approval_1788705359401_gin4xqhhp",
+      "approvalTitle": "drag-and-drop-centralization requirements (post-adoption refresh)"
     }
   ]
 }
