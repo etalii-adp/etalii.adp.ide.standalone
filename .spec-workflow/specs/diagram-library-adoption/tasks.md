@@ -102,14 +102,14 @@
   - _Requirements: 1.1, 2.1, 2.2, 2.3, 2.5, 3.3, 4.1, 5.1, 5.2_
   - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer | Task: Rebuild AnsibleCanvas and HelmCanvas on the library as plain graphs | Restrictions: inventory per canvas before code; unresolved-target edges keep drawing to nothing; no rename appears where none exists; rewritten tests seen to fail against a deliberate break; guard exclusions deleted in the same change | Success: both modules render through the library, four gates green, landed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 11. databricks migrates — four files, one unit, last
+- [x] 11. databricks migrates — four files, one unit, last
   - Files: `src/diagrams/databricks/client/DatabricksCanvas.tsx` (866), `JobCanvas.tsx`, `PipelineCanvas.tsx`, `BundleCanvas.tsx` (thin wrappers), their tests, guard exclusion entries
   - The three registered wrappers and the shared inner canvas migrate **as one unit**, preserving three-readings-one-canvas (Requirement 1.2). Mixed straight and fixed-bezier edges, target frames, the largest single canvas — every mechanism it composes is proven by now.
   - Parity watchlist: edges are not selectable today and stay that way — recorded in the label library's readme as pending, and a migration is not the moment it changes (Requirement 2.2); the bundle node's drawn key is its name (inline rename parity).
   - _Requirements: 1.1, 1.2, 2.1, 2.2, 2.3, 2.5, 3.3, 4.1, 5.1, 5.2_
   - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer | Task: Rebuild the databricks inner canvas and its three registered wrappers on the library as one landing | Restrictions: inventory before code; three-readings-one-canvas preserved; edge selection stays absent and recorded; rewritten tests seen to fail against a deliberate break; guard exclusions deleted in the same change | Success: all three databricks readings render through the one migrated canvas, four gates green, landed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 12. The final measurement, the empty exclusions, and the record
+- [-] 12. The final measurement, the empty exclusions, and the record
   - Files: guard exclusion lists (now empty), `docs/creating-a-diagram-module.md`, `docs/screenshots/` where misleading, this document, the implementation log
   - Re-measure the surveyed private-machinery counts across all migrated modules and record before/after — the design-time baseline against zero (Requirement 3.1). Verify both guard exclusion lists are empty and fail on any added entry.
   - Confirm the notation-specific exclusions that remain are named with reasons — the custom shapes and routes, timeline's frozen scale — rather than the checks loosened (Requirement 3.3).
