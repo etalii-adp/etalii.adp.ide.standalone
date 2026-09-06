@@ -57,14 +57,14 @@
 
 ## Phase 2 — Merge Diagrams (now possible, because the back-edges are gone)
 
-- [-] 8. Merge `EtAlii.Adp.Backend.Diagrams` into `EtAlii.Adp.Diagram` **[HOLD]**
+- [x] 8. Merge `EtAlii.Adp.Backend.Diagrams` into `EtAlii.Adp.Diagram` **[HOLD]**
   - Files: `EtAlii.Adp.Backend.Diagrams.csproj` (removed), its sources → `EtAlii.Adp.Diagram`; `diagrams.proto`/`deltas.proto` linked into `EtAlii.Adp.Diagram` generating `EtAlii.Adp.Diagram.Wire`; the Backend-bound half (the three `DiagramService` partials, `DiagramDocumentReloadBridge`, `ServiceCollection.AddDiagrams`, `EditorSessionAdapter`) placed per `findings.md`'s pure/bound split; consumers of the merged project across the module tree
   - The headline mandate. Possible only because phase 1 removed the cycle. `diagrams.proto` and `deltas.proto` generate into `EtAlii.Adp.Diagram.Wire` (namespace in the project), referencing `Common`. **Renames the Diagrams namespace across consumers — coordinated hold.**
   - _Requirements: 3.3, 4_ · _Prompt: Role: C# developer | Task: merge Backend.Diagrams into Diagram, relink diagrams/deltas protos as Diagram.Wire, place the Backend-bound half per findings.md | Restrictions: no cycle reintroduced; generation as today; land inside a coordinated hold; four gates + fresh-tree build + inspectcode | Success: Backend.Diagrams is gone, its behaviour reachable from Diagram, everything builds. Mark in-progress, log-implementation, mark complete._
 
 ## Phase 3 — Extract each functional area to its own project
 
-- [ ] 9. Extract `Client` to `EtAlii.Adp.Client` **[normal]**
+- [-] 9. Extract `Client` to `EtAlii.Adp.Client` **[normal]**
   - Files: the 3 `Client/` files → `src/backend/EtAlii.Adp.Client/`; project references
   - **First because it is clean** — zero cross-folder dependencies, so it proves the extraction pattern with the least risk. No proto.
   - _Requirements: 5.1, 5.2_ · _Prompt: Role: C# developer | Task: extract Client to EtAlii.Adp.Client | Restrictions: four gates + fresh-tree build | Success: Client is its own project, referenced where used. Mark in-progress, log-implementation, mark complete._
