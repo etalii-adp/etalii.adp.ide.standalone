@@ -1,5 +1,7 @@
 ﻿using EtAlii.Adp.Backend;
 
+
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.Rdf.Shacl;
 
 /// <summary>Withdraws one target declaration, addressed as its chip carries it (Requirement 5.3).</summary>

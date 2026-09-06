@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// Carries out one specific <see cref="ICommand"/>. Exactly one handler is registered per

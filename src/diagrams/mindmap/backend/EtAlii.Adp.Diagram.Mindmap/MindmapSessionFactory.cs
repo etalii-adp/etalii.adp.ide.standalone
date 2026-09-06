@@ -1,5 +1,7 @@
 using EtAlii.Adp.Backend.Diagrams;
 
+
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.Mindmap;
 
 /// <summary>Opens a <see cref="MindmapSession"/> per connection - the module's fourth registration seam.</summary>
@@ -8,9 +10,9 @@ public sealed class MindmapSessionFactory : IDiagramSessionFactory
     private readonly IMindmapDocumentStore _documents;
     private readonly MindmapViewState _views;
     private readonly MindmapElementMapper _mapper;
-    private readonly Backend.IHistoryStackStore _historyStacks;
+    private readonly Common.IHistoryStackStore _historyStacks;
 
-    public MindmapSessionFactory(IMindmapDocumentStore documents, MindmapViewState views, MindmapElementMapper mapper, Backend.IHistoryStackStore historyStacks)
+    public MindmapSessionFactory(IMindmapDocumentStore documents, MindmapViewState views, MindmapElementMapper mapper, Common.IHistoryStackStore historyStacks)
     {
         ArgumentNullException.ThrowIfNull(documents);
         ArgumentNullException.ThrowIfNull(views);

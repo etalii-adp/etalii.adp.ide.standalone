@@ -1,5 +1,7 @@
 ﻿using EtAlii.Adp.Backend;
 
+
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.Rdf;
 
 /// <summary>Removes a resource and every triple it is subject or object of, as one undo (Requirement 5.3).</summary>

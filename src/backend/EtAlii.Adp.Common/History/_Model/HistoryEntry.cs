@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// One recorded change on an <see cref="IHistoryStack"/>: the command that was executed,

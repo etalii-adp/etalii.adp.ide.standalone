@@ -1,5 +1,7 @@
 using EtAlii.Adp.Backend;
 
+
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.Mindmap;
 
 /// <summary>Set a node's notes; empty removes them (Requirement 7.7).</summary>

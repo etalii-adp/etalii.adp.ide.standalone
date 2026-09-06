@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// One <see cref="IHistoryStack"/> per project, keyed by its resolved root path rather than a

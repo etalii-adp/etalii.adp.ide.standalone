@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// Whether undo and redo are possible, and how deep each side is, read together under one

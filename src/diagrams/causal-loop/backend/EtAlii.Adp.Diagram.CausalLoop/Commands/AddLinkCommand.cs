@@ -1,5 +1,7 @@
 using EtAlii.Adp.Backend;
 
+
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.CausalLoop;
 
 /// <summary>States a causal link between two declared variables.</summary>

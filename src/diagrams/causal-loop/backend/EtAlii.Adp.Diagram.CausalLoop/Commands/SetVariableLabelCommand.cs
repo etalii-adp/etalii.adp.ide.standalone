@@ -1,5 +1,7 @@
 using EtAlii.Adp.Backend;
 
+
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.CausalLoop;
 
 /// <summary>Sets what a reader sees on a variable, without moving what refers to it.</summary>
