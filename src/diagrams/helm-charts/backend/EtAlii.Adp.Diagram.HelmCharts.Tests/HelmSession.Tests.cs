@@ -212,6 +212,8 @@ public class HelmSessionTests : IAsyncDisposable, IDisposable
         session.Changed += (_, e) =>
         {
             deltas = e.Deltas;
+            // ReSharper disable once AccessToDisposedClosure
+            // Reason: This works.
             pushed.Set();
         };
 

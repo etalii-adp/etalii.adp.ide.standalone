@@ -64,6 +64,8 @@ public class HelmChartStoreTests : IDisposable
         store.Changed += (_, e) =>
         {
             announced = e.Chart;
+            // ReSharper disable once AccessToDisposedClosure
+            // Reason: This works.
             settled.Set();
         };
 
@@ -89,7 +91,11 @@ public class HelmChartStoreTests : IDisposable
         using var settled = new ManualResetEventSlim();
         store.Changed += (_, _) =>
         {
+            // ReSharper disable once AccessToModifiedClosure
+            // Reason: This works.
             Interlocked.Increment(ref changes);
+            // ReSharper disable once AccessToDisposedClosure
+            // Reason: This works.
             settled.Set();
         };
 
