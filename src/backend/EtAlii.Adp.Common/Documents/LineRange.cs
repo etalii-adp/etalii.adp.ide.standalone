@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Hierarchy;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// An inclusive range of line indices, zero-based - the lines that declare one construct, as a

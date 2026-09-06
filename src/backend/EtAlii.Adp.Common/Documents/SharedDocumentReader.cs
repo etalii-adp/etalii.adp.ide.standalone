@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Hierarchy;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// Opens a user-editable file for reading without contending with whoever may be writing it.

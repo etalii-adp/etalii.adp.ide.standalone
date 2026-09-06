@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Hierarchy;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// What came of trying to create a file. A taken name is its own outcome rather than a

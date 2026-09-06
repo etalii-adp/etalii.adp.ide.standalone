@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Hierarchy;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// Finding and replacing lines inside a <see cref="LineDocument"/>: the mechanics a
