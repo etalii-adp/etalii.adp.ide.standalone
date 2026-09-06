@@ -694,7 +694,10 @@ export function DiagramCanvas({
             ? asideLabelPlacement(element.labelAt, 0, element.label ?? "")
             : asideLabelPlacement({ x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 }, 6, element.label ?? "");
         }
-        return centredLabelPlacement(bounds, element.label ?? "");
+        // centredLabelPlacement takes a CENTRE-based box while the library's bounds are
+        // corner-based - the same conversion the edge-attachment guard was seen to fail on,
+        // caught here by the mindmap migration's editor-position test.
+        return centredLabelPlacement({ x: element.x, y: element.y, width: bounds.width, height: bounds.height }, element.label ?? "");
       }
 
       const connection = model.connections.find((candidate) => candidate.id === id);
@@ -730,6 +733,26 @@ export function DiagramCanvas({
   const isSelected = (kind: SelectedItem["kind"], id: string) =>
     selection.some((item) => item.kind === kind && item.id === id);
 
+  /**
+   * Ends an open inline edit before a gesture begins (the mindmap spec's Requirement 5.5,
+   * inherited by every adopter): the editor commits on blur, so taking the focus is the whole
+   * mechanism, and it lives here once rather than per module. Capture phase, so it runs before
+   * any press wiring; a press inside the editor itself is exempt - ending the edit on the
+   * click being typed into would commit the very edit being clicked.
+   */
+  // Stable, and this is load-bearing: the editor's return-focus effect keys on this function's
+  // IDENTITY, and an inline arrow here re-ran its cleanup every render - which hands focus to
+  // the canvas mid-edit and latches the editor's closing flag, the silent-self-cancel class of
+  // defect the editor's own comments warn about. Caught by the mindmap migration's
+  // commit-before-gesture test.
+  const returnFocusToSurface = useCallback(() => svgRef.current?.focus(), []);
+
+  const endEditBeforeGesture = (event: React.PointerEvent) => {
+    if (editing?.editingId != null && !(event.target instanceof Element && event.target.closest("foreignObject") !== null)) {
+      svgRef.current?.focus();
+    }
+  };
+
   return (
     <div className={`library-canvas ${className ?? ""}`.trim()} data-testid="library-canvas">
       <svg
@@ -740,6 +763,7 @@ export function DiagramCanvas({
         role="img"
         aria-label={ariaLabel ?? "Diagram"}
         {...gesture.background({ kind: "background", view: effectiveView })}
+        onPointerDownCapture={endEditBeforeGesture}
         onKeyDown={onKeyDown}
         onDragOver={onSurfaceDragOver}
         onDrop={onSurfaceDrop}
@@ -825,7 +849,7 @@ export function DiagramCanvas({
               return editing.onSubmit(...args);
             }}
             onCancel={editing.onCancel}
-            onReturnFocus={() => svgRef.current?.focus()}
+            onReturnFocus={returnFocusToSurface}
           />
         )}
       </svg>
