@@ -30,7 +30,7 @@ namespace EtAlii.Adp.Backend.Tests;
 public partial class ShapeOfFileAccessTests
 {
     /// <summary>One reach for a raw file API, with the central call that replaces it.</summary>
-    private sealed record Violation()
+    private abstract record Violation
     {
         public static string ToString(string file, int line, string rule, string replacement) => $"{file}:{line} - {rule}. Use {replacement}.";
     }
