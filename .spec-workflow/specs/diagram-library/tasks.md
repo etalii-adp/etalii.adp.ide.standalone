@@ -73,6 +73,19 @@
   - _Requirements: 9.3, 9.4, 2.3, 3.1, 3.3, 8.1_
   - _Prompt: Implement the task for spec diagram-library, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Full-stack developer | Task: Rebuild TimelineCanvas on the library as the axis-shaped reference, with the time axis as a declared background and three route-label placements | Restrictions: no new capability rides along; keep today's fitToView behaviour; if the background mechanism cannot express the axis, record the gap with its consequence rather than bending the schema | Success: timeline renders through the library with its axis and along-route labels, guards fail-then-pass. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
+  - **Gap record (Requirement 9.4), from implementing this task.** The axis-as-background
+    mechanism could not express the time scale: seconds are ~10^9 while rows are ~10^2, and a
+    uniform viewBox would draw one axis invisibly - while a non-uniform one distorts text. The
+    consequence: the module owns a **frozen seconds-to-units scale** (set at first fit, exported
+    as `timelineScaleOf`) and the ruler renders module-side from the library's `view-changed`
+    signal; the schema's `background`/`extent` serve the wardley-style in-canvas case instead.
+    Three behaviours needed additive API (approved in-session): `element-resized` for
+    `sizing: "user"` edges, `connection-released-on-empty` behind a per-relation
+    `emptyRelease: "complete"` declaration for the create-and-relate gesture, and relation
+    class-name knobs. Two behaviour shifts, recorded: panning moved from the right button to
+    the left (the arbiter's right button stays the menu's), and a left press on empty space
+    now deselects at release rather than at press.
+
 - [ ] 7. The guards, mounted, and gate and merge
   - Files: shared guards beside the client's diagram tests; then the four gates and the merge
   - Three guards, each **mounting rather than grepping** and carrying a named-member canary (Requirement 10.2), because a grep over canvas sources has already reported three correct databricks canvases as offenders here:
