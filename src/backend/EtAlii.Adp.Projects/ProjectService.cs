@@ -1,12 +1,12 @@
-using EtAlii.Adp.Backend.Sessions;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Projects.Wire;
 using Grpc.Core;
 using Serilog;
 using Path = EtAlii.Adp.Common.Wire.Path;
-namespace EtAlii.Adp.Backend.Projects;
+namespace EtAlii.Adp.Projects;
 
-public sealed class ProjectService : EtAlii.Adp.ProjectService.ProjectServiceBase
+public sealed class ProjectService : Wire.ProjectService.ProjectServiceBase
 {
     private static readonly ILogger _logger = Log.ForContext<ProjectService>();
 

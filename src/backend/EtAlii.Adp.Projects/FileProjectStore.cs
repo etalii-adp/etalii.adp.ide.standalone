@@ -1,10 +1,9 @@
 using System.Text.Json;
-using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Common;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
-namespace EtAlii.Adp.Backend.Projects;
+namespace EtAlii.Adp.Projects;
 
 /// <summary>
 /// Per-user project list persisted as a plain JSON file at

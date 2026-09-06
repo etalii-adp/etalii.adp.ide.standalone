@@ -5,7 +5,7 @@ package etalii.adp;
 import "connection.proto";
 import "shared.proto";
 
-option csharp_namespace = "EtAlii.Adp";
+option csharp_namespace = "EtAlii.Adp.Projects.Wire";
 
 service ProjectService {
   rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse);
