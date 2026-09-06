@@ -92,12 +92,6 @@
   stroke-width: 2;
 }
 
-/* The property riding its edge. */
-.owl-edge-label {
-  text-anchor: middle;
-  pointer-events: none;
-}
-
 /* The showing-N-of-M banner over a budget-cut view (Requirement 8.3). */
 .owl-truncation-banner {
   position: absolute;

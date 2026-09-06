@@ -563,6 +563,60 @@ describe("DiagramCanvas", () => {
     expect(adornment).not.toBeNull();
   });
 
+  it("the anchor a connect starts from selects the relation whose source allows it", () => {
+    // skos files a concept under another from its TOP anchor and cross-links from its SIDE -
+    // two relations told apart by where the drag began. The source constraint's anchor list
+    // is that meaning; a connect from a named anchor must pick the relation that names it.
+    const onConnectionDrawn = vi.fn();
+    const definition = definitionOf({
+      elementTypes: [
+        { id: "service", shape: "box", anchors: { kind: "compass", positions: ["n", "e"] }, sizing: "model" },
+      ],
+      relationTypes: [
+        {
+          id: "files-under",
+          route: "straight",
+          endpoints: { source: { elementTypes: ["service"], anchors: ["n"] }, target: { elementTypes: ["service"] }, allowSelf: false },
+        },
+        {
+          id: "relates",
+          route: "straight",
+          endpoints: { source: { elementTypes: ["service"], anchors: ["e"] }, target: { elementTypes: ["service"] }, allowSelf: false },
+        },
+      ],
+    });
+    const model: DiagramModel = {
+      elements: [
+        { id: "a", type: "service", x: 0, y: 0, width: 100, height: 40, label: "Alpha" },
+        { id: "b", type: "service", x: 300, y: 0, width: 100, height: 40, label: "Beta" },
+      ],
+      connections: [],
+    };
+
+    const { container } = renderCanvas({ onConnectionDrawn }, definition, model);
+
+    // A drag from the EAST anchor must draw the side relation, not the first declared.
+    const anchor = anchorOn(container, "a", "e");
+    fireEvent(anchor, pointer("pointerdown", { button: 0, clientX: 50, clientY: 0 }));
+    fireEvent(anchor, pointer("pointermove", { clientX: 300, clientY: 0 }));
+    fireEvent(anchor, pointer("pointerup", { clientX: 300, clientY: 0 }));
+
+    expect(onConnectionDrawn).toHaveBeenCalledTimes(1);
+    expect(onConnectionDrawn.mock.calls[0][0].relationType).toBe("relates");
+  });
+
+  it("a connection's own class names join its group, for kinds one relation type cannot enumerate", () => {
+    // A shacl edge's kind is an open string from the document; the connection carries the
+    // kind class itself rather than the definition declaring one relation type per kind.
+    const model = modelOf();
+    (model.connections[0] as { className?: string }).className = "shacl-edge shacl-edge-node";
+
+    const { container } = renderCanvas({}, definitionOf(), model);
+
+    const group = container.querySelector('[data-connection-id="a->b"]')!;
+    expect(group.getAttribute("class")).toContain("shacl-edge-node");
+  });
+
   it("a label the definition does not mark editable opens no editor", () => {
     const { container } = renderCanvas({}, definitionOf(), modelOf(), {
       editing: {

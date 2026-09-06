@@ -2176,3 +2176,28 @@ the standing causal-loop entries above against a migrated build, plus:
   by unit tests seen to fail under three narrow sabotages (adornment unhooked, arc flattened
   to a straight line, weight ladder collapsed).
 
+## rdf family readings re-run after their library migration (diagram-library-adoption, task 6)
+
+The three sibling readings of the rdf module - SKOS, OWL and SHACL - now render through the
+diagram library, joining the already-migrated graph reference. Same cards, ellipses, regions,
+badges and edge stylings; hit-testing, anchoring, drags, drops and selection are the
+library's now. Re-run the standing rdf-family entries above against a migrated build, plus:
+
+- **Actions**: in a SKOS scheme, drag from a concept's TOP anchor onto another concept, then
+  from its SIDE anchor onto a third; in an OWL ontology, select a class carrying an
+  equivalence and one without, drag an expression node, and drag from a class's side anchor
+  onto another class; in a SHACL shapes graph, drop a property-row toolbox entry ON a card
+  and then on empty canvas, and click a reference edge; everywhere, F2 and Delete on a
+  selected element.
+- **Expected**: the top-anchor drag files the concept (skos.file-under) and the side-anchor
+  drag cross-links (skos.relate) - the anchor chooses the gesture; the equivalent class keeps
+  its doubled outline; the expression drag is refused with the identity boundary's sentence;
+  the class-to-class anchor drag offers the subclass axiom; the on-card drop acts on that
+  card while the empty drop places; clicking a SHACL reference now selects it (a library
+  unification - the old canvas only displayed a selection made elsewhere); F2 renames and
+  Delete deletes as before.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition. The anchor-selects-relation mechanism, the
+  equivalence doubling, the centre-to-corner conversion on drags and the drop-on-card
+  hit-test are pinned by unit tests seen to fail under narrow sabotages.

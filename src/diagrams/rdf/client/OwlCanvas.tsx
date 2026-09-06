@@ -1,25 +1,29 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
+
 import { BoxElement } from "@client/canvas/elements/box/BoxElement";
 import { EllipseElement } from "@client/canvas/elements/ellipse/EllipseElement";
-import { StraightConnection } from "@client/canvas/connections/straight/StraightConnection";
-import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
-import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
-import type { ConnectorBox } from "@client/canvas/connectors";
+import { edgePointOf } from "@client/canvas/connectors";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
-import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
+import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
+import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
+import type {
+  CustomShapeRef,
+  CustomShapeState,
+  DiagramDefinition,
+  RelationTypeDefinition,
+  ShapeBounds,
+  ShapePoint,
+} from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { innermostKey, useContextConnection, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
-import { ContextMenu } from "@client/shell/context/ContextMenu";
-import { toMenuGroups } from "@client/shell/context/toMenuGroups";
-import { TOOLBOX_DRAG_TYPE, useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
-import { useRegisterDiagramView } from "@client/shell/panels/DiagramViewContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
-import { ContextSelectionAction } from "@client/generated/context_pb";
+import { ContextSelectionAction, type ContextShortcut } from "@client/generated/context_pb";
 import { useOwlStream } from "./useOwlStream";
 import { useViewReport } from "@client/diagrams/useViewReport";
-import { viewportOf } from "./rdfViewport";
-import { isCard, isExpression, type OwlDiagramEdge, type OwlModel, type OwlNode } from "./owlModel";
+import { isCard, isExpression, type OwlEdgeKind, type OwlModel, type OwlNode } from "./owlModel";
 
 /** A card's drawn width, in the module's own canvas units - matching the backend layout's spacing. */
 export const CARD_WIDTH = 220;
@@ -34,42 +38,6 @@ const HEADER_HEIGHT = 30;
 const BADGES_HEIGHT = 16;
 const ROW_HEIGHT = 16;
 const FOOTER_PADDING = 10;
-
-/** The id of the arrowhead marker this reading defines and its edge stylesheet points at. */
-const ARROWHEAD_ID = "owl-arrowhead";
-
-/** Zoom limits, in pixels per canvas unit. */
-const MIN_PIXELS_PER_UNIT = 0.05;
-const MAX_PIXELS_PER_UNIT = 8;
-const ZOOM_STEP = 1.25;
-
-interface OwlView {
-  startX: number;
-  startY: number;
-  pixelsPerUnit: number;
-}
-
-interface DragState {
-  id: string;
-  clientX: number;
-  clientY: number;
-  x: number;
-  y: number;
-  moved: boolean;
-}
-
-interface DragPreview {
-  id: string;
-  x: number;
-  y: number;
-}
-
-interface ConnectDrag {
-  fromId: string;
-  x: number;
-  y: number;
-  overId?: string;
-}
 
 /** A card's height follows its content; every other shape is a fixed silhouette. */
 export function nodeSizeOf(node: OwlNode): { width: number; height: number } {
@@ -91,155 +59,282 @@ export function nodeSizeOf(node: OwlNode): { width: number; height: number } {
   return { width: SHAPE_WIDTH, height: SHAPE_HEIGHT };
 }
 
+/** An element as the library carries it here: the model element plus what it draws. */
+type OwlElement = DiagramModelElement & { node: OwlNode; doubled: boolean };
+
+function boxEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
+  const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+  return edgePointOf(
+    { x: centre.x, y: centre.y, width: bounds.width, height: bounds.height },
+    towards.x - centre.x,
+    towards.y - centre.y,
+  );
+}
+
+/** Where a connector approaching from `towards` touches an ellipse whose box is `bounds`. */
+function ellipseEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
+  const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+  const dx = towards.x - centre.x;
+  const dy = towards.y - centre.y;
+  const rx = Math.max(bounds.width / 2, 1);
+  const ry = Math.max(bounds.height / 2, 1);
+  const scale = Math.sqrt((dx / rx) ** 2 + (dy / ry) ** 2);
+  if (scale === 0) {
+    return centre;
+  }
+
+  return { x: centre.x + dx / scale, y: centre.y + dy / scale };
+}
+
+/** The classes a node wears: its kind, its dimming, and whatever state it is in. */
+function classesFor(node: OwlNode, state?: CustomShapeState): string {
+  const classes = ["owl-node canvas-element", `owl-${node.kind}`];
+  if (node.deprecated) {
+    classes.push("owl-deprecated");
+  }
+
+  if (node.external) {
+    classes.push("owl-external");
+  }
+
+  if (node.malformed) {
+    classes.push("owl-malformed");
+  }
+
+  if (node.elided) {
+    classes.push("owl-elided");
+  }
+
+  if (state?.selected) {
+    classes.push("owl-selected");
+  }
+
+  if (state?.connectTarget) {
+    classes.push("owl-connect-target canvas-connect-target");
+  }
+
+  return classes.join(" ");
+}
+
+/** An individual's or the ontology header's card: title, type badges, then one line per row. */
+const cardShape: CustomShapeRef = {
+  customShape: "owl-card",
+  render: (raw, state?: CustomShapeState) => {
+    const element = raw as OwlElement;
+    const node = element.node;
+    const width = element.width ?? CARD_WIDTH;
+    const height = element.height ?? HEADER_HEIGHT + FOOTER_PADDING;
+    const rowsStart = HEADER_HEIGHT + (node.badges.length > 0 ? BADGES_HEIGHT : 0);
+
+    return (
+      <BoxElement
+        className={classesFor(node, state)}
+        x={element.x - width / 2}
+        y={element.y - height / 2}
+        width={width}
+        height={height}
+        label={node.display}
+        boxClassName="owl-card-box canvas-node"
+        labelClassName="owl-label canvas-node-label"
+        labelY={HEADER_HEIGHT / 2 + 5}
+      >
+        {node.badges.length > 0 ? (
+          <text className="owl-badges" x={8} y={HEADER_HEIGHT - 6 + BADGES_HEIGHT}>
+            {fit(node.badges.join(" · "), width)}
+          </text>
+        ) : null}
+        {node.rows.map((row, index) => (
+          <text key={`${row.predicate}-${index}`} className="owl-row" x={8} y={rowsStart + (index + 1) * ROW_HEIGHT - 4}>
+            {fit(`${row.predicate}: ${row.value}${row.annotation ? ` ${row.annotation}` : ""}`, width)}
+          </text>
+        ))}
+        <title>{node.display}</title>
+      </BoxElement>
+    );
+  },
+  edgePoint: boxEdgePoint,
+};
+
+/** A datatype rectangle: the schema half of the literal-node position (Requirement 1.1). */
+const datatypeShape: CustomShapeRef = {
+  customShape: "owl-datatype",
+  render: (raw, state?: CustomShapeState) => {
+    const element = raw as OwlElement;
+    const width = element.width ?? SHAPE_WIDTH;
+    const height = element.height ?? SHAPE_HEIGHT;
+
+    return (
+      <BoxElement
+        className={classesFor(element.node, state)}
+        x={element.x - width / 2}
+        y={element.y - height / 2}
+        width={width}
+        height={height}
+        label={element.node.display}
+        boxClassName="owl-datatype-box canvas-node"
+        labelClassName="owl-label canvas-node-label"
+        labelY={height / 2 + 4}
+      >
+        <title>{element.node.display}</title>
+      </BoxElement>
+    );
+  },
+  edgePoint: boxEdgePoint,
+};
+
+/**
+ * Everything round: classes, Thing anchors, and the expression shapes - whose label is the
+ * Manchester form, with the elision marker when it hides depth. An equivalence doubles the
+ * outline, as the notation draws it.
+ */
+const roundShape: CustomShapeRef = {
+  customShape: "owl-round",
+  render: (raw, state?: CustomShapeState) => {
+    const element = raw as OwlElement;
+    const width = element.width ?? SHAPE_WIDTH;
+    const height = element.height ?? SHAPE_HEIGHT;
+
+    return (
+      <EllipseElement
+        className={classesFor(element.node, state)}
+        x={element.x}
+        y={element.y}
+        radiusX={width / 2}
+        radiusY={height / 2}
+        text={labelFor(element.node, width)}
+        doubled={element.doubled}
+        ellipseClassName="owl-shape canvas-node"
+        innerClassName="owl-shape-inner"
+        labelClassName="owl-label canvas-node-label"
+      >
+        <title>{element.node.display}</title>
+      </EllipseElement>
+    );
+  },
+  edgePoint: ellipseEdgePoint,
+};
+
+/** The node kinds a connect gesture may start from or land on: everything with an identity. */
+const CONNECTABLE = ["class", "datatype", "individual", "thing", "ontology"] as const;
+
+/** Every drawn kind, expression shapes included - what an edge may point at. */
+const ALL_KINDS = [...CONNECTABLE, "operator", "restriction"] as const;
+
+/** The two side anchors an axiom gesture starts from, shared by every connectable kind. */
+const AXIOM_ANCHORS = {
+  kind: "sides",
+  fractions: [
+    { side: "left", at: 0.5, name: "axiom-left" },
+    { side: "right", at: 0.5, name: "axiom-right" },
+  ],
+} as const;
+
+/**
+ * One axiom kind as a relation type: a straight line styled by what it states - dotted for
+ * subclass, the dedicated mark for disjointness, a labelled arrow for a property. Only the
+ * subclass gesture starts from an anchor; every other kind is drawn from the document alone,
+ * because the backend offers the subclass axiom for the whole between-two-nodes gesture and
+ * asks for a predicate itself where the ends want more (Requirement 6.1).
+ */
+function edgeType(kind: OwlEdgeKind, options: { arrow: boolean; gesture?: boolean; labelled?: boolean }): RelationTypeDefinition {
+  return {
+    id: kind,
+    route: "straight",
+    style: { endMarker: options.arrow ? "arrow" : "none" },
+    ...(options.labelled ? { label: { placement: "midpoint" as const, offset: -6 } } : {}),
+    className: `owl-edge owl-edge-${kind}`,
+    lineClassName: "owl-edge-line",
+    hitClassName: "owl-edge-hit",
+    endpoints: {
+      source: { elementTypes: [...CONNECTABLE], anchors: options.gesture ? ["axiom-left", "axiom-right"] : [] },
+      target: { elementTypes: [...ALL_KINDS], anchors: "edge" },
+      allowSelf: false,
+    },
+  };
+}
+
 /**
  * The ontology reading: classes as ellipses, datatypes as rectangles, individuals as the
  * family's cards, class expressions as compact nodes beside the class that uses them, and every
- * axiom drawn as the edge its kind asks for - the adopted VOWL vocabulary, drawn through the
- * central canvas library (owl-diagram Requirements 1-3).
+ * axiom drawn as the edge its kind asks for - the adopted VOWL vocabulary (Requirements 1-3).
  *
- * Kind is carried by shape and edge style with theme-aware colours, never by a fixed palette:
- * the notation's own colours are an identity rather than a semantics, and this canvas has to
- * read in both themes. A drag never writes the ontology file, and an expression node's drag is
- * refused backend-side with the identity boundary's sentence (Requirement 3.2).
+ * Kind is carried by shape and edge style with theme-aware colours, never by a fixed palette.
+ * An expression node drags like anything else, and the backend refuses the move with the
+ * identity boundary's sentence (Requirement 3.2) - so it stays a full element type here, just
+ * one no relation sources from.
+ */
+const OWL_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
+  elementTypes: [
+    { id: "class", shape: roundShape, anchors: AXIOM_ANCHORS, sizing: "model" },
+    { id: "thing", shape: roundShape, anchors: AXIOM_ANCHORS, sizing: "model" },
+    { id: "datatype", shape: datatypeShape, anchors: AXIOM_ANCHORS, sizing: "model" },
+    { id: "individual", shape: cardShape, anchors: AXIOM_ANCHORS, sizing: "model" },
+    { id: "ontology", shape: cardShape, anchors: AXIOM_ANCHORS, sizing: "model" },
+    { id: "operator", shape: roundShape, anchors: { kind: "edge" }, sizing: "model" },
+    { id: "restriction", shape: roundShape, anchors: { kind: "edge" }, sizing: "model" },
+  ],
+  relationTypes: [
+    edgeType("subclass", { arrow: true, gesture: true }),
+    edgeType("equivalent", { arrow: false }),
+    edgeType("disjoint", { arrow: false }),
+    edgeType("object-property", { arrow: true, labelled: true }),
+    edgeType("datatype-property", { arrow: true, labelled: true }),
+    edgeType("assertion", { arrow: true, labelled: true }),
+    edgeType("expression", { arrow: false }),
+  ],
+  layout: { modes: ["manual"] },
+  dragging: "enabled",
+});
+
+/**
+ * The ontology, drawn through the diagram library. A drag never writes the ontology file:
+ * `moveElementTo` lands in the registration's `layout:` block as one undoable command, and an
+ * anchor drag between two nodes becomes the one stateless rel: gesture the backend answers -
+ * between two classes the subclass axiom, anything else a predicate prompt (Requirement 6.1).
  */
 export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
   const { model, loading, failed, reportView, moveElementTo } = useOwlStream(projectId, path);
   const { select, executeAction, executeShortcut } = useContextConnection();
   const { selection, actions } = useContextSelection();
-  const surfaceRef = useRef<HTMLDivElement | null>(null);
-
-  useRegisterDiagramToolbox(useToolboxItems(projectId, path));
-
-  const [view, setView] = useState<OwlView>(() => ({ startX: -60, startY: -60, pixelsPerUnit: 1 }));
-
-  const viewRef = useRef(view);
-  viewRef.current = view;
-
-  // What the reader can see, reported once it settles and on every later change. The report
-  // observes the view rather than being wired to any one gesture, so a pan, a scrollbar thumb,
-  // a zoom and a programmatic reveal all reach the backend by the same path.
-  useViewReport({
-    view: { x: view.startX, y: view.startY, w: view.pixelsPerUnit, h: view.pixelsPerUnit },
-    report: reportView,
-    convert: () => viewportOf(viewRef.current, surfaceRef.current?.getBoundingClientRect() ?? null),
-    ready: !loading && !failed,
-  });
-  const fittedRef = useRef(false);
-
-  const panRef = useRef<{ clientX: number; clientY: number; view: OwlView; moved: boolean } | null>(null);
-  const dragRef = useRef<DragState | null>(null);
-  const [drag, setDrag] = useState<DragPreview | null>(null);
-  const [connect, setConnect] = useState<ConnectDrag | null>(null);
-  const connectRef = useRef<ConnectDrag | null>(null);
+  const toolboxItems = useToolboxItems(projectId, path);
   const [rejection, setRejection] = useState("");
+  const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
   const selectionKey = innermostKey(selection);
   const selectedId = elementIdOfKey(selectionKey ?? null);
 
-  const { menuPosition, openMenuAt, closeMenu } = useElementContextMenu(selectionKey, actions.length > 0, (id) =>
-    select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
-  );
-
-  /** Fits everything into view, with a margin. */
-  const fitToView = useCallback(() => {
-    const surface = surfaceRef.current;
-    const nodes = [...model.nodes.values()];
-    if (!surface || nodes.length === 0) {
-      return;
-    }
-
-    const minX = Math.min(...nodes.map((node) => node.x));
-    const maxX = Math.max(...nodes.map((node) => node.x + nodeSizeOf(node).width));
-    const span = Math.max(maxX - minX, CARD_WIDTH);
-    const width = surface.getBoundingClientRect().width || 1200;
-
-    setView({
-      startX: minX - span * 0.1,
-      startY: Math.min(...nodes.map((node) => node.y)) - HEADER_HEIGHT,
-      pixelsPerUnit: clampZoom(width / (span * 1.2)),
-    });
-  }, [model]);
-
-  // Fitted once, when the first delta lands - refitting on every edit would fight the user's pan.
-  useEffect(() => {
-    if (!loading && !fittedRef.current && model.nodes.size > 0) {
-      fittedRef.current = true;
-      fitToView();
-    }
-  }, [loading, model, fitToView]);
-
-  const zoomBy = useCallback((factor: number) => {
-    setView((current) => {
-      const rect = surfaceRef.current?.getBoundingClientRect();
-      const width = rect?.width || 1200;
-      const height = rect?.height || 600;
-      const next = clampZoom(current.pixelsPerUnit * factor);
-      const centreX = current.startX + (width / 2) / current.pixelsPerUnit;
-      const centreY = current.startY + (height / 2) / current.pixelsPerUnit;
+  const diagramModel = useMemo<DiagramModel>(() => {
+    const elements = [...model.nodes.values()].map((node): OwlElement => {
+      const size = nodeSizeOf(node);
       return {
-        startX: centreX - (width / 2) / next,
-        startY: centreY - (height / 2) / next,
-        pixelsPerUnit: next,
+        id: node.id,
+        type: node.kind,
+        x: node.x + size.width / 2,
+        y: node.y + size.height / 2,
+        width: size.width,
+        height: size.height,
+        label: node.display,
+        node,
+        doubled: hasEquivalence(model, node.id),
       };
     });
-  }, []);
+    const connections = [...model.edges.values()].map((edge) => ({
+      id: edge.id,
+      type: edge.kind,
+      sourceId: edge.fromElementId,
+      targetId: edge.toElementId,
+      label: edge.label || undefined,
+    }));
+    return { elements, connections };
+  }, [model]);
 
-  useRegisterDiagramView(
-    useMemo(
-      () => ({
-        zoomIn: () => zoomBy(ZOOM_STEP),
-        zoomOut: () => zoomBy(1 / ZOOM_STEP),
-        fitToView,
-      }),
-      [zoomBy, fitToView],
-    ),
-  );
-
-  // Non-passive by hand: React's synthetic wheel listener cannot preventDefault.
-  useEffect(() => {
-    const surface = surfaceRef.current;
-    if (!surface) {
-      return;
+  /** The backend's push is the selection; the canvas renders it and never decides. */
+  const librarySelection = useMemo<DiagramSelection>(() => {
+    if (selectedId === null) {
+      return [];
     }
-
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      zoomBy(event.deltaY > 0 ? 1 / ZOOM_STEP : ZOOM_STEP);
-    };
-
-    surface.addEventListener("wheel", onWheel, { passive: false });
-    return () => surface.removeEventListener("wheel", onWheel);
-  }, [zoomBy]);
-
-  // Escape abandons whichever gesture is in flight, dispatching nothing.
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") {
-        return;
-      }
-
-      dragRef.current = null;
-      connectRef.current = null;
-      setDrag(null);
-      setConnect(null);
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
-
-  const toUnitsX = (clientX: number): number => {
-    const rect = surfaceRef.current?.getBoundingClientRect();
-    return view.startX + (clientX - (rect?.left ?? 0)) / view.pixelsPerUnit;
-  };
-
-  const toUnitsY = (clientY: number): number => {
-    const rect = surfaceRef.current?.getBoundingClientRect();
-    return view.startY + (clientY - (rect?.top ?? 0)) / view.pixelsPerUnit;
-  };
-
-  const xToPx = (x: number): number => (x - view.startX) * view.pixelsPerUnit;
-  const yToPx = (y: number): number => (y - view.startY) * view.pixelsPerUnit;
+    return [{ kind: model.edges.has(selectedId) ? "connection" : "element", id: selectedId }];
+  }, [selectedId, model.edges]);
 
   const runAction = (actionId: string, sourceId?: string) => {
     void (async () => {
@@ -250,172 +345,67 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
     })();
   };
 
-  const onSurfacePointerDown = (event: React.MouseEvent) => {
-    const target = event.target as Element;
-    if (target !== event.currentTarget && !target.classList?.contains("owl-content")) {
-      return;
-    }
-
-    closeMenu();
-    if (event.button === 0) {
-      select(null);
-    }
-
-    panRef.current = { clientX: event.clientX, clientY: event.clientY, view, moved: false };
-  };
-
-  const onShapePointerDown = (event: React.MouseEvent, id: string, x: number, y: number) => {
-    event.stopPropagation();
-    setRejection("");
-    dragRef.current = { id, clientX: event.clientX, clientY: event.clientY, x, y, moved: false };
-  };
-
-  const onAnchorPointerDown = (event: React.MouseEvent, id: string) => {
-    event.stopPropagation();
-    const start: ConnectDrag = { fromId: id, x: toUnitsX(event.clientX), y: toUnitsY(event.clientY) };
-    connectRef.current = start;
-    setConnect(start);
-  };
-
-  const onPointerMove = (event: React.MouseEvent) => {
-    const dragging = dragRef.current;
-    if (dragging) {
-      dragging.moved ||= Math.abs(event.clientX - dragging.clientX) + Math.abs(event.clientY - dragging.clientY) > 3;
-      setDrag({
-        id: dragging.id,
-        x: dragging.x + (event.clientX - dragging.clientX) / view.pixelsPerUnit,
-        y: dragging.y + (event.clientY - dragging.clientY) / view.pixelsPerUnit,
-      });
-      return;
-    }
-
-    const connecting = connectRef.current;
-    if (connecting) {
-      const next = { ...connecting, x: toUnitsX(event.clientX), y: toUnitsY(event.clientY) };
-      connectRef.current = next;
-      setConnect(next);
-      return;
-    }
-
-    const pan = panRef.current;
-    if (pan) {
-      pan.moved ||= Math.abs(event.clientX - pan.clientX) + Math.abs(event.clientY - pan.clientY) > 3;
-      setView({
-        ...pan.view,
-        startX: pan.view.startX - (event.clientX - pan.clientX) / pan.view.pixelsPerUnit,
-        startY: pan.view.startY - (event.clientY - pan.clientY) / pan.view.pixelsPerUnit,
-      });
-    }
-  };
-
-  /** The canvas owns the right button: a drag pans, and the browser's own menu never appears. */
-  const onSurfaceContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-  };
-
-  const onPointerUp = (event: React.MouseEvent) => {
-    panRef.current = null;
-
-    const dragging = dragRef.current;
-    const landed = drag;
-    dragRef.current = null;
-    setDrag(null);
-    if (dragging && landed && dragging.moved) {
-      // The authored position, raw. An expression node's refusal comes back from the backend
-      // carrying the identity boundary's sentence (Requirement 3.2).
-      void (async () => {
-        const error = await moveElementTo(landed.id, landed.x, landed.y);
-        if (error) {
-          setRejection(error);
-        }
-      })();
-      return;
-    }
-
-    if (dragging && !dragging.moved) {
-      // A press with no movement is a click: a selection, never an edit.
-      select(elementSelectionOf(entryId, path, dragging.id));
-      return;
-    }
-
-    const connecting = connectRef.current;
-    connectRef.current = null;
-    setConnect(null);
-    if (connecting) {
-      const under = (event.target as Element | null)?.closest?.("[data-element-id]");
-      const targetId = connecting.overId ?? under?.getAttribute("data-element-id") ?? null;
-      if (!targetId || targetId === connecting.fromId) {
-        return;
-      }
-
-      // The whole gesture in one stateless rel: call. Between two classes the backend offers
-      // the subclass axiom; anything else asks for a predicate (Requirement 6.1).
-      runAction("owl.subclass", `rel:${connecting.fromId}->${targetId}`);
-    }
-  };
-
-  const onShapePointerEnter = (id: string) => {
-    const connecting = connectRef.current;
-    if (connecting && id !== connecting.fromId) {
-      const next = { ...connecting, overId: id };
-      connectRef.current = next;
-      setConnect(next);
-    }
-  };
-
-  const onShapePointerLeave = () => {
-    const connecting = connectRef.current;
-    if (connecting?.overId) {
-      const next = { ...connecting, overId: undefined };
-      connectRef.current = next;
-      setConnect(next);
-    }
-  };
-
-  const openTargetMenuAt = (event: React.MouseEvent, id: string) => {
-    if (panRef.current?.moved) {
-      return;
-    }
-
-    openMenuAt(event, id);
-  };
-
-  /** A toolbox entry dropped anywhere on the canvas names a placement - `new:{x},{y}`. */
-  const onSurfaceDrop = (event: React.DragEvent) => {
-    const actionId = event.dataTransfer.getData(TOOLBOX_DRAG_TYPE);
-    if (!actionId) {
-      return;
-    }
-
-    event.preventDefault();
-    runAction(actionId, `new:${toUnitsX(event.clientX)},${toUnitsY(event.clientY)}`);
-  };
-
-  const onDragOver = (event: React.DragEvent) => {
-    if (event.dataTransfer.types.includes(TOOLBOX_DRAG_TYPE)) {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = "copy";
-    }
-  };
-
-  /** Structural keys travel to the backend as data - the backend owns the key-to-action table. */
-  const onKeyDown = (event: React.KeyboardEvent) => {
-    if (!selectedId || isTextTarget(event.target)) {
-      return;
-    }
-
-    const shortcut = structuralShortcutFor(event, ["F2", "Delete"]);
-    if (!shortcut) {
-      return;
-    }
-
-    event.preventDefault();
+  const runShortcut = (shortcut: ContextShortcut, sourceId: string) => {
     void (async () => {
-      const outcome = await executeShortcut(shortcut, elementSourceOf(selectedId));
+      const outcome = await executeShortcut(shortcut, elementSourceOf(sourceId));
       if (!outcome.accepted && outcome.error) {
         setRejection(outcome.error);
       }
     })();
+  };
+
+  const events: DiagramEventHandlers = {
+    onSelectionChanged: ({ selection: next }) =>
+      select(next.length > 0 ? elementSelectionOf(entryId, path, next[0].id) : null),
+    onElementMoved: ({ elementId, position }) => {
+      setRejection("");
+      const node = model.nodes.get(elementId);
+      const size = node ? nodeSizeOf(node) : { width: 0, height: 0 };
+      // The authored position, raw. An expression node's refusal comes back from the backend
+      // carrying the identity boundary's sentence (Requirement 3.2).
+      void (async () => {
+        const error = await moveElementTo(elementId, position.x - size.width / 2, position.y - size.height / 2);
+        if (error) {
+          setRejection(error);
+        }
+      })();
+    },
+    // The whole gesture in one stateless rel: call. Between two classes the backend offers
+    // the subclass axiom; anything else asks for a predicate (Requirement 6.1).
+    onConnectionDrawn: ({ sourceElementId, targetElementId }) =>
+      runAction("owl.subclass", `rel:${sourceElementId}->${targetElementId}`),
+    // A toolbox drop names a placement - `new:{x},{y}` under the pointer.
+    onElementDropped: ({ elementType, position }) => runAction(elementType, `new:${position.x},${position.y}`),
+    onElementDeleted: ({ elementId }) =>
+      runShortcut({ key: "Delete", ctrl: false, shift: false, alt: false, meta: false } as ContextShortcut, elementId),
+    onConnectionDeleted: ({ connectionId }) =>
+      runShortcut({ key: "Delete", ctrl: false, shift: false, alt: false, meta: false } as ContextShortcut, connectionId),
+    onViewChanged: ({ viewport: next }) => setViewport(next),
+  };
+
+  useViewReport({
+    view: { x: viewport?.x ?? 0, y: viewport?.y ?? 0, w: viewport?.width ?? 0, h: viewport?.height ?? 0 },
+    report: reportView,
+    convert: () => ({
+      minX: viewport?.x ?? 0,
+      minY: viewport?.y ?? 0,
+      maxX: (viewport?.x ?? 0) + (viewport?.width ?? 0),
+      maxY: (viewport?.y ?? 0) + (viewport?.height ?? 0),
+    }),
+    ready: !loading && !failed && viewport !== null,
+  });
+
+  /** F2 travels to the backend as data; Delete is the library's event, handled above. */
+  const onKeyDown = (event: React.KeyboardEvent) => {
+    if (!selectedId || isTextTarget(event.target)) {
+      return;
+    }
+    const shortcut = structuralShortcutFor(event, ["F2"]);
+    if (!shortcut) {
+      return;
+    }
+    event.preventDefault();
+    runShortcut(shortcut, selectedId);
   };
 
   if (failed) {
@@ -426,159 +416,23 @@ export function OwlCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
     );
   }
 
-  const boxes = new Map<string, ConnectorBox>();
-  for (const node of model.nodes.values()) {
-    const size = nodeSizeOf(node);
-    boxes.set(node.id, boxFor(at(node, drag), size.width, size.height, xToPx, yToPx, view.pixelsPerUnit));
-  }
-
   return (
-    <div className="owl-canvas canvas-host">
-      <div
-        ref={surfaceRef}
-        className="owl-surface canvas-viewport"
-        role="application"
-        aria-label="OWL ontology"
-        tabIndex={0}
-        onMouseDown={onSurfacePointerDown}
-        onMouseMove={onPointerMove}
-        onMouseUp={onPointerUp}
-        onMouseLeave={onPointerUp}
-        onContextMenu={onSurfaceContextMenu}
-        onKeyDown={onKeyDown}
-        onDragOver={onDragOver}
-        onDrop={onSurfaceDrop}
-      >
-        <svg className="owl-content canvas-drawing">
-          <defs>
-            <marker
-              id={ARROWHEAD_ID}
-              className="owl-arrowhead canvas-arrowhead"
-              viewBox="0 0 10 10"
-              refX="9"
-              refY="5"
-              markerWidth="7"
-              markerHeight="7"
-              orient="auto-start-reverse"
-            >
-              <path d="M 0 0 L 10 5 L 0 10 z" />
-            </marker>
-          </defs>
-
-          {[...model.edges.values()].map((edge) =>
-            renderEdge(edge, boxes, selectedId, {
-              onMouseDown: (event) => {
-                event.stopPropagation();
-                setRejection("");
-                select(elementSelectionOf(entryId, path, edge.id));
-              },
-              onContextMenu: (event) => openTargetMenuAt(event, edge.id),
-            }),
-          )}
-
-          {[...model.nodes.values()].map((node) => {
-            const box = boxes.get(node.id)!;
-            const shared = {
-              key: node.id,
-              className: classesFor(node, selectedId, connect?.overId),
-              "data-element-id": node.id,
-              onMouseDown: (event: React.MouseEvent) =>
-                onShapePointerDown(event, node.id, at(node, drag).x, at(node, drag).y),
-              onMouseEnter: () => onShapePointerEnter(node.id),
-              onMouseLeave: onShapePointerLeave,
-              onContextMenu: (event: React.MouseEvent) => openTargetMenuAt(event, node.id),
-              onDragOver: (event: React.DragEvent) => event.preventDefault(),
-            };
-
-            if (isCard(node)) {
-              const badgesY = HEADER_HEIGHT - 6 + BADGES_HEIGHT;
-              const rowsStart = HEADER_HEIGHT + (node.badges.length > 0 ? BADGES_HEIGHT : 0);
-              return (
-                <BoxElement
-                  {...shared}
-                  x={box.x - box.width / 2}
-                  y={box.y - box.height / 2}
-                  width={box.width}
-                  height={box.height}
-                  label={node.display}
-                  boxClassName="owl-card-box canvas-node"
-                  labelClassName="owl-label canvas-node-label"
-                  labelY={(HEADER_HEIGHT / 2 + 5) * view.pixelsPerUnit}
-                >
-                  {node.badges.length > 0 ? (
-                    <text className="owl-badges" x={8 * view.pixelsPerUnit} y={badgesY * view.pixelsPerUnit}>
-                      {fit(node.badges.join(" · "), box.width)}
-                    </text>
-                  ) : null}
-                  {node.rows.map((row, index) => (
-                    <text
-                      key={`${row.predicate}-${index}`}
-                      className="owl-row"
-                      x={8 * view.pixelsPerUnit}
-                      y={(rowsStart + (index + 1) * ROW_HEIGHT - 4) * view.pixelsPerUnit}
-                    >
-                      {fit(`${row.predicate}: ${row.value}${row.annotation ? ` ${row.annotation}` : ""}`, box.width)}
-                    </text>
-                  ))}
-                  <title>{node.display}</title>
-                  {anchorsFor(node, box, selectedId, onAnchorPointerDown)}
-                </BoxElement>
-              );
-            }
-
-            if (node.kind === "datatype") {
-              // A datatype is a rectangle: the schema half of the literal-node position, where
-              // the datatype IS the axiom's point (Requirement 1.1).
-              return (
-                <BoxElement
-                  {...shared}
-                  x={box.x - box.width / 2}
-                  y={box.y - box.height / 2}
-                  width={box.width}
-                  height={box.height}
-                  label={node.display}
-                  boxClassName="owl-datatype-box canvas-node"
-                  labelClassName="owl-label canvas-node-label"
-                  labelY={(SHAPE_HEIGHT / 2 + 4) * view.pixelsPerUnit}
-                />
-              );
-            }
-
-            // Everything else is round: classes, Thing anchors, and the expression shapes -
-            // whose label is the Manchester form, with the elision marker when it hides depth.
-            return (
-              <EllipseElement
-                {...shared}
-                x={box.x}
-                y={box.y}
-                radiusX={box.width / 2}
-                radiusY={box.height / 2}
-                text={labelFor(node, box.width)}
-                doubled={hasEquivalence(model, node.id)}
-                ellipseClassName="owl-shape canvas-node"
-                innerClassName="owl-shape-inner"
-                labelClassName="owl-label canvas-node-label"
-              >
-                <title>{node.display}</title>
-                {anchorsFor(node, box, selectedId, onAnchorPointerDown)}
-              </EllipseElement>
-            );
-          })}
-        </svg>
-        <CanvasScrollbars
-          {...scrollAxesOf(model, view, surfaceRef.current?.getBoundingClientRect() ?? null)}
-          className="owl-scrollbars"
-          onPan={(startX, startY) => setView((current) => ({ ...current, startX, startY }))}
-        />
-      </div>
-      <ContextMenu
-        open={menuPosition !== null}
-        groups={toMenuGroups(actions, (action) => {
-          closeMenu();
-          runAction(action.id, selectedId ?? undefined);
-        })}
-        position={menuPosition ?? { x: 0, y: 0 }}
-        onClose={closeMenu}
+    <div className="owl-canvas canvas-host" role="application" aria-label="OWL ontology" onKeyDown={onKeyDown}>
+      <DiagramCanvas
+        definition={OWL_DEFINITION}
+        model={diagramModel}
+        events={events}
+        selection={librarySelection}
+        toolboxItems={toolboxItems}
+        context={{
+          selectionKey: selectionKey ?? undefined,
+          actions,
+          selectForMenu: (id) => select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
+          executeAction: (actionId) => runAction(actionId, selectedId ?? undefined),
+        }}
+        ariaLabel="OWL ontology"
+        className="owl-surface"
+        scrollbarsClassName="owl-scrollbars"
       />
       {model.truncation ? (
         <p className="owl-truncation-banner">
@@ -612,76 +466,6 @@ export function fit(text: string, widthPx: number): string {
   return text.length <= budget ? text : `${text.slice(0, budget - 1).trimEnd()}…`;
 }
 
-/** The classes a node wears: its kind, its dimming, and whatever state it is in. */
-function classesFor(node: OwlNode, selectedId: string | null, connectTargetId: string | undefined): string {
-  const classes = ["owl-node canvas-element", `owl-${node.kind}`];
-  if (node.deprecated) {
-    classes.push("owl-deprecated");
-  }
-
-  if (node.external) {
-    classes.push("owl-external");
-  }
-
-  if (node.malformed) {
-    classes.push("owl-malformed");
-  }
-
-  if (node.elided) {
-    classes.push("owl-elided");
-  }
-
-  if (node.id === selectedId) {
-    classes.push("owl-selected canvas-selected");
-  }
-
-  if (connectTargetId === node.id) {
-    classes.push("owl-connect-target canvas-connect-target");
-  }
-
-  return classes.join(" ");
-}
-
-/**
- * The connection anchors, on a selected node that can carry an axiom. An expression node never
- * wears them: it has no identity an edit could key off (Requirement 3.2).
- */
-function anchorsFor(
-  node: OwlNode,
-  box: ConnectorBox,
-  selectedId: string | null,
-  onAnchorPointerDown: (event: React.MouseEvent, id: string) => void,
-) {
-  if (node.id !== selectedId || isExpression(node)) {
-    return null;
-  }
-
-  const left = isCard(node) ? 0 : -box.width / 2;
-  const right = isCard(node) ? box.width : box.width / 2;
-  const y = isCard(node) ? box.height / 2 : 0;
-  return (
-    <>
-      {/* A visible dot with an invisible fat grab twin - the shared anchor pair. */}
-      <circle className="owl-anchor canvas-anchor" cx={left} cy={y} r={4} />
-      <circle className="owl-anchor canvas-anchor" cx={right} cy={y} r={4} />
-      <circle
-        className="owl-anchor-hit canvas-anchor-hit"
-        cx={left}
-        cy={y}
-        r={10}
-        onMouseDown={(event) => onAnchorPointerDown(event, node.id)}
-      />
-      <circle
-        className="owl-anchor-hit canvas-anchor-hit"
-        cx={right}
-        cy={y}
-        r={10}
-        onMouseDown={(event) => onAnchorPointerDown(event, node.id)}
-      />
-    </>
-  );
-}
-
 /** Whether an equivalence axiom touches this node - what doubles its outline, per the notation. */
 function hasEquivalence(model: OwlModel, id: string): boolean {
   for (const edge of model.edges.values()) {
@@ -691,112 +475,4 @@ function hasEquivalence(model: OwlModel, id: string): boolean {
   }
 
   return false;
-}
-
-/** The two scroll axes as the shared bars want them - everything in canvas units. */
-function scrollAxesOf(model: OwlModel, view: OwlView, surface: DOMRect | null) {
-  const widthPx = surface?.width || 1200;
-  const heightPx = surface?.height || 600;
-  const nodes = [...model.nodes.values()];
-
-  const horizontalSpan = widthPx / view.pixelsPerUnit;
-  const verticalSpan = heightPx / view.pixelsPerUnit;
-  const minX = nodes.length > 0 ? Math.min(...nodes.map((node) => node.x)) : view.startX;
-  const maxX = nodes.length > 0
-    ? Math.max(...nodes.map((node) => node.x + nodeSizeOf(node).width))
-    : view.startX + horizontalSpan;
-  const minY = nodes.length > 0 ? Math.min(...nodes.map((node) => node.y)) : view.startY;
-  const maxY = nodes.length > 0
-    ? Math.max(...nodes.map((node) => node.y + nodeSizeOf(node).height))
-    : view.startY + verticalSpan;
-
-  return {
-    horizontal: {
-      viewStart: view.startX,
-      viewSpan: horizontalSpan,
-      ...scrollExtentOf(minX, maxX, { factor: 0.5, minimumSpan: CARD_WIDTH }),
-    },
-    vertical: {
-      viewStart: view.startY,
-      viewSpan: verticalSpan,
-      ...scrollExtentOf(minY, maxY, { factor: 0, minimum: 2 * HEADER_HEIGHT }),
-    },
-  };
-}
-
-function at(placed: { id: string; x: number; y: number }, drag: DragPreview | null): { x: number; y: number } {
-  return drag && drag.id === placed.id ? { x: drag.x, y: drag.y } : { x: placed.x, y: placed.y };
-}
-
-/** A box in pixels, centre-based as the shared geometry expects. */
-function boxFor(
-  position: { x: number; y: number },
-  width: number,
-  height: number,
-  xToPx: (x: number) => number,
-  yToPx: (y: number) => number,
-  pixelsPerUnit: number,
-): ConnectorBox {
-  const w = Math.max(width * pixelsPerUnit, 2);
-  const h = Math.max(height * pixelsPerUnit, 2);
-  return {
-    x: xToPx(position.x) + w / 2,
-    y: yToPx(position.y) + h / 2,
-    width: w,
-    height: h,
-  };
-}
-
-/**
- * One axiom: a straight line styled by what it states - dotted for subclass, the dedicated mark
- * for disjointness, a labelled arrow for a property. An edge whose end is missing draws nothing.
- */
-function renderEdge(
-  edge: OwlDiagramEdge,
-  boxes: Map<string, ConnectorBox>,
-  selectedId: string | null,
-  handlers: {
-    onMouseDown: (event: React.MouseEvent) => void;
-    onContextMenu: (event: React.MouseEvent) => void;
-  },
-) {
-  const from = boxes.get(edge.fromElementId);
-  const to = boxes.get(edge.toElementId);
-  if (!from || !to) {
-    return null;
-  }
-
-  const selected = edge.id === selectedId ? " owl-selected canvas-selected" : "";
-  return (
-    <g
-      key={edge.id}
-      data-element-id={edge.id}
-      onMouseDown={handlers.onMouseDown}
-      onContextMenu={handlers.onContextMenu}
-    >
-      {/* The invisible fat grab twin the shared class defines - a thin stroke is no target. */}
-      <path className="owl-edge-hit canvas-connection-hit" d={`M ${from.x} ${from.y} L ${to.x} ${to.y}`} />
-      <StraightConnection
-        from={from}
-        to={to}
-        className={`owl-edge owl-edge-${edge.kind}${selected}`}
-        pathClassName="owl-edge-line canvas-connection-line"
-        markerEnd={arrowFor(edge) ? `url(#${ARROWHEAD_ID})` : undefined}
-      />
-      {edge.label ? (
-        <text className="owl-edge-label canvas-hint" x={(from.x + to.x) / 2} y={(from.y + to.y) / 2 - 6}>
-          {edge.label}
-        </text>
-      ) : null}
-    </g>
-  );
-}
-
-/** Which axioms point: properties and hierarchy do, symmetric statements do not. */
-function arrowFor(edge: OwlDiagramEdge): boolean {
-  return edge.kind !== "equivalent" && edge.kind !== "disjoint" && edge.kind !== "expression";
-}
-
-function clampZoom(pixelsPerUnit: number): number {
-  return Math.min(MAX_PIXELS_PER_UNIT, Math.max(MIN_PIXELS_PER_UNIT, pixelsPerUnit));
 }
