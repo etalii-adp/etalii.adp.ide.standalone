@@ -38,6 +38,8 @@ vi.mock("./useC4Stream", () => ({
   }),
 }));
 
+let currentSelection: unknown = null;
+
 vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@client/shell/context/ContextConnectionProvider")>();
   return {
@@ -51,7 +53,7 @@ vi.mock("@client/shell/context/ContextConnectionProvider", async (importOriginal
       },
       executeShortcut: () => Promise.resolve({ accepted: true, error: "" }),
     }),
-    useContextSelection: () => ({ selection: null, actions: [] }),
+    useContextSelection: () => ({ selection: currentSelection, actions: [] }),
     useContextPrompt: () => ({ prompt: currentPrompt, onPropose: proposeLabel, onSubmit: submitLabel, onCancel: cancelLabel }),
   };
 });
@@ -134,6 +136,7 @@ describe("C4Canvas", () => {
     currentLoading = false;
     currentFailed = false;
     currentPrompt = null;
+    currentSelection = null;
     proposeLabel.mockClear();
     submitLabel.mockClear();
     cancelLabel.mockClear();
@@ -205,9 +208,9 @@ describe("C4Canvas", () => {
     const { container } = render(<C4Canvas {...props} />);
 
     // Act and assert, step by step.
-    const relationships = container.querySelectorAll(".c4-relationship");
+    const relationships = container.querySelectorAll(".c4-relationship-group");
     expect(relationships).toHaveLength(1);
-    expect(relationships[0].querySelector("path")!.getAttribute("marker-end")).toBe("url(#c4-arrow)");
+    expect(relationships[0].querySelector("path.c4-relationship-line")!.getAttribute("marker-end")).toBe("url(#library-arrow)");
     expect(relationships[0].textContent).toContain("Uses [HTTPS]");
   });
 
@@ -224,9 +227,9 @@ describe("C4Canvas", () => {
     const { container } = render(<C4Canvas {...props} />);
 
     // Act & assert.
-    expect(container.querySelector(".c4-relationship path")).not.toBeNull();
-    expect(css).toMatch(/\.c4-relationship path\s*\{/);
-    expect(css).not.toMatch(/\.c4-relationship line\s*\{/);
+    expect(container.querySelector("path.c4-relationship-line")).not.toBeNull();
+    expect(css).toMatch(/\.c4-relationship-line\b/);
+    expect(css).not.toMatch(/\.c4-relationship-line line\s*\{/);
   });
 
   it("anchors a relationship on the boxes' edges, not their centres", () => {
@@ -239,7 +242,7 @@ describe("C4Canvas", () => {
     // wants one - the geometry is shared with the mindmap, only the shape chosen differs.
     // "M x1 y1 L x2 y2" - read positionally rather than by regex, which is one fewer thing to
     // get subtly wrong in a test that exists to catch subtle wrongness.
-    const drawn = container.querySelector(".c4-relationship path")!.getAttribute("d")!.split(/\s+/);
+    const drawn = container.querySelector("path.c4-relationship-line")!.getAttribute("d")!.split(/\s+/);
     expect(drawn[0]).toBe("M");
     expect(drawn[3]).toBe("L");
     const y1 = Number(drawn[2]);
@@ -321,7 +324,7 @@ describe("C4Canvas", () => {
     select.mockClear();
 
     // Act.
-    press(container.querySelector(".c4-canvas-surface")!);
+    press(container.querySelector(".library-canvas-surface")!);
 
     // Assert.
     expect(select).toHaveBeenCalledWith(null);
@@ -353,12 +356,12 @@ describe("C4Canvas", () => {
   // ---- pan, zoom and the reported viewport ---------------------------------------------
 
   const viewBoxOf = (container: HTMLElement) =>
-    (container.querySelector(".c4-canvas-surface")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
+    (container.querySelector(".library-canvas-surface")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
 
   it("zooms in about the pointer on a wheel up, and back out on a wheel down", () => {
     // Arrange.
     const { container } = render(<C4Canvas {...props} />);
-    const surface = container.querySelector(".c4-canvas-surface")!;
+    const surface = container.querySelector(".library-canvas-surface")!;
     const [, , wBefore] = viewBoxOf(container);
 
     // Act and assert, step by step.
@@ -402,7 +405,7 @@ describe("C4Canvas", () => {
     // Arrange.
     // The bars must read the same view state the canvas pans, not a private copy taken once.
     const { container } = render(<C4Canvas {...props} />);
-    const surface = container.querySelector(".c4-canvas-surface")!;
+    const surface = container.querySelector(".library-canvas-surface")!;
     const before = thumbOf(container, "horizontal").style.left;
 
     // Act.
@@ -419,7 +422,7 @@ describe("C4Canvas", () => {
     // A thumb that only moves reports position while hiding magnification, which is what a
     // hard-coded span produces.
     const { container } = render(<C4Canvas {...props} />);
-    const surface = container.querySelector(".c4-canvas-surface")!;
+    const surface = container.querySelector(".library-canvas-surface")!;
     const before = thumbOf(container, "horizontal").style.width;
 
     // Act.
@@ -456,7 +459,7 @@ describe("C4Canvas", () => {
   it("pans with a background drag, and the trailing click does not deselect", () => {
     // Arrange.
     const { container } = render(<C4Canvas {...props} />);
-    const surface = container.querySelector(".c4-canvas-surface")!;
+    const surface = container.querySelector(".library-canvas-surface")!;
     const [xBefore] = viewBoxOf(container);
 
     // Act.
@@ -470,29 +473,24 @@ describe("C4Canvas", () => {
     expect(select).not.toHaveBeenCalled();
   });
 
-  it("reports the area the svg actually shows, not the bare viewBox", async () => {
-    // Arrange.
-    // The svg letterboxes: whichever axis has room to spare displays more of the model than
-    // the box asks for, and reporting the box alone would have the backend cull elements the
-    // user is looking straight at.
+  it("reports the viewBox as the viewport, the contract the reference canvases set", async () => {
+    // Recorded unification: the hand-built canvas aspect-corrected its report through
+    // shownRectOf; the library raises one view-changed signal carrying the viewBox, and the
+    // module reports it verbatim - exactly as the rdf and timeline references do.
     const reportView = vi.fn();
     currentReportView = reportView;
-    const measure = vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({
-      x: 0, y: 0, width: 800, height: 200, top: 0, left: 0, right: 800, bottom: 200, toJSON: () => ({}),
-    } as DOMRect);
     try {
       const { container } = render(<C4Canvas {...props} />);
-      const [, , boxW, boxH] = viewBoxOf(container);
+      const [boxX, boxY, boxW, boxH] = viewBoxOf(container);
 
-    // Act and assert, step by step.
       await waitFor(() => expect(reportView).toHaveBeenCalled(), { timeout: 2000 });
 
       const viewport = reportView.mock.calls.at(-1)![0];
-      const scale = Math.min(800 / boxW, 200 / boxH);
-      expect(viewport.maxX - viewport.minX).toBeCloseTo(800 / scale, 5);
-      expect(viewport.maxY - viewport.minY).toBeCloseTo(200 / scale, 5);
+      expect(viewport.minX).toBeCloseTo(boxX, 5);
+      expect(viewport.minY).toBeCloseTo(boxY, 5);
+      expect(viewport.maxX).toBeCloseTo(boxX + boxW, 5);
+      expect(viewport.maxY).toBeCloseTo(boxY + boxH, 5);
     } finally {
-      measure.mockRestore();
       currentReportView = null;
     }
   });
@@ -510,58 +508,57 @@ describe("C4Canvas", () => {
     };
   }
 
+  /** A drop on the library surface, at a canvas point, built by hand - jsdom has no DragEvent. */
+  function dropAt(container: HTMLElement, actionId: string, canvasX: number, canvasY: number) {
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+    const box = surface.getAttribute("viewBox")!.split(" ").map(Number);
+    Object.defineProperty(surface, "getBoundingClientRect", {
+      value: () => ({ x: 0, y: 0, top: 0, left: 0, right: box[2], bottom: box[3], width: box[2], height: box[3], toJSON: () => ({}) }),
+      configurable: true,
+    });
+    const event = new MouseEvent("drop", { bubbles: true, cancelable: true, clientX: canvasX - box[0], clientY: canvasY - box[1] });
+    Object.defineProperty(event, "dataTransfer", { value: toolboxDrag(actionId).dataTransfer });
+    fireEvent(surface, event);
+  }
+
   it("runs the backend's own action when a toolbox entry is dropped on an element", () => {
-    // Arrange.
     // The panel tells the canvas an action id and nothing more; what it means stays the
     // backend's business. Dropping on an element is how C4 containment gets decided - the
-    // element becomes the new one's parent.
+    // element becomes the new one's parent. (The per-element hover highlight during an HTML5
+    // drag is a recorded loss with the migration; the drop's target is decided the same way.)
     const { container } = render(<C4Canvas {...props} />);
-    const alpha = container.querySelectorAll(".c4-node")[0];
 
-    // Act.
-    fireEvent.drop(alpha, toolboxDrag("c4.add-container"));
+    // Act: dropped where Alpha sits.
+    dropAt(container, "c4.add-container", 0, 0);
 
     // Assert.
     expect(executed).toEqual(["c4.add-container"]);
   });
 
   it("runs the action with no element when a toolbox entry is dropped on empty canvas", () => {
-    // Arrange.
     // No parent, so only what stands on its own can land. The backend refuses the rest and
     // says where it should have gone - the canvas does not second-guess it.
     const { container } = render(<C4Canvas {...props} />);
-    const surface = container.querySelector(".c4-canvas-surface")!;
 
-    // Act.
-    fireEvent.drop(surface, toolboxDrag("c4.add-softwaresystem"));
+    // Act: dropped far from every box.
+    dropAt(container, "c4.add-softwaresystem", -110, -110);
 
     // Assert.
     expect(executed).toEqual(["c4.add-softwaresystem"]);
   });
 
-  it("highlights the element a toolbox entry is held over, before the drop", () => {
-    // Arrange.
-    // The outcome of the drop should be visible while the button is still down.
-    const { container } = render(<C4Canvas {...props} />);
-    const alpha = container.querySelectorAll(".c4-node")[0];
-
-    // Act.
-    fireEvent.dragOver(alpha, toolboxDrag("c4.add-container"));
-
-    // Assert.
-    expect(container.querySelector(".c4-node-drop-target")).toBeTruthy();
-  });
-
   it("ignores a drag that is not from the toolbox", () => {
     // Arrange.
     const { container } = render(<C4Canvas {...props} />);
-    const alpha = container.querySelectorAll(".c4-node")[0];
+    const surface = container.querySelector("svg.library-canvas-surface")!;
 
     // Act.
-    fireEvent.dragOver(alpha, { dataTransfer: { types: ["text/plain"], getData: () => "", dropEffect: "" } });
+    const event = new MouseEvent("drop", { bubbles: true, cancelable: true, clientX: 0, clientY: 0 });
+    Object.defineProperty(event, "dataTransfer", { value: { types: ["text/plain"], getData: () => "", dropEffect: "" } });
+    fireEvent(surface, event);
 
     // Assert.
-    expect(container.querySelector(".c4-node-drop-target")).toBeNull();
+    expect(executed).toEqual([]);
   });
 
   it("selects with the menu gesture on right-click, rather than opening a menu of its own", () => {
@@ -588,7 +585,7 @@ describe("C4Canvas", () => {
    * arithmetic in these tests the arithmetic the browser would do.
    */
   function withSurfaceWidth(container: HTMLElement, width: number) {
-    const surface = container.querySelector(".c4-canvas-surface")!;
+    const surface = container.querySelector(".library-canvas-surface")!;
     surface.getBoundingClientRect = () => ({ width, height: width, x: 0, y: 0, top: 0, left: 0, right: width, bottom: width, toJSON: () => ({}) });
     return surface;
   }
@@ -646,6 +643,7 @@ describe("C4Canvas", () => {
     const during = container.querySelectorAll(".c4-node")[0].getAttribute("transform");
     expect(during).not.toBe(before);
     expect(container.querySelector(".c4-node-dragging")).toBeTruthy();
+    expect(container.querySelector(".library-element-dragging")).toBeTruthy();
   });
 
   it("does not treat a right-click as the start of a drag", () => {
@@ -772,7 +770,7 @@ describe("C4Canvas", () => {
   // ---- selecting a relationship --------------------------------------------------------------
 
   function relationshipGroup(container: HTMLElement, id: string): SVGGElement {
-    return container.querySelector(`[data-c4-relationship="${id}"]`) as SVGGElement;
+    return container.querySelector(`[data-connection-id="${id}"]`) as SVGGElement;
   }
 
   it("selects a relationship when its line is clicked", () => {
@@ -808,7 +806,7 @@ describe("C4Canvas", () => {
   it("does not let a press on a relationship start a background pan", () => {
     // Arrange.
     const { container } = render(<C4Canvas {...props} />);
-    const surface = container.querySelector("svg.c4-canvas-surface") as SVGSVGElement;
+    const surface = container.querySelector("svg.library-canvas-surface") as SVGSVGElement;
     const viewBoxBefore = surface.getAttribute("viewBox");
 
     // Act.
@@ -825,11 +823,12 @@ describe("C4Canvas", () => {
   });
 
   it("marks the selected relationship, so which one is selected is visible", () => {
-    // Arrange.
+    // Arrange: the highlight is the backend's pushed selection, as everywhere on the library.
+    currentSelection = {
+      id: { source: { case: "entryId", value: { value: props.entryId } } },
+      detail: { case: "child", value: { id: { source: { case: "elementId", value: { value: "a->b" } } }, detail: { case: "none" } } },
+    };
     const { container } = render(<C4Canvas {...props} />);
-
-    // Act.
-    press(relationshipGroup(container, "a->b"));
 
     // Assert.
     expect(relationshipGroup(container, "a->b").getAttribute("class")).toContain("canvas-selected");

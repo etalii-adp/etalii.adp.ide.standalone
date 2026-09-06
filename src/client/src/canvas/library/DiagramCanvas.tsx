@@ -24,7 +24,7 @@ import { SpanElement } from "../elements/span/SpanElement";
 import { StyledBoxElement } from "../elements/styled-box/StyledBoxElement";
 import { SymbolElement } from "../elements/symbol/SymbolElement";
 import { InlineLabelEditor, type InlineLabelEditorProps } from "../label/InlineLabelEditor";
-import { asideLabelPlacement, centredLabelPlacement, midpointLabelPlacement } from "../label/labelPlacement";
+import { asideLabelPlacement, centredLabelPlacement, insetLabelPlacement, midpointLabelPlacement } from "../label/labelPlacement";
 import { CanvasScrollbars } from "../scroll/CanvasScrollbars";
 import { scrollExtentOf } from "../scroll/scrollGeometry";
 import { useElementContextMenu } from "../useElementContextMenu";
@@ -694,6 +694,16 @@ export function DiagramCanvas({
             ? asideLabelPlacement(element.labelAt, 0, element.label ?? "")
             : asideLabelPlacement({ x: bounds.x + bounds.width, y: bounds.y + bounds.height / 2 }, 6, element.label ?? "");
         }
+        // "inset" opens over the one named line of a composite card - the c4 shape - with the
+        // horizontal inset applied by narrowing the centred box on both sides.
+        if (type.label.placement === "inset") {
+          return insetLabelPlacement(
+            { x: element.x, y: element.y, width: bounds.width - (type.label.insetX ?? 0) * 2, height: bounds.height },
+            type.label.insetTop ?? 0,
+            type.label.insetHeight ?? 20,
+            element.label ?? "",
+          );
+        }
         // centredLabelPlacement takes a CENTRE-based box while the library's bounds are
         // corner-based - the same conversion the edge-attachment guard was seen to fail on,
         // caught here by the mindmap migration's editor-position test.
@@ -710,7 +720,23 @@ export function DiagramCanvas({
         if (ends === null) {
           return null;
         }
-        return midpointLabelPlacement(ends[0], ends[1], relation.label.offset ?? -6, connection.label ?? "", null);
+        // The editor opens with the one AUTHORED value where the drawn label decorates it,
+        // and at the drawn text's own measured width where the browser can measure - jsdom
+        // has no getBBox, so unit tests exercise the estimate branch by construction and the
+        // measured path is the manual checks' to verify.
+        // Matched by attribute value rather than a CSS selector: jsdom offers no CSS.escape,
+        // and a connection id is module data no selector grammar should have to survive.
+        const drawnGroup = [...(svgRef.current?.querySelectorAll("[data-connection-id]") ?? [])]
+          .find((candidate) => candidate.getAttribute("data-connection-id") === connection.id);
+        const drawn = drawnGroup?.querySelector("text");
+        const measured = drawn instanceof SVGGraphicsElement && typeof drawn.getBBox === "function" ? drawn.getBBox().width : 0;
+        return midpointLabelPlacement(
+          ends[0],
+          ends[1],
+          relation.label.offset ?? -6,
+          connection.editValue ?? connection.label ?? "",
+          measured > 0 ? measured : null,
+        );
       }
 
       return null;
@@ -1099,7 +1125,10 @@ function renderShape(
     case "ellipse":
       return <EllipseElement x={element.x} y={element.y} radiusX={bounds.width / 2} radiusY={bounds.height / 2} text={label} ellipseClassName="library-shape" style={paint} />;
     case "frame":
-      return <FrameElement className="library-frame" x={bounds.x} y={bounds.y} width={bounds.width} height={bounds.height} label={label} style={paint} />;
+      // FrameElement is centre-based like the other shared elements; the corner-based bounds
+      // shifted every boundary by half its box (the third corner/centre instance, caught by
+      // the c4 migration's frame test before one ever mounted).
+      return <FrameElement className="library-frame" x={element.x} y={element.y} width={bounds.width} height={bounds.height} label={label} style={paint} />;
     case "span":
       return <SpanElement box={{ x: element.x, y: element.y, width: bounds.width, height: bounds.height }} label={label} classes={{ span: "library-shape library-span", moment: "library-span-moment", label: "library-span-label", hint: "library-span-hint", adorner: "library-span-adorner", anchor: "library-span-anchor", anchorHit: "library-span-anchor-hit" }} style={paint} />;
     case "styled-box":

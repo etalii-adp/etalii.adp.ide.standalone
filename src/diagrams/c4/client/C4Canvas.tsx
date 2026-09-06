@@ -1,65 +1,31 @@
-import type { ConnectorBox } from "@client/canvas/connectors";
-import { StraightConnection } from "@client/canvas/connections/straight/StraightConnection";
+import { useMemo, useState } from "react";
+
 import { StyledBoxElement } from "@client/canvas/elements/styled-box/StyledBoxElement";
 import { FrameElement } from "@client/canvas/elements/frame/FrameElement";
-import { elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
+import { edgePointOf } from "@client/canvas/connectors";
+import { elementSelectionOf, elementSourceOf, selectedElementIdOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
-import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
-import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
-import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useViewReport } from "@client/diagrams/useViewReport";
-import { shownRectOf } from "@client/diagrams/viewReport";
+import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
+import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
+import type { CustomShapeRef, CustomShapeState, DiagramDefinition, ShapeBounds, ShapePoint } from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
-import { ContextSelectionAction } from "@client/generated/context_pb";
-import { ContextMenu } from "@client/shell/context/ContextMenu";
-import { toMenuGroups } from "@client/shell/context/toMenuGroups";
-import { TOOLBOX_DRAG_TYPE, useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
-import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
-import { useRegisterDiagramView, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
-import { boxesOf, type C4BoundaryBox, type C4Model, type C4Node, type C4Relationship } from "./c4Model";
-import { InlineLabelEditor } from "@client/canvas/label/InlineLabelEditor";
-import { anchorsBetween } from "@client/canvas/connectors";
-import { insetLabelPlacement, midpointLabelPlacement } from "@client/canvas/label/labelPlacement";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { useRegisterInlineLabelPlacement, type LabelPlacement } from "@client/shell/panels/InlineLabelPlacementContext";
-import type { C4RelationshipPayload } from "@client/generated/c4_pb";
+import { ContextSelectionAction, type ContextShortcut } from "@client/generated/context_pb";
+import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
+import { useViewReport } from "@client/diagrams/useViewReport";
+import type { C4Model, C4Node, C4BoundaryBox } from "./c4Model";
 import { useC4Stream } from "./useC4Stream";
-import { usePointerGesture, type PointerPressWiring } from "@client/canvas/gesture/usePointerGesture";
 
 /**
  * Where an element's name sits inside its box, in canvas units: `StyledBoxElement` draws the
  * name's baseline 22 below the box's top, so a 20-tall editor starting 6 below the top covers
- * that line and nothing else.
+ * that line and nothing else. The inset label rule carries these as definition data.
  */
 const NAME_TOP = 6;
 const NAME_HEIGHT = 20;
 const NAME_INSET = 4;
-
-/** `StraightConnection`'s own default label offset, above the line's midpoint. */
-const LABEL_DY = -6;
-
-/** The visible rectangle, in canvas units - the svg viewBox as data. */
-interface ViewBox {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
-/**
- * What a press lands on. Threaded through the shared arbiter untouched: the arbiter decides
- * click-or-drag at the gesture's end, and this type is how its verdict comes back knowing
- * what the gesture was about.
- */
-type C4PressTarget =
-  | { kind: "node"; node: C4Node }
-  | { kind: "relationship"; relationship: C4Relationship }
-  | { kind: "background"; view: ViewBox };
-
-const ZOOM_STEP = 1.25;
-const MIN_VIEW_WIDTH = 40;
-const MAX_VIEW_WIDTH = 100000;
 
 export interface C4CanvasProps {
   projectId: Uint8Array;
@@ -67,309 +33,244 @@ export interface C4CanvasProps {
   path: readonly string[];
 }
 
+/** An element as the library carries it here: the model element plus the node it draws. */
+type C4NodeElement = DiagramModelElement & { node: C4Node };
+type C4BoundaryElement = DiagramModelElement & { boundary: C4BoundaryBox };
+
+function boxEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
+  const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+  return edgePointOf(
+    { x: centre.x, y: centre.y, width: bounds.width, height: bounds.height },
+    towards.x - centre.x,
+    towards.y - centre.y,
+  );
+}
+
 /**
- * Renders one C4 view. Everything it draws was decided by the backend - the boxes at the sizes
- * it measured, the palette it resolved, the title and the key it composed - so the canvas is a
- * renderer rather than a second opinion about what a C4 diagram is
- * (c4-diagrams Requirement 4).
+ * One element card as a first-class custom shape: the shared styled box with the palette the
+ * backend resolved - shape, background, colour, the three text lines - while hit-testing,
+ * edge attachment and dragging stay the library's.
+ */
+const cardShape: CustomShapeRef = {
+  customShape: "c4-card",
+  render: (raw, state?: CustomShapeState) => {
+    const element = raw as C4NodeElement;
+    const { name, typeLine, description, width, height, style } = element.node.payload;
+    return (
+      <StyledBoxElement
+        className={`c4-node${state?.selected ? " c4-node-focused" : ""}${state?.dragging ? " c4-node-dragging" : ""}`}
+        x={element.x}
+        y={element.y}
+        width={width}
+        height={height}
+        shape={style?.shape ?? "RoundedBox"}
+        background={style?.background ?? "#1168bd"}
+        color={style?.color ?? "#ffffff"}
+        name={name}
+        typeLine={typeLine}
+        description={description}
+        nameClassName="c4-node-name"
+        typeClassName="c4-node-type"
+        descriptionClassName="c4-node-description"
+        role="button"
+        aria-label={name}
+      />
+    );
+  },
+  edgePoint: boxEdgePoint,
+};
+
+/** The dashed rectangle around a system's containers or a container's components - inert. */
+const boundaryShape: CustomShapeRef = {
+  customShape: "c4-boundary",
+  render: (raw) => {
+    const element = raw as C4BoundaryElement;
+    const { name, kind, width, height } = element.boundary.payload;
+    return (
+      <FrameElement
+        className="c4-boundary"
+        x={element.x}
+        y={element.y}
+        width={width}
+        height={height}
+        label={`${name} [${kind}]`}
+        labelClassName="c4-boundary-label"
+      />
+    );
+  },
+  edgePoint: boxEdgePoint,
+};
+
+/**
+ * What a C4 view allows, stated once: element cards that drag, rename their NAME line in
+ * place and speak F2/Delete/Insert; boundaries that enclose and ignore every gesture; one
+ * dashed, arrowed, labelled relationship whose editor opens with the authored description
+ * rather than the drawn "description [technology]" string. Everything drawn was decided by
+ * the backend - the canvas stays a renderer, not a second opinion about what C4 is.
+ */
+const C4_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
+  elementTypes: [
+    {
+      id: "element",
+      shape: cardShape,
+      anchors: { kind: "edge" },
+      sizing: "model",
+      label: { placement: "inset", editable: true, insetTop: NAME_TOP, insetHeight: NAME_HEIGHT, insetX: NAME_INSET },
+    },
+    { id: "boundary", shape: boundaryShape, anchors: { kind: "edge" }, sizing: "model", draggable: false },
+  ],
+  relationTypes: [
+    {
+      id: "relationship",
+      route: "straight",
+      style: { endMarker: "arrow" },
+      label: { placement: "midpoint", offset: -6, editable: true },
+      className: "c4-relationship-group",
+      lineClassName: "c4-relationship-line",
+      endpoints: {
+        source: { elementTypes: ["element"] },
+        target: { elementTypes: ["element"], anchors: "edge" },
+        allowSelf: false,
+      },
+    },
+  ],
+  layout: { modes: ["manual"] },
+  dragging: "enabled",
+});
+
+/**
+ * Renders one C4 view, through the diagram library. Everything it draws was decided by the
+ * backend - the boxes at the sizes it measured, the palette it resolved, the title and the
+ * key it composed - and every gesture answers with the same backend calls the hand-built
+ * canvas made: a drag as `moveElementTo`, a drop as the entry's own action with the target
+ * element as parent, the keys as data against the selection.
  */
 export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
   const { model, loading, failed, reportView, moveElementTo } = useC4Stream(projectId, path);
   const { select, executeAction, executeShortcut } = useContextConnection();
   const { selection, actions } = useContextSelection();
+  const toolboxItems = useToolboxItems(projectId, path);
+  const [viewport, setViewport] = useState<ShapeBounds | null>(null);
 
-  // The palette this view contributes, registered for the Toolbox panel while this canvas is
-  // the mounted one - the same discipline the mindmap follows.
-  useRegisterDiagramToolbox(useToolboxItems(projectId, path));
-
-  // A right-click's menu, opened once the pushed selection for that element arrives with its
-  // actions: the menu shows the backend's answer, never a guess. The shared hook also opens
-  // at once when the element is already the selection, actions in hand.
   const selectionKey = innermostKey(selection);
-  const { menuPosition, openMenuAt, closeMenu } = useElementContextMenu(selectionKey, actions.length > 0, (id) =>
-    select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
-  );
-
-  // The element a toolbox drag is held over - highlighted so the drop's outcome is visible
-  // before the button is released.
-  const [dropTargetId, setDropTargetId] = useState<string | undefined>(undefined);
-
-  // How far the drag in flight has carried its element - state, because it is exactly what
-  // renders differently while the button is down. The gesture itself lives in the arbiter.
-  const [dragOffset, setDragOffset] = useState<{ id: string; dx: number; dy: number } | null>(null);
-
-  const [focusedId, setFocusedId] = useState<string | undefined>(undefined);
-  const [view, setView] = useState<ViewBox | null>(null);
-  const surfaceRef = useRef<SVGSVGElement>(null);
-
-  // Where an element's name, or a relationship's label, is drawn - for the shell's inline
-  // editor. Memoized on the model rather than made permanently stable, so that an element
-  // removed mid-edit stops being placeable and the shell hears about it.
-  const placementOfLabel = useCallback(
-    (elementId: string): LabelPlacement | null => {
-      const node = model.nodes.get(elementId);
-      if (node !== undefined) {
-        return nodeNamePlacement(node);
-      }
-
-      const relationship = model.relationships.get(elementId);
-      return relationship === undefined ? null : relationshipLabelPlacement(relationship, surfaceRef.current);
-    },
-    [model],
-  );
-  useRegisterInlineLabelPlacement(placementOfLabel);
+  const selectedId = useMemo(() => selectedElementIdOf(selection), [selection]);
 
   const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
   const editingId = inlineLabelElementIdOf(prompt);
-  const editingPlacement = editingId === null ? null : placementOfLabel(editingId);
 
-  const returnFocusToSurface = useCallback(() => surfaceRef.current?.focus(), []);
-
-  /**
-   * Ends an open inline edit before a gesture that moves the canvas begins (Requirement 5.5).
-   * Taking the focus is the whole mechanism: the editor commits on blur, so the commit rule
-   * stays in one place rather than being reimplemented per gesture.
-   */
-  const endInlineEditBeforeGesture = () => {
-    if (editingPlacement !== null) {
-      surfaceRef.current?.focus();
-    }
-  };
-
-  const fitBox = useMemo(() => fitBoxOf(model), [model]);
-  const effectiveView = view ?? fitBox;
-  const viewRef = useRef(effectiveView);
-  viewRef.current = effectiveView;
-
-  const zoomBy = useCallback((factor: number, aboutX?: number, aboutY?: number) => {
-    setView(() => {
-      const current = viewRef.current;
-      const w = Math.min(MAX_VIEW_WIDTH, Math.max(MIN_VIEW_WIDTH, current.w / factor));
-      const applied = current.w / w;
-      const h = current.h / applied;
-      const px = aboutX ?? current.x + current.w / 2;
-      const py = aboutY ?? current.y + current.h / 2;
-      return { x: px - (px - current.x) / applied, y: py - (py - current.y) / applied, w, h };
+  const diagramModel = useMemo<DiagramModel>(() => {
+    const boundaries = [...model.boundaries.values()].map((boundary): C4BoundaryElement => ({
+      id: boundary.id,
+      type: "boundary",
+      x: boundary.x,
+      y: boundary.y,
+      width: boundary.payload.width,
+      height: boundary.payload.height,
+      label: `${boundary.payload.name} [${boundary.payload.kind}]`,
+      boundary,
+    }));
+    const nodes = [...model.nodes.values()].map((node): C4NodeElement => ({
+      id: node.id,
+      type: "element",
+      x: node.x,
+      y: node.y,
+      width: node.payload.width,
+      height: node.payload.height,
+      label: node.payload.name,
+      node,
+    }));
+    const relationships = [...model.relationships.values()].map((relationship) => {
+      const p = relationship.payload;
+      const label = p.technology ? `${p.description} [${p.technology}]` : p.description;
+      return {
+        id: relationship.id,
+        type: "relationship",
+        sourceId: p.sourceId,
+        targetId: p.destinationId,
+        // The drawn string decorates the one authored value; the editor opens with the value.
+        label: label ? (p.interactionOrder ? `${p.interactionOrder}. ${label}` : label) : undefined,
+        editValue: p.description,
+      };
     });
-  }, []);
+    // Boundaries first, so everything they enclose draws on top of them.
+    return { elements: [...boundaries, ...nodes], connections: relationships };
+  }, [model]);
 
-  // Attached by hand as non-passive: React's synthetic wheel listener cannot preventDefault,
-  // and without that every zoom also scrolls the page.
-  useEffect(() => {
-    const surface = surfaceRef.current;
-    if (surface === null) {
-      return;
+  /** The backend's push is the selection; the canvas renders it and never decides. */
+  const librarySelection = useMemo<DiagramSelection>(() => {
+    if (!selectedId) {
+      return [];
     }
+    if (model.relationships.has(selectedId)) {
+      return [{ kind: "connection", id: selectedId }];
+    }
+    return model.nodes.has(selectedId) ? [{ kind: "element", id: selectedId }] : [];
+  }, [selectedId, model]);
 
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      const rect = surface.getBoundingClientRect();
-      const current = viewRef.current;
-      const aboutX = rect.width > 0 ? current.x + ((event.clientX - rect.left) / rect.width) * current.w : undefined;
-      const aboutY = rect.height > 0 ? current.y + ((event.clientY - rect.top) / rect.height) * current.h : undefined;
-      zoomBy(event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP, aboutX, aboutY);
-    };
-
-    surface.addEventListener("wheel", onWheel, { passive: false });
-    return () => surface.removeEventListener("wheel", onWheel);
-  }, [zoomBy, loading, failed]);
-
-  const viewControls = useMemo<DiagramViewControls>(
-    () => ({
-      zoomIn: () => zoomBy(ZOOM_STEP),
-      zoomOut: () => zoomBy(1 / ZOOM_STEP),
-      fitToView: () => setView(null),
-    }),
-    [zoomBy],
-  );
-  useRegisterDiagramView(viewControls);
-
-  useViewReport({
-    view: effectiveView,
-    report: reportView,
-    convert: () => shownRectOf(viewRef.current, surfaceRef.current),
-    ready: !loading && !failed,
-  });
-
-  const unitsPerPixel = (box: ViewBox): number => {
-    const rect = surfaceRef.current?.getBoundingClientRect();
-    return rect !== undefined && rect.width > 0 ? box.w / rect.width : 1;
+  const runShortcut = (shortcut: ContextShortcut, sourceId: string) => {
+    void executeShortcut(shortcut, elementSourceOf(sourceId));
   };
 
-  /**
-   * One arbiter decides click-or-drag for every press - node, relationship and background
-   * alike - at the gesture's end, from what the gesture itself recorded. Nothing here
-   * listens to `click`: that trailing event was the wrong witness, and the one-shot flags
-   * that suppressed it were the latch that silently swallowed the next legitimate selection
-   * (the selection-after-drag specification traces the defect in full).
-   */
-  const gesture = usePointerGesture<C4PressTarget>({
-    onPress: (target) => {
-      if (target.kind === "background") {
-        setFocusedId(undefined);
+  const events: DiagramEventHandlers = {
+    onSelectionChanged: ({ selection: next }) => {
+      // A press on a boundary was always a press on the background - the frame never had a
+      // hit surface of its own - so it deselects rather than selecting the inert box.
+      if (next.length > 0 && model.boundaries.has(next[0].id)) {
         select(null);
         return;
       }
-
-      // A relationship selects exactly as an element does. Until it did, relabel and
-      // set-technology were offered by the backend and reachable by nothing.
-      const id = target.kind === "node" ? target.node.id : target.relationship.id;
-      setFocusedId(id);
-      surfaceRef.current?.focus();
-      select(elementSelectionOf(entryId, path, id));
+      select(next.length > 0 ? elementSelectionOf(entryId, path, next[0].id) : null);
     },
-    onDragMove: (target, dx, dy) => {
-      if (target.kind === "node") {
-        const scale = unitsPerPixel(viewRef.current);
-        setDragOffset({ id: target.node.id, dx: dx * scale, dy: dy * scale });
-      } else if (target.kind === "background") {
-        // Panning measures against the view captured at press: the view moves under this
-        // very gesture, and measuring against the moving thing would compound each step.
-        const scale = unitsPerPixel(target.view);
-        setView({ ...target.view, x: target.view.x - dx * scale, y: target.view.y - dy * scale });
-      }
-      // A relationship has no position of its own; dragging one moves nothing.
-    },
-    onDragEnd: (target, dx, dy) => {
-      if (target.kind !== "node") {
+    onElementMoved: ({ elementId, position }) => {
+      if (!model.nodes.has(elementId)) {
         return;
       }
-
       // Nothing optimistic: the element stays where it was until the backend's delta says
       // otherwise, so what is drawn is always what was recorded.
-      setDragOffset(null);
-      const scale = unitsPerPixel(viewRef.current);
-      void moveElementTo(target.node.id, target.node.x + dx * scale, target.node.y + dy * scale);
+      void moveElementTo(elementId, position.x, position.y);
     },
-    onDragAbandon: (target) => {
-      if (target.kind === "node") {
-        setDragOffset(null);
-      }
+    onElementDropped: ({ elementType, position }) => {
+      // The entry carries the backend's own action id. Dropped on an element, that element
+      // becomes the new one's parent - which is how C4's containment gets decided by the
+      // gesture; on empty canvas only what stands alone can land, and the backend refuses
+      // the rest with a sentence.
+      const target = [...model.nodes.values()].reverse().find((node) => {
+        const { width, height } = node.payload;
+        return Math.abs(position.x - node.x) <= width / 2 && Math.abs(position.y - node.y) <= height / 2;
+      });
+      void executeAction(elementType, target !== undefined ? elementSourceOf(target.id) : undefined);
     },
+    // Delete travels as the backend shortcut it always was, raised by the library's key path.
+    onElementDeleted: ({ elementId }) =>
+      runShortcut({ key: "Delete", ctrl: false, shift: false, alt: false, meta: false } as ContextShortcut, elementId),
+    onConnectionDeleted: ({ connectionId }) =>
+      runShortcut({ key: "Delete", ctrl: false, shift: false, alt: false, meta: false } as ContextShortcut, connectionId),
+    onViewChanged: ({ viewport: next }) => setViewport(next),
+  };
+
+  useViewReport({
+    view: { x: viewport?.x ?? 0, y: viewport?.y ?? 0, w: viewport?.width ?? 0, h: viewport?.height ?? 0 },
+    report: reportView,
+    convert: () => ({
+      minX: viewport?.x ?? 0,
+      minY: viewport?.y ?? 0,
+      maxX: (viewport?.x ?? 0) + (viewport?.width ?? 0),
+      maxY: (viewport?.y ?? 0) + (viewport?.height ?? 0),
+    }),
+    ready: !loading && !failed && viewport !== null,
   });
 
-  /** A pressable's wiring, with the open inline edit committed first (Requirement 5.5). */
-  const pressWiring = (target: C4PressTarget): PointerPressWiring => {
-    const wiring = gesture.press(target);
-    return {
-      ...wiring,
-      onPointerDown: (event: React.PointerEvent) => {
-        endInlineEditBeforeGesture();
-        wiring.onPointerDown(event);
-      },
-    };
-  };
-
-  /**
-   * The surface's wiring. The inline edit is committed only when the press is really the
-   * surface's own: the editor is a child of the svg, and ending the edit on a press that
-   * merely bubbled up through it would commit the very edit being clicked into.
-   */
-  const backgroundWiring = (target: C4PressTarget): PointerPressWiring => {
-    const wiring = gesture.background(target);
-    return {
-      ...wiring,
-      onPointerDown: (event: React.PointerEvent) => {
-        if (event.target === event.currentTarget) {
-          endInlineEditBeforeGesture();
-        }
-        wiring.onPointerDown(event);
-      },
-    };
-  };
-
-  /** Right-click an element: select it with the menu gesture, open the menu on the push. */
-  const onNodeContextMenu = (node: C4Node, event: React.MouseEvent) => {
-    setFocusedId(node.id);
-    surfaceRef.current?.focus();
-    openMenuAt(event, node.id);
-  };
-
-  /** Right-click a relationship: the same menu gesture an element uses. */
-  const onRelationshipContextMenu = (relationship: C4Relationship, event: React.MouseEvent) => {
-    setFocusedId(relationship.id);
-    surfaceRef.current?.focus();
-    openMenuAt(event, relationship.id);
-  };
-
-  /** A toolbox entry held over an element: allowed, and shown as the drop's outcome. */
-  const onNodeDragOver = (node: C4Node, event: React.DragEvent) => {
-    if (!event.dataTransfer.types.includes(TOOLBOX_DRAG_TYPE)) {
-      return;
-    }
-
-    event.preventDefault(); // preventDefault is what permits the drop here
-    event.dataTransfer.dropEffect = "copy";
-    if (dropTargetId !== node.id) {
-      setDropTargetId(node.id);
-    }
-  };
-
-  /**
-   * A toolbox entry dropped on an element. The drag carries the backend's own action id and
-   * the element becomes the new one's parent - which is how C4's containment gets decided by
-   * the gesture: a container onto a system goes in that system, a component onto a container
-   * goes in that container. A pairing C4 forbids comes back refused, with a sentence.
-   */
-  const onNodeDrop = (node: C4Node, event: React.DragEvent) => {
-    const actionId = event.dataTransfer.getData(TOOLBOX_DRAG_TYPE);
-    setDropTargetId(undefined);
-    if (!actionId) {
-      return;
-    }
-
-    event.preventDefault();
-    setFocusedId(node.id);
-    void executeAction(actionId, elementSourceOf(node.id));
-  };
-
-  /**
-   * A toolbox entry dropped on empty canvas: no parent, so only what stands on its own - a
-   * person, a software system - can land. The backend refuses the rest and says where it
-   * should have gone.
-   */
-  const onSurfaceDrop = (event: React.DragEvent) => {
-    if (event.target !== event.currentTarget) {
-      return; // an element's own drop; its handler answers
-    }
-
-    const actionId = event.dataTransfer.getData(TOOLBOX_DRAG_TYPE);
-    setDropTargetId(undefined);
-    if (!actionId) {
-      return;
-    }
-
-    event.preventDefault();
-    void executeAction(actionId);
-  };
-
-  const onSurfaceDragOver = (event: React.DragEvent) => {
-    if (!event.dataTransfer.types.includes(TOOLBOX_DRAG_TYPE)) {
-      return;
-    }
-
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "copy";
-    if (event.target === event.currentTarget && dropTargetId !== undefined) {
-      setDropTargetId(undefined);
-    }
-  };
-
+  /** F2 and Insert travel to the backend as data; Delete is the library's event, handled above. */
   const onKeyDown = (event: React.KeyboardEvent) => {
-    // A key that means something in a text field is left to it - a prompt is a real input the
-    // shell mounts, so text editing wins there.
-    if (!focusedId || isTextTarget(event.target)) {
+    if (!selectedId || isTextTarget(event.target)) {
       return;
     }
-
-    const shortcut = structuralShortcutFor(event, ["F2", "Delete", "Insert"]);
+    const shortcut = structuralShortcutFor(event, ["F2", "Insert"]);
     if (!shortcut) {
       return;
     }
-
     event.preventDefault();
-    // The backend holds the key-to-action table; the canvas forwards the keystroke as data.
-    void executeShortcut(shortcut, elementSourceOf(focusedId));
+    runShortcut(shortcut, selectedId);
   };
 
   if (failed) {
@@ -382,12 +283,8 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
     );
   }
 
-  const nodes = [...model.nodes.values()];
-  const relationships = [...model.relationships.values()];
-  const boundaries = [...model.boundaries.values()];
-
   return (
-    <div className="c4-canvas" data-testid="c4-canvas">
+    <div className="c4-canvas" data-testid="c4-canvas" onKeyDown={onKeyDown}>
       {loading ? (
         <div className="c4-canvas-loading" role="status">
           Loading…
@@ -400,78 +297,22 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
               {model.view.title}
             </div>
           )}
-          <svg
-            ref={surfaceRef}
-            className="c4-canvas-surface"
-            viewBox={`${effectiveView.x} ${effectiveView.y} ${effectiveView.w} ${effectiveView.h}`}
-            tabIndex={0}
-            role="img"
-            aria-label={model.view?.title ?? "C4 diagram"}
-            {...backgroundWiring({ kind: "background", view: effectiveView })}
-            onKeyDown={onKeyDown}
-            onDragOver={onSurfaceDragOver}
-            onDrop={onSurfaceDrop}
-          >
-            <defs>
-              {/* One arrowhead, reused: C4 relationships are unidirectional. */}
-              <marker id="c4-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 5 L 0 10 z" className="c4-arrowhead" />
-              </marker>
-            </defs>
-
-            {/* Boundaries first, so everything they enclose draws on top of them. */}
-            {boundaries.map((boundary) => (
-              <C4BoundaryShape key={boundary.id} boundary={boundary} />
-            ))}
-            {relationships.map((relationship) => (
-              <C4RelationshipShape
-                key={relationship.id}
-                relationship={relationship}
-                selected={relationship.id === focusedId}
-                press={pressWiring({ kind: "relationship", relationship })}
-                onOpenMenu={(event) => onRelationshipContextMenu(relationship, event)}
-              />
-            ))}
-            {nodes.map((node) => (
-              <C4NodeShape
-                key={node.id}
-                node={node}
-                focused={node.id === focusedId}
-                dropTarget={node.id === dropTargetId}
-                offset={dragOffset?.id === node.id ? dragOffset : undefined}
-                press={pressWiring({ kind: "node", node })}
-                onContextMenu={(event) => onNodeContextMenu(node, event)}
-                onDragOver={(event) => onNodeDragOver(node, event)}
-                onDrop={(event) => onNodeDrop(node, event)}
-              />
-            ))}
-            {/* Last, so the editor is above every box and arrow it overlaps. Placed in canvas
-                units, so panning and zooming carry it with what it is editing. */}
-            {editingPlacement !== null && (
-              <InlineLabelEditor
-                placement={editingPlacement}
-                onPropose={onProposeLabel}
-                onSubmit={onSubmitLabel}
-                onCancel={onCancelLabel}
-                onReturnFocus={returnFocusToSurface}
-              />
-            )}
-          </svg>
-          <CanvasScrollbars
-            {...scrollAxesOf(effectiveView, model)}
-            className="c4-scrollbars"
-            onPan={(x, y) => setView({ ...effectiveView, x, y })}
-          />
-
-          {/* The backend's own actions for what is selected - rendered, never invented. */}
-          <ContextMenu
-            open={menuPosition !== null}
-            groups={toMenuGroups(actions, (action) => {
-              closeMenu();
-              void executeAction(action.id);
-            })}
-            position={menuPosition ?? { x: 0, y: 0 }}
-            onClose={closeMenu}
+          <DiagramCanvas
+            definition={C4_DEFINITION}
+            model={diagramModel}
+            events={events}
+            selection={librarySelection}
+            toolboxItems={toolboxItems}
+            context={{
+              selectionKey: selectionKey ?? undefined,
+              actions,
+              selectForMenu: (id) => select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
+              executeAction: (actionId) => void executeAction(actionId, selectedId ? elementSourceOf(selectedId) : undefined),
+            }}
+            editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
+            className="c4-canvas-host"
+            scrollbarsClassName="c4-scrollbars"
+            ariaLabel={model.view?.title ?? "C4 diagram"}
           />
 
           {/* C4 requires a key explaining every shape and colour the diagram uses, so it can be
@@ -494,230 +335,6 @@ export function C4Canvas({ projectId, entryId, path }: C4CanvasProps) {
       )}
     </div>
   );
-}
-
-/** One element box: name, the bracketed type-and-technology line, and the description. */
-function C4NodeShape({
-  node,
-  focused,
-  dropTarget,
-  offset,
-  press,
-  onContextMenu,
-  onDragOver,
-  onDrop,
-}: {
-  node: C4Node;
-  focused: boolean;
-  dropTarget: boolean;
-  /** How far the pointer has carried this element in the drag currently in flight. */
-  offset?: { dx: number; dy: number };
-  /** The arbiter's wiring - one spread carries both what selects and what drags this box. */
-  press: PointerPressWiring;
-  onContextMenu: (event: React.MouseEvent) => void;
-  onDragOver: (event: React.DragEvent) => void;
-  onDrop: (event: React.DragEvent) => void;
-}) {
-  const { name, typeLine, description, width, height, style } = node.payload;
-
-  return (
-    <StyledBoxElement
-      className={`c4-node${focused ? " c4-node-focused" : ""}${dropTarget ? " c4-node-drop-target" : ""}${offset ? " c4-node-dragging" : ""}`}
-      x={node.x + (offset?.dx ?? 0)}
-      y={node.y + (offset?.dy ?? 0)}
-      width={width}
-      height={height}
-      shape={style?.shape ?? "RoundedBox"}
-      background={style?.background ?? "#1168bd"}
-      color={style?.color ?? "#ffffff"}
-      name={name}
-      typeLine={typeLine}
-      description={description}
-      nameClassName="c4-node-name"
-      typeClassName="c4-node-type"
-      descriptionClassName="c4-node-description"
-      {...press}
-      onContextMenu={onContextMenu}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      role="button"
-      aria-label={name}
-    />
-  );
-}
-
-/**
- * One relationship: a dashed, unidirectional arrow labelled with what it is for and, where the
- * model says so, the technology it uses - which is what a Container diagram exists to show.
- */
-function C4RelationshipShape({
-  relationship,
-  selected,
-  press,
-  onOpenMenu,
-}: {
-  relationship: C4Relationship;
-  selected: boolean;
-  /** The arbiter's wiring: an unmoved press selects; a moved one is just not a click. */
-  press: PointerPressWiring;
-  onOpenMenu: (event: React.MouseEvent) => void;
-}) {
-  const p = relationship.payload;
-  const label = p.technology ? `${p.description} [${p.technology}]` : p.description;
-  const order = p.interactionOrder;
-  const [start, end] = anchorsBetween(sourceBoxOf(p), destinationBoxOf(p));
-
-  // Straight, deliberately: a C4 relationship joins any two elements in any direction, so
-  // there is no corridor for a curve to stay inside, and Structurizr and the C4 notation
-  // both draw these straight.
-  return (
-    // The wrapping group carries the id so the label's rendered text node can be measured for
-    // the inline editor; the shared connection component takes no id of its own, and giving it
-    // one would be a change to every canvas that draws a line.
-    <g
-      data-c4-relationship={relationship.id}
-      data-element-id={relationship.id}
-      className={`c4-relationship-group${selected ? " canvas-selected" : ""}`}
-      // The arbiter's begin() stops the press's propagation itself, which is what keeps a
-      // press on a relationship from also starting a background pan.
-      {...press}
-      onContextMenu={onOpenMenu}
-    >
-      {/* The invisible fat twin that actually takes the pointer: a dashed one-pixel stroke is
-          not a target anyone can hit. The class is the shared one every canvas uses for this,
-          so the grab width is the same on all of them. */}
-      <path className="canvas-connection-hit" d={`M ${start.x} ${start.y} L ${end.x} ${end.y}`} />
-    <StraightConnection
-      from={sourceBoxOf(p)}
-      to={destinationBoxOf(p)}
-      className="c4-relationship"
-      markerEnd="url(#c4-arrow)"
-      label={label ? (order ? `${order}. ${label}` : label) : undefined}
-      labelClassName="c4-relationship-label"
-      labelTextAnchor="middle"
-    />
-    </g>
-  );
-}
-
-/** The dashed rectangle around a system's containers or a container's components. */
-function C4BoundaryShape({ boundary }: { boundary: C4BoundaryBox }) {
-  const { name, kind, width, height } = boundary.payload;
-  return (
-    <FrameElement
-      className="c4-boundary"
-      x={boundary.x}
-      y={boundary.y}
-      width={width}
-      height={height}
-      label={`${name} [${kind}]`}
-      labelClassName="c4-boundary-label"
-    />
-  );
-}
-
-/**
- * The two ends of a relationship as boxes, which is what the shared connector geometry wants.
- * The payload carries each end's measured size precisely so an arrow can land on an edge.
- */
-/**
- * Where an element's NAME is drawn inside its box - not the box itself. `StyledBoxElement` puts
- * the name's baseline 22 units below the box's top, with the type line and description under it,
- * so an editor covering the whole box would sit over three lines of text to edit one of them.
- */
-function nodeNamePlacement(node: C4Node): LabelPlacement {
-  const { width, height, name } = node.payload;
-
-  // The box is narrowed by the inset on both sides before it is handed over: it is centred,
-  // so a narrower width insets evenly and NAME_INSET stays this module's constant rather than
-  // becoming an argument the shared helper has to carry for everyone.
-  return insetLabelPlacement(
-    { x: node.x, y: node.y, width: width - NAME_INSET * 2, height },
-    NAME_TOP,
-    NAME_HEIGHT,
-    name,
-  );
-}
-
-/**
- * Where a relationship's label is drawn: at the midpoint of the anchored line, offset above it,
- * exactly as `StraightConnection` places it - computed from the same helpers rather than from a
- * copy of the arithmetic.
- *
- * The width is MEASURED where the browser can measure it, because a relationship label has no
- * box of its own - it is a bare text node, and its width is whatever the font made it. Where
- * `getBBox` is unavailable it falls back to the per-character estimate the shared element
- * components use for the same purpose. jsdom implements no `getBBox` at all, so unit tests
- * exercise the fallback by construction and the measured path is verified by the manual check
- * in `tests.md`.
- *
- * The text it opens with is the relationship's DESCRIPTION, not the rendered label. The canvas
- * draws "description [technology]", sometimes numbered; the editor replaces that whole string on
- * screen while editing the one authored value beneath it. The decoration is chrome, and the
- * technology has an action of its own.
- */
-function relationshipLabelPlacement(relationship: C4Relationship, surface: SVGSVGElement | null): LabelPlacement {
-  const p = relationship.payload;
-  const [start, end] = anchorsBetween(sourceBoxOf(p), destinationBoxOf(p));
-  return midpointLabelPlacement(start, end, LABEL_DY, p.description, measuredLabelWidth(surface, relationship.id));
-}
-
-/** The rendered label's own width, or null where the browser cannot measure one. */
-function measuredLabelWidth(surface: SVGSVGElement | null, relationshipId: string): number | null {
-  const label = surface?.querySelector(`[data-c4-relationship="${CSS.escape(relationshipId)}"] text`);
-  if (label === null || label === undefined || typeof (label as SVGGraphicsElement).getBBox !== "function") {
-    return null;
-  }
-
-  const measured = (label as SVGGraphicsElement).getBBox().width;
-  return measured > 0 ? measured : null;
-}
-
-function sourceBoxOf(p: C4RelationshipPayload): ConnectorBox {
-  return { x: p.sourceX, y: p.sourceY, width: p.sourceWidth, height: p.sourceHeight };
-}
-
-function destinationBoxOf(p: C4RelationshipPayload): ConnectorBox {
-  return { x: p.destinationX, y: p.destinationY, width: p.destinationWidth, height: p.destinationHeight };
-}
-
-/**
- * Where the view sits inside the content, as the two axes the shared scrollbars take.
- *
- * A ViewBox canvas needs no DOM measurement for this: the view's span in content units IS
- * `w` and `h`. The pixels-per-unit consumer measures its element and divides because it has
- * to; copying that here would be importing a workaround for a problem this canvas does not
- * have. The extent is the drawn content plus a proportional margin, floored at the widest
- * box so a single-element diagram still has room to either side.
- */
-function scrollAxesOf(view: ViewBox, model: C4Model) {
-  const boxes = boxesOf(model);
-  const widest = boxes.length > 0 ? Math.max(...boxes.map((box) => box.width)) : view.w;
-  const tallest = boxes.length > 0 ? Math.max(...boxes.map((box) => box.height)) : view.h;
-  const minX = boxes.length > 0 ? Math.min(...boxes.map((box) => box.x)) : view.x;
-  const maxX = boxes.length > 0 ? Math.max(...boxes.map((box) => box.x + box.width)) : view.x + view.w;
-  const minY = boxes.length > 0 ? Math.min(...boxes.map((box) => box.y)) : view.y;
-  const maxY = boxes.length > 0 ? Math.max(...boxes.map((box) => box.y + box.height)) : view.y + view.h;
-
-  return {
-    horizontal: { viewStart: view.x, viewSpan: view.w, ...scrollExtentOf(minX, maxX, { factor: 0.5, minimumSpan: widest }) },
-    vertical: { viewStart: view.y, viewSpan: view.h, ...scrollExtentOf(minY, maxY, { factor: 0.5, minimumSpan: tallest }) },
-  };
-}
-
-/** The box that fits everything with a margin - what the canvas opens with and Fit to View returns to. */
-function fitBoxOf(model: C4Model): ViewBox {
-  const boxes = boxesOf(model);
-  if (boxes.length === 0) {
-    return { x: -200, y: -150, w: 400, h: 300 };
-  }
-
-  const margin = 40;
-  const minX = Math.min(...boxes.map((box) => box.x)) - margin;
-  const minY = Math.min(...boxes.map((box) => box.y)) - margin;
-  const maxX = Math.max(...boxes.map((box) => box.x + box.width)) + margin;
-  const maxY = Math.max(...boxes.map((box) => box.y + box.height)) + margin;
-  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
 }
 
 export type { C4Model };

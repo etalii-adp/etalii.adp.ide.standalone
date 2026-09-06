@@ -450,6 +450,81 @@ describe("DiagramCanvas", () => {
     expect(container.querySelector('[data-connection-id="a->b"] title')?.textContent).toBe("verifies tokens with");
   });
 
+  it("a frame element draws at its centre, not displaced by half its size", () => {
+    // FrameElement is centre-based like every shared element; feeding it the corner-based
+    // library bounds shifted every boundary by half its box - the third instance of the
+    // corner/centre class, caught before c4 mounted a single frame.
+    const definition = definitionOf({
+      elementTypes: [{ id: "boundary", shape: "frame", anchors: { kind: "edge" }, sizing: "model" }],
+      relationTypes: [],
+    });
+    const model: DiagramModel = {
+      elements: [{ id: "b1", type: "boundary", x: 100, y: 50, width: 200, height: 120, label: "Payments" }],
+      connections: [],
+    };
+
+    const { container } = renderCanvas({}, definition, model);
+
+    const rect = container.querySelector('[data-element-id="b1"] rect')!;
+    // Centre (100,50), 200x120: the group is translated to the centre and the rect spans
+    // from minus half - so its absolute left edge is at 0, not at 100.
+    const group = rect.closest("g[transform], g")!;
+    expect(rect.getAttribute("x")).toBe("-100");
+    expect(group.getAttribute("transform") ?? container.innerHTML).toContain("100");
+  });
+
+  it("an inset label rule opens the editor over the named line, not the whole card", () => {
+    // A c4 element is three lines of text; its editor covers the NAME line alone. The inset
+    // placement carries the module's own offsets as definition data.
+    const definition = definitionOf();
+    (definition.elementTypes[0] as { label?: unknown }).label = {
+      placement: "inset",
+      editable: true,
+      insetTop: 6,
+      insetHeight: 20,
+      insetX: 4,
+    };
+
+    const { container } = renderCanvas({}, definitionOf() && definition, modelOf(), {
+      editing: {
+        editingId: "a",
+        onPropose: async (revision: number) => ({ revision, valid: true, reason: "" }),
+        onSubmit: async () => ({ completed: true, error: "" }),
+        onCancel: () => {},
+      },
+    });
+
+    const editor = container.querySelector("foreignObject")!;
+    expect(editor).not.toBeNull();
+    // Element a: centre (0,0), 100x40 - the name line: x = -50+4, y = -20+6, height 20.
+    expect(Number(editor.getAttribute("x"))).toBe(-46);
+    expect(Number(editor.getAttribute("y"))).toBe(-14);
+    expect(Number(editor.getAttribute("height"))).toBe(20);
+  });
+
+  it("a connection's editor opens with its authored edit value, not the drawn label", () => {
+    // c4 draws "description [technology]", sometimes numbered; the editor replaces that whole
+    // string on screen while editing the one authored value - the description.
+    const definition = definitionOf();
+    (definition.relationTypes[0] as { label?: unknown }).label = { placement: "midpoint", editable: true };
+    const model = modelOf();
+    (model.connections[0] as { label?: string; editValue?: string }).label = "2. Verifies tokens [HTTPS]";
+    (model.connections[0] as { editValue?: string }).editValue = "Verifies tokens";
+
+    const { container } = renderCanvas({}, definition, model, {
+      editing: {
+        editingId: "a->b",
+        onPropose: async (revision: number) => ({ revision, valid: true, reason: "" }),
+        onSubmit: async () => ({ completed: true, error: "" }),
+        onCancel: () => {},
+      },
+    });
+
+    const field = container.querySelector("foreignObject input") as HTMLInputElement;
+    expect(field).not.toBeNull();
+    expect(field.value).toBe("Verifies tokens");
+  });
+
   it("a label the definition does not mark editable opens no editor", () => {
     const { container } = renderCanvas({}, definitionOf(), modelOf(), {
       editing: {
