@@ -1,5 +1,6 @@
 using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Backend.Projects;
+using EtAlii.Adp.Common.Wire;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
+using Path = EtAlii.Adp.Common.Wire.Path;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -108,11 +110,11 @@ public class ContextSelectionFlowTests : IClassFixture<WebApplicationFactory<Pro
             new ContextService.ContextServiceClient(channel));
     }
 
-    private static Task<Contracts.ShortGuid> EntryIdOfAsync(ContextSelectionFlowSession session, string name) =>
+    private static Task<Common.Wire.ShortGuid> EntryIdOfAsync(ContextSelectionFlowSession session, string name) =>
         // A registration is a child of its subject now, so the lookup follows the nesting.
         NestedEntryLookup.EntryIdOfAsync(session.Hierarchy, session.ProjectId, session.WatchId, session.Headers, name);
 
-    private static ContextSelection Selection(Contracts.ShortGuid entryId, params string[] path)
+    private static ContextSelection Selection(Common.Wire.ShortGuid entryId, params string[] path)
     {
         var selection = new ContextSelection
         {

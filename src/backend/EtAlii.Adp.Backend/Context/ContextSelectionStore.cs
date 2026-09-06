@@ -1,7 +1,8 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
+using EtAlii.Adp.Common.Wire;
 using Serilog;
-
+using Path = EtAlii.Adp.Common.Wire.Path;
 namespace EtAlii.Adp.Backend.Context;
 
 /// <inheritdoc cref="IContextSelectionStore" />

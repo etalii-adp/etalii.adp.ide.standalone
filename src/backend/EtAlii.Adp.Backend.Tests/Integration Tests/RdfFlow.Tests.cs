@@ -1,5 +1,6 @@
 using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Backend.Projects;
+using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Diagram.Rdf;
 using Grpc.Core;
 using Grpc.Net.Client;
@@ -9,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
+using Path = EtAlii.Adp.Common.Wire.Path;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -294,7 +296,7 @@ public class RdfFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisp
     /// Every entry of the project, by name - one nested level deep, because a registration is a
     /// child of the subject it names.
     /// </summary>
-    private static async Task<IReadOnlyDictionary<string, Contracts.ShortGuid>> EntriesAsync(
+    private static async Task<IReadOnlyDictionary<string, Common.Wire.ShortGuid>> EntriesAsync(
         GrpcChannel channel,
         Metadata headers,
         ShortGuid projectId,
@@ -321,7 +323,7 @@ public class RdfFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisp
     }
 
     /// <summary>The canvas's own selection shape: the <c>.adp</c> file, then the element as its child.</summary>
-    private static ContextSelection ElementChain(Contracts.ShortGuid entryId, string elementId) =>
+    private static ContextSelection ElementChain(Common.Wire.ShortGuid entryId, string elementId) =>
         new()
         {
             Source = ContextSelectionSource.Explorer,
@@ -337,8 +339,8 @@ public class RdfFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisp
 
     private static Task<ExecuteActionResponse> ExecuteProjectActionAsync(
         ContextService.ContextServiceClient contextClient,
-        Contracts.ShortGuid projectId,
-        Contracts.ShortGuid watchId,
+        Common.Wire.ShortGuid projectId,
+        Common.Wire.ShortGuid watchId,
         Metadata headers,
         string actionId) =>
         contextClient.ExecuteActionAsync(

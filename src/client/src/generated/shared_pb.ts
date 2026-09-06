@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file shared.proto.
  */
 export const file_shared: GenFile = /*@__PURE__*/
-  fileDesc("CgxzaGFyZWQucHJvdG8SCmV0YWxpaS5hZHAiGgoJU2hvcnRHdWlkEg0KBXZhbHVlGAEgASgMQheqAhRFdEFsaWkuQWRwLkNvbnRyYWN0c2IGcHJvdG8z");
+  fileDesc("CgxzaGFyZWQucHJvdG8SCmV0YWxpaS5hZHAiGgoJU2hvcnRHdWlkEg0KBXZhbHVlGAEgASgMQhmqAhZFdEFsaWkuQWRwLkNvbW1vbi5XaXJlYgZwcm90bzM");
 
 /**
  * The raw 16-byte representation of a System.Guid (EtAlii.Adp.ShortGuid);

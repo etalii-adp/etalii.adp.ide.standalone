@@ -7,4 +7,32 @@
     one coordinated landing at a time. Nothing here may reference any other project.
   -->
 
+  <ItemGroup>
+    <!-- The one downward reference Common may hold (Architect 1's task-3 ruling): the
+         universal core, already beneath Diagram, Editor and Backend, so ShortGuid.Cast's
+         partial can convert wire ShortGuid to and from the domain EtAlii.Adp.ShortGuid.
+         The constraint's intent stands: never upward, never Backend, never an area. -->
+    <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Google.Protobuf is the runtime; Grpc.Tools compiles the linked protos at build. -->
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      The .proto files stay in src/api/ and are LINKED here (backend-project-decomposition
+      design): Common owns generation for the wire types many areas share, in the
+      EtAlii.Adp.Common.Wire namespace the files themselves declare. GrpcServices="Both" as
+      the single-project build had - these three carry no service, so it emits messages only.
+    -->
+    <Protobuf Include="..\..\api\shared.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\shared.proto" />
+    <Protobuf Include="..\..\api\connection.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\connection.proto" />
+    <Protobuf Include="..\..\api\elements.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\elements.proto" />
+  </ItemGroup>
+
 </Project>

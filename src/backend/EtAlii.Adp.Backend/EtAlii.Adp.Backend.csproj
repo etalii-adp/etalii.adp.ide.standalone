@@ -21,7 +21,8 @@
       generated types across assemblies; its integration tests use the
       client stubs generated here to call the services in-process.
     -->
-    <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="Both" />
+    <Protobuf Include="..\..\api\*.proto" ProtoRoot="..\..\api" GrpcServices="Both"
+              Exclude="..\..\api\shared.proto;..\..\api\connection.proto;..\..\api\elements.proto" />
   </ItemGroup>
 
   <ItemGroup>

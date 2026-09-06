@@ -1,19 +1,17 @@
 using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Backend.Problems;
 using EtAlii.Adp.Backend.Projects;
+using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Diagram;
-
 using Grpc.Core;
 using Grpc.Net.Client;
-
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-
 using Xunit;
-
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
+using Path = EtAlii.Adp.Common.Wire.Path;
 
 namespace EtAlii.Adp.Backend.Tests;
 

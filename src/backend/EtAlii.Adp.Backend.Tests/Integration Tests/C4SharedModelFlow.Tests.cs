@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend.Projects;
+using EtAlii.Adp.Common.Wire;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
@@ -7,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
+using Path = EtAlii.Adp.Common.Wire.Path;
 
 namespace EtAlii.Adp.Backend.Tests;
 
@@ -159,7 +161,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
     private static async Task<IReadOnlyList<string>> ElementIdsAsync(
         DiagramService.DiagramServiceClient client,
         Metadata headers,
-        Contracts.ShortGuid projectId,
+        Common.Wire.ShortGuid projectId,
         string fileName)
     {
         var elements = await BaselineAsync(client, headers, projectId, fileName);
@@ -170,7 +172,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
     private static async Task<string> TitleOfAsync(
         DiagramService.DiagramServiceClient client,
         Metadata headers,
-        Contracts.ShortGuid projectId,
+        Common.Wire.ShortGuid projectId,
         string fileName)
     {
         var elements = await BaselineAsync(client, headers, projectId, fileName);
@@ -182,7 +184,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
     private static async Task<IReadOnlyList<Element>> BaselineAsync(
         DiagramService.DiagramServiceClient client,
         Metadata headers,
-        Contracts.ShortGuid projectId,
+        Common.Wire.ShortGuid projectId,
         string fileName)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
@@ -228,7 +230,7 @@ public class C4SharedModelFlowTests : IClassFixture<WebApplicationFactory<Progra
         return new Metadata { { SessionTokenHeader, response.Session.Value } };
     }
 
-    private async Task<Contracts.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
+    private async Task<Common.Wire.ShortGuid> AddProjectAsync(GrpcChannel channel, Metadata headers)
     {
         var projectClient = new ProjectService.ProjectServiceClient(channel);
         var pathMessage = new Path();

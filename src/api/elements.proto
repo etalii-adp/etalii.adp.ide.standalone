@@ -5,7 +5,7 @@ package etalii.adp;
 import "connection.proto";
 import "google/protobuf/any.proto";
 
-option csharp_namespace = "EtAlii.Adp";
+option csharp_namespace = "EtAlii.Adp.Common.Wire";
 
 message ElementId {
   string value = 1;
