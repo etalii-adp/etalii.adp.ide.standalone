@@ -7,7 +7,7 @@ using EtAlii.Adp.Authentication;
 using Microsoft.Extensions.Options;
 #endif
 
-namespace EtAlii.Adp.Backend.Sessions;
+namespace EtAlii.Adp.Sessions;
 
 /// <summary>
 /// Single enforcement point for Requirement 1.6 / grpc-core-communication Requirement 5.1:

@@ -1,11 +1,10 @@
 using EtAlii.Adp.Authentication;
-using EtAlii.Adp.Backend.Problems;
 
 using EtAlii.Adp.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace EtAlii.Adp.Backend.Sessions;
+namespace EtAlii.Adp.Sessions;
 
 /// <summary>
 /// Registers everything that answers "who is calling": the authenticator and its options,
