@@ -131,6 +131,88 @@ export function straightPath(from: Point, to: Point): string {
   return `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
 }
 
+/**
+ * A polyline through the given waypoints, as an SVG path - the route a user has bent by hand
+ * (diagram-library Requirement 3.1). No waypoints means a straight line.
+ */
+export function polylinePath(from: Point, to: Point, waypoints: readonly Point[] = []): string {
+  const stops = [...waypoints, to].map((point) => `L ${point.x} ${point.y}`).join(" ");
+  return `M ${from.x} ${from.y} ${stops}`;
+}
+
+/**
+ * An axis-aligned route: out horizontally to the midpoint, vertically across, then in
+ * horizontally - the orthogonal family flow diagrams draw. A corner radius rounds the two
+ * elbows with quarter-turn arcs; zero (the default) keeps them sharp.
+ */
+export function orthogonalPath(from: Point, to: Point, cornerRadius = 0): string {
+  const midX = (from.x + to.x) / 2;
+  if (cornerRadius <= 0 || from.y === to.y) {
+    return `M ${from.x} ${from.y} L ${midX} ${from.y} L ${midX} ${to.y} L ${to.x} ${to.y}`;
+  }
+
+  // The radius never exceeds what the segments can host, or the arcs would overlap.
+  const r = Math.min(cornerRadius, Math.abs(midX - from.x), Math.abs(to.y - from.y) / 2, Math.abs(to.x - midX));
+  const xDir = Math.sign(midX - from.x) || 1;
+  const yDir = Math.sign(to.y - from.y) || 1;
+  const sweep1 = xDir * yDir > 0 ? 1 : 0;
+  const sweep2 = xDir * yDir > 0 ? 0 : 1;
+  return [
+    `M ${from.x} ${from.y}`,
+    `L ${midX - xDir * r} ${from.y}`,
+    `A ${r} ${r} 0 0 ${sweep1} ${midX} ${from.y + yDir * r}`,
+    `L ${midX} ${to.y - yDir * r}`,
+    `A ${r} ${r} 0 0 ${sweep2} ${midX + xDir * r} ${to.y}`,
+    `L ${to.x} ${to.y}`,
+  ].join(" ");
+}
+
+/**
+ * A single-control-point curve bowed perpendicular to the chord, always to the same side of
+ * travel - the arc a causal-loop link draws, generalized: A -> B and B -> A bow to opposite
+ * sides and enclose a lens instead of overdrawing each other.
+ */
+export function arcPath(from: Point, to: Point, bow = 0.25): string {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const control = {
+    x: (from.x + to.x) / 2 - dy * bow,
+    y: (from.y + to.y) / 2 + dx * bow,
+  };
+  return `M ${from.x} ${from.y} Q ${control.x} ${control.y} ${to.x} ${to.y}`;
+}
+
+/** A quadratic bezier with its control at the straight midpoint - a soft, single-bend curve. */
+export function quadraticBezierPath(from: Point, to: Point): string {
+  const mid = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
+  return `M ${from.x} ${from.y} Q ${mid.x} ${mid.y} ${to.x} ${to.y}`;
+}
+
+/**
+ * A smooth spline through the given waypoints: Catmull-Rom converted to the cubic segments
+ * SVG can draw, so the curve passes THROUGH every waypoint rather than being pulled toward
+ * it. No waypoints means a straight line, exactly as the polyline degenerates.
+ */
+export function splinePath(from: Point, to: Point, waypoints: readonly Point[] = []): string {
+  const points = [from, ...waypoints, to];
+  if (points.length === 2) {
+    return straightPath(from, to);
+  }
+
+  const segments: string[] = [`M ${from.x} ${from.y}`];
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[Math.max(i - 1, 0)];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[Math.min(i + 2, points.length - 1)];
+    const c1 = { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 };
+    const c2 = { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 };
+    segments.push(`C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${p2.x} ${p2.y}`);
+  }
+
+  return segments.join(" ");
+}
+
 /** The midpoint of two points - where a connector's label usually belongs. */
 export function midpointOf(from: Point, to: Point): Point {
   return { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };

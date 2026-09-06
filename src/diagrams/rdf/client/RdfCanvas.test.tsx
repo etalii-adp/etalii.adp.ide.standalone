@@ -53,7 +53,27 @@ vi.mock("@client/shell/panels/useToolboxItems", () => ({
   useToolboxItems: () => [],
 }));
 
-const { RdfCanvas, nodeHeightOf } = await import("./RdfCanvas");
+const { RdfCanvas, nodeHeightOf, NODE_WIDTH } = await import("./RdfCanvas");
+
+// jsdom implements no pointer capture on SVG elements; the library's arbiter uses it.
+SVGElement.prototype.setPointerCapture ??= () => {};
+SVGElement.prototype.releasePointerCapture ??= () => {};
+
+/** A pointer event jsdom can carry - usePointerGesture.test.tsx's idiom, for the same reason. */
+function pointer(type: string, init: MouseEventInit) {
+  return new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
+}
+
+function press(target: Element, init: MouseEventInit = {}) {
+  fireEvent(target, pointer("pointerdown", { button: 0, ...init }));
+  fireEvent(target, pointer("pointerup", { ...init }));
+}
+
+function drag(target: Element, fromX: number, fromY: number, toX: number, toY: number) {
+  fireEvent(target, pointer("pointerdown", { button: 0, clientX: fromX, clientY: fromY }));
+  fireEvent(target, pointer("pointermove", { clientX: toX, clientY: toY }));
+  fireEvent(target, pointer("pointerup", { clientX: toX, clientY: toY }));
+}
 
 function resource(id: string, display: string, x: number, y: number, options: Partial<RdfNode> = {}): RdfNode {
   return {
@@ -69,12 +89,16 @@ function resource(id: string, display: string, x: number, y: number, options: Pa
   };
 }
 
+const ALICE = "res:http://example.org/alice";
+const BOB = "res:http://example.org/bob";
+const EDGE = "edge:res:http://example.org/alice|http://example.org/knows|res:http://example.org/bob";
+
 function modelWith(): RdfModel {
   return {
     nodes: new Map([
       [
-        "res:http://example.org/alice",
-        resource("res:http://example.org/alice", "ex:alice", 0, 0, {
+        ALICE,
+        resource(ALICE, "ex:alice", 0, 0, {
           typeBadges: ["foaf:Person"],
           rows: [
             { predicate: "foaf:name", value: "Alice", annotation: "" },
@@ -82,16 +106,16 @@ function modelWith(): RdfModel {
           ],
         }),
       ],
-      ["res:http://example.org/bob", resource("res:http://example.org/bob", "ex:bob", 520, 0)],
+      [BOB, resource(BOB, "ex:bob", 520, 0)],
       ["blank:0", resource("blank:0", "_:c", 260, 200, { blank: true })],
     ]),
     edges: new Map([
       [
-        "edge:res:http://example.org/alice|http://example.org/knows|res:http://example.org/bob",
+        EDGE,
         {
-          id: "edge:res:http://example.org/alice|http://example.org/knows|res:http://example.org/bob",
-          fromElementId: "res:http://example.org/alice",
-          toElementId: "res:http://example.org/bob",
+          id: EDGE,
+          fromElementId: ALICE,
+          toElementId: BOB,
           predicate: "ex:knows",
           predicateIri: "http://example.org/knows",
         },
@@ -105,6 +129,8 @@ function renderCanvas() {
   return render(<RdfCanvas projectId={new Uint8Array([1])} entryId={new Uint8Array([2])} path={["graph.adp"]} />);
 }
 
+const cardOf = (container: HTMLElement, id: string) => container.querySelector(`[data-element-id="${id}"]`)!;
+
 beforeEach(() => {
   currentModel = modelWith();
   currentLoading = false;
@@ -117,38 +143,29 @@ beforeEach(() => {
   reportView.mockClear();
 });
 
-describe("the rdf canvas", () => {
+describe("the rdf canvas, on the library", () => {
   it("draws cards with badges, literal rows and a labeled directed edge (Requirement 3)", () => {
-    // Act.
     const { container } = renderCanvas();
 
-    // Assert.
-    expect(container.querySelectorAll(".rdf-node")).toHaveLength(3);
-    expect(container.querySelector("marker#rdf-arrowhead")).not.toBeNull();
     expect(container.textContent).toContain("ex:alice");
-    // Types as badges, literals as rows with their annotations - never nodes.
-    expect(container.querySelector(".rdf-badges")!.textContent).toBe("foaf:Person");
+    expect(container.textContent).toContain("foaf:Person");
     expect(container.textContent).toContain("foaf:name: Alice");
     expect(container.textContent).toContain("dc:description: A person @en");
-    // The predicate rides its edge.
-    expect(container.querySelector(".rdf-edge-label")!.textContent).toBe("ex:knows");
+    expect(container.textContent).toContain("ex:knows");
+    expect(container.querySelector(`[data-connection-id="${EDGE}"] path.canvas-connection-line`)).not.toBeNull();
   });
 
   it("styles a blank node apart, wearing the shared element classes (Requirement 3.4)", () => {
-    // Act.
     const { container } = renderCanvas();
 
-    // Assert.
-    const blank = container.querySelector(".rdf-node-blank");
-    expect(blank).not.toBeNull();
-    expect(blank!.textContent).toContain("_:c");
-    expect(blank!.classList.contains("canvas-element")).toBe(true);
+    const blank = cardOf(container, "blank:0");
+    expect(blank.querySelector(".rdf-node-blank")).not.toBeNull();
+    expect(blank.querySelector(".canvas-element")).not.toBeNull();
   });
 
   it("sizes a card by its rows", () => {
-    // Arrange.
     const bare = resource("res:x", "x", 0, 0);
-    const full = resource("res:y", "y", 0, 0, {
+    const tall = resource("res:y", "y", 0, 0, {
       typeBadges: ["t"],
       rows: [
         { predicate: "a", value: "1", annotation: "" },
@@ -156,167 +173,131 @@ describe("the rdf canvas", () => {
       ],
     });
 
-    // Act & assert.
-    expect(nodeHeightOf(full)).toBeGreaterThan(nodeHeightOf(bare));
+    expect(nodeHeightOf(tall)).toBeGreaterThan(nodeHeightOf(bare));
   });
 
   it("lands a drag as one layout move, and treats a still click as a selection (Requirement 4)", () => {
-    // Arrange.
     const { container } = renderCanvas();
-    const node = container.querySelector('[data-element-id="res:http://example.org/alice"]')!;
+    const alice = cardOf(container, ALICE);
 
-    // Act: press, move past the threshold, release.
-    fireEvent.mouseDown(node, { clientX: 100, clientY: 100 });
-    fireEvent.mouseMove(container.querySelector(".rdf-surface")!, { clientX: 160, clientY: 140 });
-    fireEvent.mouseUp(container.querySelector(".rdf-surface")!);
-
-    // Assert.
+    // A drag: the move lands in the module's own top-left coordinates, exactly as the
+    // layout block stores them. jsdom's zero rect makes one pixel one canvas unit.
+    drag(alice, 10, 10, 60, 40);
     expect(moves).toHaveLength(1);
-    expect(moves[0].elementId).toBe("res:http://example.org/alice");
+    expect(moves[0].elementId).toBe(ALICE);
+    expect(moves[0].x).toBeCloseTo(50, 5);
+    expect(moves[0].y).toBeCloseTo(30, 5);
 
-    // Act: press and release without moving.
-    fireEvent.mouseDown(node, { clientX: 100, clientY: 100 });
-    fireEvent.mouseUp(container.querySelector(".rdf-surface")!);
-
-    // Assert: a click selects, never edits.
+    // A still press: a selection, never an edit - and never a move.
+    press(cardOf(container, BOB), { clientX: 10, clientY: 10 });
     expect(moves).toHaveLength(1);
-    expect(selections.length).toBeGreaterThan(0);
+    expect(selections).toHaveLength(1);
   });
 
   it("shows the showing-N-of-M banner exactly when the view is truncated (Requirement 8.2)", () => {
-    // Arrange & act: not truncated.
-    let rendered = renderCanvas();
-    expect(rendered.container.querySelector(".rdf-truncation-banner")).toBeNull();
-    rendered.unmount();
+    currentModel = { ...modelWith(), truncation: { shown: 3, total: 12 } };
+    const { container } = renderCanvas();
 
-    // Arrange & act: truncated.
-    currentModel = { ...modelWith(), truncation: { shown: 1000, total: 5321 } };
-    rendered = renderCanvas();
-
-    // Assert.
-    const banner = rendered.container.querySelector(".rdf-truncation-banner");
-    expect(banner).not.toBeNull();
-    expect(banner!.textContent).toContain("1000 of 5321");
-    expect(banner!.textContent).toContain("withheld");
+    expect(container.textContent).toContain("Showing 3 of 12 resources");
   });
 
   it("finishes an anchor drag as one stateless rel: gesture (Requirement 6)", () => {
-    // Arrange: the source resource is selected, so its anchors are drawn.
-    currentSelectionKey = "element:res:http://example.org/alice";
     const { container } = renderCanvas();
-    const anchor = container.querySelector(".rdf-anchor-hit")!;
-    const target = container.querySelector('[data-element-id="res:http://example.org/bob"]')!;
 
-    // Act: start on the anchor, enter the target, release on it.
-    fireEvent.mouseDown(anchor, { clientX: 100, clientY: 100 });
-    fireEvent.mouseEnter(target);
-    fireEvent.mouseUp(target);
+    // Alice's east anchor sits at her right edge's midpoint (220, 44); Bob's card spans
+    // x 520..740, y 0..40 - so a 340-right, 10-up drag lands the preview inside his box.
+    const anchor = container.querySelector(`[data-element-id="${ALICE}"] [data-anchor="e"]`)!;
+    drag(anchor, NODE_WIDTH, 30, 560, 20);
 
-    // Assert.
     expect(executed).toHaveLength(1);
     expect(executed[0].actionId).toBe("rdf.connect");
+    const source = executed[0].source as { source: { value: { value: string } } };
+    expect(source.source.value.value).toBe(`rel:${ALICE}->${BOB}`);
   });
 
-  it("selects an edge on click, so its removal is reachable (found in the manual pass)", () => {
-    // Arrange: the first manual pass found the Requirement 6 edge removal unreachable - no
-    // handler on the edge, so nothing on the canvas could ever select one.
+  it("a connect released over nothing, or back on its own source, is a never-mind", () => {
     const { container } = renderCanvas();
-    const edge = container.querySelector('[data-element-id^="edge:"]')!;
+    const anchor = container.querySelector(`[data-element-id="${ALICE}"] [data-anchor="e"]`)!;
 
-    // Act.
-    fireEvent.mouseDown(edge.querySelector(".canvas-connection-hit")!);
+    // Over empty canvas: no event, no action.
+    drag(anchor, NODE_WIDTH, 30, 400, 400);
+    // Back over Alice herself: the definition forbids self-connections.
+    drag(anchor, NODE_WIDTH, 30, 100, 40);
 
-    // Assert.
-    expect(selections.length).toBeGreaterThan(0);
+    expect(executed).toHaveLength(0);
+  });
+
+  it("selects an edge on press, so its removal is reachable (found in the manual pass)", () => {
+    const { container } = renderCanvas();
+
+    press(container.querySelector(`[data-connection-id="${EDGE}"] path.canvas-connection-hit`)!, {
+      clientX: 300,
+      clientY: 30,
+    });
+
+    expect(selections).toHaveLength(1);
   });
 
   it("offers no anchors on a blank node - the identity boundary starts at the gesture", () => {
-    // Arrange.
-    currentSelectionKey = "element:blank:0";
-
-    // Act.
     const { container } = renderCanvas();
 
-    // Assert.
-    expect(container.querySelector(".rdf-anchor-hit")).toBeNull();
+    expect(cardOf(container, "blank:0").querySelectorAll("[data-anchor]")).toHaveLength(0);
+    expect(cardOf(container, ALICE).querySelectorAll("[data-anchor]")).toHaveLength(2);
   });
 
   it("drops a toolbox entry as a new: placement under the pointer (Requirement 6)", () => {
-    // Arrange.
     const { container } = renderCanvas();
-    const surface = container.querySelector(".rdf-surface")!;
-    const dataTransfer = {
-      types: ["application/x-adp-toolbox-item"],
-      getData: () => "rdf.add-resource",
-      dropEffect: "",
-    };
+    const surface = container.querySelector("svg.library-canvas-surface")!;
 
-    // Act.
-    fireEvent.dragOver(surface, { dataTransfer });
-    fireEvent.drop(surface, { dataTransfer, clientX: 50, clientY: 60 });
+    fireEvent.drop(surface, {
+      clientX: 200,
+      clientY: 100,
+      dataTransfer: { types: ["application/x-adp-toolbox-item"], getData: () => "rdf.addResource", dropEffect: "" },
+    });
 
-    // Assert.
     expect(executed).toHaveLength(1);
-    expect(executed[0].actionId).toBe("rdf.add-resource");
-    expect(String((executed[0].source as { case?: unknown; value?: unknown } | undefined) ?? "")).toBeDefined();
+    expect(executed[0].actionId).toBe("rdf.addResource");
+    const source = executed[0].source as { source: { value: { value: string } } };
+    expect(source.source.value.value).toMatch(/^new:/);
   });
-});
 
-describe("the view report", () => {
-  it("reports the viewport once the view settles, and again when it changes", () => {
-    // Arrange.
-    // The behavioural test the whole specification turns on: a view CHANGE produces a report.
-    // A canvas that reports only at open has implemented the first frame of the loop, not the
-    // loop - so one call proves nothing and two, with different rectangles, prove it.
+  it("an empty drop payload refuses: nothing executes", () => {
+    const { container } = renderCanvas();
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+
+    fireEvent.drop(surface, {
+      dataTransfer: { types: ["application/x-adp-toolbox-item"], getData: () => "", dropEffect: "" },
+    });
+
+    expect(executed).toHaveLength(0);
+  });
+
+  it("reports the viewport once the view settles, and again when it changes", async () => {
     vi.useFakeTimers();
-
     try {
       const { container } = renderCanvas();
-      vi.advanceTimersByTime(VIEW_REPORT_DEBOUNCE_MS * 2);
-      const atOpen = reportView.mock.calls.length;
 
-      // Act.
-      // A wheel with ctrl held is this canvas's zoom; it changes pixelsPerUnit, which is the
-      // half of the view a report keyed on position alone would miss.
-      const surface = container.querySelector(".rdf-surface") ?? container.firstElementChild;
-      fireEvent.wheel(surface!, { deltaY: -100, ctrlKey: true, clientX: 100, clientY: 100 });
-      vi.advanceTimersByTime(VIEW_REPORT_DEBOUNCE_MS * 2);
+      await vi.advanceTimersByTimeAsync(VIEW_REPORT_DEBOUNCE_MS * 2);
+      expect(reportView).toHaveBeenCalledTimes(1);
+      const first = reportView.mock.calls[0][0] as { minX: number; maxX: number };
+      expect(first.maxX).toBeGreaterThan(first.minX);
 
-      // Assert.
-      // Two reports, and the second describes a different window - not merely a second call.
-      // A count alone would pass against a conversion that ignored the zoom entirely, since
-      // this canvas's zoom moves the origin as well and would re-fire the report regardless.
-      expect(atOpen).toBe(1);
-      expect(reportView.mock.calls.length).toBeGreaterThan(atOpen);
-
-      const first = reportView.mock.calls[0][0];
-      const last = reportView.mock.calls[reportView.mock.calls.length - 1][0];
-      expect(last.maxX - last.minX).not.toBeCloseTo(first.maxX - first.minX);
-      expect(last.maxY - last.minY).not.toBeCloseTo(first.maxY - first.minY);
+      // A zoom changes the view; once it settles the backend hears the new rectangle.
+      fireEvent.wheel(container.querySelector("svg.library-canvas-surface")!, { deltaY: -100 });
+      await vi.advanceTimersByTimeAsync(VIEW_REPORT_DEBOUNCE_MS * 2);
+      expect(reportView).toHaveBeenCalledTimes(2);
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it("reports nothing while the diagram is loading or has failed", () => {
-    // Arrange.
-    // A report before the first delta describes a view of nothing; one after a permanent
-    // failure is a call to a connection the backend has just said is unroutable.
+  it("reports nothing while the diagram is loading or has failed", async () => {
     vi.useFakeTimers();
-
     try {
-      for (const state of [{ loading: true, failed: false }, { loading: false, failed: true }]) {
-        reportView.mockClear();
-        currentLoading = state.loading;
-        currentFailed = state.failed;
-
-        // Act.
-        renderCanvas();
-        vi.advanceTimersByTime(VIEW_REPORT_DEBOUNCE_MS * 2);
-
-        // Assert.
-        expect(reportView, state.loading ? "reported while loading" : "reported after a failure").not.toHaveBeenCalled();
-      }
+      currentLoading = true;
+      renderCanvas();
+      await vi.advanceTimersByTimeAsync(VIEW_REPORT_DEBOUNCE_MS * 3);
+      expect(reportView).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }

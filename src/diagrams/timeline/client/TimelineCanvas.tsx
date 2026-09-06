@@ -1,38 +1,26 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { facingAnchorsBetween, horizontalBezierPath, sideAnchorOf, type ConnectorBox } from "@client/canvas/connectors";
-import { InteractiveBezierConnection } from "@client/canvas/connections/interactive-bezier/InteractiveBezierConnection";
-import { usePointerGesture } from "@client/canvas/gesture/usePointerGesture";
-import { InlineLabelEditor } from "@client/canvas/label/InlineLabelEditor";
-import { asideLabelPlacement, centredLabelPlacement, midpointLabelPlacement } from "@client/canvas/label/labelPlacement";
-import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { useRegisterInlineLabelPlacement, type LabelPlacement } from "@client/shell/panels/InlineLabelPlacementContext";
+import { useMemo, useRef, useState } from "react";
+import { forwardBezierPath, horizontalBezierPath } from "@client/canvas/connectors";
 import { SpanElement, type SpanElementClasses } from "@client/canvas/elements/span/SpanElement";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
-import { useElementContextMenu } from "@client/canvas/useElementContextMenu";
+import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
 import { innermostKey, useContextConnection, useContextPrompt, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
-import { ContextMenu } from "@client/shell/context/ContextMenu";
-import { toMenuGroups } from "@client/shell/context/toMenuGroups";
-import { TOOLBOX_DRAG_TYPE } from "@client/shell/panels/DiagramToolboxContext";
-import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
-import { useRegisterDiagramView } from "@client/shell/panels/DiagramViewContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
 import { useViewReport } from "@client/diagrams/useViewReport";
-import type { Viewport } from "@client/diagrams/viewReport";
-import type { DiagramCanvasProps } from "@client/shell/panels/diagramCanvas";
-import { ContextSelectionAction } from "@client/generated/context_pb";
+import type { DiagramCanvasProps as ShellCanvasProps } from "@client/shell/panels/diagramCanvas";
+import { ContextSelectionAction, type ContextShortcut } from "@client/generated/context_pb";
+import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
+import type { CustomShapeRef, DiagramDefinition } from "@client/canvas/library/definition/diagramDefinition";
+import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
+import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
+import type { DiagramEventHandlers, DiagramSelection, DiagramViewport } from "@client/canvas/library/api/diagramEvents";
 import { TimelineRuler } from "./TimelineRuler";
-import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
-import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
 import { useTimelineStream } from "./useTimelineStream";
 import type { TimelineElement, TimelineModel } from "./timelineModel";
 
 /**
- * The vertical distance between adjacent rows, in the module's own y units.
- *
- * Mirrors `TimelineRows.Height` in the backend, and must stay equal to it: the y this canvas
- * sends with a move is `row × this`, and the backend divides the same constant back out. A
- * mismatch would land every vertical drag on the wrong row.
+ * The vertical distance between adjacent rows, in the module's own y units. Mirrors
+ * `TimelineRows.Height` in the backend and must stay equal to it.
  */
 const ROW_HEIGHT = 60;
 
@@ -41,799 +29,49 @@ const ELEMENT_HEIGHT = 36;
 
 /** A moment's marker radius. */
 const MOMENT_RADIUS = 9;
-/** SpanElement puts an instant's label this far past its diamond, start-anchored. */
-const MOMENT_LABEL_GAP = 6;
-/** InteractiveBezierConnection's own label offset, above the curve's midpoint. */
-const CONNECTION_LABEL_DY = -6;
 
 const DAY = 86400;
 
-/**
- * What the surface is assumed to be before it has been measured - jsdom, or the render before
- * the first layout. The same two numbers the view fit and the scroll axes already assume, named
- * here so the three agree and a reader can find them.
- */
+/** What the surface is assumed to be before it is measured - jsdom, or the first frame. */
 const FALLBACK_WIDTH_PX = 1200;
-const FALLBACK_HEIGHT_PX = 400;
-
-/** Zoom limits, in seconds per pixel: from about a minute across the view to about a century. */
-const MIN_SECONDS_PER_PIXEL = 0.05;
-const MAX_SECONDS_PER_PIXEL = 4_000_000;
-const ZOOM_STEP = 1.25;
 
 /**
- * Vertical zoom limits, in pixels per module y unit. Far tighter than the time axis's: rows
- * are discrete, so past a few steps either way more vertical zoom only wastes screen.
- */
-const MIN_VERTICAL_SCALE = 0.25;
-const MAX_VERTICAL_SCALE = 4;
-
-interface TimelineView {
-  /** The time at the view's left edge, seconds since the epoch. */
-  startSeconds: number;
-  /** How many seconds one pixel covers - the zoom, which never reaches the backend. */
-  secondsPerPixel: number;
-  /** Vertical scroll, in the module's y units. */
-  panY: number;
-  /**
-   * How many pixels one module y unit covers - the same zoom applied vertically, so zooming
-   * spreads and squeezes the rows along with the time axis instead of leaving them fixed.
-   */
-  verticalScale: number;
-}
-
-interface DragState {
-  id: string;
-  /** Where the pointer went down. */
-  clientX: number;
-  clientY: number;
-  /** The element's own placement when the drag began. */
-  beginSeconds: number;
-  y: number;
-  moved: boolean;
-}
-
-interface DragPreview {
-  id: string;
-  beginSeconds: number;
-  row: number;
-}
-
-interface ResizeState {
-  id: string;
-  side: "left" | "right";
-  clientX: number;
-  /** The edge's time when the resize began. */
-  edgeSeconds: number;
-  /** The opposite edge, which the moving one must not cross (Requirement 7.4). */
-  limitSeconds: number;
-  dateOnly: boolean;
-}
-
-interface ConnectDrag {
-  fromId: string;
-  /**
-   * Which anchor the drag lifted from. From the end (right), the relation reads source to
-   * landing; from the begin (left) it arrives reversed - landing to source - because what
-   * precedes an element points into it.
-   */
-  fromSide: "left" | "right";
-  /** Where the pending curve currently ends, in module coordinates. */
-  x: number;
-  y: number;
-  /** The element under the pointer, when there is one. */
-  overId?: string;
-}
-
-/**
- * The timeline: periods and moments on rows along a time axis, with a view-fixed ruler and
- * every gesture ending in one command (Requirements 4-9).
+ * The seconds-to-canvas-units mapping, frozen when the first non-empty model lands.
  *
- * Zoom and pan live entirely here as a seconds-to-pixels transform; what crosses the wire is
- * always a point in the module's own coordinate space - seconds and row-height units - which is
- * what keeps the backend ignorant of the viewport (Requirement 5).
+ * The time axis cannot live in the viewBox itself: seconds are ~10^9 while rows are ~10^2,
+ * and a uniform svg would draw one of them invisibly. So the module normalizes once - the
+ * initial fit's span across ~1200 units, exactly the pixels the old canvas would have used -
+ * and the library's uniform zoom and pan take over from there. Frozen deliberately: deriving
+ * it from the current model would re-normalize on every edit and shift the whole drawing
+ * under the user. This is the axis mechanism the schema's background/extent could not carry,
+ * recorded in the tasks document per Requirement 9.4.
  */
-export function TimelineCanvas({ projectId, entryId, path }: DiagramCanvasProps) {
-  const { model, loading, failed, moveElementTo, reportView } = useTimelineStream(projectId, path);
-  const { select, executeAction, executeShortcut, setProperty } = useContextConnection();
-  const { selection, actions } = useContextSelection();
-  const surfaceRef = useRef<HTMLDivElement | null>(null);
-
-  useRegisterDiagramToolbox(useToolboxItems(projectId, path));
-
-  const [view, setView] = useState<TimelineView>(() => ({
-    startSeconds: Date.now() / 1000 - 15 * DAY,
-    secondsPerPixel: (60 * DAY) / 1200,
-    panY: -ROW_HEIGHT,
-    verticalScale: 1,
-  }));
-  const fittedRef = useRef(false);
-
-  /**
-   * What the reader can see, in the module's own units: seconds across, row-derived y down.
-   *
-   * The conversion lives here rather than in the shared code, which converts nothing
-   * (view-delta-adoption Requirement 3.4). This canvas drives seconds-per-pixel and a vertical
-   * scale rather than a `viewBox`, so it works the rectangle out from its own view state and the
-   * measured surface - the same two lines `scrollAxesOf` below already computes for the
-   * scrollbars, and the second of the two caller shapes `canvas/scroll/readme.md` records.
-   */
-  const viewportOf = useCallback((): Viewport => {
-    const rect = surfaceRef.current?.getBoundingClientRect();
-    const widthPx = rect?.width || FALLBACK_WIDTH_PX;
-    const heightPx = rect?.height || FALLBACK_HEIGHT_PX;
-    return {
-      minX: view.startSeconds,
-      minY: view.panY,
-      maxX: view.startSeconds + widthPx * view.secondsPerPixel,
-      maxY: view.panY + heightPx / view.verticalScale,
-    };
-  }, [view]);
-
-  // Reported once the view settles. The rectangle is what is keyed on, so a pan and a zoom that
-  // happen to show the same span report once - and a resize that changes nothing else does not
-  // go unreported, because the measured surface is part of the rectangle.
-  const reported = viewportOf();
-  useViewReport({
-    view: {
-      x: reported.minX,
-      y: reported.minY,
-      w: reported.maxX - reported.minX,
-      h: reported.maxY - reported.minY,
-    },
-    report: reportView,
-    convert: viewportOf,
-    ready: !loading && !failed,
-  });
-
-  const panRef = useRef<{ clientX: number; clientY: number; view: TimelineView; moved: boolean } | null>(null);
-  const dragRef = useRef<DragState | null>(null);
-  const [drag, setDrag] = useState<DragPreview | null>(null);
-  const resizeRef = useRef<ResizeState | null>(null);
-  const [resize, setResize] = useState<{ id: string; side: "left" | "right"; edgeSeconds: number } | null>(null);
-  const [connect, setConnect] = useState<ConnectDrag | null>(null);
-  const connectRef = useRef<ConnectDrag | null>(null);
-  const [rejection, setRejection] = useState("");
-
-  const selectionKey = innermostKey(selection);
-  const selectedId = elementIdOfKey(selectionKey ?? null);
-
-  // A right-click's menu, opened once the pushed selection for that target arrives with its
-  // actions: the menu shows the backend's answer, never a guess - and the shared hook opens
-  // at once when the target is already the selection, actions in hand.
-  const { menuPosition, openMenuAt, closeMenu } = useElementContextMenu(selectionKey, actions.length > 0, (id) =>
-    select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
-  );
-
-  /** Fits the whole timeline into view, with a margin. */
-  const fitToView = useCallback(() => {
-    const surface = surfaceRef.current;
-    const elements = [...model.elements.values()];
-    if (!surface || elements.length === 0) {
-      return;
-    }
-
-    const begins = elements.map((element) => element.x);
-    const ends = elements.map((element) => endSecondsOf(element));
-    const min = Math.min(...begins);
-    const max = Math.max(...ends);
-    const span = Math.max(max - min, DAY);
-    const width = surface.getBoundingClientRect().width || 1200;
-
-    setView((current) => ({
-      ...current,
-      startSeconds: min - span * 0.1,
-      secondsPerPixel: clampZoom((span * 1.2) / width),
-      panY: Math.min(...elements.map((element) => element.y)) - ROW_HEIGHT,
-      verticalScale: 1,
-    }));
-  }, [model]);
-
-  // Fitted once, when the first delta lands - and never again, because refitting under the
-  // user's feet on every edit would fight their own pan.
-  useEffect(() => {
-    if (!loading && !fittedRef.current && model.elements.size > 0) {
-      fittedRef.current = true;
-      fitToView();
-    }
-  }, [loading, model, fitToView]);
-
-  const zoomBy = useCallback((factor: number) => {
-    setView((current) => {
-      const surface = surfaceRef.current;
-      const rect = surface?.getBoundingClientRect();
-      const width = rect?.width || 1200;
-      const height = rect?.height || 600;
-      const next = clampZoom(current.secondsPerPixel * factor);
-      // The same step vertically: rows spread and squeeze along with the time axis.
-      const nextVertical = clampVerticalScale(current.verticalScale / factor);
-      // About the centre on both axes, so the thing being looked at stays where it is.
-      const centre = current.startSeconds + (width / 2) * current.secondsPerPixel;
-      const centreY = current.panY + (height / 2) / current.verticalScale;
-      return {
-        startSeconds: centre - (width / 2) * next,
-        secondsPerPixel: next,
-        panY: centreY - (height / 2) / nextVertical,
-        verticalScale: nextVertical,
-      };
-    });
-  }, []);
-
-  useRegisterDiagramView(
-    useMemo(
-      () => ({
-        zoomIn: () => zoomBy(1 / ZOOM_STEP),
-        zoomOut: () => zoomBy(ZOOM_STEP),
-        fitToView,
-      }),
-      [zoomBy, fitToView],
-    ),
-  );
-
-  // Non-passive by hand: React's synthetic wheel listener cannot preventDefault, and without
-  // it every zoom also scrolls the page.
-  useEffect(() => {
-    const surface = surfaceRef.current;
-    if (!surface) {
-      return;
-    }
-
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      zoomBy(event.deltaY > 0 ? ZOOM_STEP : 1 / ZOOM_STEP);
-    };
-
-    surface.addEventListener("wheel", onWheel, { passive: false });
-    return () => surface.removeEventListener("wheel", onWheel);
-  }, [zoomBy]);
-
-  // Escape abandons whichever gesture is in flight, dispatching nothing (Requirement 6.6).
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") {
-        return;
-      }
-
-      dragRef.current = null;
-      resizeRef.current = null;
-      connectRef.current = null;
-      setDrag(null);
-      setResize(null);
-      setConnect(null);
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
-
-  const toSeconds = (clientX: number): number => {
-    const rect = surfaceRef.current?.getBoundingClientRect();
-    return view.startSeconds + (clientX - (rect?.left ?? 0)) * view.secondsPerPixel;
-  };
-
-  const toModuleY = (clientY: number): number => {
-    const rect = surfaceRef.current?.getBoundingClientRect();
-    return view.panY + (clientY - (rect?.top ?? 0)) / view.verticalScale;
-  };
-
-  const secondsToPx = (seconds: number): number => (seconds - view.startSeconds) / view.secondsPerPixel;
-  const yToPx = (y: number): number => (y - view.panY) * view.verticalScale;
-
-  // Where an element's label, or a connection's, is drawn - for the shell's inline editor.
-  //
-  // Memoized on the model AND the view, unlike the adopters whose canvases carry a viewBox.
-  // This surface has none: it positions everything in pixels through secondsToPx and yToPx,
-  // so a pan or a zoom moves every label without changing the model. A resolver memoized on
-  // the model alone would keep answering with the pixels of a view the reader has left.
-  const placementOfLabel = useCallback(
-    (elementId: string): LabelPlacement | null => {
-      const element = model.elements.get(elementId);
-      if (element !== undefined) {
-        const box = boxFor(element, null, null, secondsToPx, yToPx, view.secondsPerPixel, view.verticalScale);
-
-        // A span's label is centred in its box; an instant's sits beside its diamond, because
-        // there is no box to put it in. SpanElement draws them differently and so must this -
-        // a centred editor on an instant would open over the marker rather than over the text.
-        return element.isPeriod
-          ? centredLabelPlacement(box, element.label)
-          : asideLabelPlacement({ x: box.x, y: box.y }, MOMENT_RADIUS + MOMENT_LABEL_GAP, element.label);
-      }
-
-      const connection = model.connections.get(elementId);
-      if (connection === undefined) {
-        return null;
-      }
-
-      const fromElement = model.elements.get(connection.fromElementId);
-      const toElement = model.elements.get(connection.toElementId);
-      if (fromElement === undefined || toElement === undefined) {
-        return null; // a dangling connection is drawn nowhere, so it can be placed nowhere
-      }
-
-      const from = boxFor(fromElement, null, null, secondsToPx, yToPx, view.secondsPerPixel, view.verticalScale);
-      const to = boxFor(toElement, null, null, secondsToPx, yToPx, view.secondsPerPixel, view.verticalScale);
-      // The same two anchors InteractiveBezierConnection picks, loop and all: it draws the
-      // label at their midpoint, so a resolver using a different pair would place the
-      // editor somewhere the text is not.
-      const loopsBack = toElement.x < endSecondsOf(fromElement);
-      const [start, end] = loopsBack
-        ? [sideAnchorOf(from, "right"), sideAnchorOf(to, "left")]
-        : facingAnchorsBetween(from, to);
-      return midpointLabelPlacement(start, end, CONNECTION_LABEL_DY, connection.label);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- secondsToPx and yToPx are
-    // recreated every render and are pure functions of view, which is in the list.
-    [model, view],
-  );
-  useRegisterInlineLabelPlacement(placementOfLabel);
-
-  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
-  const editingId = inlineLabelElementIdOf(prompt);
-  const editingPlacement = editingId === null ? null : placementOfLabel(editingId);
-
-  /**
-   * Ends an open inline edit before a gesture that moves the canvas begins. Taking the focus is
-   * the whole mechanism: the editor commits on blur, so the commit rule stays in one place
-   * rather than being reimplemented per gesture.
-   */
-  const returnFocusToSurface = useCallback(() => surfaceRef.current?.focus(), []);
-
-  const endInlineEditBeforeGesture = () => {
-    if (editingPlacement !== null) {
-      surfaceRef.current?.focus();
-    }
-  };
-
-  const onSurfacePointerDown = (event: React.MouseEvent) => {
-    endInlineEditBeforeGesture();
-    // "Empty space" is the surface div OR the bare svg that fills it. A real click never lands
-    // on the div itself - the svg covers it - so a target===currentTarget check silently
-    // disabled panning for every real mouse, while the synthetic events that verified it
-    // dispatched straight at the div and passed. Element shapes stopPropagation, so anything
-    // arriving here from inside the svg is background.
-    const target = event.target as Element;
-    if (target !== event.currentTarget && !target.classList?.contains("timeline-content")) {
-      return;
-    }
-
-    closeMenu();
-    if (event.button === 0) {
-      select(null);
-    }
-
-    // Both buttons pan on empty space: the left is the convention every canvas here follows,
-    // and the right frees the left hand for selection-heavy work. The `moved` flag is what
-    // keeps a motionless right-click from being eaten as a zero-length pan.
-    panRef.current = { clientX: event.clientX, clientY: event.clientY, view, moved: false };
-  };
-
-  const onElementPointerDown = (event: React.MouseEvent, element: TimelineElement) => {
-    event.stopPropagation();
-    endInlineEditBeforeGesture();
-    setRejection("");
-    dragRef.current = {
-      id: element.id,
-      clientX: event.clientX,
-      clientY: event.clientY,
-      beginSeconds: element.x,
-      y: element.y,
-      moved: false,
-    };
-  };
-
-  const onAnchorPointerDown = (event: React.MouseEvent, element: TimelineElement, side: "left" | "right") => {
-    // Starting a connection: drag from a side anchor to another element (Requirement 8.4).
-    // Which side is remembered, because it decides the relation's direction on release.
-    event.stopPropagation();
-    const start: ConnectDrag = { fromId: element.id, fromSide: side, x: toSeconds(event.clientX), y: toModuleY(event.clientY) };
-    connectRef.current = start;
-    setConnect(start);
-  };
-
-  const onResizePointerDown = (event: React.MouseEvent, element: TimelineElement, side: "left" | "right") => {
-    event.stopPropagation();
-    setRejection("");
-    resizeRef.current = {
-      id: element.id,
-      side,
-      clientX: event.clientX,
-      edgeSeconds: side === "left" ? element.x : endSecondsOf(element),
-      limitSeconds: side === "left" ? endSecondsOf(element) : element.x,
-      dateOnly: element.dateOnly,
-    };
-  };
-
-  const onPointerMove = (event: React.MouseEvent) => {
-    const dragging = dragRef.current;
-    if (dragging) {
-      const deltaSeconds = (event.clientX - dragging.clientX) * view.secondsPerPixel;
-      const y = dragging.y + (event.clientY - dragging.clientY) / view.verticalScale;
-      dragging.moved ||= Math.abs(event.clientX - dragging.clientX) + Math.abs(event.clientY - dragging.clientY) > 3;
-      // The row snaps as the pointer crosses the midpoint, so the user sees where it will land
-      // before releasing (Requirement 6.2). Rounded away from zero to match TimelineRows.
-      setDrag({
-        id: dragging.id,
-        beginSeconds: dragging.beginSeconds + deltaSeconds,
-        row: nearestRow(y),
-      });
-      return;
-    }
-
-    const resizing = resizeRef.current;
-    if (resizing) {
-      const deltaSeconds = (event.clientX - resizing.clientX) * view.secondsPerPixel;
-      let edge = resizing.edgeSeconds + deltaSeconds;
-      // The edge stops at the other rather than crossing it (Requirement 7.4). The handler
-      // clamps again server-side; this copy is what the user feels.
-      edge = resizing.side === "left" ? Math.min(edge, resizing.limitSeconds) : Math.max(edge, resizing.limitSeconds);
-      setResize({ id: resizing.id, side: resizing.side, edgeSeconds: edge });
-      return;
-    }
-
-    const connecting = connectRef.current;
-    if (connecting) {
-      const next = { ...connecting, x: toSeconds(event.clientX), y: toModuleY(event.clientY) };
-      connectRef.current = next;
-      setConnect(next);
-      return;
-    }
-
-    const pan = panRef.current;
-    if (pan) {
-      pan.moved ||= Math.abs(event.clientX - pan.clientX) + Math.abs(event.clientY - pan.clientY) > 3;
-      setView({
-        ...pan.view,
-        startSeconds: pan.view.startSeconds - (event.clientX - pan.clientX) * pan.view.secondsPerPixel,
-        panY: pan.view.panY - (event.clientY - pan.clientY) / pan.view.verticalScale,
-      });
-    }
-  };
-
-  /** The canvas owns the right button: a drag pans, and the browser's own menu never appears. */
-  const onSurfaceContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-  };
-
-  const onPointerUp = (event: React.MouseEvent) => {
-    panRef.current = null;
-
-    const dragging = dragRef.current;
-    const landed = drag;
-    dragRef.current = null;
-    setDrag(null);
-    if (dragging && landed && dragging.moved) {
-      void (async () => {
-        const error = await moveElementTo(landed.id, landed.beginSeconds, landed.row * ROW_HEIGHT);
-        if (error) {
-          setRejection(error);
-        }
-      })();
-      return;
-    }
-
-    if (dragging && !dragging.moved) {
-      // A press with no movement is a click: a selection, never an edit.
-      select(elementSelectionOf(entryId, path, dragging.id));
-      return;
-    }
-
-    const resizing = resizeRef.current;
-    const resized = resize;
-    resizeRef.current = null;
-    setResize(null);
-    if (resizing && resized) {
-      // A resize edits begin or end through the property channel of the selection the adorner
-      // belongs to - one command, one undo (Requirement 7.6).
-      const property = resizing.side === "left" ? "timeline.begin" : "timeline.end";
-      void (async () => {
-        const outcome = await setProperty(property, formatSeconds(resized.edgeSeconds, resizing.dateOnly));
-        if (!outcome.accepted) {
-          setRejection(outcome.error);
-        }
-      })();
-      return;
-    }
-
-    const connecting = connectRef.current;
-    connectRef.current = null;
-    setConnect(null);
-    if (connecting) {
-      // The element under the release, read from the event itself as well as from the tracked
-      // hover: a fast drag can land its mouseup before any mouseenter fired, and the gesture
-      // must not depend on the hover having kept up.
-      const under = (event.target as Element | null)?.closest?.("[data-element-id]");
-      const targetId = connecting.overId ?? under?.getAttribute("data-element-id") ?? null;
-      if (targetId === connecting.fromId) {
-        // Back onto its own source: a relation to itself is refused anyway, so this is a
-        // "never mind" and nothing is sent.
-        return;
-      }
-
-      // The whole gesture in one call - source and landing together in a rel: id. Deliberately
-      // stateless: the two-call protocol this replaces kept an armed source in the backend
-      // between calls, and a stale arm related the wrong pair. A drag from the begin anchor
-      // arrives reversed - what precedes an element points into it - so the landing becomes
-      // the relation's source and the dragged element its target.
-      const landing = targetId ?? newPlacementId(connecting.x, nearestRow(connecting.y));
-      const gesture = connecting.fromSide === "left"
-        ? `rel:${landing}->${connecting.fromId}`
-        : `rel:${connecting.fromId}->${landing}`;
-      void (async () => {
-        const outcome = await executeAction("timeline.connect", elementSourceOf(gesture));
-        if (!outcome.accepted) {
-          setRejection(outcome.error);
-        }
-      })();
-    }
-  };
-
-  const onElementPointerEnter = (element: TimelineElement) => {
-    const connecting = connectRef.current;
-    if (connecting && element.id !== connecting.fromId) {
-      const next = { ...connecting, overId: element.id };
-      connectRef.current = next;
-      setConnect(next);
-    }
-  };
-
-  const onElementPointerLeave = () => {
-    const connecting = connectRef.current;
-    if (connecting?.overId) {
-      const next = { ...connecting, overId: undefined };
-      connectRef.current = next;
-      setConnect(next);
-    }
-  };
-
-  /** One menu opening for elements and relations alike - both select through the same channel. */
-  const openTargetMenuAt = (event: React.MouseEvent, id: string) => {
-    if (panRef.current?.moved) {
-      // The right button was panning; releasing it must not also open a menu.
-      return;
-    }
-
-    openMenuAt(event, id);
-  };
-
-  const onElementContextMenu = (event: React.MouseEvent, element: TimelineElement) => {
-    openTargetMenuAt(event, element.id);
-  };
-
-  // A press on a relation selects it, exactly as it does an element (the resolver answers
-  // for both) - decided by the shared arbiter at the gesture's end, never by the trailing
-  // click, which lands wherever a drag's drop left the geometry.
-  const connectionGesture = usePointerGesture<string>({
-    onPress: (connectionId) => select(elementSelectionOf(entryId, path, connectionId)),
-  });
-
-  /**
-   * A toolbox entry dropped anywhere on the canvas: the drop names a placement - the time and
-   * row under the pointer - and the element appears there with nothing asked. One handler on
-   * the surface; drops over elements bubble here and land at the pointer all the same.
-   */
-  const onSurfaceDrop = (event: React.DragEvent) => {
-    const actionId = event.dataTransfer.getData(TOOLBOX_DRAG_TYPE);
-    if (!actionId) {
-      return;
-    }
-
-    event.preventDefault();
-    void (async () => {
-      const outcome = await executeAction(
-        actionId,
-        elementSourceOf(newPlacementId(toSeconds(event.clientX), nearestRow(toModuleY(event.clientY)))));
-      if (!outcome.accepted) {
-        setRejection(outcome.error);
-      }
-    })();
-  };
-
-  const onDragOver = (event: React.DragEvent) => {
-    if (event.dataTransfer.types.includes(TOOLBOX_DRAG_TYPE)) {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = "copy";
-    }
-  };
-
-  /**
-   * Structural keys travel to the backend as data - the backend holds the key-to-action table,
-   * this canvas only forwards the keystroke against the selected element. Tab and Enter are
-   * prevented from their browser defaults (focus traversal, activation) when an element is
-   * selected, because here they mean "add after" and "add below".
-   */
-  const onKeyDown = (event: React.KeyboardEvent) => {
-    if (!selectedId || isTextTarget(event.target)) {
-      return;
-    }
-
-    const shortcut = structuralShortcutFor(event, ["F2", "Delete", "Insert", "Tab", "Enter"]);
-    if (!shortcut) {
-      return;
-    }
-
-    event.preventDefault();
-    void (async () => {
-      const outcome = await executeShortcut(shortcut, elementSourceOf(selectedId));
-      if (!outcome.accepted && outcome.error) {
-        setRejection(outcome.error);
-      }
-    })();
-  };
-
-  if (failed) {
-    return (
-      <div className="timeline-canvas canvas-host timeline-canvas-message canvas-host-message">
-        <p>This timeline could not be opened.</p>
-      </div>
-    );
-  }
-
-  // Where each element currently sits, with the in-flight gesture's preview overriding the
-  // model - which is what makes the connections follow the drag (Requirements 6.5, 8.6): the
-  // curves are recomputed from these boxes on every pointer move.
-  const boxes = new Map<string, ConnectorBox>();
-  for (const element of model.elements.values()) {
-    boxes.set(element.id, boxFor(element, drag, resize, secondsToPx, yToPx, view.secondsPerPixel, view.verticalScale));
-  }
-
-  const width = surfaceRef.current?.getBoundingClientRect().width ?? 1200;
-
-  return (
-    <div className="timeline-canvas canvas-host">
-      <div
-        ref={surfaceRef}
-        className="timeline-surface canvas-viewport"
-        role="application"
-        aria-label="Timeline"
-        tabIndex={0}
-        onMouseDown={onSurfacePointerDown}
-        onMouseMove={onPointerMove}
-        onMouseUp={onPointerUp}
-        onMouseLeave={onPointerUp}
-        onContextMenu={onSurfaceContextMenu}
-        onKeyDown={onKeyDown}
-        onDragOver={onDragOver}
-        onDrop={onSurfaceDrop}
-      >
-        <svg className="timeline-content canvas-drawing">
-          {[...model.connections.values()].map((connection) => {
-            const from = boxes.get(connection.fromElementId);
-            const to = boxes.get(connection.toElementId);
-            const fromElement = model.elements.get(connection.fromElementId);
-            const toElement = model.elements.get(connection.toElementId);
-            if (!from || !to || !fromElement || !toElement) {
-              // A dangling connection is the validator's to report; there is nothing to draw.
-              return null;
-            }
-
-            // The shared interactive connection (Requirements 8.1-8.3). Whether the line must
-            // loop - the target beginning before the source ends - is decided here in the
-            // module's own coordinates, time, and handed over as a fact.
-            return (
-              <InteractiveBezierConnection
-                key={connection.id}
-                id={connection.id}
-                from={from}
-                to={to}
-                loopsBack={toElement.x < endSecondsOf(fromElement)}
-                selected={connection.id === selectedId}
-                label={connection.label || undefined}
-                className="timeline-connection canvas-connection"
-                selectedClassName="timeline-selected canvas-selected"
-                hitClassName="timeline-connection-hit canvas-connection-hit"
-                lineClassName="timeline-connection-line canvas-connection-line"
-                press={connectionGesture.press(connection.id)}
-                onOpenMenu={(event) => openTargetMenuAt(event, connection.id)}
-              />
-            );
-          })}
-
-          {connect ? <PendingConnection boxes={boxes} connect={connect} secondsToPx={secondsToPx} yToPx={yToPx} /> : null}
-
-          {/* Last of all, so the editor is above every span and connection it overlaps. This
-              surface carries no viewBox, so its placements are pixels rather than module
-              units - which the editor neither knows nor needs to. */}
-          {editingPlacement !== null && (
-            <InlineLabelEditor
-              placement={editingPlacement}
-              onPropose={onProposeLabel}
-              onSubmit={onSubmitLabel}
-              onCancel={onCancelLabel}
-              onReturnFocus={returnFocusToSurface}
-            />
-          )}
-
-          {[...model.elements.values()].map((element) => (
-            <TimelineElementShape
-              key={element.id}
-              element={element}
-              box={boxes.get(element.id)!}
-              selected={element.id === selectedId}
-              connectTarget={connect?.overId === element.id}
-              dragPreview={drag?.id === element.id ? drag : null}
-              resizePreview={resize?.id === element.id ? resize : null}
-              onElementDown={onElementPointerDown}
-              onAnchorDown={onAnchorPointerDown}
-              onResizeDown={onResizePointerDown}
-              onElementEnter={onElementPointerEnter}
-              onElementLeave={onElementPointerLeave}
-              onElementContextMenu={onElementContextMenu}
-            />
-          ))}
-        </svg>
-        <TimelineRuler startSeconds={view.startSeconds} secondsPerPixel={view.secondsPerPixel} widthPx={width} />
-        <CanvasScrollbars
-          {...scrollAxesOf(model, view, width)}
-          className="timeline-scrollbars"
-          onPan={(startSeconds, panY) => setView((current) => ({ ...current, startSeconds, panY }))}
-        />
-      </div>
-      <ContextMenu
-        open={menuPosition !== null}
-        groups={toMenuGroups(actions, (action) => {
-          closeMenu();
-          void executeAction(action.id, selectedId ? elementSourceOf(selectedId) : undefined);
-        })}
-        position={menuPosition ?? { x: 0, y: 0 }}
-        onClose={closeMenu}
-      />
-      {loading ? <p className="timeline-status canvas-status">Opening…</p> : null}
-      {rejection ? <p className="timeline-rejection canvas-rejection">{rejection}</p> : null}
-    </div>
-  );
+export interface TimelineScale {
+  originSeconds: number;
+  secondsPerUnit: number;
+  /** The module y (row × height) drawn at canvas y 0. */
+  originY: number;
 }
 
-/** The placement id a gesture carries when it lands on empty canvas: `new:{seconds},{row}`. */
-function newPlacementId(seconds: number, row: number): string {
-  return `new:${seconds},${row}`;
-}
-
-/** An element's box in pixels, with any in-flight preview applied. Centre-based, as the shared geometry expects. */
-function boxFor(
-  element: TimelineElement,
-  drag: DragPreview | null,
-  resize: { id: string; side: "left" | "right"; edgeSeconds: number } | null,
-  secondsToPx: (seconds: number) => number,
-  yToPx: (y: number) => number,
-  secondsPerPixel: number,
-  verticalScale: number,
-): ConnectorBox {
-  let beginSeconds = element.x;
-  let endSeconds = endSecondsOf(element);
-  let y = element.y;
-
-  if (drag && drag.id === element.id) {
-    const duration = endSeconds - beginSeconds;
-    beginSeconds = drag.beginSeconds;
-    endSeconds = beginSeconds + duration;
-    y = drag.row * ROW_HEIGHT;
+/** The scale the first fit would choose for this model - exported so tests can compute positions. */
+export function timelineScaleOf(model: TimelineModel): TimelineScale {
+  const elements = [...model.elements.values()];
+  if (elements.length === 0) {
+    return { originSeconds: 0, secondsPerUnit: DAY / 20, originY: -ROW_HEIGHT };
   }
 
-  if (resize && resize.id === element.id) {
-    if (resize.side === "left") {
-      beginSeconds = resize.edgeSeconds;
-    } else {
-      endSeconds = resize.edgeSeconds;
-    }
-  }
-
-  const width = element.isPeriod
-    ? Math.max((endSeconds - beginSeconds) / secondsPerPixel, 2)
-    : MOMENT_RADIUS * 2;
-  const left = secondsToPx(beginSeconds);
-  // The box scales with the vertical zoom, exactly as its width already scales with the
-  // horizontal one - a row's height in pixels is a view concern, never a module one.
-  const height = ELEMENT_HEIGHT * verticalScale;
-
+  const begins = elements.map((element) => element.x);
+  const ends = elements.map((element) => endSecondsOf(element));
+  const min = Math.min(...begins);
+  const span = Math.max(Math.max(...ends) - min, DAY);
   return {
-    x: element.isPeriod ? left + width / 2 : left,
-    y: yToPx(y) + height / 2,
-    width,
-    height,
+    originSeconds: min - span * 0.1,
+    secondsPerUnit: (span * 1.2) / FALLBACK_WIDTH_PX,
+    originY: Math.min(...elements.map((element) => element.y)) - ROW_HEIGHT,
   };
 }
 
-function endSecondsOf(element: TimelineElement): number {
+export function endSecondsOf(element: TimelineElement): number {
   if (!element.isPeriod) {
     return element.x;
   }
@@ -855,19 +93,9 @@ function formatSeconds(seconds: number, dateOnly: boolean): string {
   return dateOnly ? day : `${day}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
 }
 
-interface TimelineElementShapeProps {
-  element: TimelineElement;
-  box: ConnectorBox;
-  selected: boolean;
-  connectTarget: boolean;
-  dragPreview: DragPreview | null;
-  resizePreview: { id: string; side: "left" | "right"; edgeSeconds: number } | null;
-  onElementDown: (event: React.MouseEvent, element: TimelineElement) => void;
-  onAnchorDown: (event: React.MouseEvent, element: TimelineElement, side: "left" | "right") => void;
-  onResizeDown: (event: React.MouseEvent, element: TimelineElement, side: "left" | "right") => void;
-  onElementEnter: (element: TimelineElement) => void;
-  onElementLeave: () => void;
-  onElementContextMenu: (event: React.MouseEvent, element: TimelineElement) => void;
+/** The placement id a gesture carries when it lands on empty canvas: `new:{seconds},{row}`. */
+function newPlacementId(seconds: number, row: number): string {
+  return `new:${seconds},${row}`;
 }
 
 /** The class names the shared span element hangs the timeline's styling on. */
@@ -881,126 +109,330 @@ const SPAN_CLASSES: SpanElementClasses = {
   anchorHit: "timeline-anchor-hit canvas-anchor-hit",
 };
 
-function TimelineElementShape({
-  element,
-  box,
-  selected,
-  connectTarget,
-  dragPreview,
-  resizePreview,
-  onElementDown,
-  onAnchorDown,
-  onResizeDown,
-  onElementEnter,
-  onElementLeave,
-  onElementContextMenu,
-}: TimelineElementShapeProps) {
-  const classes = ["timeline-element canvas-element"];
-  if (selected) {
-    classes.push("timeline-selected canvas-selected");
-  }
+/** An element as the library carries it here: the model element plus what draws it. */
+type SpanModelElement = DiagramModelElement & { source: TimelineElement; scale: TimelineScale };
 
-  if (connectTarget) {
-    classes.push("timeline-connect-target canvas-connect-target");
-  }
-
-  // What the gesture would land on, visible before the user commits (Requirements 6.5, 7.7).
-  const hint = dragPreview
-    ? `${formatSeconds(dragPreview.beginSeconds, element.dateOnly)} · row ${dragPreview.row}`
-    : resizePreview
-      ? formatSeconds(resizePreview.edgeSeconds, element.dateOnly)
+/**
+ * The period-or-moment as a custom shape: the shared SpanElement draws the box or diamond
+ * and the label that trims itself, while the library owns selection, anchors, resizing and
+ * every gesture - so the span's own selection furniture stays off (`selected={false}`), and
+ * the drag hint is computed from the position the library has already carried it to.
+ */
+const spanShape: CustomShapeRef = {
+  customShape: "timeline-span",
+  render: (raw, state) => {
+    const element = raw as SpanModelElement;
+    const { source, scale } = element;
+    const width = element.width ?? 1;
+    const hint = state?.dragging === true
+      ? `${formatSeconds(scale.originSeconds + (element.x - width / 2) * scale.secondsPerUnit, source.dateOnly)} · row ${nearestRow(element.y - ELEMENT_HEIGHT / 2 + scale.originY)}`
       : null;
 
-  // The drawing - the box or diamond, the label that steps aside when the box is too narrow,
-  // the resize adorners and the connection anchors painted over them - is the shared span
-  // element's; only what the timeline says through it is decided here.
+    return (
+      <SpanElement
+        box={{ x: element.x, y: element.y, width, height: element.height ?? ELEMENT_HEIGHT }}
+        moment={!source.isPeriod}
+        label={source.label || source.id}
+        hint={hint}
+        selected={false}
+        pointRadius={MOMENT_RADIUS}
+        classes={SPAN_CLASSES}
+      />
+    );
+  },
+  edgePoint: (bounds, towards) => ({
+    x: towards.x >= bounds.x + bounds.width / 2 ? bounds.x + bounds.width : bounds.x,
+    y: bounds.y + bounds.height / 2,
+  }),
+};
+
+/**
+ * What a timeline allows, stated once: periods that drag and resize, moments that drag,
+ * either connecting to either from its begin or end anchor, with one bezier relation whose
+ * empty release is itself a gesture - the create-and-relate the notation offers.
+ */
+const TIMELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
+  elementTypes: [
+    {
+      id: "period",
+      shape: spanShape,
+      anchors: {
+        kind: "sides",
+        fractions: [
+          { side: "left", at: 0.5, name: "begin" },
+          { side: "right", at: 0.5, name: "end" },
+        ],
+      },
+      sizing: "user",
+      label: { placement: "inside", editable: true },
+    },
+    {
+      id: "moment",
+      shape: spanShape,
+      anchors: {
+        kind: "sides",
+        fractions: [
+          { side: "left", at: 0.5, name: "begin" },
+          { side: "right", at: 0.5, name: "end" },
+        ],
+      },
+      sizing: "model",
+      label: { placement: "beside", editable: true },
+    },
+  ],
+  relationTypes: [
+    {
+      id: "gates",
+      // The loop is decided by geometry: a target beginning before the source ends gets the
+      // forward-and-back curve, exactly as the interactive bezier drew it.
+      route: {
+        customRoute: "timeline-bezier",
+        path: (from, to) => (to.x < from.x ? forwardBezierPath(from, to) : horizontalBezierPath(from, to)),
+      },
+      label: { placement: "midpoint", offset: -6, editable: true },
+      className: "timeline-connection",
+      lineClassName: "timeline-connection-line",
+      hitClassName: "timeline-connection-hit",
+      endpoints: {
+        source: { elementTypes: ["period", "moment"] },
+        target: { elementTypes: ["period", "moment"], anchors: "edge" },
+        allowSelf: false,
+      },
+      emptyRelease: "complete",
+    },
+  ],
+  layout: { modes: ["manual"] },
+  dragging: "enabled",
+});
+
+/**
+ * The timeline, drawn through the diagram library: the axis-shaped reference canvas
+ * (diagram-library Requirement 9.3). The time axis lives in the module's frozen
+ * seconds-to-units scale; the ruler renders beside the canvas from the library's one
+ * view-changed signal; and every gesture - drag, resize, connect from either anchor,
+ * create-and-relate on an empty release, toolbox drops as placements - answers through the
+ * module's own transports, one command each.
+ */
+export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
+  const { model, loading, failed, moveElementTo, reportView } = useTimelineStream(projectId, path);
+  const { select, executeAction, executeShortcut, setProperty } = useContextConnection();
+  const { selection, actions } = useContextSelection();
+  const toolboxItems = useToolboxItems(projectId, path);
+  const [rejection, setRejection] = useState("");
+  const [viewport, setViewport] = useState<DiagramViewport | null>(null);
+
+  const selectionKey = innermostKey(selection);
+  const selectedId = elementIdOfKey(selectionKey ?? null);
+
+  // Frozen when the first non-empty model lands, exactly as the old canvas fitted once.
+  const scaleRef = useRef<TimelineScale | null>(null);
+  if (scaleRef.current === null && model.elements.size > 0) {
+    scaleRef.current = timelineScaleOf(model);
+  }
+  const scale = scaleRef.current ?? timelineScaleOf(model);
+
+  const toUnitsX = (seconds: number) => (seconds - scale.originSeconds) / scale.secondsPerUnit;
+  const toSeconds = (units: number) => scale.originSeconds + units * scale.secondsPerUnit;
+  const toUnitsY = (moduleY: number) => moduleY - scale.originY;
+  const toModuleY = (units: number) => units + scale.originY;
+
+  const diagramModel = useMemo<DiagramModel>(() => {
+    const elements = [...model.elements.values()].map((element): SpanModelElement => {
+      const width = element.isPeriod
+        ? Math.max((endSecondsOf(element) - element.x) / scale.secondsPerUnit, 2)
+        : MOMENT_RADIUS * 2;
+      return {
+        id: element.id,
+        type: element.isPeriod ? "period" : "moment",
+        x: toUnitsX(element.x) + width / 2,
+        y: toUnitsY(element.y) + ELEMENT_HEIGHT / 2,
+        width,
+        height: ELEMENT_HEIGHT,
+        label: element.label,
+        source: element,
+        scale,
+      };
+    });
+    const connections = [...model.connections.values()].map((connection) => ({
+      id: connection.id,
+      type: "gates",
+      sourceId: connection.fromElementId,
+      targetId: connection.toElementId,
+      // Fixed sides, deliberately: a timeline reads left to right, so a relation always
+      // leaves its source's end and arrives at its target's begin - and when the target
+      // starts earlier, those two points are what the loop-back curve loops between.
+      sourceAnchor: "end",
+      targetAnchor: "begin",
+      label: connection.label,
+    }));
+    return { elements, connections };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the scale is frozen; only the model varies.
+  }, [model, scale]);
+
+  const librarySelection = useMemo<DiagramSelection>(() => {
+    if (selectedId === null) {
+      return [];
+    }
+    return [{ kind: model.connections.has(selectedId) ? "connection" : "element", id: selectedId }];
+  }, [selectedId, model.connections]);
+
+  const runAction = (actionId: string, sourceId?: string) => {
+    void (async () => {
+      const outcome = await executeAction(actionId, sourceId ? elementSourceOf(sourceId) : undefined);
+      if (!outcome.accepted && outcome.error) {
+        setRejection(outcome.error);
+      }
+    })();
+  };
+
+  const runShortcut = (shortcut: ContextShortcut, sourceId: string) => {
+    void (async () => {
+      const outcome = await executeShortcut(shortcut, elementSourceOf(sourceId));
+      if (!outcome.accepted && outcome.error) {
+        setRejection(outcome.error);
+      }
+    })();
+  };
+
+  /** A drag from the begin anchor arrives reversed: what precedes an element points into it. */
+  const relationOf = (sourceId: string, sourceAnchor: string | undefined, landing: string) =>
+    sourceAnchor === "begin" ? `rel:${landing}->${sourceId}` : `rel:${sourceId}->${landing}`;
+
+  const events: DiagramEventHandlers = {
+    onSelectionChanged: ({ selection: next }) =>
+      select(next.length > 0 ? elementSelectionOf(entryId, path, next[0].id) : null),
+    onElementMoved: ({ elementId, position }) => {
+      const element = model.elements.get(elementId);
+      if (element === undefined) {
+        return;
+      }
+      setRejection("");
+      const width = element.isPeriod ? Math.max((endSecondsOf(element) - element.x) / scale.secondsPerUnit, 2) : MOMENT_RADIUS * 2;
+      const beginSeconds = toSeconds(position.x - width / 2);
+      const row = nearestRow(toModuleY(position.y - ELEMENT_HEIGHT / 2));
+      void (async () => {
+        const error = await moveElementTo(elementId, beginSeconds, row * ROW_HEIGHT);
+        if (error) {
+          setRejection(error);
+        }
+      })();
+    },
+    onElementResized: ({ elementId, side, bounds }) => {
+      const element = model.elements.get(elementId);
+      if (element === undefined || !element.isPeriod) {
+        return;
+      }
+      setRejection("");
+      // The moving edge stops at the other rather than crossing it; the handler clamps again
+      // server-side, this copy is what the user feels.
+      let edgeSeconds = toSeconds(side === "left" ? bounds.x : bounds.x + bounds.width);
+      const limit = side === "left" ? endSecondsOf(element) : element.x;
+      edgeSeconds = side === "left" ? Math.min(edgeSeconds, limit) : Math.max(edgeSeconds, limit);
+      const property = side === "left" ? "timeline.begin" : "timeline.end";
+      void (async () => {
+        const outcome = await setProperty(property, formatSeconds(edgeSeconds, element.dateOnly));
+        if (!outcome.accepted) {
+          setRejection(outcome.error);
+        }
+      })();
+    },
+    // One stateless call carries the whole gesture - the payload the context channel cannot
+    // (Requirement 7.3). Direction follows the anchor the drag lifted from.
+    onConnectionDrawn: ({ sourceElementId, sourceAnchor, targetElementId }) =>
+      runAction("timeline.connect", relationOf(sourceElementId, sourceAnchor, targetElementId)),
+    onConnectionReleasedOnEmpty: ({ sourceElementId, sourceAnchor, position }) => {
+      // Released on nothing: a create-and-relate placement at the dropped time and row.
+      const landing = newPlacementId(toSeconds(position.x), nearestRow(toModuleY(position.y)));
+      runAction("timeline.connect", relationOf(sourceElementId, sourceAnchor, landing));
+    },
+    onElementDropped: ({ elementType, position }) =>
+      runAction(elementType, newPlacementId(toSeconds(position.x), nearestRow(toModuleY(position.y)))),
+    onElementDeleted: ({ elementId }) => runShortcut(deleteShortcut(), elementId),
+    onConnectionDeleted: ({ connectionId }) => runShortcut(deleteShortcut(), connectionId),
+    onViewChanged: ({ viewport: next }) => setViewport(next),
+  };
+
+  // What the reader can see, in the module's own units - seconds across, row-derived y down -
+  // reported once it settles, observing the library's one view-changed signal.
+  useViewReport({
+    view: { x: viewport?.x ?? 0, y: viewport?.y ?? 0, w: viewport?.width ?? 0, h: viewport?.height ?? 0 },
+    report: reportView,
+    convert: () => ({
+      minX: toSeconds(viewport?.x ?? 0),
+      minY: toModuleY(viewport?.y ?? 0),
+      maxX: toSeconds((viewport?.x ?? 0) + (viewport?.width ?? 0)),
+      maxY: toModuleY((viewport?.y ?? 0) + (viewport?.height ?? 0)),
+    }),
+    ready: !loading && !failed && viewport !== null,
+  });
+
+  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
+  const editingId = inlineLabelElementIdOf(prompt);
+
+  /**
+   * Structural keys travel to the backend as data - the backend holds the key-to-action
+   * table. Delete arrives through the library's deletion events above; the rest bubble here.
+   */
+  const onKeyDown = (event: React.KeyboardEvent) => {
+    if (!selectedId || isTextTarget(event.target)) {
+      return;
+    }
+
+    const shortcut = structuralShortcutFor(event, ["F2", "Insert", "Tab", "Enter"]);
+    if (!shortcut) {
+      return;
+    }
+
+    event.preventDefault();
+    runShortcut(shortcut, selectedId);
+  };
+
+  if (failed) {
+    return (
+      <div className="timeline-canvas canvas-host timeline-canvas-message canvas-host-message">
+        <p>This timeline could not be opened.</p>
+      </div>
+    );
+  }
+
+  // The view-fixed ruler, derived from the same view the report observes.
+  const rulerStartSeconds = toSeconds(viewport?.x ?? 0);
+  const rulerSecondsPerPixel = ((viewport?.width ?? FALLBACK_WIDTH_PX) * scale.secondsPerUnit) / FALLBACK_WIDTH_PX;
+
+  /** The canvas owns the empty surface's right button; an item's right-click is the menu's. */
+  const onContextMenu = (event: React.MouseEvent) => {
+    if ((event.target as Element).closest("[data-element-id],[data-connection-id]") === null) {
+      event.preventDefault();
+    }
+  };
+
   return (
-    <SpanElement
-      className={classes.join(" ")}
-      data-element-id={element.id}
-      box={box}
-      moment={!element.isPeriod}
-      label={element.label || element.id}
-      hint={hint}
-      selected={selected}
-      pointRadius={MOMENT_RADIUS}
-      classes={SPAN_CLASSES}
-      onResizeStart={(event, side) => onResizeDown(event, element, side)}
-      onAnchorStart={(event, side) => onAnchorDown(event, element, side)}
-      onMouseDown={(event) => onElementDown(event, element)}
-      onMouseEnter={() => onElementEnter(element)}
-      onMouseLeave={onElementLeave}
-      onContextMenu={(event) => onElementContextMenu(event, element)}
-      onDragOver={(event) => event.preventDefault()}
-    />
+    <div className="timeline-canvas canvas-host" role="application" aria-label="Timeline" onKeyDown={onKeyDown} onContextMenu={onContextMenu}>
+      <DiagramCanvas
+        definition={TIMELINE_DEFINITION}
+        model={diagramModel}
+        events={events}
+        selection={librarySelection}
+        toolboxItems={toolboxItems}
+        context={{
+          selectionKey: selectionKey ?? undefined,
+          actions,
+          selectForMenu: (id) => select(elementSelectionOf(entryId, path, id, ContextSelectionAction.CONTEXT_MENU)),
+          executeAction: (actionId) => runAction(actionId, selectedId ?? undefined),
+        }}
+        editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
+        ariaLabel="Timeline"
+        className="timeline-surface canvas-viewport"
+        scrollbarsClassName="timeline-scrollbars"
+      />
+      <TimelineRuler startSeconds={rulerStartSeconds} secondsPerPixel={rulerSecondsPerPixel} widthPx={FALLBACK_WIDTH_PX} />
+      {loading ? <p className="timeline-status canvas-status">Opening…</p> : null}
+      {rejection ? <p className="timeline-rejection canvas-rejection">{rejection}</p> : null}
+    </div>
   );
 }
 
-function PendingConnection({
-  boxes,
-  connect,
-  secondsToPx,
-  yToPx,
-}: {
-  boxes: Map<string, ConnectorBox>;
-  connect: ConnectDrag;
-  secondsToPx: (seconds: number) => number;
-  yToPx: (y: number) => number;
-}) {
-  const from = boxes.get(connect.fromId);
-  if (!from) {
-    return null;
-  }
-
-  const end = connect.overId && boxes.has(connect.overId)
-    ? facingAnchorsBetween(from, boxes.get(connect.overId)!)[1]
-    : { x: secondsToPx(connect.x), y: yToPx(connect.y) };
-  const start = sideAnchorOf(from, end.x >= from.x ? "right" : "left");
-
-  return <path className="timeline-pending-connection canvas-pending-connection" d={horizontalBezierPath(start, end)} />;
-}
-
-function clampVerticalScale(scale: number): number {
-  return Math.min(MAX_VERTICAL_SCALE, Math.max(MIN_VERTICAL_SCALE, scale));
-}
-
-/**
- * The two scroll axes in the timeline's own units, for the shared scroll view.
- *
- * Horizontal is seconds: the view spans `widthPx * secondsPerPixel` from `startSeconds`, and
- * the extent is the elements' time span padded by half of itself on each side, never less than
- * a day. Vertical is row units: the view spans `heightPx / verticalScale` from `panY`, and the
- * extent is the elements' rows padded by two rows top and bottom. Both parameterisations
- * reproduce, term for term, what the timeline's own scrollbars computed before the extraction -
- * `scrollGeometry.test.ts` pins that.
- *
- * Two things are inherited unchanged on purpose (small-refinements Requirement 1.6): the 400px
- * height approximation, which only shapes the vertical thumb's ratio, and the empty-model
- * fallbacks that substitute the view's own window when there is nothing to measure. The 400 is
- * a known imprecision rather than a bug this change fixes - changing it would change the thumb
- * on every timeline.
- */
-function scrollAxesOf(model: TimelineModel, view: TimelineView, widthPx: number) {
-  const elements = [...model.elements.values()];
-  const heightPx = 400;
-
-  const viewSpanSeconds = widthPx * view.secondsPerPixel;
-  const minSeconds = elements.length > 0 ? Math.min(...elements.map((element) => element.x)) : view.startSeconds;
-  const maxSeconds = elements.length > 0
-    ? Math.max(...elements.map((element) => element.x + DAY))
-    : view.startSeconds + viewSpanSeconds;
-  const horizontalExtent = scrollExtentOf(minSeconds, maxSeconds, { factor: 0.5, minimumSpan: DAY });
-
-  const minY = elements.length > 0 ? Math.min(...elements.map((element) => element.y)) : view.panY;
-  const maxY = elements.length > 0 ? Math.max(...elements.map((element) => element.y + ROW_HEIGHT)) : view.panY + heightPx;
-  const verticalExtent = scrollExtentOf(minY, maxY, { factor: 0, minimum: 2 * ROW_HEIGHT });
-
-  return {
-    horizontal: { viewStart: view.startSeconds, viewSpan: viewSpanSeconds, ...horizontalExtent },
-    vertical: { viewStart: view.panY, viewSpan: heightPx / view.verticalScale, ...verticalExtent },
-  };
-}
-
-function clampZoom(secondsPerPixel: number): number {
-  return Math.min(MAX_SECONDS_PER_PIXEL, Math.max(MIN_SECONDS_PER_PIXEL, secondsPerPixel));
+/** The Delete key as the backend shortcut it has always travelled as. */
+function deleteShortcut(): ContextShortcut {
+  return { key: "Delete", ctrl: false, shift: false, alt: false, meta: false } as ContextShortcut;
 }
