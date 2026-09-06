@@ -2112,3 +2112,24 @@ whole-space Fit. Re-run the standing wardley entries above against a migrated bu
   behaviour is pinned by the 38 adapted unit tests, three of which were seen to fail under
   narrow sabotages (dragBounds removed, labelAt dropped, the 0..1 conversion broken).
 
+## mindmap re-run after its library migration (diagram-library-adoption, task 3)
+
+The map now renders through the diagram library: same nodes, branches, indicators, selection,
+menu, structural keys and in-place rename; the backend's own layout untouched. Re-run the
+standing mindmap entries above against a migrated build, plus:
+
+- **Actions**: drag a node over another and watch the preview; drag it over its own child;
+  drop a toolbox entry on a node; rename in place and then immediately pan; open the largest
+  example map and compare drag latency, pan smoothness and open-to-first-paint.
+- **Expected**: the dragged node itself travels (the old dimmed-original-plus-ghost became one
+  thing - recorded); a dashed branch and a ring mark the candidate parent, and neither appears
+  over the node's own subtree; the toolbox drop runs its action against the node under it (the
+  hover highlight during an HTML5 drag is a recorded loss); panning mid-edit commits the edit
+  first; nothing feels worse on the largest example.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition. The migration's tests caught two live library defects
+  before any eyes-on pass: the inside-placed editor opened at half its box off (corner fed to
+  the centre-based placement helper) and an unstable onReturnFocus identity made the editor
+  hand focus away every render - both fixed in the library with the failing tests as guards.
+

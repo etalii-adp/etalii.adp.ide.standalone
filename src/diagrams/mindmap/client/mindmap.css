@@ -82,19 +82,19 @@
   stroke-dasharray: 6 3;
 }
 
-/* The original of a node being dragged: still in place, dimmed while its ghost travels. */
+/* The node being dragged: the library carries it under the pointer, drawn lighter while it
+   travels - the ghost and its dimmed original became one thing with the migration. */
 .mindmap-node-dragging {
-  opacity: 0.35;
-}
-
-/* The ghost that follows the pointer mid-drag - the drop's outcome, made visible early. */
-.mindmap-node-ghost {
   opacity: 0.65;
 }
 
-.mindmap-node-ghost rect {
+/* The candidate parent's ring, drawn from the dragged node's own render: the drop's outcome,
+   shown before the button is released. */
+.mindmap-node-drop-target-ring {
+  fill: none;
   stroke: var(--color-primary);
-  stroke-dasharray: 4 3;
+  stroke-width: 2.5;
+  stroke-dasharray: 6 3;
 }
 
 /* The connector the drop would create, from the candidate parent to the ghost. */

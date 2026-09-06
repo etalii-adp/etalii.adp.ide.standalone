@@ -67,6 +67,14 @@ function seed(...elements: ReturnType<typeof node>[]): MindmapModel {
 
 const props = { projectId: new Uint8Array(16), entryId: new Uint8Array(16).fill(3), path: ["docs", "map.adp"] };
 
+/** The backend's pushed selection naming one node - what focus and the keyboard follow now. */
+function pushedSelection(nodeId: string) {
+  return {
+    id: { source: { case: "entryId", value: { value: props.entryId } } },
+    detail: { case: "child", value: { id: { source: { case: "elementId", value: { value: nodeId } } }, detail: { case: "none" } } },
+  };
+}
+
 /**
  * A pointer event jsdom can actually carry: jsdom implements no PointerEvent, and
  * `fireEvent.pointerDown` builds a bare Event whose `button` is undefined. A MouseEvent typed
@@ -135,7 +143,7 @@ describe("MindmapCanvas", () => {
       value: () => ({ x: 0, y: 0, top: 0, left: 0, right: 200, bottom: 10, width: 200, height: 10, toJSON: () => ({}) }),
     });
     const thumb = horizontalBar.querySelector(".canvas-scrollbar-thumb")!;
-    const surface = container.querySelector(".mindmap-canvas-surface")!;
+    const surface = container.querySelector(".library-canvas-surface")!;
     const fitted = surface.getAttribute("viewBox");
 
     // Act.
@@ -144,11 +152,11 @@ describe("MindmapCanvas", () => {
     fireEvent.mouseUp(window);
 
     // Assert.
-    // Fitted box: x -80, w 280 (two nodes at their fallback sizes plus the 20-unit margin).
-    // The extent pads that by half its span to 560 units, so the 200px track maps the
-    // 40-pixel drag to 112 units - and only x moves, never the zoom.
-    expect(fitted).toBe("-80 -56 280 92");
-    expect(surface.getAttribute("viewBox")).toBe("32 -56 280 92");
+    // Fitted box: x -100, w 320 (two nodes at their fallback sizes plus the library's 40-unit
+    // fit padding - a recorded unification from 20). The extent pads that by half its span to
+    // 640 units, so the 200px track maps the 40-pixel drag to 128 units - only x moves.
+    expect(fitted).toBe("-100 -76 320 132");
+    expect(surface.getAttribute("viewBox")).toBe("28 -76 320 132");
   });
 
   it("gives the surface the keyboard when a node is clicked", () => {
@@ -161,7 +169,7 @@ describe("MindmapCanvas", () => {
     press(container.querySelectorAll(".mindmap-node")[1]);
 
     // Assert.
-    expect(document.activeElement).toBe(container.querySelector(".mindmap-canvas-surface"));
+    expect(document.activeElement).toBe(container.querySelector(".library-canvas-surface"));
   });
 
   it("says the diagram is no longer available, naming its path, when the stream failed for good", () => {
@@ -197,12 +205,12 @@ describe("MindmapCanvas", () => {
   });
 
   it("forwards a structural key against the focused node as a shortcut", () => {
-    // Arrange.
+    // Arrange: focus is the backend's pushed selection, as everywhere on the library.
+    currentSelection = pushedSelection("root");
     const { container } = render(<MindmapCanvas {...props} />);
-    press(container.querySelectorAll(".mindmap-node")[0]); // focus Root
 
     // Act.
-    fireEvent.keyDown(container.querySelector(".mindmap-canvas-surface")!, { key: "Insert" });
+    fireEvent.keyDown(container.querySelector(".library-canvas-surface")!, { key: "Insert" });
 
     // Assert.
     expect(executeShortcut).toHaveBeenCalledTimes(1);
@@ -213,11 +221,11 @@ describe("MindmapCanvas", () => {
 
   it("maps Tab to the child action's Insert key, not to an action", () => {
     // Arrange.
+    currentSelection = pushedSelection("root");
     const { container } = render(<MindmapCanvas {...props} />);
-    press(container.querySelectorAll(".mindmap-node")[0]);
 
     // Act.
-    fireEvent.keyDown(container.querySelector(".mindmap-canvas-surface")!, { key: "Tab" });
+    fireEvent.keyDown(container.querySelector(".library-canvas-surface")!, { key: "Tab" });
 
     // Assert.
     expect(executeShortcut.mock.calls[0][0].key).toBe("Insert");
@@ -225,11 +233,11 @@ describe("MindmapCanvas", () => {
 
   it("ignores a key that carries no structural meaning", () => {
     // Arrange.
+    currentSelection = pushedSelection("root");
     const { container } = render(<MindmapCanvas {...props} />);
-    press(container.querySelectorAll(".mindmap-node")[0]);
 
     // Act.
-    fireEvent.keyDown(container.querySelector(".mindmap-canvas-surface")!, { key: "x" });
+    fireEvent.keyDown(container.querySelector(".library-canvas-surface")!, { key: "x" });
 
     // Assert.
     expect(executeShortcut).not.toHaveBeenCalled();
@@ -240,7 +248,7 @@ describe("MindmapCanvas", () => {
     const { container } = render(<MindmapCanvas {...props} />);
 
     // Act.
-    fireEvent.keyDown(container.querySelector(".mindmap-canvas-surface")!, { key: "Delete" });
+    fireEvent.keyDown(container.querySelector(".library-canvas-surface")!, { key: "Delete" });
 
     // Assert.
     expect(executeShortcut).not.toHaveBeenCalled();
@@ -298,18 +306,18 @@ describe("MindmapCanvas", () => {
   });
 
   it("clicking the empty canvas deselects", () => {
-    // Arrange.
+    // Arrange: Alpha is the pushed selection, so its highlight is on.
+    currentSelection = pushedSelection("a");
     const { container } = render(<MindmapCanvas {...props} />);
-    press(container.querySelectorAll(".mindmap-node")[1]); // select Alpha first
+    expect(container.querySelectorAll(".mindmap-node-focused")).toHaveLength(1);
     select.mockClear();
     moveElement.mockClear();
 
     // Act.
-    press(container.querySelector(".mindmap-canvas-surface")!);
+    press(container.querySelector(".library-canvas-surface")!);
 
-    // Assert.
+    // Assert: the backend hears the deselection; the highlight follows its next push.
     expect(select).toHaveBeenCalledWith(null);
-    expect(container.querySelectorAll(".mindmap-node-focused")).toHaveLength(0);
   });
 
   it("dragging one node onto another moves it there, and does not also select", () => {
@@ -352,7 +360,7 @@ describe("MindmapCanvas", () => {
     // Arrange: face (b). Alpha is selected; dragging it and releasing over empty canvas ends
     // the drag, and the trailing background click must not throw the selection away.
     const { container } = render(<MindmapCanvas {...props} />);
-    const surface = container.querySelector(".mindmap-canvas-surface")!;
+    const surface = container.querySelector(".library-canvas-surface")!;
     const alpha = container.querySelectorAll(".mindmap-node")[1];
     press(alpha); // select Alpha first
     select.mockClear();
@@ -395,19 +403,22 @@ describe("MindmapCanvas", () => {
     expect(moveElement).not.toHaveBeenCalled();
   });
 
-  it("highlights the node a drag is held over, until the drop lands", () => {
+  it("marks the node a drag is held over with the drop ring, until the drop lands", () => {
     // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
-    const [root, alpha] = [...container.querySelectorAll(".mindmap-node")];
+    const [, alpha] = [...container.querySelectorAll(".mindmap-node")];
 
-    // Act and assert, step by step. The highlight rides the drag's own movement: holding
-    // the ghost over Root's box is what marks Root, no hover event needed.
+    // Act and assert, step by step. The ring rides the drag's own movement: holding the
+    // dragged node over Root's box is what marks Root, no hover event needed. It is drawn
+    // from the dragged node's own render - the recorded shape of the old class highlight.
     fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 120, clientY: -20 }));
     fireEvent(alpha, pointer("pointermove", { clientX: 40, clientY: 0 }));
-    expect(root.classList.contains("mindmap-node-drop-target")).toBe(true);
+    const ring = container.querySelector("[data-testid=mindmap-drop-ring]")!;
+    expect(ring).not.toBeNull();
+    expect(ring.getAttribute("x")).toBe("-60"); // Root's box, not the dragged node's
 
     fireEvent(alpha, pointer("pointerup", { clientX: 40, clientY: 0 }));
-    expect(root.classList.contains("mindmap-node-drop-target")).toBe(false);
+    expect(container.querySelector("[data-testid=mindmap-drop-ring]")).toBeNull();
     expect(moveElement).toHaveBeenCalledWith("a", "root");
   });
 
@@ -418,15 +429,17 @@ describe("MindmapCanvas", () => {
 
     // Act and assert, step by step.
     fireEvent(root, pointer("pointermove", { clientX: 0, clientY: 0 })); // no gesture in flight
-    expect(root.classList.contains("mindmap-node-drop-target")).toBe(false);
+    expect(container.querySelector("[data-testid=mindmap-drop-ring]")).toBeNull();
 
     fireEvent(alpha, pointer("pointerdown", { button: 0, clientX: 120, clientY: -20 }));
     fireEvent(alpha, pointer("pointermove", { clientX: 100, clientY: -10 })); // held back over itself
-    expect(alpha.classList.contains("mindmap-node-drop-target")).toBe(false);
+    expect(container.querySelector("[data-testid=mindmap-drop-ring]")).toBeNull();
   });
 
-  it("shows the drag's outcome mid-drag: a ghost at the pointer, a preview connector to the candidate parent", () => {
-    // Arrange.
+  it("shows the drag's outcome mid-drag: the node travels, a preview connector joins the candidate parent", () => {
+    // Recorded unification: the old canvas kept a dimmed original in place and moved a ghost;
+    // the library carries the node itself to the pointer, marked dragging - one thing where
+    // there were two. The preview connector is unchanged in meaning.
     const { container } = render(<MindmapCanvas {...props} />);
     const [, alpha] = [...container.querySelectorAll(".mindmap-node")];
 
@@ -435,10 +448,8 @@ describe("MindmapCanvas", () => {
     expect(container.querySelector("[data-testid=mindmap-drag-preview]")).toBeNull(); // nothing until it moves
 
     fireEvent(alpha, pointer("pointermove", { clientX: 400, clientY: 300 }));
-    // Moved over empty canvas: the ghost travels, the original dims, but with no candidate
-    // parent no connector yet.
-    expect(container.querySelector("[data-testid=mindmap-drag-preview]")).not.toBeNull();
-    expect(container.querySelector(".mindmap-node-ghost")?.textContent).toContain("Alpha");
+    // Moved over empty canvas: the node travels marked, but with no candidate parent there
+    // is no preview at all.
     expect(alpha.classList.contains("mindmap-node-dragging")).toBe(true);
     expect(container.querySelector(".mindmap-edge-preview")).toBeNull();
 
@@ -467,21 +478,29 @@ describe("MindmapCanvas", () => {
   });
 
   it("executes a toolbox entry's action against the node it is dropped on", () => {
-    // Arrange.
+    // Arrange. The library owns the drop surface now; the module hit-tests the drop point to
+    // a node and executes the entry's own action against it. jsdom reports a zero-size svg,
+    // so a real rectangle is given by hand and the drop aimed at Root's box. (The old
+    // per-node hover highlight during an HTML5 drag is a recorded loss with the migration.)
     const { container } = render(<MindmapCanvas {...props} />);
-    const root = container.querySelectorAll(".mindmap-node")[0];
+    const surface = container.querySelector("svg.library-canvas-surface")!;
+    const box = surface.getAttribute("viewBox")!.split(" ").map(Number);
+    Object.defineProperty(surface, "getBoundingClientRect", {
+      value: () => ({ x: 0, y: 0, top: 0, left: 0, right: box[2], bottom: box[3], width: box[2], height: box[3], toJSON: () => ({}) }),
+    });
     const dataTransfer = {
       types: ["application/x-adp-toolbox-item"],
       dropEffect: "",
       getData: (type: string) => (type === "application/x-adp-toolbox-item" ? "mindmap.add-child" : ""),
     };
 
-    // Act and assert, step by step.
-    fireEvent.dragOver(root, { dataTransfer });
-    expect(root.classList.contains("mindmap-node-drop-target")).toBe(true);
+    // Act: dropped where Root sits - canvas (0,0) is at client (-viewBox.x, -viewBox.y).
+    // Built by hand: jsdom has no DragEvent, and fireEvent.drop loses the coordinates.
+    const dropEvent = new MouseEvent("drop", { bubbles: true, cancelable: true, clientX: -box[0], clientY: -box[1] });
+    Object.defineProperty(dropEvent, "dataTransfer", { value: dataTransfer });
+    fireEvent(surface, dropEvent);
 
-    fireEvent.drop(root, { dataTransfer });
-    expect(root.classList.contains("mindmap-node-drop-target")).toBe(false);
+    // Assert.
     expect(executeAction).toHaveBeenCalledTimes(1);
     const [actionId, source] = (executeAction as ReturnType<typeof vi.fn>).mock.calls[0] as [string, { source: { case: string; value: { value: string } } }];
     expect(actionId).toBe("mindmap.add-child");
@@ -492,14 +511,11 @@ describe("MindmapCanvas", () => {
   it("ignores a drag that is not a toolbox entry", () => {
     // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
-    const root = container.querySelectorAll(".mindmap-node")[0];
+    const surface = container.querySelector("svg.library-canvas-surface")!;
     const dataTransfer = { types: ["text/plain"], dropEffect: "", getData: () => "" };
 
-    // Act and assert, step by step.
-    fireEvent.dragOver(root, { dataTransfer });
-    expect(root.classList.contains("mindmap-node-drop-target")).toBe(false);
-
-    fireEvent.drop(root, { dataTransfer });
+    // Act and assert.
+    fireEvent.drop(surface, { dataTransfer });
     expect(executeAction).not.toHaveBeenCalled();
   });
 
@@ -533,19 +549,20 @@ describe("MindmapCanvas", () => {
 
     // Choosing the entry executes the pushed action and the menu closes.
     fireEvent.click(container.querySelector(".context-menu-item")!);
-    expect(executeAction).toHaveBeenCalledWith("mindmap.rename");
+    expect(executeAction).toHaveBeenCalledTimes(1);
+    expect((executeAction as ReturnType<typeof vi.fn>).mock.calls[0][0]).toBe("mindmap.rename");
     expect(container.querySelector(".context-menu")).toBeNull();
   });
 
   // ---- pan, zoom and fit -------------------------------------------------------------
 
   const viewBoxOf = (container: HTMLElement) =>
-    (container.querySelector(".mindmap-canvas-surface")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
+    (container.querySelector(".library-canvas-surface")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
 
   it("zooms in about the pointer on a wheel up, and back out on a wheel down", () => {
     // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
-    const surface = container.querySelector(".mindmap-canvas-surface")!;
+    const surface = container.querySelector(".library-canvas-surface")!;
     const [, , wBefore] = viewBoxOf(container);
 
     // Act and assert, step by step.
@@ -561,7 +578,7 @@ describe("MindmapCanvas", () => {
   it("pans with a background drag, and the trailing click does not deselect", () => {
     // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
-    const surface = container.querySelector(".mindmap-canvas-surface")!;
+    const surface = container.querySelector(".library-canvas-surface")!;
     const [xBefore, yBefore] = viewBoxOf(container);
 
     fireEvent(surface, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
@@ -581,7 +598,7 @@ describe("MindmapCanvas", () => {
   it("a drag that starts on a node never pans the view", () => {
     // Arrange.
     const { container } = render(<MindmapCanvas {...props} />);
-    const surface = container.querySelector(".mindmap-canvas-surface")!;
+    const surface = container.querySelector(".library-canvas-surface")!;
     const alpha = container.querySelectorAll(".mindmap-node")[1];
     const before = viewBoxOf(container);
 
@@ -634,38 +651,24 @@ describe("MindmapCanvas", () => {
     }
   });
 
-  it("reports the area the svg actually shows, not the bare viewBox", async () => {
-    // Arrange.
-    // The svg letterboxes: with the default preserveAspectRatio the viewBox is fitted inside
-    // the element and centred, so the axis with room to spare displays more of the map than
-    // the box asks for. Reporting the box alone had the backend cull nodes that were on screen
-    // in that margin. jsdom reports no layout, so the surface is measured by hand here.
+  it("reports the viewBox as the viewport, the contract both reference canvases set", async () => {
+    // Recorded unification: the old canvas aspect-corrected its report through shownRectOf;
+    // the library raises one view-changed signal carrying the viewBox, and the module reports
+    // it verbatim - exactly as the rdf and timeline references do.
     const reportView = vi.fn();
     currentReportView = reportView;
-    const surfaceWidth = 800;
-    const surfaceHeight = 200; // deliberately a different aspect ratio than the content
-    const measure = vi
-      .spyOn(Element.prototype, "getBoundingClientRect")
-      .mockReturnValue({ x: 0, y: 0, width: surfaceWidth, height: surfaceHeight, top: 0, left: 0, right: surfaceWidth, bottom: surfaceHeight, toJSON: () => ({}) } as DOMRect);
     try {
       const { container } = render(<MindmapCanvas {...props} />);
       const [boxX, boxY, boxW, boxH] = viewBoxOf(container);
 
-    // Act and assert, step by step.
       await waitFor(() => expect(reportView).toHaveBeenCalled(), { timeout: 2000 });
 
       const viewport = reportView.mock.calls.at(-1)![0];
-      const scale = Math.min(surfaceWidth / boxW, surfaceHeight / boxH);
-      // The reported rectangle stays centred on the viewBox but spans what the element covers.
-      expect(viewport.maxX - viewport.minX).toBeCloseTo(surfaceWidth / scale, 5);
-      expect(viewport.maxY - viewport.minY).toBeCloseTo(surfaceHeight / scale, 5);
-      expect((viewport.minX + viewport.maxX) / 2).toBeCloseTo(boxX + boxW / 2, 5);
-      expect((viewport.minY + viewport.maxY) / 2).toBeCloseTo(boxY + boxH / 2, 5);
-      // And it never reports less than the box itself, on either axis.
-      expect(viewport.minX).toBeLessThanOrEqual(boxX + 1e-9);
-      expect(viewport.maxY).toBeGreaterThanOrEqual(boxY + boxH - 1e-9);
+      expect(viewport.minX).toBeCloseTo(boxX, 5);
+      expect(viewport.minY).toBeCloseTo(boxY, 5);
+      expect(viewport.maxX).toBeCloseTo(boxX + boxW, 5);
+      expect(viewport.maxY).toBeCloseTo(boxY + boxH, 5);
     } finally {
-      measure.mockRestore();
       currentReportView = null;
     }
   });
@@ -726,7 +729,7 @@ describe("MindmapCanvas", () => {
     currentPrompt = renamePromptFor("a", "Alpha");
     const { container } = render(<MindmapCanvas {...props} />);
     fireEvent.change(labelField(container), { target: { value: "Half typed" } });
-    const surface = container.querySelector("svg.mindmap-canvas-surface") as SVGSVGElement;
+    const surface = container.querySelector("svg.library-canvas-surface") as SVGSVGElement;
     const viewBoxBefore = surface.getAttribute("viewBox");
 
     // Act.
@@ -752,11 +755,9 @@ describe("MindmapCanvas", () => {
     currentPrompt = renamePromptFor("a", "Alpha");
     const { container } = render(<MindmapCanvas {...props} />);
     fireEvent.change(labelField(container), { target: { value: "Beta" } });
-    const surface = container.querySelector("svg.mindmap-canvas-surface") as SVGSVGElement;
+    const surface = container.querySelector("svg.library-canvas-surface") as SVGSVGElement;
 
     // Act.
-    // Pressing on the empty canvas starts a pan; pressing a node starts a drag. Either way the
-    // gesture must not begin over an editor still holding unsaved text.
     await act(async () => {
       fireEvent(surface, pointer("pointerdown", { button: 0, clientX: 200, clientY: 200 }));
     });
