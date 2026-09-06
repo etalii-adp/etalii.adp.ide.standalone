@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/backend-project-decomposition/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-06T16:16:15.113Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788711375018_gal9r7nrk",
+      "approvalTitle": "backend-project-decomposition tasks"
+    }
+  ]
+}
