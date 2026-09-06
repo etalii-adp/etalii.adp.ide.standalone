@@ -88,12 +88,18 @@ async function closeTab() {
 
 // ---- sign in, open the Examples project ----------------------------------------------------
 await page.goto(appUrl, { waitUntil: "networkidle2" });
-await page.waitForSelector("input", { timeout: 20000 });
-const inputs = await page.$$("input");
-await inputs[0].type("admin");
-await inputs[1].type("changeme");
-await clickText("Sign in");
+// A developer build opens already authenticated and never renders the form
+// (developer-sign-in-bypass), so the credential is typed only where there is something to type
+// it into. Waiting unconditionally for an input hung here the moment that bypass landed.
 await sleep(1500);
+const passwordField = await page.$('input[type="password"]');
+if (passwordField !== null) {
+  const inputs = await page.$$("input");
+  await inputs[0].type("admin");
+  await inputs[1].type("changeme");
+  await clickText("Sign in");
+  await sleep(1500);
+}
 await clickText("Examples");
 await sleep(2000);
 
