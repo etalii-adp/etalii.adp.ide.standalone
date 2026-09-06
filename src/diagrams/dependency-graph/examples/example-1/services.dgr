@@ -32,8 +32,8 @@ elements:
     row: 0
   - id: payments-db
     label: Payments database
-    x: 1083.7259673696153
-    row: -2
+    x: 1091.848027445307
+    row: -1
   - id: orders-db
     label: Orders database
     x: 1080
