@@ -1,7 +1,7 @@
-using EtAlii.Adp.Common;
 using System.Globalization;
 using EtAlii.Adp.Backend;
 using EtAlii.Adp.Backend.Context;
+using EtAlii.Adp.Common;
 
 namespace EtAlii.Adp.Diagram.WardleyMap;
 
