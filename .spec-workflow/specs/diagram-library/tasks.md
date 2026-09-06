@@ -17,7 +17,7 @@
 
 ## Tasks
 
-- [-] 1. The definition schema and its validators
+- [x] 1. The definition schema and its validators
   - Files: `src/client/src/canvas/library/definition/` (new), and its tests
   - The plain-data types from the design: `DiagramDefinition`, `ElementTypeDefinition`, `RelationTypeDefinition` with its `endpoints` constraint, `RouteKind` (the built-ins plus `CustomRouteRef`), `BuiltInShape` plus `CustomShapeRef`, `AnchorSet`, `LayoutDefinition`, `DraggingPolicy`.
   - **Data only — no React, no closures the shell must serialize.** A definition is configuration a module states, read every render (Requirement 1.3).
@@ -26,7 +26,7 @@
   - _Requirements: 4.1, 4.2, 8.1, 8.2, 9.4_
   - _Prompt: Implement the task for spec diagram-library, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Define the diagram-definition schema and its validators as plain data under canvas/library/definition | Restrictions: no React or non-serializable values in a definition; reject a zero-layout-mode definition, an endpoint naming an unknown element type, and a custom shape/route with no renderer; the built-in route set must cover the design's four families | Success: the schema types exist and the validators reject each bad shape, seen to do so. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 2. The API surface: events and runtime configuration
+- [-] 2. The API surface: events and runtime configuration
   - Files: `src/client/src/canvas/library/api/` (new), and its tests
   - The `DiagramEvent` union — one member per behaviour the design lists: `elementDropped`, `elementDeleted`, `elementMoved`, `connectionDrawn`, `connectionDeleted`, `connectionAdjusted`, `selectionChanged`, `labelCommitRequested`, `viewChanged`, `layoutModeChanged` — and the `runtimeConfig` shape (`dragging`, `activeLayoutMode`, `activeTool`, definition overrides).
   - **Every event is a request, never a mutation** (Requirement 1.2): the types carry what the module needs to answer and nothing the library would act on itself.
