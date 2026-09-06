@@ -1,5 +1,6 @@
 import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
 import { WardleyCanvas } from "./WardleyCanvas";
+import "@client/canvas/canvas.css";
 import "./wardley.css";
 
 /**
