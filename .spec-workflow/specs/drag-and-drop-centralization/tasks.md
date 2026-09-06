@@ -9,7 +9,7 @@ One worktree for the whole specification (`.claude/worktrees/dnd`, per CLAUDE.md
   - The cached surface rect captured at gesture start; the `requestAnimationFrame` coalescer (latest deltas win, one applied frame per displayed frame, synchronous application when no frame provider exists so jsdom exercises the same write path); the live-write handles; `commit` and `revert`. No React dependency beyond types. Tested alone: N moves yield one applied frame; the last value wins; `revert` undoes every write; unmount cancels a pending frame.
   - _Requirements: 1.2, 1.3, 2.3_
 
-- [ ] 2. Reposition through the scheduler
+- [-] 2. Reposition through the scheduler
   - Files: `src/client/src/canvas/library/DiagramCanvas.tsx`
   - The `onDragMove` element case writes `transform` on the dragged `<g data-element-id>` group through the scheduler; the `dragOffset` state and the per-element `offset` prop are retired; the rect is read once at gesture start, retiring `unitsPerPixel`'s per-move `getBoundingClientRect` on this path; `onDragEnd` reverts the live writes and performs today's single state write and dispatch; `onDragAbandon` reverts and dispatches nothing. **Every existing module and library test passes unchanged — a test that must change is a finding, not a test to update.** The abandon test (dispatches nothing) is paired with the commit test (dispatches exactly once), because a negative-only assertion at a seam passes whether or not the positive path works.
   - _Requirements: 1.1, 1.3, 1.4, 2.1, 2.2, 2.3_
