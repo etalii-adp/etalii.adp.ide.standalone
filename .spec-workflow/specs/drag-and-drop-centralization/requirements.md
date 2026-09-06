@@ -18,7 +18,7 @@ This specification began as two things the prompting report treated as one: a **
 
 **What survived the consolidation, confirmed in `DiagramCanvas` at HEAD.** The gesture-frame mechanism this specification measured in ten canvases now exists once, unchanged in kind:
 
-- `onDragMove` writes React state **per pointer frame** — `setDragOffset` for a reposition, `setView` for a pan, `setConnect` for a connect preview — so every pointer frame re-renders the whole canvas, rebuilding every element rather than the one under the pointer.
+- `onDragMove` writes React state **per pointer frame** — `setDragOffset` for a reposition, `setView` for a pan, `setConnect` for a connect preview, `setResizePreview` for a span resize, and the connection-adjust case likewise — so every pointer frame re-renders the whole canvas, rebuilding every element rather than the one under the pointer. **This document's first approved version counted three of these five.** The enumeration stopped at the setters named in the reposition, pan and connect paths, and the implementation honoured that boundary exactly — Developer 1's completion note is what surfaced the other two, both present in the file the survey read. The count was short, not the boundary deliberate, and Requirement 1.5 was amended on 2026-09-06 to say so.
 - `unitsPerPixel`, called on every drag move to turn pointer deltas into canvas units, performs a synchronous `getBoundingClientRect` — **at least one layout read per pointer frame, and two on the pan path**, which calls it a second time for the view held at press.
 
 Centralization did not fix the cost; it made the fix a change to one file instead of ten. That is the whole remaining scope.
@@ -63,7 +63,7 @@ Nothing in this specification SHALL re-create, duplicate or re-migrate any of th
 2. WHEN pointer events arrive faster than the display refreshes THEN they SHALL be coalesced, one rendered frame per displayed frame — and it is recorded here that coalescing alone does NOT satisfy criterion 1: it caps how often the whole canvas is rebuilt without stopping each rebuild being proportional to element count.
 3. WHEN a gesture is in flight THEN no synchronous layout read SHALL be performed per pointer frame; the surface rectangle SHALL be read once at gesture start and cached for the gesture's life. `unitsPerPixel`'s per-move `getBoundingClientRect` is the named offender.
 4. WHEN the discipline is implemented THEN it SHALL live in `DiagramCanvas` — never pushed into diagram definitions or modules — so every canvas, present and future, gets it from the one gesture layer.
-5. WHEN a pan or a connect preview is in flight THEN the same discipline SHALL apply to them as to a reposition, because all three write React state per pointer frame today and fixing one leaves the report's symptom reproducible through the others.
+5. WHEN any gesture kind previews per pointer frame — reposition, pan, connect, **span resize and connection-adjust** — THEN the same discipline SHALL apply to it, because every kind left outside keeps the report's symptom reproducible through that kind on a large diagram. *Amended 2026-09-06: the approved version enumerated three kinds; the survey's count was short, and resize and connection-adjust — both writing per-frame state in the same `onDragMove` when it was surveyed — join the enumeration rather than being recorded as a non-goal, since a non-goal would enshrine an enumeration error as a decision.*
 
 ### Requirement 2 — Nothing a gesture means changes
 
@@ -81,7 +81,7 @@ Nothing in this specification SHALL re-create, duplicate or re-migrate any of th
 
 #### Acceptance Criteria
 
-1. WHEN the discipline is in place THEN a test SHALL drag on a large model and a small model of the same diagram type in one run and SHALL fail if the per-frame cost regains its scaling with element count.
+1. WHEN the discipline is in place THEN a test SHALL drag on a large model and a small model of the same diagram type in one run and SHALL fail if the per-frame cost regains its scaling with element count — and the guard SHALL exercise **every gesture kind the discipline covers**, so a kind sitting outside the guard cannot silently mean the guard asserts less than it appears to.
 2. WHEN that test is written THEN it SHALL assert a machine-independent property — a ratio between the two measurements from the same run, with its tolerance stated in the test — never an absolute millisecond budget, which becomes a flaky test on a slower machine.
 3. WHEN the guard is accepted THEN it SHALL first have been seen to fail for the right reason, by restoring the per-frame state write and watching the ratio blow its tolerance; a ratio test that has never failed is asserting arithmetic, not a property.
 
