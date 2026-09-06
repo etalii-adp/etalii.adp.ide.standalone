@@ -18,17 +18,17 @@
 
 ## Phase 1 — Contracts and cycles first (the tree becomes acyclic; nothing merges yet)
 
-- [-] 1. Remove the orphan `hierarchy.proto` **[normal]**
+- [x] 1. Remove the orphan `hierarchy.proto` **[normal]**
   - Files: `src/backend/EtAlii.Adp.Backend/Hierarchy/hierarchy.proto` (removed), reconciled against `src/api/hierarchy.proto`
   - **This is first, before anything touches proto layout.** Two `hierarchy.proto` exist, they differ, and only `src/api/hierarchy.proto` is in the build (`EtAlii.Adp.Backend.csproj` globs `..\..\api`). Confirm the api/ copy is canonical (diff the two, fold any real divergence in the backend copy into the api/ one **only if it is a genuine improvement** — otherwise the backend copy is stale and discarded), then delete the orphan. A later distribution step that picked the wrong copy would generate from the wrong source and still build green.
   - _Requirements: 5.4 (proto layout)_ · _Prompt: Role: C# developer | Task: reconcile and remove the orphan Hierarchy/hierarchy.proto against the canonical src/api/hierarchy.proto | Restrictions: the api/ copy is canonical unless the backend copy carries a genuine improvement; four gates + fresh-tree build green | Success: one hierarchy.proto, in src/api/, and the build unchanged. Mark in-progress, log-implementation, mark complete._
 
-- [ ] 2. Create `EtAlii.Adp.Common`, empty, referenced by `EtAlii.Adp.Backend` **[normal]**
+- [x] 2. Create `EtAlii.Adp.Common`, empty, referenced by `EtAlii.Adp.Backend` **[normal]**
   - Files: `src/backend/EtAlii.Adp.Common/EtAlii.Adp.Common.csproj` (new), solution file, `EtAlii.Adp.Backend.csproj` (reference)
   - A project depending on nothing, sitting beneath Backend. Nothing moves into it yet — this is the empty vessel, landed small so the wide moves that follow are single-purpose.
   - _Requirements: 1.2_ · _Prompt: Role: C# developer | Task: add the empty EtAlii.Adp.Common project below Backend | Restrictions: no dependencies out of Common; four gates + fresh-tree build | Success: Common exists, builds, referenced by Backend. Mark in-progress, log-implementation, mark complete._
 
-- [ ] 3. Move `shared`, `connection`, `elements` proto generation into `Common` as `EtAlii.Adp.Common.Wire` **[HOLD]**
+- [-] 3. Move `shared`, `connection`, `elements` proto generation into `Common` as `EtAlii.Adp.Common.Wire` **[HOLD]**
   - Files: `src/api/shared.proto`, `connection.proto`, `elements.proto` (`csharp_namespace` → `EtAlii.Adp.Common.Wire`); `EtAlii.Adp.Common.csproj` (linked `<Protobuf Include="..\..\api\…" GrpcServices="Both" Link="…"/>`); `EtAlii.Adp.Backend.csproj` (stop generating these three); **every consumer of the moved generated types** (`ShortGuid`, `Path`, `ElementId`, …) across backend and the module tree.
   - **The first wide step, and the design's model made concrete**: the `.proto` files stay in `src/api/`, linked into Common; generation is the same `GrpcServices="Both"` as today; only the owning project and namespace change. `shared.proto` moves from `EtAlii.Adp.Contracts` to `EtAlii.Adp.Common.Wire`, so `ShortGuid.Cast.cs` (which extends those types) moves to Common with it. **This renames generated types used outside the backend — coordinated hold.**
   - _Requirements: 4 (superseded R4 → per-project .Wire namespace), 5.4_ · _Prompt: Role: C# developer | Task: relink shared/connection/elements protos into Common generating EtAlii.Adp.Common.Wire, update all consumers, move ShortGuid.Cast.cs to Common | Restrictions: no separate .Wire assembly — a namespace in Common; generation identical to today; land inside a coordinated hold; four gates + fresh-tree build + inspectcode | Success: the three protos generate in Common.Wire, Backend no longer generates them, everything resolves. Mark in-progress, log-implementation, mark complete._
