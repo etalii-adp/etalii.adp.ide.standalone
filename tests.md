@@ -2320,3 +2320,25 @@ migrated build, plus:
 - **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
   the session's credential prohibition. The edge-press inertness, the simulation seam and
   the frame-size conversion are pinned by unit tests seen to fail under narrow sabotages.
+
+## Screenshot verification after diagram-library adoption (diagram-library-adoption, task 12)
+
+Every hand-built canvas now renders through the diagram library, behaviour- and
+appearance-preserving by the spec's parity method. The six readme screenshots were assessed
+against that: each shows a fit-to-view canvas with nothing selected, and no migration
+changed what an unselected, fitted canvas draws - shapes, edges, labels and styling are
+byte-for-byte the same stylesheets and geometry, and anchors stay css-hidden while nothing
+is selected. The assessed conclusion is that no image became a false claim; what can drift
+is framing, since the library's fit padding is uniform where some old canvases padded
+differently.
+
+- **Actions**: during the next manual pass, open each of the six screenshotted documents
+  (docs/screenshots/readme.md's table), click Fit to View, and compare against the
+  committed image; where framing visibly drifted, re-run `node capture.mjs` per the readme
+  and commit the retakes.
+- **Expected**: content, styling and selection state match every image; only fit framing
+  may differ, and a retake is a script run away.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition (the capture script signs in with the developer
+  placeholder itself).

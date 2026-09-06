@@ -23,7 +23,6 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { NOT_YET_MIGRATED } from "./adoptionStatus";
 
 /**
  * The library's three standing guards (diagram-library Requirement 10.1), each mounting
@@ -155,9 +154,10 @@ describe("the library's standing guards", () => {
     // go through DiagramCanvas - then the pair follows for every real registration. That
     // linkage is read from the sources (a central mount of every module would drag every
     // module's stream mocks into this file; the modules' own mounted tests carry those), so
-    // its limit is the family's: it reads text. The exclusion lists live in adoptionStatus
-    // and only ever shrink; a canvas may satisfy the check through a same-module wrapper
-    // (databricks' three thin readings over one inner canvas).
+    // its limit is the family's: it reads text. Adoption is complete and the exclusion
+    // mechanism is retired, so every module with a registration is walked; a canvas may
+    // satisfy the check through a same-module wrapper (databricks' three thin readings over
+    // one inner canvas).
     let root = dirname(fileURLToPath(import.meta.url));
     for (let depth = 0; depth < 12 && !(statSync(join(root, "diagrams"), { throwIfNoEntry: false })?.isDirectory() === true && statSync(join(root, ".editorconfig"), { throwIfNoEntry: false })?.isFile() === true); depth++) {
       root = dirname(root);
@@ -166,7 +166,7 @@ describe("the library's standing guards", () => {
     const offenders: string[] = [];
     const diagrams = join(root, "diagrams");
     const migrated = readdirSync(diagrams, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory() && !NOT_YET_MIGRATED.has(entry.name))
+      .filter((entry) => entry.isDirectory())
       .filter((entry) => statSync(join(diagrams, entry.name, "client", "register.ts"), { throwIfNoEntry: false })?.isFile() === true)
       .map((entry) => entry.name);
 

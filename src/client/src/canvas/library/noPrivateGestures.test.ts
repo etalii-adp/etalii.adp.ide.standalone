@@ -3,7 +3,6 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { NOT_YET_MIGRATED } from "./adoptionStatus";
 
 /**
  * A migrated module holds no private gesture state. There is one gesture layer, inside
@@ -69,24 +68,22 @@ function clientSources(root: string, module: string): string[] {
 }
 
 describe("no private gestures in a migrated module", () => {
-  it("classifies every module: migrated and guarded, or named as not yet migrated", () => {
-    // The completeness half: a module added to the tree lands in the walk by default, and a
-    // NOT_YET_MIGRATED name that no longer matches a module on disk is a stale entry.
+  it("walks every module: adoption is complete and the exclusion mechanism is retired", () => {
+    // The completeness half: a module added to the tree lands in the walk by default. The
+    // NOT_YET_MIGRATED set emptied with diagram-library-adoption task 11 and was deleted
+    // with its mechanism, so every module is a guarded member unconditionally.
     const modules = moduleNames(sourceRoot());
-    const stale = [...NOT_YET_MIGRATED].filter((name) => !modules.includes(name));
-    expect(stale, "NOT_YET_MIGRATED names modules that do not exist").toEqual([]);
 
     // The canary: the two reference migrations are guarded members, by name.
-    const migrated = modules.filter((name) => !NOT_YET_MIGRATED.has(name));
-    expect(migrated).toContain("rdf");
-    expect(migrated).toContain("timeline");
+    expect(modules).toContain("rdf");
+    expect(modules).toContain("timeline");
   });
 
   it("finds no module-owned gesture state in any migrated module's client sources", () => {
     const root = sourceRoot();
     const offenders: string[] = [];
 
-    for (const module of moduleNames(root).filter((name) => !NOT_YET_MIGRATED.has(name))) {
+    for (const module of moduleNames(root)) {
       for (const path of clientSources(root, module)) {
         const content = readFileSync(path, "utf-8");
         if (GESTURE_STATE.test(content)) {
