@@ -19,6 +19,12 @@ import {
 import { DiagramViewProvider, useDiagramViewControls } from "@client/shell/panels/DiagramViewContext";
 import { DiagramToolboxProvider, useDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { NOT_YET_MIGRATED, NOT_YET_MIGRATED_FILES } from "./adoptionStatus";
+
 /**
  * The library's three standing guards (diagram-library Requirement 10.1), each mounting
  * rather than grepping - a grep over canvas sources has already reported three correct
@@ -140,5 +146,51 @@ describe("the library's standing guards", () => {
     // canary names a member: the toolbox derived from the definition must offer the service.
     expect(controls).not.toBeNull();
     expect(items!.map((item) => item.id)).toContain("service");
+  });
+
+  it("every migrated module's registered canvases render through the library", () => {
+    // The per-module half of the pair claim (diagram-library-adoption Requirement 5.2): the
+    // mounted case above proves DiagramCanvas registers view controls and toolbox as a pair
+    // by construction, so what remains per module is that its REGISTERED canvases actually
+    // go through DiagramCanvas - then the pair follows for every real registration. That
+    // linkage is read from the sources (a central mount of every module would drag every
+    // module's stream mocks into this file; the modules' own mounted tests carry those), so
+    // its limit is the family's: it reads text. The exclusion lists live in adoptionStatus
+    // and only ever shrink; a canvas may satisfy the check through a same-module wrapper
+    // (databricks' three thin readings over one inner canvas).
+    let root = dirname(fileURLToPath(import.meta.url));
+    for (let depth = 0; depth < 12 && !(statSync(join(root, "diagrams"), { throwIfNoEntry: false })?.isDirectory() === true && statSync(join(root, ".editorconfig"), { throwIfNoEntry: false })?.isFile() === true); depth++) {
+      root = dirname(root);
+    }
+
+    const offenders: string[] = [];
+    const diagrams = join(root, "diagrams");
+    const migrated = readdirSync(diagrams, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && !NOT_YET_MIGRATED.has(entry.name))
+      .filter((entry) => statSync(join(diagrams, entry.name, "client", "register.ts"), { throwIfNoEntry: false })?.isFile() === true)
+      .map((entry) => entry.name);
+
+    // The canary: the two reference migrations are walked members, by name.
+    expect(migrated).toContain("rdf");
+    expect(migrated).toContain("timeline");
+
+    for (const module of migrated) {
+      const client = join(diagrams, module, "client");
+      const register = readFileSync(join(client, "register.ts"), "utf-8");
+      for (const [, , imported] of register.matchAll(/import\s+\{\s*(\w+Canvas)\s*\}\s+from\s+"\.\/(\w+)"/g)) {
+        const file = `${imported}.tsx`;
+        if (NOT_YET_MIGRATED_FILES.has(file)) {
+          continue;
+        }
+
+        const source = readFileSync(join(client, file), "utf-8");
+        const onLibrary = source.includes("@client/canvas/library") || /from\s+"\.\/\w*Canvas"/.test(source);
+        if (!onLibrary) {
+          offenders.push(`${module}/client/${file}: registered but does not render through the library`);
+        }
+      }
+    }
+
+    expect(offenders, offenders.join("\n")).toEqual([]);
   });
 });
