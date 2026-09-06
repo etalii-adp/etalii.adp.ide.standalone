@@ -1,32 +1,31 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useViewReport } from "@client/diagrams/useViewReport";
-import { shownRectOf } from "@client/diagrams/viewReport";
-import { FixedBezierConnection } from "@client/canvas/connections/fixed-bezier/FixedBezierConnection";
-import { usePointerGesture, type PointerPressWiring } from "@client/canvas/gesture/usePointerGesture";
-import { CanvasScrollbars } from "@client/canvas/scroll/CanvasScrollbars";
-import { scrollExtentOf } from "@client/canvas/scroll/scrollGeometry";
+import { useMemo, useState } from "react";
+
 import { BoxElement } from "@client/canvas/elements/box/BoxElement";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
 import { isTextTarget, structuralShortcutFor } from "@client/canvas/interaction";
-import { InlineLabelEditor } from "@client/canvas/label/InlineLabelEditor";
-import { centredLabelPlacement, insetLabelPlacement } from "@client/canvas/label/labelPlacement";
+import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
+import { assertValidDiagramDefinition } from "@client/canvas/library/definition/validateDiagramDefinition";
+import type {
+  CustomRouteRef,
+  CustomShapeRef,
+  DiagramDefinition,
+  ShapeBounds,
+  ShapePoint,
+} from "@client/canvas/library/definition/diagramDefinition";
+import type { DiagramEventHandlers, DiagramSelection } from "@client/canvas/library/api/diagramEvents";
+import type { DiagramModel, DiagramModelElement } from "@client/canvas/library/api/diagramModel";
 import { inlineLabelElementIdOf } from "@client/shell/context/inlineLabelPrompt";
-import { useRegisterInlineLabelPlacement, type LabelPlacement } from "@client/shell/panels/InlineLabelPlacementContext";
 import { innermostKey, useContextConnection, useContextPrompt, useContextProblems, useContextSelection } from "@client/shell/context/ContextConnectionProvider";
-import { useRegisterDiagramView, type DiagramViewControls } from "@client/shell/panels/DiagramViewContext";
-import { useRegisterDiagramToolbox } from "@client/shell/panels/DiagramToolboxContext";
 import { useToolboxItems } from "@client/shell/panels/useToolboxItems";
+import { useViewReport } from "@client/diagrams/useViewReport";
 import { PipelineElementKindProto } from "@client/generated/azure-pipeline_pb";
 import { indicatorsOf, problemMarkOf, problemsOn, type PipelineIndicator } from "./pipelineIndicators";
 import {
-  boxesOf,
   endpointsOf,
   jobCountLabel,
   JOB_TYPE,
   STAGE_TYPE,
   TEMPLATE_TYPE,
-  type PipelineEdgeLine,
-  type PipelineModel,
   type PipelineNode,
 } from "./pipelineModel";
 import { usePipelineStream } from "./usePipelineStream";
@@ -35,18 +34,8 @@ import { usePipelineStream } from "./usePipelineStream";
 const STAGE_NAME_TOP = 6;
 const STAGE_NAME_HEIGHT = 24;
 
-/** The visible rectangle, in canvas units - the svg viewBox as data. */
-interface ViewBox {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
-const ZOOM_STEP = 1.25;
-const MIN_VIEW_WIDTH = 40;
-const MAX_VIEW_WIDTH = 100000;
-const FIT_MARGIN = 40;
+/** The fixed control reach the "waits for" arrows have always had. */
+const EDGE_REACH = 30;
 
 export interface PipelineCanvasProps {
   projectId: Uint8Array;
@@ -54,354 +43,28 @@ export interface PipelineCanvasProps {
   path: readonly string[];
 }
 
-/**
- * Renders one Azure pipeline: its stages left to right, the jobs inside whichever stages are
- * open, and the arrows saying what waits for what.
- *
- * Everything drawn here was decided by the backend - where each box goes, how big it is, whether
- * an edge is implicit or broken. The canvas is a renderer rather than a second opinion about what
- * a pipeline is, which is the same division the C4 and mindmap canvases keep.
- *
- * What this deliberately does not draw is any particular *run*: which stage passed, which failed,
- * how long it took. That needs a live Azure DevOps connection and credentials ADP does not have,
- * and Requirement 8.8 excludes it rather than half-building it.
- */
-export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps) {
-  const { model, loading, failed, reportView } = usePipelineStream(projectId, path);
+type ProblemMarkData = { severity: string; title: string } | null;
 
-  // The palette the Toolbox panel shows while this pipeline is open - described by the
-  // backend (Requirement 9.6), registered here and withdrawn on unmount.
-  useRegisterDiagramToolbox(useToolboxItems(projectId, path));
-  const { select, executeShortcut } = useContextConnection();
-  const { selection } = useContextSelection();
-  const selectedId = elementIdOfKey(innermostKey(selection ?? null));
-  // Problems arrive for the whole project, so an element only wears the ones that name it and
-  // this file - two pipelines may each have a stage called Build (Requirement 8.7).
-  const problems = useContextProblems()?.problems ?? [];
-
-  const [focusedId, setFocusedId] = useState<string | undefined>(undefined);
-  const [view, setView] = useState<ViewBox | null>(null);
-  const surfaceRef = useRef<SVGSVGElement>(null);
-
-  const fitBox = useMemo(() => fitBoxOf(model), [model]);
-  const effectiveView = view ?? fitBox;
-  const viewRef = useRef(effectiveView);
-  viewRef.current = effectiveView;
-
-  // Where an element's name is drawn - for the shell's inline editor. This canvas carries a
-  // viewBox, so placements are module units and the model alone decides them: a pan changes
-  // the viewBox, not where anything sits in it.
-  //
-  // Two shapes. A stage is a composite card - its name line sits above the job count - so the
-  // editor covers that line rather than the card. A job, step or template is a single-line
-  // box, and the editor covers it whole. BoxElement is corner-anchored, so both convert to
-  // the centred box the shared helpers speak.
-  const placementOfLabel = useCallback(
-    (elementId: string): LabelPlacement | null => {
-      const node = model.nodes.get(elementId);
-      if (node === undefined) {
-        return null;
-      }
-
-      const { displayName, width, height } = node.payload;
-      const box = { x: node.x + width / 2, y: node.y + height / 2, width, height };
-      return node.type === STAGE_TYPE
-        ? insetLabelPlacement(box, STAGE_NAME_TOP, STAGE_NAME_HEIGHT, displayName)
-        : centredLabelPlacement(box, displayName);
-    },
-    [model],
-  );
-  useRegisterInlineLabelPlacement(placementOfLabel);
-
-  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
-  const editingId = inlineLabelElementIdOf(prompt);
-  const editingPlacement = editingId === null ? null : placementOfLabel(editingId);
-  const returnFocusToSurface = useCallback(() => surfaceRef.current?.focus(), []);
-
-  /** Ends an open inline edit before a gesture begins; the editor commits on blur. */
-  const endInlineEditBeforeGesture = () => {
-    if (editingPlacement !== null) {
-      surfaceRef.current?.focus();
-    }
-  };
-
-  /**
-   * F2 on the selected element, forwarded as data through the same seam every other canvas
-   * uses: the backend maps the key to its action, so no key-to-action table lives here.
-   */
-  const onKeyDown = async (event: React.KeyboardEvent) => {
-    if (!selectedId || isTextTarget(event.target)) {
-      return;
-    }
-
-    const shortcut = structuralShortcutFor(event, ["F2"]);
-    if (!shortcut) {
-      return;
-    }
-
-    event.preventDefault();
-    await executeShortcut(shortcut, elementSourceOf(selectedId));
-  };
-
-  const zoomBy = useCallback((factor: number, aboutX?: number, aboutY?: number) => {
-    setView(() => {
-      const current = viewRef.current;
-      const w = Math.min(MAX_VIEW_WIDTH, Math.max(MIN_VIEW_WIDTH, current.w / factor));
-      const applied = current.w / w;
-      const h = current.h / applied;
-      const px = aboutX ?? current.x + current.w / 2;
-      const py = aboutY ?? current.y + current.h / 2;
-      return { x: px - (px - current.x) / applied, y: py - (py - current.y) / applied, w, h };
-    });
-  }, []);
-
-  // Attached by hand as non-passive: React's synthetic wheel listener cannot preventDefault, and
-  // without that every zoom also scrolls the page.
-  useEffect(() => {
-    const surface = surfaceRef.current;
-    if (surface === null) {
-      return;
-    }
-
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      const rect = surface.getBoundingClientRect();
-      const current = viewRef.current;
-      const aboutX = rect.width > 0 ? current.x + ((event.clientX - rect.left) / rect.width) * current.w : undefined;
-      const aboutY = rect.height > 0 ? current.y + ((event.clientY - rect.top) / rect.height) * current.h : undefined;
-      zoomBy(event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP, aboutX, aboutY);
-    };
-
-    surface.addEventListener("wheel", onWheel, { passive: false });
-    return () => surface.removeEventListener("wheel", onWheel);
-  }, [zoomBy, loading, failed]);
-
-  const viewControls = useMemo<DiagramViewControls>(
-    () => ({
-      zoomIn: () => zoomBy(ZOOM_STEP),
-      zoomOut: () => zoomBy(1 / ZOOM_STEP),
-      fitToView: () => setView(null),
-    }),
-    [zoomBy],
-  );
-  useRegisterDiagramView(viewControls);
-
-  useViewReport({
-    view: effectiveView,
-    report: reportView,
-    convert: () => shownRectOf(viewRef.current),
-    ready: !loading && !failed,
-  });
-
-  const unitsPerPixel = (box: ViewBox): number => {
-    const rect = surfaceRef.current?.getBoundingClientRect();
-    return rect !== undefined && rect.width > 0 ? box.w / rect.width : 1;
-  };
-
-  /**
-   * One arbiter decides click-or-pan for the surface at the gesture's end, from what the
-   * gesture itself recorded. Nothing here listens to `click`: the trailing event was the
-   * wrong witness, and the one-shot flag that suppressed it was a latch armed with no
-   * guaranteed consumer (the selection-after-drag specification traces the defect).
-   */
-  const gesture = usePointerGesture<ViewBox>({
-    onPress: () => {
-      // An unmoved background press deselects: focus clears and the backend hears it.
-      setFocusedId(undefined);
-      select(null);
-    },
-    onDragMove: (pressView, dx, dy) => {
-      // Panning measures against the view captured at press: the view moves under this very
-      // gesture, and measuring against the moving thing would compound each step.
-      const scale = unitsPerPixel(pressView);
-      setView({ ...pressView, x: pressView.x - dx * scale, y: pressView.y - dy * scale });
-    },
-  });
-
-  /**
-   * The surface's wiring. The inline edit is committed only when the press is really the
-   * surface's own: the editor is a child of the svg, and ending the edit on a press that
-   * merely bubbled up through it would commit the very edit being clicked into.
-   */
-  const backgroundWiring = (): PointerPressWiring => {
-    const wiring = gesture.background(effectiveView);
-    return {
-      ...wiring,
-      onPointerDown: (event: React.PointerEvent) => {
-        if (event.target === event.currentTarget) {
-          endInlineEditBeforeGesture();
-        }
-        wiring.onPointerDown(event);
-      },
-    };
-  };
-
-  const onNodeClick = (node: PipelineNode) => {
-    setFocusedId(node.id);
-    surfaceRef.current?.focus();
-    select(elementSelectionOf(entryId, path, node.id));
-  };
-
-  if (failed) {
-    return (
-      <div className="pipeline-canvas" data-testid="pipeline-canvas">
-        <div className="pipeline-canvas-unavailable" role="alert">
-          This pipeline is no longer available at {path.join("/")}.
-        </div>
-      </div>
-    );
-  }
-
-  const nodes = [...model.nodes.values()];
-  const edges = [...model.edges.values()];
-  // Stages first, so the jobs inside them draw on top rather than behind.
-  const stages = nodes.filter((node) => node.type === STAGE_TYPE);
-  const others = nodes.filter((node) => node.type !== STAGE_TYPE);
-
-  return (
-    <div className="pipeline-canvas" data-testid="pipeline-canvas">
-      {loading ? (
-        <div className="pipeline-canvas-loading" role="status">
-          Loading…
-        </div>
-      ) : (
-        <>
-        <svg
-          ref={surfaceRef}
-          className="pipeline-canvas-surface"
-          viewBox={`${effectiveView.x} ${effectiveView.y} ${effectiveView.w} ${effectiveView.h}`}
-          tabIndex={0}
-          role="img"
-          aria-label={`Pipeline ${path.join("/")}`}
-          {...backgroundWiring()}
-          onKeyDown={onKeyDown}
-        >
-          <defs>
-            <marker
-              id="pipeline-arrow"
-              viewBox="0 0 10 10"
-              refX="9"
-              refY="5"
-              markerWidth="6"
-              markerHeight="6"
-              orient="auto-start-reverse"
-            >
-              <path d="M 0 0 L 10 5 L 0 10 z" className="pipeline-arrowhead" />
-            </marker>
-          </defs>
-
-          {stages.map((stage) => (
-            <PipelineStageShape
-              key={stage.id}
-              stage={stage}
-              expanded={!model.collapsed.has(stage.id)}
-              focused={stage.id === focusedId}
-              problem={problemMarkOf(problemsOn(problems, path, stage.id))}
-              onSelect={() => onNodeClick(stage)}
-            />
-          ))}
-          {edges.map((edge) => (
-            <PipelineEdgeShape key={edge.id} edge={edge} model={model} />
-          ))}
-          {others.map((node) => (
-            <PipelineBoxShape
-              key={node.id}
-              node={node}
-              focused={node.id === focusedId}
-              problem={problemMarkOf(problemsOn(problems, path, node.id))}
-              onSelect={() => onNodeClick(node)}
-            />
-          ))}
-
-          {/* Last of all, so the editor is above every card it overlaps. Placed in canvas
-              units; the viewBox carries it through pans and zooms like everything else. */}
-          {editingPlacement !== null && (
-            <InlineLabelEditor
-              placement={editingPlacement}
-              onPropose={onProposeLabel}
-              onSubmit={onSubmitLabel}
-              onCancel={onCancelLabel}
-              onReturnFocus={returnFocusToSurface}
-            />
-          )}
-        </svg>
-        <CanvasScrollbars
-          {...scrollAxesOf(effectiveView, model)}
-          className="pipeline-scrollbars"
-          onPan={(x, y) => setView({ ...effectiveView, x, y })}
-        />
-        </>
-      )}
-    </div>
-  );
-}
-
-/**
- * A stage: a container holding its jobs when open, a single box with its job count when closed
- * (Requirement 8.2). A manual-trigger stage is marked, because "this one waits for a person" is
- * not something a reader should have to open the file to discover (Requirement 8.3).
- */
-function PipelineStageShape({
-  stage,
-  expanded,
-  focused,
-  problem,
-  onSelect,
-}: {
-  stage: PipelineNode;
+/** An element as the library carries it here: the model node plus what it draws. */
+type PipelineElement = DiagramModelElement & {
+  node: PipelineNode;
   expanded: boolean;
   focused: boolean;
-  problem: { severity: string; title: string } | null;
-  onSelect: () => void;
-}) {
-  const { displayName, width, height, jobCount, indeterminate, fromTemplate } = stage.payload;
-  const classes = [
-    "pipeline-stage",
-    expanded ? "pipeline-stage-expanded" : "pipeline-stage-collapsed",
-    focused ? "pipeline-focused" : "",
-    indeterminate ? "pipeline-indeterminate" : "",
-    fromTemplate ? "pipeline-from-template" : "",
-    problem ? `pipeline-problem pipeline-problem-${problem.severity}` : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  problem: ProblemMarkData;
+};
 
-  return (
-    <BoxElement
-      className={classes}
-      x={stage.x}
-      y={stage.y}
-      width={width}
-      height={height}
-      rx={6}
-      label={displayName}
-      boxClassName="pipeline-stage-box"
-      labelClassName="pipeline-stage-name"
-      labelX={12}
-      labelY={24}
-      onClick={onSelect}
-      role="button"
-      aria-label={displayName}
-      data-testid={`stage-${stage.id}`}
-      data-expanded={expanded}
-    >
-      {!expanded && (
-        <text className="pipeline-stage-count" x={12} y={44}>
-          {jobCountLabel(jobCount)}
-        </text>
-      )}
-      <PipelineIndicators indicators={indicatorsOf(stage.payload)} x={width - 12} y={20} />
-      {problem && <ProblemMark elementId={stage.id} problem={problem} x={width - 12} y={height - 12} />}
-    </BoxElement>
-  );
+function sideEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
+  const centreX = bounds.x + bounds.width / 2;
+  return {
+    x: towards.x >= centreX ? bounds.x + bounds.width : bounds.x,
+    y: bounds.y + bounds.height / 2,
+  };
 }
 
 /**
  * The badges along the top-right of an element: what it is telling you without being opened
- * (Requirement 8.4).
- *
- * Laid out right to left so the first one is nearest the corner and adding another does not move
- * the ones already there.
+ * (Requirement 8.4). Laid out right to left so the first one is nearest the corner and adding
+ * another does not move the ones already there.
  */
 function PipelineIndicators({ indicators, x, y }: { indicators: PipelineIndicator[]; x: number; y: number }) {
   return (
@@ -424,8 +87,8 @@ function PipelineIndicators({ indicators, x, y }: { indicators: PipelineIndicato
 }
 
 /**
- * The mark on an element something is wrong with, so a dangling dependsOn is visible where it is
- * rather than only in a list (Requirement 8.7).
+ * The mark on an element something is wrong with, so a dangling dependsOn is visible where it
+ * is rather than only in a list (Requirement 8.7).
  */
 function ProblemMark({
   elementId,
@@ -454,130 +117,301 @@ function ProblemMark({
   );
 }
 
+/**
+ * A stage: a container holding its jobs when open, a single box with its job count when
+ * closed (Requirement 8.2). Painted beneath the connections, so the arrows between the jobs
+ * it holds stay visible over its card. A manual-trigger stage is marked, because "this one
+ * waits for a person" is not something a reader should have to open the file to discover
+ * (Requirement 8.3).
+ */
+const stageShape: CustomShapeRef = {
+  customShape: "pipeline-stage",
+  render: (raw) => {
+    const element = raw as PipelineElement;
+    const { displayName, width, height, jobCount, indeterminate, fromTemplate } = element.node.payload;
+    const classes = [
+      "pipeline-stage",
+      element.expanded ? "pipeline-stage-expanded" : "pipeline-stage-collapsed",
+      element.focused ? "pipeline-focused" : "",
+      indeterminate ? "pipeline-indeterminate" : "",
+      fromTemplate ? "pipeline-from-template" : "",
+      element.problem ? `pipeline-problem pipeline-problem-${element.problem.severity}` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    return (
+      <BoxElement
+        className={classes}
+        x={element.x - width / 2}
+        y={element.y - height / 2}
+        width={width}
+        height={height}
+        rx={6}
+        label={displayName}
+        boxClassName="pipeline-stage-box"
+        labelClassName="pipeline-stage-name"
+        labelX={12}
+        labelY={24}
+        role="button"
+        aria-label={displayName}
+        data-testid={`stage-${element.id}`}
+        data-expanded={element.expanded}
+      >
+        {!element.expanded && (
+          <text className="pipeline-stage-count" x={12} y={44}>
+            {jobCountLabel(jobCount)}
+          </text>
+        )}
+        <PipelineIndicators indicators={indicatorsOf(element.node.payload)} x={width - 12} y={20} />
+        {element.problem && <ProblemMark elementId={element.id} problem={element.problem} x={width - 12} y={height - 12} />}
+      </BoxElement>
+    );
+  },
+  edgePoint: sideEdgePoint,
+};
+
 /** A job, a step or an unfollowed template: a plain box, drawn by what kind it says it is. */
-function PipelineBoxShape({
-  node,
-  focused,
-  problem,
-  onSelect,
-}: {
-  node: PipelineNode;
-  focused: boolean;
-  problem: { severity: string; title: string } | null;
-  onSelect: () => void;
-}) {
-  const { displayName, width, height, kind, indeterminate, fromTemplate, unresolvedReason } = node.payload;
-  const deployment = kind === PipelineElementKindProto.PIPELINE_ELEMENT_KIND_DEPLOYMENT_JOB;
-  const classes = [
-    node.type === JOB_TYPE ? "pipeline-job" : node.type === TEMPLATE_TYPE ? "pipeline-template" : "pipeline-step",
-    deployment ? "pipeline-deployment" : "",
-    focused ? "pipeline-focused" : "",
-    indeterminate ? "pipeline-indeterminate" : "",
-    fromTemplate ? "pipeline-from-template" : "",
-    problem ? `pipeline-problem pipeline-problem-${problem.severity}` : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+const boxShape: CustomShapeRef = {
+  customShape: "pipeline-box",
+  render: (raw) => {
+    const element = raw as PipelineElement;
+    const { displayName, width, height, kind, indeterminate, fromTemplate, unresolvedReason } = element.node.payload;
+    const deployment = kind === PipelineElementKindProto.PIPELINE_ELEMENT_KIND_DEPLOYMENT_JOB;
+    const classes = [
+      element.node.type === JOB_TYPE ? "pipeline-job" : element.node.type === TEMPLATE_TYPE ? "pipeline-template" : "pipeline-step",
+      deployment ? "pipeline-deployment" : "",
+      element.focused ? "pipeline-focused" : "",
+      indeterminate ? "pipeline-indeterminate" : "",
+      fromTemplate ? "pipeline-from-template" : "",
+      element.problem ? `pipeline-problem pipeline-problem-${element.problem.severity}` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
 
-  return (
-    <BoxElement
-      className={classes}
-      x={node.x}
-      y={node.y}
-      width={width}
-      height={height}
-      label={displayName}
-      boxClassName="pipeline-box"
-      labelClassName="pipeline-box-name"
-      labelX={10}
-      onClick={onSelect}
-      role="button"
-      aria-label={displayName}
-      data-testid={`node-${node.id}`}
-    >
-      <PipelineIndicators indicators={indicatorsOf(node.payload)} x={width - 8} y={16} />
-      {problem && <ProblemMark elementId={node.id} problem={problem} x={width - 8} y={height - 6} />}
-      {unresolvedReason.length > 0 && <title>{unresolvedReason}</title>}
-    </BoxElement>
-  );
+    return (
+      <BoxElement
+        className={classes}
+        x={element.x - width / 2}
+        y={element.y - height / 2}
+        width={width}
+        height={height}
+        label={displayName}
+        boxClassName="pipeline-box"
+        labelClassName="pipeline-box-name"
+        labelX={10}
+        role="button"
+        aria-label={displayName}
+        data-testid={`node-${element.id}`}
+      >
+        <PipelineIndicators indicators={indicatorsOf(element.node.payload)} x={width - 8} y={16} />
+        {element.problem && <ProblemMark elementId={element.id} problem={element.problem} x={width - 8} y={height - 6} />}
+        {unresolvedReason.length > 0 && <title>{unresolvedReason}</title>}
+      </BoxElement>
+    );
+  },
+  edgePoint: sideEdgePoint,
+};
+
+/**
+ * One "waits for" arrow, exactly as FixedBezierConnection drew it: a horizontal cubic from
+ * the source's right edge to the target's left edge with a fixed control reach - the
+ * column-layout case, where a midpoint-based curve would flatten out.
+ */
+const waitsForRoute: CustomRouteRef = {
+  customRoute: "pipeline-waits-for",
+  path: (from, to, _waypoints, ends) => {
+    const a = ends ? { x: ends.source.x + ends.source.width, y: ends.source.y + ends.source.height / 2 } : from;
+    const b = ends ? { x: ends.target.x, y: ends.target.y + ends.target.height / 2 } : to;
+    return `M ${a.x} ${a.y} C ${a.x + EDGE_REACH} ${a.y}, ${b.x - EDGE_REACH} ${b.y}, ${b.x} ${b.y}`;
+  },
+};
+
+/**
+ * What a pipeline diagram allows, stated once: nothing moves, nothing connects, nothing
+ * deletes - the backend decides every box and every arrow, and this canvas renders them.
+ * Stages paint beneath the connections so the arrows between their jobs stay visible; the
+ * one relation is render-only, its implicit/broken stylings carried per connection.
+ */
+const PIPELINE_DEFINITION: DiagramDefinition = assertValidDiagramDefinition({
+  elementTypes: [
+    {
+      id: "stage",
+      shape: stageShape,
+      label: { placement: "inset", editable: true, insetTop: STAGE_NAME_TOP, insetHeight: STAGE_NAME_HEIGHT },
+      anchors: { kind: "edge" },
+      sizing: "model",
+      deletable: false,
+      beneathConnections: true,
+    },
+    { id: "job", shape: boxShape, label: { placement: "inside", editable: true }, anchors: { kind: "edge" }, sizing: "model", deletable: false },
+    { id: "template", shape: boxShape, label: { placement: "inside", editable: true }, anchors: { kind: "edge" }, sizing: "model", deletable: false },
+    { id: "step", shape: boxShape, label: { placement: "inside", editable: true }, anchors: { kind: "edge" }, sizing: "model", deletable: false },
+  ],
+  relationTypes: [
+    {
+      id: "waits-for",
+      route: waitsForRoute,
+      style: { endMarker: "arrow" },
+      className: "pipeline-edge",
+      endpoints: {
+        source: { elementTypes: ["stage", "job", "template", "step"], anchors: [] },
+        target: { elementTypes: ["stage", "job", "template", "step"], anchors: "edge" },
+        allowSelf: false,
+      },
+    },
+  ],
+  layout: { modes: ["manual"] },
+  dragging: "disabled",
+});
+
+/** The definition id a wire node type draws as. */
+function elementTypeOf(node: PipelineNode): string {
+  return node.type === STAGE_TYPE ? "stage" : node.type === JOB_TYPE ? "job" : node.type === TEMPLATE_TYPE ? "template" : "step";
 }
 
 /**
- * One "waits for" arrow, drawn between the edges of the two boxes it joins.
+ * Renders one Azure pipeline: its stages left to right, the jobs inside whichever stages are
+ * open, and the arrows saying what waits for what - drawn through the central canvas library.
  *
- * An edge whose ends are not both on the canvas is not drawn: a job's dependency inside a
- * collapsed stage has nowhere to start, and a line into empty space says less than no line.
+ * Everything drawn here was decided by the backend - where each box goes, how big it is,
+ * whether an edge is implicit or broken. The canvas is a renderer rather than a second
+ * opinion about what a pipeline is. What this deliberately does not draw is any particular
+ * *run*: which stage passed, which failed, how long it took (Requirement 8.8).
  */
-function PipelineEdgeShape({ edge, model }: { edge: PipelineEdgeLine; model: PipelineModel }) {
-  const ends = endpointsOf(model, edge);
-  if (ends === null) {
-    return null;
-  }
+export function PipelineCanvas({ projectId, entryId, path }: PipelineCanvasProps) {
+  const { model, loading, failed, reportView } = usePipelineStream(projectId, path);
+  const { select, executeShortcut } = useContextConnection();
+  const { selection } = useContextSelection();
+  const selectedId = elementIdOfKey(innermostKey(selection ?? null));
+  const toolboxItems = useToolboxItems(projectId, path);
+  // Problems arrive for the whole project, so an element only wears the ones that name it and
+  // this file - two pipelines may each have a stage called Build (Requirement 8.7).
+  const problems = useContextProblems()?.problems ?? [];
 
-  const from = {
-    x: ends.from.x + ends.from.payload.width,
-    y: ends.from.y + ends.from.payload.height / 2,
+  const [focusedId, setFocusedId] = useState<string | undefined>(undefined);
+  const [viewport, setViewport] = useState<ShapeBounds | null>(null);
+
+  const { prompt, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel } = useContextPrompt();
+  const editingId = inlineLabelElementIdOf(prompt);
+
+  const diagramModel = useMemo<DiagramModel>(() => {
+    const nodes = [...model.nodes.values()];
+    // Stages first so the jobs inside them draw on top; the stage type's beneathConnections
+    // keeps the arrows above the cards as well.
+    const ordered = [...nodes.filter((node) => node.type === STAGE_TYPE), ...nodes.filter((node) => node.type !== STAGE_TYPE)];
+    const elements = ordered.map((node): PipelineElement => ({
+      id: node.id,
+      type: elementTypeOf(node),
+      x: node.x + node.payload.width / 2,
+      y: node.y + node.payload.height / 2,
+      width: node.payload.width,
+      height: node.payload.height,
+      label: node.payload.displayName,
+      node,
+      expanded: !model.collapsed.has(node.id),
+      focused: node.id === focusedId,
+      problem: problemMarkOf(problemsOn(problems, path, node.id)),
+    }));
+    // An edge whose ends are not both on the canvas is not drawn: a job's dependency inside a
+    // collapsed stage has nowhere to start, and a line into empty space says less than no line.
+    const connections = [...model.edges.values()].flatMap((edge) => {
+      const ends = endpointsOf(model, edge);
+      if (ends === null) {
+        return [];
+      }
+      return [{
+        id: edge.id,
+        type: "waits-for",
+        sourceId: ends.from.id,
+        targetId: ends.to.id,
+        className: [
+          edge.payload.implicitDependency ? "pipeline-edge-implicit" : "",
+          edge.payload.broken ? "pipeline-edge-broken" : "",
+        ].filter(Boolean).join(" ") || undefined,
+      }];
+    });
+    return { elements, connections };
+  }, [model, focusedId, problems, path]);
+
+  /** The backend's push is the selection; the canvas renders it and never decides. */
+  const librarySelection = useMemo<DiagramSelection>(() => {
+    if (selectedId === null || !model.nodes.has(selectedId)) {
+      return [];
+    }
+    return [{ kind: "element", id: selectedId }];
+  }, [selectedId, model.nodes]);
+
+  const events: DiagramEventHandlers = {
+    onSelectionChanged: ({ selection: next }) => {
+      // A press on an arrow deselects, as it always did: an edge was never a selectable
+      // element here, and the old canvas let such a press fall through to the background.
+      const element = next.find((item) => item.kind === "element");
+      setFocusedId(element?.id);
+      select(element !== undefined ? elementSelectionOf(entryId, path, element.id) : null);
+    },
+    onViewChanged: ({ viewport: next }) => setViewport(next),
   };
-  const to = { x: ends.to.x, y: ends.to.y + ends.to.payload.height / 2 };
-  const classes = [
-    "pipeline-edge",
-    edge.payload.implicitDependency ? "pipeline-edge-implicit" : "",
-    edge.payload.broken ? "pipeline-edge-broken" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+
+  useViewReport({
+    view: { x: viewport?.x ?? 0, y: viewport?.y ?? 0, w: viewport?.width ?? 0, h: viewport?.height ?? 0 },
+    report: reportView,
+    convert: () => ({
+      minX: viewport?.x ?? 0,
+      minY: viewport?.y ?? 0,
+      maxX: (viewport?.x ?? 0) + (viewport?.width ?? 0),
+      maxY: (viewport?.y ?? 0) + (viewport?.height ?? 0),
+    }),
+    ready: !loading && !failed && viewport !== null,
+  });
+
+  /**
+   * F2 on the selected element, forwarded as data through the same seam every other canvas
+   * uses: the backend maps the key to its action, so no key-to-action table lives here.
+   */
+  const onKeyDown = async (event: React.KeyboardEvent) => {
+    if (!selectedId || isTextTarget(event.target)) {
+      return;
+    }
+
+    const shortcut = structuralShortcutFor(event, ["F2"]);
+    if (!shortcut) {
+      return;
+    }
+
+    event.preventDefault();
+    await executeShortcut(shortcut, elementSourceOf(selectedId));
+  };
+
+  if (failed) {
+    return (
+      <div className="pipeline-canvas" data-testid="pipeline-canvas">
+        <div className="pipeline-canvas-unavailable" role="alert">
+          This pipeline is no longer available at {path.join("/")}.
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <FixedBezierConnection
-      from={from}
-      to={to}
-      className={classes}
-      data-testid={`edge-${edge.id}`}
-      markerEnd="url(#pipeline-arrow)"
-    />
+    <div className="pipeline-canvas" data-testid="pipeline-canvas" onKeyDown={onKeyDown}>
+      {loading ? (
+        <div className="pipeline-canvas-loading" role="status">
+          Loading…
+        </div>
+      ) : (
+        <DiagramCanvas
+          definition={PIPELINE_DEFINITION}
+          model={diagramModel}
+          events={events}
+          selection={librarySelection}
+          toolboxItems={toolboxItems}
+          editing={{ editingId, onPropose: onProposeLabel, onSubmit: onSubmitLabel, onCancel: onCancelLabel }}
+          ariaLabel={`Pipeline ${path.join("/")}`}
+          className="pipeline-canvas-surface"
+          scrollbarsClassName="pipeline-scrollbars"
+        />
+      )}
+    </div>
   );
 }
-
-/**
- * Where the view sits inside the content, as the two axes the shared scrollbars take.
- *
- * A ViewBox canvas needs no DOM measurement: the view's span in content units IS `w` and `h`.
- * The extent is the drawn stages and jobs plus a proportional margin, floored at the widest
- * and tallest box so a one-stage pipeline still has room either side.
- */
-function scrollAxesOf(view: ViewBox, model: PipelineModel) {
-  const boxes = boxesOf(model);
-  const widest = boxes.length > 0 ? Math.max(...boxes.map((box) => box.width)) : view.w;
-  const tallest = boxes.length > 0 ? Math.max(...boxes.map((box) => box.height)) : view.h;
-  const minX = boxes.length > 0 ? Math.min(...boxes.map((box) => box.x)) : view.x;
-  const maxX = boxes.length > 0 ? Math.max(...boxes.map((box) => box.x + box.width)) : view.x + view.w;
-  const minY = boxes.length > 0 ? Math.min(...boxes.map((box) => box.y)) : view.y;
-  const maxY = boxes.length > 0 ? Math.max(...boxes.map((box) => box.y + box.height)) : view.y + view.h;
-
-  return {
-    horizontal: { viewStart: view.x, viewSpan: view.w, ...scrollExtentOf(minX, maxX, { factor: 0.5, minimumSpan: widest }) },
-    vertical: { viewStart: view.y, viewSpan: view.h, ...scrollExtentOf(minY, maxY, { factor: 0.5, minimumSpan: tallest }) },
-  };
-}
-
-/** The whole pipeline with a margin, which is what fit-to-view starts from. */
-function fitBoxOf(model: PipelineModel): ViewBox {
-  const boxes = boxesOf(model);
-  if (boxes.length === 0) {
-    return { x: 0, y: 0, w: 800, h: 600 };
-  }
-
-  const minX = Math.min(...boxes.map((box) => box.x));
-  const minY = Math.min(...boxes.map((box) => box.y));
-  const maxX = Math.max(...boxes.map((box) => box.x + box.width));
-  const maxY = Math.max(...boxes.map((box) => box.y + box.height));
-
-  return {
-    x: minX - FIT_MARGIN,
-    y: minY - FIT_MARGIN,
-    w: Math.max(maxX - minX + 2 * FIT_MARGIN, MIN_VIEW_WIDTH),
-    h: Math.max(maxY - minY + 2 * FIT_MARGIN, MIN_VIEW_WIDTH),
-  };
-}
-
-

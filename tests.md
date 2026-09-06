@@ -2249,3 +2249,27 @@ dependency-graph entries above against a migrated build, plus:
   the session's credential prohibition. The anchor-decides-direction rule, the release-time
   row snap and the loop-back route are pinned by unit tests seen to fail under narrow
   sabotages.
+
+## azure-pipeline re-run after its library migration (diagram-library-adoption, task 9)
+
+The pipeline now renders through the diagram library: same stage cards with their job
+counts, indicators and problem marks, jobs and templates on top, fixed-reach "waits for"
+arrows between edges - and the paint order survives through the library's new
+beneath-connections layer, so an arrow between two jobs stays visible over the opaque stage
+card that holds them. Re-run the standing azure-pipeline entries above against a migrated
+build, plus:
+
+- **Actions**: open a pipeline with an expanded stage and check the arrows between its jobs
+  sit over the card; open the edge-broken-graph example and confirm its broken and implicit
+  arrows draw exactly as before (their problems are the product working); select a stage and
+  press F2 (the editor must cover the name line alone, above the job count); click an arrow;
+  try to drag a box or press Delete.
+- **Expected**: arrows over stage cards, under jobs; broken arrows red-dashed, implicit
+  arrows lighter; the inset editor on the name line; a click on an arrow deselects, as it
+  always fell through to the background; nothing moves and nothing deletes - the backend
+  decides every box; the arrowhead follows the line's colour through the shared marker.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition. The beneath-connections paint order, the
+  implicit/broken markings and the problem propagation are pinned by unit tests seen to
+  fail under narrow sabotages.
