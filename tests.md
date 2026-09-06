@@ -2342,3 +2342,36 @@ differently.
 - **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
   the session's credential prohibition (the capture script signs in with the developer
   placeholder itself).
+## A canvas sizes to its pane, and does not grow while it is watched (diagram-library)
+
+The library shapes the view to the pane's proportions, which means it measures the pane. That
+measurement has one way to go wrong that no unit test can see: jsdom computes no layout, so
+every automated check reads zero and the measurement never happens at all.
+
+**The failure it guards.** The library's surface is `width: 100%; height: 100%`. A percentage
+height against an *indefinite* height resolves to the svg's intrinsic size, and an svg takes that
+from its viewBox's aspect ratio - so if the wrapper has no definite height, the measured height
+comes from the viewBox, and the viewBox is then derived from the measured height. The canvas
+grows every frame. Measured on the C4 container diagram at 1600x900: the surface went 641px tall,
+then 1160, then 1903, while the diagram slid out of the window and the screenshot came out as an
+empty canvas with only its title. The module had passed a class name with no rule behind it, and
+nothing failed - the elements were all present in the DOM, just off-screen.
+
+- **Preconditions**: backend + client running; `src/examples/` added as a project. A real
+  browser: this cannot be seen in jsdom.
+- **Actions**: open `diagrams/c4/industrial-plant/architecture/bottling-mes.dsl` ->
+  `bottling-mes.mes-containers.adp`. Let it settle, click **Fit to View**, and wait a few
+  seconds. Do the same for one canvas of each other shape - a timeline, a Wardley map, a causal
+  loop diagram. Then resize the window and watch each again.
+- **Expected**: the drawing appears and the canvas keeps the size of its pane. Nothing grows
+  while you watch it, no scrollbar appears on the page itself, and Fit to View shows the whole
+  diagram rather than an empty field. A canvas that is taller than its pane, or that grows each
+  time it settles, is this defect.
+- **Faster, and what found it**: `docs/screenshots/capture.mjs`'s sibling probe - open the
+  diagram in headless Chrome at 1600x900 and print the surface's measured height three times, a
+  second apart. Three equal numbers is the pass; a rising sequence is the bug.
+
+- **Result 2026-09-06 (developer build (Debug, `developer` env, bypass session))**: **passed
+  after the fix, and seen to fail before it.** The rising 641 / 1160 / 1903 above is the
+  measurement against the defect; with `.library-canvas` carrying its own sizing the same probe
+  reports 442 / 442 / 442 with all 24 elements inside the surface at every sample.

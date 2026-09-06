@@ -46,6 +46,29 @@
   height: 100%;
 }
 
+/*
+ * The diagram library's own wrapper, which it always applies - a module adds its own class
+ * beside it rather than instead of it.
+ *
+ * It carries the sizing because the library cannot be correct without it. The surface inside is
+ * `width: 100%; height: 100%`, and a percentage height against an INDEFINITE height resolves to
+ * the svg's intrinsic size, which an svg takes from its viewBox's aspect ratio. The library then
+ * measures that height to shape the view to the pane - so a wrapper with no definite height
+ * makes the measurement depend on the viewBox and the viewBox depend on the measurement, and the
+ * canvas grows without bound: 641px tall, then 1160, then 1903, with the diagram sliding out of
+ * the window. That is exactly what happened to the C4 canvas, whose module passed a class name
+ * that had no rule behind it.
+ *
+ * Stating it here means a module gets a canvas that sizes correctly by default, and a missing
+ * rule on the module's own class can no longer produce a runaway.
+ */
+.library-canvas {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
 .canvas-status,
 .canvas-rejection {
   position: absolute;
