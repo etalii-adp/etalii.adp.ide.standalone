@@ -113,6 +113,16 @@ describe("useViewReport", () => {
     expect(report).not.toHaveBeenCalled();
   });
 
+  // This test is insensitive to WHEN the first report arrives, and that is worth knowing before
+  // editing it. It advances the full debounce before asserting, so it passes whether the report
+  // fires immediately on becoming ready or 200ms later - and `useViewReport` currently makes it
+  // wait, because the effect sets one unconditional timer for every reason it runs, the readiness
+  // transition included. There is nothing to coalesce at open: one view, reported once.
+  //
+  // So it is not wrong and it is not redundant, but it cannot serve as the guard for first-report
+  // latency. A test for that must assert the report has arrived with NO timer advanced at all.
+  // Keep both if that guard is ever written; deleting this one as duplicated would lose the
+  // becoming-ready reason, which is the thing it does pin.
   it("reports once the diagram becomes ready", () => {
     // Arrange.
     const report = vi.fn();
