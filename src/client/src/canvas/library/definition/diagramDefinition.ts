@@ -187,6 +187,12 @@ export interface ElementTypeDefinition {
   draggable?: boolean;
   /** Whether delete gestures reach this type at all (Requirement 5.3). */
   deletable?: boolean;
+  /**
+   * Paints this type's elements beneath the connections: an opaque container whose members'
+   * edges must stay visible over it - azure-pipeline's stage cards. Off, connections draw
+   * under every element as they always have.
+   */
+  beneathConnections?: boolean;
 }
 
 /**

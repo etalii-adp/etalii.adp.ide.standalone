@@ -100,11 +100,6 @@
   stroke-width: 1.5;
 }
 
-.pipeline-arrowhead {
-  fill: var(--adp-border-strong, #9ca3af);
-  fill: context-stroke; /* follow the referencing line - muted normally, primary selected */
-}
-
 /*
  * An implicit edge is real but nobody wrote it down - a stage with no dependsOn waits for the one
  * before it. Drawn lighter so a reader can tell what the file says from what the schema decided.

@@ -767,6 +767,18 @@ export function DiagramCanvas({
     return [...elements.filter(isFrame), ...elements.filter((element) => !isFrame(element))];
   }, [elements, elementTypes]);
 
+  // A type marked beneathConnections paints before the connections - an opaque container
+  // whose members' edges must stay visible over it; everything else keeps the
+  // connections-first order the canvases have always had.
+  const beneathConnections = useMemo(
+    () => ordered.filter((element) => elementTypes.get(element.type)?.beneathConnections === true),
+    [ordered, elementTypes],
+  );
+  const aboveConnections = useMemo(
+    () => ordered.filter((element) => elementTypes.get(element.type)?.beneathConnections !== true),
+    [ordered, elementTypes],
+  );
+
   const isSelected = (kind: SelectedItem["kind"], id: string) =>
     selection.some((item) => item.kind === kind && item.id === id);
 
@@ -789,6 +801,23 @@ export function DiagramCanvas({
       svgRef.current?.focus();
     }
   };
+
+  const renderLibraryElement = (element: DiagramModelElement) => (
+    <LibraryElement
+      key={element.id}
+      element={element}
+      type={elementTypes.get(element.type)}
+      offset={dragOffset?.id === element.id ? dragOffset : undefined}
+      resize={resizePreview?.id === element.id ? resizePreview : undefined}
+      resizable={elementTypes.get(element.type)?.sizing === "user"}
+      resizePress={(side) => gesture.press({ kind: "resize", element, side })}
+      selected={isSelected("element", element.id)}
+      connectHighlight={connect?.target?.elementId === element.id ? "valid" : connect !== null && !connect.valid && connectTargetUnder(connect, element, boundsOf) ? "invalid" : undefined}
+      press={gesture.press({ kind: "element", element })}
+      anchorPress={(anchor, at) => gesture.press({ kind: "anchor", element, anchor, at })}
+      onContextMenu={onItemContextMenu(element.id)}
+    />
+  );
 
   return (
     <div className={`library-canvas ${className ?? ""}`.trim()} data-testid="library-canvas">
@@ -826,6 +855,8 @@ export function DiagramCanvas({
           </g>
         )}
 
+        {beneathConnections.map((element) => renderLibraryElement(element))}
+
         {model.connections.map((connection) => (
           <LibraryConnection
             key={connection.id}
@@ -841,22 +872,7 @@ export function DiagramCanvas({
           />
         ))}
 
-        {ordered.map((element) => (
-          <LibraryElement
-            key={element.id}
-            element={element}
-            type={elementTypes.get(element.type)}
-            offset={dragOffset?.id === element.id ? dragOffset : undefined}
-            resize={resizePreview?.id === element.id ? resizePreview : undefined}
-            resizable={elementTypes.get(element.type)?.sizing === "user"}
-            resizePress={(side) => gesture.press({ kind: "resize", element, side })}
-            selected={isSelected("element", element.id)}
-            connectHighlight={connect?.target?.elementId === element.id ? "valid" : connect !== null && !connect.valid && connectTargetUnder(connect, element, boundsOf) ? "invalid" : undefined}
-            press={gesture.press({ kind: "element", element })}
-            anchorPress={(anchor, at) => gesture.press({ kind: "anchor", element, anchor, at })}
-            onContextMenu={onItemContextMenu(element.id)}
-          />
-        ))}
+        {aboveConnections.map((element) => renderLibraryElement(element))}
 
         {connect !== null && (
           // The live preview, routed and styled as the relation prescribes (Requirement 5.4).

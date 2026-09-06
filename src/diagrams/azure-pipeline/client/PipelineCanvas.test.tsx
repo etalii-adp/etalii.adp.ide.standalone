@@ -288,7 +288,7 @@ describe("PipelineCanvas", () => {
     const view = draw();
 
     // Assert.
-    expect(view.getByTestId("edge-edge:Build->Test")).toBeTruthy();
+    expect(view.container.querySelector('[data-connection-id="edge:Build->Test"]')).not.toBeNull();
   });
 
   it("draws an implicit arrow differently from one somebody wrote down", () => {
@@ -307,7 +307,7 @@ describe("PipelineCanvas", () => {
     const view = draw();
 
     // Assert.
-    expect(view.getByTestId("edge-implicit").getAttribute("class")).toContain("pipeline-edge-implicit");
+    expect(view.container.querySelector('[data-connection-id="implicit"]')!.getAttribute("class")).toContain("pipeline-edge-implicit");
   });
 
   it("draws a broken arrow as broken", () => {
@@ -325,7 +325,7 @@ describe("PipelineCanvas", () => {
     const view = draw();
 
     // Assert.
-    expect(view.getByTestId("edge-broken").getAttribute("class")).toContain("pipeline-edge-broken");
+    expect(view.container.querySelector('[data-connection-id="broken"]')!.getAttribute("class")).toContain("pipeline-edge-broken");
   });
 
   it("draws no arrow when one of its ends is not on the canvas", () => {
@@ -336,7 +336,30 @@ describe("PipelineCanvas", () => {
     const view = draw();
 
     // Assert.
-    expect(view.queryByTestId("edge-dangling")).toBeNull();
+    expect(view.container.querySelector('[data-connection-id="dangling"]')).toBeNull();
+  });
+
+  it("paints a stage under the arrows, and the jobs over them", () => {
+    // The old canvas drew stages, then edges, then jobs, so an arrow between two jobs stayed
+    // visible over the opaque stage card that holds them. The stage type's beneathConnections
+    // keeps that order through the library.
+    currentModel = applyDelta(
+      emptyModel,
+      add(
+        stage("Build", "Build"),
+        job("Build/A", "Build", "A", {}, 10, 20),
+        job("Build/B", "Build", "B", {}, 250, 20),
+        edge("j-edge", "Build/A", "Build/B"),
+      ),
+    );
+
+    const view = draw();
+
+    const drawn = [...view.container.querySelectorAll("[data-element-id], [data-connection-id]")].map(
+      (node) => node.getAttribute("data-element-id") ?? node.getAttribute("data-connection-id"),
+    );
+    expect(drawn.indexOf("Build")).toBeLessThan(drawn.indexOf("j-edge"));
+    expect(drawn.indexOf("j-edge")).toBeLessThan(drawn.indexOf("Build/A"));
   });
 
   it("publishes a selection when an element is clicked", () => {
@@ -345,7 +368,7 @@ describe("PipelineCanvas", () => {
     const view = draw();
 
     // Act.
-    fireEvent.click(view.getByTestId("stage-Build"));
+    press(view.getByTestId("stage-Build"));
 
     // Assert.
     expect(select).toHaveBeenCalledTimes(1);
@@ -356,7 +379,7 @@ describe("PipelineCanvas", () => {
   // ---- scrollbars: each test is named for the defect it catches -------------------------
 
   const viewBoxOf = (container: HTMLElement) =>
-    (container.querySelector(".pipeline-canvas-surface")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
+    (container.querySelector("svg.library-canvas-surface")!.getAttribute("viewBox") ?? "").split(" ").map(Number);
 
   const thumbOf = (container: HTMLElement, axis: "horizontal" | "vertical") =>
     container.querySelector(`.canvas-scrollbar-${axis} .canvas-scrollbar-thumb`) as HTMLElement;
@@ -380,7 +403,7 @@ describe("PipelineCanvas", () => {
     // Arrange.
     currentModel = applyDelta(emptyModel, add(stage("Build", "Build")));
     const { container } = draw();
-    const surface = container.querySelector(".pipeline-canvas-surface")!;
+    const surface = container.querySelector("svg.library-canvas-surface")!;
     const before = thumbOf(container, "horizontal").style.left;
 
     // Act.
@@ -396,7 +419,7 @@ describe("PipelineCanvas", () => {
     // Arrange.
     currentModel = applyDelta(emptyModel, add(stage("Build", "Build")));
     const { container } = draw();
-    const surface = container.querySelector(".pipeline-canvas-surface")!;
+    const surface = container.querySelector("svg.library-canvas-surface")!;
 
     // Act.
     fireEvent(surface, pointer("pointerdown", { button: 0, clientX: 100, clientY: 100 }));
@@ -412,7 +435,7 @@ describe("PipelineCanvas", () => {
     // Arrange.
     currentModel = applyDelta(emptyModel, add(stage("Build", "Build")));
     const { container } = draw();
-    const surface = container.querySelector(".pipeline-canvas-surface")!;
+    const surface = container.querySelector("svg.library-canvas-surface")!;
     const before = thumbOf(container, "horizontal").style.width;
 
     // Act.
@@ -428,7 +451,7 @@ describe("PipelineCanvas", () => {
     const view = draw();
 
     // Act.
-    press(view.container.querySelector(".pipeline-canvas-surface")!);
+    press(view.container.querySelector("svg.library-canvas-surface")!);
 
     // Assert.
     expect(select).toHaveBeenCalledWith(null);
@@ -584,7 +607,7 @@ describe("PipelineCanvas", () => {
     const { container } = draw();
 
     // Act.
-    fireEvent.keyDown(container.querySelector("svg.pipeline-canvas-surface") as SVGSVGElement, { key: "F2" });
+    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface") as SVGSVGElement, { key: "F2" });
 
     // Assert: the key went over as data, addressed to the selected element.
     expect(executeShortcut).toHaveBeenCalledTimes(1);
@@ -599,7 +622,7 @@ describe("PipelineCanvas", () => {
     const { container } = draw();
 
     // Act.
-    fireEvent.keyDown(container.querySelector("svg.pipeline-canvas-surface") as SVGSVGElement, { key: "F2" });
+    fireEvent.keyDown(container.querySelector("svg.library-canvas-surface") as SVGSVGElement, { key: "F2" });
 
     // Assert.
     expect(executeShortcut).not.toHaveBeenCalled();

@@ -617,6 +617,29 @@ describe("DiagramCanvas", () => {
     expect(group.getAttribute("class")).toContain("shacl-edge-node");
   });
 
+  it("a type marked beneathConnections paints its elements under the connections", () => {
+    // An opaque container whose members' edges must stay visible over it - azure-pipeline's
+    // stage cards. The default stays connections-first, so only the marked type moves down.
+    const definition = definitionOf();
+    (definition.elementTypes as unknown[]).push({
+      id: "zone",
+      shape: "box",
+      anchors: { kind: "edge" },
+      sizing: "model",
+      beneathConnections: true,
+    });
+    const model = modelOf();
+    (model.elements as unknown[]).push({ id: "z", type: "zone", x: 150, y: 0, width: 500, height: 200 });
+
+    const { container } = renderCanvas({}, definition, model);
+
+    const drawn = [...container.querySelectorAll("[data-element-id], [data-connection-id]")].map(
+      (node) => node.getAttribute("data-element-id") ?? node.getAttribute("data-connection-id"),
+    );
+    expect(drawn.indexOf("z")).toBeLessThan(drawn.indexOf("a->b"));
+    expect(drawn.indexOf("a->b")).toBeLessThan(drawn.indexOf("a"));
+  });
+
   it("a label the definition does not mark editable opens no editor", () => {
     const { container } = renderCanvas({}, definitionOf(), modelOf(), {
       editing: {
