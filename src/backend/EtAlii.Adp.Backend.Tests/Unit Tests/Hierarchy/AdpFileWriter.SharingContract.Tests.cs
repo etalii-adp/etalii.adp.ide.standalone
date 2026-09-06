@@ -129,7 +129,7 @@ public class AdpFileWriterSharingContractTests : IDisposable
         var path = IoPath.Combine(_folder, "document.tml");
         File.WriteAllText(path, "before");
 
-        using (var reader = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+        using (var _ = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
         {
             Assert.ThrowsAny<Exception>(() => AdpFileWriter.Save(path, "after"));
         }
