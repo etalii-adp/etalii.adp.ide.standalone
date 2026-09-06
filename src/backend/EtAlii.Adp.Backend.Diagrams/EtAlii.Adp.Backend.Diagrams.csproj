@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="Serilog" />
+    <!--
+      The generated message/service types (DiagramServiceBase and friends) stay owned by
+      EtAlii.Adp.Backend - the single-owner rule its own csproj states - and arrive here
+      through this reference, together with the Hierarchy, Projects and Sessions seams the
+      diagram service composes.
+    -->
+    <ProjectReference Include="..\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Editor\EtAlii.Adp.Editor.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- EditorSessionAdapter is internal: the wire's synthetic-element shape is this
+         project's own affair, visible only to its tests. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Backend.Diagrams.Tests" />
+  </ItemGroup>
+
+</Project>

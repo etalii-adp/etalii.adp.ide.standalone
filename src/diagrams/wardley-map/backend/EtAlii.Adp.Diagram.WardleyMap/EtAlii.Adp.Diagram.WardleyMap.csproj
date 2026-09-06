@@ -9,6 +9,7 @@
       absent (Requirement 12.4).
     -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend.Diagrams\EtAlii.Adp.Backend.Diagrams.csproj" />
   </ItemGroup>
 
   <ItemGroup>

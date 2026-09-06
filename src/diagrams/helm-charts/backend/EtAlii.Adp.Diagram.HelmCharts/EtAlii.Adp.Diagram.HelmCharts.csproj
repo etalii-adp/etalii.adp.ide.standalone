@@ -8,6 +8,7 @@
       with this module absent (structure.md's dependency direction).
     -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend.Diagrams\EtAlii.Adp.Backend.Diagrams.csproj" />
   </ItemGroup>
 
   <ItemGroup>
