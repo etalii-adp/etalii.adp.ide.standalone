@@ -3,7 +3,7 @@ using EtAlii.Adp.Backend.Diagrams;
 using EtAlii.Adp.Editor;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Backend.Diagrams.Tests;
 
 /// <summary>
 /// The bridge between the families (modular-text-editors, "no new stream"): a text file rides

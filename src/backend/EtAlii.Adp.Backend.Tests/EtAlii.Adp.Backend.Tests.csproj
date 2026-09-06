@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Backend.Diagrams\EtAlii.Adp.Backend.Diagrams.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Backend.Service\EtAlii.Adp.Backend.Service.csproj" />
   </ItemGroup>
 

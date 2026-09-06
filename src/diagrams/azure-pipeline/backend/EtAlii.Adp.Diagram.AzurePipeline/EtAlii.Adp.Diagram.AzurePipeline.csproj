@@ -7,6 +7,7 @@
       compile and test with this module absent (azure-pipeline-diagram Requirement 14.4).
     -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Backend.Diagrams\EtAlii.Adp.Backend.Diagrams.csproj" />
   </ItemGroup>
 
   <ItemGroup>
