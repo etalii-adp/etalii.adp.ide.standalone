@@ -71,6 +71,14 @@ export const BUILT_IN_SHAPES: readonly BuiltInShape[] = [
  * or sizing rule as for any element, and the ref supplies what the library cannot know: how
  * to draw it, where its edge is for a connector to land, and which anchors it declares.
  */
+/** What the canvas tells a custom renderer about the moment it draws in. */
+export interface CustomShapeState {
+  selected: boolean;
+  /** A drag preview is in flight: the element handed over already sits at the dragged spot. */
+  dragging: boolean;
+  connectTarget: boolean;
+}
+
 export interface CustomShapeRef {
   /** Names the shape, so styles, toolboxes and test assertions can refer to it. */
   customShape: string;
@@ -78,7 +86,7 @@ export interface CustomShapeRef {
    * Draws the element. Typed opaquely on purpose: this layer knows no React, and
    * `DiagramCanvas` narrows the renderer to its component signature when mounting.
    */
-  render: (element: unknown) => unknown;
+  render: (element: unknown, state?: CustomShapeState) => unknown;
   /** Where a connector approaching from `towards` touches this shape's edge (Requirement 2.1). */
   edgePoint: (bounds: ShapeBounds, towards: ShapePoint) => ShapePoint;
   /** The shape's own anchors, in its local space; omitted means edge attachment. */
@@ -269,6 +277,14 @@ export interface RelationTypeDefinition {
   };
   /** Whether waypoints or control points may be dragged (Requirement 3.5). */
   adjustable?: boolean;
+  /**
+   * What a connect gesture released over empty canvas means. The default, `ignore`, is the
+   * library's enforcement rule: nothing was allowed there, nothing is raised. `complete`
+   * declares the release itself meaningful - the timeline's create-and-relate gesture - and
+   * raises `connection-released-on-empty` with the drop point, for the module to answer.
+   * Recorded as a schema extension in the tasks document per Requirement 9.4.
+   */
+  emptyRelease?: "ignore" | "complete";
 }
 
 /**
@@ -314,6 +330,17 @@ export interface LayoutDefinition {
 /** Whether pointer drags move elements at all, before per-type overrides (Requirement 5.2). */
 export type DraggingPolicy = "enabled" | "disabled";
 
+/**
+ * A background the canvas draws behind every element - an axis, a grid, a labelled space
+ * (the mechanism wardley's evolution axis and sparql's regions use; Requirement 9.2). The
+ * renderer is handed the current view in canvas units and draws in them, so panning and
+ * zooming carry the background with the elements.
+ */
+export interface DiagramBackgroundRef {
+  background: string;
+  render: (view: ShapeBounds) => unknown;
+}
+
 /** The whole statement of what a diagram type allows (Requirement 4.1). */
 export interface DiagramDefinition {
   elementTypes: readonly ElementTypeDefinition[];
@@ -321,4 +348,11 @@ export interface DiagramDefinition {
   toolbox?: ToolboxDefinition;
   layout: LayoutDefinition;
   dragging: DraggingPolicy;
+  /**
+   * The intrinsic space, where the notation defines one - wardley's 0..1 by 0..1. Fit shows
+   * exactly this extent rather than a box derived from the elements, because the space is
+   * definitional, not derived (Requirement 9.2).
+   */
+  extent?: ShapeBounds;
+  background?: DiagramBackgroundRef;
 }

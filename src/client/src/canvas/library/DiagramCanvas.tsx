@@ -117,6 +117,7 @@ export interface DiagramCanvasProps {
 type PressTarget =
   | { kind: "element"; element: DiagramModelElement }
   | { kind: "anchor"; element: DiagramModelElement; anchor: string | undefined; at: Point }
+  | { kind: "resize"; element: DiagramModelElement; side: "left" | "right" }
   | { kind: "connection"; connection: DiagramModelConnection }
   | { kind: "adjust"; connection: DiagramModelConnection; from: Point }
   | { kind: "background"; view: ViewBox };
@@ -203,11 +204,18 @@ export function DiagramCanvas({
   const [view, setView] = useState<ViewBox | null>(null);
   const [ownSelection, setOwnSelection] = useState<DiagramSelection>([]);
   const [dragOffset, setDragOffset] = useState<{ id: string; dx: number; dy: number } | null>(null);
+  const [resizePreview, setResizePreview] = useState<{ id: string; side: "left" | "right"; dx: number } | null>(null);
   const [connect, setConnect] = useState<ConnectPreview | null>(null);
 
   const selection = controlledSelection ?? ownSelection;
 
-  const fitBox = useMemo(() => fitBoxOf(elements, elementTypes), [elements, elementTypes]);
+  const fitBox = useMemo(() => {
+    if (definition.extent !== undefined) {
+      // The space is definitional, not derived: fit shows exactly what the notation states.
+      return { x: definition.extent.x, y: definition.extent.y, w: definition.extent.width, h: definition.extent.height };
+    }
+    return fitBoxOf(elements, elementTypes);
+  }, [definition.extent, elements, elementTypes]);
   const effectiveView = view ?? fitBox;
   const viewRef = useRef(effectiveView);
   viewRef.current = effectiveView;
@@ -219,12 +227,18 @@ export function DiagramCanvas({
     [events],
   );
 
-  const raiseView = useCallback(
-    (box: ViewBox) => {
-      raise({ kind: "view-changed", viewport: { x: box.x, y: box.y, width: box.w, height: box.h } });
-    },
-    [raise],
-  );
+  // view-changed means the view CHANGED - initially, on fit, zoom, pan and scrollbar alike -
+  // so a module reporting its viewport observes one signal instead of wiring every gesture.
+  // The handler is read through a ref because the module recreates its handler map per
+  // render, and the effect below must fire on view changes, not on handler identity.
+  const raiseRef = useRef(raise);
+  raiseRef.current = raise;
+  useEffect(() => {
+    raiseRef.current({
+      kind: "view-changed",
+      viewport: { x: effectiveView.x, y: effectiveView.y, width: effectiveView.w, height: effectiveView.h },
+    });
+  }, [effectiveView.x, effectiveView.y, effectiveView.w, effectiveView.h]);
 
   /** How many canvas units one screen pixel spans - what turns pointer deltas into movement. */
   const unitsPerPixel = useCallback((box: ViewBox): number => {
@@ -409,6 +423,10 @@ export function DiagramCanvas({
           });
           break;
         }
+        case "resize": {
+          setResizePreview({ id: target.element.id, side: target.side, dx: dx * scale });
+          break;
+        }
         case "adjust": {
           // Live feedback only; the commit is the release. The single midpoint waypoint is
           // the minimal adjustment surface; richer editing rides the same event.
@@ -423,8 +441,7 @@ export function DiagramCanvas({
       const scale = unitsPerPixel(viewRef.current);
       switch (target.kind) {
         case "background":
-          raiseView(viewRef.current);
-          break;
+          break; // the view effect above reports the settled viewport
         case "element": {
           if (!draggingEnabled(target.element)) {
             break;
@@ -444,6 +461,12 @@ export function DiagramCanvas({
           });
           break;
         }
+        case "resize": {
+          setResizePreview(null);
+          const bounds = resizedBounds(elementBounds(target.element, elementTypes.get(target.element.type)), target.side, dx * scale);
+          raise({ kind: "element-resized", elementId: target.element.id, side: target.side, bounds });
+          break;
+        }
         case "anchor": {
           const preview = connectRef.current;
           setConnect(null);
@@ -457,6 +480,16 @@ export function DiagramCanvas({
               targetElementId: preview.target.elementId,
               sourceAnchor: preview.sourceAnchor,
               targetAnchor: preview.target.anchor,
+            });
+          } else if (preview !== undefined && preview !== null && preview.relation.emptyRelease === "complete" && elementAt(preview.point) === undefined) {
+            // The definition declared an empty release meaningful - the create-and-relate
+            // gesture - so the point travels to the module instead of dissolving.
+            raise({
+              kind: "connection-released-on-empty",
+              relationType: preview.relation.id,
+              sourceElementId: preview.sourceId,
+              sourceAnchor: preview.sourceAnchor,
+              position: preview.point,
             });
           }
           break;
@@ -475,6 +508,7 @@ export function DiagramCanvas({
     },
     onDragAbandon: () => {
       setDragOffset(null);
+      setResizePreview(null);
       setConnect(null);
     },
   });
@@ -498,9 +532,8 @@ export function DiagramCanvas({
       const py = aboutY ?? current.y + current.h / 2;
       const next = { x: px - (px - current.x) / applied, y: py - (py - current.y) / applied, w, h };
       setView(next);
-      raiseView(next);
     },
-    [raiseView],
+    [],
   );
 
   useEffect(() => {
@@ -528,12 +561,9 @@ export function DiagramCanvas({
     () => ({
       zoomIn: () => zoomBy(ZOOM_STEP),
       zoomOut: () => zoomBy(1 / ZOOM_STEP),
-      fitToView: () => {
-        setView(null);
-        raiseView(fitBoxOf(elements, elementTypes));
-      },
+      fitToView: () => setView(null),
     }),
-    [zoomBy, raiseView, elements, elementTypes],
+    [zoomBy],
   );
 
   // The pair, by construction (Requirement 1.4): this component registers BOTH the view
@@ -706,6 +736,12 @@ export function DiagramCanvas({
           </marker>
         </defs>
 
+        {definition.background !== undefined && (
+          <g className="library-canvas-background" data-testid="canvas-background" pointerEvents="none">
+            {definition.background.render({ x: effectiveView.x, y: effectiveView.y, width: effectiveView.w, height: effectiveView.h }) as ReactNode}
+          </g>
+        )}
+
         {model.connections.map((connection) => (
           <LibraryConnection
             key={connection.id}
@@ -727,6 +763,9 @@ export function DiagramCanvas({
             element={element}
             type={elementTypes.get(element.type)}
             offset={dragOffset?.id === element.id ? dragOffset : undefined}
+            resize={resizePreview?.id === element.id ? resizePreview : undefined}
+            resizable={elementTypes.get(element.type)?.sizing === "user"}
+            resizePress={(side) => gesture.press({ kind: "resize", element, side })}
             selected={isSelected("element", element.id)}
             connectHighlight={connect?.target?.elementId === element.id ? "valid" : connect !== null && !connect.valid && connectTargetUnder(connect, element, boundsOf) ? "invalid" : undefined}
             press={gesture.press({ kind: "element", element })}
@@ -809,6 +848,9 @@ function LibraryElement({
   element,
   type,
   offset,
+  resize,
+  resizable,
+  resizePress,
   selected,
   connectHighlight,
   press,
@@ -818,6 +860,9 @@ function LibraryElement({
   element: DiagramModelElement;
   type: ElementTypeDefinition | undefined;
   offset?: { dx: number; dy: number };
+  resize?: { side: "left" | "right"; dx: number };
+  resizable: boolean;
+  resizePress: (side: "left" | "right") => PointerPressWiring;
   selected: boolean;
   connectHighlight?: "valid" | "invalid";
   press: PointerPressWiring;
@@ -825,7 +870,11 @@ function LibraryElement({
   onContextMenu: (event: React.MouseEvent) => void;
 }) {
   const shifted: DiagramModelElement = offset ? { ...element, x: element.x + offset.dx, y: element.y + offset.dy } : element;
-  const bounds = elementBounds(shifted, type);
+  const plainBounds = elementBounds(shifted, type);
+  const bounds = resize ? resizedBounds(plainBounds, resize.side, resize.dx) : plainBounds;
+  const resizing: DiagramModelElement = resize
+    ? { ...shifted, x: bounds.x + bounds.width / 2, width: bounds.width }
+    : shifted;
   const classes = [
     "library-element",
     selected ? "canvas-selected" : "",
@@ -839,8 +888,16 @@ function LibraryElement({
   return (
     <g className={classes} data-element-id={element.id} {...press} onContextMenu={onContextMenu}>
       <ShapeErrorBoundary bounds={bounds} label={element.label ?? element.id}>
-        {renderShape(shifted, type, bounds)}
+        {renderShape(resizing, type, bounds, { selected, dragging: offset !== undefined, connectTarget: connectHighlight === "valid" })}
       </ShapeErrorBoundary>
+      {resizable && selected && (
+        // The resize adorners a user-sized element earns when selected: each edge strip
+        // drives the arbiter and raises element-resized on release (sizing: "user", R2.5).
+        <>
+          <rect className="library-resize-handle" data-resize="left" x={bounds.x - 3} y={bounds.y} width={6} height={bounds.height} {...resizePress("left")} />
+          <rect className="library-resize-handle" data-resize="right" x={bounds.x + bounds.width - 3} y={bounds.y} width={6} height={bounds.height} {...resizePress("right")} />
+        </>
+      )}
       {/* Anchors render always and show on hover or mid-connect, via the stylesheet - so a
           test can press them and a user only sees them when they matter (Requirement 2.4). */}
       {type !== undefined &&
@@ -957,7 +1014,12 @@ class ShapeErrorBoundary extends Component<{ bounds: ConnectorBox; label: string
  * renderer for a custom shape, and a visible fallback for anything undeclared - a mapping bug
  * shown rather than hidden (design, Error Handling 1).
  */
-function renderShape(element: DiagramModelElement, type: ElementTypeDefinition | undefined, bounds: ConnectorBox): ReactNode {
+function renderShape(
+  element: DiagramModelElement,
+  type: ElementTypeDefinition | undefined,
+  bounds: ConnectorBox,
+  state?: import("./definition/diagramDefinition").CustomShapeState,
+): ReactNode {
   const label = element.label ?? "";
   if (type === undefined) {
     return fallbackBox(bounds, element.label ?? element.id);
@@ -972,7 +1034,7 @@ function renderShape(element: DiagramModelElement, type: ElementTypeDefinition |
   };
 
   if (typeof type.shape !== "string") {
-    return <>{(type.shape as CustomShapeRef).render(element) as ReactNode}</>;
+    return <>{(type.shape as CustomShapeRef).render(element, state) as ReactNode}</>;
   }
 
   switch (type.shape) {
@@ -1199,6 +1261,16 @@ function connectTargetUnder(
     connect.point.y >= bounds.y &&
     connect.point.y <= bounds.y + bounds.height
   );
+}
+
+/** The bounds with one edge carried by a resize drag; the far edge stays put and is never crossed. */
+function resizedBounds(bounds: ConnectorBox, side: "left" | "right", dx: number): ConnectorBox {
+  if (side === "left") {
+    const left = Math.min(bounds.x + dx, bounds.x + bounds.width - 1);
+    return { ...bounds, x: left, width: bounds.x + bounds.width - left };
+  }
+  const width = Math.max(bounds.width + dx, 1);
+  return { ...bounds, width };
 }
 
 function elementBounds(element: DiagramModelElement, type: ElementTypeDefinition | undefined): ConnectorBox {

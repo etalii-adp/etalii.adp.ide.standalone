@@ -305,6 +305,73 @@ describe("DiagramCanvas", () => {
     expect(container.querySelector('[data-testid="adjust-a->b"]')).toBeNull();
   });
 
+  it("a declared background draws behind the elements, and a declared extent is what fit shows", () => {
+    const definition = definitionOf({
+      extent: { x: 0, y: 0, width: 1000, height: 500 },
+      background: { background: "axis", render: (view) => <line data-testid="axis" x1={view.x} y1={0} x2={view.x + view.width} y2={0} /> },
+    });
+    const { container } = renderCanvas({}, definition);
+
+    const svg = container.querySelector("svg.library-canvas-surface")!;
+    expect(svg.getAttribute("viewBox")).toBe("0 0 1000 500");
+    const background = container.querySelector('[data-testid="canvas-background"]')!;
+    expect(background.querySelector('[data-testid="axis"]')).not.toBeNull();
+    // Behind the elements: the background group precedes every element in document order.
+    expect(background.compareDocumentPosition(elementOn(container, "a")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("an empty release completes only where the relation declares it, carrying the drop point", () => {
+    const onConnectionReleasedOnEmpty = vi.fn();
+    const declared = definitionOf();
+    (declared.relationTypes[0] as { emptyRelease?: string }).emptyRelease = "complete";
+    const { container, unmount } = renderCanvas({ onConnectionReleasedOnEmpty }, declared);
+
+    drag(anchorOn(container, "a", "e"), 50, 0, 400, 320);
+    expect(onConnectionReleasedOnEmpty).toHaveBeenCalledExactlyOnceWith({
+      kind: "connection-released-on-empty",
+      relationType: "calls",
+      sourceElementId: "a",
+      sourceAnchor: "e",
+      position: { x: 400, y: 320 },
+    });
+    unmount();
+
+    // The default stays the enforcement rule: released over nothing, nothing is raised.
+    onConnectionReleasedOnEmpty.mockClear();
+    const { container: second } = renderCanvas({ onConnectionReleasedOnEmpty });
+    drag(anchorOn(second, "a", "e"), 50, 0, 400, 320);
+    expect(onConnectionReleasedOnEmpty).not.toHaveBeenCalled();
+  });
+
+  it("a user-sized element earns resize handles when selected, and dragging one raises element-resized", () => {
+    const onElementResized = vi.fn();
+    const definition = definitionOf();
+    (definition.elementTypes[0] as { sizing: string }).sizing = "user";
+    const { container } = renderCanvas({ onElementResized }, definition, modelOf(), {
+      selection: [{ kind: "element", id: "a" }],
+    });
+
+    const handle = container.querySelector('[data-element-id="a"] [data-resize="right"]')!;
+    expect(handle).not.toBeNull();
+    drag(handle, 50, 0, 90, 0);
+
+    // Alpha spans x -50..50; carrying the right edge 40 further makes the box 140 wide.
+    expect(onElementResized).toHaveBeenCalledExactlyOnceWith({
+      kind: "element-resized",
+      elementId: "a",
+      side: "right",
+      bounds: { x: -50, y: -20, width: 140, height: 40 },
+    });
+  });
+
+  it("a model-sized element offers no resize handles at all", () => {
+    const { container } = renderCanvas({}, definitionOf(), modelOf(), {
+      selection: [{ kind: "element", id: "a" }],
+    });
+
+    expect(container.querySelector("[data-resize]")).toBeNull();
+  });
+
   it("an editable label edits through the shared editor and commits as an event first", async () => {
     const onLabelCommitRequested = vi.fn();
     const definition = definitionOf();

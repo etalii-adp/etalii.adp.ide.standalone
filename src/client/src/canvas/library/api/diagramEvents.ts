@@ -18,7 +18,9 @@ export type DiagramEvent =
   | ElementDropped
   | ElementDeleted
   | ElementMoved
+  | ElementResized
   | ConnectionDrawn
+  | ConnectionReleasedOnEmpty
   | ConnectionDeleted
   | ConnectionAdjusted
   | SelectionChanged
@@ -45,6 +47,32 @@ export interface ElementDeleted {
 export interface ElementMoved {
   kind: "element-moved";
   elementId: string;
+  position: ShapePoint;
+}
+
+/**
+ * An edge of a user-sizable element was dragged (sizing: "user"). The bounds are the whole
+ * resized rectangle and `side` names the edge that moved, so a module mapping an axis - the
+ * timeline's begin and end - knows which end the user meant.
+ */
+export interface ElementResized {
+  kind: "element-resized";
+  elementId: string;
+  side: "left" | "right";
+  bounds: { x: number; y: number; width: number; height: number };
+}
+
+/**
+ * A connect gesture released over empty canvas, where the relation declares that release
+ * meaningful (`emptyRelease: "complete"`) - the create-and-relate gesture. Under the default
+ * the release raises nothing at all; this member exists only for definitions that opt in.
+ */
+export interface ConnectionReleasedOnEmpty {
+  kind: "connection-released-on-empty";
+  relationType: string;
+  sourceElementId: string;
+  sourceAnchor?: string;
+  /** Where the gesture ended, in canvas units. */
   position: ShapePoint;
 }
 
