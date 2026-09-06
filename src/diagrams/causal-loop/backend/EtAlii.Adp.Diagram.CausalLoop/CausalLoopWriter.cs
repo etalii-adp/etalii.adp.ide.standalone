@@ -199,7 +199,7 @@ public static class CausalLoopWriter
             return "That link is already stated in this diagram.";
         }
 
-        var link = new CausalLoopLink(from, to, polarity, false, null, "", new LineRange(0, 0));
+        var link = new CausalLoopLink(from, to, polarity, false, false, null, "", new LineRange(0, 0));
         document.Insert(AfterLast(document, model.Links.Select(l => l.Lines)), [LinkStatement(link)]);
         return "";
     }
@@ -213,6 +213,20 @@ public static class CausalLoopWriter
     public static string SetLinkDelay(
         CausalLoopDocument document, CausalLoopModel model, string from, string to, bool delayed) =>
         Rewrite(document, model, from, to, link => link with { Delayed = delayed });
+
+    /// <summary>
+    /// Bows a link's arc to the other side of its chord, or puts it back.
+    /// </summary>
+    /// <remarks>
+    /// Which side an arc bows to is normally this module's own decision, taken consistently from
+    /// the direction of travel so that a two-variable loop draws as an ellipse rather than as one
+    /// line with an arrowhead at each end. That rule is right almost always and occasionally
+    /// unreadable - a link whose automatic side crosses another. This is the author overriding it
+    /// for one link, and it is stated in the document so it survives a reopen.
+    /// </remarks>
+    public static string SetLinkCurvature(
+        CausalLoopDocument document, CausalLoopModel model, string from, string to, bool flipped) =>
+        Rewrite(document, model, from, to, link => link with { Flipped = flipped });
 
     /// <summary>Sets a link's weight, or clears it when <paramref name="weight"/> is null.</summary>
     public static string SetLinkWeight(
@@ -362,6 +376,11 @@ public static class CausalLoopWriter
         if (link.Delayed)
         {
             statement += " delayed";
+        }
+
+        if (link.Flipped)
+        {
+            statement += " flipped";
         }
 
         if (link.Weight is { } weight)

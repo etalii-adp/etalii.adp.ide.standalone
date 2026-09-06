@@ -66,6 +66,28 @@ public class CausalLoopParserTests
         Assert.Equal("lagged", link.Label);
     }
 
+    [Fact]
+    public void ALink_IsUnflippedUnlessItSaysSo_AndReadsTheWordAsAModifier()
+    {
+        // Which side an arc bows to is the module's own decision until the document overrides
+        // it, so silence has to mean "the module decides" rather than "flipped false by luck" -
+        // and the word has to be read as a modifier rather than swallowed as the link's label,
+        // which is what an unrecognised token becomes.
+        // Act.
+        var silent = Parse(Corpus).Model.Links.Single(candidate => candidate.From == "deaths");
+        var stated = Assert.Single(
+            Parse(Corpus.Replace(
+                "link population -> births +",
+                "link population -> births + flipped",
+                StringComparison.Ordinal)).Model.Links,
+            candidate => candidate.From == "population" && candidate.To == "births");
+
+        // Assert.
+        Assert.False(silent.Flipped);
+        Assert.True(stated.Flipped);
+        Assert.Equal("", stated.Label);
+    }
+
     /// <summary>
     /// Both notations are in live use and mean the same two things, so a document written in
     /// either reads the same (Requirement 2.2).

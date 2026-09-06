@@ -19,7 +19,8 @@ namespace EtAlii.Adp.Diagram.CausalLoop;
 /// </para>
 /// <para>
 /// <b>What is offered depends only on what is selected.</b> A variable offers rename, remove and
-/// a new link from it; a link offers its polarity, its delay and removal; a loop offers rename
+/// a new link from it; a link offers its polarity, its delay, which way its arc bows and
+/// removal; a loop offers rename
 /// and removal; and a placement offers a new variable. The provider reads the document to fill in
 /// the counts and the current values, and never to decide whether the user is allowed.
 /// </para>
@@ -49,6 +50,15 @@ public sealed class CausalLoopContextActionProvider(
 
     /// <summary>Mark or unmark a link's effect as delayed.</summary>
     public const string ToggleDelayActionId = "causal-loop.toggle-delay";
+
+    /// <summary>Bow the link's arc to the other side of its chord.</summary>
+    /// <remarks>
+    /// Which side an arc bows to is this module's own decision, taken from the direction of
+    /// travel so that a two-variable loop draws as an ellipse. That is right almost always and
+    /// occasionally unreadable, where the chosen side crosses another link. This overrides it for
+    /// one link, and the choice is stated in the document so it survives a reopen.
+    /// </remarks>
+    public const string FlipCurvatureActionId = "causal-loop.flip-curvature";
 
     /// <summary>Withdraw a link. Loops through it survive.</summary>
     public const string RemoveLinkActionId = "causal-loop.remove-link";
@@ -222,6 +232,8 @@ public sealed class CausalLoopContextActionProvider(
                 new SetLinkPolarityCommand(body, link.Value.From, link.Value.To, CausalLoopPolarity.Negative),
             ToggleDelayActionId when link is not null =>
                 new SetLinkDelayCommand(body, link.Value.From, link.Value.To, !IsDelayed(entry.Model, link.Value)),
+            FlipCurvatureActionId when link is not null =>
+                new SetLinkCurvatureCommand(body, link.Value.From, link.Value.To, !IsFlipped(entry.Model, link.Value)),
             RemoveLinkActionId when link is not null =>
                 new RemoveLinkCommand(body, link.Value.From, link.Value.To),
             RenameLoopActionId when loop is not null => new SetLoopNameCommand(body, loop, value),
@@ -341,6 +353,10 @@ public sealed class CausalLoopContextActionProvider(
                     known && link!.Delayed ? "Not delayed" : "Delayed",
                     "mdi-timer-sand", null, known, reason),
                 new ContextActionDefinition(
+                    FlipCurvatureActionId,
+                    known && link!.Flipped ? "Curve back the other way" : "Flip the curve",
+                    "mdi-vector-curve", null, known, reason),
+                new ContextActionDefinition(
                     RemoveLinkActionId, "Remove link", "mdi-delete-outline",
                     new ContextShortcutDefinition("Delete"), known, reason),
             ]),
@@ -366,6 +382,9 @@ public sealed class CausalLoopContextActionProvider(
 
     private static bool IsDelayed(CausalLoopModel model, (string From, string To) link) =>
         model.Links.FirstOrDefault(candidate => candidate.From == link.From && candidate.To == link.To)?.Delayed == true;
+
+    private static bool IsFlipped(CausalLoopModel model, (string From, string To) link) =>
+        model.Links.FirstOrDefault(candidate => candidate.From == link.From && candidate.To == link.To)?.Flipped == true;
 
     /// <summary>The shortest cycle through a variable, so a claimed loop starts from something real.</summary>
     private static IReadOnlyList<string> LoopThrough(CausalLoopModel model, string variable) =>

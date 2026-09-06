@@ -196,6 +196,47 @@ describe("CausalLoopCanvas", () => {
     expect(Math.abs(bows[0]!)).toBeGreaterThan(10);
   });
 
+  it("bows a flipped link to the other side, and takes its adornments with it", () => {
+    // The side an arc bows to is this module's own choice, made consistently so that a
+    // two-variable loop encloses. `flipped` is the author overriding that for one link, and it
+    // has to move the whole drawn thing: a route redrawn on the far side while the polarity
+    // mark and delay strokes stayed put would read worse than not flipping at all.
+    const controlOf = (container: HTMLElement) => {
+      const d = container.querySelector('[data-connection-id="link:a|b"] .canvas-connection-line')!.getAttribute("d") ?? "";
+      const control = /Q\s+(-?[\d.]+)\s+(-?[\d.]+)/.exec(d);
+      return { x: Number(control?.[1]), y: Number(control?.[2]) };
+    };
+    const markOf = (container: HTMLElement) =>
+      Number(
+        container
+          .querySelector('[data-connection-id="link:a|b"] .causal-loop-polarity')!
+          .getAttribute("y"),
+      );
+
+    const upright = renderCanvas();
+    const uprightControl = controlOf(upright.container);
+    const uprightMark = markOf(upright.container);
+    upright.unmount();
+
+    currentModel = modelOf(
+      variable("a", 0, 0, "Alpha"),
+      variable("b", 200, 0, "Beta"),
+      link("a", "b", { flipped: true }),
+      link("b", "a", { polarity: CausalLoopPolarityProto.NEGATIVE }),
+      loop("R1", ["a", "b"]),
+    );
+    const { container } = renderCanvas();
+    const flippedControl = controlOf(container);
+    const flippedMark = markOf(container);
+
+    // The chord is horizontal here, so the bow is the control point's y: the flip is a change
+    // of sign rather than of magnitude.
+    expect(Math.sign(flippedControl.y)).not.toBe(Math.sign(uprightControl.y));
+    expect(Math.abs(flippedControl.y)).toBeCloseTo(Math.abs(uprightControl.y), 6);
+    // And the polarity mark followed the line rather than staying on the old side.
+    expect(Math.sign(flippedMark)).not.toBe(Math.sign(uprightMark));
+  });
+
   it("draws the conventional loop marker, and turns it the way the loop turns", () => {
     const { container } = renderCanvas();
 

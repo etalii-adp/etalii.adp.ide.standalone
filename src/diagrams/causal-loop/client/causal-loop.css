@@ -8,11 +8,24 @@
  * carry 104 to 261 lines of private appearance and that is the drift this one does not join.
  */
 
+/*
+ * Composes `canvas-host` rather than restating it: the shared class already carries the
+ * position, the full height and the surface colour. What is left here is the frame's own -
+ * it clips, and it fills the pane's width.
+ *
+ * The library's drawing surface used to wear `canvas-host` itself, which is a container's
+ * class and gave it a height with no width; it has since been corrected to `canvas-drawing`,
+ * and the sizing the surface needs from its wrapper is stated below instead.
+ */
 .causal-loop-frame {
-  position: relative;
   width: 100%;
-  height: 100%;
   overflow: hidden;
+}
+
+.causal-loop-canvas-host {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
 }
 
 .causal-loop-canvas {

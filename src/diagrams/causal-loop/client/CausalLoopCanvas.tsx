@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { arcBetween, normalAlong, pointAlong, type ArcBox } from "./causalLoopArc";
+import { ArcBow, arcBetween, normalAlong, pointAlong, type ArcBox } from "./causalLoopArc";
 import { BoxElement } from "@client/canvas/elements/box/BoxElement";
 import { elementSelectionOf, selectedElementIdOf } from "@client/canvas/selection";
 import { DiagramCanvas } from "@client/canvas/library/DiagramCanvas";
@@ -54,17 +54,33 @@ function boxEdgePoint(bounds: ShapeBounds, towards: ShapePoint): ShapePoint {
 }
 
 /**
+ * How far this link bows, and to which side.
+ *
+ * The magnitude is the notation's own look. The SIGN is the side of travel, and it is normally
+ * this module's decision: always the same side, so that `A -> B` and `B -> A` land on opposite
+ * sides of the chord and a two-variable loop draws as an ellipse rather than as one line with an
+ * arrowhead at each end. A link the author has flipped bows the other way instead - the one
+ * escape from that rule, for the case where the chosen side crosses something and the picture
+ * stops reading.
+ */
+function bowOf(flipped: boolean): number {
+  return flipped ? -ArcBow : ArcBow;
+}
+
+/**
  * The chord-bowed arc, and the self-loop's chordless ellipse pair, as one custom route: the
  * geometry anchors on the two end BOXES and bows to the side of travel, which is why the
  * route takes the endpoint bounds the library now hands a drawn connection.
  */
-const arcRoute = {
-  customRoute: "causal-loop-arc",
-  path: (from: ShapePoint, to: ShapePoint, _waypoints: readonly ShapePoint[], ends?: RouteEnds) =>
-    ends !== undefined
-      ? arcBetween(toArcBox(ends.source), toArcBox(ends.target)).path
-      : `M ${from.x} ${from.y} L ${to.x} ${to.y}`,
-};
+function arcRouteOf(flipped: boolean) {
+  return {
+    customRoute: "causal-loop-arc",
+    path: (from: ShapePoint, to: ShapePoint, _waypoints: readonly ShapePoint[], ends?: RouteEnds) =>
+      ends !== undefined
+        ? arcBetween(toArcBox(ends.source), toArcBox(ends.target), bowOf(flipped)).path
+        : `M ${from.x} ${from.y} L ${to.x} ${to.y}`,
+  };
+}
 
 /**
  * The polarity sign beside the arrowhead and the delay strokes across the link - the
@@ -77,7 +93,9 @@ function linkAdornment(route: { ends?: RouteEnds }, rawConnection: unknown) {
     return null;
   }
 
-  const arc = arcBetween(toArcBox(route.ends.source), toArcBox(route.ends.target));
+  // The same bow the route drew, read from the same link: an adornment computed against the
+  // unflipped arc would sit beside the line rather than on it.
+  const arc = arcBetween(toArcBox(route.ends.source), toArcBox(route.ends.target), bowOf(connection.link.payload.flipped));
   const mark = polarityMark(connection.link.payload.polarity);
   const markAt = pointAlong(arc, 0.86);
   const markNormal = normalAlong(arc, 0.86);
@@ -111,11 +129,16 @@ function linkAdornment(route: { ends?: RouteEnds }, rawConnection: unknown) {
   );
 }
 
-/** One weight step's relation type; three of them keep the stylesheet's weight classes as they are. */
-function linkRelation(step: "light" | "normal" | "heavy"): RelationTypeDefinition {
+/**
+ * One weight step's relation type, in each bow direction: the weight steps keep the stylesheet's
+ * classes as they are, and the direction is a type of its own because a route is declared by the
+ * definition rather than computed per connection - the same reason the weight steps are three
+ * types rather than one parameterised at draw time.
+ */
+function linkRelation(step: "light" | "normal" | "heavy", flipped: boolean): RelationTypeDefinition {
   return {
-    id: `link-${step}`,
-    route: arcRoute,
+    id: flipped ? `link-${step}-flipped` : `link-${step}`,
+    route: arcRouteOf(flipped),
     style: { endMarker: "arrow" },
     className: `causal-loop-link causal-loop-weight-${step}`,
     adorn: linkAdornment,
@@ -221,7 +244,14 @@ function definitionOf(onActivate: (id: string) => void): DiagramDefinition {
       { id: "variable", shape: variableShape, anchors: { kind: "edge" }, sizing: "model" },
       { id: "loop", shape: loopShape, anchors: { kind: "edge" }, sizing: "model", draggable: false },
     ],
-    relationTypes: [linkRelation("light"), linkRelation("normal"), linkRelation("heavy")],
+    relationTypes: [
+      linkRelation("light", false),
+      linkRelation("normal", false),
+      linkRelation("heavy", false),
+      linkRelation("light", true),
+      linkRelation("normal", true),
+      linkRelation("heavy", true),
+    ],
     layout: { modes: ["manual"] },
     dragging: "enabled",
   });
@@ -275,7 +305,7 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
       model.variables.has(link.payload.fromElementId) && model.variables.has(link.payload.toElementId)
         ? [{
             id: link.id,
-            type: `link-${weightStep(link)}`,
+            type: link.payload.flipped ? `link-${weightStep(link)}-flipped` : `link-${weightStep(link)}`,
             sourceId: link.payload.fromElementId,
             targetId: link.payload.toElementId,
             link,
@@ -361,7 +391,7 @@ export function CausalLoopCanvas({ projectId, entryId, path }: CausalLoopCanvasP
   }
 
   return (
-    <div className="causal-loop-frame" onContextMenu={onSurfaceContextMenu}>
+    <div className="causal-loop-frame canvas-host" onContextMenu={onSurfaceContextMenu}>
       {rejection !== null && (
         <div className="canvas-rejection" role="status" onClick={() => setRejection(null)}>
           {rejection}

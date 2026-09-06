@@ -19,6 +19,10 @@ variable foodPerCapita "Food per capita"
 # ---- links -------------------------------------------------------------------
 # An arrow from a cause to an effect. `+` means they move together, `-` means
 # they move opposite. `delayed` draws the conventional strokes across the arrow.
+# `flipped` bows the arc to the other side of its chord: the side is normally
+# this module's own choice, taken from the direction of travel so that a
+# two-variable loop draws as an ellipse, and this is the author overriding that
+# for one link where the chosen side crosses something.
 # `weight=` is an annotation the author writes and this module never evaluates.
 
 link population -> births + weight=1.4 "more people, more births"
@@ -29,7 +33,7 @@ link deaths -> population -
 
 link population -> crowding + weight=0.8
 link crowding -> sanitation - delayed "infrastructure lags the crowd"
-link sanitation -> deaths -
+link sanitation -> deaths - flipped
 
 # A link nobody has stated a polarity for. Unwritten is not zero and not
 # positive: it is unknown, and any loop through it is undecidable.
