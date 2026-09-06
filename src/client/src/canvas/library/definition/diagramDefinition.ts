@@ -218,6 +218,12 @@ export const BUILT_IN_ROUTES: readonly BuiltInRoute[] = [
 
 export type RouteKind = BuiltInRoute | CustomRouteRef;
 
+/** The two end boxes a drawn connection runs between - for a route that anchors on boxes. */
+export interface RouteEnds {
+  source: ShapeBounds;
+  target: ShapeBounds;
+}
+
 /** A module-supplied path builder, for geometry no built-in draws. */
 export interface CustomRouteRef {
   /** Names the route, so definitions and test assertions can refer to it. */
@@ -225,8 +231,11 @@ export interface CustomRouteRef {
   /**
    * Builds the SVG path between the resolved endpoints. The same path serves rendering, the
    * connect-gesture preview and hit-testing, so the three cannot disagree (Requirement 3.4).
+   * A drawn connection also receives its endpoint BOUNDS - causal-loop's arc picks its own
+   * anchors from the boxes and bows to the side of travel, which points alone cannot say;
+   * the connect preview has no target box yet and passes none.
    */
-  path: (from: ShapePoint, to: ShapePoint, waypoints: readonly ShapePoint[]) => string;
+  path: (from: ShapePoint, to: ShapePoint, waypoints: readonly ShapePoint[], ends?: RouteEnds) => string;
 }
 
 /** Start and end decorations (Requirement 3.2). */
@@ -286,6 +295,13 @@ export interface RelationTypeDefinition {
   };
   /** Whether waypoints or control points may be dragged (Requirement 3.5). */
   adjustable?: boolean;
+  /**
+   * Adornment drawn inside the connection's group, after its line - polarity signs, delay
+   * strokes, anything the notation rides on a line - so the shared `.canvas-selected` cascade
+   * colours it with the line it describes. Handed the resolved route so it can place itself
+   * along the real geometry.
+   */
+  adorn?: (route: { from: ShapePoint; to: ShapePoint; waypoints: readonly ShapePoint[]; ends?: RouteEnds }, connection: unknown) => unknown;
   /**
    * Extra class names for the pieces, so a module's stylesheet keeps dressing what it always
    * dressed: the connection group, its visible line, and its fat hit twin.

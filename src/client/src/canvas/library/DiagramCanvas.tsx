@@ -1023,7 +1023,13 @@ function LibraryConnection({
 
   const [from, to] = ends;
   const waypoints = connection.waypoints ?? [];
-  const d = routePath(relation, from, to, waypoints, connection.style?.cornerRadius ?? relation.style?.cornerRadius);
+  const source = elementsById.get(connection.sourceId);
+  const target = elementsById.get(connection.targetId);
+  const routeEnds =
+    source !== undefined && target !== undefined
+      ? { source: elementBounds(source, elementTypes.get(source.type)), target: elementBounds(target, elementTypes.get(target.type)) }
+      : undefined;
+  const d = routePath(relation, from, to, waypoints, connection.style?.cornerRadius ?? relation.style?.cornerRadius, routeEnds);
   const style = { ...relation.style, ...connection.style };
   const mid = waypoints.length > 0 ? waypoints[Math.floor(waypoints.length / 2)] : midpointOf(from, to);
   const label = connection.label;
@@ -1054,6 +1060,7 @@ function LibraryConnection({
         </text>
       )}
       {connection.title !== undefined && connection.title !== "" && <title>{connection.title}</title>}
+      {relation.adorn !== undefined && <>{relation.adorn({ from, to, waypoints, ends: routeEnds }, connection) as ReactNode}</>}
       {selected && relation.adjustable === true && (
         // The one adjustment handle: dragging it raises connection-adjusted with the carried
         // waypoint; a definition that forbids adjustment never renders it (Requirement 3.5).
@@ -1217,10 +1224,11 @@ export function routePath(
   to: Point,
   waypoints: readonly Point[],
   cornerRadius?: number,
+  ends?: import("./definition/diagramDefinition").RouteEnds,
 ): string {
   const route = relation.route;
   if (typeof route !== "string") {
-    return route.path(from, to, waypoints);
+    return route.path(from, to, waypoints, ends);
   }
 
   switch (route) {
