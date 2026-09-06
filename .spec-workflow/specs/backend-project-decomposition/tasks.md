@@ -18,7 +18,7 @@
 
 ## Phase 1 — Contracts and cycles first (the tree becomes acyclic; nothing merges yet)
 
-- [ ] 1. Remove the orphan `hierarchy.proto` **[normal]**
+- [-] 1. Remove the orphan `hierarchy.proto` **[normal]**
   - Files: `src/backend/EtAlii.Adp.Backend/Hierarchy/hierarchy.proto` (removed), reconciled against `src/api/hierarchy.proto`
   - **This is first, before anything touches proto layout.** Two `hierarchy.proto` exist, they differ, and only `src/api/hierarchy.proto` is in the build (`EtAlii.Adp.Backend.csproj` globs `..\..\api`). Confirm the api/ copy is canonical (diff the two, fold any real divergence in the backend copy into the api/ one **only if it is a genuine improvement** — otherwise the backend copy is stale and discarded), then delete the orphan. A later distribution step that picked the wrong copy would generate from the wrong source and still build green.
   - _Requirements: 5.4 (proto layout)_ · _Prompt: Role: C# developer | Task: reconcile and remove the orphan Hierarchy/hierarchy.proto against the canonical src/api/hierarchy.proto | Restrictions: the api/ copy is canonical unless the backend copy carries a genuine improvement; four gates + fresh-tree build green | Success: one hierarchy.proto, in src/api/, and the build unchanged. Mark in-progress, log-implementation, mark complete._
