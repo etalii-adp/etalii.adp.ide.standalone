@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Hierarchy;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// A run of lines captured before a removal, with the index it sat at - what a byte-exact undo

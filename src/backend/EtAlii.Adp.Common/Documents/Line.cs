@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Hierarchy;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// One line of a line-oriented document: its text, and the terminator that followed it.

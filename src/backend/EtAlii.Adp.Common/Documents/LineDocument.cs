@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace EtAlii.Adp.Backend.Hierarchy;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// A hand-authored file as the lines it is made of, with edits applied by splicing one range of
