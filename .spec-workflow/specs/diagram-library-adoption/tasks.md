@@ -27,7 +27,7 @@
   - _Requirements: 1.1, 3.2, 5.2_
   - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Re-measure the adoption population and land the noPrivateGestures guard and per-module pair-registration coverage, each with a shrink-only exclusion list | Restrictions: guards follow the house family shape with limits stated; exclusion lists may only shrink; both guards seen to fail under a planted offence before being trusted | Success: measurement recorded, both guards green with full exclusion lists and red under sabotage. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 2. wardley-map migrates — the intrinsic space, first exercise
+- [x] 2. wardley-map migrates — the intrinsic space, first exercise
   - Files: `src/diagrams/wardley-map/client/WardleyCanvas.tsx` (784 lines today), its tests, guard exclusion entries
   - The definition declares the **intrinsic 0..1 extent and the evolution axis as the in-canvas background** — the schema mechanism no reference exercised (design: first slot per Requirement 4.2). Symbol-shaped components; authored `label [-x, y]` offsets in the label rule; straight links.
   - Parity watchlist from the inventory: selection and F2 landed 2026-09-05 (inline-rename-adoption tasks 6–7); the inline editor placement honours authored label offsets; `setView(fullView)` behaviour — the one fit-to-view-immune canvas — survives as the intrinsic extent.
@@ -36,7 +36,7 @@
   - _Requirements: 1.1, 2.1, 2.2, 2.3, 2.5, 3.3, 4.1, 5.1, 5.2_
   - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer | Task: Rebuild WardleyCanvas on the library with the intrinsic 0..1 extent and evolution axis as definition-declared background | Restrictions: inventory before code; no new capability; a schema shortfall is a recorded gap, not a workaround; rewritten tests seen to fail against a deliberate break; guard exclusion entries deleted in the same change | Success: wardley renders through the library with parity, guards shrink, four gates green on the merged tree, landed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 3. mindmap migrates — tree layout, first exercise
+- [-] 3. mindmap migrates — tree layout, first exercise
   - Files: `src/diagrams/mindmap/client/MindmapCanvas.tsx` (694 lines today), its tests, guard exclusion entries
   - The **tree layout mode** built in library task 4, exercised for the first time: directional hierarchy with side-balancing; centered-box elements; `branchAnchorsBetween` anchoring as the definition's anchor set.
   - Fold/unfold stay model concerns the events report — never layout ones.
