@@ -1,0 +1,11 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!-- Serves the built client app from the host and proxies to the Vite dev server in
+         development - hosting-facing code, so it takes the ASP.NET Core frame rather than
+         a package. Depends on no functional project and on nothing of the backend. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Serilog" />
+  </ItemGroup>
+
+</Project>

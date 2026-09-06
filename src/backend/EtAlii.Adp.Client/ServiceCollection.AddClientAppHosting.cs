@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace EtAlii.Adp.Backend.Client;
+namespace EtAlii.Adp.Client;
 
 public static class ServiceCollectionAddClientAppHostingExtensions
 {

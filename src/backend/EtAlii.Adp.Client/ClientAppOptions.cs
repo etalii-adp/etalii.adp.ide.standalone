@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Backend.Client;
+namespace EtAlii.Adp.Client;
 
 public sealed class ClientAppOptions
 {

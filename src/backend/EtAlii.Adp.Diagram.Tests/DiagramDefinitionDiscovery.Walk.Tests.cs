@@ -7,6 +7,7 @@ namespace EtAlii.Adp.Diagram.Tests;
 /// discovery it exercises; the walk's own tests moved to EtAlii.Adp.Tests with
 /// <c>ApplicationAssemblies</c> (backend-project-decomposition task 8).
 /// </summary>
+[Collection(LogCapture.Collection)]
 public class DiagramDefinitionDiscoveryWalkTests
 {
     [Fact]
