@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { forwardBezierPath, horizontalBezierPath } from "@client/canvas/connectors";
 import { SpanElement, type SpanElementClasses } from "@client/canvas/elements/span/SpanElement";
 import { elementIdOfKey, elementSelectionOf, elementSourceOf } from "@client/canvas/selection";
@@ -34,6 +34,46 @@ const DAY = 86400;
 
 /** What the surface is assumed to be before it is measured - jsdom, or the first frame. */
 const FALLBACK_WIDTH_PX = 1200;
+
+/**
+ * The surface's width in real pixels, measured.
+ *
+ * The ruler converts the view's canvas units into pixel offsets for its labels, so it needs
+ * the width the surface actually has - not the width the frozen scale was normalized against.
+ * Passing the constant meant the ladder was laid out for a 1200px ruler whatever the pane's
+ * real size, and the labels then disagreed with the elements they date: on a 469px surface a
+ * milestone at 2026-01-06 drew 130px to the left of where the ruler put "2026".
+ *
+ * Measured on mount and kept current by a ResizeObserver where there is one; jsdom has neither
+ * a layout nor an observer, so a zero measurement leaves {@link FALLBACK_WIDTH_PX} standing and
+ * the existing tests keep saying exactly what they said.
+ */
+function useMeasuredWidth(ref: React.RefObject<HTMLElement | null>): number {
+  const [widthPx, setWidthPx] = useState(FALLBACK_WIDTH_PX);
+
+  useLayoutEffect(() => {
+    const host = ref.current;
+    if (host === null) {
+      return;
+    }
+
+    const measure = () => {
+      const measured = host.getBoundingClientRect().width;
+      setWidthPx((current) => (measured > 0 ? measured : current));
+    };
+
+    measure();
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(host);
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return widthPx;
+}
 
 /**
  * The seconds-to-canvas-units mapping, frozen when the first non-empty model lands.
@@ -220,6 +260,8 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
   const toolboxItems = useToolboxItems(projectId, path);
   const [rejection, setRejection] = useState("");
   const [viewport, setViewport] = useState<DiagramViewport | null>(null);
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const surfaceWidthPx = useMeasuredWidth(hostRef);
 
   const selectionKey = innermostKey(selection);
   const selectedId = elementIdOfKey(selectionKey ?? null);
@@ -395,9 +437,11 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
     );
   }
 
-  // The view-fixed ruler, derived from the same view the report observes.
+  // The view-fixed ruler, derived from the same view the report observes - and from the width
+  // the surface really has, so a label sits over the elements it dates rather than over the
+  // ones a 1200px-wide surface would have put there.
   const rulerStartSeconds = toSeconds(viewport?.x ?? 0);
-  const rulerSecondsPerPixel = ((viewport?.width ?? FALLBACK_WIDTH_PX) * scale.secondsPerUnit) / FALLBACK_WIDTH_PX;
+  const rulerSecondsPerPixel = ((viewport?.width ?? surfaceWidthPx) * scale.secondsPerUnit) / surfaceWidthPx;
 
   /** The canvas owns the empty surface's right button; an item's right-click is the menu's. */
   const onContextMenu = (event: React.MouseEvent) => {
@@ -407,7 +451,7 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
   };
 
   return (
-    <div className="timeline-canvas canvas-host" role="application" aria-label="Timeline" onKeyDown={onKeyDown} onContextMenu={onContextMenu}>
+    <div ref={hostRef} className="timeline-canvas canvas-host" role="application" aria-label="Timeline" onKeyDown={onKeyDown} onContextMenu={onContextMenu}>
       <DiagramCanvas
         definition={TIMELINE_DEFINITION}
         model={diagramModel}
@@ -425,7 +469,7 @@ export function TimelineCanvas({ projectId, entryId, path }: ShellCanvasProps) {
         className="timeline-surface canvas-viewport"
         scrollbarsClassName="timeline-scrollbars"
       />
-      <TimelineRuler startSeconds={rulerStartSeconds} secondsPerPixel={rulerSecondsPerPixel} widthPx={FALLBACK_WIDTH_PX} />
+      <TimelineRuler startSeconds={rulerStartSeconds} secondsPerPixel={rulerSecondsPerPixel} widthPx={surfaceWidthPx} />
       {loading ? <p className="timeline-status canvas-status">Opening…</p> : null}
       {rejection ? <p className="timeline-rejection canvas-rejection">{rejection}</p> : null}
     </div>

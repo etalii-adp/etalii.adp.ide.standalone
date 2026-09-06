@@ -135,6 +135,49 @@ function renderCanvas(model: WardleyModel, options?: { loading?: boolean; failed
 }
 
 describe("WardleyCanvas chrome", () => {
+  it("stretches the plotted space to the pane's shape, so the axes reach the canvas's edges", () => {
+    // The defect this guards: the space was square whatever the pane was. An svg scales its
+    // viewBox uniformly and centres the slack, so on a wide pane the map was drawn as a square
+    // in the middle with dead space either side - on a 469x285 pane, 92px of nothing on each
+    // side, with the value-chain axis floating 114px in from the left edge instead of sitting
+    // at it. It made every pointer conversion wrong too, because `unitsPerPixel` divides the
+    // view's width by the surface's width, which is only the true scale when the shapes agree.
+    //
+    // jsdom computes no layout, so the surface's size is stubbed; unstubbed the measurement
+    // reads zero, the space stays square, and every other test in this file keeps its meaning.
+    const pane = { width: 469, height: 285 };
+    const original = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function (this: Element) {
+      return this.classList?.contains("wardley-surface")
+        ? ({
+            x: 0,
+            y: 0,
+            top: 0,
+            left: 0,
+            right: pane.width,
+            bottom: pane.height,
+            width: pane.width,
+            height: pane.height,
+            toJSON: () => ({}),
+          } as DOMRect)
+        : original.call(this);
+    };
+
+    try {
+      const { container } = renderCanvas(withAxis());
+      const [, , width, height] = (container.querySelector(".wardley-surface")!.getAttribute("viewBox") ?? "")
+        .split(" ")
+        .map(Number);
+
+      // The view carries the pane's proportions, so the map fills the canvas and a canvas unit
+      // is worth the same number of pixels across as it is down. A square view - the bug - comes
+      // out at 1.
+      expect(width / height).toBeCloseTo(pane.width / pane.height, 3);
+    } finally {
+      Element.prototype.getBoundingClientRect = original;
+    }
+  });
+
   it("draws a band for every stage the backend sent", () => {
     // Act.
     const { container } = renderCanvas(withAxis());
