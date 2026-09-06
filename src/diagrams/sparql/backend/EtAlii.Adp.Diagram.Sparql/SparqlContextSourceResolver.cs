@@ -1,7 +1,7 @@
 using EtAlii.Adp.Backend.Context;
-using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Hierarchy;
 
 namespace EtAlii.Adp.Diagram.Sparql;
 

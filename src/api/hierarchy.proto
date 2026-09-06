@@ -4,7 +4,7 @@ package etalii.adp;
 
 import "shared.proto"; // ShortGuid
 
-option csharp_namespace = "EtAlii.Adp";
+option csharp_namespace = "EtAlii.Adp.Hierarchy.Wire";
 
 service HierarchyService {
   rpc ListEntries(ListEntriesRequest) returns (ListEntriesResponse);

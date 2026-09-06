@@ -2,8 +2,8 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Hierarchy;
 using Serilog;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 

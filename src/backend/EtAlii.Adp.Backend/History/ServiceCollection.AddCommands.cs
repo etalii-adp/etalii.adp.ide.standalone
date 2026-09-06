@@ -1,4 +1,3 @@
-using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -31,6 +30,11 @@ public static class ServiceCollectionAddCommandsExtension
 
         services.AddSingleton<ICommandDispatcher, CommandDispatcher>();
 
+        // The eight command/handler registrations moved to AddHierarchy with the area
+        // (backend-project-decomposition task 10, the task-4 forward flag honoured):
+        // a handler registers beside the code it invokes, and a test host that
+        // dispatches hierarchy commands calls AddHierarchy alongside AddCommands.
+
         // One history per project, keyed by root path. A provider reaches its project's stack
         // through Get(target.RootPath); a connection's Watch lifetime retains and releases it.
         services.AddSingleton<IHistoryStackStore>(provider =>
@@ -39,14 +43,6 @@ public static class ServiceCollectionAddCommandsExtension
                 grace: null,
                 notices: provider.GetService<IContextNoticeSink>()));
 
-        services.AddSingleton<ICommandHandler<RenameEntryCommand>, RenameEntryCommandHandler>();
-        services.AddSingleton<ICommandHandler<DeleteEntryCommand>, DeleteEntryCommandHandler>();
-        services.AddSingleton<ICommandHandler<CreateFolderCommand>, CreateFolderCommandHandler>();
-        services.AddSingleton<ICommandHandler<RemoveCreatedFolderCommand>, RemoveCreatedFolderCommandHandler>();
-        services.AddSingleton<ICommandHandler<SetRegistrationLayoutCommand>, SetRegistrationLayoutCommandHandler>();
-        services.AddSingleton<ICommandHandler<RemoveRegistrationLayoutCommand>, RemoveRegistrationLayoutCommandHandler>();
-        services.AddSingleton<ICommandHandler<CreateDiagramFileCommand>, CreateDiagramFileCommandHandler>();
-        services.AddSingleton<ICommandHandler<SaveTextFileCommand>, SaveTextFileCommandHandler>();
 
         return services;
     }

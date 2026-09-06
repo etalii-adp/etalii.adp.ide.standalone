@@ -1,6 +1,6 @@
 using EtAlii.Adp.Backend;
-using EtAlii.Adp.Backend.Hierarchy;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
 

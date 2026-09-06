@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Serilog" />
+    <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Common\EtAlii.Adp.Common.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Projects\EtAlii.Adp.Projects.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Editor\EtAlii.Adp.Editor.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The hierarchy wire contract, owned here since the area extraction. -->
+    <Protobuf Include="..\..\api\hierarchy.proto" ProtoRoot="..\..\api" GrpcServices="Both" Link="Wire\hierarchy.proto" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The hierarchy unit tests live in EtAlii.Adp.Backend.Tests and reach internals
+         (DiagramFilePair, EditorResolver and friends) - the moved-internals pattern from
+         the Sessions extraction. -->
+    <InternalsVisibleTo Include="EtAlii.Adp.Backend.Tests" />
+  </ItemGroup>
+
+</Project>
