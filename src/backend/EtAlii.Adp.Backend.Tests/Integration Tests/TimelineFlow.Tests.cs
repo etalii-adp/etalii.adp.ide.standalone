@@ -26,6 +26,28 @@ namespace EtAlii.Adp.Backend.Tests;
 /// selectable while every other module's resolver is also registered, and that a drag and an
 /// undo travel the whole way - canvas coordinates in, spliced lines out, byte identity back.
 /// </remarks>
+// Known flake, not a defect in this test's subject: a watcher-versus-write race under
+// preemption spikes. Observed once under parallel-gate load (the client and backend gate halves
+// running at once) - a race between the file watch firing and a write flushing. Signature: passes
+// 3/3 in isolation, the full suite re-ran 4907/0, and it fails only under that concurrent load.
+//
+// The mechanism is sparse preemption spikes, not load level: dragCost's fix (develop 38e1ffb2)
+// probed 0/4/8/16 CPU burners and found timing flat under steady load - the failure is one
+// unlucky window at the wrong moment, which is exactly what a watcher-versus-write race needs, a
+// slow machine being neither necessary nor sufficient. See that closed case for the mechanism
+// rather than re-deriving it here.
+//
+// Task 5 of backend-project-decomposition relocated AdpFileWriter and SharedDocumentReader into
+// EtAlii.Adp.Common, and TimelineDocumentStore uses both - so this test sits in that landing's
+// blast radius, and a reader checking the history will find the move. The move is timing-neutral:
+// which assembly a type compiles into cannot change when a FileSystemWatcher fires or when a write
+// flushes, so the relocation is not the cause. Do not re-suspect it on that basis.
+//
+// Ownership is unknown - not backend-consistency AC2 (that requirement is about fire-and-forget
+// tasks faulting unobserved and says nothing about watchers). Left un-skipped on purpose: it
+// passes on re-run, and quarantining a test that mostly works removes coverage to silence a
+// symptom. It becomes a real defect to chase - not contention - the moment it fails
+// deterministically or survives isolation; until then a red run here is a re-run, not an afternoon.
 public class TimelineFlowTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
     private const string DeveloperUsername = "admin";
