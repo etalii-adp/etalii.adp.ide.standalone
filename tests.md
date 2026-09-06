@@ -348,7 +348,7 @@ look at. Three things, and only these:
 - **Expected**: the styles resolve, the auto-layout is readable, and the `.layout.json` sidecar
   causes no complaint. That every view is present and every element is on it is no longer part
   of this pass - the export checks own that, and they run on every `dotnet test`.
-- **Result 2026-09-05**: **not blocked on sign-in — re-classified, not run here.** This entry's Actions run Structurizr Lite (Docker/JRE, `localhost:8080`) and its residual manual part is explicitly a subjective aesthetic judgment — styles resolve, the auto-layout is *readable*, the sidecar draws no complaint — against an external tool. None of that uses ADP's sign-in, so the developer-sign-in bypass does not unblock it; the earlier "needs a person to sign in" was a uniform-sweep mis-attribution. The objective halves it once covered are now automated and green on every `dotnet test`: `C4InteropTests` parses ADP's output through the real Structurizr CLI, and `C4ExportTests` asserts every element ADP believes is on a view is drawn (both passed in this branch's full-suite gate). What remains — the aesthetic judgment in Lite — is left for a person with Structurizr Lite; this specification does not claim it.
+- **Result 2026-09-05**: **not blocked on sign-in — re-classified, not run here.** This entry's Actions run Structurizr Lite (Docker/JRE, `localhost:8080`) and its residual manual part is explicitly a subjective aesthetic judgment — styles resolve, the auto-layout is *readable*, the sidecar draws no complaint — against an external tool. None of that uses ADP's sign-in, so the developer-sign-in bypass does not unblock it; the earlier "needs a person to sign in" was a uniform-sweep mis-attribution. The objective halves it once covered are automated: `C4ExportTests` asserts every element ADP believes is on a view is drawn, and passes on every `dotnet test`; `C4InteropTests` parses ADP's output through the real Structurizr CLI and **skips** where that CLI is absent — all 43 of its cases were skipped, not passed, in this branch's full-suite gate, each saying so and naming `ADP_STRUCTURIZR_CLI`. An earlier revision of this line said both passed; the suite's own output says otherwise, so the interop half is covered only where the CLI is provisioned. What remains — the aesthetic judgment in Lite — is left for a person with Structurizr Lite; this specification does not claim it.
 
 ## The property grid's keyboard cadence, in a real browser (property-grid, task 6)
 
@@ -1733,7 +1733,7 @@ The routing arrangement: a reading is chosen, never assumed, and the anchor keep
   the file carries an `owl:Ontology` marker; choosing the ontology writes an `.adp` naming
   `w3c/owl` and the file reopens in the ontology reading.
 
-- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not reached here.** An Add-flow-and-open check; the browser pane's late-session rendering trouble prevented clean navigation to it. No sign-in blocker remains (the developer build opens authenticated); it carries a *covered-meanwhile by OwlFlowTests* note, which per Requirement 3.4 does not retire the manual check. Left for an ordinary-browser pass.
+- **Result 2026-09-06 (developer build (Debug, `developer` env, bypass session))**: **passed, every clause.** Run against a scratch folder outside the repository holding one copy of `owl-time.ttl` and nothing beside it, added as a project. Double-clicking the unregistered file opened it as the **RDF data graph** — an `rdf-canvas` drawing resource cards with literal rows, `:Friday` typed `:DayOfWeek` carrying `rdfs:label: Friday @en` and thirteen `skos:prefLabel` translations — and not as an ontology, which is the anchor keeping the bare body. Closing it and right-clicking offered **Add as diagram…**, whose dialog listed both readings under the `w3c` vendor, *OWL Ontology* and *RDF Graph*: the `owl:Ontology` marker being read, not the extension. Choosing the ontology wrote `owl-time.adp` holding exactly `w3c/owl` and nothing else (nine bytes), and reopening the file drew the **ontology** reading — an `owl-canvas` listing object properties with their characteristics, *before (transitive, inverse of after)*, *Temporal reference system used (functional)*. A reading is chosen rather than assumed, in both directions. Covered meanwhile by
   `OwlFlowTests.ARegisteredOntology_StreamsItsShapesAndAxioms_AndABareBodyStaysTheGraphReadings`
   (a bare marked file opens as the data graph over the real host), by
   `DiagramFileRouterSharedExtensionTests.AFamilysSharedReadings_NeverWinTheBareBodyFromTheAnchor`
@@ -1795,10 +1795,7 @@ working as designed into something that reads like a defect.
   absent target is explicitly not a finding.
 
 - **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **passed.** Opened `navigation-shapes.adp`. All four targets render as chips inside their cards' target bands — *targets class r3d:Repository*, *dcat:Catalog*, *fdp:FAIRDataPoint*, *dcat:Dataset* — never as an edge reaching for the absent data (the diagram's edges are all between shapes). The shapes graph says calmly, in a chip, what it aims at.
-  (`src/client/src/App.tsx:12`), so reaching any diagram means typing a password into a form,
-  which is outside what an agent does here - the checked-in developer placeholder included.
-  Verified in the code rather than assumed from the earlier owl-diagram entries, and recorded
-  rather than skipped. What stands in meanwhile:
+  What stands in meanwhile:
   `ShaclTargetChipsTests` is the structural half - `AnAbsentTargetTerm_YieldsAChipAndNothingElse`
   and `ATargetNamingAnotherDrawnShape_StillDrawsNoEdge` run through
   `AssertElementUniverseIsShapesOnly`, which asserts the drawn universe holds shapes and
@@ -1834,10 +1831,7 @@ rather than a disabled control with nothing to say (Requirements 3.3, 6.4).
   the bug.
 
 - **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **partially verified.** The one-row property-shape format this rests on is confirmed: each property shape draws as a single `shacl-row` with its path on the left (e.g. `r3d:dataCatalog`) and its cardinality on the right (`[0..*]`). The blank-node-specific card and its one-sentence refuse-edits reason are in `spec-examples.adp`, which the browser pane would not switch to cleanly late in the session (its rendering had begun timing out); the row structure the check depends on is verified.
-  (`src/client/src/App.tsx:12`), so reaching any diagram means typing a password into a form,
-  which is outside what an agent does here - the checked-in developer placeholder included.
-  Verified in the code rather than assumed from the earlier owl-diagram entries, and recorded
-  rather than skipped. What stands in meanwhile:
+  What stands in meanwhile:
   The one thing this entry exists to catch - three places drifting to three wordings - is
   pinned by string equality against the single `ShaclRefusals.BlankRooted` constant in each
   of them: `ShaclDoubleRefusalTests.BothLayersSayTheIdenticalSentence` for writer and gate,
@@ -1866,11 +1860,8 @@ most executable-looking thing in it.
   only about the shapes file itself, never about data conforming to it. Nothing in the UI should
   leave a user thinking a validation has happened.
 
-- **Result 2026-09-05 (developer build (Debug, `developer` env, bypass session))**: **not reached here.** This needs `spec-examples.adp` and the pane's rendering had begun timing out (the window was likely behind another), so it would not switch cleanly. The *not run* guarantee is enforced in the backend — `ShaclActions` exposes no validate-data run — and the opaque SPARQL-badged row render was not observed in this pass. No sign-in blocker remains; it wants an ordinary browser.
-  (`src/client/src/App.tsx:12`), so reaching any diagram means typing a password into a form,
-  which is outside what an agent does here - the checked-in developer placeholder included.
-  Verified in the code rather than assumed from the earlier owl-diagram entries, and recorded
-  rather than skipped. What stands in meanwhile:
+- **Result 2026-09-06 (developer build (Debug, `developer` env, bypass session))**: **run; the *not run* guarantee holds, and the row this check is named for has no example data to draw.** Opened `spec-examples.adp` — it draws four shapes with their property rows and `or(...)` summaries. **The `sh:sparql` card is not there, and not because of the canvas: no vendored SHACL corpus contains one.** `sh:sparql` and `sh:select` appear nowhere under `src/examples/diagrams/shacl/`; the single hit for *sparql* in either corpus is an `rdfs:comment` in `shacl-shacl.ttl` observing that a check *“could be expressed using SHACL-SPARQL”*. So the opaque badged row and its read-only `sh:select` text cannot be exercised here at all — the same shape as the SKOS gap-chip entry above, a corpus that does not happen to demonstrate the feature, and worth a line in the shacl readme rather than a defect. **The negative half — the half this entry actually exists to police — passed.** A shape card's menu offers *Rename…* and *Remove (with 3 statements)* and nothing else; the module's entire action set, read in `ShaclActions.cs`, is add-node-shape / add-target-class / add-target-node / add-property-row / deactivate / reactivate / remove-target / remove-shape — there is no validate, run, conform or pick-a-data-file action anywhere for a menu to offer. The Errors and Warnings panel carried 24 rows for the project and not one naming a shacl file, so it says nothing about data conforming to these shapes. **One thing a reader following this check will meet:** right-clicking the canvas *background* shows a single entry, **Validate all**. It is the shell's project-wide document validation (`ValidateAllContextActionProvider`, scope `ProblemsPanel`) — cross-checked before recording it, and the causal-loop canvas background shows the identical single entry, so it is not the SHACL module offering to validate data. The word nevertheless appears on a shapes canvas, which is the impression this check is written to guard; noted rather than claimed as a defect.
+  What stands in meanwhile:
   `ShaclProjectionTests.SparqlConstraints_AreOpaqueRows` pins the row as one opaque line
   with nothing of the query parsed into elements, and
   `ShaclPropertiesTests.ASparqlConstraint_ShowsItsQueryTextAndSaysItIsNotRun` pins the query

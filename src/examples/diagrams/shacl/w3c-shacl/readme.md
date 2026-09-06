@@ -52,3 +52,15 @@ It also earns its keep as a test of this module's vocabulary table. The file use
 term SHACL Core defines, and the validator's unknown-term rule — the one that catches the typo
 that silently disables a constraint — reports nothing on it. A term the recommendation uses that
 the table had missed would have surfaced here as a warning rather than in somebody's real file.
+
+## What these two files do not demonstrate
+
+Neither carries a **`sh:sparql` constraint** — `sh:sparql` and `sh:select` appear in neither
+file, and the only mention of SPARQL in either is an `rdfs:comment` in `shacl-shacl.ttl`
+observing that a check it cannot express *"could be expressed using SHACL-SPARQL"*. So the
+module's opaque SPARQL row — one unparsed line, badged, with its query readable and read-only in
+the grid and never executed — has no example here to draw, and a manual check that asks for the
+card carrying one cannot be run against this corpus. That is a property of what W3C put in its
+spec examples, not a gap in the module: the behaviour is pinned by
+`ShaclProjectionTests.SparqlConstraints_AreOpaqueRows`. Vendoring a shapes file that does carry
+one would be the way to demonstrate it.

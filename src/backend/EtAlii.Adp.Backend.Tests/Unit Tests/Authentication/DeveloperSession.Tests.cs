@@ -147,6 +147,46 @@ public class DeveloperSessionTests
     }
 
     [Fact]
+    public async Task OrdinarySignIn_StillWorksAndStillRefuses_WithTheBypassCompiledIn()
+    {
+        // Arrange.
+        // This file compiles only where the bypass does, so "with the bypass compiled in" is
+        // not an assumption the test makes - it is the condition under which the test exists at
+        // all. One service and one store serve both paths, so nothing differs between them
+        // except how the caller asked (developer-sign-in-bypass Requirements 4.1, 4.2).
+        var store = new InMemorySessionStore();
+        var service = Service(store, Options());
+        var interceptor = Interceptor(store, Options());
+
+        // Act.
+        var signedIn = await service.Login(
+            new LoginRequest { Username = Username, Credential = Credential },
+            CreateContext(LoginMethod));
+        var refused = await service.Login(
+            new LoginRequest { Username = Username, Credential = Credential + "-not" },
+            CreateContext(LoginMethod));
+        var bypassed = await service.DeveloperSession(new DeveloperSessionRequest(), CreateContext(DeveloperSessionMethod));
+
+        // Assert: the credential path still mints a session that a guarded call accepts.
+        Assert.Equal(LoginResponse.ResultOneofCase.Session, signedIn.ResultCase);
+        var withLoginToken = new Metadata { { SessionInterceptor.SessionTokenMetadataKey, signedIn.Session.Value } };
+        Assert.Equal("ping", await interceptor.UnaryServerHandler("ping", CreateContext(SomeGuardedMethod, withLoginToken), Handler));
+
+        // And - the half nothing else in this repository covers - it still refuses a wrong one.
+        // Every other test here asks whether a correct credential works; a bypass that had
+        // quietly turned Login into a rubber stamp would pass all of them. Only this assertion
+        // fails against that, which is the reason it is written rather than assumed.
+        Assert.Equal(LoginResponse.ResultOneofCase.Error, refused.ResultCase);
+
+        // Coexisting rather than replacing: both paths answer in the same process, from the
+        // same store, at the same time - two distinct tokens, not one path standing in for the
+        // other. That they resolve to the same identity is asserted by
+        // TheBypassToken_IsAcceptedExactlyAsALoginTokenIs and is deliberately not restated.
+        Assert.Equal(DeveloperSessionResponse.ResultOneofCase.Session, bypassed.ResultCase);
+        Assert.NotEqual(signedIn.Session.Value, bypassed.Session.Value);
+    }
+
+    [Fact]
     public async Task TheBypass_MintsNothing_WhenItIsTurnedOff()
     {
         // Arrange.
