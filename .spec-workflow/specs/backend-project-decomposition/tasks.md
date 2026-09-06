@@ -64,12 +64,12 @@
 
 ## Phase 3 — Extract each functional area to its own project
 
-- [-] 9. Extract `Client` to `EtAlii.Adp.Client` **[normal]**
+- [x] 9. Extract `Client` to `EtAlii.Adp.Client` **[normal]**
   - Files: the 3 `Client/` files → `src/backend/EtAlii.Adp.Client/`; project references
   - **First because it is clean** — zero cross-folder dependencies, so it proves the extraction pattern with the least risk. No proto.
   - _Requirements: 5.1, 5.2_ · _Prompt: Role: C# developer | Task: extract Client to EtAlii.Adp.Client | Restrictions: four gates + fresh-tree build | Success: Client is its own project, referenced where used. Mark in-progress, log-implementation, mark complete._
 
-- [ ] 10. Extract the remaining areas to `EtAlii.Adp.<Area>`, one project per landing **[HOLD each]**
+- [-] 10. Extract the remaining areas to `EtAlii.Adp.<Area>`, one project per landing **[HOLD each]**
   - Files: per area — `Hierarchy`, `Context`, `Problems`, `Projects`, `Sessions`, `Authentication` → `EtAlii.Adp.<Area>` with its proto linked and generating `EtAlii.Adp.<Area>.Wire`; the `NamespaceFoldersToSkip` entries; the module-tree imports of each renamed namespace
   - **Each area is its own landing, in dependency order** (an area extracts only once every area it depends on is already a project or in Common — `findings.md` gives the order). **39 of Hierarchy's 73 types and 18 of Context's 49 are internal-only free movers**, so each extraction is less work than the folder size suggests. `context.proto → hierarchy.proto` becomes `EtAlii.Adp.Context` → `EtAlii.Adp.Hierarchy`, a project reference. `HistoryActionsBroadcaster` (declared in Context, used by History/Service) resolves to its real home here. **Each rename touches module imports — coordinated hold per area.**
   - _Requirements: 5.1, 5.3, 5.4, 3.1_ · _Prompt: Role: C# developer | Task: extract each remaining area to its own EtAlii.Adp area project with its .Wire namespace, in dependency order, one landing each | Restrictions: dependency order from findings.md; each proto's csharp_namespace set to its area .Wire namespace; project references for cross-imports; no Backend-to-functional edge; each lands inside a coordinated hold; four gates + fresh-tree build + inspectcode per landing | Success: every area is its own project, Backend depends on none of them, the module tree builds. Mark in-progress, log-implementation after each area, mark complete when all are done._
