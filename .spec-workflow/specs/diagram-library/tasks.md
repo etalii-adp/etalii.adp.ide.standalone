@@ -17,7 +17,7 @@
 
 ## Tasks
 
-- [ ] 1. The definition schema and its validators
+- [-] 1. The definition schema and its validators
   - Files: `src/client/src/canvas/library/definition/` (new), and its tests
   - The plain-data types from the design: `DiagramDefinition`, `ElementTypeDefinition`, `RelationTypeDefinition` with its `endpoints` constraint, `RouteKind` (the built-ins plus `CustomRouteRef`), `BuiltInShape` plus `CustomShapeRef`, `AnchorSet`, `LayoutDefinition`, `DraggingPolicy`.
   - **Data only — no React, no closures the shell must serialize.** A definition is configuration a module states, read every render (Requirement 1.3).
