@@ -1,0 +1,112 @@
+# Tasks Document
+
+**One Developer owns this specification through every task, in series** (Requirement 4.3). The tasks are independently landable — each migration goes through the four gates and leaves the product releasable with migrated and unmigrated modules coexisting (Requirement 4.1) — and that buys ordering freedom and clean merges, never extra hands.
+
+**The order is Requirement 4.2 made concrete, and it is the schedule.** wardley-map goes first because it is the axis-shaped case that was not a reference and the only module exercising the intrinsic-extent/background mechanism nothing has tested; mindmap, c4 and causal-loop follow, each the first exercise of a library mechanism (tree layout, nesting, custom routes); then the pattern-copy and plain-graph work where the library holds no surprises; databricks last, largest and by then fully proven.
+
+**Three criteria are satisfied by this document's own shape rather than by any task in it**, so the coverage diff does not read them as gaps: **4.2** (the ordering above), **4.3** (single ownership, stated here), and **1.3**'s conditional path — a module the library cannot express is a stop-and-report recorded in this document with its consequence (the library task-6 gap record is the template), which every migration task's restrictions carry rather than any one task claiming it.
+
+**Every migration task follows the same discipline, stated once here and binding on all of them:**
+
+- The **capability inventory is written before touching code** and goes into the task's implementation log (Requirement 2.1).
+- **Deliberate unifications are recorded as they are made**; no new capability rides along — follow-ups are recorded and left (Requirements 2.1, 2.2).
+- **Tests keep passing or are honestly replaced**, each rewritten behaviour test **seen to fail against a deliberate behaviour break** before it is trusted (Requirement 2.5).
+- The module's **`noPrivateGestures` exclusion entry and pair-guard exclusion entry are deleted in the same change** (Requirements 3.2, 5.2).
+- The module's **`tests.md` entries are re-run** against a local build and the **performance comparison** made on its largest example document in the same eyes-on session; where the implementing agent cannot sign in, the entries are handed over runnable with that stated plainly (Requirement 2.3, NFR Performance).
+- `client/register.ts` keeps its shape; the shell notices nothing (Requirement 5.1).
+- **Worktree per the standing rules**: short name, `git config --worktree user.name` at creation, fresh-tree build before trusting the first green, all four gates on the merged tree before every land (NFR Process).
+
+## Tasks
+
+- [ ] 1. The measurement and the guards that will shrink
+  - Files: `src/client/src/canvas/library/noPrivateGestures.test.ts` (new), `src/client/src/canvas/library/libraryGuards.test.tsx`, a measurement record in this task's implementation log
+  - Re-run the population measurement against `src/diagrams/*/client/register.ts` and the canvases importing the library; record it with the design-time baseline beside it (Requirement 1.1's "measured, not inherited").
+  - `noPrivateGestures` joins the noPrivate family: no migrated module's client sources hold private gesture state (`dragRef`/`panRef`/`connectRef` naming, raw pointer-capture handling outside the library, private connector path assembly for library-expressible routes), with an explicit **`NOT_YET_MIGRATED` exclusion list holding today's eleven unmigrated modules that only ever shrinks** — the guard fails on any added entry. Its text-reading limit stated in the file, as the family does.
+  - The pair-registration guard gains its per-module mounted structure with the same exclusion discipline, starting from the two migrated references (Requirement 5.2).
+  - Both guards **seen to fail first**: a planted `dragRef` in a migrated module's source for one, an emptied toolbox registration for the other.
+  - _Requirements: 1.1, 3.2, 5.2_
+  - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Re-measure the adoption population and land the noPrivateGestures guard and per-module pair-registration coverage, each with a shrink-only exclusion list | Restrictions: guards follow the house family shape with limits stated; exclusion lists may only shrink; both guards seen to fail under a planted offence before being trusted | Success: measurement recorded, both guards green with full exclusion lists and red under sabotage. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
+
+- [ ] 2. wardley-map migrates — the intrinsic space, first exercise
+  - Files: `src/diagrams/wardley-map/client/WardleyCanvas.tsx` (784 lines today), its tests, guard exclusion entries
+  - The definition declares the **intrinsic 0..1 extent and the evolution axis as the in-canvas background** — the schema mechanism no reference exercised (design: first slot per Requirement 4.2). Symbol-shaped components; authored `label [-x, y]` offsets in the label rule; straight links.
+  - Parity watchlist from the inventory: selection and F2 landed 2026-09-05 (inline-rename-adoption tasks 6–7); the inline editor placement honours authored label offsets; `setView(fullView)` behaviour — the one fit-to-view-immune canvas — survives as the intrinsic extent.
+  - If the intrinsic-extent/background mechanism cannot express the map, that is a gap record in this document with its consequence, raised against `diagram-library` — never a bent schema (Requirement 1.3).
+  - _Requirements: 1.1, 2.1, 2.2, 2.3, 2.5, 3.3, 4.1, 5.1, 5.2_
+  - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer | Task: Rebuild WardleyCanvas on the library with the intrinsic 0..1 extent and evolution axis as definition-declared background | Restrictions: inventory before code; no new capability; a schema shortfall is a recorded gap, not a workaround; rewritten tests seen to fail against a deliberate break; guard exclusion entries deleted in the same change | Success: wardley renders through the library with parity, guards shrink, four gates green on the merged tree, landed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
+
+- [ ] 3. mindmap migrates — tree layout, first exercise
+  - Files: `src/diagrams/mindmap/client/MindmapCanvas.tsx` (694 lines today), its tests, guard exclusion entries
+  - The **tree layout mode** built in library task 4, exercised for the first time: directional hierarchy with side-balancing; centered-box elements; `branchAnchorsBetween` anchoring as the definition's anchor set.
+  - Fold/unfold stay model concerns the events report — never layout ones.
+  - Parity watchlist: the inline rename reference behaviour (mindmap is one of the two original inline-editing canvases); Tab/Enter/Insert structural keys through the library's keyboard path.
+  - _Requirements: 1.1, 2.1, 2.2, 2.3, 2.5, 3.3, 4.1, 5.1, 5.2_
+  - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer | Task: Rebuild MindmapCanvas on the library using the tree layout mode with side balance and branch anchors | Restrictions: inventory before code; fold state is model data, not layout state; no new capability; rewritten tests seen to fail against a deliberate break; guard exclusions deleted in the same change | Success: mindmap renders through the library with parity on the first automatic layout mode in production, four gates green, landed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
+
+- [ ] 4. c4 migrates — frames and nesting, first exercise
+  - Files: `src/diagrams/c4/client/C4Canvas.tsx` (723 lines today), its tests, guard exclusion entries
+  - **Container nesting through frame elements**: children within the frame's bounds, inner elements hit-tested first, boundaries travelling with their contents. Styled-box elements with per-style theming; straight relationships; both registrations over the one canvas.
+  - Parity watchlist: relationship selection (line, arrowhead and label as one, per the 2026-09-06 adorner fix); the dashed-to-solid selected style; technology labels.
+  - _Requirements: 1.1, 2.1, 2.2, 2.3, 2.5, 3.3, 4.1, 5.1, 5.2_
+  - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer | Task: Rebuild C4Canvas on the library with frame-based nesting and inner-first hit-testing | Restrictions: inventory before code; both registrations keep serving one canvas; no new capability; rewritten tests seen to fail against a deliberate break; guard exclusions deleted in the same change | Success: c4 renders through the library with nesting proven, four gates green, landed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
+
+- [ ] 5. causal-loop migrates — the custom route, first exercise
+  - Files: `src/diagrams/causal-loop/client/CausalLoopCanvas.tsx` (510 lines today), its tests, guard exclusion entries
+  - The **self-loop as a `CustomRouteRef`** (`causalLoopArc`'s ellipse pair — the one genuinely bespoke geometry the library survey found), the chord-bowed link as the arc route, `allowSelf: true`, and polarity marks plus delay strokes as along-route labels and adornment.
+  - The backend self-organizing Arrange stays a backend action the events invoke; layout mode stays manual/external.
+  - Parity watchlist: the selected-state adorner styling landed 2026-09-06 (delay strokes, polarity, arrowhead via context-stroke) must survive the rewrite; link weight classes.
+  - _Requirements: 1.1, 2.1, 2.2, 2.3, 2.5, 3.3, 4.1, 5.1, 5.2_
+  - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer | Task: Rebuild CausalLoopCanvas on the library with the self-loop as a custom route and polarity and delay as along-route adornment | Restrictions: inventory before code; Arrange stays a backend action; the fresh selected-adorner styling survives; rewritten tests seen to fail against a deliberate break; guard exclusions deleted in the same change | Success: causal-loop renders through the library including self-loops, four gates green, landed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
+
+- [ ] 6. The rdf family migrates — skos, owl, shacl on the reference's pattern
+  - Files: `src/diagrams/rdf/client/SkosCanvas.tsx` (765), `OwlCanvas.tsx` (802), `ShaclCanvas.tsx` (602), their tests, guard exclusion entries
+  - Three near-copies of the landed `RdfCanvas` migration: the resource-card `CustomShapeRef`, straight arrowed statements, edge anchors, manual layout, the same event wiring. The value is family consistency — one card mechanism across four vocabularies, not three re-inventions.
+  - The skos drawn-element budget and its banner stay model-side, exactly as the reference recorded for rdf.
+  - Parity watchlist: skos notation badges and polyhierarchy edges; owl axiom decorations; shacl blank-node property rows that draw but never edit in place.
+  - _Requirements: 1.1, 2.1, 2.2, 2.3, 2.5, 3.3, 4.1, 5.1, 5.2_
+  - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer | Task: Rebuild SkosCanvas, OwlCanvas and ShaclCanvas on the library following the landed RdfCanvas pattern | Restrictions: inventory per canvas before code; one card mechanism for the family, not three; budget stays model-side; rewritten tests seen to fail against a deliberate break; guard exclusions deleted in the same change | Success: all four rdf readings render through the library with one consistent pattern, four gates green, landed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
+
+- [ ] 7. sparql migrates — frames as region grouping
+  - Files: `src/diagrams/sparql/client/SparqlCanvas.tsx` (626 lines today), its tests, guard exclusion entries
+  - Region grouping through the frame mechanism c4 proved, styled as sparql draws it; box elements and straight edges otherwise on the plain-graph pattern.
+  - Parity watchlist: no rename exists in this module (recorded exempt in its client readme) — the migration must not conjure one (Requirement 2.2).
+  - _Requirements: 1.1, 2.1, 2.2, 2.3, 2.5, 3.3, 4.1, 5.1, 5.2_
+  - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer | Task: Rebuild SparqlCanvas on the library with frames as region grouping | Restrictions: inventory before code; no rename appears where none exists; no new capability; rewritten tests seen to fail against a deliberate break; guard exclusions deleted in the same change | Success: sparql renders through the library with its groupings intact, four gates green, landed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
+
+- [ ] 8. dependency-graph migrates — adjustable routes
+  - Files: `src/diagrams/dependency-graph/client/DependencyGraphCanvas.tsx` (924 lines today), its tests, guard exclusion entries
+  - Span elements on the timeline-proven pattern; the interactive bezier as an adjustable route raising `connection-adjusted`; row-snapped drags in the mapping's coordinate conversion.
+  - Parity watchlist: the span-viewport relation rule (landed 2026-09-06) is backend-side and must be named in the inventory as untouched; relation labels editable inline per inline-rename-adoption.
+  - _Requirements: 1.1, 2.1, 2.2, 2.3, 2.5, 3.3, 4.1, 5.1, 5.2_
+  - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer | Task: Rebuild DependencyGraphCanvas on the library with adjustable bezier routes and row-snapped drag conversion | Restrictions: inventory before code; the backend span-viewport culling is out of reach and stays so; no new capability; rewritten tests seen to fail against a deliberate break; guard exclusions deleted in the same change | Success: dependency-graph renders through the library with adjustment parity, four gates green, landed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
+
+- [ ] 9. azure-pipeline migrates — composite cards
+  - Files: `src/diagrams/azure-pipeline/client/PipelineCanvas.tsx` (583 lines today), its tests, guard exclusion entries
+  - Stage and job cards as composite boxes whose name line is an inset label rule (the inline-rename placement constants become definition data); fixed-bezier dependency edges with facing anchors.
+  - Parity watchlist: F2 landed 2026-09-05 as this canvas's first keyboard gesture; the deliberately-broken example fixtures (`edge-broken-graph`) render exactly as before — their problems are the product working.
+  - _Requirements: 1.1, 2.1, 2.2, 2.3, 2.5, 3.3, 4.1, 5.1, 5.2_
+  - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer | Task: Rebuild PipelineCanvas on the library with inset-label composite cards and fixed-bezier edges | Restrictions: inventory before code; byte-compared fixtures untouched; no new capability; rewritten tests seen to fail against a deliberate break; guard exclusions deleted in the same change | Success: azure-pipeline renders through the library with card parity, four gates green, landed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
+
+- [ ] 10. ansible-structure and helm-charts migrate — the plain-graph near-twins
+  - Files: `src/diagrams/ansible-structure/client/AnsibleCanvas.tsx` (523), `src/diagrams/helm-charts/client/HelmCanvas.tsx` (466), their tests, guard exclusion entries
+  - Two plain graphs on the fully-proven pattern: box elements, bezier edges, edge anchors, external layout. Worked as one task because they are near-twins; landed as two clean merges if that suits the gates better.
+  - Ansible's unresolved-target edges — drawn from source to nothing so a reader sees something missing — are a mapping decision the inventory records and the migration preserves.
+  - Parity watchlist: both modules are rename-exempt (client readmes); the ansible INI-inventory groups (landed 2026-09-06) arrive from the backend and just render.
+  - _Requirements: 1.1, 2.1, 2.2, 2.3, 2.5, 3.3, 4.1, 5.1, 5.2_
+  - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer | Task: Rebuild AnsibleCanvas and HelmCanvas on the library as plain graphs | Restrictions: inventory per canvas before code; unresolved-target edges keep drawing to nothing; no rename appears where none exists; rewritten tests seen to fail against a deliberate break; guard exclusions deleted in the same change | Success: both modules render through the library, four gates green, landed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
+
+- [ ] 11. databricks migrates — four files, one unit, last
+  - Files: `src/diagrams/databricks/client/DatabricksCanvas.tsx` (866), `JobCanvas.tsx`, `PipelineCanvas.tsx`, `BundleCanvas.tsx` (thin wrappers), their tests, guard exclusion entries
+  - The three registered wrappers and the shared inner canvas migrate **as one unit**, preserving three-readings-one-canvas (Requirement 1.2). Mixed straight and fixed-bezier edges, target frames, the largest single canvas — every mechanism it composes is proven by now.
+  - Parity watchlist: edges are not selectable today and stay that way — recorded in the label library's readme as pending, and a migration is not the moment it changes (Requirement 2.2); the bundle node's drawn key is its name (inline rename parity).
+  - _Requirements: 1.1, 1.2, 2.1, 2.2, 2.3, 2.5, 3.3, 4.1, 5.1, 5.2_
+  - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer | Task: Rebuild the databricks inner canvas and its three registered wrappers on the library as one landing | Restrictions: inventory before code; three-readings-one-canvas preserved; edge selection stays absent and recorded; rewritten tests seen to fail against a deliberate break; guard exclusions deleted in the same change | Success: all three databricks readings render through the one migrated canvas, four gates green, landed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
+
+- [ ] 12. The final measurement, the empty exclusions, and the record
+  - Files: guard exclusion lists (now empty), `docs/creating-a-diagram-module.md`, `docs/screenshots/` where misleading, this document, the implementation log
+  - Re-measure the surveyed private-machinery counts across all migrated modules and record before/after — the design-time baseline against zero (Requirement 3.1). Verify both guard exclusion lists are empty and fail on any added entry.
+  - Confirm the notation-specific exclusions that remain are named with reasons — the custom shapes and routes, timeline's frozen scale — rather than the checks loosened (Requirement 3.3).
+  - Documentation refresh: the module-authoring guide's touch points now describe writing a definition rather than a canvas; screenshots retaken where the migration made them misleading (Requirement 2.4).
+  - Run the mechanical requirement-coverage diff **both ways**: against this document before implementing began, and against the finished code now, tracing each criterion to a file and a string rather than to a task's claim.
+  - _Requirements: 1.1, 2.4, 3.1, 3.2, 3.3_
+  - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Release engineer and technical writer | Task: Re-measure the private-machinery counts to zero, verify empty guard exclusions, refresh the authoring docs and screenshots, and run the coverage diff both ways | Restrictions: a non-zero count is a finding to fix, not a note; exclusions that remain are named with reasons; documentation says what is true | Success: counts recorded at zero, exclusions empty, docs true, coverage traced to files, four gates green, landed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
