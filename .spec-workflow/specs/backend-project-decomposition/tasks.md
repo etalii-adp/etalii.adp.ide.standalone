@@ -48,7 +48,7 @@
   - Per `findings.md`: Authentication↔Sessions is five types total; `SessionContext` is consumed by four folders and is a bottom-project citizen. Read the body against the map — the residual edge must resolve to one direction.
   - _Requirements: 2.1, 2.2_ · _Prompt: Role: C# developer | Task: move SessionContext and the shared auth/session types to Common | Restrictions: verify the residual edge is one-directional; four gates + fresh-tree build | Success: Authentication↔Sessions is acyclic. Mark in-progress, log-implementation, mark complete._
 
-- [-] 7. Eliminate the 22 `EtAlii.Adp.Backend` → `EtAlii.Adp.Diagram` back-edges **[HOLD]**
+- [x] 7. Eliminate the 22 `EtAlii.Adp.Backend` → `EtAlii.Adp.Diagram` back-edges **[HOLD]**
   - Files: the 22 Backend files using `EtAlii.Adp.Diagram`, the 13 Diagram-contract types they consume (moved to `Common`), and every module consumer of those types re-imported
   - **Re-scoped from `[normal]` to `[HOLD]` after measurement (2026-09-06).** The original `[normal]` counted the 22 Backend files — the files *changed* — as the blast. The blast is the *consumer* side: the 22 files consume 13 Diagram-contract types (a definition/catalog cluster and a problem/validation cluster), and those types are consumed across the module tree — `DiagramOrigin` in 159 module files, `DiagramDefinition` in 91, `DiagramProblem` in 41, plus ~70 in `Backend.Tests`. An honest move of them to `EtAlii.Adp.Common` (the only project beneath Backend, Diagram and the modules) is a **~250-file namespace sweep** — the second-widest landing in the spec. A measurement of the edit, not of its reach.
   - **The types move to `Common` with honest `EtAlii.Adp.Common.*` namespaces, not namespace-preserving relocation.** Leaving them in `Common.dll` under `EtAlii.Adp.Diagram` behind `CheckNamespace` suppressions would blind the `NamespaceProviders` guard for exactly those files — the inspectcode substitute — and only defer the sweep to task 10. Same sweep machinery as task 5.
@@ -57,7 +57,7 @@
 
 ## Phase 2 — Merge Diagrams (now possible, because the back-edges are gone)
 
-- [ ] 8. Merge `EtAlii.Adp.Backend.Diagrams` into `EtAlii.Adp.Diagram` **[HOLD]**
+- [-] 8. Merge `EtAlii.Adp.Backend.Diagrams` into `EtAlii.Adp.Diagram` **[HOLD]**
   - Files: `EtAlii.Adp.Backend.Diagrams.csproj` (removed), its sources → `EtAlii.Adp.Diagram`; `diagrams.proto`/`deltas.proto` linked into `EtAlii.Adp.Diagram` generating `EtAlii.Adp.Diagram.Wire`; the Backend-bound half (the three `DiagramService` partials, `DiagramDocumentReloadBridge`, `ServiceCollection.AddDiagrams`, `EditorSessionAdapter`) placed per `findings.md`'s pure/bound split; consumers of the merged project across the module tree
   - The headline mandate. Possible only because phase 1 removed the cycle. `diagrams.proto` and `deltas.proto` generate into `EtAlii.Adp.Diagram.Wire` (namespace in the project), referencing `Common`. **Renames the Diagrams namespace across consumers — coordinated hold.**
   - _Requirements: 3.3, 4_ · _Prompt: Role: C# developer | Task: merge Backend.Diagrams into Diagram, relink diagrams/deltas protos as Diagram.Wire, place the Backend-bound half per findings.md | Restrictions: no cycle reintroduced; generation as today; land inside a coordinated hold; four gates + fresh-tree build + inspectcode | Success: Backend.Diagrams is gone, its behaviour reachable from Diagram, everything builds. Mark in-progress, log-implementation, mark complete._
