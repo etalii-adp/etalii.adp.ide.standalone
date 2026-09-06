@@ -260,6 +260,63 @@ public class HierarchyModelTests : IDisposable
     }
 
     [Fact]
+    public void OnWatcherEvent_Deleted_ForAPathThatStillExists_KeepsTheEntryAndItsId()
+    {
+        // A Deleted event whose path is still on disk is not a deletion: Windows' ReplaceFile -
+        // which File.Replace uses, and AdpFileWriter.Save with it, to rewrite a registration in
+        // place - raises a spurious Deleted for the destination it just refreshed. Removing the
+        // entry here would hand the file a new id on the Created that follows, orphaning any open
+        // document that still holds the old one. That is what left a causal-loop diagram
+        // unselectable after the first variable drag: its positions live in the .adp's layout:
+        // block, so every move rewrites the registration in place.
+        var filePath = CreateFile(segments: "a.txt");
+        var model = new HierarchyModel(_root);
+        var entry = model.ListChildren(null).Single();
+
+        var changes = new List<HierarchyEntryChange>();
+        model.EntryChanged += changes.Add;
+
+        // The file is deliberately left on disk - this is the replace-in-place echo.
+        model.OnWatcherEvent(WatcherChangeTypes.Deleted, filePath, null);
+
+        // The entry survives, with the very same id, so a document opened through it stays
+        // resolvable; and nothing was pushed, because the tree did not change.
+        Assert.DoesNotContain(changes, change => change is HierarchyEntryRemoved);
+        Assert.True(model.TryResolvePath(entry.Id, out _, out _));
+    }
+
+    [Fact]
+    public void OnWatcherEvent_ReplaceFileSequence_KeepsTheEntryAndItsId()
+    {
+        // The event sequence Windows' ReplaceFile actually raises when File.Replace rewrites a
+        // file in place, verbatim from a live run: its backup temp appears, the DESTINATION is
+        // renamed onto that backup name, the fresh content arrives under the real name as a
+        // create, and the backup is deleted. Untreated, the rename walks the entry off its path
+        // and the create then mints a NEW id for the same file - which orphaned every open
+        // causal-loop diagram on the first variable drag, since its positions live in the
+        // .adp's layout: block and every move rewrites that registration in place.
+        var filePath = CreateFile(segments: "a.txt");
+        var backupPath = filePath + "~RF17c7806.TMP";
+        var model = new HierarchyModel(_root);
+        var entry = model.ListChildren(null).Single();
+
+        var changes = new List<HierarchyEntryChange>();
+        model.EntryChanged += changes.Add;
+
+        // The file itself stays on disk throughout - ReplaceFile never leaves the path empty.
+        model.OnWatcherEvent(WatcherChangeTypes.Created, null, backupPath);
+        model.OnWatcherEvent(WatcherChangeTypes.Renamed, filePath, backupPath);
+        model.OnWatcherEvent(WatcherChangeTypes.Created, null, filePath);
+        model.OnWatcherEvent(WatcherChangeTypes.Deleted, backupPath, null);
+
+        // One entry, the same id, and no churn was pushed: to the tree, nothing happened.
+        Assert.True(model.TryResolvePath(entry.Id, out var resolvedPath, out _));
+        Assert.Equal(IoPath.GetFullPath(filePath), resolvedPath);
+        Assert.Empty(changes);
+        Assert.Equal(entry.Id, model.ListChildren(null).Single(e => e.Name == "a.txt").Id);
+    }
+
+    [Fact]
     public void OnWatcherEvent_Renamed_ForAKnownEntry_RaisesRenamedWithExistingIdAndNewName()
     {
         // Arrange.
