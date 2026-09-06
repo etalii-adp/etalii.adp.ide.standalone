@@ -145,7 +145,16 @@ export interface LabelTypography {
 
 /** How an element's label sits, wraps and edits (Requirement 2.3). */
 export interface LabelRule {
-  placement: "inside" | "above" | "below" | "beside";
+  placement: "inside" | "above" | "below" | "beside" | "inset";
+  /**
+   * The inset placement's own offsets, for a composite card whose first line is the name: the
+   * line's top offset from the box's top, the line's height, and the horizontal inset on both
+   * sides. The c4 card is the shape this exists for; an editor covering the whole card would
+   * sit over three lines of text to edit one of them.
+   */
+  insetTop?: number;
+  insetHeight?: number;
+  insetX?: number;
   wrap?: boolean;
   truncate?: boolean;
   /**

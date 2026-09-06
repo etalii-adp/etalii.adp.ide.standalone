@@ -2133,3 +2133,25 @@ standing mindmap entries above against a migrated build, plus:
   the centre-based placement helper) and an unstable onReturnFocus identity made the editor
   hand focus away every render - both fixed in the library with the failing tests as guards.
 
+## c4 re-run after its library migration (diagram-library-adoption, task 4)
+
+Both C4 views now render through the diagram library: same cards at the backend's sizes and
+palette, same boundaries, arrows, labels, title and key; nesting and inner-first hit-testing
+are the library's now. Re-run the standing c4 entries above against a migrated build, plus:
+
+- **Actions**: rename an element (the editor must cover the NAME line alone) and a
+  relationship (the editor opens on the description without the [technology] suffix, at the
+  drawn label's own width - the measured branch jsdom cannot take); select a relationship and
+  check line, arrowhead and label take the accent together; drop a toolbox entry on an
+  element and on empty canvas; compare feel on the biggest example.
+- **Expected**: boundaries enclose exactly as before and stay inert; the drawn relationship
+  string keeps its "N. description [technology]" shape; a drop on an element parents the new
+  one there (the hover highlight during an HTML5 drag is a recorded loss); nothing feels
+  worse on the largest example.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition. The migration's tests caught a third live library
+  defect before any eyes-on pass: built-in frame elements drew displaced by half their size
+  (corner bounds fed to the centre-based FrameElement) - fixed centrally with the failing
+  test as the guard, before any migrated module had mounted one.
+

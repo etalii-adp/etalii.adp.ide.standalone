@@ -49,6 +49,12 @@ export interface DiagramModelConnection {
   label?: string;
   /** A hover tooltip for the whole connection - a wardley link's context sentence. */
   title?: string;
+  /**
+   * The one authored value the label DECORATES, where the drawn string is not it - c4 draws
+   * "description [technology]", sometimes numbered, and its editor opens with the description
+   * alone. Omitted, the editor opens with the label as drawn.
+   */
+  editValue?: string;
   /** The user's bends, where the type is adjustable (Requirement 3.5). */
   waypoints?: readonly ShapePoint[];
   /** Per-connection override of the type's style (Requirement 3.2). */
