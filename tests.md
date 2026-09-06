@@ -119,6 +119,39 @@ like the context surface being broken again, and it is not.
 
 - **Result 2026-09-05**: **passed**, all six claims of Requirement 6 confirmed in the running app.
 
+## Anchors and the connect preview are styled, not black (canvas library, found in the app)
+
+**Reported from the running app, and invisible to every test.** The canvas library draws four
+things a module never supplies a class for - the anchors it derives from a type's `anchors`
+declaration, the preview path a connect gesture drags, and the resize and adjust handles. It
+names them `library-*`, and 31 of its 32 classes had no CSS anywhere.
+
+The library's canvas `<svg>` computes `fill: rgb(0, 0, 0)`, and SVG's `fill` is **inherited**, so
+every unstyled shape inside it was painted black. Nothing failed: the element rendered, carried
+its class, and the browser painted it with the defaults.
+
+- **Preconditions**: backend + client running; `src/examples` open as a project.
+- **Actions**: open `diagrams/timeline/example-1/roadmap.tml`, then a dependency graph. Look at
+  the anchor dots on each element. Then press an anchor and drag away from it without releasing.
+- **Expected**:
+  - Anchors are the element's own surface colour with a green outline - **not** black discs.
+  - The drag preview is a **dashed green line**. It must not be a filled shape: a curve with a
+    fill paints the region between the curve and its chord, which swept a solid black wedge
+    across the diagram.
+  - Dragging onto a target that refuses the connection turns the preview **red**.
+  - A selected span's resize handles are invisible rather than black bars, and a connection's
+    midpoint adjust handle is a surface-coloured dot.
+- **And the regression to watch for**: the anchors must still be **draggable**. They carry the
+  connect gesture themselves, unlike the shared `.canvas-anchor`, which can be inert only because
+  the modules using it draw a separate hit circle behind it. Copying `pointer-events: none` onto
+  them leaves them looking perfect and impossible to drag from.
+
+**Result 2026-09-05**: **passed** for the colours, measured against the live computed styles
+rather than by eye - anchors `rgb(30,41,59)` where an unstyled path in the same `<svg>` computes
+`rgb(0,0,0)`; preview `fill: none` with a dashed green stroke; invalid variant red. **The drag
+itself was not performed by hand** - a synthesised mousedown did not start the gesture - so the
+wedge's absence is inferred from the computed style, not seen. Worth one human drag.
+
 ## A feedback loop is drawn as a loop (causal-loop-diagram, arcs fix)
 
 **A defect found by looking at the running app.** The diagram type is named after loops and drew
