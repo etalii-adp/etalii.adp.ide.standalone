@@ -36,15 +36,16 @@
   - _Requirements: 1.1, 2.1, 2.2, 2.3, 2.5, 3.3, 4.1, 5.1, 5.2_
   - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer | Task: Rebuild WardleyCanvas on the library with the intrinsic 0..1 extent and evolution axis as definition-declared background | Restrictions: inventory before code; no new capability; a schema shortfall is a recorded gap, not a workaround; rewritten tests seen to fail against a deliberate break; guard exclusion entries deleted in the same change | Success: wardley renders through the library with parity, guards shrink, four gates green on the merged tree, landed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 3. mindmap migrates — tree layout, first exercise
+- [x] 3. mindmap migrates — tree layout, first exercise
   - Files: `src/diagrams/mindmap/client/MindmapCanvas.tsx` (694 lines today), its tests, guard exclusion entries
   - The **tree layout mode** built in library task 4, exercised for the first time: directional hierarchy with side-balancing; centered-box elements; `branchAnchorsBetween` anchoring as the definition's anchor set.
   - Fold/unfold stay model concerns the events report — never layout ones.
+  - **Recorded deviation from this task's own text (from implementing it): manual layout, not tree.** The mindmap backend computes the arrangement and streams positions, and diagram-library Requirement 8.3 rules that case: where the backend places elements, the library uses manual/external and leaves it untouched — a client-side tree pass would fight the wire's. The tree mode stays unexercised in production until a module wants client-side arrangement. Two library defects were also found and fixed by this migration's tests (the corner-fed centred editor placement, and the unstable onReturnFocus identity re-running the editor's cleanup every render), plus the end-edit-before-gesture discipline added centrally.
   - Parity watchlist: the inline rename reference behaviour (mindmap is one of the two original inline-editing canvases); Tab/Enter/Insert structural keys through the library's keyboard path.
   - _Requirements: 1.1, 2.1, 2.2, 2.3, 2.5, 3.3, 4.1, 5.1, 5.2_
   - _Prompt: Implement the task for spec diagram-library-adoption, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend developer | Task: Rebuild MindmapCanvas on the library using the tree layout mode with side balance and branch anchors | Restrictions: inventory before code; fold state is model data, not layout state; no new capability; rewritten tests seen to fail against a deliberate break; guard exclusions deleted in the same change | Success: mindmap renders through the library with parity on the first automatic layout mode in production, four gates green, landed. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 4. c4 migrates — frames and nesting, first exercise
+- [-] 4. c4 migrates — frames and nesting, first exercise
   - Files: `src/diagrams/c4/client/C4Canvas.tsx` (723 lines today), its tests, guard exclusion entries
   - **Container nesting through frame elements**: children within the frame's bounds, inner elements hit-tested first, boundaries travelling with their contents. Styled-box elements with per-style theming; straight relationships; both registrations over the one canvas.
   - Parity watchlist: relationship selection (line, arrowhead and label as one, per the 2026-09-06 adorner fix); the dashed-to-solid selected style; technology labels.
