@@ -257,7 +257,11 @@ export function DiagramCanvas({
         return type.shape.edgePoint(bounds, towards);
       }
 
-      return edgePointOf(bounds, towards.x - (bounds.x + bounds.width / 2), towards.y - (bounds.y + bounds.height / 2));
+      // ConnectorBox is CENTRE-based while the library's bounds are corner-based; the
+      // conversion here is load-bearing - without it every edge left from the corner as if
+      // it were the centre, and the guard above this comment's test was seen to fail on it.
+      const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+      return edgePointOf({ x: centre.x, y: centre.y, width: bounds.width, height: bounds.height }, towards.x - centre.x, towards.y - centre.y);
     },
     [elementTypes],
   );

@@ -92,6 +92,19 @@ describe("DiagramCanvas", () => {
     expect(container.textContent).toContain("calls");
   });
 
+  it("an edge-attached connection leaves the source's edge, not its corner or centre", () => {
+    // ConnectorBox is centre-based and the library's bounds are corner-based; feeding one to
+    // the other silently drew every edge from the wrong point. Alpha is 100 wide at (0,0),
+    // so a line toward Beta at (300,0) must leave at (50,0) - the east edge, exactly.
+    const definition = definitionOf();
+    (definition.elementTypes[0] as { anchors: unknown }).anchors = { kind: "edge" };
+    const { container } = renderCanvas({}, definition);
+
+    const d = container.querySelector('[data-connection-id="a->b"] path.canvas-connection-line')!.getAttribute("d")!;
+
+    expect(d).toMatch(/^M 50 0/);
+  });
+
   it("renders a visible fallback for an element naming no declared type, and raises nothing", () => {
     const onSelectionChanged = vi.fn();
     const model = modelOf();
