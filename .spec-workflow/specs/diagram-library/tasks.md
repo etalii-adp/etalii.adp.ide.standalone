@@ -47,7 +47,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 3.5, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5, 6.1, 6.2, 6.3, 7.1, 7.2, 7.3_
   - _Prompt: Implement the task for spec diagram-library, first run spec-workflow-guide to get the workflow guide then implement the task: Role: React/TypeScript developer | Task: Build DiagramCanvas over the existing canvas parts - shapes, route builders, anchors, selection, context menu, inline editor, and usePointerGesture | Restrictions: the component mutates nothing and raises an event per gesture; anchors resolve once for render, preview and hit-test; enforcement happens at gesture time not by post-hoc veto; no private label editor, no second selection policy, no invented side channel; register view controls and toolbox as a pair; colours through theme tokens | Success: a definition plus a model plus handlers renders and operates a canvas, and a forbidden gesture cannot raise an event. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [-] 4. The layout seam, with manual/external and tree
+- [x] 4. The layout seam, with manual/external and tree
   - Files: `src/client/src/canvas/library/layout/` (new), and its tests
   - The `LayoutAlgorithm` seam and its built-ins. **Manual/external returns the model's own positions untouched** — the mode every backend-laid-out diagram uses, and the one both references need (Requirement 8.3). **Tree** (directional hierarchy) is the one automatic mode implemented here, because mindmap needs it and it exercises the seam; horizontal-flow, vertical-flow and layered-graph are declared in the schema and land as `diagram-library-adoption` reaches a module that needs each.
   - A definition allowing one mode presents no switching surface; switching raises `layoutModeChanged` (Requirement 8.2). Where automatic layout is active and dragging permitted, the definition says whether a drag repins to manual or is a reclaimed displacement (Requirement 8.4).
@@ -55,7 +55,7 @@
   - _Requirements: 8.1, 8.2, 8.3, 8.4_
   - _Prompt: Implement the task for spec diagram-library, first run spec-workflow-guide to get the workflow guide then implement the task: Role: TypeScript developer | Task: Build the layout seam with manual/external and tree algorithms behind one interface | Restrictions: manual/external returns model positions untouched; no layout computation crosses the wire; one mode means no switching surface; the definition decides what a drag means under automatic layout | Success: the seam runs manual/external and tree, and a further algorithm is an addition rather than a change. Mark this task in-progress in tasks.md before starting, log the implementation with log-implementation when done, then mark it complete._
 
-- [ ] 5. rdf as the graph-shaped reference, end to end
+- [-] 5. rdf as the graph-shaped reference, end to end
   - Files: `src/diagrams/rdf/client/RdfCanvas.tsx`, its definition, and tests
   - Box elements, straight routes, edge anchors, manual/external layout, at the 1,000-element budget the model already enforces (`RdfProjection.DefaultBudget`) — proving the library at the sizes that started `drag-and-drop-centralization`, and that a plain graph is a short definition.
   - `RdfCanvas` builds `fitToView` at `RdfCanvas.tsx:127` today; the migrated canvas keeps that behaviour through the library rather than by hand.
