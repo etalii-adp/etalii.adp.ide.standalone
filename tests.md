@@ -2375,3 +2375,35 @@ nothing failed - the elements were all present in the DOM, just off-screen.
   after the fix, and seen to fail before it.** The rising 641 / 1160 / 1903 above is the
   measurement against the defect; with `.library-canvas` carrying its own sizing the same probe
   reports 442 / 442 / 442 with all 24 elements inside the surface at every sample.
+
+## wardley-map property grid re-check, and the shared stylesheet imports (defect pair)
+
+Two unowned findings closed at unit level; each hands one eyes-on step over.
+
+**One - the wardley property-grid FLAG** (developer-sign-in-bypass findings, 2026-09-05):
+the missing element-selection wiring it names was closed by the wardley library migration
+(landed 2026-09-06, merge 33aaeba0) - clicks now raise selection-changed and the module
+forwards `elementSelectionOf(entryId, path, id)`; the guard test "reports a clicked element
+as a nested selection" has now been seen to fail with the forwarding severed.
+
+- **Actions**: re-run the FAILED entry "An element selected on the canvas fills the property
+  grid (wardley-map, task 26)" against a build at or after 33aaeba0: open tea.adp, click a
+  component, read the Property Grid.
+- **Expected**: the grid heads with the element and shows its Identity / Position / Strategy
+  rows; the backend log says the element id, not the .adp path. An evolve-target dot stays
+  inert - pressing one neither selects nor deselects, by design.
+
+**Two - five modules styled only by accident**: azure-pipeline, c4, helm-charts, mindmap and
+wardley-map named `canvas-*` classes without importing `@client/canvas/canvas.css`; they
+rendered styled only because `diagramCanvases.ts` eagerly globs every register file, so some
+other module always loaded the sheet. The five registers now import it, and
+`sharedStylesheetImports.test.ts` guards the convention (seen to fail naming all five).
+jsdom applies no CSS, so no automated check can see the appearance itself.
+
+- **Actions**: during the next manual pass, open one diagram from any of the five modules
+  and confirm the shared styling (selection accents, connection lines, anchors) renders.
+- **Expected**: identical appearance to before - the change makes each module's styling
+  self-sufficient, not different.
+
+- **Result 2026-09-06**: **written and not yet executed by eyes** - handed over runnable per
+  the session's credential prohibition.

@@ -1,5 +1,6 @@
 import type { DiagramCanvasRegistration } from "@client/shell/panels/diagramCanvas";
 import { C4Canvas } from "./C4Canvas";
+import "@client/canvas/canvas.css";
 import "./c4.css";
 
 /**
