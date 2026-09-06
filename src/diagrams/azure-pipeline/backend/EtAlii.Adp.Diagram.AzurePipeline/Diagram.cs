@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.AzurePipeline;
 
 /// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `azure-devops/pipeline`.</summary>

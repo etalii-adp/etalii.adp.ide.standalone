@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram.Rdf.Shacl;
 
 namespace EtAlii.Adp.Diagram.Rdf;

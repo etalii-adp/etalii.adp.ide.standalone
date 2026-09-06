@@ -1,4 +1,5 @@
 using EtAlii.Adp.Backend.Diagrams;
+using EtAlii.Adp.Common;
 using Xunit;
 
 namespace EtAlii.Adp.Diagram.C4.Tests;
@@ -384,7 +385,7 @@ public class C4ElementMapperTests
 
         // Act and assert, step by step.
         var problem = Assert.Single(problems, p => p.RuleId == C4Rules.MissingDescription);
-        // Not `Diagram.DiagramProblemElementLocation`: this module now has a class called
+        // Not `Common.DiagramProblemElementLocation`: this module now has a class called
         // `Diagram` (the seven definitions), which shadows the `EtAlii.Adp.Diagram` namespace
         // for any name qualified that way from in here.
         Assert.Equal(new DiagramProblemElementLocation("u"), problem.Location);

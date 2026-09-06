@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// One thing wrong with one diagram document, as its type's <see cref="IDiagramValidator"/>

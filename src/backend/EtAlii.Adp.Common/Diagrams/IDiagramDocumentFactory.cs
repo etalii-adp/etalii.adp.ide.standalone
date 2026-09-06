@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// Produces the empty document body for one diagram type - the one thing core cannot derive

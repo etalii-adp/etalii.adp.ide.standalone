@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// The registered <see cref="IDiagramValidator"/> instances, looked up by origin - how core

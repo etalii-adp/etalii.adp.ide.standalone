@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Backend.Context;
 
 /// <summary>
@@ -49,4 +50,4 @@ public sealed record ContextTarget(
     string RootPath = "",
     ShortGuid WatchId = default,
     string ElementId = "",
-    Diagram.DiagramOrigin? Origin = null);
+    Common.DiagramOrigin? Origin = null);

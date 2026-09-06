@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// How bad a <see cref="DiagramProblem"/> is: informational, worth attention, or wrong.

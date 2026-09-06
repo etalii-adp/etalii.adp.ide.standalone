@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.StructurizrC4;
 
 /// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `structurizr/c4`.</summary>

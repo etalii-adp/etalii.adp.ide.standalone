@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Diagram;
+namespace EtAlii.Adp.Common;
 
 /// <summary>
 /// What a diagram type's diagram actually <em>is</em> - the thing its module reads and its

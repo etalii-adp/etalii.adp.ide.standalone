@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.UmlProfile;
 
 /// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `uml/profile`.</summary>

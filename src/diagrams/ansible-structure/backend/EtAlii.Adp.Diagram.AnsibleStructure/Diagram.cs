@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.AnsibleStructure;
 
 /// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `ansible/structure`.</summary>

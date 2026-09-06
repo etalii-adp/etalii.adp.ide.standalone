@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.GcpArchitecture;
 
 /// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `gcp/architecture`.</summary>

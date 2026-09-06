@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common;
 namespace EtAlii.Adp.Diagram.UmlComponent;
 
 /// <summary>This diagram type's identity, cataloged in docs/diagrams.md as `uml/component`.</summary>

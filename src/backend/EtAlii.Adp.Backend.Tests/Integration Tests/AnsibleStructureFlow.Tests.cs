@@ -58,7 +58,7 @@ public class AnsibleStructureFlowTests : IClassFixture<WebApplicationFactory<Pro
                 services.AddSingleton<Problems.IProblemStore>(provider => new Problems.ProblemStore(
                     _appDataRoot,
                     provider.GetRequiredService<DiagramFileRouter>(),
-                    provider.GetRequiredService<Diagram.DiagramValidators>()));
+                    provider.GetRequiredService<Common.DiagramValidators>()));
             });
         });
     }
