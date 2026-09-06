@@ -130,10 +130,23 @@ describe("drag cost", () => {
 
   it("per-frame cost is flat across model sizes: the small/large ratio stays within tolerance", () => {
     // Both models measured in ONE run and compared as a ratio (Requirements 3.1, 3.2).
-    // Three repetitions, minimum taken: jsdom's clock is coarse and a GC pause in one pass
-    // must not decide the verdict; the minimum is the least-noise estimate of true cost.
+    // Each frame is timed ALONE and the MEDIAN single frame taken, across three mounts.
+    // The estimator matters, and two wrong ones were measured before this one:
+    // - the whole-window minimum (the first shipped version) inflates under parallel-gate
+    //   contention, because the scheduler preempts inside every thirty-frame window - it
+    //   read 4.345 against the tolerance of 4 on 2026-09-06 with nothing actually wrong,
+    //   green 3-of-3 in isolation;
+    // - the per-frame minimum is worse in the opposite direction: pointermove is a
+    //   continuous-priority event, so React may flush a frame's render after the handler
+    //   returns, one of ninety frames escapes its timing window, and the minimum finds
+    //   exactly that frame - under the restored-sabotage check it read 1.11, a PASSING
+    //   guard over broken code, caught only because the sabotage was re-run.
+    // The median dodges both: contention spikes are outliers above it, deferred flushes
+    // outliers below it, and 29 of 30 sabotaged frames carry the O(elements) render so
+    // the sabotage stays loud - re-verified at 17.91 against the tolerance of 4 after
+    // this change, on 2026-09-06.
     const perFrame = (count: number, gesture: "reposition" | "pan"): number => {
-      let best = Number.POSITIVE_INFINITY;
+      const samples: number[] = [];
       for (let repetition = 0; repetition < 3; repetition++) {
         const counts = new Map<string, number>();
         const { container, unmount } = mountCanvas(counts, count);
@@ -141,14 +154,17 @@ describe("drag cost", () => {
           gesture === "reposition"
             ? container.querySelector('[data-element-id="el-0"]')!
             : container.querySelector("svg.library-canvas-surface")!;
-        const started = performance.now();
-        driveFrames(target);
-        const elapsed = performance.now() - started;
+        fireEvent(target, pointer("pointerdown", { clientX: 10, clientY: 10 }));
+        for (let frame = 1; frame <= FRAMES; frame++) {
+          const started = performance.now();
+          fireEvent(target, pointer("pointermove", { clientX: 10 + frame * 3, clientY: 10 + frame * 2 }));
+          samples.push(performance.now() - started);
+        }
         fireEvent(target, pointer("pointerup", { clientX: 200, clientY: 200 }));
         unmount();
-        best = Math.min(best, elapsed / FRAMES);
       }
-      return best;
+      samples.sort((a, b) => a - b);
+      return samples[Math.floor(samples.length / 2)];
     };
 
     const repositionRatio = perFrame(LARGE, "reposition") / Math.max(perFrame(SMALL, "reposition"), 0.001);
