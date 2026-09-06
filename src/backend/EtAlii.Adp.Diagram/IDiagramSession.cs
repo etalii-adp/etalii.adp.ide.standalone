@@ -1,7 +1,7 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
 
-namespace EtAlii.Adp.Backend.Diagrams;
+namespace EtAlii.Adp.Diagram;
 
 /// <summary>
 /// One open diagram for one connection, from the type module's side. The core

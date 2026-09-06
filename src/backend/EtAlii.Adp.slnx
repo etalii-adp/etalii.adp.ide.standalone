@@ -26,8 +26,6 @@
   <Project Path="EtAlii.Adp.Backend.Tests/EtAlii.Adp.Backend.Tests.csproj" />
   <Project Path="EtAlii.Adp.Common/EtAlii.Adp.Common.csproj" />
   <Project Path="EtAlii.Adp.Backend/EtAlii.Adp.Backend.csproj" />
-  <Project Path="EtAlii.Adp.Backend.Diagrams/EtAlii.Adp.Backend.Diagrams.csproj" />
-  <Project Path="EtAlii.Adp.Backend.Diagrams.Tests/EtAlii.Adp.Backend.Diagrams.Tests.csproj" />
   <Folder Name="/Diagrams/">
     <Project Path="../diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure/EtAlii.Adp.Diagram.AnsibleStructure.csproj" />
     <Project Path="../diagrams/ansible-structure/backend/EtAlii.Adp.Diagram.AnsibleStructure.Tests/EtAlii.Adp.Diagram.AnsibleStructure.Tests.csproj" />

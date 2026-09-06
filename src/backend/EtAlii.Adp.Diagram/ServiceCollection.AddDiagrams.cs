@@ -5,7 +5,7 @@ using EtAlii.Adp.Editor;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace EtAlii.Adp.Backend.Diagrams;
+namespace EtAlii.Adp.Diagram;
 
 /// <summary>
 /// Registers the type-agnostic half of diagramming: the factories a module registers to

@@ -1,4 +1,4 @@
-﻿namespace EtAlii.Adp.Backend.Diagrams;
+﻿namespace EtAlii.Adp.Diagram;
 
 public sealed class DiagramDeltasEventArgs(IReadOnlyList<DiagramDelta> deltas) : EventArgs
 {

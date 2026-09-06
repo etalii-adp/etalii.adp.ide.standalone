@@ -2,7 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EtAlii.Adp.Backend\EtAlii.Adp.Backend.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.Backend.Diagrams\EtAlii.Adp.Backend.Diagrams.csproj" />
     <!-- Explicit rather than transitive through the modules: Program.cs runs discovery itself. -->
     <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
     <PackageReference Include="JetBrains.Annotations" />

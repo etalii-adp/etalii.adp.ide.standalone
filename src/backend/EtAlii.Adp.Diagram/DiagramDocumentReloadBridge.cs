@@ -4,7 +4,7 @@ using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
 using Serilog;
 
-namespace EtAlii.Adp.Backend.Diagrams;
+namespace EtAlii.Adp.Diagram;
 
 /// <summary>
 /// The watcher-to-store bridge: the one place a disk change reaches a diagram document store's

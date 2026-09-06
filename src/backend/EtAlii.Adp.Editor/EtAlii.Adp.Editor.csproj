@@ -7,7 +7,6 @@
          (Backend references THIS project for it), and referencing Backend from here as well
          would be a cycle - the arrow list loses to the adapter section it cites. -->
     <ProjectReference Include="..\EtAlii.Adp\EtAlii.Adp.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
   </ItemGroup>
 
   <ItemGroup>

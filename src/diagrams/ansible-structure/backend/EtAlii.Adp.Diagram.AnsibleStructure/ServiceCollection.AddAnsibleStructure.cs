@@ -1,7 +1,6 @@
 using EtAlii.Adp.Backend.Context;
-using EtAlii.Adp.Backend.Diagrams;
-
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Diagram;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Diagram.AnsibleStructure;

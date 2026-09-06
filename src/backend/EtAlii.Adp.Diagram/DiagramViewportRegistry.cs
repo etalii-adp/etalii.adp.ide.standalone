@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace EtAlii.Adp.Backend.Diagrams;
+namespace EtAlii.Adp.Diagram;
 
 /// <inheritdoc />
 public sealed class DiagramViewportRegistry : IDiagramViewportRegistry

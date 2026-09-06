@@ -1,7 +1,7 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
 
-namespace EtAlii.Adp.Backend.Diagrams;
+namespace EtAlii.Adp.Diagram;
 
 /// <summary>The registered <see cref="IDiagramSessionFactory"/> instances, looked up by origin.</summary>
 public sealed class DiagramSessionFactories

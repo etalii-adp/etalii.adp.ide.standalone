@@ -1,6 +1,7 @@
 using System.Text;
 using EtAlii.Adp.Backend.Projects;
 using EtAlii.Adp.Common.Wire;
+using EtAlii.Adp.Diagram.Wire;
 using EtAlii.Adp.Editor;
 using Grpc.Core;
 using Grpc.Net.Client;

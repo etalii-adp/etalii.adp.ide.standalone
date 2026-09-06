@@ -4,7 +4,7 @@ package etalii.adp;
 
 import "elements.proto";
 
-option csharp_namespace = "EtAlii.Adp";
+option csharp_namespace = "EtAlii.Adp.Diagram.Wire";
 
 message Add {
   repeated Element elements = 1;

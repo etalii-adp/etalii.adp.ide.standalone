@@ -1,9 +1,7 @@
 using EtAlii.Adp.Backend;
-using EtAlii.Adp.Backend.Diagrams;
 using EtAlii.Adp.Backend.Hierarchy;
-
-
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Diagram;
 using IoPath = System.IO.Path; // EtAlii.Adp.Path (the proto message) would otherwise shadow System.IO.Path here
 
 namespace EtAlii.Adp.Diagram.AnsibleStructure;

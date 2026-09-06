@@ -6,7 +6,7 @@ import "shared.proto";      // ShortGuid
 import "connection.proto";  // Path, ViewUpdate
 import "deltas.proto";
 
-option csharp_namespace = "EtAlii.Adp";
+option csharp_namespace = "EtAlii.Adp.Diagram.Wire";
 
 // One open diagram, as two correlated one-way legs (tech.md's "gRPC call shapes"): a browser
 // on grpc-web cannot stream a request body, so the bidirectional Connect this service was

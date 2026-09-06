@@ -4,7 +4,7 @@ using EtAlii.Adp.Diagram;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Diagrams.Tests;
+namespace EtAlii.Adp.Diagram.Tests;
 
 /// <summary>
 /// The watcher-to-store bridge on its own: a disk change to a tracked body or registration

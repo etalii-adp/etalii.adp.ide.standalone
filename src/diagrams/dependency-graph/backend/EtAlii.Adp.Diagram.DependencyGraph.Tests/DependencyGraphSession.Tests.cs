@@ -1,5 +1,5 @@
 using EtAlii.Adp.Backend;
-using EtAlii.Adp.Backend.Diagrams;
+using EtAlii.Adp.Diagram;
 using Xunit;
 using IoPath = System.IO.Path;
 
