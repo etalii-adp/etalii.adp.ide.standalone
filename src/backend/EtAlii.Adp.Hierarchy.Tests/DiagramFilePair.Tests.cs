@@ -1,11 +1,10 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
-using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.TestSupport;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Hierarchy.Tests;
 
 /// <summary>
 /// The pair of files a diagram may be, and what the rename, delete and create commands do

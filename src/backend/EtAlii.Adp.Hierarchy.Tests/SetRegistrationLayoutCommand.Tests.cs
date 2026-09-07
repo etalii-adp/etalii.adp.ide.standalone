@@ -1,10 +1,9 @@
 using EtAlii.Adp.Common;
-using EtAlii.Adp.Hierarchy;
 using EtAlii.Adp.TestSupport;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Hierarchy.Tests;
 
 /// <summary>
 /// A reposition is one undo away like every other edit, and undo returns the registration

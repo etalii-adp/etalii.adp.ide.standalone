@@ -1,7 +1,6 @@
-using EtAlii.Adp.Hierarchy;
 using Xunit;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Hierarchy.Tests;
 
 /// <summary>
 /// The nesting decision as a pure function (adp-file-nesting Requirement 3): placement is

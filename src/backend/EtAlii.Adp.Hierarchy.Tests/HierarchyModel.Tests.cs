@@ -1,9 +1,8 @@
 using EtAlii.Adp.Common;
-using EtAlii.Adp.Hierarchy;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Hierarchy.Tests;
 
 public class HierarchyModelTests : IDisposable
 {
