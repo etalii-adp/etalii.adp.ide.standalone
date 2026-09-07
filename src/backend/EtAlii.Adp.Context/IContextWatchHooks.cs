@@ -1,3 +1,4 @@
+using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context.Wire;
 
 namespace EtAlii.Adp.Context;

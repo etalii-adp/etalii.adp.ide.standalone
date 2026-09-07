@@ -3,7 +3,8 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { create } from "@bufbuild/protobuf";
 import { ContextActionGroupSchema, ContextSelectionSource } from "../../generated/context-contract_pb";
 import { type ContextActionGroup } from "../../generated/context-contract_pb";
-import { ContextSelectionAction, ProblemSetState, ProblemSeverity, ProjectProblemsSchema, type ContextSelection, type Problem, type ProjectProblems } from "../../generated/context_pb";
+import { ContextSelectionAction, type ContextSelection } from "../../generated/context_pb";
+import { ProblemSetState, ProblemSeverity, ProjectProblemsSchema, type Problem, type ProjectProblems } from "../../generated/problems_pb";
 import { ErrorsWarningsPanel, visibleProblems } from "./ErrorsWarningsPanel";
 import { requestTextTab } from "./textTabRequests";
 

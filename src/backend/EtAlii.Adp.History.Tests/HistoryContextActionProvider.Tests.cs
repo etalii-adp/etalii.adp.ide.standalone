@@ -6,7 +6,7 @@ using EtAlii.Adp.TestSupport;
 using Xunit;
 using IoPath = System.IO.Path;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.History.Tests;
 
 /// <summary>
 /// The provider that offers undo and redo as project-scope context actions. Driven against a

@@ -13,8 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\EtAlii.Adp.Hierarchy\EtAlii.Adp.Hierarchy.csproj" />
-    <ProjectReference Include="..\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Diagram\EtAlii.Adp.Diagram.csproj" />
+    <ProjectReference Include="..\EtAlii.Adp.Problems\EtAlii.Adp.Problems.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.TestSupport\EtAlii.Adp.TestSupport.csproj" />
   </ItemGroup>
 

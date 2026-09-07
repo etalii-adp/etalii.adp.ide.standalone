@@ -6,8 +6,8 @@
 // apart is what lets the rules be tested without rendering anything.
 
 import type { PipelineElementPayload } from "@client/generated/azure-pipeline_pb";
-import type { Problem } from "@client/generated/context_pb";
-import { ProblemSeverity } from "@client/generated/context_pb";
+import type { Problem } from "@client/generated/problems_pb";
+import { ProblemSeverity } from "@client/generated/problems_pb";
 import type { PipelineNode } from "./pipelineModel";
 
 /** One thing worth saying about an element, as a badge on it. */

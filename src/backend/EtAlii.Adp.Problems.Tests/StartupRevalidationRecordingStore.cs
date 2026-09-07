@@ -1,6 +1,6 @@
 using EtAlii.Adp.Problems;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Problems.Tests;
 
 internal sealed class StartupRevalidationRecordingStore : IProblemStore
 {

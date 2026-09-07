@@ -1,9 +1,10 @@
 using System.Threading.Channels;
 using EtAlii.Adp.Common;
+using EtAlii.Adp.Common.Wire;
 using EtAlii.Adp.Context;
 using EtAlii.Adp.Context.Wire;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Problems.Tests;
 
 /// <summary>Records the problems pushes; every other member is unreached by the broadcaster.</summary>
 internal sealed class ProblemBroadcasterRecordingSelectionStore : IContextSelectionStore

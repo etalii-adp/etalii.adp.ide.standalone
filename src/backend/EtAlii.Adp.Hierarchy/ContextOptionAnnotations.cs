@@ -1,4 +1,4 @@
-namespace EtAlii.Adp.Common;
+namespace EtAlii.Adp.Hierarchy;
 
 /// <summary>
 /// The per-option values a caller decides while the subject is still known, computed once when

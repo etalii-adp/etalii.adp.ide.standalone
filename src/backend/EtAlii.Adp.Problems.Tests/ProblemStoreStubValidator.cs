@@ -1,7 +1,7 @@
 using EtAlii.Adp.Common;
 using EtAlii.Adp.Diagram;
 
-namespace EtAlii.Adp.Backend.Tests;
+namespace EtAlii.Adp.Problems.Tests;
 
 internal sealed class ProblemStoreStubValidator(DiagramOrigin origin) : IDiagramValidator
 {
