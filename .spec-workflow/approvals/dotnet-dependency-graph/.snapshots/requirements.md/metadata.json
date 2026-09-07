@@ -1,12 +1,20 @@
 {
   "filePath": ".spec-workflow/specs/dotnet-dependency-graph/requirements.md",
-  "currentVersion": 1,
+  "currentVersion": 2,
   "snapshots": [
     {
       "version": 1,
       "filename": "snapshot-001.json",
       "timestamp": "2026-09-07T16:47:21.682Z",
       "trigger": "initial",
+      "approvalId": "approval_1788799641266_gwswafpep",
+      "approvalTitle": "Requirements: .NET project and package dependency graph"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2026-09-07T17:01:18.656Z",
+      "trigger": "approved",
       "approvalId": "approval_1788799641266_gwswafpep",
       "approvalTitle": "Requirements: .NET project and package dependency graph"
     }

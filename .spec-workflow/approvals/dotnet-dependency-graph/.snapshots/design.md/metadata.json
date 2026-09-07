@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/dotnet-dependency-graph/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2026-09-07T20:34:28.415Z",
+      "trigger": "initial",
+      "approvalId": "approval_1788813268074_2jc79xh5b",
+      "approvalTitle": "Design: .NET project and package dependency graph"
+    }
+  ]
+}

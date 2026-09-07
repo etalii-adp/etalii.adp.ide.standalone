@@ -3,8 +3,10 @@
   "title": "Requirements: .NET project and package dependency graph",
   "filePath": ".spec-workflow/specs/dotnet-dependency-graph/requirements.md",
   "type": "document",
-  "status": "pending",
+  "status": "approved",
   "createdAt": "2026-09-07T16:47:21.266Z",
   "category": "spec",
-  "categoryName": "dotnet-dependency-graph"
+  "categoryName": "dotnet-dependency-graph",
+  "response": "Approved via dashboard",
+  "respondedAt": "2026-09-07T17:01:18.661Z"
 }
