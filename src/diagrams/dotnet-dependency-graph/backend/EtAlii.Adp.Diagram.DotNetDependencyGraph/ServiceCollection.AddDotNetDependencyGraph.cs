@@ -1,3 +1,4 @@
+using EtAlii.Adp.Context;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EtAlii.Adp.Diagram.DotNetDependencyGraph;
@@ -27,9 +28,30 @@ public static class ServiceCollectionAddDotNetDependencyGraphExtension
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        // Task 1 registers nothing: the reader, session, providers and layout arrive with the
-        // tasks that build them. The method exists from the start so the definition's Build
-        // callback names something real rather than being wired up later.
+        // The readers: one solution parser, one project parser, one description reader. All
+        // three are stateless and read-only, so one of each per host is right.
+        services.AddSingleton<SolutionReader>();
+        services.AddSingleton<ProjectReader>();
+        services.AddSingleton<PackageDescriptionReader>();
+
+        // One store per host: it holds one derived graph per solution, so every session and the
+        // property grid read the same graph rather than each deriving its own.
+        services.AddSingleton<DependencyGraphStore>();
+        services.AddSingleton<IDependencyGraphStore>(provider => provider.GetRequiredService<DependencyGraphStore>());
+
+        services.AddSingleton<DependencyElementMapper>();
+        services.AddSingleton<IDiagramSessionFactory, DotNetDependencyGraphSessionFactory>();
+
+        // One resolver makes every project, package and edge selectable, so the property grid,
+        // the ribbon and the menu answer for one like any other element. The context service
+        // itself is untouched.
+        services.AddSingleton<IContextSourceResolver, DotNetContextSourceResolver>();
+
+        // Property-grid Requirement 4 at 100%: every row this contributes is read-only, and
+        // every reason names what would have to change instead. ContextPropertyResolver refuses
+        // a write to any of them server-side, so the markings are enforced, not styled.
+        services.AddSingleton<IContextPropertyProvider, DotNetContextPropertyProvider>();
+
         return services;
     }
 }

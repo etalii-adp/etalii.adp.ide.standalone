@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <!-- xUnit v3 test projects are executables: the test host is the project itself. -->
@@ -15,6 +15,7 @@
   <ItemGroup>
     <!-- The context seam this module's property provider implements. -->
     <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.Context\EtAlii.Adp.Context.csproj" />
+    <ProjectReference Include="..\..\..\..\backend\EtAlii.Adp.History\EtAlii.Adp.History.csproj" />
     <ProjectReference Include="..\EtAlii.Adp.Diagram.DotNetDependencyGraph\EtAlii.Adp.Diagram.DotNetDependencyGraph.csproj" />
   </ItemGroup>
 

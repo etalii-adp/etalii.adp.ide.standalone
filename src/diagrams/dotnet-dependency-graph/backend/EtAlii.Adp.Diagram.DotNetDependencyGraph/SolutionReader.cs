@@ -70,15 +70,29 @@ public sealed class SolutionReader
         }
 
         var extension = Path.GetExtension(solutionPath);
-        var declared = string.Equals(extension, Diagram.AlternateDocumentExtension, StringComparison.OrdinalIgnoreCase)
-            ? ReadSlnx(text, solutionPath)
-            : ReadClassic(text);
+        if (string.Equals(extension, Diagram.AlternateDocumentExtension, StringComparison.OrdinalIgnoreCase))
+        {
+            var parsed = ReadSlnx(text, solutionPath);
 
-        return Resolve(declared, solutionPath);
+            // Reported, never swallowed (Requirement 2.4). Returning no projects AND no reason
+            // would open an empty diagram claiming the solution contains nothing - which is the
+            // failure mode the requirement names rather than a mild version of it. Found by the
+            // session's integration test, after this reader's own unit test asserted only that
+            // no projects came back and so passed over the missing reason.
+            return parsed is null
+                ? SolutionReading.OfFailure(solutionPath, "The solution file could not be parsed.")
+                : Resolve(parsed, solutionPath);
+        }
+
+        return Resolve(ReadClassic(text), solutionPath);
     }
 
-    /// <summary>The XML serialization: <c>Project Path=</c>, at any depth inside folders.</summary>
-    private static IReadOnlyList<string> ReadSlnx(string text, string solutionPath)
+    /// <summary>
+    /// The XML serialization: <c>Project Path=</c>, at any depth inside folders. <c>null</c>
+    /// when the document will not parse - distinct from an empty list, which is a solution that
+    /// genuinely names no projects.
+    /// </summary>
+    private static IReadOnlyList<string>? ReadSlnx(string text, string solutionPath)
     {
         XDocument document;
         try
@@ -88,7 +102,7 @@ public sealed class SolutionReader
         catch (System.Xml.XmlException error)
         {
             _logger.Warning(error, "Solution {Solution} is not well-formed XML", solutionPath);
-            return [];
+            return null;
         }
 
         // Descendants rather than children: a .slnx nests projects inside <Folder> elements,

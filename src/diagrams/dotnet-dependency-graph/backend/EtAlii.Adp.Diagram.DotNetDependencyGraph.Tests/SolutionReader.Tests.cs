@@ -88,8 +88,15 @@ public class SolutionReaderTests
     }
 
     [Fact]
-    public void Read_AnUnparseableSolution_IsAFailureRatherThanAThrow()
+    public void Read_AnUnparseableSolution_ReportsTheReason_RatherThanReturningSilence()
     {
+        // This test WAS weaker: it asserted only that no projects came back, and passed while
+        // the reader swallowed the parse failure entirely - no projects and no reason, which
+        // opens an empty diagram claiming the solution contains nothing. That is precisely the
+        // failure mode Requirement 2.4 names, and the session's integration test is what caught
+        // it. The missing assertion is the one that matters, so it is here now: a reader that
+        // says nothing is indistinguishable from a solution that has nothing in it.
+
         // Arrange.
         var reader = new SolutionReader();
 
@@ -97,8 +104,27 @@ public class SolutionReaderTests
         var reading = reader.Read(FixturePath("Broken.slnx"));
 
         // Assert.
-        // No projects, and the diagram still opens - which is what the session does with this.
         Assert.Empty(reading.Projects);
+        var failure = Assert.Single(reading.Failures);
+        Assert.NotEqual("", failure.Reason);
+    }
+
+    [Fact]
+    public void Read_ASolutionThatGenuinelyNamesNoProjects_IsNotAFailure()
+    {
+        // The pairing for the test above, and the reason the parse failure is a null rather
+        // than an empty list: "would not parse" and "parsed, and names nothing" are different
+        // answers, and an empty solution is not broken.
+
+        // Arrange.
+        var reader = new SolutionReader();
+
+        // Act.
+        var reading = reader.Read(FixturePath("Empty.slnx"));
+
+        // Assert.
+        Assert.Empty(reading.Projects);
+        Assert.Empty(reading.Failures);
     }
 
     [Fact]
